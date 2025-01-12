@@ -13,9 +13,7 @@ The base URL for the API is:
 
 Authenticated endpoints require a Bearer token in the `Authorization` header:
 
-```http
-Authorization: Bearer <token>
-```
+`Authorization: Bearer YOUR_TOKEN_HERE`
 
 ---
 
@@ -27,25 +25,21 @@ Authorization: Bearer <token>
 
 Creates a new user account.
 
-#### **Signup Request Body**
+##### **Signup Request Body**
 
-```json
 {
   "username": "string",
   "email": "string",
   "password": "string"
 }
-```
 
-#### **Signup Response (201 Created)**
+##### **Signup Response (201 Created)**
 
-```json
 {
   "message": "User created successfully",
   "userId": "string",
   "token": "string"
 }
-```
 
 ---
 
@@ -53,23 +47,19 @@ Creates a new user account.
 
 Authenticates a user and generates a token.
 
-#### **Login Request Body**
+##### **Login Request Body**
 
-```json
 {
   "email": "string",
   "password": "string"
 }
-```
 
-#### **Login Response (200 OK)**
+##### **Login Response (200 OK)**
 
-```json
 {
   "message": "Login successful",
   "token": "string"
 }
-```
 
 ---
 
@@ -79,15 +69,12 @@ Authenticates a user and generates a token.
 
 Retrieves the user's profile.
 
-#### **User Profile Headers**
+##### **User Profile Headers**
 
-```http
-Authorization: Bearer <token>
-```
+`Authorization: Bearer YOUR_TOKEN_HERE`
 
-#### **User Profile Response (200 OK)**
+##### **User Profile Response (200 OK)**
 
-```json
 {
   "id": "string",
   "username": "string",
@@ -95,7 +82,6 @@ Authorization: Bearer <token>
   "created_at": "string",
   "updated_at": "string"
 }
-```
 
 ---
 
@@ -103,28 +89,22 @@ Authorization: Bearer <token>
 
 Updates the user profile.
 
-#### **User Update Headers**
+##### **User Update Headers**
 
-```http
-Authorization: Bearer <token>
-```
+`Authorization: Bearer YOUR_TOKEN_HERE`
 
-#### **User Update Request Body**
+##### **User Update Request Body**
 
-```json
 {
   "username": "string",
   "email": "string"
 }
-```
 
-#### **User Update Response (200 OK)**
+##### **User Update Response (200 OK)**
 
-```json
 {
   "message": "User updated successfully"
 }
-```
 
 ---
 
@@ -132,13 +112,11 @@ Authorization: Bearer <token>
 
 Deletes the user account.
 
-#### **User Delete Headers**
+##### **User Delete Headers**
 
-```http
-Authorization: Bearer <token>
-```
+`Authorization: Bearer YOUR_TOKEN_HERE`
 
-#### **User Delete Response (204 No Content)**
+##### **User Delete Response (204 No Content)**
 
 No response body.
 
@@ -150,15 +128,12 @@ No response body.
 
 Creates a new universe.
 
-#### **Universe Create Headers**
+##### **Universe Create Headers**
 
-```http
-Authorization: Bearer <token>
-```
+`Authorization: Bearer YOUR_TOKEN_HERE`
 
-#### **Universe Create Request Body**
+##### **Universe Create Request Body**
 
-```json
 {
   "name": "string",
   "description": "string",
@@ -166,16 +141,13 @@ Authorization: Bearer <token>
   "environment_harmony": "number",
   "friction": "number"
 }
-```
 
-#### **Universe Create Response (201 Created)**
+##### **Universe Create Response (201 Created)**
 
-```json
 {
   "message": "Universe created successfully",
   "universeId": "string"
 }
-```
 
 ---
 
@@ -183,15 +155,12 @@ Authorization: Bearer <token>
 
 Retrieves all universes for the authenticated user.
 
-#### **Universe List Headers**
+##### **Universe List Headers**
 
-```http
-Authorization: Bearer <token>
-```
+`Authorization: Bearer YOUR_TOKEN_HERE`
 
-#### **Universe List Response (200 OK)**
+##### **Universe List Response (200 OK)**
 
-```json
 {
   "universes": [
     {
@@ -206,7 +175,6 @@ Authorization: Bearer <token>
     }
   ]
 }
-```
 
 ---
 
@@ -214,15 +182,12 @@ Authorization: Bearer <token>
 
 Retrieves a single universe by its ID.
 
-#### **Universe Get Headers**
+##### **Universe Get Headers**
 
-```http
-Authorization: Bearer <token>
-```
+`Authorization: Bearer YOUR_TOKEN_HERE`
 
-#### **Universe Get Response (200 OK)**
+##### **Universe Get Response (200 OK)**
 
-```json
 {
   "id": "string",
   "name": "string",
@@ -233,7 +198,6 @@ Authorization: Bearer <token>
   "created_at": "string",
   "updated_at": "string"
 }
-```
 
 ---
 
@@ -241,15 +205,12 @@ Authorization: Bearer <token>
 
 Updates a universe's settings.
 
-#### **Universe Update Headers**
+##### **Universe Update Headers**
 
-```http
-Authorization: Bearer <token>
-```
+`Authorization: Bearer YOUR_TOKEN_HERE`
 
-#### **Universe Update Request Body**
+##### **Universe Update Request Body**
 
-```json
 {
   "name": "string",
   "description": "string",
@@ -257,15 +218,12 @@ Authorization: Bearer <token>
   "environment_harmony": "number",
   "friction": "number"
 }
-```
 
-#### **Universe Update Response (200 OK)**
+##### **Universe Update Response (200 OK)**
 
-```json
 {
   "message": "Universe updated successfully"
 }
-```
 
 ---
 
@@ -273,13 +231,11 @@ Authorization: Bearer <token>
 
 Deletes a universe.
 
-#### **Universe Delete Headers**
+##### **Universe Delete Headers**
 
-```http
-Authorization: Bearer <token>
-```
+`Authorization: Bearer YOUR_TOKEN_HERE`
 
-#### **Universe Delete Response (204 No Content)**
+##### **Universe Delete Response (204 No Content)**
 
 No response body.
 
@@ -291,29 +247,23 @@ No response body.
 
 Adds a new physics parameter to a universe.
 
-#### **Physics Create Headers**
+##### **Physics Create Headers**
 
-```http
-Authorization: Bearer <token>
-```
+`Authorization: Bearer YOUR_TOKEN_HERE`
 
-#### **Physics Create Request Body**
+##### **Physics Create Request Body**
 
-```json
 {
   "parameter_name": "string",
   "value": "number"
 }
-```
 
-#### **Physics Create Response (201 Created)**
+##### **Physics Create Response (201 Created)**
 
-```json
 {
   "message": "Physics parameter added successfully",
   "parameterId": "string"
 }
-```
 
 ---
 
@@ -321,15 +271,12 @@ Authorization: Bearer <token>
 
 Retrieves all physics parameters for a universe.
 
-#### **Physics List Headers**
+##### **Physics List Headers**
 
-```http
-Authorization: Bearer <token>
-```
+`Authorization: Bearer YOUR_TOKEN_HERE`
 
-#### **Physics List Response (200 OK)**
+##### **Physics List Response (200 OK)**
 
-```json
 {
   "parameters": [
     {
@@ -339,7 +286,6 @@ Authorization: Bearer <token>
     }
   ]
 }
-```
 
 ---
 
@@ -347,28 +293,22 @@ Authorization: Bearer <token>
 
 Updates a physics parameter.
 
-#### **Physics Update Headers**
+##### **Physics Update Headers**
 
-```http
-Authorization: Bearer <token>
-```
+`Authorization: Bearer YOUR_TOKEN_HERE`
 
-#### **Physics Update Request Body**
+##### **Physics Update Request Body**
 
-```json
 {
   "parameter_name": "string",
   "value": "number"
 }
-```
 
-#### **Physics Update Response (200 OK)**
+##### **Physics Update Response (200 OK)**
 
-```json
 {
   "message": "Physics parameter updated successfully"
 }
-```
 
 ---
 
@@ -376,13 +316,11 @@ Authorization: Bearer <token>
 
 Deletes a physics parameter.
 
-#### **Physics Delete Headers**
+##### **Physics Delete Headers**
 
-```http
-Authorization: Bearer <token>
-```
+`Authorization: Bearer YOUR_TOKEN_HERE`
 
-#### **Physics Delete Response (204 No Content)**
+##### **Physics Delete Response (204 No Content)**
 
 No response body.
 
@@ -394,30 +332,24 @@ No response body.
 
 Adds or updates music settings for a universe.
 
-#### **Music Update Headers**
+##### **Music Update Headers**
 
-```http
-Authorization: Bearer <token>
-```
+`Authorization: Bearer YOUR_TOKEN_HERE`
 
-#### **Music Update Request Body**
+##### **Music Update Request Body**
 
-```json
 {
   "tempo": "number",
   "pitch": "number",
   "instrument": "string",
   "harmony_value": "number"
 }
-```
 
-#### **Music Update Response (200 OK)**
+##### **Music Update Response (200 OK)**
 
-```json
 {
   "message": "Music settings updated successfully"
 }
-```
 
 ---
 
@@ -425,22 +357,22 @@ Authorization: Bearer <token>
 
 Retrieves music settings for a universe.
 
-#### **Music Get Headers**
+##### **Music Get Headers**
 
-```http
-Authorization: Bearer <token>
-```
+`Authorization: Bearer YOUR_TOKEN_HERE`
 
-#### **Music Get Response (200 OK)**
+##### **Music Get Response (200 OK)**
 
-```json
 {
-  "tempo": "number",
-  "pitch": "number",
-  "instrument": "string",
-  "harmony_value": "number"
+  "parameters": [
+    {
+      "id": "string",
+      "parameter_name": "string",
+      "value": "number",
+      "instrument": "string"
+    }
+  ]
 }
-```
 
 ---
 
@@ -450,30 +382,24 @@ Authorization: Bearer <token>
 
 Adds a new storyboard entry to a universe.
 
-#### **Storyboard Create Headers**
+##### **Storyboard Create Headers**
 
-```http
-Authorization: Bearer <token>
-```
+`Authorization: Bearer YOUR_TOKEN_HERE`
 
-#### **Storyboard Create Request Body**
+##### **Storyboard Create Request Body**
 
-```json
 {
   "plot_point": "string",
   "description": "string",
   "harmony_tie": "number"
 }
-```
 
-#### **Storyboard Create Response (201 Created)**
+##### **Storyboard Create Response (201 Created)**
 
-```json
 {
   "message": "Storyboard added successfully",
   "storyboardId": "string"
 }
-```
 
 ---
 
@@ -481,15 +407,12 @@ Authorization: Bearer <token>
 
 Retrieves all storyboards for a universe.
 
-#### **Storyboard List Headers**
+##### **Storyboard List Headers**
 
-```http
-Authorization: Bearer <token>
-```
+`Authorization: Bearer YOUR_TOKEN_HERE`
 
-#### **Storyboard List Response (200 OK)**
+##### **Storyboard List Response (200 OK)**
 
-```json
 {
   "storyboards": [
     {
@@ -501,7 +424,6 @@ Authorization: Bearer <token>
     }
   ]
 }
-```
 
 ---
 
@@ -509,13 +431,11 @@ Authorization: Bearer <token>
 
 Deletes a storyboard.
 
-#### **Storyboard Delete Headers**
+##### **Storyboard Delete Headers**
 
-```http
-Authorization: Bearer <token>
-```
+`Authorization: Bearer YOUR_TOKEN_HERE`
 
-#### **Storyboard Delete Response (204 No Content)**
+##### **Storyboard Delete Response (204 No Content)**
 
 No response body.
 
@@ -532,3 +452,41 @@ No response body.
 | 403         | Forbidden             | `{"error": "Access denied"}`           |
 | 404         | Not Found             | `{"error": "Resource not found"}`      |
 | 500         | Internal Server Error | `{"error": "Internal server error"}`   |
+
+---
+
+#### **PUT /universes/{universeId}/music/{parameterId}**
+
+Updates a music parameter.
+
+##### **Music Parameter Update Headers**
+
+`Authorization: Bearer YOUR_TOKEN_HERE`
+
+##### **Music Parameter Update Request Body**
+
+{
+  "parameter_name": "string",
+  "value": "number",
+  "instrument": "string"
+}
+
+##### **Music Parameter Update Response (200 OK)**
+
+{
+  "message": "Music parameter updated successfully"
+}
+
+---
+
+#### **DELETE /universes/{universeId}/music/{parameterId}**
+
+Deletes a music parameter.
+
+##### **Music Parameter Delete Headers**
+
+`Authorization: Bearer YOUR_TOKEN_HERE`
+
+##### **Music Parameter Delete Response (204 No Content)**
+
+No response body.
