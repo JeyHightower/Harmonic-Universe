@@ -6,7 +6,7 @@ from app.utils.token_manager import auto_token
 
 music_bp = Blueprint('music', __name__)
 
-@music_bp.route('/<int:universe_id>/music', methods=['POST'])
+@music_bp.route('/', methods=['POST'])
 @auto_token
 def add_music_parameter(universe_id):
     data = request.get_json()
@@ -40,7 +40,7 @@ def add_music_parameter(universe_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@music_bp.route('/<int:universe_id>/music', methods=['GET'])
+@music_bp.route('/', methods=['GET'])
 @auto_token
 def get_music_parameters(universe_id):
     try:
@@ -59,7 +59,7 @@ def get_music_parameters(universe_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@music_bp.route('/<int:universe_id>/music/<int:parameter_id>', methods=['PUT'])
+@music_bp.route('/<int:parameter_id>', methods=['PUT'])
 @auto_token
 def update_music_parameter(universe_id, parameter_id):
     data = request.get_json()
@@ -93,7 +93,7 @@ def update_music_parameter(universe_id, parameter_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@music_bp.route('/<int:universe_id>/music/<int:parameter_id>', methods=['DELETE'])
+@music_bp.route('/<int:parameter_id>', methods=['DELETE'])
 @auto_token
 def delete_music_parameter(universe_id, parameter_id):
     try:

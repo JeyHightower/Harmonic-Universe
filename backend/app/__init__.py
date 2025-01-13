@@ -45,14 +45,15 @@ def create_app(config_class=Config):
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(universe_bp, url_prefix='/api/universes')
-    app.register_blueprint(music_bp, url_prefix='/api/universes')
-    app.register_blueprint(physics_bp, url_prefix='/api/universes')
-    app.register_blueprint(storyboard_bp, url_prefix='/api/universes')
+    app.register_blueprint(music_bp, url_prefix='/api/universes/<int:universe_id>/music')
+    app.register_blueprint(physics_bp, url_prefix='/api/universes/<int:universe_id>/physics')
+    app.register_blueprint(storyboard_bp, url_prefix='/api/universes/<int:universe_id>/storyboards')
 
     # CSRF token route
     @app.route('/api/csrf/token')
     def get_csrf_token():
-        token = csrf.generate_csrf()
+        from flask_wtf.csrf import generate_csrf
+        token = generate_csrf()
         response = {'csrf_token': token}
         return response
 

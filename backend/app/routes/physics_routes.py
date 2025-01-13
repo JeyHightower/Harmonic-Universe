@@ -6,7 +6,7 @@ from app.utils.token_manager import auto_token
 
 physics_bp = Blueprint('physics', __name__)
 
-@physics_bp.route('/<int:universe_id>/physics', methods=['POST'])
+@physics_bp.route('/', methods=['POST'])
 @auto_token
 def add_physics_parameter(universe_id):
     data = request.get_json()
@@ -40,7 +40,7 @@ def add_physics_parameter(universe_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@physics_bp.route('/<int:universe_id>/physics', methods=['GET'])
+@physics_bp.route('/', methods=['GET'])
 @auto_token
 def get_physics_parameters(universe_id):
     try:
@@ -55,11 +55,11 @@ def get_physics_parameters(universe_id):
             'value': p.value,
             'unit': p.unit
         } for p in parameters]
-        return jsonify(result), 200
+        return jsonify({'parameters': result}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@physics_bp.route('/<int:universe_id>/physics/<int:parameter_id>', methods=['PUT'])
+@physics_bp.route('/<int:parameter_id>', methods=['PUT'])
 @auto_token
 def update_physics_parameter(universe_id, parameter_id):
     data = request.get_json()
@@ -93,7 +93,7 @@ def update_physics_parameter(universe_id, parameter_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@physics_bp.route('/<int:universe_id>/physics/<int:parameter_id>', methods=['DELETE'])
+@physics_bp.route('/<int:parameter_id>', methods=['DELETE'])
 @auto_token
 def delete_physics_parameter(universe_id, parameter_id):
     try:

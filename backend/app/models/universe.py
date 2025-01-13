@@ -1,5 +1,5 @@
 from app.extensions import db
-from datetime import datetime
+from datetime import datetime, UTC
 
 class Universe(db.Model):
     __tablename__ = 'universes'
@@ -10,8 +10,14 @@ class Universe(db.Model):
     gravity_constant = db.Column(db.Float)
     environment_harmony = db.Column(db.Float)
     creator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+
+    # Relationships
+    user = db.relationship('User', back_populates='universes')
+    music_parameters = db.relationship('MusicParameter', back_populates='universe', cascade='all, delete')
+    physics_parameters = db.relationship('PhysicsParameter', back_populates='universe', cascade='all, delete')
+    storyboards = db.relationship('Storyboard', back_populates='universe', cascade='all, delete')
 
     def to_dict(self):
         """Convert universe to dictionary"""

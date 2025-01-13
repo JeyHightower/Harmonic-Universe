@@ -7,9 +7,10 @@ class PhysicsParameter(db.Model):
     universe_id = db.Column(db.Integer, db.ForeignKey('universes.id'), nullable=False)
     parameter_name = db.Column(db.String(100), nullable=False, index=True)  # Index added
     value = db.Column(db.Float, nullable=False)
+    unit = db.Column(db.String(50), nullable=False)  # Added unit field
 
     # Relationships
     universe = db.relationship('Universe', back_populates='physics_parameters')
 
     def __repr__(self):
-        return f"<PhysicsParameter {self.parameter_name}: {self.value}>"
+        return f"<PhysicsParameter {self.parameter_name}: {self.value} {self.unit}>"

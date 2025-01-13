@@ -1,22 +1,24 @@
 # app/routes/auth_routes.py
 from flask import Blueprint, request, jsonify, g
-from werkzeug.security import generate_password_hash, check_password_hash
 from app.models.user import User
 from app import db
 import jwt
-import datetime
+import bcrypt
+from datetime import datetime, timedelta, UTC
+from app.config import Config
+from app.utils.token_manager import auto_token
 from functools import wraps
 
 auth_bp = Blueprint('auth', __name__)
 
 def generate_token(user_id):
-    """Generate a new token for a user"""
+    """Generate a JWT token for the user"""
     payload = {
         'user_id': user_id,
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(days=30),
-        'iat': datetime.datetime.utcnow()
+        'exp': datetime.now(UTC) + timedelta(days=30),
+        'iat': datetime.now(UTC)
     }
-    return jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
+    return jwt.encode(payload, Config.SECRET_KEY, algorithm='HS256')
 
 @auth_bp.route('/token', methods=['POST'])
 def get_token():
@@ -28,7 +30,7 @@ def get_token():
 
     user = User.query.filter_by(email=data['email']).first()
 
-    if user and check_password_hash(user.password, data['password']):
+    if user and bcrypt.checkpw(data['password'].encode('utf-8'), user.password_hash.encode('utf-8')):
         token = generate_token(user.id)
         return jsonify({
             'token': token,
@@ -50,7 +52,7 @@ def refresh_token():
 
     try:
         token = auth_header.split(" ")[1]
-        data = jwt.decode(token, 'dev-secret-key', algorithms=["HS256"])
+        data = jwt.decode(token, Config.SECRET_KEY, algorithms=["HS256"])
         user = User.query.get(data['user_id'])
 
         if not user:
@@ -83,12 +85,11 @@ def signup():
     if User.query.filter_by(username=data['username']).first():
         return jsonify({'error': 'Username already taken'}), 400
 
-    hashed_password = generate_password_hash(data['password'])
     new_user = User(
         username=data['username'],
-        email=data['email'],
-        password=hashed_password
+        email=data['email']
     )
+    new_user.set_password(data['password'])
 
     try:
         db.session.add(new_user)
@@ -119,7 +120,7 @@ def login():
 
     user = User.query.filter_by(email=data['email']).first()
 
-    if user and check_password_hash(user.password, data['password']):
+    if user and bcrypt.checkpw(data['password'].encode('utf-8'), user.password_hash.encode('utf-8')):
         # Generate token
         token = generate_token(user.id)
 
@@ -144,7 +145,7 @@ def validate_token():
 
     try:
         token = auth_header.split(" ")[1]
-        data = jwt.decode(token, 'dev-secret-key', algorithms=["HS256"])
+        data = jwt.decode(token, Config.SECRET_KEY, algorithms=["HS256"])
         user = User.query.get(data['user_id'])
 
         if not user:
