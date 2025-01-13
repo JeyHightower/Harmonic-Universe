@@ -75,23 +75,103 @@ def refresh_token():
 @auth_bp.route('/signup', methods=['POST'])
 def signup():
     data = request.get_json()
+    print("Signup data:", data)  # Debug log
 
-    if not data or 'email' not in data or 'password' not in data or 'username' not in data:
-        return jsonify({'error': 'Missing required fields'}), 400
+    if not data:
+        return jsonify({'error': 'No data provided', 'type': 'validation_error'}), 400
 
-    if User.query.filter_by(email=data['email']).first():
-        return jsonify({'error': 'Email already registered'}), 400
+    # Check required fields
+    required_fields = ['email', 'password', 'username']
+    missing_fields = [field for field in required_fields if field not in data or not data[field]]
+    if missing_fields:
+        print("Missing fields:", missing_fields)  # Debug log
+        return jsonify({
+            'error': f'Missing required fields: {", ".join(missing_fields)}',
+            'type': 'validation_error'
+        }), 400
 
-    if User.query.filter_by(username=data['username']).first():
-        return jsonify({'error': 'Username already taken'}), 400
+    # Clean input data
+    email = data['email'].strip()
+    username = data['username'].strip()
+    password = data['password']
+    print(f"Cleaned data - email: {email}, username: {username}, password length: {len(password)}")  # Debug log
 
-    new_user = User(
-        username=data['username'],
-        email=data['email']
-    )
-    new_user.set_password(data['password'])
+    # Check if email already exists
+    existing_email = User.query.filter_by(email=email).first()
+    if existing_email:
+        print("Email exists:", email)  # Debug log
+        return jsonify({
+            'error': 'Email already registered',
+            'type': 'validation_error'
+        }), 400
 
+    # Check if username already exists
+    existing_username = User.query.filter_by(username=username).first()
+    if existing_username:
+        print("Username exists:", username)  # Debug log
+        return jsonify({
+            'error': 'Username already taken',
+            'type': 'validation_error'
+        }), 400
+
+    # Validate email format
+    if not '@' in email or not '.' in email:
+        print("Invalid email format:", email)  # Debug log
+        return jsonify({
+            'error': 'Invalid email format',
+            'type': 'validation_error'
+        }), 400
+
+    # Validate username
+    if len(username) < 3 or len(username) > 40:
+        print("Invalid username length:", len(username))  # Debug log
+        return jsonify({
+            'error': 'Username must be between 3 and 40 characters',
+            'type': 'validation_error'
+        }), 400
+    if not username.replace('_', '').replace('-', '').isalnum():
+        print("Invalid username characters:", username)  # Debug log
+        return jsonify({
+            'error': 'Username can only contain letters, numbers, underscores, and hyphens',
+            'type': 'validation_error'
+        }), 400
+
+    # Validate password
+    if len(password) < 8:
+        print("Password too short:", len(password))  # Debug log
+        return jsonify({
+            'error': 'Password must be at least 8 characters long',
+            'type': 'validation_error'
+        }), 400
+    if not any(c.isupper() for c in password):
+        print("Password missing uppercase")  # Debug log
+        return jsonify({
+            'error': 'Password must contain at least one uppercase letter',
+            'type': 'validation_error'
+        }), 400
+    if not any(c.islower() for c in password):
+        print("Password missing lowercase")  # Debug log
+        return jsonify({
+            'error': 'Password must contain at least one lowercase letter',
+            'type': 'validation_error'
+        }), 400
+    if not any(c.isdigit() for c in password):
+        print("Password missing number")  # Debug log
+        return jsonify({
+            'error': 'Password must contain at least one number',
+            'type': 'validation_error'
+        }), 400
+
+    print("All validation passed")  # Debug log
+
+    # Create new user
     try:
+        new_user = User(
+            username=username,
+            email=email
+        )
+        new_user.set_password(password)
+
         db.session.add(new_user)
         db.session.commit()
 
@@ -107,9 +187,15 @@ def signup():
                 'username': new_user.username
             }
         }), 201
+
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        print("Error creating user:", str(e))  # Debug log
+        return jsonify({
+            'error': 'An error occurred while creating the user',
+            'type': 'server_error',
+            'details': str(e)
+        }), 500
 
 @auth_bp.route('/login', methods=['POST'])
 def login():

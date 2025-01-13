@@ -59,7 +59,7 @@ class TestRoutes(unittest.TestCase):
         signup_user = {
             'username': 'newuser',
             'email': 'new@example.com',
-            'password': 'newpass123'
+            'password': 'Newpass123'
         }
         response = self.client.post('/api/auth/signup', json=signup_user)
         self.assertEqual(response.status_code, 201)

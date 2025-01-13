@@ -4,7 +4,7 @@
 
 The base URL for all API endpoints is:
 
-```http://localhost:5000/api
+```http://localhost:5001/api
 
 ```
 
@@ -56,9 +56,9 @@ Creates a new user account.
 
 ```json
 {
-  "username": "string",
-  "email": "string",
-  "password": "string"
+  "username": "string (3-40 chars, alphanumeric with _ and -)",
+  "email": "valid email format",
+  "password": "string (min 8 chars, must contain uppercase, lowercase, and number)"
 }
 ```
 
@@ -66,6 +66,7 @@ Creates a new user account.
 
 ```json
 {
+  "message": "User created successfully",
   "token": "string",
   "user": {
     "id": "integer",
@@ -74,6 +75,19 @@ Creates a new user account.
   }
 }
 ```
+
+**Error Responses:**
+
+- 400 Bad Request:
+  - No data provided
+  - Missing required fields
+  - Invalid email format
+  - Username too short/long
+  - Invalid username characters
+  - Password requirements not met
+  - Email already registered
+  - Username already taken
+- 500 Server Error: Unexpected server error
 
 #### **POST /auth/login**
 
