@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request, g
 from app.routes.utils import login_required
-from app.models import MusicParameter, Universe
+from app.models.music_parameter import MusicParameter
+from app.models.universe import Universe
 from app import db
 
 music_bp = Blueprint('music', __name__)
@@ -12,9 +13,9 @@ def add_music_parameter(universe_id):
     if not data or 'parameter_name' not in data or 'value' not in data or 'instrument' not in data:
         return jsonify({'error': 'Invalid Data'}), 400
 
-    universe = Universe.query. get_or_404(universe_id)
+    universe = Universe.query.get_or_404(universe_id)
     if universe.creator_id != g.current_user.id:
-        return jsonify({ 'error': 'Unauthorized'}), 403
+        return jsonify({'error': 'Unauthorized'}), 403
 
     new_parameter = MusicParameter(
         universe_id=universe_id,
@@ -24,7 +25,7 @@ def add_music_parameter(universe_id):
     )
     db.session.add(new_parameter)
     db.session.commit()
-    return jsonify({ 'message': 'Music parameter added Successfully'}), 201
+    return jsonify({'message': 'Music parameter added Successfully'}), 201
 
 @music_bp.route('/universes/<int:universe_id>/music', methods=['GET'])
 @login_required

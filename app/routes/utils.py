@@ -1,6 +1,6 @@
 from functools import wraps
 from flask import session, jsonify, request, g
-from app.models import User
+from app.models.user import User
 
 def login_required(f):
     @wraps(f)

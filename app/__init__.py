@@ -1,12 +1,11 @@
 # app/__init__.py
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect
 from .config import Config
+from app.models import db
 
 # Setup Database
-db = SQLAlchemy()
 migrate = Migrate()
 csrf = CSRFProtect()
 
@@ -14,12 +13,16 @@ def create_app():
     app = Flask(__name__)
 
     # Load Configurations
-    app.config.from_object(Config)  # Assuming Config is defined elsewhere
+    app.config.from_object(Config)
 
     # Initialize Extensions
     db.init_app(app)
     migrate.init_app(app, db)
     csrf.init_app(app)
+
+    # Initialize models
+    with app.app_context():
+        db.create_all()
 
     # Register Blueprints
     from .routes.auth_routes import auth_bp
@@ -33,9 +36,5 @@ def create_app():
     app.register_blueprint(physics_bp)
     app.register_blueprint(storyboard_bp)
     app.register_blueprint(universe_bp, url_prefix='/universes')
-
-    # Create tables
-    with app.app_context():
-        db.create_all()
 
     return app

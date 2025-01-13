@@ -1,4 +1,4 @@
-from app import db
+from app.models import db
 
 class PhysicsParameter(db.Model):
     __tablename__ = 'physics_parameters'

@@ -1,4 +1,4 @@
-from app import db
+from app.models import db
 
 class Storyboard(db.Model):
     __tablename__ = 'storyboards'

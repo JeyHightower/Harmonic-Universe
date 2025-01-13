@@ -1,6 +1,7 @@
 # app/routes/auth_routes.py
 from flask import Blueprint, request, jsonify, session
-from app.models import db, User
+from app.models import db
+from app.models.user import User
 from werkzeug.security import generate_password_hash, check_password_hash
 import re
 
