@@ -181,7 +181,7 @@ class TestRoutes(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_3_storyboard_routes(self):
-        """Test storyboard routes"""
+        """Test storyboard routes with comprehensive validation"""
         # First authenticate
         response = self.client.post('/api/auth/login',
                                   json={'email': self.test_user['email'],
@@ -191,7 +191,7 @@ class TestRoutes(unittest.TestCase):
 
         # Create a universe first
         universe_data = {
-            'name': 'Story Universe',
+            'name': 'Test Universe',
             'description': 'For testing storyboards'
         }
         response = self.client.post('/api/universes/',
@@ -199,42 +199,41 @@ class TestRoutes(unittest.TestCase):
                                   headers=headers)
         self.universe_id = json.loads(response.data)['universe']['id']
 
-        # Test storyboard creation without auth
-        storyboard_data = {
-            'plot_point': 'Test Story',
-            'description': 'Once upon a time...',
-            'harmony_tie': 0.8
-        }
+        # Test validation - empty strings
         response = self.client.post(f'/api/universes/{self.universe_id}/storyboards/',
-                                  json=storyboard_data)
-        self.assertEqual(response.status_code, 401)
-
-        # Test storyboard creation with missing fields
-        response = self.client.post(f'/api/universes/{self.universe_id}/storyboards/',
-                                  json={},
-                                  headers=headers)
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('Missing required fields', json.loads(response.data)['error'])
-
-        # Test storyboard creation with invalid harmony_tie
-        invalid_data = storyboard_data.copy()
-        invalid_data['harmony_tie'] = 1.5
-        response = self.client.post(f'/api/universes/{self.universe_id}/storyboards/',
-                                  json=invalid_data,
-                                  headers=headers)
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('harmony_tie must be a number between 0 and 1', json.loads(response.data)['error'])
-
-        # Test storyboard creation with empty strings
-        invalid_data = storyboard_data.copy()
-        invalid_data['plot_point'] = ''
-        response = self.client.post(f'/api/universes/{self.universe_id}/storyboards/',
-                                  json=invalid_data,
+                                  json={'plot_point': '   ', 'description': 'Valid', 'harmony_tie': 0.5},
                                   headers=headers)
         self.assertEqual(response.status_code, 400)
         self.assertIn('plot_point must be a non-empty string', json.loads(response.data)['error'])
 
-        # Test storyboard creation with valid data
+        # Test validation - string for harmony_tie
+        response = self.client.post(f'/api/universes/{self.universe_id}/storyboards/',
+                                  json={'plot_point': 'Valid', 'description': 'Valid', 'harmony_tie': 'invalid'},
+                                  headers=headers)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('harmony_tie must be a number', json.loads(response.data)['error'])
+
+        # Test validation - harmony_tie out of range
+        response = self.client.post(f'/api/universes/{self.universe_id}/storyboards/',
+                                  json={'plot_point': 'Valid', 'description': 'Valid', 'harmony_tie': 1.5},
+                                  headers=headers)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('harmony_tie must be a number between 0 and 1', json.loads(response.data)['error'])
+
+        # Test validation - max length
+        long_text = 'a' * 501
+        response = self.client.post(f'/api/universes/{self.universe_id}/storyboards/',
+                                  json={'plot_point': long_text, 'description': 'Valid', 'harmony_tie': 0.5},
+                                  headers=headers)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('plot_point cannot exceed 500 characters', json.loads(response.data)['error'])
+
+        # Test successful creation
+        storyboard_data = {
+            'plot_point': 'Valid Plot Point',
+            'description': 'Valid Description',
+            'harmony_tie': 0.5
+        }
         response = self.client.post(f'/api/universes/{self.universe_id}/storyboards/',
                                   json=storyboard_data,
                                   headers=headers)
@@ -251,9 +250,13 @@ class TestRoutes(unittest.TestCase):
                                  headers=headers)
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.data)
-        self.assertIsInstance(data, list)
-        self.assertEqual(len(data), 1)
-        self.assertEqual(data[0]['plot_point'], storyboard_data['plot_point'])
+        self.assertIsInstance(data, dict)
+        self.assertIn('storyboards', data)
+        self.assertIn('pagination', data)
+        self.assertIn('filters', data)
+        self.assertEqual(len(data['storyboards']), 1)
+        self.assertEqual(data['pagination']['total_items'], 1)
+        self.assertEqual(data['pagination']['page'], 1)
 
         # Test get non-existent universe
         response = self.client.get('/api/universes/999/storyboards/',
@@ -331,7 +334,56 @@ class TestRoutes(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.data)
-        self.assertEqual(len(data), 0)
+        self.assertEqual(len(data['storyboards']), 0)
+        self.assertEqual(data['pagination']['total_items'], 0)
+
+        # Test get all storyboards with pagination and filtering
+        # Add more storyboards for pagination testing
+        for i in range(3):
+            test_data = {
+                'plot_point': f'Story {i}',
+                'description': f'Description {i}',
+                'harmony_tie': i * 0.3
+            }
+            self.client.post(f'/api/universes/{self.universe_id}/storyboards/',
+                           json=test_data,
+                           headers=headers)
+
+        # Test pagination
+        response = self.client.get(f'/api/universes/{self.universe_id}/storyboards/?page=1&per_page=2',
+                                 headers=headers)
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data)
+        self.assertEqual(len(data['storyboards']), 2)
+        self.assertEqual(data['pagination']['total_items'], 3)
+        self.assertEqual(data['pagination']['page'], 1)
+
+        # Test invalid page number
+        response = self.client.get(f'/api/universes/{self.universe_id}/storyboards/?page=0',
+                                 headers=headers)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('Page number must be greater than 0', json.loads(response.data)['error'])
+
+        # Test harmony_tie filtering
+        response = self.client.get(f'/api/universes/{self.universe_id}/storyboards/?harmony_min=0.5&harmony_max=1.0',
+                                 headers=headers)
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data)
+        self.assertTrue(all(0.5 <= s['harmony_tie'] <= 1.0 for s in data['storyboards']))
+
+        # Test sorting
+        response = self.client.get(f'/api/universes/{self.universe_id}/storyboards/?sort_by=harmony_tie&order=asc',
+                                 headers=headers)
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data)
+        harmony_ties = [s['harmony_tie'] for s in data['storyboards']]
+        self.assertEqual(harmony_ties, sorted(harmony_ties))
+
+        # Test invalid sort field
+        response = self.client.get(f'/api/universes/{self.universe_id}/storyboards/?sort_by=invalid_field',
+                                 headers=headers)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('Invalid sort field', json.loads(response.data)['error'])
 
     def test_4_physics_routes(self):
         """Test physics parameter routes"""

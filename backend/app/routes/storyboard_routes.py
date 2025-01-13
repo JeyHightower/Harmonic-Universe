@@ -122,37 +122,76 @@ def get_storyboards(universe_id):
         harmony_min = request.args.get('harmony_min', type=float)
         harmony_max = request.args.get('harmony_max', type=float)
 
-        # Build query
-        query = Storyboard.query.filter_by(universe_id=universe_id)
+        # Validate pagination parameters
+        if page < 1:
+            raise BadRequest('Page number must be greater than 0')
+        if per_page < 1 or per_page > 100:
+            raise BadRequest('Items per page must be between 1 and 100')
 
-        # Apply harmony tie filters if provided
-        if harmony_min is not None:
-            query = query.filter(Storyboard.harmony_tie >= harmony_min)
-        if harmony_max is not None:
-            query = query.filter(Storyboard.harmony_tie <= harmony_max)
+        # Validate harmony range
+        if harmony_min is not None and (harmony_min < 0 or harmony_min > 1):
+            raise BadRequest('harmony_min must be between 0 and 1')
+        if harmony_max is not None and (harmony_max < 0 or harmony_max > 1):
+            raise BadRequest('harmony_max must be between 0 and 1')
+        if harmony_min is not None and harmony_max is not None and harmony_min > harmony_max:
+            raise BadRequest('harmony_min cannot be greater than harmony_max')
 
-        # Apply sorting
-        if hasattr(Storyboard, sort_by):
+        # Validate sort parameters
+        valid_sort_fields = ['created_at', 'updated_at', 'harmony_tie', 'plot_point']
+        if sort_by not in valid_sort_fields:
+            raise BadRequest(f'Invalid sort field. Must be one of: {", ".join(valid_sort_fields)}')
+        if order.lower() not in ['asc', 'desc']:
+            raise BadRequest('Invalid sort order. Must be "asc" or "desc"')
+
+        try:
+            # Build query
+            query = Storyboard.query.filter_by(universe_id=universe_id)
+
+            # Apply harmony tie filters if provided
+            if harmony_min is not None:
+                query = query.filter(Storyboard.harmony_tie >= harmony_min)
+            if harmony_max is not None:
+                query = query.filter(Storyboard.harmony_tie <= harmony_max)
+
+            # Apply sorting
             sort_column = getattr(Storyboard, sort_by)
             if order.lower() == 'desc':
                 sort_column = sort_column.desc()
             query = query.order_by(sort_column)
 
-        # Execute query
-        storyboards = query.all()
+            # Execute paginated query
+            paginated_storyboards = query.paginate(page=page, per_page=per_page)
 
-        # Format response
-        result = [{
-            'id': s.id,
-            'plot_point': s.plot_point,
-            'description': s.description,
-            'harmony_tie': s.harmony_tie,
-            'created_at': s.created_at.isoformat() if hasattr(s, 'created_at') else None,
-            'updated_at': s.updated_at.isoformat() if hasattr(s, 'updated_at') else None,
-            'universe_id': s.universe_id
-        } for s in storyboards]
+            # Format response
+            storyboards = [{
+                'id': s.id,
+                'plot_point': s.plot_point,
+                'description': s.description,
+                'harmony_tie': s.harmony_tie,
+                'created_at': s.created_at.isoformat() if hasattr(s, 'created_at') else None,
+                'updated_at': s.updated_at.isoformat() if hasattr(s, 'updated_at') else None,
+                'universe_id': s.universe_id
+            } for s in paginated_storyboards.items]
 
-        return jsonify(result), 200
+            return jsonify({
+                'storyboards': storyboards,
+                'pagination': {
+                    'page': page,
+                    'per_page': per_page,
+                    'total_pages': paginated_storyboards.pages,
+                    'total_items': paginated_storyboards.total
+                },
+                'filters': {
+                    'harmony_min': harmony_min,
+                    'harmony_max': harmony_max,
+                    'sort_by': sort_by,
+                    'order': order
+                }
+            }), 200
+
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            raise BadRequest(f'Database error: {str(e)}')
 
     except BadRequest as e:
         return jsonify({'error': str(e), 'type': 'validation_error'}), 400
