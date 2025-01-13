@@ -2,491 +2,371 @@
 
 ## **Base URL**
 
-The base URL for the API is:
+The base URL for all API endpoints is:
 
-- Local development: `http://127.0.0.1:5000`
-- Production: `https://api.harmonicuniverse.com/v1`
+```http://localhost:5000/api
+```
 
----
+## **Authentication**
 
-## **Authorization**
+Most endpoints require authentication using a Bearer token in the Authorization header:
 
-Authenticated endpoints require a Bearer token in the `Authorization` header:
+```Authorization: Bearer <token>
+```
 
-`Authorization: Bearer YOUR_TOKEN_HERE`
+## **CSRF Protection**
 
----
+For non-GET requests, include the CSRF token in the header:
+
+```X-CSRF-Token: <token>
+```
+
+Get a CSRF token using the `/api/csrf/token` endpoint.
+
+## **Error Handling**
+
+All error responses follow this format:
+
+```json
+{
+  "error": "Error message",
+  "type": "error_type"
+}
+```
+
+Error types include:
+
+- `validation_error`: Invalid input data
+- `authorization_error`: Authentication/permission issues
+- `not_found_error`: Resource not found
+- `server_error`: Unexpected server errors
 
 ## **Endpoints**
 
-### **1. User Authentication**
+### **1. Authentication**
 
 #### **POST /auth/signup**
 
 Creates a new user account.
 
-##### **Signup Request Body**
+**Request Body:**
 
+```json
 {
   "username": "string",
   "email": "string",
   "password": "string"
 }
+```
 
-##### **Signup Response (201 Created)**
+**Response (201 Created):**
 
+```json
 {
-  "message": "User created successfully",
-  "userId": "string",
-  "token": "string"
+  "token": "string",
+  "user": {
+    "id": "integer",
+    "username": "string",
+    "email": "string"
+  }
 }
-
----
+```
 
 #### **POST /auth/login**
 
-Authenticates a user and generates a token.
+Authenticates a user.
 
-##### **Login Request Body**
+**Request Body:**
 
+```json
 {
   "email": "string",
   "password": "string"
 }
+```
 
-##### **Login Response (200 OK)**
+**Response (200 OK):**
 
+```json
 {
-  "message": "Login successful",
   "token": "string"
 }
+```
 
----
+#### **GET /auth/validate**
 
-### **2. User Management**
+Validates the current token.
 
-#### **GET /users/{id}**
+**Response (200 OK):**
 
-Retrieves the user's profile.
-
-##### **User Profile Headers**
-
-`Authorization: Bearer YOUR_TOKEN_HERE`
-
-##### **User Profile Response (200 OK)**
-
+```json
 {
-  "id": "string",
-  "username": "string",
-  "email": "string",
-  "created_at": "string",
-  "updated_at": "string"
+  "valid": true,
+  "user": {
+    "id": "integer",
+    "username": "string",
+    "email": "string"
+  }
 }
+```
 
----
+#### **POST /auth/token/refresh**
 
-#### **PUT /users/{id}**
+Refreshes the authentication token.
 
-Updates the user profile.
+**Response (200 OK):**
 
-##### **User Update Headers**
-
-`Authorization: Bearer YOUR_TOKEN_HERE`
-
-##### **User Update Request Body**
-
+```json
 {
-  "username": "string",
-  "email": "string"
+  "token": "string"
 }
+```
 
-##### **User Update Response (200 OK)**
-
-{
-  "message": "User updated successfully"
-}
-
----
-
-#### **DELETE /users/{id}**
-
-Deletes the user account.
-
-##### **User Delete Headers**
-
-`Authorization: Bearer YOUR_TOKEN_HERE`
-
-##### **User Delete Response (204 No Content)**
-
-No response body.
-
----
-
-### **3. Universe Management**
+### **2. Universe Management**
 
 #### **POST /universes**
 
 Creates a new universe.
 
-##### **Universe Create Headers**
+**Request Body:**
 
-`Authorization: Bearer YOUR_TOKEN_HERE`
-
-##### **Universe Create Request Body**
-
+```json
 {
   "name": "string",
   "description": "string",
   "gravity_constant": "number",
-  "environment_harmony": "number",
-  "friction": "number"
+  "environment_harmony": "number"
 }
+```
 
-##### **Universe Create Response (201 Created)**
+**Response (201 Created):**
 
+```json
 {
   "message": "Universe created successfully",
-  "universeId": "string"
+  "universe": {
+    "id": "integer",
+    "name": "string",
+    "description": "string",
+    "gravity_constant": "number",
+    "environment_harmony": "number",
+    "created_at": "string",
+    "updated_at": "string",
+    "creator_id": "integer"
+  }
 }
-
----
+```
 
 #### **GET /universes**
 
 Retrieves all universes for the authenticated user.
 
-##### **Universe List Headers**
+**Response (200 OK):**
 
-`Authorization: Bearer YOUR_TOKEN_HERE`
-
-##### **Universe List Response (200 OK)**
-
-{
-  "universes": [
-    {
-      "id": "string",
-      "name": "string",
-      "description": "string",
-      "gravity_constant": "number",
-      "environment_harmony": "number",
-      "friction": "number",
-      "created_at": "string",
-      "updated_at": "string"
-    }
-  ]
-}
-
----
+```json
+[
+  {
+    "id": "integer",
+    "name": "string",
+    "description": "string",
+    "gravity_constant": "number",
+    "environment_harmony": "number",
+    "created_at": "string",
+    "updated_at": "string",
+    "creator_id": "integer"
+  }
+]
+```
 
 #### **GET /universes/{id}**
 
-Retrieves a single universe by its ID.
+Retrieves a specific universe.
 
-##### **Universe Get Headers**
+**Response (200 OK):**
 
-`Authorization: Bearer YOUR_TOKEN_HERE`
-
-##### **Universe Get Response (200 OK)**
-
+```json
 {
-  "id": "string",
+  "id": "integer",
   "name": "string",
   "description": "string",
   "gravity_constant": "number",
   "environment_harmony": "number",
-  "friction": "number",
   "created_at": "string",
-  "updated_at": "string"
+  "updated_at": "string",
+  "creator_id": "integer"
 }
-
----
+```
 
 #### **PUT /universes/{id}**
 
-Updates a universe's settings.
+Updates a universe.
 
-##### **Universe Update Headers**
+**Request Body:**
 
-`Authorization: Bearer YOUR_TOKEN_HERE`
-
-##### **Universe Update Request Body**
-
+```json
 {
   "name": "string",
   "description": "string",
   "gravity_constant": "number",
-  "environment_harmony": "number",
-  "friction": "number"
+  "environment_harmony": "number"
 }
+```
 
-##### **Universe Update Response (200 OK)**
+**Response (200 OK):**
 
+```json
 {
-  "message": "Universe updated successfully"
+  "message": "Universe updated successfully",
+  "universe": {
+    "id": "integer",
+    "name": "string",
+    "description": "string",
+    "gravity_constant": "number",
+    "environment_harmony": "number",
+    "created_at": "string",
+    "updated_at": "string",
+    "creator_id": "integer"
+  }
 }
-
----
+```
 
 #### **DELETE /universes/{id}**
 
 Deletes a universe.
 
-##### **Universe Delete Headers**
+**Response (200 OK):**
 
-`Authorization: Bearer YOUR_TOKEN_HERE`
-
-##### **Universe Delete Response (204 No Content)**
-
-No response body.
-
----
-
-### **4. Physics Parameters**
-
-#### **POST /universes/{universeId}/physics**
-
-Adds a new physics parameter to a universe.
-
-##### **Physics Create Headers**
-
-`Authorization: Bearer YOUR_TOKEN_HERE`
-
-##### **Physics Create Request Body**
-
+```json
 {
-  "parameter_name": "string",
-  "value": "number"
+  "message": "Universe deleted successfully"
 }
+```
 
-##### **Physics Create Response (201 Created)**
+### **3. Storyboard Management**
 
+#### **POST /universes/{universe_id}/storyboards**
+
+Creates a new storyboard.
+
+**Request Body:**
+
+```json
 {
-  "message": "Physics parameter added successfully",
-  "parameterId": "string"
+  "plot_point": "string (max 500 chars)",
+  "description": "string (max 2000 chars)",
+  "harmony_tie": "number (0-1)"
 }
+```
 
----
+**Response (201 Created):**
 
-#### **GET /universes/{universeId}/physics**
-
-Retrieves all physics parameters for a universe.
-
-##### **Physics List Headers**
-
-`Authorization: Bearer YOUR_TOKEN_HERE`
-
-##### **Physics List Response (200 OK)**
-
+```json
 {
-  "parameters": [
-    {
-      "id": "string",
-      "parameter_name": "string",
-      "value": "number"
-    }
-  ]
+  "message": "Storyboard created successfully",
+  "storyboard": {
+    "id": "integer",
+    "plot_point": "string",
+    "description": "string",
+    "harmony_tie": "number",
+    "created_at": "string",
+    "updated_at": "string",
+    "universe_id": "integer"
+  }
 }
+```
 
----
-
-#### **PUT /universes/{universeId}/physics/{parameterId}**
-
-Updates a physics parameter.
-
-##### **Physics Update Headers**
-
-`Authorization: Bearer YOUR_TOKEN_HERE`
-
-##### **Physics Update Request Body**
-
-{
-  "parameter_name": "string",
-  "value": "number"
-}
-
-##### **Physics Update Response (200 OK)**
-
-{
-  "message": "Physics parameter updated successfully"
-}
-
----
-
-#### **DELETE /universes/{universeId}/physics/{parameterId}**
-
-Deletes a physics parameter.
-
-##### **Physics Delete Headers**
-
-`Authorization: Bearer YOUR_TOKEN_HERE`
-
-##### **Physics Delete Response (204 No Content)**
-
-No response body.
-
----
-
-### **5. Music Integration**
-
-#### **POST /universes/{universeId}/music**
-
-Adds or updates music settings for a universe.
-
-##### **Music Update Headers**
-
-`Authorization: Bearer YOUR_TOKEN_HERE`
-
-##### **Music Update Request Body**
-
-{
-  "tempo": "number",
-  "pitch": "number",
-  "instrument": "string",
-  "harmony_value": "number"
-}
-
-##### **Music Update Response (200 OK)**
-
-{
-  "message": "Music settings updated successfully"
-}
-
----
-
-#### **GET /universes/{universeId}/music**
-
-Retrieves music settings for a universe.
-
-##### **Music Get Headers**
-
-`Authorization: Bearer YOUR_TOKEN_HERE`
-
-##### **Music Get Response (200 OK)**
-
-{
-  "parameters": [
-    {
-      "id": "string",
-      "parameter_name": "string",
-      "value": "number",
-      "instrument": "string"
-    }
-  ]
-}
-
----
-
-### **6. Storyboards**
-
-#### **POST /universes/{universeId}/storyboards**
-
-Adds a new storyboard entry to a universe.
-
-##### **Storyboard Create Headers**
-
-`Authorization: Bearer YOUR_TOKEN_HERE`
-
-##### **Storyboard Create Request Body**
-
-{
-  "plot_point": "string",
-  "description": "string",
-  "harmony_tie": "number"
-}
-
-##### **Storyboard Create Response (201 Created)**
-
-{
-  "message": "Storyboard added successfully",
-  "storyboardId": "string"
-}
-
----
-
-#### **GET /universes/{universeId}/storyboards**
+#### **GET /universes/{universe_id}/storyboards**
 
 Retrieves all storyboards for a universe.
 
-##### **Storyboard List Headers**
+**Query Parameters:**
 
-`Authorization: Bearer YOUR_TOKEN_HERE`
+- `sort_by`: Field to sort by (default: created_at)
+- `order`: Sort order (asc/desc, default: desc)
+- `harmony_min`: Minimum harmony tie value
+- `harmony_max`: Maximum harmony tie value
 
-##### **Storyboard List Response (200 OK)**
+**Response (200 OK):**
 
+```json
+[
+  {
+    "id": "integer",
+    "plot_point": "string",
+    "description": "string",
+    "harmony_tie": "number",
+    "created_at": "string",
+    "updated_at": "string",
+    "universe_id": "integer"
+  }
+]
+```
+
+#### **PUT /universes/{universe_id}/storyboards/{storyboard_id}**
+
+Updates a storyboard.
+
+**Request Body:**
+
+```json
 {
-  "storyboards": [
-    {
-      "id": "string",
-      "plot_point": "string",
-      "description": "string",
-      "harmony_tie": "number",
-      "created_at": "string"
-    }
-  ]
+  "plot_point": "string (max 500 chars)",
+  "description": "string (max 2000 chars)",
+  "harmony_tie": "number (0-1)"
 }
+```
 
----
+**Response (200 OK):**
 
-#### **DELETE /universes/{universeId}/storyboards/{storyboardId}**
+```json
+{
+  "message": "Storyboard updated successfully",
+  "storyboard": {
+    "id": "integer",
+    "plot_point": "string",
+    "description": "string",
+    "harmony_tie": "number",
+    "created_at": "string",
+    "updated_at": "string",
+    "universe_id": "integer"
+  }
+}
+```
+
+#### **DELETE /universes/{universe_id}/storyboards/{storyboard_id}**
 
 Deletes a storyboard.
 
-##### **Storyboard Delete Headers**
+**Response (200 OK):**
 
-`Authorization: Bearer YOUR_TOKEN_HERE`
-
-##### **Storyboard Delete Response (204 No Content)**
-
-No response body.
-
----
-
-## **Error Responses**
-
-### **Standard Error Responses**
-
-| Status Code | Description           | Response Body                          |
-| ----------- | --------------------- | -------------------------------------- |
-| 400         | Bad Request           | `{"error": "Invalid request data"}`    |
-| 401         | Unauthorized          | `{"error": "Authentication required"}` |
-| 403         | Forbidden             | `{"error": "Access denied"}`           |
-| 404         | Not Found             | `{"error": "Resource not found"}`      |
-| 500         | Internal Server Error | `{"error": "Internal server error"}`   |
-
----
-
-#### **PUT /universes/{universeId}/music/{parameterId}**
-
-Updates a music parameter.
-
-##### **Music Parameter Update Headers**
-
-`Authorization: Bearer YOUR_TOKEN_HERE`
-
-##### **Music Parameter Update Request Body**
-
+```json
 {
-  "parameter_name": "string",
-  "value": "number",
-  "instrument": "string"
+  "message": "Storyboard deleted successfully",
+  "deleted_storyboard": {
+    "id": "integer",
+    "universe_id": "integer"
+  }
 }
+```
 
-##### **Music Parameter Update Response (200 OK)**
+### **4. Physics Parameters**
 
-{
-  "message": "Music parameter updated successfully"
-}
+[Similar structure for physics parameter endpoints...]
 
----
+### **5. Music Parameters**
 
-#### **DELETE /universes/{universeId}/music/{parameterId}**
+[Similar structure for music parameter endpoints...]
 
-Deletes a music parameter.
+## **Status Codes**
 
-##### **Music Parameter Delete Headers**
+- 200: Success
+- 201: Created
+- 400: Bad Request
+- 401: Unauthorized
+- 403: Forbidden
+- 404: Not Found
+- 500: Internal Server Error
 
-`Authorization: Bearer YOUR_TOKEN_HERE`
+## **Rate Limiting**
 
-##### **Music Parameter Delete Response (204 No Content)**
-
-No response body.
+Currently, there are no rate limits implemented.

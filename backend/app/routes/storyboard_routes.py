@@ -3,124 +3,262 @@ from app.models.storyboard import Storyboard
 from app.models.universe import Universe
 from app import db
 from app.utils.token_manager import auto_token
-from werkzeug.exceptions import NotFound
+from werkzeug.exceptions import NotFound, BadRequest, Unauthorized, Forbidden
+from sqlalchemy.exc import SQLAlchemyError
 
 storyboard_bp = Blueprint('storyboard', __name__)
+
+def validate_storyboard_data(data):
+    """Validate storyboard input data with enhanced checks"""
+    if not isinstance(data, dict):
+        raise BadRequest('Invalid data format: expected JSON object')
+
+    if not data:
+        raise BadRequest('Missing required fields: plot_point, description, harmony_tie')
+
+    required_fields = ['plot_point', 'description', 'harmony_tie']
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        raise BadRequest(f'Missing required fields: {", ".join(missing_fields)}')
+
+    # Enhanced validation for plot_point
+    if not isinstance(data['plot_point'], str):
+        raise BadRequest('plot_point must be a string')
+    if len(data['plot_point'].strip()) < 1:
+        raise BadRequest('plot_point must be a non-empty string')
+    if len(data['plot_point']) > 500:
+        raise BadRequest('plot_point cannot exceed 500 characters')
+
+    # Enhanced validation for description
+    if not isinstance(data['description'], str):
+        raise BadRequest('description must be a string')
+    if len(data['description'].strip()) < 1:
+        raise BadRequest('description cannot be empty')
+    if len(data['description']) > 2000:
+        raise BadRequest('description cannot exceed 2000 characters')
+
+    # Enhanced validation for harmony_tie
+    if not isinstance(data['harmony_tie'], (int, float)):
+        raise BadRequest('harmony_tie must be a number')
+    if not 0 <= data['harmony_tie'] <= 1:
+        raise BadRequest('harmony_tie must be a number between 0 and 1')
+
+    # Strip whitespace from string fields
+    data['plot_point'] = data['plot_point'].strip()
+    data['description'] = data['description'].strip()
+
+    return data
+
+def get_universe_or_404(universe_id, check_auth=True):
+    """Get universe and check authorization"""
+    universe = Universe.query.get_or_404(universe_id, description='Universe not found')
+    if check_auth and universe.creator_id != g.current_user.id:
+        raise Forbidden('You do not have permission to access this universe')
+    return universe
 
 @storyboard_bp.route('/', methods=['POST'])
 @auto_token
 def add_storyboard(universe_id):
-    data = request.get_json()
-    if not data or 'plot_point' not in data or 'description' not in data or 'harmony_tie' not in data:
-        return jsonify({'error': 'Invalid Data'}), 400
-
     try:
-        universe = Universe.query.get(universe_id)
-        if not universe:
-            return jsonify({'error': 'Universe not found'}), 404
-        if universe.creator_id != g.current_user.id:
-            return jsonify({'error': 'Unauthorized'}), 403
+        data = request.get_json()
+        if not data:
+            raise BadRequest('Missing required fields: plot_point, description, harmony_tie')
 
-        new_storyboard = Storyboard(
-            universe_id=universe_id,
-            plot_point=data['plot_point'],
-            description=data['description'],
-            harmony_tie=data['harmony_tie']
-        )
-        db.session.add(new_storyboard)
-        db.session.commit()
+        # Validate and sanitize input data
+        data = validate_storyboard_data(data)
+        universe = get_universe_or_404(universe_id)
 
-        return jsonify({
-            'message': 'Storyboard added successfully',
-            'storyboard': {
-                'id': new_storyboard.id,
-                'plot_point': new_storyboard.plot_point,
-                'description': new_storyboard.description,
-                'harmony_tie': new_storyboard.harmony_tie
-            }
-        }), 201
+        # Start database transaction
+        try:
+            new_storyboard = Storyboard(
+                universe_id=universe_id,
+                plot_point=data['plot_point'],
+                description=data['description'],
+                harmony_tie=data['harmony_tie']
+            )
+            db.session.add(new_storyboard)
+            db.session.commit()
+
+            return jsonify({
+                'message': 'Storyboard created successfully',
+                'storyboard': {
+                    'id': new_storyboard.id,
+                    'plot_point': new_storyboard.plot_point,
+                    'description': new_storyboard.description,
+                    'harmony_tie': new_storyboard.harmony_tie,
+                    'created_at': new_storyboard.created_at.isoformat() if hasattr(new_storyboard, 'created_at') else None,
+                    'updated_at': new_storyboard.updated_at.isoformat() if hasattr(new_storyboard, 'updated_at') else None,
+                    'universe_id': new_storyboard.universe_id
+                }
+            }), 201
+
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            raise BadRequest(f'Database error: {str(e)}')
+
+    except BadRequest as e:
+        return jsonify({'error': str(e), 'type': 'validation_error'}), 400
+    except Forbidden as e:
+        return jsonify({'error': str(e), 'type': 'authorization_error'}), 403
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'error': 'An unexpected error occurred',
+            'type': 'server_error',
+            'details': str(e)
+        }), 500
 
 @storyboard_bp.route('/', methods=['GET'])
 @auto_token
 def get_storyboards(universe_id):
     try:
-        universe = Universe.query.get(universe_id)
-        if not universe:
-            return jsonify({'error': 'Universe not found'}), 404
-        if universe.creator_id != g.current_user.id:
-            return jsonify({'error': 'Unauthorized'}), 403
+        universe = get_universe_or_404(universe_id)
 
-        storyboards = Storyboard.query.filter_by(universe_id=universe_id).all()
+        # Get query parameters for filtering and pagination
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        sort_by = request.args.get('sort_by', 'created_at')
+        order = request.args.get('order', 'desc')
+        harmony_min = request.args.get('harmony_min', type=float)
+        harmony_max = request.args.get('harmony_max', type=float)
+
+        # Build query
+        query = Storyboard.query.filter_by(universe_id=universe_id)
+
+        # Apply harmony tie filters if provided
+        if harmony_min is not None:
+            query = query.filter(Storyboard.harmony_tie >= harmony_min)
+        if harmony_max is not None:
+            query = query.filter(Storyboard.harmony_tie <= harmony_max)
+
+        # Apply sorting
+        if hasattr(Storyboard, sort_by):
+            sort_column = getattr(Storyboard, sort_by)
+            if order.lower() == 'desc':
+                sort_column = sort_column.desc()
+            query = query.order_by(sort_column)
+
+        # Execute query
+        storyboards = query.all()
+
+        # Format response
         result = [{
             'id': s.id,
             'plot_point': s.plot_point,
             'description': s.description,
-            'harmony_tie': s.harmony_tie
+            'harmony_tie': s.harmony_tie,
+            'created_at': s.created_at.isoformat() if hasattr(s, 'created_at') else None,
+            'updated_at': s.updated_at.isoformat() if hasattr(s, 'updated_at') else None,
+            'universe_id': s.universe_id
         } for s in storyboards]
+
         return jsonify(result), 200
+
+    except BadRequest as e:
+        return jsonify({'error': str(e), 'type': 'validation_error'}), 400
+    except NotFound as e:
+        return jsonify({'error': str(e), 'type': 'not_found_error'}), 404
+    except Forbidden as e:
+        return jsonify({'error': str(e), 'type': 'authorization_error'}), 403
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'error': 'An unexpected error occurred',
+            'type': 'server_error',
+            'details': str(e)
+        }), 500
 
 @storyboard_bp.route('/<int:storyboard_id>', methods=['PUT'])
 @auto_token
 def update_storyboard(universe_id, storyboard_id):
-    data = request.get_json()
-    if not data or 'plot_point' not in data or 'description' not in data or 'harmony_tie' not in data:
-        return jsonify({'error': 'Invalid Data'}), 400
-
     try:
-        storyboard = Storyboard.query.get(storyboard_id)
-        if not storyboard:
-            return jsonify({'error': 'Storyboard not found'}), 404
+        data = request.get_json()
+        if not data:
+            raise BadRequest('No JSON data provided')
+
+        # Validate and sanitize input data
+        data = validate_storyboard_data(data)
+        universe = get_universe_or_404(universe_id)
+
+        # Get storyboard and verify ownership
+        storyboard = Storyboard.query.get_or_404(storyboard_id, description='Storyboard not found')
         if storyboard.universe_id != universe_id:
-            return jsonify({'error': 'Storyboard not found in this Universe'}), 404
+            raise NotFound('Storyboard not found in this universe')
 
-        universe = Universe.query.get(universe_id)
-        if not universe:
-            return jsonify({'error': 'Universe not found'}), 404
-        if universe.creator_id != g.current_user.id:
-            return jsonify({'error': 'Unauthorized'}), 403
+        # Start database transaction
+        try:
+            # Update storyboard fields
+            storyboard.plot_point = data['plot_point']
+            storyboard.description = data['description']
+            storyboard.harmony_tie = data['harmony_tie']
+            db.session.commit()
 
-        storyboard.plot_point = data['plot_point']
-        storyboard.description = data['description']
-        storyboard.harmony_tie = data['harmony_tie']
-        db.session.commit()
+            return jsonify({
+                'message': 'Storyboard updated successfully',
+                'storyboard': {
+                    'id': storyboard.id,
+                    'plot_point': storyboard.plot_point,
+                    'description': storyboard.description,
+                    'harmony_tie': storyboard.harmony_tie,
+                    'created_at': storyboard.created_at.isoformat() if hasattr(storyboard, 'created_at') else None,
+                    'updated_at': storyboard.updated_at.isoformat() if hasattr(storyboard, 'updated_at') else None,
+                    'universe_id': storyboard.universe_id
+                }
+            }), 200
 
-        return jsonify({
-            'message': 'Storyboard updated successfully',
-            'storyboard': {
-                'id': storyboard.id,
-                'plot_point': storyboard.plot_point,
-                'description': storyboard.description,
-                'harmony_tie': storyboard.harmony_tie
-            }
-        }), 200
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            raise BadRequest(f'Database error: {str(e)}')
+
+    except BadRequest as e:
+        return jsonify({'error': str(e), 'type': 'validation_error'}), 400
+    except NotFound as e:
+        return jsonify({'error': str(e), 'type': 'not_found_error'}), 404
+    except Forbidden as e:
+        return jsonify({'error': str(e), 'type': 'authorization_error'}), 403
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'error': 'An unexpected error occurred',
+            'type': 'server_error',
+            'details': str(e)
+        }), 500
 
 @storyboard_bp.route('/<int:storyboard_id>', methods=['DELETE'])
 @auto_token
 def delete_storyboard(universe_id, storyboard_id):
     try:
-        storyboard = Storyboard.query.get(storyboard_id)
-        if not storyboard:
-            return jsonify({'error': 'Storyboard not found'}), 404
+        universe = get_universe_or_404(universe_id)
+        storyboard = Storyboard.query.get_or_404(storyboard_id, description='Storyboard not found')
+
         if storyboard.universe_id != universe_id:
-            return jsonify({'error': 'Storyboard not found in this Universe'}), 404
+            raise NotFound('Storyboard not found in this universe')
 
-        universe = Universe.query.get(universe_id)
-        if not universe:
-            return jsonify({'error': 'Universe not found'}), 404
-        if universe.creator_id != g.current_user.id:
-            return jsonify({'error': 'Unauthorized'}), 403
+        # Start database transaction
+        try:
+            db.session.delete(storyboard)
+            db.session.commit()
+            return jsonify({
+                'message': 'Storyboard deleted successfully',
+                'deleted_storyboard': {
+                    'id': storyboard_id,
+                    'universe_id': universe_id
+                }
+            }), 200
 
-        db.session.delete(storyboard)
-        db.session.commit()
-        return jsonify({'message': 'Storyboard deleted successfully'}), 200
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            raise BadRequest(f'Database error: {str(e)}')
+
+    except BadRequest as e:
+        return jsonify({'error': str(e), 'type': 'validation_error'}), 400
+    except NotFound as e:
+        return jsonify({'error': str(e), 'type': 'not_found_error'}), 404
+    except Forbidden as e:
+        return jsonify({'error': str(e), 'type': 'authorization_error'}), 403
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'error': 'An unexpected error occurred',
+            'type': 'server_error',
+            'details': str(e)
+        }), 500

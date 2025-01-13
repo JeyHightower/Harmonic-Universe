@@ -214,6 +214,25 @@ class TestRoutes(unittest.TestCase):
                                   json={},
                                   headers=headers)
         self.assertEqual(response.status_code, 400)
+        self.assertIn('Missing required fields', json.loads(response.data)['error'])
+
+        # Test storyboard creation with invalid harmony_tie
+        invalid_data = storyboard_data.copy()
+        invalid_data['harmony_tie'] = 1.5
+        response = self.client.post(f'/api/universes/{self.universe_id}/storyboards/',
+                                  json=invalid_data,
+                                  headers=headers)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('harmony_tie must be a number between 0 and 1', json.loads(response.data)['error'])
+
+        # Test storyboard creation with empty strings
+        invalid_data = storyboard_data.copy()
+        invalid_data['plot_point'] = ''
+        response = self.client.post(f'/api/universes/{self.universe_id}/storyboards/',
+                                  json=invalid_data,
+                                  headers=headers)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('plot_point must be a non-empty string', json.loads(response.data)['error'])
 
         # Test storyboard creation with valid data
         response = self.client.post(f'/api/universes/{self.universe_id}/storyboards/',
@@ -231,6 +250,16 @@ class TestRoutes(unittest.TestCase):
         response = self.client.get(f'/api/universes/{self.universe_id}/storyboards/',
                                  headers=headers)
         self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data)
+        self.assertIsInstance(data, list)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['plot_point'], storyboard_data['plot_point'])
+
+        # Test get non-existent universe
+        response = self.client.get('/api/universes/999/storyboards/',
+                                 headers=headers)
+        self.assertEqual(response.status_code, 404)
+        self.assertIn('Universe not found', json.loads(response.data)['error'])
 
         # Test update storyboard without auth
         update_data = {
@@ -244,22 +273,6 @@ class TestRoutes(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 401)
 
-        # Test update storyboard with missing fields
-        response = self.client.put(
-            f'/api/universes/{self.universe_id}/storyboards/{self.storyboard_id}',
-            json={},
-            headers=headers
-        )
-        self.assertEqual(response.status_code, 400)
-
-        # Test update storyboard with valid data
-        response = self.client.put(
-            f'/api/universes/{self.universe_id}/storyboards/{self.storyboard_id}',
-            json=update_data,
-            headers=headers
-        )
-        self.assertEqual(response.status_code, 200)
-
         # Test update non-existent storyboard
         response = self.client.put(
             f'/api/universes/{self.universe_id}/storyboards/999',
@@ -267,6 +280,58 @@ class TestRoutes(unittest.TestCase):
             headers=headers
         )
         self.assertEqual(response.status_code, 404)
+        self.assertIn('Storyboard not found', json.loads(response.data)['error'])
+
+        # Test update storyboard with invalid data
+        invalid_update = update_data.copy()
+        invalid_update['harmony_tie'] = 'not a number'
+        response = self.client.put(
+            f'/api/universes/{self.universe_id}/storyboards/{self.storyboard_id}',
+            json=invalid_update,
+            headers=headers
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('harmony_tie must be a number', json.loads(response.data)['error'])
+
+        # Test successful update
+        response = self.client.put(
+            f'/api/universes/{self.universe_id}/storyboards/{self.storyboard_id}',
+            json=update_data,
+            headers=headers
+        )
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data)
+        self.assertEqual(data['storyboard']['plot_point'], update_data['plot_point'])
+
+        # Test delete non-existent storyboard
+        response = self.client.delete(
+            f'/api/universes/{self.universe_id}/storyboards/999',
+            headers=headers
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertIn('Storyboard not found', json.loads(response.data)['error'])
+
+        # Test delete without auth
+        response = self.client.delete(
+            f'/api/universes/{self.universe_id}/storyboards/{self.storyboard_id}'
+        )
+        self.assertEqual(response.status_code, 401)
+
+        # Test successful delete
+        response = self.client.delete(
+            f'/api/universes/{self.universe_id}/storyboards/{self.storyboard_id}',
+            headers=headers
+        )
+        self.assertEqual(response.status_code, 200)
+
+        # Verify deletion
+        response = self.client.get(
+            f'/api/universes/{self.universe_id}/storyboards/',
+            headers=headers
+        )
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data)
+        self.assertEqual(len(data), 0)
 
     def test_4_physics_routes(self):
         """Test physics parameter routes"""
