@@ -1,80 +1,67 @@
 # app/routes/universe_routes.py
 from flask import Blueprint, jsonify, request, g
-from app.routes.utils import login_required
-from app.models import Universe
+from app.models.universe import Universe
 from app import db
+from app.utils.token_manager import auto_token
 
 universe_bp = Blueprint('universe', __name__)
 
-@universe_bp.route('/', methods=['GET'])
-@login_required
-def get_universes():
-    try:
-        universes = Universe.query.filter_by(creator_id=g.current_user.id).all()
-        result = [{
-            'id': u.id,
-            'name': u.name,
-            'description': u.description,
-            'gravity_constant': u.gravity_constant,
-            'environment_harmony': u.environment_harmony
-        } for u in universes]
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
 @universe_bp.route('/', methods=['POST'])
-@login_required
+@auto_token
 def create_universe():
-    if not request.headers.get('X-CSRF-Token'):
-        return jsonify({'error': 'CSRF token missing'}), 400
-
     data = request.get_json()
-    required_fields = ['name', 'description', 'gravity_constant', 'environment_harmony']
 
-    # Validate required fields
-    if not all(field in data for field in required_fields):
-        return jsonify({'error': 'Missing required fields'}), 400
+    if not data or 'name' not in data:
+        return jsonify({'error': 'Name is required'}), 400
+
+    new_universe = Universe(
+        name=data['name'],
+        description=data.get('description', ''),
+        gravity_constant=data.get('gravity_constant', 9.81),
+        environment_harmony=data.get('environment_harmony', 1.0),
+        creator_id=g.current_user.id
+    )
 
     try:
-        new_universe = Universe(
-            name=data['name'],
-            description=data['description'],
-            gravity_constant=data['gravity_constant'],
-            environment_harmony=data['environment_harmony'],
-            creator_id=g.current_user.id  # Add the creator_id from the logged-in user
-        )
         db.session.add(new_universe)
         db.session.commit()
         return jsonify({
-            'message': 'Universe created successfully!',
-            'universe': {
-                'id': new_universe.id,
-                'name': new_universe.name,
-                'description': new_universe.description,
-                'gravity_constant': new_universe.gravity_constant,
-                'environment_harmony': new_universe.environment_harmony
-            }
+            'message': 'Universe created successfully',
+            'universe': new_universe.to_dict()
         }), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 400
+        return jsonify({'error': str(e)}), 500
 
-@universe_bp.route('/<int:id>', methods=['PUT'])
-@login_required
-def update_universe(id):
-    if not request.headers.get('X-CSRF-Token'):
-        return jsonify({'error': 'CSRF token missing'}), 400
+@universe_bp.route('/', methods=['GET'])
+@auto_token
+def get_universes():
+    try:
+        universes = Universe.query.filter_by(creator_id=g.current_user.id).all()
+        return jsonify([u.to_dict() for u in universes]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
+@universe_bp.route('/<int:id>', methods=['GET'])
+@auto_token
+def get_universe(id):
     try:
         universe = Universe.query.get_or_404(id)
-
-        # Check if the user owns this universe
         if universe.creator_id != g.current_user.id:
-            return jsonify({'error': 'Unauthorized to modify this universe'}), 403
+            return jsonify({'error': 'Unauthorized'}), 403
+        return jsonify(universe.to_dict()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
-        data = request.get_json()
+@universe_bp.route('/<int:id>', methods=['PUT'])
+@auto_token
+def update_universe(id):
+    data = request.get_json()
+    try:
+        universe = Universe.query.get_or_404(id)
+        if universe.creator_id != g.current_user.id:
+            return jsonify({'error': 'Unauthorized'}), 403
 
-        # Update fields if they exist in the request
         if 'name' in data:
             universe.name = data['name']
         if 'description' in data:
@@ -86,55 +73,24 @@ def update_universe(id):
 
         db.session.commit()
         return jsonify({
-            'message': 'Universe updated!',
-            'universe': {
-                'id': universe.id,
-                'name': universe.name,
-                'description': universe.description,
-                'gravity_constant': universe.gravity_constant,
-                'environment_harmony': universe.environment_harmony
-            }
+            'message': 'Universe updated successfully',
+            'universe': universe.to_dict()
         }), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 400
+        return jsonify({'error': str(e)}), 500
 
 @universe_bp.route('/<int:id>', methods=['DELETE'])
-@login_required
+@auto_token
 def delete_universe(id):
-    if not request.headers.get('X-CSRF-Token'):
-        return jsonify({'error': 'CSRF token missing'}), 400
-
     try:
         universe = Universe.query.get_or_404(id)
-
-        # Check if the user owns this universe
         if universe.creator_id != g.current_user.id:
-            return jsonify({'error': 'Unauthorized to delete this universe'}), 403
+            return jsonify({'error': 'Unauthorized'}), 403
 
         db.session.delete(universe)
         db.session.commit()
-        return jsonify({'message': 'Universe deleted successfully!'}), 200
+        return jsonify({'message': 'Universe deleted successfully'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 400
-
-@universe_bp.route('/<int:id>', methods=['GET'])
-@login_required
-def get_universe(id):
-    try:
-        universe = Universe.query.get_or_404(id)
-
-        # Check if the user has access to this universe
-        if universe.creator_id != g.current_user.id:
-            return jsonify({'error': 'Unauthorized to view this universe'}), 403
-
-        return jsonify({
-            'id': universe.id,
-            'name': universe.name,
-            'description': universe.description,
-            'gravity_constant': universe.gravity_constant,
-            'environment_harmony': universe.environment_harmony
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        return jsonify({'error': str(e)}), 500

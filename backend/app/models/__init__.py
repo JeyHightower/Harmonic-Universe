@@ -1,15 +1,13 @@
-from flask_sqlalchemy import SQLAlchemy
+from app.extensions import db
 
-db = SQLAlchemy()
-
-# Import and expose models
+# Import models
 from .user import User
 from .universe import Universe
-from .physics_parameter import PhysicsParameter
 from .music_parameter import MusicParameter
+from .physics_parameter import PhysicsParameter
 from .storyboard import Storyboard
 
-__all__ = ['db', 'User', 'Universe', 'PhysicsParameter', 'MusicParameter', 'Storyboard']
+__all__ = ['db', 'User', 'Universe', 'MusicParameter', 'PhysicsParameter', 'Storyboard']
 
 def init_models():
     """Initialize any model-specific configurations if needed"""
