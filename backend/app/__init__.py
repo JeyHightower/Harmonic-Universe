@@ -2,7 +2,7 @@
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 from flask_session import Session
-from config import Config
+from app.config import Config
 from app.extensions import db, migrate, cors, csrf
 from flask_wtf.csrf import generate_csrf
 
@@ -15,6 +15,14 @@ def create_app(config_class=Config):
     migrate.init_app(app, db)
     cors.init_app(app)
     csrf.init_app(app)
+
+    # Disable CSRF for auth routes
+    app.config['WTF_CSRF_CHECK_DEFAULT'] = False
+    csrf.exempt('/api/auth/signup')
+    csrf.exempt('/api/auth/login')
+    csrf.exempt('/api/auth/token')
+    csrf.exempt('/api/auth/token/refresh')
+    csrf.exempt('/api/auth/validate')
 
     # Initialize session
     if app.config.get('SESSION_TYPE'):
@@ -36,9 +44,6 @@ def create_app(config_class=Config):
     def check_token_auth():
         auth_header = request.headers.get('Authorization')
         return auth_header and auth_header.startswith('Bearer ')
-
-    # Exempt auth routes from CSRF
-    csrf.exempt(r"/api/auth/*")
 
     # Register blueprints
     from app.routes.auth_routes import auth_bp
@@ -64,22 +69,37 @@ def create_app(config_class=Config):
     # Error handlers
     @app.errorhandler(400)
     def bad_request(e):
-        return jsonify({'error': 'Bad Request'}), 400
+        return jsonify({
+            'error': str(e.description) if hasattr(e, 'description') else 'Bad Request',
+            'type': 'validation_error'
+        }), 400
 
     @app.errorhandler(401)
     def unauthorized(e):
-        return jsonify({'error': 'Unauthorized'}), 401
+        return jsonify({
+            'error': str(e.description) if hasattr(e, 'description') else 'Unauthorized',
+            'type': 'auth_error'
+        }), 401
 
     @app.errorhandler(403)
     def forbidden(e):
-        return jsonify({'error': 'Forbidden'}), 403
+        return jsonify({
+            'error': str(e.description) if hasattr(e, 'description') else 'Forbidden',
+            'type': 'auth_error'
+        }), 403
 
     @app.errorhandler(404)
     def not_found(e):
-        return jsonify({'error': 'Not Found'}), 404
+        return jsonify({
+            'error': str(e.description) if hasattr(e, 'description') else 'Not Found',
+            'type': 'not_found_error'
+        }), 404
 
     @app.errorhandler(500)
     def internal_server_error(e):
-        return jsonify({'error': 'Internal Server Error'}), 500
+        return jsonify({
+            'error': str(e.description) if hasattr(e, 'description') else 'Internal Server Error',
+            'type': 'server_error'
+        }), 500
 
     return app

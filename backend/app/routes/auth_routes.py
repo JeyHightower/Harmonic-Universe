@@ -74,11 +74,16 @@ def refresh_token():
 
 @auth_bp.route('/signup', methods=['POST'])
 def signup():
+    print("Request received at /signup")  # Debug log
+    print("Request headers:", request.headers)  # Debug log
+    print("Request data:", request.get_data(as_text=True))  # Debug log
+
     data = request.get_json()
-    print("Signup data:", data)  # Debug log
+    print("Parsed JSON data:", data)  # Debug log
 
     if not data:
-        return jsonify({'error': 'No data provided', 'type': 'validation_error'}), 400
+        print("No data provided or invalid JSON")  # Debug log
+        return jsonify({'error': 'No data provided or invalid JSON', 'type': 'validation_error'}), 400
 
     # Check required fields
     required_fields = ['email', 'password', 'username']
