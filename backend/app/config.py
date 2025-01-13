@@ -51,3 +51,4 @@ class TestConfig(Config):
     SECRET_KEY = 'test-secret-key'
     WTF_CSRF_SECRET_KEY = 'test-csrf-secret-key'
     SERVER_NAME = 'localhost.localdomain'  # Required for URL generation in tests
+    SESSION_TYPE = None  # Use Flask's built-in session management for testing

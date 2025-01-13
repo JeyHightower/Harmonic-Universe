@@ -1,11 +1,18 @@
 import pytest
 from app import create_app, db
 from app.models.user import User
+from app.config import TestConfig
+import os
 
 @pytest.fixture
 def app():
-    app = create_app('testing')
-    return app
+    app = create_app(TestConfig)
+
+    with app.app_context():
+        db.create_all()
+        yield app
+        db.session.remove()
+        db.drop_all()
 
 @pytest.fixture
 def client(app):
@@ -25,13 +32,17 @@ def test_user(app):
     with app.app_context():
         db.session.add(user)
         db.session.commit()
-    return user
+    return {
+        'username': user.username,
+        'email': user.email,
+        'password': 'testpass123'
+    }
 
 @pytest.fixture
 def auth_headers(client, test_user):
-    response = client.post('/auth/login', json={
-        'email': test_user.email,
-        'password': 'testpass123'
+    response = client.post('/api/auth/login', json={
+        'email': test_user['email'],
+        'password': test_user['password']
     })
     token = response.json['token']
     return {'Authorization': f'Bearer {token}'}

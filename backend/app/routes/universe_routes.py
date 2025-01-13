@@ -3,6 +3,7 @@ from flask import Blueprint, jsonify, request, g
 from app.models.universe import Universe
 from app import db
 from app.utils.token_manager import auto_token
+from werkzeug.exceptions import NotFound
 
 universe_bp = Blueprint('universe', __name__)
 
@@ -46,7 +47,9 @@ def get_universes():
 @auto_token
 def get_universe(id):
     try:
-        universe = Universe.query.get_or_404(id)
+        universe = Universe.query.get(id)
+        if not universe:
+            return jsonify({'error': 'Universe not found'}), 404
         if universe.creator_id != g.current_user.id:
             return jsonify({'error': 'Unauthorized'}), 403
         return jsonify(universe.to_dict()), 200
@@ -58,7 +61,9 @@ def get_universe(id):
 def update_universe(id):
     data = request.get_json()
     try:
-        universe = Universe.query.get_or_404(id)
+        universe = Universe.query.get(id)
+        if not universe:
+            return jsonify({'error': 'Universe not found'}), 404
         if universe.creator_id != g.current_user.id:
             return jsonify({'error': 'Unauthorized'}), 403
 
@@ -84,7 +89,9 @@ def update_universe(id):
 @auto_token
 def delete_universe(id):
     try:
-        universe = Universe.query.get_or_404(id)
+        universe = Universe.query.get(id)
+        if not universe:
+            return jsonify({'error': 'Universe not found'}), 404
         if universe.creator_id != g.current_user.id:
             return jsonify({'error': 'Unauthorized'}), 403
 

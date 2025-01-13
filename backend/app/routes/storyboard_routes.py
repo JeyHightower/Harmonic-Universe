@@ -3,6 +3,7 @@ from app.models.storyboard import Storyboard
 from app.models.universe import Universe
 from app import db
 from app.utils.token_manager import auto_token
+from werkzeug.exceptions import NotFound
 
 storyboard_bp = Blueprint('storyboard', __name__)
 
@@ -14,7 +15,9 @@ def add_storyboard(universe_id):
         return jsonify({'error': 'Invalid Data'}), 400
 
     try:
-        universe = Universe.query.get_or_404(universe_id)
+        universe = Universe.query.get(universe_id)
+        if not universe:
+            return jsonify({'error': 'Universe not found'}), 404
         if universe.creator_id != g.current_user.id:
             return jsonify({'error': 'Unauthorized'}), 403
 
@@ -44,7 +47,9 @@ def add_storyboard(universe_id):
 @auto_token
 def get_storyboards(universe_id):
     try:
-        universe = Universe.query.get_or_404(universe_id)
+        universe = Universe.query.get(universe_id)
+        if not universe:
+            return jsonify({'error': 'Universe not found'}), 404
         if universe.creator_id != g.current_user.id:
             return jsonify({'error': 'Unauthorized'}), 403
 
@@ -67,11 +72,15 @@ def update_storyboard(universe_id, storyboard_id):
         return jsonify({'error': 'Invalid Data'}), 400
 
     try:
-        storyboard = Storyboard.query.get_or_404(storyboard_id)
+        storyboard = Storyboard.query.get(storyboard_id)
+        if not storyboard:
+            return jsonify({'error': 'Storyboard not found'}), 404
         if storyboard.universe_id != universe_id:
             return jsonify({'error': 'Storyboard not found in this Universe'}), 404
 
-        universe = Universe.query.get_or_404(universe_id)
+        universe = Universe.query.get(universe_id)
+        if not universe:
+            return jsonify({'error': 'Universe not found'}), 404
         if universe.creator_id != g.current_user.id:
             return jsonify({'error': 'Unauthorized'}), 403
 
@@ -97,11 +106,15 @@ def update_storyboard(universe_id, storyboard_id):
 @auto_token
 def delete_storyboard(universe_id, storyboard_id):
     try:
-        storyboard = Storyboard.query.get_or_404(storyboard_id)
+        storyboard = Storyboard.query.get(storyboard_id)
+        if not storyboard:
+            return jsonify({'error': 'Storyboard not found'}), 404
         if storyboard.universe_id != universe_id:
             return jsonify({'error': 'Storyboard not found in this Universe'}), 404
 
-        universe = Universe.query.get_or_404(universe_id)
+        universe = Universe.query.get(universe_id)
+        if not universe:
+            return jsonify({'error': 'Universe not found'}), 404
         if universe.creator_id != g.current_user.id:
             return jsonify({'error': 'Unauthorized'}), 403
 

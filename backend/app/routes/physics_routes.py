@@ -3,6 +3,7 @@ from app.models.physics_parameter import PhysicsParameter
 from app.models.universe import Universe
 from app import db
 from app.utils.token_manager import auto_token
+from werkzeug.exceptions import NotFound
 
 physics_bp = Blueprint('physics', __name__)
 
@@ -14,7 +15,9 @@ def add_physics_parameter(universe_id):
         return jsonify({'error': 'Invalid Data'}), 400
 
     try:
-        universe = Universe.query.get_or_404(universe_id)
+        universe = Universe.query.get(universe_id)
+        if not universe:
+            return jsonify({'error': 'Universe not found'}), 404
         if universe.creator_id != g.current_user.id:
             return jsonify({'error': 'Unauthorized'}), 403
 
@@ -44,7 +47,9 @@ def add_physics_parameter(universe_id):
 @auto_token
 def get_physics_parameters(universe_id):
     try:
-        universe = Universe.query.get_or_404(universe_id)
+        universe = Universe.query.get(universe_id)
+        if not universe:
+            return jsonify({'error': 'Universe not found'}), 404
         if universe.creator_id != g.current_user.id:
             return jsonify({'error': 'Unauthorized'}), 403
 
@@ -67,11 +72,15 @@ def update_physics_parameter(universe_id, parameter_id):
         return jsonify({'error': 'Invalid Data'}), 400
 
     try:
-        parameter = PhysicsParameter.query.get_or_404(parameter_id)
+        parameter = PhysicsParameter.query.get(parameter_id)
+        if not parameter:
+            return jsonify({'error': 'Parameter not found'}), 404
         if parameter.universe_id != universe_id:
             return jsonify({'error': 'Parameter not found in this Universe'}), 404
 
-        universe = Universe.query.get_or_404(universe_id)
+        universe = Universe.query.get(universe_id)
+        if not universe:
+            return jsonify({'error': 'Universe not found'}), 404
         if universe.creator_id != g.current_user.id:
             return jsonify({'error': 'Unauthorized'}), 403
 
@@ -97,11 +106,15 @@ def update_physics_parameter(universe_id, parameter_id):
 @auto_token
 def delete_physics_parameter(universe_id, parameter_id):
     try:
-        parameter = PhysicsParameter.query.get_or_404(parameter_id)
+        parameter = PhysicsParameter.query.get(parameter_id)
+        if not parameter:
+            return jsonify({'error': 'Parameter not found'}), 404
         if parameter.universe_id != universe_id:
             return jsonify({'error': 'Parameter not found in this Universe'}), 404
 
-        universe = Universe.query.get_or_404(universe_id)
+        universe = Universe.query.get(universe_id)
+        if not universe:
+            return jsonify({'error': 'Universe not found'}), 404
         if universe.creator_id != g.current_user.id:
             return jsonify({'error': 'Unauthorized'}), 403
 

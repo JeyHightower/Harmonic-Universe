@@ -1,9 +1,10 @@
 # app/__init__.py
-from flask import Flask, request
+from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 from flask_session import Session
 from config import Config
 from app.extensions import db, migrate, cors, csrf
+from flask_wtf.csrf import generate_csrf
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -14,7 +15,10 @@ def create_app(config_class=Config):
     migrate.init_app(app, db)
     cors.init_app(app)
     csrf.init_app(app)
-    Session(app)
+
+    # Initialize session
+    if app.config.get('SESSION_TYPE'):
+        Session(app)
 
     # Configure CORS
     CORS(app, resources={
@@ -50,30 +54,32 @@ def create_app(config_class=Config):
     app.register_blueprint(storyboard_bp, url_prefix='/api/universes/<int:universe_id>/storyboards')
 
     # CSRF token route
-    @app.route('/api/csrf/token')
+    @app.route('/api/csrf/token', methods=['GET'])
     def get_csrf_token():
-        from flask_wtf.csrf import generate_csrf
         token = generate_csrf()
-        response = {'csrf_token': token}
+        response = jsonify({'csrf_token': token})
+        response.headers['X-CSRF-Token'] = token
         return response
 
     # Error handlers
     @app.errorhandler(400)
-    def handle_csrf_error(e):
-        return {'error': 'CSRF token missing or invalid'}, 400
+    def bad_request(e):
+        return jsonify({'error': 'Bad Request'}), 400
 
     @app.errorhandler(401)
-    def handle_unauthorized(e):
-        return {'error': 'Authentication required'}, 401
+    def unauthorized(e):
+        return jsonify({'error': 'Unauthorized'}), 401
 
     @app.errorhandler(403)
-    def handle_forbidden(e):
-        return {'error': 'Forbidden'}, 403
+    def forbidden(e):
+        return jsonify({'error': 'Forbidden'}), 403
 
-    # Initialize models
-    with app.app_context():
-        from app.models import init_models
-        db.create_all()
-        init_models()
+    @app.errorhandler(404)
+    def not_found(e):
+        return jsonify({'error': 'Not Found'}), 404
+
+    @app.errorhandler(500)
+    def internal_server_error(e):
+        return jsonify({'error': 'Internal Server Error'}), 500
 
     return app
