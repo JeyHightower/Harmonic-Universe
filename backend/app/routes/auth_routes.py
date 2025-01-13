@@ -133,10 +133,6 @@ def login():
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
     try:
-        # Check CSRF token
-        if not request.headers.get('X-CSRF-Token'):
-            return jsonify({'error': 'CSRF token missing'}), 400
-
         session.clear()
         return jsonify({
             'message': 'Logout successful'
@@ -146,11 +142,3 @@ def logout():
             'error': 'An error occurred during logout',
             'details': str(e)
         }), 500
-
-@auth_bp.route('/csrf-token', methods=['GET'])
-def get_csrf_token():
-    """Endpoint to get CSRF token for protected requests"""
-    from app import csrf
-    return jsonify({
-        'csrf_token': csrf.generate_csrf()
-    })
