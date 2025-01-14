@@ -7,7 +7,7 @@ from werkzeug.exceptions import NotFound
 
 universe_bp = Blueprint('universe', __name__)
 
-@universe_bp.route('/', methods=['POST'])
+@universe_bp.route('', methods=['POST'])
 @auto_token
 def create_universe():
     try:
@@ -57,7 +57,7 @@ def create_universe():
             'details': str(e)
         }), 500
 
-@universe_bp.route('/', methods=['GET'])
+@universe_bp.route('', methods=['GET'])
 @auto_token
 def get_universes():
     try:

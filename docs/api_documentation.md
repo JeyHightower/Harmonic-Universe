@@ -1,18 +1,18 @@
-# **Harmonic Universe API Documentation**
+# Harmonic Universe API Documentation
 
-## **Base URL**
+## Base URL
 
 The base URL for all API endpoints is:
 
-`http://localhost:5001/api`
+`http://127.0.0.1:5001/api`
 
-## **Authentication**
+## Authentication
 
 Most endpoints require authentication using a Bearer token in the Authorization header:
 
 `Authorization: Bearer <token>`
 
-## **Error Handling**
+## Error Handling
 
 All error responses follow this format:
 
@@ -31,11 +31,11 @@ Error types include:
 - `not_found_error`: Resource not found
 - `server_error`: Unexpected server errors
 
-## **Endpoints**
+## Endpoints
 
-### **1. Authentication**
+### 1. Authentication
 
-#### **POST /auth/signup**
+#### POST /auth/signup
 
 Creates a new user account.
 
@@ -63,33 +63,7 @@ Creates a new user account.
 }
 ```
 
-#### **POST /auth/token**
-
-Get an authentication token.
-
-**Request Body:**
-
-```json
-{
-  "email": "string",
-  "password": "string"
-}
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "token": "string",
-  "user": {
-    "id": "integer",
-    "email": "string",
-    "username": "string"
-  }
-}
-```
-
-#### **POST /auth/login**
+#### POST /auth/login
 
 Authenticates a user.
 
@@ -116,9 +90,18 @@ Authenticates a user.
 }
 ```
 
-#### **POST /auth/token/refresh**
+#### POST /auth/token
 
-Refreshes the authentication token.
+Get an authentication token.
+
+**Request Body:**
+
+```json
+{
+  "email": "string",
+  "password": "string"
+}
+```
 
 **Response (200 OK):**
 
@@ -133,7 +116,7 @@ Refreshes the authentication token.
 }
 ```
 
-#### **GET /auth/validate**
+#### GET /auth/validate
 
 Validates the current token.
 
@@ -150,7 +133,7 @@ Validates the current token.
 }
 ```
 
-#### **PUT /auth/user**
+#### PUT /auth/user
 
 Updates the authenticated user's information.
 
@@ -177,25 +160,9 @@ Updates the authenticated user's information.
 }
 ```
 
-**Error Responses:**
+#### DELETE /auth/user
 
-- 400 Bad Request:
-  - No data provided
-  - Invalid username format/length
-  - Invalid email format
-  - Invalid password requirements
-  - Username already taken
-  - Email already registered
-- 401 Unauthorized:
-  - Missing or invalid token
-- 404 Not Found:
-  - User not found
-- 500 Server Error:
-  - Unexpected server error
-
-#### **DELETE /auth/user**
-
-Deletes the authenticated user's account and all associated data.
+Deletes the authenticated user's account.
 
 **Response (200 OK):**
 
@@ -205,20 +172,11 @@ Deletes the authenticated user's account and all associated data.
 }
 ```
 
-**Error Responses:**
-
-- 401 Unauthorized:
-  - Missing or invalid token
-- 404 Not Found:
-  - User not found
-- 500 Server Error:
-  - Unexpected server error
-
-### **2. Universe Management**
+### 2. Universe Management
 
 All universe endpoints require authentication.
 
-#### **POST /universes**
+#### POST /universes
 
 Creates a new universe.
 
@@ -251,13 +209,7 @@ Creates a new universe.
 }
 ```
 
-**Validation Rules:**
-
-- Name: 3-100 characters
-- Gravity constant: Must be positive number
-- Environment harmony: Must be between 0 and 1
-
-#### **GET /universes**
+#### GET /universes
 
 Retrieves all universes for the authenticated user.
 
@@ -278,7 +230,7 @@ Retrieves all universes for the authenticated user.
 ]
 ```
 
-#### **GET /universes/{id}**
+#### GET /universes/{id}
 
 Retrieves a specific universe.
 
@@ -297,7 +249,7 @@ Retrieves a specific universe.
 }
 ```
 
-#### **PUT /universes/{id}**
+#### PUT /universes/{id}
 
 Updates a universe.
 
@@ -330,7 +282,7 @@ Updates a universe.
 }
 ```
 
-#### **DELETE /universes/{id}**
+#### DELETE /universes/{id}
 
 Deletes a universe.
 
@@ -342,33 +294,242 @@ Deletes a universe.
 }
 ```
 
-**Common Error Responses for Universe Endpoints:**
+### 3. Physics Parameters
 
-- 400 Bad Request:
-  - No data provided
-  - Invalid field values
-  - Validation errors
-- 401 Unauthorized:
-  - Missing or invalid token
-- 403 Forbidden:
-  - Attempting to access/modify another user's universe
-- 404 Not Found:
-  - Universe not found
-- 500 Server Error:
-  - Unexpected server error
+#### POST /universes/{universe_id}/physics
 
-### **3. Storyboard Management**
-
-#### **POST /universes/{universe_id}/storyboards**
-
-Creates a new storyboard.
+Creates a new physics parameter.
 
 **Request Body:**
 
 ```json
 {
-  "plot_point": "string (max 500 chars)",
-  "description": "string (max 2000 chars)",
+  "parameter_name": "string (2-50 chars)",
+  "value": "number",
+  "unit": "string (1-20 chars)"
+}
+```
+
+**Response (201 Created):**
+
+```json
+{
+  "message": "Physics parameter created successfully",
+  "parameter": {
+    "id": "integer",
+    "parameter_name": "string",
+    "value": "number",
+    "unit": "string",
+    "created_at": "string",
+    "updated_at": "string",
+    "universe_id": "integer"
+  }
+}
+```
+
+#### GET /universes/{universe_id}/physics
+
+Retrieves all physics parameters for a universe.
+
+**Query Parameters:**
+
+- `page`: Page number (default: 1, must be > 0)
+- `per_page`: Items per page (default: 10, range: 1-100)
+- `sort_by`: Field to sort by (default: created_at)
+  - Valid fields: created_at, updated_at, name, value
+- `order`: Sort order (asc/desc, default: desc)
+
+**Response (200 OK):**
+
+```json
+{
+  "parameters": [
+    {
+      "id": "integer",
+      "parameter_name": "string",
+      "value": "number",
+      "unit": "string",
+      "created_at": "string",
+      "updated_at": "string",
+      "universe_id": "integer"
+    }
+  ],
+  "pagination": {
+    "page": "integer",
+    "per_page": "integer",
+    "total_pages": "integer",
+    "total_items": "integer"
+  }
+}
+```
+
+#### PUT /universes/{universe_id}/physics/{parameter_id}
+
+Updates a physics parameter.
+
+**Request Body:**
+
+```json
+{
+  "parameter_name": "string (2-50 chars)",
+  "value": "number",
+  "unit": "string (1-20 chars)"
+}
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "message": "Physics parameter updated successfully",
+  "parameter": {
+    "id": "integer",
+    "parameter_name": "string",
+    "value": "number",
+    "unit": "string",
+    "created_at": "string",
+    "updated_at": "string",
+    "universe_id": "integer"
+  }
+}
+```
+
+#### DELETE /universes/{universe_id}/physics/{parameter_id}
+
+Deletes a physics parameter.
+
+**Response (200 OK):**
+
+```json
+{
+  "message": "Physics parameter deleted successfully"
+}
+```
+
+### 4. Music Parameters
+
+#### POST /universes/{universe_id}/music
+
+Creates a new music parameter.
+
+**Request Body:**
+
+```json
+{
+  "parameter_name": "string (2-50 chars)",
+  "value": "number",
+  "instrument": "string (2-50 chars)"
+}
+```
+
+**Response (201 Created):**
+
+```json
+{
+  "message": "Music parameter created successfully",
+  "parameter": {
+    "id": "integer",
+    "parameter_name": "string",
+    "value": "number",
+    "instrument": "string",
+    "created_at": "string",
+    "updated_at": "string",
+    "universe_id": "integer"
+  }
+}
+```
+
+#### GET /universes/{universe_id}/music
+
+Retrieves all music parameters for a universe.
+
+**Query Parameters:**
+
+- `page`: Page number (default: 1, must be > 0)
+- `per_page`: Items per page (default: 10, range: 1-100)
+- `sort_by`: Field to sort by (default: created_at)
+  - Valid fields: created_at, updated_at, name, value
+- `order`: Sort order (asc/desc, default: desc)
+
+**Response (200 OK):**
+
+```json
+{
+  "parameters": [
+    {
+      "id": "integer",
+      "parameter_name": "string",
+      "value": "number",
+      "instrument": "string",
+      "created_at": "string",
+      "updated_at": "string",
+      "universe_id": "integer"
+    }
+  ],
+  "pagination": {
+    "page": "integer",
+    "per_page": "integer",
+    "total_pages": "integer",
+    "total_items": "integer"
+  }
+}
+```
+
+#### PUT /universes/{universe_id}/music/{parameter_id}
+
+Updates a music parameter.
+
+**Request Body:**
+
+```json
+{
+  "parameter_name": "string (2-50 chars)",
+  "value": "number",
+  "instrument": "string (2-50 chars)"
+}
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "message": "Music parameter updated successfully",
+  "parameter": {
+    "id": "integer",
+    "parameter_name": "string",
+    "value": "number",
+    "instrument": "string",
+    "created_at": "string",
+    "updated_at": "string",
+    "universe_id": "integer"
+  }
+}
+```
+
+#### DELETE /universes/{universe_id}/music/{parameter_id}
+
+Deletes a music parameter.
+
+**Response (200 OK):**
+
+```json
+{
+  "message": "Music parameter deleted successfully"
+}
+```
+
+### 5. Storyboard
+
+#### POST /universes/{universe_id}/storyboard
+
+Creates a new plot point.
+
+**Request Body:**
+
+```json
+{
+  "plot_point": "string",
+  "description": "string",
   "harmony_tie": "number (0-1)"
 }
 ```
@@ -390,17 +551,16 @@ Creates a new storyboard.
 }
 ```
 
-#### **GET /universes/{universe_id}/storyboards**
+#### GET /universes/{universe_id}/storyboard
 
-Retrieves all storyboards for a universe.
+Retrieves plot points for a universe.
 
 **Query Parameters:**
 
 - `page`: Page number (default: 1, must be > 0)
 - `per_page`: Items per page (default: 10, range: 1-100)
-- `sort_by`: Field to sort by (default: created_at)
-  - Valid fields: created_at, updated_at, harmony_tie, plot_point
-- `order`: Sort order (asc/desc, default: desc)
+- `sort_by`: Field to sort by (options: created_at, updated_at, harmony_tie, plot_point; default: created_at)
+- `order`: Sort order (options: asc, desc; default: desc)
 - `harmony_min`: Minimum harmony tie value (0-1)
 - `harmony_max`: Maximum harmony tie value (0-1)
 
@@ -426,36 +586,24 @@ Retrieves all storyboards for a universe.
     "total_items": "integer"
   },
   "filters": {
-    "harmony_min": "number or null",
-    "harmony_max": "number or null",
+    "harmony_min": "number",
+    "harmony_max": "number",
     "sort_by": "string",
     "order": "string"
   }
 }
 ```
 
-**Error Responses:**
+#### PUT /universes/{universe_id}/storyboard/{storyboard_id}
 
-- 400 Bad Request:
-  - Invalid page number
-  - Invalid items per page
-  - Invalid harmony range
-  - Invalid sort field
-  - Invalid sort order
-- 403 Forbidden: Not authorized to access this universe
-- 404 Not Found: Universe not found
-- 500 Server Error: Unexpected server error
-
-#### **PUT /universes/{universe_id}/storyboards/{storyboard_id}**
-
-Updates a storyboard.
+Updates a plot point.
 
 **Request Body:**
 
 ```json
 {
-  "plot_point": "string (max 500 chars)",
-  "description": "string (max 2000 chars)",
+  "plot_point": "string",
+  "description": "string",
   "harmony_tie": "number (0-1)"
 }
 ```
@@ -464,7 +612,7 @@ Updates a storyboard.
 
 ```json
 {
-  "message": "Storyboard updated successfully",
+  "message": "Plot Point updated successfully",
   "storyboard": {
     "id": "integer",
     "plot_point": "string",
@@ -477,290 +625,19 @@ Updates a storyboard.
 }
 ```
 
-#### **DELETE /universes/{universe_id}/storyboards/{storyboard_id}**
+#### DELETE /universes/{universe_id}/storyboard/{storyboard_id}
 
-Deletes a storyboard.
-
-**Response (200 OK):**
-
-```json
-{
-  "message": "Storyboard deleted successfully",
-  "deleted_storyboard": {
-    "id": "integer",
-    "universe_id": "integer"
-  }
-}
-```
-
-### **4. Physics Parameters**
-
-#### **POST /universes/{universe_id}/physics**
-
-Creates a new physics parameter.
-
-**Request Body:**
-
-```json
-{
-  "name": "string (max 100 chars)",
-  "value": "number",
-  "unit": "string (max 50 chars)",
-  "description": "string (max 500 chars)"
-}
-```
-
-**Response (201 Created):**
-
-```json
-{
-  "message": "Physics parameter created successfully",
-  "parameter": {
-    "id": "integer",
-    "name": "string",
-    "value": "number",
-    "unit": "string",
-    "description": "string",
-    "created_at": "string",
-    "updated_at": "string",
-    "universe_id": "integer"
-  }
-}
-```
-
-#### **GET /universes/{universe_id}/physics**
-
-Retrieves all physics parameters for a universe.
-
-**Query Parameters:**
-
-- `page`: Page number (default: 1, must be > 0)
-- `per_page`: Items per page (default: 10, range: 1-100)
-- `sort_by`: Field to sort by (default: created_at)
-  - Valid fields: created_at, updated_at, name, value
-- `order`: Sort order (asc/desc, default: desc)
+Deletes a plot point.
 
 **Response (200 OK):**
 
 ```json
 {
-  "parameters": [
-    {
-      "id": "integer",
-      "name": "string",
-      "value": "number",
-      "unit": "string",
-      "description": "string",
-      "created_at": "string",
-      "updated_at": "string",
-      "universe_id": "integer"
-    }
-  ],
-  "pagination": {
-    "page": "integer",
-    "per_page": "integer",
-    "total_pages": "integer",
-    "total_items": "integer"
-  }
+  "message": "Plot Point deleted successfully"
 }
 ```
 
-#### **PUT /universes/{universe_id}/physics/{parameter_id}**
-
-Updates a physics parameter.
-
-**Request Body:**
-
-```json
-{
-  "name": "string (max 100 chars)",
-  "value": "number",
-  "unit": "string (max 50 chars)",
-  "description": "string (max 500 chars)"
-}
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "message": "Physics parameter updated successfully",
-  "parameter": {
-    "id": "integer",
-    "name": "string",
-    "value": "number",
-    "unit": "string",
-    "description": "string",
-    "created_at": "string",
-    "updated_at": "string",
-    "universe_id": "integer"
-  }
-}
-```
-
-#### **DELETE /universes/{universe_id}/physics/{parameter_id}**
-
-Deletes a physics parameter.
-
-**Response (200 OK):**
-
-```json
-{
-  "message": "Physics parameter deleted successfully",
-  "deleted_parameter": {
-    "id": "integer",
-    "universe_id": "integer"
-  }
-}
-```
-
-### **5. Music Parameters**
-
-#### **POST /universes/{universe_id}/music**
-
-Creates a new music parameter.
-
-**Request Body:**
-
-```json
-{
-  "name": "string (max 100 chars)",
-  "value": "number",
-  "unit": "string (max 50 chars)",
-  "description": "string (max 500 chars)",
-  "harmony_impact": "number (0-1)"
-}
-```
-
-**Response (201 Created):**
-
-```json
-{
-  "message": "Music parameter created successfully",
-  "parameter": {
-    "id": "integer",
-    "name": "string",
-    "value": "number",
-    "unit": "string",
-    "description": "string",
-    "harmony_impact": "number",
-    "created_at": "string",
-    "updated_at": "string",
-    "universe_id": "integer"
-  }
-}
-```
-
-#### **GET /universes/{universe_id}/music**
-
-Retrieves all music parameters for a universe.
-
-**Query Parameters:**
-
-- `page`: Page number (default: 1, must be > 0)
-- `per_page`: Items per page (default: 10, range: 1-100)
-- `sort_by`: Field to sort by (default: created_at)
-  - Valid fields: created_at, updated_at, name, value, harmony_impact
-- `order`: Sort order (asc/desc, default: desc)
-- `harmony_min`: Minimum harmony impact value (0-1)
-- `harmony_max`: Maximum harmony impact value (0-1)
-
-**Response (200 OK):**
-
-```json
-{
-  "parameters": [
-    {
-      "id": "integer",
-      "name": "string",
-      "value": "number",
-      "unit": "string",
-      "description": "string",
-      "harmony_impact": "number",
-      "created_at": "string",
-      "updated_at": "string",
-      "universe_id": "integer"
-    }
-  ],
-  "pagination": {
-    "page": "integer",
-    "per_page": "integer",
-    "total_pages": "integer",
-    "total_items": "integer"
-  },
-  "filters": {
-    "harmony_min": "number or null",
-    "harmony_max": "number or null",
-    "sort_by": "string",
-    "order": "string"
-  }
-}
-```
-
-#### **PUT /universes/{universe_id}/music/{parameter_id}**
-
-Updates a music parameter.
-
-**Request Body:**
-
-```json
-{
-  "name": "string (max 100 chars)",
-  "value": "number",
-  "unit": "string (max 50 chars)",
-  "description": "string (max 500 chars)",
-  "harmony_impact": "number (0-1)"
-}
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "message": "Music parameter updated successfully",
-  "parameter": {
-    "id": "integer",
-    "name": "string",
-    "value": "number",
-    "unit": "string",
-    "description": "string",
-    "harmony_impact": "number",
-    "created_at": "string",
-    "updated_at": "string",
-    "universe_id": "integer"
-  }
-}
-```
-
-#### **DELETE /universes/{universe_id}/music/{parameter_id}**
-
-Deletes a music parameter.
-
-**Response (200 OK):**
-
-```json
-{
-  "message": "Music parameter deleted successfully",
-  "deleted_parameter": {
-    "id": "integer",
-    "universe_id": "integer"
-  }
-}
-```
-
-**Error Responses for Physics and Music Parameters:**
-
-- 400 Bad Request:
-  - Missing required fields
-  - Invalid field values
-  - Invalid pagination parameters
-  - Invalid sort parameters
-  - Invalid harmony range (music only)
-- 403 Forbidden: Not authorized to access this universe
-- 404 Not Found: Universe or parameter not found
-- 500 Server Error: Unexpected server error
-
-## **Status Codes**
+## Status Codes
 
 - 200: Success
 - 201: Created
@@ -770,6 +647,6 @@ Deletes a music parameter.
 - 404: Not Found
 - 500: Internal Server Error
 
-## **Rate Limiting**
+## Rate Limiting
 
 Currently, there are no rate limits implemented.

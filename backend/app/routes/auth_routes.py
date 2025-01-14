@@ -1,6 +1,7 @@
 # app/routes/auth_routes.py
 from flask import Blueprint, request, jsonify, g
 from app.models.user import User
+from app.models.universe import Universe
 from app import db
 import jwt
 import bcrypt
@@ -74,103 +75,41 @@ def refresh_token():
 
 @auth_bp.route('/signup', methods=['POST'])
 def signup():
-    print("Request received at /signup")  # Debug log
-    print("Request headers:", request.headers)  # Debug log
-    print("Request data:", request.get_data(as_text=True))  # Debug log
-
-    data = request.get_json()
-    print("Parsed JSON data:", data)  # Debug log
-
-    if not data:
-        print("No data provided or invalid JSON")  # Debug log
-        return jsonify({'error': 'No data provided or invalid JSON', 'type': 'validation_error'}), 400
-
-    # Check required fields
-    required_fields = ['email', 'password', 'username']
-    missing_fields = [field for field in required_fields if field not in data or not data[field]]
-    if missing_fields:
-        print("Missing fields:", missing_fields)  # Debug log
-        return jsonify({
-            'error': f'Missing required fields: {", ".join(missing_fields)}',
-            'type': 'validation_error'
-        }), 400
-
-    # Clean input data
-    email = data['email'].strip()
-    username = data['username'].strip()
-    password = data['password']
-    print(f"Cleaned data - email: {email}, username: {username}, password length: {len(password)}")  # Debug log
-
-    # Check if email already exists
-    existing_email = User.query.filter_by(email=email).first()
-    if existing_email:
-        print("Email exists:", email)  # Debug log
-        return jsonify({
-            'error': 'Email already registered',
-            'type': 'validation_error'
-        }), 400
-
-    # Check if username already exists
-    existing_username = User.query.filter_by(username=username).first()
-    if existing_username:
-        print("Username exists:", username)  # Debug log
-        return jsonify({
-            'error': 'Username already taken',
-            'type': 'validation_error'
-        }), 400
-
-    # Validate email format
-    if not '@' in email or not '.' in email:
-        print("Invalid email format:", email)  # Debug log
-        return jsonify({
-            'error': 'Invalid email format',
-            'type': 'validation_error'
-        }), 400
-
-    # Validate username
-    if len(username) < 3 or len(username) > 40:
-        print("Invalid username length:", len(username))  # Debug log
-        return jsonify({
-            'error': 'Username must be between 3 and 40 characters',
-            'type': 'validation_error'
-        }), 400
-    if not username.replace('_', '').replace('-', '').isalnum():
-        print("Invalid username characters:", username)  # Debug log
-        return jsonify({
-            'error': 'Username can only contain letters, numbers, underscores, and hyphens',
-            'type': 'validation_error'
-        }), 400
-
-    # Validate password
-    if len(password) < 8:
-        print("Password too short:", len(password))  # Debug log
-        return jsonify({
-            'error': 'Password must be at least 8 characters long',
-            'type': 'validation_error'
-        }), 400
-    if not any(c.isupper() for c in password):
-        print("Password missing uppercase")  # Debug log
-        return jsonify({
-            'error': 'Password must contain at least one uppercase letter',
-            'type': 'validation_error'
-        }), 400
-    if not any(c.islower() for c in password):
-        print("Password missing lowercase")  # Debug log
-        return jsonify({
-            'error': 'Password must contain at least one lowercase letter',
-            'type': 'validation_error'
-        }), 400
-    if not any(c.isdigit() for c in password):
-        print("Password missing number")  # Debug log
-        return jsonify({
-            'error': 'Password must contain at least one number',
-            'type': 'validation_error'
-        }), 400
-
-    print("All validation passed")  # Debug log
-
-    # Create new user
+    """Create a new user account"""
     try:
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'error': 'No data provided',
+                'message': 'Request body is required'
+            }), 400
+
+        # Clean and validate input data
+        email = data.get('email', '').strip()
+        username = data.get('username', '').strip()
+        password = data.get('password', '')
+
+        # Validate all fields are present
+        missing = []
+        if not email: missing.append('email')
+        if not username: missing.append('username')
+        if not password: missing.append('password')
+
+        if missing:
+            return jsonify({
+                'error': 'Missing required fields',
+                'message': f'The following fields are required: {", ".join(missing)}'
+            }), 400
+
+        # Check if user already exists
+        existing_user = User.query.filter((User.email == email) | (User.username == username)).first()
+        if existing_user:
+            return jsonify({
+                'error': 'User already exists',
+                'message': 'Email or username is already taken'
+            }), 400
+
+        # Create new user
         new_user = User(
             username=username,
             email=email
@@ -195,37 +134,51 @@ def signup():
 
     except Exception as e:
         db.session.rollback()
-        print("Error creating user:", str(e))  # Debug log
         return jsonify({
-            'error': 'An error occurred while creating the user',
-            'type': 'server_error',
-            'details': str(e)
+            'error': 'Server error',
+            'message': str(e)
         }), 500
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    data = request.get_json()
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'error': 'No data provided',
+                'message': 'Request body is required'
+            }), 400
 
-    if not data or 'email' not in data or 'password' not in data:
-        return jsonify({'error': 'Missing email or password'}), 400
+        if 'email' not in data or 'password' not in data:
+            return jsonify({
+                'error': 'Missing credentials',
+                'message': 'Both email and password are required'
+            }), 400
 
-    user = User.query.filter_by(email=data['email']).first()
+        user = User.query.filter_by(email=data['email']).first()
 
-    if user and bcrypt.checkpw(data['password'].encode('utf-8'), user.password_hash.encode('utf-8')):
-        # Generate token
-        token = generate_token(user.id)
+        if user and bcrypt.checkpw(data['password'].encode('utf-8'), user.password_hash.encode('utf-8')):
+            token = generate_token(user.id)
+            return jsonify({
+                'message': 'Logged in successfully',
+                'token': token,
+                'user': {
+                    'id': user.id,
+                    'email': user.email,
+                    'username': user.username
+                }
+            }), 200
 
         return jsonify({
-            'message': 'Logged in successfully',
-            'token': token,
-            'user': {
-                'id': user.id,
-                'email': user.email,
-                'username': user.username
-            }
-        })
+            'error': 'Invalid credentials',
+            'message': 'Email or password is incorrect'
+        }), 401
 
-    return jsonify({'error': 'Invalid credentials'}), 401
+    except Exception as e:
+        return jsonify({
+            'error': 'Server error',
+            'message': str(e)
+        }), 500
 
 @auth_bp.route('/validate', methods=['GET'])
 def validate_token():
@@ -262,57 +215,25 @@ def update_user():
     try:
         data = request.get_json()
         if not data:
-            return jsonify({'error': 'No data provided', 'type': 'validation_error'}), 400
+            return jsonify({
+                'error': 'No data provided',
+                'message': 'Request body is required'
+            }), 400
 
         user = User.query.get(g.current_user.id)
         if not user:
-            return jsonify({'error': 'User not found', 'type': 'not_found_error'}), 404
+            return jsonify({
+                'error': 'User not found',
+                'message': 'User account not found'
+            }), 404
 
-        # Update username if provided
+        # Update fields if provided
         if 'username' in data:
-            username = data['username'].strip()
-            if not username:
-                return jsonify({'error': 'Username cannot be empty', 'type': 'validation_error'}), 400
-            if len(username) < 3 or len(username) > 40:
-                return jsonify({'error': 'Username must be between 3 and 40 characters', 'type': 'validation_error'}), 400
-            if not username.replace('_', '').replace('-', '').isalnum():
-                return jsonify({'error': 'Username can only contain letters, numbers, underscores, and hyphens', 'type': 'validation_error'}), 400
-
-            # Check if username is taken by another user
-            existing_user = User.query.filter_by(username=username).first()
-            if existing_user and existing_user.id != user.id:
-                return jsonify({'error': 'Username already taken', 'type': 'validation_error'}), 400
-
-            user.username = username
-
-        # Update email if provided
+            user.username = data['username'].strip()
         if 'email' in data:
-            email = data['email'].strip()
-            if not email:
-                return jsonify({'error': 'Email cannot be empty', 'type': 'validation_error'}), 400
-            if not '@' in email or not '.' in email:
-                return jsonify({'error': 'Invalid email format', 'type': 'validation_error'}), 400
-
-            # Check if email is taken by another user
-            existing_user = User.query.filter_by(email=email).first()
-            if existing_user and existing_user.id != user.id:
-                return jsonify({'error': 'Email already registered', 'type': 'validation_error'}), 400
-
-            user.email = email
-
-        # Update password if provided
+            user.email = data['email'].strip()
         if 'password' in data:
-            password = data['password']
-            if len(password) < 8:
-                return jsonify({'error': 'Password must be at least 8 characters long', 'type': 'validation_error'}), 400
-            if not any(c.isupper() for c in password):
-                return jsonify({'error': 'Password must contain at least one uppercase letter', 'type': 'validation_error'}), 400
-            if not any(c.islower() for c in password):
-                return jsonify({'error': 'Password must contain at least one lowercase letter', 'type': 'validation_error'}), 400
-            if not any(c.isdigit() for c in password):
-                return jsonify({'error': 'Password must contain at least one number', 'type': 'validation_error'}), 400
-
-            user.set_password(password)
+            user.set_password(data['password'])
 
         db.session.commit()
 
@@ -328,9 +249,8 @@ def update_user():
     except Exception as e:
         db.session.rollback()
         return jsonify({
-            'error': 'An error occurred while updating the user',
-            'type': 'server_error',
-            'details': str(e)
+            'error': 'Server error',
+            'message': str(e)
         }), 500
 
 @auth_bp.route('/user', methods=['DELETE'])
@@ -338,24 +258,31 @@ def update_user():
 def delete_user():
     """Delete the authenticated user's account"""
     try:
+        print("Received delete user request")  # Debug log
         user = User.query.get(g.current_user.id)
         if not user:
-            return jsonify({'error': 'User not found', 'type': 'not_found_error'}), 404
+            return jsonify({
+                'error': 'User not found',
+                'type': 'not_found_error'
+            }), 404
 
-        # Delete all user's universes and related data
-        universes = Universe.query.filter_by(creator_id=user.id).all()
-        for universe in universes:
-            db.session.delete(universe)
+        # Delete user's universes first
+        try:
+            Universe.query.filter_by(creator_id=user.id).delete()
+            db.session.delete(user)
+            db.session.commit()
 
-        db.session.delete(user)
-        db.session.commit()
+            return jsonify({
+                'message': 'User account deleted successfully'
+            }), 200
 
-        return jsonify({
-            'message': 'User account deleted successfully'
-        }), 200
+        except Exception as e:
+            print(f"Delete user database error: {str(e)}")  # Debug log
+            db.session.rollback()
+            raise
 
     except Exception as e:
-        db.session.rollback()
+        print(f"Delete user error: {str(e)}")  # Debug log
         return jsonify({
             'error': 'An error occurred while deleting the user',
             'type': 'server_error',

@@ -1,8 +1,10 @@
 # app/config.py
 import os
+import secrets
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key'
+    # Generate a secure secret key if not provided
+    SECRET_KEY = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
         'sqlite:///app.db'
