@@ -1,54 +1,99 @@
 # MVP Features for Harmonic Universe
 
-This document outlines the **MVP (Minimum Viable Product)** features for the capstone project, divided into core requirements and bonus additions.
+This document outlines the implemented features in the current version of Harmonic Universe.
 
 ---
 
-## **Core MVP Features**
+## **Core Features**
 
-### **1. Universe CRUD**
+### **1. User Authentication**
 
-- Users can:
-  - Create new universes with custom names and descriptions.
-  - View a list of all their saved universes.
-  - Update universes to tweak physical and musical settings.
-  - Delete universes they no longer need.
+- Complete user authentication system:
+  - User registration with email and username validation
+  - Secure login with JWT token generation
+  - Token validation and session management
+  - User profile updates (username, email, password)
+
+### **2. Universe Management**
+
+- Full CRUD operations for universes:
+  - Create universes with custom names and descriptions
+  - Set gravity constant and environment harmony values
+  - View all universes owned by the user
+  - View detailed universe information
+  - Ownership-based access control
+
+### **3. Physics Parameters**
+
+- Comprehensive physics parameter management:
+  - Add custom physics parameters with names, values, and units
+  - View all parameters for a specific universe
+  - Update parameter values and units
+  - Delete unwanted parameters
+  - Validation for parameter names and values
+
+### **4. Music Parameters**
+
+- Complete music parameter system:
+  - Add music parameters with names, values, and instruments
+  - View all music parameters for a universe
+  - Update existing parameters
+  - Delete parameters
+  - Validation for parameter names and values
+
+### **5. Storyboards**
+
+- Advanced storyboard functionality:
+  - Create plot points with descriptions
+  - Associate harmony values with story elements
+  - Paginated storyboard viewing
+  - Filter by harmony range
+  - Sort by multiple criteria (created_at, updated_at, harmony_tie)
+  - Full CRUD operations
 
 ---
 
-### **2. Physics Parameters CRUD**
+## **Technical Features**
 
-- Users can:
-  - Add new parameters that define physics for a universe (e.g., gravity, friction).
-  - Retrieve and view parameters to analyze their effects.
-  - Edit existing parameters to test new world dynamics.
+### **1. API Security**
 
----
+- JWT-based authentication
+- Route protection with token validation
+- Input validation and sanitization
+- Error handling and meaningful responses
 
-### **3. Music Integration**
+### **2. Database Design**
 
-- Users can:
-  - Tune harmony, tempo, and pitch based on universe physics.
-  - Save these settings persistently.
-  - Generate dynamic music tied to physics rules dynamically.
+- Relational database with proper relationships
+- Indexed fields for performance
+- Cascade deletions for related entities
+- Timestamp tracking for all entities
 
----
+### **3. API Design**
 
-## **Bonus Features**
-
-### **1. Storyboards**
-
-- Add plot points or narrative elements tied to universes.
-- Associate harmony or physics conditions with storytelling events (e.g., pivotal moments in physics shifts).
-
-### **2. Dynamic Visualizations**
-
-- Render real-time physics simulations using libraries like **p5.js** or **D3.js** to give users visual feedback.
+- RESTful endpoints for all resources
+- Consistent error handling
+- Pagination for large datasets
+- Filtering and sorting capabilities
 
 ---
 
-## **Planned Future Features**
+## **Planned Features**
 
-- AI-powered suggestions for physics or harmony configurations.
-- Export universes as JSON, MIDI, or simulation videos.
-- Real-time multiplayer universe collaboration.
+### **1. Music Generation**
+
+- Dynamic music generation based on universe parameters
+- Real-time audio playback
+- Music export capabilities
+
+### **2. Visualization**
+
+- Interactive physics simulations
+- Real-time parameter visualization
+- Dynamic harmony representations
+
+### **3. AI Integration**
+
+- AI-powered parameter suggestions
+- Harmony optimization
+- Physics configuration recommendations

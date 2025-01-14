@@ -6,49 +6,46 @@ This document contains the user stories for the main features and functionality 
 
 ## **Core Features**
 
-### 1. Universe Creation and Management
+### 1. User Authentication
 
-**Create Universe**:
+- As a user, I can sign up with a unique username and email to create an account.
+- As a user, I can log in with my email and password to access my universes.
+- As a user, I can update my profile information including username, email, and password.
+- As a user, I can validate my authentication token to maintain my session.
 
-- As a user, I can create a new universe with unique physics settings, so I can design a custom world.
-- As a user, I can view all universes I've created, so I can manage my designs.
-- As a user, I can update a universe's name, description, or physics settings, so I can refine my work.
-- As a user, I can delete a universe that I no longer need.
+### 2. Universe Creation and Management
 
----
+- As a user, I can create a new universe with a name, description, gravity constant, and environment harmony.
+- As a user, I can view all universes I've created.
+- As a user, I can view detailed information about a specific universe.
+- As a user, I can only access and modify universes I've created.
 
-### 2. Physics Parameters CRUD
+### 3. Physics Parameters Management
 
-- As a user, I can add custom parameters for physics in my universe, so I can explore unique dynamics.
-- As a user, I can modify physical parameters like `gravity` and `friction` for a saved universe, so I can tune its behavior.
-- As a user, I can retrieve and view all physics settings for a universe, so I can analyze my rules.
+- As a user, I can add custom physics parameters to my universe with a name, value, and unit.
+- As a user, I can view all physics parameters for a specific universe.
+- As a user, I can update existing physics parameters to fine-tune my universe.
+- As a user, I can delete physics parameters I no longer need.
 
----
+### 4. Music Parameters Management
 
-### 3. Music Integration
+- As a user, I can add music parameters with a name, value, and associated instrument.
+- As a user, I can view all music parameters for a specific universe.
+- As a user, I can update existing music parameters to adjust the harmony.
+- As a user, I can delete music parameters I no longer need.
 
-- As a user, I can adjust the harmony, pitch, and tempo parameters of a universe, so I can listen to how music reflects the physics.
-- As a user, I can save harmony parameters tied to physics rules, so my music always matches my universe.
-- As a user, I can play or stop the music reflecting my universe's harmony, so I can fully immerse myself.
+### 5. Storyboard Management
 
----
-
-### **BONUS FEATURE: Storyboards**
-
-- As a user, I can add storyline elements (plot points) linked to my universe, so I can bring narrative context to my designs.
-- As a user, I can associate harmony values with plot points, so I can tie my story to musical moments.
-- As a user, I can view all storyboards associated with a universe, so I can track and edit them.
-
----
-
-## **Administrative Stories**
-
-- As an admin, I can disable or delete user accounts to maintain the integrity of the platform.
-- As an admin, I can review error logs to troubleshoot issues.
+- As a user, I can create storyboard entries with plot points, descriptions, and harmony ties.
+- As a user, I can view all storyboards for a universe with pagination and filtering options.
+- As a user, I can filter storyboards by harmony range and sort them by various criteria.
+- As a user, I can update and delete storyboard entries.
 
 ---
 
-## **Future User Stories**
+## **Future Enhancements**
 
-- As a user, I would like to export my universe as JSON or audio, so I can share it with others.
-- As a user, I would like AI-generated harmony or physics suggestions to enhance my creativity.
+- As a user, I would like to generate dynamic music based on my universe's parameters.
+- As a user, I would like to visualize my universe's physics using interactive simulations.
+- As a user, I would like to export my universe configurations for sharing.
+- As a user, I would like AI-powered suggestions for physics and harmony configurations.
