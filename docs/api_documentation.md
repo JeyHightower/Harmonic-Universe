@@ -4,27 +4,13 @@
 
 The base URL for all API endpoints is:
 
-```http://localhost:5001/api
-
-```
+`http://localhost:5001/api`
 
 ## **Authentication**
 
 Most endpoints require authentication using a Bearer token in the Authorization header:
 
-```Authorization: Bearer <token>
-
-```
-
-## **CSRF Protection**
-
-For non-GET requests, include the CSRF token in the header:
-
-```X-CSRF-Token: <token>
-
-```
-
-Get a CSRF token using the `/api/csrf/token` endpoint.
+`Authorization: Bearer <token>`
 
 ## **Error Handling**
 
@@ -33,7 +19,8 @@ All error responses follow this format:
 ```json
 {
   "error": "Error message",
-  "type": "error_type"
+  "type": "error_type",
+  "details": "Optional detailed error message"
 }
 ```
 
@@ -70,24 +57,37 @@ Creates a new user account.
   "token": "string",
   "user": {
     "id": "integer",
-    "username": "string",
-    "email": "string"
+    "email": "string",
+    "username": "string"
   }
 }
 ```
 
-**Error Responses:**
+#### **POST /auth/token**
 
-- 400 Bad Request:
-  - No data provided
-  - Missing required fields
-  - Invalid email format
-  - Username too short/long
-  - Invalid username characters
-  - Password requirements not met
-  - Email already registered
-  - Username already taken
-- 500 Server Error: Unexpected server error
+Get an authentication token.
+
+**Request Body:**
+
+```json
+{
+  "email": "string",
+  "password": "string"
+}
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "token": "string",
+  "user": {
+    "id": "integer",
+    "email": "string",
+    "username": "string"
+  }
+}
+```
 
 #### **POST /auth/login**
 
@@ -106,7 +106,30 @@ Authenticates a user.
 
 ```json
 {
-  "token": "string"
+  "message": "Logged in successfully",
+  "token": "string",
+  "user": {
+    "id": "integer",
+    "email": "string",
+    "username": "string"
+  }
+}
+```
+
+#### **POST /auth/token/refresh**
+
+Refreshes the authentication token.
+
+**Response (200 OK):**
+
+```json
+{
+  "token": "string",
+  "user": {
+    "id": "integer",
+    "email": "string",
+    "username": "string"
+  }
 }
 ```
 
@@ -121,25 +144,79 @@ Validates the current token.
   "valid": true,
   "user": {
     "id": "integer",
-    "username": "string",
-    "email": "string"
+    "email": "string",
+    "username": "string"
   }
 }
 ```
 
-#### **POST /auth/token/refresh**
+#### **PUT /auth/user**
 
-Refreshes the authentication token.
+Updates the authenticated user's information.
+
+**Request Body:**
+
+```json
+{
+  "username": "string (3-40 chars, alphanumeric with _ and -) (optional)",
+  "email": "valid email format (optional)",
+  "password": "string (min 8 chars, must contain uppercase, lowercase, and number) (optional)"
+}
+```
 
 **Response (200 OK):**
 
 ```json
 {
-  "token": "string"
+  "message": "User updated successfully",
+  "user": {
+    "id": "integer",
+    "email": "string",
+    "username": "string"
+  }
 }
 ```
 
+**Error Responses:**
+
+- 400 Bad Request:
+  - No data provided
+  - Invalid username format/length
+  - Invalid email format
+  - Invalid password requirements
+  - Username already taken
+  - Email already registered
+- 401 Unauthorized:
+  - Missing or invalid token
+- 404 Not Found:
+  - User not found
+- 500 Server Error:
+  - Unexpected server error
+
+#### **DELETE /auth/user**
+
+Deletes the authenticated user's account and all associated data.
+
+**Response (200 OK):**
+
+```json
+{
+  "message": "User account deleted successfully"
+}
+```
+
+**Error Responses:**
+
+- 401 Unauthorized:
+  - Missing or invalid token
+- 404 Not Found:
+  - User not found
+- 500 Server Error:
+  - Unexpected server error
+
 ### **2. Universe Management**
+
+All universe endpoints require authentication.
 
 #### **POST /universes**
 
@@ -149,10 +226,10 @@ Creates a new universe.
 
 ```json
 {
-  "name": "string",
-  "description": "string",
-  "gravity_constant": "number",
-  "environment_harmony": "number"
+  "name": "string (3-100 chars)",
+  "description": "string (optional)",
+  "gravity_constant": "number (positive)",
+  "environment_harmony": "number (0-1)"
 }
 ```
 
@@ -173,6 +250,12 @@ Creates a new universe.
   }
 }
 ```
+
+**Validation Rules:**
+
+- Name: 3-100 characters
+- Gravity constant: Must be positive number
+- Environment harmony: Must be between 0 and 1
 
 #### **GET /universes**
 
@@ -222,10 +305,10 @@ Updates a universe.
 
 ```json
 {
-  "name": "string",
-  "description": "string",
-  "gravity_constant": "number",
-  "environment_harmony": "number"
+  "name": "string (3-100 chars, optional)",
+  "description": "string (optional)",
+  "gravity_constant": "number (positive, optional)",
+  "environment_harmony": "number (0-1, optional)"
 }
 ```
 
@@ -258,6 +341,21 @@ Deletes a universe.
   "message": "Universe deleted successfully"
 }
 ```
+
+**Common Error Responses for Universe Endpoints:**
+
+- 400 Bad Request:
+  - No data provided
+  - Invalid field values
+  - Validation errors
+- 401 Unauthorized:
+  - Missing or invalid token
+- 403 Forbidden:
+  - Attempting to access/modify another user's universe
+- 404 Not Found:
+  - Universe not found
+- 500 Server Error:
+  - Unexpected server error
 
 ### **3. Storyboard Management**
 

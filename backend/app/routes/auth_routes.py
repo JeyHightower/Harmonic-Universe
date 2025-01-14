@@ -254,3 +254,110 @@ def validate_token():
         return jsonify({'error': 'Token has expired'}), 401
     except jwt.InvalidTokenError:
         return jsonify({'error': 'Invalid token'}), 401
+
+@auth_bp.route('/user', methods=['PUT'])
+@auto_token
+def update_user():
+    """Update the authenticated user's information"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided', 'type': 'validation_error'}), 400
+
+        user = User.query.get(g.current_user.id)
+        if not user:
+            return jsonify({'error': 'User not found', 'type': 'not_found_error'}), 404
+
+        # Update username if provided
+        if 'username' in data:
+            username = data['username'].strip()
+            if not username:
+                return jsonify({'error': 'Username cannot be empty', 'type': 'validation_error'}), 400
+            if len(username) < 3 or len(username) > 40:
+                return jsonify({'error': 'Username must be between 3 and 40 characters', 'type': 'validation_error'}), 400
+            if not username.replace('_', '').replace('-', '').isalnum():
+                return jsonify({'error': 'Username can only contain letters, numbers, underscores, and hyphens', 'type': 'validation_error'}), 400
+
+            # Check if username is taken by another user
+            existing_user = User.query.filter_by(username=username).first()
+            if existing_user and existing_user.id != user.id:
+                return jsonify({'error': 'Username already taken', 'type': 'validation_error'}), 400
+
+            user.username = username
+
+        # Update email if provided
+        if 'email' in data:
+            email = data['email'].strip()
+            if not email:
+                return jsonify({'error': 'Email cannot be empty', 'type': 'validation_error'}), 400
+            if not '@' in email or not '.' in email:
+                return jsonify({'error': 'Invalid email format', 'type': 'validation_error'}), 400
+
+            # Check if email is taken by another user
+            existing_user = User.query.filter_by(email=email).first()
+            if existing_user and existing_user.id != user.id:
+                return jsonify({'error': 'Email already registered', 'type': 'validation_error'}), 400
+
+            user.email = email
+
+        # Update password if provided
+        if 'password' in data:
+            password = data['password']
+            if len(password) < 8:
+                return jsonify({'error': 'Password must be at least 8 characters long', 'type': 'validation_error'}), 400
+            if not any(c.isupper() for c in password):
+                return jsonify({'error': 'Password must contain at least one uppercase letter', 'type': 'validation_error'}), 400
+            if not any(c.islower() for c in password):
+                return jsonify({'error': 'Password must contain at least one lowercase letter', 'type': 'validation_error'}), 400
+            if not any(c.isdigit() for c in password):
+                return jsonify({'error': 'Password must contain at least one number', 'type': 'validation_error'}), 400
+
+            user.set_password(password)
+
+        db.session.commit()
+
+        return jsonify({
+            'message': 'User updated successfully',
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'username': user.username
+            }
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'error': 'An error occurred while updating the user',
+            'type': 'server_error',
+            'details': str(e)
+        }), 500
+
+@auth_bp.route('/user', methods=['DELETE'])
+@auto_token
+def delete_user():
+    """Delete the authenticated user's account"""
+    try:
+        user = User.query.get(g.current_user.id)
+        if not user:
+            return jsonify({'error': 'User not found', 'type': 'not_found_error'}), 404
+
+        # Delete all user's universes and related data
+        universes = Universe.query.filter_by(creator_id=user.id).all()
+        for universe in universes:
+            db.session.delete(universe)
+
+        db.session.delete(user)
+        db.session.commit()
+
+        return jsonify({
+            'message': 'User account deleted successfully'
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'error': 'An error occurred while deleting the user',
+            'type': 'server_error',
+            'details': str(e)
+        }), 500
