@@ -1,0 +1,41 @@
+.sidebar {
+    width: 250px;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 60px; /* Header height */
+    background: white;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+    padding: 2rem 0;
+  }
+
+  .nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .navItem {
+    padding: 0.75rem 2rem;
+    color: var(--text-color);
+    text-decoration: none;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .navItem:hover,
+  .navItem.active {
+    background-color: rgba(98, 0, 234, 0.1);
+    color: var(--primary-color);
+  }
+
+  .icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .label {
+    font-size: 0.9rem;
+  }

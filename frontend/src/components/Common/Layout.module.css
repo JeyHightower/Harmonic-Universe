@@ -1,0 +1,15 @@
+.layout {
+    padding-top: 60px; /* Header height */
+    min-height: 100vh;
+    background-color: var(--background-color);
+  }
+
+  .mainContent {
+    margin-left: 250px; /* Sidebar width */
+    padding: 2rem;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
