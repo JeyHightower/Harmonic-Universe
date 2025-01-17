@@ -1,87 +1,51 @@
 // UniverseCard.js
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { deleteUniverse } from '../../redux/slices/universeSlice';
-import { FaEye, FaEdit, FaTrash } from 'react-icons/fa'; // Install react-icons if not already installed
+import PropTypes from 'prop-types';
+import { Link } from 'react-router-dom';
+import FavoriteButton from './FavoriteButton';
+import styles from './Universe.module.css';
 
 const UniverseCard = ({ universe }) => {
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-
-  const handleDelete = async (e) => {
-    e.stopPropagation(); // Prevent card click when clicking delete
-    if (window.confirm('Are you sure you want to delete this universe?')) {
-      try {
-        await dispatch(deleteUniverse(universe.id));
-      } catch (error) {
-        console.error('Failed to delete universe:', error);
-      }
-    }
-  };
-
   return (
-    <div className="universe-card" onClick={() => navigate(`/universe/${universe.id}`)}>
-      <div className="universe-card-content">
-        <h3>{universe.name}</h3>
-        <p className="description">{universe.description}</p>
-
-        <div className="universe-stats">
-          <div className="stat-item">
-            <span className="stat-label">Harmony</span>
-            <div className="harmony-meter">
-              <div
-                className="harmony-fill"
-                style={{ width: `${universe.environmentHarmony}%` }}
-              />
-            </div>
-            <span className="stat-value">{universe.environmentHarmony}%</span>
-          </div>
-
-          {universe.gravityConstant && (
-            <div className="stat-item">
-              <span className="stat-label">Gravity</span>
-              <span className="stat-value">{universe.gravityConstant} m/s²</span>
-            </div>
-          )}
+    <div className={styles.card}>
+      <div className={styles.cardHeader}>
+        <Link to={`/universe/${universe.id}`} className={styles.title}>
+          {universe.name}
+        </Link>
+        <FavoriteButton universeId={universe.id} />
+      </div>
+      <p className={styles.description}>{universe.description}</p>
+      <div className={styles.stats}>
+        <div className={styles.stat}>
+          <label>Gravity:</label>
+          <span>{universe.gravity_constant}</span>
         </div>
-
-        <div className="created-at">
-          Created: {new Date(universe.createdAt).toLocaleDateString()}
+        <div className={styles.stat}>
+          <label>Harmony:</label>
+          <span>{universe.environment_harmony}</span>
         </div>
       </div>
-
-      <div className="card-actions">
-        <button
-          className="action-btn view-btn"
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/universe/${universe.id}`);
-          }}
-          title="View Universe"
-        >
-          <FaEye />
-        </button>
-        <button
-          className="action-btn edit-btn"
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/universe/${universe.id}/edit`);
-          }}
-          title="Edit Universe"
-        >
-          <FaEdit />
-        </button>
-        <button
-          className="action-btn delete-btn"
-          onClick={handleDelete}
-          title="Delete Universe"
-        >
-          <FaTrash />
-        </button>
+      <div className={styles.meta}>
+        <span className={styles.date}>
+          Created: {new Date(universe.created_at).toLocaleDateString()}
+        </span>
+        {universe.favorite_count > 0 && (
+          <span className={styles.favorites}>♥ {universe.favorite_count}</span>
+        )}
       </div>
     </div>
   );
+};
+
+UniverseCard.propTypes = {
+  universe: PropTypes.shape({
+    id: PropTypes.number.isRequired,
+    name: PropTypes.string.isRequired,
+    description: PropTypes.string,
+    gravity_constant: PropTypes.number,
+    environment_harmony: PropTypes.number,
+    created_at: PropTypes.string,
+    favorite_count: PropTypes.number,
+  }).isRequired,
 };
 
 export default UniverseCard;

@@ -1,10 +1,14 @@
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { loginStart, loginSuccess, loginFail } from '../../redux/slices/authSlice';
-import { login } from '../../services/authService';
 import useForm from '../../hooks/useForm';
-import styles from './Auth.module.css';
+import {
+  loginFail,
+  loginStart,
+  loginSuccess,
+} from '../../redux/slices/authSlice';
+import { authService } from '../../services/authService';
 import { validateEmail, validatePassword } from '../../utils/validations';
+import styles from './Auth.module.css';
 
 const LoginForm = () => {
   const dispatch = useDispatch();
@@ -13,87 +17,68 @@ const LoginForm = () => {
   const validations = {
     email: {
       required: true,
-      validate: validateEmail
+      validate: validateEmail,
     },
     password: {
       required: true,
-      validate: validatePassword
-    }
+      validate: validatePassword,
+    },
   };
 
-  const {
-    values,
-    errors,
-    isSubmitting,
-    handleChange,
-    handleBlur,
-    handleSubmit
-  } = useForm(
-    { email: '', password: '' },
-    validations
-  );
-
-  const onSubmit = async (formData) => {
-    try {
-      dispatch(loginStart());
-      const response = await login(formData);
-      dispatch(loginSuccess(response));
-      navigate('/dashboard');
-    } catch (error) {
-      dispatch(loginFail(error.message));
-      throw error;
-    }
-  };
+  const { formData, errors, handleChange, handleSubmit } = useForm({
+    initialValues: {
+      email: '',
+      password: '',
+    },
+    validations,
+    onSubmit: async values => {
+      try {
+        dispatch(loginStart());
+        const response = await authService.login(values);
+        dispatch(loginSuccess(response));
+        navigate('/dashboard');
+      } catch (error) {
+        dispatch(loginFail(error.message));
+      }
+    },
+  });
 
   return (
-    <div className={styles.formContainer}>
-      <form onSubmit={(e) => {
-        e.preventDefault();
-        handleSubmit(onSubmit);
-      }}>
-        <div className={styles.formGroup}>
-          <input
-            type="email"
-            name="email"
-            value={values.email}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            className={styles.input}
-            placeholder="Email"
-          />
-          {errors.email && (
-            <div className={styles.error}>{errors.email}</div>
-          )}
-        </div>
-
-        <div className={styles.formGroup}>
-          <input
-            type="password"
-            name="password"
-            value={values.password}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            className={styles.input}
-            placeholder="Password"
-          />
-          {errors.password && (
-            <div className={styles.error}>{errors.password}</div>
-          )}
-        </div>
-
-        {errors.submit && (
-          <div className={styles.error}>{errors.submit}</div>
+    <form className={styles.form} onSubmit={handleSubmit}>
+      <div className={styles.formGroup}>
+        <label htmlFor="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
+          className={errors.email ? styles.error : ''}
+        />
+        {errors.email && (
+          <span className={styles.errorMessage}>{errors.email}</span>
         )}
+      </div>
 
-        <button
-          type="submit"
-          className={styles.button}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
-    </div>
+      <div className={styles.formGroup}>
+        <label htmlFor="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          value={formData.password}
+          onChange={handleChange}
+          className={errors.password ? styles.error : ''}
+        />
+        {errors.password && (
+          <span className={styles.errorMessage}>{errors.password}</span>
+        )}
+      </div>
+
+      <button type="submit" className={styles.submitButton}>
+        Login
+      </button>
+    </form>
   );
 };
 

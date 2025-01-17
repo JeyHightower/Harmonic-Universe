@@ -1,0 +1,118 @@
+.presence {
+  background: white;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.presence h4 {
+  margin: 0 0 1rem;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.onlineUsers,
+.activeEditors {
+  margin-bottom: 1.5rem;
+}
+
+.userList,
+.editorList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.user,
+.editor {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.user:hover,
+.editor:hover {
+  background: #e9ecef;
+}
+
+.userAvatar,
+.editorAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #4facfe;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.userName,
+.editorName {
+  color: #495057;
+  font-size: 0.95rem;
+}
+
+.onlineIndicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  margin-left: auto;
+  position: relative;
+}
+
+.onlineIndicator::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.2);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: pulse 2s infinite;
+}
+
+.editorGroup {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.storyboardTitle {
+  display: block;
+  color: #6c757d;
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+.editors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+@keyframes pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .editors {
+    flex-direction: column;
+  }
+}

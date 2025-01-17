@@ -23,5 +23,37 @@ export const universeService = {
 
   async deleteUniverse(id) {
     await api.delete(`/universes/${id}`);
-  }
+  },
+
+  async shareUniverse(id, userId) {
+    const response = await api.post(`/universes/${id}/share`, { userId });
+    return response.data;
+  },
+
+  async unshareUniverse(id, userId) {
+    const response = await api.delete(`/universes/${id}/share/${userId}`);
+    return response.data;
+  },
+
+  async setPrivacy(id, isPublic) {
+    const response = await api.put(`/universes/${id}/privacy`, { isPublic });
+    return response.data;
+  },
+
+  async getSharedUniverses() {
+    const response = await api.get('/universes/shared');
+    return response.data;
+  },
+
+  async getPublicUniverses() {
+    const response = await api.get('/universes/public');
+    return response.data;
+  },
+
+  async updatePrivacy(universeId, isPublic) {
+    const response = await api.patch(`/universes/${universeId}/privacy`, {
+      is_public: isPublic,
+    });
+    return response.data;
+  },
 };

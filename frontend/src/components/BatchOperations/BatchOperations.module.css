@@ -1,0 +1,211 @@
+.batchOperations {
+  background: white;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.header h4 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.selectionControls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.selectAllButton {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  background: white;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.85rem;
+}
+
+.selectAllButton:hover {
+  background: #f8f9fa;
+}
+
+.selectedCount {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.storyboardList {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+}
+
+.storyboardItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.storyboardItem:last-child {
+  border-bottom: none;
+}
+
+.storyboardItem:hover {
+  background: #f8f9fa;
+}
+
+.storyboardItem.selected {
+  background: #e3f2fd;
+}
+
+.storyboardItem input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.plotPoint {
+  color: #495057;
+  font-size: 0.95rem;
+}
+
+.operations {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #dee2e6;
+}
+
+.harmonyUpdate {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.harmonyUpdate label {
+  color: #495057;
+  font-size: 0.9rem;
+  min-width: 120px;
+}
+
+.harmonyUpdate input[type='range'] {
+  flex: 1;
+  height: 6px;
+  -webkit-appearance: none;
+  background: #e9ecef;
+  border-radius: 3px;
+}
+
+.harmonyUpdate input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #4facfe;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.harmonyUpdate span {
+  color: #495057;
+  font-size: 0.9rem;
+  min-width: 50px;
+}
+
+.updateButton {
+  padding: 0.25rem 0.75rem;
+  background: #4facfe;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 0.9rem;
+}
+
+.updateButton:hover {
+  background: #2196f3;
+}
+
+.exportOptions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.exportButton {
+  padding: 0.5rem 1rem;
+  background: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #90caf9;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+  flex: 1;
+}
+
+.exportButton:hover {
+  background: #bbdefb;
+}
+
+.deleteButton {
+  padding: 0.5rem 1rem;
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.deleteButton:hover {
+  background: #fecaca;
+}
+
+.deleteButton.confirming {
+  background: #dc2626;
+  color: white;
+  border-color: #dc2626;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.8;
+  }
+}
+
+@media (max-width: 768px) {
+  .harmonyUpdate {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .exportOptions {
+    flex-direction: column;
+  }
+}

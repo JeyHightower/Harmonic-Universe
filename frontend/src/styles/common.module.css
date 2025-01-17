@@ -1,0 +1,92 @@
+.container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: #6c757d;
+}
+
+.error {
+  text-align: center;
+  padding: 2rem;
+  color: #dc3545;
+  background: #fff5f5;
+  border-radius: 8px;
+}
+
+.button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.primaryButton {
+  composes: button;
+  background: #4facfe;
+  color: white;
+}
+
+.primaryButton:hover {
+  background: #2196f3;
+}
+
+.secondaryButton {
+  composes: button;
+  background: #e9ecef;
+  color: #495057;
+}
+
+.secondaryButton:hover {
+  background: #dee2e6;
+}
+
+.dangerButton {
+  composes: button;
+  background: #ff4d4d;
+  color: white;
+}
+
+.dangerButton:hover {
+  background: #ff3333;
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #495057;
+  font-weight: 500;
+}
+
+.formInput {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: #4facfe;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+}

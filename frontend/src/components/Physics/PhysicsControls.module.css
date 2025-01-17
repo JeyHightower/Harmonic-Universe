@@ -1,0 +1,118 @@
+.physicsControls {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.physicsControls h3 {
+  margin: 0 0 1.5rem;
+  color: #2c3e50;
+  font-size: 1.5rem;
+}
+
+.controlsGrid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.controlGroup {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.controlGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #495057;
+  font-weight: 500;
+}
+
+.controlRow {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.controlRow input[type='range'] {
+  flex: 1;
+  height: 6px;
+  -webkit-appearance: none;
+  background: #e9ecef;
+  border-radius: 3px;
+  outline: none;
+}
+
+.controlRow input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #4facfe;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.controlRow input[type='range']::-webkit-slider-thumb:hover {
+  background: #2196f3;
+}
+
+.controlRow input[type='number'] {
+  width: 80px;
+  padding: 0.25rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.visualFeedback {
+  height: 6px;
+  background: #e9ecef;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+
+.feedbackBar {
+  height: 100%;
+  background: linear-gradient(to right, #4facfe, #00f2fe);
+  transition: width 0.3s ease;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: #6c757d;
+}
+
+.error {
+  text-align: center;
+  padding: 2rem;
+  color: #dc3545;
+  background: #fff5f5;
+  border-radius: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .physicsControls {
+    padding: 1rem;
+  }
+
+  .controlsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .controlRow {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .controlRow input[type='number'] {
+    width: 100%;
+  }
+}

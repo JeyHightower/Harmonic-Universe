@@ -1,0 +1,133 @@
+.musicControls {
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mainControls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.playButton {
+  padding: 0.75rem 1.5rem;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-weight: 500;
+  min-width: 100px;
+}
+
+.playButton:hover {
+  background-color: #357abd;
+}
+
+.playButton.playing {
+  background-color: #f44336;
+}
+
+.playButton.playing:hover {
+  background-color: #d32f2f;
+}
+
+.volumeControl {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.volumeControl label {
+  font-size: 0.9rem;
+  color: #666;
+  min-width: 80px;
+}
+
+.volumeSlider {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #e0e0e0;
+  border-radius: 2px;
+  outline: none;
+}
+
+.volumeSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #4a90e2;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.volumeSlider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #4a90e2;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.volumeSlider::-webkit-slider-thumb:hover {
+  background: #357abd;
+}
+
+.volumeSlider::-moz-range-thumb:hover {
+  background: #357abd;
+}
+
+.volumeValue {
+  font-size: 0.9rem;
+  color: #666;
+  min-width: 60px;
+  text-align: right;
+}
+
+.loading {
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+}
+
+.error {
+  padding: 1rem;
+  color: #f44336;
+  background: #ffebee;
+  border-radius: 4px;
+  margin: 1rem 0;
+}
+
+@media (max-width: 768px) {
+  .mainControls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .volumeControl {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .volumeValue {
+    text-align: left;
+  }
+
+  .playButton {
+    width: 100%;
+  }
+}

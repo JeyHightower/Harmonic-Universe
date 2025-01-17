@@ -1,0 +1,258 @@
+.timelineVisualization {
+  position: relative;
+  width: 100%;
+  height: 500px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.timelineContent {
+  position: relative;
+  height: 100%;
+  min-width: 100%;
+}
+
+.timelineNode {
+  position: absolute;
+  width: 180px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+.timelineNode:hover {
+  transform: translate(-50%, -50%) scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.timelineNode.selected {
+  box-shadow: 0 0 0 2px #4facfe, 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translate(-50%, -50%) scale(1.05);
+}
+
+.nodeContent {
+  position: relative;
+}
+
+.nodeContent h4 {
+  margin: 0 0 0.5rem;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.nodeContent p {
+  margin: 0;
+  color: #495057;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  max-height: 3.6em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.nodeTimestamp {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-top: 0.5rem;
+}
+
+.nodeActions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.timelineNode:hover .nodeActions {
+  opacity: 1;
+}
+
+.nodeActions button {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.nodeActions button:first-child {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.nodeActions button:last-child {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.nodeActions button:hover {
+  filter: brightness(0.95);
+}
+
+.harmonyIndicator {
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: 0 0 8px 8px;
+}
+
+.connection {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.timeAxis {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  border-top: 1px solid #dee2e6;
+}
+
+.timeMarker {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 0.8rem;
+  color: #6c757d;
+  padding-top: 0.5rem;
+}
+
+.timeMarker::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  height: 5px;
+  background: #dee2e6;
+}
+
+/* Zoom controls */
+.zoomControls {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  background: white;
+  padding: 0.5rem;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.zoomControls button {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  background: white;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.zoomControls button:hover {
+  background: #f8f9fa;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .timelineVisualization {
+    height: 400px;
+    padding: 1rem;
+  }
+
+  .timelineNode {
+    width: 150px;
+  }
+
+  .nodeContent p {
+    -webkit-line-clamp: 1;
+  }
+}
+
+.description {
+  color: #495057;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  max-height: 3.6em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.description :global(p) {
+  margin: 0;
+}
+
+.description :global(h1),
+.description :global(h2) {
+  font-size: inherit;
+  margin: 0;
+}
+
+.description :global(ul),
+.description :global(ol) {
+  margin: 0;
+  padding-left: 1.2em;
+}
+
+.description :global(blockquote) {
+  margin: 0;
+  padding-left: 0.5em;
+  border-left: 2px solid #dee2e6;
+}
+
+.description :global(pre),
+.description :global(code) {
+  font-family: monospace;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.1em 0.2em;
+  border-radius: 2px;
+}
+
+.description :global(img) {
+  display: none;
+}
+
+.description :global(hr) {
+  display: none;
+}
+
+.description :global(ul[data-type='taskList']) {
+  list-style: none;
+  padding: 0;
+}
+
+.description :global(ul[data-type='taskList'] li) {
+  display: flex;
+  align-items: flex-start;
+}
+
+.description :global(ul[data-type='taskList'] li > label) {
+  margin-right: 0.3em;
+}

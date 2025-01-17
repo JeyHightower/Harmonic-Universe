@@ -1,49 +1,27 @@
 // App.jsx
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import Navbar from './components/Navbar';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
-import DashboardPage from './pages/DashboardPage';
-import ProfilePage from './pages/ProfilePage';
-import UniverseBuilderPage from './pages/UniverseBuilderPage';
-import PrivateRoute from './components/PrivateRoute';
+import { Provider } from 'react-redux';
+import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import './App.css';
+import UniverseEditor from './components/Universe/UniverseEditor';
+import store from './redux/store';
 
-const App = () => {
-  const { isAuthenticated } = useSelector(state => state.auth);
-
+function App() {
   return (
-    <Router>
-      <div className="app">
-        <Navbar />
-        <main className="main-content">
+    <Provider store={store}>
+      <Router>
+        <div className="app">
           <Routes>
-            <Route path="/" element={
-              isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/login" />
-            } />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
-            <Route path="/dashboard" element={
-              <PrivateRoute>
-                <DashboardPage />
-              </PrivateRoute>
-            } />
-            <Route path="/profile" element={
-              <PrivateRoute>
-                <ProfilePage />
-              </PrivateRoute>
-            } />
-            <Route path="/universe/create" element={
-              <PrivateRoute>
-                <UniverseBuilderPage />
-              </PrivateRoute>
-            } />
+            <Route
+              path="/universes/:universeId/edit"
+              element={<UniverseEditor />}
+            />
+            {/* Add more routes here */}
           </Routes>
-        </main>
-      </div>
-    </Router>
+        </div>
+      </Router>
+    </Provider>
   );
-};
+}
 
 export default App;
