@@ -1,6 +1,5 @@
 // redux/slices/universeSlice.js
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { exportService } from '../../services/exportService';
 import { universeService } from '../../services/universeService';
 
 // Async Thunks
@@ -46,58 +45,6 @@ export const createUniverse = createAsyncThunk(
   }
 );
 
-export const updateUniverse = createAsyncThunk(
-  'universe/updateUniverse',
-  async ({ id, universeData }, { rejectWithValue }) => {
-    try {
-      const data = await universeService.updateUniverse(id, universeData);
-      return data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || 'Failed to update universe'
-      );
-    }
-  }
-);
-
-export const deleteUniverse = createAsyncThunk(
-  'universe/deleteUniverse',
-  async (id, { rejectWithValue }) => {
-    try {
-      await universeService.deleteUniverse(id);
-      return id;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || 'Failed to delete universe'
-      );
-    }
-  }
-);
-
-export const exportUniverse = createAsyncThunk(
-  'universe/exportUniverse',
-  async (universeId, { rejectWithValue }) => {
-    try {
-      await exportService.exportUniverse(universeId);
-      return true;
-    } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Export failed');
-    }
-  }
-);
-
-export const importUniverse = createAsyncThunk(
-  'universe/importUniverse',
-  async (file, { rejectWithValue }) => {
-    try {
-      const data = await exportService.importUniverse(file);
-      return data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Import failed');
-    }
-  }
-);
-
 export const updateUniversePrivacy = createAsyncThunk(
   'universe/updatePrivacy',
   async ({ universeId, isPublic }, { rejectWithValue }) => {
@@ -108,7 +55,9 @@ export const updateUniversePrivacy = createAsyncThunk(
       );
       return response;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update privacy settings'
+      );
     }
   }
 );
@@ -120,7 +69,9 @@ export const shareUniverse = createAsyncThunk(
       const response = await universeService.shareUniverse(universeId, userId);
       return response;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to share universe'
+      );
     }
   }
 );
@@ -129,10 +80,15 @@ export const unshareUniverse = createAsyncThunk(
   'universe/unshareUniverse',
   async ({ universeId, userId }, { rejectWithValue }) => {
     try {
-      await universeService.unshareUniverse(universeId, userId);
-      return { userId };
+      const response = await universeService.unshareUniverse(
+        universeId,
+        userId
+      );
+      return response;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to unshare universe'
+      );
     }
   }
 );
@@ -142,8 +98,6 @@ const initialState = {
   currentUniverse: null,
   isLoading: false,
   error: null,
-  exportStatus: 'idle', // 'idle' | 'loading' | 'success' | 'failed'
-  importStatus: 'idle', // 'idle' | 'loading' | 'success' | 'failed'
 };
 
 const universeSlice = createSlice({
@@ -153,16 +107,11 @@ const universeSlice = createSlice({
     clearError: state => {
       state.error = null;
     },
-    resetExportStatus: state => {
-      state.exportStatus = 'idle';
-    },
-    resetImportStatus: state => {
-      state.importStatus = 'idle';
-    },
+    resetState: () => initialState,
   },
   extraReducers: builder => {
     builder
-      // Fetch All Universes
+      // Fetch Universes
       .addCase(fetchUniverses.pending, state => {
         state.isLoading = true;
         state.error = null;
@@ -176,7 +125,7 @@ const universeSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
       })
-      // Fetch Single Universe
+      // Fetch Universe by ID
       .addCase(fetchUniverseById.pending, state => {
         state.isLoading = true;
         state.error = null;
@@ -204,68 +153,6 @@ const universeSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
       })
-      // Update Universe
-      .addCase(updateUniverse.pending, state => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(updateUniverse.fulfilled, (state, action) => {
-        state.isLoading = false;
-        const index = state.universes.findIndex(
-          u => u.id === action.payload.id
-        );
-        if (index !== -1) {
-          state.universes[index] = action.payload;
-        }
-        state.currentUniverse = action.payload;
-        state.error = null;
-      })
-      .addCase(updateUniverse.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload;
-      })
-      // Delete Universe
-      .addCase(deleteUniverse.pending, state => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(deleteUniverse.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.universes = state.universes.filter(u => u.id !== action.payload);
-        if (state.currentUniverse?.id === action.payload) {
-          state.currentUniverse = null;
-        }
-        state.error = null;
-      })
-      .addCase(deleteUniverse.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload;
-      })
-      // Export Universe
-      .addCase(exportUniverse.pending, state => {
-        state.exportStatus = 'loading';
-        state.error = null;
-      })
-      .addCase(exportUniverse.fulfilled, state => {
-        state.exportStatus = 'success';
-      })
-      .addCase(exportUniverse.rejected, (state, action) => {
-        state.exportStatus = 'failed';
-        state.error = action.payload;
-      })
-      // Import Universe
-      .addCase(importUniverse.pending, state => {
-        state.importStatus = 'loading';
-        state.error = null;
-      })
-      .addCase(importUniverse.fulfilled, (state, action) => {
-        state.importStatus = 'success';
-        state.universes.push(action.payload);
-      })
-      .addCase(importUniverse.rejected, (state, action) => {
-        state.importStatus = 'failed';
-        state.error = action.payload;
-      })
       // Update Universe Privacy
       .addCase(updateUniversePrivacy.pending, state => {
         state.isLoading = true;
@@ -273,9 +160,19 @@ const universeSlice = createSlice({
       })
       .addCase(updateUniversePrivacy.fulfilled, (state, action) => {
         state.isLoading = false;
-        if (state.currentUniverse) {
+        if (
+          state.currentUniverse &&
+          state.currentUniverse.id === action.payload.id
+        ) {
           state.currentUniverse.is_public = action.payload.is_public;
         }
+        const universeIndex = state.universes.findIndex(
+          u => u.id === action.payload.id
+        );
+        if (universeIndex !== -1) {
+          state.universes[universeIndex].is_public = action.payload.is_public;
+        }
+        state.error = null;
       })
       .addCase(updateUniversePrivacy.rejected, (state, action) => {
         state.isLoading = false;
@@ -288,9 +185,20 @@ const universeSlice = createSlice({
       })
       .addCase(shareUniverse.fulfilled, (state, action) => {
         state.isLoading = false;
-        if (state.currentUniverse) {
+        if (
+          state.currentUniverse &&
+          state.currentUniverse.id === action.payload.id
+        ) {
           state.currentUniverse.shared_with = action.payload.shared_with;
         }
+        const universeIndex = state.universes.findIndex(
+          u => u.id === action.payload.id
+        );
+        if (universeIndex !== -1) {
+          state.universes[universeIndex].shared_with =
+            action.payload.shared_with;
+        }
+        state.error = null;
       })
       .addCase(shareUniverse.rejected, (state, action) => {
         state.isLoading = false;
@@ -303,12 +211,20 @@ const universeSlice = createSlice({
       })
       .addCase(unshareUniverse.fulfilled, (state, action) => {
         state.isLoading = false;
-        if (state.currentUniverse) {
-          state.currentUniverse.shared_with =
-            state.currentUniverse.shared_with.filter(
-              id => id !== action.payload.userId
-            );
+        if (
+          state.currentUniverse &&
+          state.currentUniverse.id === action.payload.id
+        ) {
+          state.currentUniverse.shared_with = action.payload.shared_with;
         }
+        const universeIndex = state.universes.findIndex(
+          u => u.id === action.payload.id
+        );
+        if (universeIndex !== -1) {
+          state.universes[universeIndex].shared_with =
+            action.payload.shared_with;
+        }
+        state.error = null;
       })
       .addCase(unshareUniverse.rejected, (state, action) => {
         state.isLoading = false;
@@ -317,6 +233,5 @@ const universeSlice = createSlice({
   },
 });
 
-export const { clearError, resetExportStatus, resetImportStatus } =
-  universeSlice.actions;
+export const { clearError, resetState } = universeSlice.actions;
 export default universeSlice.reducer;

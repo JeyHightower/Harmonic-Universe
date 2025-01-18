@@ -1,31 +1,58 @@
-# app/__init__.py
 from flask import Flask
+from flask_cors import CORS
+from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
-from .config import config
-from .extensions import db, migrate, cors, csrf, cache, limiter
-from .models import User, Universe, Storyboard, MusicParameter, PhysicsParameter, Version
+from .extensions import db, limiter
+from datetime import timedelta
+import os
 
-def create_app(config_name='development'):
+def create_app(test_config=None):
     app = Flask(__name__)
-    app.config.from_object(config[config_name])
 
-    # Initialize extensions
+    if test_config is None:
+        app.config.from_object('app.config.Config')
+    else:
+        app.config.update(test_config)
+
+    # Initialize CORS with more permissive settings
+    CORS(app, resources={
+        r"/api/*": {
+            "origins": ["http://localhost:5174", "http://127.0.0.1:5174"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+            "allow_headers": ["Content-Type", "Authorization", "Access-Control-Allow-Credentials"],
+            "supports_credentials": True,
+            "expose_headers": ["Content-Range", "X-Content-Range"]
+        }
+    })
+
+    # Initialize database
     db.init_app(app)
-    migrate.init_app(app, db)
-    cors.init_app(app)
-    csrf.init_app(app)
-    cache.init_app(app)
+    with app.app_context():
+        try:
+            db.create_all()
+            print("Database tables created successfully")
+        except Exception as e:
+            print(f"Database initialization error: {e}")
+
+    # Initialize JWT
+    jwt = JWTManager(app)
+
+    # Initialize migrations
+    Migrate(app, db)
+
+    # Initialize rate limiter
     limiter.init_app(app)
 
+    # JWT Configuration
+    app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'dev-secret-key')
+    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=1)
+
     # Register blueprints
-    from .routes import (
-        auth_bp, music_bp, physics_bp, storyboard_bp, universe_bp, user_bp
-    )
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(music_bp, url_prefix='/api/music')
-    app.register_blueprint(physics_bp, url_prefix='/api/physics')
-    app.register_blueprint(storyboard_bp, url_prefix='/api/storyboards')
-    app.register_blueprint(universe_bp, url_prefix='/api/universes')
-    app.register_blueprint(user_bp, url_prefix='/api/users')
+    from .routes.auth import auth_bp
+    app.register_blueprint(auth_bp)
+
+    @app.route('/api/health')
+    def health_check():
+        return {'status': 'healthy'}, 200
 
     return app

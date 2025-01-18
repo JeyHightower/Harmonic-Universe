@@ -1,86 +1,124 @@
-import { useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
+import React, { useEffect, useRef } from 'react';
+import * as Tone from 'tone';
 import styles from './AudioVisualizer.module.css';
 
-const AudioVisualizer = ({ audioData, isPlaying }) => {
+const AudioVisualizer = ({ isPlaying }) => {
   const canvasRef = useRef(null);
-  const animationRef = useRef(null);
+  const analyserRef = useRef(null);
+  const animationFrameRef = useRef(null);
+
+  useEffect(() => {
+    // Create analyzer node
+    const analyzer = new Tone.Analyser('waveform', 256);
+    Tone.Destination.connect(analyzer);
+    analyserRef.current = analyzer;
+
+    return () => {
+      Tone.Destination.disconnect(analyzer);
+      analyzer.dispose();
+    };
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const analyser = audioContext.createAnalyser();
+    const analyzer = analyserRef.current;
 
-    const setupAudio = async () => {
-      const audio = new Audio(audioData);
-      const source = audioContext.createMediaElementSource(audio);
-      source.connect(analyser);
-      analyser.connect(audioContext.destination);
+    const resize = () => {
+      canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+      canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    };
 
-      analyser.fftSize = 256;
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
+    resize();
+    window.addEventListener('resize', resize);
 
-      const draw = () => {
-        const WIDTH = canvas.width;
-        const HEIGHT = canvas.height;
+    const draw = () => {
+      const width = canvas.offsetWidth;
+      const height = canvas.offsetHeight;
+      const values = analyzer.getValue();
 
-        analyser.getByteFrequencyData(dataArray);
+      // Clear canvas
+      ctx.clearRect(0, 0, width, height);
 
-        ctx.fillStyle = 'rgb(0, 0, 0)';
-        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+      // Draw waveform
+      ctx.beginPath();
+      ctx.strokeStyle = getComputedStyle(canvas).getPropertyValue('--accent');
+      ctx.lineWidth = 2;
 
-        const barWidth = (WIDTH / bufferLength) * 2.5;
-        let barHeight;
-        let x = 0;
+      const sliceWidth = width / values.length;
+      let x = 0;
 
-        for(let i = 0; i < bufferLength; i++) {
-          barHeight = dataArray[i] / 2;
+      for (let i = 0; i < values.length; i++) {
+        const v = values[i];
+        const y = ((v + 1) / 2) * height;
 
-          const r = barHeight + (25 * (i/bufferLength));
-          const g = 250 * (i/bufferLength);
-          const b = 50;
-
-          ctx.fillStyle = `rgb(${r},${g},${b})`;
-          ctx.fillRect(x, HEIGHT - barHeight, barWidth, barHeight);
-
-          x += barWidth + 1;
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
         }
 
-        animationRef.current = requestAnimationFrame(draw);
-      };
+        x += sliceWidth;
+      }
+
+      ctx.lineTo(width, height / 2);
+      ctx.stroke();
+
+      // Draw frequency bars
+      const barWidth = width / 64;
+      const barGap = 2;
+      const barCount = Math.floor(width / (barWidth + barGap));
+      const frequencyData = new Uint8Array(analyzer.size);
+      analyzer.getByteFrequencyData(frequencyData);
+
+      for (let i = 0; i < barCount; i++) {
+        const barHeight = (frequencyData[i] / 255) * height;
+        const x = i * (barWidth + barGap);
+        const y = height - barHeight;
+
+        ctx.fillStyle =
+          getComputedStyle(canvas).getPropertyValue('--accent-light');
+        ctx.fillRect(x, y, barWidth, barHeight);
+      }
 
       if (isPlaying) {
-        audio.play();
-        draw();
+        animationFrameRef.current = requestAnimationFrame(draw);
       }
-
-      return () => {
-        audio.pause();
-        cancelAnimationFrame(animationRef.current);
-      };
     };
 
-    setupAudio();
+    if (isPlaying) {
+      draw();
+    } else if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      // Clear canvas when stopped
+      ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+    }
 
     return () => {
-      cancelAnimationFrame(animationRef.current);
-      if (audioContext.state !== 'closed') {
-        audioContext.close();
+      window.removeEventListener('resize', resize);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [audioData, isPlaying]);
+  }, [isPlaying]);
 
   return (
     <div className={styles.visualizer}>
-      <canvas
-        ref={canvasRef}
-        width="800"
-        height="200"
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
+      {!isPlaying && (
+        <div className={styles.placeholder}>
+          <i className="fas fa-music" />
+          <span>Play to visualize audio</span>
+        </div>
+      )}
     </div>
   );
+};
+
+AudioVisualizer.propTypes = {
+  isPlaying: PropTypes.bool.isRequired,
 };
 
 export default AudioVisualizer;

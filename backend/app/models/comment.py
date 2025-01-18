@@ -1,5 +1,5 @@
-from app.models import db
 from datetime import datetime, UTC
+from app.extensions import db
 
 class Comment(db.Model):
     __tablename__ = 'comments'
@@ -15,11 +15,8 @@ class Comment(db.Model):
     # Relationships
     user = db.relationship('User', back_populates='comments')
     universe = db.relationship('Universe', back_populates='comments')
-    replies = db.relationship(
-        'Comment',
-        backref=db.backref('parent', remote_side=[id]),
-        cascade='all, delete-orphan'
-    )
+    parent = db.relationship('Comment', remote_side=[id], back_populates='replies')
+    replies = db.relationship('Comment', back_populates='parent', cascade='all, delete-orphan')
 
     def to_dict(self, include_replies=True):
         """Convert comment to dictionary"""

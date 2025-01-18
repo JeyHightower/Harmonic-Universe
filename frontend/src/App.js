@@ -1,51 +1,36 @@
 import React from 'react';
-import { Route, Routes } from 'react-router-dom';
-import styles from './App.module.css';
+import { Route, Routes, useParams } from 'react-router-dom';
+import './App.css';
 import LoginForm from './components/Auth/LoginForm';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
-import RegisterForm from './components/Auth/RegisterForm';
-import Navigation from './components/Navigation/Navigation';
-import TemplatesPage from './components/Templates/TemplatesPage';
+import Navigation from './components/Navigation';
 import UniverseDetail from './components/Universe/UniverseDetail';
 import UniverseList from './components/Universe/UniverseList';
 
-const App = () => {
+// Wrapper component to get universeId from URL params
+const UniverseDetailWrapper = () => {
+  const { universeId } = useParams();
+  return <UniverseDetail universeId={universeId} />;
+};
+
+function App() {
   return (
-    <div className={styles.app}>
+    <div className="app">
       <Navigation />
-      <main className={styles.main}>
+      <main className="main">
         <Routes>
           <Route path="/login" element={<LoginForm />} />
-          <Route path="/register" element={<RegisterForm />} />
-          <Route
-            path="/universes"
-            element={
-              <ProtectedRoute>
-                <UniverseList />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/universes/:id"
-            element={
-              <ProtectedRoute>
-                <UniverseDetail />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/templates"
-            element={
-              <ProtectedRoute>
-                <TemplatesPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/" element={<UniverseList />} />
+          <Route path="/" element={<ProtectedRoute />}>
+            <Route index element={<UniverseList />} />
+            <Route
+              path="/universes/:universeId"
+              element={<UniverseDetailWrapper />}
+            />
+          </Route>
         </Routes>
       </main>
     </div>
   );
-};
+}
 
 export default App;

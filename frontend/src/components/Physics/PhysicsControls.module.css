@@ -1,118 +1,186 @@
 .physicsControls {
-  background: white;
-  padding: 2rem;
+  background: var(--background-secondary);
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+  margin: 20px auto;
 }
 
 .physicsControls h3 {
-  margin: 0 0 1.5rem;
-  color: #2c3e50;
+  color: var(--text-primary);
+  margin-bottom: 24px;
   font-size: 1.5rem;
+  font-weight: 600;
+  text-align: center;
 }
 
-.controlsGrid {
-  display: grid;
-  gap: 1.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+.parameter {
+  margin-bottom: 20px;
+  position: relative;
 }
 
-.controlGroup {
-  background: #f8f9fa;
-  padding: 1rem;
-  border-radius: 8px;
-}
-
-.controlGroup label {
+.parameter label {
   display: block;
-  margin-bottom: 0.5rem;
-  color: #495057;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
   font-weight: 500;
+  position: relative;
+  cursor: help;
 }
 
-.controlRow {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  margin-bottom: 0.5rem;
+.tooltip {
+  position: absolute;
+  top: -8px;
+  left: calc(100% + 12px);
+  background: var(--background-primary);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: normal;
+  white-space: nowrap;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  transform: translateY(-4px);
+  animation: tooltipFadeIn 0.2s ease forwards;
 }
 
-.controlRow input[type='range'] {
-  flex: 1;
-  height: 6px;
-  -webkit-appearance: none;
-  background: #e9ecef;
-  border-radius: 3px;
+.tooltip::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-right: 6px solid var(--background-primary);
+}
+
+.parameter input[type='range'] {
+  width: 100%;
+  height: 4px;
+  background: var(--accent-light);
+  border-radius: 2px;
   outline: none;
+  -webkit-appearance: none;
+  margin: 10px 0;
 }
 
-.controlRow input[type='range']::-webkit-slider-thumb {
+.parameter input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 16px;
   height: 16px;
-  background: #4facfe;
+  background: var(--accent);
   border-radius: 50%;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: transform 0.2s;
 }
 
-.controlRow input[type='range']::-webkit-slider-thumb:hover {
-  background: #2196f3;
+.parameter input[type='range']::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
 }
 
-.controlRow input[type='number'] {
-  width: 80px;
-  padding: 0.25rem;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
+.parameter span {
+  position: absolute;
+  right: 0;
+  top: 0;
+  color: var(--text-secondary);
   font-size: 0.9rem;
-  text-align: center;
+  font-weight: 500;
 }
 
-.visualFeedback {
-  height: 6px;
-  background: #e9ecef;
-  border-radius: 3px;
-  overflow: hidden;
-  margin-top: 0.5rem;
-}
-
-.feedbackBar {
-  height: 100%;
-  background: linear-gradient(to right, #4facfe, #00f2fe);
-  transition: width 0.3s ease;
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
 }
 
 .loading {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.loading::after {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--accent);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.errorContainer {
+  padding: 20px;
   text-align: center;
-  padding: 2rem;
-  color: #6c757d;
 }
 
 .error {
-  text-align: center;
-  padding: 2rem;
-  color: #dc3545;
-  background: #fff5f5;
+  background: var(--error-bg);
+  color: var(--error-text);
+  padding: 16px;
   border-radius: 8px;
+  margin-bottom: 16px;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .physicsControls {
-    padding: 1rem;
-  }
+.error h4 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
 
-  .controlsGrid {
-    grid-template-columns: 1fr;
-  }
+.retryButton {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s;
+}
 
-  .controlRow {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
+.retryButton:hover {
+  background: var(--accent-dark);
+}
 
-  .controlRow input[type='number'] {
-    width: 100%;
+.savingIndicator {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+  opacity: 0;
+  animation: fadeIn 0.3s forwards;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

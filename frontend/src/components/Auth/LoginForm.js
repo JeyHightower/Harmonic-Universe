@@ -8,11 +8,16 @@ import {
 } from '../../redux/slices/authSlice';
 import { authService } from '../../services/authService';
 import { validateEmail, validatePassword } from '../../utils/validations';
-import styles from './Auth.module.css';
+import './Auth.css';
 
 const LoginForm = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  const initialValues = {
+    email: '',
+    password: '',
+  };
 
   const validations = {
     email: {
@@ -25,60 +30,65 @@ const LoginForm = () => {
     },
   };
 
-  const { formData, errors, handleChange, handleSubmit } = useForm({
-    initialValues: {
-      email: '',
-      password: '',
-    },
-    validations,
-    onSubmit: async values => {
-      try {
-        dispatch(loginStart());
-        const response = await authService.login(values);
-        dispatch(loginSuccess(response));
-        navigate('/dashboard');
-      } catch (error) {
-        dispatch(loginFail(error.message));
-      }
-    },
-  });
+  const {
+    values: formData,
+    errors,
+    handleChange,
+    handleSubmit: handleFormSubmit,
+  } = useForm(initialValues, validations);
+
+  const onSubmit = async e => {
+    e.preventDefault();
+    try {
+      dispatch(loginStart());
+      const response = await authService.login(formData);
+      dispatch(loginSuccess(response));
+      navigate('/dashboard');
+    } catch (error) {
+      dispatch(loginFail(error.message));
+    }
+  };
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit}>
-      <div className={styles.formGroup}>
-        <label htmlFor="email">Email</label>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          value={formData.email}
-          onChange={handleChange}
-          className={errors.email ? styles.error : ''}
-        />
-        {errors.email && (
-          <span className={styles.errorMessage}>{errors.email}</span>
-        )}
-      </div>
+    <div className="auth-container">
+      <form className="auth-form" onSubmit={onSubmit}>
+        <h2>Login</h2>
 
-      <div className={styles.formGroup}>
-        <label htmlFor="password">Password</label>
-        <input
-          type="password"
-          id="password"
-          name="password"
-          value={formData.password}
-          onChange={handleChange}
-          className={errors.password ? styles.error : ''}
-        />
-        {errors.password && (
-          <span className={styles.errorMessage}>{errors.password}</span>
-        )}
-      </div>
+        <div className="form-group">
+          <label htmlFor="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            className={errors.email ? 'error' : ''}
+          />
+          {errors.email && (
+            <span className="error-message">{errors.email}</span>
+          )}
+        </div>
 
-      <button type="submit" className={styles.submitButton}>
-        Login
-      </button>
-    </form>
+        <div className="form-group">
+          <label htmlFor="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            className={errors.password ? 'error' : ''}
+          />
+          {errors.password && (
+            <span className="error-message">{errors.password}</span>
+          )}
+        </div>
+
+        <button type="submit" className="submit-button">
+          Login
+        </button>
+      </form>
+    </div>
   );
 };
 

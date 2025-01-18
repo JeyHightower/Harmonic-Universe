@@ -1,68 +1,59 @@
-import axios from 'axios';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import api from './api';
 
 export const musicService = {
-  async getMusicParameters(universeId) {
+  getMusicParameters: async universeId => {
     try {
-      const response = await axios.get(
-        `${API_URL}/universes/${universeId}/parameters`
-      );
+      const response = await api.get(`/api/universes/${universeId}/music`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching music parameters:', error);
-      throw error;
+      throw new Error(
+        error.response?.data?.message || 'Failed to fetch music parameters'
+      );
     }
   },
 
-  async updateMusicParameters(universeId, parameters) {
+  updateMusicParameters: async (universeId, parameters) => {
     try {
-      const response = await axios.put(
-        `${API_URL}/universes/${universeId}/parameters`,
+      const response = await api.put(
+        `/api/universes/${universeId}/music`,
         parameters
       );
       return response.data;
     } catch (error) {
-      console.error('Error updating music parameters:', error);
-      throw error;
+      throw new Error(
+        error.response?.data?.message || 'Failed to update music parameters'
+      );
     }
   },
 
-  async exportAudio(universeId, format = 'wav') {
+  // Additional music-related API calls can be added here
+  generateHarmony: async (universeId, parameters) => {
     try {
-      const response = await axios.get(
-        `${API_URL}/universes/${universeId}/export?format=${format}`,
-        { responseType: 'blob' }
+      const response = await api.post(
+        `/api/universes/${universeId}/music/generate`,
+        parameters
       );
       return response.data;
     } catch (error) {
-      console.error('Error exporting audio:', error);
-      throw error;
+      throw new Error(
+        error.response?.data?.message || 'Failed to generate harmony'
+      );
     }
   },
 
-  async getPresets(universeId) {
+  exportAudio: async (universeId, format = 'wav') => {
     try {
-      const response = await axios.get(
-        `${API_URL}/universes/${universeId}/presets`
+      const response = await api.get(
+        `/api/universes/${universeId}/music/export?format=${format}`,
+        {
+          responseType: 'blob',
+        }
       );
       return response.data;
     } catch (error) {
-      console.error('Error fetching presets:', error);
-      throw error;
-    }
-  },
-
-  async savePreset(universeId, presetData) {
-    try {
-      const response = await axios.post(
-        `${API_URL}/universes/${universeId}/presets`,
-        presetData
+      throw new Error(
+        error.response?.data?.message || 'Failed to export audio'
       );
-      return response.data;
-    } catch (error) {
-      console.error('Error saving preset:', error);
-      throw error;
     }
   },
 };

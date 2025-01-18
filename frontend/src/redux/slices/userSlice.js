@@ -1,49 +1,62 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { userService } from '../../services/userService';
 
-export const searchUsers = createAsyncThunk(
-  'users/search',
-  async (query, { rejectWithValue }) => {
-    try {
-      return await userService.searchUsers(query);
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
+export const searchUsers = createAsyncThunk('users/search', async query => {
+  const response = await fetch(
+    `/api/users/search?q=${encodeURIComponent(query)}`
+  );
+  if (!response.ok) throw new Error('Failed to search users');
+  return await response.json();
+});
 
 export const fetchUsersByIds = createAsyncThunk(
   'users/fetchByIds',
-  async (userIds, { rejectWithValue }) => {
-    try {
-      return await userService.getUsersByIds(userIds);
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
+  async userIds => {
+    const response = await fetch('/api/users/batch', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userIds }),
+    });
+    if (!response.ok) throw new Error('Failed to fetch users');
+    return await response.json();
   }
 );
 
 const initialState = {
-  searchResults: [],
-  userDetails: {},
+  user: null,
+  isAuthenticated: false,
   isLoading: false,
   error: null,
+  searchResults: [],
+  userDetails: {},
 };
 
 const userSlice = createSlice({
-  name: 'users',
+  name: 'user',
   initialState,
   reducers: {
+    setUser: (state, action) => {
+      state.user = action.payload;
+      state.isAuthenticated = !!action.payload;
+    },
+    setLoading: (state, action) => {
+      state.isLoading = action.payload;
+    },
+    setError: (state, action) => {
+      state.error = action.payload;
+    },
+    logout: state => {
+      state.user = null;
+      state.isAuthenticated = false;
+      state.error = null;
+    },
     clearSearchResults: state => {
       state.searchResults = [];
-    },
-    clearError: state => {
-      state.error = null;
     },
   },
   extraReducers: builder => {
     builder
-      // Search Users
       .addCase(searchUsers.pending, state => {
         state.isLoading = true;
         state.error = null;
@@ -54,16 +67,14 @@ const userSlice = createSlice({
       })
       .addCase(searchUsers.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload;
+        state.error = action.error.message;
       })
-      // Fetch Users by IDs
       .addCase(fetchUsersByIds.pending, state => {
         state.isLoading = true;
         state.error = null;
       })
       .addCase(fetchUsersByIds.fulfilled, (state, action) => {
         state.isLoading = false;
-        // Convert array of users to object with IDs as keys
         const userMap = action.payload.reduce((acc, user) => {
           acc[user.id] = user;
           return acc;
@@ -72,10 +83,12 @@ const userSlice = createSlice({
       })
       .addCase(fetchUsersByIds.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload;
+        state.error = action.error.message;
       });
   },
 });
 
-export const { clearSearchResults, clearError } = userSlice.actions;
+export const { setUser, setLoading, setError, logout, clearSearchResults } =
+  userSlice.actions;
+
 export default userSlice.reducer;

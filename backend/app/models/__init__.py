@@ -1,15 +1,23 @@
+from ..extensions import db
 from .user import User
 from .universe import Universe
-from .storyboard import Storyboard
-from .music_parameter import MusicParameter
-from .physics_parameter import PhysicsParameter
-from .version import Version
+from .comment import Comment
+from .favorite import Favorite
+from .storyboard import StoryboardPoint
+from .physics_parameters import PhysicsParameters
+from .music_parameters import MusicParameters
+from .audio_parameters import AudioParameters
+from .visualization_parameters import VisualizationParameters
 
 __all__ = [
+    'db',
     'User',
     'Universe',
-    'Storyboard',
-    'MusicParameter',
-    'PhysicsParameter',
-    'Version'
+    'Comment',
+    'Favorite',
+    'StoryboardPoint',
+    'PhysicsParameters',
+    'MusicParameters',
+    'AudioParameters',
+    'VisualizationParameters'
 ]

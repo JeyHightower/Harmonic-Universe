@@ -1,19 +1,53 @@
 import os
 from datetime import timedelta
 
+basedir = os.path.abspath(os.path.dirname(__file__))
+
 class Config:
-    """Base config."""
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev')
+    # Basic Flask configuration
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-please-change'
+    DEBUG = True
+    TESTING = False
+
+    # Database configuration
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'sqlite:///' + os.path.join(basedir, 'app.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    PERMANENT_SESSION_LIFETIME = timedelta(days=31)
+
+    # JWT configuration
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'jwt-secret-key-please-change'
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
+
+    # File upload configuration
+    UPLOAD_FOLDER = os.path.join(basedir, 'app', 'static', 'uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
-    UPLOAD_FOLDER = 'uploads'
+
+    # WebSocket configuration
+    CORS_ALLOWED_ORIGINS = "*"
+
+    # Rate limiting configuration
+    RATELIMIT_DEFAULT = "200 per day"
+    RATELIMIT_STORAGE_URL = "memory://"
+
+    # Audio configuration
+    AUDIO_UPLOAD_FOLDER = os.path.join(basedir, 'app', 'static', 'audio')
+    ALLOWED_AUDIO_EXTENSIONS = {'wav', 'mp3', 'ogg'}
+
+    # Session configuration
+    SESSION_TYPE = 'filesystem'
+    PERMANENT_SESSION_LIFETIME = timedelta(days=31)
+
+    # Security configuration
+    WTF_CSRF_ENABLED = False  # Disable CSRF globally
+    WTF_CSRF_SECRET_KEY = os.environ.get('WTF_CSRF_SECRET_KEY') or 'csrf-key-please-change'
 
 class DevelopmentConfig(Config):
     """Development config."""
     DEVELOPMENT = True
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///dev.db')
+    WTF_CSRF_ENABLED = False  # Disable CSRF for development
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'sqlite:///' + os.path.join(basedir, 'dev.db')
 
 class TestingConfig(Config):
     """Testing config."""

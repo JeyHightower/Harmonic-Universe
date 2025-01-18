@@ -1,67 +1,27 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { physicsService } from '../../services/physicsService';
 
-// Async thunks
+// Async thunk for fetching physics parameters
 export const fetchPhysicsParameters = createAsyncThunk(
   'physics/fetchParameters',
   async universeId => {
-    const response = await physicsService.getPhysicsParameters(universeId);
-    return response;
-  }
-);
-
-export const updatePhysicsParameters = createAsyncThunk(
-  'physics/updateParameters',
-  async ({ universeId, parameters }) => {
-    const response = await physicsService.updatePhysicsParameters(
-      universeId,
-      parameters
-    );
-    return response;
-  }
-);
-
-export const fetchParticleState = createAsyncThunk(
-  'physics/fetchParticleState',
-  async universeId => {
-    const response = await physicsService.getParticleState(universeId);
-    return response;
-  }
-);
-
-export const updateParticleState = createAsyncThunk(
-  'physics/updateParticleState',
-  async ({ universeId, particles }) => {
-    const response = await physicsService.updateParticleState(
-      universeId,
-      particles
-    );
-    return response;
-  }
-);
-
-export const fetchForceFields = createAsyncThunk(
-  'physics/fetchForceFields',
-  async universeId => {
-    const response = await physicsService.getForceFields(universeId);
-    return response;
+    try {
+      const response = await fetch(`/api/universe/${universeId}/physics`);
+      if (!response.ok) throw new Error('Failed to fetch physics parameters');
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
   }
 );
 
 const initialState = {
   parameters: {
     gravity: 9.81,
-    airResistance: 0.1,
-    friction: 0.05,
+    friction: 0.5,
     elasticity: 0.7,
-    timeScale: 1.0,
-    maxParticles: 1000,
-    particleSize: 5,
-    particleLifetime: 5000,
+    airResistance: 0.1,
   },
-  particles: [],
-  forceFields: [],
-  status: 'idle',
+  isLoading: false,
   error: null,
 };
 
@@ -69,78 +29,38 @@ const physicsSlice = createSlice({
   name: 'physics',
   initialState,
   reducers: {
-    setParameter: (state, action) => {
-      const { name, value } = action.payload;
-      state.parameters[name] = value;
+    setParameters: (state, action) => {
+      state.parameters = action.payload;
     },
-    addParticle: (state, action) => {
-      state.particles.push(action.payload);
+    updateParameter: (state, action) => {
+      const { parameter, value } = action.payload;
+      state.parameters[parameter] = value;
     },
-    removeParticle: (state, action) => {
-      state.particles = state.particles.filter(p => p.id !== action.payload);
+    setLoading: (state, action) => {
+      state.isLoading = action.payload;
     },
-    updateParticle: (state, action) => {
-      const index = state.particles.findIndex(p => p.id === action.payload.id);
-      if (index !== -1) {
-        state.particles[index] = action.payload;
-      }
-    },
-    addForceField: (state, action) => {
-      state.forceFields.push(action.payload);
-    },
-    removeForceField: (state, action) => {
-      state.forceFields = state.forceFields.filter(
-        f => f.id !== action.payload
-      );
-    },
-    updateForceField: (state, action) => {
-      const index = state.forceFields.findIndex(
-        f => f.id === action.payload.id
-      );
-      if (index !== -1) {
-        state.forceFields[index] = action.payload;
-      }
-    },
-    resetPhysics: state => {
-      state.parameters = initialState.parameters;
-      state.particles = [];
-      state.forceFields = [];
+    setError: (state, action) => {
+      state.error = action.payload;
     },
   },
   extraReducers: builder => {
     builder
       .addCase(fetchPhysicsParameters.pending, state => {
-        state.status = 'loading';
+        state.isLoading = true;
+        state.error = null;
       })
       .addCase(fetchPhysicsParameters.fulfilled, (state, action) => {
-        state.status = 'succeeded';
+        state.isLoading = false;
         state.parameters = action.payload;
       })
       .addCase(fetchPhysicsParameters.rejected, (state, action) => {
-        state.status = 'failed';
+        state.isLoading = false;
         state.error = action.error.message;
-      })
-      .addCase(fetchParticleState.fulfilled, (state, action) => {
-        state.particles = action.payload;
-      })
-      .addCase(updateParticleState.fulfilled, (state, action) => {
-        state.particles = action.payload;
-      })
-      .addCase(fetchForceFields.fulfilled, (state, action) => {
-        state.forceFields = action.payload;
       });
   },
 });
 
-export const {
-  setParameter,
-  addParticle,
-  removeParticle,
-  updateParticle,
-  addForceField,
-  removeForceField,
-  updateForceField,
-  resetPhysics,
-} = physicsSlice.actions;
+export const { setParameters, updateParameter, setLoading, setError } =
+  physicsSlice.actions;
 
 export default physicsSlice.reducer;

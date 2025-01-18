@@ -1,59 +1,48 @@
 import api from './api';
 
 export const universeService = {
-  async getAllUniverses() {
-    const response = await api.get('/universes');
+  getAllUniverses: async () => {
+    const response = await api.get('/api/universes');
     return response.data;
   },
 
-  async getUniverseById(id) {
-    const response = await api.get(`/universes/${id}`);
+  getUniverseById: async id => {
+    const response = await api.get(`/api/universes/${id}`);
     return response.data;
   },
 
-  async createUniverse(universeData) {
-    const response = await api.post('/universes', universeData);
+  createUniverse: async universeData => {
+    const response = await api.post('/api/universes', universeData);
     return response.data;
   },
 
-  async updateUniverse(id, universeData) {
-    const response = await api.put(`/universes/${id}`, universeData);
+  updateUniverse: async (id, universeData) => {
+    const response = await api.put(`/api/universes/${id}`, universeData);
     return response.data;
   },
 
-  async deleteUniverse(id) {
-    await api.delete(`/universes/${id}`);
+  deleteUniverse: async id => {
+    await api.delete(`/api/universes/${id}`);
   },
 
-  async shareUniverse(id, userId) {
-    const response = await api.post(`/universes/${id}/share`, { userId });
-    return response.data;
-  },
-
-  async unshareUniverse(id, userId) {
-    const response = await api.delete(`/universes/${id}/share/${userId}`);
-    return response.data;
-  },
-
-  async setPrivacy(id, isPublic) {
-    const response = await api.put(`/universes/${id}/privacy`, { isPublic });
-    return response.data;
-  },
-
-  async getSharedUniverses() {
-    const response = await api.get('/universes/shared');
-    return response.data;
-  },
-
-  async getPublicUniverses() {
-    const response = await api.get('/universes/public');
-    return response.data;
-  },
-
-  async updatePrivacy(universeId, isPublic) {
-    const response = await api.patch(`/universes/${universeId}/privacy`, {
+  updatePrivacy: async (universeId, isPublic) => {
+    const response = await api.patch(`/api/universes/${universeId}/privacy`, {
       is_public: isPublic,
     });
+    return response.data;
+  },
+
+  shareUniverse: async (universeId, userId) => {
+    const response = await api.post(`/api/universes/${universeId}/share`, {
+      user_id: userId,
+    });
+    return response.data;
+  },
+
+  unshareUniverse: async (universeId, userId) => {
+    const response = await api.delete(
+      `/api/universes/${universeId}/share/${userId}`
+    );
     return response.data;
   },
 };

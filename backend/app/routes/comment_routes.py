@@ -1,151 +1,135 @@
-from flask import Blueprint, jsonify, request, g
-from app.models.comment import Comment
-from app.models.universe import Universe
-from app import db
-from app.utils.token_manager import auto_token
-from werkzeug.exceptions import NotFound, BadRequest, Forbidden
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy.exc import SQLAlchemyError
+from ..extensions import db
+from ..models import Comment, Universe
+from ..extensions import limiter
+from ..utils.auth import check_universe_access
 
 comment_bp = Blueprint('comment', __name__)
 
-def validate_comment_data(data):
-    """Validate comment data"""
-    if not data or not isinstance(data, dict):
-        raise BadRequest('Invalid comment data')
-
-    if 'content' not in data or not data['content'].strip():
-        raise BadRequest('Comment content is required')
-
-    return {
-        'content': data['content'].strip(),
-        'parent_id': data.get('parent_id')
-    }
-
-@comment_bp.route('/universes/<int:universe_id>/comments', methods=['GET'])
-@auto_token
-def get_comments(universe_id):
+@comment_bp.route('/<int:universe_id>', methods=['POST'])
+@jwt_required()
+@limiter.limit("30 per hour")
+def create_comment(universe_id):
+    """Create a new comment for a universe"""
     try:
-        # Check if universe exists and is accessible
-        universe = Universe.query.get_or_404(universe_id)
-        if not universe.is_public and universe.creator_id != g.current_user.id:
-            raise Forbidden('You do not have access to this universe')
+        current_user_id = get_jwt_identity()
+        universe = Universe.query.get(universe_id)
 
-        # Get top-level comments (no parent_id)
-        comments = Comment.query.filter_by(
-            universe_id=universe_id,
-            parent_id=None
-        ).order_by(Comment.created_at.desc()).all()
+        if not universe:
+            return jsonify({'error': 'Universe not found'}), 404
 
-        return jsonify([comment.to_dict() for comment in comments]), 200
+        if not check_universe_access(universe, current_user_id):
+            return jsonify({'error': 'Unauthorized'}), 403
 
-    except (NotFound, Forbidden) as e:
-        return jsonify({'error': str(e), 'type': 'authorization_error'}), 403
-    except Exception as e:
-        return jsonify({
-            'error': 'An unexpected error occurred',
-            'type': 'server_error',
-            'details': str(e)
-        }), 500
+        data = request.get_json()
 
-@comment_bp.route('/universes/<int:universe_id>/comments', methods=['POST'])
-@auto_token
-def add_comment(universe_id):
-    try:
-        data = validate_comment_data(request.get_json())
+        if not data or not data.get('content'):
+            return jsonify({'error': 'Comment content is required'}), 400
 
-        # Check if universe exists and is accessible
-        universe = Universe.query.get_or_404(universe_id)
-        if not universe.is_public and universe.creator_id != g.current_user.id:
-            raise Forbidden('You do not have access to this universe')
-
-        # If it's a reply, verify parent comment exists
-        if data['parent_id']:
-            parent_comment = Comment.query.get_or_404(data['parent_id'])
-            if parent_comment.universe_id != universe_id:
-                raise BadRequest('Parent comment does not belong to this universe')
-
-        # Create new comment
         new_comment = Comment(
-            content=data['content'],
+            user_id=current_user_id,
             universe_id=universe_id,
-            user_id=g.current_user.id,
-            parent_id=data['parent_id']
+            content=data['content']
         )
 
         db.session.add(new_comment)
         db.session.commit()
 
-        return jsonify({
-            'message': 'Comment added successfully',
-            'comment': new_comment.to_dict()
-        }), 201
+        return jsonify(new_comment.to_dict()), 201
 
-    except (NotFound, BadRequest, Forbidden) as e:
-        return jsonify({'error': str(e), 'type': 'validation_error'}), 400
     except SQLAlchemyError as e:
         db.session.rollback()
-        return jsonify({
-            'error': 'Database error',
-            'type': 'server_error',
-            'details': str(e)
-        }), 500
+        return jsonify({'error': 'Database error', 'details': str(e)}), 500
+    except Exception as e:
+        return jsonify({'error': 'Server error', 'details': str(e)}), 500
 
-@comment_bp.route('/universes/<int:universe_id>/comments/<int:comment_id>', methods=['PUT'])
-@auto_token
-def update_comment(universe_id, comment_id):
+@comment_bp.route('/<int:universe_id>', methods=['GET'])
+@jwt_required()
+@limiter.limit("100 per hour")
+def get_comments(universe_id):
+    """Get all comments for a universe"""
     try:
-        data = validate_comment_data(request.get_json())
+        current_user_id = get_jwt_identity()
+        universe = Universe.query.get(universe_id)
 
-        # Check if comment exists and belongs to user
-        comment = Comment.query.get_or_404(comment_id)
-        if comment.user_id != g.current_user.id:
-            raise Forbidden('You can only edit your own comments')
-        if comment.universe_id != universe_id:
-            raise NotFound('Comment not found in this universe')
+        if not universe:
+            return jsonify({'error': 'Universe not found'}), 404
 
-        # Update comment
+        if not check_universe_access(universe, current_user_id):
+            return jsonify({'error': 'Unauthorized'}), 403
+
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+
+        comments = Comment.query.filter_by(universe_id=universe_id)\
+            .order_by(Comment.created_at.desc())\
+            .paginate(page=page, per_page=per_page, error_out=False)
+
+        return jsonify({
+            'comments': [comment.to_dict() for comment in comments.items],
+            'total': comments.total,
+            'pages': comments.pages,
+            'current_page': comments.page
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@comment_bp.route('/<int:comment_id>', methods=['PUT'])
+@jwt_required()
+@limiter.limit("30 per hour")
+def update_comment(comment_id):
+    """Update a comment"""
+    try:
+        current_user_id = get_jwt_identity()
+        comment = Comment.query.get(comment_id)
+
+        if not comment:
+            return jsonify({'error': 'Comment not found'}), 404
+
+        if comment.user_id != current_user_id:
+            return jsonify({'error': 'Unauthorized'}), 403
+
+        data = request.get_json()
+
+        if not data or not data.get('content'):
+            return jsonify({'error': 'Comment content is required'}), 400
+
         comment.content = data['content']
         db.session.commit()
 
-        return jsonify({
-            'message': 'Comment updated successfully',
-            'comment': comment.to_dict()
-        }), 200
+        return jsonify(comment.to_dict()), 200
 
-    except (NotFound, BadRequest, Forbidden) as e:
-        return jsonify({'error': str(e), 'type': 'validation_error'}), 400
     except SQLAlchemyError as e:
         db.session.rollback()
-        return jsonify({
-            'error': 'Database error',
-            'type': 'server_error',
-            'details': str(e)
-        }), 500
+        return jsonify({'error': 'Database error', 'details': str(e)}), 500
+    except Exception as e:
+        return jsonify({'error': 'Server error', 'details': str(e)}), 500
 
-@comment_bp.route('/universes/<int:universe_id>/comments/<int:comment_id>', methods=['DELETE'])
-@auto_token
-def delete_comment(universe_id, comment_id):
+@comment_bp.route('/<int:comment_id>', methods=['DELETE'])
+@jwt_required()
+@limiter.limit("20 per hour")
+def delete_comment(comment_id):
+    """Delete a comment"""
     try:
-        # Check if comment exists and belongs to user
-        comment = Comment.query.get_or_404(comment_id)
-        if comment.user_id != g.current_user.id:
-            raise Forbidden('You can only delete your own comments')
-        if comment.universe_id != universe_id:
-            raise NotFound('Comment not found in this universe')
+        current_user_id = get_jwt_identity()
+        comment = Comment.query.get(comment_id)
+
+        if not comment:
+            return jsonify({'error': 'Comment not found'}), 404
+
+        if comment.user_id != current_user_id:
+            return jsonify({'error': 'Unauthorized'}), 403
 
         db.session.delete(comment)
         db.session.commit()
 
-        return jsonify({
-            'message': 'Comment deleted successfully'
-        }), 200
+        return jsonify({'message': 'Comment deleted successfully'}), 200
 
-    except (NotFound, Forbidden) as e:
-        return jsonify({'error': str(e), 'type': 'authorization_error'}), 403
     except SQLAlchemyError as e:
         db.session.rollback()
-        return jsonify({
-            'error': 'Database error',
-            'type': 'server_error',
-            'details': str(e)
-        }), 500
+        return jsonify({'error': 'Database error', 'details': str(e)}), 500
+    except Exception as e:
+        return jsonify({'error': 'Server error', 'details': str(e)}), 500

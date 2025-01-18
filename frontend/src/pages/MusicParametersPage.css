@@ -1,0 +1,136 @@
+.music-parameters-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  color: #ffffff;
+}
+
+.music-parameters-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.music-parameters-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  color: #ffffff;
+}
+
+.music-description {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.8);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.music-content {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.visualization-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.waveform-section,
+.frequency-section,
+.controls-container {
+  background: #1a1a1a;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.waveform-section h2,
+.frequency-section h2,
+.controls-container h2 {
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  color: #ffffff;
+}
+
+.music-info {
+  background: #1a1a1a;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-top: 2rem;
+}
+
+.music-info h3 {
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  color: #ffffff;
+}
+
+.music-info p {
+  margin-bottom: 1rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.music-info ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.music-info li {
+  margin-bottom: 0.5rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.music-info strong {
+  color: #ffffff;
+  margin-right: 0.5rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .music-parameters-page {
+    padding: 1.5rem;
+  }
+
+  .music-parameters-header h1 {
+    font-size: 2rem;
+  }
+
+  .music-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .music-parameters-header h1 {
+    font-size: 1.8rem;
+  }
+
+  .music-description {
+    font-size: 1rem;
+  }
+
+  .waveform-section,
+  .frequency-section,
+  .controls-container {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .music-parameters-page {
+    padding: 1rem;
+  }
+
+  .music-parameters-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .music-content {
+    gap: 1rem;
+  }
+
+  .visualization-container {
+    gap: 1rem;
+  }
+}

@@ -1,5 +1,5 @@
-from app.models import db
 from datetime import datetime, UTC
+from app.extensions import db
 
 class Template(db.Model):
     __tablename__ = 'templates'
