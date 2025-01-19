@@ -17,7 +17,24 @@ def create_app(test_config=None):
     # Initialize CORS with more permissive settings
     CORS(app, resources={
         r"/api/*": {
-            "origins": ["http://localhost:5174", "http://127.0.0.1:5174"],
+            "origins": [
+                "http://localhost:5174",
+                "http://localhost:5175",
+                "http://localhost:5176",
+                "http://localhost:5177",
+                "http://localhost:5178",
+                "http://localhost:5179",
+                "http://localhost:5180",
+                "http://localhost:5181",
+                "http://127.0.0.1:5174",
+                "http://127.0.0.1:5175",
+                "http://127.0.0.1:5176",
+                "http://127.0.0.1:5177",
+                "http://127.0.0.1:5178",
+                "http://127.0.0.1:5179",
+                "http://127.0.0.1:5180",
+                "http://127.0.0.1:5181"
+            ],
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
             "allow_headers": ["Content-Type", "Authorization", "Access-Control-Allow-Credentials"],
             "supports_credentials": True,

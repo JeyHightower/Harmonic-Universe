@@ -10,7 +10,7 @@ class Favorite(db.Model):
 
     # Relationships
     user = db.relationship('User', back_populates='favorites', overlaps="favorite_universes,users_favorited")
-    universe = db.relationship('Universe', back_populates='favorites', overlaps="favorited_by,users_favorited")
+    universe = db.relationship('Universe', back_populates='favorites', overlaps="favorited_by,favorite_universes")
 
     def __repr__(self):
         return f'<Favorite {self.user_id} -> {self.universe_id}>'

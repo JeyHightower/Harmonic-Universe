@@ -11,6 +11,7 @@ export const authService = {
       }
       throw new Error(response.data.message || 'Login failed');
     } catch (error) {
+      localStorage.removeItem('token');
       throw error.response?.data || error;
     }
   },
@@ -25,15 +26,15 @@ export const authService = {
       }
       throw new Error(response.data.message || 'Registration failed');
     } catch (error) {
+      localStorage.removeItem('token');
       throw error.response?.data || error;
     }
   },
 
   async logout() {
     try {
-      const response = await api.post('/api/auth/logout');
+      await api.post('/api/auth/logout');
       localStorage.removeItem('token');
-      return response.data;
     } catch (error) {
       console.error('Logout error:', error);
       localStorage.removeItem('token');
@@ -49,10 +50,10 @@ export const authService = {
       if (response.data.status === 'success') {
         return response.data.data.user;
       }
-      return null;
+      throw new Error('Failed to get current user');
     } catch (error) {
-      console.error('Get current user error:', error);
-      return null;
+      localStorage.removeItem('token');
+      throw error.response?.data || error;
     }
   },
 };

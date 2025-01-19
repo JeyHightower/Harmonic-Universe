@@ -1,11 +1,43 @@
 from datetime import datetime
 from app.extensions import db
+from sqlalchemy.orm import relationship
+
+class Storyboard(db.Model):
+    """Model for storing storyboards."""
+    __tablename__ = 'storyboards'
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text)
+    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    universe = relationship('Universe', back_populates='storyboards')
+    versions = relationship('Version', back_populates='storyboard', cascade='all, delete-orphan')
+    points = relationship('StoryboardPoint', back_populates='storyboard', cascade='all, delete-orphan')
+
+    def __repr__(self):
+        return f'<Storyboard {self.id} for Universe {self.universe_id}>'
+
+    def to_dict(self):
+        """Convert storyboard to dictionary."""
+        return {
+            'id': self.id,
+            'title': self.title,
+            'description': self.description,
+            'universe_id': self.universe_id,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+            'points': [point.to_dict() for point in self.points]
+        }
 
 class StoryboardPoint(db.Model):
     __tablename__ = 'storyboard_points'
 
     id = db.Column(db.Integer, primary_key=True)
-    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id'), nullable=False)
+    storyboard_id = db.Column(db.Integer, db.ForeignKey('storyboards.id', ondelete='CASCADE'), nullable=False)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     timestamp = db.Column(db.Float, nullable=False)  # Position in the timeline (seconds)
@@ -31,7 +63,7 @@ class StoryboardPoint(db.Model):
     lfo_depth = db.Column(db.Float)
 
     # Relationships
-    universe = db.relationship('Universe', back_populates='storyboard_points')
+    storyboard = relationship('Storyboard', back_populates='points')
 
     def __repr__(self):
         return f'<StoryboardPoint {self.title} at {self.timestamp}s>'
@@ -39,7 +71,7 @@ class StoryboardPoint(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
-            'universe_id': self.universe_id,
+            'storyboard_id': self.storyboard_id,
             'title': self.title,
             'description': self.description,
             'timestamp': self.timestamp,

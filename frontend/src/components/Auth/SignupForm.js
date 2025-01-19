@@ -1,144 +1,143 @@
-import { useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { loginSuccess } from '../../redux/slices/authSlice';
-import { signup } from '../../services/authService';
-import useForm from '../../hooks/useForm';
-import styles from './Auth.module.css';
-import { validateEmail, validatePassword } from '../../utils/validations';
+import React, { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { Link, useNavigate } from 'react-router-dom';
+import { register } from '../../redux/slices/authSlice';
+import './Auth.css';
 
 const SignupForm = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { isLoading, error } = useSelector(state => state.auth);
 
-  const validations = {
-    username: {
-      required: true,
-      validate: (value) => ({
-        isValid: value.length >= 3,
-        errors: ['Username must be at least 3 characters long']
-      })
-    },
-    email: {
-      required: true,
-      validate: validateEmail
-    },
-    password: {
-      required: true,
-      validate: validatePassword
-    },
-    confirmPassword: {
-      required: true,
-      validate: (value, formValues) => ({
-        isValid: value === formValues.password,
-        errors: ['Passwords do not match']
-      })
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
+
+  const [validationErrors, setValidationErrors] = useState({});
+
+  const validateForm = () => {
+    const errors = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!formData.email) {
+      errors.email = 'Email is required';
+    } else if (!emailRegex.test(formData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+
+    if (!formData.password) {
+      errors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      errors.password = 'Password must be at least 6 characters long';
+    }
+
+    if (!formData.confirmPassword) {
+      errors.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleChange = e => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+    // Clear validation error when user starts typing
+    if (validationErrors[name]) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [name]: '',
+      }));
     }
   };
 
-  const {
-    values,
-    errors,
-    isSubmitting,
-    handleChange,
-    handleBlur,
-    handleSubmit
-  } = useForm(
-    {
-      username: '',
-      email: '',
-      password: '',
-      confirmPassword: ''
-    },
-    validations
-  );
+  const handleSubmit = async e => {
+    e.preventDefault();
+    if (!validateForm()) return;
 
-  const onSubmit = async (formData) => {
     try {
-      const response = await signup(formData);
-      dispatch(loginSuccess(response));
-      navigate('/dashboard');
-    } catch (error) {
-      throw error;
+      const { confirmPassword, ...registrationData } = formData;
+      const resultAction = await dispatch(register(registrationData));
+      if (register.fulfilled.match(resultAction)) {
+        navigate('/login');
+      }
+    } catch (err) {
+      console.error('Registration failed:', err);
     }
   };
 
   return (
-    <div className={styles.formContainer}>
-      <form onSubmit={(e) => {
-        e.preventDefault();
-        handleSubmit(onSubmit);
-      }}>
-        <div className={styles.formGroup}>
-          <input
-            type="text"
-            name="username"
-            value={values.username}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            className={styles.input}
-            placeholder="Username"
-          />
-          {errors.username && (
-            <div className={styles.error}>{errors.username}</div>
-          )}
-        </div>
+    <div className="auth-container">
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <h2>Create Account</h2>
+        {error && <div className="error-message">{error}</div>}
 
-        <div className={styles.formGroup}>
+        <div className="form-group">
+          <label htmlFor="email">Email</label>
           <input
             type="email"
+            id="email"
             name="email"
-            value={values.email}
+            value={formData.email}
             onChange={handleChange}
-            onBlur={handleBlur}
-            className={styles.input}
-            placeholder="Email"
+            className={validationErrors.email ? 'error' : ''}
+            placeholder="Enter your email"
           />
-          {errors.email && (
-            <div className={styles.error}>{errors.email}</div>
+          {validationErrors.email && (
+            <div className="error-message">{validationErrors.email}</div>
           )}
         </div>
 
-        <div className={styles.formGroup}>
+        <div className="form-group">
+          <label htmlFor="password">Password</label>
           <input
             type="password"
+            id="password"
             name="password"
-            value={values.password}
+            value={formData.password}
             onChange={handleChange}
-            onBlur={handleBlur}
-            className={styles.input}
-            placeholder="Password"
+            className={validationErrors.password ? 'error' : ''}
+            placeholder="Create a password"
           />
-          {errors.password && (
-            <div className={styles.error}>{errors.password}</div>
+          {validationErrors.password && (
+            <div className="error-message">{validationErrors.password}</div>
           )}
         </div>
 
-        <div className={styles.formGroup}>
+        <div className="form-group">
+          <label htmlFor="confirmPassword">Confirm Password</label>
           <input
             type="password"
+            id="confirmPassword"
             name="confirmPassword"
-            value={values.confirmPassword}
+            value={formData.confirmPassword}
             onChange={handleChange}
-            onBlur={handleBlur}
-            className={styles.input}
-            placeholder="Confirm Password"
+            className={validationErrors.confirmPassword ? 'error' : ''}
+            placeholder="Confirm your password"
           />
-          {errors.confirmPassword && (
-            <div className={styles.error}>{errors.confirmPassword}</div>
+          {validationErrors.confirmPassword && (
+            <div className="error-message">
+              {validationErrors.confirmPassword}
+            </div>
           )}
         </div>
 
-        {errors.submit && (
-          <div className={styles.error}>{errors.submit}</div>
-        )}
-
-        <button
-          type="submit"
-          className={styles.button}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? 'Creating Account...' : 'Sign Up'}
+        <button type="submit" className="auth-button" disabled={isLoading}>
+          {isLoading ? 'Creating Account...' : 'Sign Up'}
         </button>
+
+        <div className="auth-links">
+          <p>
+            Already have an account? <Link to="/login">Login here</Link>
+          </p>
+        </div>
       </form>
     </div>
   );

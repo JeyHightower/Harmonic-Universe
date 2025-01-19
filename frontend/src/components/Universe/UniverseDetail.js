@@ -1,6 +1,6 @@
-import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useParams } from 'react-router-dom';
 import { fetchUniverses } from '../../redux/slices/universeSlice';
 import CommentList from '../Comments/CommentList';
 import MusicControls from '../Music/MusicControls';
@@ -11,7 +11,8 @@ import PrivacyToggle from './PrivacyToggle';
 import ShareUniverse from './ShareUniverse';
 import styles from './Universe.module.css';
 
-const UniverseDetail = ({ universeId }) => {
+const UniverseDetail = () => {
+  const { universeId } = useParams();
   const dispatch = useDispatch();
   const { currentUniverse, isLoading, error } = useSelector(
     state => state.universe
@@ -117,10 +118,6 @@ const UniverseDetail = ({ universeId }) => {
       <div className={styles.content}>{renderTabContent()}</div>
     </div>
   );
-};
-
-UniverseDetail.propTypes = {
-  universeId: PropTypes.string.isRequired,
 };
 
 export default UniverseDetail;

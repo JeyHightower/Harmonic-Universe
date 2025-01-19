@@ -17,16 +17,9 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    // Add CORS headers
-    const currentPort = window.location.port;
-    config.headers[
-      'Access-Control-Allow-Origin'
-    ] = `http://localhost:${currentPort}`;
-    config.headers['Access-Control-Allow-Credentials'] = true;
     return config;
   },
   error => {
-    console.error('Request error:', error);
     return Promise.reject(error);
   }
 );
@@ -37,24 +30,24 @@ api.interceptors.response.use(
   error => {
     if (error.response) {
       // Server responded with error
-      console.error('Response error:', error.response.data);
       if (error.response.status === 401) {
         localStorage.removeItem('token');
         window.location.href = '/login';
       }
       return Promise.reject(error.response.data);
-    } else if (error.request) {
-      // Request made but no response
-      console.error('Network error:', error.request);
-      return Promise.reject({
-        message:
-          'Network error. Please check if the backend server is running.',
-      });
-    } else {
-      // Request setup error
-      console.error('Request setup error:', error.message);
-      return Promise.reject({ message: 'Failed to make request.' });
     }
+
+    if (error.request) {
+      // Request made but no response
+      return Promise.reject({
+        message: 'Network error. Please check your connection and try again.',
+      });
+    }
+
+    // Request setup error
+    return Promise.reject({
+      message: 'An unexpected error occurred. Please try again.',
+    });
   }
 );
 

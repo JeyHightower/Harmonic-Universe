@@ -32,7 +32,7 @@ def register():
 
         user = User(
             email=data['email'],
-            password=generate_password_hash(data['password'])
+            password=data['password']  # Password will be hashed in User.__init__
         )
 
         db.session.add(user)

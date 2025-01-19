@@ -1,5 +1,6 @@
 from datetime import datetime
 from app.extensions import db
+from sqlalchemy.orm import relationship
 
 class Version(db.Model):
     """Model for storing version history of storyboard content."""
@@ -13,8 +14,8 @@ class Version(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
 
     # Relationships
-    storyboard = db.relationship('Storyboard', back_populates='versions')
-    creator = db.relationship('User', back_populates='versions')
+    storyboard = relationship('Storyboard', back_populates='versions')
+    creator = relationship('User', back_populates='versions')
 
     def __repr__(self):
         return f'<Version {self.id} for Storyboard {self.storyboard_id}>'
