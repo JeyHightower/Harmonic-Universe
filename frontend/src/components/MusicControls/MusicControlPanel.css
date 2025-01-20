@@ -1,107 +1,51 @@
 .music-control-panel {
-  background: #1a1a1a;
-  border-radius: 8px;
-  padding: 20px;
-  color: #ffffff;
-  width: 100%;
-  max-width: 800px;
-  margin: 20px auto;
+  /* Add any music-specific styles here */
+  --accent-color: #ff00ff;
+  --accent-color-hover: #cc00cc;
 }
 
-.music-control-panel h2 {
-  margin: 0 0 20px 0;
-  font-size: 24px;
-  color: #4a9eff;
+.music-control-panel
+  .range-container
+  input[type='range']::-webkit-slider-thumb {
+  background: var(--accent-color);
 }
 
-.control-section {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
+.music-control-panel .range-container input[type='range']::-moz-range-thumb {
+  background: var(--accent-color);
 }
 
-.parameter-group {
-  background: #2a2a2a;
-  border-radius: 6px;
-  padding: 15px;
-  margin-bottom: 15px;
+.music-control-panel
+  .range-container
+  input[type='range']:hover::-webkit-slider-thumb {
+  background: var(--accent-color-hover);
 }
 
-.parameter-group h3 {
-  margin: 0 0 15px 0;
-  font-size: 18px;
-  color: #66b3ff;
+.music-control-panel
+  .range-container
+  input[type='range']:hover::-moz-range-thumb {
+  background: var(--accent-color-hover);
 }
 
-.parameter {
-  margin-bottom: 15px;
+.music-control-panel .range-container .value {
+  color: var(--accent-color);
 }
 
-.parameter label {
-  display: block;
-  margin-bottom: 5px;
-  font-size: 14px;
-  color: #cccccc;
+.music-control-panel .select-control:hover,
+.music-control-panel .select-control:focus {
+  border-color: var(--accent-color);
 }
 
-.parameter input[type='range'] {
-  width: 100%;
-  margin: 10px 0;
-  -webkit-appearance: none;
-  background: #3a3a3a;
-  height: 5px;
-  border-radius: 5px;
-  outline: none;
+.music-control-panel .select-control:focus {
+  box-shadow: 0 0 0 2px rgba(255, 0, 255, 0.2);
 }
 
-.parameter input[type='range']::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 15px;
-  height: 15px;
-  background: #4a9eff;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background 0.2s;
+.music-control-panel .info-label {
+  color: var(--accent-color);
 }
 
-.parameter input[type='range']::-webkit-slider-thumb:hover {
-  background: #66b3ff;
-}
-
-.parameter select {
-  width: 100%;
-  padding: 8px;
-  background: #3a3a3a;
-  border: none;
-  border-radius: 4px;
-  color: #ffffff;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.parameter select:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.3);
-}
-
-.parameter span {
-  display: inline-block;
-  margin-left: 10px;
-  font-size: 14px;
-  color: #999999;
-}
-
-/* Animation for value changes */
-.parameter span {
-  transition: all 0.2s ease;
-}
-
-/* Hover effects */
-.parameter:hover label {
-  color: #ffffff;
-}
-
-.parameter-group:hover {
-  transform: translateY(-1px);
-  transition: transform 0.2s ease;
+@media (prefers-color-scheme: light) {
+  .music-control-panel {
+    --accent-color: #990099;
+    --accent-color-hover: #660066;
+  }
 }

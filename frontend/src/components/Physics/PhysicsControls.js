@@ -135,9 +135,9 @@ const PhysicsControls = ({ universeId }) => {
       {renderParameter('gravity', 0, 20, 0.1)}
       {renderParameter('friction', 0, 1, 0.01)}
       {renderParameter('elasticity', 0, 1, 0.01)}
-      {renderParameter('airResistance', 0, 1, 0.01)}
+      {renderParameter('air_resistance', 0, 1, 0.01)}
       {renderParameter('density', 0, 5, 0.1)}
-      {renderParameter('timeScale', 0.1, 2, 0.1)}
+      {renderParameter('time_scale', 0.1, 2, 0.1)}
     </div>
   );
 };

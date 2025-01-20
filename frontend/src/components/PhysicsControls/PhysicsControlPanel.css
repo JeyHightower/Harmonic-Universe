@@ -1,132 +1,51 @@
 .physics-control-panel {
-  background: #1a1a1a;
-  border-radius: 8px;
-  padding: 20px;
-  color: #ffffff;
-  width: 100%;
-  max-width: 800px;
-  margin: 20px auto;
-}
-
-.physics-control-panel h2 {
-  margin: 0 0 20px 0;
-  font-size: 24px;
-  color: #ff6b4a; /* Different accent color for physics */
-}
-
-.physics-control-panel .control-section {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-}
-
-.physics-control-panel .parameter-group {
-  background: #2a2a2a;
-  border-radius: 6px;
-  padding: 15px;
-  margin-bottom: 15px;
-  border-left: 3px solid #ff6b4a; /* Unique accent for physics */
-}
-
-.physics-control-panel .parameter-group h3 {
-  margin: 0 0 15px 0;
-  font-size: 18px;
-  color: #ff8f6b; /* Lighter version of accent color */
-}
-
-.physics-control-panel .parameter {
-  margin-bottom: 15px;
-}
-
-.physics-control-panel .parameter label {
-  display: block;
-  margin-bottom: 5px;
-  font-size: 14px;
-  color: #cccccc;
-}
-
-.physics-control-panel .parameter input[type='range'] {
-  width: 100%;
-  margin: 10px 0;
-  -webkit-appearance: none;
-  background: #3a3a3a;
-  height: 5px;
-  border-radius: 5px;
-  outline: none;
-}
-
-.physics-control-panel .parameter input[type='range']::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 15px;
-  height: 15px;
-  background: #ff6b4a;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background 0.2s;
+  /* Add any physics-specific styles here */
+  --accent-color: #00ff9d;
+  --accent-color-hover: #00cc7d;
 }
 
 .physics-control-panel
-  .parameter
-  input[type='range']::-webkit-slider-thumb:hover {
-  background: #ff8f6b;
+  .range-container
+  input[type='range']::-webkit-slider-thumb {
+  background: var(--accent-color);
 }
 
-.physics-control-panel .parameter select {
-  width: 100%;
-  padding: 8px;
-  background: #3a3a3a;
-  border: none;
-  border-radius: 4px;
-  color: #ffffff;
-  font-size: 14px;
-  cursor: pointer;
+.physics-control-panel .range-container input[type='range']::-moz-range-thumb {
+  background: var(--accent-color);
 }
 
-.physics-control-panel .parameter select:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(255, 107, 74, 0.3);
+.physics-control-panel
+  .range-container
+  input[type='range']:hover::-webkit-slider-thumb {
+  background: var(--accent-color-hover);
 }
 
-.physics-control-panel .parameter span {
-  display: inline-block;
-  margin-left: 10px;
-  font-size: 14px;
-  color: #999999;
+.physics-control-panel
+  .range-container
+  input[type='range']:hover::-moz-range-thumb {
+  background: var(--accent-color-hover);
 }
 
-/* Loading state */
-.physics-control-panel.loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 200px;
-  font-size: 18px;
-  color: #ff6b4a;
+.physics-control-panel .range-container .value {
+  color: var(--accent-color);
 }
 
-/* Error state */
-.physics-control-panel.error {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 200px;
-  font-size: 18px;
-  color: #ff4a4a;
-  background: rgba(255, 74, 74, 0.1);
+.physics-control-panel .select-control:hover,
+.physics-control-panel .select-control:focus {
+  border-color: var(--accent-color);
 }
 
-/* Animation for value changes */
-.physics-control-panel .parameter span {
-  transition: all 0.2s ease;
+.physics-control-panel .select-control:focus {
+  box-shadow: 0 0 0 2px rgba(0, 255, 157, 0.2);
 }
 
-/* Hover effects */
-.physics-control-panel .parameter:hover label {
-  color: #ffffff;
+.physics-control-panel .info-label {
+  color: var(--accent-color);
 }
 
-.physics-control-panel .parameter-group:hover {
-  transform: translateY(-1px);
-  transition: transform 0.2s ease;
-  box-shadow: 0 2px 8px rgba(255, 107, 74, 0.1);
+@media (prefers-color-scheme: light) {
+  .physics-control-panel {
+    --accent-color: #008850;
+    --accent-color-hover: #006b3f;
+  }
 }

@@ -1,3 +1,15 @@
+from functools import wraps
+from flask import jsonify
+from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+
+def require_auth(fn):
+    """Decorator to require authentication."""
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        verify_jwt_in_request()
+        return fn(*args, **kwargs)
+    return wrapper
+
 def check_universe_access(universe, user_id, require_ownership=False):
     """
     Check if a user has access to a universe.

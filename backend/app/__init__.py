@@ -1,75 +1,64 @@
 from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
-from flask_migrate import Migrate
-from .extensions import db, limiter
-from datetime import timedelta
-import os
+from .extensions import db, limiter, ratelimit_error_handler
+from .routes.auth_routes import auth_bp
+from .routes.universe_routes import universe_bp
+from .routes.storyboard_routes import storyboard_bp
+from .routes.comment_routes import comment_bp
+from .routes.favorite_routes import favorite_bp
+from .routes.audio_routes import audio_bp
+from .routes.visualization_routes import visualization_bp
+from .websocket.manager import WebSocketManager
 
-def create_app(test_config=None):
+def init_websocket(app):
+    """Initialize WebSocket after app creation to avoid circular imports."""
+    websocket_manager = WebSocketManager(app)
+    app.websocket_manager = websocket_manager
+
+def create_app(config_name='development'):
+    """Create Flask application."""
     app = Flask(__name__)
 
-    if test_config is None:
-        app.config.from_object('app.config.Config')
+    # Load config based on environment
+    if config_name == 'production':
+        app.config.from_object('config.ProductionConfig')
+    elif config_name == 'testing':
+        app.config.from_object('config.TestingConfig')
     else:
-        app.config.update(test_config)
+        app.config.from_object('config.DevelopmentConfig')
 
-    # Initialize CORS with more permissive settings
-    CORS(app, resources={
-        r"/api/*": {
-            "origins": [
-                "http://localhost:5174",
-                "http://localhost:5175",
-                "http://localhost:5176",
-                "http://localhost:5177",
-                "http://localhost:5178",
-                "http://localhost:5179",
-                "http://localhost:5180",
-                "http://localhost:5181",
-                "http://127.0.0.1:5174",
-                "http://127.0.0.1:5175",
-                "http://127.0.0.1:5176",
-                "http://127.0.0.1:5177",
-                "http://127.0.0.1:5178",
-                "http://127.0.0.1:5179",
-                "http://127.0.0.1:5180",
-                "http://127.0.0.1:5181"
-            ],
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-            "allow_headers": ["Content-Type", "Authorization", "Access-Control-Allow-Credentials"],
-            "supports_credentials": True,
-            "expose_headers": ["Content-Range", "X-Content-Range"]
-        }
-    })
-
-    # Initialize database
+    # Initialize extensions
+    CORS(app)
     db.init_app(app)
-    with app.app_context():
-        try:
-            db.create_all()
-            print("Database tables created successfully")
-        except Exception as e:
-            print(f"Database initialization error: {e}")
-
-    # Initialize JWT
     jwt = JWTManager(app)
-
-    # Initialize migrations
-    Migrate(app, db)
-
-    # Initialize rate limiter
     limiter.init_app(app)
+    app.errorhandler(429)(ratelimit_error_handler)
 
-    # JWT Configuration
-    app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'dev-secret-key')
-    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=1)
+    # Register blueprints with URL prefixes
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(universe_bp, url_prefix='/api/universes')
+    app.register_blueprint(storyboard_bp, url_prefix='/api/storyboards')
+    app.register_blueprint(comment_bp, url_prefix='/api/comments')
+    app.register_blueprint(favorite_bp, url_prefix='/api/favorites')
+    app.register_blueprint(audio_bp, url_prefix='/api/audio')
+    app.register_blueprint(visualization_bp, url_prefix='/api/visualization')
 
-    # Register blueprints
-    from .routes.auth import auth_bp
-    app.register_blueprint(auth_bp)
+    # Initialize WebSocket manager
+    init_websocket(app)
 
-    @app.route('/api/health')
-    def health_check():
-        return {'status': 'healthy'}, 200
+    # Create database tables
+    with app.app_context():
+        db.create_all()
+
+    # Error handlers
+    @app.errorhandler(404)
+    def not_found_error(error):
+        return {'error': 'Not found'}, 404
+
+    @app.errorhandler(500)
+    def internal_error(error):
+        db.session.rollback()
+        return {'error': 'Internal server error'}, 500
 
     return app

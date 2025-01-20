@@ -112,6 +112,133 @@ export const universeValidationSchema = {
   ],
 };
 
+// Form validation utilities
+
+/**
+ * Validates an email address
+ * @param {string} email - The email to validate
+ * @returns {boolean} Whether the email is valid
+ */
+export const isValidEmail = email => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+/**
+ * Validates a password
+ * @param {string} password - The password to validate
+ * @returns {Object} Validation result with isValid and errors
+ */
+export const validatePassword = password => {
+  const errors = [];
+
+  if (!password || password.length < 8) {
+    errors.push('Password must be at least 8 characters long');
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    errors.push('Password must contain at least one uppercase letter');
+  }
+
+  if (!/[a-z]/.test(password)) {
+    errors.push('Password must contain at least one lowercase letter');
+  }
+
+  if (!/[0-9]/.test(password)) {
+    errors.push('Password must contain at least one number');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+/**
+ * Validates registration form data
+ * @param {Object} data - The form data to validate
+ * @returns {Object} Validation result with isValid and errors
+ */
+export const validateRegistration = data => {
+  const errors = {};
+
+  if (!data.email) {
+    errors.email = 'Email is required';
+  } else if (!isValidEmail(data.email)) {
+    errors.email = 'Please enter a valid email address';
+  }
+
+  if (!data.password) {
+    errors.password = 'Password is required';
+  } else {
+    const passwordValidation = validatePassword(data.password);
+    if (!passwordValidation.isValid) {
+      errors.password = passwordValidation.errors[0];
+    }
+  }
+
+  if (!data.confirmPassword) {
+    errors.confirmPassword = 'Please confirm your password';
+  } else if (data.password !== data.confirmPassword) {
+    errors.confirmPassword = 'Passwords do not match';
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+};
+
+/**
+ * Validates login form data
+ * @param {Object} data - The form data to validate
+ * @returns {Object} Validation result with isValid and errors
+ */
+export const validateLogin = data => {
+  const errors = {};
+
+  if (!data.email) {
+    errors.email = 'Email is required';
+  } else if (!isValidEmail(data.email)) {
+    errors.email = 'Please enter a valid email address';
+  }
+
+  if (!data.password) {
+    errors.password = 'Password is required';
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+};
+
+/**
+ * Validates universe form data
+ * @param {Object} data - The form data to validate
+ * @returns {Object} Validation result with isValid and errors
+ */
+export const validateUniverse = data => {
+  const errors = {};
+
+  if (!data.title) {
+    errors.title = 'Title is required';
+  } else if (data.title.length < 3) {
+    errors.title = 'Title must be at least 3 characters long';
+  }
+
+  if (!data.description) {
+    errors.description = 'Description is required';
+  } else if (data.description.length < 10) {
+    errors.description = 'Description must be at least 10 characters long';
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+};
+
 export default {
   validateField,
   validateForm,

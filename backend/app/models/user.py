@@ -40,6 +40,10 @@ class User(db.Model):
                               foreign_keys='Template.creator_id',
                               back_populates='creator',
                               cascade='all, delete-orphan')
+    storyboards = db.relationship('Storyboard',
+                                foreign_keys='Storyboard.user_id',
+                                back_populates='user',
+                                cascade='all, delete-orphan')
 
     def __init__(self, email, password):
         self.email = email

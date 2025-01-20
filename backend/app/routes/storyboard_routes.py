@@ -1,181 +1,197 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from sqlalchemy.exc import SQLAlchemyError
-from ..extensions import db
-from ..models import Universe, StoryboardPoint
-from ..extensions import limiter
-from ..utils.auth import check_universe_access
+from ..models import Storyboard, Universe, Version
+from ..extensions import db, limiter
 
 storyboard_bp = Blueprint('storyboard', __name__)
 
-@storyboard_bp.route('/universes/<int:universe_id>/storyboard', methods=['POST'])
+@storyboard_bp.route('/<int:universe_id>', methods=['POST'])
 @jwt_required()
-@limiter.limit("50 per hour")
-def create_storyboard_point(universe_id):
-    """Create a new storyboard point for a universe"""
+@limiter.limit("30 per hour")
+def create_storyboard(universe_id):
+    """Create a new storyboard."""
     try:
-        current_user_id = get_jwt_identity()
-        universe = Universe.query.get(universe_id)
-
-        if not universe:
-            return jsonify({'error': 'Universe not found'}), 404
-
-        if not check_universe_access(universe, current_user_id, require_ownership=True):
-            return jsonify({'error': 'Unauthorized'}), 403
-
         data = request.get_json()
+        if not data:
+            return jsonify({
+                'status': 'error',
+                'message': 'No data provided'
+            }), 400
 
-        if not data or not data.get('title') or not data.get('timestamp'):
-            return jsonify({'error': 'Title and timestamp are required'}), 400
+        universe = Universe.query.get_or_404(universe_id)
+        current_user_id = get_jwt_identity()
 
-        new_point = StoryboardPoint(
-            universe_id=universe_id,
-            title=data['title'],
+        if not universe.is_public and universe.user_id != current_user_id:
+            return jsonify({
+                'status': 'error',
+                'message': 'Unauthorized access'
+            }), 403
+
+        storyboard = Storyboard(
+            plot_point=data.get('plot_point'),
             description=data.get('description', ''),
-            timestamp=data['timestamp'],
-            harmony_value=data.get('harmony_value', 0.5),
-            transition_duration=data.get('transition_duration', 1.0),
-            # Physics state
-            gravity=data.get('gravity'),
-            friction=data.get('friction'),
-            elasticity=data.get('elasticity'),
-            air_resistance=data.get('air_resistance'),
-            density=data.get('density'),
-            # Audio state
-            waveform=data.get('waveform'),
-            attack=data.get('attack'),
-            decay=data.get('decay'),
-            sustain=data.get('sustain'),
-            release=data.get('release'),
-            lfo_rate=data.get('lfo_rate'),
-            lfo_depth=data.get('lfo_depth')
+            harmony_tie=data.get('harmony_tie', 0.5),
+            universe_id=universe_id,
+            user_id=current_user_id
+        )
+        db.session.add(storyboard)
+        db.session.commit()
+
+        # Create initial version
+        Version.create_version(
+            storyboard_id=storyboard.id,
+            content=data.get('content', ''),
+            description='Initial version',
+            created_by=current_user_id
         )
 
-        db.session.add(new_point)
-        db.session.commit()
-
-        return jsonify(new_point.to_dict()), 201
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        return jsonify({'error': 'Database error', 'details': str(e)}), 500
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'storyboard': storyboard.to_dict()
+            }
+        }), 201
     except Exception as e:
-        return jsonify({'error': 'Server error', 'details': str(e)}), 500
+        db.session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
-@storyboard_bp.route('/universes/<int:universe_id>/storyboard', methods=['GET'])
+@storyboard_bp.route('/<int:universe_id>', methods=['GET'])
 @jwt_required()
 @limiter.limit("100 per hour")
-def get_storyboard_points(universe_id):
-    """Get all storyboard points for a universe"""
+def get_storyboards(universe_id):
+    """Get all storyboards for a universe."""
     try:
+        universe = Universe.query.get_or_404(universe_id)
         current_user_id = get_jwt_identity()
-        universe = Universe.query.get(universe_id)
 
-        if not universe:
-            return jsonify({'error': 'Universe not found'}), 404
+        if not universe.is_public and universe.user_id != current_user_id:
+            return jsonify({
+                'status': 'error',
+                'message': 'Unauthorized access'
+            }), 403
 
-        if not check_universe_access(universe, current_user_id):
-            return jsonify({'error': 'Unauthorized'}), 403
-
-        points = StoryboardPoint.query.filter_by(universe_id=universe_id)\
-            .order_by(StoryboardPoint.timestamp)\
-            .all()
-
-        return jsonify([point.to_dict() for point in points]), 200
-
+        storyboards = Storyboard.query.filter_by(universe_id=universe_id).all()
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'storyboards': [s.to_dict() for s in storyboards]
+            }
+        }), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
-@storyboard_bp.route('/storyboard/<int:point_id>', methods=['PUT'])
+@storyboard_bp.route('/<int:storyboard_id>/versions', methods=['GET'])
 @jwt_required()
-@limiter.limit("50 per hour")
-def update_storyboard_point(point_id):
-    """Update a storyboard point"""
+@limiter.limit("100 per hour")
+def get_storyboard_versions(storyboard_id):
+    """Get all versions of a storyboard."""
     try:
+        storyboard = Storyboard.query.get_or_404(storyboard_id)
+        universe = Universe.query.get_or_404(storyboard.universe_id)
         current_user_id = get_jwt_identity()
-        point = StoryboardPoint.query.get(point_id)
 
-        if not point:
-            return jsonify({'error': 'Storyboard point not found'}), 404
+        if not universe.is_public and universe.user_id != current_user_id:
+            return jsonify({
+                'status': 'error',
+                'message': 'Unauthorized access'
+            }), 403
 
-        universe = Universe.query.get(point.universe_id)
-        if not check_universe_access(universe, current_user_id, require_ownership=True):
-            return jsonify({'error': 'Unauthorized'}), 403
+        versions = Version.query.filter_by(storyboard_id=storyboard_id).order_by(Version.created_at.desc()).all()
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'versions': [v.to_dict() for v in versions]
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
+@storyboard_bp.route('/<int:storyboard_id>', methods=['PUT'])
+@jwt_required()
+@limiter.limit("30 per hour")
+def update_storyboard(storyboard_id):
+    """Update a storyboard."""
+    try:
         data = request.get_json()
+        if not data:
+            return jsonify({
+                'status': 'error',
+                'message': 'No data provided'
+            }), 400
 
-        # Update basic info
-        if 'title' in data:
-            point.title = data['title']
-        if 'description' in data:
-            point.description = data['description']
-        if 'timestamp' in data:
-            point.timestamp = data['timestamp']
-        if 'harmony_value' in data:
-            point.harmony_value = data['harmony_value']
-        if 'transition_duration' in data:
-            point.transition_duration = data['transition_duration']
-
-        # Update physics state
-        if 'gravity' in data:
-            point.gravity = data['gravity']
-        if 'friction' in data:
-            point.friction = data['friction']
-        if 'elasticity' in data:
-            point.elasticity = data['elasticity']
-        if 'air_resistance' in data:
-            point.air_resistance = data['air_resistance']
-        if 'density' in data:
-            point.density = data['density']
-
-        # Update audio state
-        if 'waveform' in data:
-            point.waveform = data['waveform']
-        if 'attack' in data:
-            point.attack = data['attack']
-        if 'decay' in data:
-            point.decay = data['decay']
-        if 'sustain' in data:
-            point.sustain = data['sustain']
-        if 'release' in data:
-            point.release = data['release']
-        if 'lfo_rate' in data:
-            point.lfo_rate = data['lfo_rate']
-        if 'lfo_depth' in data:
-            point.lfo_depth = data['lfo_depth']
-
-        db.session.commit()
-        return jsonify(point.to_dict()), 200
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        return jsonify({'error': 'Database error', 'details': str(e)}), 500
-    except Exception as e:
-        return jsonify({'error': 'Server error', 'details': str(e)}), 500
-
-@storyboard_bp.route('/storyboard/<int:point_id>', methods=['DELETE'])
-@jwt_required()
-@limiter.limit("20 per hour")
-def delete_storyboard_point(point_id):
-    """Delete a storyboard point"""
-    try:
+        storyboard = Storyboard.query.get_or_404(storyboard_id)
         current_user_id = get_jwt_identity()
-        point = StoryboardPoint.query.get(point_id)
 
-        if not point:
-            return jsonify({'error': 'Storyboard point not found'}), 404
+        if storyboard.user_id != current_user_id:
+            return jsonify({
+                'status': 'error',
+                'message': 'Unauthorized access'
+            }), 403
 
-        universe = Universe.query.get(point.universe_id)
-        if not check_universe_access(universe, current_user_id, require_ownership=True):
-            return jsonify({'error': 'Unauthorized'}), 403
+        if 'plot_point' in data:
+            storyboard.plot_point = data['plot_point']
+        if 'description' in data:
+            storyboard.description = data['description']
+        if 'harmony_tie' in data:
+            storyboard.harmony_tie = data['harmony_tie']
 
-        db.session.delete(point)
+        # Create new version if content is provided
+        if 'content' in data:
+            Version.create_version(
+                storyboard_id=storyboard.id,
+                content=data['content'],
+                description=data.get('version_description', 'Update'),
+                created_by=current_user_id
+            )
+
+        db.session.commit()
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'storyboard': storyboard.to_dict()
+            }
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@storyboard_bp.route('/<int:storyboard_id>', methods=['DELETE'])
+@jwt_required()
+@limiter.limit("10 per hour")
+def delete_storyboard(storyboard_id):
+    """Delete a storyboard."""
+    try:
+        storyboard = Storyboard.query.get_or_404(storyboard_id)
+        current_user_id = get_jwt_identity()
+
+        if storyboard.user_id != current_user_id:
+            return jsonify({
+                'status': 'error',
+                'message': 'Unauthorized access'
+            }), 403
+
+        db.session.delete(storyboard)
         db.session.commit()
 
-        return jsonify({'message': 'Storyboard point deleted successfully'}), 200
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        return jsonify({'error': 'Database error', 'details': str(e)}), 500
+        return jsonify({
+            'status': 'success',
+            'message': 'Storyboard deleted successfully'
+        }), 200
     except Exception as e:
-        return jsonify({'error': 'Server error', 'details': str(e)}), 500
+        db.session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500

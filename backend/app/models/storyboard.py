@@ -7,14 +7,17 @@ class Storyboard(db.Model):
     __tablename__ = 'storyboards'
 
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(255), nullable=False)
+    plot_point = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text)
+    harmony_tie = db.Column(db.Float, default=0.5)  # 0.0 to 1.0
     universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     universe = relationship('Universe', back_populates='storyboards')
+    user = relationship('User', back_populates='storyboards')
     versions = relationship('Version', back_populates='storyboard', cascade='all, delete-orphan')
     points = relationship('StoryboardPoint', back_populates='storyboard', cascade='all, delete-orphan')
 
@@ -25,12 +28,15 @@ class Storyboard(db.Model):
         """Convert storyboard to dictionary."""
         return {
             'id': self.id,
-            'title': self.title,
+            'plot_point': self.plot_point,
             'description': self.description,
+            'harmony_tie': self.harmony_tie,
             'universe_id': self.universe_id,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
-            'points': [point.to_dict() for point in self.points]
+            'user_id': self.user_id,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'points': [point.to_dict() for point in self.points],
+            'versions': [v.to_dict() for v in self.versions]
         }
 
 class StoryboardPoint(db.Model):

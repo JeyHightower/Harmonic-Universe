@@ -2,30 +2,26 @@ import os
 import pytest
 from app import create_app
 from app.extensions import db as _db
+from sqlalchemy.orm import scoped_session, sessionmaker
+from flask_sqlalchemy import SQLAlchemy
+from flask_jwt_extended import create_access_token
 
 @pytest.fixture(scope='session')
 def app():
     """Create application for the tests."""
-    _app = create_app('testing')
-    _app.config['TESTING'] = True
-    _app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
-
-    ctx = _app.app_context()
-    ctx.push()
-
-    yield _app
-
-    ctx.pop()
+    app = create_app()
+    app.config['TESTING'] = True
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+    app.config['JWT_SECRET_KEY'] = 'test-secret-key'
+    return app
 
 @pytest.fixture(scope='session')
 def db(app):
     """Create database for the tests."""
-    _db.app = app
-    _db.create_all()
-
-    yield _db
-
-    _db.drop_all()
+    with app.app_context():
+        _db.create_all()
+        yield _db
+        _db.drop_all()
 
 @pytest.fixture(scope='function')
 def session(db):
@@ -33,26 +29,39 @@ def session(db):
     connection = db.engine.connect()
     transaction = connection.begin()
 
-    options = dict(bind=connection, binds={})
-    session = db.create_scoped_session(options=options)
+    # Create a session factory bound to the connection
+    session_factory = sessionmaker(bind=connection)
+    session = scoped_session(session_factory)
 
+    # Start with a clean slate for each test
     db.session = session
 
     yield session
 
+    # Cleanup
+    session.close()
     transaction.rollback()
     connection.close()
-    session.remove()
+
+    # Reset main session
+    db.session = scoped_session(sessionmaker(bind=db.engine))
 
 @pytest.fixture
 def client(app):
-    """Create a test client for the app."""
+    """Create test client."""
     return app.test_client()
 
 @pytest.fixture
-def auth_headers():
-    """Create authentication headers for testing."""
-    return {
-        'Authorization': 'Bearer test-token',
-        'Content-Type': 'application/json'
-    }
+def runner(app):
+    """Create test CLI runner."""
+    return app.test_cli_runner()
+
+@pytest.fixture
+def auth_headers(app):
+    """Return auth headers for testing."""
+    with app.app_context():
+        token = create_access_token(identity=1)
+        return {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json'
+        }

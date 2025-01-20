@@ -30,7 +30,7 @@ class Comment(db.Model):
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'user': {
                 'id': self.user.id,
-                'username': self.user.username
+                'email': self.user.email
             }
         }
 

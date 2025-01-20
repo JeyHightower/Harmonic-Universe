@@ -1,144 +1,201 @@
-from typing import Dict, List, Tuple, Optional
+"""Visualization renderer service."""
 import numpy as np
-from dataclasses import dataclass
-import colorsys
+from typing import Dict, Any, List, Tuple
+from ..models import VisualizationParameters
 
-@dataclass
-class VisualizationParameters:
-    background_color: Tuple[float, float, float] = (0.1, 0.1, 0.2)
-    particle_base_color: Tuple[float, float, float] = (0.8, 0.4, 0.2)
-    particle_size_range: Tuple[float, float] = (5.0, 20.0)
-    glow_intensity: float = 0.5
-    trail_length: int = 20
-    camera_zoom: float = 1.0
-    camera_position: Tuple[float, float] = (0.0, 0.0)
-    blur_amount: float = 0.2
+class Color:
+    def __init__(self, r: float, g: float, b: float, a: float = 1.0):
+        self.r = max(0.0, min(1.0, r))
+        self.g = max(0.0, min(1.0, g))
+        self.b = max(0.0, min(1.0, b))
+        self.a = max(0.0, min(1.0, a))
 
-@dataclass
-class ParticleTrail:
-    positions: List[Tuple[float, float]]
-    colors: List[Tuple[float, float, float, float]]
-    max_length: int
+    def to_dict(self) -> Dict[str, float]:
+        return {
+            'r': self.r,
+            'g': self.g,
+            'b': self.b,
+            'a': self.a
+        }
 
-    def add_position(self, pos: Tuple[float, float], color: Tuple[float, float, float, float]):
-        """Add new position to trail."""
-        self.positions.append(pos)
-        self.colors.append(color)
-        if len(self.positions) > self.max_length:
-            self.positions.pop(0)
-            self.colors.pop(0)
+    @classmethod
+    def from_hsv(cls, h: float, s: float, v: float, a: float = 1.0) -> 'Color':
+        """Create color from HSV values."""
+        h = h % 1.0
+        h_i = int(h * 6)
+        f = h * 6 - h_i
+        p = v * (1 - s)
+        q = v * (1 - f * s)
+        t = v * (1 - (1 - f) * s)
+
+        if h_i == 0:
+            r, g, b = v, t, p
+        elif h_i == 1:
+            r, g, b = q, v, p
+        elif h_i == 2:
+            r, g, b = p, v, t
+        elif h_i == 3:
+            r, g, b = p, q, v
+        elif h_i == 4:
+            r, g, b = t, p, v
+        else:
+            r, g, b = v, p, q
+
+        return cls(r, g, b, a)
+
+class Particle:
+    def __init__(self, x: float, y: float, size: float, color: Color,
+                 velocity_x: float = 0.0, velocity_y: float = 0.0):
+        self.x = x
+        self.y = y
+        self.size = size
+        self.color = color
+        self.velocity_x = velocity_x
+        self.velocity_y = velocity_y
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'x': self.x,
+            'y': self.y,
+            'size': self.size,
+            'color': self.color.to_dict(),
+            'velocity': {
+                'x': self.velocity_x,
+                'y': self.velocity_y
+            }
+        }
 
 class VisualizationRenderer:
     def __init__(self):
-        self.params = VisualizationParameters()
-        self.particle_trails: Dict[int, ParticleTrail] = {}
-        self.frame_count = 0
+        """Initialize visualization renderer."""
+        self.rng = np.random.default_rng()
 
-    def update_parameters(self, params: Dict):
-        """Update visualization parameters."""
-        if 'background_color' in params:
-            self.params.background_color = tuple(params['background_color'])
-        if 'particle_base_color' in params:
-            self.params.particle_base_color = tuple(params['particle_base_color'])
-        if 'particle_size_range' in params:
-            self.params.particle_size_range = tuple(params['particle_size_range'])
-        if 'glow_intensity' in params:
-            self.params.glow_intensity = float(params['glow_intensity'])
-        if 'trail_length' in params:
-            self.params.trail_length = int(params['trail_length'])
-        if 'camera_zoom' in params:
-            self.params.camera_zoom = float(params['camera_zoom'])
-        if 'camera_position' in params:
-            self.params.camera_position = tuple(params['camera_position'])
-        if 'blur_amount' in params:
-            self.params.blur_amount = float(params['blur_amount'])
+    def _generate_color_palette(self, params: VisualizationParameters) -> List[Color]:
+        """Generate color palette based on parameters."""
+        palette = []
+        base_hue = self.rng.random()  # Random base hue
 
-    def calculate_particle_color(self, velocity: np.ndarray, mass: float, harmony_value: float) -> Tuple[float, float, float, float]:
-        """Calculate particle color based on its properties."""
-        # Use velocity magnitude to affect hue
-        velocity_magnitude = np.linalg.norm(velocity)
-        hue = (velocity_magnitude * 0.1) % 1.0
+        if params.color_scheme == 'monochrome':
+            # Generate shades of a single color
+            for i in range(5):
+                s = params.saturation * (0.5 + i * 0.1)
+                v = params.brightness * (0.5 + i * 0.1)
+                palette.append(Color.from_hsv(base_hue, s, v))
 
-        # Use mass to affect saturation
-        saturation = min(1.0, mass * 0.2 + 0.3)
+        elif params.color_scheme == 'complementary':
+            # Generate complementary color pairs
+            for i in range(3):
+                s = params.saturation * (0.7 + i * 0.1)
+                v = params.brightness * (0.7 + i * 0.1)
+                palette.append(Color.from_hsv(base_hue, s, v))
+                palette.append(Color.from_hsv((base_hue + 0.5) % 1.0, s, v))
 
-        # Use harmony value to affect brightness
-        value = min(1.0, harmony_value * 0.5 + 0.5)
+        elif params.color_scheme == 'analogous':
+            # Generate analogous colors
+            for i in range(5):
+                hue = (base_hue + i * 0.1) % 1.0
+                palette.append(Color.from_hsv(hue, params.saturation, params.brightness))
 
-        # Convert HSV to RGB
-        rgb = colorsys.hsv_to_rgb(hue, saturation, value)
+        elif params.color_scheme == 'triadic':
+            # Generate triadic colors
+            for i in range(2):
+                for j in range(3):
+                    hue = (base_hue + j * 0.333) % 1.0
+                    s = params.saturation * (0.7 + i * 0.2)
+                    v = params.brightness * (0.7 + i * 0.2)
+                    palette.append(Color.from_hsv(hue, s, v))
 
-        # Add alpha channel
-        return rgb + (min(1.0, velocity_magnitude * 0.2 + 0.6),)
+        else:  # rainbow or custom
+            # Generate full spectrum
+            for i in range(6):
+                hue = (base_hue + i * 0.167) % 1.0
+                palette.append(Color.from_hsv(hue, params.saturation, params.brightness))
 
-    def calculate_particle_size(self, mass: float) -> float:
-        """Calculate particle size based on its mass."""
-        min_size, max_size = self.params.particle_size_range
-        return min_size + (max_size - min_size) * min(1.0, mass * 0.5)
+        return palette
 
-    def update_particle_trails(self, particles: List[Dict], harmony_value: float):
-        """Update particle trails with new positions."""
-        self.frame_count += 1
+    def _generate_particles(self, params: VisualizationParameters, width: int,
+                          height: int, palette: List[Color]) -> List[Particle]:
+        """Generate particles based on parameters."""
+        particles = []
+        particle_count = int(1000 * params.complexity)  # Scale particle count with complexity
 
-        # Update existing trails and create new ones
-        current_particles = set()
-        for particle in particles:
-            particle_id = id(particle)
-            current_particles.add(particle_id)
+        for _ in range(particle_count):
+            x = self.rng.uniform(0, width)
+            y = self.rng.uniform(0, height)
+            size = self.rng.uniform(2, 10) * params.complexity
+            color = self.rng.choice(palette)
 
-            position = tuple(particle['position'])
-            velocity = particle['velocity']
-            mass = particle['mass']
+            # Add some velocity for animation
+            velocity_x = self.rng.normal(0, 2) * params.complexity
+            velocity_y = self.rng.normal(0, 2) * params.complexity
 
-            color = self.calculate_particle_color(velocity, mass, harmony_value)
+            particles.append(Particle(x, y, size, color, velocity_x, velocity_y))
 
-            if particle_id not in self.particle_trails:
-                self.particle_trails[particle_id] = ParticleTrail(
-                    positions=[position],
-                    colors=[color],
-                    max_length=self.params.trail_length
-                )
-            else:
-                self.particle_trails[particle_id].add_position(position, color)
+        return particles
 
-        # Remove trails for particles that no longer exist
-        for particle_id in list(self.particle_trails.keys()):
-            if particle_id not in current_particles:
-                del self.particle_trails[particle_id]
-
-    def apply_camera_transform(self, position: Tuple[float, float]) -> Tuple[float, float]:
-        """Apply camera transformation to position."""
-        x, y = position
-        cam_x, cam_y = self.params.camera_position
-        return (
-            (x - cam_x) * self.params.camera_zoom,
-            (y - cam_y) * self.params.camera_zoom
-        )
-
-    def get_render_data(self) -> Dict:
-        """Get current render data for visualization."""
+    def _generate_effects(self, params: VisualizationParameters) -> Dict[str, Any]:
+        """Generate visual effects based on parameters."""
         return {
-            'frame': self.frame_count,
-            'background_color': self.params.background_color,
-            'camera': {
-                'position': self.params.camera_position,
-                'zoom': self.params.camera_zoom
+            'blur': params.complexity * 10,
+            'glow': {
+                'enabled': params.brightness > 0.5,
+                'intensity': params.brightness * 2,
+                'radius': params.complexity * 20
             },
-            'particles': [
-                {
-                    'trail_positions': [
-                        self.apply_camera_transform(pos)
-                        for pos in trail.positions
-                    ],
-                    'trail_colors': trail.colors,
-                    'size': self.calculate_particle_size(
-                        float(trail.colors[-1][1])  # Use saturation as proxy for mass
-                    )
-                }
-                for trail in self.particle_trails.values()
-            ],
-            'effects': {
-                'glow_intensity': self.params.glow_intensity,
-                'blur_amount': self.params.blur_amount
+            'trails': {
+                'enabled': params.complexity > 0.3,
+                'length': params.complexity * 20,
+                'decay': 1 - params.complexity
+            },
+            'noise': {
+                'enabled': params.complexity > 0.7,
+                'intensity': (params.complexity - 0.7) * 3,
+                'scale': params.complexity * 100
             }
+        }
+
+    def render(self, params: VisualizationParameters, width: int = 800,
+              height: int = 600, quality: str = 'high') -> Dict[str, Any]:
+        """Render visualization based on parameters."""
+        # Generate color palette
+        palette = self._generate_color_palette(params)
+
+        # Generate particles
+        particles = self._generate_particles(params, width, height, palette)
+
+        # Generate effects
+        effects = self._generate_effects(params)
+
+        # Quality settings
+        quality_settings = {
+            'low': {
+                'particle_detail': 0.5,
+                'effect_quality': 0.5,
+                'antialiasing': False
+            },
+            'medium': {
+                'particle_detail': 0.75,
+                'effect_quality': 0.75,
+                'antialiasing': True
+            },
+            'high': {
+                'particle_detail': 1.0,
+                'effect_quality': 1.0,
+                'antialiasing': True
+            }
+        }.get(quality.lower(), quality_settings['medium'])
+
+        return {
+            'width': width,
+            'height': height,
+            'quality': quality_settings,
+            'parameters': {
+                'brightness': params.brightness,
+                'saturation': params.saturation,
+                'complexity': params.complexity,
+                'colorScheme': params.color_scheme
+            },
+            'particles': [p.to_dict() for p in particles],
+            'effects': effects,
+            'palette': [c.to_dict() for c in palette]
         }

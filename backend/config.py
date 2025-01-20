@@ -1,66 +1,118 @@
+"""Application configuration."""
 import os
 from datetime import timedelta
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
-    # Basic Flask configuration
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-please-change'
+    """Base configuration."""
+
+    # Flask
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-key-change-in-production')
+
+    # Database
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///app.db')
+
+    # JWT
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'jwt-secret-change-in-production')
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
+
+    # Rate limiting
+    RATELIMIT_ENABLED = True
+    RATELIMIT_HEADERS_ENABLED = True
+    RATELIMIT_STORAGE_URL = "memory://"
+
+    # WebSocket
+    WEBSOCKET_HOST = '0.0.0.0'
+    WEBSOCKET_PORT = 5002
+    WEBSOCKET_PING_INTERVAL = 25
+    WEBSOCKET_PING_TIMEOUT = 120
+
+    # CORS
+    CORS_ORIGINS = ['http://localhost:3000']  # Add production URLs in ProductionConfig
+
+    # File upload
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
+    UPLOAD_FOLDER = 'uploads'
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp3', 'wav'}
+
+class DevelopmentConfig(Config):
+    """Development configuration."""
+
     DEBUG = True
     TESTING = False
 
-    # Database configuration
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///' + os.path.join(basedir, 'app.db')
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # Enable more detailed error messages
+    PROPAGATE_EXCEPTIONS = True
 
-    # JWT configuration
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'jwt-secret-key-please-change'
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
+    # Development database
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///dev.db'
 
-    # File upload configuration
-    UPLOAD_FOLDER = os.path.join(basedir, 'app', 'static', 'uploads')
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
+    # Shorter token expiration for development
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
 
-    # WebSocket configuration
-    CORS_ALLOWED_ORIGINS = "*"
+    # Less strict rate limiting
+    RATELIMIT_DEFAULT = "200 per hour"
 
-    # Rate limiting configuration
-    RATELIMIT_DEFAULT = "200 per day"
-    RATELIMIT_STORAGE_URL = "memory://"
-
-    # Audio configuration
-    AUDIO_UPLOAD_FOLDER = os.path.join(basedir, 'app', 'static', 'audio')
-    ALLOWED_AUDIO_EXTENSIONS = {'wav', 'mp3', 'ogg'}
-
-    # Session configuration
-    SESSION_TYPE = 'filesystem'
-    PERMANENT_SESSION_LIFETIME = timedelta(days=31)
-
-    # Security configuration
-    WTF_CSRF_ENABLED = False  # Disable CSRF globally
-    WTF_CSRF_SECRET_KEY = os.environ.get('WTF_CSRF_SECRET_KEY') or 'csrf-key-please-change'
-
-class DevelopmentConfig(Config):
-    """Development config."""
-    DEVELOPMENT = True
-    DEBUG = True
-    WTF_CSRF_ENABLED = False  # Disable CSRF for development
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///' + os.path.join(basedir, 'dev.db')
+    # Allow all origins in development
+    CORS_ORIGINS = '*'
 
 class TestingConfig(Config):
-    """Testing config."""
+    """Testing configuration."""
+
     TESTING = True
-    DEBUG = True
+    DEBUG = False
+
+    # Use in-memory database for testing
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+
+    # Disable rate limiting for tests
+    RATELIMIT_ENABLED = False
+
+    # No token expiration in testing
+    JWT_ACCESS_TOKEN_EXPIRES = False
+
+    # Disable CSRF protection in testing
     WTF_CSRF_ENABLED = False
-    SERVER_NAME = 'localhost.localdomain'
 
 class ProductionConfig(Config):
-    """Production config."""
+    """Production configuration."""
+
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    TESTING = False
+
+    # Must be set in environment
+    SECRET_KEY = os.environ['SECRET_KEY']
+    JWT_SECRET_KEY = os.environ['JWT_SECRET_KEY']
+
+    # Use PostgreSQL in production
+    SQLALCHEMY_DATABASE_URI = os.environ['DATABASE_URL']
+
+    # Stricter rate limiting
+    RATELIMIT_DEFAULT = "100 per hour"
+
+    # Production CORS settings
+    CORS_ORIGINS = [
+        'https://harmonic-universe.com',
+        'https://www.harmonic-universe.com'
+    ]
+
+    # Production WebSocket settings
+    WEBSOCKET_HOST = '0.0.0.0'
+    WEBSOCKET_PORT = int(os.environ.get('PORT', 5002))
+
+    # SSL settings (if not using reverse proxy)
+    SSL_CERT = os.environ.get('SSL_CERT')
+    SSL_KEY = os.environ.get('SSL_KEY')
+
+    # Redis for rate limiting and caching
+    RATELIMIT_STORAGE_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+
+    # Production logging
+    LOG_LEVEL = 'INFO'
+    LOG_TO_STDOUT = os.environ.get('LOG_TO_STDOUT', 'false').lower() == 'true'
 
 config = {
     'development': DevelopmentConfig,

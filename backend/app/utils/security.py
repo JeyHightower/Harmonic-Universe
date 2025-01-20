@@ -4,6 +4,9 @@ import redis
 from datetime import datetime, timedelta
 import secrets
 import hashlib
+import bcrypt
+from typing import Optional
+import jwt
 
 # Initialize Redis for rate limiting
 redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
@@ -71,3 +74,55 @@ def validate_file_size(file, max_size_mb=5):
     if file.content_length > max_size_mb * 1024 * 1024:
         abort(413, description=f"File size exceeds {max_size_mb}MB limit")
     return True
+
+def hash_password(password: str) -> str:
+    """Hash a password using bcrypt."""
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+
+def verify_password(password: str, hashed: str) -> bool:
+    """Verify a password against its hash."""
+    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+
+def generate_token(user_id: int, expiration: Optional[timedelta] = None) -> str:
+    """Generate a JWT token for a user."""
+    if expiration is None:
+        expiration = timedelta(days=1)
+
+    payload = {
+        'user_id': user_id,
+        'exp': datetime.utcnow() + expiration,
+        'iat': datetime.utcnow()
+    }
+    return jwt.encode(payload, current_app.config['SECRET_KEY'], algorithm='HS256')
+
+def verify_token(token: str) -> Optional[int]:
+    """Verify a JWT token and return the user ID if valid."""
+    try:
+        payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
+        return payload['user_id']
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None
+
+def generate_reset_token(user_id: int) -> str:
+    """Generate a password reset token."""
+    payload = {
+        'user_id': user_id,
+        'exp': datetime.utcnow() + timedelta(hours=1),
+        'type': 'reset'
+    }
+    return jwt.encode(payload, current_app.config['SECRET_KEY'], algorithm='HS256')
+
+def verify_reset_token(token: str) -> Optional[int]:
+    """Verify a password reset token."""
+    try:
+        payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
+        if payload.get('type') != 'reset':
+            return None
+        return payload['user_id']
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None

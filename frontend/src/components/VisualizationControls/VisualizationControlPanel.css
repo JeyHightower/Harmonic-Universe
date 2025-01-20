@@ -1,0 +1,53 @@
+.visualization-control-panel {
+  /* Add any visualization-specific styles here */
+  --accent-color: #00ffff;
+  --accent-color-hover: #00cccc;
+}
+
+.visualization-control-panel
+  .range-container
+  input[type='range']::-webkit-slider-thumb {
+  background: var(--accent-color);
+}
+
+.visualization-control-panel
+  .range-container
+  input[type='range']::-moz-range-thumb {
+  background: var(--accent-color);
+}
+
+.visualization-control-panel
+  .range-container
+  input[type='range']:hover::-webkit-slider-thumb {
+  background: var(--accent-color-hover);
+}
+
+.visualization-control-panel
+  .range-container
+  input[type='range']:hover::-moz-range-thumb {
+  background: var(--accent-color-hover);
+}
+
+.visualization-control-panel .range-container .value {
+  color: var(--accent-color);
+}
+
+.visualization-control-panel .select-control:hover,
+.visualization-control-panel .select-control:focus {
+  border-color: var(--accent-color);
+}
+
+.visualization-control-panel .select-control:focus {
+  box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.2);
+}
+
+.visualization-control-panel .info-label {
+  color: var(--accent-color);
+}
+
+@media (prefers-color-scheme: light) {
+  .visualization-control-panel {
+    --accent-color: #008888;
+    --accent-color-hover: #006666;
+  }
+}

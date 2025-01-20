@@ -1,68 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import WebSocketManager from '../../services/WebSocketManager';
+import WebSocketClient from '../../services/WebSocketClient';
+import { setFrequencies } from '../../store/actions/audio';
 import './AudioWorkspace.css';
 
 const AudioWorkspace = () => {
   const dispatch = useDispatch();
-  const [wsManager] = useState(() => new WebSocketManager());
-  const [connectionStatus, setConnectionStatus] = useState('connecting');
+  const [wsClient] = useState(() => new WebSocketClient());
   const frequencies = useSelector(state => state.audio.frequencies);
+  const connected = useSelector(state => state.websocket.connected);
 
   useEffect(() => {
     // Initialize WebSocket connection
-    wsManager.connect();
+    wsClient.connect();
 
-    // Override the default message handler
-    wsManager.handleMessage = message => {
-      switch (message.type) {
-        case 'audioAnalysis':
-          dispatch({
-            type: 'SET_FREQUENCIES',
-            payload: message.data.frequencies,
-          });
-          break;
-        default:
-          console.warn('Unknown message type:', message.type);
-      }
-    };
-
-    // Update connection status based on WebSocket events
-    const originalOnOpen = wsManager.socket.onopen;
-    const originalOnClose = wsManager.socket.onclose;
-    const originalOnError = wsManager.socket.onerror;
-
-    wsManager.socket.onopen = (...args) => {
-      setConnectionStatus('connected');
-      originalOnOpen?.(...args);
-    };
-
-    wsManager.socket.onclose = (...args) => {
-      setConnectionStatus('disconnected');
-      originalOnClose?.(...args);
-    };
-
-    wsManager.socket.onerror = (...args) => {
-      setConnectionStatus('error');
-      originalOnError?.(...args);
-    };
+    // Add audio analysis handler
+    wsClient.socket.on('audio_analysis', data => {
+      dispatch(setFrequencies(data.frequencies));
+    });
 
     return () => {
-      wsManager.disconnect();
+      wsClient.disconnect();
     };
-  }, [dispatch, wsManager]);
+  }, [dispatch, wsClient]);
 
   return (
     <div className="audio-workspace">
-      <div className="connection-status">
-        {connectionStatus === 'connecting' && (
-          <p>Connecting to audio server...</p>
-        )}
-        {connectionStatus === 'connected' && <p>Connected to audio server</p>}
-        {connectionStatus === 'disconnected' && <p>Connection lost</p>}
-        {connectionStatus === 'error' && <p>Connection error</p>}
-      </div>
-
+      {!connected && (
+        <div className="connection-status">
+          Connection lost. Attempting to reconnect...
+        </div>
+      )}
       {/* Audio visualization based on frequencies */}
       <div className="frequency-display">
         <div

@@ -1,23 +1,19 @@
-from flask import Blueprint, jsonify, request, send_file
-from app.extensions import db
-from app.models.universe import Universe
-from app.models.audio_parameters import AudioParameters
+from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-import numpy as np
-from scipy.io import wavfile
-import os
-import tempfile
 from sqlalchemy.exc import SQLAlchemyError
-from ..extensions import limiter
+from ..extensions import db, limiter
+from ..models import Universe, AudioParameters, MusicParameters
 from ..utils.auth import check_universe_access
+from ..services.audio_processor import AudioProcessor
+from ..services.harmony_engine import HarmonyEngine
 
-audio_bp = Blueprint('audio', __name__)
+audio_bp = Blueprint('audio', __name__, url_prefix='/api/audio')
 
-@audio_bp.route('/universes/<int:universe_id>/audio', methods=['PUT'])
+@audio_bp.route('/settings/<int:universe_id>', methods=['POST'])
 @jwt_required()
-@limiter.limit("50 per hour")
-def update_audio_parameters(universe_id):
-    """Update audio parameters for a universe"""
+@limiter.limit("30 per hour")
+def create_audio_settings(universe_id):
+    """Create audio settings for a universe"""
     try:
         current_user_id = get_jwt_identity()
         universe = Universe.query.get(universe_id)
@@ -25,42 +21,41 @@ def update_audio_parameters(universe_id):
         if not universe:
             return jsonify({'error': 'Universe not found'}), 404
 
-        if not check_universe_access(universe, current_user_id, require_ownership=True):
+        if not check_universe_access(universe, current_user_id):
             return jsonify({'error': 'Unauthorized'}), 403
 
         data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No settings provided'}), 400
 
-        if not universe.audio_parameters:
-            universe.audio_parameters = AudioParameters(universe_id=universe_id)
+        # Create audio settings
+        audio_settings = AudioParameters(
+            universe_id=universe_id,
+            volume=data.get('volume', 1.0),
+            reverb=data.get('reverb', 0.0),
+            delay=data.get('delay', 0.0),
+            eq_low=data.get('eq_low', 0.0),
+            eq_mid=data.get('eq_mid', 0.0),
+            eq_high=data.get('eq_high', 0.0)
+        )
 
-        # Update audio parameters
-        if 'waveform' in data:
-            universe.audio_parameters.waveform = data['waveform']
-        if 'attack' in data:
-            universe.audio_parameters.attack = data['attack']
-        if 'decay' in data:
-            universe.audio_parameters.decay = data['decay']
-        if 'sustain' in data:
-            universe.audio_parameters.sustain = data['sustain']
-        if 'release' in data:
-            universe.audio_parameters.release = data['release']
-        if 'lfo_rate' in data:
-            universe.audio_parameters.lfo_rate = data['lfo_rate']
-        if 'lfo_depth' in data:
-            universe.audio_parameters.lfo_depth = data['lfo_depth']
-        if 'filter_cutoff' in data:
-            universe.audio_parameters.filter_cutoff = data['filter_cutoff']
-        if 'filter_resonance' in data:
-            universe.audio_parameters.filter_resonance = data['filter_resonance']
-        if 'reverb_amount' in data:
-            universe.audio_parameters.reverb_amount = data['reverb_amount']
-        if 'delay_time' in data:
-            universe.audio_parameters.delay_time = data['delay_time']
-        if 'delay_feedback' in data:
-            universe.audio_parameters.delay_feedback = data['delay_feedback']
+        # Create music settings
+        music_settings = MusicParameters(
+            universe_id=universe_id,
+            tempo=data.get('tempo', 120),
+            key=data.get('key', 'C'),
+            scale=data.get('scale', 'major'),
+            harmony_complexity=data.get('harmony_complexity', 0.5)
+        )
 
+        db.session.add(audio_settings)
+        db.session.add(music_settings)
         db.session.commit()
-        return jsonify(universe.audio_parameters.to_dict()), 200
+
+        return jsonify({
+            'audio': audio_settings.to_dict(),
+            'music': music_settings.to_dict()
+        }), 201
 
     except SQLAlchemyError as e:
         db.session.rollback()
@@ -68,11 +63,11 @@ def update_audio_parameters(universe_id):
     except Exception as e:
         return jsonify({'error': 'Server error', 'details': str(e)}), 500
 
-@audio_bp.route('/universes/<int:universe_id>/audio', methods=['GET'])
+@audio_bp.route('/settings/<int:universe_id>', methods=['GET'])
 @jwt_required()
 @limiter.limit("100 per hour")
-def get_audio_parameters(universe_id):
-    """Get audio parameters for a universe"""
+def get_audio_settings(universe_id):
+    """Get audio settings for a universe"""
     try:
         current_user_id = get_jwt_identity()
         universe = Universe.query.get(universe_id)
@@ -83,11 +78,75 @@ def get_audio_parameters(universe_id):
         if not check_universe_access(universe, current_user_id):
             return jsonify({'error': 'Unauthorized'}), 403
 
-        if not universe.audio_parameters:
-            universe.audio_parameters = AudioParameters(universe_id=universe_id)
-            db.session.commit()
+        audio_settings = AudioParameters.query.filter_by(universe_id=universe_id).first()
+        music_settings = MusicParameters.query.filter_by(universe_id=universe_id).first()
 
-        return jsonify(universe.audio_parameters.to_dict()), 200
+        if not audio_settings or not music_settings:
+            return jsonify({'error': 'Settings not found'}), 404
+
+        return jsonify({
+            'audio': audio_settings.to_dict(),
+            'music': music_settings.to_dict()
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@audio_bp.route('/settings/<int:universe_id>', methods=['PUT'])
+@jwt_required()
+@limiter.limit("50 per hour")
+def update_audio_settings(universe_id):
+    """Update audio settings for a universe"""
+    try:
+        current_user_id = get_jwt_identity()
+        universe = Universe.query.get(universe_id)
+
+        if not universe:
+            return jsonify({'error': 'Universe not found'}), 404
+
+        if not check_universe_access(universe, current_user_id):
+            return jsonify({'error': 'Unauthorized'}), 403
+
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No update data provided'}), 400
+
+        audio_settings = AudioParameters.query.filter_by(universe_id=universe_id).first()
+        music_settings = MusicParameters.query.filter_by(universe_id=universe_id).first()
+
+        if not audio_settings or not music_settings:
+            return jsonify({'error': 'Settings not found'}), 404
+
+        # Update audio settings
+        if 'volume' in data:
+            audio_settings.volume = data['volume']
+        if 'reverb' in data:
+            audio_settings.reverb = data['reverb']
+        if 'delay' in data:
+            audio_settings.delay = data['delay']
+        if 'eq_low' in data:
+            audio_settings.eq_low = data['eq_low']
+        if 'eq_mid' in data:
+            audio_settings.eq_mid = data['eq_mid']
+        if 'eq_high' in data:
+            audio_settings.eq_high = data['eq_high']
+
+        # Update music settings
+        if 'tempo' in data:
+            music_settings.tempo = data['tempo']
+        if 'key' in data:
+            music_settings.key = data['key']
+        if 'scale' in data:
+            music_settings.scale = data['scale']
+        if 'harmony_complexity' in data:
+            music_settings.harmony_complexity = data['harmony_complexity']
+
+        db.session.commit()
+
+        return jsonify({
+            'audio': audio_settings.to_dict(),
+            'music': music_settings.to_dict()
+        }), 200
 
     except SQLAlchemyError as e:
         db.session.rollback()
@@ -95,11 +154,11 @@ def get_audio_parameters(universe_id):
     except Exception as e:
         return jsonify({'error': 'Server error', 'details': str(e)}), 500
 
-@audio_bp.route('/universes/<int:universe_id>/audio/generate', methods=['POST'])
+@audio_bp.route('/generate/<int:universe_id>', methods=['POST'])
 @jwt_required()
-@limiter.limit("20 per hour")
+@limiter.limit("10 per hour")
 def generate_audio(universe_id):
-    """Generate audio for a universe based on its parameters"""
+    """Generate audio for a universe based on its settings"""
     try:
         current_user_id = get_jwt_identity()
         universe = Universe.query.get(universe_id)
@@ -110,69 +169,27 @@ def generate_audio(universe_id):
         if not check_universe_access(universe, current_user_id):
             return jsonify({'error': 'Unauthorized'}), 403
 
-        if not universe.audio_parameters:
-            return jsonify({'error': 'No audio parameters found'}), 404
+        audio_settings = AudioParameters.query.filter_by(universe_id=universe_id).first()
+        music_settings = MusicParameters.query.filter_by(universe_id=universe_id).first()
 
-        # Generate audio based on parameters
-        sample_rate = 44100  # CD quality audio
-        duration = 5.0       # 5 seconds of audio
-        t = np.linspace(0, duration, int(sample_rate * duration), False)
+        if not audio_settings or not music_settings:
+            return jsonify({'error': 'Settings not found'}), 404
 
-        # Generate base waveform
-        if universe.audio_parameters.waveform == 'sine':
-            audio = np.sin(2 * np.pi * 440 * t)
-        elif universe.audio_parameters.waveform == 'square':
-            audio = np.sign(np.sin(2 * np.pi * 440 * t))
-        elif universe.audio_parameters.waveform == 'sawtooth':
-            audio = 2 * (t * 440 - np.floor(0.5 + t * 440))
-        else:  # Default to sine
-            audio = np.sin(2 * np.pi * 440 * t)
+        # Generate audio using combined settings
+        audio_processor = AudioProcessor()
+        music_service = HarmonyEngine()
 
-        # Apply ADSR envelope
-        adsr = np.ones_like(t)
-        attack_samples = int(universe.audio_parameters.attack * sample_rate)
-        decay_samples = int(universe.audio_parameters.decay * sample_rate)
-        release_samples = int(universe.audio_parameters.release * sample_rate)
+        audio_data = audio_processor.generate_audio(audio_settings)
+        music_data = music_service.generate_music(music_settings)
 
-        # Attack phase
-        if attack_samples > 0:
-            adsr[:attack_samples] = np.linspace(0, 1, attack_samples)
+        # Combine audio and music
+        combined_data = audio_processor.mix_audio_and_music(audio_data, music_data)
 
-        # Decay phase
-        if decay_samples > 0:
-            decay_end = attack_samples + decay_samples
-            adsr[attack_samples:decay_end] = np.linspace(1, universe.audio_parameters.sustain, decay_samples)
+        return jsonify({
+            'audio_url': combined_data['url'],
+            'duration': combined_data['duration'],
+            'format': combined_data['format']
+        }), 200
 
-        # Sustain phase
-        sustain_end = int(sample_rate * duration * 0.8)  # Release starts at 80% of duration
-        adsr[decay_end:sustain_end] = universe.audio_parameters.sustain
-
-        # Release phase
-        if release_samples > 0:
-            adsr[sustain_end:] = np.linspace(universe.audio_parameters.sustain, 0, len(adsr) - sustain_end)
-
-        # Apply envelope
-        audio = audio * adsr
-
-        # Apply LFO
-        if universe.audio_parameters.lfo_depth > 0:
-            lfo = universe.audio_parameters.lfo_depth * np.sin(2 * np.pi * universe.audio_parameters.lfo_rate * t)
-            audio = audio * (1 + lfo)
-
-        # Normalize audio
-        audio = np.int16(audio * 32767)
-
-        # Save to temporary file
-        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_file:
-            wavfile.write(temp_file.name, sample_rate, audio)
-            return send_file(
-                temp_file.name,
-                mimetype='audio/wav',
-                as_attachment=True,
-                download_name=f'universe_{universe_id}_audio.wav'
-            )
-
-    except SQLAlchemyError as e:
-        return jsonify({'error': 'Database error', 'details': str(e)}), 500
     except Exception as e:
-        return jsonify({'error': 'Server error', 'details': str(e)}), 500
+        return jsonify({'error': str(e)}), 500
