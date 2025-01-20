@@ -4,13 +4,28 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from app import create_app
 from app.models import User, Universe
-from app.websocket import WebSocketClient, WebSocketManager
+from app.websocket import WebSocketService
+from flask import Flask
+from flask_socketio import SocketIO
+from app.config import Config
+from app.extensions import db, migrate, jwt
 
 @pytest.fixture
 def app():
-    """Create test application."""
-    app = create_app('testing')
-    return app
+    app = Flask(__name__)
+    app.config.from_object(Config)
+    db.init_app(app)
+    migrate.init_app(app, db)
+    jwt.init_app(app)
+    socketio = SocketIO(app)
+    websocket_service = WebSocketService(socketio)
+    websocket_service.register_handlers()
+
+    with app.app_context():
+        db.create_all()
+        yield app
+        db.session.remove()
+        db.drop_all()
 
 @pytest.fixture
 def client(app):
@@ -44,14 +59,14 @@ def test_concurrent_universe_creation(client, session):
 def test_concurrent_websocket_connections(app):
     """Test handling multiple WebSocket connections."""
     n_clients = 100
-    manager = WebSocketManager()
+    manager = WebSocketService()
     clients = []
 
     start_time = time.time()
 
     # Create and connect multiple clients
     for i in range(n_clients):
-        client = WebSocketClient(manager)
+        client = WebSocketService()
         client.connect()
         clients.append(client)
 
@@ -140,12 +155,12 @@ def test_database_query_performance(app, session):
 @pytest.mark.asyncio
 async def test_websocket_broadcast_performance(app):
     """Test WebSocket broadcast performance under load."""
-    manager = WebSocketManager()
+    manager = WebSocketService()
     n_clients = 100
     n_messages = 100
 
     # Create and connect clients
-    clients = [WebSocketClient(manager) for _ in range(n_clients)]
+    clients = [WebSocketService() for _ in range(n_clients)]
     for client in clients:
         client.connect()
         client.subscribe(1)  # All clients subscribe to the same universe

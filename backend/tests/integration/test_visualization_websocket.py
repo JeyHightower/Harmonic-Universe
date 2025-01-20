@@ -5,7 +5,7 @@ from flask_socketio import SocketIOTestClient
 from app import create_app
 from app.extensions import db
 from app.models import User, Universe, VisualizationParameters
-from app.websocket import WebSocketManager
+from app.websocket import WebSocketService
 
 @pytest.fixture
 def app():

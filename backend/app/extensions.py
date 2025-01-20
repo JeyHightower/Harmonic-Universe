@@ -5,11 +5,13 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_jwt_extended import JWTManager
 from flask import jsonify
+from flask_socketio import SocketIO
 
 db = SQLAlchemy()
 migrate = Migrate()
 cors = CORS()
 jwt = JWTManager()
+socketio = SocketIO()
 
 def ratelimit_error_handler(e):
     """Handle rate limit exceeded errors."""

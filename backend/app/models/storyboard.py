@@ -7,32 +7,30 @@ class Storyboard(db.Model):
     __tablename__ = 'storyboards'
 
     id = db.Column(db.Integer, primary_key=True)
-    plot_point = db.Column(db.String(255), nullable=False)
+    title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
-    harmony_tie = db.Column(db.Float, default=0.5)  # 0.0 to 1.0
-    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    universe = relationship('Universe', back_populates='storyboards')
     user = relationship('User', back_populates='storyboards')
+    universe = relationship('Universe', back_populates='storyboards')
     versions = relationship('Version', back_populates='storyboard', cascade='all, delete-orphan')
     points = relationship('StoryboardPoint', back_populates='storyboard', cascade='all, delete-orphan')
 
     def __repr__(self):
-        return f'<Storyboard {self.id} for Universe {self.universe_id}>'
+        return f'<Storyboard {self.title}>'
 
     def to_dict(self):
         """Convert storyboard to dictionary."""
         return {
             'id': self.id,
-            'plot_point': self.plot_point,
+            'title': self.title,
             'description': self.description,
-            'harmony_tie': self.harmony_tie,
-            'universe_id': self.universe_id,
             'user_id': self.user_id,
+            'universe_id': self.universe_id,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'points': [point.to_dict() for point in self.points],

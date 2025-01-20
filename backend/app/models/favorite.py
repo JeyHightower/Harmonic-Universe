@@ -1,4 +1,6 @@
 from ..extensions import db
+from sqlalchemy.orm import relationship
+from datetime import datetime
 
 class Favorite(db.Model):
     __tablename__ = 'favorites'
@@ -6,11 +8,13 @@ class Favorite(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     universe_id = db.Column(db.Integer, db.ForeignKey('universes.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
-    user = db.relationship('User', back_populates='favorites', overlaps="favorite_universes,users_favorited")
-    universe = db.relationship('Universe', back_populates='favorites', overlaps="favorited_by,favorite_universes")
+    user = relationship('User', back_populates='favorites',
+                       overlaps="favorite_universes,favorited_by")
+    universe = relationship('Universe', back_populates='favorites',
+                          overlaps="favorite_universes,favorited_by")
 
     def __repr__(self):
         return f'<Favorite {self.user_id} -> {self.universe_id}>'

@@ -92,14 +92,14 @@ def validate_parameters(physics_params, music_params, vis_params):
 
     physics_errors = validate_physics_parameters(physics_params)
     if physics_errors:
-        errors['physics_parameters'] = physics_errors
+        errors.update(physics_errors)
 
     music_errors = validate_music_parameters(music_params)
     if music_errors:
-        errors['music_parameters'] = music_errors
+        errors.update(music_errors)
 
     vis_errors = validate_visualization_parameters(vis_params)
     if vis_errors:
-        errors['visualization_parameters'] = vis_errors
+        errors.update(vis_errors)
 
     return errors

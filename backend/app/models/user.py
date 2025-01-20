@@ -1,59 +1,54 @@
 from app.extensions import db
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash, check_password_hash
+import jwt
+from flask import current_app
 
 class User(db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), unique=True, nullable=False)
-    password = db.Column(db.String(255), nullable=False)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # Relationships using string references
-    universes = db.relationship('Universe',
-                              foreign_keys='Universe.user_id',
-                              back_populates='user',
-                              cascade='all, delete-orphan')
-    favorites = db.relationship('Favorite',
-                              foreign_keys='Favorite.user_id',
-                              back_populates='user',
-                              cascade='all, delete-orphan')
-    favorite_universes = db.relationship('Universe',
-                                       secondary='favorites',
-                                       primaryjoin='User.id == Favorite.user_id',
-                                       secondaryjoin='Favorite.universe_id == Universe.id',
-                                       back_populates='favorited_by',
-                                       overlaps="favorites,users_favorited")
-    comments = db.relationship('Comment',
-                             foreign_keys='Comment.user_id',
-                             back_populates='user',
-                             cascade='all, delete-orphan')
-    # Use deferred loading for versions relationship
-    versions = relationship('Version',
-                         primaryjoin='User.id == foreign(Version.created_by)',
-                         back_populates='creator',
-                         lazy='dynamic')
-    templates = db.relationship('Template',
-                              foreign_keys='Template.creator_id',
-                              back_populates='creator',
-                              cascade='all, delete-orphan')
-    storyboards = db.relationship('Storyboard',
-                                foreign_keys='Storyboard.user_id',
-                                back_populates='user',
-                                cascade='all, delete-orphan')
-
-    def __init__(self, email, password):
-        self.email = email
-        self.set_password(password)
+    universes = relationship('Universe', back_populates='user')
+    comments = relationship('Comment', back_populates='user')
+    favorites = relationship('Favorite', back_populates='user', overlaps="favorite_universes")
+    favorite_universes = relationship('Universe', secondary='favorites',
+                                    back_populates='favorited_by',
+                                    overlaps="favorites")
+    storyboards = relationship('Storyboard', back_populates='user')
+    versions = relationship('Version', back_populates='creator')
+    templates = relationship('Template', back_populates='creator')
 
     def set_password(self, password):
-        self.password = generate_password_hash(password)
+        self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
-        return check_password_hash(self.password, password)
+        return check_password_hash(self.password_hash, password)
+
+    def get_reset_password_token(self, expires_in=3600):
+        return jwt.encode(
+            {'reset_password': self.id, 'exp': datetime.utcnow() + timedelta(seconds=expires_in)},
+            current_app.config['SECRET_KEY'],
+            algorithm='HS256'
+        )
+
+    @staticmethod
+    def verify_reset_password_token(token):
+        try:
+            id = jwt.decode(token, current_app.config['SECRET_KEY'],
+                          algorithms=['HS256'])['reset_password']
+        except:
+            return None
+        return User.query.get(id)
+
+    def __repr__(self):
+        return f'<User {self.username}>'
 
     def to_dict(self):
         return {
