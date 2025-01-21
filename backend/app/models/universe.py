@@ -2,23 +2,23 @@ from ..extensions import db
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from typing import Dict, Any, Optional
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 
 class Universe(db.Model):
     __tablename__ = 'universes'
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text)
-    is_public = db.Column(db.Boolean, default=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    template_id = db.Column(db.Integer, db.ForeignKey('templates.id'))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    description = Column(String(500))
+    is_public = Column(db.Boolean, default=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    template_id = Column(Integer, ForeignKey('templates.id'))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user = relationship('User', back_populates='universes')
     template = relationship('Template', back_populates='universes')
-    physics_parameters = relationship('PhysicsParameters', uselist=False, back_populates='universe',
-                                   cascade='all, delete-orphan')
+    physics_parameters = relationship('PhysicsParameters', back_populates="universe", uselist=False)
     music_parameters = relationship('MusicParameters', uselist=False, back_populates='universe',
                                   cascade='all, delete-orphan')
     audio_parameters = relationship('AudioParameters', uselist=False, back_populates='universe',
@@ -106,3 +106,11 @@ class Universe(db.Model):
 
     def __repr__(self):
         return f'<Universe {self.name}>'
+
+    @staticmethod
+    def from_dict(data):
+        """Create a Universe instance from a dictionary."""
+        return Universe(
+            name=data.get('name'),
+            description=data.get('description')
+        )

@@ -1,3 +1,4 @@
+"""Flask extensions initialization."""
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
@@ -27,9 +28,7 @@ def exempt_test_requests():
 
 limiter = Limiter(
     key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"],
-    storage_uri="memory://",
-    strategy="fixed-window"
+    default_limits=["200 per day", "50 per hour"]
 )
 
 limiter.request_filter(exempt_test_requests)

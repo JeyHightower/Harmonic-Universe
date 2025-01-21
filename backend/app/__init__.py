@@ -1,43 +1,38 @@
 from flask import Flask
 from flask_cors import CORS
-from .extensions import db, migrate, jwt, limiter, socketio
+from flask_socketio import SocketIO
 from .config import Config
-from .routes.auth_routes import auth_bp
-from .routes.universe_routes import universe_bp
-from .routes.comment_routes import comment_bp
-from .routes.favorite_routes import favorite_bp
-from .routes.storyboard_routes import storyboard_bp
-from .routes.audio_routes import audio_bp
-from .routes.visualization_routes import visualization_bp
-from .websocket.service import WebSocketService
-
-def init_websocket(app):
-    websocket_service = WebSocketService(app)
-    return websocket_service
+from .database import init_db
+from .extensions import socketio
 
 def create_app(config_class=Config):
+    """Create and configure the Flask application."""
     app = Flask(__name__)
     app.config.from_object(config_class)
 
     # Initialize extensions
     CORS(app)
-    db.init_app(app)
-    migrate.init_app(app, db)
-    jwt.init_app(app)
-    limiter.init_app(app)
     socketio.init_app(app, cors_allowed_origins="*")
 
-    # Initialize WebSocket
-    websocket_service = init_websocket(app)
+    # Initialize database
+    init_db(app)
 
     # Register blueprints
+    from .routes.auth_routes import auth_bp
+    from .routes.universe_routes import universe_bp
+    from .routes.music_routes import music_bp
+    from .routes.physics_routes import physics_bp
+    from .routes.visualization_routes import visualization_bp
+    from .routes.storyboard_routes import storyboard_bp
+    from .routes.template_routes import template_bp
+
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(universe_bp, url_prefix='/api/universes')
-    app.register_blueprint(comment_bp, url_prefix='/api/comments')
-    app.register_blueprint(favorite_bp, url_prefix='/api/favorites')
-    app.register_blueprint(storyboard_bp, url_prefix='/api/storyboards')
-    app.register_blueprint(audio_bp, url_prefix='/api/audio')
+    app.register_blueprint(music_bp, url_prefix='/api/music')
+    app.register_blueprint(physics_bp, url_prefix='/api/physics')
     app.register_blueprint(visualization_bp, url_prefix='/api/visualization')
+    app.register_blueprint(storyboard_bp, url_prefix='/api/storyboards')
+    app.register_blueprint(template_bp, url_prefix='/api/templates')
 
     @app.errorhandler(404)
     def not_found_error(error):
