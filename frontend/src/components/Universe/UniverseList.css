@@ -128,3 +128,49 @@
     flex-wrap: wrap;
   }
 }
+
+.universe-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--background-secondary);
+  border-radius: 8px;
+}
+
+.connection-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.connection-status::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.connection-status.connected {
+  background-color: var(--success-light);
+  color: var(--success);
+}
+
+.connection-status.connected::before {
+  background-color: var(--success);
+}
+
+.connection-status.disconnected {
+  background-color: var(--error-light);
+  color: var(--error);
+}
+
+.connection-status.disconnected::before {
+  background-color: var(--error);
+}
