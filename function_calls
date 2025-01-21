@@ -1,0 +1,656 @@
+<invoke name="list_dir" explanation="Examining the root directory structure to understand the codebase organization">
+<parameter name="relative_workspace_path">.</parameter>
+</invoke>
+
+<invoke name="list_dir" explanation="Examining the frontend directory structure">
+<parameter name="relative_workspace_path">frontend</parameter>
+</invoke>
+
+<invoke name="list_dir" explanation="Examining the backend directory structure">
+<parameter name="relative_workspace_path">backend</parameter>
+</invoke>
+
+<invoke name="codebase_search" explanation="Looking for schema and model definitions">
+<parameter name="query">schema model definition class</parameter>
+<parameter name="target_directories">["backend/app/models", "backend/app/schemas"]</parameter>
+</invoke>
+
+<invoke name="grep_search" explanation="Looking for potentially unused files">
+<parameter name="query">import.*from</parameter>
+</invoke>
+
+<invoke name="edit_file" explanation="Creating a new consolidated test file structure">
+<parameter name="target_file">frontend/tests/cypress/e2e/README.md</parameter>
+<parameter name="instructions">I will create a README documenting the new test structure and organization</parameter>
+<parameter name="code_edit"># Test Structure
+
+## Core Features
+- `auth.cy.js` - Authentication tests
+- `profile.cy.js` - User profile and preferences tests
+- `universe.cy.js` - Universe management and export/import tests
+- `storyboard.cy.js` - Storyboard creation and management tests
+
+## Social Features
+- `social.cy.js` - Combined social features (notifications, sharing, collaboration)
+- `search.cy.js` - Search, discovery, and recommendations
+
+## UI/UX Features
+- `accessibility.cy.js` - Accessibility and keyboard shortcuts
+- `responsive.cy.js` - Mobile and responsive design tests
+- `performance.cy.js` - Performance and optimization tests
+
+## Test Organization Guidelines
+1. Each test file should focus on a specific domain
+2. Common setup and utilities should be in support files
+3. Avoid duplicate test scenarios across files
+4. Use consistent naming and structure
+
+## Removed/Consolidated Files
+- Merged `notifications.cy.js` into `social.cy.js`
+- Merged `sharing.cy.js` into `social.cy.js`
+- Merged `export-import.cy.js` into `universe.cy.js`
+</parameter>
+<parameter name="blocking">true</parameter>
+</invoke>
+
+<invoke name="edit_file" explanation="Creating a schema definition file">
+<parameter name="target_file">backend/app/schemas/README.md</parameter>
+<parameter name="instructions">I will create a README documenting the schema structure</parameter>
+<parameter name="code_edit"># Schema Structure
+
+## Core Schemas
+- `UserSchema` - User profile and authentication
+- `UniverseSchema` - Universe properties and settings
+- `StoryboardSchema` - Storyboard and scene management
+
+## Social Schemas
+- `NotificationSchema` - User notifications
+- `CollaborationSchema` - Sharing and real-time collaboration
+- `ActivitySchema` - User activity tracking
+
+## Feature Schemas
+- `PreferencesSchema` - User preferences and accessibility settings
+- `PerformanceSchema` - Performance metrics and optimization
+- `SearchSchema` - Search and discovery settings
+
+## Relationships
+1. User -> Universes (one-to-many)
+2. Universe -> Storyboards (one-to-many)
+3. Universe -> Collaborators (many-to-many)
+4. User -> Notifications (one-to-many)
+5. User -> Activities (one-to-many)
+
+## Removed/Consolidated Schemas
+- Merged `SharingSchema` into `CollaborationSchema`
+- Merged `ExportSchema` into `UniverseSchema`
+- Merged `ImportSchema` into `UniverseSchema`
+</parameter>
+<parameter name="blocking">true</parameter>
+</invoke>
+
+<invoke name="edit_file" explanation="Creating consolidated social features test file">
+<parameter name="target_file">frontend/tests/cypress/e2e/social.cy.js</parameter>
+<parameter name="instructions">I will combine notifications, sharing, and collaboration tests into one file</parameter>
+<parameter name="code_edit">describe('Social Features', () => {
+  beforeEach(() => {
+    // Mock login
+    cy.intercept('POST', '/api/auth/login', {
+      statusCode: 200,
+      body: {
+        user: { id: 1, username: 'testuser' },
+        token: 'fake-jwt-token',
+      },
+    }).as('loginRequest');
+
+    // Mock notifications
+    cy.intercept('GET', '/api/notifications', {
+      statusCode: 200,
+      body: {
+        notifications: [
+          {
+            id: 1,
+            type: 'collaboration_invite',
+            content: 'You have been invited to collaborate',
+            sender: { id: 2, username: 'otheruser' },
+            created_at: '2024-01-20T12:00:00Z',
+            read: false,
+          }
+        ],
+        unread_count: 1,
+      },
+    }).as('getNotifications');
+
+    // Mock collaboration session
+    cy.intercept('GET', '/api/universes/1/session', {
+      statusCode: 200,
+      body: {
+        session_id: 'test-session',
+        active_users: [
+          {
+            id: 1,
+            username: 'testuser',
+            cursor: { x: 100, y: 100 },
+          }
+        ],
+      },
+    }).as('getSession');
+
+    cy.login();
+  });
+
+  describe('Notifications', () => {
+    beforeEach(() => {
+      cy.visit('/notifications');
+      cy.wait('@getNotifications');
+    });
+
+    it('should display notifications', () => {
+      cy.get('[data-testid="notifications-list"]').within(() => {
+        cy.get('[data-testid="notification-1"]')
+          .should('have.class', 'unread')
+          .and('contain', 'collaborate');
+      });
+    });
+
+    it('should mark notifications as read', () => {
+      cy.intercept('POST', '/api/notifications/1/read', {
+        statusCode: 200,
+        body: { message: 'Marked as read' },
+      }).as('markRead');
+
+      cy.get('[data-testid="notification-1"]').click();
+      cy.wait('@markRead');
+      cy.get('[data-testid="notification-1"]').should('not.have.class', 'unread');
+    });
+  });
+
+  describe('Collaboration', () => {
+    beforeEach(() => {
+      cy.visit('/universes/1/edit');
+      cy.wait('@getSession');
+    });
+
+    it('should show active collaborators', () => {
+      cy.get('[data-testid="active-users"]').should('contain', 'testuser');
+    });
+
+    it('should handle cursor tracking', () => {
+      cy.window().then(win => {
+        win.postMessage({
+          type: 'cursor_update',
+          data: { user_id: 2, cursor: { x: 200, y: 200 } },
+        }, '*');
+      });
+
+      cy.get('[data-testid="remote-cursor-2"]').should(
+        'have.css',
+        'transform',
+        'translate(200px, 200px)'
+      );
+    });
+  });
+
+  describe('Sharing', () => {
+    beforeEach(() => {
+      cy.visit('/universes/1/settings');
+    });
+
+    it('should manage collaborators', () => {
+      cy.intercept('POST', '/api/universes/1/collaborators', {
+        statusCode: 201,
+        body: {
+          id: 2,
+          username: 'newcollaborator',
+          role: 'editor',
+        },
+      }).as('addCollaborator');
+
+      cy.get('[data-testid="add-collaborator"]').click();
+      cy.get('[data-testid="collaborator-username"]').type('newcollaborator');
+      cy.get('[data-testid="collaborator-role"]').select('editor');
+      cy.get('[data-testid="submit-collaborator"]').click();
+
+      cy.wait('@addCollaborator');
+      cy.get('[data-testid="collaborator-2"]').should('contain', 'newcollaborator');
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should handle notification errors', () => {
+      cy.intercept('GET', '/api/notifications', {
+        statusCode: 500,
+        body: { error: 'Failed to fetch notifications' },
+      }).as('notificationError');
+
+      cy.visit('/notifications');
+      cy.wait('@notificationError');
+      cy.get('[data-testid="error-message"]').should('contain', 'Failed to fetch notifications');
+    });
+
+    it('should handle collaboration errors', () => {
+      cy.intercept('GET', '/api/universes/1/session', {
+        statusCode: 500,
+        body: { error: 'Failed to join session' },
+      }).as('sessionError');
+
+      cy.visit('/universes/1/edit');
+      cy.wait('@sessionError');
+      cy.get('[data-testid="error-message"]').should('contain', 'Failed to join session');
+    });
+  });
+});</parameter>
+<parameter name="blocking">true</parameter>
+</invoke>
+
+<invoke name="edit_file" explanation="Updating universe management tests to include export/import functionality">
+<parameter name="target_file">frontend/tests/cypress/e2e/universe.cy.js</parameter>
+<parameter name="instructions">I will combine universe management with export/import tests</parameter>
+<parameter name="code_edit">describe('Universe Management', () => {
+  beforeEach(() => {
+    cy.intercept('POST', '/api/auth/login', {
+      statusCode: 200,
+      body: {
+        user: { id: 1, username: 'testuser' },
+        token: 'fake-jwt-token',
+      },
+    }).as('loginRequest');
+
+    cy.intercept('GET', '/api/universes/1', {
+      statusCode: 200,
+      body: {
+        id: 1,
+        name: 'Test Universe',
+        description: 'A test universe',
+        physics_params: { particle_count: 1000 },
+        audio_params: { sample_rate: 44100 },
+      },
+    }).as('getUniverse');
+
+    cy.login();
+  });
+
+  describe('Basic Management', () => {
+    it('should create universe', () => {
+      cy.intercept('POST', '/api/universes', {
+        statusCode: 201,
+        body: {
+          id: 2,
+          name: 'New Universe',
+        },
+      }).as('createUniverse');
+
+      cy.visit('/universes/new');
+      cy.get('[data-testid="universe-name"]').type('New Universe');
+      cy.get('[data-testid="create-universe"]').click();
+      cy.wait('@createUniverse');
+      cy.url().should('include', '/universes/2');
+    });
+
+    it('should edit universe', () => {
+      cy.intercept('PUT', '/api/universes/1', {
+        statusCode: 200,
+        body: {
+          id: 1,
+          name: 'Updated Universe',
+        },
+      }).as('updateUniverse');
+
+      cy.visit('/universes/1/edit');
+      cy.get('[data-testid="universe-name"]').clear().type('Updated Universe');
+      cy.get('[data-testid="save-universe"]').click();
+      cy.wait('@updateUniverse');
+      cy.get('[data-testid="success-message"]').should('be.visible');
+    });
+  });
+
+  describe('Export', () => {
+    beforeEach(() => {
+      cy.visit('/universes/1/export');
+    });
+
+    it('should export as JSON', () => {
+      cy.intercept('POST', '/api/universes/1/export', {
+        statusCode: 200,
+        body: {
+          export_id: 'test-export',
+          download_url: 'https://example.com/export.json',
+        },
+      }).as('exportUniverse');
+
+      cy.get('[data-testid="format-json"]').click();
+      cy.get('[data-testid="start-export"]').click();
+      cy.wait('@exportUniverse');
+      cy.get('[data-testid="download-export"]').should('be.visible');
+    });
+  });
+
+  describe('Import', () => {
+    it('should import universe', () => {
+      cy.intercept('POST', '/api/universes/import', {
+        statusCode: 200,
+        body: {
+          id: 3,
+          name: 'Imported Universe',
+        },
+      }).as('importUniverse');
+
+      cy.visit('/universes/import');
+      cy.get('[data-testid="file-upload"]').attachFile('universe.json');
+      cy.get('[data-testid="start-import"]').click();
+      cy.wait('@importUniverse');
+      cy.url().should('include', '/universes/3');
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should handle export errors', () => {
+      cy.intercept('POST', '/api/universes/1/export', {
+        statusCode: 500,
+        body: { error: 'Export failed' },
+      }).as('exportError');
+
+      cy.visit('/universes/1/export');
+      cy.get('[data-testid="start-export"]').click();
+      cy.wait('@exportError');
+      cy.get('[data-testid="error-message"]').should('contain', 'Export failed');
+    });
+
+    it('should handle import errors', () => {
+      cy.intercept('POST', '/api/universes/import', {
+        statusCode: 400,
+        body: { error: 'Invalid file format' },
+      }).as('importError');
+
+      cy.visit('/universes/import');
+      cy.get('[data-testid="file-upload"]').attachFile('invalid.json');
+      cy.get('[data-testid="start-import"]').click();
+      cy.wait('@importError');
+      cy.get('[data-testid="error-message"]').should('contain', 'Invalid file format');
+    });
+  });
+});</parameter>
+<parameter name="blocking">true</parameter>
+</invoke>
+
+<invoke name="delete_file" explanation="Removing redundant notifications test file">
+<parameter name="target_file">frontend/tests/cypress/e2e/social/notifications.cy.js</parameter>
+</invoke>
+
+<invoke name="delete_file" explanation="Removing redundant sharing test file">
+<parameter name="target_file">frontend/tests/cypress/e2e/social/sharing.cy.js</parameter>
+</invoke>
+
+<invoke name="delete_file" explanation="Removing redundant export-import test file">
+<parameter name="target_file">frontend/tests/cypress/e2e/features/export-import.cy.js</parameter>
+</invoke>
+
+<invoke name="edit_file" explanation="Creating main schema file">
+<parameter name="target_file">backend/app/schemas/models.py</parameter>
+<parameter name="instructions">I will create the main schema definitions file</parameter>
+<parameter name="code_edit">from datetime import datetime
+from typing import List, Optional
+from pydantic import BaseModel, Field
+
+class UserBase(BaseModel):
+    username: str
+    email: str
+
+class UserCreate(UserBase):
+    password: str
+
+class User(UserBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        orm_mode = True
+
+class UniverseBase(BaseModel):
+    name: str
+    description: Optional[str]
+    physics_params: dict
+    audio_params: dict
+
+class Universe(UniverseBase):
+    id: int
+    owner_id: int
+    created_at: datetime
+    updated_at: datetime
+    shared_with: List[int] = []
+
+    class Config:
+        orm_mode = True
+
+class StoryboardBase(BaseModel):
+    title: str
+    description: Optional[str]
+    scenes: List[dict]
+
+class Storyboard(StoryboardBase):
+    id: int
+    universe_id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        orm_mode = True
+
+class NotificationBase(BaseModel):
+    type: str
+    content: str
+    recipient_id: int
+    sender_id: Optional[int]
+
+class Notification(NotificationBase):
+    id: int
+    created_at: datetime
+    read: bool = False
+
+    class Config:
+        orm_mode = True
+
+class CollaborationBase(BaseModel):
+    universe_id: int
+    user_id: int
+    role: str = Field(default="viewer")
+
+class Collaboration(CollaborationBase):
+    id: int
+    joined_at: datetime
+
+    class Config:
+        orm_mode = True
+
+class ActivityBase(BaseModel):
+    type: str
+    user_id: int
+    target_type: str
+    target_id: int
+    details: dict
+
+class Activity(ActivityBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
+
+class PreferencesBase(BaseModel):
+    user_id: int
+    theme: str = "light"
+    notifications_enabled: bool = True
+    accessibility: dict = Field(default_factory=dict)
+
+class Preferences(PreferencesBase):
+    id: int
+    updated_at: datetime
+
+    class Config:
+        orm_mode = True
+
+class PerformanceMetrics(BaseModel):
+    universe_id: int
+    fps: float
+    memory_usage: float
+    particle_count: int
+    timestamp: datetime
+
+class SearchIndex(BaseModel):
+    target_type: str
+    target_id: int
+    content: str
+    tags: List[str]
+    updated_at: datetime</parameter>
+<parameter name="blocking">true</parameter>
+</invoke>
+
+<invoke name="edit_file" explanation="Creating main models file">
+<parameter name="target_file">backend/app/models/models.py</parameter>
+<parameter name="instructions">I will create the main models file matching our schema</parameter>
+<parameter name="code_edit">from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, JSON
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+from database import Base
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True)
+    email = Column(String, unique=True, index=True)
+    hashed_password = Column(String)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    universes = relationship("Universe", back_populates="owner")
+    notifications = relationship("Notification", back_populates="recipient")
+    activities = relationship("Activity", back_populates="user")
+    preferences = relationship("Preferences", back_populates="user", uselist=False)
+
+class Universe(Base):
+    __tablename__ = "universes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    description = Column(String, nullable=True)
+    physics_params = Column(JSON)
+    audio_params = Column(JSON)
+    owner_id = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    owner = relationship("User", back_populates="universes")
+    storyboards = relationship("Storyboard", back_populates="universe")
+    collaborations = relationship("Collaboration", back_populates="universe")
+    performance_metrics = relationship("PerformanceMetrics", back_populates="universe")
+
+class Storyboard(Base):
+    __tablename__ = "storyboards"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, index=True)
+    description = Column(String, nullable=True)
+    scenes = Column(JSON)
+    universe_id = Column(Integer, ForeignKey("universes.id"))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    universe = relationship("Universe", back_populates="storyboards")
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    type = Column(String)
+    content = Column(String)
+    recipient_id = Column(Integer, ForeignKey("users.id"))
+    sender_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    read = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    recipient = relationship("User", back_populates="notifications", foreign_keys=[recipient_id])
+    sender = relationship("User", foreign_keys=[sender_id])
+
+class Collaboration(Base):
+    __tablename__ = "collaborations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    universe_id = Column(Integer, ForeignKey("universes.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    role = Column(String)
+    joined_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    universe = relationship("Universe", back_populates="collaborations")
+    user = relationship("User")
+
+class Activity(Base):
+    __tablename__ = "activities"
+
+    id = Column(Integer, primary_key=True, index=True)
+    type = Column(String)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    target_type = Column(String)
+    target_id = Column(Integer)
+    details = Column(JSON)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="activities")
+
+class Preferences(Base):
+    __tablename__ = "preferences"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+    theme = Column(String, default="light")
+    notifications_enabled = Column(Boolean, default=True)
+    accessibility = Column(JSON)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    user = relationship("User", back_populates="preferences")
+
+class PerformanceMetrics(Base):
+    __tablename__ = "performance_metrics"
+
+    id = Column(Integer, primary_key=True, index=True)
+    universe_id = Column(Integer, ForeignKey("universes.id"))
+    fps = Column(Integer)
+    memory_usage = Column(Integer)
+    particle_count = Column(Integer)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+    universe = relationship("Universe", back_populates="performance_metrics")</parameter>
+<parameter name="blocking">true</parameter>
+</invoke>
+
+<invoke name="edit_file" explanation="Creating main project README">
+<parameter name="target_file">README.md</parameter>
+<parameter name="instructions">I will create the main project documentation</parameter>
+<parameter name="code_edit"># Harmonic Universe
+
+A real-time collaborative universe creation platform with physics simulation and audio visualization.
+
+## Features
+
+### Core Features
+- Universe Creation & Management
+- Physics Simulation
+- Audio Visualization & Processing
+- Storyboard Creation
+- Real-time Collaboration
+
+### Social Features
+- User Profiles
+- Notifications
+- Sharing & Collaboration
+- Search & Discovery
+
+### Technical Features
+- Performance Optimization
+- Analytics & Monitoring
+- Export/Import Functionality
+- Accessibility Support
+
+## Project Structure</parameter>
+<parameter name="blocking">true</parameter>
+</invoke>
