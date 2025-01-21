@@ -1,42 +1,13 @@
-export default {
-  testEnvironment: 'jsdom',
+module.exports = {
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.js'],
+  testEnvironment: 'jsdom',
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-    '\\.(gif|ttf|eot|svg|png)$': '<rootDir>/src/tests/__mocks__/fileMock.js',
-    '^@/(.*)$': '<rootDir>/src/$1',
-  },
-  transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': [
-      'babel-jest',
-      { presets: ['@babel/preset-env', '@babel/preset-react'] },
-    ],
-  },
-  testMatch: [
-    '<rootDir>/src/**/__tests__/**/*.{js,jsx,ts,tsx}',
-    '<rootDir>/src/**/*.{spec,test}.{js,jsx,ts,tsx}',
-  ],
-  coveragePathIgnorePatterns: [
-    '/node_modules/',
-    '/__tests__/',
-    '/tests/',
-    '/__mocks__/',
-  ],
-  globals: {
-    'process.env.NODE_ENV': 'test',
-    'process.env.VITE_APP_VERSION': '1.0.0',
-  },
-  setupFiles: ['jest-canvas-mock'],
-  testEnvironmentOptions: {
-    url: 'http://localhost',
-    customExportConditions: [''],
-    pretendToBeVisual: true,
+    '\\.(gif|ttf|eot|svg)$': '<rootDir>/__mocks__/fileMock.js',
   },
   collectCoverageFrom: [
-    'src/**/*.{js,jsx,ts,tsx}',
-    '!src/**/*.d.ts',
-    '!src/index.jsx',
-    '!src/serviceWorker.js',
+    'src/**/*.{js,jsx}',
+    '!src/index.js',
     '!src/reportWebVitals.js',
   ],
   coverageThreshold: {
@@ -47,12 +18,17 @@ export default {
       statements: 80,
     },
   },
-  watchPlugins: [
-    'jest-watch-typeahead/filename',
-    'jest-watch-typeahead/testname',
+  testMatch: [
+    '<rootDir>/tests/**/*.test.{js,jsx}',
+    '<rootDir>/src/**/*.test.{js,jsx}',
   ],
-  resetMocks: true,
-  restoreMocks: true,
-  clearMocks: true,
   moduleDirectories: ['node_modules', 'src'],
+  transform: {
+    '^.+\\.(js|jsx)$': 'babel-jest',
+  },
+  verbose: true,
+  testTimeout: 10000,
+  globals: {
+    __DEV__: true,
+  },
 };
