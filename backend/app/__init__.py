@@ -1,15 +1,19 @@
 """Flask application factory."""
-from flask import Flask, jsonify
+from flask import Flask
 from flask_cors import CORS
-from .config import config_by_name
+from .config import config
 from .extensions import socketio, db, migrate, jwt, limiter
 from .sockets.physics_handler import PhysicsNamespace
+from .routes.analytics_routes import analytics_bp
 
 def create_app(config_name='development', testing=False):
     """Create Flask application."""
     app = Flask(__name__)
-    app.config.from_object(config_by_name[config_name])
-    app.config['TESTING'] = testing
+
+    # Configure the app
+    app.config.from_object(config[config_name])
+    if testing:
+        app.config['TESTING'] = True
 
     # Initialize extensions
     CORS(app)
@@ -17,24 +21,23 @@ def create_app(config_name='development', testing=False):
     migrate.init_app(app, db)
     jwt.init_app(app)
     limiter.init_app(app)
+    socketio.init_app(app, cors_allowed_origins="*")
 
-    # Initialize SocketIO with correct settings
-    socketio.init_app(app,
-                     message_queue=app.config.get('SOCKETIO_MESSAGE_QUEUE'),
-                     async_mode='eventlet' if not testing else None,
-                     cors_allowed_origins="*")
-
-    # Register namespaces
+    # Set up WebSocket namespaces
     physics_namespace = PhysicsNamespace('/physics')
     socketio.on_namespace(physics_namespace)
 
-    with app.app_context():
-        # Import parts of our application
-        from .routes import register_routes
-        register_routes(app)
+    # Register blueprints
+    from .routes.auth import auth_bp
+    from .routes.universe import universe_bp
 
-        # Create tables if they don't exist
-        db.create_all()
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(universe_bp)
+    app.register_blueprint(analytics_bp)
+
+    with app.app_context():
+        if not testing:
+            db.create_all()
 
     # Error handlers
     @app.errorhandler(404)

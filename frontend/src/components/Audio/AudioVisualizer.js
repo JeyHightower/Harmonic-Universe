@@ -1,110 +1,72 @@
-import React, { useEffect, useRef } from 'react';
-import { useSelector } from 'react-redux';
-import * as Tone from 'tone';
-import './AudioVisualizer.css';
+import React, { useCallback, useEffect, useRef } from 'react';
+import { useAnimationFrame } from '../../hooks/useAnimationFrame';
+import { useResizeEvent } from '../../hooks/useEventListener';
+import styles from './AudioVisualizer.module.css';
 
-const AudioVisualizer = () => {
+const AudioVisualizer = ({ analyzer, width = 800, height = 200 }) => {
   const canvasRef = useRef(null);
-  const analyzerRef = useRef(null);
-  const animationRef = useRef(null);
-  const { isPlaying } = useSelector(state => state.audio);
+  const contextRef = useRef(null);
 
-  useEffect(() => {
-    // Create analyzer node
-    analyzerRef.current = new Tone.Analyser({
-      type: 'waveform',
-      size: 1024,
-    });
-
-    // Connect to Tone.Destination
-    Tone.Destination.connect(analyzerRef.current);
-
-    return () => {
-      if (analyzerRef.current) {
-        analyzerRef.current.dispose();
-      }
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
+  const setupCanvas = () => {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const analyzer = analyzerRef.current;
+    const context = canvas.getContext('2d');
 
-    const draw = () => {
-      // Set canvas size to match container
-      const container = canvas.parentElement;
-      canvas.width = container.offsetWidth;
-      canvas.height = container.offsetHeight;
+    // Handle high DPI displays
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    context.scale(dpr, dpr);
 
-      // Clear canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    contextRef.current = context;
+  };
 
-      // Get waveform data
-      const values = analyzer.getValue();
-      const bufferLength = values.length;
+  useEffect(() => {
+    setupCanvas();
+  }, [width, height]);
 
-      // Draw waveform
-      ctx.beginPath();
-      ctx.strokeStyle = '#4CAF50';
-      ctx.lineWidth = 2;
+  useResizeEvent(() => {
+    setupCanvas();
+  });
 
-      const sliceWidth = canvas.width / bufferLength;
-      let x = 0;
+  const draw = useCallback(() => {
+    if (!analyzer || !contextRef.current) return;
 
-      for (let i = 0; i < bufferLength; i++) {
-        const v = values[i];
-        const y = ((v + 1) / 2) * canvas.height;
+    const context = contextRef.current;
+    const bufferLength = analyzer.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
 
-        if (i === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
-        }
+    analyzer.getByteFrequencyData(dataArray);
 
-        x += sliceWidth;
-      }
+    context.fillStyle = 'rgb(0, 0, 0)';
+    context.fillRect(0, 0, width, height);
 
-      ctx.lineTo(canvas.width, canvas.height / 2);
-      ctx.stroke();
+    const barWidth = (width / bufferLength) * 2.5;
+    let barHeight;
+    let x = 0;
 
-      // Continue animation if playing
-      if (isPlaying) {
-        animationRef.current = requestAnimationFrame(draw);
-      }
-    };
+    for (let i = 0; i < bufferLength; i++) {
+      barHeight = (dataArray[i] / 255) * height;
 
-    if (isPlaying) {
-      draw();
-    } else if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-      // Clear canvas when stopped
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const hue = (i / bufferLength) * 360;
+      context.fillStyle = `hsl(${hue}, 100%, 50%)`;
+      context.fillRect(x, height - barHeight, barWidth, barHeight);
+
+      x += barWidth + 1;
     }
+  }, [analyzer, width, height]);
 
-    // Handle window resize
-    const handleResize = () => {
-      if (isPlaying) {
-        draw();
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [isPlaying]);
+  useAnimationFrame(draw, [draw]);
 
   return (
-    <div className="visualizer-container">
-      <canvas ref={canvasRef} className="visualizer-canvas" />
+    <div className={styles.visualizerContainer}>
+      <canvas
+        ref={canvasRef}
+        className={styles.visualizerCanvas}
+        width={width}
+        height={height}
+      />
     </div>
   );
 };

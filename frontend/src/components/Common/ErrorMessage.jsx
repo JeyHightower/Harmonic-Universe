@@ -1,41 +1,57 @@
 import PropTypes from 'prop-types';
-import React from 'react';
+import React, { useEffect } from 'react';
 import './ErrorMessage.css';
 
-const ErrorMessage = ({ message, onRetry }) => {
-  // Format error message to be more user-friendly
-  const formatErrorMessage = error => {
-    if (typeof error === 'string') {
-      // Remove technical details and format common error messages
-      if (error.includes('Network Error')) {
-        return 'Unable to connect to the server. Please check your internet connection.';
-      }
-      if (error.includes('404')) {
-        return 'The requested resource was not found.';
-      }
-      if (error.includes('401')) {
-        return 'Please log in to continue.';
-      }
-      if (error.includes('403')) {
-        return 'You do not have permission to perform this action.';
-      }
-      if (error.includes('500')) {
-        return 'Something went wrong on our end. Please try again later.';
-      }
-      return error;
+const ErrorMessage = ({
+  message,
+  details,
+  category,
+  duration = 5000,
+  onDismiss,
+  showIcon = true,
+  variant = 'default',
+  severity = 'error', // error, warning, info
+}) => {
+  useEffect(() => {
+    if (duration && onDismiss) {
+      const timer = setTimeout(() => {
+        onDismiss();
+      }, duration);
+
+      return () => clearTimeout(timer);
     }
-    return 'An unexpected error occurred. Please try again.';
+  }, [duration, onDismiss]);
+
+  const handleDismiss = () => {
+    if (onDismiss) {
+      onDismiss();
+    }
   };
 
-  const formattedMessage = formatErrorMessage(message);
+  const getIcon = () => {
+    switch (severity) {
+      case 'error':
+        return '⚠️';
+      case 'warning':
+        return '⚡';
+      case 'info':
+        return 'ℹ️';
+      default:
+        return '⚠️';
+    }
+  };
 
   return (
-    <div className="error-message">
-      <div className="error-icon">⚠️</div>
-      <p className="error-text">{formattedMessage}</p>
-      {onRetry && (
-        <button className="retry-button" onClick={onRetry}>
-          Try Again
+    <div className={`error-message variant-${variant} severity-${severity}`}>
+      {showIcon && <div className="error-icon">{getIcon()}</div>}
+      <div className="error-content">
+        <p className="error-text">{message}</p>
+        {details && <p className="error-details">{details}</p>}
+        {category && <p className="error-category">{category}</p>}
+      </div>
+      {onDismiss && (
+        <button className="dismiss-button" onClick={handleDismiss}>
+          ×
         </button>
       )}
     </div>
@@ -43,8 +59,14 @@ const ErrorMessage = ({ message, onRetry }) => {
 };
 
 ErrorMessage.propTypes = {
-  message: PropTypes.oneOfType([PropTypes.string, PropTypes.object]).isRequired,
-  onRetry: PropTypes.func,
+  message: PropTypes.string.isRequired,
+  details: PropTypes.string,
+  category: PropTypes.string,
+  duration: PropTypes.number,
+  onDismiss: PropTypes.func,
+  showIcon: PropTypes.bool,
+  variant: PropTypes.oneOf(['default', 'toast', 'inline']),
+  severity: PropTypes.oneOf(['error', 'warning', 'info']),
 };
 
 export default ErrorMessage;

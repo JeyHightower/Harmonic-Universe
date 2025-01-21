@@ -3,7 +3,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background-color: #ffffff;
+  background-color: var(--background-secondary);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   position: fixed;
   top: 0;
@@ -18,30 +18,38 @@
 }
 
 .logo a {
+  color: var(--text-primary);
   text-decoration: none;
-  color: #333;
-  transition: color 0.2s;
+  transition: color 0.2s ease;
 }
 
 .logo a:hover {
-  color: #4a90e2;
+  color: var(--primary);
 }
 
-.navLinks {
+.links {
   display: flex;
-  align-items: center;
   gap: 1.5rem;
+  align-items: center;
 }
 
-.navLink {
+.link {
+  color: var(--text-secondary);
   text-decoration: none;
-  color: #666;
-  font-weight: 500;
-  transition: color 0.2s;
+  font-size: 1rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
 }
 
-.navLink:hover {
-  color: #4a90e2;
+.link:hover {
+  color: var(--text-primary);
+  background-color: var(--background-hover);
+}
+
+.link.active {
+  color: var(--primary);
+  background-color: var(--background-active);
 }
 
 .userMenu {
@@ -71,11 +79,22 @@
 
 @media (max-width: 768px) {
   .navigation {
+    flex-direction: column;
     padding: 1rem;
   }
 
-  .navLinks {
+  .logo {
+    margin-bottom: 1rem;
+  }
+
+  .links {
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 1rem;
+  }
+
+  .link {
+    font-size: 0.9rem;
   }
 
   .username {

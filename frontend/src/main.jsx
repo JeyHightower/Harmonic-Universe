@@ -2,80 +2,145 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Provider } from 'react-redux';
-import { BrowserRouter } from 'react-router-dom';
-import App from './App.jsx';
+import { getCLS, getFCP, getFID, getLCP, getTTFB } from 'web-vitals';
+import App from './App';
 import './index.css';
-import { store } from './redux/store';
+import { monitoring } from './services/monitoring';
+import store from './store';
 
-// Enable future flags for React Router
-const router = {
-  future: {
-    v7_startTransition: true,
-    v7_relativeSplatPath: true,
-  },
-};
+// Initialize monitoring with error tracking
+monitoring
+  .init({
+    appVersion: import.meta.env.VITE_APP_VERSION,
+    environment: import.meta.env.MODE,
+    analyticsEndpoint: '/api/analytics',
+    errorEndpoint: '/api/errors',
+    onError: error => {
+      // Global error handler for uncaught errors
+      console.error('Uncaught error:', error);
 
-// Service Worker Registration
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('/service-worker.js')
-      .then(registration => {
-        console.log(
-          'ServiceWorker registration successful:',
-          registration.scope
-        );
-
-        // Handle updates
-        registration.addEventListener('updatefound', () => {
-          const newWorker = registration.installing;
-
-          newWorker.addEventListener('statechange', () => {
-            if (
-              newWorker.state === 'installed' &&
-              navigator.serviceWorker.controller
-            ) {
-              // New content is available, show update notification
-              if (confirm('New version available! Would you like to update?')) {
-                window.location.reload();
-              }
-            }
-          });
+      // If we have access to the notification system, show the error
+      const notificationContainer = document.querySelector(
+        '.notification-container'
+      );
+      if (notificationContainer) {
+        const errorEvent = new CustomEvent('show-error', {
+          detail: {
+            message: 'An unexpected error occurred',
+            details: error.message,
+            category: 'UNCAUGHT_ERROR',
+          },
         });
-      })
-      .catch(error => {
-        console.error('ServiceWorker registration failed:', error);
-      });
-  });
+        window.dispatchEvent(errorEvent);
+      }
+    },
+  })
+  .startTracking();
 
-  // Handle communication with the service worker
-  navigator.serviceWorker.addEventListener('message', event => {
-    if (event.data.type === 'CACHE_UPDATED') {
-      // Handle cache updates
-      console.log('Cache updated:', event.data.url);
+// Report web vitals
+function reportWebVitals(metric) {
+  monitoring.trackPerformance(`performance_${metric.name}`, metric.value, {
+    id: metric.id,
+    name: metric.name,
+    value: metric.value,
+    rating: metric.rating,
+    navigationType: metric.navigationType,
+    entries: JSON.stringify(metric.entries),
+  });
+}
+
+// Initialize web vitals
+getCLS(reportWebVitals);
+getFID(reportWebVitals);
+getLCP(reportWebVitals);
+getTTFB(reportWebVitals);
+getFCP(reportWebVitals);
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const registration = await navigator.serviceWorker.register(
+        '/service-worker.js'
+      );
+      console.log('Service worker registered:', registration.scope);
+
+      // Handle updates
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+
+        newWorker.addEventListener('statechange', () => {
+          if (
+            newWorker.state === 'installed' &&
+            navigator.serviceWorker.controller
+          ) {
+            // New version available - show notification
+            const updateEvent = new CustomEvent('show-info', {
+              detail: {
+                message: 'A new version is available!',
+                details: 'Would you like to update now?',
+                category: 'UPDATE_AVAILABLE',
+                duration: null, // Don't auto-dismiss
+                onAction: () => {
+                  newWorker.postMessage({ type: 'SKIP_WAITING' });
+                  window.location.reload();
+                },
+              },
+            });
+            window.dispatchEvent(updateEvent);
+          }
+        });
+      });
+    } catch (error) {
+      console.error('Service worker registration failed:', error);
+      const errorEvent = new CustomEvent('show-error', {
+        detail: {
+          message: 'Service Worker Registration Failed',
+          details: error.message,
+          category: 'SERVICE_WORKER_ERROR',
+        },
+      });
+      window.dispatchEvent(errorEvent);
     }
   });
 
-  // Handle offline/online status
-  window.addEventListener('online', () => {
-    document.body.classList.remove('offline');
-    // Trigger sync when back online
-    navigator.serviceWorker.ready.then(registration => {
-      registration.sync.register('sync-messages');
-    });
-  });
-
-  window.addEventListener('offline', () => {
-    document.body.classList.add('offline');
+  // Handle controller change
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
   });
 }
+
+// Update online/offline status
+function updateOnlineStatus() {
+  const isOnline = navigator.onLine;
+  document.body.classList.toggle('offline', !isOnline);
+
+  // Show notification when connection status changes
+  const event = new CustomEvent(isOnline ? 'show-success' : 'show-warning', {
+    detail: {
+      message: isOnline ? 'Back Online' : 'Connection Lost',
+      details: isOnline
+        ? 'Your internet connection has been restored'
+        : 'Please check your internet connection',
+      category: 'CONNECTIVITY',
+      duration: 3000,
+    },
+  });
+  window.dispatchEvent(event);
+}
+
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <Provider store={store}>
-      <BrowserRouter {...router}>
-        <App />
-      </BrowserRouter>
+      <App />
     </Provider>
   </React.StrictMode>
 );

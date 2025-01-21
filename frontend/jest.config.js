@@ -3,17 +3,56 @@ export default {
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.js'],
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-    '^tone$': '<rootDir>/src/tests/mocks/tonejs-mock.js',
+    '\\.(gif|ttf|eot|svg|png)$': '<rootDir>/src/tests/__mocks__/fileMock.js',
+    '^@/(.*)$': '<rootDir>/src/$1',
   },
   transform: {
-    '^.+\\.(js|jsx)$': 'babel-jest',
+    '^.+\\.(js|jsx|ts|tsx)$': [
+      'babel-jest',
+      { presets: ['@babel/preset-env', '@babel/preset-react'] },
+    ],
   },
-  transformIgnorePatterns: ['/node_modules/(?!tone).+\\.js$'],
   testMatch: [
-    '<rootDir>/src/**/__tests__/**/*.{js,jsx}',
-    '<rootDir>/src/**/*.{spec,test}.{js,jsx}',
+    '<rootDir>/src/**/__tests__/**/*.{js,jsx,ts,tsx}',
+    '<rootDir>/src/**/*.{spec,test}.{js,jsx,ts,tsx}',
   ],
+  coveragePathIgnorePatterns: [
+    '/node_modules/',
+    '/__tests__/',
+    '/tests/',
+    '/__mocks__/',
+  ],
+  globals: {
+    'process.env.NODE_ENV': 'test',
+    'process.env.VITE_APP_VERSION': '1.0.0',
+  },
+  setupFiles: ['jest-canvas-mock'],
+  testEnvironmentOptions: {
+    url: 'http://localhost',
+    customExportConditions: [''],
+    pretendToBeVisual: true,
+  },
+  collectCoverageFrom: [
+    'src/**/*.{js,jsx,ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/index.jsx',
+    '!src/serviceWorker.js',
+    '!src/reportWebVitals.js',
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+  },
+  watchPlugins: [
+    'jest-watch-typeahead/filename',
+    'jest-watch-typeahead/testname',
+  ],
+  resetMocks: true,
+  restoreMocks: true,
+  clearMocks: true,
   moduleDirectories: ['node_modules', 'src'],
-  testPathIgnorePatterns: ['/node_modules/'],
-  verbose: true,
 };

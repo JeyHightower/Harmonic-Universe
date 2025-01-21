@@ -1,0 +1,24 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  flex: 1;
+  padding-top: 4rem; /* Height of navigation */
+  padding-bottom: 2rem;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding-left: var(--spacing-md);
+  padding-right: var(--spacing-md);
+}
+
+@media (max-width: 768px) {
+  .main {
+    padding-top: 6rem; /* Increased for mobile navigation */
+    padding-left: var(--spacing-sm);
+    padding-right: var(--spacing-sm);
+  }
+}

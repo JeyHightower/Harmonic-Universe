@@ -28,6 +28,17 @@ class CircuitBreaker {
 
     if (this.failureCount >= this.failureThreshold) {
       this.state = CIRCUIT_STATES.OPEN;
+      // Notify about circuit breaker state change
+      const event = new CustomEvent('show-warning', {
+        detail: {
+          message: 'Connection Problems Detected',
+          details:
+            'The system is temporarily limiting connection attempts due to repeated failures.',
+          category: 'CIRCUIT_BREAKER',
+          duration: 7000,
+        },
+      });
+      window.dispatchEvent(event);
     }
   }
 
@@ -40,6 +51,16 @@ class CircuitBreaker {
       const now = Date.now();
       if (now - this.lastFailureTime >= this.resetTimeout) {
         this.state = CIRCUIT_STATES.HALF_OPEN;
+        // Notify about retry attempt
+        const event = new CustomEvent('show-info', {
+          detail: {
+            message: 'Attempting to Restore Connection',
+            details: 'The system will try to re-establish a stable connection.',
+            category: 'CIRCUIT_BREAKER',
+            duration: 4000,
+          },
+        });
+        window.dispatchEvent(event);
         return true;
       }
       return false;
@@ -66,6 +87,67 @@ class WebSocketService {
     this.heartbeatInterval = null;
     this.lastHeartbeat = null;
     this.heartbeatTimeout = 30000;
+    this.errorCategories = {
+      NETWORK: 'NETWORK',
+      PROTOCOL: 'PROTOCOL',
+      AUTHENTICATION: 'AUTHENTICATION',
+      TIMEOUT: 'TIMEOUT',
+      UNKNOWN: 'UNKNOWN',
+    };
+
+    this.retryStrategies = {
+      [this.errorCategories.NETWORK]: {
+        maxAttempts: 5,
+        baseDelay: 1000,
+        maxDelay: 30000,
+      },
+      [this.errorCategories.PROTOCOL]: {
+        maxAttempts: 3,
+        baseDelay: 2000,
+        maxDelay: 10000,
+      },
+      [this.errorCategories.AUTHENTICATION]: {
+        maxAttempts: 2,
+        baseDelay: 5000,
+        maxDelay: 15000,
+      },
+      [this.errorCategories.TIMEOUT]: {
+        maxAttempts: 4,
+        baseDelay: 2000,
+        maxDelay: 20000,
+      },
+      [this.errorCategories.UNKNOWN]: {
+        maxAttempts: 3,
+        baseDelay: 3000,
+        maxDelay: 15000,
+      },
+    };
+
+    this.cleanupTasks = new Set();
+    this.resourceTimers = new Set();
+  }
+
+  registerCleanupTask(task) {
+    this.cleanupTasks.add(task);
+  }
+
+  registerTimer(timer) {
+    this.resourceTimers.add(timer);
+  }
+
+  clearTimer(timer) {
+    if (timer) {
+      clearTimeout(timer);
+      clearInterval(timer);
+      this.resourceTimers.delete(timer);
+    }
+  }
+
+  clearAllTimers() {
+    for (const timer of this.resourceTimers) {
+      this.clearTimer(timer);
+    }
+    this.resourceTimers.clear();
   }
 
   connect(url, options = {}) {
@@ -101,28 +183,54 @@ class WebSocketService {
   }
 
   startHeartbeat() {
-    if (this.heartbeatInterval) {
-      clearInterval(this.heartbeatInterval);
-    }
+    this.stopHeartbeat(); // Clear any existing heartbeat
 
-    this.heartbeatInterval = setInterval(() => {
+    const heartbeatInterval = setInterval(() => {
       if (!this.isConnected) return;
 
-      this.emit('heartbeat', { timestamp: Date.now() })
-        .then(() => {
-          this.lastHeartbeat = Date.now();
-          this.circuitBreaker.recordSuccess();
-        })
-        .catch(error => {
-          console.error('Heartbeat failed:', error);
-          this.handleHeartbeatFailure();
-        });
-    }, this.heartbeatTimeout / 3);
+      try {
+        this.socket.emit('heartbeat', { timestamp: Date.now() });
+        this.lastHeartbeat = Date.now();
+
+        // Check for missed heartbeats
+        const heartbeatTimeout = setTimeout(() => {
+          if (Date.now() - this.lastHeartbeat > this.heartbeatTimeout) {
+            this.handleHeartbeatFailure();
+          }
+        }, this.heartbeatTimeout);
+
+        this.registerTimer(heartbeatTimeout);
+      } catch (error) {
+        console.error('Heartbeat failed:', error);
+        this.handleHeartbeatFailure();
+      }
+    }, 15000);
+
+    this.registerTimer(heartbeatInterval);
+    this.heartbeatInterval = heartbeatInterval;
+  }
+
+  stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      this.clearTimer(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
   }
 
   handleHeartbeatFailure() {
     const timeSinceLastHeartbeat = Date.now() - (this.lastHeartbeat || 0);
     if (timeSinceLastHeartbeat > this.heartbeatTimeout) {
+      // Show heartbeat failure notification
+      const event = new CustomEvent('show-warning', {
+        detail: {
+          message: 'Connection Unstable',
+          details: 'Lost connection to server. Attempting to reconnect...',
+          category: 'WEBSOCKET_HEARTBEAT',
+          duration: 5000,
+        },
+      });
+      window.dispatchEvent(event);
+
       console.error('Heartbeat timeout, reconnecting...');
       this.circuitBreaker.recordFailure();
       this.reconnect();
@@ -130,44 +238,41 @@ class WebSocketService {
   }
 
   setupEventHandlers() {
+    if (!this.socket) return;
+
+    // Clear existing handlers
+    this.socket.removeAllListeners();
+
+    // Setup new handlers
     this.socket.on('connect', () => {
-      console.log('WebSocket connected');
       this.isConnected = true;
       this.reconnectAttempts = 0;
       this.circuitBreaker.recordSuccess();
-      this.lastHeartbeat = Date.now();
       this.flushMessageQueue();
-      this.emit('client_ready', { timestamp: Date.now() });
     });
 
     this.socket.on('disconnect', reason => {
-      console.log('WebSocket disconnected:', reason);
-      this.isConnected = false;
       this.handleDisconnect(reason);
     });
 
-    this.socket.on('error', this.handleError.bind(this));
-
-    this.socket.on('connect_error', error => {
-      console.error('Connection error:', error);
+    this.socket.on('error', error => {
       this.handleError(error);
-      this.circuitBreaker.recordFailure();
     });
 
-    this.socket.on('reconnect_attempt', attemptNumber => {
-      console.log(`Reconnection attempt ${attemptNumber}`);
-      this.reconnectAttempts = attemptNumber;
+    this.socket.on('message_ack', data => {
+      this.handleMessageAck(data);
     });
 
-    this.socket.on('reconnect_failed', () => {
-      console.error('Reconnection failed');
-      this.handleReconnectFailed();
-      this.circuitBreaker.recordFailure();
+    this.socket.on('batch_update', data => {
+      this.handleBatchUpdate(data);
     });
 
-    this.socket.on('batch_update', this.handleBatchUpdate.bind(this));
-    this.socket.on('message_ack', this.handleMessageAck.bind(this));
-    this.socket.on('heartbeat_ack', this.handleHeartbeatAck.bind(this));
+    // Register socket cleanup
+    this.registerCleanupTask(() => {
+      if (this.socket) {
+        this.socket.removeAllListeners();
+      }
+    });
   }
 
   handleBatchUpdate(compressedData) {
@@ -202,11 +307,6 @@ class WebSocketService {
     }
   }
 
-  handleHeartbeatAck(data) {
-    this.lastHeartbeat = Date.now();
-    this.circuitBreaker.recordSuccess();
-  }
-
   handleDisconnect(reason) {
     if (reason === 'io server disconnect') {
       // Server disconnected, attempt reconnection
@@ -219,21 +319,134 @@ class WebSocketService {
     this.pendingMessages.clear();
   }
 
-  handleError(error) {
-    console.error('WebSocket error:', error);
-    // Notify error handlers
-    const errorHandler = this.handlers.get('error');
-    if (errorHandler) {
-      errorHandler(error);
+  categorizeError(error) {
+    if (error.message?.includes('timeout')) {
+      return this.errorCategories.TIMEOUT;
+    }
+    if (
+      error.message?.includes('unauthorized') ||
+      error.message?.includes('authentication')
+    ) {
+      return this.errorCategories.AUTHENTICATION;
+    }
+    if (
+      error.message?.includes('network') ||
+      error.message?.includes('connection')
+    ) {
+      return this.errorCategories.NETWORK;
+    }
+    if (
+      error.message?.includes('protocol') ||
+      error.message?.includes('websocket')
+    ) {
+      return this.errorCategories.PROTOCOL;
+    }
+    return this.errorCategories.UNKNOWN;
+  }
+
+  async handleError(error) {
+    const category = this.categorizeError(error);
+    const strategy = this.retryStrategies[category];
+
+    console.error(`WebSocket error (${category}):`, error);
+
+    // Show error notification
+    const event = new CustomEvent('show-error', {
+      detail: {
+        message: this.getErrorMessage(category),
+        details: error.message,
+        category: `WEBSOCKET_${category}`,
+        duration: 5000,
+      },
+    });
+    window.dispatchEvent(event);
+
+    if (this.reconnectAttempts >= strategy.maxAttempts) {
+      this.handleReconnectFailed();
+      return;
+    }
+
+    const delay = Math.min(
+      strategy.baseDelay * Math.pow(2, this.reconnectAttempts),
+      strategy.maxDelay
+    );
+
+    this.reconnectAttempts++;
+
+    // Show reconnection attempt notification
+    const reconnectEvent = new CustomEvent('show-info', {
+      detail: {
+        message: 'Attempting to Reconnect',
+        details: `Retry attempt ${this.reconnectAttempts} of ${strategy.maxAttempts}`,
+        category: 'WEBSOCKET_RECONNECT',
+        duration: 3000,
+      },
+    });
+    window.dispatchEvent(reconnectEvent);
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, delay));
+      await this.reconnect();
+
+      // Show success notification
+      const successEvent = new CustomEvent('show-success', {
+        detail: {
+          message: 'Connection Restored',
+          details: 'WebSocket connection has been re-established',
+          category: 'WEBSOCKET_RECONNECT',
+          duration: 3000,
+        },
+      });
+      window.dispatchEvent(successEvent);
+
+      this.circuitBreaker.recordSuccess();
+    } catch (reconnectError) {
+      this.circuitBreaker.recordFailure();
+      this.handleError(reconnectError);
+    }
+  }
+
+  getErrorMessage(category) {
+    switch (category) {
+      case this.errorCategories.NETWORK:
+        return 'Network Connection Error';
+      case this.errorCategories.PROTOCOL:
+        return 'Protocol Error';
+      case this.errorCategories.AUTHENTICATION:
+        return 'Authentication Failed';
+      case this.errorCategories.TIMEOUT:
+        return 'Connection Timeout';
+      default:
+        return 'Unknown Error';
     }
   }
 
   handleReconnectFailed() {
     const error = new Error('Maximum reconnection attempts reached');
-    this.handleError(error);
-    // Clear message queue
+    error.category = this.errorCategories.NETWORK;
+
+    // Show fatal error notification
+    const event = new CustomEvent('show-error', {
+      detail: {
+        message: 'Connection Failed',
+        details:
+          'Maximum reconnection attempts reached. Please try again later.',
+        category: 'WEBSOCKET_FATAL',
+        duration: null, // Don't auto-dismiss
+      },
+    });
+    window.dispatchEvent(event);
+
+    // Clear message queue and pending messages
     this.messageQueue = [];
     this.pendingMessages.clear();
+
+    // Reset connection state
+    this.isConnected = false;
+    this.reconnectAttempts = 0;
+
+    // Stop heartbeat
+    this.stopHeartbeat();
   }
 
   handleMessageError(messageId, error) {
@@ -331,32 +544,71 @@ class WebSocketService {
   }
 
   disconnect() {
-    if (this.socket) {
-      if (this.heartbeatInterval) {
-        clearInterval(this.heartbeatInterval);
-        this.heartbeatInterval = null;
-      }
-      this.socket.disconnect();
-      this.socket = null;
-      this.isConnected = false;
-      this.messageQueue = [];
-      this.handlers.clear();
-      this.pendingMessages.clear();
-      if (this.batchTimeout) {
-        clearTimeout(this.batchTimeout);
-        this.batchTimeout = null;
+    // Execute all cleanup tasks
+    for (const task of this.cleanupTasks) {
+      try {
+        task();
+      } catch (error) {
+        console.error('Error in cleanup task:', error);
       }
     }
+    this.cleanupTasks.clear();
+
+    // Clear all timers
+    this.clearAllTimers();
+
+    // Clear message queue and pending messages
+    this.messageQueue = [];
+    for (const { timeout } of this.pendingMessages.values()) {
+      this.clearTimer(timeout);
+    }
+    this.pendingMessages.clear();
+
+    // Stop heartbeat
+    this.stopHeartbeat();
+
+    // Disconnect socket
+    if (this.socket) {
+      this.socket.removeAllListeners();
+      this.socket.close();
+      this.socket = null;
+    }
+
+    // Reset state
+    this.isConnected = false;
+    this.reconnectAttempts = 0;
+    this.lastHeartbeat = null;
   }
 
-  reconnect() {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++;
-      const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-      setTimeout(() => this.connect(), delay);
-    } else {
-      this.handleReconnectFailed();
+  async reconnect() {
+    if (!this.circuitBreaker.canMakeRequest()) {
+      throw new Error('Circuit breaker is open');
     }
+
+    if (this.socket) {
+      this.disconnect();
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        this.socket = io(this.url, this.options);
+
+        this.socket.once('connect', () => {
+          this.isConnected = true;
+          this.reconnectAttempts = 0;
+          this.setupEventHandlers();
+          this.startHeartbeat();
+          this.flushMessageQueue();
+          resolve();
+        });
+
+        this.socket.once('connect_error', error => {
+          reject(error);
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 }
 

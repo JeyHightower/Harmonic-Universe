@@ -2,6 +2,10 @@ import * as Tone from 'tone';
 
 class AudioEngine {
   constructor() {
+    this.initialized = false;
+    this.resources = new Set();
+    this.cleanupHandlers = new Set();
+
     // Initialize audio components
     this.synth = new Tone.PolySynth(Tone.Synth).toDestination();
     this.filter = new Tone.Filter(1000, 'lowpass').connect(this.synth);
@@ -47,6 +51,42 @@ class AudioEngine {
         transform: value => this.mapRange(value, 0, 5, -20, 0),
       },
     };
+  }
+
+  initialize() {
+    if (this.initialized) return;
+
+    try {
+      this.synth = new Tone.PolySynth().toDestination();
+      this.filter = new Tone.Filter(1000, 'lowpass').toDestination();
+      this.reverb = new Tone.Reverb(2).toDestination();
+      this.delay = new Tone.FeedbackDelay('8n', 0.5).toDestination();
+
+      // Track resources for cleanup
+      this.resources.add(this.synth);
+      this.resources.add(this.filter);
+      this.resources.add(this.reverb);
+      this.resources.add(this.delay);
+
+      // Connect audio nodes
+      this.synth.connect(this.filter);
+      this.filter.connect(this.reverb);
+      this.reverb.connect(this.delay);
+
+      this.initialized = true;
+    } catch (error) {
+      console.error('Failed to initialize audio engine:', error);
+      this.dispose();
+      throw error;
+    }
+  }
+
+  addCleanupHandler(handler) {
+    this.cleanupHandlers.add(handler);
+  }
+
+  removeCleanupHandler(handler) {
+    this.cleanupHandlers.delete(handler);
   }
 
   // Utility function to map ranges
@@ -111,13 +151,35 @@ class AudioEngine {
     this.isPlaying = false;
   }
 
-  // Clean up resources
   dispose() {
-    this.stop();
-    this.synth.dispose();
-    this.filter.dispose();
-    this.reverb.dispose();
-    this.delay.dispose();
+    // Execute cleanup handlers
+    for (const handler of this.cleanupHandlers) {
+      try {
+        handler();
+      } catch (error) {
+        console.error('Error in cleanup handler:', error);
+      }
+    }
+    this.cleanupHandlers.clear();
+
+    // Dispose audio resources
+    for (const resource of this.resources) {
+      try {
+        if (resource && typeof resource.dispose === 'function') {
+          resource.dispose();
+        }
+      } catch (error) {
+        console.error('Error disposing audio resource:', error);
+      }
+    }
+    this.resources.clear();
+
+    // Reset state
+    this.initialized = false;
+    this.synth = null;
+    this.filter = null;
+    this.reverb = null;
+    this.delay = null;
   }
 }
 
