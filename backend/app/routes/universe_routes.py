@@ -27,15 +27,40 @@ def verify_token():
 @cache.cached(timeout=60)
 def get_universes():
     """Get all public universes."""
-    universes = Universe.query.filter_by(is_public=True).all()
-    return jsonify([universe.to_dict() for universe in universes])
+    try:
+        universes = Universe.get_public_universes().all()
+        return jsonify([universe.to_dict() for universe in universes])
+    except Exception as e:
+        current_app.logger.error(f"Error fetching universes: {str(e)}")
+        return jsonify({'error': 'Failed to fetch universes'}), 500
+
+@universe_bp.route('/user/universes', methods=['GET'])
+@jwt_required()
+@cache.memoize(60)
+def get_user_universes():
+    """Get all universes accessible to the current user."""
+    try:
+        current_user_id = get_jwt_identity()
+        universes = Universe.get_user_universes(current_user_id).all()
+        return jsonify([universe.to_dict() for universe in universes])
+    except Exception as e:
+        current_app.logger.error(f"Error fetching user universes: {str(e)}")
+        return jsonify({'error': 'Failed to fetch universes'}), 500
 
 @universe_bp.route('/universes/<int:universe_id>', methods=['GET'])
 @cache.memoize(60)
 def get_universe(universe_id):
     """Get a specific universe."""
-    universe = Universe.query.get_or_404(universe_id)
-    return jsonify(universe.to_dict())
+    try:
+        universe = Universe.query.options(
+            db.joinedload(Universe.physics_parameters),
+            db.joinedload(Universe.music_parameters),
+            db.joinedload(Universe.visualization_parameters)
+        ).get_or_404(universe_id)
+        return jsonify(universe.to_dict())
+    except Exception as e:
+        current_app.logger.error(f"Error fetching universe {universe_id}: {str(e)}")
+        return jsonify({'error': 'Failed to fetch universe'}), 500
 
 @universe_bp.route('/universes', methods=['POST'])
 @jwt_required()

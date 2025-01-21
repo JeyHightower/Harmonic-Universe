@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import AutoSizer from 'react-virtualized-auto-sizer';
+import { FixedSizeGrid } from 'react-window';
 import useWebSocket from '../../hooks/useWebSocket';
 import { fetchUniverses } from '../../store/universeSlice';
 import ErrorMessage from '../Common/ErrorMessage';
@@ -8,6 +10,9 @@ import UniverseCard from './UniverseCard';
 import './UniverseList.css';
 
 const ITEMS_PER_PAGE = 12;
+const COLUMN_COUNT = 3;
+const CARD_HEIGHT = 400;
+const CARD_WIDTH = 350;
 
 const UniverseList = () => {
   const dispatch = useDispatch();
@@ -18,7 +23,7 @@ const UniverseList = () => {
   const [sortOrder, setSortOrder] = useState('desc');
   const [selectedUniverse, setSelectedUniverse] = useState(null);
 
-  // WebSocket setup
+  // Memoize WebSocket handlers
   const wsHandlers = useMemo(
     () => ({
       universe_created: data => {
@@ -48,6 +53,7 @@ const UniverseList = () => {
     dispatch(fetchUniverses());
   }, [dispatch]);
 
+  // Memoize handlers
   const handleCreate = useCallback(
     universeData => {
       emit('universe_update', {
@@ -79,46 +85,78 @@ const UniverseList = () => {
     [emit]
   );
 
-  // Filter universes based on search term
-  const filteredUniverses = universes.filter(
-    universe =>
-      universe.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      universe.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  // Memoize filtered and sorted universes
+  const filteredAndSortedUniverses = useMemo(() => {
+    const filtered = universes.filter(
+      universe =>
+        universe.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        universe.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    return [...filtered].sort((a, b) => {
+      const aValue = a[sortBy];
+      const bValue = b[sortBy];
+      const order = sortOrder === 'asc' ? 1 : -1;
+
+      if (typeof aValue === 'string') {
+        return order * aValue.localeCompare(bValue);
+      }
+      return order * (aValue - bValue);
+    });
+  }, [universes, searchTerm, sortBy, sortOrder]);
+
+  // Memoize paginated universes
+  const paginatedUniverses = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredAndSortedUniverses.slice(
+      startIndex,
+      startIndex + ITEMS_PER_PAGE
+    );
+  }, [filteredAndSortedUniverses, currentPage]);
+
+  const totalPages = Math.ceil(
+    filteredAndSortedUniverses.length / ITEMS_PER_PAGE
   );
 
-  // Sort universes
-  const sortedUniverses = [...filteredUniverses].sort((a, b) => {
-    const aValue = a[sortBy];
-    const bValue = b[sortBy];
-    const order = sortOrder === 'asc' ? 1 : -1;
-
-    if (typeof aValue === 'string') {
-      return order * aValue.localeCompare(bValue);
-    }
-    return order * (aValue - bValue);
-  });
-
-  // Paginate universes
-  const totalPages = Math.ceil(sortedUniverses.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedUniverses = sortedUniverses.slice(
-    startIndex,
-    startIndex + ITEMS_PER_PAGE
-  );
-
-  const handlePageChange = page => {
+  const handlePageChange = useCallback(page => {
     setCurrentPage(page);
     window.scrollTo(0, 0);
-  };
+  }, []);
 
-  const handleSortChange = field => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
+  const handleSortChange = useCallback(field => {
+    setSortBy(prevSortBy => {
+      if (prevSortBy === field) {
+        setSortOrder(prevOrder => (prevOrder === 'asc' ? 'desc' : 'asc'));
+        return field;
+      }
       setSortOrder('desc');
-    }
-  };
+      return field;
+    });
+  }, []);
+
+  // Memoized grid cell renderer
+  const Cell = useCallback(
+    ({ columnIndex, rowIndex, style }) => {
+      const index = rowIndex * COLUMN_COUNT + columnIndex;
+      const universe = paginatedUniverses[index];
+
+      if (!universe) return null;
+
+      return (
+        <div style={style}>
+          <UniverseCard
+            key={universe.id}
+            universe={universe}
+            onUpdate={handleUpdate}
+            onDelete={handleDelete}
+            selected={selectedUniverse === universe.id}
+            onSelect={() => setSelectedUniverse(universe.id)}
+          />
+        </div>
+      );
+    },
+    [paginatedUniverses, handleUpdate, handleDelete, selectedUniverse]
+  );
 
   if (isLoading) return <LoadingSpinner />;
   if (error) return <ErrorMessage message={error} />;
@@ -134,6 +172,7 @@ const UniverseList = () => {
           <span className="connection-status disconnected">Disconnected</span>
         )}
       </div>
+
       <div className="list-controls">
         <div className="search-box">
           <input
@@ -167,17 +206,21 @@ const UniverseList = () => {
         </div>
       ) : (
         <>
-          <div className="universe-grid">
-            {paginatedUniverses.map(universe => (
-              <UniverseCard
-                key={universe.id}
-                universe={universe}
-                onUpdate={handleUpdate}
-                onDelete={handleDelete}
-                selected={selectedUniverse === universe.id}
-                onSelect={() => setSelectedUniverse(universe.id)}
-              />
-            ))}
+          <div className="universe-grid" style={{ height: '800px' }}>
+            <AutoSizer>
+              {({ height, width }) => (
+                <FixedSizeGrid
+                  columnCount={COLUMN_COUNT}
+                  columnWidth={CARD_WIDTH}
+                  height={height}
+                  rowCount={Math.ceil(paginatedUniverses.length / COLUMN_COUNT)}
+                  rowHeight={CARD_HEIGHT}
+                  width={width}
+                >
+                  {Cell}
+                </FixedSizeGrid>
+              )}
+            </AutoSizer>
           </div>
 
           <div className="pagination">

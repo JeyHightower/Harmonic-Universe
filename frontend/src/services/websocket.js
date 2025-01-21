@@ -1,6 +1,54 @@
 import pako from 'pako'; // For message compression
 import io from 'socket.io-client';
 
+// Circuit breaker states
+const CIRCUIT_STATES = {
+  CLOSED: 'CLOSED',
+  HALF_OPEN: 'HALF_OPEN',
+  OPEN: 'OPEN',
+};
+
+class CircuitBreaker {
+  constructor(failureThreshold = 5, resetTimeout = 60000) {
+    this.state = CIRCUIT_STATES.CLOSED;
+    this.failureCount = 0;
+    this.failureThreshold = failureThreshold;
+    this.resetTimeout = resetTimeout;
+    this.lastFailureTime = null;
+  }
+
+  recordSuccess() {
+    this.failureCount = 0;
+    this.state = CIRCUIT_STATES.CLOSED;
+  }
+
+  recordFailure() {
+    this.failureCount++;
+    this.lastFailureTime = Date.now();
+
+    if (this.failureCount >= this.failureThreshold) {
+      this.state = CIRCUIT_STATES.OPEN;
+    }
+  }
+
+  canMakeRequest() {
+    if (this.state === CIRCUIT_STATES.CLOSED) {
+      return true;
+    }
+
+    if (this.state === CIRCUIT_STATES.OPEN) {
+      const now = Date.now();
+      if (now - this.lastFailureTime >= this.resetTimeout) {
+        this.state = CIRCUIT_STATES.HALF_OPEN;
+        return true;
+      }
+      return false;
+    }
+
+    return this.state === CIRCUIT_STATES.HALF_OPEN;
+  }
+}
+
 class WebSocketService {
   constructor() {
     this.socket = null;
@@ -14,9 +62,18 @@ class WebSocketService {
     this.pendingMessages = new Map();
     this.messageTimeout = 5000; // 5 seconds timeout for messages
     this.compressionThreshold = 1024; // Compress messages larger than 1KB
+    this.circuitBreaker = new CircuitBreaker();
+    this.heartbeatInterval = null;
+    this.lastHeartbeat = null;
+    this.heartbeatTimeout = 30000;
   }
 
   connect(url, options = {}) {
+    if (!this.circuitBreaker.canMakeRequest()) {
+      console.error('Circuit breaker is open, connection not allowed');
+      return false;
+    }
+
     if (this.socket) {
       this.disconnect();
     }
@@ -33,11 +90,42 @@ class WebSocketService {
       });
 
       this.setupEventHandlers();
+      this.startHeartbeat();
       return true;
     } catch (error) {
       console.error('WebSocket connection error:', error);
       this.handleError(error);
+      this.circuitBreaker.recordFailure();
       return false;
+    }
+  }
+
+  startHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+    }
+
+    this.heartbeatInterval = setInterval(() => {
+      if (!this.isConnected) return;
+
+      this.emit('heartbeat', { timestamp: Date.now() })
+        .then(() => {
+          this.lastHeartbeat = Date.now();
+          this.circuitBreaker.recordSuccess();
+        })
+        .catch(error => {
+          console.error('Heartbeat failed:', error);
+          this.handleHeartbeatFailure();
+        });
+    }, this.heartbeatTimeout / 3);
+  }
+
+  handleHeartbeatFailure() {
+    const timeSinceLastHeartbeat = Date.now() - (this.lastHeartbeat || 0);
+    if (timeSinceLastHeartbeat > this.heartbeatTimeout) {
+      console.error('Heartbeat timeout, reconnecting...');
+      this.circuitBreaker.recordFailure();
+      this.reconnect();
     }
   }
 
@@ -46,6 +134,8 @@ class WebSocketService {
       console.log('WebSocket connected');
       this.isConnected = true;
       this.reconnectAttempts = 0;
+      this.circuitBreaker.recordSuccess();
+      this.lastHeartbeat = Date.now();
       this.flushMessageQueue();
       this.emit('client_ready', { timestamp: Date.now() });
     });
@@ -61,6 +151,7 @@ class WebSocketService {
     this.socket.on('connect_error', error => {
       console.error('Connection error:', error);
       this.handleError(error);
+      this.circuitBreaker.recordFailure();
     });
 
     this.socket.on('reconnect_attempt', attemptNumber => {
@@ -71,36 +162,49 @@ class WebSocketService {
     this.socket.on('reconnect_failed', () => {
       console.error('Reconnection failed');
       this.handleReconnectFailed();
+      this.circuitBreaker.recordFailure();
     });
 
-    // Handle batch updates with decompression
-    this.socket.on('batch_update', compressedData => {
-      try {
-        const updates = this.decompressMessage(compressedData);
-        updates.forEach(update => {
-          const handler = this.handlers.get(update.type);
-          if (handler) {
-            handler(update.data);
-          }
-        });
-      } catch (error) {
-        console.error('Error processing batch update:', error);
-        this.handleError(error);
-      }
-    });
+    this.socket.on('batch_update', this.handleBatchUpdate.bind(this));
+    this.socket.on('message_ack', this.handleMessageAck.bind(this));
+    this.socket.on('heartbeat_ack', this.handleHeartbeatAck.bind(this));
+  }
 
-    // Handle message acknowledgments
-    this.socket.on('message_ack', ({ messageId, status, error }) => {
-      const pending = this.pendingMessages.get(messageId);
-      if (pending) {
-        clearTimeout(pending.timeout);
-        this.pendingMessages.delete(messageId);
-
-        if (status === 'error') {
-          this.handleMessageError(messageId, error);
+  handleBatchUpdate(compressedData) {
+    try {
+      const updates = this.decompressMessage(compressedData);
+      updates.forEach(update => {
+        const handler = this.handlers.get(update.type);
+        if (handler) {
+          handler(update.data);
         }
+      });
+      this.circuitBreaker.recordSuccess();
+    } catch (error) {
+      console.error('Error processing batch update:', error);
+      this.handleError(error);
+      this.circuitBreaker.recordFailure();
+    }
+  }
+
+  handleMessageAck({ messageId, status, error }) {
+    const pending = this.pendingMessages.get(messageId);
+    if (pending) {
+      clearTimeout(pending.timeout);
+      this.pendingMessages.delete(messageId);
+
+      if (status === 'error') {
+        this.handleMessageError(messageId, error);
+        this.circuitBreaker.recordFailure();
+      } else {
+        this.circuitBreaker.recordSuccess();
       }
-    });
+    }
+  }
+
+  handleHeartbeatAck(data) {
+    this.lastHeartbeat = Date.now();
+    this.circuitBreaker.recordSuccess();
   }
 
   handleDisconnect(reason) {
@@ -228,6 +332,10 @@ class WebSocketService {
 
   disconnect() {
     if (this.socket) {
+      if (this.heartbeatInterval) {
+        clearInterval(this.heartbeatInterval);
+        this.heartbeatInterval = null;
+      }
       this.socket.disconnect();
       this.socket = null;
       this.isConnected = false;
@@ -238,6 +346,16 @@ class WebSocketService {
         clearTimeout(this.batchTimeout);
         this.batchTimeout = null;
       }
+    }
+  }
+
+  reconnect() {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+      setTimeout(() => this.connect(), delay);
+    } else {
+      this.handleReconnectFailed();
     }
   }
 }

@@ -3,9 +3,17 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from typing import Dict, Any, Optional
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy.orm import joinedload
+from sqlalchemy.sql import or_
 
 class Universe(db.Model):
     __tablename__ = 'universes'
+    __table_args__ = (
+        db.Index('idx_user_id', 'user_id'),
+        db.Index('idx_is_public', 'is_public'),
+        db.Index('idx_created_at', 'created_at'),
+        db.Index('idx_name', 'name'),
+    )
 
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
@@ -113,4 +121,22 @@ class Universe(db.Model):
         return Universe(
             name=data.get('name'),
             description=data.get('description')
+        )
+
+    @classmethod
+    def get_public_universes(cls):
+        return cls.query.filter_by(is_public=True).options(
+            db.joinedload(cls.physics_parameters),
+            db.joinedload(cls.music_parameters),
+            db.joinedload(cls.visualization_parameters)
+        )
+
+    @classmethod
+    def get_user_universes(cls, user_id):
+        return cls.query.filter(
+            or_(cls.user_id == user_id, cls.is_public == True)
+        ).options(
+            db.joinedload(cls.physics_parameters),
+            db.joinedload(cls.music_parameters),
+            db.joinedload(cls.visualization_parameters)
         )

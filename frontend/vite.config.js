@@ -1,9 +1,37 @@
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig, splitVendorChunkPlugin } from 'vite';
+import { compression } from 'vite-plugin-compression';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    splitVendorChunkPlugin(),
+    compression({
+      algorithm: 'gzip',
+      ext: '.gz',
+    }),
+    compression({
+      algorithm: 'brotliCompress',
+      ext: '.br',
+    }),
+  ],
+  build: {
+    target: 'esnext',
+    minify: 'esbuild',
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'redux-vendor': ['redux', 'react-redux', '@reduxjs/toolkit'],
+          visualization: ['matter-js', 'tone'],
+          utils: ['axios', 'pako'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000,
+  },
   esbuild: {
     loader: 'jsx',
     include: /src\/.*\.jsx?$/,
