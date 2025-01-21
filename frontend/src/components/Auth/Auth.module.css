@@ -1,0 +1,129 @@
+.authContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 2rem;
+  background-color: var(--background-color);
+}
+
+.authForm {
+  width: 100%;
+  max-width: 400px;
+  padding: 2rem;
+  background-color: var(--card-background);
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.authForm h2 {
+  margin-bottom: 2rem;
+  text-align: center;
+  color: var(--text-color);
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.formGroup input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--input-background);
+  color: var(--text-color);
+  transition: border-color 0.2s ease;
+}
+
+.formGroup input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+}
+
+.formGroup input:disabled {
+  background-color: var(--disabled-background);
+  cursor: not-allowed;
+}
+
+.error {
+  color: var(--error-color);
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+.success {
+  color: var(--success-color);
+  text-align: center;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background-color: rgba(var(--success-color-rgb), 0.1);
+  border-radius: 4px;
+}
+
+.authButton {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.authButton:hover:not(:disabled) {
+  background-color: var(--primary-color-dark);
+}
+
+.authButton:disabled {
+  background-color: var(--disabled-background);
+  cursor: not-allowed;
+}
+
+.authLinks {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.authLinks a {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-size: 0.875rem;
+  margin: 0 0.5rem;
+}
+
+.authLinks a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .authForm {
+    padding: 1.5rem;
+  }
+
+  .authForm h2 {
+    margin-bottom: 1.5rem;
+  }
+
+  .formGroup {
+    margin-bottom: 1rem;
+  }
+
+  .formGroup input {
+    padding: 0.5rem;
+  }
+
+  .authButton {
+    padding: 0.5rem;
+  }
+}

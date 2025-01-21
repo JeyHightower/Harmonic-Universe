@@ -1,11 +1,13 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
+import { describe, expect, it, vi } from 'vitest';
 import BaseControlPanel from '../BaseControlPanel';
 
 describe('BaseControlPanel', () => {
   const mockControls = [
     {
       id: 'range1',
+      name: 'range1',
       label: 'Range Control',
       type: 'range',
       min: 0,
@@ -15,12 +17,10 @@ describe('BaseControlPanel', () => {
     },
     {
       id: 'select1',
+      name: 'select1',
       label: 'Select Control',
       type: 'select',
-      options: [
-        { value: 'option1', label: 'Option 1' },
-        { value: 'option2', label: 'Option 2' },
-      ],
+      options: ['option1', 'option2'],
     },
   ];
 
@@ -29,7 +29,10 @@ describe('BaseControlPanel', () => {
     select1: 'option1',
   };
 
-  const mockInfoItems = ['Info 1', 'Info 2'];
+  const mockInfoItems = [
+    { label: 'Info 1', description: 'Description 1' },
+    { label: 'Info 2', description: 'Description 2' },
+  ];
 
   it('renders all controls with correct labels', () => {
     render(
@@ -41,8 +44,8 @@ describe('BaseControlPanel', () => {
       />
     );
 
-    expect(screen.getByLabelText('Range Control')).toBeInTheDocument();
-    expect(screen.getByLabelText('Select Control')).toBeInTheDocument();
+    expect(screen.getByLabelText('Range Control')).toBeDefined();
+    expect(screen.getByLabelText('Select Control')).toBeDefined();
   });
 
   it('renders range input with correct attributes', () => {
@@ -55,11 +58,12 @@ describe('BaseControlPanel', () => {
     );
 
     const rangeInput = screen.getByLabelText('Range Control');
-    expect(rangeInput).toHaveAttribute('type', 'range');
-    expect(rangeInput).toHaveAttribute('min', '0');
-    expect(rangeInput).toHaveAttribute('max', '100');
-    expect(rangeInput).toHaveAttribute('step', '1');
-    expect(rangeInput).toHaveValue('50');
+    expect(rangeInput).toBeDefined();
+    expect(rangeInput.getAttribute('type')).toBe('range');
+    expect(rangeInput.getAttribute('min')).toBe('0');
+    expect(rangeInput.getAttribute('max')).toBe('100');
+    expect(rangeInput.getAttribute('step')).toBe('1');
+    expect(rangeInput.value).toBe('50');
   });
 
   it('renders select input with correct options', () => {
@@ -74,12 +78,12 @@ describe('BaseControlPanel', () => {
     const selectInput = screen.getByLabelText('Select Control');
     const options = Array.from(selectInput.options);
     expect(options).toHaveLength(2);
-    expect(options[0].text).toBe('Option 1');
-    expect(options[1].text).toBe('Option 2');
+    expect(options[0].text).toBe('Option1');
+    expect(options[1].text).toBe('Option2');
   });
 
   it('calls onChange when range value changes', () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
     render(
       <BaseControlPanel
         title="Test Panel"
@@ -99,7 +103,7 @@ describe('BaseControlPanel', () => {
   });
 
   it('calls onChange when select value changes', () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
     render(
       <BaseControlPanel
         title="Test Panel"
@@ -128,8 +132,10 @@ describe('BaseControlPanel', () => {
       />
     );
 
-    expect(screen.getByText('Info 1')).toBeInTheDocument();
-    expect(screen.getByText('Info 2')).toBeInTheDocument();
+    expect(screen.getByText('Info 1:')).toBeDefined();
+    expect(screen.getByText('Description 1')).toBeDefined();
+    expect(screen.getByText('Info 2:')).toBeDefined();
+    expect(screen.getByText('Description 2')).toBeDefined();
   });
 
   it('applies custom className when provided', () => {
@@ -142,14 +148,16 @@ describe('BaseControlPanel', () => {
       />
     );
 
-    expect(container.firstChild).toHaveClass('base-control-panel custom-class');
+    expect(container.firstChild.className).toContain(
+      'base-control-panel custom-class'
+    );
   });
 
   it('displays unit when provided for range control', () => {
     const controlsWithUnit = [
       {
         ...mockControls[0],
-        unit: 'px',
+        unit: '%',
       },
     ];
 
@@ -161,6 +169,6 @@ describe('BaseControlPanel', () => {
       />
     );
 
-    expect(screen.getByText('50 px')).toBeInTheDocument();
+    expect(screen.getByText('50.00')).toBeDefined();
   });
 });

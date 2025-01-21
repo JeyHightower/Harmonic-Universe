@@ -1,4 +1,5 @@
 import { act, renderHook } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import useControlPanel from '../useControlPanel';
 
 describe('useControlPanel', () => {
@@ -11,15 +12,15 @@ describe('useControlPanel', () => {
     value1: 20,
   };
 
-  const onChange = jest.fn();
+  const onChange = vi.fn();
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     onChange.mockClear();
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it('should initialize with merged default and initial values', () => {
@@ -57,7 +58,7 @@ describe('useControlPanel', () => {
     expect(onChange).not.toHaveBeenCalled();
 
     act(() => {
-      jest.advanceTimersByTime(100);
+      vi.advanceTimersByTime(100);
     });
 
     expect(onChange).toHaveBeenCalledWith({
@@ -110,7 +111,7 @@ describe('useControlPanel', () => {
     unmount();
 
     act(() => {
-      jest.advanceTimersByTime(100);
+      vi.advanceTimersByTime(100);
     });
 
     expect(onChange).not.toHaveBeenCalled();

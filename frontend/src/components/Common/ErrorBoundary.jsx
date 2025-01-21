@@ -1,6 +1,5 @@
-import PropTypes from 'prop-types';
 import React from 'react';
-import ErrorMessage from './ErrorMessage';
+import styles from './ErrorBoundary.module.css';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -8,7 +7,7 @@ class ErrorBoundary extends React.Component {
     this.state = {
       hasError: false,
       error: null,
-      errorInfo: null,
+      errorInfo: null
     };
   }
 
@@ -19,20 +18,18 @@ class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     this.setState({
       error,
-      errorInfo,
+      errorInfo
     });
 
     // Log error to your error reporting service
-    if (this.props.onError) {
-      this.props.onError(error, errorInfo);
-    }
+    console.error('Error caught by boundary:', error, errorInfo);
   }
 
   handleRetry = () => {
     this.setState({
       hasError: false,
       error: null,
-      errorInfo: null,
+      errorInfo: null
     });
 
     if (this.props.onRetry) {
@@ -41,31 +38,29 @@ class ErrorBoundary extends React.Component {
   };
 
   render() {
-    const { hasError, error } = this.state;
-    const { fallback, children } = this.props;
-
-    if (hasError) {
-      if (fallback) {
-        return fallback(error, this.handleRetry);
-      }
-
+    if (this.state.hasError) {
       return (
-        <ErrorMessage
-          message={error?.message || 'Something went wrong'}
-          onRetry={this.handleRetry}
-        />
+        <div className={styles.errorContainer}>
+          <h2>Something went wrong</h2>
+          <p>{this.state.error?.message}</p>
+          {this.props.showDetails && (
+            <details className={styles.errorDetails}>
+              <summary>Error Details</summary>
+              <pre>{this.state.errorInfo?.componentStack}</pre>
+            </details>
+          )}
+          <button
+            onClick={this.handleRetry}
+            className={styles.retryButton}
+          >
+            Try Again
+          </button>
+        </div>
       );
     }
 
-    return children;
+    return this.props.children;
   }
 }
-
-ErrorBoundary.propTypes = {
-  children: PropTypes.node.isRequired,
-  fallback: PropTypes.func,
-  onError: PropTypes.func,
-  onRetry: PropTypes.func,
-};
 
 export default ErrorBoundary;

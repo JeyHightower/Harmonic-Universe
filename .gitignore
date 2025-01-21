@@ -1,2 +1,145 @@
-node_modules
-backend/venv/
+# Dependencies
+node_modules/
+/frontend/node_modules/
+/backend/venv/
+/backend/.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.development
+.env.test
+.env.production
+.python-version
+
+# Build outputs
+/frontend/dist/
+/frontend/build/
+*.egg-info/
+dist/
+build/
+*.egg
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# Testing and coverage
+/frontend/coverage/
+/backend/coverage/
+.coverage
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+htmlcov/
+.tox/
+.nox/
+.coverage.*
+nosetests.xml
+coverage.xml
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pip-log.txt
+pip-delete-this-directory.txt
+
+# System files
+.DS_Store
+Thumbs.db
+*.bak
+*.tmp
+*.temp
+.directory
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+*.sql
+*.dump
+
+# Compiled files
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.dylib
+*.dll
+*.class
+*.exe
+*.o
+*.a
+
+# Cache
+.cache/
+.npm/
+.eslintcache
+.stylelintcache
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Cypress
+/frontend/cypress/videos/
+/frontend/cypress/screenshots/
+/frontend/cypress/downloads/
+
+# Misc
+*.pid
+*.seed
+*.pid.lock
+.env.*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Audio files
+*.wav
+*.mp3
+*.ogg
+*.flac
+
+# Large media files
+*.mp4
+*.tiff
+*.avi
+*.flv
+*.mov
+*.wmv
+
+# Documentation build
+/docs/_build/
+/docs/build/
+/site/
+
+# Deployment
+.vercel
+.netlify

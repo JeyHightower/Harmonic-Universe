@@ -13,11 +13,12 @@ class AuthService {
   constructor() {
     this.refreshPromise = null;
     this.tokenRefreshThreshold = 5 * 60 * 1000; // 5 minutes
+    this.API_URL = '/api/auth';
   }
 
   async login(credentials) {
     try {
-      const response = await axios.post('/api/auth/login', credentials);
+      const response = await axios.post(`${this.API_URL}/login`, credentials);
       this.handleAuthSuccess(response.data);
 
       // Show success notification
@@ -58,7 +59,7 @@ class AuthService {
 
   async register(userData) {
     try {
-      const response = await axios.post('/api/auth/register', userData);
+      const response = await axios.post(`${this.API_URL}/register`, userData);
       this.handleAuthSuccess(response.data);
 
       // Show success notification
@@ -99,38 +100,64 @@ class AuthService {
 
   async logout() {
     try {
-      await axios.post('/api/auth/logout');
-      this.clearAuthData();
-
-      // Show success notification
-      const event = new CustomEvent('show-success', {
-        detail: {
-          message: 'Logged Out Successfully',
-          details: 'See you next time!',
-          category: 'AUTH_LOGOUT',
-          duration: 3000,
+      await axios.post(`${this.API_URL}/logout`, null, {
+        headers: {
+          Authorization: `Bearer ${this.getToken()}`,
         },
       });
-      window.dispatchEvent(event);
+      localStorage.removeItem('token');
+      return true;
     } catch (error) {
+      console.error('Logout failed:', error);
+      return false;
+    }
+  }
+
+  getToken() {
+    return localStorage.getItem('token');
+  }
+
+  isAuthenticated() {
+    return !!this.getToken();
+  }
+
+  async resetPassword(email) {
+    try {
+      const response = await axios.post(`${this.API_URL}/reset-password`, {
+        email,
+      });
+      return response.data;
+    } catch (error) {
+      const authError = this.categorizeAuthError(error);
       logError(
         error,
-        'Logout',
+        'Password Reset',
         ERROR_CATEGORIES.AUTHENTICATION,
-        ERROR_SEVERITY.WARNING
+        authError.severity
       );
+      throw authError;
+    }
+  }
 
-      // Show warning notification
-      const event = new CustomEvent('show-warning', {
-        detail: {
-          message: 'Logout Error',
-          details:
-            'There was a problem logging out. Your session may still be active.',
-          category: 'AUTH_LOGOUT_ERROR',
-          duration: 5000,
-        },
-      });
-      window.dispatchEvent(event);
+  async confirmResetPassword(token, newPassword) {
+    try {
+      const response = await axios.post(
+        `${this.API_URL}/reset-password/confirm`,
+        {
+          token,
+          newPassword,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      const authError = this.categorizeAuthError(error);
+      logError(
+        error,
+        'Password Reset Confirmation',
+        ERROR_CATEGORIES.AUTHENTICATION,
+        authError.severity
+      );
+      throw authError;
     }
   }
 
@@ -141,25 +168,29 @@ class AuthService {
 
     this.refreshPromise = (async () => {
       try {
-        const response = await axios.post('/api/auth/refresh');
-        this.handleAuthSuccess(response.data);
+        const response = await axios.post(
+          `${this.API_URL}/refresh-token`,
+          null,
+          {
+            headers: {
+              Authorization: `Bearer ${this.getToken()}`,
+            },
+          }
+        );
+
+        if (response.data.token) {
+          localStorage.setItem('token', response.data.token);
+        }
+
         return response.data;
       } catch (error) {
         const authError = this.categorizeAuthError(error);
-        if (authError.type === AUTH_ERRORS.TOKEN_EXPIRED) {
-          this.clearAuthData();
-
-          // Show warning notification
-          const event = new CustomEvent('show-warning', {
-            detail: {
-              message: 'Session Expired',
-              details: 'Please log in again to continue.',
-              category: 'AUTH_SESSION_EXPIRED',
-              duration: 5000,
-            },
-          });
-          window.dispatchEvent(event);
-        }
+        logError(
+          error,
+          'Token Refresh',
+          ERROR_CATEGORIES.AUTHENTICATION,
+          authError.severity
+        );
         throw authError;
       } finally {
         this.refreshPromise = null;
@@ -169,41 +200,51 @@ class AuthService {
     return this.refreshPromise;
   }
 
+  handleAuthSuccess(data) {
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+    }
+  }
+
   categorizeAuthError(error) {
     const baseError = {
-      message: 'Authentication failed',
+      message: 'An unexpected error occurred',
       type: AUTH_ERRORS.SERVER_ERROR,
-      severity: ERROR_SEVERITY.ERROR,
-      originalError: error,
+      severity: ERROR_SEVERITY.HIGH,
+      details: [],
     };
 
     if (!error.response) {
       return {
         ...baseError,
         type: AUTH_ERRORS.NETWORK_ERROR,
-        message: 'Network error occurred during authentication',
+        message: 'Network error occurred',
+        severity: ERROR_SEVERITY.MEDIUM,
       };
     }
 
     switch (error.response.status) {
-      case 400:
-        return {
-          ...baseError,
-          type: AUTH_ERRORS.VALIDATION_ERROR,
-          message: 'Invalid input data',
-          severity: ERROR_SEVERITY.WARNING,
-        };
       case 401:
         return {
           ...baseError,
           type: AUTH_ERRORS.INVALID_CREDENTIALS,
           message: 'Invalid credentials',
+          severity: ERROR_SEVERITY.LOW,
         };
       case 403:
         return {
           ...baseError,
           type: AUTH_ERRORS.TOKEN_EXPIRED,
-          message: 'Authentication token expired',
+          message: 'Session expired',
+          severity: ERROR_SEVERITY.MEDIUM,
+        };
+      case 422:
+        return {
+          ...baseError,
+          type: AUTH_ERRORS.VALIDATION_ERROR,
+          message: 'Validation error',
+          severity: ERROR_SEVERITY.LOW,
+          details: error.response.data.errors || [],
         };
       default:
         return baseError;
@@ -211,88 +252,11 @@ class AuthService {
   }
 
   getErrorDetails(authError) {
-    switch (authError.type) {
-      case AUTH_ERRORS.INVALID_CREDENTIALS:
-        return 'Please check your username and password and try again.';
-      case AUTH_ERRORS.TOKEN_EXPIRED:
-        return 'Your session has expired. Please log in again.';
-      case AUTH_ERRORS.NETWORK_ERROR:
-        return 'Please check your internet connection and try again.';
-      case AUTH_ERRORS.VALIDATION_ERROR:
-        return (
-          authError.originalError.response?.data?.message ||
-          'Please check your input and try again.'
-        );
-      default:
-        return 'An unexpected error occurred. Please try again later.';
+    if (authError.details && authError.details.length > 0) {
+      return authError.details.join(', ');
     }
-  }
-
-  handleAuthSuccess(data) {
-    localStorage.setItem('token', data.token);
-    if (data.refreshToken) {
-      localStorage.setItem('refreshToken', data.refreshToken);
-    }
-    this.setupTokenRefresh(data.token);
-  }
-
-  setupTokenRefresh(token) {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const expiresIn = payload.exp * 1000 - Date.now();
-
-      if (expiresIn > this.tokenRefreshThreshold) {
-        setTimeout(
-          () => this.refreshToken(),
-          expiresIn - this.tokenRefreshThreshold
-        );
-      } else {
-        this.refreshToken();
-      }
-    } catch (error) {
-      logError(
-        error,
-        'Token Refresh Setup',
-        ERROR_CATEGORIES.AUTHENTICATION,
-        ERROR_SEVERITY.WARNING
-      );
-
-      // Show warning notification
-      const event = new CustomEvent('show-warning', {
-        detail: {
-          message: 'Token Refresh Error',
-          details:
-            'There was a problem setting up automatic token refresh. You may need to log in again soon.',
-          category: 'AUTH_TOKEN_REFRESH',
-          duration: 5000,
-        },
-      });
-      window.dispatchEvent(event);
-    }
-  }
-
-  clearAuthData() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-  }
-
-  getAuthHeader() {
-    const token = localStorage.getItem('token');
-    return token ? `Bearer ${token}` : '';
-  }
-
-  isAuthenticated() {
-    const token = localStorage.getItem('token');
-    if (!token) return false;
-
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.exp * 1000 > Date.now();
-    } catch {
-      return false;
-    }
+    return 'Please try again or contact support if the issue persists.';
   }
 }
 
-const authService = new AuthService();
-export default authService;
+export const authService = new AuthService();

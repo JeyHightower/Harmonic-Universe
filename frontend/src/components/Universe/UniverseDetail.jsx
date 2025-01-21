@@ -1,16 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import {
-  fetchUniverseById,
-  updateUniverse,
-} from '../../redux/slices/universeSlice';
-import ErrorMessage from '../Common/ErrorMessage';
-import LoadingSpinner from '../Common/LoadingSpinner';
-import MusicControlPanel from '../Music/MusicControlPanel';
-import PhysicsControlPanel from '../Physics/PhysicsControlPanel';
-import StoryboardPanel from '../Storyboard/StoryboardPanel';
-import './UniverseDetail.css';
+import { fetchUniverses } from '../../redux/slices/universeSlice';
+import CommentList from '../Comments/CommentList';
+import MusicControls from '../Music/MusicControls';
+import PhysicsControls from '../Physics/PhysicsControls';
+import Storyboard from '../Storyboard/Storyboard';
+import FavoriteButton from './FavoriteButton';
+import PrivacyToggle from './PrivacyToggle';
+import ShareUniverse from './ShareUniverse';
+import styles from './Universe.module.css';
 
 const UniverseDetail = () => {
   const { universeId } = useParams();
@@ -22,128 +21,101 @@ const UniverseDetail = () => {
 
   useEffect(() => {
     if (universeId) {
-      dispatch(fetchUniverseById(universeId));
+      dispatch(fetchUniverses(universeId));
     }
   }, [dispatch, universeId]);
 
-  const handlePhysicsChange = parameters => {
-    dispatch(
-      updateUniverse({
-        id: universeId,
-        physics_parameters: parameters,
-      })
-    );
-  };
+  if (isLoading) {
+    return <div className={styles.loading}>Loading universe...</div>;
+  }
 
-  const handleMusicChange = parameters => {
-    dispatch(
-      updateUniverse({
-        id: universeId,
-        music_parameters: parameters,
-      })
-    );
-  };
+  if (error) {
+    return <div className={styles.error}>{error}</div>;
+  }
 
-  const handleStoryboardChange = plotPoints => {
-    dispatch(
-      updateUniverse({
-        id: universeId,
-        storyboard: plotPoints,
-      })
-    );
-  };
+  if (!currentUniverse) {
+    return <div className={styles.error}>Universe not found</div>;
+  }
 
-  if (isLoading) return <LoadingSpinner />;
-  if (error) return <ErrorMessage message={error} />;
-  if (!currentUniverse) return <ErrorMessage message="Universe not found" />;
+  const handleTabChange = tab => {
+    setActiveTab(tab);
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'overview':
         return (
-          <div className="overview-section">
-            <h2>{currentUniverse.title}</h2>
-            <p className="description">{currentUniverse.description}</p>
-            <div className="metadata">
-              <div className="metadata-item">
-                <label>Created:</label>
-                <span>
-                  {new Date(currentUniverse.created_at).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="metadata-item">
-                <label>Last Updated:</label>
-                <span>
-                  {new Date(currentUniverse.updated_at).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="metadata-item">
-                <label>Visibility:</label>
-                <span>{currentUniverse.is_public ? 'Public' : 'Private'}</span>
-              </div>
+          <div className={styles.overview}>
+            <h2>{currentUniverse.name}</h2>
+            <p>{currentUniverse.description}</p>
+            <div className={styles.actions}>
+              <FavoriteButton universeId={universeId} />
+              <PrivacyToggle
+                isPrivate={currentUniverse.isPrivate}
+                universeId={universeId}
+              />
+              <ShareUniverse universe={currentUniverse} />
             </div>
           </div>
         );
-
       case 'physics':
-        return (
-          <PhysicsControlPanel
-            initialValues={currentUniverse.physics_parameters}
-            onChange={handlePhysicsChange}
-          />
-        );
-
+        return <PhysicsControls universeId={universeId} />;
       case 'music':
-        return (
-          <MusicControlPanel
-            initialValues={currentUniverse.music_parameters}
-            onChange={handleMusicChange}
-          />
-        );
-
+        return <MusicControls universeId={universeId} />;
       case 'storyboard':
-        return (
-          <StoryboardPanel
-            initialPoints={currentUniverse.storyboard || []}
-            onChange={handleStoryboardChange}
-          />
-        );
-
+        return <Storyboard universeId={universeId} />;
+      case 'comments':
+        return <CommentList universeId={universeId} />;
       default:
         return null;
     }
   };
 
   return (
-    <div className="universe-detail">
-      <nav className="tabs">
+    <div className={styles.universeDetail}>
+      <nav className={styles.tabs}>
         <button
-          className={`tab ${activeTab === 'overview' ? 'active' : ''}`}
-          onClick={() => setActiveTab('overview')}
+          className={`${styles.tab} ${
+            activeTab === 'overview' ? styles.active : ''
+          }`}
+          onClick={() => handleTabChange('overview')}
         >
           Overview
         </button>
         <button
-          className={`tab ${activeTab === 'physics' ? 'active' : ''}`}
-          onClick={() => setActiveTab('physics')}
+          className={`${styles.tab} ${
+            activeTab === 'physics' ? styles.active : ''
+          }`}
+          onClick={() => handleTabChange('physics')}
         >
           Physics
         </button>
         <button
-          className={`tab ${activeTab === 'music' ? 'active' : ''}`}
-          onClick={() => setActiveTab('music')}
+          className={`${styles.tab} ${
+            activeTab === 'music' ? styles.active : ''
+          }`}
+          onClick={() => handleTabChange('music')}
         >
           Music
         </button>
         <button
-          className={`tab ${activeTab === 'storyboard' ? 'active' : ''}`}
-          onClick={() => setActiveTab('storyboard')}
+          className={`${styles.tab} ${
+            activeTab === 'storyboard' ? styles.active : ''
+          }`}
+          onClick={() => handleTabChange('storyboard')}
         >
           Storyboard
         </button>
+        <button
+          className={`${styles.tab} ${
+            activeTab === 'comments' ? styles.active : ''
+          }`}
+          onClick={() => handleTabChange('comments')}
+        >
+          Comments
+        </button>
       </nav>
-
-      <div className="content">{renderTabContent()}</div>
+      <div className={styles.content}>{renderTabContent()}</div>
     </div>
   );
 };

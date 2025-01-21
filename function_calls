@@ -1,5 +1,5 @@
 <invoke name="list_dir">
-<parameter name="explanation">Examining the root directory structure to begin full codebase analysis.</parameter>
+<parameter name="explanation">Examining the root directory structure to understand the codebase organization</parameter>
 <parameter name="relative_workspace_path">.</parameter>
 </invoke>
 
@@ -16,8 +16,10 @@
 <parameter name="target_directories">["backend/app/models", "backend/app/schemas"]</parameter>
 </invoke>
 
-<invoke name="grep_search" explanation="Looking for all import statements to analyze usage">
+<invoke name="grep_search">
 <parameter name="query">^import|^from.*import</parameter>
+<parameter name="explanation">Analyzing import statements to identify unused dependencies</parameter>
+<parameter name="case_sensitive">true</parameter>
 </invoke>
 
 <invoke name="edit_file" explanation="Creating a new consolidated test file structure">
@@ -865,7 +867,7 @@ Cypress.Commands.add('login', (email, password) => {
 
 // WebSocket commands
 Cypress.Commands.add('connectWebSocket', () => {
-  cy.window().then((win) => {
+  cy.window().then(() => {
     const ws = new WebSocket('ws://localhost:8080');
     return new Cypress.Promise((resolve) => {
       ws.onopen = () => resolve(ws);
@@ -2171,4 +2173,9 @@ const LanguageSwitcher = () => {
 
 export default LanguageSwitcher;</parameter>
 <parameter name="blocking">true</parameter>
+</invoke>
+
+<invoke name="codebase_search">
+<parameter name="query">duplicate similar files components utils helpers</parameter>
+<parameter name="explanation">Looking for potentially duplicate or similar files that could be consolidated</parameter>
 </invoke>

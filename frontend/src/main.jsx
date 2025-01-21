@@ -2,11 +2,18 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Provider } from 'react-redux';
+import { BrowserRouter } from 'react-router-dom';
 import { getCLS, getFCP, getFID, getLCP, getTTFB } from 'web-vitals';
 import App from './App';
 import './index.css';
 import { monitoring } from './services/monitoring';
 import store from './store';
+
+console.log('Application initialization started');
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+
+console.log('Root element found, mounting application');
 
 // Initialize monitoring with error tracking
 monitoring
@@ -137,10 +144,14 @@ window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 updateOnlineStatus();
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+root.render(
   <React.StrictMode>
     <Provider store={store}>
-      <App />
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
     </Provider>
   </React.StrictMode>
 );
+
+console.log('Application mounted successfully');

@@ -1,53 +1,51 @@
-import React, { useMemo } from 'react';
+// UniverseCard.js
+import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
-import styles from './UniverseCard.module.css';
+import FavoriteButton from './FavoriteButton';
+import styles from './Universe.module.css';
 
-const UniverseCard = React.memo(({ universe, onDelete }) => {
-  const formattedDate = useMemo(() => {
-    return new Date(universe.created_at).toLocaleDateString();
-  }, [universe.created_at]);
-
-  const handleDelete = e => {
-    e.preventDefault();
-    onDelete(universe.id);
-  };
-
-  const cardStyle = useMemo(
-    () => ({
-      background: `linear-gradient(45deg, ${
-        universe.color_scheme || '#4a90e2'
-      }, ${universe.secondary_color || '#357abd'})`,
-    }),
-    [universe.color_scheme, universe.secondary_color]
-  );
-
+const UniverseCard = ({ universe }) => {
   return (
-    <Link
-      to={`/universe/${universe.id}`}
-      className={styles.card}
-      style={cardStyle}
-    >
-      <div className={styles.content}>
-        <h3 className={styles.title}>{universe.name}</h3>
-        <p className={styles.description}>{universe.description}</p>
-        <div className={styles.metadata}>
-          <span className={styles.date}>Created: {formattedDate}</span>
-          <span className={styles.author}>By: {universe.author}</span>
+    <div className={styles.card}>
+      <div className={styles.cardHeader}>
+        <Link to={`/universe/${universe.id}`} className={styles.title}>
+          {universe.name}
+        </Link>
+        <FavoriteButton universeId={universe.id} />
+      </div>
+      <p className={styles.description}>{universe.description}</p>
+      <div className={styles.stats}>
+        <div className={styles.stat}>
+          <label>Gravity:</label>
+          <span>{universe.gravity_constant}</span>
         </div>
-        {onDelete && (
-          <button
-            className={styles.deleteButton}
-            onClick={handleDelete}
-            aria-label="Delete universe"
-          >
-            Delete
-          </button>
+        <div className={styles.stat}>
+          <label>Harmony:</label>
+          <span>{universe.environment_harmony}</span>
+        </div>
+      </div>
+      <div className={styles.meta}>
+        <span className={styles.date}>
+          Created: {new Date(universe.created_at).toLocaleDateString()}
+        </span>
+        {universe.favorite_count > 0 && (
+          <span className={styles.favorites}>♥ {universe.favorite_count}</span>
         )}
       </div>
-    </Link>
+    </div>
   );
-});
+};
 
-UniverseCard.displayName = 'UniverseCard';
+UniverseCard.propTypes = {
+  universe: PropTypes.shape({
+    id: PropTypes.number.isRequired,
+    name: PropTypes.string.isRequired,
+    description: PropTypes.string,
+    gravity_constant: PropTypes.number,
+    environment_harmony: PropTypes.number,
+    created_at: PropTypes.string,
+    favorite_count: PropTypes.number,
+  }).isRequired,
+};
 
 export default UniverseCard;

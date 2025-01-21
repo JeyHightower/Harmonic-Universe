@@ -38,7 +38,9 @@ const BaseControlPanel = ({
                   handleChange(control.name, parseFloat(e.target.value))
                 }
               />
-              <span className="value">{value.toFixed(2)}</span>
+              <span className="value">
+                {typeof value === 'number' ? value.toFixed(2) : value}
+              </span>
             </div>
           </div>
         );

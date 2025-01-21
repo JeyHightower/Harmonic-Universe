@@ -1,172 +1,252 @@
-import '@testing-library/jest-dom';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
+import { configureStore } from '@reduxjs/toolkit';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { Provider } from 'react-redux';
+import { BrowserRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Dashboard from '../Dashboard';
 
-// Mock fetch globally
-global.fetch = jest.fn();
-
-// Mock Chart.js to avoid canvas errors
-jest.mock('chart.js');
-jest.mock('react-chartjs-2', () => ({
-  Line: () => null,
-}));
-
-describe('Analytics Dashboard', () => {
-  const mockSummaryData = {
-    summary: {
-      pwa_install: {
-        total: 100,
-        count: 50,
-        min: 1,
-        max: 5,
-        average: 2,
-        tags: {
-          platform: {
-            ios: 20,
-            android: 30,
-          },
-          outcome: {
-            success: 45,
-            failed: 5,
-          },
-        },
-      },
-      service_worker: {
-        total: 200,
-        count: 100,
-        min: 0,
-        max: 2,
-        average: 1,
-        tags: {
-          event: {
-            registration: 80,
-            activation: 20,
-          },
-        },
-      },
+describe('Dashboard', () => {
+  const mockAnalytics = {
+    overview: {
+      totalUniverses: 100,
+      activeUsers: 50,
+      averageEngagement: '30m',
+      retentionRate: '75%',
+    },
+    userMetrics: {
+      daily: [
+        /* daily data */
+      ],
+      weekly: [
+        /* weekly data */
+      ],
+      monthly: [
+        /* monthly data */
+      ],
+    },
+    universeMetrics: {
+      mostActive: [
+        { id: 1, name: 'Universe 1', activity: 100 },
+        { id: 2, name: 'Universe 2', activity: 80 },
+      ],
+      recentlyCreated: [
+        { id: 3, name: 'Universe 3', created: '2024-02-01' },
+        { id: 4, name: 'Universe 4', created: '2024-01-31' },
+      ],
     },
   };
 
+  const renderWithRedux = (ui, initialState = {}) => {
+    const store = configureStore({
+      reducer: {
+        universe: (state = initialState, action) => {
+          if (action.type === 'universe/setAnalytics') {
+            return { ...state, analytics: action.payload };
+          }
+          return state;
+        },
+      },
+    });
+
+    return {
+      ...render(
+        <Provider store={store}>
+          <BrowserRouter>{ui}</BrowserRouter>
+        </Provider>
+      ),
+      store,
+    };
+  };
+
   beforeEach(() => {
-    fetch.mockClear();
+    vi.clearAllMocks();
+    global.fetch = vi.fn();
   });
 
-  it('shows loading state initially', () => {
-    fetch.mockImplementationOnce(() => new Promise(() => {}));
-    render(<Dashboard />);
-    expect(screen.getByText('Loading analytics...')).toBeInTheDocument();
-  });
-
-  it('shows error state when fetch fails', async () => {
-    fetch.mockRejectedValueOnce(new Error('Failed to fetch'));
-    render(<Dashboard />);
-    await waitFor(() => {
-      expect(screen.getByText('Failed to fetch')).toBeInTheDocument();
+  describe('Initial Rendering', () => {
+    it('shows loading state initially', () => {
+      renderWithRedux(<Dashboard />);
+      expect(screen.getByTestId('loading-indicator')).toBeInTheDocument();
     });
-  });
 
-  it('shows empty state when no data available', async () => {
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ summary: {} }),
-    });
-    render(<Dashboard />);
-    await waitFor(() => {
-      expect(
-        screen.getByText('No analytics data available')
-      ).toBeInTheDocument();
+    it('displays error message when fetch fails', async () => {
+      global.fetch.mockRejectedValueOnce(new Error('Failed to fetch'));
+      renderWithRedux(<Dashboard />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('error-message')).toHaveTextContent(
+          'Failed to fetch'
+        );
+      });
     });
   });
 
-  it('displays metrics data correctly', async () => {
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockSummaryData,
+  describe('Data Display', () => {
+    beforeEach(() => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockAnalytics),
+      });
     });
 
-    render(<Dashboard />);
+    it('displays overview metrics correctly', async () => {
+      renderWithRedux(<Dashboard />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Analytics Dashboard')).toBeInTheDocument();
-      expect(screen.getByLabelText('Select Metric:')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(
+          screen.getByText(
+            `Total Universes: ${mockAnalytics.overview.totalUniverses}`
+          )
+        ).toBeInTheDocument();
+        expect(
+          screen.getByText(
+            `Active Users: ${mockAnalytics.overview.activeUsers}`
+          )
+        ).toBeInTheDocument();
+        expect(
+          screen.getByText(
+            `Average Engagement: ${mockAnalytics.overview.averageEngagement}`
+          )
+        ).toBeInTheDocument();
+        expect(
+          screen.getByText(
+            `Retention Rate: ${mockAnalytics.overview.retentionRate}`
+          )
+        ).toBeInTheDocument();
+      });
     });
 
-    // Check if metrics are in the select dropdown
-    const select = screen.getByLabelText('Select Metric:');
-    expect(select).toHaveValue('pwa_install');
-    expect(screen.getByText('100.00')).toBeInTheDocument(); // Total
-    expect(screen.getByText('2.00')).toBeInTheDocument(); // Average
+    it('displays most active universes', async () => {
+      renderWithRedux(<Dashboard />);
+
+      await waitFor(() => {
+        mockAnalytics.universeMetrics.mostActive.forEach(universe => {
+          expect(screen.getByText(universe.name)).toBeInTheDocument();
+          expect(
+            screen.getByText(`Activity: ${universe.activity}`)
+          ).toBeInTheDocument();
+        });
+      });
+    });
+
+    it('displays recently created universes', async () => {
+      renderWithRedux(<Dashboard />);
+
+      await waitFor(() => {
+        mockAnalytics.universeMetrics.recentlyCreated.forEach(universe => {
+          expect(screen.getByText(universe.name)).toBeInTheDocument();
+          expect(screen.getByText(universe.created)).toBeInTheDocument();
+        });
+      });
+    });
   });
 
-  it('allows switching between metrics', async () => {
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockSummaryData,
+  describe('User Interactions', () => {
+    it('handles time period changes', async () => {
+      const user = userEvent.setup();
+      renderWithRedux(<Dashboard />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('time-period-select')).toBeInTheDocument();
+      });
+
+      await user.selectOptions(
+        screen.getByTestId('time-period-select'),
+        'weekly'
+      );
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('period=weekly')
+      );
     });
 
-    render(<Dashboard />);
+    it('handles data export', async () => {
+      const user = userEvent.setup();
+      renderWithRedux(<Dashboard />);
 
-    await waitFor(() => {
-      expect(screen.getByLabelText('Select Metric:')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByTestId('export-button')).toBeInTheDocument();
+      });
+
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        blob: () => new Blob(['test data'], { type: 'text/csv' }),
+      });
+
+      await user.click(screen.getByTestId('export-button'));
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/analytics/export',
+        expect.any(Object)
+      );
     });
 
-    const select = screen.getByLabelText('Select Metric:');
-    fireEvent.change(select, { target: { value: 'service_worker' } });
+    it('handles refresh data', async () => {
+      const user = userEvent.setup();
+      renderWithRedux(<Dashboard />);
 
-    expect(screen.getByText('200.00')).toBeInTheDocument(); // New total
-    expect(screen.getByText('1.00')).toBeInTheDocument(); // New average
+      await waitFor(() => {
+        expect(screen.getByTestId('refresh-button')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByTestId('refresh-button'));
+      expect(global.fetch).toHaveBeenCalledTimes(2); // Initial load + refresh
+    });
   });
 
-  it('refreshes data periodically', async () => {
-    jest.useFakeTimers();
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockSummaryData,
+  describe('Error Handling', () => {
+    it('handles network errors gracefully', async () => {
+      global.fetch.mockRejectedValueOnce(new Error('Network error'));
+      renderWithRedux(<Dashboard />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('error-message')).toHaveTextContent(
+          'Network error'
+        );
+        expect(screen.getByTestId('retry-button')).toBeInTheDocument();
+      });
     });
 
-    render(<Dashboard />);
+    it('handles API errors with status codes', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        statusText: 'Forbidden',
+      });
+      renderWithRedux(<Dashboard />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Analytics Dashboard')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByTestId('error-message')).toHaveTextContent('403');
+        expect(screen.getByTestId('error-message')).toHaveTextContent(
+          'Forbidden'
+        );
+      });
     });
 
-    // First call on mount
-    expect(fetch).toHaveBeenCalledTimes(1);
+    it('allows retry after error', async () => {
+      const user = userEvent.setup();
+      global.fetch
+        .mockRejectedValueOnce(new Error('First attempt failed'))
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockAnalytics),
+        });
 
-    // Fast-forward 5 minutes
-    jest.advanceTimersByTime(5 * 60 * 1000);
+      renderWithRedux(<Dashboard />);
 
-    // Should have made another call
-    expect(fetch).toHaveBeenCalledTimes(2);
+      await waitFor(() => {
+        expect(screen.getByTestId('retry-button')).toBeInTheDocument();
+      });
 
-    jest.useRealTimers();
-  });
+      await user.click(screen.getByTestId('retry-button'));
 
-  it('displays tag distribution correctly', async () => {
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockSummaryData,
+      await waitFor(() => {
+        expect(screen.queryByTestId('error-message')).not.toBeInTheDocument();
+        expect(
+          screen.getByText(
+            `Total Universes: ${mockAnalytics.overview.totalUniverses}`
+          )
+        ).toBeInTheDocument();
+      });
     });
-
-    render(<Dashboard />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Tags Distribution')).toBeInTheDocument();
-    });
-
-    // Check platform tags
-    expect(screen.getByText('platform')).toBeInTheDocument();
-    expect(screen.getByText('ios')).toBeInTheDocument();
-    expect(screen.getByText('20')).toBeInTheDocument();
-    expect(screen.getByText('android')).toBeInTheDocument();
-    expect(screen.getByText('30')).toBeInTheDocument();
-
-    // Check outcome tags
-    expect(screen.getByText('outcome')).toBeInTheDocument();
-    expect(screen.getByText('success')).toBeInTheDocument();
-    expect(screen.getByText('45')).toBeInTheDocument();
-    expect(screen.getByText('failed')).toBeInTheDocument();
-    expect(screen.getByText('5')).toBeInTheDocument();
   });
 });

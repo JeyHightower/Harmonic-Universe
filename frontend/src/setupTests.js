@@ -1,184 +1,172 @@
 import '@testing-library/jest-dom';
-import './tests/mocks/setupMocks';
+import { vi } from 'vitest';
 
-// Mock window.URL
-global.URL.createObjectURL = jest.fn();
-global.URL.revokeObjectURL = jest.fn();
-
-// Mock crypto for UUID generation
-global.crypto = {
-  randomUUID: () => 'test-uuid',
+// Mock localStorage
+const storageMock = () => {
+  let storage = {};
+  return {
+    getItem: vi.fn(key => storage[key] || null),
+    setItem: vi.fn((key, value) => {
+      storage[key] = value;
+    }),
+    removeItem: vi.fn(key => {
+      delete storage[key];
+    }),
+    clear: vi.fn(() => {
+      storage = {};
+    }),
+  };
 };
+
+global.localStorage = storageMock();
+global.sessionStorage = storageMock();
+
+// Mock window.matchMedia
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+});
 
 // Mock AudioContext
 class MockAudioContext {
   constructor() {
-    this.destination = {};
-    this.createGain = jest.fn(() => ({
-      connect: jest.fn(),
-      gain: { value: 1 },
-    }));
-    this.createOscillator = jest.fn(() => ({
-      connect: jest.fn(),
-      start: jest.fn(),
-      stop: jest.fn(),
-      frequency: { value: 440 },
-    }));
-    this.createAnalyser = jest.fn(() => ({
-      connect: jest.fn(),
+    this.state = 'suspended';
+    this.destination = {
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    };
+  }
+
+  createOscillator() {
+    return {
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
+      frequency: { value: 440, setValueAtTime: vi.fn() },
+    };
+  }
+
+  createGain() {
+    return {
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      gain: { value: 1, setValueAtTime: vi.fn() },
+    };
+  }
+
+  createAnalyser() {
+    return {
+      connect: vi.fn(),
+      disconnect: vi.fn(),
       frequencyBinCount: 1024,
-      getByteFrequencyData: jest.fn(),
-    }));
+      getByteFrequencyData: vi.fn(),
+      getByteTimeDomainData: vi.fn(),
+    };
+  }
+
+  resume() {
+    this.state = 'running';
+    return Promise.resolve();
+  }
+
+  suspend() {
+    this.state = 'suspended';
+    return Promise.resolve();
+  }
+
+  close() {
+    this.state = 'closed';
+    return Promise.resolve();
   }
 }
 
 global.AudioContext = MockAudioContext;
-
-// Mock fetch
-global.fetch = jest.fn();
-
-// Mock service worker
-class ServiceWorkerRegistration {
-  constructor() {
-    this.active = {
-      postMessage: jest.fn(),
-    };
-    this.installing = {
-      addEventListener: jest.fn(),
-      state: 'installed',
-    };
-    this.scope = '/';
-    this.addEventListener = jest.fn();
-  }
-}
-
-class ServiceWorker {
-  constructor() {
-    this.ready = Promise.resolve(new ServiceWorkerRegistration());
-    this.register = jest
-      .fn()
-      .mockResolvedValue(new ServiceWorkerRegistration());
-    this.addEventListener = jest.fn();
-    this.controller = {
-      state: 'activated',
-    };
-  }
-}
-
-// Mock web vitals
-jest.mock('web-vitals', () => ({
-  getCLS: jest.fn(cb => cb({ name: 'CLS', value: 0.1, rating: 'good' })),
-  getFID: jest.fn(cb => cb({ name: 'FID', value: 100, rating: 'good' })),
-  getLCP: jest.fn(cb => cb({ name: 'LCP', value: 2500, rating: 'good' })),
-  getTTFB: jest.fn(cb => cb({ name: 'TTFB', value: 100, rating: 'good' })),
-  getFCP: jest.fn(cb => cb({ name: 'FCP', value: 1000, rating: 'good' })),
-}));
+global.webkitAudioContext = MockAudioContext;
 
 // Mock ResizeObserver
 class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
+  observe() {
+    return vi.fn();
+  }
+  unobserve() {
+    return vi.fn();
+  }
+  disconnect() {
+    return vi.fn();
+  }
 }
+
+global.ResizeObserver = ResizeObserver;
 
 // Mock IntersectionObserver
 class IntersectionObserver {
   constructor(callback) {
     this.callback = callback;
   }
-
   observe() {
-    this.callback([{ isIntersecting: true }]);
+    return vi.fn();
   }
-
-  unobserve() {}
-  disconnect() {}
+  unobserve() {
+    return vi.fn();
+  }
+  disconnect() {
+    return vi.fn();
+  }
 }
 
-// Mock PerformanceObserver
-class PerformanceObserver {
-  constructor(callback) {
-    this.callback = callback;
-  }
+global.IntersectionObserver = IntersectionObserver;
 
-  observe() {
-    this.callback({
-      getEntries: () => [
-        {
-          name: 'first-contentful-paint',
-          startTime: 1000,
-          entryType: 'paint',
-        },
-      ],
-    });
-  }
-
-  disconnect() {}
-}
-
-// Mock localStorage
-const localStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
-};
-
-// Mock sessionStorage
-const sessionStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
-};
-
-// Mock matchMedia
-window.matchMedia = jest.fn().mockImplementation(query => ({
-  matches: false,
-  media: query,
-  onchange: null,
-  addListener: jest.fn(),
-  removeListener: jest.fn(),
-  addEventListener: jest.fn(),
-  removeEventListener: jest.fn(),
-  dispatchEvent: jest.fn(),
-}));
-
-// Assign mocks to global object
-Object.defineProperty(window, 'localStorage', { value: localStorageMock });
-Object.defineProperty(window, 'sessionStorage', { value: sessionStorageMock });
-Object.defineProperty(window, 'ResizeObserver', { value: ResizeObserver });
-Object.defineProperty(window, 'IntersectionObserver', {
-  value: IntersectionObserver,
-});
-Object.defineProperty(window, 'PerformanceObserver', {
-  value: PerformanceObserver,
-});
-Object.defineProperty(navigator, 'serviceWorker', {
-  value: new ServiceWorker(),
+// Cleanup utilities
+afterEach(() => {
+  // Clear all mocks
+  vi.clearAllMocks();
+  // Clear localStorage and sessionStorage
+  localStorage.clear();
+  sessionStorage.clear();
+  // Reset document body
+  document.body.innerHTML = '';
 });
 
-// Mock canvas context
-HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
-  fillRect: jest.fn(),
-  clearRect: jest.fn(),
-  getImageData: jest.fn(() => ({
-    data: new Array(4),
-  })),
-  putImageData: jest.fn(),
-  createImageData: jest.fn(() => []),
-  setTransform: jest.fn(),
-  drawImage: jest.fn(),
-  save: jest.fn(),
-  restore: jest.fn(),
-  scale: jest.fn(),
-  rotate: jest.fn(),
-  translate: jest.fn(),
-  transform: jest.fn(),
-  beginPath: jest.fn(),
-  moveTo: jest.fn(),
-  lineTo: jest.fn(),
-  stroke: jest.fn(),
-  arc: jest.fn(),
-  fill: jest.fn(),
-}));
+// Error handling for unhandled rejections and console errors
+const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
+
+beforeAll(() => {
+  console.error = vi.fn();
+  console.warn = vi.fn();
+});
+
+afterAll(() => {
+  console.error = originalConsoleError;
+  console.warn = originalConsoleWarn;
+});
+
+// Add custom matchers if needed
+expect.extend({
+  toBeWithinRange(received, floor, ceiling) {
+    const pass = received >= floor && received <= ceiling;
+    if (pass) {
+      return {
+        message: () =>
+          `expected ${received} not to be within range ${floor} - ${ceiling}`,
+        pass: true,
+      };
+    } else {
+      return {
+        message: () =>
+          `expected ${received} to be within range ${floor} - ${ceiling}`,
+        pass: false,
+      };
+    }
+  },
+});

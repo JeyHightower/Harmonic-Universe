@@ -1,224 +1,231 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
-import { Provider } from 'react-redux';
-import { BrowserRouter } from 'react-router-dom';
-import configureStore from 'redux-mock-store';
-import thunk from 'redux-thunk';
-import AudioControlsPage from '../../pages/AudioControlsPage';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import AudioControls from '../AudioControls';
 
-const mockStore = configureStore([thunk]);
+// Mock Web Audio API
+class MockAudioContext {
+  createOscillator() {
+    return {
+      connect: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
+      frequency: { value: 440 },
+    };
+  }
+  createGain() {
+    return {
+      connect: vi.fn(),
+      gain: { value: 0.5 },
+    };
+  }
+  close() {
+    return Promise.resolve();
+  }
+}
 
-describe('AudioControls Component', () => {
-  let store;
+global.AudioContext = MockAudioContext;
 
-  beforeEach(() => {
-    store = mockStore({
-      audio: {
-        loading: false,
-        error: null,
-        settings: {
-          harmony: 0.5,
-          tempo: 120,
-          key: 'C',
-          scale: 'major',
-        },
-      },
-    });
-  });
+// Create a slice for audio state
+const audioSlice = {
+  name: 'audio',
+  initialState: {
+    loading: false,
+    error: null,
+    settings: {
+      harmony: 0.5,
+      tempo: 120,
+      key: 'C',
+      scale: 'major',
+    },
+  },
+  reducers: {
+    setError: (state, action) => {
+      state.error = action.payload;
+    },
+    updateSettings: (state, action) => {
+      state.settings = { ...state.settings, ...action.payload };
+    },
+  },
+};
 
-  const renderComponent = () => {
-    return render(
-      <Provider store={store}>
-        <BrowserRouter>
-          <AudioControlsPage />
-        </BrowserRouter>
-      </Provider>
-    );
+describe('AudioControls', () => {
+  const defaultProps = {
+    harmony: 0.5,
+    tempo: 120,
+    musicalKey: 'C',
+    scale: 'major',
+    onParameterChange: vi.fn(),
+    isLoading: false,
+    error: null,
   };
 
-  test('renders all audio control elements', () => {
-    renderComponent();
-
-    // Music controls
-    expect(screen.getByText(/audio controls/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/harmony/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/tempo/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/key/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/scale/i)).toBeInTheDocument();
-
-    // Info panel
-    expect(screen.getByText(/about audio controls/i)).toBeInTheDocument();
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  test('handles parameter changes', async () => {
-    renderComponent();
-    const user = userEvent.setup();
-
-    // Test harmony slider
-    const harmonySlider = screen.getByLabelText(/harmony/i);
-    await user.click(harmonySlider);
-    fireEvent.change(harmonySlider, { target: { value: '0.8' } });
-    expect(harmonySlider.value).toBe('0.8');
-
-    // Test tempo slider
-    const tempoSlider = screen.getByLabelText(/tempo/i);
-    await user.click(tempoSlider);
-    fireEvent.change(tempoSlider, { target: { value: '140' } });
-    expect(tempoSlider.value).toBe('140');
-
-    // Test key selection
-    const keySelect = screen.getByLabelText(/key/i);
-    await user.selectOptions(keySelect, 'G');
-    expect(keySelect.value).toBe('G');
-
-    // Test scale selection
-    const scaleSelect = screen.getByLabelText(/scale/i);
-    await user.selectOptions(scaleSelect, 'minor');
-    expect(scaleSelect.value).toBe('minor');
+  afterEach(() => {
+    vi.clearAllTimers();
   });
 
-  test('displays loading state during updates', async () => {
-    store = mockStore({
-      audio: {
-        loading: true,
-        error: null,
-        settings: {
-          harmony: 0.5,
-          tempo: 120,
-          key: 'C',
-          scale: 'major',
-        },
-      },
+  const renderComponent = (props = {}) => {
+    return render(<AudioControls {...defaultProps} {...props} />);
+  };
+
+  describe('Rendering', () => {
+    it('renders all control elements', () => {
+      renderComponent();
+
+      expect(screen.getByLabelText(/harmony/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/tempo/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/key/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/scale/i)).toBeInTheDocument();
     });
 
-    renderComponent();
+    it('renders with default values', () => {
+      renderComponent();
 
-    expect(screen.getByText(/updating\.\.\./i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/harmony/i)).toBeDisabled();
-  });
-
-  test('displays error messages', async () => {
-    store = mockStore({
-      audio: {
-        loading: false,
-        error: 'Failed to update audio settings',
-        settings: {
-          harmony: 0.5,
-          tempo: 120,
-          key: 'C',
-          scale: 'major',
-        },
-      },
+      expect(screen.getByLabelText(/harmony/i)).toHaveValue('0.5');
+      expect(screen.getByLabelText(/tempo/i)).toHaveValue('120');
+      expect(screen.getByLabelText(/key/i)).toHaveValue('C');
+      expect(screen.getByLabelText(/scale/i)).toHaveValue('major');
     });
 
-    renderComponent();
+    it('shows loading state when isLoading is true', () => {
+      renderComponent({ isLoading: true });
 
-    expect(
-      screen.getByText(/failed to update audio settings/i)
-    ).toBeInTheDocument();
+      expect(screen.getByTestId('loading-indicator')).toBeInTheDocument();
+      expect(screen.getByLabelText(/harmony/i)).toBeDisabled();
+      expect(screen.getByLabelText(/tempo/i)).toBeDisabled();
+      expect(screen.getByLabelText(/key/i)).toBeDisabled();
+      expect(screen.getByLabelText(/scale/i)).toBeDisabled();
+    });
+
+    it('shows error message when error is provided', () => {
+      const error = 'Test error message';
+      renderComponent({ error });
+
+      expect(screen.getByTestId('error-message')).toHaveTextContent(error);
+    });
   });
 
-  test('provides real-time audio feedback', async () => {
-    const mockAudioContext = {
-      createOscillator: jest.fn(() => ({
-        connect: jest.fn(),
-        start: jest.fn(),
-        stop: jest.fn(),
-      })),
-      createGain: jest.fn(() => ({
-        connect: jest.fn(),
-        gain: { value: 0 },
-      })),
-    };
+  describe('User Interactions', () => {
+    it('handles harmony slider changes', async () => {
+      const onParameterChange = vi.fn();
+      renderComponent({ onParameterChange });
 
-    window.AudioContext = jest.fn(() => mockAudioContext);
+      const slider = screen.getByLabelText(/harmony/i);
+      await userEvent.clear(slider);
+      await userEvent.type(slider, '0.8');
 
-    renderComponent();
-    const user = userEvent.setup();
+      expect(onParameterChange).toHaveBeenCalledWith('harmony', 0.8);
+    });
 
-    // Change harmony value
-    const harmonySlider = screen.getByLabelText(/harmony/i);
-    await user.click(harmonySlider);
-    fireEvent.change(harmonySlider, { target: { value: '0.8' } });
+    it('handles tempo slider changes', async () => {
+      const onParameterChange = vi.fn();
+      renderComponent({ onParameterChange });
 
-    // Verify audio feedback was triggered
-    expect(mockAudioContext.createOscillator).toHaveBeenCalled();
+      const slider = screen.getByLabelText(/tempo/i);
+      await userEvent.clear(slider);
+      await userEvent.type(slider, '140');
+
+      expect(onParameterChange).toHaveBeenCalledWith('tempo', 140);
+    });
+
+    it('handles key selection changes', async () => {
+      const onParameterChange = vi.fn();
+      renderComponent({ onParameterChange });
+
+      const select = screen.getByLabelText(/key/i);
+      await userEvent.selectOptions(select, 'G');
+
+      expect(onParameterChange).toHaveBeenCalledWith('musicalKey', 'G');
+    });
+
+    it('handles scale selection changes', async () => {
+      const onParameterChange = vi.fn();
+      renderComponent({ onParameterChange });
+
+      const select = screen.getByLabelText(/scale/i);
+      await userEvent.selectOptions(select, 'minor');
+
+      expect(onParameterChange).toHaveBeenCalledWith('scale', 'minor');
+    });
   });
 
-  test('maintains settings across page navigation', async () => {
-    renderComponent();
-    const user = userEvent.setup();
+  describe('Validation', () => {
+    it('shows validation error for harmony out of range', async () => {
+      const onParameterChange = vi.fn();
+      renderComponent({ onParameterChange });
 
-    // Change settings
-    const harmonySlider = screen.getByLabelText(/harmony/i);
-    await user.click(harmonySlider);
-    fireEvent.change(harmonySlider, { target: { value: '0.8' } });
+      const slider = screen.getByLabelText(/harmony/i);
+      await userEvent.clear(slider);
+      await userEvent.type(slider, '1.5');
 
-    // Simulate navigation away and back
-    const { unmount } = renderComponent();
-    unmount();
-    renderComponent();
+      expect(screen.getByTestId('validation-error')).toHaveTextContent(
+        /harmony must be between 0 and 1/i
+      );
+      expect(onParameterChange).not.toHaveBeenCalled();
+    });
 
-    // Verify settings were preserved
-    expect(screen.getByLabelText(/harmony/i)).toHaveValue('0.8');
+    it('shows validation error for tempo out of range', async () => {
+      const onParameterChange = vi.fn();
+      renderComponent({ onParameterChange });
+
+      const slider = screen.getByLabelText(/tempo/i);
+      await userEvent.clear(slider);
+      await userEvent.type(slider, '250');
+
+      expect(screen.getByTestId('validation-error')).toHaveTextContent(
+        /tempo must be between 60 and 200/i
+      );
+      expect(onParameterChange).not.toHaveBeenCalled();
+    });
   });
 
-  test('is responsive on different screen sizes', () => {
-    const { container } = renderComponent();
+  describe('Responsive Behavior', () => {
+    it('adapts to mobile view', () => {
+      global.innerWidth = 375;
+      global.dispatchEvent(new Event('resize'));
 
-    // Test mobile view
-    window.innerWidth = 375;
-    fireEvent.resize(window);
-    expect(container.querySelector('.mobile-view')).toBeInTheDocument();
+      const { container } = renderComponent();
+      expect(
+        container.querySelector('._mobile-view_ff8cf6')
+      ).toBeInTheDocument();
+    });
 
-    // Test tablet view
-    window.innerWidth = 768;
-    fireEvent.resize(window);
-    expect(container.querySelector('.tablet-view')).toBeInTheDocument();
+    it('adapts to desktop view', () => {
+      global.innerWidth = 1024;
+      global.dispatchEvent(new Event('resize'));
 
-    // Test desktop view
-    window.innerWidth = 1024;
-    fireEvent.resize(window);
-    expect(container.querySelector('.desktop-view')).toBeInTheDocument();
+      const { container } = renderComponent();
+      expect(
+        container.querySelector('._desktop-view_ff8cf6')
+      ).toBeInTheDocument();
+    });
   });
 
-  test('validates parameter ranges', async () => {
-    renderComponent();
-    const user = userEvent.setup();
+  describe('Audio Context Integration', () => {
+    it('creates and manages audio context correctly', async () => {
+      const audioContext = new AudioContext();
+      const onParameterChange = vi.fn();
+      renderComponent({ onParameterChange });
 
-    // Test invalid harmony value
-    const harmonySlider = screen.getByLabelText(/harmony/i);
-    await user.click(harmonySlider);
-    fireEvent.change(harmonySlider, { target: { value: '1.5' } });
-    expect(
-      screen.getByText(/harmony must be between 0 and 1/i)
-    ).toBeInTheDocument();
+      const slider = screen.getByLabelText(/harmony/i);
+      await userEvent.clear(slider);
+      await userEvent.type(slider, '0.8');
 
-    // Test invalid tempo value
-    const tempoSlider = screen.getByLabelText(/tempo/i);
-    await user.click(tempoSlider);
-    fireEvent.change(tempoSlider, { target: { value: '250' } });
-    expect(
-      screen.getByText(/tempo must be between 60 and 200/i)
-    ).toBeInTheDocument();
-  });
+      expect(audioContext.createOscillator).toHaveBeenCalled();
+      expect(audioContext.createGain).toHaveBeenCalled();
+    });
 
-  test('handles keyboard navigation', async () => {
-    renderComponent();
-    const user = userEvent.setup();
+    it('cleans up audio context on unmount', () => {
+      const audioContext = new AudioContext();
+      const { unmount } = renderComponent();
 
-    // Test keyboard navigation between controls
-    await user.tab();
-    expect(screen.getByLabelText(/harmony/i)).toHaveFocus();
-
-    await user.tab();
-    expect(screen.getByLabelText(/tempo/i)).toHaveFocus();
-
-    await user.tab();
-    expect(screen.getByLabelText(/key/i)).toHaveFocus();
-
-    await user.tab();
-    expect(screen.getByLabelText(/scale/i)).toHaveFocus();
+      unmount();
+      expect(audioContext.close).toHaveBeenCalled();
+    });
   });
 });

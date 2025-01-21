@@ -1,260 +1,222 @@
-import { METRICS as ConfigMETRICS } from '../../config/monitoring.config';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { monitoring } from '../monitoring';
 
-describe('MonitoringService', () => {
-  let originalFetch;
-  let mockObservers;
-  let originalOnline;
-
-  beforeAll(() => {
-    originalFetch = global.fetch;
-    global.fetch = jest.fn();
-    originalOnline = navigator.onLine;
-    Object.defineProperty(navigator, 'onLine', {
-      configurable: true,
-      value: true,
-    });
-  });
+describe('Monitoring Service', () => {
+  const mockConfig = {
+    appVersion: '1.0.0',
+    environment: 'test',
+    analyticsEndpoint: '/api/analytics',
+    errorEndpoint: '/api/errors',
+    onError: vi.fn(),
+  };
 
   beforeEach(() => {
-    // Mock localStorage
-    const mockStorage = {};
-    global.localStorage = {
-      getItem: jest.fn(key => mockStorage[key]),
-      setItem: jest.fn((key, value) => {
-        mockStorage[key] = value;
-      }),
-      clear: jest.fn(() => {
-        mockStorage = {};
-      }),
-    };
-
-    // Mock PerformanceObserver
-    global.PerformanceObserver = jest.fn(callback => ({
-      observe: jest.fn(),
-      disconnect: jest.fn(),
-    }));
-
-    // Reset fetch mock
-    fetch.mockClear();
-
-    // Track observers
-    mockObservers = new Set();
-
-    monitoring.init({
-      appVersion: '1.0.0',
-      environment: 'test',
-      analyticsEndpoint: '/api/analytics',
-    });
-    monitoring.failedMetrics.clear();
-    monitoring.offlineDuration = 0;
-    monitoring.offlineStart = null;
+    vi.useFakeTimers();
+    global.fetch = vi.fn();
+    monitoring.init(mockConfig);
   });
 
-  afterAll(() => {
-    global.fetch = originalFetch;
-    Object.defineProperty(navigator, 'onLine', {
-      configurable: true,
-      value: originalOnline,
-    });
+  afterEach(() => {
+    vi.clearAllMocks();
+    vi.clearAllTimers();
+    vi.useRealTimers();
+    monitoring.clearMetrics();
   });
 
-  describe('Network Status Monitoring', () => {
-    it('should track offline duration', () => {
-      // Simulate going offline
-      Object.defineProperty(navigator, 'onLine', {
-        configurable: true,
-        value: false,
+  describe('Initialization', () => {
+    it('initializes with correct configuration', () => {
+      expect(monitoring.getMetrics()).toEqual({
+        errors: [],
+        performance: [],
+        userActions: [],
       });
-      window.dispatchEvent(new Event('offline'));
+    });
 
-      // Fast-forward time by 1000ms
-      jest.advanceTimersByTime(1000);
+    it('sets up error handling', () => {
+      const error = new Error('Test error');
+      window.dispatchEvent(new ErrorEvent('error', { error }));
+      expect(mockConfig.onError).toHaveBeenCalledWith(error);
+    });
+  });
 
-      // Simulate going online
-      Object.defineProperty(navigator, 'onLine', {
-        configurable: true,
-        value: true,
+  describe('Error Tracking', () => {
+    it('tracks and buffers errors', () => {
+      const error = new Error('Test error');
+      monitoring.logError(error);
+      expect(monitoring.getMetrics().errors).toHaveLength(1);
+      expect(monitoring.getMetrics().errors[0]).toMatchObject({
+        message: 'Test error',
+        type: 'Error',
       });
-      window.dispatchEvent(new Event('online'));
-
-      expect(monitoring.getOfflineDuration()).toBeGreaterThan(0);
     });
 
-    it('should notify observers of online/offline events', () => {
-      const observer = jest.fn();
-      monitoring.addObserver(observer);
-
-      window.dispatchEvent(new Event('offline'));
-      expect(observer).toHaveBeenCalledWith({ type: 'offline' });
-
-      window.dispatchEvent(new Event('online'));
-      expect(observer).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'online',
-          duration: expect.any(Number),
+    it('handles promise rejection errors', async () => {
+      const error = new Error('Promise error');
+      window.dispatchEvent(
+        new PromiseRejectionEvent('unhandledrejection', {
+          reason: error,
+          promise: Promise.reject(error),
+          cancelable: true,
         })
       );
-    });
-  });
-
-  describe('Metric Tracking', () => {
-    it('should track metrics with correct format', async () => {
-      const metric = {
-        name: ConfigMETRICS.CUSTOM,
-        value: 100,
-        tags: { type: 'test' },
-      };
-
-      fetch.mockImplementationOnce(() =>
-        Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({ id: '123' }),
-        })
-      );
-
-      await monitoring.trackEvent(metric.name, metric.value, metric.tags);
-
-      expect(fetch).toHaveBeenCalledWith(
-        '/api/analytics',
-        expect.objectContaining({
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: expect.stringContaining(metric.name),
-        })
-      );
-    });
-
-    it('should store failed metrics for retry', async () => {
-      const metric = {
-        name: ConfigMETRICS.CUSTOM,
-        value: 100,
-        tags: { type: 'test' },
-      };
-
-      fetch.mockImplementationOnce(() =>
-        Promise.reject(new Error('Network error'))
-      );
-
-      await monitoring.trackEvent(metric.name, metric.value, metric.tags);
-
-      expect(monitoring.failedMetrics.size).toBe(1);
-    });
-  });
-
-  describe('Service Worker Tracking', () => {
-    it('should track service worker registration', async () => {
-      monitoring.startTracking();
-
-      await mockServiceWorker.ready;
-
-      expect(fetch).toHaveBeenCalledWith(
-        '/api/analytics',
-        expect.objectContaining({
-          method: 'POST',
-          body: expect.stringContaining(ConfigMETRICS.SW.REGISTRATION),
-        })
-      );
-    });
-
-    it('should track service worker state changes', async () => {
-      monitoring.startTracking();
-
-      const registration = await mockServiceWorker.ready;
-      const stateChangeCallback =
-        registration.installing.addEventListener.mock.calls[0][1];
-
-      stateChangeCallback();
-
-      expect(fetch).toHaveBeenCalledWith(
-        '/api/analytics',
-        expect.objectContaining({
-          method: 'POST',
-          body: expect.stringContaining(ConfigMETRICS.SW.STATE_CHANGE),
-        })
-      );
+      expect(mockConfig.onError).toHaveBeenCalledWith(error);
     });
   });
 
   describe('Performance Monitoring', () => {
-    it('should track performance metrics', () => {
-      const metric = {
-        name: 'LCP',
-        value: 2500,
-        tags: { type: 'performance' },
-      };
+    it('tracks performance metrics', () => {
+      monitoring.logPerformance('page-load', 1500);
+      expect(monitoring.getMetrics().performance).toHaveLength(1);
+      expect(monitoring.getMetrics().performance[0]).toMatchObject({
+        name: 'page-load',
+        value: 1500,
+      });
+    });
 
-      monitoring.trackPerformance(metric.name, metric.value, metric.tags);
+    it('tracks custom performance marks', () => {
+      performance.mark('start');
+      performance.mark('end');
+      performance.measure('test', 'start', 'end');
 
-      expect(fetch).toHaveBeenCalledWith(
-        '/api/analytics',
-        expect.objectContaining({
-          method: 'POST',
-          body: expect.stringContaining(metric.name),
-        })
+      const entries = performance.getEntriesByType('measure');
+      monitoring.logPerformance('custom-measure', entries[0].duration);
+
+      expect(monitoring.getMetrics().performance).toHaveLength(1);
+    });
+  });
+
+  describe('User Action Tracking', () => {
+    it('tracks user actions', () => {
+      monitoring.logUserAction('button-click', { buttonId: 'submit' });
+      expect(monitoring.getMetrics().userActions).toHaveLength(1);
+      expect(monitoring.getMetrics().userActions[0]).toMatchObject({
+        type: 'button-click',
+        data: { buttonId: 'submit' },
+      });
+    });
+
+    it('includes timestamp with user actions', () => {
+      monitoring.logUserAction('form-submit', { formId: 'login' });
+      expect(monitoring.getMetrics().userActions[0]).toHaveProperty(
+        'timestamp'
       );
     });
   });
 
-  describe('Observer Pattern', () => {
-    it('should notify observers when metrics are tracked', async () => {
-      const observer = jest.fn();
-      monitoring.addObserver(observer);
+  describe('Metric Buffering and Sending', () => {
+    it('buffers metrics until flush threshold', async () => {
+      for (let i = 0; i < 5; i++) {
+        monitoring.logError(new Error(`Error ${i}`));
+      }
 
-      fetch.mockImplementationOnce(() =>
-        Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({ id: '123' }),
-        })
-      );
+      expect(monitoring.getMetrics().errors).toHaveLength(5);
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
 
-      await monitoring.trackEvent(ConfigMETRICS.CUSTOM, 100);
+    it('sends metrics when buffer is full', async () => {
+      global.fetch.mockResolvedValueOnce({ ok: true });
 
-      expect(observer).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'metric',
-          metric: expect.any(Object),
-        })
+      for (let i = 0; i < 50; i++) {
+        monitoring.logError(new Error(`Error ${i}`));
+      }
+
+      await vi.runAllTimersAsync();
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        mockConfig.errorEndpoint,
+        expect.any(Object)
       );
     });
 
-    it('should remove observers', () => {
-      const observer = jest.fn();
-      monitoring.addObserver(observer);
-      monitoring.removeObserver(observer);
+    it('retries failed metric sends', async () => {
+      global.fetch
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockResolvedValueOnce({ ok: true });
 
-      monitoring.notifyObservers({ type: 'test' });
+      monitoring.logError(new Error('Test error'));
+      await vi.runAllTimersAsync();
 
-      expect(observer).not.toHaveBeenCalled();
+      expect(global.fetch).toHaveBeenCalledTimes(2);
     });
   });
 
-  describe('Retry Mechanism', () => {
-    it('should retry failed metrics when online', async () => {
-      const metric = {
-        name: ConfigMETRICS.CUSTOM,
-        value: 100,
-        tags: { type: 'test' },
+  describe('Network Monitoring', () => {
+    it('tracks failed network requests', () => {
+      const mockXHR = {
+        status: 500,
+        responseURL: 'https://api.example.com/data',
+        getAllResponseHeaders: () => '',
       };
 
-      // First attempt fails
-      fetch.mockImplementationOnce(() =>
-        Promise.reject(new Error('Network error'))
-      );
-
-      await monitoring.trackEvent(metric.name, metric.value, metric.tags);
-      expect(monitoring.failedMetrics.size).toBe(1);
-
-      // Second attempt succeeds
-      fetch.mockImplementationOnce(() =>
-        Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({ id: '123' }),
+      window.dispatchEvent(
+        new ErrorEvent('error', {
+          error: new Error('Network request failed'),
+          target: mockXHR,
         })
       );
 
-      await monitoring.retryFailedMetrics();
-      expect(monitoring.failedMetrics.size).toBe(0);
+      expect(monitoring.getMetrics().errors[0]).toMatchObject({
+        type: 'NetworkError',
+        url: 'https://api.example.com/data',
+        status: 500,
+      });
+    });
+
+    it('tracks slow network requests', async () => {
+      const start = performance.now();
+      const mockXHR = {
+        status: 200,
+        responseURL: 'https://api.example.com/data',
+        getAllResponseHeaders: () => '',
+        timing: {
+          requestStart: start,
+          responseEnd: start + 5000, // 5s response time
+        },
+      };
+
+      window.dispatchEvent(new Event('load', { target: mockXHR }));
+
+      expect(monitoring.getMetrics().performance).toHaveLength(1);
+      expect(monitoring.getMetrics().performance[0].value).toBeGreaterThan(
+        5000
+      );
+    });
+  });
+
+  describe('Session Tracking', () => {
+    it('maintains session ID across page loads', () => {
+      const sessionId1 = monitoring._getOrCreateSessionId();
+      const sessionId2 = monitoring._getOrCreateSessionId();
+      expect(sessionId1).toBe(sessionId2);
+    });
+
+    it('tracks session duration', () => {
+      const startTime = Date.now();
+      vi.advanceTimersByTime(300000); // 5 minutes
+
+      monitoring.logUserAction('page-view', {});
+      const metrics = monitoring.getMetrics().userActions[0];
+
+      expect(metrics.sessionDuration).toBeGreaterThanOrEqual(300000);
+    });
+  });
+
+  describe('Error Recovery', () => {
+    it('recovers from storage errors', () => {
+      const originalSetItem = localStorage.setItem;
+      localStorage.setItem = vi.fn().mockImplementation(() => {
+        throw new Error('Storage full');
+      });
+
+      expect(() => monitoring.logError(new Error('Test'))).not.toThrow();
+      localStorage.setItem = originalSetItem;
+    });
+
+    it('handles invalid metric data', () => {
+      const circularObj = {};
+      circularObj.self = circularObj;
+
+      expect(() => monitoring.logUserAction('test', circularObj)).not.toThrow();
     });
   });
 });
