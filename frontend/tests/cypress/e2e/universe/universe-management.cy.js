@@ -1,6 +1,6 @@
 describe('Universe Management', () => {
   beforeEach(() => {
-    // Mock login
+    // Login
     cy.intercept('POST', '/api/auth/login', {
       statusCode: 200,
       body: {
@@ -18,101 +18,13 @@ describe('Universe Management', () => {
             id: 1,
             name: 'Test Universe',
             description: 'A test universe',
-            created_at: '2024-01-20T12:00:00Z',
-            updated_at: '2024-01-20T12:00:00Z',
             owner_id: 1,
-            physics_params: {
-              gravity: 9.8,
-              friction: 0.5,
-              particles: 1000,
-              boundaries: {
-                x: [-100, 100],
-                y: [-100, 100],
-                z: [-100, 100],
-              },
-            },
-            audio_params: {
-              harmony: 0.7,
-              rhythm: 0.5,
-              tempo: 120,
-              scale: 'major',
-              root_note: 'C4',
-              effects: ['reverb', 'delay'],
-            },
-            shared_with: [
-              {
-                user_id: 2,
-                username: 'collaborator1',
-                role: 'editor',
-              },
-            ],
-            version: 1,
+            created_at: '2024-01-15T00:00:00Z',
+            updated_at: '2024-01-15T00:00:00Z',
           },
         ],
       },
     }).as('getUniverses');
-
-    // Mock universe templates
-    cy.intercept('GET', '/api/universes/templates', {
-      statusCode: 200,
-      body: {
-        templates: [
-          {
-            id: 1,
-            name: 'Empty Universe',
-            description: 'Start from scratch',
-            preview_url: 'https://example.com/previews/empty.png',
-            physics_params: {
-              gravity: 9.8,
-              friction: 0.5,
-              particles: 0,
-            },
-            audio_params: {
-              harmony: 0.5,
-              rhythm: 0.5,
-              tempo: 120,
-            },
-          },
-          {
-            id: 2,
-            name: 'Particle System',
-            description: 'Pre-configured particle system',
-            preview_url: 'https://example.com/previews/particles.png',
-            physics_params: {
-              gravity: 0,
-              friction: 0.1,
-              particles: 1000,
-            },
-            audio_params: {
-              harmony: 0.8,
-              rhythm: 0.7,
-              tempo: 140,
-            },
-          },
-        ],
-      },
-    }).as('getTemplates');
-
-    // Mock single universe
-    cy.intercept('GET', '/api/universes/1', {
-      statusCode: 200,
-      body: {
-        id: 1,
-        name: 'Test Universe',
-        description: 'A test universe',
-        physics_params: {
-          gravity: 9.8,
-          friction: 0.5,
-          particles: 1000,
-        },
-        audio_params: {
-          harmony: 0.7,
-          rhythm: 0.5,
-          tempo: 120,
-        },
-        version: 1,
-      },
-    }).as('getUniverse');
 
     // Login and navigate
     cy.visit('/login');
@@ -125,438 +37,229 @@ describe('Universe Management', () => {
     cy.wait('@getUniverses');
   });
 
-  it('should display universe list', () => {
+  it('should list universes', () => {
     cy.get('[data-testid="universe-list"]').should('be.visible');
-    cy.get('[data-testid="universe-1"]').within(() => {
-      cy.get('[data-testid="universe-name"]').should(
-        'contain',
-        'Test Universe'
-      );
-      cy.get('[data-testid="universe-description"]').should(
-        'contain',
-        'A test universe'
-      );
-      cy.get('[data-testid="last-updated"]').should('contain', '2024-01-20');
-      cy.get('[data-testid="collaborator-count"]').should('contain', '1');
-    });
+    cy.get('[data-testid="universe-card"]').should('have.length', 1);
+    cy.contains('Test Universe').should('be.visible');
   });
 
-  it('should create new universe from template', () => {
+  it('should create universe', () => {
     cy.intercept('POST', '/api/universes', {
       statusCode: 201,
       body: {
         id: 2,
         name: 'New Universe',
-        description: 'Created from template',
-        physics_params: {
-          gravity: 9.8,
-          friction: 0.5,
-          particles: 0,
-        },
-        audio_params: {
-          harmony: 0.5,
-          rhythm: 0.5,
-          tempo: 120,
-        },
+        description: 'A new test universe',
+        owner_id: 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       },
     }).as('createUniverse');
 
     cy.get('[data-testid="create-universe"]').click();
-    cy.get('[data-testid="template-1"]').click();
-    cy.get('[data-testid="universe-name-input"]').type('New Universe');
-    cy.get('[data-testid="universe-description-input"]').type(
-      'Created from template'
-    );
-    cy.get('[data-testid="create-from-template"]').click();
+    cy.get('input[name="name"]').type('New Universe');
+    cy.get('textarea[name="description"]').type('A new test universe');
+    cy.get('button[type="submit"]').click();
 
     cy.wait('@createUniverse');
-    cy.get('[data-testid="success-message"]').should(
-      'contain',
-      'Universe created successfully'
-    );
+    cy.contains('Universe created successfully').should('be.visible');
+    cy.url().should('include', '/universe/2');
   });
 
-  it('should edit universe details', () => {
+  it('should edit universe', () => {
     cy.intercept('PUT', '/api/universes/1', {
       statusCode: 200,
       body: {
         id: 1,
         name: 'Updated Universe',
-        description: 'Updated description',
+        description: 'An updated test universe',
+        owner_id: 1,
+        updated_at: new Date().toISOString(),
       },
     }).as('updateUniverse');
 
-    cy.get('[data-testid="universe-1"]')
-      .find('[data-testid="edit-universe"]')
-      .click();
-    cy.get('[data-testid="universe-name-input"]')
+    cy.get('[data-testid="universe-card"]').first().click();
+    cy.get('[data-testid="edit-universe"]').click();
+    cy.get('input[name="name"]').clear().type('Updated Universe');
+    cy.get('textarea[name="description"]')
       .clear()
-      .type('Updated Universe');
-    cy.get('[data-testid="universe-description-input"]')
-      .clear()
-      .type('Updated description');
-    cy.get('[data-testid="save-universe"]').click();
+      .type('An updated test universe');
+    cy.get('button[type="submit"]').click();
 
     cy.wait('@updateUniverse');
-    cy.get('[data-testid="success-message"]').should(
-      'contain',
-      'Universe updated successfully'
-    );
+    cy.contains('Universe updated successfully').should('be.visible');
   });
 
-  it('should configure physics parameters', () => {
-    cy.intercept('PUT', '/api/universes/1/physics', {
+  it('should delete universe', () => {
+    cy.intercept('DELETE', '/api/universes/1', {
+      statusCode: 200,
+    }).as('deleteUniverse');
+
+    cy.get('[data-testid="universe-card"]').first().click();
+    cy.get('[data-testid="delete-universe"]').click();
+    cy.get('[data-testid="confirm-delete"]').click();
+
+    cy.wait('@deleteUniverse');
+    cy.contains('Universe deleted successfully').should('be.visible');
+    cy.url().should('include', '/universes');
+  });
+
+  it('should handle universe templates', () => {
+    cy.intercept('GET', '/api/universe-templates', {
       statusCode: 200,
       body: {
-        physics_params: {
-          gravity: 5.0,
-          friction: 0.3,
-          particles: 2000,
-          boundaries: {
-            x: [-200, 200],
-            y: [-200, 200],
-            z: [-200, 200],
+        templates: [
+          {
+            id: 1,
+            name: 'Basic Template',
+            description: 'A basic universe template',
+            preview_url: 'https://example.com/preview.jpg',
           },
-        },
+        ],
       },
-    }).as('updatePhysics');
+    }).as('getTemplates');
 
-    cy.visit('/universes/1/settings');
-    cy.wait('@getUniverse');
+    cy.get('[data-testid="create-from-template"]').click();
+    cy.wait('@getTemplates');
 
-    cy.get('[data-testid="physics-tab"]').click();
-    cy.get('[data-testid="gravity-input"]').clear().type('5.0');
-    cy.get('[data-testid="friction-input"]').clear().type('0.3');
-    cy.get('[data-testid="particles-input"]').clear().type('2000');
-    cy.get('[data-testid="boundary-x-min"]').clear().type('-200');
-    cy.get('[data-testid="boundary-x-max"]').clear().type('200');
-    cy.get('[data-testid="save-physics"]').click();
+    cy.get('[data-testid="template-card"]').should('have.length', 1);
+    cy.get('[data-testid="use-template"]').click();
 
-    cy.wait('@updatePhysics');
-    cy.get('[data-testid="success-message"]').should(
-      'contain',
-      'Physics parameters updated'
-    );
-  });
+    cy.get('input[name="name"]').type('Template Universe');
+    cy.get('button[type="submit"]').click();
 
-  it('should configure audio parameters', () => {
-    cy.intercept('PUT', '/api/universes/1/audio', {
-      statusCode: 200,
-      body: {
-        audio_params: {
-          harmony: 0.8,
-          rhythm: 0.6,
-          tempo: 140,
-          scale: 'minor',
-          root_note: 'A4',
-          effects: ['chorus', 'reverb'],
-        },
-      },
-    }).as('updateAudio');
-
-    cy.visit('/universes/1/settings');
-    cy.wait('@getUniverse');
-
-    cy.get('[data-testid="audio-tab"]').click();
-    cy.get('[data-testid="harmony-input"]').clear().type('0.8');
-    cy.get('[data-testid="rhythm-input"]').clear().type('0.6');
-    cy.get('[data-testid="tempo-input"]').clear().type('140');
-    cy.get('[data-testid="scale-select"]').select('minor');
-    cy.get('[data-testid="root-note-select"]').select('A4');
-    cy.get('[data-testid="effects-select"]').select(['chorus', 'reverb']);
-    cy.get('[data-testid="save-audio"]').click();
-
-    cy.wait('@updateAudio');
-    cy.get('[data-testid="success-message"]').should(
-      'contain',
-      'Audio parameters updated'
-    );
+    cy.contains('Universe created from template').should('be.visible');
   });
 
   it('should handle universe sharing', () => {
     cy.intercept('POST', '/api/universes/1/share', {
       statusCode: 200,
       body: {
-        message: 'Universe shared successfully',
         shared_with: [
           {
-            user_id: 3,
-            username: 'newcollaborator',
-            role: 'viewer',
+            user_id: 2,
+            username: 'collaborator',
+            permission: 'edit',
           },
         ],
       },
     }).as('shareUniverse');
 
-    cy.visit('/universes/1/settings');
-    cy.wait('@getUniverse');
-
-    cy.get('[data-testid="sharing-tab"]').click();
-    cy.get('[data-testid="share-username"]').type('newcollaborator');
-    cy.get('[data-testid="share-role"]').select('viewer');
+    cy.get('[data-testid="universe-card"]').first().click();
     cy.get('[data-testid="share-universe"]').click();
+    cy.get('input[name="collaborator"]').type('collaborator');
+    cy.get('[data-testid="permission-select"]').select('edit');
+    cy.get('[data-testid="add-collaborator"]').click();
 
     cy.wait('@shareUniverse');
-    cy.get('[data-testid="success-message"]').should(
-      'contain',
-      'Universe shared successfully'
-    );
+    cy.contains('Universe shared successfully').should('be.visible');
   });
 
-  it('should handle version control', () => {
-    // Mock version list
+  it('should handle universe versioning', () => {
     cy.intercept('GET', '/api/universes/1/versions', {
       statusCode: 200,
       body: {
         versions: [
           {
-            version: 1,
-            created_at: '2024-01-20T12:00:00Z',
-            changes: ['Initial version'],
-          },
-          {
-            version: 2,
-            created_at: '2024-01-20T13:00:00Z',
-            changes: ['Updated physics parameters'],
+            id: 1,
+            version: '1.0.0',
+            created_at: '2024-01-15T00:00:00Z',
+            changes: 'Initial version',
           },
         ],
       },
     }).as('getVersions');
 
-    // Mock version creation
-    cy.intercept('POST', '/api/universes/1/versions', {
-      statusCode: 201,
-      body: {
-        version: 3,
-        created_at: '2024-01-20T14:00:00Z',
-        changes: ['New version created'],
-      },
-    }).as('createVersion');
+    cy.get('[data-testid="universe-card"]').first().click();
+    cy.get('[data-testid="version-history"]').click();
+    cy.wait('@getVersions');
 
-    // Mock version restore
-    cy.intercept('POST', '/api/universes/1/versions/2/restore', {
-      statusCode: 200,
-      body: {
-        message: 'Version 2 restored successfully',
-      },
-    }).as('restoreVersion');
-
-    cy.visit('/universes/1/versions');
-    cy.wait(['@getUniverse', '@getVersions']);
+    cy.get('[data-testid="version-list"]').should('be.visible');
+    cy.get('[data-testid="version-item"]').should('have.length', 1);
 
     // Create new version
     cy.get('[data-testid="create-version"]').click();
-    cy.get('[data-testid="version-notes"]').type('New version created');
+    cy.get('input[name="version"]').type('1.1.0');
+    cy.get('textarea[name="changes"]').type('Updated physics parameters');
     cy.get('[data-testid="save-version"]').click();
-    cy.wait('@createVersion');
-    cy.get('[data-testid="success-message"]').should(
-      'contain',
-      'Version created successfully'
-    );
 
-    // View version history
-    cy.get('[data-testid="version-2"]').within(() => {
-      cy.get('[data-testid="version-number"]').should('contain', '2');
-      cy.get('[data-testid="version-date"]').should('contain', '2024-01-20');
-      cy.get('[data-testid="version-changes"]').should(
-        'contain',
-        'Updated physics parameters'
-      );
-    });
-
-    // Restore previous version
-    cy.get('[data-testid="version-2"]')
-      .find('[data-testid="restore-version"]')
-      .click();
-    cy.get('[data-testid="confirm-restore"]').click();
-    cy.wait('@restoreVersion');
-    cy.get('[data-testid="success-message"]').should(
-      'contain',
-      'Version 2 restored successfully'
-    );
+    cy.contains('Version 1.1.0 created').should('be.visible');
   });
 
   it('should handle universe export/import', () => {
-    // Mock export
-    cy.intercept('GET', '/api/universes/1/export', {
-      statusCode: 200,
-      body: {
-        url: 'https://example.com/exports/universe1.json',
-      },
-    }).as('exportUniverse');
-
-    // Mock import
-    cy.intercept('POST', '/api/universes/import', {
-      statusCode: 201,
-      body: {
-        id: 3,
-        name: 'Imported Universe',
-        message: 'Universe imported successfully',
-      },
-    }).as('importUniverse');
-
     // Test export
-    cy.visit('/universes/1/settings');
-    cy.wait('@getUniverse');
-
-    cy.get('[data-testid="export-tab"]').click();
+    cy.get('[data-testid="universe-card"]').first().click();
+    cy.get('[data-testid="export-universe"]').click();
     cy.get('[data-testid="export-format"]').select('json');
     cy.get('[data-testid="start-export"]').click();
 
-    cy.wait('@exportUniverse');
-    cy.get('[data-testid="success-message"]').should(
-      'contain',
-      'Universe exported successfully'
-    );
-    cy.get('[data-testid="download-link"]')
+    cy.get('[data-testid="download-export"]')
       .should('have.attr', 'href')
-      .and('include', 'universe1.json');
+      .and('include', '/exports/');
 
     // Test import
+    const testFile = new File(['{}'], 'universe.json', {
+      type: 'application/json',
+    });
     cy.get('[data-testid="import-universe"]').click();
-    cy.get('[data-testid="import-file"]').attachFile('universe.json');
+    cy.get('input[type="file"]').attachFile(testFile);
     cy.get('[data-testid="start-import"]').click();
 
-    cy.wait('@importUniverse');
-    cy.get('[data-testid="success-message"]').should(
-      'contain',
-      'Universe imported successfully'
-    );
+    cy.contains('Universe imported successfully').should('be.visible');
   });
 
-  it('should handle universe templates', () => {
-    // Mock template creation
-    cy.intercept('POST', '/api/universes/templates', {
-      statusCode: 201,
-      body: {
-        id: 3,
-        name: 'Custom Template',
-        description: 'Created during test',
-        message: 'Template created successfully',
-      },
-    }).as('createTemplate');
-
-    // Mock template update
-    cy.intercept('PUT', '/api/universes/templates/1', {
+  it('should handle universe analytics', () => {
+    cy.intercept('GET', '/api/universes/1/analytics', {
       statusCode: 200,
       body: {
-        id: 1,
-        name: 'Updated Template',
-        description: 'Updated during test',
-        message: 'Template updated successfully',
+        views: 100,
+        collaborators: 5,
+        edits: 25,
+        last_active: '2024-01-15T00:00:00Z',
+        popular_elements: [{ name: 'Particle System', usage: 80 }],
       },
-    }).as('updateTemplate');
+    }).as('getAnalytics');
 
-    // Mock template deletion
-    cy.intercept('DELETE', '/api/universes/templates/1', {
-      statusCode: 200,
-      body: {
-        message: 'Template deleted successfully',
-      },
-    }).as('deleteTemplate');
+    cy.get('[data-testid="universe-card"]').first().click();
+    cy.get('[data-testid="view-analytics"]').click();
+    cy.wait('@getAnalytics');
 
-    cy.visit('/universes/templates');
-    cy.wait('@getTemplates');
-
-    // Create template
-    cy.get('[data-testid="create-template"]').click();
-    cy.get('[data-testid="template-name"]').type('Custom Template');
-    cy.get('[data-testid="template-description"]').type('Created during test');
-    cy.get('[data-testid="save-template"]').click();
-
-    cy.wait('@createTemplate');
-    cy.get('[data-testid="success-message"]').should(
-      'contain',
-      'Template created successfully'
-    );
-
-    // Edit template
-    cy.get('[data-testid="template-1"]')
-      .find('[data-testid="edit-template"]')
-      .click();
-    cy.get('[data-testid="template-name"]').clear().type('Updated Template');
-    cy.get('[data-testid="template-description"]')
-      .clear()
-      .type('Updated during test');
-    cy.get('[data-testid="save-template"]').click();
-
-    cy.wait('@updateTemplate');
-    cy.get('[data-testid="success-message"]').should(
-      'contain',
-      'Template updated successfully'
-    );
-
-    // Delete template
-    cy.get('[data-testid="template-1"]')
-      .find('[data-testid="delete-template"]')
-      .click();
-    cy.get('[data-testid="confirm-delete"]').click();
-
-    cy.wait('@deleteTemplate');
-    cy.get('[data-testid="success-message"]').should(
-      'contain',
-      'Template deleted successfully'
-    );
+    cy.get('[data-testid="analytics-dashboard"]').should('be.visible');
+    cy.get('[data-testid="views-count"]').should('contain', '100');
+    cy.get('[data-testid="collaborators-count"]').should('contain', '5');
+    cy.get('[data-testid="edits-count"]').should('contain', '25');
   });
 
   it('should handle error states', () => {
-    // Test creation error
-    cy.intercept('POST', '/api/universes', {
+    // Test network error
+    cy.intercept('GET', '/api/universes', {
       statusCode: 500,
       body: {
-        error: 'Failed to create universe',
+        error: 'Internal server error',
       },
-    }).as('createError');
+    }).as('getUniversesError');
 
+    cy.reload();
+    cy.contains('Error loading universes').should('be.visible');
+    cy.get('[data-testid="retry-button"]').click();
+
+    // Test validation error
     cy.get('[data-testid="create-universe"]').click();
-    cy.get('[data-testid="template-1"]').click();
-    cy.get('[data-testid="universe-name-input"]').type('Error Test');
-    cy.get('[data-testid="create-from-template"]').click();
+    cy.get('button[type="submit"]').click();
+    cy.contains('Name is required').should('be.visible');
 
-    cy.wait('@createError');
-    cy.get('[data-testid="error-message"]').should(
-      'contain',
-      'Failed to create universe'
-    );
-
-    // Test import error
-    cy.intercept('POST', '/api/universes/import', {
-      statusCode: 400,
+    // Test permission error
+    cy.intercept('PUT', '/api/universes/1', {
+      statusCode: 403,
       body: {
-        error: 'Invalid file format',
+        error: 'Permission denied',
       },
-    }).as('importError');
+    }).as('updateUniverseError');
 
-    cy.get('[data-testid="import-universe"]').click();
-    cy.get('[data-testid="import-file"]').attachFile('invalid.txt');
-    cy.get('[data-testid="start-import"]').click();
-
-    cy.wait('@importError');
-    cy.get('[data-testid="error-message"]').should(
-      'contain',
-      'Invalid file format'
-    );
-
-    // Test version control error
-    cy.intercept('POST', '/api/universes/1/versions/2/restore', {
-      statusCode: 404,
-      body: {
-        error: 'Version not found',
-      },
-    }).as('versionError');
-
-    cy.visit('/universes/1/versions');
-    cy.wait(['@getUniverse', '@getVersions']);
-
-    cy.get('[data-testid="version-2"]')
-      .find('[data-testid="restore-version"]')
-      .click();
-    cy.get('[data-testid="confirm-restore"]').click();
-
-    cy.wait('@versionError');
-    cy.get('[data-testid="error-message"]').should(
-      'contain',
-      'Version not found'
+    cy.get('[data-testid="universe-card"]').first().click();
+    cy.get('[data-testid="edit-universe"]').click();
+    cy.contains('You do not have permission to edit this universe').should(
+      'be.visible'
     );
   });
 });

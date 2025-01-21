@@ -1,13 +1,13 @@
 describe('Real-time Collaboration', () => {
   beforeEach(() => {
-    // Login
+    // Login as first user
     cy.intercept('POST', '/api/auth/login', {
       statusCode: 200,
       body: {
-        user: { id: 1, username: 'testuser' },
-        token: 'fake-jwt-token',
+        user: { id: 1, username: 'testuser1' },
+        token: 'fake-jwt-token-1',
       },
-    }).as('loginRequest');
+    }).as('loginRequest1');
 
     // Mock universe data
     cy.intercept('GET', '/api/universes/1', {
@@ -15,350 +15,294 @@ describe('Real-time Collaboration', () => {
       body: {
         id: 1,
         name: 'Collaborative Universe',
-        description: 'A test universe for collaboration',
+        description: 'A test universe',
         owner_id: 1,
-        shared_with: [
-          {
-            user_id: 2,
-            username: 'collaborator',
-            permission: 'edit',
-          },
-        ],
+        shared_with: [2],
       },
     }).as('getUniverse');
 
-    // Mock collaboration session
-    cy.intercept('GET', '/api/universes/1/collaboration', {
-      statusCode: 200,
-      body: {
-        session_id: 'test-session',
-        active_users: [
-          {
-            id: 1,
-            username: 'testuser',
-            cursor: { x: 100, y: 100 },
-            selection: null,
-          },
-          {
-            id: 2,
-            username: 'collaborator',
-            cursor: { x: 200, y: 200 },
-            selection: { start: 10, end: 20 },
-          },
-        ],
-      },
-    }).as('getCollaboration');
+    // Mock WebSocket connection
+    cy.intercept('GET', '/socket.io/*', req => {
+      req.reply({
+        statusCode: 200,
+        body: { message: 'Connected' },
+      });
+    }).as('socketConnection');
 
     // Login and navigate
     cy.visit('/login');
-    cy.get('input[type="email"]').type('test@example.com');
+    cy.get('input[type="email"]').type('user1@example.com');
     cy.get('input[type="password"]').type('password123');
     cy.get('button[type="submit"]').click();
-    cy.wait('@loginRequest');
+    cy.wait('@loginRequest1');
 
-    cy.visit('/universe/1/collaborate');
-    cy.wait(['@getUniverse', '@getCollaboration']);
+    cy.visit('/universe/1/edit');
+    cy.wait(['@getUniverse', '@socketConnection']);
   });
 
-  it('should handle user presence', () => {
-    // Check presence indicators
-    cy.get('[data-testid="presence-panel"]').should('be.visible');
-    cy.get('[data-testid="active-users"]').within(() => {
-      cy.contains('testuser').should('be.visible');
-      cy.contains('collaborator').should('be.visible');
+  it('should handle WebSocket connections', () => {
+    // Verify connection status
+    cy.get('[data-testid="connection-status"]')
+      .should('be.visible')
+      .and('contain', 'Connected');
+
+    // Test reconnection
+    cy.window().then(win => {
+      win.socketClient.emit('disconnect');
     });
 
-    // Simulate new user joining
+    cy.get('[data-testid="connection-status"]')
+      .should('contain', 'Disconnected')
+      .and('have.class', 'disconnected');
+
     cy.window().then(win => {
-      win.socketClient.emit('user:join', {
-        user_id: 3,
-        username: 'newuser',
-        cursor: { x: 300, y: 300 },
+      win.socketClient.emit('connect');
+    });
+
+    cy.get('[data-testid="connection-status"]')
+      .should('contain', 'Connected')
+      .and('have.class', 'connected');
+  });
+
+  it('should show presence indicators', () => {
+    // Simulate another user joining
+    cy.window().then(win => {
+      win.socketClient.emit('user:joined', {
+        userId: 2,
+        username: 'testuser2',
+        cursor: { x: 100, y: 100 },
       });
     });
 
-    cy.get('[data-testid="active-users"]').should('contain', 'newuser');
+    cy.get('[data-testid="presence-indicator-2"]').should('be.visible');
+    cy.contains('testuser2').should('be.visible');
+
+    // Verify cursor position
+    cy.get('[data-testid="remote-cursor-2"]')
+      .should('be.visible')
+      .and('have.css', 'left', '100px')
+      .and('have.css', 'top', '100px');
 
     // Simulate user leaving
     cy.window().then(win => {
-      win.socketClient.emit('user:leave', {
-        user_id: 2,
+      win.socketClient.emit('user:left', {
+        userId: 2,
+        username: 'testuser2',
       });
     });
 
-    cy.get('[data-testid="active-users"]').should(
-      'not.contain',
-      'collaborator'
-    );
+    cy.get('[data-testid="presence-indicator-2"]').should('not.exist');
   });
 
   it('should handle collaborative editing', () => {
-    // Start editing
-    cy.get('[data-testid="physics-params"]').click();
-    cy.get('[data-testid="gravity"]').clear().type('5.0');
+    // Make a local change
+    cy.get('[data-testid="physics-panel"]').within(() => {
+      cy.get('input[name="gravity"]').clear().type('5.0');
+    });
 
-    // Verify local change
-    cy.get('[data-testid="gravity"]').should('have.value', '5.0');
-
-    // Simulate remote change
+    // Verify change is broadcasted
     cy.window().then(win => {
-      win.socketClient.emit('change:physics', {
-        user_id: 2,
-        params: {
-          friction: 0.8,
-        },
+      cy.spy(win.socketClient, 'emit').as('socketEmit');
+    });
+
+    cy.get('@socketEmit').should('be.calledWith', 'physics:update');
+
+    // Simulate receiving a change from another user
+    cy.window().then(win => {
+      win.socketClient.emit('physics:update', {
+        userId: 2,
+        username: 'testuser2',
+        changes: { friction: 0.3 },
       });
     });
 
-    // Verify remote change applied
-    cy.get('[data-testid="friction"]').should('have.value', '0.8');
-
-    // Test conflict resolution
-    cy.window().then(win => {
-      win.socketClient.emit('change:physics', {
-        user_id: 2,
-        params: {
-          gravity: 9.81,
-        },
-        timestamp: Date.now(),
-      });
-    });
-
-    // Verify conflict dialog
-    cy.get('[data-testid="conflict-dialog"]').should('be.visible');
-    cy.get('[data-testid="resolve-conflict"]').click();
-    cy.get('[data-testid="keep-remote"]').click();
-
-    cy.get('[data-testid="gravity"]').should('have.value', '9.81');
+    cy.get('input[name="friction"]').should('have.value', '0.3');
   });
 
-  it('should handle cursor tracking', () => {
-    // Move cursor
-    cy.get('[data-testid="canvas"]').trigger('mousemove', {
-      clientX: 150,
-      clientY: 150,
+  it('should handle conflict resolution', () => {
+    // Make conflicting changes
+    cy.get('[data-testid="physics-panel"]').within(() => {
+      cy.get('input[name="gravity"]').clear().type('5.0');
     });
 
-    // Verify cursor broadcast
+    // Simulate concurrent change from another user
     cy.window().then(win => {
-      expect(win.socketClient.lastEmitted).to.deep.equal({
-        event: 'cursor:move',
-        data: {
-          x: 150,
-          y: 150,
-        },
+      win.socketClient.emit('physics:update', {
+        userId: 2,
+        username: 'testuser2',
+        changes: { gravity: 6.0 },
+        timestamp: new Date().toISOString(),
       });
     });
 
-    // Simulate remote cursor movement
-    cy.window().then(win => {
-      win.socketClient.emit('cursor:update', {
-        user_id: 2,
-        cursor: { x: 250, y: 250 },
-      });
-    });
+    // Verify conflict resolution UI
+    cy.get('[data-testid="conflict-dialog"]').should('be.visible');
+    cy.contains('Conflicting changes detected').should('be.visible');
 
-    // Verify remote cursor displayed
-    cy.get('[data-testid="remote-cursor-2"]')
-      .should('have.css', 'left', '250px')
-      .and('have.css', 'top', '250px');
+    // Resolve conflict
+    cy.get('[data-testid="resolve-keep-mine"]').click();
+    cy.get('input[name="gravity"]').should('have.value', '5.0');
   });
 
   it('should handle chat functionality', () => {
-    // Open chat
-    cy.get('[data-testid="chat-panel"]').click();
+    // Open chat panel
+    cy.get('[data-testid="chat-toggle"]').click();
+    cy.get('[data-testid="chat-panel"]').should('be.visible');
 
-    // Send message
-    cy.get('[data-testid="chat-input"]').type('Hello, team!{enter}');
+    // Send a message
+    cy.get('[data-testid="chat-input"]').type('Hello everyone!{enter}');
 
-    // Verify message sent
-    cy.get('[data-testid="chat-messages"]')
-      .should('contain', 'Hello, team!')
-      .and('contain', 'testuser');
+    // Verify message is displayed and broadcasted
+    cy.contains('Hello everyone!').should('be.visible');
+    cy.window().then(win => {
+      cy.spy(win.socketClient, 'emit').as('socketEmit');
+    });
+    cy.get('@socketEmit').should('be.calledWith', 'chat:message');
 
-    // Simulate receiving message
+    // Simulate receiving a message
     cy.window().then(win => {
       win.socketClient.emit('chat:message', {
-        user_id: 2,
-        username: 'collaborator',
+        userId: 2,
+        username: 'testuser2',
         message: 'Hi there!',
         timestamp: new Date().toISOString(),
       });
     });
 
-    // Verify received message
-    cy.get('[data-testid="chat-messages"]')
-      .should('contain', 'Hi there!')
-      .and('contain', 'collaborator');
-
-    // Test message notifications
-    cy.get('[data-testid="chat-panel"]').click(); // Close chat
-    cy.window().then(win => {
-      win.socketClient.emit('chat:message', {
-        user_id: 2,
-        username: 'collaborator',
-        message: 'New message',
-      });
-    });
-
-    cy.get('[data-testid="chat-notification"]')
-      .should('be.visible')
-      .and('contain', '1');
-  });
-
-  it('should handle conflict resolution', () => {
-    // Make local change
-    cy.get('[data-testid="audio-params"]').click();
-    cy.get('[data-testid="harmony"]').clear().type('0.8');
-
-    // Simulate concurrent remote change
-    cy.window().then(win => {
-      win.socketClient.emit('change:audio', {
-        user_id: 2,
-        params: {
-          harmony: 0.6,
-        },
-        timestamp: Date.now() + 1000, // Later timestamp
-      });
-    });
-
-    // Verify conflict detection
-    cy.get('[data-testid="conflict-dialog"]').should('be.visible');
-
-    // Test conflict resolution options
-    cy.get('[data-testid="conflict-dialog"]').within(() => {
-      cy.get('[data-testid="local-value"]').should('contain', '0.8');
-      cy.get('[data-testid="remote-value"]').should('contain', '0.6');
-
-      // Choose remote value
-      cy.get('[data-testid="keep-remote"]').click();
-    });
-
-    // Verify resolution
-    cy.get('[data-testid="harmony"]').should('have.value', '0.6');
-  });
-
-  it('should handle permissions and roles', () => {
-    // Test view-only mode
-    cy.window().then(win => {
-      win.socketClient.emit('permission:update', {
-        user_id: 1,
-        permission: 'view',
-      });
-    });
-
-    // Verify edit controls disabled
-    cy.get('[data-testid="physics-params"]').should('have.class', 'disabled');
-    cy.get('[data-testid="audio-params"]').should('have.class', 'disabled');
-
-    // Test editor mode
-    cy.window().then(win => {
-      win.socketClient.emit('permission:update', {
-        user_id: 1,
-        permission: 'edit',
-      });
-    });
-
-    // Verify edit controls enabled
-    cy.get('[data-testid="physics-params"]').should(
-      'not.have.class',
-      'disabled'
-    );
-    cy.get('[data-testid="audio-params"]').should('not.have.class', 'disabled');
+    cy.contains('testuser2: Hi there!').should('be.visible');
   });
 
   it('should handle room management', () => {
-    // Create room
+    // Create a new room
     cy.get('[data-testid="create-room"]').click();
-    cy.get('[data-testid="room-name"]').type('Physics Discussion');
-    cy.get('[data-testid="create-room-submit"]').click();
+    cy.get('input[name="room-name"]').type('Physics Discussion');
+    cy.get('button[type="submit"]').click();
 
-    // Verify room created
-    cy.get('[data-testid="rooms-list"]').should(
-      'contain',
-      'Physics Discussion'
-    );
+    // Verify room creation
+    cy.get('[data-testid="room-list"]').contains('Physics Discussion');
 
     // Join room
-    cy.get('[data-testid="room-physics"]').click();
-    cy.get('[data-testid="room-members"]').should('contain', 'testuser');
-
-    // Simulate other user joining
+    cy.get('[data-testid="room-Physics Discussion"]').click();
     cy.window().then(win => {
-      win.socketClient.emit('room:join', {
-        user_id: 2,
-        username: 'collaborator',
-        room: 'physics',
+      cy.spy(win.socketClient, 'emit').as('socketEmit');
+    });
+    cy.get('@socketEmit').should('be.calledWith', 'room:join');
+
+    // Simulate others joining the room
+    cy.window().then(win => {
+      win.socketClient.emit('room:joined', {
+        userId: 2,
+        username: 'testuser2',
+        room: 'Physics Discussion',
       });
     });
 
-    cy.get('[data-testid="room-members"]').should('contain', 'collaborator');
+    cy.get('[data-testid="room-members"]').contains('testuser2');
+  });
 
-    // Leave room
-    cy.get('[data-testid="leave-room"]').click();
-    cy.get('[data-testid="room-physics"]').should('not.have.class', 'active');
+  it('should handle change history', () => {
+    // Open history panel
+    cy.get('[data-testid="history-toggle"]').click();
+    cy.get('[data-testid="history-panel"]').should('be.visible');
+
+    // Make a change
+    cy.get('[data-testid="physics-panel"]').within(() => {
+      cy.get('input[name="gravity"]').clear().type('5.0');
+    });
+
+    // Verify change is recorded
+    cy.get('[data-testid="history-list"]').within(() => {
+      cy.contains('Changed gravity to 5.0').should('be.visible');
+      cy.contains('testuser1').should('be.visible');
+    });
+
+    // Undo change
+    cy.get('[data-testid="undo-button"]').click();
+    cy.get('input[name="gravity"]').should('have.value', '9.81');
+
+    // Redo change
+    cy.get('[data-testid="redo-button"]').click();
+    cy.get('input[name="gravity"]').should('have.value', '5.0');
+  });
+
+  it('should handle permissions', () => {
+    // Test view-only mode
+    cy.window().then(win => {
+      win.socketClient.emit('permissions:update', {
+        userId: 1,
+        role: 'viewer',
+      });
+    });
+
+    cy.get('input[name="gravity"]').should('be.disabled');
+    cy.get('[data-testid="edit-controls"]').should('not.exist');
+
+    // Test editor mode
+    cy.window().then(win => {
+      win.socketClient.emit('permissions:update', {
+        userId: 1,
+        role: 'editor',
+      });
+    });
+
+    cy.get('input[name="gravity"]').should('be.enabled');
+    cy.get('[data-testid="edit-controls"]').should('exist');
   });
 
   it('should handle activity logs', () => {
     // Open activity panel
-    cy.get('[data-testid="activity-panel"]').click();
+    cy.get('[data-testid="activity-toggle"]').click();
+    cy.get('[data-testid="activity-panel"]').should('be.visible');
 
-    // Verify initial activities
-    cy.get('[data-testid="activity-log"]').within(() => {
-      cy.contains('testuser joined').should('be.visible');
-      cy.contains('collaborator joined').should('be.visible');
+    // Make a change
+    cy.get('[data-testid="physics-panel"]').within(() => {
+      cy.get('input[name="gravity"]').clear().type('5.0');
     });
 
-    // Perform action
-    cy.get('[data-testid="physics-params"]').click();
-    cy.get('[data-testid="gravity"]').clear().type('5.0');
-    cy.get('[data-testid="save-physics"]').click();
+    // Verify activity is logged
+    cy.get('[data-testid="activity-log"]').contains('changed gravity to 5.0');
 
-    // Verify action logged
-    cy.get('[data-testid="activity-log"]').should(
-      'contain',
-      'testuser updated physics parameters'
-    );
-
-    // Simulate remote action
+    // Simulate activity from another user
     cy.window().then(win => {
       win.socketClient.emit('activity:log', {
-        user_id: 2,
-        username: 'collaborator',
-        action: 'updated audio parameters',
+        userId: 2,
+        username: 'testuser2',
+        action: 'modified friction',
         timestamp: new Date().toISOString(),
       });
     });
 
-    // Verify remote action logged
-    cy.get('[data-testid="activity-log"]').should(
-      'contain',
-      'collaborator updated audio parameters'
+    cy.get('[data-testid="activity-log"]').contains(
+      'testuser2 modified friction'
     );
   });
 
-  it('should handle disconnection and reconnection', () => {
-    // Simulate disconnection
+  it('should handle error recovery', () => {
+    // Simulate connection error
     cy.window().then(win => {
-      win.socketClient.emit('disconnect');
+      win.socketClient.emit('error', {
+        message: 'Connection lost',
+      });
     });
 
-    // Verify disconnection state
-    cy.get('[data-testid="connection-status"]').should(
-      'contain',
-      'Disconnected'
-    );
-    cy.get('[data-testid="reconnect-button"]').should('be.visible');
+    cy.get('[data-testid="error-notification"]')
+      .should('be.visible')
+      .and('contain', 'Connection lost');
 
-    // Test auto-reconnect
+    // Test automatic reconnection
     cy.window().then(win => {
-      win.socketClient.emit('reconnect');
+      win.socketClient.emit('connect');
     });
-
-    // Verify reconnection
-    cy.get('[data-testid="connection-status"]').should('contain', 'Connected');
 
     // Verify state synchronization
-    cy.get('[data-testid="sync-status"]').should('contain', 'Synchronized');
+    cy.window().then(win => {
+      cy.spy(win.socketClient, 'emit').as('socketEmit');
+    });
+    cy.get('@socketEmit').should('be.calledWith', 'sync:request');
+
+    // Verify recovery notification
+    cy.get('[data-testid="recovery-notification"]')
+      .should('be.visible')
+      .and('contain', 'Connection restored');
   });
 });

@@ -1,353 +1,344 @@
-describe('Infrastructure Monitoring', () => {
+describe('System Monitoring', () => {
   beforeEach(() => {
-    // Login
+    // Login as admin
     cy.intercept('POST', '/api/auth/login', {
       statusCode: 200,
       body: {
-        user: { id: 1, username: 'testuser', role: 'admin' },
+        user: { id: 1, username: 'admin', role: 'admin' },
         token: 'fake-jwt-token',
       },
     }).as('loginRequest');
 
-    // Mock system health data
-    cy.intercept('GET', '/api/monitoring/health', {
+    // Mock monitoring data
+    cy.intercept('GET', '/api/monitoring/overview', {
       statusCode: 200,
       body: {
-        status: 'healthy',
-        uptime: 1209600, // 14 days in seconds
-        active_instances: 4,
-        load_balancer: {
-          status: 'active',
-          healthy_backends: 4,
-          total_backends: 4,
+        system_health: {
+          status: 'healthy',
+          uptime: '99.99%',
+          last_incident: null,
+          active_users: 150,
+          cpu_usage: 45,
+          memory_usage: 60,
+          disk_usage: 55,
         },
-        services: {
-          api: { status: 'healthy', response_time: 45 },
-          database: { status: 'healthy', connections: 50 },
-          cache: { status: 'healthy', hit_rate: 0.95 },
-          storage: { status: 'healthy', usage: 0.65 },
+        performance_metrics: {
+          response_time: 120,
+          error_rate: 0.5,
+          request_rate: 1000,
+          concurrent_users: 50,
+        },
+        error_tracking: {
+          total_errors: 25,
+          unique_errors: 8,
+          resolved_errors: 20,
+          critical_errors: 2,
         },
       },
-    }).as('getHealth');
+    }).as('getMonitoring');
 
-    // Mock deployment data
-    cy.intercept('GET', '/api/monitoring/deployments', {
+    // Mock alerts
+    cy.intercept('GET', '/api/monitoring/alerts', {
       statusCode: 200,
       body: {
-        current_version: 'v1.2.3',
-        last_deployment: '2024-01-15T00:00:00Z',
-        deployment_history: [
+        alerts: [
           {
-            version: 'v1.2.3',
-            timestamp: '2024-01-15T00:00:00Z',
-            status: 'success',
-            duration: 180,
+            id: 1,
+            type: 'high_cpu',
+            severity: 'warning',
+            message: 'CPU usage above 80%',
+            timestamp: new Date().toISOString(),
+            status: 'active',
           },
           {
-            version: 'v1.2.2',
-            timestamp: '2024-01-01T00:00:00Z',
-            status: 'success',
-            duration: 195,
+            id: 2,
+            type: 'error_spike',
+            severity: 'critical',
+            message: 'Error rate increased by 200%',
+            timestamp: new Date().toISOString(),
+            status: 'resolved',
           },
         ],
-        rollbacks: [],
       },
-    }).as('getDeployments');
+    }).as('getAlerts');
 
-    // Mock infrastructure metrics
-    cy.intercept('GET', '/api/monitoring/metrics', {
+    // Mock logs
+    cy.intercept('GET', '/api/monitoring/logs', {
       statusCode: 200,
       body: {
-        cpu_usage: {
-          current: 45,
-          threshold: 80,
-          history: [
-            { timestamp: '2024-01-15T00:00:00Z', value: 45 },
-            { timestamp: '2024-01-14T00:00:00Z', value: 50 },
-          ],
-        },
-        memory_usage: {
-          current: 60,
-          threshold: 85,
-          history: [
-            { timestamp: '2024-01-15T00:00:00Z', value: 60 },
-            { timestamp: '2024-01-14T00:00:00Z', value: 65 },
-          ],
-        },
-        disk_usage: {
-          current: 70,
-          threshold: 90,
-          history: [
-            { timestamp: '2024-01-15T00:00:00Z', value: 70 },
-            { timestamp: '2024-01-14T00:00:00Z', value: 68 },
-          ],
-        },
+        logs: [
+          {
+            id: 1,
+            level: 'error',
+            message: 'Database connection failed',
+            timestamp: new Date().toISOString(),
+            service: 'database',
+            trace_id: 'trace-123',
+          },
+          {
+            id: 2,
+            level: 'info',
+            message: 'User authentication successful',
+            timestamp: new Date().toISOString(),
+            service: 'auth',
+            trace_id: 'trace-124',
+          },
+        ],
       },
-    }).as('getMetrics');
+    }).as('getLogs');
 
     // Login and navigate
     cy.visit('/login');
-    cy.get('input[type="email"]').type('test@example.com');
-    cy.get('input[type="password"]').type('password123');
+    cy.get('input[type="email"]').type('admin@example.com');
+    cy.get('input[type="password"]').type('admin123');
     cy.get('button[type="submit"]').click();
     cy.wait('@loginRequest');
 
     cy.visit('/monitoring');
-    cy.wait(['@getHealth', '@getDeployments', '@getMetrics']);
+    cy.wait(['@getMonitoring', '@getAlerts', '@getLogs']);
   });
 
-  it('should handle system health monitoring', () => {
-    // Check overall status
+  it('should display system health overview', () => {
+    cy.get('[data-testid="health-overview"]').should('be.visible');
+
+    // Check status indicators
     cy.get('[data-testid="system-status"]')
       .should('contain', 'Healthy')
       .and('have.class', 'status-healthy');
+    cy.get('[data-testid="uptime"]').should('contain', '99.99%');
 
-    // Check uptime
-    cy.get('[data-testid="system-uptime"]').should('contain', '14 days');
+    // Check resource usage
+    cy.get('[data-testid="cpu-usage"]').within(() => {
+      cy.get('.usage-value').should('contain', '45%');
+      cy.get('.usage-graph').should('exist');
+    });
 
-    // Check active instances
-    cy.get('[data-testid="active-instances"]').should('contain', '4');
+    cy.get('[data-testid="memory-usage"]').within(() => {
+      cy.get('.usage-value').should('contain', '60%');
+      cy.get('.usage-graph').should('exist');
+    });
 
-    // Check service health
-    cy.get('[data-testid="services-health"]').within(() => {
-      cy.get('[data-testid="api-status"]')
-        .should('contain', 'Healthy')
-        .and('contain', '45ms');
-
-      cy.get('[data-testid="database-status"]')
-        .should('contain', 'Healthy')
-        .and('contain', '50 connections');
-
-      cy.get('[data-testid="cache-status"]')
-        .should('contain', 'Healthy')
-        .and('contain', '95% hit rate');
-
-      cy.get('[data-testid="storage-status"]')
-        .should('contain', 'Healthy')
-        .and('contain', '65% usage');
+    cy.get('[data-testid="disk-usage"]').within(() => {
+      cy.get('.usage-value').should('contain', '55%');
+      cy.get('.usage-graph').should('exist');
     });
   });
 
-  it('should handle deployment monitoring', () => {
-    cy.get('[data-testid="deployment-tab"]').click();
+  it('should handle performance monitoring', () => {
+    cy.get('[data-testid="performance-metrics"]').should('be.visible');
 
-    // Check current version
-    cy.get('[data-testid="current-version"]').should('contain', 'v1.2.3');
-
-    // Check deployment history
-    cy.get('[data-testid="deployment-history"]').within(() => {
-      cy.get('[data-testid="deployment-v1.2.3"]')
-        .should('contain', 'Success')
-        .and('contain', '3 minutes');
-
-      cy.get('[data-testid="deployment-v1.2.2"]')
-        .should('contain', 'Success')
-        .and('contain', '3 minutes 15 seconds');
+    // Check response time
+    cy.get('[data-testid="response-time"]').within(() => {
+      cy.get('.metric-value').should('contain', '120ms');
+      cy.get('.trend-graph').should('exist');
     });
 
-    // Test deployment filters
-    cy.get('[data-testid="deployment-filter"]').select('failed');
-    cy.get('[data-testid="deployment-history"]').should(
-      'not.contain',
-      'v1.2.3'
+    // Check error rate
+    cy.get('[data-testid="error-rate"]').within(() => {
+      cy.get('.metric-value').should('contain', '0.5%');
+      cy.get('.trend-graph').should('exist');
+    });
+
+    // Check request rate
+    cy.get('[data-testid="request-rate"]').within(() => {
+      cy.get('.metric-value').should('contain', '1000');
+      cy.get('.trend-graph').should('exist');
+    });
+
+    // Test time range selection
+    cy.get('[data-testid="time-range"]').select('1h');
+    cy.get('[data-testid="refresh-metrics"]').click();
+    cy.wait('@getMonitoring');
+  });
+
+  it('should handle error tracking', () => {
+    cy.get('[data-testid="error-tracking"]').should('be.visible');
+
+    // Check error statistics
+    cy.get('[data-testid="total-errors"]').should('contain', '25');
+    cy.get('[data-testid="unique-errors"]').should('contain', '8');
+    cy.get('[data-testid="resolved-errors"]').should('contain', '20');
+    cy.get('[data-testid="critical-errors"]').should('contain', '2');
+
+    // Test error filtering
+    cy.get('[data-testid="error-filter"]').select('critical');
+    cy.get('[data-testid="error-list"]').should(
+      'contain',
+      'Error rate increased'
     );
 
-    // View deployment details
-    cy.get('[data-testid="deployment-v1.2.3"]').click();
-    cy.get('[data-testid="deployment-details"]')
-      .should('be.visible')
-      .and('contain', 'v1.2.3');
+    // Test error resolution
+    cy.get('[data-testid="error-1"]')
+      .find('[data-testid="resolve-error"]')
+      .click();
+    cy.get('[data-testid="resolution-notes"]').type('Fixed in latest deploy');
+    cy.get('[data-testid="confirm-resolution"]').click();
   });
 
-  it('should handle load balancing monitoring', () => {
-    cy.get('[data-testid="load-balancer-tab"]').click();
+  it('should handle alert management', () => {
+    cy.get('[data-testid="alert-management"]').should('be.visible');
 
-    // Check load balancer status
-    cy.get('[data-testid="lb-status"]')
-      .should('contain', 'Active')
-      .and('have.class', 'status-active');
-
-    // Check backend health
-    cy.get('[data-testid="backend-health"]').should('contain', '4/4 healthy');
-
-    // Test backend details
-    cy.get('[data-testid="view-backends"]').click();
-    cy.get('[data-testid="backend-list"]').within(() => {
-      cy.get('[data-testid="backend-1"]').should('contain', 'Healthy');
+    // Check alert list
+    cy.get('[data-testid="alert-list"]').within(() => {
+      cy.get('[data-testid="alert-1"]')
+        .should('contain', 'CPU usage above 80%')
+        .and('have.class', 'warning');
+      cy.get('[data-testid="alert-2"]')
+        .should('contain', 'Error rate increased')
+        .and('have.class', 'critical');
     });
 
-    // Test traffic distribution
-    cy.get('[data-testid="traffic-distribution"]').should('be.visible');
+    // Test alert filtering
+    cy.get('[data-testid="alert-filter"]').select('critical');
+    cy.get('[data-testid="alert-list"]').should('have.length', 1);
+
+    // Test alert acknowledgment
+    cy.get('[data-testid="alert-1"]')
+      .find('[data-testid="acknowledge-alert"]')
+      .click();
+    cy.get('[data-testid="ack-notes"]').type('Investigating high CPU usage');
+    cy.get('[data-testid="confirm-ack"]').click();
   });
 
-  it('should handle auto-scaling configuration', () => {
-    cy.get('[data-testid="auto-scaling-tab"]').click();
-
-    // Configure scaling rules
-    cy.get('[data-testid="add-scaling-rule"]').click();
-    cy.get('[data-testid="metric-type"]').select('cpu');
-    cy.get('[data-testid="threshold"]').type('75');
-    cy.get('[data-testid="scale-out-amount"]').type('2');
-    cy.get('[data-testid="cooldown-period"]').type('300');
-    cy.get('[data-testid="save-rule"]').click();
-
-    // Verify rule added
-    cy.get('[data-testid="scaling-rules"]')
-      .should('contain', 'CPU > 75%')
-      .and('contain', 'Scale out by 2');
-
-    // Test rule editing
-    cy.get('[data-testid="edit-rule-1"]').click();
-    cy.get('[data-testid="threshold"]').clear().type('80');
-    cy.get('[data-testid="save-rule"]').click();
-    cy.get('[data-testid="scaling-rules"]').should('contain', 'CPU > 80%');
-  });
-
-  it('should handle backup management', () => {
-    cy.get('[data-testid="backup-tab"]').click();
-
-    // Configure backup schedule
-    cy.get('[data-testid="configure-backup"]').click();
-    cy.get('[data-testid="backup-frequency"]').select('daily');
-    cy.get('[data-testid="backup-time"]').type('02:00');
-    cy.get('[data-testid="retention-days"]').type('30');
-    cy.get('[data-testid="save-backup-config"]').click();
-
-    // Verify backup schedule
-    cy.get('[data-testid="backup-schedule"]')
-      .should('contain', 'Daily at 02:00')
-      .and('contain', '30 days retention');
-
-    // Test manual backup
-    cy.get('[data-testid="create-backup"]').click();
-    cy.get('[data-testid="backup-progress"]').should('be.visible');
-    cy.get('[data-testid="backup-complete"]').should('be.visible');
-
-    // Test backup restoration
-    cy.get('[data-testid="restore-backup"]').click();
-    cy.get('[data-testid="confirm-restore"]').click();
-    cy.get('[data-testid="restore-complete"]').should('be.visible');
-  });
-
-  it('should handle system logs', () => {
-    cy.get('[data-testid="logs-tab"]').click();
-
-    // Configure log filters
-    cy.get('[data-testid="log-level"]').select('error');
-    cy.get('[data-testid="log-service"]').select('api');
-    cy.get('[data-testid="date-range"]').click();
-    cy.get('[data-testid="last-24-hours"]').click();
-    cy.get('[data-testid="apply-filters"]').click();
+  it('should handle log analysis', () => {
+    cy.get('[data-testid="log-analysis"]').should('be.visible');
 
     // Check log entries
-    cy.get('[data-testid="log-entries"]').should('be.visible');
+    cy.get('[data-testid="log-list"]').within(() => {
+      cy.get('[data-testid="log-1"]')
+        .should('contain', 'Database connection failed')
+        .and('have.class', 'error');
+      cy.get('[data-testid="log-2"]')
+        .should('contain', 'User authentication successful')
+        .and('have.class', 'info');
+    });
+
+    // Test log filtering
+    cy.get('[data-testid="log-level-filter"]').select('error');
+    cy.get('[data-testid="service-filter"]').select('database');
+    cy.get('[data-testid="log-list"]').should('have.length', 1);
 
     // Test log search
-    cy.get('[data-testid="log-search"]').type('database');
-    cy.get('[data-testid="search-logs"]').click();
-    cy.get('[data-testid="log-entries"]').should('contain', 'database');
-
-    // Test log export
-    cy.get('[data-testid="export-logs"]').click();
-    cy.get('[data-testid="export-format"]').select('json');
-    cy.get('[data-testid="start-export"]').click();
-    cy.get('[data-testid="export-complete"]').should('be.visible');
+    cy.get('[data-testid="log-search"]').type('connection');
+    cy.get('[data-testid="log-list"]').should('contain', 'connection failed');
   });
 
-  it('should handle SSL/TLS configuration', () => {
-    cy.get('[data-testid="ssl-tab"]').click();
+  it('should handle metric visualization', () => {
+    // Test graph types
+    cy.get('[data-testid="visualization-type"]').select('line');
+    cy.get('[data-testid="metric-graph"]').should('have.class', 'line-graph');
 
-    // Check certificate status
-    cy.get('[data-testid="certificate-status"]')
-      .should('contain', 'Valid')
-      .and('contain', 'Expires in');
+    cy.get('[data-testid="visualization-type"]').select('bar');
+    cy.get('[data-testid="metric-graph"]').should('have.class', 'bar-graph');
 
-    // Upload new certificate
-    cy.get('[data-testid="upload-certificate"]').click();
-    cy.get('[data-testid="certificate-file"]').attachFile('test-cert.pem');
-    cy.get('[data-testid="private-key"]').attachFile('test-key.pem');
-    cy.get('[data-testid="save-certificate"]').click();
+    // Test data aggregation
+    cy.get('[data-testid="aggregation-period"]').select('1h');
+    cy.get('[data-testid="refresh-graph"]').click();
+    cy.wait('@getMonitoring');
 
-    // Verify certificate update
-    cy.get('[data-testid="certificate-updated"]').should('be.visible');
-
-    // Configure SSL settings
-    cy.get('[data-testid="ssl-settings"]').click();
-    cy.get('[data-testid="min-version"]').select('TLS 1.2');
-    cy.get('[data-testid="save-ssl-settings"]').click();
+    // Test metric comparison
+    cy.get('[data-testid="compare-metrics"]').click();
+    cy.get('[data-testid="metric-selector"]').select(['cpu', 'memory']);
+    cy.get('[data-testid="comparison-graph"]').should('be.visible');
   });
 
-  it('should handle infrastructure as code', () => {
-    cy.get('[data-testid="iac-tab"]').click();
+  it('should handle report generation', () => {
+    // Configure report
+    cy.get('[data-testid="create-report"]').click();
+    cy.get('[data-testid="report-type"]').select('performance');
+    cy.get('[data-testid="report-period"]').select('last-7-days');
+    cy.get('[data-testid="include-metrics"]').select([
+      'cpu',
+      'memory',
+      'errors',
+    ]);
 
-    // View infrastructure code
-    cy.get('[data-testid="view-terraform"]').click();
-    cy.get('[data-testid="terraform-config"]').should('be.visible');
+    // Generate report
+    cy.get('[data-testid="generate-report"]').click();
+    cy.get('[data-testid="report-progress"]').should('be.visible');
 
-    // Edit configuration
-    cy.get('[data-testid="edit-config"]').click();
-    cy.get('[data-testid="config-editor"]').type(
-      'resource "aws_instance" "web" {'
+    // Download report
+    cy.get('[data-testid="download-report"]')
+      .should('have.attr', 'href')
+      .and('include', '/reports/');
+  });
+
+  it('should handle system configuration', () => {
+    // Test alert thresholds
+    cy.get('[data-testid="config-tab"]').click();
+    cy.get('[data-testid="cpu-threshold"]').clear().type('90');
+    cy.get('[data-testid="memory-threshold"]').clear().type('85');
+    cy.get('[data-testid="error-threshold"]').clear().type('1.0');
+    cy.get('[data-testid="save-thresholds"]').click();
+
+    // Test notification settings
+    cy.get('[data-testid="notification-email"]').type('alerts@example.com');
+    cy.get('[data-testid="notification-slack"]').type('#monitoring');
+    cy.get('[data-testid="save-notifications"]').click();
+
+    // Test retention settings
+    cy.get('[data-testid="log-retention"]').select('30d');
+    cy.get('[data-testid="metric-retention"]').select('90d');
+    cy.get('[data-testid="save-retention"]').click();
+  });
+
+  it('should handle incident management', () => {
+    // Create incident
+    cy.get('[data-testid="create-incident"]').click();
+    cy.get('[data-testid="incident-title"]').type('Database Outage');
+    cy.get('[data-testid="incident-severity"]').select('critical');
+    cy.get('[data-testid="incident-description"]').type(
+      'Complete database outage affecting all services'
     );
-    cy.get('[data-testid="save-config"]').click();
+    cy.get('[data-testid="create-incident-submit"]').click();
 
-    // Plan changes
-    cy.get('[data-testid="plan-changes"]').click();
-    cy.get('[data-testid="plan-output"]').should('contain', 'Plan: 1 to add');
+    // Update incident
+    cy.get('[data-testid="incident-1"]')
+      .find('[data-testid="update-incident"]')
+      .click();
+    cy.get('[data-testid="incident-status"]').select('investigating');
+    cy.get('[data-testid="incident-update"]').type('Investigation in progress');
+    cy.get('[data-testid="submit-update"]').click();
 
-    // Apply changes
-    cy.get('[data-testid="apply-changes"]').click();
-    cy.get('[data-testid="confirm-apply"]').click();
-    cy.get('[data-testid="apply-complete"]').should('be.visible');
+    // Resolve incident
+    cy.get('[data-testid="incident-1"]')
+      .find('[data-testid="resolve-incident"]')
+      .click();
+    cy.get('[data-testid="resolution-details"]').type(
+      'Database restored and stable'
+    );
+    cy.get('[data-testid="confirm-resolution"]').click();
   });
 
-  it('should handle disaster recovery', () => {
-    cy.get('[data-testid="dr-tab"]').click();
+  it('should handle error states', () => {
+    // Test data fetch error
+    cy.intercept('GET', '/api/monitoring/overview', {
+      statusCode: 500,
+      body: {
+        error: 'Internal server error',
+      },
+    }).as('getMonitoringError');
 
-    // Configure DR policy
-    cy.get('[data-testid="configure-dr"]').click();
-    cy.get('[data-testid="rpo"]').type('4');
-    cy.get('[data-testid="rto"]').type('1');
-    cy.get('[data-testid="save-dr-config"]').click();
+    cy.get('[data-testid="refresh-dashboard"]').click();
+    cy.get('[data-testid="error-message"]')
+      .should('be.visible')
+      .and('contain', 'Failed to fetch monitoring data');
 
-    // Test DR simulation
-    cy.get('[data-testid="simulate-dr"]').click();
-    cy.get('[data-testid="simulation-type"]').select('region_failure');
-    cy.get('[data-testid="start-simulation"]').click();
-    cy.get('[data-testid="simulation-progress"]').should('be.visible');
-    cy.get('[data-testid="simulation-complete"]').should('be.visible');
+    // Test alert creation error
+    cy.get('[data-testid="create-alert"]').click();
+    cy.get('[data-testid="alert-name"]').type('Test Alert');
+    cy.get('[data-testid="create-alert-submit"]').click();
 
-    // View DR report
-    cy.get('[data-testid="view-dr-report"]').click();
-    cy.get('[data-testid="dr-metrics"]').within(() => {
-      cy.get('[data-testid="actual-rto"]').should('exist');
-      cy.get('[data-testid="actual-rpo"]').should('exist');
-    });
-  });
+    cy.get('[data-testid="alert-error"]')
+      .should('be.visible')
+      .and('contain', 'Failed to create alert');
 
-  it('should handle alerts and notifications', () => {
-    cy.get('[data-testid="alerts-tab"]').click();
+    // Test report generation error
+    cy.get('[data-testid="create-report"]').click();
+    cy.get('[data-testid="generate-report"]').click();
 
-    // Configure alert rules
-    cy.get('[data-testid="add-alert"]').click();
-    cy.get('[data-testid="alert-metric"]').select('cpu_usage');
-    cy.get('[data-testid="alert-threshold"]').type('90');
-    cy.get('[data-testid="alert-duration"]').type('5');
-    cy.get('[data-testid="alert-severity"]').select('critical');
-
-    // Configure notifications
-    cy.get('[data-testid="notification-email"]').check();
-    cy.get('[data-testid="notification-slack"]').check();
-    cy.get('[data-testid="save-alert"]').click();
-
-    // Verify alert rule
-    cy.get('[data-testid="alert-rules"]')
-      .should('contain', 'CPU Usage > 90%')
-      .and('contain', 'Critical');
-
-    // Test alert simulation
-    cy.get('[data-testid="simulate-alert"]').click();
-    cy.get('[data-testid="alert-simulation"]').should('be.visible');
-    cy.get('[data-testid="notification-received"]').should('be.visible');
+    cy.get('[data-testid="report-error"]')
+      .should('be.visible')
+      .and('contain', 'Failed to generate report');
   });
 });

@@ -1,8 +1,8 @@
-<invoke name="list_dir" explanation="Examining the root directory structure to understand the codebase organization">
+<invoke name="list_dir" explanation="Examining root directory structure">
 <parameter name="relative_workspace_path">.</parameter>
 </invoke>
 
-<invoke name="list_dir" explanation="Examining the frontend directory structure">
+<invoke name="list_dir" explanation="Examining frontend directory">
 <parameter name="relative_workspace_path">frontend</parameter>
 </invoke>
 
@@ -10,13 +10,13 @@
 <parameter name="relative_workspace_path">backend</parameter>
 </invoke>
 
-<invoke name="codebase_search" explanation="Looking for schema and model definitions">
-<parameter name="query">schema model definition class</parameter>
+<invoke name="codebase_search" explanation="Looking for all schema definitions">
+<parameter name="query">schema definition model class</parameter>
 <parameter name="target_directories">["backend/app/models", "backend/app/schemas"]</parameter>
 </invoke>
 
-<invoke name="grep_search" explanation="Looking for potentially unused files">
-<parameter name="query">import.*from</parameter>
+<invoke name="grep_search" explanation="Looking for all import statements to analyze usage">
+<parameter name="query">^import|^from.*import</parameter>
 </invoke>
 
 <invoke name="edit_file" explanation="Creating a new consolidated test file structure">
@@ -496,161 +496,161 @@ class PerformanceMetrics(BaseModel):
     particle_count: int
     timestamp: datetime
 
-class SearchIndex(BaseModel):
-    target_type: str
-    target_id: int
-    content: str
-    tags: List[str]
-    updated_at: datetime</parameter>
+# ... (rest of the code remains unchanged)
+
+```
+</parameter>
 <parameter name="blocking">true</parameter>
 </invoke>
 
-<invoke name="edit_file" explanation="Creating main models file">
-<parameter name="target_file">backend/app/models/models.py</parameter>
-<parameter name="instructions">I will create the main models file matching our schema</parameter>
-<parameter name="code_edit">from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, JSON
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
-from database import Base
+<invoke name="edit_file" explanation="Creating migration documentation">
+<parameter name="target_file">docs/migrations.md</parameter>
+<parameter name="instructions">I will create the migration documentation</parameter>
+<parameter name="code_edit"># Database Migrations
 
-class User(Base):
-    __tablename__ = "users"
+## Overview
 
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True)
-    email = Column(String, unique=True, index=True)
-    hashed_password = Column(String)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+This document describes the database migration process for the Harmonic Universe project. We use Alembic for database migrations.
 
-    universes = relationship("Universe", back_populates="owner")
-    notifications = relationship("Notification", back_populates="recipient")
-    activities = relationship("Activity", back_populates="user")
-    preferences = relationship("Preferences", back_populates="user", uselist=False)
+## Migration Files
 
-class Universe(Base):
-    __tablename__ = "universes"
+Current migrations in order:
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    description = Column(String, nullable=True)
-    physics_params = Column(JSON)
-    audio_params = Column(JSON)
-    owner_id = Column(Integer, ForeignKey("users.id"))
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+1. `001_initial.py` - Initial schema setup
+   - Users table
+   - Universes table
+   - Storyboards table
+   - Base relationships
 
-    owner = relationship("User", back_populates="universes")
-    storyboards = relationship("Storyboard", back_populates="universe")
-    collaborations = relationship("Collaboration", back_populates="universe")
-    performance_metrics = relationship("PerformanceMetrics", back_populates="universe")
+2. `002_notifications.py` - Notification system
+   - Notifications table
+   - Recipient/sender relationships
+   - Indexes for efficient querying
 
-class Storyboard(Base):
-    __tablename__ = "storyboards"
+3. `003_activities.py` - Activity tracking
+   - Activities table
+   - User activity relationships
+   - Target type/id tracking
 
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, index=True)
-    description = Column(String, nullable=True)
-    scenes = Column(JSON)
-    universe_id = Column(Integer, ForeignKey("universes.id"))
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+4. `004_performance_metrics.py` - Performance monitoring
+   - Performance metrics table
+   - Universe relationship
+   - Timestamp-based indexing
 
-    universe = relationship("Universe", back_populates="storyboards")
+5. `005_search_index.py` - Full-text search
+   - Search index table
+   - GIN index for search vector
+   - Automatic vector updates
 
-class Notification(Base):
-    __tablename__ = "notifications"
+## Running Migrations
 
-    id = Column(Integer, primary_key=True, index=True)
-    type = Column(String)
-    content = Column(String)
-    recipient_id = Column(Integer, ForeignKey("users.id"))
-    sender_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    read = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+### Development Environment
 
-    recipient = relationship("User", back_populates="notifications", foreign_keys=[recipient_id])
-    sender = relationship("User", foreign_keys=[sender_id])
+```bash
+# Apply all pending migrations
+alembic upgrade head
 
-class Collaboration(Base):
-    __tablename__ = "collaborations"
+# Rollback last migration
+alembic downgrade -1
 
-    id = Column(Integer, primary_key=True, index=True)
-    universe_id = Column(Integer, ForeignKey("universes.id"))
-    user_id = Column(Integer, ForeignKey("users.id"))
-    role = Column(String)
-    joined_at = Column(DateTime(timezone=True), server_default=func.now())
+# Rollback to specific version
+alembic downgrade <version_id>
 
-    universe = relationship("Universe", back_populates="collaborations")
-    user = relationship("User")
+# View migration history
+alembic history
+```
 
-class Activity(Base):
-    __tablename__ = "activities"
+### Production Environment
 
-    id = Column(Integer, primary_key=True, index=True)
-    type = Column(String)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    target_type = Column(String)
-    target_id = Column(Integer)
-    details = Column(JSON)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+```bash
+# Apply migrations with verification
+alembic upgrade head --sql > migration.sql
+# Review migration.sql
+psql -d your_database -f migration.sql
+```
 
-    user = relationship("User", back_populates="activities")
+## Creating New Migrations
 
-class Preferences(Base):
-    __tablename__ = "preferences"
+```bash
+# Create new migration
+alembic revision -m "description_of_changes"
+```
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
-    theme = Column(String, default="light")
-    notifications_enabled = Column(Boolean, default=True)
-    accessibility = Column(JSON)
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+### Migration Template
 
-    user = relationship("User", back_populates="preferences")
+```python
+"""description_of_changes
 
-class PerformanceMetrics(Base):
-    __tablename__ = "performance_metrics"
+Revision ID: <auto_generated>
+Revises: <previous_revision>
+Create Date: <timestamp>
 
-    id = Column(Integer, primary_key=True, index=True)
-    universe_id = Column(Integer, ForeignKey("universes.id"))
-    fps = Column(Integer)
-    memory_usage = Column(Integer)
-    particle_count = Column(Integer)
-    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+"""
+from alembic import op
+import sqlalchemy as sa
 
-    universe = relationship("Universe", back_populates="performance_metrics")</parameter>
-<parameter name="blocking">true</parameter>
-</invoke>
+# revision identifiers
+revision = '<auto_generated>'
+down_revision = '<previous_revision>'
+branch_labels = None
+depends_on = None
 
-<invoke name="edit_file" explanation="Creating main project README">
-<parameter name="target_file">README.md</parameter>
-<parameter name="instructions">I will create the main project documentation</parameter>
-<parameter name="code_edit"># Harmonic Universe
+def upgrade():
+    # Add upgrade operations
+    pass
 
-A real-time collaborative universe creation platform with physics simulation and audio visualization.
+def downgrade():
+    # Add downgrade operations
+    pass
+```
 
-## Features
+## Best Practices
 
-### Core Features
-- Universe Creation & Management
-- Physics Simulation
-- Audio Visualization & Processing
-- Storyboard Creation
-- Real-time Collaboration
+1. **Atomic Changes**
+   - Each migration should be self-contained
+   - Focus on related changes only
+   - Include both upgrade and downgrade operations
 
-### Social Features
-- User Profiles
-- Notifications
-- Sharing & Collaboration
-- Search & Discovery
+2. **Idempotent Migrations**
+   - Migrations should be idempotent
+   - Running the same migration multiple times should have no effect
 
-### Technical Features
-- Performance Optimization
-- Analytics & Monitoring
-- Export/Import Functionality
-- Accessibility Support
+3. **Test Migrations**
+   - Test migrations in a staging environment before applying to production
+   - Verify data integrity and functionality
 
-## Project Structure</parameter>
+4. **Document Migrations**
+   - Document changes in migration files
+   - Include reasoning behind changes
+   - Reference related issues or pull requests
+
+5. **Review Migrations**
+   - Review migrations with team members
+   - Discuss potential impacts and risks
+   - Ensure everyone is aligned with the changes
+
+6. **Backup Data**
+   - Always backup data before running migrations
+   - Test restoring from backups if needed
+
+7. **Rollback Plan**
+   - Have a rollback plan in case of issues
+   - Test rollback procedures regularly
+
+8. **Version Control**
+   - Use version control for migrations
+   - Keep migrations in a separate branch
+   - Merge migrations into main branch after testing
+
+9. **Automation**
+   - Automate migrations as much as possible
+   - Use CI/CD pipelines for deployments
+
+10. **Monitoring**
+   - Monitor migrations for errors or failures
+   - Set up alerts for migration failures
+
+By following these best practices, we can ensure a smooth and reliable database migration process.
+</parameter>
 <parameter name="blocking">true</parameter>
 </invoke>
