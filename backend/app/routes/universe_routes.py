@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import or_
-from ..extensions import db, limiter
+from ..extensions import db, limiter, cache
 from ..models import Universe, PhysicsParameters, MusicParameters, VisualizationParameters
 from ..utils.auth import check_universe_access
 from ..utils.parameter_validator import validate_parameters
@@ -23,7 +23,21 @@ def verify_token():
     except Exception as e:
         return jsonify({'error': str(e)}), 401
 
-@universe_bp.route('', methods=['POST'])
+@universe_bp.route('/universes', methods=['GET'])
+@cache.cached(timeout=60)
+def get_universes():
+    """Get all public universes."""
+    universes = Universe.query.filter_by(is_public=True).all()
+    return jsonify([universe.to_dict() for universe in universes])
+
+@universe_bp.route('/universes/<int:universe_id>', methods=['GET'])
+@cache.memoize(60)
+def get_universe(universe_id):
+    """Get a specific universe."""
+    universe = Universe.query.get_or_404(universe_id)
+    return jsonify(universe.to_dict())
+
+@universe_bp.route('/universes', methods=['POST'])
 @jwt_required()
 @limiter.limit("30 per hour")
 def create_universe():
@@ -91,6 +105,7 @@ def create_universe():
 
         db.session.add(universe)
         db.session.commit()
+        cache.delete_memoized(get_universes)
 
         return jsonify(universe.to_dict()), 201
 
@@ -107,44 +122,11 @@ def create_universe():
             'message': 'An unexpected error occurred'
         }), 500
 
-@universe_bp.route('', methods=['GET'])
-@jwt_required()
-@limiter.limit("100 per hour")
-def get_universes():
-    """Get all universes accessible to the user."""
-    try:
-        current_user_id = get_jwt_identity()
-        universes = Universe.query.filter(
-            or_(Universe.user_id == current_user_id, Universe.is_public == True)
-        ).all()
-
-        return jsonify({
-            'universes': [u.to_dict() for u in universes]
-        }), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@universe_bp.route('/<int:universe_id>', methods=['GET'])
-@jwt_required()
-@limiter.limit("100 per hour")
-def get_universe(universe_id):
-    """Get a specific universe."""
-    try:
-        universe = Universe.query.get_or_404(universe_id)
-        current_user_id = get_jwt_identity()
-
-        if not universe.is_public and universe.user_id != current_user_id:
-            return jsonify({'error': 'Unauthorized access'}), 403
-
-        return jsonify(universe.to_dict()), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@universe_bp.route('/<int:universe_id>', methods=['PUT'])
+@universe_bp.route('/universes/<int:universe_id>', methods=['PUT'])
 @jwt_required()
 @limiter.limit("30 per hour")
 def update_universe(universe_id):
-    """Update a specific universe."""
+    """Update a universe."""
     try:
         data = request.get_json()
         if not data:
@@ -190,17 +172,20 @@ def update_universe(universe_id):
             universe.visualization_parameters.update(vis_data)
 
         db.session.commit()
+        cache.delete_memoized(get_universe, universe_id)
+        cache.delete_memoized(get_universes)
+
         return jsonify(universe.to_dict()), 200
 
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@universe_bp.route('/<int:universe_id>', methods=['DELETE'])
+@universe_bp.route('/universes/<int:universe_id>', methods=['DELETE'])
 @jwt_required()
 @limiter.limit("10 per hour")
 def delete_universe(universe_id):
-    """Delete a specific universe."""
+    """Delete a universe."""
     try:
         universe = Universe.query.get_or_404(universe_id)
         current_user_id = get_jwt_identity()
@@ -210,6 +195,9 @@ def delete_universe(universe_id):
 
         db.session.delete(universe)
         db.session.commit()
+
+        cache.delete_memoized(get_universe, universe_id)
+        cache.delete_memoized(get_universes)
 
         return '', 204
     except Exception as e:
@@ -242,6 +230,9 @@ def update_physics(universe_id):
         universe.update_dependent_parameters('physics')
 
         db.session.commit()
+        cache.delete_memoized(get_universe, universe_id)
+        cache.delete_memoized(get_universes)
+
         return jsonify({
             'physics_parameters': universe.physics_parameters.to_dict(),
             'music_parameters': universe.music_parameters.to_dict(),
@@ -278,6 +269,9 @@ def update_music(universe_id):
         universe.update_dependent_parameters('music')
 
         db.session.commit()
+        cache.delete_memoized(get_universe, universe_id)
+        cache.delete_memoized(get_universes)
+
         return jsonify({
             'music_parameters': universe.music_parameters.to_dict(),
             'visualization_parameters': universe.visualization_parameters.to_dict()
@@ -309,6 +303,8 @@ def update_visualization(universe_id):
 
         universe.visualization_parameters.update(data)
         db.session.commit()
+        cache.delete_memoized(get_universe, universe_id)
+        cache.delete_memoized(get_universes)
 
         return jsonify({
             'visualization_parameters': universe.visualization_parameters.to_dict()
@@ -400,6 +396,8 @@ def sync_parameters(universe_id):
             universe.visualization_parameters.update(data['visualization_parameters'])
 
         db.session.commit()
+        cache.delete_memoized(get_universe, universe_id)
+        cache.delete_memoized(get_universes)
 
         # Broadcast update via WebSocket
         current_app.websocket_manager.broadcast_universe_update(universe_id)
@@ -562,6 +560,9 @@ def update_parameters(universe_id):
                 setattr(universe.visualization_parameters, key, value)
 
         db.session.commit()
+        cache.delete_memoized(get_universe, universe_id)
+        cache.delete_memoized(get_universes)
+
         return jsonify(universe.to_dict()), 200
 
     except Exception as e:

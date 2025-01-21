@@ -1,12 +1,15 @@
-from app.config import TestConfig
-import os
+"""Test configuration and fixtures."""
 import pytest
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_socketio import SocketIOTestClient
 from app import create_app
-from app.models import db as _db
+from app.extensions import db as _db, socketio
+from app.models import Universe, PhysicsParameters
 from sqlalchemy.orm import scoped_session, sessionmaker
 from flask_jwt_extended import create_access_token
 import time
+from app.sockets.physics_handler import PhysicsNamespace
 
 # Import all models to ensure they're registered
 from app.models.user import User
@@ -16,53 +19,100 @@ from app.models.favorite import Favorite
 from app.models.storyboard import Storyboard
 from app.models.version import Version
 from app.models.template import Template
-from app.models.physics_parameters import PhysicsParameters
 from app.models.music_parameters import MusicParameters
 from app.models.visualization_parameters import VisualizationParameters
 from app.models.audio_parameters import AudioParameters
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='function')
 def app():
-    """Create application for the tests."""
-    app = create_app(TestConfig)
-    return app
+    """Create a test application."""
+    app = create_app('test', testing=True)
+    app.config.update({
+        'TESTING': True,
+        'DEBUG': True,
+        'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
+        'SQLALCHEMY_TRACK_MODIFICATIONS': False,
+        'SOCKETIO_TEST_MODE': True,
+        'SOCKETIO_MESSAGE_QUEUE': None,
+        'SECRET_KEY': 'test_key'
+    })
 
-@pytest.fixture(scope='session')
-def db(app):
-    """Create database for the tests."""
-    with app.app_context():
-        _db.app = app
-        _db.create_all()
-        yield _db
-        _db.drop_all()
+    # Store the current app context
+    ctx = app.app_context()
+    ctx.push()
 
-@pytest.fixture(scope='function')
-def session(db, app):
-    """Create a new database session for a test."""
-    with app.app_context():
-        connection = db.engine.connect()
-        transaction = connection.begin()
+    # Create tables
+    _db.create_all()
 
-        # Create a session factory bound to the connection
-        session_factory = sessionmaker(bind=connection)
-        session = scoped_session(session_factory)
+    yield app
 
-        # Start with a clean slate for each test
-        db.session = session
-        db.drop_all()  # Drop all tables
-        db.create_all()  # Recreate tables
-
-        yield session
-
-        # Cleanup
-        session.close()
-        transaction.rollback()
-        connection.close()
+    # Clean up
+    _db.session.remove()
+    _db.drop_all()
+    ctx.pop()
 
 @pytest.fixture(scope='function')
-def client(app):
-    """Create test client."""
+def test_client(app):
+    """Create a test client."""
     return app.test_client()
+
+@pytest.fixture(scope='function')
+def socket_client(app):
+    """Create a WebSocket test client."""
+    flask_test_client = app.test_client()
+    socket_client = SocketIOTestClient(app, socketio, flask_test_client=flask_test_client, namespace='/physics')
+    return socket_client
+
+@pytest.fixture(scope='function')
+def db(app):
+    """Create database for testing."""
+    return _db
+
+@pytest.fixture(scope='function')
+def session(db):
+    """Create a new database session for a test."""
+    connection = db.engine.connect()
+    transaction = connection.begin()
+
+    options = dict(bind=connection, binds={})
+    session = db.create_scoped_session(options=options)
+
+    db.session = session
+
+    yield session
+
+    transaction.rollback()
+    connection.close()
+    session.remove()
+
+@pytest.fixture(scope='function')
+def universe(app):
+    """Create a test universe."""
+    universe = Universe(
+        name="Test Universe",
+        description="A universe for testing physics",
+        user_id=1
+    )
+    _db.session.add(universe)
+    _db.session.commit()
+    return universe
+
+@pytest.fixture(scope='function')
+def physics_parameters(app, universe):
+    """Create physics parameters for testing."""
+    params = PhysicsParameters(
+        universe=universe,
+        gravity=9.81,
+        elasticity=0.7,
+        friction=0.3,
+        air_resistance=0.1,
+        density=1.0,
+        time_scale=1.0,
+        max_time_step=1/60
+    )
+    _db.session.add(params)
+    _db.session.commit()
+    return params
 
 @pytest.fixture(scope='function')
 def test_user(session):
@@ -116,31 +166,17 @@ def test_server(app):
 
     yield
 
-@pytest.fixture
-def test_universe(test_user, session):
-    """Create a test universe with parameters."""
-    universe = Universe(
-        name='Test Universe',  # Changed from title
-        description='Test Description',
-        is_public=True,  # Changed from visibility
-        user_id=test_user.id
-    )
+@pytest.fixture(autouse=True)
+def clear_namespace_state():
+    """Clear namespace state before each test."""
+    # Get the physics namespace instance
+    physics_namespace = None
+    for namespace in socketio.server.namespace_handlers.values():
+        if isinstance(namespace, PhysicsNamespace):
+            physics_namespace = namespace
+            break
 
-    physics = PhysicsParameters(
-        gravity=9.81,
-        friction=0.5,
-        elasticity=0.7
-    )
+    if physics_namespace:
+        physics_namespace.cleanup()
 
-    music = MusicParameters(
-        key='C',
-        scale='major',
-        tempo=120
-    )
-
-    universe.physics_parameters = physics
-    universe.music_parameters = music
-
-    session.add(universe)
-    session.commit()
-    return universe
+    yield

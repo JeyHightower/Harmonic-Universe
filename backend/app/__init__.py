@@ -1,46 +1,52 @@
-from flask import Flask
+"""Flask application factory."""
+from flask import Flask, jsonify
 from flask_cors import CORS
-from flask_socketio import SocketIO
-from .config import Config
-from .database import init_db
-from .extensions import socketio
+from .config import config_by_name
+from .extensions import socketio, db, migrate, jwt, limiter
+from .sockets.physics_handler import PhysicsNamespace
 
-def create_app(config_class=Config):
-    """Create and configure the Flask application."""
+def create_app(config_name='development', testing=False):
+    """Create Flask application."""
     app = Flask(__name__)
-    app.config.from_object(config_class)
+    app.config.from_object(config_by_name[config_name])
+    app.config['TESTING'] = testing
 
     # Initialize extensions
     CORS(app)
-    socketio.init_app(app, cors_allowed_origins="*")
+    db.init_app(app)
+    migrate.init_app(app, db)
+    jwt.init_app(app)
+    limiter.init_app(app)
 
-    # Initialize database
-    init_db(app)
+    # Initialize SocketIO with correct settings
+    socketio.init_app(app,
+                     message_queue=app.config.get('SOCKETIO_MESSAGE_QUEUE'),
+                     async_mode='eventlet' if not testing else None,
+                     cors_allowed_origins="*")
 
-    # Register blueprints
-    from .routes.auth_routes import auth_bp
-    from .routes.universe_routes import universe_bp
-    from .routes.music_routes import music_bp
-    from .routes.physics_routes import physics_bp
-    from .routes.visualization_routes import visualization_bp
-    from .routes.storyboard_routes import storyboard_bp
-    from .routes.template_routes import template_bp
+    # Register namespaces
+    physics_namespace = PhysicsNamespace('/physics')
+    socketio.on_namespace(physics_namespace)
 
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(universe_bp, url_prefix='/api/universes')
-    app.register_blueprint(music_bp, url_prefix='/api/music')
-    app.register_blueprint(physics_bp, url_prefix='/api/physics')
-    app.register_blueprint(visualization_bp, url_prefix='/api/visualization')
-    app.register_blueprint(storyboard_bp, url_prefix='/api/storyboards')
-    app.register_blueprint(template_bp, url_prefix='/api/templates')
+    with app.app_context():
+        # Import parts of our application
+        from .routes import register_routes
+        register_routes(app)
 
+        # Create tables if they don't exist
+        db.create_all()
+
+    # Error handlers
     @app.errorhandler(404)
-    def not_found_error(error):
-        return {'error': 'Not Found'}, 404
+    def not_found(error):
+        return {'error': 'Not found'}, 404
 
     @app.errorhandler(500)
-    def internal_error(error):
-        db.session.rollback()
-        return {'error': 'Internal Server Error'}, 500
+    def server_error(error):
+        return {'error': 'Internal server error'}, 500
+
+    @app.errorhandler(429)
+    def ratelimit_handler(error):
+        return {'error': 'Rate limit exceeded'}, 429
 
     return app

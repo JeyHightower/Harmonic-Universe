@@ -1,8 +1,9 @@
 """Tests for the physics simulation engine."""
 import pytest
 import numpy as np
-from app.physics.engine import Vector2D, Particle, PhysicsEngine
+from app.physics.engine import Vector2D, Particle, PhysicsEngine, BoundaryType
 from app.models import Universe, PhysicsParameters
+import math
 
 @pytest.fixture
 def universe():
@@ -38,50 +39,45 @@ def physics_parameters(universe):
     )
 
 def test_vector_operations():
-    """Test vector operations."""
-    v1 = Vector2D(1.0, 2.0)
-    v2 = Vector2D(2.0, 3.0)
+    """Test Vector2D operations."""
+    v1 = Vector2D(1, 2)
+    v2 = Vector2D(3, 4)
 
-    # Test addition
+    # Addition
     v3 = v1 + v2
-    assert v3.x == 3.0
-    assert v3.y == 5.0
+    assert v3.x == 4
+    assert v3.y == 6
 
-    # Test subtraction
+    # Subtraction
     v4 = v2 - v1
-    assert v4.x == 1.0
-    assert v4.y == 1.0
+    assert v4.x == 2
+    assert v4.y == 2
 
-    # Test scalar multiplication
+    # Scalar multiplication
     v5 = v1 * 2
-    assert v5.x == 2.0
-    assert v5.y == 4.0
+    assert v5.x == 2
+    assert v5.y == 4
 
-    # Test magnitude
-    assert abs(v1.magnitude() - np.sqrt(5.0)) < 1e-10
+    # Magnitude
+    assert math.isclose(v1.magnitude(), math.sqrt(5))
 
-    # Test normalization
+    # Normalization
     v6 = v1.normalize()
-    assert abs(v6.magnitude() - 1.0) < 1e-10
+    assert math.isclose(v6.magnitude(), 1.0)
 
 def test_particle_creation():
     """Test particle creation and properties."""
-    particle = Particle(
-        position=Vector2D(1.0, 1.0),
-        velocity=Vector2D(0.0, 0.0),
-        acceleration=Vector2D(0.0, 0.0),
-        mass=2.0,
-        radius=1.5,
-        elasticity=0.8,
-        id=1
-    )
+    pos = Vector2D(1, 2)
+    vel = Vector2D(3, 4)
+    particle = Particle(pos, vel, mass=2.0, radius=0.5)
 
-    assert particle.position.x == 1.0
-    assert particle.position.y == 1.0
+    assert particle.position.x == 1
+    assert particle.position.y == 2
+    assert particle.velocity.x == 3
+    assert particle.velocity.y == 4
     assert particle.mass == 2.0
-    assert particle.radius == 1.5
-    assert particle.elasticity == 0.8
-    assert particle.id == 1
+    assert particle.radius == 0.5
+    assert particle.id is not None
 
 def test_particle_force_application():
     """Test force application to particles."""
@@ -125,182 +121,250 @@ def test_particle_update():
     assert particle.position.x == 3.0  # 0.0 + 1.0 * 2.0 + 0.5 * 0.5 * 4.0
     assert particle.position.y == 3.0
 
-def test_physics_engine_creation(physics_parameters):
+def test_physics_engine_creation():
     """Test physics engine creation with parameters."""
-    engine = PhysicsEngine(physics_parameters)
+    params = PhysicsParameters(
+        gravity=9.81,
+        air_resistance=0.1,
+        elasticity=0.8,
+        friction=0.2
+    )
+    engine = PhysicsEngine(params)
+
     assert engine.gravity == 9.81
-    assert engine.elasticity == 0.7
     assert engine.air_resistance == 0.1
+    assert engine.elasticity == 0.8
+    assert engine.friction == 0.2
+    assert len(engine.particles) == 0
 
-def test_add_particle_to_engine(physics_parameters):
-    """Test adding particles to the physics engine."""
-    engine = PhysicsEngine(physics_parameters)
-    particle = Particle(
-        position=Vector2D(0.0, 0.0),
-        velocity=Vector2D(1.0, 1.0),
-        acceleration=Vector2D(0.0, 0.0),
-        mass=1.0,
-        radius=1.0,
-        elasticity=0.7,
-        id=1
-    )
+def test_add_particle():
+    """Test adding particles to the engine."""
+    engine = PhysicsEngine(PhysicsParameters())
 
-    engine.add_particle(particle)
+    pos = {'x': 1, 'y': 2}
+    vel = {'x': 3, 'y': 4}
+    particle = engine.add_particle(pos, vel, mass=2.0, radius=0.5)
+
     assert len(engine.particles) == 1
-    assert engine.particles[0] == particle
+    assert particle.position.x == 1
+    assert particle.position.y == 2
+    assert particle.velocity.x == 3
+    assert particle.velocity.y == 4
+    assert particle.mass == 2.0
+    assert particle.radius == 0.5
 
-def test_gravity_force(physics_parameters):
-    """Test gravity force application."""
-    engine = PhysicsEngine(physics_parameters)
-    particle = Particle(
-        position=Vector2D(0.0, 0.0),
-        velocity=Vector2D(0.0, 0.0),
-        acceleration=Vector2D(0.0, 0.0),
-        mass=1.0,
-        radius=1.0,
-        elasticity=0.7,
-        id=1
+def test_apply_gravity():
+    """Test gravity application to particles."""
+    params = PhysicsParameters(gravity=9.81)
+    engine = PhysicsEngine(params)
+
+    particle = engine.add_particle(
+        position={'x': 0, 'y': 0},
+        velocity={'x': 0, 'y': 0}
     )
 
-    engine.add_particle(particle)
-    engine.apply_gravity()
+    dt = 1.0
+    engine.apply_gravity(dt)
+    assert particle.velocity.y == -9.81
 
-    assert particle.acceleration.y == -9.81
+def test_apply_air_resistance():
+    """Test air resistance application to particles."""
+    params = PhysicsParameters(air_resistance=0.1)
+    engine = PhysicsEngine(params)
 
-def test_air_resistance(physics_parameters):
-    """Test air resistance force application."""
-    engine = PhysicsEngine(physics_parameters)
-    particle = Particle(
-        position=Vector2D(0.0, 0.0),
-        velocity=Vector2D(10.0, 0.0),
-        acceleration=Vector2D(0.0, 0.0),
-        mass=1.0,
-        radius=1.0,
-        elasticity=0.7,
-        id=1
+    particle = engine.add_particle(
+        position={'x': 0, 'y': 0},
+        velocity={'x': 10, 'y': 0}
     )
 
-    engine.add_particle(particle)
-    engine.apply_air_resistance()
+    dt = 1.0
+    engine.apply_air_resistance(dt)
+    assert particle.velocity.x < 10  # Velocity should decrease
 
-    # Air resistance should oppose motion
-    assert particle.acceleration.x < 0
-    assert abs(particle.acceleration.y) < 1e-10
-
-def test_collision_detection(physics_parameters):
+def test_detect_collisions():
     """Test collision detection between particles."""
-    engine = PhysicsEngine(physics_parameters)
-    p1 = Particle(
-        position=Vector2D(0.0, 0.0),
-        velocity=Vector2D(1.0, 0.0),
-        acceleration=Vector2D(0.0, 0.0),
-        mass=1.0,
-        radius=1.0,
-        elasticity=0.7,
-        id=1
-    )
-    p2 = Particle(
-        position=Vector2D(1.5, 0.0),
-        velocity=Vector2D(-1.0, 0.0),
-        acceleration=Vector2D(0.0, 0.0),
-        mass=1.0,
-        radius=1.0,
-        elasticity=0.7,
-        id=2
-    )
+    engine = PhysicsEngine(PhysicsParameters())
 
-    engine.add_particle(p1)
-    engine.add_particle(p2)
+    p1 = engine.add_particle(
+        position={'x': 0, 'y': 0},
+        velocity={'x': 1, 'y': 0},
+        radius=1.0
+    )
+    p2 = engine.add_particle(
+        position={'x': 1.5, 'y': 0},
+        velocity={'x': -1, 'y': 0},
+        radius=1.0
+    )
 
     collisions = engine.detect_collisions()
     assert len(collisions) == 1
-    assert collisions[0] == (p1, p2)
+    assert (p1, p2) in collisions or (p2, p1) in collisions
 
-def test_collision_resolution(physics_parameters):
+def test_resolve_collisions():
     """Test collision resolution between particles."""
-    engine = PhysicsEngine(physics_parameters)
-    p1 = Particle(
-        position=Vector2D(0.0, 0.0),
-        velocity=Vector2D(1.0, 0.0),
-        acceleration=Vector2D(0.0, 0.0),
-        mass=1.0,
-        radius=1.0,
-        elasticity=0.7,
-        id=1
+    params = PhysicsParameters(elasticity=1.0)  # Perfect elasticity
+    engine = PhysicsEngine(params)
+
+    p1 = engine.add_particle(
+        position={'x': 0, 'y': 0},
+        velocity={'x': 1, 'y': 0},
+        mass=1.0
     )
-    p2 = Particle(
-        position=Vector2D(1.5, 0.0),
-        velocity=Vector2D(-1.0, 0.0),
-        acceleration=Vector2D(0.0, 0.0),
-        mass=1.0,
-        radius=1.0,
-        elasticity=0.7,
-        id=2
+    p2 = engine.add_particle(
+        position={'x': 1, 'y': 0},
+        velocity={'x': -1, 'y': 0},
+        mass=1.0
     )
 
-    engine.add_particle(p1)
-    engine.add_particle(p2)
-
-    # Calculate initial momentum and energy
-    initial_momentum = p1.mass * p1.velocity.x + p2.mass * p2.velocity.x
-    initial_energy = 0.5 * p1.mass * p1.velocity.x**2 + 0.5 * p2.mass * p2.velocity.x**2
+    # Store initial velocities
+    v1_init = p1.velocity.x
+    v2_init = p2.velocity.x
 
     engine.resolve_collisions([(p1, p2)])
 
-    # Calculate final momentum and energy
-    final_momentum = p1.mass * p1.velocity.x + p2.mass * p2.velocity.x
-    final_energy = 0.5 * p1.mass * p1.velocity.x**2 + 0.5 * p2.mass * p2.velocity.x**2
+    # For perfectly elastic collision with equal masses,
+    # velocities should swap
+    assert math.isclose(p1.velocity.x, v2_init)
+    assert math.isclose(p2.velocity.x, v1_init)
 
-    # Check conservation laws
-    assert abs(final_momentum - initial_momentum) < 1e-10  # Momentum should be conserved
-    assert final_energy <= initial_energy  # Energy should be conserved or decrease
-    assert final_energy >= initial_energy * (p1.elasticity ** 2)  # Energy loss bounded by elasticity
-
-    # Check velocity directions
-    assert p1.velocity.x < 0  # First particle should move left
-    assert p2.velocity.x > 0  # Second particle should move right
-
-def test_energy_calculation(physics_parameters):
-    """Test energy calculation in the system."""
-    engine = PhysicsEngine(physics_parameters)
-    particle = Particle(
-        position=Vector2D(0.0, 10.0),
-        velocity=Vector2D(1.0, 0.0),
-        acceleration=Vector2D(0.0, 0.0),
-        mass=1.0,
-        radius=1.0,
-        elasticity=0.7,
-        id=1
+def test_boundary_wrap():
+    """Test wrap boundary behavior."""
+    engine = PhysicsEngine(PhysicsParameters())
+    engine.set_boundary(
+        boundary_type='wrap',
+        x_min=-10,
+        x_max=10,
+        y_min=-10,
+        y_max=10
     )
 
-    engine.add_particle(particle)
-
-    # Total energy = KE + PE
-    # KE = 1/2 * m * v^2 = 0.5 * 1.0 * 1.0 = 0.5
-    # PE = m * g * h = 1.0 * 9.81 * 10.0 = 98.1
-    expected_energy = 98.6  # 0.5 + 98.1
-
-    assert abs(engine.calculate_total_energy() - expected_energy) < 1e-10
-
-def test_simulation_update(physics_parameters):
-    """Test complete simulation update."""
-    engine = PhysicsEngine(physics_parameters)
-    particle = Particle(
-        position=Vector2D(0.0, 10.0),
-        velocity=Vector2D(1.0, 0.0),
-        acceleration=Vector2D(0.0, 0.0),
-        mass=1.0,
-        radius=1.0,
-        elasticity=0.7,
-        id=1
+    particle = engine.add_particle(
+        position={'x': 11, 'y': 11},
+        velocity={'x': 1, 'y': 1}
     )
 
-    engine.add_particle(particle)
-    initial_energy = engine.calculate_total_energy()
+    engine.update(1.0)
+    assert -10 <= particle.position.x <= 10
+    assert -10 <= particle.position.y <= 10
 
-    # Run simulation for a few steps
+def test_boundary_bounce():
+    """Test bounce boundary behavior."""
+    engine = PhysicsEngine(PhysicsParameters())
+    engine.set_boundary(
+        boundary_type='bounce',
+        x_min=-10,
+        x_max=10,
+        y_min=-10,
+        y_max=10,
+        elasticity=1.0
+    )
+
+    particle = engine.add_particle(
+        position={'x': 9, 'y': 0},
+        velocity={'x': 2, 'y': 0}
+    )
+
+    engine.update(1.0)
+    assert particle.velocity.x < 0  # Should bounce back
+
+def test_boundary_absorb():
+    """Test absorb boundary behavior."""
+    engine = PhysicsEngine(PhysicsParameters())
+    engine.set_boundary(
+        boundary_type='absorb',
+        x_min=-10,
+        x_max=10,
+        y_min=-10,
+        y_max=10
+    )
+
+    particle = engine.add_particle(
+        position={'x': 9, 'y': 0},
+        velocity={'x': 2, 'y': 0}
+    )
+
+    engine.update(1.0)
+    assert len(engine.particles) == 0  # Particle should be absorbed
+
+def test_energy_conservation():
+    """Test energy conservation in elastic collisions."""
+    params = PhysicsParameters(
+        gravity=0,
+        air_resistance=0,
+        elasticity=1.0,
+        friction=0
+    )
+    engine = PhysicsEngine(params)
+
+    p1 = engine.add_particle(
+        position={'x': 0, 'y': 0},
+        velocity={'x': 1, 'y': 0},
+        mass=1.0
+    )
+    p2 = engine.add_particle(
+        position={'x': 2, 'y': 0},
+        velocity={'x': -1, 'y': 0},
+        mass=1.0
+    )
+
+    # Calculate initial energy
+    initial_energy = sum(0.5 * p.mass * p.velocity.magnitude()**2
+                        for p in engine.particles)
+
+    engine.update(1.0)
+
+    # Calculate final energy
+    final_energy = sum(0.5 * p.mass * p.velocity.magnitude()**2
+                      for p in engine.particles)
+
+    assert math.isclose(initial_energy, final_energy, rel_tol=1e-10)
+
+def test_performance_metrics():
+    """Test performance metrics tracking."""
+    engine = PhysicsEngine(PhysicsParameters())
+
+    # Add some particles
+    for i in range(10):
+        engine.add_particle(
+            position={'x': i, 'y': 0},
+            velocity={'x': 1, 'y': 0}
+        )
+
+    # Run several updates
     for _ in range(10):
-        engine.update(0.1)
+        engine.update(1/60)
 
-    # Energy should decrease due to air resistance
-    assert engine.calculate_total_energy() < initial_energy
+    # Get performance metrics
+    metrics = engine.get_performance_metrics()
+
+    assert 'frame_time' in metrics
+    assert 'collision_count' in metrics
+    assert 'particle_count' in metrics
+    assert metrics['particle_count'] == 10
+
+def test_get_state():
+    """Test getting complete simulation state."""
+    engine = PhysicsEngine(PhysicsParameters())
+
+    # Add particle and set boundary
+    engine.add_particle(
+        position={'x': 0, 'y': 0},
+        velocity={'x': 1, 'y': 1}
+    )
+    engine.set_boundary(
+        boundary_type='bounce',
+        x_min=-10,
+        x_max=10,
+        y_min=-10,
+        y_max=10
+    )
+
+    # Get state
+    state = engine.get_state()
+
+    assert 'particles' in state
+    assert 'boundary' in state
+    assert 'performance' in state
+    assert len(state['particles']) == 1
+    assert state['boundary']['type'] == 'bounce'
+    assert 'frame_time' in state['performance']

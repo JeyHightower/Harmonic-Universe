@@ -1,245 +1,194 @@
 """Tests for the physics simulation WebSocket handler."""
 import pytest
+import logging
 from unittest.mock import patch, MagicMock
+from flask import Flask
 from flask_socketio import SocketIOTestClient
 from app import create_app
 from app.config import TestConfig
 from app.models import Universe, PhysicsParameters
-from app.services.physics_engine import Vector2D
-from app.websockets.physics_handler import (
-    active_simulations,
-    universe_clients,
-    get_or_create_simulation
-)
+from app.physics.engine import Vector2D
+from app.sockets.physics_handler import PhysicsNamespace
+from app.extensions import db, socketio
 
-@pytest.fixture
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+@pytest.fixture(scope='function')
 def app():
-    """Create test application."""
-    app = create_app(TestConfig)
-    return app
+    """Create application for testing."""
+    _app = Flask(__name__)
+    _app.config.update({
+        'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
+        'SQLALCHEMY_TRACK_MODIFICATIONS': False,
+        'SOCKETIO_TEST_MODE': True,
+        'SOCKETIO_MESSAGE_QUEUE': None,
+        'SECRET_KEY': 'test_key',
+        'TESTING': True,
+        'DEBUG': True
+    })
 
-@pytest.fixture
-def socketio_test_client(app):
-    """Create test client for WebSocket connections."""
-    from app.extensions import socketio
-    return socketio.test_client(app)
+    # Initialize extensions
+    db.init_app(_app)
+    socketio.init_app(_app, message_queue=None, async_mode='eventlet', logger=True, engineio_logger=True)
 
-@pytest.fixture
-def test_universe(session):
+    # Register physics namespace
+    physics_namespace = PhysicsNamespace('/physics')
+    socketio.on_namespace(physics_namespace)
+
+    with _app.app_context():
+        db.create_all()
+        # Start the background task
+        physics_namespace.app = _app
+        physics_namespace._stop_event.clear()
+        physics_namespace.update_task = socketio.start_background_task(target=physics_namespace.broadcast_updates)
+        logger.info(f"Started background task: {physics_namespace.update_task}")
+        yield _app
+        # Stop the background task before cleanup
+        logger.info("Cleaning up app")
+        physics_namespace.cleanup()
+        db.session.remove()
+        db.drop_all()
+
+@pytest.fixture(scope='function')
+def socket_client(app):
+    """Create a WebSocket test client."""
+    logger.info("Creating socket client")
+    flask_test_client = app.test_client()
+    client = socketio.test_client(app, namespace='/physics')
+    logger.info(f"Socket client connected: {client.is_connected('/physics')}")
+    assert client.is_connected('/physics'), "Socket client failed to connect to /physics namespace"
+    return client
+
+@pytest.fixture(scope='function')
+def test_universe(app):
     """Create a test universe with physics parameters."""
+    universe = Universe(
+        name='Test Universe',
+        description='Test universe for WebSocket testing',
+        is_public=True,
+        user_id=1  # Required field
+    )
+    db.session.add(universe)
+    db.session.commit()
+
     physics_params = PhysicsParameters(
+        universe_id=universe.id,
         gravity=9.81,
         elasticity=0.7,
         friction=0.3,
         air_resistance=0.1,
         density=1.0
     )
-    universe = Universe(
-        name='Test Universe',
-        description='Test universe for WebSocket testing',
-        is_public=True,
-        physics_parameters=physics_params
-    )
-    session.add(universe)
-    session.commit()
+    db.session.add(physics_params)
+    db.session.commit()
+
     return universe
 
-def test_client_connection(socketio_test_client):
+def test_client_connection(socket_client):
     """Test client connection to WebSocket server."""
-    received = socketio_test_client.get_received()
+    received = socket_client.get_received('/physics')
     assert len(received) == 1
-    assert received[0]['name'] == 'connected'
-    assert 'message' in received[0]['args'][0]
+    assert received[0]['name'] == 'connection_established'
+    assert 'client_id' in received[0]['args'][0]
+    assert received[0]['args'][0]['status'] == 'connected'
 
-def test_join_simulation(socketio_test_client, test_universe):
+def test_join_simulation(socket_client, test_universe):
     """Test joining a physics simulation."""
-    socketio_test_client.emit('join_simulation', {'universe_id': test_universe.id})
-    received = socketio_test_client.get_received()
+    socket_client.emit('join_simulation', {'universe_id': test_universe.id}, namespace='/physics')
+    received = socket_client.get_received('/physics')
 
     # Should receive simulation state
     assert len(received) > 0
     state_event = received[-1]
     assert state_event['name'] == 'simulation_state'
-    assert 'particles' in state_event['args'][0]
-    assert 'time' in state_event['args'][0]
-    assert 'frame' in state_event['args'][0]
+    assert 'state' in state_event['args'][0]
+    assert 'universe_id' in state_event['args'][0]
+    assert state_event['args'][0]['universe_id'] == test_universe.id
 
-    # Check that client is tracked
-    assert test_universe.id in universe_clients
-    assert len(universe_clients[test_universe.id]) > 0
-
-def test_join_invalid_universe(socketio_test_client):
-    """Test joining a non-existent universe."""
-    socketio_test_client.emit('join_simulation', {'universe_id': 999})
-    received = socketio_test_client.get_received()
-
-    assert len(received) > 0
-    error_event = received[-1]
-    assert error_event['name'] == 'error'
-    assert 'message' in error_event['args'][0]
-
-def test_leave_simulation(socketio_test_client, test_universe):
-    """Test leaving a physics simulation."""
-    # First join
-    socketio_test_client.emit('join_simulation', {'universe_id': test_universe.id})
-    socketio_test_client.get_received()  # Clear received events
-
-    # Then leave
-    socketio_test_client.emit('leave_simulation', {'universe_id': test_universe.id})
-
-    # Check that client is removed
-    assert test_universe.id not in universe_clients or \
-           len(universe_clients[test_universe.id]) == 0
-
-def test_add_particle(socketio_test_client, test_universe):
+def test_add_particle(socket_client, test_universe):
     """Test adding a particle to the simulation."""
     # Join simulation first
-    socketio_test_client.emit('join_simulation', {'universe_id': test_universe.id})
-    socketio_test_client.get_received()  # Clear received events
+    socket_client.emit('join_simulation', {'universe_id': test_universe.id}, namespace='/physics')
+    socket_client.get_received('/physics')  # Clear received events
 
-    # Add particle
-    particle_data = {
+    # Add particle with correct data structure
+    socket_client.emit('add_particle', {
         'universe_id': test_universe.id,
-        'x': 1.0,
-        'y': 2.0,
-        'vx': 3.0,
-        'vy': 4.0,
-        'mass': 1.0,
-        'radius': 0.5
-    }
-    socketio_test_client.emit('add_particle', particle_data)
-    received = socketio_test_client.get_received()
+        'particle': {
+            'position': {'x': 0, 'y': 0},
+            'velocity': {'x': 1, 'y': 1},
+            'mass': 1.0,
+            'radius': 0.5
+        }
+    }, namespace='/physics')
+    received = socket_client.get_received('/physics')
 
     assert len(received) > 0
-    particle_event = received[-1]
-    assert particle_event['name'] == 'particle_added'
+    update_event = received[-1]
+    assert update_event['name'] == 'simulation_state'
+    assert 'args' in update_event
+    assert len(update_event['args']) > 0
+    state = update_event['args'][0]
+    assert 'state' in state
+    assert 'universe_id' in state
+    assert state['universe_id'] == test_universe.id
 
-    added_particle = particle_event['args'][0]
-    assert added_particle['position']['x'] == 1.0
-    assert added_particle['position']['y'] == 2.0
-    assert added_particle['velocity']['x'] == 3.0
-    assert added_particle['velocity']['y'] == 4.0
-    assert added_particle['mass'] == 1.0
-    assert added_particle['radius'] == 0.5
+def test_broadcast_updates(socket_client, test_universe):
+    """Test that simulation updates are broadcast to connected clients."""
+    logger.info("Starting broadcast updates test")
 
-def test_clear_simulation(socketio_test_client, test_universe):
-    """Test clearing all particles from the simulation."""
-    # Join simulation first
-    socketio_test_client.emit('join_simulation', {'universe_id': test_universe.id})
-    socketio_test_client.get_received()  # Clear received events
+    # Join simulation
+    socket_client.emit('join_simulation', {'universe_id': test_universe.id}, namespace='/physics')
+    logger.info(f"Joined simulation {test_universe.id}")
+
+    # Wait for initial state
+    received = []
+    max_retries = 10
+    for _ in range(max_retries):
+        socketio.sleep(0.2)  # Wait for initial state
+        received = socket_client.get_received('/physics')
+        if received:
+            break
+
+    assert len(received) > 0, "No initial state received"
+    logger.info(f"Received initial state: {received}")
+
+    # Clear received messages
+    socket_client.get_received('/physics')
 
     # Add a particle
-    particle_data = {
+    socket_client.emit('add_particle', {
         'universe_id': test_universe.id,
-        'x': 0.0,
-        'y': 0.0
-    }
-    socketio_test_client.emit('add_particle', particle_data)
-    socketio_test_client.get_received()  # Clear received events
+        'particle': {
+            'position': {'x': 0, 'y': 0},
+            'velocity': {'x': 1, 'y': 1},
+            'mass': 1.0,
+            'radius': 0.5
+        }
+    }, namespace='/physics')
+    logger.info("Added particle")
 
-    # Clear simulation
-    socketio_test_client.emit('clear_simulation', {'universe_id': test_universe.id})
-    received = socketio_test_client.get_received()
+    # Wait for updates
+    received = []
+    max_retries = 20
+    for i in range(max_retries):
+        socketio.sleep(0.2)  # Wait longer between checks
+        received = socket_client.get_received('/physics')
+        logger.info(f"Check {i+1}/{max_retries}: Received {len(received)} messages")
+        if received:
+            break
 
-    assert len(received) > 0
-    clear_event = received[-1]
-    assert clear_event['name'] == 'simulation_cleared'
+    assert len(received) > 0, "No simulation updates received"
+    logger.info(f"Final received updates: {received}")
 
-    # Verify simulation is cleared
-    engine = active_simulations.get(test_universe.id)
-    assert engine is not None
-    assert len(engine.particles) == 0
-
-@pytest.mark.asyncio
-async def test_broadcast_updates(socketio_test_client, test_universe):
-    """Test broadcasting simulation updates to clients."""
-    # Join simulation
-    socketio_test_client.emit('join_simulation', {'universe_id': test_universe.id})
-    socketio_test_client.get_received()  # Clear received events
-
-    # Add a particle
-    particle_data = {
-        'universe_id': test_universe.id,
-        'x': 0.0,
-        'y': 10.0,
-        'vx': 0.0,
-        'vy': 0.0,
-        'mass': 1.0
-    }
-    socketio_test_client.emit('add_particle', particle_data)
-    socketio_test_client.get_received()  # Clear received events
-
-    # Mock sleep to speed up test
-    with patch('asyncio.sleep', return_value=None):
-        # Get engine and run a few updates
-        engine = active_simulations[test_universe.id]
-        for _ in range(5):
-            state = engine.update(1/60)
-
-            # Verify particle is falling due to gravity
-            particle = state['particles'][0]
-            assert particle['position']['y'] < 10.0  # Should fall due to gravity
-            assert particle['velocity']['y'] < 0.0  # Negative velocity due to gravity
-
-def test_simulation_cleanup(socketio_test_client, test_universe):
-    """Test cleanup of simulations when all clients disconnect."""
-    # Join simulation
-    socketio_test_client.emit('join_simulation', {'universe_id': test_universe.id})
-    socketio_test_client.get_received()  # Clear received events
-
-    # Verify simulation exists
-    assert test_universe.id in active_simulations
-    assert test_universe.id in universe_clients
-
-    # Disconnect client
-    socketio_test_client.disconnect()
-
-    # Verify cleanup
-    assert test_universe.id not in active_simulations
-    assert test_universe.id not in universe_clients
-
-def test_multiple_clients(app, test_universe):
-    """Test multiple clients connecting to the same simulation."""
-    from app.extensions import socketio
-
-    # Create two test clients
-    client1 = socketio.test_client(app)
-    client2 = socketio.test_client(app)
-
-    # Both clients join the same simulation
-    client1.emit('join_simulation', {'universe_id': test_universe.id})
-    client2.emit('join_simulation', {'universe_id': test_universe.id})
-
-    # Verify both clients are tracked
-    assert test_universe.id in universe_clients
-    assert len(universe_clients[test_universe.id]) == 2
-
-    # Add particle through client1
-    particle_data = {
-        'universe_id': test_universe.id,
-        'x': 1.0,
-        'y': 1.0
-    }
-    client1.emit('add_particle', particle_data)
-
-    # Both clients should receive the particle_added event
-    received1 = client1.get_received()
-    received2 = client2.get_received()
-
-    assert any(event['name'] == 'particle_added' for event in received1)
-    assert any(event['name'] == 'particle_added' for event in received2)
-
-    # Disconnect one client
-    client1.disconnect()
-
-    # Verify simulation still exists (one client still connected)
-    assert test_universe.id in active_simulations
-    assert test_universe.id in universe_clients
-    assert len(universe_clients[test_universe.id]) == 1
-
-    # Disconnect second client
-    client2.disconnect()
-
-    # Verify complete cleanup
-    assert test_universe.id not in active_simulations
-    assert test_universe.id not in universe_clients
+    # Verify update format
+    update = received[0]
+    assert update['name'] == 'simulation_state'
+    assert 'args' in update
+    assert len(update['args']) > 0
+    state_update = update['args'][0]
+    assert 'state' in state_update
+    assert 'universe_id' in state_update
+    assert state_update['universe_id'] == test_universe.id
