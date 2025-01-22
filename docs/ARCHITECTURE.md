@@ -67,107 +67,161 @@ Harmonic Universe is a real-time interactive application that combines physics s
    - `MusicParameters`: Music generation settings
    - `VisualizationParameters`: Visual rendering settings
 
+## Model Layer
+
+### Core Models
+
+#### Universe
+
+- Primary model representing a user's created universe
+- Properties:
+  - Basic: id, name, description, is_public
+  - Timestamps: created_at, updated_at
+  - Relations: user_id, template_id
+- Relationships:
+  - User (owner)
+  - Template (base template)
+  - PhysicsParameters (1:1)
+  - MusicParameters (1:1)
+  - AudioParameters (1:1)
+  - VisualizationParameters (1:1)
+  - Comments (1:many)
+  - Favorites (many:many with User)
+  - Storyboards (1:many)
+
+#### Parameters
+
+1. Physics Parameters
+
+   - Gravity
+   - Particle behavior
+   - Motion dynamics
+   - Affects music tempo and audio volume
+
+2. Music Parameters
+
+   - Tempo (influenced by gravity)
+   - Key
+   - Scale
+   - Note generation
+   - Affects audio pitch
+
+3. Audio Parameters
+
+   - Volume (influenced by physics)
+   - Pitch (influenced by music)
+   - Sound effects
+   - Ambient sounds
+
+4. Visualization Parameters
+   - Color schemes
+   - Particle effects
+   - Visual dynamics
+   - Animation settings
+
+### Supporting Models
+
+#### User
+
+- Authentication and profile
+- Universe ownership
+- Preferences and settings
+- Favorite universes
+
+#### Template
+
+- Pre-defined universe configurations
+- Base settings for new universes
+- Customization options
+
+#### Storyboard
+
+- Sequence of universe states
+- Timeline management
+- State transitions
+
+#### Comments
+
+- User feedback
+- Discussion threads
+- Universe reviews
+
+#### Favorites
+
+- User bookmarks
+- Popular universes tracking
+- Quick access management
+
 ## Data Flow
 
-### Parameter Updates
+### Parameter Relationships
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant Frontend
-    participant WebSocket
-    participant Backend
-    participant Database
+1. Physics → Music
 
-    User->>Frontend: Updates parameter
-    Frontend->>WebSocket: Emit parameter_update
-    WebSocket->>Backend: Process update
-    Backend->>Database: Save changes
-    Backend->>WebSocket: Broadcast update
-    WebSocket->>Frontend: Update all clients
-```
+   - Gravity affects tempo
+   - Particle behavior influences rhythm
 
-### Real-time Collaboration
+2. Music → Audio
 
-```mermaid
-sequenceDiagram
-    participant User1
-    participant User2
-    participant WebSocket
-    participant Backend
+   - Tempo affects pitch
+   - Scale determines sound palette
 
-    User1->>WebSocket: Join room
-    WebSocket->>Backend: Validate access
-    Backend->>WebSocket: Room joined
-    User2->>WebSocket: Join room
-    WebSocket->>User1: New participant
-    User1->>WebSocket: Parameter update
-    WebSocket->>User2: Sync parameters
-```
+3. Audio → Physics
 
-## Parameter Integration
+   - Volume influences gravity
+   - Sound patterns affect particle behavior
 
-### Physics → Music Mapping
+4. All → Visualization
+   - Physics affects particle rendering
+   - Music influences color patterns
+   - Audio impacts visual effects
 
-- Gravity affects tempo (higher gravity = faster tempo)
-- Friction affects harmony (more friction = more harmonic)
-- Density affects note density
-- Elasticity affects note duration
+## AI Integration
 
-### Music → Visualization Mapping
+### Parameter Generation
 
-- Tempo affects particle speed
-- Harmony affects color scheme
-- Key affects particle rotation
-- Scale affects particle distribution
+- AI-powered suggestions for parameters
+- Context-aware recommendations
+- Style transfer between universes
 
-### Physics → Visualization Mapping
+### Music Generation
 
-- Gravity affects brightness
-- Density affects particle count
-- Air resistance affects trail length
-- Friction affects particle blur
+- Dynamic note generation
+- Harmony optimization
+- Rhythm patterns based on physics
+
+## Real-time Updates
+
+### WebSocket Protocol
+
+- Live parameter updates
+- Collaborative editing
+- State synchronization
+- Real-time visualization
 
 ## Security
 
-1. **Authentication**
+### Access Control
 
-   - JWT-based authentication
-   - Token refresh mechanism
-   - Rate limiting per user
+- Public/Private universes
+- User authentication
+- Permission management
+- API rate limiting
 
-2. **WebSocket Security**
+### Data Protection
 
-   - Connection authentication
-   - Room-based access control
-   - Message validation
+- Secure parameter storage
+- User data encryption
+- Safe template sharing
 
-3. **API Security**
-   - CORS configuration
-   - Input validation
-   - Parameter range enforcement
+## Performance
 
-## Performance Considerations
+### Optimization
 
-1. **Frontend Optimization**
-
-   - Debounced parameter updates
-   - WebGL rendering for visualization
-   - Web Audio API for music generation
-   - Memoized React components
-
-2. **Backend Optimization**
-
-   - Connection pooling
-   - Caching layer
-   - Batch parameter updates
-   - Async task processing
-
-3. **WebSocket Optimization**
-   - Binary message format
-   - Message batching
-   - Heartbeat mechanism
-   - Reconnection strategy
+- Efficient parameter calculations
+- Cached visualization states
+- Optimized audio processing
+- Background task handling
 
 ## Development Workflow
 

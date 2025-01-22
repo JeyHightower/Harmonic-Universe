@@ -1,403 +1,318 @@
 # API Documentation
 
+## Overview
+
+This document describes the REST API endpoints and WebSocket events for the Harmonic Universe application.
+
 ## Authentication
 
-### Register User
+### JWT Authentication
 
-```http
-POST /api/auth/register
-Content-Type: application/json
-
-{
-  "username": "string",
-  "email": "string",
-  "password": "string"
-}
 ```
-
-### Login
-
-```http
 POST /api/auth/login
-Content-Type: application/json
-
-{
-  "email": "string",
-  "password": "string"
-}
-```
-
-### Refresh Token
-
-```http
+POST /api/auth/register
 POST /api/auth/refresh
-Authorization: Bearer {refresh_token}
-```
-
-### Reset Password Request
-
-```http
-POST /api/auth/reset-password-request
-Content-Type: application/json
-
-{
-  "email": "string"
-}
-```
-
-### Reset Password
-
-```http
-POST /api/auth/reset-password
-Content-Type: application/json
-
-{
-  "token": "string",
-  "new_password": "string"
-}
+POST /api/auth/logout
 ```
 
 ## Universe Management
 
-### Create Universe
+### Universe CRUD Operations
 
-```http
-POST /api/universes
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "name": "string",
-  "description": "string",
-  "physics_params": {
-    "gravity": "number",
-    "friction": "number",
-    "elasticity": "number",
-    "air_resistance": "number",
-    "density": "number",
-    "time_scale": "number"
-  },
-  "audio_params": {
-    "harmony": "number",
-    "tempo": "number",
-    "key": "string",
-    "scale": "string",
-    "rhythm_complexity": "number",
-    "melody_range": "number"
-  }
-}
+```
+GET    /api/universes
+POST   /api/universes
+GET    /api/universes/:id
+PUT    /api/universes/:id
+DELETE /api/universes/:id
 ```
 
-### Get Universe
+### Universe Parameters
 
-```http
-GET /api/universes/{universe_id}
-Authorization: Bearer {token}
+```
+GET    /api/universes/:id/parameters
+PUT    /api/universes/:id/parameters/physics
+PUT    /api/universes/:id/parameters/music
+PUT    /api/universes/:id/parameters/audio
+PUT    /api/universes/:id/parameters/visualization
 ```
 
-### Update Universe
+### Universe Templates
 
-```http
-PUT /api/universes/{universe_id}
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "name": "string",
-  "description": "string",
-  "physics_params": {
-    "gravity": "number",
-    "friction": "number",
-    "elasticity": "number",
-    "air_resistance": "number",
-    "density": "number",
-    "time_scale": "number"
-  },
-  "audio_params": {
-    "harmony": "number",
-    "tempo": "number",
-    "key": "string",
-    "scale": "string",
-    "rhythm_complexity": "number",
-    "melody_range": "number"
-  }
-}
+```
+GET    /api/templates
+POST   /api/templates
+GET    /api/templates/:id
+PUT    /api/templates/:id
+DELETE /api/templates/:id
 ```
 
-### Delete Universe
+### Universe Sharing
 
-```http
-DELETE /api/universes/{universe_id}
-Authorization: Bearer {token}
+```
+POST   /api/universes/:id/share
+DELETE /api/universes/:id/share/:userId
+GET    /api/universes/:id/collaborators
 ```
 
-### List Universes
-
-```http
-GET /api/universes
-Authorization: Bearer {token}
-Query Parameters:
-  - page: integer
-  - per_page: integer
-  - sort_by: string
-  - order: asc|desc
-```
-
-### Share Universe
-
-```http
-POST /api/universes/{universe_id}/share
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "user_id": "string",
-  "permission": "view|edit"
-}
-```
-
-## Physics Engine
-
-### Update Physics Parameters
-
-```http
-PUT /api/universes/{universe_id}/physics
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "gravity": "number",
-  "friction": "number",
-  "elasticity": "number",
-  "air_resistance": "number",
-  "density": "number",
-  "time_scale": "number"
-}
-```
-
-### Get Physics State
-
-```http
-GET /api/universes/{universe_id}/physics
-Authorization: Bearer {token}
-```
-
-### Reset Physics
-
-```http
-POST /api/universes/{universe_id}/physics/reset
-Authorization: Bearer {token}
-```
-
-## Audio System
-
-### Update Audio Parameters
-
-```http
-PUT /api/universes/{universe_id}/audio
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "harmony": "number",
-  "tempo": "number",
-  "key": "string",
-  "scale": "string",
-  "rhythm_complexity": "number",
-  "melody_range": "number"
-}
-```
-
-### Get Audio State
-
-```http
-GET /api/universes/{universe_id}/audio
-Authorization: Bearer {token}
-```
-
-### Export Audio
-
-```http
-POST /api/universes/{universe_id}/audio/export
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "format": "wav",
-  "duration": "number"
-}
-```
-
-## WebSocket API
-
-### Connect
-
-```javascript
-const ws = new WebSocket('ws://api.example.com/ws');
-```
-
-### Authentication
-
-```json
-{
-  "type": "auth",
-  "token": "string"
-}
-```
-
-### Join Universe
-
-```json
-{
-  "type": "join",
-  "universe_id": "string"
-}
-```
-
-### Update Parameters
-
-```json
-{
-  "type": "update",
-  "universe_id": "string",
-  "params": {
-    "physics": {
-      "gravity": "number",
-      "friction": "number"
-    },
-    "audio": {
-      "harmony": "number",
-      "tempo": "number"
-    }
-  }
-}
-```
-
-### Chat Message
-
-```json
-{
-  "type": "chat",
-  "universe_id": "string",
-  "message": "string"
-}
-```
-
-### User Presence
-
-```json
-{
-  "type": "presence",
-  "status": "online|away|offline"
-}
-```
-
-## Error Responses
-
-### 400 Bad Request
-
-```json
-{
-  "error": "string",
-  "message": "string",
-  "details": {}
-}
-```
-
-### 401 Unauthorized
-
-```json
-{
-  "error": "unauthorized",
-  "message": "Invalid or expired token"
-}
-```
-
-### 403 Forbidden
-
-```json
-{
-  "error": "forbidden",
-  "message": "Insufficient permissions"
-}
-```
-
-### 404 Not Found
-
-```json
-{
-  "error": "not_found",
-  "message": "Resource not found"
-}
-```
-
-### 429 Too Many Requests
-
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests",
-  "retry_after": "number"
-}
-```
-
-## Rate Limits
-
-- Authentication endpoints: 5 requests per minute
-- Universe management: 60 requests per minute
-- Physics updates: 120 requests per minute
-- WebSocket messages: 100 messages per minute
-
-## Data Types
-
-### Universe
-
-```typescript
-interface Universe {
-  id: string;
-  name: string;
-  description: string;
-  owner_id: string;
-  created_at: string;
-  updated_at: string;
-  physics_params: PhysicsParams;
-  audio_params: AudioParams;
-  shared_with: SharedUser[];
-}
-```
+## Parameter Management
 
 ### Physics Parameters
 
-```typescript
-interface PhysicsParams {
-  gravity: number; // 0-20 m/s²
-  friction: number; // 0-1
-  elasticity: number; // 0-1
-  air_resistance: number; // 0-1
-  density: number; // 0-5 kg/m³
-  time_scale: number; // 0.1-2
+```json
+{
+  "gravity": 9.81,
+  "particle_speed": 50.0,
+  "particle_size": 1.0,
+  "friction": 0.5,
+  "elasticity": 0.7
+}
+```
+
+### Music Parameters
+
+```json
+{
+  "tempo": 120,
+  "key": "C",
+  "scale": "major",
+  "harmony_complexity": 5
 }
 ```
 
 ### Audio Parameters
 
-```typescript
-interface AudioParams {
-  harmony: number; // 0-1
-  tempo: number; // 40-200 BPM
-  key: string; // C, C#, D, D#, E, F, F#, G, G#, A, A#, B
-  scale: string; // major, minor, harmonic_minor, melodic_minor, pentatonic, blues
-  rhythm_complexity: number; // 0-1
-  melody_range: number; // 0-1
+```json
+{
+  "volume": 0.8,
+  "pitch": 0.5,
+  "reverb": 0.3,
+  "delay": 0.2
 }
 ```
 
-### Shared User
+### Visualization Parameters
 
-```typescript
-interface SharedUser {
-  user_id: string;
-  permission: 'view' | 'edit';
-  shared_at: string;
+```json
+{
+  "color_scheme": "spectrum",
+  "particle_effect": "glow",
+  "background_style": "gradient",
+  "animation_speed": 1.0
 }
 ```
+
+## Real-time Communication
+
+### WebSocket Events
+
+1. Connection
+
+```javascript
+socket.on('connect', () => {
+  socket.emit('join_universe', { universe_id: 'xxx' });
+});
+```
+
+2. Parameter Updates
+
+```javascript
+socket.emit('parameter_update', {
+  universe_id: 'xxx',
+  category: 'physics',
+  parameters: {
+    gravity: 15.0,
+  },
+});
+```
+
+3. State Sync
+
+```javascript
+socket.on('state_sync', data => {
+  // Full universe state
+});
+```
+
+## AI Integration
+
+### Parameter Suggestions
+
+```
+GET /api/ai/suggestions/:universe_id
+POST /api/ai/suggestions/:universe_id/apply
+```
+
+### Style Transfer
+
+```
+POST /api/ai/transfer
+Body: {
+  source_universe_id: "xxx",
+  target_universe_id: "yyy",
+  aspects: ["physics", "music"]
+}
+```
+
+## Social Features
+
+### Comments
+
+```
+GET    /api/universes/:id/comments
+POST   /api/universes/:id/comments
+PUT    /api/comments/:id
+DELETE /api/comments/:id
+```
+
+### Favorites
+
+```
+POST   /api/universes/:id/favorite
+DELETE /api/universes/:id/favorite
+GET    /api/users/:id/favorites
+```
+
+### User Profiles
+
+```
+GET    /api/users/:id
+PUT    /api/users/:id
+GET    /api/users/:id/universes
+```
+
+## Data Models
+
+### Universe Model
+
+```python
+class Universe:
+    id: int
+    name: str
+    description: str
+    is_public: bool
+    user_id: int
+    template_id: int
+    created_at: datetime
+    updated_at: datetime
+
+    # Relationships
+    physics_parameters: PhysicsParameters
+    music_parameters: MusicParameters
+    audio_parameters: AudioParameters
+    visualization_parameters: VisualizationParameters
+    comments: List[Comment]
+    favorites: List[Favorite]
+    storyboards: List[Storyboard]
+```
+
+### User Model
+
+```python
+class User:
+    id: int
+    username: str
+    email: str
+    created_at: datetime
+
+    # Relationships
+    universes: List[Universe]
+    favorite_universes: List[Universe]
+    comments: List[Comment]
+    preferences: UserPreferences
+```
+
+## Error Handling
+
+### Error Response Format
+
+```json
+{
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human readable message",
+    "details": {
+      "field": "specific error details"
+    }
+  }
+}
+```
+
+### Common Error Codes
+
+- `UNAUTHORIZED`: Authentication required
+- `FORBIDDEN`: Permission denied
+- `NOT_FOUND`: Resource not found
+- `VALIDATION_ERROR`: Invalid input
+- `RATE_LIMITED`: Too many requests
+- `SERVER_ERROR`: Internal server error
+
+## Rate Limiting
+
+### Limits
+
+- API: 100 requests per minute per user
+- WebSocket: 60 events per minute per connection
+- AI endpoints: 10 requests per minute per user
+
+### Headers
+
+```
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1516131940
+```
+
+## Versioning
+
+### API Versioning
+
+All endpoints are prefixed with API version:
+
+```
+/api/v1/universes
+```
+
+### Response Headers
+
+```
+API-Version: 1.0
+```
+
+## WebSocket Protocol
+
+### Connection
+
+```javascript
+const socket = io('wss://api.harmonic-universe.com', {
+  auth: {
+    token: 'JWT_TOKEN',
+  },
+});
+```
+
+### Events
+
+1. Universe Events
+
+   - `universe:join`
+   - `universe:leave`
+   - `universe:update`
+   - `universe:sync`
+
+2. Parameter Events
+
+   - `parameter:update`
+   - `parameter:sync`
+   - `parameter:reset`
+
+3. Collaboration Events
+
+   - `collaboration:join`
+   - `collaboration:leave`
+   - `collaboration:cursor`
+
+4. System Events
+   - `system:error`
+   - `system:notification`
+   - `system:maintenance`

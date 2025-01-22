@@ -4,233 +4,276 @@
 
 ### System Requirements
 
-- Node.js v16 or higher
-- Python 3.8 or higher
-- PostgreSQL 12 or higher
-- Redis 6 or higher
-- Git
+- Python 3.8+
+- Node.js 16+
+- npm 8+ or yarn 1.22+
+- PostgreSQL 13+ (for production)
+- Redis (for WebSocket scaling)
 
 ### Development Tools
 
+- Git
 - Visual Studio Code (recommended)
-- Docker Desktop
-- Postman (optional)
-- pgAdmin (optional)
+- Docker (optional, for containerization)
+- k6 (optional, for load testing)
 
-## Installation
+## Initial Setup
 
-### 1. Clone the Repository
+1. **Clone the Repository**
 
-```bash
-git clone https://github.com/yourusername/harmonic-universe.git
-cd harmonic-universe
+   ```bash
+   git clone https://github.com/yourusername/harmonic-universe.git
+   cd harmonic-universe
+   ```
+
+2. **Environment Setup**
+
+   ```bash
+   # Copy environment template
+   cp .env.example .env
+
+   # Edit environment variables
+   nano .env
+   ```
+
+   Required variables:
+
+   ```env
+   DATABASE_URL=postgresql://user:pass@localhost:5432/harmonic_universe
+   REDIS_URL=redis://localhost:6379/0
+   SECRET_KEY=your-secret-key
+   AI_API_KEY=your-ai-service-key
+   ```
+
+## Backend Setup
+
+1. **Create Virtual Environment**
+
+   ```bash
+   cd backend
+   python -m venv venv
+   source venv/bin/activate  # On Windows: .\venv\Scripts\activate
+   ```
+
+2. **Install Dependencies**
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Database Setup**
+
+   ```bash
+   # Create database
+   createdb harmonic_universe
+
+   # Run migrations
+   flask db upgrade
+   ```
+
+4. **Start Backend Server**
+
+   ```bash
+   # Development
+   flask run
+
+   # Production
+   gunicorn -w 4 -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -b 0.0.0.0:5000 wsgi:app
+   ```
+
+## Frontend Setup
+
+1. **Install Dependencies**
+
+   ```bash
+   cd frontend
+   npm install   # or: yarn install
+   ```
+
+2. **Development Server**
+
+   ```bash
+   npm run dev   # or: yarn dev
+   ```
+
+3. **Production Build**
+   ```bash
+   npm run build   # or: yarn build
+   npm run preview # or: yarn preview
+   ```
+
+## WebSocket Setup
+
+1. **Redis Installation**
+
+   ```bash
+   # MacOS
+   brew install redis
+   brew services start redis
+
+   # Ubuntu
+   sudo apt-get install redis-server
+   sudo systemctl start redis
+   ```
+
+2. **WebSocket Configuration**
+   ```env
+   WEBSOCKET_URL=ws://localhost:5000/ws
+   REDIS_URL=redis://localhost:6379/0
+   ```
+
+## AI Integration Setup
+
+1. **API Key Configuration**
+
+   ```env
+   AI_SERVICE_URL=https://api.ai-service.com
+   AI_API_KEY=your-api-key
+   ```
+
+2. **Model Configuration**
+   ```env
+   AI_MODEL_VERSION=v3
+   AI_TEMPERATURE=0.7
+   AI_MAX_TOKENS=1000
+   ```
+
+## Testing Setup
+
+1. **Backend Tests**
+
+   ```bash
+   cd backend
+   pytest
+
+   # With coverage
+   pytest --cov=app tests/
+   ```
+
+2. **Frontend Tests**
+
+   ```bash
+   cd frontend
+   npm test        # or: yarn test
+   npm run e2e     # or: yarn e2e
+   ```
+
+3. **Load Tests**
+   ```bash
+   k6 run k6.config.js
+   ```
+
+## Development Tools
+
+### VSCode Extensions
+
+- Python
+- ESLint
+- Prettier
+- GitLens
+- Python Test Explorer
+- REST Client
+
+### Configuration Files
+
+```json
+// .vscode/settings.json
+{
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": true,
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  }
+}
 ```
-
-### 2. Backend Setup
-
-#### Create Python Virtual Environment
-
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-#### Install Python Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-#### Configure Environment Variables
-
-Create `.env` file in `backend/` directory:
-
-```env
-FLASK_APP=run.py
-FLASK_ENV=development
-DATABASE_URL=postgresql://user:password@localhost:5432/harmonic_universe
-REDIS_URL=redis://localhost:6379
-SECRET_KEY=your_secret_key
-JWT_SECRET_KEY=your_jwt_secret
-```
-
-#### Initialize Database
-
-```bash
-flask db upgrade
-flask seed all  # If you want sample data
-```
-
-### 3. Frontend Setup
-
-#### Install Node.js Dependencies
-
-```bash
-cd frontend
-npm install
-```
-
-#### Configure Environment Variables
-
-Create `.env` file in `frontend/` directory:
-
-```env
-VITE_API_URL=http://localhost:5000
-VITE_WS_URL=ws://localhost:5000/ws
-```
-
-### 4. Docker Setup (Optional)
-
-#### Build and Run with Docker Compose
-
-```bash
-docker-compose up --build
-```
-
-## Development
-
-### Start Backend Server
-
-```bash
-cd backend
-source venv/bin/activate
-flask run
-```
-
-### Start Frontend Development Server
-
-```bash
-cd frontend
-npm run dev
-```
-
-### Run Tests
-
-#### Backend Tests
-
-```bash
-cd backend
-pytest
-```
-
-#### Frontend Tests
-
-```bash
-cd frontend
-npm test
-```
-
-#### End-to-End Tests
-
-```bash
-cd frontend
-npm run cypress:open
-```
-
-## Common Issues
-
-### Database Connection
-
-1. Ensure PostgreSQL is running
-2. Check database URL in `.env`
-3. Verify database exists
-4. Check user permissions
-
-### WebSocket Connection
-
-1. Ensure Redis is running
-2. Check WebSocket URL in frontend `.env`
-3. Verify CORS settings in backend
-
-### Build Issues
-
-1. Clear node_modules and reinstall
-2. Update Python dependencies
-3. Check Node.js version
-4. Clear browser cache
 
 ## Production Deployment
 
-### 1. Build Frontend
+1. **Database Setup**
 
-```bash
-cd frontend
-npm run build
-```
+   ```bash
+   # Create production database
+   createdb harmonic_universe_prod
 
-### 2. Configure Production Environment
+   # Run migrations
+   FLASK_ENV=production flask db upgrade
+   ```
 
-Update environment variables for production:
+2. **Environment Configuration**
 
-```env
-FLASK_ENV=production
-DATABASE_URL=your_production_db_url
-REDIS_URL=your_production_redis_url
-```
+   ```env
+   FLASK_ENV=production
+   DATABASE_URL=postgresql://user:pass@prod-db:5432/harmonic_universe_prod
+   REDIS_URL=redis://prod-redis:6379/0
+   ```
 
-### 3. Deploy to render.com
+3. **Build and Deploy**
 
-```bash
-./deploy.sh
-```
+   ```bash
+   # Build frontend
+   cd frontend
+   npm run build
 
-## Development Guidelines
+   # Deploy using script
+   ./deploy.sh
+   ```
 
-### Code Style
+## Troubleshooting
 
-- Follow PEP 8 for Python code
-- Use ESLint and Prettier for JavaScript/React
-- Write meaningful commit messages
-- Document complex functions and components
+### Common Issues
 
-### Git Workflow
+1. **Database Connection**
 
-1. Create feature branch
-2. Make changes
-3. Run tests
-4. Create pull request
-5. Wait for review and CI checks
+   ```bash
+   # Check PostgreSQL status
+   pg_isready
 
-### Testing
+   # Reset database
+   dropdb harmonic_universe
+   createdb harmonic_universe
+   flask db upgrade
+   ```
 
-1. Write unit tests for new features
-2. Update integration tests if needed
-3. Run full test suite before committing
-4. Maintain test coverage above 80%
+2. **Node Modules**
 
-## Additional Resources
+   ```bash
+   # Clear node_modules
+   rm -rf node_modules
+   npm install
+   ```
 
-### Documentation
+3. **Redis Connection**
 
-- [API Documentation](./API.md)
-- [Feature List](./FEATURES.md)
-- [Testing Guide](./TESTING.md)
-- [Deployment Guide](./DEPLOYMENT.md)
+   ```bash
+   # Check Redis status
+   redis-cli ping
 
-### External Links
-
-- [React Documentation](https://reactjs.org/)
-- [Flask Documentation](https://flask.palletsprojects.com/)
-- [Redux Toolkit](https://redux-toolkit.js.org/)
-- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
-
-## Support
+   # Clear Redis cache
+   redis-cli flushall
+   ```
 
 ### Getting Help
 
-1. Check existing documentation
-2. Search issue tracker
-3. Create new issue with:
-   - Clear description
-   - Steps to reproduce
-   - Expected vs actual behavior
-   - Environment details
+1. Check the [FAQ](FAQ.md) for common issues
+2. Search existing [GitHub Issues](https://github.com/yourusername/harmonic-universe/issues)
+3. Join our [Discord community](https://discord.gg/harmonic-universe)
 
-### Contributing
+## Security Notes
 
-1. Read [Contributing Guide](./CONTRIBUTING.md)
-2. Fork repository
-3. Create feature branch
-4. Make changes
-5. Submit pull request
+1. **Environment Variables**
+
+   - Never commit `.env` files
+   - Use strong, unique keys
+   - Rotate keys regularly
+
+2. **API Keys**
+
+   - Store securely
+   - Use appropriate scopes
+   - Monitor usage
+
+3. **Database**
+   - Regular backups
+   - Access control
+   - Connection encryption

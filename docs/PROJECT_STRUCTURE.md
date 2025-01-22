@@ -1,38 +1,19 @@
 # Project Structure
 
+## Overview
+
+This document outlines the organization of the Harmonic Universe codebase.
+
 ## Root Directory
 
 ```
 harmonic-universe/
-├── frontend/           # React frontend application
 ├── backend/           # Flask backend application
-├── docs/             # Project documentation
-├── .github/          # GitHub workflows and templates
+├── frontend/          # React frontend application
+├── docs/             # Documentation
 ├── scripts/          # Utility scripts
-├── deploy.sh         # Deployment script
-├── k6.config.js      # k6 load testing configuration
-├── run_tests.sh      # Test runner script
-└── README.md         # Project overview
-```
-
-## Frontend Structure
-
-```
-frontend/
-├── src/
-│   ├── assets/        # Static assets (images, fonts)
-│   ├── components/    # Reusable React components
-│   ├── config/        # Configuration files
-│   ├── contexts/      # React contexts
-│   ├── hooks/         # Custom React hooks
-│   ├── pages/         # Page components
-│   ├── redux/         # Redux store and slices
-│   ├── services/      # API and service integrations
-│   ├── styles/        # Global styles and themes
-│   └── utils/         # Utility functions
-├── public/           # Public static files
-├── cypress/          # End-to-end tests
-└── tests/            # Unit and integration tests
+├── tests/            # Global test files
+└── .github/          # GitHub workflows and templates
 ```
 
 ## Backend Structure
@@ -40,92 +21,186 @@ frontend/
 ```
 backend/
 ├── app/
-│   ├── models/        # Database models
-│   ├── routes/        # API routes
-│   ├── services/      # Business logic
-│   ├── middleware/    # Custom middleware
-│   ├── physics/       # Physics engine
-│   ├── sockets/       # WebSocket handlers
-│   └── utils/         # Utility functions
+│   ├── models/           # Database models
+│   │   ├── __init__.py
+│   │   ├── user.py
+│   │   ├── universe.py
+│   │   ├── physics_parameters.py
+│   │   ├── music_parameters.py
+│   │   ├── audio_parameters.py
+│   │   ├── visualization_parameters.py
+│   │   ├── template.py
+│   │   ├── comment.py
+│   │   ├── favorite.py
+│   │   ├── notification.py
+│   │   ├── storyboard.py
+│   │   ├── user_preferences.py
+│   │   ├── analytics.py
+│   │   └── base.py
+│   ├── routes/          # API endpoints
+│   │   ├── auth.py
+│   │   ├── universes.py
+│   │   ├── parameters.py
+│   │   ├── templates.py
+│   │   ├── users.py
+│   │   └── ai.py
+│   ├── services/        # Business logic
+│   │   ├── physics.py
+│   │   ├── music.py
+│   │   ├── audio.py
+│   │   ├── visualization.py
+│   │   ├── ai.py
+│   │   └── websocket.py
+│   └── websocket/       # WebSocket handlers
+│       ├── events.py
+│       ├── manager.py
+│       └── rooms.py
 ├── tests/
-│   ├── unit/         # Unit tests
-│   ├── integration/  # Integration tests
-│   ├── e2e/         # End-to-end tests
-│   ├── load/        # Load tests
-│   └── k6/          # k6 performance tests
-├── migrations/       # Database migrations
-└── config.py        # Application configuration
+│   ├── unit/           # Unit tests
+│   ├── integration/    # Integration tests
+│   └── e2e/           # End-to-end tests
+├── migrations/         # Database migrations
+└── config/            # Configuration files
+```
+
+## Frontend Structure
+
+```
+frontend/
+├── src/
+│   ├── components/     # React components
+│   │   ├── universe/
+│   │   ├── parameters/
+│   │   ├── visualization/
+│   │   └── common/
+│   ├── pages/         # Page components
+│   │   ├── Home/
+│   │   ├── Universe/
+│   │   ├── Profile/
+│   │   └── Settings/
+│   ├── services/      # API clients
+│   │   ├── api.ts
+│   │   ├── websocket.ts
+│   │   └── auth.ts
+│   ├── store/         # Redux store
+│   │   ├── slices/
+│   │   └── middleware/
+│   ├── hooks/         # Custom hooks
+│   ├── utils/         # Utility functions
+│   └── styles/        # Global styles
+├── public/           # Static assets
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── e2e/
+└── config/          # Build configuration
 ```
 
 ## Documentation Structure
 
 ```
 docs/
-├── API.md           # API documentation
-├── FEATURES.md      # Feature list and status
-├── SETUP.md         # Setup instructions
-├── TESTING.md       # Testing documentation
-├── DEPLOYMENT.md    # Deployment guide
-└── CONTRIBUTING.md  # Contribution guidelines
+├── api/             # API documentation
+│   ├── endpoints/
+│   ├── models/
+│   └── websocket/
+├── features/        # Feature specifications
+├── monitoring/      # Monitoring setup
+├── pwa/            # Progressive Web App
+├── testing/        # Test documentation
+└── *.md            # Core documentation
+```
+
+## Scripts
+
+```
+scripts/
+├── setup.sh        # Project setup
+├── deploy.sh       # Deployment
+├── test_runner.sh  # Test execution
+└── cleanup.sh      # Codebase cleanup
+```
+
+## Configuration Files
+
+```
+./
+├── .env                # Environment variables
+├── .gitignore         # Git ignore rules
+├── package.json       # Node.js dependencies
+├── requirements.txt   # Python dependencies
+├── tsconfig.json     # TypeScript config
+└── vite.config.js    # Vite build config
 ```
 
 ## Key Files
 
-### Frontend
-
-- `frontend/src/main.jsx`: Application entry point
-- `frontend/src/App.jsx`: Root component
-- `frontend/src/redux/store.js`: Redux store configuration
-- `frontend/vite.config.js`: Vite configuration
-- `frontend/jest.config.js`: Jest test configuration
-- `frontend/cypress.config.js`: Cypress test configuration
-
 ### Backend
 
-- `backend/app/__init__.py`: Application factory
-- `backend/app/config.py`: Configuration settings
-- `backend/app/extensions.py`: Flask extensions
-- `backend/app/websockets.py`: WebSocket handlers
-- `backend/run.py`: Development server
-- `backend/requirements.txt`: Python dependencies
+- `app/__init__.py`: Application factory
+- `app/models/base.py`: Base model class
+- `app/routes/__init__.py`: Route registration
+- `app/services/__init__.py`: Service initialization
+- `config.py`: Configuration classes
 
-### Configuration
+### Frontend
 
-- `.env`: Environment variables
-- `.gitignore`: Git ignore patterns
-- `package.json`: Node.js dependencies
-- `deploy.sh`: Deployment configuration
+- `src/App.tsx`: Root component
+- `src/main.tsx`: Application entry
+- `src/store/index.ts`: Redux store setup
+- `src/styles/global.css`: Global styles
+- `index.html`: HTML template
 
 ## Development Workflow
 
-### Frontend Development
+1. **Backend Development**
 
-1. Components are organized by feature in `src/components`
-2. Pages are in `src/pages`
-3. State management uses Redux with slices in `src/redux/slices`
-4. API calls are centralized in `src/services`
-5. Styles use CSS modules and global styles
+   ```bash
+   cd backend
+   flask run
+   ```
 
-### Backend Development
+2. **Frontend Development**
 
-1. Routes are defined in `app/routes`
-2. Models are in `app/models`
-3. Business logic is in `app/services`
-4. WebSocket handlers in `app/sockets`
-5. Database migrations in `migrations`
+   ```bash
+   cd frontend
+   npm run dev
+   ```
 
-### Testing Strategy
+3. **Testing**
 
-1. Unit tests alongside source code
-2. Integration tests in dedicated directories
-3. End-to-end tests using Cypress
-4. Load testing with k6
-5. Continuous testing in CI/CD pipeline
+   ```bash
+   ./run_all_tests.sh
+   ```
 
-### Deployment Process
+4. **Documentation**
+   ```bash
+   # Generate API docs
+   cd docs/api
+   npm run generate
+   ```
 
-1. Frontend built with Vite
-2. Backend containerized with Docker
-3. Deployed to render.com
-4. Automated via GitHub Actions
-5. Environment-specific configurations
+## Best Practices
+
+1. **File Organization**
+
+   - Keep related files together
+   - Use consistent naming conventions
+   - Maintain clear separation of concerns
+
+2. **Code Style**
+
+   - Follow language-specific style guides
+   - Use consistent formatting
+   - Write clear documentation
+
+3. **Testing**
+
+   - Write tests for new features
+   - Maintain test coverage
+   - Use appropriate test types
+
+4. **Documentation**
+   - Keep docs up to date
+   - Document complex logic
+   - Include examples

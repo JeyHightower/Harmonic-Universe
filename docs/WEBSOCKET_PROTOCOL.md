@@ -1,499 +1,341 @@
-# WebSocket Protocol Guide
+# WebSocket Protocol
 
 ## Overview
 
-This document details the WebSocket communication protocol used in Harmonic Universe for real-time updates and collaboration.
+The Harmonic Universe WebSocket protocol enables real-time communication between clients and the server for parameter updates, collaboration, and state synchronization.
 
 ## Connection
 
-### Authentication
-
-WebSocket connections require JWT authentication. The token should be provided in the connection query parameters:
+### Establishing Connection
 
 ```javascript
-const socket = io('wss://yourdomain.com/ws', {
-  query: {
-    token: 'your-jwt-token',
+const socket = io('wss://api.harmonic-universe.com', {
+  auth: {
+    token: 'JWT_TOKEN',
   },
+  transports: ['websocket'],
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000,
 });
 ```
 
 ### Connection Events
 
-1. **Connection Success**
-
 ```javascript
-// Server -> Client
-{
-  "event": "connect_success",
-  "data": {
-    "userId": "user-123",
-    "timestamp": "2024-03-21T10:30:00Z"
-  }
-}
-```
+socket.on('connect', () => {
+  console.log('Connected to server');
+});
 
-2. **Connection Error**
+socket.on('disconnect', reason => {
+  console.log('Disconnected:', reason);
+});
 
-```javascript
-// Server -> Client
-{
-  "event": "connect_error",
-  "data": {
-    "error": "Invalid token",
-    "code": "AUTH_ERROR"
-  }
-}
-```
-
-## Room Management
-
-### Join Room
-
-1. **Request**
-
-```javascript
-// Client -> Server
-socket.emit('join_room', {
-  universeId: 'universe-123',
-  mode: 'edit', // or 'view'
+socket.on('error', error => {
+  console.error('WebSocket error:', error);
 });
 ```
 
-2. **Success Response**
+## Universe Events
 
-```javascript
-// Server -> Client
-{
-  "event": "room_joined",
-  "data": {
-    "universeId": "universe-123",
-    "participants": [
-      {
-        "userId": "user-123",
-        "username": "john_doe",
-        "mode": "edit"
-      }
-    ],
-    "timestamp": "2024-03-21T10:30:00Z"
-  }
-}
-```
-
-3. **Error Response**
-
-```javascript
-// Server -> Client
-{
-  "event": "room_error",
-  "data": {
-    "error": "Universe not found",
-    "code": "NOT_FOUND"
-  }
-}
-```
-
-### Leave Room
-
-1. **Request**
+### Join Universe
 
 ```javascript
 // Client -> Server
-socket.emit('leave_room', {
-  universeId: 'universe-123',
+socket.emit('universe:join', {
+  universe_id: 'xxx',
+  user_id: 'yyy',
+});
+
+// Server -> Client
+socket.on('universe:joined', data => {
+  const { universe, participants } = data;
 });
 ```
 
-2. **Response**
-
-```javascript
-// Server -> Client
-{
-  "event": "room_left",
-  "data": {
-    "universeId": "universe-123",
-    "timestamp": "2024-03-21T10:30:00Z"
-  }
-}
-```
-
-## Parameter Updates
-
-### Physics Parameters
-
-1. **Update Request**
+### Leave Universe
 
 ```javascript
 // Client -> Server
-socket.emit('update_physics', {
-  universeId: 'universe-123',
+socket.emit('universe:leave', {
+  universe_id: 'xxx',
+  user_id: 'yyy',
+});
+
+// Server -> Client
+socket.on('universe:left', data => {
+  const { universe_id, user_id } = data;
+});
+```
+
+### Universe Updates
+
+```javascript
+// Client -> Server
+socket.emit('universe:update', {
+  universe_id: 'xxx',
+  changes: {
+    name: 'New Name',
+    description: 'New Description',
+  },
+});
+
+// Server -> Client
+socket.on('universe:updated', data => {
+  const { universe_id, changes } = data;
+});
+```
+
+## Parameter Events
+
+### Parameter Update
+
+```javascript
+// Client -> Server
+socket.emit('parameter:update', {
+  universe_id: 'xxx',
+  category: 'physics',
   parameters: {
-    gravity: 9.81,
-    friction: 0.5,
-    elasticity: 0.7,
-    airResistance: 0.1,
-    timeScale: 1.0,
+    gravity: 15.0,
+    particle_speed: 50.0,
   },
+});
+
+// Server -> Client
+socket.on('parameter:updated', data => {
+  const { universe_id, category, parameters } = data;
 });
 ```
 
-2. **Broadcast**
-
-```javascript
-// Server -> All Clients in Room
-{
-  "event": "physics_updated",
-  "data": {
-    "universeId": "universe-123",
-    "parameters": {
-      "gravity": 9.81,
-      "friction": 0.5,
-      "elasticity": 0.7,
-      "airResistance": 0.1,
-      "timeScale": 1.0
-    },
-    "userId": "user-123",
-    "timestamp": "2024-03-21T10:30:00Z"
-  }
-}
-```
-
-### Music Parameters
-
-1. **Update Request**
+### Parameter Reset
 
 ```javascript
 // Client -> Server
-socket.emit('update_music', {
-  universeId: 'universe-123',
-  parameters: {
-    harmony: 0.7,
-    tempo: 120,
-    key: 'C',
-    scale: 'major',
-    rhythmComplexity: 0.5,
-    melodyRange: 0.8,
-  },
+socket.emit('parameter:reset', {
+  universe_id: 'xxx',
+  category: 'physics',
+});
+
+// Server -> Client
+socket.on('parameter:reset', data => {
+  const { universe_id, category, default_parameters } = data;
 });
 ```
 
-2. **Broadcast**
-
-```javascript
-// Server -> All Clients in Room
-{
-  "event": "music_updated",
-  "data": {
-    "universeId": "universe-123",
-    "parameters": {
-      "harmony": 0.7,
-      "tempo": 120,
-      "key": "C",
-      "scale": "major",
-      "rhythmComplexity": 0.5,
-      "melodyRange": 0.8
-    },
-    "userId": "user-123",
-    "timestamp": "2024-03-21T10:30:00Z"
-  }
-}
-```
-
-### Visualization Parameters
-
-1. **Update Request**
+### Parameter Sync
 
 ```javascript
 // Client -> Server
-socket.emit('update_visualization', {
-  universeId: 'universe-123',
-  parameters: {
-    brightness: 0.8,
-    saturation: 0.7,
-    complexity: 0.6,
-    colorScheme: 'rainbow',
-    particleCount: 5000,
-    glowIntensity: 0.5,
-  },
+socket.emit('parameter:sync', {
+  universe_id: 'xxx',
+});
+
+// Server -> Client
+socket.on('parameter:synced', data => {
+  const {
+    physics_parameters,
+    music_parameters,
+    audio_parameters,
+    visualization_parameters,
+  } = data;
 });
 ```
 
-2. **Broadcast**
+## Collaboration Events
 
-```javascript
-// Server -> All Clients in Room
-{
-  "event": "visualization_updated",
-  "data": {
-    "universeId": "universe-123",
-    "parameters": {
-      "brightness": 0.8,
-      "saturation": 0.7,
-      "complexity": 0.6,
-      "colorScheme": "rainbow",
-      "particleCount": 5000,
-      "glowIntensity": 0.5
-    },
-    "userId": "user-123",
-    "timestamp": "2024-03-21T10:30:00Z"
-  }
-}
-```
-
-## Music Generation
-
-### Request Generation
-
-1. **Request**
+### Cursor Position
 
 ```javascript
 // Client -> Server
-socket.emit('generate_music', {
-  universeId: 'universe-123',
-  duration: 8, // seconds
+socket.emit('collaboration:cursor', {
+  universe_id: 'xxx',
+  user_id: 'yyy',
+  position: { x: 100, y: 200 },
+});
+
+// Server -> Client
+socket.on('collaboration:cursor', data => {
+  const { universe_id, user_id, position } = data;
 });
 ```
 
-2. **Response**
-
-```javascript
-// Server -> All Clients in Room
-{
-  "event": "music_generated",
-  "data": {
-    "universeId": "universe-123",
-    "notes": [
-      {
-        "pitch": 60,
-        "startTime": 0,
-        "duration": 0.5,
-        "velocity": 80
-      },
-      // ... more notes
-    ],
-    "timestamp": "2024-03-21T10:30:00Z"
-  }
-}
-```
-
-## Audio Analysis
-
-### Send Analysis
-
-1. **Request**
+### User Presence
 
 ```javascript
 // Client -> Server
-socket.emit('audio_analysis', {
-  universeId: 'universe-123',
-  analysis: {
-    frequencies: [
-      /* frequency data */
-    ],
-    waveform: [
-      /* waveform data */
-    ],
-    timestamp: '2024-03-21T10:30:00Z',
-  },
+socket.emit('collaboration:presence', {
+  universe_id: 'xxx',
+  user_id: 'yyy',
+  status: 'active',
+});
+
+// Server -> Client
+socket.on('collaboration:presence', data => {
+  const { universe_id, user_id, status } = data;
 });
 ```
 
-2. **Broadcast**
+### Chat Messages
 
 ```javascript
-// Server -> All Clients in Room
-{
-  "event": "audio_analyzed",
-  "data": {
-    "universeId": "universe-123",
-    "analysis": {
-      "frequencies": [/* frequency data */],
-      "waveform": [/* waveform data */],
-      "timestamp": "2024-03-21T10:30:00Z"
-    }
-  }
-}
+// Client -> Server
+socket.emit('collaboration:message', {
+  universe_id: 'xxx',
+  user_id: 'yyy',
+  message: 'Hello!',
+});
+
+// Server -> Client
+socket.on('collaboration:message', data => {
+  const { universe_id, user_id, message } = data;
+});
 ```
 
-## Participant Management
+## System Events
 
-### Participant Joined
+### Error Events
 
 ```javascript
-// Server -> All Clients in Room
-{
-  "event": "participant_joined",
-  "data": {
-    "universeId": "universe-123",
-    "participant": {
-      "userId": "user-123",
-      "username": "john_doe",
-      "mode": "edit"
+socket.on('system:error', data => {
+  const { code, message, details } = data;
+});
+```
+
+### Notification Events
+
+```javascript
+socket.on('system:notification', data => {
+  const { type, message, data } = data;
+});
+```
+
+### Maintenance Events
+
+```javascript
+socket.on('system:maintenance', data => {
+  const { type, message, estimated_duration } = data;
+});
+```
+
+## State Management
+
+### Initial State
+
+```javascript
+socket.on('state:initial', data => {
+  const { universe, parameters, participants, history } = data;
+});
+```
+
+### State Sync
+
+```javascript
+socket.emit('state:sync', {
+  universe_id: 'xxx',
+  last_sync: timestamp,
+});
+
+socket.on('state:synced', data => {
+  const { universe_id, state, timestamp } = data;
+});
+```
+
+## Performance Optimization
+
+### Message Batching
+
+```javascript
+// Batch multiple parameter updates
+socket.emit('parameter:batch_update', {
+  universe_id: 'xxx',
+  updates: [
+    {
+      category: 'physics',
+      parameters: { gravity: 15.0 },
     },
-    "timestamp": "2024-03-21T10:30:00Z"
-  }
-}
+    {
+      category: 'music',
+      parameters: { tempo: 120 },
+    },
+  ],
+});
 ```
 
-### Participant Left
+### Delta Updates
 
 ```javascript
-// Server -> All Clients in Room
-{
-  "event": "participant_left",
-  "data": {
-    "universeId": "universe-123",
-    "userId": "user-123",
-    "timestamp": "2024-03-21T10:30:00Z"
-  }
-}
+socket.emit('parameter:delta', {
+  universe_id: 'xxx',
+  category: 'physics',
+  changes: {
+    gravity: { from: 10.0, to: 15.0 },
+  },
+});
 ```
 
 ## Error Handling
 
-### Common Error Codes
-
-- `AUTH_ERROR`: Authentication failed
-- `NOT_FOUND`: Resource not found
-- `PERMISSION_DENIED`: Insufficient permissions
-- `INVALID_PARAMETERS`: Invalid parameter values
-- `ROOM_FULL`: Maximum participants reached
-- `RATE_LIMITED`: Too many requests
-- `INTERNAL_ERROR`: Server error
-
-### Error Response Format
+### Reconnection
 
 ```javascript
-{
-  "event": "error",
-  "data": {
-    "code": "ERROR_CODE",
-    "message": "Human readable error message",
-    "details": {
-      // Additional error details
-    }
-  }
-}
-```
+socket.io.on('reconnect_attempt', attempt => {
+  console.log(`Reconnection attempt ${attempt}`);
+});
 
-## Rate Limiting
-
-- Maximum 60 parameter updates per minute per client
-- Maximum 10 music generation requests per minute per client
-- Maximum 30 room join/leave operations per minute per client
-
-## Reconnection
-
-### Automatic Reconnection
-
-The client should implement exponential backoff for reconnection attempts:
-
-```javascript
-const socket = io('wss://yourdomain.com/ws', {
-  reconnection: true,
-  reconnectionAttempts: 10,
-  reconnectionDelay: 1000,
-  reconnectionDelayMax: 5000,
-  randomizationFactor: 0.5,
+socket.io.on('reconnect_failed', () => {
+  console.log('Failed to reconnect');
 });
 ```
 
-### State Recovery
+### Error Codes
 
-Upon reconnection, the server will automatically:
+```javascript
+const ERROR_CODES = {
+  UNAUTHORIZED: 'unauthorized',
+  INVALID_UNIVERSE: 'invalid_universe',
+  INVALID_PARAMETERS: 'invalid_parameters',
+  RATE_LIMITED: 'rate_limited',
+  SERVER_ERROR: 'server_error',
+};
+```
 
-1. Rejoin the client to their previous room
-2. Send current parameter values
-3. Send current participant list
-4. Send any missed updates that occurred during disconnection
+## Security
 
-## Performance Considerations
-
-1. **Message Size**
-
-   - Keep messages under 16KB when possible
-   - Use compression for larger payloads
-   - Batch updates when appropriate
-
-2. **Update Frequency**
-
-   - Throttle rapid parameter updates
-   - Implement debouncing on the client side
-   - Use delta updates for large datasets
-
-3. **Connection Management**
-   - Implement heartbeat mechanism
-   - Monitor connection quality
-   - Handle disconnections gracefully
-
-## Security Considerations
-
-1. **Authentication**
-
-   - Use secure WebSocket (WSS)
-   - Validate JWT on every message
-   - Implement token refresh mechanism
-
-2. **Authorization**
-
-   - Verify universe access permissions
-   - Validate edit/view modes
-   - Check rate limits per user
-
-3. **Data Validation**
-   - Validate all incoming messages
-   - Sanitize user input
-   - Implement message size limits
-
-## Debugging
-
-### Client-side Logging
+### Authentication
 
 ```javascript
 socket.on('connect', () => {
-  console.log('Connected to WebSocket server');
+  socket.emit('authenticate', { token: 'JWT_TOKEN' });
 });
 
-socket.on('connect_error', error => {
-  console.error('Connection error:', error);
+socket.on('authenticated', () => {
+  console.log('Successfully authenticated');
 });
+```
 
-// Enable debug mode
-const socket = io('wss://yourdomain.com/ws', {
+### Rate Limiting
+
+```javascript
+socket.on('rate_limit', data => {
+  const { limit, remaining, reset_at } = data;
+});
+```
+
+## Development Tools
+
+### Debug Mode
+
+```javascript
+const socket = io('wss://api.harmonic-universe.com', {
   debug: true,
+  debugLevel: 3,
 });
 ```
 
-### Server-side Logging
+### Event Logging
 
-```python
-@socketio.on_error()
-def error_handler(e):
-    logger.error(f"WebSocket error: {str(e)}")
-    return {"error": str(e)}
+```javascript
+socket.onAny((event, ...args) => {
+  console.log(`[WebSocket] ${event}:`, args);
+});
 ```
-
-## Best Practices
-
-1. **Connection Management**
-
-   - Implement proper cleanup on component unmount
-   - Handle reconnection gracefully
-   - Monitor connection state
-
-2. **Error Handling**
-
-   - Implement comprehensive error handling
-   - Provide meaningful error messages
-   - Log errors appropriately
-
-3. **Performance**
-
-   - Batch updates when possible
-   - Implement debouncing
-   - Monitor message sizes
-
-4. **Testing**
-   - Test reconnection scenarios
-   - Verify error handling
-   - Test with various network conditions
