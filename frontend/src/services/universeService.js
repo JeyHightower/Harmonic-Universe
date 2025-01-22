@@ -1,27 +1,27 @@
-import api from './api';
+import api from '../services/api';
 
 export const universeService = {
-  getAllUniverses: async () => {
+  async getUniverses() {
     const response = await api.get('/api/universes');
     return response.data;
   },
 
-  getUniverseById: async id => {
+  async getUniverse(id) {
     const response = await api.get(`/api/universes/${id}`);
     return response.data;
   },
 
-  createUniverse: async universeData => {
-    const response = await api.post('/api/universes', universeData);
+  async createUniverse(data) {
+    const response = await api.post('/api/universes', data);
     return response.data;
   },
 
-  updateUniverse: async (id, universeData) => {
-    const response = await api.put(`/api/universes/${id}`, universeData);
+  async updateUniverse(id, data) {
+    const response = await api.put(`/api/universes/${id}`, data);
     return response.data;
   },
 
-  deleteUniverse: async id => {
+  async deleteUniverse(id) {
     await api.delete(`/api/universes/${id}`);
   },
 

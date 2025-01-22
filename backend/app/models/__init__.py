@@ -11,6 +11,7 @@ from .storyboard import Storyboard, StoryboardPoint
 from .audio_parameters import AudioParameters
 from .visualization_parameters import VisualizationParameters
 from .version import Version
+from .notification import Notification
 
 __all__ = [
     'db',
@@ -25,5 +26,6 @@ __all__ = [
     'StoryboardPoint',
     'AudioParameters',
     'VisualizationParameters',
-    'Version'
+    'Version',
+    'Notification'
 ]

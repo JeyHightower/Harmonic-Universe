@@ -4,7 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from app.models.user import User
 from app.extensions import db, limiter
 
-auth_bp = Blueprint('auth', __name__)
+auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 
 @auth_bp.route('/register', methods=['POST'])
 @limiter.limit("30 per hour")
@@ -18,13 +18,14 @@ def register():
                 'message': 'No data provided'
             }), 400
 
+        username = data.get('username')
         email = data.get('email')
         password = data.get('password')
 
-        if not email or not password:
+        if not username or not email or not password:
             return jsonify({
                 'status': 'error',
-                'message': 'Email and password are required'
+                'message': 'Username, email and password are required'
             }), 400
 
         if User.query.filter_by(email=email).first():
@@ -33,7 +34,14 @@ def register():
                 'message': 'Email already registered'
             }), 409
 
-        user = User(email=email, password=password)
+        if User.query.filter_by(username=username).first():
+            return jsonify({
+                'status': 'error',
+                'message': 'Username already taken'
+            }), 409
+
+        user = User(username=username, email=email)
+        user.set_password(password)
         db.session.add(user)
         db.session.commit()
 
@@ -119,7 +127,7 @@ def validate_token():
             'message': str(e)
         }), 500
 
-@auth_bp.route('/api/auth/logout', methods=['POST'])
+@auth_bp.route('/logout', methods=['POST'])
 @jwt_required()
 def logout():
     return jsonify({
@@ -127,7 +135,7 @@ def logout():
         'message': 'Successfully logged out'
     }), 200
 
-@auth_bp.route('/api/auth/me', methods=['GET'])
+@auth_bp.route('/me', methods=['GET'])
 @jwt_required()
 @limiter.limit("30 per minute")
 def get_current_user():

@@ -1,257 +1,315 @@
-describe('Authentication and User Management', () => {
+describe('Authentication Features', () => {
   beforeEach(() => {
-    cy.intercept('POST', '/api/auth/login', {
-      statusCode: 200,
-      body: {
-        user: { id: 1, username: 'testuser' },
-        token: 'fake-jwt-token',
-      },
-    }).as('loginRequest');
-
-    cy.intercept('POST', '/api/auth/register', {
-      statusCode: 201,
-      body: {
-        user: { id: 1, username: 'newuser' },
-        token: 'fake-jwt-token',
-      },
-    }).as('registerRequest');
+    // Clear localStorage before each test
+    cy.clearLocalStorage();
   });
 
-  describe('Authentication', () => {
-    it('should handle user registration', () => {
+  describe('Registration', () => {
+    beforeEach(() => {
       cy.visit('/register');
+    });
 
-      // Fill registration form
-      cy.get('[data-testid="register-username"]').type('newuser');
-      cy.get('[data-testid="register-email"]').type('newuser@example.com');
-      cy.get('[data-testid="register-password"]').type('password123');
-      cy.get('[data-testid="register-confirm-password"]').type('password123');
+    it('should register a new user successfully', () => {
+      cy.intercept('POST', '/api/auth/register', {
+        statusCode: 200,
+        body: {
+          user: {
+            id: 1,
+            username: 'testuser',
+            email: 'test@example.com',
+          },
+          token: 'fake-jwt-token',
+        },
+      }).as('registerRequest');
+
+      // Fill out registration form
+      cy.get('[data-testid="register-username"]').type('testuser');
+      cy.get('[data-testid="register-email"]').type('test@example.com');
+      cy.get('[data-testid="register-password"]').type('Password123!');
+      cy.get('[data-testid="register-confirm-password"]').type('Password123!');
       cy.get('[data-testid="register-submit"]').click();
 
+      // Wait for registration request
       cy.wait('@registerRequest');
+
+      // Should redirect to dashboard
       cy.url().should('include', '/dashboard');
-      cy.get('[data-testid="user-menu"]').should('contain', 'newuser');
+
+      // Should show user info in header
+      cy.get('[data-testid="user-menu"]').should('contain', 'testuser');
+
+      // Should store token in localStorage
+      cy.window().its('localStorage.token').should('exist');
     });
 
-    it('should handle login', () => {
-      cy.visit('/login');
+    it('should validate registration form fields', () => {
+      // Try to submit empty form
+      cy.get('[data-testid="register-submit"]').click();
 
-      // Fill login form
+      // Check validation messages
+      cy.get('[data-testid="username-error"]')
+        .should('be.visible')
+        .and('contain', 'Username is required');
+      cy.get('[data-testid="email-error"]')
+        .should('be.visible')
+        .and('contain', 'Email is required');
+      cy.get('[data-testid="password-error"]')
+        .should('be.visible')
+        .and('contain', 'Password is required');
+    });
+
+    it('should validate password requirements', () => {
+      cy.get('[data-testid="register-username"]').type('testuser');
+      cy.get('[data-testid="register-email"]').type('test@example.com');
+      cy.get('[data-testid="register-password"]').type('weak');
+      cy.get('[data-testid="register-confirm-password"]').type('weak');
+      cy.get('[data-testid="register-submit"]').click();
+
+      cy.get('[data-testid="password-error"]')
+        .should('be.visible')
+        .and('contain', 'Password must be at least 8 characters');
+    });
+
+    it('should validate password confirmation match', () => {
+      cy.get('[data-testid="register-username"]').type('testuser');
+      cy.get('[data-testid="register-email"]').type('test@example.com');
+      cy.get('[data-testid="register-password"]').type('Password123!');
+      cy.get('[data-testid="register-confirm-password"]').type(
+        'DifferentPass123!'
+      );
+      cy.get('[data-testid="register-submit"]').click();
+
+      cy.get('[data-testid="confirm-password-error"]')
+        .should('be.visible')
+        .and('contain', 'Passwords do not match');
+    });
+
+    it('should handle registration errors', () => {
+      cy.intercept('POST', '/api/auth/register', {
+        statusCode: 400,
+        body: {
+          error: 'Email already exists',
+        },
+      }).as('registerError');
+
+      cy.get('[data-testid="register-username"]').type('testuser');
+      cy.get('[data-testid="register-email"]').type('existing@example.com');
+      cy.get('[data-testid="register-password"]').type('Password123!');
+      cy.get('[data-testid="register-confirm-password"]').type('Password123!');
+      cy.get('[data-testid="register-submit"]').click();
+
+      cy.wait('@registerError');
+      cy.get('[data-testid="register-error"]')
+        .should('be.visible')
+        .and('contain', 'Email already exists');
+    });
+  });
+
+  describe('Login', () => {
+    beforeEach(() => {
+      cy.visit('/login');
+    });
+
+    it('should login successfully', () => {
+      cy.intercept('POST', '/api/auth/login', {
+        statusCode: 200,
+        body: {
+          user: {
+            id: 1,
+            username: 'testuser',
+            email: 'test@example.com',
+          },
+          token: 'fake-jwt-token',
+        },
+      }).as('loginRequest');
+
+      // Fill out login form
       cy.get('[data-testid="login-email"]').type('test@example.com');
-      cy.get('[data-testid="login-password"]').type('password123');
+      cy.get('[data-testid="login-password"]').type('Password123!');
       cy.get('[data-testid="login-submit"]').click();
 
+      // Wait for login request
       cy.wait('@loginRequest');
+
+      // Should redirect to dashboard
       cy.url().should('include', '/dashboard');
+
+      // Should show user info in header
+      cy.get('[data-testid="user-menu"]').should('contain', 'testuser');
+
+      // Should store token in localStorage
+      cy.window().its('localStorage.token').should('exist');
     });
 
-    it('should handle password reset', () => {
-      // Mock password reset request
-      cy.intercept('POST', '/api/auth/reset-password', {
+    it('should validate login form fields', () => {
+      // Try to submit empty form
+      cy.get('[data-testid="login-submit"]').click();
+
+      // Check validation messages
+      cy.get('[data-testid="email-error"]')
+        .should('be.visible')
+        .and('contain', 'Email is required');
+      cy.get('[data-testid="password-error"]')
+        .should('be.visible')
+        .and('contain', 'Password is required');
+    });
+
+    it('should handle invalid credentials', () => {
+      cy.intercept('POST', '/api/auth/login', {
+        statusCode: 401,
+        body: {
+          error: 'Invalid email or password',
+        },
+      }).as('loginError');
+
+      cy.get('[data-testid="login-email"]').type('wrong@example.com');
+      cy.get('[data-testid="login-password"]').type('WrongPass123!');
+      cy.get('[data-testid="login-submit"]').click();
+
+      cy.wait('@loginError');
+      cy.get('[data-testid="login-error"]')
+        .should('be.visible')
+        .and('contain', 'Invalid email or password');
+    });
+
+    it('should handle server errors', () => {
+      cy.intercept('POST', '/api/auth/login', {
+        statusCode: 500,
+        body: {
+          error: 'Internal server error',
+        },
+      }).as('loginServerError');
+
+      cy.get('[data-testid="login-email"]').type('test@example.com');
+      cy.get('[data-testid="login-password"]').type('Password123!');
+      cy.get('[data-testid="login-submit"]').click();
+
+      cy.wait('@loginServerError');
+      cy.get('[data-testid="login-error"]')
+        .should('be.visible')
+        .and('contain', 'Internal server error');
+    });
+  });
+
+  describe('Logout', () => {
+    beforeEach(() => {
+      // Login first
+      cy.login();
+    });
+
+    it('should logout successfully', () => {
+      cy.intercept('POST', '/api/auth/logout', {
+        statusCode: 200,
+        body: {
+          success: true,
+        },
+      }).as('logoutRequest');
+
+      // Click logout button
+      cy.get('[data-testid="user-menu"]').click();
+      cy.get('[data-testid="logout-button"]').click();
+
+      // Wait for logout request
+      cy.wait('@logoutRequest');
+
+      // Should redirect to login page
+      cy.url().should('include', '/login');
+
+      // Should remove token from localStorage
+      cy.window().its('localStorage.token').should('not.exist');
+
+      // Should not show user menu
+      cy.get('[data-testid="user-menu"]').should('not.exist');
+    });
+  });
+
+  describe('Protected Routes', () => {
+    it('should redirect to login when accessing protected route', () => {
+      cy.visit('/dashboard');
+
+      // Should redirect to login
+      cy.url().should('include', '/login');
+
+      // Should show message
+      cy.get('[data-testid="auth-required"]')
+        .should('be.visible')
+        .and('contain', 'Please login to continue');
+    });
+
+    it('should maintain intended destination after login', () => {
+      // Try to access protected route
+      cy.visit('/dashboard');
+
+      // Should redirect to login
+      cy.url().should('include', '/login');
+
+      // Login
+      cy.login();
+
+      // Should redirect back to intended destination
+      cy.url().should('include', '/dashboard');
+    });
+  });
+
+  describe('Password Reset', () => {
+    it('should request password reset', () => {
+      cy.intercept('POST', '/api/auth/forgot-password', {
         statusCode: 200,
         body: {
           message: 'Password reset email sent',
         },
       }).as('resetRequest');
 
-      cy.visit('/reset-password');
+      cy.visit('/forgot-password');
 
-      // Request password reset
       cy.get('[data-testid="reset-email"]').type('test@example.com');
       cy.get('[data-testid="reset-submit"]').click();
+
       cy.wait('@resetRequest');
-
-      // Verify success message
-      cy.get('[data-testid="reset-success"]').should('be.visible');
-    });
-
-    it('should handle logout', () => {
-      // Mock logout request
-      cy.intercept('POST', '/api/auth/logout', {
-        statusCode: 200,
-      }).as('logoutRequest');
-
-      // Login first
-      cy.visit('/login');
-      cy.get('[data-testid="login-email"]').type('test@example.com');
-      cy.get('[data-testid="login-password"]').type('password123');
-      cy.get('[data-testid="login-submit"]').click();
-      cy.wait('@loginRequest');
-
-      // Perform logout
-      cy.get('[data-testid="user-menu"]').click();
-      cy.get('[data-testid="logout-button"]').click();
-      cy.wait('@logoutRequest');
-
-      // Verify redirect to login
-      cy.url().should('include', '/login');
-    });
-  });
-
-  describe('Profile Management', () => {
-    beforeEach(() => {
-      // Mock profile data
-      cy.intercept('GET', '/api/users/1/profile', {
-        statusCode: 200,
-        body: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-          avatar: 'https://example.com/avatar.jpg',
-          preferences: {
-            theme: 'light',
-            notifications: {
-              email: true,
-              push: true,
-            },
-          },
-        },
-      }).as('getProfile');
-
-      // Login and visit profile
-      cy.visit('/login');
-      cy.get('[data-testid="login-email"]').type('test@example.com');
-      cy.get('[data-testid="login-password"]').type('password123');
-      cy.get('[data-testid="login-submit"]').click();
-      cy.wait('@loginRequest');
-
-      cy.visit('/profile');
-      cy.wait('@getProfile');
-    });
-
-    it('should update profile information', () => {
-      // Mock profile update
-      cy.intercept('PUT', '/api/users/1/profile', {
-        statusCode: 200,
-        body: {
-          username: 'updateduser',
-          email: 'updated@example.com',
-        },
-      }).as('updateProfile');
-
-      // Update profile
-      cy.get('[data-testid="edit-profile"]').click();
-      cy.get('[data-testid="profile-username"]').clear().type('updateduser');
-      cy.get('[data-testid="profile-email"]')
-        .clear()
-        .type('updated@example.com');
-      cy.get('[data-testid="save-profile"]').click();
-      cy.wait('@updateProfile');
-
-      // Verify updates
-      cy.get('[data-testid="profile-username"]').should(
-        'have.value',
-        'updateduser'
-      );
-      cy.get('[data-testid="profile-email"]').should(
-        'have.value',
-        'updated@example.com'
-      );
-    });
-
-    it('should handle avatar upload', () => {
-      // Mock avatar upload
-      cy.intercept('POST', '/api/users/1/avatar', {
-        statusCode: 200,
-        body: {
-          avatar: 'https://example.com/new-avatar.jpg',
-        },
-      }).as('uploadAvatar');
-
-      // Upload avatar
-      cy.get('[data-testid="avatar-upload"]').attachFile({
-        fileContent: 'test image content',
-        fileName: 'avatar.jpg',
-        mimeType: 'image/jpeg',
-      });
-      cy.wait('@uploadAvatar');
-
-      // Verify avatar update
-      cy.get('[data-testid="user-avatar"]')
-        .should('have.attr', 'src')
-        .and('include', 'new-avatar.jpg');
-    });
-
-    it('should manage user preferences', () => {
-      // Mock preferences update
-      cy.intercept('PUT', '/api/users/1/preferences', {
-        statusCode: 200,
-        body: {
-          theme: 'dark',
-          notifications: {
-            email: false,
-            push: true,
-          },
-        },
-      }).as('updatePreferences');
-
-      // Update preferences
-      cy.get('[data-testid="preferences-tab"]').click();
-      cy.get('[data-testid="theme-selector"]').select('dark');
-      cy.get('[data-testid="email-notifications"]').uncheck();
-      cy.get('[data-testid="save-preferences"]').click();
-      cy.wait('@updatePreferences');
-
-      // Verify updates
-      cy.get('[data-testid="theme-selector"]').should('have.value', 'dark');
-      cy.get('[data-testid="email-notifications"]').should('not.be.checked');
-    });
-  });
-
-  describe('Error Handling', () => {
-    it('should handle invalid login', () => {
-      cy.intercept('POST', '/api/auth/login', {
-        statusCode: 401,
-        body: {
-          error: 'Invalid credentials',
-        },
-      }).as('failedLogin');
-
-      cy.visit('/login');
-      cy.get('[data-testid="login-email"]').type('wrong@example.com');
-      cy.get('[data-testid="login-password"]').type('wrongpassword');
-      cy.get('[data-testid="login-submit"]').click();
-      cy.wait('@failedLogin');
-
-      cy.get('[data-testid="login-error"]')
+      cy.get('[data-testid="reset-success"]')
         .should('be.visible')
-        .and('contain', 'Invalid credentials');
+        .and('contain', 'Password reset email sent');
     });
 
-    it('should handle registration validation', () => {
-      cy.intercept('POST', '/api/auth/register', {
+    it('should reset password with valid token', () => {
+      cy.intercept('POST', '/api/auth/reset-password', {
+        statusCode: 200,
+        body: {
+          message: 'Password reset successful',
+        },
+      }).as('passwordReset');
+
+      cy.visit('/reset-password?token=valid-token');
+
+      cy.get('[data-testid="new-password"]').type('NewPassword123!');
+      cy.get('[data-testid="confirm-new-password"]').type('NewPassword123!');
+      cy.get('[data-testid="reset-submit"]').click();
+
+      cy.wait('@passwordReset');
+      cy.url().should('include', '/login');
+      cy.get('[data-testid="reset-success"]')
+        .should('be.visible')
+        .and('contain', 'Password reset successful');
+    });
+
+    it('should handle invalid reset token', () => {
+      cy.intercept('POST', '/api/auth/reset-password', {
         statusCode: 400,
         body: {
-          error: 'Email already exists',
+          error: 'Invalid or expired reset token',
         },
-      }).as('failedRegister');
+      }).as('invalidReset');
 
-      cy.visit('/register');
-      cy.get('[data-testid="register-username"]').type('existinguser');
-      cy.get('[data-testid="register-email"]').type('existing@example.com');
-      cy.get('[data-testid="register-password"]').type('password123');
-      cy.get('[data-testid="register-confirm-password"]').type('password123');
-      cy.get('[data-testid="register-submit"]').click();
-      cy.wait('@failedRegister');
+      cy.visit('/reset-password?token=invalid-token');
 
-      cy.get('[data-testid="register-error"]')
+      cy.get('[data-testid="new-password"]').type('NewPassword123!');
+      cy.get('[data-testid="confirm-new-password"]').type('NewPassword123!');
+      cy.get('[data-testid="reset-submit"]').click();
+
+      cy.wait('@invalidReset');
+      cy.get('[data-testid="reset-error"]')
         .should('be.visible')
-        .and('contain', 'Email already exists');
-    });
-
-    it('should handle network errors', () => {
-      cy.intercept('POST', '/api/auth/login', {
-        forceNetworkError: true,
-      }).as('networkError');
-
-      cy.visit('/login');
-      cy.get('[data-testid="login-email"]').type('test@example.com');
-      cy.get('[data-testid="login-password"]').type('password123');
-      cy.get('[data-testid="login-submit"]').click();
-
-      cy.get('[data-testid="network-error"]')
-        .should('be.visible')
-        .and('contain', 'Network error');
+        .and('contain', 'Invalid or expired reset token');
     });
   });
 });

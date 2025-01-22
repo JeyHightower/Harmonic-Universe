@@ -1,11 +1,13 @@
 import json
 import pytest
 from app.models import Universe, User
+from unittest.mock import patch
+from app.extensions import db
 
 def test_create_universe(client, session, auth_headers):
     """Test creating a universe with valid parameters."""
     data = {
-        'title': 'Test Universe',
+        'name': 'Test Universe',
         'description': 'A test universe',
         'is_public': True,
         'physics_parameters': {
@@ -27,9 +29,7 @@ def test_create_universe(client, session, auth_headers):
                          json=data,
                          headers=auth_headers)
     assert response.status_code == 201
-    response_data = json.loads(response.data)
-    assert 'universe' in response_data
-    assert response_data['universe']['title'] == 'Test Universe'
+    assert response.json['universe']['name'] == 'Test Universe'
 
 def test_create_universe_invalid_parameters(client, auth_headers):
     """Test creating a universe with invalid parameters."""
@@ -38,10 +38,12 @@ def test_create_universe_invalid_parameters(client, auth_headers):
                          json={},
                          headers=auth_headers)
     assert response.status_code == 400
+    assert response.json['status'] == 'error'
+    assert response.json['message'] == 'Name is required'
 
     # Test invalid physics parameters
     data = {
-        'title': 'Test Universe',
+        'name': 'Test Universe',
         'description': 'A test universe',
         'physics_parameters': {
             'gravity': -1,  # Invalid negative gravity
@@ -55,7 +57,7 @@ def test_create_universe_invalid_parameters(client, auth_headers):
 
     # Test invalid music parameters
     data = {
-        'title': 'Test Universe',
+        'name': 'Test Universe',
         'description': 'A test universe',
         'music_parameters': {
             'tempo': -120,  # Invalid negative tempo
@@ -76,22 +78,20 @@ def test_update_physics_parameters(client, session, auth_headers):
 
     # Update physics parameters
     data = {
-        'physics_parameters': {
-            'gravity': 5.0,
-            'friction': 0.3,
-            'elasticity': 0.8,
-            'air_resistance': 0.2,
-            'density': 1.2,
-            'time_scale': 1.5
-        }
+        'gravity': 5.0,
+        'friction': 0.3,
+        'elasticity': 0.8,
+        'air_resistance': 0.2,
+        'density': 1.2,
+        'time_scale': 1.5
     }
-    response = client.put(f'/api/universes/{universe.id}',
+    response = client.put(f'/api/universes/{universe.id}/physics',
                        json=data,
                        headers=auth_headers)
     assert response.status_code == 200
     response_data = json.loads(response.data)
-    assert response_data['physics_parameters']['gravity'] == 5.0
-    assert response_data['physics_parameters']['time_scale'] == 1.5
+    assert response_data['universe']['physics_parameters']['gravity'] == 5.0
+    assert response_data['universe']['physics_parameters']['time_scale'] == 1.5
 
 def test_update_music_parameters(client, session, auth_headers):
     """Test updating music parameters of a universe."""
@@ -102,22 +102,19 @@ def test_update_music_parameters(client, session, auth_headers):
 
     # Update music parameters
     data = {
-        'music_parameters': {
-            'harmony': 0.8,
-            'tempo': 140,
-            'key': 'G',
-            'scale': 'minor',
-            'rhythm_complexity': 0.7,
-            'melody_range': 0.6
-        }
+        'tempo': 140,
+        'key': 'G',
+        'scale': 'minor',
+        'rhythm_complexity': 0.7,
+        'melody_range': 0.6
     }
-    response = client.put(f'/api/universes/{universe.id}',
+    response = client.put(f'/api/universes/{universe.id}/music',
                        json=data,
                        headers=auth_headers)
     assert response.status_code == 200
     response_data = json.loads(response.data)
-    assert response_data['music_parameters']['tempo'] == 140
-    assert response_data['music_parameters']['rhythm_complexity'] == 0.7
+    assert response_data['universe']['music_parameters']['tempo'] == 140
+    assert response_data['universe']['music_parameters']['rhythm_complexity'] == 0.7
 
 def test_update_visualization_parameters(client, session, auth_headers):
     """Test updating visualization parameters of a universe."""
@@ -128,35 +125,33 @@ def test_update_visualization_parameters(client, session, auth_headers):
 
     # Update visualization parameters
     data = {
-        'visualization_parameters': {
-            'brightness': 0.9,
-            'saturation': 0.8,
-            'complexity': 0.7,
-            'color_scheme': 'monochrome',
-            'background_color': '#000000',
-            'particle_color': '#FFFFFF',
-            'glow_color': '#00FF00',
-            'particle_count': 5000,
-            'particle_size': 2.5,
-            'particle_speed': 1.5,
-            'glow_intensity': 0.8,
-            'blur_amount': 0.3,
-            'trail_length': 0.6,
-            'animation_speed': 1.2,
-            'bounce_factor': 0.7,
-            'rotation_speed': 2.0,
-            'camera_zoom': 1.5,
-            'camera_rotation': 45
-        }
+        'brightness': 0.9,
+        'saturation': 0.8,
+        'complexity': 0.7,
+        'color_scheme': 'monochrome',
+        'background_color': '#000000',
+        'particle_color': '#FFFFFF',
+        'glow_color': '#00FF00',
+        'particle_count': 5000,
+        'particle_size': 2.5,
+        'particle_speed': 1.5,
+        'glow_intensity': 0.8,
+        'blur_amount': 0.3,
+        'trail_length': 0.6,
+        'animation_speed': 1.2,
+        'bounce_factor': 0.7,
+        'rotation_speed': 2.0,
+        'camera_zoom': 1.5,
+        'camera_rotation': 45
     }
-    response = client.put(f'/api/universes/{universe.id}',
+    response = client.put(f'/api/universes/{universe.id}/visualization',
                        json=data,
                        headers=auth_headers)
     assert response.status_code == 200
     response_data = json.loads(response.data)
-    assert response_data['visualization_parameters']['brightness'] == 0.9
-    assert response_data['visualization_parameters']['particle_count'] == 5000
-    assert response_data['visualization_parameters']['camera_zoom'] == 1.5
+    assert response_data['universe']['visualization_parameters']['brightness'] == 0.9
+    assert response_data['universe']['visualization_parameters']['particle_count'] == 5000
+    assert response_data['universe']['visualization_parameters']['camera_zoom'] == 1.5
 
 def test_invalid_parameters(client, session, auth_headers):
     """Test validation of invalid parameters."""
@@ -166,12 +161,10 @@ def test_invalid_parameters(client, session, auth_headers):
 
     # Test invalid physics parameters
     data = {
-        'physics_parameters': {
-            'gravity': -1.0,  # Invalid negative gravity
-            'time_scale': 0.05  # Below minimum
-        }
+        'gravity': -1.0,  # Invalid negative gravity
+        'time_scale': 0.05  # Below minimum
     }
-    response = client.put(f'/api/universes/{universe.id}',
+    response = client.put(f'/api/universes/{universe.id}/physics',
                        json=data,
                        headers=auth_headers)
     assert response.status_code == 400
@@ -180,13 +173,11 @@ def test_invalid_parameters(client, session, auth_headers):
 
     # Test invalid music parameters
     data = {
-        'music_parameters': {
-            'tempo': 300,  # Above maximum
-            'key': 'H',  # Invalid key
-            'rhythm_complexity': 1.5  # Above maximum
-        }
+        'tempo': 300,  # Above maximum
+        'key': 'H',  # Invalid key
+        'rhythm_complexity': 1.5  # Above maximum
     }
-    response = client.put(f'/api/universes/{universe.id}',
+    response = client.put(f'/api/universes/{universe.id}/music',
                        json=data,
                        headers=auth_headers)
     assert response.status_code == 400
@@ -196,13 +187,11 @@ def test_invalid_parameters(client, session, auth_headers):
 
     # Test invalid visualization parameters
     data = {
-        'visualization_parameters': {
-            'particle_count': 50,  # Below minimum
-            'camera_rotation': 400,  # Above maximum
-            'color_scheme': 'invalid'  # Invalid scheme
-        }
+        'particle_count': 50,  # Below minimum
+        'camera_rotation': 400,  # Above maximum
+        'color_scheme': 'invalid'  # Invalid scheme
     }
-    response = client.put(f'/api/universes/{universe.id}',
+    response = client.put(f'/api/universes/{universe.id}/visualization',
                        json=data,
                        headers=auth_headers)
     assert response.status_code == 400
@@ -215,23 +204,23 @@ def test_filter_universes_by_visibility(client, session, auth_headers):
     # Create test universes
     user = User.query.get(1)
     universes = [
-        Universe(title='Public Universe 1', is_public=True, user_id=user.id),
-        Universe(title='Private Universe 1', is_public=False, user_id=user.id),
-        Universe(title='Public Universe 2', is_public=True, user_id=user.id)
+        Universe(name='Public Universe 1', is_public=True, user_id=user.id),
+        Universe(name='Private Universe 1', is_public=False, user_id=user.id),
+        Universe(name='Public Universe 2', is_public=True, user_id=user.id)
     ]
     for universe in universes:
         session.add(universe)
     session.commit()
 
     # Test filtering public universes
-    response = client.get('/api/universes?visibility=public',
+    response = client.get('/api/universes/public',
                          headers=auth_headers)
     assert response.status_code == 200
     response_data = json.loads(response.data)
     assert len(response_data['universes']) == 2
 
     # Test filtering private universes
-    response = client.get('/api/universes?visibility=private',
+    response = client.get('/api/universes/private',
                          headers=auth_headers)
     assert response.status_code == 200
     response_data = json.loads(response.data)
@@ -242,31 +231,31 @@ def test_search_universes_by_title(client, session, auth_headers):
     # Create test universes
     user = User.query.get(1)
     universes = [
-        Universe(title='Harmonic Universe', is_public=True, user_id=user.id),
-        Universe(title='Cosmic Symphony', is_public=True, user_id=user.id),
-        Universe(title='Musical Galaxy', is_public=True, user_id=user.id)
+        Universe(name='Harmonic Universe', is_public=True, user_id=user.id),
+        Universe(name='Cosmic Symphony', is_public=True, user_id=user.id),
+        Universe(name='Musical Galaxy', is_public=True, user_id=user.id)
     ]
     for universe in universes:
         session.add(universe)
     session.commit()
 
     # Test search with matching query
-    response = client.get('/api/universes?search=harmonic',
+    response = client.get('/api/universes/search?q=harmonic',
                          headers=auth_headers)
     assert response.status_code == 200
     response_data = json.loads(response.data)
     assert len(response_data['universes']) == 1
-    assert response_data['universes'][0]['title'] == 'Harmonic Universe'
+    assert response_data['universes'][0]['name'] == 'Harmonic Universe'
 
     # Test search with partial match
-    response = client.get('/api/universes?search=universe',
+    response = client.get('/api/universes/search?q=universe',
                          headers=auth_headers)
     assert response.status_code == 200
     response_data = json.loads(response.data)
     assert len(response_data['universes']) == 1
 
     # Test search with no matches
-    response = client.get('/api/universes?search=nonexistent',
+    response = client.get('/api/universes/search?q=nonexistent',
                          headers=auth_headers)
     assert response.status_code == 200
     response_data = json.loads(response.data)
@@ -275,19 +264,20 @@ def test_search_universes_by_title(client, session, auth_headers):
 def test_get_universes(client, session, auth_headers):
     """Test getting all universes for a user."""
     # Create a test user
-    user = User(email='test@example.com', password='testpass123')
+    user = User(email='test@example.com', username='testuser')
+    user.set_password('testpass123')
     session.add(user)
     session.commit()
 
     # Create some test universes
     universe1 = Universe(
-        title='Universe 1',
+        name='Universe 1',
         description='First test universe',
         is_public=True,
         user_id=user.id
     )
     universe2 = Universe(
-        title='Universe 2',
+        name='Universe 2',
         description='Second test universe',
         is_public=True,
         user_id=user.id
@@ -303,18 +293,19 @@ def test_get_universes(client, session, auth_headers):
     response_data = json.loads(response.data)
     assert response_data['status'] == 'success'
     assert len(response_data['data']['universes']) == 2
-    assert response_data['data']['universes'][0]['title'] == 'Universe 1'
-    assert response_data['data']['universes'][1]['title'] == 'Universe 2'
+    assert response_data['data']['universes'][0]['name'] == 'Universe 1'
+    assert response_data['data']['universes'][1]['name'] == 'Universe 2'
 
 def test_get_universe(client, session, auth_headers):
     """Test getting a specific universe."""
     # Create test user and universe
-    user = User(email='test@example.com', password='testpass123')
+    user = User(email='test@example.com', username='testuser')
+    user.set_password('testpass123')
     session.add(user)
     session.commit()
 
     universe = Universe(
-        title='Test Universe',
+        name='Test Universe',
         description='A test universe',
         is_public=True,
         user_id=user.id
@@ -327,17 +318,18 @@ def test_get_universe(client, session, auth_headers):
     assert response.status_code == 200
     response_data = json.loads(response.data)
     assert response_data['status'] == 'success'
-    assert response_data['data']['universe']['title'] == 'Test Universe'
+    assert response_data['data']['universe']['name'] == 'Test Universe'
 
 def test_update_universe(client, session, auth_headers):
     """Test updating a universe."""
     # Create test user and universe
-    user = User(email='test@example.com', password='testpass123')
+    user = User(email='test@example.com', username='testuser')
+    user.set_password('testpass123')
     session.add(user)
     session.commit()
 
     universe = Universe(
-        title='Test Universe',
+        name='Test Universe',
         description='A test universe',
         is_public=True,
         user_id=user.id
@@ -346,7 +338,7 @@ def test_update_universe(client, session, auth_headers):
     session.commit()
 
     data = {
-        'title': 'Updated Universe',
+        'name': 'Updated Universe',
         'is_public': False
     }
     response = client.put(f'/api/universes/{universe.id}',
@@ -355,18 +347,19 @@ def test_update_universe(client, session, auth_headers):
     assert response.status_code == 200
     response_data = json.loads(response.data)
     assert response_data['status'] == 'success'
-    assert response_data['data']['universe']['title'] == 'Updated Universe'
+    assert response_data['data']['universe']['name'] == 'Updated Universe'
     assert not response_data['data']['universe']['is_public']
 
 def test_delete_universe(client, session, auth_headers):
     """Test deleting a universe."""
     # Create test user and universe
-    user = User(email='test@example.com', password='testpass123')
+    user = User(email='test@example.com', username='testuser')
+    user.set_password('testpass123')
     session.add(user)
     session.commit()
 
     universe = Universe(
-        title='Test Universe',
+        name='Test Universe',
         description='A test universe',
         is_public=True,
         user_id=user.id
@@ -377,7 +370,90 @@ def test_delete_universe(client, session, auth_headers):
     response = client.delete(f'/api/universes/{universe.id}',
                            headers=auth_headers)
     assert response.status_code == 200
-    assert json.loads(response.data)['message'] == 'Universe deleted successfully'
+    assert response.json['status'] == 'success'
+    assert response.json['message'] == 'Universe deleted successfully'
 
     # Verify universe is deleted
     assert Universe.query.get(universe.id) is None
+
+def test_create_universe_with_max_values(client, session, auth_headers):
+    """Test creating a universe with maximum allowed parameter values."""
+    data = {
+        'name': 'X' * 255,  # Max title length
+        'description': 'X' * 1000,  # Max description length
+        'is_public': True,
+        'physics_parameters': {
+            'gravity': 1000.0,  # Max gravity
+            'friction': 1.0,    # Max friction
+            'elasticity': 1.0,  # Max elasticity
+            'air_resistance': 1.0,
+            'density': 1000.0   # Max density
+        },
+        'music_parameters': {
+            'harmony': 1.0,
+            'tempo': 300,      # Max tempo
+            'key': 'B',
+            'scale': 'chromatic'
+        }
+    }
+
+    response = client.post('/api/universes',
+                         json=data,
+                         headers=auth_headers)
+    assert response.status_code == 201
+    response_data = json.loads(response.data)
+    assert response_data['universe']['name'] == 'X' * 255
+
+def test_create_universe_concurrent(client, session, auth_headers):
+    """Test creating multiple universes concurrently."""
+    import threading
+    import queue
+
+    results = queue.Queue()
+    num_universes = 5
+
+    def create_universe(i):
+        data = {
+            'name': f'Concurrent Universe {i}',
+            'description': f'Created in concurrent test {i}',
+            'is_public': True,
+            'physics_parameters': {
+                'gravity': 9.81,
+                'friction': 0.5
+            },
+            'music_parameters': {
+                'harmony': 1.0,
+                'tempo': 120
+            }
+        }
+        response = client.post('/api/universes',
+                             json=data,
+                             headers=auth_headers)
+        results.put((i, response.status_code))
+
+    threads = []
+    for i in range(num_universes):
+        thread = threading.Thread(target=create_universe, args=(i,))
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
+    while not results.empty():
+        _, status_code = results.get()
+        assert status_code == 201
+
+def test_create_universe_with_special_characters(client, session, auth_headers):
+    """Test creating a universe with special characters in title and description."""
+    data = {
+        'name': '!@#$%^&*()_+-=[]{}|;:,.<>?',
+        'description': '¡™£¢∞§¶•ªº–≠œ∑´®†¥¨ˆøπ"'
+    }
+
+    response = client.post('/api/universes',
+                         json=data,
+                         headers=auth_headers)
+    assert response.status_code == 201
+    response_data = json.loads(response.data)
+    assert response_data['universe']['name'] == '!@#$%^&*()_+-=[]{}|;:,.<>?'

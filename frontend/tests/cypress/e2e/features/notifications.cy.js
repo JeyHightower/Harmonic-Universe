@@ -1,336 +1,188 @@
-describe('Notifications Features', () => {
+describe('Notifications', () => {
   beforeEach(() => {
-    // Mock authentication
-    cy.intercept('POST', '/api/auth/login', {
-      statusCode: 200,
-      body: {
-        user: { id: 1, username: 'testuser' },
-        token: 'fake-jwt-token',
-      },
-    }).as('loginRequest');
-
-    // Mock notifications list
+    cy.visit('/');
+    cy.login();
     cy.intercept('GET', '/api/notifications', {
       statusCode: 200,
       body: {
         notifications: [
           {
             id: 1,
-            type: 'collaboration',
-            message: 'User2 invited you to collaborate',
+            type: 'info',
+            message: 'Test notification',
             read: false,
-            createdAt: Date.now() - 1000,
-          },
-          {
-            id: 2,
-            type: 'system',
-            message: 'System maintenance scheduled',
-            read: true,
-            createdAt: Date.now() - 2000,
+            createdAt: '2024-01-01T00:00:00.000Z',
           },
         ],
-        unreadCount: 1,
       },
     }).as('getNotifications');
-
-    // Login and navigate
-    cy.visit('/login');
-    cy.get('[data-testid="login-email"]').type('test@example.com');
-    cy.get('[data-testid="login-password"]').type('password123');
-    cy.get('[data-testid="login-submit"]').click();
-    cy.wait('@loginRequest');
-
-    cy.visit('/notifications');
-    cy.wait('@getNotifications');
   });
 
   describe('Notification Display', () => {
-    it('should display notification list', () => {
-      cy.get('[data-testid="notifications-list"]').within(() => {
-        cy.get('[data-testid="notification-1"]')
-          .should('contain', 'User2 invited you to collaborate')
-          .and('have.class', 'unread');
-
-        cy.get('[data-testid="notification-2"]')
-          .should('contain', 'System maintenance scheduled')
-          .and('have.class', 'read');
-      });
+    it('should display notifications when available', () => {
+      cy.get('[data-testid="notifications-icon"]').click();
+      cy.get('[data-testid="notification-list"]').should('be.visible');
+      cy.get('[data-testid="notification-item"]').should('have.length', 1);
     });
 
-    it('should show unread count', () => {
-      cy.get('[data-testid="notification-badge"]')
-        .should('be.visible')
-        .and('contain', '1');
+    it('should show empty state when no notifications', () => {
+      cy.intercept('GET', '/api/notifications', {
+        statusCode: 200,
+        body: { notifications: [] },
+      }).as('getEmptyNotifications');
+      cy.get('[data-testid="notifications-icon"]').click();
+      cy.get('[data-testid="empty-notifications"]').should('be.visible');
     });
 
-    it('should filter notifications', () => {
-      cy.get('[data-testid="filter-collaboration"]').click();
-      cy.get('[data-testid="notifications-list"]')
-        .should('contain', 'User2 invited you to collaborate')
-        .and('not.contain', 'System maintenance scheduled');
-
-      cy.get('[data-testid="filter-system"]').click();
-      cy.get('[data-testid="notifications-list"]')
-        .should('contain', 'System maintenance scheduled')
-        .and('not.contain', 'User2 invited you to collaborate');
+    it('should display different notification types correctly', () => {
+      cy.intercept('GET', '/api/notifications', {
+        statusCode: 200,
+        body: {
+          notifications: [
+            {
+              id: 1,
+              type: 'success',
+              message: 'Success notification',
+              read: false,
+            },
+            {
+              id: 2,
+              type: 'error',
+              message: 'Error notification',
+              read: false,
+            },
+            {
+              id: 3,
+              type: 'warning',
+              message: 'Warning notification',
+              read: false,
+            },
+          ],
+        },
+      }).as('getNotificationTypes');
+      cy.get('[data-testid="notifications-icon"]').click();
+      cy.get('[data-testid="notification-success"]').should('exist');
+      cy.get('[data-testid="notification-error"]').should('exist');
+      cy.get('[data-testid="notification-warning"]').should('exist');
     });
   });
 
   describe('Notification Actions', () => {
-    it('should mark notification as read', () => {
+    it('should mark notification as read when clicked', () => {
       cy.intercept('PUT', '/api/notifications/1/read', {
         statusCode: 200,
-        body: {
-          id: 1,
-          read: true,
-        },
-      }).as('markRead');
+        body: { success: true },
+      }).as('markAsRead');
+      cy.get('[data-testid="notifications-icon"]').click();
+      cy.get('[data-testid="notification-item"]').click();
+      cy.wait('@markAsRead');
+      cy.get('[data-testid="notification-item"]').should('have.class', 'read');
+    });
 
-      cy.get('[data-testid="notification-1"]').click();
-      cy.wait('@markRead');
-
-      cy.get('[data-testid="notification-1"]').should('have.class', 'read');
-      cy.get('[data-testid="notification-badge"]').should('contain', '0');
+    it('should dismiss notification', () => {
+      cy.intercept('DELETE', '/api/notifications/1', {
+        statusCode: 200,
+        body: { success: true },
+      }).as('dismissNotification');
+      cy.get('[data-testid="notifications-icon"]').click();
+      cy.get('[data-testid="notification-dismiss"]').click();
+      cy.wait('@dismissNotification');
+      cy.get('[data-testid="notification-item"]').should('not.exist');
     });
 
     it('should mark all notifications as read', () => {
       cy.intercept('PUT', '/api/notifications/read-all', {
         statusCode: 200,
-        body: {
-          success: true,
-          unreadCount: 0,
-        },
-      }).as('markAllRead');
-
+        body: { success: true },
+      }).as('markAllAsRead');
+      cy.get('[data-testid="notifications-icon"]').click();
       cy.get('[data-testid="mark-all-read"]').click();
-      cy.wait('@markAllRead');
-
-      cy.get('[data-testid="notifications-list"]')
-        .find('.unread')
-        .should('not.exist');
-      cy.get('[data-testid="notification-badge"]').should('contain', '0');
-    });
-
-    it('should delete notification', () => {
-      cy.intercept('DELETE', '/api/notifications/1', {
-        statusCode: 200,
-        body: {
-          success: true,
-        },
-      }).as('deleteNotification');
-
-      cy.get('[data-testid="notification-1"]')
-        .find('[data-testid="delete-notification"]')
-        .click();
-      cy.wait('@deleteNotification');
-
-      cy.get('[data-testid="notification-1"]').should('not.exist');
-    });
-
-    it('should clear all notifications', () => {
-      cy.intercept('DELETE', '/api/notifications/clear-all', {
-        statusCode: 200,
-        body: {
-          success: true,
-        },
-      }).as('clearAll');
-
-      cy.get('[data-testid="clear-all"]').click();
-      cy.get('[data-testid="confirm-clear"]').click();
-      cy.wait('@clearAll');
-
-      cy.get('[data-testid="notifications-list"]').should('be.empty');
-      cy.get('[data-testid="empty-state"]')
-        .should('be.visible')
-        .and('contain', 'No notifications');
+      cy.wait('@markAllAsRead');
+      cy.get('[data-testid="notification-item"]').should('have.class', 'read');
     });
   });
 
-  describe('Real-time Notifications', () => {
-    it('should receive new notification', () => {
-      // Simulate receiving new notification via WebSocket
+  describe('Real-time Updates', () => {
+    it('should handle new notification arrival', () => {
       cy.window().then(win => {
-        win.notificationSocket.onmessage({
-          data: JSON.stringify({
-            type: 'notification',
-            data: {
-              id: 3,
-              type: 'mention',
-              message: 'User3 mentioned you in a comment',
-              read: false,
-              createdAt: Date.now(),
-            },
-          }),
+        win.socket.emit('notification:new', {
+          id: 2,
+          type: 'info',
+          message: 'New notification',
+          read: false,
         });
       });
-
-      cy.get('[data-testid="notification-3"]')
-        .should('be.visible')
-        .and('contain', 'User3 mentioned you in a comment')
-        .and('have.class', 'unread');
-
-      cy.get('[data-testid="notification-badge"]').should('contain', '2');
+      cy.get('[data-testid="notification-badge"]').should('be.visible');
+      cy.get('[data-testid="notifications-icon"]').click();
+      cy.get('[data-testid="notification-item"]').should('have.length', 2);
     });
 
-    it('should show notification toast', () => {
-      // Simulate receiving new notification while on different page
-      cy.visit('/dashboard');
-
-      cy.window().then(win => {
-        win.notificationSocket.onmessage({
-          data: JSON.stringify({
-            type: 'notification',
-            data: {
-              id: 3,
-              type: 'mention',
-              message: 'User3 mentioned you in a comment',
-              read: false,
-              createdAt: Date.now(),
-            },
-          }),
-        });
-      });
-
-      cy.get('[data-testid="notification-toast"]')
-        .should('be.visible')
-        .and('contain', 'User3 mentioned you in a comment');
-    });
-  });
-
-  describe('Notification Settings', () => {
-    beforeEach(() => {
-      cy.intercept('GET', '/api/notifications/settings', {
+    it('should update notification count badge', () => {
+      cy.intercept('GET', '/api/notifications/unread-count', {
         statusCode: 200,
-        body: {
-          email: true,
-          push: true,
-          desktop: false,
-          types: {
-            collaboration: true,
-            mention: true,
-            system: false,
-          },
-        },
-      }).as('getSettings');
-
-      cy.get('[data-testid="notification-settings"]').click();
-      cy.wait('@getSettings');
-    });
-
-    it('should update notification channels', () => {
-      cy.intercept('PUT', '/api/notifications/settings', {
-        statusCode: 200,
-        body: {
-          email: false,
-          push: true,
-          desktop: true,
-        },
-      }).as('updateSettings');
-
-      cy.get('[data-testid="email-notifications"]').uncheck();
-      cy.get('[data-testid="desktop-notifications"]').check();
-      cy.get('[data-testid="save-settings"]').click();
-      cy.wait('@updateSettings');
-
-      cy.get('[data-testid="settings-success"]')
-        .should('be.visible')
-        .and('contain', 'Settings updated successfully');
-    });
-
-    it('should update notification types', () => {
-      cy.intercept('PUT', '/api/notifications/settings/types', {
-        statusCode: 200,
-        body: {
-          types: {
-            collaboration: true,
-            mention: false,
-            system: true,
-          },
-        },
-      }).as('updateTypes');
-
-      cy.get('[data-testid="mention-notifications"]').uncheck();
-      cy.get('[data-testid="system-notifications"]').check();
-      cy.get('[data-testid="save-settings"]').click();
-      cy.wait('@updateTypes');
-
-      cy.get('[data-testid="settings-success"]')
-        .should('be.visible')
-        .and('contain', 'Settings updated successfully');
-    });
-
-    it('should request desktop notification permission', () => {
-      cy.window().then(win => {
-        cy.stub(win.Notification, 'requestPermission').resolves('granted');
-      });
-
-      cy.get('[data-testid="enable-desktop-notifications"]').click();
-
-      cy.get('[data-testid="desktop-notifications"]').should('be.checked');
+        body: { count: 3 },
+      }).as('getUnreadCount');
+      cy.get('[data-testid="notification-badge"]').should('contain', '3');
     });
   });
 
   describe('Error Handling', () => {
-    it('should handle fetch errors', () => {
+    it('should handle fetch errors gracefully', () => {
       cy.intercept('GET', '/api/notifications', {
         statusCode: 500,
-        body: {
-          error: 'Failed to fetch notifications',
-        },
-      }).as('fetchError');
-
-      cy.reload();
-      cy.wait('@fetchError');
-
-      cy.get('[data-testid="fetch-error"]')
-        .should('be.visible')
-        .and('contain', 'Failed to fetch notifications');
+        body: { error: 'Internal Server Error' },
+      }).as('getNotificationsError');
+      cy.get('[data-testid="notifications-icon"]').click();
+      cy.get('[data-testid="notifications-error"]').should('be.visible');
+      cy.get('[data-testid="retry-button"]').should('exist');
     });
 
-    it('should handle action errors', () => {
+    it('should handle action errors gracefully', () => {
       cy.intercept('PUT', '/api/notifications/1/read', {
         statusCode: 500,
-        body: {
-          error: 'Failed to mark notification as read',
-        },
-      }).as('actionError');
+        body: { error: 'Failed to mark as read' },
+      }).as('markAsReadError');
+      cy.get('[data-testid="notifications-icon"]').click();
+      cy.get('[data-testid="notification-item"]').click();
+      cy.get('[data-testid="action-error"]').should('be.visible');
+    });
+  });
 
-      cy.get('[data-testid="notification-1"]').click();
-      cy.wait('@actionError');
-
-      cy.get('[data-testid="action-error"]')
-        .should('be.visible')
-        .and('contain', 'Failed to mark notification as read');
+  describe('Performance', () => {
+    it('should handle large number of notifications', () => {
+      const notifications = Array.from({ length: 100 }, (_, i) => ({
+        id: i + 1,
+        type: 'info',
+        message: `Notification ${i + 1}`,
+        read: false,
+      }));
+      cy.intercept('GET', '/api/notifications', {
+        statusCode: 200,
+        body: { notifications },
+      }).as('getLargeNotifications');
+      cy.get('[data-testid="notifications-icon"]').click();
+      cy.get('[data-testid="notification-list"]').should('exist');
+      cy.get('[data-testid="notification-item"]').should('have.length', 100);
     });
 
-    it('should handle settings update errors', () => {
-      cy.intercept('PUT', '/api/notifications/settings', {
-        statusCode: 500,
+    it('should implement infinite scroll for large lists', () => {
+      cy.intercept('GET', '/api/notifications?page=2', {
+        statusCode: 200,
         body: {
-          error: 'Failed to update settings',
+          notifications: [
+            {
+              id: 2,
+              type: 'info',
+              message: 'Paginated notification',
+              read: false,
+            },
+          ],
         },
-      }).as('settingsError');
-
-      cy.get('[data-testid="notification-settings"]').click();
-      cy.get('[data-testid="email-notifications"]').uncheck();
-      cy.get('[data-testid="save-settings"]').click();
-      cy.wait('@settingsError');
-
-      cy.get('[data-testid="settings-error"]')
-        .should('be.visible')
-        .and('contain', 'Failed to update settings');
-    });
-
-    it('should handle WebSocket connection errors', () => {
-      cy.window().then(win => {
-        win.notificationSocket.onerror();
-      });
-
-      cy.get('[data-testid="connection-error"]')
-        .should('be.visible')
-        .and('contain', 'Connection lost');
-
-      cy.get('[data-testid="retry-connection"]').should('be.visible').click();
+      }).as('getMoreNotifications');
+      cy.get('[data-testid="notifications-icon"]').click();
+      cy.get('[data-testid="notification-list"]').scrollTo('bottom');
+      cy.wait('@getMoreNotifications');
+      cy.get('[data-testid="notification-item"]').should('have.length.gt', 1);
     });
   });
 });

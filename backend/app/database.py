@@ -1,14 +1,9 @@
 """Database configuration for the application."""
-from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-
-# Initialize SQLAlchemy
-db = SQLAlchemy()
+from .extensions import db
 
 def init_db(app):
     """Initialize database with application context."""
-    db.init_app(app)
-
     # Initialize Flask-Migrate
     migrate = Migrate(app, db)
 

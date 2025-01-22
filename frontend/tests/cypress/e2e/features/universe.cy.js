@@ -1,15 +1,17 @@
 describe('Universe Features', () => {
   beforeEach(() => {
-    // Mock authentication
-    cy.intercept('POST', '/api/auth/login', {
+    // Setup mock responses for universe-related API calls
+    cy.intercept('POST', '/api/universes', {
       statusCode: 200,
       body: {
-        user: { id: 1, username: 'testuser' },
-        token: 'fake-jwt-token',
+        id: 1,
+        name: 'Test Universe',
+        description: 'Test Description',
+        isPublic: false,
+        maxParticipants: 10,
       },
-    }).as('loginRequest');
+    }).as('createUniverse');
 
-    // Mock universe data
     cy.intercept('GET', '/api/universes', {
       statusCode: 200,
       body: {
@@ -17,286 +19,218 @@ describe('Universe Features', () => {
           {
             id: 1,
             name: 'Test Universe',
-            description: 'A test universe',
-            owner: { id: 1, username: 'testuser' },
-            collaborators: [],
-            createdAt: new Date().toISOString(),
-            lastModified: new Date().toISOString(),
+            description: 'Test Description',
             isPublic: false,
+            maxParticipants: 10,
           },
         ],
-        total: 1,
       },
     }).as('getUniverses');
 
-    // Login and navigate
-    cy.visit('/login');
-    cy.get('[data-testid="login-email"]').type('test@example.com');
-    cy.get('[data-testid="login-password"]').type('password123');
-    cy.get('[data-testid="login-submit"]').click();
-    cy.wait('@loginRequest');
+    cy.intercept('GET', '/api/universes/1', {
+      statusCode: 200,
+      body: {
+        id: 1,
+        name: 'Test Universe',
+        description: 'Test Description',
+        isPublic: false,
+        maxParticipants: 10,
+      },
+    }).as('getUniverse');
 
-    cy.visit('/universes');
-    cy.wait('@getUniverses');
+    // Login before each test
+    cy.login();
   });
 
-  describe('Universe Management', () => {
-    it('should create new universe', () => {
-      cy.intercept('POST', '/api/universes', {
-        statusCode: 200,
-        body: {
-          id: 2,
-          name: 'New Universe',
-          description: 'Brand new universe',
-          owner: { id: 1, username: 'testuser' },
-        },
-      }).as('createUniverse');
+  describe('Universe Creation', () => {
+    it('should create a new universe with valid data', () => {
+      cy.visit('/universes/create');
 
-      cy.get('[data-testid="create-universe"]').click();
-      cy.get('[data-testid="universe-name"]').type('New Universe');
-      cy.get('[data-testid="universe-description"]').type('Brand new universe');
-      cy.get('[data-testid="save-universe"]').click();
+      // Fill out the form
+      cy.get('[data-testid="universe-name"]').type('Test Universe');
+      cy.get('[data-testid="universe-description"]').type('Test Description');
+      cy.get('[data-testid="universe-max-participants"]').clear().type('10');
+      cy.get('[data-testid="universe-public"]').click();
+
+      // Submit the form
+      cy.get('[data-testid="create-universe-submit"]').click();
+
+      // Wait for API call and verify redirect
       cy.wait('@createUniverse');
+      cy.url().should('include', '/universe/1');
 
-      cy.get('[data-testid="universe-2"]').should('contain', 'New Universe');
-    });
-
-    it('should edit universe', () => {
-      cy.intercept('PUT', '/api/universes/1', {
-        statusCode: 200,
-        body: {
-          name: 'Updated Universe',
-          description: 'Updated description',
-        },
-      }).as('updateUniverse');
-
-      cy.get('[data-testid="edit-universe-1"]').click();
-      cy.get('[data-testid="universe-name"]').clear().type('Updated Universe');
-      cy.get('[data-testid="universe-description"]')
-        .clear()
-        .type('Updated description');
-      cy.get('[data-testid="save-universe"]').click();
-      cy.wait('@updateUniverse');
-
-      cy.get('[data-testid="universe-1"]').should(
+      // Verify universe details are displayed
+      cy.get('[data-testid="universe-title"]').should(
         'contain',
-        'Updated Universe'
+        'Test Universe'
+      );
+      cy.get('[data-testid="universe-description"]').should(
+        'contain',
+        'Test Description'
       );
     });
 
-    it('should delete universe', () => {
+    it('should validate required fields', () => {
+      cy.visit('/universes/create');
+
+      // Try to submit empty form
+      cy.get('[data-testid="create-universe-submit"]').click();
+
+      // Verify validation messages
+      cy.get('[data-testid="name-error"]').should('be.visible');
+      cy.get('[data-testid="description-error"]').should('be.visible');
+    });
+
+    it('should handle API errors during creation', () => {
+      cy.intercept('POST', '/api/universes', {
+        statusCode: 500,
+        body: {
+          error: 'Server error',
+        },
+      }).as('createUniverseError');
+
+      cy.visit('/universes/create');
+
+      // Fill out the form
+      cy.get('[data-testid="universe-name"]').type('Test Universe');
+      cy.get('[data-testid="universe-description"]').type('Test Description');
+
+      // Submit the form
+      cy.get('[data-testid="create-universe-submit"]').click();
+
+      // Verify error message
+      cy.get('[data-testid="error-message"]')
+        .should('be.visible')
+        .and('contain', 'Server error');
+    });
+  });
+
+  describe('Universe Management', () => {
+    it('should list all universes', () => {
+      cy.visit('/universes');
+
+      cy.wait('@getUniverses');
+
+      // Verify universe list
+      cy.get('[data-testid="universe-list"]')
+        .should('be.visible')
+        .within(() => {
+          cy.get('[data-testid="universe-item"]').should('have.length', 1);
+          cy.contains('Test Universe').should('be.visible');
+        });
+    });
+
+    it('should view universe details', () => {
+      cy.visit('/universes/1');
+
+      cy.wait('@getUniverse');
+
+      // Verify universe details
+      cy.get('[data-testid="universe-title"]').should(
+        'contain',
+        'Test Universe'
+      );
+      cy.get('[data-testid="universe-description"]').should(
+        'contain',
+        'Test Description'
+      );
+      cy.get('[data-testid="universe-participants"]').should('contain', '10');
+    });
+
+    it('should edit universe settings', () => {
+      cy.intercept('PUT', '/api/universes/1', {
+        statusCode: 200,
+        body: {
+          id: 1,
+          name: 'Updated Universe',
+          description: 'Updated Description',
+          isPublic: true,
+          maxParticipants: 20,
+        },
+      }).as('updateUniverse');
+
+      cy.visit('/universes/1/edit');
+
+      // Update form fields
+      cy.get('[data-testid="universe-name"]').clear().type('Updated Universe');
+      cy.get('[data-testid="universe-description"]')
+        .clear()
+        .type('Updated Description');
+      cy.get('[data-testid="universe-max-participants"]').clear().type('20');
+
+      // Submit changes
+      cy.get('[data-testid="update-universe-submit"]').click();
+
+      cy.wait('@updateUniverse');
+
+      // Verify updates
+      cy.get('[data-testid="universe-title"]').should(
+        'contain',
+        'Updated Universe'
+      );
+      cy.get('[data-testid="universe-description"]').should(
+        'contain',
+        'Updated Description'
+      );
+    });
+
+    it('should delete a universe', () => {
       cy.intercept('DELETE', '/api/universes/1', {
         statusCode: 200,
       }).as('deleteUniverse');
 
-      cy.get('[data-testid="delete-universe-1"]').click();
+      cy.visit('/universes/1');
+
+      // Click delete button and confirm
+      cy.get('[data-testid="delete-universe"]').click();
       cy.get('[data-testid="confirm-delete"]').click();
+
       cy.wait('@deleteUniverse');
 
-      cy.get('[data-testid="universe-1"]').should('not.exist');
-    });
-  });
-
-  describe('Universe Visualization', () => {
-    beforeEach(() => {
-      cy.intercept('GET', '/api/universes/1/visualization', {
-        statusCode: 200,
-        body: {
-          nodes: [
-            { id: 'node1', label: 'Node 1', type: 'entity' },
-            { id: 'node2', label: 'Node 2', type: 'concept' },
-          ],
-          edges: [
-            {
-              id: 'edge1',
-              source: 'node1',
-              target: 'node2',
-              label: 'relates to',
-            },
-          ],
-        },
-      }).as('getVisualization');
-
-      cy.visit('/universes/1/visualize');
-      cy.wait('@getVisualization');
-    });
-
-    it('should render visualization', () => {
-      cy.get('[data-testid="visualization-canvas"]').should('be.visible');
-      cy.get('[data-testid="node-node1"]').should('exist');
-      cy.get('[data-testid="node-node2"]').should('exist');
-      cy.get('[data-testid="edge-edge1"]').should('exist');
-    });
-
-    it('should handle node interactions', () => {
-      cy.intercept('PUT', '/api/universes/1/nodes/node1', {
-        statusCode: 200,
-        body: {
-          label: 'Updated Node',
-          position: { x: 100, y: 100 },
-        },
-      }).as('updateNode');
-
-      cy.get('[data-testid="node-node1"]').click();
-      cy.get('[data-testid="node-label"]').clear().type('Updated Node');
-      cy.get('[data-testid="save-node"]').click();
-      cy.wait('@updateNode');
-
-      cy.get('[data-testid="node-node1"]').should('contain', 'Updated Node');
-    });
-
-    it('should handle edge creation', () => {
-      cy.intercept('POST', '/api/universes/1/edges', {
-        statusCode: 200,
-        body: {
-          id: 'edge2',
-          source: 'node1',
-          target: 'node2',
-          label: 'new connection',
-        },
-      }).as('createEdge');
-
-      cy.get('[data-testid="create-edge"]').click();
-      cy.get('[data-testid="node-node1"]').click();
-      cy.get('[data-testid="node-node2"]').click();
-      cy.get('[data-testid="edge-label"]').type('new connection');
-      cy.get('[data-testid="save-edge"]').click();
-      cy.wait('@createEdge');
-
-      cy.get('[data-testid="edge-edge2"]').should('exist');
-    });
-  });
-
-  describe('Universe Creation Flow', () => {
-    it('should handle template selection', () => {
-      cy.intercept('GET', '/api/templates', {
-        statusCode: 200,
-        body: {
-          templates: [
-            {
-              id: 1,
-              name: 'Basic Template',
-              description: 'A basic starting point',
-            },
-          ],
-        },
-      }).as('getTemplates');
-
-      cy.get('[data-testid="create-universe"]').click();
-      cy.get('[data-testid="use-template"]').click();
-      cy.wait('@getTemplates');
-
-      cy.get('[data-testid="template-1"]').click();
-      cy.get('[data-testid="universe-name"]').type('Template Universe');
-      cy.get('[data-testid="create-from-template"]').click();
-
-      cy.get('[data-testid="success-message"]').should('be.visible');
-    });
-
-    it('should handle custom creation', () => {
-      cy.get('[data-testid="create-universe"]').click();
-      cy.get('[data-testid="custom-creation"]').click();
-
-      // Step 1: Basic Info
-      cy.get('[data-testid="universe-name"]').type('Custom Universe');
-      cy.get('[data-testid="universe-description"]').type('Custom description');
-      cy.get('[data-testid="next-step"]').click();
-
-      // Step 2: Structure
-      cy.get('[data-testid="add-entity"]').click();
-      cy.get('[data-testid="entity-name"]').type('Character');
-      cy.get('[data-testid="next-step"]').click();
-
-      // Step 3: Settings
-      cy.get('[data-testid="visibility-private"]').check();
-      cy.get('[data-testid="create-universe"]').click();
-
-      cy.get('[data-testid="success-message"]').should('be.visible');
-    });
-  });
-
-  describe('Collaboration Features', () => {
-    it('should invite collaborators', () => {
-      cy.intercept('POST', '/api/universes/1/collaborators', {
-        statusCode: 200,
-        body: {
-          collaborator: {
-            id: 2,
-            username: 'collaborator',
-            role: 'editor',
-          },
-        },
-      }).as('inviteCollaborator');
-
-      cy.get('[data-testid="universe-1"]').click();
-      cy.get('[data-testid="invite-collaborator"]').click();
-      cy.get('[data-testid="collaborator-email"]').type(
-        'collaborator@example.com'
-      );
-      cy.get('[data-testid="collaborator-role"]').select('editor');
-      cy.get('[data-testid="send-invite"]').click();
-      cy.wait('@inviteCollaborator');
-
-      cy.get('[data-testid="collaborator-list"]').should(
+      // Verify redirect to universes list
+      cy.url().should('include', '/universes');
+      cy.get('[data-testid="success-message"]').should(
         'contain',
-        'collaborator'
-      );
-    });
-
-    it('should handle permission changes', () => {
-      cy.intercept('PUT', '/api/universes/1/collaborators/2', {
-        statusCode: 200,
-        body: {
-          role: 'viewer',
-        },
-      }).as('updatePermission');
-
-      cy.get('[data-testid="universe-1"]').click();
-      cy.get('[data-testid="manage-collaborators"]').click();
-      cy.get('[data-testid="collaborator-2-role"]').select('viewer');
-      cy.get('[data-testid="save-permissions"]').click();
-      cy.wait('@updatePermission');
-
-      cy.get('[data-testid="collaborator-2-role"]').should(
-        'have.value',
-        'viewer'
+        'Universe deleted successfully'
       );
     });
   });
 
-  describe('Error Handling', () => {
-    it('should handle creation errors', () => {
-      cy.intercept('POST', '/api/universes', {
-        statusCode: 400,
+  describe('Universe Participation', () => {
+    it('should join a public universe', () => {
+      cy.intercept('POST', '/api/universes/1/join', {
+        statusCode: 200,
         body: {
-          error: 'Invalid universe name',
+          success: true,
         },
-      }).as('createError');
+      }).as('joinUniverse');
 
-      cy.get('[data-testid="create-universe"]').click();
-      cy.get('[data-testid="universe-name"]').type('');
-      cy.get('[data-testid="save-universe"]').click();
-      cy.wait('@createError');
+      cy.visit('/universes/1');
 
-      cy.get('[data-testid="error-message"]')
-        .should('be.visible')
-        .and('contain', 'Invalid universe name');
+      cy.get('[data-testid="join-universe"]').click();
+      cy.wait('@joinUniverse');
+
+      // Verify joined state
+      cy.get('[data-testid="leave-universe"]').should('be.visible');
+      cy.get('[data-testid="participant-count"]').should('contain', '1');
     });
 
-    it('should handle visualization errors', () => {
-      cy.intercept('GET', '/api/universes/1/visualization', {
-        statusCode: 500,
+    it('should leave a universe', () => {
+      cy.intercept('POST', '/api/universes/1/leave', {
+        statusCode: 200,
         body: {
-          error: 'Failed to load visualization',
+          success: true,
         },
-      }).as('visualizationError');
+      }).as('leaveUniverse');
 
-      cy.visit('/universes/1/visualize');
-      cy.wait('@visualizationError');
+      cy.visit('/universes/1');
 
-      cy.get('[data-testid="visualization-error"]')
-        .should('be.visible')
-        .and('contain', 'Failed to load visualization');
+      cy.get('[data-testid="leave-universe"]').click();
+      cy.wait('@leaveUniverse');
+
+      // Verify left state
+      cy.get('[data-testid="join-universe"]').should('be.visible');
+      cy.get('[data-testid="participant-count"]').should('contain', '0');
     });
   });
 });

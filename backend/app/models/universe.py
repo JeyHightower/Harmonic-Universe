@@ -1,12 +1,14 @@
+"""Universe model."""
+from datetime import datetime, timezone
 from ..extensions import db
 from sqlalchemy.orm import relationship
-from datetime import datetime
 from typing import Dict, Any, Optional
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import or_
 
 class Universe(db.Model):
+    """Universe model."""
     __tablename__ = 'universes'
     __table_args__ = (
         db.Index('idx_user_id', 'user_id'),
@@ -18,11 +20,12 @@ class Universe(db.Model):
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
     description = Column(String(500))
-    is_public = Column(db.Boolean, default=True)
+    is_public = Column(Boolean, default=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    template_id = Column(Integer, ForeignKey('templates.id'))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    template_id = Column(Integer, ForeignKey('templates.id'), nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
+                          onupdate=lambda: datetime.now(timezone.utc))
 
     user = relationship('User', back_populates='universes')
     template = relationship('Template', back_populates='universes')
@@ -41,25 +44,29 @@ class Universe(db.Model):
     storyboards = relationship('Storyboard', back_populates='universe', cascade='all, delete-orphan')
 
     def __init__(self, name: str, description: str = None, is_public: bool = True,
-                 user_id: int = None):
+                 user_id: int = None, template_id: int = None):
         self.name = name
         self.description = description
         self.is_public = is_public
         self.user_id = user_id
+        self.template_id = template_id
 
     def to_dict(self) -> Dict[str, Any]:
+        """Convert universe to dictionary."""
         return {
             'id': self.id,
             'name': self.name,
             'description': self.description,
             'is_public': self.is_public,
             'user_id': self.user_id,
+            'template_id': self.template_id,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
             'physics_parameters': self.physics_parameters.to_dict() if self.physics_parameters else None,
             'music_parameters': self.music_parameters.to_dict() if self.music_parameters else None,
             'audio_parameters': self.audio_parameters.to_dict() if self.audio_parameters else None,
-            'visualization_parameters': self.visualization_parameters.to_dict() if self.visualization_parameters else None
+            'visualization_parameters': self.visualization_parameters.to_dict() if self.visualization_parameters else None,
+            'template': self.template.to_dict() if self.template else None
         }
 
     def update_dependent_parameters(self, source: str):

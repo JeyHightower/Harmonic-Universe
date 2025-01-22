@@ -1,13 +1,12 @@
 // App.jsx
-import React, { Suspense, useEffect } from 'react';
-import { Route, Routes, useLocation } from 'react-router-dom';
+import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
+import React from 'react';
+import { Provider } from 'react-redux';
+import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import './App.css';
-import styles from './App.module.css';
-import GlobalErrorBoundary from './components/Common/GlobalErrorBoundary';
-import LoadingSpinner from './components/Common/LoadingSpinner';
-import NotificationContainer from './components/Common/NotificationContainer';
-import Navigation from './components/Navigation/Navigation';
-import { NotificationProvider } from './contexts/NotificationContext';
+import Layout from './components/Navigation/Layout';
+import UserPreferences from './components/Settings/UserPreferences';
+import store from './redux/store';
 
 // Lazy load components
 const Login = React.lazy(() => {
@@ -55,48 +54,28 @@ const Analytics = React.lazy(() => {
   return import('./components/Analytics/Dashboard');
 });
 
-const AppRoutes = () => {
-  const location = useLocation();
+const theme = createTheme({
+  palette: {
+    mode: 'light',
+  },
+});
 
-  useEffect(() => {
-    console.log('Current route:', location.pathname);
-  }, [location]);
-
+const App = () => {
   return (
-    <Suspense fallback={<LoadingSpinner />}>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/" element={<UniverseList />} />
-        <Route path="/universes/new" element={<UniverseCreate />} />
-        <Route path="/universes/:id" element={<UniverseDetail />} />
-        <Route path="/universes/:id/edit" element={<UniverseEdit />} />
-        <Route path="/universes/:id/storyboard" element={<Storyboard />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/analytics" element={<Analytics />} />
-      </Routes>
-    </Suspense>
+    <Provider store={store}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Router>
+          <Routes>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<div>Home Page</div>} />
+              <Route path="/settings" element={<UserPreferences />} />
+            </Route>
+          </Routes>
+        </Router>
+      </ThemeProvider>
+    </Provider>
   );
 };
-
-function App() {
-  console.log('App component rendering');
-
-  return (
-    <NotificationProvider>
-      <GlobalErrorBoundary>
-        <div className={styles.app}>
-          <Navigation />
-          <main className={styles.main}>
-            <AppRoutes />
-          </main>
-          <NotificationContainer />
-        </div>
-      </GlobalErrorBoundary>
-    </NotificationProvider>
-  );
-}
 
 export default App;

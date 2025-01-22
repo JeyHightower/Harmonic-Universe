@@ -10,6 +10,9 @@ from app.physics.engine import PhysicsEngine, Particle, Vector2D, BoundaryType
 from sqlalchemy.orm import joinedload
 import threading
 import logging
+from flask_jwt_extended import decode_token
+from datetime import datetime
+from ..services.physics_simulator import PhysicsSimulator
 
 logger = logging.getLogger(__name__)
 
@@ -44,44 +47,33 @@ class PhysicsNamespace(Namespace):
     def on_connect(self):
         """Handle client connection."""
         try:
-            client_id = request.sid
-            logger.info(f"Client {client_id} connected")
-
-            # Store app reference for background task
-            if not self.app:
-                self.app = current_app._get_current_object()
-                logger.info("Stored app reference")
-
-            # Start update loop if not already started
-            if not self.update_task and not self._stop_event.is_set():
-                self._stop_event.clear()
-                logger.info("Starting background task")
-                with self.app.app_context():
-                    self.update_task = socketio.start_background_task(target=self.broadcast_updates)
-                    logger.info(f"Background task started: {self.update_task}")
-
-            # Emit connection established event
-            self.emit('connection_established',
-                     {'client_id': client_id, 'status': 'connected'},
-                     room=client_id)
-
-            self.error_counts[client_id] = 0
-
+            emit('connected', {
+                'status': 'success',
+                'message': 'Connected to physics namespace'
+            })
         except Exception as e:
-            self.handle_error(request.sid, e)
-            logger.error(f"Error in connection handler: {str(e)}")
+            current_app.logger.error(f"Connection error: {str(e)}")
+            emit('error', {
+                'status': 'error',
+                'error': 'Connection Error',
+                'message': 'Failed to establish connection'
+            })
 
     def on_disconnect(self):
         """Handle client disconnection."""
         try:
-            client_id = request.sid
-            if client_id in self.client_universes:
-                universe_id = self.client_universes[client_id]
-                self.leave_simulation(universe_id)
-            self.error_counts.pop(client_id, None)
-
+            self.cleanup()
+            emit('disconnected', {
+                'status': 'success',
+                'message': 'Disconnected from physics namespace'
+            })
         except Exception as e:
-            logger.error(f"Error during disconnect: {str(e)}")
+            current_app.logger.error(f"Disconnection error: {str(e)}")
+            emit('error', {
+                'status': 'error',
+                'error': 'Disconnection Error',
+                'message': 'Error during disconnection'
+            })
 
     def on_join_simulation(self, data):
         """Handle client joining a simulation."""
@@ -294,6 +286,51 @@ class PhysicsNamespace(Namespace):
         self.client_universes.clear()
         self.error_counts.clear()
         logger.info("Cleanup complete")
+
+    def on_ping(self, data):
+        """Handle ping messages to check connection."""
+        try:
+            emit('pong', {
+                'status': 'success',
+                'message': 'Pong',
+                'timestamp': datetime.utcnow().isoformat()
+            })
+        except Exception as e:
+            current_app.logger.error(f"Ping error: {str(e)}")
+            emit('error', {
+                'status': 'error',
+                'error': 'Ping Error',
+                'message': 'Failed to process ping'
+            })
+
+    def on_message(self, data):
+        """Handle incoming messages."""
+        try:
+            # Validate message size
+            message_size = len(str(data))
+            if message_size > current_app.config.get('MAX_MESSAGE_SIZE', 16384):
+                emit('error', {
+                    'status': 'error',
+                    'error': 'Message Too Large',
+                    'message': 'Message size exceeds maximum allowed'
+                })
+                return
+
+            # Process message
+            emit('message', {
+                'status': 'success',
+                'data': {
+                    'message': data,
+                    'timestamp': datetime.utcnow().isoformat()
+                }
+            })
+        except Exception as e:
+            current_app.logger.error(f"Message error: {str(e)}")
+            emit('error', {
+                'status': 'error',
+                'error': 'Message Error',
+                'message': 'Failed to process message'
+            })
 
 def init_socket_handlers(socketio):
     """Initialize socket handlers."""

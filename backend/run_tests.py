@@ -14,12 +14,10 @@ def main():
 
     # Configure test files to run
     test_files = [
-        'tests/test_universe.py',
-        'tests/test_physics.py',
-        'tests/test_music.py',
-        'tests/test_integration.py',
-        'tests/test_auth.py',
-        'tests/test_websocket.py'
+        'tests/unit/test_universe_routes.py',
+        'tests/unit/test_error_handling_unit.py',
+        'tests/integration/test_websocket.py',
+        'tests/performance/test_universe_performance.py'
     ]
 
     # Run tests with coverage

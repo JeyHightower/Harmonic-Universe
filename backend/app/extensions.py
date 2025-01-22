@@ -14,8 +14,7 @@ migrate = Migrate()
 cors = CORS()
 jwt = JWTManager()
 cache = Cache(config={
-    'CACHE_TYPE': 'redis',
-    'CACHE_REDIS_URL': 'redis://localhost:6379/0',
+    'CACHE_TYPE': 'SimpleCache',
     'CACHE_DEFAULT_TIMEOUT': 300
 })
 
@@ -45,7 +44,8 @@ def exempt_test_requests():
 
 limiter = Limiter(
     key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"]
+    default_limits=["5 per minute"],  # Stricter limit for testing
+    storage_uri="memory://"
 )
 
 limiter.request_filter(exempt_test_requests)
@@ -57,12 +57,16 @@ def init_extensions(app):
     cors.init_app(app)
     migrate.init_app(app, db)
     cache.init_app(app)
+    limiter.init_app(app)
 
     # Configure WebSocket
     socketio.init_app(app,
                      cors_allowed_origins="*",
-                     async_mode='gevent',
-                     message_queue='redis://localhost:6379/0',
-                     channel='harmonic_universe')
+                     async_mode='threading',
+                     logger=False,
+                     engineio_logger=False)
+
+    # Register rate limit error handler
+    app.errorhandler(429)(ratelimit_error_handler)
 
     return None

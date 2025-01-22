@@ -1,305 +1,276 @@
-describe('Templates System Features', () => {
+describe('Templates', () => {
   beforeEach(() => {
-    // Mock authentication
-    cy.intercept('POST', '/api/auth/login', {
-      statusCode: 200,
-      body: {
-        user: { id: 1, username: 'testuser' },
-        token: 'fake-jwt-token',
-      },
-    }).as('loginRequest');
-
-    // Mock templates list
+    cy.visit('/');
+    cy.login();
     cy.intercept('GET', '/api/templates', {
       statusCode: 200,
       body: {
         templates: [
           {
             id: 1,
-            name: 'Basic Universe',
-            description: 'A simple starting point',
-            category: 'basic',
-            author: { id: 1, username: 'testuser' },
-            usageCount: 100,
-            rating: 4.5,
-            isPublic: true,
+            name: 'Basic Template',
+            description: 'A basic universe template',
+            category: 'general',
+            previewImage: 'https://example.com/preview1.jpg',
+            settings: {
+              maxParticipants: 10,
+              isPublic: true,
+            },
           },
         ],
-        categories: ['basic', 'advanced', 'specialized'],
       },
     }).as('getTemplates');
-
-    // Login and navigate
-    cy.visit('/login');
-    cy.get('[data-testid="login-email"]').type('test@example.com');
-    cy.get('[data-testid="login-password"]').type('password123');
-    cy.get('[data-testid="login-submit"]').click();
-    cy.wait('@loginRequest');
-
-    cy.visit('/templates');
-    cy.wait('@getTemplates');
   });
 
-  describe('Template Management', () => {
-    it('should create new template', () => {
-      cy.intercept('POST', '/api/templates', {
-        statusCode: 200,
-        body: {
-          id: 2,
-          name: 'Custom Template',
-          description: 'My custom universe template',
-          category: 'specialized',
-          isPublic: false,
-        },
-      }).as('createTemplate');
-
-      cy.get('[data-testid="create-template"]').click();
-      cy.get('[data-testid="template-name"]').type('Custom Template');
-      cy.get('[data-testid="template-description"]').type(
-        'My custom universe template'
-      );
-      cy.get('[data-testid="template-category"]').select('specialized');
-      cy.get('[data-testid="template-visibility"]').select('private');
-      cy.get('[data-testid="save-template"]').click();
-      cy.wait('@createTemplate');
-
-      cy.get('[data-testid="template-2"]').should('contain', 'Custom Template');
-    });
-
-    it('should edit template', () => {
-      cy.intercept('PUT', '/api/templates/1', {
-        statusCode: 200,
-        body: {
-          name: 'Updated Template',
-          description: 'Updated description',
-          category: 'advanced',
-        },
-      }).as('updateTemplate');
-
-      cy.get('[data-testid="edit-template-1"]').click();
-      cy.get('[data-testid="template-name"]').clear().type('Updated Template');
-      cy.get('[data-testid="template-description"]')
-        .clear()
-        .type('Updated description');
-      cy.get('[data-testid="template-category"]').select('advanced');
-      cy.get('[data-testid="save-template"]').click();
-      cy.wait('@updateTemplate');
-
-      cy.get('[data-testid="template-1"]').should(
+  describe('Template List', () => {
+    it('should display available templates', () => {
+      cy.get('[data-testid="template-list"]').should('be.visible');
+      cy.get('[data-testid="template-card"]').should('have.length', 1);
+      cy.get('[data-testid="template-name"]').should(
         'contain',
-        'Updated Template'
-      );
-    });
-  });
-
-  describe('Template Usage', () => {
-    it('should create universe from template', () => {
-      cy.intercept('POST', '/api/universes/from-template/1', {
-        statusCode: 200,
-        body: {
-          id: 1,
-          name: 'New Universe',
-          template: { id: 1, name: 'Basic Universe' },
-        },
-      }).as('createFromTemplate');
-
-      cy.get('[data-testid="use-template-1"]').click();
-      cy.get('[data-testid="new-universe-name"]').type('New Universe');
-      cy.get('[data-testid="create-from-template"]').click();
-      cy.wait('@createFromTemplate');
-
-      cy.get('[data-testid="success-message"]').should(
-        'contain',
-        'Universe created successfully'
+        'Basic Template'
       );
     });
 
-    it('should show template preview', () => {
-      cy.intercept('GET', '/api/templates/1/preview', {
+    it('should show loading state while fetching templates', () => {
+      cy.intercept('GET', '/api/templates', {
+        delay: 1000,
         statusCode: 200,
-        body: {
-          preview: {
-            screenshot: 'preview.jpg',
-            features: ['Feature 1', 'Feature 2'],
-            requirements: ['Requirement 1'],
-          },
-        },
-      }).as('getPreview');
-
-      cy.get('[data-testid="preview-template-1"]').click();
-      cy.wait('@getPreview');
-
-      cy.get('[data-testid="template-preview"]').should('be.visible');
-      cy.get('[data-testid="preview-features"]').should('contain', 'Feature 1');
+        body: { templates: [] },
+      }).as('getTemplatesDelayed');
+      cy.get('[data-testid="templates-loading"]').should('be.visible');
+      cy.wait('@getTemplatesDelayed');
+      cy.get('[data-testid="templates-loading"]').should('not.exist');
     });
-  });
 
-  describe('Template Categories', () => {
+    it('should handle empty template list', () => {
+      cy.intercept('GET', '/api/templates', {
+        statusCode: 200,
+        body: { templates: [] },
+      }).as('getEmptyTemplates');
+      cy.get('[data-testid="empty-templates"]').should('be.visible');
+      cy.get('[data-testid="create-template-button"]').should('exist');
+    });
+
     it('should filter templates by category', () => {
-      cy.intercept('GET', '/api/templates?category=advanced', {
+      cy.intercept('GET', '/api/templates?category=music', {
         statusCode: 200,
         body: {
           templates: [
             {
-              id: 3,
-              name: 'Advanced Template',
-              category: 'advanced',
-            },
-          ],
-        },
-      }).as('filterTemplates');
-
-      cy.get('[data-testid="category-filter"]').select('advanced');
-      cy.wait('@filterTemplates');
-
-      cy.get('[data-testid="template-list"]').should(
-        'contain',
-        'Advanced Template'
-      );
-    });
-
-    it('should manage categories', () => {
-      cy.intercept('POST', '/api/templates/categories', {
-        statusCode: 200,
-        body: {
-          category: 'custom',
-          status: 'created',
-        },
-      }).as('createCategory');
-
-      cy.get('[data-testid="manage-categories"]').click();
-      cy.get('[data-testid="new-category"]').type('custom');
-      cy.get('[data-testid="add-category"]').click();
-      cy.wait('@createCategory');
-
-      cy.get('[data-testid="category-list"]').should('contain', 'custom');
-    });
-  });
-
-  describe('Template Sharing', () => {
-    it('should share template', () => {
-      cy.intercept('POST', '/api/templates/1/share', {
-        statusCode: 200,
-        body: {
-          shareUrl: 'https://example.com/template/abc123',
-          accessLevel: 'view',
-        },
-      }).as('shareTemplate');
-
-      cy.get('[data-testid="share-template-1"]').click();
-      cy.get('[data-testid="share-access-level"]').select('view');
-      cy.get('[data-testid="generate-share-link"]').click();
-      cy.wait('@shareTemplate');
-
-      cy.get('[data-testid="share-url"]')
-        .should('have.value')
-        .and('include', 'template/abc123');
-    });
-
-    it('should handle template permissions', () => {
-      cy.intercept('PUT', '/api/templates/1/permissions', {
-        statusCode: 200,
-        body: {
-          permissions: {
-            public: true,
-            allowCopy: true,
-            allowModify: false,
-          },
-        },
-      }).as('updatePermissions');
-
-      cy.get('[data-testid="template-permissions-1"]').click();
-      cy.get('[data-testid="permission-public"]').check();
-      cy.get('[data-testid="permission-copy"]').check();
-      cy.get('[data-testid="permission-modify"]').uncheck();
-      cy.get('[data-testid="save-permissions"]').click();
-      cy.wait('@updatePermissions');
-
-      cy.get('[data-testid="template-1"]').should('have.class', 'public');
-    });
-  });
-
-  describe('Template Versioning', () => {
-    it('should handle version history', () => {
-      cy.intercept('GET', '/api/templates/1/versions', {
-        statusCode: 200,
-        body: {
-          versions: [
-            {
               id: 2,
-              changes: 'Updated features',
-              timestamp: new Date().toISOString(),
-            },
-            {
-              id: 1,
-              changes: 'Initial version',
-              timestamp: new Date().toISOString(),
+              name: 'Music Template',
+              category: 'music',
             },
           ],
         },
-      }).as('getVersions');
-
-      cy.get('[data-testid="template-versions-1"]').click();
-      cy.wait('@getVersions');
-
-      cy.get('[data-testid="version-list"]').should(
+      }).as('getFilteredTemplates');
+      cy.get('[data-testid="category-filter"]').select('music');
+      cy.wait('@getFilteredTemplates');
+      cy.get('[data-testid="template-name"]').should(
         'contain',
-        'Updated features'
+        'Music Template'
       );
-    });
-
-    it('should restore previous version', () => {
-      cy.intercept('POST', '/api/templates/1/restore', {
-        statusCode: 200,
-        body: {
-          version: 1,
-          status: 'restored',
-        },
-      }).as('restoreVersion');
-
-      cy.get('[data-testid="template-versions-1"]').click();
-      cy.get('[data-testid="restore-version-1"]').click();
-      cy.wait('@restoreVersion');
-
-      cy.get('[data-testid="version-restored"]').should('be.visible');
     });
   });
 
-  describe('Error Handling', () => {
-    it('should handle creation errors', () => {
+  describe('Template Creation', () => {
+    it('should create new template', () => {
+      cy.intercept('POST', '/api/templates', {
+        statusCode: 201,
+        body: {
+          id: 3,
+          name: 'New Template',
+          description: 'Test description',
+          category: 'general',
+        },
+      }).as('createTemplate');
+
+      cy.get('[data-testid="create-template-button"]').click();
+      cy.get('[data-testid="template-name-input"]').type('New Template');
+      cy.get('[data-testid="template-description"]').type('Test description');
+      cy.get('[data-testid="template-category"]').select('general');
+      cy.get('[data-testid="save-template"]').click();
+
+      cy.wait('@createTemplate');
+      cy.get('[data-testid="template-success"]').should('be.visible');
+    });
+
+    it('should validate template creation', () => {
+      cy.get('[data-testid="create-template-button"]').click();
+      cy.get('[data-testid="save-template"]').click();
+      cy.get('[data-testid="name-error"]').should('be.visible');
+    });
+
+    it('should handle template creation errors', () => {
       cy.intercept('POST', '/api/templates', {
         statusCode: 500,
-        body: {
-          error: 'Failed to create template',
-        },
-      }).as('createError');
+        body: { error: 'Failed to create template' },
+      }).as('createTemplateError');
 
-      cy.get('[data-testid="create-template"]').click();
-      cy.get('[data-testid="template-name"]').type('Error Template');
+      cy.get('[data-testid="create-template-button"]').click();
+      cy.get('[data-testid="template-name-input"]').type('New Template');
       cy.get('[data-testid="save-template"]').click();
-      cy.wait('@createError');
+      cy.get('[data-testid="template-error"]').should('be.visible');
+    });
+  });
 
-      cy.get('[data-testid="error-message"]')
-        .should('be.visible')
-        .and('contain', 'Failed to create template');
+  describe('Template Details', () => {
+    it('should display template details', () => {
+      cy.intercept('GET', '/api/templates/1', {
+        statusCode: 200,
+        body: {
+          id: 1,
+          name: 'Basic Template',
+          description: 'A basic universe template',
+          category: 'general',
+          settings: {
+            maxParticipants: 10,
+            isPublic: true,
+          },
+        },
+      }).as('getTemplateDetails');
+
+      cy.get('[data-testid="template-card"]').first().click();
+      cy.wait('@getTemplateDetails');
+      cy.get('[data-testid="template-details"]').should('be.visible');
+      cy.get('[data-testid="template-settings"]').should('be.visible');
     });
 
-    it('should handle usage errors', () => {
-      cy.intercept('POST', '/api/universes/from-template/1', {
-        statusCode: 500,
+    it('should handle missing template details', () => {
+      cy.intercept('GET', '/api/templates/999', {
+        statusCode: 404,
+        body: { error: 'Template not found' },
+      }).as('getMissingTemplate');
+
+      cy.visit('/templates/999');
+      cy.get('[data-testid="template-not-found"]').should('be.visible');
+    });
+  });
+
+  describe('Template Editing', () => {
+    it('should edit existing template', () => {
+      cy.intercept('PUT', '/api/templates/1', {
+        statusCode: 200,
         body: {
-          error: 'Template usage failed',
+          id: 1,
+          name: 'Updated Template',
+          description: 'Updated description',
         },
-      }).as('usageError');
+      }).as('updateTemplate');
 
-      cy.get('[data-testid="use-template-1"]').click();
-      cy.get('[data-testid="new-universe-name"]').type('New Universe');
-      cy.get('[data-testid="create-from-template"]').click();
-      cy.wait('@usageError');
+      cy.get('[data-testid="template-card"]').first().click();
+      cy.get('[data-testid="edit-template-button"]').click();
+      cy.get('[data-testid="template-name-input"]')
+        .clear()
+        .type('Updated Template');
+      cy.get('[data-testid="template-description"]')
+        .clear()
+        .type('Updated description');
+      cy.get('[data-testid="save-template"]').click();
 
-      cy.get('[data-testid="error-message"]')
-        .should('be.visible')
-        .and('contain', 'Template usage failed');
+      cy.wait('@updateTemplate');
+      cy.get('[data-testid="template-success"]').should('be.visible');
+    });
+
+    it('should validate template updates', () => {
+      cy.get('[data-testid="template-card"]').first().click();
+      cy.get('[data-testid="edit-template-button"]').click();
+      cy.get('[data-testid="template-name-input"]').clear();
+      cy.get('[data-testid="save-template"]').click();
+      cy.get('[data-testid="name-error"]').should('be.visible');
+    });
+
+    it('should handle template update errors', () => {
+      cy.intercept('PUT', '/api/templates/1', {
+        statusCode: 500,
+        body: { error: 'Failed to update template' },
+      }).as('updateTemplateError');
+
+      cy.get('[data-testid="template-card"]').first().click();
+      cy.get('[data-testid="edit-template-button"]').click();
+      cy.get('[data-testid="template-name-input"]')
+        .clear()
+        .type('Updated Template');
+      cy.get('[data-testid="save-template"]').click();
+      cy.get('[data-testid="template-error"]').should('be.visible');
+    });
+  });
+
+  describe('Template Deletion', () => {
+    it('should delete template', () => {
+      cy.intercept('DELETE', '/api/templates/1', {
+        statusCode: 200,
+        body: { success: true },
+      }).as('deleteTemplate');
+
+      cy.get('[data-testid="template-card"]').first().click();
+      cy.get('[data-testid="delete-template-button"]').click();
+      cy.get('[data-testid="confirm-delete"]').click();
+
+      cy.wait('@deleteTemplate');
+      cy.get('[data-testid="template-deleted"]').should('be.visible');
+      cy.get('[data-testid="template-card"]').should('not.exist');
+    });
+
+    it('should handle template deletion errors', () => {
+      cy.intercept('DELETE', '/api/templates/1', {
+        statusCode: 500,
+        body: { error: 'Failed to delete template' },
+      }).as('deleteTemplateError');
+
+      cy.get('[data-testid="template-card"]').first().click();
+      cy.get('[data-testid="delete-template-button"]').click();
+      cy.get('[data-testid="confirm-delete"]').click();
+      cy.get('[data-testid="delete-error"]').should('be.visible');
+    });
+  });
+
+  describe('Template Application', () => {
+    it('should apply template to new universe', () => {
+      cy.intercept('POST', '/api/universes', {
+        statusCode: 201,
+        body: {
+          id: 1,
+          name: 'New Universe',
+          description: 'Created from template',
+          settings: {
+            maxParticipants: 10,
+            isPublic: true,
+          },
+        },
+      }).as('createUniverse');
+
+      cy.get('[data-testid="template-card"]').first().click();
+      cy.get('[data-testid="use-template-button"]').click();
+      cy.get('[data-testid="universe-name"]').type('New Universe');
+      cy.get('[data-testid="universe-description"]').type(
+        'Created from template'
+      );
+      cy.get('[data-testid="create-universe"]').click();
+
+      cy.wait('@createUniverse');
+      cy.get('[data-testid="universe-created"]').should('be.visible');
+    });
+
+    it('should validate universe creation from template', () => {
+      cy.get('[data-testid="template-card"]').first().click();
+      cy.get('[data-testid="use-template-button"]').click();
+      cy.get('[data-testid="create-universe"]').click();
+      cy.get('[data-testid="name-error"]').should('be.visible');
+    });
+
+    it('should handle template application errors', () => {
+      cy.intercept('POST', '/api/universes', {
+        statusCode: 500,
+        body: { error: 'Failed to create universe' },
+      }).as('createUniverseError');
+
+      cy.get('[data-testid="template-card"]').first().click();
+      cy.get('[data-testid="use-template-button"]').click();
+      cy.get('[data-testid="universe-name"]').type('New Universe');
+      cy.get('[data-testid="create-universe"]').click();
+      cy.get('[data-testid="creation-error"]').should('be.visible');
     });
   });
 });

@@ -1,43 +1,43 @@
-import requests
+"""Integration tests for API routes."""
+import pytest
 import json
 import websocket
-import threading
 import time
 from datetime import datetime
 
-BASE_URL = "http://localhost:5000/api"
-WS_URL = "ws://localhost:5002"
-
-def test_auth_routes():
-    print("\nTesting Auth Routes...")
-
+def test_auth_routes(client, session):
+    """Test authentication routes."""
     # Test signup
     signup_data = {
         "username": f"testuser_{int(time.time())}",
         "email": f"test_{int(time.time())}@test.com",
         "password": "testpass123"
     }
-    response = requests.post(f"{BASE_URL}/auth/register", json=signup_data)
-    print(f"Register Response: {response.status_code}")
-    print(f"Response content: {response.text}")
-    assert response.status_code in [201, 400], "Registration failed"
+    response = client.post('/api/auth/register', json=signup_data)
+    print(f"Response data: {response.data}")  # For debugging
+    assert response.status_code == 201
 
     # Test login
     login_data = {
         "email": signup_data["email"],
         "password": signup_data["password"]
     }
-    response = requests.post(f"{BASE_URL}/auth/login", json=login_data)
-    print(f"Login Response: {response.status_code}")
-    print(f"Response content: {response.text}")
-    assert response.status_code == 200, "Login failed"
+    response = client.post('/api/auth/login', json=login_data)
+    assert response.status_code == 200
+    data = json.loads(response.data)
+    assert 'token' in data['data']
 
-    return response.json().get('access_token')
+def test_protected_routes(client, auth_headers):
+    """Test routes that require authentication."""
+    # Test getting user profile
+    print(f"Auth headers: {auth_headers}")
+    response = client.get('/api/auth/me', headers=auth_headers)
+    print(f"Response status: {response.status_code}")
+    print(f"Response data: {response.get_data(as_text=True)}")
+    assert response.status_code == 200
 
-def test_universe_routes(token):
-    print("\nTesting Universe Routes...")
-    headers = {'Authorization': f'Bearer {token}'}
-
+def test_universe_routes(client, auth_headers, session):
+    """Test universe routes."""
     # Create universe
     universe_data = {
         "name": f"Test Universe {int(time.time())}",
@@ -51,58 +51,70 @@ def test_universe_routes(token):
             "key": "C"
         }
     }
-    response = requests.post(f"{BASE_URL}/universes", json=universe_data, headers=headers)
-    print(f"Create Universe Response: {response.status_code}")
-    assert response.status_code == 201, "Universe creation failed"
-    universe_id = response.json().get('id')
+    response = client.post('/api/universes', json=universe_data, headers=auth_headers)
+    assert response.status_code == 201
+    data = json.loads(response.data)
+    universe_id = data['data']['id']
 
     # Get universe
-    response = requests.get(f"{BASE_URL}/universes/{universe_id}", headers=headers)
-    print(f"Get Universe Response: {response.status_code}")
-    assert response.status_code == 200, "Get universe failed"
+    response = client.get(f'/api/universes/{universe_id}', headers=auth_headers)
+    assert response.status_code == 200
 
-    return universe_id
+@pytest.fixture
+def universe_id(client, auth_headers, session):
+    """Create a test universe and return its ID."""
+    universe_data = {
+        "name": f"Test Universe {int(time.time())}",
+        "description": "Test description",
+        "physics_params": {
+            "gravity": 9.81,
+            "friction": 0.5
+        },
+        "audio_params": {
+            "tempo": 120,
+            "key": "C"
+        }
+    }
+    response = client.post('/api/universes', json=universe_data, headers=auth_headers)
+    assert response.status_code == 201
+    data = json.loads(response.data)
+    return data['data']['id']
 
-def test_physics_routes(token, universe_id):
-    print("\nTesting Physics Routes...")
-    headers = {'Authorization': f'Bearer {token}'}
-
+def test_physics_routes(client, auth_headers, universe_id):
+    """Test physics routes."""
     # Update physics parameters
     physics_data = {
         "gravity": 10.0,
         "friction": 0.3
     }
-    response = requests.put(
-        f"{BASE_URL}/physics/{universe_id}/parameters",
+    response = client.put(
+        f'/api/physics/{universe_id}/parameters',
         json=physics_data,
-        headers=headers
+        headers=auth_headers
     )
-    print(f"Update Physics Response: {response.status_code}")
-    assert response.status_code == 200, "Physics update failed"
+    assert response.status_code == 200
 
-def test_music_routes(token, universe_id):
-    print("\nTesting Music Routes...")
-    headers = {'Authorization': f'Bearer {token}'}
-
+def test_music_routes(client, auth_headers, universe_id):
+    """Test music routes."""
     # Update music parameters
     music_data = {
         "tempo": 130,
         "key": "Am",
         "scale": "minor"
     }
-    response = requests.put(
-        f"{BASE_URL}/music/{universe_id}/parameters",
+    response = client.put(
+        f'/api/audio/{universe_id}/parameters',
         json=music_data,
-        headers=headers
+        headers=auth_headers
     )
-    print(f"Update Music Response: {response.status_code}")
-    assert response.status_code == 200, "Music update failed"
+    assert response.status_code == 200
 
+@pytest.mark.skip(reason="WebSocket server not running in test environment")
 def test_websocket():
-    print("\nTesting WebSocket Connection...")
+    """Test WebSocket connection."""
     ws = websocket.WebSocket()
     try:
-        ws.connect(WS_URL)
+        ws.connect("ws://localhost:5002")
         print("WebSocket connection successful")
 
         # Join a room
@@ -125,30 +137,6 @@ def test_websocket():
 
     except Exception as e:
         print(f"WebSocket test failed: {e}")
+        raise
     finally:
         ws.close()
-
-def main():
-    try:
-        # Test authentication
-        token = test_auth_routes()
-
-        # Test universe creation and management
-        universe_id = test_universe_routes(token)
-
-        # Test physics routes
-        test_physics_routes(token, universe_id)
-
-        # Test music routes
-        test_music_routes(token, universe_id)
-
-        # Test WebSocket
-        test_websocket()
-
-        print("\nAll tests completed successfully!")
-
-    except Exception as e:
-        print(f"\nTest failed: {e}")
-
-if __name__ == "__main__":
-    main()

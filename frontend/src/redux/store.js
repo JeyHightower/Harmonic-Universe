@@ -1,16 +1,14 @@
 import { configureStore } from '@reduxjs/toolkit';
-import authReducer from './slices/authSlice';
+import notificationReducer from './slices/notificationSlice';
+import preferencesReducer from './slices/preferencesSlice';
 import universeReducer from './slices/universeSlice';
 
-export const store = configureStore({
+const store = configureStore({
   reducer: {
-    auth: authReducer,
+    notifications: notificationReducer,
+    preferences: preferencesReducer,
     universe: universeReducer,
   },
-  middleware: getDefaultMiddleware =>
-    getDefaultMiddleware({
-      serializableCheck: false,
-    }),
 });
 
 export default store;

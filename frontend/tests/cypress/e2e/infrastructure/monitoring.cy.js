@@ -342,3 +342,264 @@ describe('System Monitoring', () => {
       .and('contain', 'Failed to generate report');
   });
 });
+
+describe('Infrastructure and Monitoring', () => {
+  describe('Application Health', () => {
+    it('should check API health endpoint', () => {
+      cy.request('/api/health').then(response => {
+        expect(response.status).to.eq(200);
+        expect(response.body).to.have.property('status', 'healthy');
+        expect(response.body).to.have.property('uptime').and.be.a('number');
+      });
+    });
+
+    it('should verify API version', () => {
+      cy.request('/api/version').then(response => {
+        expect(response.status).to.eq(200);
+        expect(response.body)
+          .to.have.property('version')
+          .and.match(/^\d+\.\d+\.\d+$/);
+        expect(response.body).to.have.property('environment');
+      });
+    });
+  });
+
+  describe('Error Tracking', () => {
+    beforeEach(() => {
+      cy.intercept('POST', '/api/errors', {
+        statusCode: 200,
+        body: {
+          success: true,
+          errorId: 'test-error-id',
+        },
+      }).as('errorReport');
+    });
+
+    it('should report JavaScript errors', () => {
+      cy.visit('/error-test', {
+        onBeforeLoad(win) {
+          cy.stub(win.console, 'error').as('consoleError');
+        },
+      });
+
+      // Trigger a JavaScript error
+      cy.window().then(win => {
+        win.dispatchEvent(
+          new ErrorEvent('error', {
+            error: new Error('Test error'),
+            message: 'Test error message',
+          })
+        );
+      });
+
+      // Verify error was reported
+      cy.wait('@errorReport').then(interception => {
+        expect(interception.request.body).to.have.property(
+          'type',
+          'javascript'
+        );
+        expect(interception.request.body)
+          .to.have.property('message')
+          .and.include('Test error');
+      });
+
+      // Verify console error was logged
+      cy.get('@consoleError').should('have.been.called');
+    });
+
+    it('should report API errors', () => {
+      cy.intercept('GET', '/api/data', {
+        statusCode: 500,
+        body: {
+          error: 'Internal server error',
+        },
+      }).as('apiError');
+
+      cy.visit('/data-page');
+      cy.wait('@apiError');
+      cy.wait('@errorReport').then(interception => {
+        expect(interception.request.body).to.have.property('type', 'api');
+        expect(interception.request.body).to.have.property('status', 500);
+      });
+    });
+  });
+
+  describe('Performance Monitoring', () => {
+    beforeEach(() => {
+      cy.intercept('POST', '/api/metrics', {
+        statusCode: 200,
+        body: {
+          success: true,
+        },
+      }).as('metricsReport');
+    });
+
+    it('should track page load metrics', () => {
+      cy.visit('/', {
+        onBeforeLoad(win) {
+          // Stub performance API
+          cy.stub(win.performance, 'getEntriesByType').returns([
+            {
+              entryType: 'navigation',
+              duration: 1000,
+              domComplete: 800,
+              loadEventEnd: 1000,
+            },
+          ]);
+        },
+      });
+
+      cy.wait('@metricsReport').then(interception => {
+        const metrics = interception.request.body;
+        expect(metrics).to.have.property('pageLoad');
+        expect(metrics.pageLoad)
+          .to.have.property('duration')
+          .and.be.a('number');
+        expect(metrics.pageLoad)
+          .to.have.property('domComplete')
+          .and.be.a('number');
+      });
+    });
+
+    it('should track API response times', () => {
+      cy.intercept('GET', '/api/data', req => {
+        req.reply({
+          statusCode: 200,
+          body: { data: 'test' },
+          delay: 100,
+        });
+      }).as('slowRequest');
+
+      cy.visit('/data-page');
+      cy.wait('@slowRequest');
+      cy.wait('@metricsReport').then(interception => {
+        const metrics = interception.request.body;
+        expect(metrics).to.have.property('apiLatency');
+        expect(metrics.apiLatency).to.have.property('endpoint', '/api/data');
+        expect(metrics.apiLatency)
+          .to.have.property('duration')
+          .and.be.above(90);
+      });
+    });
+  });
+
+  describe('Resource Loading', () => {
+    it('should load and cache static assets', () => {
+      cy.intercept('GET', '/static/**', {
+        statusCode: 200,
+      }).as('staticAsset');
+
+      cy.visit('/');
+
+      // Check if assets are cached
+      cy.window().then(win => {
+        return win.caches.open('static-assets').then(cache => {
+          return cache.keys().then(keys => {
+            expect(keys.length).to.be.above(0);
+          });
+        });
+      });
+    });
+
+    it('should handle missing assets gracefully', () => {
+      cy.intercept('GET', '/static/missing-image.jpg', {
+        statusCode: 404,
+      }).as('missingAsset');
+
+      cy.visit('/');
+
+      // Verify fallback content is shown
+      cy.get('[data-testid="image-fallback"]').should('be.visible');
+    });
+  });
+
+  describe('WebSocket Connection', () => {
+    it('should establish and maintain WebSocket connection', () => {
+      cy.visit('/', {
+        onBeforeLoad(win) {
+          cy.stub(win.console, 'log').as('consoleLog');
+        },
+      });
+
+      // Verify WebSocket connection
+      cy.window().then(win => {
+        expect(win.WebSocket).to.be.a('function');
+        const ws = new win.WebSocket('ws://localhost:5001/ws');
+
+        ws.onopen = () => {
+          expect(ws.readyState).to.equal(1); // OPEN
+        };
+      });
+    });
+
+    it('should handle WebSocket reconnection', () => {
+      cy.visit('/', {
+        onBeforeLoad(win) {
+          cy.stub(win.console, 'log').as('consoleLog');
+        },
+      });
+
+      cy.window().then(win => {
+        const ws = new win.WebSocket('ws://localhost:5001/ws');
+
+        // Force close connection
+        ws.close();
+
+        // Verify reconnection attempt
+        cy.get('@consoleLog').should(
+          'be.calledWith',
+          'WebSocket: Attempting reconnection'
+        );
+      });
+    });
+  });
+
+  describe('Browser Storage', () => {
+    it('should handle localStorage quota exceeded', () => {
+      cy.visit('/', {
+        onBeforeLoad(win) {
+          cy.stub(win.console, 'error').as('consoleError');
+
+          // Mock localStorage to throw quota exceeded error
+          win.localStorage.setItem = function () {
+            throw new Error('QuotaExceededError');
+          };
+        },
+      });
+
+      // Attempt to store large data
+      cy.window().then(win => {
+        try {
+          win.localStorage.setItem('test', 'x'.repeat(10000000));
+        } catch (e) {
+          expect(e.message).to.include('QuotaExceeded');
+        }
+      });
+
+      // Verify error handling
+      cy.get('[data-testid="storage-error"]')
+        .should('be.visible')
+        .and('contain', 'Storage quota exceeded');
+    });
+
+    it('should clean up old cache entries', () => {
+      cy.visit('/', {
+        onBeforeLoad(win) {
+          // Add old cache entries
+          win.caches.open('test-cache').then(cache => {
+            cache.put('/old-data', new Response('old data'));
+          });
+        },
+      });
+
+      // Verify cache cleanup
+      cy.window().then(win => {
+        return win.caches.open('test-cache').then(cache => {
+          return cache.keys().then(keys => {
+            expect(keys.length).to.equal(0);
+          });
+        });
+      });
+    });
+  });
+});

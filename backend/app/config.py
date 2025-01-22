@@ -15,7 +15,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # JWT
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'dev')
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'dev-jwt-secret')
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
 
@@ -32,6 +32,12 @@ class Config:
 
     SOCKETIO_MESSAGE_QUEUE = None
 
+    CACHE_TYPE = 'simple'
+    CACHE_DEFAULT_TIMEOUT = 300
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
+    UPLOAD_FOLDER = 'uploads'
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp3', 'wav'}
+
 class DevelopmentConfig(Config):
     """Development configuration."""
     DEBUG = True
@@ -39,26 +45,21 @@ class DevelopmentConfig(Config):
         'DATABASE_URL',
         'sqlite:///dev.db'
     )
+    SQLALCHEMY_ECHO = True
 
 class TestConfig(Config):
-    """Test configuration."""
+    """Testing configuration."""
     TESTING = True
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
-
-    # Disable CSRF tokens in the Forms
     WTF_CSRF_ENABLED = False
-
-    # Faster token expiration for testing
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=5)
-    JWT_REFRESH_TOKEN_EXPIRES = timedelta(minutes=10)
-
-    # Disable rate limiting in tests
+    PRESERVE_CONTEXT_ON_EXCEPTION = True
     RATELIMIT_ENABLED = False
-
-    # WebSocket test settings
-    SOCKETIO_TEST_MODE = True
+    JWT_SECRET_KEY = 'test-jwt-secret'
+    SECRET_KEY = 'test-secret'
     SOCKETIO_MESSAGE_QUEUE = None
+    CACHE_TYPE = 'null'
+    SQLALCHEMY_ECHO = True
 
 class ProductionConfig(Config):
     """Production configuration."""
@@ -79,10 +80,12 @@ class ProductionConfig(Config):
     RATELIMIT_DEFAULT = "100 per day"
     RATELIMIT_STORAGE_URL = os.environ.get('REDIS_URL')
 
+    SQLALCHEMY_ECHO = False
+
 # Configuration dictionary
-config_by_name = {
+config = {
     'development': DevelopmentConfig,
-    'test': TestConfig,
+    'testing': TestConfig,
     'production': ProductionConfig,
     'default': DevelopmentConfig
 }

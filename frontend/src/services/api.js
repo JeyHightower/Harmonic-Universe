@@ -1,16 +1,13 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5001',
-  timeout: 10000,
-  withCredentials: true,
+  baseURL: 'http://localhost:5000',
   headers: {
     'Content-Type': 'application/json',
-    Accept: 'application/json',
   },
 });
 
-// Request interceptor
+// Add a request interceptor to add auth token
 api.interceptors.request.use(
   config => {
     const token = localStorage.getItem('token');
@@ -24,30 +21,15 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor
+// Add a response interceptor to handle errors
 api.interceptors.response.use(
   response => response,
   error => {
-    if (error.response) {
-      // Server responded with error
-      if (error.response.status === 401) {
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-      }
-      return Promise.reject(error.response.data);
+    if (error.response?.status === 401) {
+      // Redirect to login page if unauthorized
+      window.location.href = '/login';
     }
-
-    if (error.request) {
-      // Request made but no response
-      return Promise.reject({
-        message: 'Network error. Please check your connection and try again.',
-      });
-    }
-
-    // Request setup error
-    return Promise.reject({
-      message: 'An unexpected error occurred. Please try again.',
-    });
+    return Promise.reject(error);
   }
 );
 

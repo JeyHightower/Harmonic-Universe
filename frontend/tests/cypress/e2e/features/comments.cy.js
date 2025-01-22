@@ -1,309 +1,293 @@
-describe('Comments System Features', () => {
+describe('Comment Features', () => {
   beforeEach(() => {
-    // Mock authentication
-    cy.intercept('POST', '/api/auth/login', {
+    // Setup mock responses for comment-related API calls
+    cy.intercept('GET', '/api/comments/1', {
       statusCode: 200,
       body: {
-        user: { id: 1, username: 'testuser' },
-        token: 'fake-jwt-token',
-      },
-    }).as('loginRequest');
-
-    // Mock initial comments
-    cy.intercept('GET', '/api/universes/1/comments*', {
-      statusCode: 200,
-      body: {
-        comments: [
-          {
-            id: 1,
-            content: 'Initial comment',
-            author: { id: 1, username: 'testuser' },
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            reactions: { '👍': 5, '❤️': 3 },
-            replyCount: 2,
-            isEdited: false,
-          },
-        ],
-        total: 1,
-        hasMore: false,
-      },
-    }).as('getComments');
-
-    // Login and navigate
-    cy.visit('/login');
-    cy.get('[data-testid="login-email"]').type('test@example.com');
-    cy.get('[data-testid="login-password"]').type('password123');
-    cy.get('[data-testid="login-submit"]').click();
-    cy.wait('@loginRequest');
-
-    cy.visit('/universes/1/comments');
-    cy.wait('@getComments');
-  });
-
-  describe('Comment Creation', () => {
-    it('should create new comment', () => {
-      cy.intercept('POST', '/api/universes/1/comments', {
-        statusCode: 200,
-        body: {
-          id: 2,
-          content: 'New comment',
-          author: { id: 1, username: 'testuser' },
-          createdAt: new Date().toISOString(),
-          reactions: {},
-          replyCount: 0,
-        },
-      }).as('createComment');
-
-      cy.get('[data-testid="comment-input"]').type('New comment');
-      cy.get('[data-testid="submit-comment"]').click();
-      cy.wait('@createComment');
-
-      cy.get('[data-testid="comment-2"]').should('contain', 'New comment');
-    });
-
-    it('should handle rich text formatting', () => {
-      cy.get('[data-testid="comment-input"]').type('**Bold text**');
-      cy.get('[data-testid="format-preview"]')
-        .should('contain', 'Bold text')
-        .find('strong')
-        .should('exist');
-
-      cy.get('[data-testid="comment-input"]').clear().type('`code block`');
-      cy.get('[data-testid="format-preview"]')
-        .should('contain', 'code block')
-        .find('code')
-        .should('exist');
-    });
-  });
-
-  describe('Comment Threading', () => {
-    it('should create reply', () => {
-      cy.intercept('POST', '/api/comments/1/replies', {
-        statusCode: 200,
-        body: {
-          id: 3,
-          content: 'Reply comment',
-          author: { id: 1, username: 'testuser' },
-          parentId: 1,
-          createdAt: new Date().toISOString(),
-          reactions: {},
-        },
-      }).as('createReply');
-
-      cy.get('[data-testid="reply-button-1"]').click();
-      cy.get('[data-testid="reply-input-1"]').type('Reply comment');
-      cy.get('[data-testid="submit-reply-1"]').click();
-      cy.wait('@createReply');
-
-      cy.get('[data-testid="comment-3"]')
-        .should('contain', 'Reply comment')
-        .and('have.class', 'reply');
-    });
-
-    it('should load nested replies', () => {
-      cy.intercept('GET', '/api/comments/1/replies', {
-        statusCode: 200,
-        body: {
-          replies: [
+        status: 'success',
+        data: {
+          comments: [
             {
-              id: 4,
-              content: 'Nested reply',
-              author: { id: 2, username: 'user2' },
-              parentId: 1,
-              createdAt: new Date().toISOString(),
+              id: 1,
+              content: 'Test Comment',
+              user_id: 1,
+              username: 'testuser',
+              created_at: new Date().toISOString(),
+              parent_id: null,
+              replies: [],
             },
           ],
         },
-      }).as('getReplies');
+      },
+    }).as('getComments');
 
-      cy.get('[data-testid="view-replies-1"]').click();
-      cy.wait('@getReplies');
+    cy.intercept('POST', '/api/comments/1', {
+      statusCode: 201,
+      body: {
+        status: 'success',
+        data: {
+          comment: {
+            id: 2,
+            content: 'New Comment',
+            user_id: 1,
+            username: 'testuser',
+            created_at: new Date().toISOString(),
+            parent_id: null,
+            replies: [],
+          },
+        },
+      },
+    }).as('createComment');
 
-      cy.get('[data-testid="comment-4"]')
-        .should('contain', 'Nested reply')
-        .and('have.class', 'nested');
+    // Login before each test
+    cy.login();
+    cy.visit('/universe/1');
+  });
+
+  describe('Comment Creation', () => {
+    it('should create a new comment', () => {
+      cy.get('[data-testid="comment-section"]').should('be.visible');
+      cy.get('[data-testid="comment-input"]').type('New Comment');
+      cy.get('[data-testid="submit-comment"]').click();
+
+      cy.wait('@createComment');
+
+      cy.get('[data-testid="comment-list"]')
+        .should('contain', 'New Comment')
+        .and('contain', 'testuser');
+    });
+
+    it('should validate empty comments', () => {
+      cy.get('[data-testid="submit-comment"]').should('be.disabled');
+      cy.get('[data-testid="comment-input"]').type('   ');
+      cy.get('[data-testid="submit-comment"]').should('be.disabled');
+    });
+
+    it('should handle API errors during creation', () => {
+      cy.intercept('POST', '/api/comments/1', {
+        statusCode: 500,
+        body: {
+          status: 'error',
+          message: 'Server error',
+        },
+      }).as('commentError');
+
+      cy.get('[data-testid="comment-input"]').type('New Comment');
+      cy.get('[data-testid="submit-comment"]').click();
+
+      cy.wait('@commentError');
+      cy.get('[data-testid="error-message"]')
+        .should('be.visible')
+        .and('contain', 'Server error');
+    });
+
+    it('should create nested replies', () => {
+      cy.get('[data-testid="comment-1"]').within(() => {
+        cy.get('[data-testid="reply-button"]').click();
+      });
+
+      cy.get('[data-testid="reply-input"]').type('Reply Comment');
+      cy.get('[data-testid="submit-reply"]').click();
+
+      cy.wait('@createComment');
+      cy.get('[data-testid="comment-replies"]').should(
+        'contain',
+        'Reply Comment'
+      );
     });
   });
 
-  describe('Comment Editing', () => {
-    it('should edit comment', () => {
+  describe('Comment Management', () => {
+    it('should edit existing comment', () => {
       cy.intercept('PUT', '/api/comments/1', {
         statusCode: 200,
         body: {
-          content: 'Updated comment',
-          isEdited: true,
-          updatedAt: new Date().toISOString(),
+          status: 'success',
+          data: {
+            comment: {
+              id: 1,
+              content: 'Updated Comment',
+              user_id: 1,
+              username: 'testuser',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          },
         },
       }).as('updateComment');
 
-      cy.get('[data-testid="edit-comment-1"]').click();
-      cy.get('[data-testid="edit-input-1"]').clear().type('Updated comment');
-      cy.get('[data-testid="save-edit-1"]').click();
-      cy.wait('@updateComment');
+      cy.get('[data-testid="comment-1"]').within(() => {
+        cy.get('[data-testid="edit-button"]').click();
+        cy.get('[data-testid="edit-input"]').clear().type('Updated Comment');
+        cy.get('[data-testid="save-edit"]').click();
+      });
 
+      cy.wait('@updateComment');
       cy.get('[data-testid="comment-1"]')
-        .should('contain', 'Updated comment')
+        .should('contain', 'Updated Comment')
         .and('contain', '(edited)');
     });
 
     it('should delete comment', () => {
       cy.intercept('DELETE', '/api/comments/1', {
         statusCode: 200,
+        body: {
+          status: 'success',
+          message: 'Comment deleted successfully',
+        },
       }).as('deleteComment');
 
-      cy.get('[data-testid="delete-comment-1"]').click();
+      cy.get('[data-testid="comment-1"]').within(() => {
+        cy.get('[data-testid="delete-button"]').click();
+      });
+
       cy.get('[data-testid="confirm-delete"]').click();
       cy.wait('@deleteComment');
-
       cy.get('[data-testid="comment-1"]').should('not.exist');
     });
-  });
 
-  describe('Reactions', () => {
-    it('should add reaction', () => {
-      cy.intercept('POST', '/api/comments/1/reactions', {
-        statusCode: 200,
+    it('should handle unauthorized edit attempts', () => {
+      cy.intercept('PUT', '/api/comments/1', {
+        statusCode: 403,
         body: {
-          reactions: { '👍': 6, '❤️': 3 },
+          status: 'error',
+          message: 'Unauthorized access',
         },
-      }).as('addReaction');
+      }).as('unauthorizedEdit');
 
-      cy.get('[data-testid="react-👍-1"]').click();
-      cy.wait('@addReaction');
+      cy.get('[data-testid="comment-1"]').within(() => {
+        cy.get('[data-testid="edit-button"]').click();
+        cy.get('[data-testid="edit-input"]').clear().type('Unauthorized Edit');
+        cy.get('[data-testid="save-edit"]').click();
+      });
 
-      cy.get('[data-testid="reaction-count-👍-1"]').should('contain', '6');
-    });
-
-    it('should remove reaction', () => {
-      cy.intercept('DELETE', '/api/comments/1/reactions/👍', {
-        statusCode: 200,
-        body: {
-          reactions: { '👍': 4, '❤️': 3 },
-        },
-      }).as('removeReaction');
-
-      cy.get('[data-testid="react-👍-1"]').click();
-      cy.wait('@removeReaction');
-
-      cy.get('[data-testid="reaction-count-👍-1"]').should('contain', '4');
-    });
-  });
-
-  describe('Notifications', () => {
-    it('should notify on mentions', () => {
-      cy.intercept('POST', '/api/universes/1/comments', {
-        statusCode: 200,
-        body: {
-          id: 5,
-          content: '@user2 Check this out',
-          mentions: ['user2'],
-        },
-      }).as('mentionComment');
-
-      cy.get('[data-testid="comment-input"]').type('@user2 Check this out');
-      cy.get('[data-testid="submit-comment"]').click();
-      cy.wait('@mentionComment');
-
-      cy.get('[data-testid="mention-notification"]').should('be.visible');
-    });
-
-    it('should subscribe to thread', () => {
-      cy.intercept('POST', '/api/comments/1/subscribe', {
-        statusCode: 200,
-        body: {
-          subscribed: true,
-        },
-      }).as('subscribe');
-
-      cy.get('[data-testid="subscribe-thread-1"]').click();
-      cy.wait('@subscribe');
-
-      cy.get('[data-testid="subscribe-thread-1"]').should(
-        'have.class',
-        'subscribed'
-      );
-    });
-  });
-
-  describe('Moderation', () => {
-    it('should flag inappropriate content', () => {
-      cy.intercept('POST', '/api/comments/1/flag', {
-        statusCode: 200,
-        body: {
-          status: 'flagged',
-          moderationQueue: true,
-        },
-      }).as('flagComment');
-
-      cy.get('[data-testid="flag-comment-1"]').click();
-      cy.get('[data-testid="flag-reason"]').select('inappropriate');
-      cy.get('[data-testid="submit-flag"]').click();
-      cy.wait('@flagComment');
-
-      cy.get('[data-testid="comment-1"]').should('have.class', 'flagged');
-    });
-
-    it('should handle moderation actions', () => {
-      // Mock moderator role
-      cy.intercept('GET', '/api/auth/user', {
-        statusCode: 200,
-        body: {
-          roles: ['moderator'],
-        },
-      }).as('checkRole');
-
-      cy.intercept('PUT', '/api/comments/1/moderate', {
-        statusCode: 200,
-        body: {
-          status: 'hidden',
-          moderatedBy: 'testuser',
-        },
-      }).as('moderateComment');
-
-      cy.get('[data-testid="moderate-comment-1"]').click();
-      cy.get('[data-testid="moderation-action"]').select('hide');
-      cy.get('[data-testid="apply-moderation"]').click();
-      cy.wait('@moderateComment');
-
-      cy.get('[data-testid="comment-1"]').should('have.class', 'hidden');
-    });
-  });
-
-  describe('Error Handling', () => {
-    it('should handle creation errors', () => {
-      cy.intercept('POST', '/api/universes/1/comments', {
-        statusCode: 500,
-        body: {
-          error: 'Failed to create comment',
-        },
-      }).as('createError');
-
-      cy.get('[data-testid="comment-input"]').type('Error comment');
-      cy.get('[data-testid="submit-comment"]').click();
-      cy.wait('@createError');
-
+      cy.wait('@unauthorizedEdit');
       cy.get('[data-testid="error-message"]')
         .should('be.visible')
-        .and('contain', 'Failed to create comment');
+        .and('contain', 'Unauthorized access');
+    });
+  });
+
+  describe('Comment Display', () => {
+    it('should display comments in chronological order', () => {
+      cy.intercept('GET', '/api/comments/1', {
+        statusCode: 200,
+        body: {
+          status: 'success',
+          data: {
+            comments: [
+              {
+                id: 1,
+                content: 'First Comment',
+                created_at: '2024-01-01T00:00:00Z',
+              },
+              {
+                id: 2,
+                content: 'Second Comment',
+                created_at: '2024-01-02T00:00:00Z',
+              },
+            ],
+          },
+        },
+      }).as('getOrderedComments');
+
+      cy.visit('/universe/1');
+      cy.wait('@getOrderedComments');
+
+      cy.get('[data-testid="comment-list"]').within(() => {
+        cy.get('[data-testid="comment"]')
+          .eq(0)
+          .should('contain', 'First Comment');
+        cy.get('[data-testid="comment"]')
+          .eq(1)
+          .should('contain', 'Second Comment');
+      });
     });
 
-    it('should handle rate limiting', () => {
-      cy.intercept('POST', '/api/universes/1/comments', {
-        statusCode: 429,
+    it('should handle empty comment list', () => {
+      cy.intercept('GET', '/api/comments/1', {
+        statusCode: 200,
         body: {
-          error: 'Too many comments',
-          retryAfter: 60,
+          status: 'success',
+          data: {
+            comments: [],
+          },
         },
-      }).as('rateLimitError');
+      }).as('getEmptyComments');
 
-      cy.get('[data-testid="comment-input"]').type('Rate limited comment');
-      cy.get('[data-testid="submit-comment"]').click();
-      cy.wait('@rateLimitError');
+      cy.visit('/universe/1');
+      cy.wait('@getEmptyComments');
 
-      cy.get('[data-testid="rate-limit-message"]')
+      cy.get('[data-testid="empty-comments"]')
         .should('be.visible')
-        .and('contain', 'Try again in 1 minute');
+        .and('contain', 'No comments yet');
+    });
+
+    it('should format timestamps correctly', () => {
+      const now = new Date();
+      const comment = {
+        id: 1,
+        content: 'Test Comment',
+        created_at: now.toISOString(),
+      };
+
+      cy.intercept('GET', '/api/comments/1', {
+        statusCode: 200,
+        body: {
+          status: 'success',
+          data: {
+            comments: [comment],
+          },
+        },
+      }).as('getTimestampComment');
+
+      cy.visit('/universe/1');
+      cy.wait('@getTimestampComment');
+
+      cy.get('[data-testid="comment-timestamp"]').should('contain', 'just now');
+    });
+  });
+
+  describe('Comment Interactions', () => {
+    it('should show loading state while fetching comments', () => {
+      cy.intercept('GET', '/api/comments/1', {
+        delay: 1000,
+        statusCode: 200,
+        body: {
+          status: 'success',
+          data: {
+            comments: [],
+          },
+        },
+      }).as('getDelayedComments');
+
+      cy.visit('/universe/1');
+      cy.get('[data-testid="comments-loading"]').should('be.visible');
+      cy.wait('@getDelayedComments');
+      cy.get('[data-testid="comments-loading"]').should('not.exist');
+    });
+
+    it('should handle network errors gracefully', () => {
+      cy.intercept('GET', '/api/comments/1', {
+        forceNetworkError: true,
+      }).as('networkError');
+
+      cy.visit('/universe/1');
+      cy.get('[data-testid="error-message"]')
+        .should('be.visible')
+        .and('contain', 'Failed to load comments');
+      cy.get('[data-testid="retry-button"]').should('be.visible');
+    });
+
+    it('should auto-update comment list after new comment', () => {
+      cy.get('[data-testid="comment-input"]').type('Auto-update Test');
+      cy.get('[data-testid="submit-comment"]').click();
+
+      cy.wait('@createComment');
+      cy.get('[data-testid="comment-list"]').should(
+        'contain',
+        'Auto-update Test'
+      );
     });
   });
 });

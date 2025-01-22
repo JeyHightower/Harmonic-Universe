@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import JSON
 from app.extensions import db
 
 class UserPreferences(db.Model):
@@ -9,7 +9,7 @@ class UserPreferences(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, unique=True)
     theme = db.Column(db.String(20), default='system')  # system, light, dark
     notifications_enabled = db.Column(db.Boolean, default=True)
-    notification_types = db.Column(JSONB, default={
+    notification_types = db.Column(JSON, default={
         'system': True,
         'alert': True,
         'message': True
@@ -20,12 +20,12 @@ class UserPreferences(db.Model):
     timezone = db.Column(db.String(50), default='UTC')
     date_format = db.Column(db.String(20), default='YYYY-MM-DD')
     time_format = db.Column(db.String(20), default='HH:mm')
-    accessibility = db.Column(JSONB, default={
+    accessibility = db.Column(JSON, default={
         'high_contrast': False,
         'reduced_motion': False,
         'font_size': 'medium'
     })
-    dashboard_layout = db.Column(JSONB, default={
+    dashboard_layout = db.Column(JSON, default={
         'widgets': ['notifications', 'analytics', 'recent_activity'],
         'layout': 'grid'
     })

@@ -1,37 +1,49 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { notificationService } from '../../services/notificationService';
 
+// Async thunks
 export const fetchNotifications = createAsyncThunk(
-  'notifications/fetchAll',
+  'notifications/fetchNotifications',
   async (_, { rejectWithValue }) => {
     try {
-      return await notificationService.getNotifications();
+      const response = await fetch('/api/notifications');
+      if (!response.ok) throw new Error('Failed to fetch notifications');
+      return await response.json();
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(error.message);
     }
   }
 );
 
-export const markAsRead = createAsyncThunk(
+export const markNotificationAsRead = createAsyncThunk(
   'notifications/markAsRead',
   async (notificationId, { rejectWithValue }) => {
     try {
-      await notificationService.markAsRead(notificationId);
+      const response = await fetch(
+        `/api/notifications/${notificationId}/read`,
+        {
+          method: 'PUT',
+        }
+      );
+      if (!response.ok) throw new Error('Failed to mark notification as read');
       return notificationId;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(error.message);
     }
   }
 );
 
-export const markAllAsRead = createAsyncThunk(
+export const markAllNotificationsAsRead = createAsyncThunk(
   'notifications/markAllAsRead',
   async (_, { rejectWithValue }) => {
     try {
-      await notificationService.markAllAsRead();
-      return true;
+      const response = await fetch('/api/notifications/read-all', {
+        method: 'PUT',
+      });
+      if (!response.ok)
+        throw new Error('Failed to mark all notifications as read');
+      return await response.json();
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(error.message);
     }
   }
 );
@@ -40,29 +52,19 @@ export const deleteNotification = createAsyncThunk(
   'notifications/delete',
   async (notificationId, { rejectWithValue }) => {
     try {
-      await notificationService.deleteNotification(notificationId);
+      const response = await fetch(`/api/notifications/${notificationId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete notification');
       return notificationId;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
-
-export const clearAllNotifications = createAsyncThunk(
-  'notifications/clearAll',
-  async (_, { rejectWithValue }) => {
-    try {
-      await notificationService.clearAllNotifications();
-      return true;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(error.message);
     }
   }
 );
 
 const initialState = {
-  notifications: [],
-  unreadCount: 0,
+  items: [],
   isLoading: false,
   error: null,
 };
@@ -71,12 +73,6 @@ const notificationSlice = createSlice({
   name: 'notifications',
   initialState,
   reducers: {
-    addNotification: (state, action) => {
-      state.notifications.unshift(action.payload);
-      if (!action.payload.read) {
-        state.unreadCount += 1;
-      }
-    },
     clearError: state => {
       state.error = null;
     },
@@ -90,49 +86,35 @@ const notificationSlice = createSlice({
       })
       .addCase(fetchNotifications.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.notifications = action.payload;
-        state.unreadCount = action.payload.filter(n => !n.read).length;
+        state.items = action.payload;
       })
       .addCase(fetchNotifications.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       })
       // Mark as read
-      .addCase(markAsRead.fulfilled, (state, action) => {
-        const notification = state.notifications.find(
-          n => n.id === action.payload
+      .addCase(markNotificationAsRead.fulfilled, (state, action) => {
+        const notification = state.items.find(
+          item => item.id === action.payload
         );
-        if (notification && !notification.read) {
-          notification.read = true;
-          state.unreadCount -= 1;
+        if (notification) {
+          notification.isRead = true;
         }
       })
       // Mark all as read
-      .addCase(markAllAsRead.fulfilled, state => {
-        state.notifications.forEach(n => {
-          n.read = true;
+      .addCase(markAllNotificationsAsRead.fulfilled, state => {
+        state.items.forEach(notification => {
+          notification.isRead = true;
         });
-        state.unreadCount = 0;
       })
       // Delete notification
       .addCase(deleteNotification.fulfilled, (state, action) => {
-        const notification = state.notifications.find(
-          n => n.id === action.payload
+        state.items = state.items.filter(
+          notification => notification.id !== action.payload
         );
-        state.notifications = state.notifications.filter(
-          n => n.id !== action.payload
-        );
-        if (notification && !notification.read) {
-          state.unreadCount -= 1;
-        }
-      })
-      // Clear all notifications
-      .addCase(clearAllNotifications.fulfilled, state => {
-        state.notifications = [];
-        state.unreadCount = 0;
       });
   },
 });
 
-export const { addNotification, clearError } = notificationSlice.actions;
+export const { clearError } = notificationSlice.actions;
 export default notificationSlice.reducer;

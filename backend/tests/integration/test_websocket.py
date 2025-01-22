@@ -3,6 +3,15 @@ import time
 import logging
 import sys
 from typing import Dict, Any
+import pytest
+from unittest.mock import patch
+from app.websocket import WebSocketService
+from app.models.user import User
+from app.extensions import db
+import json
+from flask_socketio import SocketIO
+from app.extensions import socketio
+from app.sockets.physics_handler import PhysicsNamespace
 
 # Configure logging
 logging.basicConfig(
@@ -152,6 +161,84 @@ def main():
         logger.error(f'Unexpected error: {e}')
         client.disconnect()
         sys.exit(1)
+
+@pytest.fixture
+def socket_client(app, client):
+    """Create a test WebSocket client."""
+    return socketio.test_client(app, namespace='/physics')
+
+def test_websocket_reconnection(app, client, socket_client):
+    """Test WebSocket reconnection."""
+    # Initial connection
+    socket_client.connect()
+    assert socket_client.is_connected()
+    response = socket_client.get_received()
+    assert len(response) == 1
+    assert response[0]['name'] == 'connected'
+    assert response[0]['args'][0]['status'] == 'success'
+    assert response[0]['args'][0]['message'] == 'Connected to physics namespace'
+
+    # Disconnect and reconnect
+    socket_client.disconnect()
+    assert not socket_client.is_connected()
+    response = socket_client.get_received()
+    assert len(response) == 1
+    assert response[0]['name'] == 'disconnected'
+    assert response[0]['args'][0]['status'] == 'success'
+    assert response[0]['args'][0]['message'] == 'Disconnected from physics namespace'
+
+    socket_client.connect()
+    assert socket_client.is_connected()
+    response = socket_client.get_received()
+    assert len(response) == 1
+    assert response[0]['name'] == 'connected'
+    assert response[0]['args'][0]['status'] == 'success'
+    assert response[0]['args'][0]['message'] == 'Connected to physics namespace'
+
+def test_websocket_large_message(app, client, socket_client):
+    """Test handling of large WebSocket messages."""
+    socket_client.connect()
+    assert socket_client.is_connected()
+
+    # Send a large message
+    large_data = {'data': 'x' * 1000000}  # 1MB of data
+    socket_client.emit('message', large_data)
+    response = socket_client.get_received()
+    assert len(response) == 1
+    assert response[0]['name'] == 'error'
+    assert response[0]['args'][0]['status'] == 'error'
+    assert response[0]['args'][0]['error'] == 'Request Entity Too Large'
+    assert response[0]['args'][0]['message'] == 'Message size exceeds limit'
+
+def test_websocket_invalid_message(app, client, socket_client):
+    """Test handling of invalid WebSocket messages."""
+    socket_client.connect()
+    assert socket_client.is_connected()
+
+    # Send an invalid message
+    socket_client.emit('message', 'invalid')
+    response = socket_client.get_received()
+    assert len(response) == 1
+    assert response[0]['name'] == 'error'
+    assert response[0]['args'][0]['status'] == 'error'
+    assert response[0]['args'][0]['error'] == 'Bad Request'
+    assert response[0]['args'][0]['message'] == 'Invalid message format'
+
+def test_websocket_authentication_expiry(app, client, socket_client):
+    """Test WebSocket behavior when authentication expires."""
+    socket_client.connect()
+    assert socket_client.is_connected()
+
+    # Simulate token expiry
+    with patch('app.sockets.physics_handler.verify_jwt_in_request',
+              side_effect=Exception('Token has expired')):
+        socket_client.emit('message', {'data': 'test'})
+        response = socket_client.get_received()
+        assert len(response) == 1
+        assert response[0]['name'] == 'error'
+        assert response[0]['args'][0]['status'] == 'error'
+        assert response[0]['args'][0]['error'] == 'Unauthorized'
+        assert response[0]['args'][0]['message'] == 'Authentication has expired'
 
 if __name__ == '__main__':
     main()

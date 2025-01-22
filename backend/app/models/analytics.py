@@ -1,6 +1,6 @@
 from ..extensions import db
 from datetime import datetime
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import JSON
 
 class Analytics(db.Model):
     __tablename__ = 'analytics'
@@ -9,7 +9,7 @@ class Analytics(db.Model):
     metric_name = db.Column(db.String(100), nullable=False, index=True)
     metric_value = db.Column(db.Float, nullable=False)
     timestamp = db.Column(db.DateTime, nullable=False, index=True, default=datetime.utcnow)
-    tags = db.Column(JSONB, nullable=False, default=dict)
+    tags = db.Column(JSON, nullable=False, default=dict)
 
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
