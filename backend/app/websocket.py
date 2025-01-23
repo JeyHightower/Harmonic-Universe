@@ -72,17 +72,19 @@ class WebSocketService:
             try:
                 # Validate message size
                 if len(str(data)) > 1000000:  # 1MB limit
-                    return {
+                    emit('error', {
                         'status': 'error',
                         'message': 'Message too large'
-                    }
+                    })
+                    return
 
                 # Validate message format
                 if not isinstance(data, dict):
-                    return {
+                    emit('error', {
                         'status': 'error',
                         'message': 'Invalid message format'
-                    }
+                    })
+                    return
 
                 # Process message
                 return {
@@ -92,10 +94,11 @@ class WebSocketService:
                 }
             except Exception as e:
                 current_app.logger.error(f"WebSocket message error: {str(e)}")
-                return {
+                emit('error', {
                     'status': 'error',
                     'message': 'Failed to process message'
-                }
+                })
+                return
 
         @socketio.on_error(namespace='/physics')
         def handle_error(e):
@@ -112,7 +115,7 @@ class WebSocketService:
             try:
                 room_id = data.get('room_id')
                 if not room_id or room_id not in self.collaboration_rooms:
-                    emit('error', {'message': 'Invalid room ID'})
+                    emit('error', {'message': 'Room not found'})
                     return
 
                 room = self.collaboration_rooms[room_id]

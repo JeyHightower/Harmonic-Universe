@@ -1,3 +1,4 @@
+"""Notification service for handling user notifications."""
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from sqlalchemy import desc
@@ -5,25 +6,38 @@ from app.models import Notification
 from app.extensions import db, cache
 
 class NotificationService:
-    """Service class for handling notifications."""
+    """Service for handling user notifications."""
 
     def __init__(self):
         self.cache = cache
         self.cache_ttl = 300  # 5 minutes
 
-    def create_notification(self, user_id: int, title: str, message: str, type: str) -> Notification:
-        """Create a new notification."""
+    def create_notification(
+        self,
+        user_id: int,
+        message: str,
+        type: str = 'info',
+        link: Optional[str] = None
+    ) -> Notification:
+        """
+        Create a new notification.
+
+        Args:
+            user_id: ID of the user to notify
+            message: Notification message
+            type: Type of notification (info, warning, error)
+            link: Optional link associated with notification
+
+        Returns:
+            Created notification
+        """
         notification = Notification(
             user_id=user_id,
-            title=title,
             message=message,
             type=type,
-            created_at=datetime.utcnow(),
-            read=False
+            link=link
         )
-
-        db.session.add(notification)
-        db.session.commit()
+        notification.save()
 
         # Invalidate user's notification cache
         self._invalidate_cache(user_id)
@@ -79,68 +93,96 @@ class NotificationService:
 
         return result
 
-    def mark_as_read(self, notification_id: int, user_id: int) -> bool:
-        """Mark a notification as read."""
-        notification = Notification.query.filter_by(
-            id=notification_id,
-            user_id=user_id
-        ).first()
+    def mark_as_read(self, notification_id: int) -> bool:
+        """
+        Mark a notification as read.
 
+        Args:
+            notification_id: ID of the notification
+
+        Returns:
+            True if successful, False otherwise
+        """
+        notification = Notification.query.get(notification_id)
         if notification:
             notification.read = True
             notification.read_at = datetime.utcnow()
-            db.session.commit()
+            notification.save()
 
             # Invalidate cache
-            self._invalidate_cache(user_id)
+            self._invalidate_cache(notification.user_id)
 
             return True
         return False
 
     def mark_all_as_read(self, user_id: int) -> int:
-        """Mark all notifications as read for a user."""
-        notifications = Notification.query.filter_by(
-            user_id=user_id,
-            read=False
-        ).all()
+        """
+        Mark all notifications for a user as read.
 
-        for notification in notifications:
-            notification.read = True
-            notification.read_at = datetime.utcnow()
+        Args:
+            user_id: ID of the user
 
+        Returns:
+            Number of notifications marked as read
+        """
+        now = datetime.utcnow()
+        result = (
+            Notification.query
+            .filter_by(user_id=user_id, read=False)
+            .update({
+                'read': True,
+                'read_at': now
+            })
+        )
         db.session.commit()
 
         # Invalidate cache
         self._invalidate_cache(user_id)
 
-        return len(notifications)
+        return result
 
-    def delete_notification(self, notification_id: int, user_id: int) -> bool:
-        """Delete a notification."""
-        notification = Notification.query.filter_by(
-            id=notification_id,
-            user_id=user_id
-        ).first()
+    def delete_notification(self, notification_id: int) -> bool:
+        """
+        Delete a notification.
 
+        Args:
+            notification_id: ID of the notification
+
+        Returns:
+            True if successful, False otherwise
+        """
+        notification = Notification.query.get(notification_id)
         if notification:
-            db.session.delete(notification)
-            db.session.commit()
+            notification.delete()
 
             # Invalidate cache
-            self._invalidate_cache(user_id)
+            self._invalidate_cache(notification.user_id)
 
             return True
         return False
 
-    def cleanup_old_notifications(self, days: int = 90):
-        """Delete notifications older than specified days."""
-        cutoff_date = datetime.utcnow() - timedelta(days=days)
+    def delete_old_notifications(self, days: int = 30) -> int:
+        """
+        Delete notifications older than specified days.
 
-        Notification.query.filter(
-            Notification.created_at < cutoff_date
-        ).delete()
+        Args:
+            days: Number of days to keep notifications
 
+        Returns:
+            Number of notifications deleted
+        """
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        result = (
+            Notification.query
+            .filter(Notification.created_at < cutoff)
+            .delete()
+        )
         db.session.commit()
+
+        # Invalidate cache
+        self._invalidate_cache(0)
+
+        return result
 
     def _invalidate_cache(self, user_id: int):
         """Invalidate all cached notifications for a user."""

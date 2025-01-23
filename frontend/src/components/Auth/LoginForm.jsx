@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
-import { login } from '../../redux/slices/authSlice';
+import { login } from '../../store/slices/authSlice';
 import './Auth.css';
 
 const LoginForm = () => {

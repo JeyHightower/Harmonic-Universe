@@ -10,6 +10,16 @@ from werkzeug.exceptions import (
     UnsupportedMediaType,
     HTTPException
 )
+from flask_jwt_extended.exceptions import (
+    JWTExtendedException,
+    NoAuthorizationError,
+    InvalidHeaderError,
+    CSRFError,
+    WrongTokenError,
+    RevokedTokenError,
+    FreshTokenRequired,
+    UserLookupError
+)
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 import logging
 from ..extensions import db
@@ -371,3 +381,53 @@ def register_error_handlers(app):
             return jsonify(response), 400
 
         return None
+
+    # JWT Error Handlers
+    @app.errorhandler(JWTExtendedException)
+    def handle_jwt_extended_error(e):
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 401
+
+    @app.errorhandler(InvalidHeaderError)
+    def handle_invalid_header_error(e):
+        return jsonify({
+            'status': 'error',
+            'message': 'Invalid token header'
+        }), 401
+
+    @app.errorhandler(NoAuthorizationError)
+    def handle_no_auth_error(e):
+        return jsonify({
+            'status': 'error',
+            'message': 'No authorization token provided'
+        }), 401
+
+    @app.errorhandler(WrongTokenError)
+    def handle_wrong_token_error(e):
+        return jsonify({
+            'status': 'error',
+            'message': 'Wrong token type'
+        }), 401
+
+    @app.errorhandler(RevokedTokenError)
+    def handle_revoked_token_error(e):
+        return jsonify({
+            'status': 'error',
+            'message': 'Token has been revoked'
+        }), 401
+
+    @app.errorhandler(FreshTokenRequired)
+    def handle_fresh_token_required(e):
+        return jsonify({
+            'status': 'error',
+            'message': 'Fresh token required'
+        }), 401
+
+    @app.errorhandler(UserLookupError)
+    def handle_user_lookup_error(e):
+        return jsonify({
+            'status': 'error',
+            'message': 'Error loading user'
+        }), 401

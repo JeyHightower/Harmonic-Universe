@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchNotifications,
   markAllAsRead,
-} from '../../redux/slices/notificationSlice';
+} from '../../store/slices/notificationSlice';
 import NotificationPanel from './NotificationPanel';
 import styles from './Notifications.module.css';
 

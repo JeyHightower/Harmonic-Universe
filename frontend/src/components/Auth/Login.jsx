@@ -5,20 +5,14 @@ import { login } from '../../store/slices/authSlice';
 import styles from './Auth.module.css';
 
 const Login = () => {
-  console.log('Login component rendering');
   const location = useLocation();
   const authState = useSelector(state => state.auth);
 
   useEffect(() => {
-    console.log('Login component mounted');
-    console.log('Current pathname:', location.pathname);
-    console.log('Current search:', location.search);
-    console.log('Current state:', location.state);
-    console.log('Initial auth state:', authState);
-
-    return () => {
-      console.log('Login component unmounting');
-    };
+    // Monitor auth state changes
+    if (authState?.isAuthenticated) {
+      navigate('/');
+    }
   }, [location, authState]);
 
   const [formData, setFormData] = useState({
@@ -33,7 +27,6 @@ const Login = () => {
 
   const handleChange = e => {
     const { name, value } = e.target;
-    console.log(`Updating ${name} field:`, value);
     setFormData(prev => ({
       ...prev,
       [name]: value,
@@ -48,7 +41,6 @@ const Login = () => {
   };
 
   const validateForm = () => {
-    console.log('Validating form data:', formData);
     const newErrors = {};
     if (!formData.email) {
       newErrors.email = 'Email is required';
@@ -58,32 +50,26 @@ const Login = () => {
     if (!formData.password) {
       newErrors.password = 'Password is required';
     }
-    console.log('Validation errors:', newErrors);
     return newErrors;
   };
 
   const handleSubmit = async e => {
     e.preventDefault();
-    console.log('Form submission started');
 
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
-      console.log('Form validation failed:', validationErrors);
       setErrors(validationErrors);
       return;
     }
 
     setIsLoading(true);
     try {
-      console.log('Dispatching login action with:', formData);
       const result = await dispatch(login(formData));
       if (result.error) {
         throw new Error(result.error.message || 'Login failed');
       }
-      console.log('Login successful, navigating to home');
       navigate('/');
     } catch (error) {
-      console.error('Login failed:', error);
       setErrors({
         submit: error.message || 'Login failed. Please try again.',
       });
@@ -146,4 +132,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export { Login };

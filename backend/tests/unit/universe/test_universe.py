@@ -1,6 +1,6 @@
 import pytest
 from flask import url_for
-from app.models import Universe, PhysicsParameters, MusicParameters, VisualizationParameters, User
+from app.models.base import Universe, PhysicsParameters, MusicParameters, VisualizationParameters, User
 from app.extensions import db
 from app.schemas import UniverseSchema
 from flask_jwt_extended import create_access_token

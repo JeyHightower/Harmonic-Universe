@@ -1,7 +1,7 @@
 from functools import wraps
 from flask import request, jsonify, g, current_app
 from flask_jwt_extended import decode_token, get_jwt_identity
-from app.models.user import User
+from app.models.base.user import User
 
 def auto_token(f):
     """Decorator to automatically handle token authentication"""

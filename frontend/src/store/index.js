@@ -1,43 +1,43 @@
 import { configureStore } from '@reduxjs/toolkit';
-import { setupListeners } from '@reduxjs/toolkit/query';
-import { api } from './api';
 import analyticsReducer from './slices/analyticsSlice';
-import audioReducer from './slices/audioSlice';
 import authReducer from './slices/authSlice';
+import commentReducer from './slices/commentSlice';
+import favoriteReducer from './slices/favoriteSlice';
+import musicReducer from './slices/musicSlice';
+import notificationsReducer from './slices/notificationsSlice';
+import physicsReducer from './slices/physicsSlice';
 import preferencesReducer from './slices/preferencesSlice';
+import storyboardReducer from './slices/storyboardSlice';
+import templateReducer from './slices/templateSlice';
 import universeReducer from './slices/universeSlice';
-
-console.log('Configuring Redux store');
+import userReducer from './slices/userSlice';
 
 export const store = configureStore({
   reducer: {
-    universe: universeReducer,
     auth: authReducer,
-    audio: audioReducer,
-    preferences: preferencesReducer,
+    universe: universeReducer,
     analytics: analyticsReducer,
-    [api.reducerPath]: api.reducer,
+    music: musicReducer,
+    notifications: notificationsReducer,
+    user: userReducer,
+    storyboard: storyboardReducer,
+    preferences: preferencesReducer,
+    comments: commentReducer,
+    templates: templateReducer,
+    physics: physicsReducer,
+    favorites: favoriteReducer,
   },
   middleware: getDefaultMiddleware =>
-    getDefaultMiddleware().concat(api.middleware),
-  devTools: process.env.NODE_ENV !== 'production',
+    getDefaultMiddleware({
+      serializableCheck: {
+        // Ignore these action types
+        ignoredActions: ['universe/setPhysicsEngine', 'music/setAudioContext'],
+        // Ignore these field paths in all actions
+        ignoredActionPaths: ['payload.engine', 'payload.context'],
+        // Ignore these paths in the state
+        ignoredPaths: ['universe.physicsEngine', 'music.audioContext'],
+      },
+    }),
 });
 
-setupListeners(store.dispatch);
-
-// Log initial state
-console.log('Initial store state:', store.getState());
-
-// Subscribe to store changes
-store.subscribe(() => {
-  console.log('Store state updated:', store.getState());
-});
-
-console.log('Redux store configured successfully');
-
-export * from './api';
-export * from './slices/analyticsSlice';
-export * from './slices/audioSlice';
-export * from './slices/authSlice';
-export * from './slices/preferencesSlice';
-export * from './slices/universeSlice';
+export default store;

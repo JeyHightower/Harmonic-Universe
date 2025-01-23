@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   createStoryboard,
   updateStoryboard,
-} from '../../redux/slices/storyboardSlice';
+} from '../../store/slices/storyboardSlice';
 import styles from './StoryboardModal.module.css';
 
 const StoryboardModal = ({

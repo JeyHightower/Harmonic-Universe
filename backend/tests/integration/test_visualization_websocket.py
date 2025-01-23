@@ -4,7 +4,7 @@ from flask import url_for
 from flask_socketio import SocketIOTestClient
 from app import create_app
 from app.extensions import db
-from app.models import User, Universe, VisualizationParameters
+from app.models.base import User, Universe, VisualizationParameters
 from app.websocket import WebSocketService
 
 @pytest.fixture

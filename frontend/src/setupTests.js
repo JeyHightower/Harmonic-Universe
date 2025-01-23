@@ -1,27 +1,86 @@
+import { configure } from '@testing-library/dom';
 import '@testing-library/jest-dom';
-import { vi } from 'vitest';
+import { cleanup } from '@testing-library/react';
+import { JSDOM } from 'jsdom';
+import { afterEach, beforeEach, vi } from 'vitest';
 
-// Mock localStorage
-const storageMock = () => {
-  let storage = {};
-  return {
-    getItem: vi.fn(key => storage[key] || null),
-    setItem: vi.fn((key, value) => {
-      storage[key] = value;
-    }),
-    removeItem: vi.fn(key => {
-      delete storage[key];
-    }),
-    clear: vi.fn(() => {
-      storage = {};
-    }),
-  };
+// Configure testing library
+configure({ testIdAttribute: 'data-testid' });
+
+// Setup JSDOM with enhanced features
+const dom = new JSDOM('<!doctype html><html><body></body></html>', {
+  url: 'http://localhost',
+  pretendToBeVisual: true,
+  features: {
+    FetchExternalResources: ['script', 'css', 'img', 'iframe', 'form'],
+    ProcessExternalResources: ['script'],
+    MutationEvents: '2.0',
+  },
+  runScripts: 'dangerously',
+});
+
+// Setup global environment with enhanced window object
+global.window = Object.assign(dom.window, {
+  CSS: { supports: () => false },
+  matchMedia: vi.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+});
+
+global.document = dom.window.document;
+global.navigator = {
+  userAgent: 'node.js',
+  language: 'en-US',
+  languages: ['en'],
+  platform: 'MacIntel',
+  clipboard: {
+    writeText: vi.fn().mockImplementation(text => Promise.resolve(text)),
+    readText: vi.fn().mockImplementation(() => Promise.resolve('')),
+  },
 };
 
-global.localStorage = storageMock();
-global.sessionStorage = storageMock();
+// Enhanced window methods and properties
+Object.defineProperties(window, {
+  innerWidth: {
+    writable: true,
+    configurable: true,
+    value: 1024,
+  },
+  innerHeight: {
+    writable: true,
+    configurable: true,
+    value: 768,
+  },
+  pageXOffset: {
+    writable: true,
+    configurable: true,
+    value: 0,
+  },
+  pageYOffset: {
+    writable: true,
+    configurable: true,
+    value: 0,
+  },
+});
 
-// Mock window.matchMedia
+// Mock MutationObserver
+global.MutationObserver = class {
+  constructor(callback) {
+    this.callback = callback;
+    this.observe = vi.fn();
+    this.disconnect = vi.fn();
+    this.takeRecords = vi.fn();
+  }
+};
+
+// Mock window properties and methods
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation(query => ({
@@ -36,31 +95,59 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
+// Mock IntersectionObserver
+global.IntersectionObserver = class IntersectionObserver {
+  constructor(callback) {
+    this.callback = callback;
+  }
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+};
+
+// Mock ResizeObserver
+global.ResizeObserver = class ResizeObserver {
+  constructor(callback) {
+    this.callback = callback;
+  }
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+};
+
 // Mock AudioContext
 class MockAudioContext {
   constructor() {
-    this.state = 'suspended';
+    this.state = 'running';
+    this.sampleRate = 44100;
     this.destination = {
-      connect: vi.fn(),
-      disconnect: vi.fn(),
+      channelCount: 2,
+      channelCountMode: 'explicit',
+      channelInterpretation: 'speakers',
     };
   }
 
   createOscillator() {
     return {
       connect: vi.fn(),
-      disconnect: vi.fn(),
       start: vi.fn(),
       stop: vi.fn(),
-      frequency: { value: 440, setValueAtTime: vi.fn() },
+      frequency: {
+        setValueAtTime: vi.fn(),
+        linearRampToValueAtTime: vi.fn(),
+        exponentialRampToValueAtTime: vi.fn(),
+      },
     };
   }
 
   createGain() {
     return {
       connect: vi.fn(),
-      disconnect: vi.fn(),
-      gain: { value: 1, setValueAtTime: vi.fn() },
+      gain: {
+        setValueAtTime: vi.fn(),
+        linearRampToValueAtTime: vi.fn(),
+        exponentialRampToValueAtTime: vi.fn(),
+      },
     };
   }
 
@@ -68,90 +155,120 @@ class MockAudioContext {
     return {
       connect: vi.fn(),
       disconnect: vi.fn(),
+      fftSize: 2048,
       frequencyBinCount: 1024,
       getByteFrequencyData: vi.fn(),
       getByteTimeDomainData: vi.fn(),
     };
-  }
-
-  resume() {
-    this.state = 'running';
-    return Promise.resolve();
-  }
-
-  suspend() {
-    this.state = 'suspended';
-    return Promise.resolve();
-  }
-
-  close() {
-    this.state = 'closed';
-    return Promise.resolve();
   }
 }
 
 global.AudioContext = MockAudioContext;
 global.webkitAudioContext = MockAudioContext;
 
-// Mock ResizeObserver
-class ResizeObserver {
-  observe() {
-    return vi.fn();
-  }
-  unobserve() {
-    return vi.fn();
-  }
-  disconnect() {
-    return vi.fn();
-  }
-}
+// Enhanced localStorage and sessionStorage mock
+const createStorageMock = () => {
+  const storage = {};
+  return {
+    getItem: vi.fn(key => storage[key] || null),
+    setItem: vi.fn((key, value) => {
+      storage[key] = value.toString();
+    }),
+    removeItem: vi.fn(key => {
+      delete storage[key];
+    }),
+    clear: vi.fn(() => {
+      Object.keys(storage).forEach(key => {
+        delete storage[key];
+      });
+    }),
+    length: 0,
+    key: vi.fn(index => Object.keys(storage)[index] || null),
+    ...storage,
+  };
+};
 
-global.ResizeObserver = ResizeObserver;
+Object.defineProperty(window, 'localStorage', { value: createStorageMock() });
+Object.defineProperty(window, 'sessionStorage', { value: createStorageMock() });
 
-// Mock IntersectionObserver
-class IntersectionObserver {
-  constructor(callback) {
-    this.callback = callback;
-  }
-  observe() {
-    return vi.fn();
-  }
-  unobserve() {
-    return vi.fn();
-  }
-  disconnect() {
-    return vi.fn();
-  }
-}
+// Enhanced window method mocks
+window.scroll = vi.fn();
+window.scrollTo = vi.fn();
+window.scrollBy = vi.fn();
+window.getComputedStyle = vi.fn(() => ({
+  getPropertyValue: vi.fn(),
+}));
+window.addEventListener = vi.fn();
+window.removeEventListener = vi.fn();
+window.dispatchEvent = vi.fn();
+window.requestAnimationFrame = vi.fn(callback => setTimeout(callback, 0));
+window.cancelAnimationFrame = vi.fn();
 
-global.IntersectionObserver = IntersectionObserver;
+// Mock fetch
+global.fetch = vi.fn();
 
-// Cleanup utilities
-afterEach(() => {
-  // Clear all mocks
-  vi.clearAllMocks();
-  // Clear localStorage and sessionStorage
-  localStorage.clear();
-  sessionStorage.clear();
-  // Reset document body
+// Mock console methods
+console.error = vi.fn();
+console.warn = vi.fn();
+console.log = vi.fn();
+
+// Enhanced cleanup
+beforeEach(() => {
   document.body.innerHTML = '';
+  vi.clearAllMocks();
+  window.localStorage.clear();
+  window.sessionStorage.clear();
 });
 
-// Error handling for unhandled rejections and console errors
-const originalConsoleError = console.error;
-const originalConsoleWarn = console.warn;
+afterEach(() => {
+  cleanup();
+  vi.clearAllTimers();
+  vi.clearAllMocks();
+  document.body.innerHTML = '';
 
-beforeAll(() => {
-  console.error = vi.fn();
-  console.warn = vi.fn();
+  // Reset window scroll positions
+  window.pageXOffset = 0;
+  window.pageYOffset = 0;
+
+  // Clear all event listeners
+  window.addEventListener.mockClear();
+  window.removeEventListener.mockClear();
+  window.dispatchEvent.mockClear();
 });
 
-afterAll(() => {
-  console.error = originalConsoleError;
-  console.warn = originalConsoleWarn;
-});
+// Mock WebSocket
+class MockWebSocket {
+  constructor(url) {
+    this.url = url;
+    this.readyState = WebSocket.CONNECTING;
+    this.send = vi.fn();
+    this.close = vi.fn();
 
-// Add custom matchers if needed
+    // Auto connect
+    setTimeout(() => {
+      this.readyState = WebSocket.OPEN;
+      if (this.onopen) this.onopen();
+    }, 0);
+  }
+
+  // WebSocket states
+  static get CONNECTING() {
+    return 0;
+  }
+  static get OPEN() {
+    return 1;
+  }
+  static get CLOSING() {
+    return 2;
+  }
+  static get CLOSED() {
+    return 3;
+  }
+}
+
+global.WebSocket = MockWebSocket;
+
+// Add custom matchers
 expect.extend({
   toBeWithinRange(received, floor, ceiling) {
     const pass = received >= floor && received <= ceiling;

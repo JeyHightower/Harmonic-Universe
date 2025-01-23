@@ -1,31 +1,31 @@
-import { useSelector, useDispatch } from 'react-redux';
-import { updateUser } from '../../redux/slices/userSlice';
+import { useDispatch, useSelector } from 'react-redux';
 import useForm from '../../hooks/useForm';
-import styles from './Profile.module.css';
+import { updateUser } from '../../store/slices/userSlice';
 import { validateEmail } from '../../utils/validations';
+import styles from './Profile.module.css';
 
 const UserProfile = () => {
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
+  const { user } = useSelector(state => state.auth);
 
   const validations = {
     username: {
       required: true,
-      validate: (value) => ({
+      validate: value => ({
         isValid: value.length >= 3,
-        errors: ['Username must be at least 3 characters long']
-      })
+        errors: ['Username must be at least 3 characters long'],
+      }),
     },
     email: {
       required: true,
-      validate: validateEmail
+      validate: validateEmail,
     },
     bio: {
-      validate: (value) => ({
+      validate: value => ({
         isValid: value.length <= 500,
-        errors: ['Bio must be less than 500 characters']
-      })
-    }
+        errors: ['Bio must be less than 500 characters'],
+      }),
+    },
   };
 
   const {
@@ -35,17 +35,17 @@ const UserProfile = () => {
     handleChange,
     handleBlur,
     handleSubmit,
-    setValues
+    setValues,
   } = useForm(
     {
       username: user?.username || '',
       email: user?.email || '',
-      bio: user?.bio || ''
+      bio: user?.bio || '',
     },
     validations
   );
 
-  const onSubmit = async (formData) => {
+  const onSubmit = async formData => {
     try {
       await dispatch(updateUser(formData)).unwrap();
     } catch (error) {
@@ -56,10 +56,12 @@ const UserProfile = () => {
   return (
     <div className={styles.profileContainer}>
       <h2 className={styles.title}>Edit Profile</h2>
-      <form onSubmit={(e) => {
-        e.preventDefault();
-        handleSubmit(onSubmit);
-      }}>
+      <form
+        onSubmit={e => {
+          e.preventDefault();
+          handleSubmit(onSubmit);
+        }}
+      >
         <div className={styles.formGroup}>
           <label>Username</label>
           <input
@@ -85,9 +87,7 @@ const UserProfile = () => {
             onBlur={handleBlur}
             className={styles.input}
           />
-          {errors.email && (
-            <div className={styles.error}>{errors.email}</div>
-          )}
+          {errors.email && <div className={styles.error}>{errors.email}</div>}
         </div>
 
         <div className={styles.formGroup}>
@@ -100,20 +100,12 @@ const UserProfile = () => {
             className={styles.textarea}
             rows="4"
           />
-          {errors.bio && (
-            <div className={styles.error}>{errors.bio}</div>
-          )}
+          {errors.bio && <div className={styles.error}>{errors.bio}</div>}
         </div>
 
-        {errors.submit && (
-          <div className={styles.error}>{errors.submit}</div>
-        )}
+        {errors.submit && <div className={styles.error}>{errors.submit}</div>}
 
-        <button
-          type="submit"
-          className={styles.button}
-          disabled={isSubmitting}
-        >
+        <button type="submit" className={styles.button} disabled={isSubmitting}>
           {isSubmitting ? 'Saving...' : 'Save Changes'}
         </button>
       </form>

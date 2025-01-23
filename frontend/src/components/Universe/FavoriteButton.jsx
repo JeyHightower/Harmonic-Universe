@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { addFavorite, removeFavorite } from '../../redux/slices/favoriteSlice';
+import { addFavorite, removeFavorite } from '../../store/slices/favoriteSlice';
 import styles from './Universe.module.css';
 
 const FavoriteButton = ({ universeId }) => {

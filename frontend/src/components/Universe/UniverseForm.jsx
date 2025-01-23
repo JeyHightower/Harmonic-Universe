@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { createUniverse } from '../../redux/slices/universeSlice';
+import { createUniverse } from '../../store/slices/universeSlice';
 
 const UniverseForm = ({ onClose }) => {
   const dispatch = useDispatch();

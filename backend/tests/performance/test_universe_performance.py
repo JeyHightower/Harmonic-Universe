@@ -1,7 +1,7 @@
 """Test universe performance."""
 import pytest
 import time
-from app.models import Universe, User
+from app.models.base import Universe, User
 from app.extensions import db
 
 def test_universe_creation_performance(client, session, auth_headers):

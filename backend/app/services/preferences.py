@@ -1,7 +1,7 @@
+"""Preferences service for handling user preferences."""
 from typing import Dict, Optional
-from app.models.user_preferences import UserPreferences
+from app.models import UserPreferences, User
 from app.extensions import db, cache
-from app.models import User
 
 class PreferencesService:
     """Service class for handling user preferences."""
@@ -10,7 +10,7 @@ class PreferencesService:
         self.cache = cache
         self.cache_ttl = 300  # 5 minutes
 
-    def get_preferences(self, user_id: int) -> Dict:
+    def get_user_preferences(self, user_id: int) -> Dict:
         """Get user preferences."""
         cache_key = f"preferences:{user_id}"
 
@@ -36,77 +36,55 @@ class PreferencesService:
 
         return result
 
-    def update_preferences(self, user_id: int, updates: Dict) -> Dict:
+    def update_user_preferences(self, user_id: int, updates: Dict) -> Dict:
         """Update user preferences."""
         user = User.query.get_or_404(user_id)
-        user.preferences.update(updates)
+        preferences = user.preferences or UserPreferences(user_id=user_id)
+        preferences.update(updates)
         db.session.commit()
 
         # Invalidate cache
         self._invalidate_cache(user_id)
 
-        return user.preferences.to_dict()
+        return preferences.to_dict()
+
+    def reset_user_preferences(self, user_id: int) -> Dict:
+        """Reset user preferences to default."""
+        user = User.query.get_or_404(user_id)
+        if user.preferences:
+            db.session.delete(user.preferences)
+
+        preferences = UserPreferences(user_id=user_id)
+        db.session.add(preferences)
+        db.session.commit()
+
+        # Invalidate cache
+        self._invalidate_cache(user_id)
+
+        return preferences.to_dict()
 
     def update_theme(self, user_id: int, theme: str) -> Dict:
         """Update user theme preference."""
         if theme not in ['system', 'light', 'dark']:
             raise ValueError('Invalid theme')
 
-        user = User.query.get_or_404(user_id)
-        user.preferences['theme'] = theme
-        db.session.commit()
-
-        # Invalidate cache
-        self._invalidate_cache(user_id)
-
-        return user.preferences
+        return self.update_user_preferences(user_id, {'theme': theme})
 
     def update_notification_settings(self, user_id: int, settings: Dict) -> Dict:
         """Update user notification preferences."""
-        user = User.query.get_or_404(user_id)
-        user.preferences['notifications'] = settings
-        db.session.commit()
-
-        # Invalidate cache
-        self._invalidate_cache(user_id)
-
-        return user.preferences
+        return self.update_user_preferences(user_id, {'notifications': settings})
 
     def update_accessibility(self, user_id: int, settings: Dict) -> Dict:
         """Update user accessibility preferences."""
-        user = User.query.get_or_404(user_id)
-        user.preferences['accessibility'] = settings
-        db.session.commit()
-
-        # Invalidate cache
-        self._invalidate_cache(user_id)
-
-        return user.preferences
+        return self.update_user_preferences(user_id, {'accessibility': settings})
 
     def update_dashboard_layout(self, user_id: int, layout: Dict) -> Dict:
         """Update user dashboard layout preferences."""
-        user = User.query.get_or_404(user_id)
-        user.preferences['dashboard_layout'] = layout
-        db.session.commit()
+        return self.update_user_preferences(user_id, {'dashboard_layout': layout})
 
-        # Invalidate cache
-        self._invalidate_cache(user_id)
-
-        return user.preferences
-
-    def update_localization(self, user_id: int, language: str, timezone: str) -> Dict:
+    def update_localization(self, user_id: int, settings: Dict) -> Dict:
         """Update user localization preferences."""
-        user = User.query.get_or_404(user_id)
-        user.preferences['localization'] = {
-            'language': language,
-            'timezone': timezone
-        }
-        db.session.commit()
-
-        # Invalidate cache
-        self._invalidate_cache(user_id)
-
-        return user.preferences
+        return self.update_user_preferences(user_id, {'localization': settings})
 
     def _invalidate_cache(self, user_id: int):
         """Invalidate user preferences cache."""

@@ -5,7 +5,7 @@ import {
   createTemplate,
   fetchCategories,
   updateTemplate,
-} from '../../redux/slices/templateSlice';
+} from '../../store/slices/templateSlice';
 import styles from './Templates.module.css';
 
 const TemplateForm = ({ template, onSubmit, onCancel }) => {

@@ -87,5 +87,8 @@ config = {
     'development': DevelopmentConfig,
     'testing': TestConfig,
     'production': ProductionConfig,
-    'default': DevelopmentConfig
+    'default': DevelopmentConfig,
+    'test': TestConfig,  # Add alias for testing
+    TestConfig: TestConfig,  # Allow direct class reference
+    'TestConfig': TestConfig  # Allow string class name
 }

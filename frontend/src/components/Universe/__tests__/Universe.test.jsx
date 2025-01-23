@@ -4,6 +4,10 @@ import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import authReducer from '../../../store/slices/authSlice';
+import favoritesReducer from '../../../store/slices/favoriteSlice';
+import universeReducer from '../../../store/slices/universeSlice';
+import userReducer from '../../../store/slices/userSlice';
 import UniverseCreate from '../UniverseCreate';
 import UniverseDetail from '../UniverseDetail';
 import UniverseEdit from '../UniverseEdit';
@@ -28,6 +32,8 @@ describe('Universe Components', () => {
       description: 'Description 1',
       isPublic: true,
       maxParticipants: 10,
+      creator_id: 1,
+      shared_with: [],
       owner: { id: 1, username: 'testuser' },
     },
     {
@@ -36,38 +42,124 @@ describe('Universe Components', () => {
       description: 'Description 2',
       isPublic: false,
       maxParticipants: 5,
+      creator_id: 1,
+      shared_with: [],
       owner: { id: 1, username: 'testuser' },
     },
   ];
 
+  const renderWithProviders = (
+    ui,
+    {
+      preloadedState = {
+        auth: {
+          user: { id: 1, username: 'testuser' },
+          token: 'test-token',
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        },
+        favorites: {
+          favorites: [],
+          isLoading: false,
+          error: null,
+        },
+        universe: {
+          universes: mockUniverses,
+          currentUniverse: null,
+          status: 'idle',
+          error: null,
+        },
+        users: {
+          searchResults: [],
+          userDetails: {},
+          isLoading: false,
+          error: null,
+        },
+      },
+      store = configureStore({
+        reducer: {
+          auth: authReducer,
+          favorites: favoritesReducer,
+          universe: universeReducer,
+          users: userReducer,
+        },
+        preloadedState,
+      }),
+      ...renderOptions
+    } = {}
+  ) => {
+    const Wrapper = ({ children }) => (
+      <Provider store={store}>
+        <BrowserRouter>{children}</BrowserRouter>
+      </Provider>
+    );
+
+    return { store, ...render(ui, { wrapper: Wrapper, ...renderOptions }) };
+  };
+
   beforeEach(() => {
     store = configureStore({
       reducer: {
-        universe: (
-          state = {
-            universes: mockUniverses,
-            currentUniverse: null,
-            isLoading: false,
-            error: null,
-          },
-          action
-        ) => state,
+        auth: authReducer,
+        favorites: favoritesReducer,
+        universe: universeReducer,
+        users: userReducer,
+      },
+      preloadedState: {
+        auth: {
+          user: { id: 1, username: 'testuser' },
+          token: 'test-token',
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        },
+        favorites: {
+          favorites: [],
+          isLoading: false,
+          error: null,
+        },
+        universe: {
+          universes: mockUniverses,
+          currentUniverse: null,
+          status: 'idle',
+          error: null,
+        },
+        users: {
+          searchResults: [],
+          userDetails: {},
+          isLoading: false,
+          error: null,
+        },
       },
     });
     vi.clearAllMocks();
   });
 
-  const renderWithProviders = component => {
-    return render(
-      <Provider store={store}>
-        <BrowserRouter>{component}</BrowserRouter>
-      </Provider>
-    );
-  };
-
   describe('UniverseList Component', () => {
     it('renders universe list correctly', async () => {
-      renderWithProviders(<UniverseList />);
+      renderWithProviders(<UniverseList />, {
+        preloadedState: {
+          auth: {
+            user: { id: 1, username: 'testuser' },
+            token: 'test-token',
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          },
+          favorites: {
+            favorites: [],
+            isLoading: false,
+            error: null,
+          },
+          universe: {
+            universes: mockUniverses,
+            currentUniverse: null,
+            status: 'idle',
+            error: null,
+          },
+        },
+      });
 
       await waitFor(() => {
         mockUniverses.forEach(universe => {
@@ -78,34 +170,86 @@ describe('Universe Components', () => {
     });
 
     it('handles empty universe list', async () => {
-      store = configureStore({
-        reducer: {
-          universe: (state = { universes: [], isLoading: false }, action) =>
-            state,
+      renderWithProviders(<UniverseList />, {
+        preloadedState: {
+          auth: {
+            user: { id: 1, username: 'testuser' },
+            token: 'test-token',
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          },
+          favorites: {
+            favorites: [],
+            isLoading: false,
+            error: null,
+          },
+          universe: {
+            universes: [],
+            currentUniverse: null,
+            status: 'idle',
+            error: null,
+          },
         },
       });
 
-      renderWithProviders(<UniverseList />);
-
       await waitFor(() => {
-        expect(screen.getByText(/no universes found/i)).toBeInTheDocument();
+        expect(
+          screen.getByText('No universes found. Create one to get started!')
+        ).toBeInTheDocument();
       });
     });
 
     it('displays loading state', () => {
-      store = configureStore({
-        reducer: {
-          universe: (state = { isLoading: true }, action) => state,
+      renderWithProviders(<UniverseList />, {
+        preloadedState: {
+          auth: {
+            user: { id: 1, username: 'testuser' },
+            token: 'test-token',
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          },
+          favorites: {
+            favorites: [],
+            isLoading: false,
+            error: null,
+          },
+          universe: {
+            universes: [],
+            currentUniverse: null,
+            status: 'loading',
+            error: null,
+          },
         },
       });
-
-      renderWithProviders(<UniverseList />);
-      expect(screen.getByTestId('loading-indicator')).toBeInTheDocument();
+      expect(screen.getByRole('status')).toBeInTheDocument();
     });
 
     it('handles universe filtering', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<UniverseList />);
+      renderWithProviders(<UniverseList />, {
+        preloadedState: {
+          auth: {
+            user: { id: 1, username: 'testuser' },
+            token: 'test-token',
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          },
+          favorites: {
+            favorites: [],
+            isLoading: false,
+            error: null,
+          },
+          universe: {
+            universes: mockUniverses,
+            currentUniverse: null,
+            status: 'idle',
+            error: null,
+          },
+        },
+      });
 
       const searchInput = screen.getByTestId('universe-search');
       await user.type(searchInput, 'Test Universe 1');
@@ -119,36 +263,99 @@ describe('Universe Components', () => {
 
   describe('UniverseCreate Component', () => {
     it('renders create form correctly', () => {
-      renderWithProviders(<UniverseCreate />);
+      renderWithProviders(<UniverseCreate />, {
+        preloadedState: {
+          auth: {
+            user: { id: 1, username: 'testuser' },
+            token: 'test-token',
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          },
+          favorites: {
+            favorites: [],
+            isLoading: false,
+            error: null,
+          },
+          universe: {
+            universes: [],
+            currentUniverse: null,
+            status: 'idle',
+            error: null,
+          },
+        },
+      });
 
-      expect(screen.getByLabelText(/name/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/max participants/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/public/i)).toBeInTheDocument();
+      expect(screen.getByLabelText('Universe Name')).toBeInTheDocument();
+      expect(screen.getByLabelText('Description')).toBeInTheDocument();
+      expect(screen.getByLabelText('Max Participants')).toBeInTheDocument();
+      expect(screen.getByLabelText('Make Universe Public')).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Create Universe' })
+      ).toBeInTheDocument();
     });
 
     it('validates required fields', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<UniverseCreate />);
+      renderWithProviders(<UniverseCreate />, {
+        preloadedState: {
+          auth: {
+            user: { id: 1, username: 'testuser' },
+            token: 'test-token',
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          },
+          favorites: {
+            favorites: [],
+            isLoading: false,
+            error: null,
+          },
+          universe: {
+            universes: [],
+            currentUniverse: null,
+            status: 'idle',
+            error: null,
+          },
+        },
+      });
 
-      await user.click(screen.getByText(/create universe/i));
+      await user.click(screen.getByRole('button', { name: 'Create Universe' }));
 
-      expect(screen.getByText(/name is required/i)).toBeInTheDocument();
-      expect(screen.getByText(/description is required/i)).toBeInTheDocument();
+      expect(screen.getByText('Name is required')).toBeInTheDocument();
+      expect(screen.getByText('Description is required')).toBeInTheDocument();
     });
 
     it('handles successful universe creation', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<UniverseCreate />);
+      renderWithProviders(<UniverseCreate />, {
+        preloadedState: {
+          auth: {
+            user: { id: 1, username: 'testuser' },
+            token: 'test-token',
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          },
+          favorites: {
+            favorites: [],
+            isLoading: false,
+            error: null,
+          },
+          universe: {
+            universes: [],
+            currentUniverse: null,
+            status: 'idle',
+            error: null,
+          },
+        },
+      });
 
-      await user.type(screen.getByLabelText(/name/i), 'New Universe');
-      await user.type(
-        screen.getByLabelText(/description/i),
-        'Test Description'
-      );
-      await user.type(screen.getByLabelText(/max participants/i), '10');
-      await user.click(screen.getByLabelText(/public/i));
-      await user.click(screen.getByText(/create universe/i));
+      await user.type(screen.getByLabelText('Universe Name'), 'New Universe');
+      await user.type(screen.getByLabelText('Description'), 'Test Description');
+      await user.type(screen.getByLabelText('Max Participants'), '10');
+      await user.click(screen.getByLabelText('Make Universe Public'));
+      await user.click(screen.getByRole('button', { name: 'Create Universe' }));
 
       await waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith('/universe/1');
@@ -157,108 +364,228 @@ describe('Universe Components', () => {
 
     it('handles creation error', async () => {
       const user = userEvent.setup();
-      store = configureStore({
-        reducer: {
-          universe: (state = { error: 'Creation failed' }, action) => state,
+      renderWithProviders(<UniverseCreate />, {
+        preloadedState: {
+          auth: {
+            user: { id: 1, username: 'testuser' },
+            token: 'test-token',
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          },
+          favorites: {
+            favorites: [],
+            isLoading: false,
+            error: null,
+          },
+          universe: {
+            universes: [],
+            currentUniverse: null,
+            status: 'failed',
+            error: 'Creation failed',
+          },
         },
       });
 
-      renderWithProviders(<UniverseCreate />);
-      await user.type(screen.getByLabelText(/name/i), 'New Universe');
-      await user.click(screen.getByText(/create universe/i));
+      await user.type(screen.getByLabelText('Universe Name'), 'New Universe');
+      await user.click(screen.getByRole('button', { name: 'Create Universe' }));
 
-      expect(screen.getByText(/creation failed/i)).toBeInTheDocument();
+      expect(screen.getByText('Creation failed')).toBeInTheDocument();
     });
   });
 
   describe('UniverseDetail Component', () => {
     const mockUniverse = mockUniverses[0];
 
-    beforeEach(() => {
-      store = configureStore({
-        reducer: {
-          universe: (state = { currentUniverse: mockUniverse }, action) =>
-            state,
+    it('renders universe details correctly', () => {
+      renderWithProviders(<UniverseDetail />, {
+        preloadedState: {
+          auth: {
+            user: { id: 1, username: 'testuser' },
+            token: 'test-token',
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          },
+          favorites: {
+            favorites: [],
+            isLoading: false,
+            error: null,
+          },
+          universe: {
+            universes: mockUniverses,
+            currentUniverse: mockUniverse,
+            status: 'idle',
+            error: null,
+          },
         },
       });
-    });
-
-    it('renders universe details correctly', () => {
-      renderWithProviders(<UniverseDetail />);
 
       expect(screen.getByText(mockUniverse.name)).toBeInTheDocument();
       expect(screen.getByText(mockUniverse.description)).toBeInTheDocument();
       expect(
-        screen.getByText(`Max Participants: ${mockUniverse.maxParticipants}`)
+        screen.getByRole('button', { name: 'Overview' })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Physics' })
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Music' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Storyboard' })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Comments' })
       ).toBeInTheDocument();
     });
 
     it('handles loading state', () => {
-      store = configureStore({
-        reducer: {
-          universe: (state = { isLoading: true }, action) => state,
+      renderWithProviders(<UniverseDetail />, {
+        preloadedState: {
+          auth: {
+            user: { id: 1, username: 'testuser' },
+            token: 'test-token',
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          },
+          favorites: {
+            favorites: [],
+            isLoading: false,
+            error: null,
+          },
+          universe: {
+            universes: [],
+            currentUniverse: null,
+            status: 'loading',
+            error: null,
+          },
         },
       });
-
-      renderWithProviders(<UniverseDetail />);
       expect(screen.getByTestId('loading-indicator')).toBeInTheDocument();
     });
 
     it('displays error state', () => {
-      store = configureStore({
-        reducer: {
-          universe: (state = { error: 'Failed to load universe' }, action) =>
-            state,
+      renderWithProviders(<UniverseDetail />, {
+        preloadedState: {
+          auth: {
+            user: { id: 1, username: 'testuser' },
+            token: 'test-token',
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          },
+          favorites: {
+            favorites: [],
+            isLoading: false,
+            error: null,
+          },
+          universe: {
+            universes: [],
+            currentUniverse: null,
+            status: 'failed',
+            error: 'Failed to load universe',
+          },
         },
       });
-
-      renderWithProviders(<UniverseDetail />);
-      expect(screen.getByText(/failed to load universe/i)).toBeInTheDocument();
+      expect(screen.getByTestId('error-message')).toHaveTextContent(
+        'Failed to load universe'
+      );
     });
 
     it('handles universe not found', () => {
-      store = configureStore({
-        reducer: {
-          universe: (state = { currentUniverse: null }, action) => state,
+      renderWithProviders(<UniverseDetail />, {
+        preloadedState: {
+          auth: {
+            user: { id: 1, username: 'testuser' },
+            token: 'test-token',
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          },
+          favorites: {
+            favorites: [],
+            isLoading: false,
+            error: null,
+          },
+          universe: {
+            universes: [],
+            currentUniverse: null,
+            status: 'idle',
+            error: null,
+          },
         },
       });
-
-      renderWithProviders(<UniverseDetail />);
-      expect(screen.getByText(/universe not found/i)).toBeInTheDocument();
+      expect(screen.getByTestId('not-found-message')).toHaveTextContent(
+        'Universe not found'
+      );
     });
   });
 
   describe('UniverseEdit Component', () => {
     const mockUniverse = mockUniverses[0];
 
-    beforeEach(() => {
-      store = configureStore({
-        reducer: {
-          universe: (state = { currentUniverse: mockUniverse }, action) =>
-            state,
+    it('renders edit form with universe data', () => {
+      renderWithProviders(<UniverseEdit />, {
+        preloadedState: {
+          auth: {
+            user: { id: 1, username: 'testuser' },
+            token: 'test-token',
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          },
+          favorites: {
+            favorites: [],
+            isLoading: false,
+            error: null,
+          },
+          universe: {
+            universes: mockUniverses,
+            currentUniverse: mockUniverse,
+            status: 'idle',
+            error: null,
+          },
         },
       });
-    });
 
-    it('renders edit form with universe data', () => {
-      renderWithProviders(<UniverseEdit />);
-
-      expect(screen.getByLabelText(/name/i)).toHaveValue(mockUniverse.name);
-      expect(screen.getByLabelText(/description/i)).toHaveValue(
+      expect(screen.getByLabelText('Universe Name')).toHaveValue(
+        mockUniverse.name
+      );
+      expect(screen.getByLabelText('Description')).toHaveValue(
         mockUniverse.description
       );
-      expect(screen.getByLabelText(/max participants/i)).toHaveValue(
-        mockUniverse.maxParticipants.toString()
+      expect(screen.getByLabelText('Max Participants')).toHaveValue(
+        mockUniverse.maxParticipants
       );
     });
 
     it('handles successful update', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<UniverseEdit />);
+      renderWithProviders(<UniverseEdit />, {
+        preloadedState: {
+          auth: {
+            user: { id: 1, username: 'testuser' },
+            token: 'test-token',
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          },
+          favorites: {
+            favorites: [],
+            isLoading: false,
+            error: null,
+          },
+          universe: {
+            universes: mockUniverses,
+            currentUniverse: mockUniverse,
+            status: 'idle',
+            error: null,
+          },
+        },
+      });
 
-      await user.clear(screen.getByLabelText(/name/i));
-      await user.type(screen.getByLabelText(/name/i), 'Updated Universe');
-      await user.click(screen.getByText(/save changes/i));
+      await user.type(screen.getByLabelText('Universe Name'), ' Updated');
+      await user.click(screen.getByText('Save Changes'));
 
       await waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith(
@@ -269,32 +596,64 @@ describe('Universe Components', () => {
 
     it('handles update error', async () => {
       const user = userEvent.setup();
-      store = configureStore({
-        reducer: {
-          universe: (
-            state = {
-              currentUniverse: mockUniverse,
-              error: 'Update failed',
-            },
-            action
-          ) => state,
+      renderWithProviders(<UniverseEdit />, {
+        preloadedState: {
+          auth: {
+            user: { id: 1, username: 'testuser' },
+            token: 'test-token',
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          },
+          favorites: {
+            favorites: [],
+            isLoading: false,
+            error: null,
+          },
+          universe: {
+            universes: mockUniverses,
+            currentUniverse: mockUniverse,
+            status: 'failed',
+            error: 'Update failed',
+          },
         },
       });
 
-      renderWithProviders(<UniverseEdit />);
-      await user.click(screen.getByText(/save changes/i));
+      await user.type(screen.getByLabelText('Universe Name'), ' Updated');
+      await user.click(screen.getByText('Save Changes'));
 
       expect(screen.getByText(/update failed/i)).toBeInTheDocument();
     });
 
     it('validates required fields', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<UniverseEdit />);
+      renderWithProviders(<UniverseEdit />, {
+        preloadedState: {
+          auth: {
+            user: { id: 1, username: 'testuser' },
+            token: 'test-token',
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          },
+          favorites: {
+            favorites: [],
+            isLoading: false,
+            error: null,
+          },
+          universe: {
+            universes: mockUniverses,
+            currentUniverse: mockUniverse,
+            status: 'idle',
+            error: null,
+          },
+        },
+      });
 
-      await user.clear(screen.getByLabelText(/name/i));
-      await user.click(screen.getByText(/save changes/i));
+      await user.clear(screen.getByLabelText('Universe Name'));
+      await user.click(screen.getByText('Save Changes'));
 
-      expect(screen.getByText(/name is required/i)).toBeInTheDocument();
+      expect(screen.getByText('Name is required')).toBeInTheDocument();
     });
   });
 });

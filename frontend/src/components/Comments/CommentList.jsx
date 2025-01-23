@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { addComment, fetchComments } from '../../redux/slices/commentSlice';
+import { addComment, fetchComments } from '../../store/slices/commentSlice';
 import Comment from './Comment';
 import styles from './Comments.module.css';
 

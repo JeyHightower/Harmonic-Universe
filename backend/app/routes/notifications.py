@@ -1,64 +1,64 @@
+"""Notification routes."""
 from datetime import datetime
 from flask import Blueprint, jsonify, request
 from app.services.notification import notification_service
-from app.auth import require_auth, get_current_user
-from app.models import Notification
-from app.extensions import db
-from app import socketio
+from app.utils.auth import require_auth
+from flask_jwt_extended import get_jwt_identity
 
-notifications_bp = Blueprint('notifications', __name__, url_prefix='/api/notifications')
+notifications_bp = Blueprint('notifications', __name__)
 
-# Mock database for testing
-notifications_db = {}
-
-@notifications_bp.route('/', methods=['GET', 'POST'])
-def handle_notifications():
-    if request.method == 'GET':
-        return jsonify(list(notifications_db.values()))
-
-    data = request.get_json()
-    notification_id = len(notifications_db) + 1
-    new_notification = {
-        "id": notification_id,
-        "type": data['type'],
-        "message": data['message'],
-        "isRead": False,
-        "createdAt": datetime.now().isoformat()
-    }
-    notifications_db[notification_id] = new_notification
-    socketio.emit('notification', new_notification)
-    return jsonify(new_notification), 201
-
-@notifications_bp.route('/<int:notification_id>', methods=['PATCH', 'DELETE'])
-def handle_notification(notification_id):
-    notification = notifications_db.get(notification_id)
-    if not notification:
-        return jsonify({"error": "Notification not found"}), 404
-
-    if request.method == 'PATCH':
-        data = request.get_json()
-        notification.update(data)
-        return jsonify(notification)
-
-    elif request.method == 'DELETE':
-        del notifications_db[notification_id]
-        return '', 204
-
-@notifications_bp.route('/mark-all-read', methods=['POST'])
-def mark_all_notifications_read():
-    for notification in notifications_db.values():
-        notification['isRead'] = True
-    return jsonify(list(notifications_db.values()))
-
-@notifications_bp.route('/cleanup', methods=['POST'])
+@notifications_bp.route('/notifications', methods=['GET'])
 @require_auth
-def cleanup_notifications():
-    """Clean up old notifications."""
-    try:
-        days = request.json.get('days', 90)
-        notification_service.cleanup_old_notifications(days)
-        return jsonify({'status': 'success'})
-    except Exception as e:
-        return jsonify({
-            'error': f'Failed to clean up notifications: {str(e)}'
-        }), 500
+def get_notifications():
+    """Get user notifications."""
+    user_id = get_jwt_identity()
+    limit = request.args.get('limit', 10, type=int)
+    offset = request.args.get('offset', 0, type=int)
+    unread_only = request.args.get('unread', False, type=bool)
+
+    notifications = notification_service.get_user_notifications(
+        user_id,
+        limit=limit,
+        offset=offset,
+        unread_only=unread_only
+    )
+
+    return jsonify({
+        'notifications': notifications,
+        'total': len(notifications),
+        'limit': limit,
+        'offset': offset
+    }), 200
+
+@notifications_bp.route('/notifications/<int:notification_id>', methods=['PUT'])
+@require_auth
+def mark_as_read(notification_id):
+    """Mark a notification as read."""
+    success = notification_service.mark_as_read(notification_id)
+
+    if not success:
+        return jsonify({'error': 'Notification not found'}), 404
+
+    return jsonify({'message': 'Notification marked as read'}), 200
+
+@notifications_bp.route('/notifications/mark-all-read', methods=['PUT'])
+@require_auth
+def mark_all_read():
+    """Mark all notifications as read."""
+    user_id = get_jwt_identity()
+    count = notification_service.mark_all_as_read(user_id)
+
+    return jsonify({
+        'message': f'Marked {count} notifications as read'
+    }), 200
+
+@notifications_bp.route('/notifications/<int:notification_id>', methods=['DELETE'])
+@require_auth
+def delete_notification(notification_id):
+    """Delete a notification."""
+    success = notification_service.delete_notification(notification_id)
+
+    if not success:
+        return jsonify({'error': 'Notification not found'}), 404
+
+    return jsonify({'message': 'Notification deleted'}), 200

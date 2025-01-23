@@ -1,31 +1,30 @@
 """Models package initialization."""
-from app.extensions import db
+from .user import User
 from .universe import Universe
 from .physics_parameters import PhysicsParameters
-from .user import User
-from .template import Template
 from .music_parameters import MusicParameters
+from .visualization_parameters import VisualizationParameters
+from .audio_parameters import AudioParameters
+from .notification import Notification
 from .comment import Comment
 from .favorite import Favorite
-from .storyboard import Storyboard, StoryboardPoint
-from .audio_parameters import AudioParameters
-from .visualization_parameters import VisualizationParameters
+from .storyboard import Storyboard
+from .template import Template
 from .version import Version
-from .notification import Notification
+from .user_preferences import UserPreferences
 
 __all__ = [
-    'db',
+    'User',
     'Universe',
     'PhysicsParameters',
-    'User',
-    'Template',
     'MusicParameters',
+    'VisualizationParameters',
+    'AudioParameters',
+    'Notification',
     'Comment',
     'Favorite',
     'Storyboard',
-    'StoryboardPoint',
-    'AudioParameters',
-    'VisualizationParameters',
+    'Template',
     'Version',
-    'Notification'
+    'UserPreferences',
 ]

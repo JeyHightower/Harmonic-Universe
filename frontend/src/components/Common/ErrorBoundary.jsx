@@ -7,7 +7,7 @@ class ErrorBoundary extends React.Component {
     this.state = {
       hasError: false,
       error: null,
-      errorInfo: null
+      errorInfo: null,
     };
   }
 
@@ -18,18 +18,23 @@ class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     this.setState({
       error,
-      errorInfo
+      errorInfo,
     });
 
-    // Log error to your error reporting service
-    console.error('Error caught by boundary:', error, errorInfo);
+    // Call error reporting service if provided
+    if (this.props.onError) {
+      this.props.onError(error);
+    } else {
+      // Fallback to console error
+      console.error('Error caught by boundary:', error, errorInfo);
+    }
   }
 
   handleRetry = () => {
     this.setState({
       hasError: false,
       error: null,
-      errorInfo: null
+      errorInfo: null,
     });
 
     if (this.props.onRetry) {
@@ -39,6 +44,18 @@ class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
+      // Use custom fallback if provided
+      if (this.props.FallbackComponent) {
+        return (
+          <this.props.FallbackComponent
+            error={this.state.error}
+            errorInfo={this.state.errorInfo}
+            onRetry={this.handleRetry}
+          />
+        );
+      }
+
+      // Default error UI
       return (
         <div className={styles.errorContainer}>
           <h2>Something went wrong</h2>
@@ -49,10 +66,7 @@ class ErrorBoundary extends React.Component {
               <pre>{this.state.errorInfo?.componentStack}</pre>
             </details>
           )}
-          <button
-            onClick={this.handleRetry}
-            className={styles.retryButton}
-          >
+          <button onClick={this.handleRetry} className={styles.retryButton}>
             Try Again
           </button>
         </div>

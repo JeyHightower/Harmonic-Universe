@@ -1,21 +1,27 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { register } from '../../store/slices/authSlice';
 import styles from './Auth.module.css';
 
 const Register = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { error } = useSelector(state => state.auth);
+
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     password: '',
     confirmPassword: '',
   });
-  const [errors, setErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
 
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
+  const [formErrors, setFormErrors] = useState({
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -23,128 +29,126 @@ const Register = () => {
       ...prev,
       [name]: value,
     }));
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: '',
-      }));
-    }
+    setFormErrors(prev => ({
+      ...prev,
+      [name]: '',
+    }));
   };
 
   const validateForm = () => {
-    const newErrors = {};
+    const errors = {};
     if (!formData.username) {
-      newErrors.username = 'Username is required';
+      errors.username = 'Username is required';
     }
     if (!formData.email) {
-      newErrors.email = 'Email is required';
+      errors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      errors.email = 'Invalid email format';
     }
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      errors.password = 'Password is required';
     }
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      errors.confirmPassword = 'Passwords do not match';
     }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async e => {
     e.preventDefault();
-    if (!validateForm()) return;
-
-    setIsLoading(true);
-    try {
-      await dispatch(register(formData)).unwrap();
-      navigate('/');
-    } catch (error) {
-      setErrors({
-        submit: error.message || 'Registration failed. Please try again.',
-      });
-    } finally {
-      setIsLoading(false);
+    if (validateForm()) {
+      try {
+        const result = await dispatch(register(formData)).unwrap();
+        if (result.token) {
+          navigate('/dashboard');
+        }
+      } catch (err) {
+        // Error handling is done in the slice
+      }
     }
   };
 
   return (
     <div className={styles.authContainer} data-testid="register-container">
-      <form onSubmit={handleSubmit} className={styles.authForm}>
+      <form className={styles.authForm} onSubmit={handleSubmit}>
         <h2>Register</h2>
-
         <div className={styles.formGroup}>
           <label htmlFor="username">Username</label>
           <input
             type="text"
             id="username"
             name="username"
-            data-testid="username-input"
             value={formData.username}
             onChange={handleChange}
-            disabled={isLoading}
+            data-testid="username-input"
           />
-          {errors.username && (
-            <span className={styles.error}>{errors.username}</span>
+          {formErrors.username && (
+            <div className={styles.error} data-testid="username-error">
+              {formErrors.username}
+            </div>
           )}
         </div>
-
         <div className={styles.formGroup}>
           <label htmlFor="email">Email</label>
           <input
             type="email"
             id="email"
             name="email"
-            data-testid="email-input"
             value={formData.email}
             onChange={handleChange}
-            disabled={isLoading}
+            data-testid="email-input"
           />
-          {errors.email && <span className={styles.error}>{errors.email}</span>}
+          {formErrors.email && (
+            <div className={styles.error} data-testid="email-error">
+              {formErrors.email}
+            </div>
+          )}
         </div>
-
         <div className={styles.formGroup}>
           <label htmlFor="password">Password</label>
           <input
             type="password"
             id="password"
             name="password"
-            data-testid="password-input"
             value={formData.password}
             onChange={handleChange}
-            disabled={isLoading}
+            data-testid="password-input"
           />
-          {errors.password && (
-            <span className={styles.error}>{errors.password}</span>
+          {formErrors.password && (
+            <div className={styles.error} data-testid="password-error">
+              {formErrors.password}
+            </div>
           )}
         </div>
-
         <div className={styles.formGroup}>
           <label htmlFor="confirmPassword">Confirm Password</label>
           <input
             type="password"
             id="confirmPassword"
             name="confirmPassword"
-            data-testid="confirm-password-input"
             value={formData.confirmPassword}
             onChange={handleChange}
-            disabled={isLoading}
+            data-testid="confirm-password-input"
           />
-          {errors.confirmPassword && (
-            <span className={styles.error}>{errors.confirmPassword}</span>
+          {formErrors.confirmPassword && (
+            <div className={styles.error} data-testid="confirm-password-error">
+              {formErrors.confirmPassword}
+            </div>
           )}
         </div>
-
-        {errors.submit && <div className={styles.error}>{errors.submit}</div>}
-
+        {error && (
+          <div className={styles.error} data-testid="submit-error">
+            {error.message || error}
+          </div>
+        )}
         <button
           type="submit"
-          data-testid="register-button"
-          disabled={isLoading}
           className={styles.authButton}
+          data-testid="register-button"
         >
-          {isLoading ? 'Registering...' : 'Register'}
+          Register
         </button>
-
         <div className={styles.authLinks}>
           <a href="/login">Already have an account? Login</a>
         </div>
@@ -153,4 +157,4 @@ const Register = () => {
   );
 };
 
-export default Register;
+export { Register };

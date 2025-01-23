@@ -1,8 +1,8 @@
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
-import { logout } from '../redux/slices/authSlice';
-import { authService } from '../services/authService';
+import { authService } from '../../services/authService';
+import { logout } from '../../store/slices/authSlice';
 import './Navigation.css';
 
 const Navigation = () => {

@@ -4,12 +4,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   shareUniverse,
   unshareUniverse,
-} from '../../redux/slices/universeSlice';
+} from '../../store/slices/universeSlice';
 import {
   clearSearchResults,
   fetchUsersByIds,
   searchUsers,
-} from '../../redux/slices/userSlice';
+} from '../../store/slices/userSlice';
 import styles from './Universe.module.css';
 
 const ShareUniverse = ({ universeId }) => {

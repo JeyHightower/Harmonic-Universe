@@ -2,9 +2,9 @@
 import pytest
 from flask import Flask, jsonify
 from werkzeug.exceptions import NotFound, Unauthorized, BadRequest
-from app.utils.error_handlers import register_error_handlers
+from app.utils.helpers.error_handlers import register_error_handlers
 from app.extensions import db
-from app.models.user import User
+from app.models.base.user import User
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from unittest.mock import patch
 from app import create_app

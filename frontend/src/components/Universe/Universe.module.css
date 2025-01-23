@@ -359,3 +359,59 @@
   color: #666;
   font-style: italic;
 }
+
+.universeList {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 2rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.searchInput {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  width: 300px;
+  transition: border-color 0.3s;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.createButton {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s;
+}
+
+.createButton:hover {
+  background-color: var(--primary-color-dark);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.noUniverses {
+  text-align: center;
+  color: #666;
+  font-size: 1.1rem;
+  grid-column: 1 / -1;
+  padding: 2rem;
+}

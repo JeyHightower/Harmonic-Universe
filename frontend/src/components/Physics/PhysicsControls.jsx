@@ -4,7 +4,7 @@ import {
   fetchPhysicsParameters,
   setParameters,
   updateParameter,
-} from '../../redux/slices/physicsSlice';
+} from '../../store/slices/physicsSlice';
 import './PhysicsControls.css';
 
 const PARAMETER_DESCRIPTIONS = {

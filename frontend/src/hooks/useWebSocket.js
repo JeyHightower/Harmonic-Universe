@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
-import websocketService from '../services/websocket';
+import websocketService from '../../services/websocket';
 
 export const useWebSocket = (url, options = {}) => {
   const {

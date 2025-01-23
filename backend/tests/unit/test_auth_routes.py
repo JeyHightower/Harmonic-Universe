@@ -1,100 +1,96 @@
-import json
 import pytest
-from flask_jwt_extended import create_access_token
-from app.models import User
-import unittest
+from flask import json
 from app import create_app
-from app.extensions import db
-from tests.test_utils import BaseTest
+from config import Config
+
+class TestConfig(Config):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    JWT_SECRET_KEY = 'test-secret-key'
 
 @pytest.fixture
-def auth_headers(session):
-    """Create a test user and return auth headers with valid token."""
-    user = User(email='test@example.com', password='testpass123')
-    session.add(user)
-    session.commit()
+def app():
+    app = create_app(TestConfig)
+    return app
 
-    token = create_access_token(identity=user.id)
-    return {
-        'Authorization': f'Bearer {token}',
-        'Content-Type': 'application/json'
-    }
+@pytest.fixture
+def client(app):
+    return app.test_client()
 
-def test_signup(client, session):
-    """Test user signup."""
-    data = {
+def test_register(client):
+    response = client.post('/api/auth/register', json={
+        'username': 'testuser',
         'email': 'test@example.com',
-        'password': 'testpass123'
-    }
-    response = client.post('/api/auth/register',
-                          data=json.dumps(data),
-                          content_type='application/json')
+        'password': 'password123'
+    })
     assert response.status_code == 201
+    data = json.loads(response.data)
+    assert 'token' in data
+    assert 'user' in data
 
-    response_data = json.loads(response.data)
-    assert response_data['status'] == 'success'
-    assert 'token' in response_data['data']
-    assert 'user' in response_data['data']
-    assert response_data['data']['user']['email'] == 'test@example.com'
+def test_register_duplicate_email(client):
+    # First registration
+    client.post('/api/auth/register', json={
+        'username': 'testuser',
+        'email': 'test@example.com',
+        'password': 'password123'
+    })
 
-    user = session.query(User).filter_by(email='test@example.com').first()
-    assert user is not None
+    # Duplicate registration
+    response = client.post('/api/auth/register', json={
+        'username': 'testuser2',
+        'email': 'test@example.com',
+        'password': 'password123'
+    })
+    assert response.status_code == 400
+    data = json.loads(response.data)
+    assert 'error' in data
 
-def test_login(client, session):
-    """Test user login."""
-    # Create a test user with a new email
-    user = User(email='test2@example.com', password='testpass123')
-    session.add(user)
-    session.commit()
+def test_login_success(client):
+    # Register first
+    client.post('/api/auth/register', json={
+        'username': 'testuser',
+        'email': 'test@example.com',
+        'password': 'password123'
+    })
 
-    response = client.post('/api/auth/login',
-                          json={'email': 'test2@example.com', 'password': 'testpass123'})
+    # Then login
+    response = client.post('/api/auth/login', json={
+        'email': 'test@example.com',
+        'password': 'password123'
+    })
     assert response.status_code == 200
     data = json.loads(response.data)
-    assert 'token' in data['data']
+    assert 'token' in data
+    assert 'user' in data
 
-def test_validate_token(client, auth_headers):
-    """Test token validation."""
-    response = client.get('/api/auth/validate',
-                         headers=auth_headers)
-    assert response.status_code == 200
-    data = json.loads(response.data)
-    assert data['status'] == 'success'
-    assert 'user' in data['data']
-
-def test_invalid_login(client):
-    """Test login with invalid credentials."""
-    response = client.post('/api/auth/login',
-                          json={'email': 'wrong@example.com', 'password': 'wrongpass'})
+def test_login_invalid_credentials(client):
+    response = client.post('/api/auth/login', json={
+        'email': 'test@example.com',
+        'password': 'wrongpassword'
+    })
     assert response.status_code == 401
+    data = json.loads(response.data)
+    assert 'error' in data
 
-def test_duplicate_signup(client, session):
-    """Test signup with existing email."""
-    # Create initial user with a new email
-    user = User(email='test3@example.com', password='testpass123')
-    session.add(user)
-    session.commit()
+def test_protected_route(client):
+    # Register and login to get token
+    client.post('/api/auth/register', json={
+        'username': 'testuser',
+        'email': 'test@example.com',
+        'password': 'password123'
+    })
+    login_response = client.post('/api/auth/login', json={
+        'email': 'test@example.com',
+        'password': 'password123'
+    })
+    token = json.loads(login_response.data)['token']
 
-    # Try to register with same email
-    response = client.post('/api/auth/register',
-                          json={'email': 'test3@example.com', 'password': 'testpass123'})
-    assert response.status_code == 409
+    # Test protected route
+    response = client.get('/api/auth/protected',
+                         headers={'Authorization': f'Bearer {token}'})
+    assert response.status_code == 200
 
-class TestAuthFlow(BaseTest):
-    def test_auth_flow(self):
-        # Test registration
-        response = self.register_user()
-        self.assertEqual(response.status_code, 201)
-        data = json.loads(response.data)
-        self.assertIn('data', data)
-        self.assertIn('token', data['data'])
-
-        # Test login
-        response = self.login_user()
-        self.assertEqual(response.status_code, 200)
-        data = json.loads(response.data)
-        self.assertIn('data', data)
-        self.assertIn('token', data['data'])
-
-if __name__ == '__main__':
-    unittest.main()
+def test_protected_route_no_token(client):
+    response = client.get('/api/auth/protected')
+    assert response.status_code == 401

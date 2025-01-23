@@ -5,6 +5,7 @@ import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import { getCLS, getFCP, getFID, getLCP, getTTFB } from 'web-vitals';
 import App from './App';
+import GlobalErrorBoundary from './components/Common/GlobalErrorBoundary';
 import './index.css';
 import { monitoring } from './services/monitoring';
 import store from './store';
@@ -146,11 +147,13 @@ updateOnlineStatus();
 
 root.render(
   <React.StrictMode>
-    <Provider store={store}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </Provider>
+    <GlobalErrorBoundary>
+      <Provider store={store}>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </Provider>
+    </GlobalErrorBoundary>
   </React.StrictMode>
 );
 

@@ -1,6 +1,6 @@
 import json
 import pytest
-from app.models import User, Universe, Storyboard, Version
+from app.models.base import User, Universe, Storyboard, Version
 
 def test_create_storyboard(client, session, auth_headers):
     """Test storyboard creation."""

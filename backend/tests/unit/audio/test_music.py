@@ -1,5 +1,5 @@
 import pytest
-from app.models import Universe, MusicParameters
+from app.models.base import Universe, MusicParameters
 
 def test_music_parameter_validation(client, auth_headers, session):
     """Test music parameter validation."""

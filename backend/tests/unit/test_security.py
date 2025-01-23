@@ -1,8 +1,8 @@
 import pytest
 from flask_jwt_extended import create_access_token
-from app.models import User, Universe
-from app.utils.auth import check_universe_access, require_auth
-from app.utils.security import hash_password, verify_password
+from app.models.base import User, Universe
+from app.utils.helpers.auth import check_universe_access, require_auth
+from app.utils.helpers.security import hash_password, verify_password
 
 def test_password_hashing():
     """Test password hashing and verification"""

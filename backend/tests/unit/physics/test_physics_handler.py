@@ -3,7 +3,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from flask_socketio import SocketIOTestClient
 from app import create_app
-from app.models import Universe, PhysicsParameters
+from app.models.base import Universe, PhysicsParameters
 from app.physics.engine import Vector2D, Particle, PhysicsEngine, BoundaryType
 from app.extensions import db
 from app.sockets.physics_handler import PhysicsNamespace

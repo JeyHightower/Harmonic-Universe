@@ -1,5 +1,5 @@
 import pytest
-from app.models import Universe, PhysicsParameters, MusicParameters
+from app.models.base import Universe, PhysicsParameters, MusicParameters
 from app.extensions import db
 
 def test_universe_creation_with_parameters(client, auth_headers, session):

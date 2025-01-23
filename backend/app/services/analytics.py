@@ -3,7 +3,7 @@ import json
 from typing import Dict, List, Optional
 from sqlalchemy import func, and_
 from redis import Redis
-from app.models import Analytics
+from app.models.base import Analytics
 from app.extensions import db, cache
 
 class AnalyticsService:

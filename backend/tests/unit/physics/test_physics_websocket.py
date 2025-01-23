@@ -6,7 +6,7 @@ from flask import Flask
 from flask_socketio import SocketIOTestClient
 from app import create_app
 from app.config import TestConfig
-from app.models import Universe, PhysicsParameters
+from app.models.base import Universe, PhysicsParameters
 from app.physics.engine import Vector2D
 from app.sockets.physics_handler import PhysicsNamespace
 from app.extensions import db, socketio

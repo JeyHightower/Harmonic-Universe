@@ -25,7 +25,7 @@ def verify_token():
     except Exception as e:
         return jsonify({'error': str(e)}), 401
 
-@universe_bp.route('/universes', methods=['GET'])
+@universe_bp.route('', methods=['GET'])
 @cache.cached(timeout=60)
 def get_universes():
     """Get all public universes."""
@@ -88,7 +88,7 @@ def get_universe(universe_id):
             'message': 'Failed to fetch universe'
         }), 500
 
-@universe_bp.route('/universes', methods=['POST'])
+@universe_bp.route('', methods=['POST'])
 @jwt_required()
 @limiter.limit("30 per hour")
 def create_universe():

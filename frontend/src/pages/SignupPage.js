@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom'; // Added Link
-import LoadingSpinner from '../components/LoadingSpinner';
-import { registerUser } from '../redux/actions/authActions';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import { registerUser } from '../../store/actions/authActions';
 
 const SignupPage = () => {
   const dispatch = useDispatch();

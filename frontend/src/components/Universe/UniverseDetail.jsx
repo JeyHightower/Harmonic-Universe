@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import { fetchUniverses } from '../../redux/slices/universeSlice';
+import { fetchUniverses } from '../../store/slices/universeSlice';
 import CommentList from '../Comments/CommentList';
 import MusicControls from '../Music/MusicControls';
 import PhysicsControls from '../Physics/PhysicsControls';
@@ -26,15 +26,27 @@ const UniverseDetail = () => {
   }, [dispatch, universeId]);
 
   if (isLoading) {
-    return <div className={styles.loading}>Loading universe...</div>;
+    return (
+      <div data-testid="loading-indicator" className={styles.loading}>
+        Loading universe...
+      </div>
+    );
   }
 
   if (error) {
-    return <div className={styles.error}>{error}</div>;
+    return (
+      <div data-testid="error-message" className={styles.error}>
+        {error}
+      </div>
+    );
   }
 
   if (!currentUniverse) {
-    return <div className={styles.error}>Universe not found</div>;
+    return (
+      <div data-testid="not-found-message" className={styles.error}>
+        Universe not found
+      </div>
+    );
   }
 
   const handleTabChange = tab => {

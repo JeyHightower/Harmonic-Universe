@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import AudioVisualizer from '../components/Audio/AudioVisualizer';
-import FrequencyAnalyzer from '../components/Audio/FrequencyAnalyzer';
-import ErrorMessage from '../components/Common/ErrorMessage';
-import LoadingSpinner from '../components/Common/LoadingSpinner';
-import PhysicsSimulation from '../components/Physics/PhysicsSimulation';
-import { fetchUniverse } from '../store/actions/universeActions';
+import AudioVisualizer from '../../components/Audio/AudioVisualizer';
+import FrequencyAnalyzer from '../../components/Audio/FrequencyAnalyzer';
+import ErrorMessage from '../../components/Common/ErrorMessage';
+import LoadingSpinner from '../../components/Common/LoadingSpinner';
+import PhysicsSimulation from '../../components/Physics/PhysicsSimulation';
+import { fetchUniverse } from '../../store/actions/universeActions';
 import './UniversePage.css';
 
 const UniversePage = () => {

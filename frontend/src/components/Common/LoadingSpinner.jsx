@@ -21,7 +21,7 @@ const LoadingSpinner = ({
   }
 
   return (
-    <div className="spinner-container">
+    <div className="spinner-container" data-testid="loading-indicator">
       <div className={spinnerClass}></div>
       {text && <p className="spinner-text">{text}</p>}
     </div>

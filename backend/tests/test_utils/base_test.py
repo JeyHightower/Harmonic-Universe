@@ -2,13 +2,14 @@ import unittest
 import json
 from app import create_app
 from app.extensions import db
+from ..config import TestConfig
 
 class BaseTest(unittest.TestCase):
     """Base test class with common setup and authentication methods."""
 
     def setUp(self):
         """Set up test environment."""
-        self.app = create_app('testing')
+        self.app = create_app(TestConfig)
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
         self.app_context.push()
@@ -25,7 +26,8 @@ class BaseTest(unittest.TestCase):
         """Register a test user."""
         return self.client.post('/api/auth/register', json={
             'email': email,
-            'password': password
+            'password': password,
+            'username': email.split('@')[0]
         })
 
     def login_user(self, email='test@example.com', password='testpass123'):

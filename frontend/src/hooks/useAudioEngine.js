@@ -1,13 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import AudioEngine from '../services/AudioEngine';
+import AudioEngine from '../../services/AudioEngine';
 import {
   addScheduledNote,
   clearScheduledNotes,
   setBpm,
   setError,
   setPlayingStatus,
-} from '../store/audio';
+} from '../../store/audio';
 
 export const useAudioEngine = () => {
   const dispatch = useDispatch();

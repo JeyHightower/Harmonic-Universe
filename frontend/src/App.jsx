@@ -4,9 +4,9 @@ import React from 'react';
 import { Provider } from 'react-redux';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import './App.css';
+import HomePage from './components/Home/HomePage';
 import Layout from './components/Navigation/Layout';
-import UserPreferences from './components/Settings/UserPreferences';
-import store from './redux/store';
+import store from './store';
 
 // Lazy load components
 const Login = React.lazy(() => {
@@ -68,8 +68,95 @@ const App = () => {
         <Router>
           <Routes>
             <Route path="/" element={<Layout />}>
-              <Route index element={<div>Home Page</div>} />
-              <Route path="/settings" element={<UserPreferences />} />
+              <Route index element={<HomePage />} />
+              <Route
+                path="/login"
+                element={
+                  <React.Suspense fallback={<div>Loading...</div>}>
+                    <Login />
+                  </React.Suspense>
+                }
+              />
+              <Route
+                path="/register"
+                element={
+                  <React.Suspense fallback={<div>Loading...</div>}>
+                    <Register />
+                  </React.Suspense>
+                }
+              />
+              <Route
+                path="/reset-password"
+                element={
+                  <React.Suspense fallback={<div>Loading...</div>}>
+                    <ResetPassword />
+                  </React.Suspense>
+                }
+              />
+              <Route
+                path="/universes"
+                element={
+                  <React.Suspense fallback={<div>Loading...</div>}>
+                    <UniverseList />
+                  </React.Suspense>
+                }
+              />
+              <Route
+                path="/universes/:id"
+                element={
+                  <React.Suspense fallback={<div>Loading...</div>}>
+                    <UniverseDetail />
+                  </React.Suspense>
+                }
+              />
+              <Route
+                path="/universes/create"
+                element={
+                  <React.Suspense fallback={<div>Loading...</div>}>
+                    <UniverseCreate />
+                  </React.Suspense>
+                }
+              />
+              <Route
+                path="/universes/:id/edit"
+                element={
+                  <React.Suspense fallback={<div>Loading...</div>}>
+                    <UniverseEdit />
+                  </React.Suspense>
+                }
+              />
+              <Route
+                path="/universes/:id/storyboard"
+                element={
+                  <React.Suspense fallback={<div>Loading...</div>}>
+                    <Storyboard />
+                  </React.Suspense>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <React.Suspense fallback={<div>Loading...</div>}>
+                    <Settings />
+                  </React.Suspense>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <React.Suspense fallback={<div>Loading...</div>}>
+                    <Profile />
+                  </React.Suspense>
+                }
+              />
+              <Route
+                path="/analytics"
+                element={
+                  <React.Suspense fallback={<div>Loading...</div>}>
+                    <Analytics />
+                  </React.Suspense>
+                }
+              />
             </Route>
           </Routes>
         </Router>

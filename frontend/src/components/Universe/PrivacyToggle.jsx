@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { updateUniversePrivacy } from '../../redux/slices/universeSlice';
+import { updateUniversePrivacy } from '../../store/slices/universeSlice';
 import styles from './Universe.module.css';
 
 const PrivacyToggle = ({ universeId, isPublic }) => {

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import ErrorMessage from '../components/Common/ErrorMessage';
-import LoadingSpinner from '../components/Common/LoadingSpinner';
+import ErrorMessage from '../../components/Common/ErrorMessage';
+import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import {
   fetchStoryboard,
   updateStoryboard,
-} from '../store/actions/storyboardActions';
+} from '../../store/actions/storyboardActions';
 import './StoryboardPage.css';
 
 const StoryboardPage = () => {

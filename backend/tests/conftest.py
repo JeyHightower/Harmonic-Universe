@@ -5,37 +5,66 @@ import pytest
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from app import create_app
-from app.extensions import db
-from app.models import Universe, PhysicsParameters
+from app.extensions import db as _db
+from app.models import (
+    User,
+    Universe,
+    PhysicsParameters,
+    MusicParameters,
+    VisualizationParameters,
+    Comment,
+    Favorite,
+    Storyboard
+)
 from sqlalchemy.orm import scoped_session, sessionmaker
 from flask_jwt_extended import create_access_token
 import time
-
-# Import all models to ensure they're registered
-from app.models.user import User
-from app.models.universe import Universe
-from app.models.comment import Comment
-from app.models.favorite import Favorite
-from app.models.storyboard import Storyboard
-from app.models.version import Version
-from app.models.template import Template
-from app.models.music_parameters import MusicParameters
-from app.models.visualization_parameters import VisualizationParameters
-from app.models.audio_parameters import AudioParameters
+from .config import TestConfig
 
 @pytest.fixture(scope='session')
 def app():
     """Create application for the tests."""
-    app = create_app('testing')
+    _app = create_app(TestConfig)
+    ctx = _app.test_request_context()
+    ctx.push()
 
-    with app.app_context():
-        db.create_all()
+    yield _app
 
-    yield app
+    ctx.pop()
 
-    with app.app_context():
-        db.session.remove()
-        db.drop_all()
+@pytest.fixture(scope='session')
+def db(app):
+    """Create database for the tests."""
+    # Drop all tables first to ensure clean state
+    _db.drop_all()
+
+    # Create all tables
+    _db.create_all()
+
+    yield _db
+
+    # Clean up after tests
+    _db.session.remove()
+    _db.drop_all()
+
+@pytest.fixture(scope='function')
+def session(db):
+    """Create a new database session for a test."""
+    connection = db.engine.connect()
+    transaction = connection.begin()
+
+    # Create session factory
+    session_factory = sessionmaker(bind=connection)
+    session = scoped_session(session_factory)
+
+    # Set session for SQLAlchemy
+    db.session = session
+
+    yield session
+
+    transaction.rollback()
+    connection.close()
+    session.remove()
 
 @pytest.fixture
 def client(app):
@@ -43,43 +72,46 @@ def client(app):
     return app.test_client()
 
 @pytest.fixture
-def session(app):
-    """Create a new database session for a test."""
-    with app.app_context():
-        connection = db.engine.connect()
-        transaction = connection.begin()
-
-        # Create a session with the connection
-        Session = sessionmaker(bind=connection)
-        session = scoped_session(Session)
-        db.session = session
-
-        yield session
-
-        session.close()
-        transaction.rollback()
-        connection.close()
-
-@pytest.fixture
 def runner(app):
-    """Create a test CLI runner."""
+    """Create test CLI runner."""
     return app.test_cli_runner()
 
 @pytest.fixture(scope='function')
 def test_user(session):
     """Create test user."""
-    user = User(username='testuser', email='test@example.com')
-    user.set_password('password123')
+    user = User(
+        username='testuser',
+        email='test@example.com',
+        password='Password123'
+    )
     session.add(user)
     session.commit()
     return user
 
 @pytest.fixture(scope='function')
-def auth_headers(app, test_user):
+def auth_headers(app, test_user, session):
     """Create authentication headers."""
     with app.app_context():
+        # Ensure the user exists in the database
+        if not User.query.get(test_user.id):
+            session.add(test_user)
+            session.commit()
+
         access_token = create_access_token(identity=test_user.id)
-        return {
+        headers = {
             'Authorization': f'Bearer {access_token}',
             'Content-Type': 'application/json'
         }
+        return headers
+
+@pytest.fixture
+def mock_redis(mocker):
+    """Mock Redis client."""
+    mock = mocker.patch('app.extensions.redis')
+    return mock
+
+@pytest.fixture
+def mock_websocket(mocker):
+    """Mock WebSocket connection."""
+    mock = mocker.patch('app.sockets.connection.Connection')
+    return mock

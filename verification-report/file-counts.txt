@@ -1,3 +1,0 @@
-File counts by type:
--------------------
-Python files:     4129

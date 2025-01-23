@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import collaborationService from '../services/collaborationService';
+import collaborationService from '../../services/collaborationService';
 
 export const useCollaboration = universeId => {
   const [collaborators, setCollaborators] = useState([]);

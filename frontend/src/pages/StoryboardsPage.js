@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import StoryboardFilters from '../components/Storyboard/StoryboardFilters';
-import StoryboardList from '../components/Storyboard/StoryboardList';
-import StoryboardModal from '../components/Storyboard/StoryboardModal';
-import StoryboardPagination from '../components/Storyboard/StoryboardPagination';
+import StoryboardFilters from '../../components/Storyboard/StoryboardFilters';
+import StoryboardList from '../../components/Storyboard/StoryboardList';
+import StoryboardModal from '../../components/Storyboard/StoryboardModal';
+import StoryboardPagination from '../../components/Storyboard/StoryboardPagination';
 import {
   fetchStoryboards,
   setFilter,
   setPage,
   setSorting,
-} from '../redux/slices/storyboardSlice';
+} from '../../store/slices/storyboardSlice';
 import styles from './StoryboardsPage.module.css';
 
 const StoryboardsPage = () => {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { logout } from '../../redux/slices/authSlice';
+import { logout } from '../../store/slices/authSlice';
 import NotificationBell from '../Notifications/NotificationBell';
 import styles from './Navigation.module.css';
 

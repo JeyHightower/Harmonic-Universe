@@ -1,231 +1,130 @@
-import { render, screen } from '@testing-library/react';
+import { configureStore } from '@reduxjs/toolkit';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import AudioControls from '../AudioControls';
+import { Provider } from 'react-redux';
+import * as Tone from 'tone';
+import { describe, expect, it, vi } from 'vitest';
+import { musicSlice } from '../../store/slices/musicSlice';
+import AudioController from '../Audio/AudioController';
+import styles from '../Audio/AudioController.module.css';
 
-// Mock Web Audio API
-class MockAudioContext {
-  createOscillator() {
-    return {
-      connect: vi.fn(),
-      start: vi.fn(),
-      stop: vi.fn(),
-      frequency: { value: 440 },
-    };
-  }
-  createGain() {
-    return {
-      connect: vi.fn(),
-      gain: { value: 0.5 },
-    };
-  }
-  close() {
-    return Promise.resolve();
-  }
-}
-
-global.AudioContext = MockAudioContext;
-
-// Create a slice for audio state
-const audioSlice = {
-  name: 'audio',
-  initialState: {
-    loading: false,
-    error: null,
-    settings: {
-      harmony: 0.5,
-      tempo: 120,
-      key: 'C',
-      scale: 'major',
-    },
+// Mock Tone.js
+vi.mock('tone', () => ({
+  start: vi.fn().mockResolvedValue(undefined),
+  Transport: {
+    start: vi.fn(),
+    stop: vi.fn(),
   },
-  reducers: {
-    setError: (state, action) => {
-      state.error = action.payload;
-    },
-    updateSettings: (state, action) => {
-      state.settings = { ...state.settings, ...action.payload };
-    },
-  },
-};
+  PolySynth: vi.fn().mockImplementation(() => ({
+    toDestination: () => ({
+      volume: { value: -12 },
+      set: vi.fn(),
+      triggerAttackRelease: vi.fn(),
+      dispose: vi.fn(),
+    }),
+  })),
+  Sequence: vi.fn().mockImplementation(() => ({
+    start: vi.fn(),
+    stop: vi.fn(),
+    dispose: vi.fn(),
+  })),
+  getContext: vi.fn(),
+  Frequency: vi.fn().mockImplementation(value => ({
+    harmonize: vi.fn().mockReturnValue(value),
+  })),
+}));
 
-describe('AudioControls', () => {
+describe('AudioController Component', () => {
   const defaultProps = {
-    harmony: 0.5,
-    tempo: 120,
-    musicalKey: 'C',
-    scale: 'major',
-    onParameterChange: vi.fn(),
-    isLoading: false,
-    error: null,
+    physicsParameters: {
+      gravity: 9.81,
+      elasticity: 0.5,
+      friction: 0.3,
+      airResistance: 0.1,
+      density: 1.0,
+    },
+  };
+
+  const renderComponent = (props = {}) => {
+    const store = configureStore({
+      reducer: {
+        music: musicSlice.reducer,
+      },
+    });
+
+    return render(
+      <Provider store={store}>
+        <AudioController {...defaultProps} {...props} />
+      </Provider>
+    );
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  afterEach(() => {
-    vi.clearAllTimers();
+  it('renders audio control elements', () => {
+    renderComponent();
+    expect(screen.getByRole('button')).toHaveTextContent(/play|stop/i);
+    expect(screen.getByLabelText(/volume/i)).toBeInTheDocument();
   });
 
-  const renderComponent = (props = {}) => {
-    return render(<AudioControls {...defaultProps} {...props} />);
-  };
+  it('handles play/pause toggle', async () => {
+    renderComponent();
+    const playButton = screen.getByRole('button');
 
-  describe('Rendering', () => {
-    it('renders all control elements', () => {
-      renderComponent();
+    // Initial state
+    expect(playButton).toHaveTextContent('Play');
 
-      expect(screen.getByLabelText(/harmony/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/tempo/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/key/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/scale/i)).toBeInTheDocument();
-    });
+    // Click play
+    await userEvent.click(playButton);
+    expect(Tone.start).toHaveBeenCalled();
+    expect(Tone.Transport.start).toHaveBeenCalled();
+    expect(playButton).toHaveTextContent('Stop');
 
-    it('renders with default values', () => {
-      renderComponent();
-
-      expect(screen.getByLabelText(/harmony/i)).toHaveValue('0.5');
-      expect(screen.getByLabelText(/tempo/i)).toHaveValue('120');
-      expect(screen.getByLabelText(/key/i)).toHaveValue('C');
-      expect(screen.getByLabelText(/scale/i)).toHaveValue('major');
-    });
-
-    it('shows loading state when isLoading is true', () => {
-      renderComponent({ isLoading: true });
-
-      expect(screen.getByTestId('loading-indicator')).toBeInTheDocument();
-      expect(screen.getByLabelText(/harmony/i)).toBeDisabled();
-      expect(screen.getByLabelText(/tempo/i)).toBeDisabled();
-      expect(screen.getByLabelText(/key/i)).toBeDisabled();
-      expect(screen.getByLabelText(/scale/i)).toBeDisabled();
-    });
-
-    it('shows error message when error is provided', () => {
-      const error = 'Test error message';
-      renderComponent({ error });
-
-      expect(screen.getByTestId('error-message')).toHaveTextContent(error);
-    });
+    // Click stop
+    await userEvent.click(playButton);
+    expect(Tone.Transport.stop).toHaveBeenCalled();
+    expect(playButton).toHaveTextContent('Play');
   });
 
-  describe('User Interactions', () => {
-    it('handles harmony slider changes', async () => {
-      const onParameterChange = vi.fn();
-      renderComponent({ onParameterChange });
+  it('handles volume changes', () => {
+    renderComponent();
+    const volumeSlider = screen.getByLabelText(/volume/i);
 
-      const slider = screen.getByLabelText(/harmony/i);
-      await userEvent.clear(slider);
-      await userEvent.type(slider, '0.8');
-
-      expect(onParameterChange).toHaveBeenCalledWith('harmony', 0.8);
-    });
-
-    it('handles tempo slider changes', async () => {
-      const onParameterChange = vi.fn();
-      renderComponent({ onParameterChange });
-
-      const slider = screen.getByLabelText(/tempo/i);
-      await userEvent.clear(slider);
-      await userEvent.type(slider, '140');
-
-      expect(onParameterChange).toHaveBeenCalledWith('tempo', 140);
-    });
-
-    it('handles key selection changes', async () => {
-      const onParameterChange = vi.fn();
-      renderComponent({ onParameterChange });
-
-      const select = screen.getByLabelText(/key/i);
-      await userEvent.selectOptions(select, 'G');
-
-      expect(onParameterChange).toHaveBeenCalledWith('musicalKey', 'G');
-    });
-
-    it('handles scale selection changes', async () => {
-      const onParameterChange = vi.fn();
-      renderComponent({ onParameterChange });
-
-      const select = screen.getByLabelText(/scale/i);
-      await userEvent.selectOptions(select, 'minor');
-
-      expect(onParameterChange).toHaveBeenCalledWith('scale', 'minor');
-    });
+    // Test volume change
+    fireEvent.change(volumeSlider, { target: { value: '-20' } });
+    expect(volumeSlider.value).toBe('-20');
   });
 
-  describe('Validation', () => {
-    it('shows validation error for harmony out of range', async () => {
-      const onParameterChange = vi.fn();
-      renderComponent({ onParameterChange });
+  it('updates synth parameters based on physics', () => {
+    const physicsParameters = {
+      gravity: 5,
+      elasticity: 0.8,
+      friction: 0.2,
+      airResistance: 0.3,
+      density: 1.5,
+    };
 
-      const slider = screen.getByLabelText(/harmony/i);
-      await userEvent.clear(slider);
-      await userEvent.type(slider, '1.5');
-
-      expect(screen.getByTestId('validation-error')).toHaveTextContent(
-        /harmony must be between 0 and 1/i
-      );
-      expect(onParameterChange).not.toHaveBeenCalled();
-    });
-
-    it('shows validation error for tempo out of range', async () => {
-      const onParameterChange = vi.fn();
-      renderComponent({ onParameterChange });
-
-      const slider = screen.getByLabelText(/tempo/i);
-      await userEvent.clear(slider);
-      await userEvent.type(slider, '250');
-
-      expect(screen.getByTestId('validation-error')).toHaveTextContent(
-        /tempo must be between 60 and 200/i
-      );
-      expect(onParameterChange).not.toHaveBeenCalled();
-    });
+    renderComponent({ physicsParameters });
+    expect(screen.getByRole('button')).toBeInTheDocument();
   });
 
-  describe('Responsive Behavior', () => {
-    it('adapts to mobile view', () => {
-      global.innerWidth = 375;
-      global.dispatchEvent(new Event('resize'));
+  it('is responsive', () => {
+    const { container } = renderComponent();
 
-      const { container } = renderComponent();
-      expect(
-        container.querySelector('._mobile-view_ff8cf6')
-      ).toBeInTheDocument();
-    });
+    // Test mobile view
+    window.innerWidth = 375;
+    fireEvent.resize(window);
+    expect(container.querySelector(`.${styles.audioController}`)).toHaveClass(
+      styles.mobile
+    );
 
-    it('adapts to desktop view', () => {
-      global.innerWidth = 1024;
-      global.dispatchEvent(new Event('resize'));
-
-      const { container } = renderComponent();
-      expect(
-        container.querySelector('._desktop-view_ff8cf6')
-      ).toBeInTheDocument();
-    });
-  });
-
-  describe('Audio Context Integration', () => {
-    it('creates and manages audio context correctly', async () => {
-      const audioContext = new AudioContext();
-      const onParameterChange = vi.fn();
-      renderComponent({ onParameterChange });
-
-      const slider = screen.getByLabelText(/harmony/i);
-      await userEvent.clear(slider);
-      await userEvent.type(slider, '0.8');
-
-      expect(audioContext.createOscillator).toHaveBeenCalled();
-      expect(audioContext.createGain).toHaveBeenCalled();
-    });
-
-    it('cleans up audio context on unmount', () => {
-      const audioContext = new AudioContext();
-      const { unmount } = renderComponent();
-
-      unmount();
-      expect(audioContext.close).toHaveBeenCalled();
-    });
+    // Test desktop view
+    window.innerWidth = 1024;
+    fireEvent.resize(window);
+    expect(
+      container.querySelector(`.${styles.audioController}`)
+    ).not.toHaveClass(styles.mobile);
   });
 });

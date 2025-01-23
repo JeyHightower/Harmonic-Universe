@@ -4,7 +4,7 @@ import { useDispatch } from 'react-redux';
 import {
   deleteNotification,
   markAsRead,
-} from '../../redux/slices/notificationSlice';
+} from '../../store/slices/notificationSlice';
 import styles from './Notifications.module.css';
 
 const NotificationPanel = ({ notifications, onClose }) => {

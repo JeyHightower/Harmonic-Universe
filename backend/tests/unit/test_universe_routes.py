@@ -1,6 +1,6 @@
 import json
 import pytest
-from app.models import Universe, User
+from app.models.base import Universe, User
 from unittest.mock import patch
 from app.extensions import db
 

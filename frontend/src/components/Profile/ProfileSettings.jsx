@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { updateUserProfile } from '../../redux/slices/userSlice';
 import { useNotification } from '../../context/NotificationContext';
+import { updateUserProfile } from '../../store/slices/userSlice';
 import styles from './ProfileSettings.module.css';
 
 const ProfileSettings = ({ user }) => {
@@ -15,7 +15,7 @@ const ProfileSettings = ({ user }) => {
     language: user?.settings?.language || 'en',
   });
 
-  const handleImageChange = (e) => {
+  const handleImageChange = e => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
@@ -29,17 +29,19 @@ const ProfileSettings = ({ user }) => {
   const handleSettingChange = (setting, value) => {
     setSettings(prev => ({
       ...prev,
-      [setting]: value
+      [setting]: value,
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     try {
-      await dispatch(updateUserProfile({
-        settings,
-        profileImage: imagePreview
-      })).unwrap();
+      await dispatch(
+        updateUserProfile({
+          settings,
+          profileImage: imagePreview,
+        })
+      ).unwrap();
 
       showNotification('Profile settings updated successfully', 'success');
     } catch (error) {
@@ -71,7 +73,9 @@ const ProfileSettings = ({ user }) => {
             <input
               type="checkbox"
               checked={settings.emailNotifications}
-              onChange={(e) => handleSettingChange('emailNotifications', e.target.checked)}
+              onChange={e =>
+                handleSettingChange('emailNotifications', e.target.checked)
+              }
             />
             <span className={styles.slider}></span>
             Email Notifications
@@ -82,7 +86,9 @@ const ProfileSettings = ({ user }) => {
             <input
               type="checkbox"
               checked={settings.soundEnabled}
-              onChange={(e) => handleSettingChange('soundEnabled', e.target.checked)}
+              onChange={e =>
+                handleSettingChange('soundEnabled', e.target.checked)
+              }
             />
             <span className={styles.slider}></span>
             Enable Sound Effects
@@ -91,7 +97,7 @@ const ProfileSettings = ({ user }) => {
           <h3>Appearance</h3>
           <select
             value={settings.theme}
-            onChange={(e) => handleSettingChange('theme', e.target.value)}
+            onChange={e => handleSettingChange('theme', e.target.value)}
             className={styles.select}
           >
             <option value="light">Light Theme</option>
@@ -101,7 +107,7 @@ const ProfileSettings = ({ user }) => {
           <h3>Language</h3>
           <select
             value={settings.language}
-            onChange={(e) => handleSettingChange('language', e.target.value)}
+            onChange={e => handleSettingChange('language', e.target.value)}
             className={styles.select}
           >
             <option value="en">English</option>
@@ -110,10 +116,7 @@ const ProfileSettings = ({ user }) => {
           </select>
         </div>
 
-        <button
-          type="submit"
-          className={styles.saveButton}
-        >
+        <button type="submit" className={styles.saveButton}>
           Save Settings
         </button>
       </form>

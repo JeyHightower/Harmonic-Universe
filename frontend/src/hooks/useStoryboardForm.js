@@ -5,7 +5,7 @@ import {
   addStoryboard,
   setSelectedStoryboard,
   updateStoryboard,
-} from '../redux/slices/storyboardSlice';
+} from '../../store/slices/storyboardSlice';
 import { storage } from '../utils/storage';
 
 const initialFormState = {

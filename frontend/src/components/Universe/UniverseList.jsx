@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   createUniverse,
   fetchUniverses,
-} from '../../redux/slices/universeSlice';
+} from '../../store/slices/universeSlice';
 import ErrorMessage from '../Common/ErrorMessage';
 import LoadingSpinner from '../Common/LoadingSpinner';
 import { CardTransition } from '../Common/Transitions';
@@ -15,6 +15,7 @@ const UniverseList = () => {
   const dispatch = useDispatch();
   const { universes, isLoading, error } = useSelector(state => state.universe);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     dispatch(fetchUniverses());
@@ -29,6 +30,10 @@ const UniverseList = () => {
     }
   };
 
+  const filteredUniverses = universes?.filter(universe =>
+    universe.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   if (isLoading) {
     return <LoadingSpinner />;
   }
@@ -39,12 +44,22 @@ const UniverseList = () => {
 
   return (
     <div className={styles.universeList}>
-      <button
-        className={styles.createButton}
-        onClick={() => setShowCreateForm(true)}
-      >
-        Create New Universe
-      </button>
+      <div className={styles.header}>
+        <button
+          className={styles.createButton}
+          onClick={() => setShowCreateForm(true)}
+        >
+          Create New Universe
+        </button>
+        <input
+          type="text"
+          placeholder="Search universes..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          className={styles.searchInput}
+          data-testid="universe-search"
+        />
+      </div>
 
       {showCreateForm && (
         <UniverseForm
@@ -54,13 +69,13 @@ const UniverseList = () => {
       )}
 
       <div className={styles.grid}>
-        {universes &&
-          universes.map(universe => (
+        {filteredUniverses &&
+          filteredUniverses.map(universe => (
             <CardTransition key={universe.id}>
               <UniverseCard universe={universe} />
             </CardTransition>
           ))}
-        {universes && universes.length === 0 && (
+        {filteredUniverses && filteredUniverses.length === 0 && (
           <p className={styles.noUniverses}>
             No universes found. Create one to get started!
           </p>

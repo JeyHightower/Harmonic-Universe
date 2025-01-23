@@ -5,7 +5,7 @@ import {
   createUniverseFromTemplate,
   fetchCategories,
   fetchTemplates,
-} from '../../redux/slices/templateSlice';
+} from '../../store/slices/templateSlice';
 import LoadingSpinner from '../common/LoadingSpinner';
 import styles from './Templates.module.css';
 

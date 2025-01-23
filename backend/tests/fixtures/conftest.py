@@ -5,23 +5,23 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import SocketIOTestClient
 from app import create_app
 from app.extensions import db as _db, socketio
-from app.models import Universe, PhysicsParameters
+from app.models.base import Universe, PhysicsParameters
 from sqlalchemy.orm import scoped_session, sessionmaker
 from flask_jwt_extended import create_access_token
 import time
 from app.sockets.physics_handler import PhysicsNamespace
 
 # Import all models to ensure they're registered
-from app.models.user import User
-from app.models.universe import Universe
-from app.models.comment import Comment
-from app.models.favorite import Favorite
-from app.models.storyboard import Storyboard
-from app.models.version import Version
-from app.models.template import Template
-from app.models.music_parameters import MusicParameters
-from app.models.visualization_parameters import VisualizationParameters
-from app.models.audio_parameters import AudioParameters
+from app.models.base.user import User
+from app.models.base.universe import Universe
+from app.models.base.comment import Comment
+from app.models.base.favorite import Favorite
+from app.models.base.storyboard import Storyboard
+from app.models.base.version import Version
+from app.models.base.template import Template
+from app.models.base.music_parameters import MusicParameters
+from app.models.base.visualization_parameters import VisualizationParameters
+from app.models.base.audio_parameters import AudioParameters
 
 @pytest.fixture(scope='function')
 def app():

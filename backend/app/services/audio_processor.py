@@ -109,7 +109,7 @@ class AudioProcessor:
             release = envelope.get('release', release)
 
         samples = len(signal)
-        env = np.zeros(samples)
+        env = np.zeros(samples, dtype=np.float32)
 
         attack_samples = int(attack * self.sample_rate)
         decay_samples = int(decay * self.sample_rate)
@@ -118,47 +118,47 @@ class AudioProcessor:
 
         # Attack
         if attack_samples > 0:
-            env[:attack_samples] = np.linspace(0, 1, attack_samples)
+            env[:attack_samples] = np.linspace(0, 1, attack_samples, dtype=np.float32)
         # Decay
         if decay_samples > 0:
-            env[attack_samples:attack_samples + decay_samples] = np.linspace(1, sustain, decay_samples)
+            env[attack_samples:attack_samples + decay_samples] = np.linspace(1, sustain, decay_samples, dtype=np.float32)
         # Sustain
         if sustain_samples > 0:
             env[attack_samples + decay_samples:-release_samples] = sustain
         # Release
         if release_samples > 0:
-            env[-release_samples:] = np.linspace(sustain, 0, release_samples)
+            env[-release_samples:] = np.linspace(sustain, 0, release_samples, dtype=np.float32)
 
-        return signal * env
+        return (signal * env).astype(np.float32)
 
     def apply_reverb(self, signal: np.ndarray, amount: float = 0.3) -> np.ndarray:
         """Apply reverb effect to the signal"""
         if amount == 0:
-            return signal
+            return signal.astype(np.float32)
 
         # Create impulse response
         decay = int(amount * self.sample_rate)
-        impulse_response = np.exp(-np.linspace(0, 5, decay))
+        impulse_response = np.exp(-np.linspace(0, 5, decay)).astype(np.float32)
 
         # Convolve signal with impulse response
-        reverb_signal = np.convolve(signal, impulse_response, mode='full')[:len(signal)]
+        reverb_signal = np.convolve(signal.astype(np.float32), impulse_response, mode='full')[:len(signal)]
 
         # Mix dry and wet signals
-        return (1 - amount) * signal + amount * reverb_signal
+        return ((1 - amount) * signal + amount * reverb_signal).astype(np.float32)
 
     def apply_delay(self, signal: np.ndarray, delay_time: float = 0.3, feedback: float = 0.3) -> np.ndarray:
         """Apply delay effect to the signal"""
         if delay_time == 0:
-            return signal
+            return signal.astype(np.float32)
 
         delay_samples = int(delay_time * self.sample_rate)
-        delayed_signal = np.zeros_like(signal)
+        delayed_signal = np.zeros_like(signal, dtype=np.float32)
         delayed_signal[delay_samples:] = signal[:-delay_samples]
 
         # Apply feedback
         result = signal + feedback * delayed_signal
 
-        return result / max(abs(result))  # Normalize
+        return (result / max(abs(result))).astype(np.float32)  # Normalize
 
     def apply_filter(self,
                     input_signal: np.ndarray,
@@ -172,9 +172,9 @@ class AudioProcessor:
 
         # Create and apply filter
         b, a = signal.butter(4, normalized_cutoff, filter_type)
-        filtered = signal.filtfilt(b, a, input_signal)
+        filtered = signal.filtfilt(b, a, input_signal.astype(np.float32))
 
-        return filtered
+        return filtered.astype(np.float32)
 
     def generate_audio(self, parameters: dict, duration: float) -> Tuple[np.ndarray, int]:
         """Generate audio based on music parameters"""

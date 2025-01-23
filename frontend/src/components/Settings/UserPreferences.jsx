@@ -19,7 +19,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchPreferences,
   updatePreferences,
-} from '../../redux/slices/preferencesSlice';
+} from '../../store/slices/preferencesSlice';
 
 const UserPreferences = () => {
   const dispatch = useDispatch();

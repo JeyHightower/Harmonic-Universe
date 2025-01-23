@@ -28,4 +28,17 @@ export default defineConfig({
     },
   },
   appType: 'spa',
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/setupTests.js'],
+    css: true,
+    coverage: {
+      reporter: ['text', 'json', 'html'],
+      exclude: ['node_modules/', 'src/setupTests.js'],
+    },
+    deps: {
+      inline: ['vitest-canvas-mock'],
+    },
+  },
 });

@@ -26,8 +26,8 @@ def check_universe_access(universe, user_id, require_ownership=False):
         return False
 
     # Public universes are accessible to all users unless ownership is required
-    if not universe.is_private and not require_ownership:
+    if universe.is_public and not require_ownership:
         return True
 
     # For private universes or when ownership is required, check creator
-    return universe.creator_id == user_id
+    return universe.user_id == user_id

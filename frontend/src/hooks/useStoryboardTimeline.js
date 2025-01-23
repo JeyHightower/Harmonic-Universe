@@ -5,7 +5,7 @@ import {
   setFilters,
   setPagination,
   setSort,
-} from '../redux/slices/storyboardSlice';
+} from '../../store/slices/storyboardSlice';
 import { storage, STORAGE_DEFAULTS } from '../utils/storage';
 
 const DEFAULT_PAGE = 1;

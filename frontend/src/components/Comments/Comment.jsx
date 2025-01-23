@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { deleteComment, updateComment } from '../../redux/slices/commentSlice';
+import { deleteComment, updateComment } from '../../store/slices/commentSlice';
 import styles from './Comments.module.css';
 
 const Comment = ({ comment, universeId, onReply }) => {

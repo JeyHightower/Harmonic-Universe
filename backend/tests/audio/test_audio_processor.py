@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from app.services.audio_processor import AudioProcessor, PYDUB_AVAILABLE, LIBROSA_AVAILABLE
+from app.services.core.audio_processor import AudioProcessor, PYDUB_AVAILABLE, LIBROSA_AVAILABLE
 
 @pytest.mark.skipif(not LIBROSA_AVAILABLE, reason="librosa not available")
 class TestAudioProcessor:

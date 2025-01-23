@@ -2,15 +2,15 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import MusicControlPanel from '../components/MusicControls/MusicControlPanel';
-import PhysicsControlPanel from '../components/PhysicsControls/PhysicsControlPanel';
-import VisualizationControlPanel from '../components/VisualizationControls/VisualizationControlPanel';
+import MusicControlPanel from '../../components/MusicControls/MusicControlPanel';
+import PhysicsControlPanel from '../../components/PhysicsControls/PhysicsControlPanel';
+import VisualizationControlPanel from '../../components/VisualizationControls/VisualizationControlPanel';
 import {
   createUniverse,
   resetStatus,
   selectUniverseError,
   selectUniverseStatus,
-} from '../redux/slices/universeSlice';
+} from '../../store/slices/universeSlice';
 import styles from './UniverseBuilderPage.module.css';
 
 const UniverseBuilderPage = () => {

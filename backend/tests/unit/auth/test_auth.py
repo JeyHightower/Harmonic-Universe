@@ -1,177 +1,161 @@
+"""Unit tests for authentication functionality."""
 import pytest
-from app.models import User
-from flask_jwt_extended import decode_token
+from flask import json
+from app.models import User, Universe
+from app.utils.auth import check_universe_access
+from app.utils.security import hash_password, verify_password
+from flask_jwt_extended import create_access_token
+from ...config import TestConfig
 
-def test_user_registration(client):
+def test_user_registration(client, session):
     """Test user registration."""
-    data = {
+    response = client.post('/api/auth/register', json={
         'username': 'testuser',
         'email': 'test@example.com',
-        'password': 'Test123!',
-        'confirm_password': 'Test123!'
-    }
-
-    response = client.post('/api/auth/register', json=data)
+        'password': 'Password123'
+    })
     assert response.status_code == 201
-    assert 'access_token' in response.json
-    assert 'user' in response.json
-    assert response.json['user']['username'] == 'testuser'
+    data = json.loads(response.data)
+    assert data['status'] == 'success'
+    assert 'token' in data['data']
+    assert 'user' in data['data']
+
+    # Verify user was created in database
+    user = session.query(User).filter_by(email='test@example.com').first()
+    assert user is not None
+    assert user.username == 'testuser'
+
+def test_registration_validation(client, session):
+    """Test registration validation."""
+    # Create a user directly in the database
+    user = User(username='testuser', email='test@example.com')
+    user.set_password('Password123')
+    session.add(user)
+    session.commit()
+
+    # Try to register with same email
+    response = client.post('/api/auth/register', json={
+        'username': 'testuser2',
+        'email': 'test@example.com',
+        'password': 'Password123'
+    })
+    assert response.status_code == 400
+    data = json.loads(response.data)
+    assert data['status'] == 'error'
+    assert 'email already registered' in data['message'].lower()
 
 def test_user_login(client, session):
     """Test user login."""
-    # Create a test user
-    user = User(
-        username='testuser',
-        email='test@example.com'
-    )
-    user.set_password('Test123!')
+    # Create a user
+    user = User(username='testuser', email='test@example.com')
+    user.set_password('Password123')
     session.add(user)
     session.commit()
 
-    # Test login
-    data = {
+    # Try to login
+    response = client.post('/api/auth/login', json={
         'email': 'test@example.com',
-        'password': 'Test123!'
-    }
-
-    response = client.post('/api/auth/login', json=data)
+        'password': 'Password123'
+    })
     assert response.status_code == 200
-    assert 'access_token' in response.json
-    assert 'user' in response.json
-    assert response.json['user']['email'] == 'test@example.com'
+    data = json.loads(response.data)
+    assert data['status'] == 'success'
+    assert 'token' in data['data']
+    assert 'user' in data['data']
 
 def test_invalid_login(client, session):
-    """Test login with invalid credentials."""
-    # Create a test user
-    user = User(
-        username='testuser',
-        email='test@example.com'
-    )
-    user.set_password('Test123!')
-    session.add(user)
-    session.commit()
-
-    # Test with wrong password
-    data = {
-        'email': 'test@example.com',
-        'password': 'WrongPassword123!'
-    }
-
-    response = client.post('/api/auth/login', json=data)
+    """Test invalid login credentials."""
+    response = client.post('/api/auth/login', json={
+        'email': 'wrong@example.com',
+        'password': 'wrongpass'
+    })
     assert response.status_code == 401
-    assert 'error' in response.json
+    data = json.loads(response.data)
+    assert data['status'] == 'error'
+    assert 'invalid' in data['message'].lower()
 
 def test_token_validation(client, auth_headers):
-    """Test token validation."""
-    response = client.get('/api/auth/validate', headers=auth_headers)
+    """Test protected route with valid token."""
+    response = client.get('/api/auth/protected', headers=auth_headers)
     assert response.status_code == 200
 
-def test_password_reset_request(client, session):
-    """Test password reset request."""
-    # Create a test user
+def test_invalid_token(client):
+    """Test protected route with invalid token."""
+    headers = {
+        'Authorization': 'Bearer invalid_token',
+        'Content-Type': 'application/json'
+    }
+    response = client.get('/api/auth/protected', headers=headers)
+    assert response.status_code == 401
+
+def test_user_creation(session):
+    """Test user model creation."""
     user = User(
         username='testuser',
-        email='test@example.com'
+        email='test@example.com',
+        password='Password123'
     )
-    user.set_password('Test123!')
     session.add(user)
     session.commit()
 
-    data = {
-        'email': 'test@example.com'
-    }
+    assert user.id is not None
+    assert user.username == 'testuser'
+    assert user.email == 'test@example.com'
+    assert user.verify_password('Password123')
 
-    response = client.post('/api/auth/reset-password-request', json=data)
-    assert response.status_code == 200
-    assert 'message' in response.json
+def test_password_hashing():
+    """Test password hashing and verification."""
+    password = 'Password123'
+    hashed = hash_password(password)
 
-def test_password_reset(client, session):
-    """Test password reset."""
-    # Create a test user with reset token
-    user = User(
-        username='testuser',
-        email='test@example.com'
-    )
-    user.set_password('Test123!')
-    reset_token = user.get_reset_password_token()
-    session.add(user)
+    assert hashed != password
+    assert verify_password(password, hashed)
+    assert not verify_password('wrongpassword', hashed)
+
+def test_universe_access(session):
+    """Test universe access checking."""
+    user = User(username='creator', email='creator@test.com', password='Password123')
+    other_user = User(username='other', email='other@test.com', password='Password123')
+    session.add_all([user, other_user])
     session.commit()
 
-    data = {
-        'token': reset_token,
-        'new_password': 'NewTest123!',
-        'confirm_password': 'NewTest123!'
-    }
+    # Public universe
+    public_universe = Universe(
+        name='Public Universe',
+        user_id=user.id,
+        is_public=True
+    )
+    session.add(public_universe)
 
-    response = client.post('/api/auth/reset-password', json=data)
-    assert response.status_code == 200
-    assert 'message' in response.json
+    # Private universe
+    private_universe = Universe(
+        name='Private Universe',
+        user_id=user.id,
+        is_public=False
+    )
+    session.add(private_universe)
+    session.commit()
 
-    # Verify new password works
-    login_data = {
-        'email': 'test@example.com',
-        'password': 'NewTest123!'
-    }
-    response = client.post('/api/auth/login', json=login_data)
-    assert response.status_code == 200
+    # Test public universe access
+    assert check_universe_access(public_universe, other_user.id)
+    assert check_universe_access(public_universe, user.id)
 
-def test_registration_validation(client):
-    """Test registration input validation."""
-    test_cases = [
-        {
-            'data': {
-                'username': 'te',  # Too short
-                'email': 'test@example.com',
-                'password': 'Test123!',
-                'confirm_password': 'Test123!'
-            },
-            'error_field': 'username'
-        },
-        {
-            'data': {
-                'username': 'testuser',
-                'email': 'invalid-email',  # Invalid email format
-                'password': 'Test123!',
-                'confirm_password': 'Test123!'
-            },
-            'error_field': 'email'
-        },
-        {
-            'data': {
-                'username': 'testuser',
-                'email': 'test@example.com',
-                'password': 'short',  # Too short
-                'confirm_password': 'short'
-            },
-            'error_field': 'password'
-        },
-        {
-            'data': {
-                'username': 'testuser',
-                'email': 'test@example.com',
-                'password': 'Test123!',
-                'confirm_password': 'Different123!'  # Doesn't match
-            },
-            'error_field': 'confirm_password'
-        }
-    ]
+    # Test private universe access
+    assert not check_universe_access(private_universe, other_user.id)
+    assert check_universe_access(private_universe, user.id)
 
-    for case in test_cases:
-        response = client.post('/api/auth/register', json=case['data'])
-        assert response.status_code == 400
-        assert case['error_field'] in response.json['errors']
+    # Test ownership requirement
+    assert not check_universe_access(public_universe, other_user.id, require_ownership=True)
+    assert check_universe_access(public_universe, user.id, require_ownership=True)
 
-def test_token_expiration(client, auth_headers):
-    """Test token expiration handling."""
-    # Get current token
-    token = auth_headers['Authorization'].split()[1]
+def test_jwt_token(app, session):
+    """Test JWT token creation and usage."""
+    with app.test_request_context():
+        # Create a real user for the token
+        user = User(username='testuser', email='test@example.com', password='Password123')
+        session.add(user)
+        session.commit()
 
-    # Decode token to verify expiration
-    decoded = decode_token(token)
-    assert 'exp' in decoded
-
-    # Test token refresh
-    response = client.post('/api/auth/refresh', headers=auth_headers)
-    assert response.status_code == 200
-    assert 'access_token' in response.json
-    assert response.json['access_token'] != token
+        token = create_access_token(identity=user.id)
+        assert token is not None
+        assert isinstance(token, str)

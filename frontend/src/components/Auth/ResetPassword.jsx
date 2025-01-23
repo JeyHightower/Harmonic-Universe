@@ -1,19 +1,23 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { resetPassword } from '../../store/slices/authSlice';
 import styles from './Auth.module.css';
 
 const ResetPassword = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { error } = useSelector(state => state.auth);
+
   const [formData, setFormData] = useState({
     email: '',
   });
-  const [errors, setErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
 
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
+  const [formErrors, setFormErrors] = useState({
+    email: '',
+  });
+
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -21,42 +25,35 @@ const ResetPassword = () => {
       ...prev,
       [name]: value,
     }));
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: '',
-      }));
-    }
+    setFormErrors(prev => ({
+      ...prev,
+      [name]: '',
+    }));
   };
 
   const validateForm = () => {
-    const newErrors = {};
+    const errors = {};
     if (!formData.email) {
-      newErrors.email = 'Email is required';
+      errors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      errors.email = 'Invalid email format';
     }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async e => {
     e.preventDefault();
-    if (!validateForm()) return;
-
-    setIsLoading(true);
-    try {
-      await dispatch(resetPassword(formData)).unwrap();
-      setSuccess(true);
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
-    } catch (error) {
-      setErrors({
-        submit:
-          error.message || 'Password reset request failed. Please try again.',
-      });
-    } finally {
-      setIsLoading(false);
+    if (validateForm()) {
+      try {
+        const result = await dispatch(resetPassword(formData)).unwrap();
+        setSuccessMessage(result.message);
+        setTimeout(() => {
+          navigate('/login');
+        }, 3000);
+      } catch (err) {
+        // Error handling is done in the slice
+      }
     }
   };
 
@@ -65,47 +62,41 @@ const ResetPassword = () => {
       className={styles.authContainer}
       data-testid="reset-password-container"
     >
-      <form onSubmit={handleSubmit} className={styles.authForm}>
+      <form className={styles.authForm} onSubmit={handleSubmit}>
         <h2>Reset Password</h2>
-
-        {success ? (
-          <div className={styles.success}>
-            Reset instructions sent
-            <p>You will be redirected to login page shortly...</p>
-          </div>
-        ) : (
-          <>
-            <div className={styles.formGroup}>
-              <label htmlFor="email">Email</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                data-testid="email-input"
-                value={formData.email}
-                onChange={handleChange}
-                disabled={isLoading}
-              />
-              {errors.email && (
-                <span className={styles.error}>{errors.email}</span>
-              )}
+        <div className={styles.formGroup}>
+          <label htmlFor="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            data-testid="email-input"
+          />
+          {formErrors.email && (
+            <div className={styles.error} data-testid="email-error">
+              {formErrors.email}
             </div>
-
-            {errors.submit && (
-              <div className={styles.error}>{errors.submit}</div>
-            )}
-
-            <button
-              type="submit"
-              data-testid="reset-button"
-              disabled={isLoading}
-              className={styles.authButton}
-            >
-              {isLoading ? 'Sending...' : 'Reset Password'}
-            </button>
-          </>
+          )}
+        </div>
+        {error && (
+          <div className={styles.error} data-testid="submit-error">
+            {error.message || error}
+          </div>
         )}
-
+        {successMessage && (
+          <div className={styles.success} data-testid="submit-success">
+            {successMessage}
+          </div>
+        )}
+        <button
+          type="submit"
+          className={styles.authButton}
+          data-testid="reset-button"
+        >
+          Reset Password
+        </button>
         <div className={styles.authLinks}>
           <a href="/login">Back to Login</a>
         </div>
@@ -114,4 +105,4 @@ const ResetPassword = () => {
   );
 };
 
-export default ResetPassword;
+export { ResetPassword };

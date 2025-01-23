@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { CollaborationProvider } from '../../contexts/CollaborationContext';
 import { useStoryboardForm } from '../../hooks/useStoryboardForm';
 import { useStoryboardTimeline } from '../../hooks/useStoryboardTimeline';
-import { deleteStoryboard } from '../../redux/slices/storyboardSlice';
+import { deleteStoryboard } from '../../store/slices/storyboardSlice';
 import commonStyles from '../../styles/common.module.css';
 import { calculateHarmonyColor } from '../../utils/colorUtils';
 import { useDebounce } from '../../utils/debounceUtils';

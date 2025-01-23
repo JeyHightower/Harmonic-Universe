@@ -1,12 +1,7 @@
 import pytest
 from flask import json
 from app import create_app
-from config import Config
-
-class TestConfig(Config):
-    TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
-    JWT_SECRET_KEY = 'test-secret-key'
+from ...config import TestConfig
 
 @pytest.fixture
 def app():
@@ -29,7 +24,8 @@ def auth_headers(client):
         'email': 'test@example.com',
         'password': 'password123'
     })
-    token = json.loads(response.data)['token']
+    data = json.loads(response.data)
+    token = data['data']['token']
     return {'Authorization': f'Bearer {token}'}
 
 def test_get_notifications(client, auth_headers):

@@ -2,7 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import NotificationsButton from '../../../components/Notifications/NotificationsButton';
-import notificationsReducer from '../../../redux/slices/notificationSlice';
+import notificationsReducer from '../../../store/slices/notificationSlice';
 
 const mockStore = configureStore({
   reducer: {

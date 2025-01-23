@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   deleteTemplate,
   fetchTemplate,
-} from '../../redux/slices/templateSlice';
+} from '../../store/slices/templateSlice';
 import LoadingSpinner from '../common/LoadingSpinner';
 import TemplateForm from './TemplateForm';
 import styles from './Templates.module.css';

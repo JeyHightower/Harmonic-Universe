@@ -3,7 +3,7 @@ import pytest
 import time
 from concurrent.futures import ThreadPoolExecutor
 from app import create_app
-from app.models import User, Universe
+from app.models.base import User, Universe
 from app.websocket import WebSocketService
 from flask import Flask
 from flask_socketio import SocketIO

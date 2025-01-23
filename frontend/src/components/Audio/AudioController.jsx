@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import * as Tone from 'tone';
-import { setAudioContext, setIsPlaying } from '../../redux/slices/musicSlice';
+import { setAudioContext, setIsPlaying } from '../../store/slices/musicSlice';
 import styles from './AudioController.module.css';
 
 const AudioController = ({ physicsParameters }) => {

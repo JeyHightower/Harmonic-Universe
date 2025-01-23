@@ -8,7 +8,7 @@ import {
   setMusicData,
   setVisualizationData,
   updateParameters,
-} from '../store/actions/websocket';
+} from '../../store/actions/websocket';
 
 class WebSocketClient {
   constructor(store, url = 'ws://localhost:5002') {

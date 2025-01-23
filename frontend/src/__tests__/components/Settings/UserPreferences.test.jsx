@@ -2,7 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import UserPreferences from '../../../components/Settings/UserPreferences';
-import preferencesReducer from '../../../redux/slices/preferencesSlice';
+import preferencesReducer from '../../../store/slices/preferencesSlice';
 
 const mockStore = configureStore({
   reducer: {

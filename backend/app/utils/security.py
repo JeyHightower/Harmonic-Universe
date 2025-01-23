@@ -7,6 +7,8 @@ import hashlib
 import bcrypt
 from typing import Optional
 import jwt
+from werkzeug.security import generate_password_hash as _generate_hash
+from werkzeug.security import check_password_hash as _check_hash
 
 # Initialize Redis for rate limiting
 redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
@@ -75,14 +77,30 @@ def validate_file_size(file, max_size_mb=5):
         abort(413, description=f"File size exceeds {max_size_mb}MB limit")
     return True
 
-def hash_password(password: str) -> str:
-    """Hash a password using bcrypt."""
-    salt = bcrypt.gensalt()
-    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+def hash_password(password):
+    """
+    Hash a password using Werkzeug's secure hash.
 
-def verify_password(password: str, hashed: str) -> bool:
-    """Verify a password against its hash."""
-    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+    Args:
+        password (str): Plain text password
+
+    Returns:
+        str: Hashed password
+    """
+    return _generate_hash(password)
+
+def verify_password(password, hashed_password):
+    """
+    Verify a password against its hash.
+
+    Args:
+        password (str): Plain text password to verify
+        hashed_password (str): Hashed password to check against
+
+    Returns:
+        bool: True if password matches hash, False otherwise
+    """
+    return _check_hash(hashed_password, password)
 
 def generate_token(user_id: int, expiration: Optional[timedelta] = None) -> str:
     """Generate a JWT token for a user."""

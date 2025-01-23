@@ -5,7 +5,7 @@ from flask import Flask
 from flask_migrate import Migrate
 from app import create_app
 from app.extensions import db
-from app.models import User, Universe, PhysicsParameters, MusicParameters, VisualizationParameters
+from app.models.base import User, Universe, PhysicsParameters, MusicParameters, VisualizationParameters
 
 def reset_database():
     """Reset the database by dropping all tables and recreating them."""

@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   selectActiveTrack,
   updateTrackParameters,
-} from '../../redux/audioSlice';
+} from '../../store/audioSlice';
 import styles from './MusicControls.module.css';
 
 const MusicControls = () => {

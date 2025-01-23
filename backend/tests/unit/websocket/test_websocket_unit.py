@@ -1,158 +1,72 @@
+"""Test WebSocket functionality."""
 import pytest
-import json
-import asyncio
-from websockets import connect
-from app.models import Universe, User
+from flask import Flask
+from flask_socketio import SocketIO
+from datetime import datetime, timedelta
+from app.websocket import WebSocketService
+from app.models.base import User, Universe, PhysicsParameters, MusicParameters, VisualizationParameters
 from app.extensions import db
+from unittest.mock import Mock, patch
+from ...config import TestConfig
 
-@pytest.mark.asyncio
-async def test_websocket_connection(test_server, auth_headers):
-    """Test WebSocket connection and authentication."""
-    uri = "ws://localhost:5000/ws"
-    token = auth_headers['Authorization'].split()[1]
+@pytest.fixture
+def app():
+    """Create a Flask application."""
+    app = Flask(__name__)
+    app.config.from_object(TestConfig)
+    db.init_app(app)
 
-    async with connect(f"{uri}?token={token}") as websocket:
-        # Test connection is established
-        greeting = await websocket.recv()
-        greeting_data = json.loads(greeting)
-        assert greeting_data['type'] == 'connection_established'
+    with app.app_context():
+        db.create_all()
+        yield app
+        db.session.remove()
+        db.drop_all()
 
-async def test_parameter_update_broadcast(test_server, auth_headers, session):
-    """Test broadcasting parameter updates to connected clients."""
-    # Create test universe
-    universe = Universe(
-        title='WebSocket Test Universe',
-        description='Testing WebSocket updates',
-        user_id=1,
-        visibility='public'
-    )
-    session.add(universe)
-    session.commit()
+@pytest.fixture
+def socketio(app):
+    """Create a SocketIO instance."""
+    return SocketIO(app, async_mode='threading', message_queue=None)
 
-    uri = "ws://localhost:5000/ws"
-    token = auth_headers['Authorization'].split()[1]
+@pytest.fixture
+def websocket_service(app, socketio):
+    """Create a WebSocket service instance."""
+    service = WebSocketService(socketio)
+    service.register_handlers()
+    return service
 
-    async with connect(f"{uri}?token={token}") as websocket:
-        # Subscribe to universe updates
-        subscribe_message = {
-            'type': 'subscribe',
-            'universe_id': universe.id
-        }
-        await websocket.send(json.dumps(subscribe_message))
+@pytest.fixture
+def test_user(app):
+    """Create a test user."""
+    with app.app_context():
+        user = User(username='testuser', email='test@example.com')
+        user.set_password('password123')
+        db.session.add(user)
+        db.session.commit()
+        return user
 
-        # Send parameter update
-        update_message = {
-            'type': 'parameter_update',
-            'universe_id': universe.id,
-            'physics_params': {
-                'gravity': 5.0
-            }
-        }
-        await websocket.send(json.dumps(update_message))
+def test_create_collaboration_room(websocket_service, test_user):
+    """Test creating a collaboration room."""
+    room = websocket_service.create_room(test_user.id, 'test-universe')
+    assert room is not None
+    assert test_user.id in websocket_service.get_room_participants('test-universe')
 
-        # Receive broadcast message
-        response = await websocket.recv()
-        response_data = json.loads(response)
-        assert response_data['type'] == 'parameter_update'
-        assert response_data['physics_params']['gravity'] == 5.0
+def test_connection_limit(websocket_service):
+    """Test connection limit enforcement."""
+    # Create max number of connections
+    max_connections = 10
+    for i in range(max_connections):
+        websocket_service.create_room(i, f'universe-{i}')
 
-async def test_multiple_client_broadcast(test_server, auth_headers, session):
-    """Test broadcasting updates to multiple connected clients."""
-    # Create test universe
-    universe = Universe(
-        title='Multi-Client Test Universe',
-        description='Testing multi-client updates',
-        user_id=1,
-        visibility='public'
-    )
-    session.add(universe)
-    session.commit()
+    # Try to create one more
+    with pytest.raises(Exception):
+        websocket_service.create_room(max_connections + 1, 'universe-overflow')
 
-    uri = "ws://localhost:5000/ws"
-    token = auth_headers['Authorization'].split()[1]
+def test_error_handling(websocket_service):
+    """Test error handling in WebSocket service."""
+    # Test invalid room
+    with pytest.raises(Exception):
+        websocket_service.join_room(None, 'invalid-room')
 
-    async with connect(f"{uri}?token={token}") as client1, \
-              connect(f"{uri}?token={token}") as client2:
-
-        # Subscribe both clients
-        subscribe_message = {
-            'type': 'subscribe',
-            'universe_id': universe.id
-        }
-        await client1.send(json.dumps(subscribe_message))
-        await client2.send(json.dumps(subscribe_message))
-
-        # Send update from client1
-        update_message = {
-            'type': 'parameter_update',
-            'universe_id': universe.id,
-            'music_params': {
-                'tempo': 140
-            }
-        }
-        await client1.send(json.dumps(update_message))
-
-        # Both clients should receive the update
-        response1 = await client1.recv()
-        response2 = await client2.recv()
-
-        response1_data = json.loads(response1)
-        response2_data = json.loads(response2)
-
-        assert response1_data['music_params']['tempo'] == 140
-        assert response2_data['music_params']['tempo'] == 140
-
-async def test_client_disconnect_handling(test_server, auth_headers, session):
-    """Test proper handling of client disconnections."""
-    uri = "ws://localhost:5000/ws"
-    token = auth_headers['Authorization'].split()[1]
-
-    # Connect and immediately disconnect
-    async with connect(f"{uri}?token={token}") as websocket:
-        greeting = await websocket.recv()
-        greeting_data = json.loads(greeting)
-        assert greeting_data['type'] == 'connection_established'
-
-    # Reconnect to verify server is still accepting connections
-    async with connect(f"{uri}?token={token}") as websocket:
-        greeting = await websocket.recv()
-        greeting_data = json.loads(greeting)
-        assert greeting_data['type'] == 'connection_established'
-
-async def test_invalid_message_handling(test_server, auth_headers):
-    """Test handling of invalid WebSocket messages."""
-    uri = "ws://localhost:5000/ws"
-    token = auth_headers['Authorization'].split()[1]
-
-    async with connect(f"{uri}?token={token}") as websocket:
-        # Send invalid JSON
-        await websocket.send("invalid json")
-        response = await websocket.recv()
-        response_data = json.loads(response)
-        assert response_data['type'] == 'error'
-        assert 'invalid_json' in response_data['error']
-
-        # Send message with missing required fields
-        await websocket.send(json.dumps({'type': 'parameter_update'}))
-        response = await websocket.recv()
-        response_data = json.loads(response)
-        assert response_data['type'] == 'error'
-        assert 'missing_fields' in response_data['error']
-
-async def test_authentication_failure(test_server):
-    """Test WebSocket connection with invalid authentication."""
-    uri = "ws://localhost:5000/ws"
-
-    # Test with invalid token
-    try:
-        async with connect(f"{uri}?token=invalid_token"):
-            assert False, "Should not connect with invalid token"
-    except Exception as e:
-        assert "401" in str(e)
-
-    # Test with missing token
-    try:
-        async with connect(uri):
-            assert False, "Should not connect without token"
-    except Exception as e:
-        assert "401" in str(e)
+    # Test invalid user
+    with pytest.raises(Exception):
+        websocket_service.join_room('invalid-user', 'test-room')

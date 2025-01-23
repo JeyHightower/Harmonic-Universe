@@ -14,14 +14,51 @@ class AuthService {
     this.refreshPromise = null;
     this.tokenRefreshThreshold = 5 * 60 * 1000; // 5 minutes
     this.API_URL = '/api/auth';
+
+    // Demo user credentials
+    this.DEMO_USER = {
+      email: 'demo@example.com',
+      password: 'demo123',
+    };
   }
 
   async login(credentials) {
     try {
+      // Check if this is a demo user login
+      if (
+        credentials.email === this.DEMO_USER.email &&
+        credentials.password === this.DEMO_USER.password
+      ) {
+        // Return mock data for demo user
+        const demoResponse = {
+          user: {
+            id: 'demo-1',
+            email: this.DEMO_USER.email,
+            username: 'Demo User',
+            isDemo: true,
+          },
+          token: 'demo-token-' + Date.now(),
+        };
+
+        this.handleAuthSuccess(demoResponse);
+
+        const event = new CustomEvent('show-success', {
+          detail: {
+            message: 'Demo Login Successful',
+            details: 'Welcome to the demo! Feel free to explore.',
+            category: 'AUTH_DEMO_LOGIN',
+            duration: 5000,
+          },
+        });
+        window.dispatchEvent(event);
+
+        return demoResponse;
+      }
+
+      // Regular login flow
       const response = await axios.post(`${this.API_URL}/login`, credentials);
       this.handleAuthSuccess(response.data);
 
-      // Show success notification
       const event = new CustomEvent('show-success', {
         detail: {
           message: 'Login Successful',
@@ -42,7 +79,6 @@ class AuthService {
         authError.severity
       );
 
-      // Show error notification
       const event = new CustomEvent('show-error', {
         detail: {
           message: authError.message,

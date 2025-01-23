@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
-import LoadingSpinner from '../components/LoadingSpinner';
-import { loginUser } from '../redux/actions/authActions';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import { loginUser } from '../../store/actions/authActions';
 
 const LoginPage = () => {
   const dispatch = useDispatch();
@@ -102,7 +102,7 @@ const LoginPage = () => {
 
         <div className="auth-links">
           <p>
-     <Link to="/signup">Sign up here</Link>
+            <Link to="/signup">Sign up here</Link>
           </p>
           {/* You can add this later when you implement password reset */}
           {/* <p><Link to="/forgot-password">Forgot Password?</Link></p> */}

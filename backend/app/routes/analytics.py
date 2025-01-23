@@ -1,6 +1,6 @@
 from datetime import datetime
 from flask import Blueprint, jsonify, request
-from app.services.analytics import analytics_service
+from app.services.core.analytics import analytics_service
 from app.auth import require_auth
 
 bp = Blueprint('analytics', __name__, url_prefix='/api/analytics')

@@ -5,7 +5,7 @@ import {
   importUniverse,
   resetExportStatus,
   resetImportStatus,
-} from '../../redux/slices/universeSlice';
+} from '../../store/slices/universeSlice';
 import commonStyles from '../../styles/common.module.css';
 import styles from './Universe.module.css';
 

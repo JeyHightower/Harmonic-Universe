@@ -1,5 +1,5 @@
 import pytest
-from app.models import MusicParameters, Universe
+from app.models.base import MusicParameters, Universe
 from sqlalchemy.exc import IntegrityError
 
 def test_music_parameter_creation(session):

@@ -14,6 +14,7 @@ const UniverseCreate = () => {
   });
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
 
   const handleChange = e => {
     const { name, value, type, checked } = e.target;
@@ -23,9 +24,26 @@ const UniverseCreate = () => {
     }));
   };
 
+  const validateForm = () => {
+    const errors = {};
+    if (!formData.name.trim()) {
+      errors.name = 'Name is required';
+    }
+    if (!formData.description.trim()) {
+      errors.description = 'Description is required';
+    }
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async e => {
     e.preventDefault();
     setError(null);
+
+    if (!validateForm()) {
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -57,6 +75,9 @@ const UniverseCreate = () => {
             maxLength={50}
             placeholder="Enter universe name"
           />
+          {validationErrors.name && (
+            <div className="error-message">{validationErrors.name}</div>
+          )}
         </div>
 
         <div className="form-group">
@@ -69,6 +90,9 @@ const UniverseCreate = () => {
             rows={4}
             placeholder="Describe your universe"
           />
+          {validationErrors.description && (
+            <div className="error-message">{validationErrors.description}</div>
+          )}
         </div>
 
         <div className="form-group">
