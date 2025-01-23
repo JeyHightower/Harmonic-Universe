@@ -1,5 +1,5 @@
 """Physics parameters model for the simulation."""
-from sqlalchemy import Column, Integer, Float, ForeignKey
+from sqlalchemy import Column, Integer, Float, ForeignKey, event
 from sqlalchemy.orm import relationship
 from app.extensions import db
 
@@ -40,6 +40,29 @@ class PhysicsParameters(db.Model):
 
     # Relationships
     universe = relationship("Universe", back_populates="physics_parameters")
+
+    def validate(self):
+        """Validate physics parameters."""
+        # Set default values for nullable fields
+        if self.time_scale is None:
+            self.time_scale = 1.0
+        if self.air_resistance is None:
+            self.air_resistance = 0.1
+        if self.density is None:
+            self.density = 1.0
+
+        if self.gravity <= 0:
+            raise ValueError("Gravity must be positive")
+        if not 0 <= self.friction <= 1:
+            raise ValueError("Friction must be between 0 and 1")
+        if not 0 <= self.elasticity <= 1:
+            raise ValueError("Elasticity must be between 0 and 1")
+        if not 0.1 <= self.time_scale <= 10.0:
+            raise ValueError("Time scale must be between 0.1 and 10.0")
+        if not 0 <= self.air_resistance <= 1:
+            raise ValueError("Air resistance must be between 0 and 1")
+        if not 0 <= self.density <= 10.0:
+            raise ValueError("Density must be between 0 and 10.0")
 
     def to_dict(self):
         """Convert the parameters to a dictionary."""
@@ -96,3 +119,10 @@ class PhysicsParameters(db.Model):
         for key, value in data.items():
             if hasattr(self, key):
                 setattr(self, key, value)
+        self.validate()
+
+@event.listens_for(PhysicsParameters, 'before_insert')
+@event.listens_for(PhysicsParameters, 'before_update')
+def validate_physics_parameters(mapper, connection, target):
+    """Validate physics parameters before insert or update."""
+    target.validate()
