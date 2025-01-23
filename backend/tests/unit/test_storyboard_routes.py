@@ -1,6 +1,10 @@
 import json
 import pytest
-from app.models.base import User, Universe, Storyboard, Version
+from flask import url_for
+from app.models import User, Universe, Storyboard, Version
+from app.extensions import db
+from app.schemas import StoryboardSchema
+from flask_jwt_extended import create_access_token
 
 def test_create_storyboard(client, session, auth_headers):
     """Test storyboard creation."""

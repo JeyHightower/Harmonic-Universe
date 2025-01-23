@@ -1,8 +1,11 @@
 import json
 import pytest
-from app.models.base import Universe, User
-from unittest.mock import patch
+from flask import url_for
+from app.models import Universe, User, PhysicsParameters, MusicParameters, VisualizationParameters
 from app.extensions import db
+from app.schemas import UniverseSchema
+from flask_jwt_extended import create_access_token
+from unittest.mock import patch
 
 def test_create_universe(client, session, auth_headers):
     """Test creating a universe with valid parameters."""

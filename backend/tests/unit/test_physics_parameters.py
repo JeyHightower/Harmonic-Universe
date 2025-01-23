@@ -1,5 +1,6 @@
 import pytest
-from app.models.base import PhysicsParameters, Universe
+from app.models import PhysicsParameters, Universe
+from app.extensions import db
 from sqlalchemy.exc import IntegrityError
 
 def test_physics_parameter_creation(session):
