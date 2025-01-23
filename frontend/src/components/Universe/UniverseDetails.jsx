@@ -60,7 +60,7 @@ const UniverseDetails = () => {
     websocketService.updatePresence(id, 'active');
 
     // Listen for parameter updates
-    const parameterHandler = (data) => {
+    const parameterHandler = data => {
       if (data.universe_id === id) {
         setUniverse(prev => ({
           ...prev,
@@ -70,7 +70,7 @@ const UniverseDetails = () => {
     };
 
     // Listen for presence updates
-    const presenceHandler = (data) => {
+    const presenceHandler = data => {
       if (data.universe_id === id) {
         setActiveCollaborators(prev => {
           const newMap = new Map(prev);
@@ -106,7 +106,7 @@ const UniverseDetails = () => {
     websocketService.updateParameter(id, type, params);
   };
 
-  const handlePrivacyUpdate = (updatedUniverse) => {
+  const handlePrivacyUpdate = updatedUniverse => {
     setUniverse(updatedUniverse);
   };
 
@@ -144,10 +144,7 @@ const UniverseDetails = () => {
                       variant="dot"
                       color="success"
                     >
-                      <Avatar
-                        alt={user.username}
-                        src={user.avatarUrl}
-                      >
+                      <Avatar alt={user.username} src={user.avatarUrl}>
                         {user.username[0]}
                       </Avatar>
                     </Badge>
@@ -239,7 +236,9 @@ const UniverseDetails = () => {
               universeId={id}
               type="visualization"
               initialParameters={universe.visualization_parameters}
-              onUpdate={params => handleParameterUpdate('visualization', params)}
+              onUpdate={params =>
+                handleParameterUpdate('visualization', params)
+              }
             />
           </TabPanel>
         </Paper>

@@ -1,5 +1,4 @@
 import {
-  Delete as DeleteIcon,
   Edit as EditIcon,
   Favorite as FavoriteIcon,
 } from '@mui/icons-material';
