@@ -203,4 +203,4 @@ describe('Navigation System', () => {
     expect(styles.backgroundColor).toBeTruthy();
     expect(styles.boxShadow).toBeTruthy();
   });
-}); 
+});

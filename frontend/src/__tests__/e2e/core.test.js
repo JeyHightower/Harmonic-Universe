@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 test.describe('Core Features E2E Test', () => {
   test.beforeEach(async ({ page }) => {
