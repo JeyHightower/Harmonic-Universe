@@ -29,7 +29,8 @@ class Universe(db.Model):
 
     user = relationship('User', back_populates='universes')
     template = relationship('Template', back_populates='universes')
-    physics_parameters = relationship('PhysicsParameters', back_populates="universe", uselist=False)
+    physics_parameters = relationship('PhysicsParameters', back_populates="universe", uselist=False,
+                                    cascade='all, delete-orphan')
     music_parameters = relationship('MusicParameters', uselist=False, back_populates='universe',
                                   cascade='all, delete-orphan')
     audio_parameters = relationship('AudioParameters', uselist=False, back_populates='universe',

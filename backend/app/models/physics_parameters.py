@@ -8,7 +8,7 @@ class PhysicsParameters(db.Model):
     __tablename__ = 'physics_parameters'
 
     id = Column(Integer, primary_key=True)
-    universe_id = Column(Integer, ForeignKey('universes.id'), nullable=False)
+    universe_id = Column(Integer, ForeignKey('universes.id', ondelete='CASCADE'), nullable=False)
 
     # Basic physics parameters
     gravity = Column(Float, default=9.81)
@@ -90,3 +90,9 @@ class PhysicsParameters(db.Model):
             collision_threshold=data.get('collision_threshold', 0.01),
             restitution_coefficient=data.get('restitution_coefficient', 0.8)
         )
+
+    def update(self, data):
+        """Update the parameters with new values."""
+        for key, value in data.items():
+            if hasattr(self, key):
+                setattr(self, key, value)

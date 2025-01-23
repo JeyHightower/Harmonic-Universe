@@ -1,6 +1,6 @@
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 from marshmallow import fields
-from app.models.base import Universe, PhysicsParameters, MusicParameters, AudioParameters, VisualizationParameters
+from app.models import Universe, PhysicsParameters, MusicParameters, AudioParameters, VisualizationParameters
 
 class PhysicsParametersSchema(SQLAlchemyAutoSchema):
     class Meta:

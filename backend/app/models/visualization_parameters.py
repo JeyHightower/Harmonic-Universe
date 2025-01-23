@@ -4,7 +4,7 @@ class VisualizationParameters(db.Model):
     __tablename__ = 'visualization_parameters'
 
     id = db.Column(db.Integer, primary_key=True)
-    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id'), nullable=False)
+    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), nullable=False)
 
     # Color parameters
     background_color = db.Column(db.String(7), default='#000000')  # Hex color
@@ -55,3 +55,9 @@ class VisualizationParameters(db.Model):
             'camera_zoom': self.camera_zoom,
             'camera_rotation': self.camera_rotation
         }
+
+    def update(self, data):
+        """Update the parameters with new values."""
+        for key, value in data.items():
+            if hasattr(self, key):
+                setattr(self, key, value)

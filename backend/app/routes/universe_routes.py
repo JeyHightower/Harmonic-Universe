@@ -17,13 +17,30 @@ universe_bp = Blueprint('universe', __name__)
 @universe_bp.before_request
 def verify_token():
     """Verify JWT token before processing request"""
-    if current_app.config.get('TESTING'):
-        # Skip token verification in test environment
+    # Skip token verification for public routes
+    if request.method == 'GET' and request.endpoint in ['universe.get_universes']:
         return None
+
+    # For universe-specific routes, check if the universe is public
+    if request.method == 'GET' and request.endpoint == 'universe.get_universe':
+        universe_id = request.view_args.get('universe_id')
+        if universe_id:
+            universe = Universe.query.get(universe_id)
+            if not universe or not universe.is_public:
+                try:
+                    verify_jwt_in_request()
+                except Exception:
+                    return jsonify({
+                        'error': 'Authentication required'
+                    }), 401
+
+    # For all other routes, require authentication
     try:
         verify_jwt_in_request()
-    except Exception as e:
-        return jsonify({'error': str(e)}), 401
+    except Exception:
+        return jsonify({
+            'error': 'Authentication required'
+        }), 401
 
 @universe_bp.route('', methods=['GET'])
 @cache.cached(timeout=60)
@@ -31,17 +48,11 @@ def get_universes():
     """Get all public universes."""
     try:
         universes = Universe.get_public_universes().all()
-        return jsonify({
-            'status': 'success',
-            'data': {
-                'universes': [universe.to_dict() for universe in universes]
-            }
-        }), 200
+        return jsonify([universe.to_dict() for universe in universes]), 200
     except Exception as e:
         current_app.logger.error(f"Error fetching universes: {str(e)}")
         return jsonify({
-            'status': 'error',
-            'message': 'Failed to fetch universes'
+            'error': 'Failed to fetch universes'
         }), 500
 
 @universe_bp.route('/user/universes', methods=['GET'])
@@ -65,7 +76,7 @@ def get_user_universes():
             'message': 'Failed to fetch universes'
         }), 500
 
-@universe_bp.route('/universes/<int:universe_id>', methods=['GET'])
+@universe_bp.route('/<int:universe_id>', methods=['GET'])
 @cache.memoize(60)
 def get_universe(universe_id):
     """Get a specific universe."""
@@ -75,17 +86,26 @@ def get_universe(universe_id):
             db.joinedload(Universe.music_parameters),
             db.joinedload(Universe.visualization_parameters)
         ).get_or_404(universe_id)
-        return jsonify({
-            'status': 'success',
-            'data': {
-                'universe': universe.to_dict()
-            }
-        }), 200
+
+        # Check if universe is public or if user is authenticated
+        if not universe.is_public:
+            try:
+                verify_jwt_in_request()
+                current_user_id = get_jwt_identity()
+                if universe.user_id != current_user_id:
+                    return jsonify({
+                        'error': 'Unauthorized access'
+                    }), 403
+            except Exception:
+                return jsonify({
+                    'error': 'Authentication required'
+                }), 401
+
+        return jsonify(universe.to_dict()), 200
     except Exception as e:
         current_app.logger.error(f"Error fetching universe {universe_id}: {str(e)}")
         return jsonify({
-            'status': 'error',
-            'message': 'Failed to fetch universe'
+            'error': 'Failed to fetch universe'
         }), 500
 
 @universe_bp.route('', methods=['POST'])
@@ -94,13 +114,30 @@ def get_universe(universe_id):
 def create_universe():
     """Create a new universe."""
     if not request.is_json:
-        raise BadRequest('Content type must be application/json')
+        return jsonify({
+            'error': 'Content type must be application/json'
+        }), 400
 
     data = request.get_json()
     if not data or 'name' not in data:
-        raise BadRequest('Name is required')
+        return jsonify({
+            'error': 'Name is required'
+        }), 400
 
+    # Validate name
     name = data['name']
+    if not name or not isinstance(name, str):
+        return jsonify({
+            'error': 'Name is required and must be a string'
+        }), 400
+
+    # Validate is_public
+    is_public = data.get('is_public', True)
+    if not isinstance(is_public, bool):
+        return jsonify({
+            'error': 'is_public must be a boolean value'
+        }), 400
+
     current_user_id = get_jwt_identity()
 
     # Validate parameters
@@ -110,63 +147,77 @@ def create_universe():
 
     validation_errors = validate_parameters(physics_data, music_data, vis_data)
     if validation_errors:
+        # Flatten validation errors
+        flat_errors = {}
+        for param_type, errors in validation_errors.items():
+            flat_errors.update(errors)
         return jsonify({
-            'status': 'error',
-            'message': 'Invalid parameters',
-            'errors': validation_errors
+            'error': 'Invalid parameters',
+            'errors': flat_errors
         }), 400
 
-    # Create universe with parameters
-    universe = Universe(
-        name=name,
-        description=data.get('description', ''),
-        is_public=data.get('is_public', True),
-        user_id=current_user_id
-    )
+    try:
+        # Create universe with parameters
+        universe = Universe(
+            name=name,
+            description=data.get('description', ''),
+            is_public=is_public,
+            user_id=current_user_id
+        )
 
-    physics_params = PhysicsParameters(
-        gravity=physics_data.get('gravity', 9.81),
-        friction=physics_data.get('friction', 0.5),
-        elasticity=physics_data.get('elasticity', 0.7),
-        air_resistance=physics_data.get('air_resistance', 0.1),
-        density=physics_data.get('density', 1.0)
-    )
+        physics_params = PhysicsParameters(
+            gravity=physics_data.get('gravity', 9.81),
+            friction=physics_data.get('friction', 0.5),
+            elasticity=physics_data.get('elasticity', 0.7)
+        )
 
-    music_params = MusicParameters(
-        harmony=music_data.get('harmony', 0.5),
-        tempo=music_data.get('tempo', 120),
-        key=music_data.get('key', 'C'),
-        scale=music_data.get('scale', 'major')
-    )
+        music_params = MusicParameters(
+            key=music_data.get('key', 'C'),
+            scale=music_data.get('scale', 'major'),
+            tempo=music_data.get('tempo', 120)
+        )
 
-    vis_params = VisualizationParameters(
-        brightness=vis_data.get('brightness', 0.8),
-        saturation=vis_data.get('saturation', 0.7),
-        complexity=vis_data.get('complexity', 0.5),
-        color_scheme=vis_data.get('color_scheme', 'monochrome')
-    )
+        vis_params = VisualizationParameters(
+            background_color=vis_data.get('background_color', '#000000'),
+            particle_color=vis_data.get('particle_color', '#FFFFFF'),
+            glow_color=vis_data.get('glow_color', '#00FF00'),
+            particle_count=vis_data.get('particle_count', 1000),
+            particle_size=vis_data.get('particle_size', 2.0),
+            particle_speed=vis_data.get('particle_speed', 1.0),
+            glow_intensity=vis_data.get('glow_intensity', 0.5),
+            blur_amount=vis_data.get('blur_amount', 0.0),
+            trail_length=vis_data.get('trail_length', 0.5),
+            animation_speed=vis_data.get('animation_speed', 1.0),
+            bounce_factor=vis_data.get('bounce_factor', 0.8),
+            rotation_speed=vis_data.get('rotation_speed', 0.0),
+            camera_zoom=vis_data.get('camera_zoom', 1.0),
+            camera_rotation=vis_data.get('camera_rotation', 0.0)
+        )
 
-    universe.physics_parameters = physics_params
-    universe.music_parameters = music_params
-    universe.visualization_parameters = vis_params
+        universe.physics_parameters = physics_params
+        universe.music_parameters = music_params
+        universe.visualization_parameters = vis_params
 
-    db.session.add(universe)
-    db.session.commit()
-    cache.delete_memoized(get_universes)
+        db.session.add(universe)
+        db.session.commit()
+        cache.delete_memoized(get_universes)
 
-    response_data = universe.to_dict()
-    response_data['physics_parameters'] = physics_params.to_dict()
-    response_data['music_parameters'] = music_params.to_dict()
-    response_data['visualization_parameters'] = vis_params.to_dict()
+        return jsonify(universe.to_dict()), 201
 
-    return jsonify({
-        'status': 'success',
-        'data': {
-            'universe': response_data
-        }
-    }), 201
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        current_app.logger.error(f"Database error creating universe: {str(e)}")
+        return jsonify({
+            'error': 'Failed to create universe'
+        }), 500
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error creating universe: {str(e)}")
+        return jsonify({
+            'error': 'Failed to create universe'
+        }), 500
 
-@universe_bp.route('/universes/<int:universe_id>', methods=['PUT'])
+@universe_bp.route('/<int:universe_id>', methods=['PUT'])
 @jwt_required()
 @limiter.limit("30 per hour")
 def update_universe(universe_id):
@@ -175,17 +226,16 @@ def update_universe(universe_id):
         data = request.get_json()
         if not data:
             return jsonify({
-                'status': 'error',
-                'message': 'No data provided'
+                'error': 'No data provided'
             }), 400
 
         universe = Universe.query.get_or_404(universe_id)
         current_user_id = get_jwt_identity()
 
-        if universe.user_id != current_user_id:
+        # Check if user owns the universe
+        if universe.user_id != int(current_user_id):
             return jsonify({
-                'status': 'error',
-                'message': 'Unauthorized access'
+                'error': 'Unauthorized access'
             }), 403
 
         # Update basic info
@@ -196,113 +246,80 @@ def update_universe(universe_id):
         if 'is_public' in data:
             universe.is_public = data['is_public']
 
-        # Update parameters if provided
-        if 'physics_parameters' in data:
-            physics_data = data['physics_parameters']
-            validation_errors = validate_parameters(physics_data, {}, {})
-            if validation_errors:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Invalid physics parameters',
-                    'details': validation_errors
-                }), 400
+        # Validate and update parameters if provided
+        physics_data = data.get('physics_parameters', {})
+        music_data = data.get('music_parameters', {})
+        vis_data = data.get('visualization_parameters', {})
 
+        validation_errors = validate_parameters(physics_data, music_data, vis_data)
+        if validation_errors:
+            return jsonify({
+                'error': 'Invalid parameters',
+                'errors': validation_errors
+            }), 400
+
+        # Update physics parameters
+        if physics_data:
             universe.physics_parameters.update(physics_data)
 
-        if 'music_parameters' in data:
-            music_data = data['music_parameters']
-            validation_errors = validate_parameters({}, music_data, {})
-            if validation_errors:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Invalid music parameters',
-                    'details': validation_errors
-                }), 400
-
+        # Update music parameters
+        if music_data:
             universe.music_parameters.update(music_data)
 
-        if 'visualization_parameters' in data:
-            vis_data = data['visualization_parameters']
-            validation_errors = validate_parameters({}, {}, vis_data)
-            if validation_errors:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Invalid visualization parameters',
-                    'details': validation_errors
-                }), 400
-
+        # Update visualization parameters
+        if vis_data:
             universe.visualization_parameters.update(vis_data)
 
         db.session.commit()
         cache.delete_memoized(get_universe, universe_id)
         cache.delete_memoized(get_universes)
 
-        response_data = universe.to_dict()
-        response_data['physics_parameters'] = universe.physics_parameters.to_dict()
-        response_data['music_parameters'] = universe.music_parameters.to_dict()
-        response_data['visualization_parameters'] = universe.visualization_parameters.to_dict()
-
-        return jsonify({
-            'status': 'success',
-            'data': {
-                'universe': response_data
-            }
-        }), 200
+        return jsonify(universe.to_dict()), 200
 
     except SQLAlchemyError as e:
         db.session.rollback()
-        current_app.logger.error(f"Database error: {str(e)}")
+        current_app.logger.error(f"Database error updating universe: {str(e)}")
         return jsonify({
-            'status': 'error',
-            'message': 'Database error occurred'
+            'error': 'Failed to update universe'
         }), 500
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Unexpected error: {str(e)}")
+        current_app.logger.error(f"Error updating universe: {str(e)}")
         return jsonify({
-            'status': 'error',
-            'message': 'An unexpected error occurred'
+            'error': 'Failed to update universe'
         }), 500
 
-@universe_bp.route('/universes/<int:universe_id>', methods=['DELETE'])
+@universe_bp.route('/<int:universe_id>', methods=['DELETE'])
 @jwt_required()
+@limiter.limit("30 per hour")
 def delete_universe(universe_id):
     """Delete a universe."""
     try:
         universe = Universe.query.get_or_404(universe_id)
         current_user_id = get_jwt_identity()
 
-        if universe.user_id != current_user_id:
+        # Check if user owns the universe
+        if universe.user_id != int(current_user_id):
             return jsonify({
-                'status': 'error',
-                'message': 'Unauthorized access'
+                'error': 'Unauthorized access'
             }), 403
 
         db.session.delete(universe)
         db.session.commit()
         cache.delete_memoized(get_universe, universe_id)
-        cache.delete_memoized(get_universes)
-
-        return jsonify({
-            'status': 'success',
-            'data': {
-                'message': 'Universe deleted successfully'
-            }
-        }), 200
+        return '', 204
 
     except SQLAlchemyError as e:
         db.session.rollback()
-        current_app.logger.error(f"Database error: {str(e)}")
+        current_app.logger.error(f"Database error deleting universe: {str(e)}")
         return jsonify({
-            'status': 'error',
-            'message': 'Database error occurred'
+            'error': 'Failed to delete universe'
         }), 500
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Unexpected error: {str(e)}")
+        current_app.logger.error(f"Error deleting universe: {str(e)}")
         return jsonify({
-            'status': 'error',
-            'message': 'An unexpected error occurred'
+            'error': 'Failed to delete universe'
         }), 500
 
 @universe_bp.route('/<int:universe_id>/physics', methods=['PATCH'])
@@ -382,38 +399,67 @@ def update_music(universe_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@universe_bp.route('/<int:universe_id>/visualization', methods=['PATCH'])
+@universe_bp.route('/<int:universe_id>/parameters', methods=['PATCH'])
 @jwt_required()
-@limiter.limit("50 per hour")
-def update_visualization(universe_id):
-    """Update visualization parameters."""
+@limiter.limit("30 per hour")
+def update_parameters(universe_id):
+    """Update universe parameters."""
     try:
         data = request.get_json()
         if not data:
-            return jsonify({'error': 'No data provided'}), 400
+            return jsonify({
+                'error': 'No data provided'
+            }), 400
 
         universe = Universe.query.get_or_404(universe_id)
         current_user_id = get_jwt_identity()
 
-        if universe.user_id != current_user_id:
-            return jsonify({'error': 'Unauthorized access'}), 403
+        # Check if user owns the universe
+        if universe.user_id != int(current_user_id):
+            return jsonify({
+                'error': 'Unauthorized access'
+            }), 403
 
-        validation_errors = validate_parameters({}, {}, data)
+        # Validate parameters
+        physics_data = data.get('physics_parameters', {})
+        music_data = data.get('music_parameters', {})
+        vis_data = data.get('visualization_parameters', {})
+
+        validation_errors = validate_parameters(physics_data, music_data, vis_data)
         if validation_errors:
-            return jsonify({'error': 'Invalid parameters', 'details': validation_errors}), 400
+            return jsonify({
+                'error': 'Invalid parameters',
+                'errors': validation_errors
+            }), 400
 
-        universe.visualization_parameters.update(data)
+        # Update physics parameters
+        if physics_data:
+            universe.physics_parameters.update(physics_data)
+
+        # Update music parameters
+        if music_data:
+            universe.music_parameters.update(music_data)
+
+        # Update visualization parameters
+        if vis_data:
+            universe.visualization_parameters.update(vis_data)
+
         db.session.commit()
         cache.delete_memoized(get_universe, universe_id)
-        cache.delete_memoized(get_universes)
+        return jsonify(universe.to_dict()), 200
 
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        current_app.logger.error(f"Database error updating parameters: {str(e)}")
         return jsonify({
-            'visualization_parameters': universe.visualization_parameters.to_dict()
-        }), 200
-
+            'error': 'Failed to update parameters'
+        }), 500
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        current_app.logger.error(f"Error updating parameters: {str(e)}")
+        return jsonify({
+            'error': 'Failed to update parameters'
+        }), 500
 
 @universe_bp.route('/<int:universe_id>/ai/suggest', methods=['POST'])
 @jwt_required()
@@ -423,17 +469,18 @@ def ai_suggest(universe_id):
     try:
         data = request.get_json()
         if not data:
-            return jsonify({'message': 'No data provided'}), 400
+            return jsonify({'error': 'No data provided'}), 400
 
         universe = Universe.query.get_or_404(universe_id)
         current_user_id = get_jwt_identity()
 
-        if universe.user_id != current_user_id:
-            return jsonify({'message': 'Unauthorized access'}), 403
+        # Check if user owns the universe or if it's public
+        if not universe.is_public and universe.user_id != current_user_id:
+            return jsonify({'error': 'Unauthorized access'}), 403
 
         target = data.get('target')
         if target not in ['physics', 'music', 'visualization']:
-            return jsonify({'message': 'Invalid target parameter'}), 400
+            return jsonify({'error': 'Invalid target parameter'}), 400
 
         constraints = data.get('constraints', {})
 
@@ -457,7 +504,7 @@ def ai_suggest(universe_id):
         return jsonify(suggestions), 200
 
     except Exception as e:
-        return jsonify({'message': str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
 @universe_bp.route('/<int:universe_id>/sync', methods=['POST'])
 @jwt_required()
@@ -615,60 +662,6 @@ def start_collaboration(universe_id):
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-@universe_bp.route('/<int:universe_id>/parameters', methods=['PATCH'])
-@jwt_required()
-@limiter.limit("30 per hour")
-def update_parameters(universe_id):
-    """Update universe parameters."""
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'message': 'No data provided'}), 400
-
-        universe = Universe.query.get_or_404(universe_id)
-        current_user_id = get_jwt_identity()
-
-        if universe.user_id != current_user_id:
-            return jsonify({'message': 'Unauthorized access'}), 403
-
-        # Update parameters if provided
-        if 'physics_parameters' in data:
-            physics_data = data['physics_parameters']
-            validation_errors = validate_parameters(physics_data, {}, {})
-            if validation_errors:
-                return jsonify({'message': 'Invalid physics parameters', 'errors': validation_errors}), 400
-
-            for key, value in physics_data.items():
-                setattr(universe.physics_parameters, key, value)
-
-        if 'music_parameters' in data:
-            music_data = data['music_parameters']
-            validation_errors = validate_parameters({}, music_data, {})
-            if validation_errors:
-                return jsonify({'message': 'Invalid music parameters', 'errors': validation_errors}), 400
-
-            for key, value in music_data.items():
-                setattr(universe.music_parameters, key, value)
-
-        if 'visualization_parameters' in data:
-            vis_data = data['visualization_parameters']
-            validation_errors = validate_parameters({}, {}, vis_data)
-            if validation_errors:
-                return jsonify({'message': 'Invalid visualization parameters', 'errors': validation_errors}), 400
-
-            for key, value in vis_data.items():
-                setattr(universe.visualization_parameters, key, value)
-
-        db.session.commit()
-        cache.delete_memoized(get_universe, universe_id)
-        cache.delete_memoized(get_universes)
-
-        return jsonify(universe.to_dict()), 200
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'message': str(e)}), 500
 
 @universe_bp.route('/private', methods=['GET'])
 @handle_exceptions

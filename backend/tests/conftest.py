@@ -81,9 +81,9 @@ def test_user(session):
     """Create test user."""
     user = User(
         username='testuser',
-        email='test@example.com',
-        password='Password123'
+        email='test@example.com'
     )
+    user.set_password('Password123')
     session.add(user)
     session.commit()
     return user

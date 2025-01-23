@@ -5,7 +5,7 @@ class MusicParameters(db.Model):
     __tablename__ = 'music_parameters'
 
     id = db.Column(db.Integer, primary_key=True)
-    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id'), nullable=False)
+    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), nullable=False)
     tempo = db.Column(db.Float, nullable=False, default=120.0)  # BPM
     key = db.Column(db.String(10), nullable=False, default='C')  # Musical key
     scale = db.Column(db.String(20), nullable=False, default='major')  # Musical scale
@@ -34,3 +34,9 @@ class MusicParameters(db.Model):
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
+
+    def update(self, data):
+        """Update the parameters with new values."""
+        for key, value in data.items():
+            if hasattr(self, key):
+                setattr(self, key, value)

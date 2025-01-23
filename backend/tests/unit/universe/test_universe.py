@@ -1,6 +1,6 @@
 import pytest
 from flask import url_for
-from app.models.base import Universe, PhysicsParameters, MusicParameters, VisualizationParameters, User
+from app.models import Universe, PhysicsParameters, MusicParameters, VisualizationParameters, User
 from app.extensions import db
 from app.schemas import UniverseSchema
 from flask_jwt_extended import create_access_token
@@ -8,6 +8,10 @@ from flask_jwt_extended import create_access_token
 @pytest.fixture
 def test_universe(test_user, session):
     """Create a test universe with parameters."""
+    # Ensure test_user exists in the session
+    session.add(test_user)
+    session.flush()  # Get the ID without committing
+
     universe = Universe(
         name='Test Universe',
         description='Test Description',
@@ -27,8 +31,26 @@ def test_universe(test_user, session):
         tempo=120
     )
 
+    vis = VisualizationParameters(
+        background_color='#000000',
+        particle_color='#FFFFFF',
+        glow_color='#00FF00',
+        particle_count=1000,
+        particle_size=2.0,
+        particle_speed=1.0,
+        glow_intensity=0.5,
+        blur_amount=0.0,
+        trail_length=0.5,
+        animation_speed=1.0,
+        bounce_factor=0.8,
+        rotation_speed=0.0,
+        camera_zoom=1.0,
+        camera_rotation=0.0
+    )
+
     universe.physics_parameters = physics
     universe.music_parameters = music
+    universe.visualization_parameters = vis
 
     session.add(universe)
     session.commit()
@@ -50,12 +72,29 @@ class TestUniverseAPI:
                 'key': 'C',
                 'scale': 'major',
                 'tempo': 120
+            },
+            'visualization_parameters': {
+                'background_color': '#000000',
+                'particle_color': '#FFFFFF',
+                'glow_color': '#00FF00',
+                'particle_count': 1000,
+                'particle_size': 2.0,
+                'particle_speed': 1.0,
+                'glow_intensity': 0.5,
+                'blur_amount': 0.0,
+                'trail_length': 0.5,
+                'animation_speed': 1.0,
+                'bounce_factor': 0.8,
+                'rotation_speed': 0.0,
+                'camera_zoom': 1.0,
+                'camera_rotation': 0.0
             }
         }
 
         response = client.post('/api/universes', json=data, headers=auth_headers)
         assert response.status_code == 201
         assert response.json['name'] == 'New Universe'
+        assert 'visualization_parameters' in response.json
 
     def test_get_universe(self, client, auth_headers, test_universe):
         """Test getting a universe."""
@@ -178,8 +217,9 @@ class TestValidation:
         data = {
             'name': 'Invalid Universe',
             'visualization_parameters': {
-                'brightness': 1.5,
-                'colorScheme': 'invalid'
+                'particle_size': -1.0,
+                'glow_intensity': 2.0,
+                'background_color': 'invalid'
             }
         }
 
@@ -190,8 +230,9 @@ class TestValidation:
         )
 
         assert response.status_code == 400
-        assert 'brightness' in response.json['errors']
-        assert 'colorScheme' in response.json['errors']
+        assert 'particle_size' in response.json['errors']
+        assert 'glow_intensity' in response.json['errors']
+        assert 'background_color' in response.json['errors']
 
 class TestAuthentication:
     def test_unauthorized_access(self, client, test_universe):
