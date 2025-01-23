@@ -2,9 +2,17 @@ const { defineConfig } = require('cypress');
 
 module.exports = defineConfig({
   e2e: {
-    baseUrl: 'http://localhost:5173',
+    baseUrl: 'http://localhost:3000',
     setupNodeEvents(on, config) {
-      // implement node event listeners here
+      on('task', {
+        'reset-test-db': () => {
+          // Add logic to reset test database
+          return null;
+        },
+      });
+    },
+    env: {
+      apiUrl: 'http://localhost:5000/api',
     },
     viewportWidth: 1280,
     viewportHeight: 720,
