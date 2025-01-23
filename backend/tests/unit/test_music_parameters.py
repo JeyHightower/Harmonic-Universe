@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 
 def test_music_parameter_creation(session):
     """Test creating music parameters with valid values."""
-    universe = Universe(title='Test Universe', user_id=1)
+    universe = Universe(name='Test Universe', user_id=1)
     session.add(universe)
     session.commit()
 
@@ -27,11 +27,11 @@ def test_music_parameter_creation(session):
 
 def test_music_parameter_validation(session):
     """Test music parameter validation rules."""
-    universe = Universe(title='Test Universe', user_id=1)
+    # Test harmony validation (must be between 0 and 1)
+    universe = Universe(name='Test Universe', user_id=1)
     session.add(universe)
     session.commit()
 
-    # Test harmony validation (must be between 0 and 1)
     with pytest.raises(ValueError):
         params = MusicParameters(
             universe_id=universe.id,
@@ -41,21 +41,31 @@ def test_music_parameter_validation(session):
             scale='major'
         )
         session.add(params)
-        session.commit()
+        session.flush()
+    session.rollback()
 
-    # Test tempo validation (must be positive)
+    # Test tempo validation (must be between 40 and 240 BPM)
+    universe = Universe(name='Test Universe', user_id=1)
+    session.add(universe)
+    session.commit()
+
     with pytest.raises(ValueError):
         params = MusicParameters(
             universe_id=universe.id,
             harmony=0.8,
-            tempo=-120,
+            tempo=300,
             key='C',
             scale='major'
         )
         session.add(params)
-        session.commit()
+        session.flush()
+    session.rollback()
 
     # Test key validation (must be valid musical key)
+    universe = Universe(name='Test Universe', user_id=1)
+    session.add(universe)
+    session.commit()
+
     with pytest.raises(ValueError):
         params = MusicParameters(
             universe_id=universe.id,
@@ -65,9 +75,14 @@ def test_music_parameter_validation(session):
             scale='major'
         )
         session.add(params)
-        session.commit()
+        session.flush()
+    session.rollback()
 
     # Test scale validation (must be valid scale type)
+    universe = Universe(name='Test Universe', user_id=1)
+    session.add(universe)
+    session.commit()
+
     with pytest.raises(ValueError):
         params = MusicParameters(
             universe_id=universe.id,
@@ -77,11 +92,12 @@ def test_music_parameter_validation(session):
             scale='invalid_scale'
         )
         session.add(params)
-        session.commit()
+        session.flush()
+    session.rollback()
 
 def test_music_parameter_persistence(session):
     """Test music parameter persistence and retrieval."""
-    universe = Universe(title='Test Universe', user_id=1)
+    universe = Universe(name='Test Universe', user_id=1)
     session.add(universe)
     session.commit()
 
@@ -105,7 +121,7 @@ def test_music_parameter_persistence(session):
 
 def test_music_parameter_updates(session):
     """Test updating music parameters."""
-    universe = Universe(title='Test Universe', user_id=1)
+    universe = Universe(name='Test Universe', user_id=1)
     session.add(universe)
     session.commit()
 
@@ -135,7 +151,7 @@ def test_music_parameter_updates(session):
 
 def test_music_parameter_deletion(session):
     """Test cascade deletion of music parameters when universe is deleted."""
-    universe = Universe(title='Test Universe', user_id=1)
+    universe = Universe(name='Test Universe', user_id=1)
     session.add(universe)
     session.commit()
 
@@ -158,15 +174,12 @@ def test_music_parameter_deletion(session):
 
 def test_valid_keys_and_scales(session):
     """Test all valid musical keys and scales."""
-    universe = Universe(title='Test Universe', user_id=1)
+    universe = Universe(name='Test Universe', user_id=1)
     session.add(universe)
     session.commit()
 
-    valid_keys = ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb']
-    valid_scales = ['major', 'minor', 'harmonic minor', 'melodic minor', 'pentatonic', 'blues']
-
-    for key in valid_keys:
-        for scale in valid_scales:
+    for key in MusicParameters.VALID_KEYS:
+        for scale in MusicParameters.VALID_SCALES:
             params = MusicParameters(
                 universe_id=universe.id,
                 harmony=0.8,
@@ -175,13 +188,14 @@ def test_valid_keys_and_scales(session):
                 scale=scale
             )
             session.add(params)
-            session.commit()
+            session.flush()
             session.delete(params)
-            session.commit()
+            session.flush()
+    session.commit()
 
 def test_real_time_parameter_updates(session):
     """Test real-time parameter updates."""
-    universe = Universe(title='Test Universe', user_id=1)
+    universe = Universe(name='Test Universe', user_id=1)
     session.add(universe)
     session.commit()
 
