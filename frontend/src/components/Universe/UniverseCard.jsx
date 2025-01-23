@@ -6,7 +6,7 @@ import styles from './Universe.module.css';
 
 const UniverseCard = ({ universe }) => {
   return (
-    <div className={styles.card}>
+    <div className={styles.card} data-testid="universe-card">
       <div className={styles.cardHeader}>
         <Link to={`/universe/${universe.id}`} className={styles.title}>
           {universe.name}

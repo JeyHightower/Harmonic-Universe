@@ -1,94 +1,90 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import axios from 'axios';
 
-export const searchUsers = createAsyncThunk('users/search', async query => {
-  const response = await fetch(
-    `/api/users/search?q=${encodeURIComponent(query)}`
-  );
-  if (!response.ok) throw new Error('Failed to search users');
-  return await response.json();
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+// Create axios instance with auth header
+const authAxios = axios.create({
+  baseURL: API_URL,
 });
 
-export const fetchUsersByIds = createAsyncThunk(
-  'users/fetchByIds',
-  async userIds => {
-    const response = await fetch('/api/users/batch', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ userIds }),
-    });
-    if (!response.ok) throw new Error('Failed to fetch users');
-    return await response.json();
+// Add auth header interceptor
+authAxios.interceptors.request.use(config => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export const fetchCurrentUser = createAsyncThunk(
+  'user/fetchCurrentUser',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await authAxios.get('/auth/me');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response.data);
+    }
+  }
+);
+
+export const updateUser = createAsyncThunk(
+  'user/updateUser',
+  async ({ userId, userData }, { rejectWithValue }) => {
+    try {
+      const response = await authAxios.put(`/users/${userId}`, userData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response.data);
+    }
   }
 );
 
 const initialState = {
-  user: null,
-  isAuthenticated: false,
-  isLoading: false,
+  currentUser: null,
+  loading: false,
   error: null,
-  searchResults: [],
-  userDetails: {},
 };
 
 const userSlice = createSlice({
   name: 'user',
   initialState,
   reducers: {
-    setUser: (state, action) => {
-      state.user = action.payload;
-      state.isAuthenticated = !!action.payload;
-    },
-    setLoading: (state, action) => {
-      state.isLoading = action.payload;
-    },
-    setError: (state, action) => {
-      state.error = action.payload;
-    },
-    logout: state => {
-      state.user = null;
-      state.isAuthenticated = false;
+    clearError: state => {
       state.error = null;
-    },
-    clearSearchResults: state => {
-      state.searchResults = [];
     },
   },
   extraReducers: builder => {
     builder
-      .addCase(searchUsers.pending, state => {
-        state.isLoading = true;
+      // Fetch current user
+      .addCase(fetchCurrentUser.pending, state => {
+        state.loading = true;
         state.error = null;
       })
-      .addCase(searchUsers.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.searchResults = action.payload;
+      .addCase(fetchCurrentUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentUser = action.payload;
       })
-      .addCase(searchUsers.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.error.message;
+      .addCase(fetchCurrentUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.error || 'Failed to fetch user';
       })
-      .addCase(fetchUsersByIds.pending, state => {
-        state.isLoading = true;
+      // Update user
+      .addCase(updateUser.pending, state => {
+        state.loading = true;
         state.error = null;
       })
-      .addCase(fetchUsersByIds.fulfilled, (state, action) => {
-        state.isLoading = false;
-        const userMap = action.payload.reduce((acc, user) => {
-          acc[user.id] = user;
-          return acc;
-        }, {});
-        state.userDetails = { ...state.userDetails, ...userMap };
+      .addCase(updateUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentUser = action.payload;
       })
-      .addCase(fetchUsersByIds.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.error.message;
+      .addCase(updateUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.error || 'Failed to update user';
       });
   },
 });
 
-export const { setUser, setLoading, setError, logout, clearSearchResults } =
-  userSlice.actions;
-
+export const { clearError } = userSlice.actions;
 export default userSlice.reducer;

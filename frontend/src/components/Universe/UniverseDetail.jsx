@@ -57,7 +57,7 @@ const UniverseDetail = () => {
     switch (activeTab) {
       case 'overview':
         return (
-          <div className={styles.overview}>
+          <div className={styles.overview} data-testid="overview-content">
             <h2>{currentUniverse.name}</h2>
             <p>{currentUniverse.description}</p>
             <div className={styles.actions}>
@@ -71,26 +71,43 @@ const UniverseDetail = () => {
           </div>
         );
       case 'physics':
-        return <PhysicsControls universeId={universeId} />;
+        return (
+          <div data-testid="physics-content">
+            <PhysicsControls universeId={universeId} />
+          </div>
+        );
       case 'music':
-        return <MusicControls universeId={universeId} />;
+        return (
+          <div data-testid="music-content">
+            <MusicControls universeId={universeId} />
+          </div>
+        );
       case 'storyboard':
-        return <Storyboard universeId={universeId} />;
+        return (
+          <div data-testid="storyboard-content">
+            <Storyboard universeId={universeId} />
+          </div>
+        );
       case 'comments':
-        return <CommentList universeId={universeId} />;
+        return (
+          <div data-testid="comments-content">
+            <CommentList universeId={universeId} />
+          </div>
+        );
       default:
         return null;
     }
   };
 
   return (
-    <div className={styles.universeDetail}>
-      <nav className={styles.tabs}>
+    <div className={styles.universeDetail} data-testid="universe-detail">
+      <nav className={styles.tabs} data-testid="universe-tabs">
         <button
           className={`${styles.tab} ${
             activeTab === 'overview' ? styles.active : ''
           }`}
           onClick={() => handleTabChange('overview')}
+          data-testid="overview-tab"
         >
           Overview
         </button>
@@ -99,6 +116,7 @@ const UniverseDetail = () => {
             activeTab === 'physics' ? styles.active : ''
           }`}
           onClick={() => handleTabChange('physics')}
+          data-testid="physics-tab"
         >
           Physics
         </button>
@@ -107,6 +125,7 @@ const UniverseDetail = () => {
             activeTab === 'music' ? styles.active : ''
           }`}
           onClick={() => handleTabChange('music')}
+          data-testid="music-tab"
         >
           Music
         </button>
@@ -115,6 +134,7 @@ const UniverseDetail = () => {
             activeTab === 'storyboard' ? styles.active : ''
           }`}
           onClick={() => handleTabChange('storyboard')}
+          data-testid="storyboard-tab"
         >
           Storyboard
         </button>
@@ -123,11 +143,14 @@ const UniverseDetail = () => {
             activeTab === 'comments' ? styles.active : ''
           }`}
           onClick={() => handleTabChange('comments')}
+          data-testid="comments-tab"
         >
           Comments
         </button>
       </nav>
-      <div className={styles.content}>{renderTabContent()}</div>
+      <div className={styles.content} data-testid="tab-content">
+        {renderTabContent()}
+      </div>
     </div>
   );
 };

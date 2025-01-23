@@ -96,24 +96,22 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock IntersectionObserver
-global.IntersectionObserver = class IntersectionObserver {
-  constructor(callback) {
-    this.callback = callback;
-  }
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-};
+const mockIntersectionObserver = vi.fn();
+mockIntersectionObserver.mockImplementation(() => ({
+  observe: () => null,
+  unobserve: () => null,
+  disconnect: () => null,
+}));
+window.IntersectionObserver = mockIntersectionObserver;
 
 // Mock ResizeObserver
-global.ResizeObserver = class ResizeObserver {
-  constructor(callback) {
-    this.callback = callback;
-  }
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-};
+const mockResizeObserver = vi.fn();
+mockResizeObserver.mockImplementation(() => ({
+  observe: () => null,
+  unobserve: () => null,
+  disconnect: () => null,
+}));
+window.ResizeObserver = mockResizeObserver;
 
 // Mock AudioContext
 class MockAudioContext {
@@ -282,6 +280,20 @@ expect.extend({
       return {
         message: () =>
           `expected ${received} to be within range ${floor} - ${ceiling}`,
+        pass: false,
+      };
+    }
+  },
+  toBeInTheDocument(received) {
+    const pass = received !== null;
+    if (pass) {
+      return {
+        message: () => `expected ${received} not to be in the document`,
+        pass: true,
+      };
+    } else {
+      return {
+        message: () => `expected ${received} to be in the document`,
         pass: false,
       };
     }

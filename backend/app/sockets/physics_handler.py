@@ -5,7 +5,7 @@ from dataclasses import asdict
 from flask import request, current_app
 from flask_socketio import emit, join_room, leave_room, Namespace
 from app.extensions import socketio, db
-from app.models.base import Universe, PhysicsParameters
+from app.models import Universe, PhysicsParameters
 from app.physics.engine import PhysicsEngine, Particle, Vector2D, BoundaryType
 from sqlalchemy.orm import joinedload
 import threading

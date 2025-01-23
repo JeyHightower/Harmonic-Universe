@@ -7,10 +7,10 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: [path.resolve(__dirname, './frontend/src/setupTests.js')],
+    setupFiles: [path.resolve(__dirname, './src/setupTests.js')],
     include: [
-      'frontend/src/**/*.{test,spec}.{js,jsx}',
-      'frontend/tests/**/*.{test,spec}.{js,jsx}',
+      'src/**/*.{test,spec}.{js,jsx}',
+      'tests/**/*.{test,spec}.{js,jsx}',
     ],
     exclude: ['node_modules', 'dist', '.idea', '.git', '.cache'],
     coverage: {

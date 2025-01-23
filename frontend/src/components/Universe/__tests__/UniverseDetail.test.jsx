@@ -1,179 +1,254 @@
-import { screen, waitFor } from '@testing-library/react';
+/**
+ * @vitest-environment jsdom
+ */
+import { configureStore } from '@reduxjs/toolkit';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
-import {
-  createMockUniverse,
-  createMockUser,
-  mockApiResponse,
-  renderWithProviders,
-} from '../../../tests/utils/testUtils';
+import { Provider } from 'react-redux';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { describe, expect, it, vi } from 'vitest';
+import universeReducer, {
+  fetchUniverses,
+} from '../../../store/slices/universeSlice';
+import styles from '../Universe.module.css';
 import UniverseDetail from '../UniverseDetail';
 
-describe('UniverseDetail Component', () => {
-  const mockUniverse = createMockUniverse();
-  const mockUser = createMockUser();
+// Mock the universe actions
+vi.mock('../../../store/slices/universeSlice', () => ({
+  fetchUniverses: vi.fn(() => ({
+    type: 'universe/fetchUniverses',
+    payload: undefined,
+  })),
+  updateUniverse: vi.fn(() => ({
+    type: 'universe/updateUniverse',
+    payload: undefined,
+  })),
+  __esModule: true,
+  default: (
+    state = {
+      universes: [],
+      currentUniverse: null,
+      isLoading: false,
+      error: null,
+    }
+  ) => state,
+}));
 
-  beforeEach(() => {
-    // Reset fetch mock
-    fetch.mockReset();
-  });
+// Mock child components
+vi.mock('../FavoriteButton', () => ({
+  default: () => <div data-testid="favorite-button">Favorite Button</div>,
+}));
+
+vi.mock('../PrivacyToggle', () => ({
+  default: () => <div data-testid="privacy-toggle">Privacy Toggle</div>,
+}));
+
+vi.mock('../ShareUniverse', () => ({
+  default: () => <div data-testid="share-universe">Share Universe</div>,
+}));
+
+vi.mock('../../Physics/PhysicsControls', () => ({
+  default: () => <div data-testid="physics-controls">Physics Controls</div>,
+}));
+
+vi.mock('../../Music/MusicControls', () => ({
+  default: () => <div data-testid="music-controls">Music Controls</div>,
+}));
+
+vi.mock('../../Storyboard/Storyboard', () => ({
+  default: () => <div data-testid="storyboard">Storyboard</div>,
+}));
+
+vi.mock('../../Comments/CommentList', () => ({
+  default: () => <div data-testid="comment-list">Comment List</div>,
+}));
+
+// Mock CSS modules
+vi.mock('../Universe.module.css', () => ({
+  default: {
+    active: 'active',
+    tab: 'tab',
+    loading: 'loading',
+    error: 'error',
+  },
+}));
+
+describe('UniverseDetail Component', () => {
+  const mockUniverse = {
+    id: '1',
+    name: 'Test Universe',
+    description: 'A test universe description',
+    isPrivate: false,
+    ownerId: 'user1',
+    gravity_constant: 9.81,
+    environment_harmony: 0.75,
+    created_at: '2024-01-23T12:00:00Z',
+    updated_at: '2024-01-24T14:30:00Z',
+  };
+
+  const renderWithProviders = (
+    ui,
+    {
+      preloadedState = {
+        universe: {
+          universes: [],
+          currentUniverse: mockUniverse,
+          isLoading: false,
+          error: null,
+        },
+      },
+      store = configureStore({
+        reducer: {
+          universe: universeReducer,
+        },
+        preloadedState,
+      }),
+      ...renderOptions
+    } = {}
+  ) => {
+    const Wrapper = ({ children }) => (
+      <Provider store={store}>
+        <BrowserRouter>
+          <Routes>
+            <Route path="*" element={children} />
+          </Routes>
+        </BrowserRouter>
+      </Provider>
+    );
+    return { store, ...render(ui, { wrapper: Wrapper, ...renderOptions }) };
+  };
 
   it('renders loading state initially', () => {
-    renderWithProviders(<UniverseDetail universeId={mockUniverse.id} />);
-    expect(screen.getByTestId('loading')).toBeInTheDocument();
-  });
-
-  it('renders universe details after loading', async () => {
-    // Mock API response
-    fetch.mockResolvedValueOnce(mockApiResponse({ universe: mockUniverse }));
-
-    renderWithProviders(<UniverseDetail universeId={mockUniverse.id} />);
-
-    // Wait for loading to finish
-    await waitFor(() => {
-      expect(screen.queryByTestId('loading')).not.toBeInTheDocument();
+    renderWithProviders(<UniverseDetail />, {
+      preloadedState: {
+        universe: {
+          universes: [],
+          currentUniverse: null,
+          isLoading: true,
+          error: null,
+        },
+      },
     });
 
-    // Check if universe details are rendered
+    expect(screen.getByTestId('loading-indicator')).toBeInTheDocument();
+  });
+
+  it('renders error state when fetch fails', () => {
+    const errorMessage = 'Failed to load universe';
+    renderWithProviders(<UniverseDetail />, {
+      preloadedState: {
+        universe: {
+          universes: [],
+          currentUniverse: null,
+          isLoading: false,
+          error: errorMessage,
+        },
+      },
+    });
+
+    expect(screen.getByTestId('error-message')).toHaveTextContent(errorMessage);
+  });
+
+  it('renders not found message when universe is null', () => {
+    renderWithProviders(<UniverseDetail />, {
+      preloadedState: {
+        universe: {
+          universes: [],
+          currentUniverse: null,
+          isLoading: false,
+          error: null,
+        },
+      },
+    });
+
+    expect(screen.getByTestId('not-found-message')).toBeInTheDocument();
+  });
+
+  it('renders universe details correctly', () => {
+    renderWithProviders(<UniverseDetail />);
+
     expect(screen.getByText(mockUniverse.name)).toBeInTheDocument();
+    expect(screen.getByText(mockUniverse.description)).toBeInTheDocument();
+    expect(screen.getByTestId('favorite-button')).toBeInTheDocument();
+    expect(screen.getByTestId('privacy-toggle')).toBeInTheDocument();
+    expect(screen.getByTestId('share-universe')).toBeInTheDocument();
+  });
+
+  it('switches tabs correctly', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<UniverseDetail />);
+
+    // Test each tab
+    const tabs = [
+      { name: 'Physics', testId: 'physics-controls' },
+      { name: 'Music', testId: 'music-controls' },
+      { name: 'Storyboard', testId: 'storyboard' },
+      { name: 'Comments', testId: 'comment-list' },
+    ];
+
+    for (const tab of tabs) {
+      await user.click(screen.getByRole('button', { name: tab.name }));
+      expect(screen.getByTestId(tab.testId)).toBeInTheDocument();
+    }
+
+    // Test switching back to overview
+    await user.click(screen.getByRole('button', { name: 'Overview' }));
     expect(screen.getByText(mockUniverse.description)).toBeInTheDocument();
   });
 
-  it('handles error state', async () => {
-    // Mock API error
-    fetch.mockRejectedValueOnce(new Error('Failed to fetch universe'));
-
-    renderWithProviders(<UniverseDetail universeId={mockUniverse.id} />);
+  it('fetches universe data on mount', async () => {
+    const mockDispatch = vi.fn(() => Promise.resolve());
+    const { store } = renderWithProviders(<UniverseDetail />);
+    store.dispatch = mockDispatch;
 
     await waitFor(() => {
-      expect(screen.getByText(/error/i)).toBeInTheDocument();
+      expect(fetchUniverses).toHaveBeenCalled();
     });
   });
 
-  it('allows editing universe details when user is owner', async () => {
+  it('updates active tab state', async () => {
     const user = userEvent.setup();
+    renderWithProviders(<UniverseDetail />);
 
-    // Mock API responses
-    fetch.mockResolvedValueOnce(
-      mockApiResponse({
-        universe: { ...mockUniverse, ownerId: mockUser.id },
-      })
-    );
+    // Initially shows overview
+    expect(screen.getByText(mockUniverse.description)).toBeInTheDocument();
 
-    renderWithProviders(<UniverseDetail universeId={mockUniverse.id} />, {
-      preloadedState: {
-        auth: { user: mockUser, isAuthenticated: true },
-      },
-    });
-
-    // Wait for loading to finish
-    await waitFor(() => {
-      expect(screen.queryByTestId('loading')).not.toBeInTheDocument();
-    });
-
-    // Click edit button
-    const editButton = screen.getByRole('button', { name: /edit/i });
-    await user.click(editButton);
-
-    // Check if edit form is displayed
-    expect(screen.getByLabelText(/name/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
+    // Switch to physics tab
+    await user.click(screen.getByRole('button', { name: 'Physics' }));
+    expect(screen.getByTestId('physics-controls')).toBeInTheDocument();
+    expect(
+      screen.queryByText(mockUniverse.description)
+    ).not.toBeInTheDocument();
   });
 
-  it('updates physics parameters', async () => {
+  it('handles tab button styling', async () => {
     const user = userEvent.setup();
+    renderWithProviders(<UniverseDetail />);
 
-    // Mock API responses
-    fetch.mockResolvedValueOnce(mockApiResponse({ universe: mockUniverse }));
+    const physicsTab = screen.getByRole('button', { name: 'Physics' });
 
-    renderWithProviders(<UniverseDetail universeId={mockUniverse.id} />);
+    // Initially not active
+    expect(physicsTab.className).not.toContain(styles.active);
 
-    // Wait for loading to finish
-    await waitFor(() => {
-      expect(screen.queryByTestId('loading')).not.toBeInTheDocument();
-    });
+    // Click to activate
+    await user.click(physicsTab);
+    expect(physicsTab.className).toContain(styles.active);
 
-    // Find physics controls
-    const gravitySlider = screen.getByLabelText(/gravity/i);
-    await user.type(gravitySlider, '5.0');
-
-    // Check if value is updated
-    expect(gravitySlider).toHaveValue('5.0');
+    // Click another tab
+    await user.click(screen.getByRole('button', { name: 'Music' }));
+    expect(physicsTab.className).not.toContain(styles.active);
   });
 
-  it('plays and pauses audio', async () => {
+  it('preserves tab state on universe update', async () => {
     const user = userEvent.setup();
+    const { rerender } = renderWithProviders(<UniverseDetail />);
 
-    // Mock API responses
-    fetch.mockResolvedValueOnce(mockApiResponse({ universe: mockUniverse }));
+    // Switch to physics tab
+    await user.click(screen.getByRole('button', { name: 'Physics' }));
+    expect(screen.getByTestId('physics-controls')).toBeInTheDocument();
 
-    renderWithProviders(<UniverseDetail universeId={mockUniverse.id} />);
-
-    // Wait for loading to finish
-    await waitFor(() => {
-      expect(screen.queryByTestId('loading')).not.toBeInTheDocument();
-    });
-
-    // Find play button
-    const playButton = screen.getByRole('button', { name: /play/i });
-    await user.click(playButton);
-
-    // Check if audio is playing
-    expect(playButton).toHaveAttribute('aria-label', 'Pause');
-
-    // Click again to pause
-    await user.click(playButton);
-    expect(playButton).toHaveAttribute('aria-label', 'Play');
-  });
-
-  it('shows comments section', async () => {
-    // Mock API responses
-    const mockComments = [
-      { id: 1, text: 'Great universe!', user: createMockUser() },
-      { id: 2, text: 'Amazing work', user: createMockUser() },
-    ];
-
-    fetch.mockResolvedValueOnce(mockApiResponse({ universe: mockUniverse }));
-    fetch.mockResolvedValueOnce(mockApiResponse({ comments: mockComments }));
-
-    renderWithProviders(<UniverseDetail universeId={mockUniverse.id} />);
-
-    // Wait for loading to finish
-    await waitFor(() => {
-      expect(screen.queryByTestId('loading')).not.toBeInTheDocument();
-    });
-
-    // Check if comments are displayed
-    expect(screen.getByText('Great universe!')).toBeInTheDocument();
-    expect(screen.getByText('Amazing work')).toBeInTheDocument();
-  });
-
-  it('allows adding new comments when authenticated', async () => {
-    const user = userEvent.setup();
-
-    // Mock API responses
-    fetch.mockResolvedValueOnce(mockApiResponse({ universe: mockUniverse }));
-    fetch.mockResolvedValueOnce(mockApiResponse({ comments: [] }));
-
-    renderWithProviders(<UniverseDetail universeId={mockUniverse.id} />, {
-      preloadedState: {
-        auth: { user: mockUser, isAuthenticated: true },
-      },
-    });
-
-    // Wait for loading to finish
-    await waitFor(() => {
-      expect(screen.queryByTestId('loading')).not.toBeInTheDocument();
-    });
-
-    // Add new comment
-    const commentInput = screen.getByPlaceholderText(/add a comment/i);
-    await user.type(commentInput, 'New comment');
-
-    const submitButton = screen.getByRole('button', { name: /submit/i });
-    await user.click(submitButton);
-
-    // Check if comment is added
-    expect(screen.getByText('New comment')).toBeInTheDocument();
+    // Simulate universe update
+    rerender(<UniverseDetail />);
+    expect(screen.getByTestId('physics-controls')).toBeInTheDocument();
   });
 });

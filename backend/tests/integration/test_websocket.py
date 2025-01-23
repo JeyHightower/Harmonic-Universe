@@ -6,7 +6,7 @@ from typing import Dict, Any
 import pytest
 from unittest.mock import patch
 from app.websocket import WebSocketService
-from app.models.base.user import User
+from app.models import User
 from app.extensions import db
 import json
 from flask_socketio import SocketIO

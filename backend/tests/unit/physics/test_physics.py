@@ -1,5 +1,7 @@
 import pytest
-from app.models.base import Universe, PhysicsParameters
+from app.models.universe import Universe
+from app.models.physics_parameters import PhysicsParameters
+from app.extensions import db
 
 def test_physics_parameter_validation(client, auth_headers, session):
     """Test physics parameter validation."""

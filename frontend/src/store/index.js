@@ -12,7 +12,7 @@ import templateReducer from './slices/templateSlice';
 import universeReducer from './slices/universeSlice';
 import userReducer from './slices/userSlice';
 
-export const store = configureStore({
+const store = configureStore({
   reducer: {
     auth: authReducer,
     universe: universeReducer,
@@ -31,11 +31,11 @@ export const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: {
         // Ignore these action types
-        ignoredActions: ['universe/setPhysicsEngine', 'music/setAudioContext'],
+        ignoredActions: ['auth/login/fulfilled', 'auth/register/fulfilled'],
         // Ignore these field paths in all actions
-        ignoredActionPaths: ['payload.engine', 'payload.context'],
+        ignoredActionPaths: ['payload.timestamp'],
         // Ignore these paths in the state
-        ignoredPaths: ['universe.physicsEngine', 'music.audioContext'],
+        ignoredPaths: ['auth.user.createdAt', 'auth.user.updatedAt'],
       },
     }),
 });

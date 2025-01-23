@@ -1,8 +1,12 @@
 import api from '../../services/api';
 
 export const universeService = {
-  async getUniverses() {
-    const response = await api.get('/api/universes');
+  async getUniverses({ filter = 'all', sortBy = 'newest' } = {}) {
+    const params = new URLSearchParams();
+    params.append('filter', filter);
+    params.append('sort', sortBy);
+
+    const response = await api.get(`/api/universes?${params.toString()}`);
     return response.data;
   },
 
@@ -43,6 +47,21 @@ export const universeService = {
     const response = await api.delete(
       `/api/universes/${universeId}/share/${userId}`
     );
+    return response.data;
+  },
+
+  updateParameters: async (universeId, type, parameters) => {
+    const response = await api.put(
+      `/universes/${universeId}/parameters/${type}`,
+      {
+        parameters,
+      }
+    );
+    return response.data;
+  },
+
+  toggleFavorite: async universeId => {
+    const response = await api.post(`/api/universes/${universeId}/favorite`);
     return response.data;
   },
 };

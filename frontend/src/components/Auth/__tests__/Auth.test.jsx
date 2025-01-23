@@ -2,10 +2,10 @@
  * @vitest-environment jsdom
  */
 import { configureStore } from '@reduxjs/toolkit';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter, Route, Routes } from 'react-router-dom';
 import {
   afterAll,
   beforeAll,
@@ -21,6 +21,7 @@ import {
   ERROR_SEVERITY,
 } from '../../../services/errorLogging.js';
 import { authReducer } from '../../../store/slices/authSlice.js';
+import Auth from '../Auth';
 
 // Create localStorage mock
 const createLocalStorageMock = () => ({
@@ -202,6 +203,50 @@ const renderWithProviders = ({
     ),
   };
 };
+
+const mockStore = configureStore([]);
+
+describe('Auth Component', () => {
+  let store;
+
+  beforeEach(() => {
+    store = mockStore({
+      session: {
+        user: null,
+        error: null,
+      },
+    });
+  });
+
+  it('renders login form by default', () => {
+    render(
+      <Provider store={store}>
+        <BrowserRouter>
+          <Auth />
+        </BrowserRouter>
+      </Provider>
+    );
+
+    expect(screen.getByText(/Log In/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Email/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Password/i)).toBeInTheDocument();
+  });
+
+  it('switches to signup form when signup link is clicked', () => {
+    render(
+      <Provider store={store}>
+        <BrowserRouter>
+          <Auth />
+        </BrowserRouter>
+      </Provider>
+    );
+
+    const signupLink = screen.getByText(/Sign Up/i);
+    fireEvent.click(signupLink);
+
+    expect(screen.getByText(/Create Account/i)).toBeInTheDocument();
+  });
+});
 
 describe('Auth Components', () => {
   beforeAll(() => {

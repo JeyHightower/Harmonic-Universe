@@ -1,0 +1,71 @@
+.container {
+  background: var(--background-light);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.container h6 {
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+}
+
+.container :global(.MuiSlider-root) {
+  color: var(--accent);
+}
+
+.container :global(.MuiSlider-thumb) {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
+}
+
+.container :global(.MuiSlider-thumb:hover) {
+  transform: scale(1.2);
+}
+
+.container :global(.MuiSlider-track) {
+  height: 4px;
+}
+
+.container :global(.MuiSlider-rail) {
+  height: 4px;
+  opacity: 0.3;
+}
+
+.container :global(.MuiSelect-select) {
+  background: var(--background-light);
+}
+
+.container :global(.MuiButton-root) {
+  height: 48px;
+  text-transform: none;
+  font-weight: 500;
+}
+
+.container :global(.MuiButton-root:not(:disabled)) {
+  background: var(--accent);
+}
+
+.container :global(.MuiButton-root:disabled) {
+  background: var(--disabled);
+}
+
+.container :global(.MuiCircularProgress-root) {
+  color: var(--text-light);
+}
+
+.container :global(.MuiAlert-root) {
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .container :global(.MuiButton-root) {
+    height: 40px;
+  }
+}

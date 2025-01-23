@@ -6,6 +6,7 @@ from ..models import Universe, AudioParameters, MusicParameters
 from ..utils.auth import check_universe_access
 from ..services.audio_processor import AudioProcessor
 from ..services.harmony_engine import HarmonyEngine
+from ..services.ai_service import AIService
 
 audio_bp = Blueprint('audio', __name__, url_prefix='/api/audio')
 
@@ -191,5 +192,111 @@ def generate_audio(universe_id):
             'format': combined_data['format']
         }), 200
 
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@audio_bp.route('/<int:universe_id>/generate', methods=['POST'])
+@jwt_required()
+@limiter.limit("10 per minute")
+def generate_music(universe_id):
+    """Generate music for a universe using AI."""
+    try:
+        # Check access
+        if not check_universe_access(universe_id):
+            return jsonify({
+                "success": False,
+                "message": "Access denied"
+            }), 403
+
+        # Get parameters from request
+        parameters = request.get_json()
+
+        # Generate music using AI service
+        ai_service = AIService()
+        result = ai_service.generate_music(universe_id, parameters)
+
+        if result["success"]:
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 400
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "message": "Failed to generate music"
+        }), 500
+
+@audio_bp.route('/style-transfer', methods=['POST'])
+@jwt_required()
+@limiter.limit("5 per minute")
+def style_transfer():
+    """Apply style transfer between universes."""
+    try:
+        data = request.get_json()
+        source_id = data.get('source_id')
+        target_id = data.get('target_id')
+        aspects = data.get('aspects', ['music'])
+
+        if not (source_id and target_id):
+            return jsonify({
+                "success": False,
+                "message": "Source and target IDs are required"
+            }), 400
+
+        # Check access to both universes
+        if not (check_universe_access(source_id) and check_universe_access(target_id)):
+            return jsonify({
+                "success": False,
+                "message": "Access denied"
+            }), 403
+
+        # Apply style transfer
+        ai_service = AIService()
+        result = ai_service.apply_style_transfer(source_id, target_id, aspects)
+
+        if result["success"]:
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 400
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "message": "Failed to apply style transfer"
+        }), 500
+
+@audio_bp.route('/settings/<int:universe_id>', methods=['DELETE'])
+@jwt_required()
+@limiter.limit("20 per hour")
+def delete_audio_settings(universe_id):
+    """Delete audio and music settings for a universe"""
+    try:
+        current_user_id = get_jwt_identity()
+        universe = Universe.query.get(universe_id)
+
+        if not universe:
+            return jsonify({'error': 'Universe not found'}), 404
+
+        if not check_universe_access(universe, current_user_id):
+            return jsonify({'error': 'Unauthorized'}), 403
+
+        # Delete audio settings
+        audio_settings = AudioParameters.query.filter_by(universe_id=universe_id).first()
+        if audio_settings:
+            db.session.delete(audio_settings)
+
+        # Delete music settings
+        music_settings = MusicParameters.query.filter_by(universe_id=universe_id).first()
+        if music_settings:
+            db.session.delete(music_settings)
+
+        db.session.commit()
+        return jsonify({'message': 'Settings deleted successfully'}), 200
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': 'Database error', 'details': str(e)}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500

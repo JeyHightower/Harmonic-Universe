@@ -3,7 +3,7 @@ import json
 from flask import url_for
 from app import create_app
 from app.extensions import db
-from app.models.base import User, Universe, VisualizationParameters
+from app.models import User, Universe, VisualizationParameters
 
 @pytest.fixture
 def app():

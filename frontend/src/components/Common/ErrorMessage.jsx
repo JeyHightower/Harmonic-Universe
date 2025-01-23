@@ -6,7 +6,7 @@ const ErrorMessage = ({ message, onDismiss, type = 'error' }) => {
   if (!message) return null;
 
   return (
-    <div className={`error-container ${type}`}>
+    <div className={`error-container ${type}`} data-testid="error-message">
       <div className="error-content">
         <span className="error-text">{message}</span>
         {onDismiss && (

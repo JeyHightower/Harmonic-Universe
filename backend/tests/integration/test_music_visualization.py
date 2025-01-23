@@ -2,7 +2,7 @@ import pytest
 from flask_socketio import SocketIOTestClient
 from app import create_app
 from app.extensions import db
-from app.models.base import User, Universe, MusicParameters, VisualizationParameters
+from app.models import User, Universe, MusicParameters, VisualizationParameters
 import numpy as np
 from ..config import TestConfig
 

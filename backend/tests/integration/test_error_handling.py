@@ -3,7 +3,7 @@ from flask_socketio import SocketIOTestClient
 from datetime import datetime, timedelta
 from app import create_app
 from app.extensions import db
-from app.models.base import User, Universe
+from app.models import User, Universe
 import json
 
 @pytest.fixture
