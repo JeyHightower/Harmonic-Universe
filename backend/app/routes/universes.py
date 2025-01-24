@@ -1,82 +1,67 @@
-from flask import Blueprint, jsonify, request
-from datetime import datetime
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.models.universe import Universe
+from app.schemas.universe import UniverseSchema
+from app.services.universe_service import UniverseService
 
-bp = Blueprint('universes', __name__, url_prefix='/api/universes')
+universes = Blueprint('universes', __name__)
+universe_schema = UniverseSchema()
+universe_service = UniverseService()
 
-# Mock database for testing
-universes_db = {}
-
-@bp.route('', methods=['GET', 'POST'])
-def handle_universes():
-    if request.method == 'GET':
-        return jsonify({
-            'status': 'success',
-            'universes': list(universes_db.values())
-        }), 200
-
+@universes.route('/api/universes', methods=['POST'])
+@jwt_required()
+def create_universe():
+    """Create a new universe."""
+    current_user_id = get_jwt_identity()
     data = request.get_json()
-    if not data:
-        return jsonify({
-            'status': 'error',
-            'error': 'No data provided'
-        }), 400
 
-    # Validate required fields
-    required_fields = ['name']
-    missing_fields = [field for field in required_fields if field not in data]
-    if missing_fields:
-        return jsonify({
-            'status': 'error',
-            'error': f'Missing required fields: {", ".join(missing_fields)}'
-        }), 400
+    try:
+        universe = universe_service.create_universe(current_user_id, data)
+        return jsonify(universe_schema.dump(universe)), 201
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'Failed to create universe'}), 500
 
-    universe_id = len(universes_db) + 1
-    new_universe = {
-        "id": universe_id,
-        "name": data['name'],
-        "description": data.get('description', ''),  # Make description optional
-        "isPublic": data.get('isPublic', False),
-        "allowGuests": data.get('allowGuests', False),
-        "createdAt": datetime.now().isoformat()
-    }
-    universes_db[universe_id] = new_universe
-    return jsonify({
-        'status': 'success',
-        'universe': new_universe
-    }), 201
+@universes.route('/api/universes/<int:universe_id>', methods=['GET'])
+@jwt_required()
+def get_universe(universe_id):
+    """Get a specific universe by ID."""
+    try:
+        universe = universe_service.get_universe(universe_id)
+        if not universe:
+            return jsonify({'error': 'Universe not found'}), 404
+        return jsonify(universe_schema.dump(universe))
+    except Exception as e:
+        return jsonify({'error': 'Failed to fetch universe'}), 500
 
-@bp.route('/<int:universe_id>', methods=['GET', 'PUT', 'DELETE'])
-def handle_universe(universe_id):
-    universe = universes_db.get(universe_id)
-    if not universe:
-        return jsonify({
-            'status': 'error',
-            'error': 'Universe not found'
-        }), 404
+@universes.route('/api/universes/<int:universe_id>', methods=['PUT'])
+@jwt_required()
+def update_universe(universe_id):
+    """Update a specific universe."""
+    current_user_id = get_jwt_identity()
+    data = request.get_json()
 
-    if request.method == 'GET':
-        return jsonify({
-            'status': 'success',
-            'universe': universe
-        }), 200
+    try:
+        universe = universe_service.update_universe(universe_id, current_user_id, data)
+        if not universe:
+            return jsonify({'error': 'Universe not found'}), 404
+        return jsonify(universe_schema.dump(universe))
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'Failed to update universe'}), 500
 
-    elif request.method == 'PUT':
-        data = request.get_json()
-        if not data:
-            return jsonify({
-                'status': 'error',
-                'error': 'No data provided'
-            }), 400
+@universes.route('/api/universes/<int:universe_id>', methods=['DELETE'])
+@jwt_required()
+def delete_universe(universe_id):
+    """Delete a specific universe."""
+    current_user_id = get_jwt_identity()
 
-        universe.update(data)
-        return jsonify({
-            'status': 'success',
-            'universe': universe
-        }), 200
-
-    elif request.method == 'DELETE':
-        del universes_db[universe_id]
-        return jsonify({
-            'status': 'success',
-            'message': 'Universe deleted successfully'
-        }), 200  # Changed from 204 to match test expectations
+    try:
+        universe_service.delete_universe(universe_id, current_user_id)
+        return '', 204
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'Failed to delete universe'}), 500

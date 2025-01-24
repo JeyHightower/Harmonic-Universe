@@ -1,80 +1,163 @@
+/**
+ * @vitest-environment jsdom
+ */
 import { configureStore } from '@reduxjs/toolkit';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
+import { BrowserRouter } from 'react-router-dom';
+import { describe, expect, it, vi } from 'vitest';
 import UserPreferences from '../../../components/Settings/UserPreferences';
-import preferencesReducer from '../../../store/slices/preferencesSlice';
+import preferencesReducer, {
+  updatePreferences,
+} from '../../../store/slices/preferencesSlice';
 
-const mockStore = configureStore({
-  reducer: {
-    preferences: preferencesReducer,
-  },
+// Mock the preferences actions
+vi.mock('../../../store/slices/preferencesSlice', () => ({
+  updatePreferences: vi.fn(() => ({
+    type: 'preferences/updatePreferences',
+    payload: undefined,
+  })),
+  __esModule: true,
+  default: (
+    state = { theme: 'light', language: 'en', emailNotifications: false }
+  ) => state,
+}));
+
+// Mock react-router-dom
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
 });
 
 describe('UserPreferences Component', () => {
-  const renderPreferences = () => {
-    render(
-      <Provider store={mockStore}>
-        <UserPreferences />
-      </Provider>
-    );
+  const mockPreferences = {
+    theme: 'light',
+    language: 'en',
+    emailNotifications: false,
   };
 
-  test('renders preferences form', () => {
-    renderPreferences();
+  const renderWithProviders = (
+    ui,
+    {
+      preloadedState = {
+        preferences: mockPreferences,
+      },
+      store = configureStore({
+        reducer: {
+          preferences: preferencesReducer,
+        },
+        preloadedState,
+      }),
+      ...renderOptions
+    } = {}
+  ) => {
+    const Wrapper = ({ children }) => (
+      <Provider store={store}>
+        <BrowserRouter>{children}</BrowserRouter>
+      </Provider>
+    );
+    return { store, ...render(ui, { wrapper: Wrapper, ...renderOptions }) };
+  };
+
+  it('renders preferences form', () => {
+    renderWithProviders(<UserPreferences />);
+
     expect(screen.getByLabelText(/theme/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/language/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/email notifications/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
   });
 
-  test('handles theme change', async () => {
-    renderPreferences();
+  it('handles theme change', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<UserPreferences />);
 
     const themeSelect = screen.getByLabelText(/theme/i);
-    fireEvent.change(themeSelect, { target: { value: 'dark' } });
+    await user.selectOptions(themeSelect, 'dark');
 
-    await waitFor(() => {
-      expect(themeSelect.value).toBe('dark');
-    });
+    expect(themeSelect).toHaveValue('dark');
   });
 
-  test('handles language change', async () => {
-    renderPreferences();
+  it('handles language change', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<UserPreferences />);
 
     const languageSelect = screen.getByLabelText(/language/i);
-    fireEvent.change(languageSelect, { target: { value: 'es' } });
+    await user.selectOptions(languageSelect, 'es');
 
-    await waitFor(() => {
-      expect(languageSelect.value).toBe('es');
-    });
+    expect(languageSelect).toHaveValue('es');
   });
 
-  test('handles email notifications toggle', async () => {
-    renderPreferences();
+  it('handles email notifications toggle', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<UserPreferences />);
 
     const notificationsToggle = screen.getByLabelText(/email notifications/i);
-    fireEvent.click(notificationsToggle);
+    await user.click(notificationsToggle);
+
+    expect(notificationsToggle).toBeChecked();
+  });
+
+  it('handles successful preferences update', async () => {
+    const mockDispatch = vi.fn(() => ({
+      unwrap: () => Promise.resolve(mockPreferences),
+    }));
+    const user = userEvent.setup();
+    const { store } = renderWithProviders(<UserPreferences />);
+    store.dispatch = mockDispatch;
+
+    await user.selectOptions(screen.getByLabelText(/theme/i), 'dark');
+    await user.selectOptions(screen.getByLabelText(/language/i), 'es');
+    await user.click(screen.getByLabelText(/email notifications/i));
+    await user.click(screen.getByRole('button', { name: /save/i }));
 
     await waitFor(() => {
-      expect(notificationsToggle).toBeChecked();
+      expect(updatePreferences).toHaveBeenCalledWith({
+        theme: 'dark',
+        language: 'es',
+        emailNotifications: true,
+      });
+      expect(screen.getByText(/preferences saved/i)).toBeInTheDocument();
     });
   });
 
-  test('handles form submission', async () => {
-    renderPreferences();
+  it('handles update error', async () => {
+    const mockError = new Error('Failed to update preferences');
+    const mockDispatch = vi.fn(() => ({
+      unwrap: () => Promise.reject(mockError),
+    }));
+    const user = userEvent.setup();
+    const { store } = renderWithProviders(<UserPreferences />);
+    store.dispatch = mockDispatch;
 
-    fireEvent.change(screen.getByLabelText(/theme/i), {
-      target: { value: 'dark' },
-    });
-    fireEvent.change(screen.getByLabelText(/language/i), {
-      target: { value: 'es' },
-    });
-    fireEvent.click(screen.getByLabelText(/email notifications/i));
-
-    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+    await user.selectOptions(screen.getByLabelText(/theme/i), 'dark');
+    await user.click(screen.getByRole('button', { name: /save/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/preferences saved/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/failed to update preferences/i)
+      ).toBeInTheDocument();
     });
+  });
+
+  it('disables save button while updating', async () => {
+    const mockDispatch = vi.fn(() => ({
+      unwrap: () => new Promise(() => {}), // Never resolves to keep loading state
+    }));
+    const user = userEvent.setup();
+    const { store } = renderWithProviders(<UserPreferences />);
+    store.dispatch = mockDispatch;
+
+    await user.selectOptions(screen.getByLabelText(/theme/i), 'dark');
+    await user.click(screen.getByRole('button', { name: /save/i }));
+
+    expect(
+      screen.getByRole('button', { name: /saving\.\.\./i })
+    ).toBeDisabled();
   });
 });

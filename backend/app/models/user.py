@@ -7,31 +7,25 @@ import jwt
 from flask import current_app
 
 class User(db.Model):
-    """User model for authentication and profile management."""
-
+    """User model for storing user related details."""
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128))
+    is_active = db.Column(db.Boolean, default=True)
+    is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    universes = relationship('Universe', back_populates='user')
-    comments = relationship('Comment', back_populates='user')
-    favorites = relationship('Favorite', back_populates='user', overlaps="favorite_universes")
-    favorite_universes = relationship('Universe', secondary='favorites',
-                                    back_populates='favorited_by',
-                                    overlaps="favorites")
-    storyboards = relationship('Storyboard', back_populates='user')
-    versions = relationship('Version', back_populates='creator')
-    templates = relationship('Template', back_populates='creator')
+    universes = db.relationship('Universe', backref='creator', lazy=True)
+    collaborations = db.relationship('UniverseCollaborator', backref='user', lazy=True)
+    comments = db.relationship('Comment', backref='author', lazy=True)
+    favorites = db.relationship('Favorite', backref='user', lazy=True)
 
-    def __init__(self, username, email, password=None, **kwargs):
-        """Initialize user with username, email, and optional password."""
-        super(User, self).__init__(**kwargs)
+    def __init__(self, username, email, password=None):
         self.username = username
         self.email = email
         if password:
@@ -48,13 +42,11 @@ class User(db.Model):
         self.set_password(password)
 
     def set_password(self, password):
-        """Set password hash."""
+        """Set password."""
         self.password_hash = generate_password_hash(password)
 
-    def verify_password(self, password):
-        """Check if password matches."""
-        if not self.password_hash:
-            return False
+    def check_password(self, password):
+        """Check password."""
         return check_password_hash(self.password_hash, password)
 
     def get_reset_password_token(self, expires_in=3600):
@@ -86,16 +78,21 @@ class User(db.Model):
             setattr(self, key, value)
         db.session.commit()
 
-    def __repr__(self):
-        """String representation of user."""
-        return f'<User {self.username}>'
-
     def to_dict(self):
-        """Convert user to dictionary."""
+        """Convert user object to dictionary."""
         return {
             'id': self.id,
             'username': self.username,
             'email': self.email,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+            'is_active': self.is_active,
+            'is_admin': self.is_admin,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+            'universes_count': len(self.universes),
+            'collaborations_count': len(self.collaborations),
+            'comments_count': len(self.comments),
+            'favorites_count': len(self.favorites)
         }
+
+    def __repr__(self):
+        return f'<User {self.username}>'

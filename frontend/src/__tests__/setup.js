@@ -7,44 +7,18 @@ configure({ testIdAttribute: 'data-testid' });
 
 // Mock IntersectionObserver
 class MockIntersectionObserver {
-  constructor(callback) {
-    this.callback = callback;
-  }
-
-  observe() {
-    return null;
-  }
-
-  unobserve() {
-    return null;
-  }
-
-  disconnect() {
-    return null;
-  }
+  observe() { return null; }
+  unobserve() { return null; }
+  disconnect() { return null; }
 }
-
 global.IntersectionObserver = MockIntersectionObserver;
 
 // Mock ResizeObserver
 class MockResizeObserver {
-  constructor(callback) {
-    this.callback = callback;
-  }
-
-  observe() {
-    return null;
-  }
-
-  unobserve() {
-    return null;
-  }
-
-  disconnect() {
-    return null;
-  }
+  observe() { return null; }
+  unobserve() { return null; }
+  disconnect() { return null; }
 }
-
 global.ResizeObserver = MockResizeObserver;
 
 // Mock window.matchMedia
@@ -67,49 +41,30 @@ global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
 
 // Mock localStorage
-const localStorageMock = {
+const storageMock = {
   getItem: jest.fn(),
   setItem: jest.fn(),
   removeItem: jest.fn(),
   clear: jest.fn(),
 };
-global.localStorage = localStorageMock;
-
-// Mock sessionStorage
-const sessionStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
-};
-global.sessionStorage = sessionStorageMock;
+global.localStorage = storageMock;
+global.sessionStorage = storageMock;
 
 // Mock WebSocket
 class MockWebSocket {
   constructor(url) {
     this.url = url;
-    this.readyState = WebSocket.CONNECTING;
-    setTimeout(() => {
-      this.readyState = WebSocket.OPEN;
-      this.onopen && this.onopen();
-    }, 0);
+    this.readyState = WebSocket.OPEN;
   }
-
   send(data) {
     this.onmessage && this.onmessage({ data });
   }
-
   close() {
-    this.readyState = WebSocket.CLOSED;
     this.onclose && this.onclose();
   }
 }
-
 global.WebSocket = MockWebSocket;
-WebSocket.CONNECTING = 0;
 WebSocket.OPEN = 1;
-WebSocket.CLOSING = 2;
-WebSocket.CLOSED = 3;
 
 // Mock fetch
 global.fetch = jest.fn(() =>
@@ -118,22 +73,12 @@ global.fetch = jest.fn(() =>
     json: () => Promise.resolve({}),
     text: () => Promise.resolve(''),
     blob: () => Promise.resolve(new Blob()),
-    arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
   })
 );
 
-// Mock URL.createObjectURL
-global.URL.createObjectURL = jest.fn();
-global.URL.revokeObjectURL = jest.fn();
-
-// Suppress console errors during tests
+// Suppress React 18 Strict Mode warnings
 const originalError = console.error;
 console.error = (...args) => {
-  if (
-    typeof args[0] === 'string' &&
-    args[0].includes('Warning: ReactDOM.render is no longer supported')
-  ) {
-    return;
-  }
+  if (args[0]?.includes?.('ReactDOM.render is no longer supported')) return;
   originalError.call(console, ...args);
 };

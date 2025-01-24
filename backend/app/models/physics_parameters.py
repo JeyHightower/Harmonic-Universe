@@ -2,6 +2,7 @@
 from sqlalchemy import Column, Integer, Float, ForeignKey, event
 from sqlalchemy.orm import relationship
 from app.extensions import db
+from datetime import datetime
 
 class PhysicsParameters(db.Model):
     """Model for physics simulation parameters."""
@@ -38,6 +39,9 @@ class PhysicsParameters(db.Model):
     collision_threshold = Column(Float, default=0.01)
     restitution_coefficient = Column(Float, default=0.8)
 
+    # New particle speed parameter
+    particle_speed = Column(Float, default=1.0)
+
     # Relationships
     universe = relationship("Universe", back_populates="physics_parameters")
 
@@ -50,6 +54,10 @@ class PhysicsParameters(db.Model):
             self.air_resistance = 0.1
         if self.density is None:
             self.density = 1.0
+        if self.friction is None:
+            self.friction = 0.5
+        if self.elasticity is None:
+            self.elasticity = 0.5
 
         if self.gravity <= 0:
             raise ValueError("Gravity must be positive")
@@ -86,7 +94,8 @@ class PhysicsParameters(db.Model):
             'field_falloff': self.field_falloff,
             'collision_damping': self.collision_damping,
             'collision_threshold': self.collision_threshold,
-            'restitution_coefficient': self.restitution_coefficient
+            'restitution_coefficient': self.restitution_coefficient,
+            'particle_speed': self.particle_speed
         }
 
     @staticmethod
@@ -111,7 +120,8 @@ class PhysicsParameters(db.Model):
             field_falloff=data.get('field_falloff', 2.0),
             collision_damping=data.get('collision_damping', 0.1),
             collision_threshold=data.get('collision_threshold', 0.01),
-            restitution_coefficient=data.get('restitution_coefficient', 0.8)
+            restitution_coefficient=data.get('restitution_coefficient', 0.8),
+            particle_speed=data.get('particle_speed', 1.0)
         )
 
     def update(self, data):

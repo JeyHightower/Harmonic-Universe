@@ -1,93 +1,111 @@
 """Authentication routes."""
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from app.models.base.user import User
-from app.extensions import db
-from werkzeug.security import check_password_hash, generate_password_hash
+from flask_jwt_extended import (
+    create_access_token,
+    create_refresh_token,
+    jwt_required,
+    get_jwt_identity,
+    get_jwt
+)
+from app.models.user import User
+from app.schemas.user import UserSchema
+from app import db
 
-auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
+auth = Blueprint('auth', __name__)
+user_schema = UserSchema()
 
-# Mock database for testing
-users_db = {
-    "test@example.com": {
-        "password": "password123",
-        "id": 1,
-        "name": "Test User"
-    }
-}
-
-@auth_bp.route('/register', methods=['POST'])
+@auth.route('/api/auth/register', methods=['POST'])
 def register():
     """Register a new user."""
     data = request.get_json()
 
-    if not data or not data.get('username') or not data.get('password') or not data.get('email'):
-        return jsonify({'error': 'Missing required fields'}), 400
+    try:
+        # Validate input data
+        errors = user_schema.validate(data)
+        if errors:
+            return jsonify({'error': errors}), 400
 
-    if User.query.filter_by(username=data['username']).first():
-        return jsonify({'error': 'Username already exists'}), 409
+        # Check if user already exists
+        if User.query.filter_by(email=data['email']).first():
+            return jsonify({'error': 'Email already registered'}), 400
+        if User.query.filter_by(username=data['username']).first():
+            return jsonify({'error': 'Username already taken'}), 400
 
-    if User.query.filter_by(email=data['email']).first():
-        return jsonify({'error': 'Email already exists'}), 409
+        # Create new user
+        user = User(
+            username=data['username'],
+            email=data['email']
+        )
+        user.set_password(data['password'])
 
-    user = User(
-        username=data['username'],
-        email=data['email'],
-        password=generate_password_hash(data['password'])
-    )
+        db.session.add(user)
+        db.session.commit()
 
-    db.session.add(user)
-    db.session.commit()
+        # Generate tokens
+        access_token = create_access_token(identity=user.id)
+        refresh_token = create_refresh_token(identity=user.id)
 
-    access_token = create_access_token(identity=user.id)
-    return jsonify({
-        'message': 'User created successfully',
-        'access_token': access_token,
-        'user': {
-            'id': user.id,
-            'username': user.username,
-            'email': user.email
-        }
-    }), 201
-
-@auth_bp.route('/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
-
-    user = users_db.get(email)
-    if user and user['password'] == password:
         return jsonify({
-            "token": "mock_token",
-            "user": {
-                "id": user['id'],
-                "email": email,
-                "name": user['name']
-            }
+            'user': user_schema.dump(user),
+            'access_token': access_token,
+            'refresh_token': refresh_token
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@auth.route('/api/auth/login', methods=['POST'])
+def login():
+    """Login user and return tokens."""
+    data = request.get_json()
+
+    try:
+        # Find user by email
+        user = User.query.filter_by(email=data['email']).first()
+
+        # Verify user and password
+        if not user or not user.check_password(data['password']):
+            return jsonify({'error': 'Invalid email or password'}), 401
+
+        if not user.is_active:
+            return jsonify({'error': 'Account is deactivated'}), 401
+
+        # Generate tokens
+        access_token = create_access_token(identity=user.id)
+        refresh_token = create_refresh_token(identity=user.id)
+
+        return jsonify({
+            'user': user_schema.dump(user),
+            'access_token': access_token,
+            'refresh_token': refresh_token
         })
-    return jsonify({"error": "Invalid credentials"}), 401
 
-@auth_bp.route('/me', methods=['GET'])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@auth.route('/api/auth/refresh', methods=['POST'])
+@jwt_required(refresh=True)
+def refresh():
+    """Refresh access token."""
+    try:
+        current_user_id = get_jwt_identity()
+        access_token = create_access_token(identity=current_user_id)
+        return jsonify({'access_token': access_token})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@auth.route('/api/auth/me', methods=['GET'])
 @jwt_required()
-def get_current_user():
-    """Get the current user's information."""
-    user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+def get_user():
+    """Get current user details."""
+    try:
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
 
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
 
-    return jsonify({
-        'id': user.id,
-        'username': user.username,
-        'email': user.email
-    }), 200
-
-@auth_bp.route('/logout', methods=['POST'])
-@jwt_required()
-def logout():
-    """Logout a user."""
-    # In a stateless JWT setup, we don't need to do anything server-side
-    # The client should remove the token
-    return jsonify({'message': 'Successfully logged out'}), 200
+        return jsonify(user_schema.dump(user))
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

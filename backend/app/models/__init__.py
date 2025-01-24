@@ -4,14 +4,15 @@ from .universe import Universe
 from .physics_parameters import PhysicsParameters
 from .music_parameters import MusicParameters
 from .visualization_parameters import VisualizationParameters
-from .audio_parameters import AudioParameters
-from .notification import Notification
-from .comment import Comment
-from .favorite import Favorite
+from .analytics import Analytics
 from .storyboard import Storyboard
 from .template import Template
+from .favorite import Favorite
+from .notification import Notification
 from .version import Version
+from .comment import Comment
 from .user_preferences import UserPreferences
+from .audio_parameters import AudioParameters
 
 __all__ = [
     'User',
@@ -19,12 +20,13 @@ __all__ = [
     'PhysicsParameters',
     'MusicParameters',
     'VisualizationParameters',
-    'AudioParameters',
-    'Notification',
-    'Comment',
-    'Favorite',
+    'Analytics',
     'Storyboard',
     'Template',
+    'Favorite',
+    'Notification',
     'Version',
+    'Comment',
     'UserPreferences',
+    'AudioParameters',
 ]

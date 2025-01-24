@@ -115,7 +115,9 @@ describe('FavoriteButton Component', () => {
   });
 
   it('dispatches addFavorite when clicking non-favorited button', async () => {
-    const mockDispatch = vi.fn(() => Promise.resolve());
+    const mockDispatch = vi.fn(() => ({
+      unwrap: () => Promise.resolve({ universe_id: universeId }),
+    }));
     const { store } = renderWithProviders(
       <FavoriteButton universeId={universeId} />
     );
@@ -128,7 +130,9 @@ describe('FavoriteButton Component', () => {
   });
 
   it('dispatches removeFavorite when clicking favorited button', async () => {
-    const mockDispatch = vi.fn(() => Promise.resolve());
+    const mockDispatch = vi.fn(() => ({
+      unwrap: () => Promise.resolve({ universe_id: universeId }),
+    }));
     const { store } = renderWithProviders(
       <FavoriteButton universeId={universeId} />,
       {
@@ -178,7 +182,9 @@ describe('FavoriteButton Component', () => {
   it('handles error when toggling favorite fails', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const mockError = new Error('Failed to toggle');
-    const mockDispatch = vi.fn(() => Promise.reject(mockError));
+    const mockDispatch = vi.fn(() => ({
+      unwrap: () => Promise.reject(mockError),
+    }));
 
     const { store } = renderWithProviders(
       <FavoriteButton universeId={universeId} />

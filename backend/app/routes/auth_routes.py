@@ -18,8 +18,12 @@ from app.utils.validation import validate_registration, validate_login
 from app.extensions import db, limiter, jwt
 import logging
 from functools import wraps
+from app.schemas.user import UserSchema
+from app.services.auth_service import AuthService
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
+user_schema = UserSchema()
+auth_service = AuthService()
 
 def rate_limit_if_enabled(limit_string):
     """Conditionally apply rate limiting based on config."""
@@ -36,121 +40,51 @@ def rate_limit_if_enabled(limit_string):
 @rate_limit_if_enabled("30 per hour")
 def register():
     """Register a new user."""
+    data = request.get_json()
+
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({
-                'status': 'error',
-                'message': 'No data provided'
-            }), 400
-
-        # Check if required fields are present
-        required_fields = ['username', 'email', 'password']
-        for field in required_fields:
-            if field not in data:
-                return jsonify({
-                    'status': 'error',
-                    'message': f'{field.capitalize()} is required'
-                }), 400
-
-        # Check if user already exists
-        if User.query.filter_by(email=data['email']).first():
-            return jsonify({
-                'status': 'error',
-                'message': 'Email already registered'
-            }), 400
-
-        if User.query.filter_by(username=data['username']).first():
-            return jsonify({
-                'status': 'error',
-                'message': 'Username already taken'
-            }), 400
-
-        # Validate registration data
-        validation_error = validate_registration(data)
-        if validation_error:
-            return jsonify({
-                'status': 'error',
-                'message': validation_error
-            }), 400
-
-        # Create new user
-        user = User(
-            username=data['username'],
-            email=data['email'],
-            password=data['password']
-        )
-        db.session.add(user)
-        db.session.commit()
-
-        # Generate access token
+        user = auth_service.register_user(data)
         access_token = create_access_token(identity=user.id)
+        refresh_token = create_refresh_token(identity=user.id)
 
         return jsonify({
-            'status': 'success',
-            'message': 'Registration successful',
-            'data': {
-                'token': access_token,
-                'user': user.to_dict()
-            }
+            'user': user_schema.dump(user),
+            'access_token': access_token,
+            'refresh_token': refresh_token
         }), 201
-
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
     except Exception as e:
-        current_app.logger.error(f"Registration error: {str(e)}")
-        db.session.rollback()
-        return jsonify({
-            'status': 'error',
-            'message': 'An error occurred during registration'
-        }), 500
+        return jsonify({'error': 'Failed to register user'}), 500
 
 @auth_bp.route('/login', methods=['POST'])
 @rate_limit_if_enabled("30 per hour")
 def login():
-    """Login user and return access token."""
+    """Login a user."""
+    data = request.get_json()
+
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({
-                'status': 'error',
-                'message': 'No data provided'
-            }), 400
+        user = auth_service.authenticate_user(
+            data.get('email'),
+            data.get('password')
+        )
 
-        # Validate login data
-        validation_error = validate_login(data)
-        if validation_error:
-            return jsonify({
-                'status': 'error',
-                'message': validation_error
-            }), 400
+        if not user:
+            return jsonify({'error': 'Invalid credentials'}), 401
 
-        # Find user by email
-        user = User.query.filter_by(email=data['email']).first()
+        if not user.is_active:
+            return jsonify({'error': 'Account is deactivated'}), 403
 
-        # Verify password
-        if not user or not user.verify_password(data['password']):
-            return jsonify({
-                'status': 'error',
-                'message': 'Invalid email or password'
-            }), 401
-
-        # Generate access token
         access_token = create_access_token(identity=user.id)
+        refresh_token = create_refresh_token(identity=user.id)
 
         return jsonify({
-            'status': 'success',
-            'message': 'Login successful',
-            'data': {
-                'token': access_token,
-                'user': user.to_dict()
-            }
-        }), 200
-
+            'user': user_schema.dump(user),
+            'access_token': access_token,
+            'refresh_token': refresh_token
+        })
     except Exception as e:
-        current_app.logger.error(f"Login error: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': 'An error occurred during login'
-        }), 500
+        return jsonify({'error': 'Failed to login'}), 500
 
 @auth_bp.route('/validate', methods=['GET'])
 @jwt_required()
@@ -197,17 +131,13 @@ def protected():
 @auth_bp.route('/logout', methods=['POST'])
 @jwt_required()
 def logout():
+    """Logout a user."""
+    jti = get_jwt()['jti']
     try:
-        return jsonify({
-            'status': 'success',
-            'message': 'Successfully logged out'
-        }), 200
+        auth_service.blacklist_token(jti)
+        return '', 204
     except Exception as e:
-        current_app.logger.error(f"Logout error: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': 'An error occurred during logout'
-        }), 500
+        return jsonify({'error': 'Failed to logout'}), 500
 
 @auth_bp.route('/me', methods=['GET'])
 @require_auth
@@ -283,3 +213,70 @@ def update_current_user():
             'status': 'error',
             'message': 'An error occurred updating user details'
         }), 500
+
+@auth_bp.route('/refresh', methods=['POST'])
+@jwt_required(refresh=True)
+def refresh():
+    """Refresh access token."""
+    current_user_id = get_jwt_identity()
+
+    try:
+        user = User.query.get(current_user_id)
+        if not user or not user.is_active:
+            return jsonify({'error': 'User not found or inactive'}), 401
+
+        access_token = create_access_token(identity=current_user_id)
+        return jsonify({'access_token': access_token})
+    except Exception as e:
+        return jsonify({'error': 'Failed to refresh token'}), 500
+
+@auth_bp.route('/reset-password', methods=['POST'])
+def request_password_reset():
+    """Request a password reset."""
+    data = request.get_json()
+
+    try:
+        auth_service.request_password_reset(data.get('email'))
+        return jsonify({'message': 'Password reset email sent'}), 200
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'Failed to request password reset'}), 500
+
+@auth_bp.route('/reset-password/<token>', methods=['POST'])
+def reset_password(token):
+    """Reset password using token."""
+    data = request.get_json()
+
+    try:
+        auth_service.reset_password(token, data.get('new_password'))
+        return jsonify({'message': 'Password reset successful'}), 200
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'Failed to reset password'}), 500
+
+@auth_bp.route('/verify-email/<token>', methods=['GET'])
+def verify_email(token):
+    """Verify user's email address."""
+    try:
+        auth_service.verify_email(token)
+        return jsonify({'message': 'Email verified successfully'}), 200
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'Failed to verify email'}), 500
+
+@auth_bp.route('/resend-verification', methods=['POST'])
+@jwt_required()
+def resend_verification():
+    """Resend email verification link."""
+    current_user_id = get_jwt_identity()
+
+    try:
+        auth_service.resend_verification_email(current_user_id)
+        return jsonify({'message': 'Verification email sent'}), 200
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'Failed to resend verification email'}), 500

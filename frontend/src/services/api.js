@@ -1,20 +1,19 @@
 /* global window */
 import axios from 'axios';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-const api = axios.create({
-  baseURL: API_BASE_URL,
+export const api = axios.create({
+  baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Add request interceptor to include auth token
+// Request interceptor
 api.interceptors.request.use(
   config => {
-    const token = window.localStorage.getItem('token');
+    const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -25,27 +24,30 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor to handle common errors
+// Response interceptor
 api.interceptors.response.use(
   response => response,
-  error => {
-    if (error.response) {
-      // Handle specific error cases
-      switch (error.response.status) {
-        case 401:
-          // Handle unauthorized
-          window.localStorage.removeItem('token');
-          window.location.href = '/login';
-          break;
-        case 403:
-          // Handle forbidden
-          break;
-        case 404:
-          // Handle not found
-          break;
-        default:
-          // Handle other errors
-          break;
+  async error => {
+    const originalRequest = error.config;
+
+    // Handle token refresh
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const refreshToken = localStorage.getItem('refreshToken');
+        const response = await axios.post(`${BASE_URL}/api/auth/refresh`, {
+          refreshToken,
+        });
+        const { token } = response.data;
+        localStorage.setItem('token', token);
+        originalRequest.headers.Authorization = `Bearer ${token}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Handle refresh token failure (e.g., logout user)
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
       }
     }
     return Promise.reject(error);
@@ -71,5 +73,3 @@ export const del = async (url, config = {}) => {
   const response = await api.delete(url, config);
   return response.data;
 };
-
-export default api;

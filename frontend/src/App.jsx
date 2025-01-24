@@ -1,101 +1,73 @@
 // App.jsx
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
-import { Provider } from 'react-redux';
+import React from 'react';
+import { useSelector } from 'react-redux';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
-import store from './store';
+import PrivateRoute from './components/common/PrivateRoute';
+import AppLayout from './components/layout/AppLayout';
 import theme from './theme';
 
 // Pages
 import Dashboard from './pages/Dashboard';
+import Explore from './pages/Explore';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
 import Profile from './pages/Profile';
 import Register from './pages/Register';
+import UniverseDetails from './pages/UniverseDetails';
+import UniverseForm from './pages/UniverseForm';
 
-// Components
-import Layout from './components/Layout';
-import PrivateRoute from './components/PrivateRoute';
-import FavoritesList from './components/Universe/FavoritesList';
-import UniverseDetails from './components/Universe/UniverseDetails';
-import UniverseForm from './components/Universe/UniverseForm';
-import UniverseList from './components/Universe/UniverseList';
+const App = () => {
+  const { theme: userTheme } = useSelector((state) => state.profile.settings);
 
-function App() {
   return (
-    <Provider store={store}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <Router>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route
-                path="/profile"
-                element={
-                  <PrivateRoute>
-                    <Profile />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/dashboard"
-                element={
-                  <PrivateRoute>
-                    <Dashboard />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/universes"
-                element={
-                  <PrivateRoute>
-                    <UniverseList />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/universes/favorites"
-                element={
-                  <PrivateRoute>
-                    <FavoritesList />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/universes/new"
-                element={
-                  <PrivateRoute>
-                    <UniverseForm />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/universes/:id"
-                element={
-                  <PrivateRoute>
-                    <UniverseDetails />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/universes/:id/edit"
-                element={
-                  <PrivateRoute>
-                    <UniverseForm isEdit={true} />
-                  </PrivateRoute>
-                }
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Layout>
-        </Router>
-      </ThemeProvider>
-    </Provider>
+    <ThemeProvider theme={theme(userTheme)}>
+      <CssBaseline />
+      <Router>
+        <AppLayout>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+
+            <Route path="/dashboard" element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            } />
+            <Route path="/profile" element={
+              <PrivateRoute>
+                <Profile />
+              </PrivateRoute>
+            } />
+            <Route path="/explore" element={
+              <PrivateRoute>
+                <Explore />
+              </PrivateRoute>
+            } />
+            <Route path="/universes/new" element={
+              <PrivateRoute>
+                <UniverseForm />
+              </PrivateRoute>
+            } />
+            <Route path="/universes/:id" element={
+              <PrivateRoute>
+                <UniverseDetails />
+              </PrivateRoute>
+            } />
+            <Route path="/universes/:id/edit" element={
+              <PrivateRoute>
+                <UniverseForm />
+              </PrivateRoute>
+            } />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AppLayout>
+      </Router>
+    </ThemeProvider>
   );
-}
+};
 
 export default App;

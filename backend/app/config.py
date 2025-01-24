@@ -6,18 +6,21 @@ class Config:
     """Base configuration."""
     # Flask
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev')
+    FLASK_ENV = os.environ.get('FLASK_ENV', 'development')
     DEBUG = False
     TESTING = False
 
     # SQLAlchemy
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///app.db'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///dev.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # JWT
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'dev-jwt-secret')
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'dev')
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
+
+    # Redis
+    REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
 
     # CORS
     CORS_HEADERS = 'Content-Type'
@@ -36,59 +39,50 @@ class Config:
     CACHE_DEFAULT_TIMEOUT = 300
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
     UPLOAD_FOLDER = 'uploads'
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp3', 'wav'}
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 class DevelopmentConfig(Config):
     """Development configuration."""
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        'DATABASE_URL',
-        'sqlite:///dev.db'
-    )
-    SQLALCHEMY_ECHO = True
+    TESTING = False
 
-class TestConfig(Config):
+class TestingConfig(Config):
     """Testing configuration."""
     TESTING = True
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///test.db'
     WTF_CSRF_ENABLED = False
-    PRESERVE_CONTEXT_ON_EXCEPTION = True
-    RATELIMIT_ENABLED = False
-    JWT_SECRET_KEY = 'test-jwt-secret'
-    SECRET_KEY = 'test-secret'
-    SOCKETIO_MESSAGE_QUEUE = None
-    CACHE_TYPE = 'null'
-    SQLALCHEMY_ECHO = True
 
 class ProductionConfig(Config):
     """Production configuration."""
     DEBUG = False
-
-    # Use strong secret keys in production
-    SECRET_KEY = os.environ.get('SECRET_KEY')
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
-
-    # Use PostgreSQL in production
+    TESTING = False
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
 
-    # Enable SSL in production
+    # Security
     SESSION_COOKIE_SECURE = True
     REMEMBER_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_HTTPONLY = True
+
+    # Use PostgreSQL in production
+    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith('postgres://'):
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace(
+            'postgres://',
+            'postgresql://',
+            1
+        )
 
     # Rate limiting
     RATELIMIT_DEFAULT = "100 per day"
-    RATELIMIT_STORAGE_URL = os.environ.get('REDIS_URL')
+    RATELIMIT_STORAGE_URL = REDIS_URL
 
     SQLALCHEMY_ECHO = False
 
 # Configuration dictionary
 config = {
     'development': DevelopmentConfig,
-    'testing': TestConfig,
+    'testing': TestingConfig,
     'production': ProductionConfig,
-    'default': DevelopmentConfig,
-    'test': TestConfig,  # Add alias for testing
-    TestConfig: TestConfig,  # Allow direct class reference
-    'TestConfig': TestConfig  # Allow string class name
+    'default': DevelopmentConfig
 }

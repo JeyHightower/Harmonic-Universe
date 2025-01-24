@@ -3,13 +3,14 @@ import pytest
 from unittest.mock import patch, MagicMock
 from flask_socketio import SocketIOTestClient
 from app import create_app
-from app.models.base import Universe, PhysicsParameters
+from app.models import Universe, PhysicsParameters
 from app.physics.engine import Vector2D, Particle, PhysicsEngine, BoundaryType
 from app.extensions import db
 from app.sockets.physics_handler import PhysicsNamespace
 import time
 import socketio
 import json
+from app.services.physics_simulator import PhysicsSimulator
 
 @pytest.fixture(scope='function')
 def app():
@@ -257,3 +258,7 @@ def test_broadcast_updates(socket_client, universe, physics_parameters, socketio
     assert 'state' in state_updates[0]['args'][0]
     assert 'universe_id' in state_updates[0]['args'][0]
     assert state_updates[0]['args'][0]['universe_id'] == universe.id
+
+def test_physics_handler():
+    # Test implementation here
+    pass

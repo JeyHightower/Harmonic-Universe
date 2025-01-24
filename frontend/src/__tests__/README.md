@@ -2,7 +2,7 @@
 
 ## Core Features Test Coverage
 
-This test suite covers the following core features:
+This test suite covers the following fully implemented features:
 
 1. User Authentication CRUD
    - Registration
@@ -58,13 +58,21 @@ This test suite covers the following core features:
 ```
 frontend/src/__tests__/
 ├── setup.js                 # Test setup and configuration
-├── App.test.jsx            # Main app tests
-├── store/                  # Redux store tests
-├── services/               # API service tests
+├── core/                    # Core CRUD tests
+│   ├── auth.test.js        # Authentication tests
+│   ├── universe.test.js    # Universe management tests
+│   ├── profile.test.js     # Profile management tests
+│   └── favorites.test.js   # Favorites management tests
 ├── components/             # UI component tests
-├── pages/                  # Page component tests
-├── unit/                   # Unit tests
-└── integration/            # Integration tests
+│   ├── Navigation.test.js  # Navigation system tests
+│   ├── PrivacySettings.test.js
+│   └── ParameterManager.test.js
+├── services/               # Service tests
+│   └── websocket.test.js   # WebSocket service tests
+├── e2e/                    # End-to-end tests
+│   └── core.test.js        # Core user journey test
+└── __mocks__/             # Mock files
+    └── fileMock.js        # File mock for assets
 ```
 
 ## Running Tests

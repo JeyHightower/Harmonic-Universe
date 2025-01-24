@@ -73,6 +73,17 @@ vi.mock('../Universe.module.css', () => ({
   },
 }));
 
+// Mock react-router-dom
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+    useParams: () => ({ id: '1' }),
+  };
+});
+
 describe('UniverseDetail Component', () => {
   const mockUniverse = {
     id: '1',
@@ -197,7 +208,9 @@ describe('UniverseDetail Component', () => {
   });
 
   it('fetches universe data on mount', async () => {
-    const mockDispatch = vi.fn(() => Promise.resolve());
+    const mockDispatch = vi.fn(() => ({
+      unwrap: () => Promise.resolve(mockUniverse),
+    }));
     const { store } = renderWithProviders(<UniverseDetail />);
     store.dispatch = mockDispatch;
 

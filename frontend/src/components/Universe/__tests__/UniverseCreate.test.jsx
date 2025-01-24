@@ -6,7 +6,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import universeReducer, {
   createUniverse,
 } from '../../../store/slices/universeSlice';
@@ -23,7 +23,21 @@ vi.mock('../../../store/slices/universeSlice', () => ({
     state,
 }));
 
+// Mock react-router-dom
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
+
 describe('UniverseCreate Component', () => {
+  beforeEach(() => {
+    mockNavigate.mockClear();
+  });
+
   const renderWithProviders = (
     ui,
     {
@@ -100,15 +114,6 @@ describe('UniverseCreate Component', () => {
   });
 
   it('handles successful universe creation', async () => {
-    const mockNavigate = vi.fn();
-    vi.mock('react-router-dom', async () => {
-      const actual = await vi.importActual('react-router-dom');
-      return {
-        ...actual,
-        useNavigate: () => mockNavigate,
-      };
-    });
-
     const mockDispatch = vi.fn(() => Promise.resolve({ id: 1 }));
     const { store } = renderWithProviders(<UniverseCreate />);
     store.dispatch = mockDispatch;
@@ -159,15 +164,6 @@ describe('UniverseCreate Component', () => {
   });
 
   it('navigates back on cancel', async () => {
-    const mockNavigate = vi.fn();
-    vi.mock('react-router-dom', async () => {
-      const actual = await vi.importActual('react-router-dom');
-      return {
-        ...actual,
-        useNavigate: () => mockNavigate,
-      };
-    });
-
     const user = userEvent.setup();
     renderWithProviders(<UniverseCreate />);
 

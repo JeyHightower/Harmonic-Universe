@@ -44,86 +44,32 @@ class PhysicsNamespace(Namespace):
             'error_count': self.error_counts[client_id]
         }, room=client_id)
 
-    def on_connect(self):
+    @socketio.on('connect', namespace='/physics')
+    def handle_connect():
         """Handle client connection."""
-        try:
-            emit('connected', {
-                'status': 'success',
-                'message': 'Connected to physics namespace'
-            })
-        except Exception as e:
-            current_app.logger.error(f"Connection error: {str(e)}")
-            emit('error', {
-                'status': 'error',
-                'error': 'Connection Error',
-                'message': 'Failed to establish connection'
-            })
+        emit('connected', {'status': 'connected'})
+        current_app.logger.info('Client connected')
 
-    def on_disconnect(self):
+    @socketio.on('disconnect', namespace='/physics')
+    def handle_disconnect():
         """Handle client disconnection."""
-        try:
-            self.cleanup()
-            emit('disconnected', {
-                'status': 'success',
-                'message': 'Disconnected from physics namespace'
-            })
-        except Exception as e:
-            current_app.logger.error(f"Disconnection error: {str(e)}")
-            emit('error', {
-                'status': 'error',
-                'error': 'Disconnection Error',
-                'message': 'Error during disconnection'
-            })
+        current_app.logger.info('Client disconnected')
 
-    def on_join_simulation(self, data):
+    @socketio.on('join_simulation', namespace='/physics')
+    def handle_join_simulation(data):
         """Handle client joining a simulation."""
-        try:
-            universe_id = data.get('universe_id')
-            client_id = request.sid
+        if 'universe_id' not in data:
+            emit('error', {'message': 'Missing universe_id'})
+            return
 
-            # Get universe and its physics parameters
-            universe = Universe.query.options(
-                joinedload(Universe.physics_parameters)
-            ).get(universe_id)
+        universe_id = data['universe_id']
+        universe = Universe.query.get(universe_id)
+        if not universe:
+            emit('error', {'message': f'Universe {universe_id} not found'})
+            return
 
-            if not universe:
-                raise ValueError(f'Universe {universe_id} not found')
-
-            if not universe.physics_parameters:
-                raise ValueError(f'Universe {universe_id} has no physics parameters')
-
-            # Initialize simulation if not exists
-            if universe_id not in self.active_simulations:
-                logger.info(f"Initializing simulation for universe {universe_id}")
-                self.active_simulations[universe_id] = PhysicsEngine(universe.physics_parameters)
-                self.simulation_clients[universe_id] = set()
-
-                # Set boundary from parameters
-                self.active_simulations[universe_id].set_boundary(
-                    boundary_type=data.get('boundary_type', 'bounce'),
-                    x_min=data.get('x_min', -10.0),
-                    x_max=data.get('x_max', 10.0),
-                    y_min=data.get('y_min', -10.0),
-                    y_max=data.get('y_max', 10.0)
-                )
-
-            # Add client to simulation room
-            room = f'universe_{universe_id}'
-            join_room(room)
-            logger.info(f"Client {client_id} joined room {room}")
-            self.simulation_clients[universe_id].add(client_id)
-            self.client_universes[client_id] = universe_id
-
-            # Send initial state
-            state = self.active_simulations[universe_id].get_state()
-            logger.info(f"Sending initial state to client {client_id}")
-            self.emit('simulation_state', {
-                'state': state,
-                'universe_id': universe_id
-            }, namespace='/physics')
-
-        except Exception as e:
-            self.handle_error(request.sid, e)
+        join_room(f'universe_{universe_id}')
+        emit('joined', {'universe_id': universe_id})
 
     def on_leave_simulation(self, data):
         """Handle client leaving a simulation."""

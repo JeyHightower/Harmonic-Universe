@@ -1,119 +1,82 @@
 import { expect, test } from '@playwright/test';
 
-test.describe('Core Features E2E Test', () => {
+test.describe('Core Application Features', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3000');
+    await page.goto('/');
   });
 
-  test('complete user journey', async ({ page }) => {
-    // 1. User Authentication
-    await test.step('Register new user', async () => {
-      await page.click('text=Register');
-      await page.fill('input[name="username"]', 'testuser');
-      await page.fill('input[name="email"]', 'test@example.com');
-      await page.fill('input[name="password"]', 'Password123!');
-      await page.fill('input[name="confirmPassword"]', 'Password123!');
-      await page.click('button:text("Register")');
-      await expect(page).toHaveURL('/dashboard');
+  test('complete user journey with error scenarios', async ({ page }) => {
+    // Test error handling first
+    await page.route('**/api/auth/login', (route) => {
+      route.fulfill({
+        status: 401,
+        body: JSON.stringify({ message: 'Invalid credentials' }),
+      });
     });
+    await page.click('text=Try Demo Account');
+    await expect(page.locator('text=Invalid credentials')).toBeVisible();
 
-    // 2. Universe Management
-    await test.step('Create and manage universe', async () => {
-      await page.click('text=Universes');
-      await page.click('text=Create Universe');
-      await page.fill('input[name="name"]', 'Test Universe');
-      await page.fill('textarea[name="description"]', 'A test universe description');
-      await page.click('button:text("Create")');
-      await expect(page.getByText('Test Universe')).toBeVisible();
+    // Reset route and proceed with successful login
+    await page.unroute('**/api/auth/login');
+    await page.click('text=Try Demo Account');
+    await expect(page).toHaveURL('/dashboard');
+    await expect(page.locator('text=Welcome back')).toBeVisible();
 
-      // Edit universe
-      await page.click('[data-testid="edit-universe"]');
-      await page.fill('input[name="name"]', 'Updated Universe');
-      await page.click('button:text("Save")');
-      await expect(page.getByText('Updated Universe')).toBeVisible();
-    });
+    // Universe Creation and Management
+    await page.click('button[aria-label="add universe"]');
+    await expect(page).toHaveURL('/universes/new');
+    await page.fill('input[name="name"]', 'Test Universe');
+    await page.fill('textarea[name="description"]', 'A test universe description');
+    await page.click('text=Enable Physics');
+    await page.click('text=Enable Music');
+    await page.click('text=Create Universe');
+    await expect(page).toHaveURL(/\/universes\/\d+/);
 
-    // 3. Parameter Management
-    await test.step('Configure universe parameters', async () => {
-      await page.click('[data-testid="parameters-tab"]');
+    // Parameter Management and Real-time Features
+    await page.click('text=Physics');
+    await page.locator('input[type="range"]').first().fill('75');
+    await page.click('[data-testid="SaveIcon"]');
+    await expect(page.locator('text="Parameters updated successfully"')).toBeVisible();
 
-      // Physics parameters
-      await page.fill('input[name="gravity"]', '9.81');
-      await page.fill('input[name="friction"]', '0.5');
+    // Privacy and Collaboration Features
+    await page.click('[data-testid="SettingsIcon"]');
+    await expect(page.locator('text=Privacy Settings')).toBeVisible();
+    await page.click('text=Private Universe');
+    await page.fill('input[placeholder="Add collaborator by email"]', 'test@example.com');
+    await page.click('[data-testid="PersonAddIcon"]');
+    await page.click('text=Save');
 
-      // Music parameters
-      await page.fill('input[name="tempo"]', '120');
-      await page.selectOption('select[name="key"]', 'C');
+    // Universe Discovery and Interaction
+    await page.click('text=Explore');
+    await expect(page).toHaveURL('/explore');
+    await page.fill('input[placeholder="Search universes..."]', 'Test Universe');
+    await expect(page.locator('text=Test Universe')).toBeVisible();
+    await page.click('[data-testid="StarBorderIcon"]');
+    await expect(page.locator('[data-testid="StarIcon"]')).toBeVisible();
 
-      await page.click('button:text("Apply")');
-      await expect(page.getByText('Parameters updated')).toBeVisible();
-    });
+    // Profile Management
+    await page.click('text=Profile');
+    await expect(page).toHaveURL('/profile');
+    await page.click('text=Edit Profile');
+    await page.fill('input[placeholder="Display Name"]', 'Test User');
+    await page.fill('textarea[placeholder="Tell us about yourself..."]', 'Test bio');
+    await page.click('text=Save');
 
-    // 4. Privacy Controls
-    await test.step('Configure privacy settings', async () => {
-      await page.click('[data-testid="privacy-tab"]');
-      await page.click('text=Public Universe');
-      await page.click('text=Allow Guests');
+    // Theme and Responsiveness
+    await page.click('text=Dark Mode');
+    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(18, 18, 18)');
 
-      // Add collaborator
-      await page.fill('input[name="collaborator"]', 'collaborator@example.com');
-      await page.click('button:text("Add Collaborator")');
+    // Test responsive layouts
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.click('button[aria-label="open drawer"]');
+    await expect(page.locator('text=Dashboard')).toBeVisible();
 
-      await expect(page.getByText('collaborator@example.com')).toBeVisible();
-    });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await expect(page.locator('.MuiGrid-container')).toHaveCSS('grid-template-columns', /repeat\(4, 1fr\)/);
 
-    // 5. Favorites Management
-    await test.step('Manage favorites', async () => {
-      await page.click('text=Favorites');
-      await expect(page.getByText('No favorites yet')).toBeVisible();
-
-      // Add to favorites
-      await page.click('text=Universes');
-      await page.click('[data-testid="favorite-button"]');
-
-      // Verify favorite added
-      await page.click('text=Favorites');
-      await expect(page.getByText('Updated Universe')).toBeVisible();
-    });
-
-    // 6. Profile Management
-    await test.step('Update profile', async () => {
-      await page.click('text=Profile');
-      await page.click('text=Edit Profile');
-
-      await page.fill('input[name="bio"]', 'Test bio');
-      const avatarInput = await page.locator('input[type="file"]');
-      await avatarInput.setInputFiles('path/to/test/avatar.jpg');
-
-      await page.click('button:text("Save Changes")');
-      await expect(page.getByText('Profile updated')).toBeVisible();
-    });
-
-    // 7. Real-time Collaboration
-    await test.step('Verify real-time updates', async () => {
-      await page.click('text=Universes');
-      await page.click('text=Updated Universe');
-
-      // Open WebSocket connection
-      await expect(page.getByTestId('connection-status')).toHaveText('Connected');
-
-      // Verify presence indicator
-      await expect(page.getByTestId('active-users')).toBeVisible();
-
-      // Verify parameter updates are reflected
-      await page.fill('input[name="gravity"]', '10.0');
-      await expect(page.getByText('Parameter updated by testuser')).toBeVisible();
-    });
-
-    // 8. Cleanup
-    await test.step('Delete universe and logout', async () => {
-      await page.click('text=Universes');
-      await page.click('[data-testid="delete-universe"]');
-      await page.click('text=Confirm');
-      await expect(page.getByText('Universe deleted')).toBeVisible();
-
-      await page.click('text=Logout');
-      await expect(page).toHaveURL('/login');
-    });
+    // Cleanup and Logout
+    await page.click('[aria-label="account menu"]');
+    await page.click('text=Logout');
+    await expect(page).toHaveURL('/');
   });
 });

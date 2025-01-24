@@ -1,12 +1,13 @@
 from config import Config
+import os
 
 class TestConfig(Config):
     """Test configuration."""
     TESTING = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    JWT_SECRET_KEY = 'test-secret-key'
-    SECRET_KEY = 'test-key'
+    JWT_SECRET_KEY = 'test-jwt-secret'
+    SECRET_KEY = 'test-secret-key'
     REDIS_URL = None  # Disable Redis for testing
     SOCKETIO_MESSAGE_QUEUE = None  # Disable message queue for testing
     WTF_CSRF_ENABLED = False  # Disable CSRF for testing
@@ -22,3 +23,7 @@ class TestConfig(Config):
 
     # Rate Limiter Configuration
     RATELIMIT_ENABLED = False  # Disable rate limiting in tests
+
+    # Test file upload settings
+    UPLOAD_FOLDER = 'tests/uploads'
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size

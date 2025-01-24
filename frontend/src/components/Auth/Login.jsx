@@ -1,29 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { login } from '../../store/slices/authSlice';
 import styles from './Auth.module.css';
 
 const Login = () => {
-  const location = useLocation();
-  const authState = useSelector(state => state.auth);
-
-  useEffect(() => {
-    // Monitor auth state changes
-    if (authState?.isAuthenticated) {
-      navigate('/');
-    }
-  }, [location, authState]);
-
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
   const [errors, setErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { isLoading, error } = useSelector(state => state.auth);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -62,74 +52,75 @@ const Login = () => {
       return;
     }
 
-    setIsLoading(true);
     try {
-      const result = await dispatch(login(formData));
-      if (result.error) {
-        throw new Error(result.error.message || 'Login failed');
+      const result = await dispatch(login(formData)).unwrap();
+      if (result) {
+        navigate('/dashboard');
       }
-      navigate('/');
-    } catch (error) {
-      setErrors({
-        submit: error.message || 'Login failed. Please try again.',
-      });
-    } finally {
-      setIsLoading(false);
+    } catch (err) {
+      setErrors(prev => ({
+        ...prev,
+        submit: err.message || 'Login failed. Please try again.',
+      }));
     }
   };
 
   return (
-    <div className={styles.authContainer} data-testid="login-container">
+    <div className={styles.authContainer}>
       <form onSubmit={handleSubmit} className={styles.authForm}>
-        <h2>Login</h2>
+        <h2>Login to Your Account</h2>
+
         <div className={styles.formGroup}>
+          <label htmlFor="email">Email</label>
           <input
             type="email"
+            id="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
-            placeholder="Email"
             className={errors.email ? styles.error : ''}
-            data-testid="email-input"
+            placeholder="Enter your email"
           />
           {errors.email && (
-            <span className={styles.errorText} data-testid="email-error">
-              {errors.email}
-            </span>
+            <span className={styles.errorText}>{errors.email}</span>
           )}
         </div>
+
         <div className={styles.formGroup}>
+          <label htmlFor="password">Password</label>
           <input
             type="password"
+            id="password"
             name="password"
             value={formData.password}
             onChange={handleChange}
-            placeholder="Password"
             className={errors.password ? styles.error : ''}
-            data-testid="password-input"
+            placeholder="Enter your password"
           />
           {errors.password && (
-            <span className={styles.errorText} data-testid="password-error">
-              {errors.password}
-            </span>
+            <span className={styles.errorText}>{errors.password}</span>
           )}
         </div>
-        {errors.submit && (
-          <div className={styles.errorText} data-testid="submit-error">
-            {errors.submit}
-          </div>
+
+        {(errors.submit || error) && (
+          <div className={styles.errorText}>{errors.submit || error}</div>
         )}
+
         <button
           type="submit"
           className={styles.authButton}
           disabled={isLoading}
-          data-testid="login-button"
         >
           {isLoading ? 'Logging in...' : 'Login'}
         </button>
+
+        <div className={styles.authLinks}>
+          <a href="/register">Don't have an account? Sign up</a>
+          <a href="/forgot-password">Forgot Password?</a>
+        </div>
       </form>
     </div>
   );
 };
 
-export { Login };
+export default Login;

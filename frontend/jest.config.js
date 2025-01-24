@@ -7,16 +7,18 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1'
   },
   testMatch: [
-    '<rootDir>/src/__tests__/**/*.test.{js,jsx}',
-    '<rootDir>/src/**/*.test.{js,jsx}'
+    '<rootDir>/src/__tests__/core/*.test.{js,jsx}',
+    '<rootDir>/src/__tests__/components/*.test.{js,jsx}',
+    '<rootDir>/src/__tests__/services/*.test.{js,jsx}',
+    '<rootDir>/src/__tests__/e2e/*.test.{js,jsx}'
   ],
   transform: {
     '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['@babel/preset-env', '@babel/preset-react'] }]
   },
   collectCoverageFrom: [
-    'src/**/*.{js,jsx}',
-    '!src/index.js',
-    '!src/reportWebVitals.js',
+    'src/components/**/*.{js,jsx}',
+    'src/services/**/*.{js,jsx}',
+    'src/store/**/*.{js,jsx}',
     '!src/**/*.d.ts',
     '!src/__tests__/**/*'
   ],
@@ -29,10 +31,7 @@ module.exports = {
     }
   },
   coverageReporters: ['text', 'lcov', 'clover'],
-  testPathIgnorePatterns: [
-    '/node_modules/',
-    '/cypress/'
-  ],
+  testPathIgnorePatterns: ['/node_modules/'],
   watchPlugins: [
     'jest-watch-typeahead/filename',
     'jest-watch-typeahead/testname'

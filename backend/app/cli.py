@@ -1,24 +1,21 @@
+"""CLI commands for the application."""
 import click
 from flask.cli import with_appcontext
-from .extensions import db
-from .models import User, Universe, Parameter
+from .models import User, Universe, PhysicsParameters
 
 @click.command('reset-test-db')
 @with_appcontext
 def reset_test_db():
-    """Reset test database to initial state."""
-    if db.engine.url.database != 'test':
-        click.echo('This command can only be run in test environment')
-        return
+    """Reset test database."""
+    from .extensions import db
 
-    click.echo('Dropping all tables...')
+    # Drop all tables
     db.drop_all()
 
-    click.echo('Creating all tables...')
+    # Create tables
     db.create_all()
 
-    click.echo('Creating test data...')
-    # Create test users
+    # Create test user
     test_user = User(
         username='testuser',
         email='test@example.com'
@@ -26,29 +23,28 @@ def reset_test_db():
     test_user.set_password('password123')
     db.session.add(test_user)
 
-    collaborator = User(
-        username='collaborator',
-        email='collaborator@example.com'
-    )
-    collaborator.set_password('password123')
-    db.session.add(collaborator)
-
     # Create test universe
     test_universe = Universe(
         name='Test Universe',
         description='A test universe',
-        is_public=True,
-        creator=test_user
+        creator=test_user,
+        is_public=True
     )
     db.session.add(test_universe)
 
-    # Create test parameters
-    physics_params = Parameter(
+    # Create test physics parameters
+    physics_params = PhysicsParameters(
         universe=test_universe,
-        type='physics',
-        data={'gravity': 9.81, 'particle_speed': 1.0}
+        gravity=9.81,
+        particle_speed=1.0,
+        collision_damping=0.8,
+        boundary_damping=0.9,
+        particle_mass=1.0,
+        particle_radius=0.5
     )
     db.session.add(physics_params)
 
+    # Commit changes
     db.session.commit()
-    click.echo('Test database reset complete!')
+
+    click.echo('Test database has been reset with sample data.')

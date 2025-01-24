@@ -1,28 +1,29 @@
-# app/routes/universe_routes.py
+"""Universe routes."""
 from flask import Blueprint, request, jsonify, current_app
-from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
+from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request, jwt_optional
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import or_
 from ..extensions import db, limiter, cache
-from ..models import Universe, PhysicsParameters, MusicParameters, VisualizationParameters
-from ..utils.auth import check_universe_access
+from ..models import Universe, PhysicsParameters
 from ..utils.parameter_validator import validate_parameters
-from ..services.music_generator import MusicGenerator
-from ..services.visualization_renderer import VisualizationRenderer
 from werkzeug.exceptions import BadRequest, NotFound, Unauthorized
 from ..utils.decorators import handle_exceptions
+from app.schemas.universe import UniverseSchema
+from app.services.universe_service import UniverseService
 
-universe_bp = Blueprint('universe', __name__)
+universe_bp = Blueprint('universes', __name__)
+universe_schema = UniverseSchema()
+universe_service = UniverseService()
 
 @universe_bp.before_request
 def verify_token():
     """Verify JWT token before processing request"""
     # Skip token verification for public routes
-    if request.method == 'GET' and request.endpoint in ['universe.get_universes']:
+    if request.method == 'GET' and request.endpoint in ['universes.get_universes']:
         return None
 
     # For universe-specific routes, check if the universe is public
-    if request.method == 'GET' and request.endpoint == 'universe.get_universe':
+    if request.method == 'GET' and request.endpoint == 'universes.get_universe':
         universe_id = request.view_args.get('universe_id')
         if universe_id:
             universe = Universe.query.get(universe_id)
@@ -42,285 +43,199 @@ def verify_token():
             'error': 'Authentication required'
         }), 401
 
-@universe_bp.route('', methods=['GET'])
-@cache.cached(timeout=60)
+@universe_bp.route('/api/universes', methods=['GET'])
+@jwt_optional
 def get_universes():
-    """Get all public universes."""
-    try:
-        universes = Universe.get_public_universes().all()
-        return jsonify([universe.to_dict() for universe in universes]), 200
-    except Exception as e:
-        current_app.logger.error(f"Error fetching universes: {str(e)}")
-        return jsonify({
-            'error': 'Failed to fetch universes'
-        }), 500
+    """Get all public universes or user's universes."""
+    current_user_id = get_jwt_identity()
+    query = request.args.get('q')
+    sort_by = request.args.get('sort_by', 'recent')
 
-@universe_bp.route('/user/universes', methods=['GET'])
+    try:
+        if query:
+            universes = universe_service.search_universes(query)
+        elif current_user_id:
+            universes = universe_service.get_user_universes(current_user_id)
+        else:
+            universes = universe_service.get_public_universes()
+
+        return jsonify([universe_schema.dump(u) for u in universes])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@universe_bp.route('/api/universes', methods=['POST'])
 @jwt_required()
-@cache.memoize(60)
-def get_user_universes():
-    """Get all universes accessible to the current user."""
-    try:
-        current_user_id = get_jwt_identity()
-        universes = Universe.get_user_universes(current_user_id).all()
-        return jsonify({
-            'status': 'success',
-            'data': {
-                'universes': [universe.to_dict() for universe in universes]
-            }
-        }), 200
-    except Exception as e:
-        current_app.logger.error(f"Error fetching user universes: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': 'Failed to fetch universes'
-        }), 500
-
-@universe_bp.route('/<int:universe_id>', methods=['GET'])
-@cache.memoize(60)
-def get_universe(universe_id):
-    """Get a specific universe."""
-    try:
-        universe = Universe.query.options(
-            db.joinedload(Universe.physics_parameters),
-            db.joinedload(Universe.music_parameters),
-            db.joinedload(Universe.visualization_parameters)
-        ).get_or_404(universe_id)
-
-        # Check if universe is public or if user is authenticated
-        if not universe.is_public:
-            try:
-                verify_jwt_in_request()
-                current_user_id = get_jwt_identity()
-                if universe.user_id != current_user_id:
-                    return jsonify({
-                        'error': 'Unauthorized access'
-                    }), 403
-            except Exception:
-                return jsonify({
-                    'error': 'Authentication required'
-                }), 401
-
-        return jsonify(universe.to_dict()), 200
-    except Exception as e:
-        current_app.logger.error(f"Error fetching universe {universe_id}: {str(e)}")
-        return jsonify({
-            'error': 'Failed to fetch universe'
-        }), 500
-
-@universe_bp.route('', methods=['POST'])
-@jwt_required()
-@limiter.limit("30 per hour")
 def create_universe():
     """Create a new universe."""
-    if not request.is_json:
-        return jsonify({
-            'error': 'Content type must be application/json'
-        }), 400
-
+    current_user_id = get_jwt_identity()
     data = request.get_json()
-    if not data or 'name' not in data:
-        return jsonify({
-            'error': 'Name is required'
-        }), 400
 
-    # Validate name
-    name = data['name']
-    if not name or not isinstance(name, str):
-        return jsonify({
-            'error': 'Name is required and must be a string'
-        }), 400
+    try:
+        universe = universe_service.create_universe(current_user_id, data)
+        return jsonify(universe_schema.dump(universe)), 201
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'Failed to create universe'}), 500
 
-    # Validate is_public
-    is_public = data.get('is_public', True)
-    if not isinstance(is_public, bool):
-        return jsonify({
-            'error': 'is_public must be a boolean value'
-        }), 400
-
+@universe_bp.route('/api/universes/<int:universe_id>', methods=['GET'])
+@jwt_optional
+def get_universe(universe_id):
+    """Get a specific universe by ID."""
     current_user_id = get_jwt_identity()
 
-    # Validate parameters
-    physics_data = data.get('physics_parameters', {})
-    music_data = data.get('music_parameters', {})
-    vis_data = data.get('visualization_parameters', {})
-
-    validation_errors = validate_parameters(physics_data, music_data, vis_data)
-    if validation_errors:
-        # Flatten validation errors
-        flat_errors = {}
-        for param_type, errors in validation_errors.items():
-            flat_errors.update(errors)
-        return jsonify({
-            'error': 'Invalid parameters',
-            'errors': flat_errors
-        }), 400
-
     try:
-        # Create universe with parameters
-        universe = Universe(
-            name=name,
-            description=data.get('description', ''),
-            is_public=is_public,
-            user_id=current_user_id
-        )
+        universe = universe_service.get_universe(universe_id)
+        if not universe:
+            return jsonify({'error': 'Universe not found'}), 404
 
-        physics_params = PhysicsParameters(
-            gravity=physics_data.get('gravity', 9.81),
-            friction=physics_data.get('friction', 0.5),
-            elasticity=physics_data.get('elasticity', 0.7)
-        )
+        if not universe.is_public and (not current_user_id or current_user_id != universe.creator_id):
+            return jsonify({'error': 'Unauthorized to view this universe'}), 403
 
-        music_params = MusicParameters(
-            key=music_data.get('key', 'C'),
-            scale=music_data.get('scale', 'major'),
-            tempo=music_data.get('tempo', 120)
-        )
-
-        vis_params = VisualizationParameters(
-            background_color=vis_data.get('background_color', '#000000'),
-            particle_color=vis_data.get('particle_color', '#FFFFFF'),
-            glow_color=vis_data.get('glow_color', '#00FF00'),
-            particle_count=vis_data.get('particle_count', 1000),
-            particle_size=vis_data.get('particle_size', 2.0),
-            particle_speed=vis_data.get('particle_speed', 1.0),
-            glow_intensity=vis_data.get('glow_intensity', 0.5),
-            blur_amount=vis_data.get('blur_amount', 0.0),
-            trail_length=vis_data.get('trail_length', 0.5),
-            animation_speed=vis_data.get('animation_speed', 1.0),
-            bounce_factor=vis_data.get('bounce_factor', 0.8),
-            rotation_speed=vis_data.get('rotation_speed', 0.0),
-            camera_zoom=vis_data.get('camera_zoom', 1.0),
-            camera_rotation=vis_data.get('camera_rotation', 0.0)
-        )
-
-        universe.physics_parameters = physics_params
-        universe.music_parameters = music_params
-        universe.visualization_parameters = vis_params
-
-        db.session.add(universe)
-        db.session.commit()
-        cache.delete_memoized(get_universes)
-
-        return jsonify(universe.to_dict()), 201
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        current_app.logger.error(f"Database error creating universe: {str(e)}")
-        return jsonify({
-            'error': 'Failed to create universe'
-        }), 500
+        return jsonify(universe_schema.dump(universe))
     except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error creating universe: {str(e)}")
-        return jsonify({
-            'error': 'Failed to create universe'
-        }), 500
+        return jsonify({'error': 'Failed to fetch universe'}), 500
 
-@universe_bp.route('/<int:universe_id>', methods=['PUT'])
+@universe_bp.route('/api/universes/<int:universe_id>', methods=['PUT'])
 @jwt_required()
-@limiter.limit("30 per hour")
 def update_universe(universe_id):
-    """Update a universe."""
+    """Update a specific universe."""
+    current_user_id = get_jwt_identity()
+    data = request.get_json()
+
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({
-                'error': 'No data provided'
-            }), 400
-
-        universe = Universe.query.get_or_404(universe_id)
-        current_user_id = get_jwt_identity()
-
-        # Check if user owns the universe
-        if universe.user_id != int(current_user_id):
-            return jsonify({
-                'error': 'Unauthorized access'
-            }), 403
-
-        # Update basic info
-        if 'name' in data:
-            universe.name = data['name']
-        if 'description' in data:
-            universe.description = data['description']
-        if 'is_public' in data:
-            universe.is_public = data['is_public']
-
-        # Validate and update parameters if provided
-        physics_data = data.get('physics_parameters', {})
-        music_data = data.get('music_parameters', {})
-        vis_data = data.get('visualization_parameters', {})
-
-        validation_errors = validate_parameters(physics_data, music_data, vis_data)
-        if validation_errors:
-            return jsonify({
-                'error': 'Invalid parameters',
-                'errors': validation_errors
-            }), 400
-
-        # Update physics parameters
-        if physics_data:
-            universe.physics_parameters.update(physics_data)
-
-        # Update music parameters
-        if music_data:
-            universe.music_parameters.update(music_data)
-
-        # Update visualization parameters
-        if vis_data:
-            universe.visualization_parameters.update(vis_data)
-
-        db.session.commit()
-        cache.delete_memoized(get_universe, universe_id)
-        cache.delete_memoized(get_universes)
-
-        return jsonify(universe.to_dict()), 200
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        current_app.logger.error(f"Database error updating universe: {str(e)}")
-        return jsonify({
-            'error': 'Failed to update universe'
-        }), 500
+        universe = universe_service.update_universe(universe_id, current_user_id, data)
+        if not universe:
+            return jsonify({'error': 'Universe not found'}), 404
+        return jsonify(universe_schema.dump(universe))
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
     except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error updating universe: {str(e)}")
-        return jsonify({
-            'error': 'Failed to update universe'
-        }), 500
+        return jsonify({'error': 'Failed to update universe'}), 500
 
-@universe_bp.route('/<int:universe_id>', methods=['DELETE'])
+@universe_bp.route('/api/universes/<int:universe_id>', methods=['DELETE'])
 @jwt_required()
-@limiter.limit("30 per hour")
 def delete_universe(universe_id):
-    """Delete a universe."""
+    """Delete a specific universe."""
+    current_user_id = get_jwt_identity()
+
     try:
-        universe = Universe.query.get_or_404(universe_id)
-        current_user_id = get_jwt_identity()
-
-        # Check if user owns the universe
-        if universe.user_id != int(current_user_id):
-            return jsonify({
-                'error': 'Unauthorized access'
-            }), 403
-
-        db.session.delete(universe)
-        db.session.commit()
-        cache.delete_memoized(get_universe, universe_id)
+        universe_service.delete_universe(universe_id, current_user_id)
         return '', 204
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        current_app.logger.error(f"Database error deleting universe: {str(e)}")
-        return jsonify({
-            'error': 'Failed to delete universe'
-        }), 500
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
     except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error deleting universe: {str(e)}")
-        return jsonify({
-            'error': 'Failed to delete universe'
-        }), 500
+        return jsonify({'error': 'Failed to delete universe'}), 500
+
+@universe_bp.route('/api/universes/<int:universe_id>/favorite', methods=['POST'])
+@jwt_required()
+def favorite_universe(universe_id):
+    """Add universe to user's favorites."""
+    current_user_id = get_jwt_identity()
+
+    try:
+        universe_service.add_favorite(universe_id, current_user_id)
+        return '', 204
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'Failed to favorite universe'}), 500
+
+@universe_bp.route('/api/universes/<int:universe_id>/favorite', methods=['DELETE'])
+@jwt_required()
+def unfavorite_universe(universe_id):
+    """Remove universe from user's favorites."""
+    current_user_id = get_jwt_identity()
+
+    try:
+        universe_service.remove_favorite(universe_id, current_user_id)
+        return '', 204
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'Failed to unfavorite universe'}), 500
+
+@universe_bp.route('/api/universes/<int:universe_id>/collaborators', methods=['GET'])
+@jwt_required()
+def get_collaborators(universe_id):
+    """Get universe collaborators."""
+    try:
+        collaborators = universe_service.get_collaborators(universe_id)
+        return jsonify(collaborators)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'Failed to fetch collaborators'}), 500
+
+@universe_bp.route('/api/universes/<int:universe_id>/collaborators', methods=['POST'])
+@jwt_required()
+def add_collaborator(universe_id):
+    """Add a collaborator to the universe."""
+    current_user_id = get_jwt_identity()
+    data = request.get_json()
+
+    try:
+        collaborator = universe_service.add_collaborator(universe_id, current_user_id, data)
+        return jsonify(collaborator), 201
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'Failed to add collaborator'}), 500
+
+@universe_bp.route('/api/universes/<int:universe_id>/collaborators/<int:user_id>', methods=['DELETE'])
+@jwt_required()
+def remove_collaborator(universe_id, user_id):
+    """Remove a collaborator from the universe."""
+    current_user_id = get_jwt_identity()
+
+    try:
+        universe_service.remove_collaborator(universe_id, current_user_id, user_id)
+        return '', 204
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'Failed to remove collaborator'}), 500
+
+@universe_bp.route('/api/universes/<int:universe_id>/comments', methods=['GET'])
+@jwt_optional
+def get_comments(universe_id):
+    """Get universe comments."""
+    try:
+        comments = universe_service.get_comments(universe_id)
+        return jsonify(comments)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'Failed to fetch comments'}), 500
+
+@universe_bp.route('/api/universes/<int:universe_id>/comments', methods=['POST'])
+@jwt_required()
+def add_comment(universe_id):
+    """Add a comment to the universe."""
+    current_user_id = get_jwt_identity()
+    data = request.get_json()
+
+    try:
+        comment = universe_service.add_comment(universe_id, current_user_id, data)
+        return jsonify(comment), 201
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'Failed to add comment'}), 500
+
+@universe_bp.route('/api/universes/<int:universe_id>/comments/<int:comment_id>', methods=['DELETE'])
+@jwt_required()
+def delete_comment(universe_id, comment_id):
+    """Delete a comment from the universe."""
+    current_user_id = get_jwt_identity()
+
+    try:
+        universe_service.delete_comment(universe_id, comment_id, current_user_id)
+        return '', 204
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'Failed to delete comment'}), 500
 
 @universe_bp.route('/<int:universe_id>/physics', methods=['PATCH'])
 @jwt_required()
@@ -335,7 +250,7 @@ def update_physics(universe_id):
         universe = Universe.query.get_or_404(universe_id)
         current_user_id = get_jwt_identity()
 
-        if universe.user_id != current_user_id:
+        if universe.creator_id != current_user_id:
             return jsonify({'error': 'Unauthorized access'}), 403
 
         validation_errors = validate_parameters(data, {}, {})
@@ -374,7 +289,7 @@ def update_music(universe_id):
         universe = Universe.query.get_or_404(universe_id)
         current_user_id = get_jwt_identity()
 
-        if universe.user_id != current_user_id:
+        if universe.creator_id != current_user_id:
             return jsonify({'error': 'Unauthorized access'}), 403
 
         validation_errors = validate_parameters({}, data, {})
@@ -415,7 +330,7 @@ def update_parameters(universe_id):
         current_user_id = get_jwt_identity()
 
         # Check if user owns the universe
-        if universe.user_id != int(current_user_id):
+        if universe.creator_id != current_user_id:
             return jsonify({
                 'error': 'Unauthorized access'
             }), 403
@@ -475,7 +390,7 @@ def ai_suggest(universe_id):
         current_user_id = get_jwt_identity()
 
         # Check if user owns the universe or if it's public
-        if not universe.is_public and universe.user_id != current_user_id:
+        if not universe.is_public and universe.creator_id != current_user_id:
             return jsonify({'error': 'Unauthorized access'}), 403
 
         target = data.get('target')
@@ -519,7 +434,7 @@ def sync_parameters(universe_id):
         universe = Universe.query.get_or_404(universe_id)
         current_user_id = get_jwt_identity()
 
-        if universe.user_id != current_user_id:
+        if universe.creator_id != current_user_id:
             return jsonify({'error': 'Unauthorized access'}), 403
 
         # Validate and update parameters
@@ -569,7 +484,7 @@ def generate_music(universe_id):
         universe = Universe.query.get_or_404(universe_id)
         current_user_id = get_jwt_identity()
 
-        if not universe.is_public and universe.user_id != current_user_id:
+        if not universe.is_public and universe.creator_id != current_user_id:
             return jsonify({'error': 'Unauthorized access'}), 403
 
         # Get generation parameters from request
@@ -602,7 +517,7 @@ def render_visualization(universe_id):
         universe = Universe.query.get_or_404(universe_id)
         current_user_id = get_jwt_identity()
 
-        if not universe.is_public and universe.user_id != current_user_id:
+        if not universe.is_public and universe.creator_id != current_user_id:
             return jsonify({'error': 'Unauthorized access'}), 403
 
         # Get render parameters from request
@@ -637,7 +552,7 @@ def start_collaboration(universe_id):
         universe = Universe.query.get_or_404(universe_id)
         current_user_id = get_jwt_identity()
 
-        if not universe.is_public and universe.user_id != current_user_id:
+        if not universe.is_public and universe.creator_id != current_user_id:
             return jsonify({'error': 'Unauthorized access'}), 403
 
         # Get collaboration parameters
@@ -668,13 +583,6 @@ def start_collaboration(universe_id):
 def get_private_universe():
     """Get a private universe (requires authentication)."""
     raise Unauthorized('Authentication required')
-
-@universe_bp.route('', methods=['GET'])
-@handle_exceptions
-def list_universes():
-    """List all universes."""
-    universes = Universe.query.all()
-    return jsonify([u.to_dict() for u in universes])
 
 @universe_bp.route('/upload', methods=['POST'])
 @handle_exceptions

@@ -22,19 +22,9 @@ class WebSocketService:
         """Register WebSocket event handlers."""
         @socketio.on('connect', namespace='/physics')
         def handle_connect():
-            """Handle WebSocket connection."""
-            try:
-                emit('connected', {
-                    'status': 'success',
-                    'message': 'Connected to physics namespace'
-                })
-            except Exception as e:
-                current_app.logger.error(f"WebSocket connection error: {str(e)}")
-                emit('error', {
-                    'status': 'error',
-                    'message': 'Failed to establish connection'
-                })
-                disconnect()
+            """Handle client connection."""
+            emit('connected', {'status': 'connected'})
+            current_app.logger.info('Client connected')
 
         @socketio.on('disconnect', namespace='/physics')
         def handle_disconnect():

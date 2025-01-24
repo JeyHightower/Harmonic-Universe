@@ -8,7 +8,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import or_
 
 class Universe(db.Model):
-    """Universe model."""
+    """Universe model for storing universe related details."""
     __tablename__ = 'universes'
     __table_args__ = (
         db.Index('idx_user_id', 'user_id'),
@@ -20,37 +20,28 @@ class Universe(db.Model):
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
     description = Column(String(500))
-    is_public = Column(Boolean, default=True)
+    is_public = Column(Boolean, default=False)
+    allow_guests = Column(Boolean, default=False)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    template_id = Column(Integer, ForeignKey('templates.id'), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
                           onupdate=lambda: datetime.now(timezone.utc))
 
     user = relationship('User', back_populates='universes')
-    template = relationship('Template', back_populates='universes')
     physics_parameters = relationship('PhysicsParameters', back_populates="universe", uselist=False,
                                     cascade='all, delete-orphan')
-    music_parameters = relationship('MusicParameters', uselist=False, back_populates='universe',
-                                  cascade='all, delete-orphan')
-    audio_parameters = relationship('AudioParameters', uselist=False, back_populates='universe',
-                                 cascade='all, delete-orphan')
-    visualization_parameters = relationship('VisualizationParameters', uselist=False, back_populates='universe',
-                                        cascade='all, delete-orphan')
-    comments = relationship('Comment', back_populates='universe', cascade='all, delete-orphan')
-    favorites = relationship('Favorite', back_populates='universe', overlaps="favorited_by")
-    favorited_by = relationship('User', secondary='favorites',
-                              back_populates='favorite_universes',
-                              overlaps="favorites")
-    storyboards = relationship('Storyboard', back_populates='universe', cascade='all, delete-orphan')
+    parameters = relationship('UniverseParameter', backref='universe', lazy=True, cascade='all, delete-orphan')
+    collaborators = relationship('UniverseCollaborator', backref='universe', lazy=True, cascade='all, delete-orphan')
+    comments = relationship('Comment', backref='universe', lazy=True, cascade='all, delete-orphan')
+    favorites = relationship('Favorite', backref='universe', lazy=True, cascade='all, delete-orphan')
 
-    def __init__(self, name: str, description: str = None, is_public: bool = True,
-                 user_id: int = None, template_id: int = None):
+    def __init__(self, name: str, description: str = None, is_public: bool = False,
+                 allow_guests: bool = False, user_id: int = None):
         self.name = name
         self.description = description
         self.is_public = is_public
+        self.allow_guests = allow_guests
         self.user_id = user_id
-        self.template_id = template_id
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert universe to dictionary."""
@@ -59,32 +50,24 @@ class Universe(db.Model):
             'name': self.name,
             'description': self.description,
             'is_public': self.is_public,
+            'allow_guests': self.allow_guests,
             'user_id': self.user_id,
-            'template_id': self.template_id,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
             'physics_parameters': self.physics_parameters.to_dict() if self.physics_parameters else None,
-            'music_parameters': self.music_parameters.to_dict() if self.music_parameters else None,
-            'audio_parameters': self.audio_parameters.to_dict() if self.audio_parameters else None,
-            'visualization_parameters': self.visualization_parameters.to_dict() if self.visualization_parameters else None,
-            'template': self.template.to_dict() if self.template else None
+            'parameters_count': len(self.parameters),
+            'collaborators_count': len(self.collaborators),
+            'comments_count': len(self.comments),
+            'favorites_count': len(self.favorites)
         }
 
     def update_dependent_parameters(self, source: str):
         if source == 'physics':
-            if self.physics_parameters and self.music_parameters:
+            if self.physics_parameters:
                 gravity = self.physics_parameters.gravity
-                self.music_parameters.tempo = min(200, max(40, int(120 * (gravity / 9.81))))
-
-            if self.physics_parameters and self.audio_parameters:
-                self.audio_parameters.volume = min(1.0, max(0.0, self.physics_parameters.gravity / 20))
-
-        elif source == 'music':
-            if self.music_parameters and self.audio_parameters:
-                self.audio_parameters.pitch = min(1.0, max(0.0, (self.music_parameters.tempo - 40) / 160))
 
         elif source == 'audio':
-            if self.audio_parameters and self.physics_parameters:
+            if self.physics_parameters:
                 self.physics_parameters.gravity = min(20.0, max(1.0, 9.81 * (self.audio_parameters.volume * 20)))
 
     def get_ai_suggestions(self, ai_service, target: str, constraints: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -134,9 +117,7 @@ class Universe(db.Model):
     @classmethod
     def get_public_universes(cls):
         return cls.query.filter_by(is_public=True).options(
-            db.joinedload(cls.physics_parameters),
-            db.joinedload(cls.music_parameters),
-            db.joinedload(cls.visualization_parameters)
+            db.joinedload(cls.physics_parameters)
         )
 
     @classmethod
@@ -144,7 +125,5 @@ class Universe(db.Model):
         return cls.query.filter(
             or_(cls.user_id == user_id, cls.is_public == True)
         ).options(
-            db.joinedload(cls.physics_parameters),
-            db.joinedload(cls.music_parameters),
-            db.joinedload(cls.visualization_parameters)
+            db.joinedload(cls.physics_parameters)
         )
