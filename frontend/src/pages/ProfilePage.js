@@ -1,9 +1,9 @@
-import React from 'react';
-import { useSelector } from 'react-redux';
-import './ProfilePage.css';
+import React from "react";
+import { useSelector } from "react-redux";
+import "./ProfilePage.css";
 
 const ProfilePage = () => {
-  const user = useSelector(state => state.auth.user);
+  const user = useSelector((state) => state.auth.user);
 
   if (!user) {
     return <div className="loading">Loading profile...</div>;

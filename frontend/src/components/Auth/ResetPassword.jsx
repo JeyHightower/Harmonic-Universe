@@ -1,55 +1,55 @@
-import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { resetPassword } from '../../store/slices/authSlice';
-import styles from './Auth.module.css';
+import React, { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { resetPassword } from "../../store/slices/authSlice";
+import styles from "./Auth.module.css";
 
 const ResetPassword = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { error } = useSelector(state => state.auth);
+  const { error } = useSelector((state) => state.auth);
 
   const [formData, setFormData] = useState({
-    email: '',
+    email: "",
   });
 
   const [formErrors, setFormErrors] = useState({
-    email: '',
+    email: "",
   });
 
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState("");
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
-    setFormErrors(prev => ({
+    setFormErrors((prev) => ({
       ...prev,
-      [name]: '',
+      [name]: "",
     }));
   };
 
   const validateForm = () => {
     const errors = {};
     if (!formData.email) {
-      errors.email = 'Email is required';
+      errors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = 'Invalid email format';
+      errors.email = "Invalid email format";
     }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
       try {
         const result = await dispatch(resetPassword(formData)).unwrap();
         setSuccessMessage(result.message);
         setTimeout(() => {
-          navigate('/login');
+          navigate("/login");
         }, 3000);
       } catch (err) {
         // Error handling is done in the slice

@@ -1,23 +1,23 @@
 // Error severity levels
 const ERROR_SEVERITY = {
-  INFO: 'info',
-  WARNING: 'warning',
-  ERROR: 'error',
-  CRITICAL: 'critical',
+  INFO: "info",
+  WARNING: "warning",
+  ERROR: "error",
+  CRITICAL: "critical",
 };
 
 // Error categories
 const ERROR_CATEGORIES = {
-  NETWORK: 'network',
-  API: 'api',
-  WEBSOCKET: 'websocket',
-  VALIDATION: 'validation',
-  AUTHENTICATION: 'authentication',
-  AUTHORIZATION: 'authorization',
-  DATABASE: 'database',
-  BUSINESS_LOGIC: 'business_logic',
-  PERFORMANCE: 'performance',
-  UNKNOWN: 'unknown',
+  NETWORK: "network",
+  API: "api",
+  WEBSOCKET: "websocket",
+  VALIDATION: "validation",
+  AUTHENTICATION: "authentication",
+  AUTHORIZATION: "authorization",
+  DATABASE: "database",
+  BUSINESS_LOGIC: "business_logic",
+  PERFORMANCE: "performance",
+  UNKNOWN: "unknown",
 };
 
 class ErrorTracker {
@@ -30,9 +30,9 @@ class ErrorTracker {
 
   trackError(
     error,
-    context = '',
+    context = "",
     category = ERROR_CATEGORIES.UNKNOWN,
-    severity = ERROR_SEVERITY.ERROR
+    severity = ERROR_SEVERITY.ERROR,
   ) {
     const errorEntry = {
       message: error.message,
@@ -58,14 +58,14 @@ class ErrorTracker {
 
     console.error(
       `[${severity.toUpperCase()}] Error in ${context}:`,
-      errorEntry
+      errorEntry,
     );
   }
 
   getPerformanceMetrics() {
     const metrics = {};
     if (window.performance) {
-      const navigation = performance.getEntriesByType('navigation')[0];
+      const navigation = performance.getEntriesByType("navigation")[0];
       const memory = performance.memory;
 
       if (navigation) {
@@ -92,11 +92,11 @@ class ErrorTracker {
   }
 
   notifyErrorCallbacks(error) {
-    this.errorCallbacks.forEach(callback => {
+    this.errorCallbacks.forEach((callback) => {
       try {
         callback(error);
       } catch (e) {
-        console.error('Error in error callback:', e);
+        console.error("Error in error callback:", e);
       }
     });
   }
@@ -109,14 +109,14 @@ class ErrorTracker {
     try {
       // Example integration with Google Analytics
       if (window.gtag) {
-        window.gtag('event', 'error', {
+        window.gtag("event", "error", {
           event_category: error.category,
           event_label: error.message,
           value: error.severity === ERROR_SEVERITY.CRITICAL ? 1 : 0,
         });
       }
     } catch (e) {
-      console.error('Failed to send error to analytics:', e);
+      console.error("Failed to send error to analytics:", e);
     }
   }
 
@@ -143,91 +143,91 @@ const errorTracker = new ErrorTracker();
 
 export const logError = (
   error,
-  context = '',
+  context = "",
   category = ERROR_CATEGORIES.UNKNOWN,
-  severity = ERROR_SEVERITY.ERROR
+  severity = ERROR_SEVERITY.ERROR,
 ) => {
   errorTracker.trackError(error, context, category, severity);
 };
 
-export const handleApiError = error => {
+export const handleApiError = (error) => {
   if (error.response) {
     // Server responded with error
     const errorData = {
-      type: 'API_ERROR',
-      message: error.response.data.message || 'Server error occurred',
+      type: "API_ERROR",
+      message: error.response.data.message || "Server error occurred",
       status: error.response.status,
     };
     errorTracker.trackError(
       new Error(errorData.message),
-      'API Request',
+      "API Request",
       ERROR_CATEGORIES.API,
       error.response.status >= 500
         ? ERROR_SEVERITY.ERROR
-        : ERROR_SEVERITY.WARNING
+        : ERROR_SEVERITY.WARNING,
     );
     return errorData;
   } else if (error.request) {
     // Request made but no response
     const errorData = {
-      type: 'NETWORK_ERROR',
-      message: 'Network error - please check your connection',
+      type: "NETWORK_ERROR",
+      message: "Network error - please check your connection",
     };
     errorTracker.trackError(
       new Error(errorData.message),
-      'Network Request',
+      "Network Request",
       ERROR_CATEGORIES.NETWORK,
-      ERROR_SEVERITY.ERROR
+      ERROR_SEVERITY.ERROR,
     );
     return errorData;
   } else {
     // Error in request setup
     const errorData = {
-      type: 'REQUEST_ERROR',
-      message: 'Error in setting up request',
+      type: "REQUEST_ERROR",
+      message: "Error in setting up request",
     };
     errorTracker.trackError(
       new Error(errorData.message),
-      'Request Setup',
+      "Request Setup",
       ERROR_CATEGORIES.API,
-      ERROR_SEVERITY.ERROR
+      ERROR_SEVERITY.ERROR,
     );
     return errorData;
   }
 };
 
-export const handleWebSocketError = (error, context = '') => {
+export const handleWebSocketError = (error, context = "") => {
   errorTracker.trackError(
     error,
-    context || 'WebSocket',
+    context || "WebSocket",
     ERROR_CATEGORIES.WEBSOCKET,
-    ERROR_SEVERITY.ERROR
+    ERROR_SEVERITY.ERROR,
   );
 };
 
-export const handleValidationError = (error, context = '') => {
+export const handleValidationError = (error, context = "") => {
   errorTracker.trackError(
     error,
-    context || 'Validation',
+    context || "Validation",
     ERROR_CATEGORIES.VALIDATION,
-    ERROR_SEVERITY.WARNING
+    ERROR_SEVERITY.WARNING,
   );
 };
 
-export const handleAuthError = (error, context = '') => {
+export const handleAuthError = (error, context = "") => {
   errorTracker.trackError(
     error,
-    context || 'Authentication',
+    context || "Authentication",
     ERROR_CATEGORIES.AUTHENTICATION,
-    ERROR_SEVERITY.ERROR
+    ERROR_SEVERITY.ERROR,
   );
 };
 
 export const getErrorStats = () => errorTracker.getErrorStats();
 export const clearErrors = () => errorTracker.clearErrors();
-export const addErrorCallback = callback =>
+export const addErrorCallback = (callback) =>
   errorTracker.addErrorCallback(callback);
-export const removeErrorCallback = callback =>
+export const removeErrorCallback = (callback) =>
   errorTracker.removeErrorCallback(callback);
 
 export { ERROR_CATEGORIES, ERROR_SEVERITY };

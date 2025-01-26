@@ -1,139 +1,206 @@
+import {
+    Box,
+    Button,
+    Card,
+    CardContent,
+    Container,
+    FormControl,
+    Grid,
+    InputLabel,
+    MenuItem,
+    Select,
+    TextField,
+    Typography,
+    alpha,
+    styled,
+} from '@mui/material';
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { createUniverse } from '../../store/slices/universeSlice';
 
-const UniverseCreate = () => {
-  const navigate = useNavigate();
+const CreateCard = styled(Card)(({ theme }) => ({
+  backgroundColor: alpha(theme.palette.background.paper, 0.6),
+  backdropFilter: 'blur(8px)',
+  transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+  '&:hover': {
+    transform: 'translateY(-4px)',
+    boxShadow: theme.shadows[8],
+  },
+}));
+
+const FormContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: theme.spacing(3),
+}));
+
+interface UniverseFormData {
+  name: string;
+  description: string;
+  template: string;
+  isPrivate: boolean;
+}
+
+const TEMPLATES = [
+  { value: 'empty', label: 'Empty Universe' },
+  { value: 'solar-system', label: 'Solar System' },
+  { value: 'galaxy', label: 'Galaxy' },
+  { value: 'nebula', label: 'Nebula' },
+];
+
+const UniverseCreate: React.FC = () => {
   const dispatch = useDispatch();
-  const [formData, setFormData] = useState({
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState<UniverseFormData>({
     name: '',
     description: '',
-    isPublic: false,
-    maxParticipants: 10,
+    template: 'empty',
+    isPrivate: false,
   });
-  const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [validationErrors, setValidationErrors] = useState({});
-
-  const handleChange = e => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-  };
+  const [errors, setErrors] = useState<Partial<UniverseFormData>>({});
 
   const validateForm = () => {
-    const errors = {};
-    if (!formData.name.trim()) {
-      errors.name = 'Name is required';
+    const newErrors: Partial<UniverseFormData> = {};
+
+    if (!formData.name) {
+      newErrors.name = 'Name is required';
+    } else if (formData.name.length < 3) {
+      newErrors.name = 'Name must be at least 3 characters long';
     }
-    if (!formData.description.trim()) {
-      errors.description = 'Description is required';
+
+    if (!formData.description) {
+      newErrors.description = 'Description is required';
+    } else if (formData.description.length < 10) {
+      newErrors.description = 'Description must be at least 10 characters long';
     }
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-
-    if (!validateForm()) {
-      return;
+    if (validateForm()) {
+      try {
+        const response = await dispatch(createUniverse(formData));
+        navigate(`/universe/${response.id}`);
+      } catch (error) {
+        setErrors({
+          name: 'Failed to create universe. Please try again.',
+        });
+      }
     }
+  };
 
-    setIsLoading(true);
-
-    try {
-      const result = await dispatch(createUniverse(formData)).unwrap();
-      navigate(`/universe/${result.id}`);
-    } catch (err) {
-      setError(err.message || 'Failed to create universe');
-    } finally {
-      setIsLoading(false);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | { name?: string; value: unknown }>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name as string]: value,
+    }));
+    if (errors[name as keyof UniverseFormData]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name as string]: undefined,
+      }));
     }
   };
 
   return (
-    <div className="create-universe-container">
-      <h2>Create New Universe</h2>
-      {error && <div className="error-message">{error}</div>}
+    <Container maxWidth="md" sx={{ mt: 8, mb: 8 }}>
+      <Box sx={{ mb: 4, textAlign: 'center' }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Create New Universe
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Design your own universe with custom parameters and settings
+        </Typography>
+      </Box>
 
-      <form onSubmit={handleSubmit} className="universe-form">
-        <div className="form-group">
-          <label htmlFor="name">Universe Name</label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            minLength={3}
-            maxLength={50}
-            placeholder="Enter universe name"
-          />
-          {validationErrors.name && (
-            <div className="error-message">{validationErrors.name}</div>
-          )}
-        </div>
+      <CreateCard>
+        <CardContent sx={{ p: 4 }}>
+          <form onSubmit={handleSubmit}>
+            <FormContainer>
+              <Grid container spacing={3}>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Universe Name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    error={!!errors.name}
+                    helperText={errors.name}
+                  />
+                </Grid>
 
-        <div className="form-group">
-          <label htmlFor="description">Description</label>
-          <textarea
-            id="description"
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            rows={4}
-            placeholder="Describe your universe"
-          />
-          {validationErrors.description && (
-            <div className="error-message">{validationErrors.description}</div>
-          )}
-        </div>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Description"
+                    name="description"
+                    multiline
+                    rows={4}
+                    value={formData.description}
+                    onChange={handleChange}
+                    error={!!errors.description}
+                    helperText={errors.description || 'Describe your universe and its purpose'}
+                  />
+                </Grid>
 
-        <div className="form-group">
-          <label htmlFor="maxParticipants">Max Participants</label>
-          <input
-            type="number"
-            id="maxParticipants"
-            name="maxParticipants"
-            value={formData.maxParticipants}
-            onChange={handleChange}
-            min={1}
-            max={100}
-          />
-        </div>
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <InputLabel id="template-select-label">Template</InputLabel>
+                    <Select
+                      labelId="template-select-label"
+                      name="template"
+                      value={formData.template}
+                      label="Template"
+                      onChange={handleChange}
+                    >
+                      {TEMPLATES.map((template) => (
+                        <MenuItem key={template.value} value={template.value}>
+                          {template.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
 
-        <div className="form-group checkbox">
-          <label>
-            <input
-              type="checkbox"
-              name="isPublic"
-              checked={formData.isPublic}
-              onChange={handleChange}
-            />
-            Make Universe Public
-          </label>
-        </div>
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <InputLabel id="privacy-select-label">Privacy</InputLabel>
+                    <Select
+                      labelId="privacy-select-label"
+                      name="isPrivate"
+                      value={formData.isPrivate}
+                      label="Privacy"
+                      onChange={handleChange}
+                    >
+                      <MenuItem value={false}>Public</MenuItem>
+                      <MenuItem value={true}>Private</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
 
-        <div className="form-actions">
-          <button
-            type="button"
-            onClick={() => navigate('/universes')}
-            className="btn-secondary"
-          >
-            Cancel
-          </button>
-          <button type="submit" disabled={isLoading} className="btn-primary">
-            {isLoading ? 'Creating...' : 'Create Universe'}
-          </button>
-        </div>
-      </form>
-    </div>
+                <Grid item xs={12}>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    size="large"
+                    fullWidth
+                    sx={{ mt: 2 }}
+                  >
+                    Create Universe
+                  </Button>
+                </Grid>
+              </Grid>
+            </FormContainer>
+          </form>
+        </CardContent>
+      </CreateCard>
+    </Container>
   );
 };
 

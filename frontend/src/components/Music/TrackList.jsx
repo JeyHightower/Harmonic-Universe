@@ -1,5 +1,5 @@
-import React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   addTrack,
   removeTrack,
@@ -12,8 +12,8 @@ import {
   setTrackPan,
   setTrackSolo,
   setTrackVolume,
-} from '../../store/slices/audioSlice';
-import styles from './TrackList.module.css';
+} from "../../store/slices/audioSlice";
+import styles from "./TrackList.module.css";
 
 const TrackList = () => {
   const dispatch = useDispatch();
@@ -25,11 +25,11 @@ const TrackList = () => {
     dispatch(addTrack());
   };
 
-  const handleRemoveTrack = trackId => {
+  const handleRemoveTrack = (trackId) => {
     dispatch(removeTrack(trackId));
   };
 
-  const handleTrackSelect = trackId => {
+  const handleTrackSelect = (trackId) => {
     dispatch(setActiveTrack(trackId));
   };
 
@@ -49,7 +49,7 @@ const TrackList = () => {
     dispatch(setTrackPan({ trackId, pan: parseFloat(pan) }));
   };
 
-  const handleMasterVolumeChange = volume => {
+  const handleMasterVolumeChange = (volume) => {
     dispatch(setMasterVolume(parseFloat(volume)));
   };
 
@@ -68,11 +68,11 @@ const TrackList = () => {
       </div>
 
       <div className={styles.tracks}>
-        {tracks.map(track => (
+        {tracks.map((track) => (
           <div
             key={track.id}
             className={`${styles.track} ${
-              track.id === activeTrackId ? styles.active : ''
+              track.id === activeTrackId ? styles.active : ""
             }`}
             onClick={() => handleTrackSelect(track.id)}
           >
@@ -82,7 +82,7 @@ const TrackList = () => {
                 {tracks.length > 1 && (
                   <button
                     className={styles.removeButton}
-                    onClick={e => {
+                    onClick={(e) => {
                       e.stopPropagation();
                       handleRemoveTrack(track.id);
                     }}
@@ -96,9 +96,9 @@ const TrackList = () => {
               <div className={styles.trackControls}>
                 <button
                   className={`${styles.muteButton} ${
-                    track.isMuted ? styles.active : ''
+                    track.isMuted ? styles.active : ""
                   }`}
-                  onClick={e => {
+                  onClick={(e) => {
                     e.stopPropagation();
                     handleMuteToggle(track.id, track.isMuted);
                   }}
@@ -109,9 +109,9 @@ const TrackList = () => {
 
                 <button
                   className={`${styles.soloButton} ${
-                    track.isSolo ? styles.active : ''
+                    track.isSolo ? styles.active : ""
                   }`}
-                  onClick={e => {
+                  onClick={(e) => {
                     e.stopPropagation();
                     handleSoloToggle(track.id, track.isSolo);
                   }}
@@ -132,8 +132,8 @@ const TrackList = () => {
                   max="6"
                   step="0.1"
                   value={track.volume}
-                  onChange={e => handleVolumeChange(track.id, e.target.value)}
-                  onClick={e => e.stopPropagation()}
+                  onChange={(e) => handleVolumeChange(track.id, e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
                 />
                 <span>{track.volume.toFixed(1)} dB</span>
               </div>
@@ -147,15 +147,15 @@ const TrackList = () => {
                   max="1"
                   step="0.1"
                   value={track.pan}
-                  onChange={e => handlePanChange(track.id, e.target.value)}
-                  onClick={e => e.stopPropagation()}
+                  onChange={(e) => handlePanChange(track.id, e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
                 />
                 <span>
                   {track.pan === 0
-                    ? 'C'
+                    ? "C"
                     : track.pan < 0
-                    ? `L${Math.abs(track.pan * 100)}`
-                    : `R${track.pan * 100}`}
+                      ? `L${Math.abs(track.pan * 100)}`
+                      : `R${track.pan * 100}`}
                 </span>
               </div>
             </div>
@@ -174,7 +174,7 @@ const TrackList = () => {
             max="6"
             step="0.1"
             value={masterVolume}
-            onChange={e => handleMasterVolumeChange(e.target.value)}
+            onChange={(e) => handleMasterVolumeChange(e.target.value)}
           />
           <span>{masterVolume.toFixed(1)} dB</span>
         </div>

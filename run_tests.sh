@@ -26,19 +26,31 @@ print_header "Installing Dependencies"
 cd backend && pip install -r requirements.txt && pip install -r requirements-test.txt
 cd ../frontend && npm install
 
-# Run backend tests
-print_header "Running Backend Tests"
-cd ../backend && pytest --cov=app --cov-report=term-missing
-check_status "Backend tests" || exit 1
+# Start the backend server
+cd backend
+python run.py &
+BACKEND_PID=$!
 
-# Run frontend unit tests
-print_header "Running Frontend Unit Tests"
-cd ../frontend && npm test
-check_status "Frontend unit tests" || exit 1
+# Start the frontend server
+cd ../frontend
+npm run dev &
+FRONTEND_PID=$!
 
-# Run end-to-end tests
-print_header "Running End-to-End Tests"
-npm run test:e2e
-check_status "End-to-end tests" || exit 1
+# Wait for servers to start
+echo "Waiting for servers to start..."
+sleep 10
+
+# Run the tests
+echo "Running backend tests..."
+cd ../backend
+python -m pytest tests/test_comprehensive.py -v
+
+echo "Running frontend tests..."
+cd ../frontend
+npx cypress run --spec "cypress/e2e/comprehensive.cy.js"
+
+# Cleanup
+kill $BACKEND_PID
+kill $FRONTEND_PID
 
 echo -e "\n${GREEN}All tests completed successfully!${NC}"

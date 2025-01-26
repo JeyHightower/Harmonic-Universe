@@ -1,16 +1,16 @@
-import PropTypes from 'prop-types';
-import React, { useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import MidiService from '../../services/MidiService';
-import { selectTracks, setTracks } from '../../store/slices/audioSlice';
-import styles from './MidiControls.module.css';
+import PropTypes from "prop-types";
+import React, { useRef } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import MidiService from "../../services/MidiService";
+import { selectTracks, setTracks } from "../../store/slices/audioSlice";
+import styles from "./MidiControls.module.css";
 
 const MidiControls = ({ onError }) => {
   const dispatch = useDispatch();
   const tracks = useSelector(selectTracks);
   const fileInputRef = useRef(null);
 
-  const handleImport = async event => {
+  const handleImport = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -21,13 +21,13 @@ const MidiControls = ({ onError }) => {
     } catch (error) {
       onError?.(error.message);
     } finally {
-      event.target.value = '';
+      event.target.value = "";
     }
   };
 
   const handleExport = async () => {
     if (!tracks.length) {
-      onError?.('No tracks available to export.');
+      onError?.("No tracks available to export.");
       return;
     }
 
@@ -35,7 +35,7 @@ const MidiControls = ({ onError }) => {
       const midiTracks = MidiService.convertSequenceToMidi(tracks);
       await MidiService.exportMidiFile(
         midiTracks,
-        'harmonic_universe_sequence.mid'
+        "harmonic_universe_sequence.mid",
       );
     } catch (error) {
       onError?.(error.message);

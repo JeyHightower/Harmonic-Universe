@@ -1,5 +1,5 @@
-import api from '@/services/api';
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import api from "@/services/api";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 interface Collaborator {
   id: number;
@@ -24,17 +24,17 @@ const initialState: CollaboratorState = {
 };
 
 export const fetchCollaborators = createAsyncThunk(
-  'collaborators/fetch',
+  "collaborators/fetch",
   async (universeId: number) => {
     const response = await api.get(
-      `/api/universes/${universeId}/collaborators`
+      `/api/universes/${universeId}/collaborators`,
     );
     return response.data;
-  }
+  },
 );
 
 export const addCollaborator = createAsyncThunk(
-  'collaborators/add',
+  "collaborators/add",
   async ({
     universeId,
     userId,
@@ -49,14 +49,14 @@ export const addCollaborator = createAsyncThunk(
       {
         user_id: userId,
         role,
-      }
+      },
     );
     return response.data;
-  }
+  },
 );
 
 export const updateCollaborator = createAsyncThunk(
-  'collaborators/update',
+  "collaborators/update",
   async ({
     universeId,
     userId,
@@ -68,28 +68,28 @@ export const updateCollaborator = createAsyncThunk(
   }) => {
     const response = await api.put(
       `/api/universes/${universeId}/collaborators/${userId}`,
-      { role }
+      { role },
     );
     return response.data;
-  }
+  },
 );
 
 export const removeCollaborator = createAsyncThunk(
-  'collaborators/remove',
+  "collaborators/remove",
   async ({ universeId, userId }: { universeId: number; userId: number }) => {
     await api.delete(`/api/universes/${universeId}/collaborators/${userId}`);
     return userId;
-  }
+  },
 );
 
 const collaboratorSlice = createSlice({
-  name: 'collaborators',
+  name: "collaborators",
   initialState,
   reducers: {},
-  extraReducers: builder => {
+  extraReducers: (builder) => {
     builder
       // Fetch collaborators
-      .addCase(fetchCollaborators.pending, state => {
+      .addCase(fetchCollaborators.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
@@ -99,10 +99,10 @@ const collaboratorSlice = createSlice({
       })
       .addCase(fetchCollaborators.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to fetch collaborators';
+        state.error = action.error.message || "Failed to fetch collaborators";
       })
       // Add collaborator
-      .addCase(addCollaborator.pending, state => {
+      .addCase(addCollaborator.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
@@ -112,17 +112,17 @@ const collaboratorSlice = createSlice({
       })
       .addCase(addCollaborator.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to add collaborator';
+        state.error = action.error.message || "Failed to add collaborator";
       })
       // Update collaborator
-      .addCase(updateCollaborator.pending, state => {
+      .addCase(updateCollaborator.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(updateCollaborator.fulfilled, (state, action) => {
         state.loading = false;
         const index = state.collaborators.findIndex(
-          c => c.user_id === action.payload.user_id
+          (c) => c.user_id === action.payload.user_id,
         );
         if (index !== -1) {
           state.collaborators[index] = action.payload;
@@ -130,22 +130,22 @@ const collaboratorSlice = createSlice({
       })
       .addCase(updateCollaborator.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to update collaborator';
+        state.error = action.error.message || "Failed to update collaborator";
       })
       // Remove collaborator
-      .addCase(removeCollaborator.pending, state => {
+      .addCase(removeCollaborator.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(removeCollaborator.fulfilled, (state, action) => {
         state.loading = false;
         state.collaborators = state.collaborators.filter(
-          c => c.user_id !== action.payload
+          (c) => c.user_id !== action.payload,
         );
       })
       .addCase(removeCollaborator.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to remove collaborator';
+        state.error = action.error.message || "Failed to remove collaborator";
       });
   },
 });

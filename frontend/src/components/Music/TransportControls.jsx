@@ -1,8 +1,8 @@
-import React from 'react';
-import { useSelector } from 'react-redux';
-import useAudioEngine from '../../hooks/useAudioEngine';
-import { selectError, selectIsPlaying } from '../../store/slices/audioSlice';
-import styles from './TransportControls.module.css';
+import React from "react";
+import { useSelector } from "react-redux";
+import useAudioEngine from "../../hooks/useAudioEngine";
+import { selectError, selectIsPlaying } from "../../store/slices/audioSlice";
+import styles from "./TransportControls.module.css";
 
 const TransportControls = () => {
   const isPlaying = useSelector(selectIsPlaying);
@@ -29,13 +29,13 @@ const TransportControls = () => {
     const buffer = await exportAudio(4); // Export 4 seconds of audio
     if (buffer) {
       // Create a WAV file from the buffer
-      const wav = new Blob([buffer.get()], { type: 'audio/wav' });
+      const wav = new Blob([buffer.get()], { type: "audio/wav" });
       const url = URL.createObjectURL(wav);
 
       // Create a download link
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = 'sequence.wav';
+      a.download = "sequence.wav";
       a.click();
 
       // Clean up
@@ -58,10 +58,10 @@ const TransportControls = () => {
         <button
           className={`${styles.button} ${styles.playPause}`}
           onClick={handlePlayPause}
-          title={isPlaying ? 'Stop' : 'Play'}
+          title={isPlaying ? "Stop" : "Play"}
         >
-          <i className={`fas fa-${isPlaying ? 'stop' : 'play'}`} />
-          <span>{isPlaying ? 'Stop' : 'Play'}</span>
+          <i className={`fas fa-${isPlaying ? "stop" : "play"}`} />
+          <span>{isPlaying ? "Stop" : "Play"}</span>
         </button>
 
         <button

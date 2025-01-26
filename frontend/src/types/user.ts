@@ -28,7 +28,7 @@ export interface UserSettings {
   id: number;
   user_id: number;
   email_notifications: boolean;
-  theme_preference: 'light' | 'dark' | 'system';
+  theme_preference: "light" | "dark" | "system";
   language: string;
   timezone: string;
   created_at: string;

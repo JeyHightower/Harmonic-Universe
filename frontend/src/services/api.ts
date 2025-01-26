@@ -1,18 +1,18 @@
-import store from '@/store';
-import { logout, refreshToken } from '@/store/slices/authSlice';
-import { showAlert } from '@/store/slices/uiSlice';
-import axios from 'axios';
+import store from "@/store";
+import { logout, refreshToken } from "@/store/slices/authSlice";
+import { showAlert } from "@/store/slices/uiSlice";
+import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000",
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
 // Request interceptor for adding auth token
 api.interceptors.request.use(
-  config => {
+  (config) => {
     const state = store.getState();
     const token = state.auth.accessToken;
 
@@ -22,15 +22,15 @@ api.interceptors.request.use(
 
     return config;
   },
-  error => {
+  (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor for handling token refresh and errors
 api.interceptors.response.use(
-  response => response,
-  async error => {
+  (response) => response,
+  async (error) => {
     const originalRequest = error.config;
     const state = store.getState();
 
@@ -52,9 +52,9 @@ api.interceptors.response.use(
         store.dispatch(logout());
         store.dispatch(
           showAlert({
-            type: 'error',
-            message: 'Your session has expired. Please log in again.',
-          })
+            type: "error",
+            message: "Your session has expired. Please log in again.",
+          }),
         );
         return Promise.reject(refreshError);
       }
@@ -64,17 +64,17 @@ api.interceptors.response.use(
     const errorMessage =
       error.response?.data?.error ||
       error.message ||
-      'An unexpected error occurred';
+      "An unexpected error occurred";
 
     store.dispatch(
       showAlert({
-        type: 'error',
+        type: "error",
         message: errorMessage,
-      })
+      }),
     );
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

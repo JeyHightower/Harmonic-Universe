@@ -5,9 +5,9 @@
  * @param {Error|Object|string} error - The error to format
  * @returns {string} A user-friendly error message
  */
-export const formatApiError = error => {
+export const formatApiError = (error) => {
   if (!error) {
-    return 'An unknown error occurred';
+    return "An unknown error occurred";
   }
 
   // Handle axios error objects
@@ -17,31 +17,31 @@ export const formatApiError = error => {
     // Handle specific status codes
     switch (status) {
       case 400:
-        return data.message || 'Invalid request. Please check your input.';
+        return data.message || "Invalid request. Please check your input.";
       case 401:
-        return 'Please log in to continue.';
+        return "Please log in to continue.";
       case 403:
-        return 'You do not have permission to perform this action.';
+        return "You do not have permission to perform this action.";
       case 404:
-        return 'The requested resource was not found.';
+        return "The requested resource was not found.";
       case 422:
-        return data.message || 'Invalid input. Please check your data.';
+        return data.message || "Invalid input. Please check your data.";
       case 429:
-        return 'Too many requests. Please try again later.';
+        return "Too many requests. Please try again later.";
       case 500:
-        return 'Something went wrong on our end. Please try again later.';
+        return "Something went wrong on our end. Please try again later.";
       default:
-        return data.message || 'An unexpected error occurred.';
+        return data.message || "An unexpected error occurred.";
     }
   }
 
   // Handle network errors
-  if (error.message === 'Network Error') {
-    return 'Unable to connect to the server. Please check your internet connection.';
+  if (error.message === "Network Error") {
+    return "Unable to connect to the server. Please check your internet connection.";
   }
 
   // Handle string errors
-  if (typeof error === 'string') {
+  if (typeof error === "string") {
     return error;
   }
 
@@ -50,7 +50,7 @@ export const formatApiError = error => {
     return error.message;
   }
 
-  return 'An unexpected error occurred';
+  return "An unexpected error occurred";
 };
 
 /**
@@ -58,7 +58,7 @@ export const formatApiError = error => {
  * @param {string} actionType - The base action type (e.g., 'auth/login')
  * @returns {Object} Object containing error handler and action creator
  */
-export const createAsyncThunkHandler = actionType => ({
+export const createAsyncThunkHandler = (actionType) => ({
   pending: `${actionType}/pending`,
   fulfilled: `${actionType}/fulfilled`,
   rejected: `${actionType}/rejected`,
@@ -70,13 +70,13 @@ export const createAsyncThunkHandler = actionType => ({
   },
 
   // Helper for handling pending state
-  handlePending: state => {
+  handlePending: (state) => {
     state.isLoading = true;
     state.error = null;
   },
 
   // Helper for handling fulfilled state
-  handleFulfilled: state => {
+  handleFulfilled: (state) => {
     state.isLoading = false;
     state.error = null;
   },
@@ -89,7 +89,7 @@ export const createAsyncThunkHandler = actionType => ({
  * @returns {Promise} The wrapped function result
  */
 export const withErrorHandling = async (asyncFn, options = {}) => {
-  const { onError, rethrow = false, context = 'operation' } = options;
+  const { onError, rethrow = false, context = "operation" } = options;
 
   try {
     return await asyncFn();

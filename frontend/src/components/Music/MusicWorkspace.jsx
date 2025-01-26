@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   addTrackNote,
   deleteTrackNote,
   selectActiveTrackId,
   selectTracks,
   updateTrackNotes,
-} from '../../store/slices/audioSlice';
-import MidiControls from './MidiControls';
-import styles from './MusicWorkspace.module.css';
-import PianoRoll from './PianoRoll';
-import PresetManager from './PresetManager';
-import ScaleSelector from './ScaleSelector';
-import Spectrogram from './Spectrogram';
-import TrackList from './TrackList';
+} from "../../store/slices/audioSlice";
+import MidiControls from "./MidiControls";
+import styles from "./MusicWorkspace.module.css";
+import PianoRoll from "./PianoRoll";
+import PresetManager from "./PresetManager";
+import ScaleSelector from "./ScaleSelector";
+import Spectrogram from "./Spectrogram";
+import TrackList from "./TrackList";
 
 const MusicWorkspace = () => {
   const dispatch = useDispatch();
@@ -21,32 +21,32 @@ const MusicWorkspace = () => {
   const activeTrackId = useSelector(selectActiveTrackId);
   const [error, setError] = useState(null);
 
-  const activeTrack = tracks.find(track => track.id === activeTrackId);
+  const activeTrack = tracks.find((track) => track.id === activeTrackId);
 
-  const handleNoteAdd = note => {
+  const handleNoteAdd = (note) => {
     if (!activeTrackId) {
-      setError('Please select a track first');
+      setError("Please select a track first");
       return;
     }
     dispatch(addTrackNote({ trackId: activeTrackId, note }));
   };
 
-  const handleNoteUpdate = note => {
+  const handleNoteUpdate = (note) => {
     if (!activeTrackId) return;
     dispatch(
       updateTrackNotes({
         trackId: activeTrackId,
-        notes: activeTrack.notes.map(n => (n.id === note.id ? note : n)),
-      })
+        notes: activeTrack.notes.map((n) => (n.id === note.id ? note : n)),
+      }),
     );
   };
 
-  const handleNoteDelete = note => {
+  const handleNoteDelete = (note) => {
     if (!activeTrackId) return;
     dispatch(deleteTrackNote({ trackId: activeTrackId, noteId: note.id }));
   };
 
-  const handleError = message => {
+  const handleError = (message) => {
     setError(message);
     setTimeout(() => setError(null), 3000);
   };

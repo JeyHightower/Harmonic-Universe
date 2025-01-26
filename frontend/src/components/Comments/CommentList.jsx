@@ -1,21 +1,21 @@
-import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { addComment, fetchComments } from '../../store/slices/commentSlice';
-import Comment from './Comment';
-import styles from './Comments.module.css';
+import PropTypes from "prop-types";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { addComment, fetchComments } from "../../store/slices/commentSlice";
+import Comment from "./Comment";
+import styles from "./Comments.module.css";
 
 const CommentList = ({ universeId }) => {
   const dispatch = useDispatch();
-  const { comments, isLoading, error } = useSelector(state => state.comments);
-  const [newComment, setNewComment] = useState('');
+  const { comments, isLoading, error } = useSelector((state) => state.comments);
+  const [newComment, setNewComment] = useState("");
   const [replyTo, setReplyTo] = useState(null);
 
   useEffect(() => {
     dispatch(fetchComments(universeId));
   }, [dispatch, universeId]);
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newComment.trim()) return;
 
@@ -25,16 +25,16 @@ const CommentList = ({ universeId }) => {
           universeId,
           content: newComment,
           parentId: replyTo,
-        })
+        }),
       ).unwrap();
-      setNewComment('');
+      setNewComment("");
       setReplyTo(null);
     } catch (error) {
-      console.error('Failed to add comment:', error);
+      console.error("Failed to add comment:", error);
     }
   };
 
-  const handleReply = commentId => {
+  const handleReply = (commentId) => {
     setReplyTo(commentId);
   };
 
@@ -51,8 +51,8 @@ const CommentList = ({ universeId }) => {
       <form onSubmit={handleSubmit} className={styles.commentForm}>
         <textarea
           value={newComment}
-          onChange={e => setNewComment(e.target.value)}
-          placeholder={replyTo ? 'Write a reply...' : 'Write a comment...'}
+          onChange={(e) => setNewComment(e.target.value)}
+          placeholder={replyTo ? "Write a reply..." : "Write a comment..."}
           className={styles.commentInput}
         />
         <div className={styles.formActions}>
@@ -70,13 +70,13 @@ const CommentList = ({ universeId }) => {
             disabled={!newComment.trim()}
             className={styles.submitButton}
           >
-            {replyTo ? 'Reply' : 'Comment'}
+            {replyTo ? "Reply" : "Comment"}
           </button>
         </div>
       </form>
 
       <div className={styles.comments}>
-        {comments.map(comment => (
+        {comments.map((comment) => (
           <Comment
             key={comment.id}
             comment={comment}

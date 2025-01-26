@@ -1,6 +1,6 @@
-import { User } from '@/types/user';
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import axios from 'axios';
+import { User } from "@/types/user";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import axios from "axios";
 
 interface AuthState {
   user: User | null;
@@ -10,123 +10,123 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   showAuthModal: boolean;
-  authModalView: 'login' | 'register' | 'forgot-password';
+  authModalView: "login" | "register" | "forgot-password";
 }
 
 const initialState: AuthState = {
   user: null,
-  accessToken: localStorage.getItem('accessToken'),
-  refreshToken: localStorage.getItem('refreshToken'),
-  isAuthenticated: !!localStorage.getItem('accessToken'),
+  accessToken: localStorage.getItem("accessToken"),
+  refreshToken: localStorage.getItem("refreshToken"),
+  isAuthenticated: !!localStorage.getItem("accessToken"),
   isLoading: false,
   error: null,
   showAuthModal: false,
-  authModalView: 'login',
+  authModalView: "login",
 };
 
 export const login = createAsyncThunk(
-  'auth/login',
+  "auth/login",
   async (
     credentials: { email: string; password: string },
-    { rejectWithValue }
+    { rejectWithValue },
   ) => {
     try {
-      const response = await axios.post('/api/auth/login', credentials);
+      const response = await axios.post("/api/auth/login", credentials);
       const { user, access_token, refresh_token } = response.data;
 
-      localStorage.setItem('accessToken', access_token);
-      localStorage.setItem('refreshToken', refresh_token);
+      localStorage.setItem("accessToken", access_token);
+      localStorage.setItem("refreshToken", refresh_token);
 
       return { user, access_token, refresh_token };
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.error || 'Login failed');
+      return rejectWithValue(error.response?.data?.error || "Login failed");
     }
-  }
+  },
 );
 
 export const register = createAsyncThunk(
-  'auth/register',
+  "auth/register",
   async (
     userData: { username: string; email: string; password: string },
-    { rejectWithValue }
+    { rejectWithValue },
   ) => {
     try {
-      const response = await axios.post('/api/auth/register', userData);
+      const response = await axios.post("/api/auth/register", userData);
       const { user, access_token, refresh_token } = response.data;
 
-      localStorage.setItem('accessToken', access_token);
-      localStorage.setItem('refreshToken', refresh_token);
+      localStorage.setItem("accessToken", access_token);
+      localStorage.setItem("refreshToken", refresh_token);
 
       return { user, access_token, refresh_token };
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.error || 'Registration failed'
+        error.response?.data?.error || "Registration failed",
       );
     }
-  }
+  },
 );
 
 export const logout = createAsyncThunk(
-  'auth/logout',
+  "auth/logout",
   async (_, { rejectWithValue }) => {
     try {
-      await axios.post('/api/auth/logout');
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      await axios.post("/api/auth/logout");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.error || 'Logout failed');
+      return rejectWithValue(error.response?.data?.error || "Logout failed");
     }
-  }
+  },
 );
 
 export const refreshToken = createAsyncThunk(
-  'auth/refreshToken',
+  "auth/refreshToken",
   async (_, { rejectWithValue }) => {
     try {
-      const refresh_token = localStorage.getItem('refreshToken');
+      const refresh_token = localStorage.getItem("refreshToken");
       if (!refresh_token) {
-        throw new Error('No refresh token available');
+        throw new Error("No refresh token available");
       }
 
       const response = await axios.post(
-        '/api/auth/refresh',
+        "/api/auth/refresh",
         {},
         {
           headers: { Authorization: `Bearer ${refresh_token}` },
-        }
+        },
       );
 
       const { access_token } = response.data;
-      localStorage.setItem('accessToken', access_token);
+      localStorage.setItem("accessToken", access_token);
 
       return { access_token };
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.error || 'Token refresh failed'
+        error.response?.data?.error || "Token refresh failed",
       );
     }
-  }
+  },
 );
 
 export const requestPasswordReset = createAsyncThunk(
-  'auth/requestPasswordReset',
+  "auth/requestPasswordReset",
   async (email: string, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/api/auth/reset-password', { email });
+      const response = await axios.post("/api/auth/reset-password", { email });
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.error || 'Password reset request failed'
+        error.response?.data?.error || "Password reset request failed",
       );
     }
-  }
+  },
 );
 
 export const resetPassword = createAsyncThunk(
-  'auth/resetPassword',
+  "auth/resetPassword",
   async (
     { token, newPassword }: { token: string; newPassword: string },
-    { rejectWithValue }
+    { rejectWithValue },
   ) => {
     try {
       const response = await axios.post(`/api/auth/reset-password/${token}`, {
@@ -135,22 +135,22 @@ export const resetPassword = createAsyncThunk(
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.error || 'Password reset failed'
+        error.response?.data?.error || "Password reset failed",
       );
     }
-  }
+  },
 );
 
 const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState,
   reducers: {
     openAuthModal: (state, action) => {
       state.showAuthModal = true;
-      state.authModalView = action.payload || 'login';
+      state.authModalView = action.payload || "login";
       state.error = null;
     },
-    closeAuthModal: state => {
+    closeAuthModal: (state) => {
       state.showAuthModal = false;
       state.error = null;
     },
@@ -158,14 +158,14 @@ const authSlice = createSlice({
       state.authModalView = action.payload;
       state.error = null;
     },
-    clearError: state => {
+    clearError: (state) => {
       state.error = null;
     },
   },
-  extraReducers: builder => {
+  extraReducers: (builder) => {
     // Login
     builder
-      .addCase(login.pending, state => {
+      .addCase(login.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
@@ -184,7 +184,7 @@ const authSlice = createSlice({
 
     // Register
     builder
-      .addCase(register.pending, state => {
+      .addCase(register.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
@@ -203,10 +203,10 @@ const authSlice = createSlice({
 
     // Logout
     builder
-      .addCase(logout.pending, state => {
+      .addCase(logout.pending, (state) => {
         state.isLoading = true;
       })
-      .addCase(logout.fulfilled, state => {
+      .addCase(logout.fulfilled, (state) => {
         state.isLoading = false;
         state.isAuthenticated = false;
         state.user = null;
@@ -223,7 +223,7 @@ const authSlice = createSlice({
       .addCase(refreshToken.fulfilled, (state, action) => {
         state.accessToken = action.payload.access_token;
       })
-      .addCase(refreshToken.rejected, state => {
+      .addCase(refreshToken.rejected, (state) => {
         state.isAuthenticated = false;
         state.user = null;
         state.accessToken = null;
@@ -232,11 +232,11 @@ const authSlice = createSlice({
 
     // Password Reset Request
     builder
-      .addCase(requestPasswordReset.pending, state => {
+      .addCase(requestPasswordReset.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(requestPasswordReset.fulfilled, state => {
+      .addCase(requestPasswordReset.fulfilled, (state) => {
         state.isLoading = false;
       })
       .addCase(requestPasswordReset.rejected, (state, action) => {
@@ -246,13 +246,13 @@ const authSlice = createSlice({
 
     // Password Reset
     builder
-      .addCase(resetPassword.pending, state => {
+      .addCase(resetPassword.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(resetPassword.fulfilled, state => {
+      .addCase(resetPassword.fulfilled, (state) => {
         state.isLoading = false;
-        state.authModalView = 'login';
+        state.authModalView = "login";
       })
       .addCase(resetPassword.rejected, (state, action) => {
         state.isLoading = false;

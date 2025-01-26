@@ -1,5 +1,5 @@
-import api from '@/services/api';
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import api from "@/services/api";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 interface Comment {
   id: number;
@@ -33,15 +33,15 @@ const initialState: CommentState = {
 };
 
 export const fetchComments = createAsyncThunk(
-  'comments/fetch',
+  "comments/fetch",
   async (universeId: number) => {
     const response = await api.get(`/api/universes/${universeId}/comments`);
     return response.data;
-  }
+  },
 );
 
 export const addComment = createAsyncThunk(
-  'comments/add',
+  "comments/add",
   async ({
     universeId,
     content,
@@ -56,11 +56,11 @@ export const addComment = createAsyncThunk(
       parent_id: parentId,
     });
     return response.data;
-  }
+  },
 );
 
 export const updateComment = createAsyncThunk(
-  'comments/update',
+  "comments/update",
   async ({
     universeId,
     commentId,
@@ -72,14 +72,14 @@ export const updateComment = createAsyncThunk(
   }) => {
     const response = await api.put(
       `/api/universes/${universeId}/comments/${commentId}`,
-      { content }
+      { content },
     );
     return response.data;
-  }
+  },
 );
 
 export const deleteComment = createAsyncThunk(
-  'comments/delete',
+  "comments/delete",
   async ({
     universeId,
     commentId,
@@ -89,25 +89,25 @@ export const deleteComment = createAsyncThunk(
   }) => {
     await api.delete(`/api/universes/${universeId}/comments/${commentId}`);
     return commentId;
-  }
+  },
 );
 
 export const fetchUserComments = createAsyncThunk(
-  'comments/fetchUserComments',
+  "comments/fetchUserComments",
   async () => {
-    const response = await api.get('/api/users/me/comments');
+    const response = await api.get("/api/users/me/comments");
     return response.data;
-  }
+  },
 );
 
 const commentSlice = createSlice({
-  name: 'comments',
+  name: "comments",
   initialState,
   reducers: {},
-  extraReducers: builder => {
+  extraReducers: (builder) => {
     builder
       // Fetch comments
-      .addCase(fetchComments.pending, state => {
+      .addCase(fetchComments.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
@@ -117,10 +117,10 @@ const commentSlice = createSlice({
       })
       .addCase(fetchComments.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to fetch comments';
+        state.error = action.error.message || "Failed to fetch comments";
       })
       // Add comment
-      .addCase(addComment.pending, state => {
+      .addCase(addComment.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
@@ -130,7 +130,7 @@ const commentSlice = createSlice({
         if (comment.parent_id) {
           // Add reply to parent comment
           const parentComment = state.comments.find(
-            c => c.id === comment.parent_id
+            (c) => c.id === comment.parent_id,
           );
           if (parentComment) {
             parentComment.replies = parentComment.replies || [];
@@ -143,10 +143,10 @@ const commentSlice = createSlice({
       })
       .addCase(addComment.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to add comment';
+        state.error = action.error.message || "Failed to add comment";
       })
       // Update comment
-      .addCase(updateComment.pending, state => {
+      .addCase(updateComment.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
@@ -156,11 +156,11 @@ const commentSlice = createSlice({
         if (updatedComment.parent_id) {
           // Update reply
           const parentComment = state.comments.find(
-            c => c.id === updatedComment.parent_id
+            (c) => c.id === updatedComment.parent_id,
           );
           if (parentComment?.replies) {
             const replyIndex = parentComment.replies.findIndex(
-              r => r.id === updatedComment.id
+              (r) => r.id === updatedComment.id,
             );
             if (replyIndex !== -1) {
               parentComment.replies[replyIndex] = updatedComment;
@@ -169,7 +169,7 @@ const commentSlice = createSlice({
         } else {
           // Update top-level comment
           const commentIndex = state.comments.findIndex(
-            c => c.id === updatedComment.id
+            (c) => c.id === updatedComment.id,
           );
           if (commentIndex !== -1) {
             state.comments[commentIndex] = updatedComment;
@@ -178,10 +178,10 @@ const commentSlice = createSlice({
       })
       .addCase(updateComment.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to update comment';
+        state.error = action.error.message || "Failed to update comment";
       })
       // Delete comment
-      .addCase(deleteComment.pending, state => {
+      .addCase(deleteComment.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
@@ -189,20 +189,20 @@ const commentSlice = createSlice({
         state.loading = false;
         const commentId = action.payload;
         // Remove from top-level comments
-        state.comments = state.comments.filter(c => c.id !== commentId);
+        state.comments = state.comments.filter((c) => c.id !== commentId);
         // Remove from replies
-        state.comments.forEach(comment => {
+        state.comments.forEach((comment) => {
           if (comment.replies) {
-            comment.replies = comment.replies.filter(r => r.id !== commentId);
+            comment.replies = comment.replies.filter((r) => r.id !== commentId);
           }
         });
       })
       .addCase(deleteComment.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to delete comment';
+        state.error = action.error.message || "Failed to delete comment";
       })
       // Fetch user comments
-      .addCase(fetchUserComments.pending, state => {
+      .addCase(fetchUserComments.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
@@ -212,7 +212,7 @@ const commentSlice = createSlice({
       })
       .addCase(fetchUserComments.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to fetch user comments';
+        state.error = action.error.message || "Failed to fetch user comments";
       });
   },
 });

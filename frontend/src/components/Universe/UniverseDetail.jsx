@@ -1,23 +1,23 @@
-import { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useParams } from 'react-router-dom';
-import { fetchUniverses } from '../../store/slices/universeSlice';
-import CommentList from '../Comments/CommentList';
-import MusicControls from '../Music/MusicControls';
-import PhysicsControls from '../Physics/PhysicsControls';
-import Storyboard from '../Storyboard/Storyboard';
-import FavoriteButton from './FavoriteButton';
-import PrivacyToggle from './PrivacyToggle';
-import ShareUniverse from './ShareUniverse';
-import styles from './Universe.module.css';
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useParams } from "react-router-dom";
+import { fetchUniverses } from "../../store/slices/universeSlice";
+import CommentList from "../Comments/CommentList";
+import MusicControls from "../Music/MusicControls";
+import PhysicsControls from "../Physics/PhysicsControls";
+import Storyboard from "../Storyboard/Storyboard";
+import FavoriteButton from "./FavoriteButton";
+import PrivacyToggle from "./PrivacyToggle";
+import ShareUniverse from "./ShareUniverse";
+import styles from "./Universe.module.css";
 
 const UniverseDetail = () => {
   const { universeId } = useParams();
   const dispatch = useDispatch();
   const { currentUniverse, isLoading, error } = useSelector(
-    state => state.universe
+    (state) => state.universe,
   );
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
     if (universeId) {
@@ -49,13 +49,13 @@ const UniverseDetail = () => {
     );
   }
 
-  const handleTabChange = tab => {
+  const handleTabChange = (tab) => {
     setActiveTab(tab);
   };
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'overview':
+      case "overview":
         return (
           <div className={styles.overview} data-testid="overview-content">
             <h2>{currentUniverse.name}</h2>
@@ -70,25 +70,25 @@ const UniverseDetail = () => {
             </div>
           </div>
         );
-      case 'physics':
+      case "physics":
         return (
           <div data-testid="physics-content">
             <PhysicsControls universeId={universeId} />
           </div>
         );
-      case 'music':
+      case "music":
         return (
           <div data-testid="music-content">
             <MusicControls universeId={universeId} />
           </div>
         );
-      case 'storyboard':
+      case "storyboard":
         return (
           <div data-testid="storyboard-content">
             <Storyboard universeId={universeId} />
           </div>
         );
-      case 'comments':
+      case "comments":
         return (
           <div data-testid="comments-content">
             <CommentList universeId={universeId} />
@@ -104,45 +104,45 @@ const UniverseDetail = () => {
       <nav className={styles.tabs} data-testid="universe-tabs">
         <button
           className={`${styles.tab} ${
-            activeTab === 'overview' ? styles.active : ''
+            activeTab === "overview" ? styles.active : ""
           }`}
-          onClick={() => handleTabChange('overview')}
+          onClick={() => handleTabChange("overview")}
           data-testid="overview-tab"
         >
           Overview
         </button>
         <button
           className={`${styles.tab} ${
-            activeTab === 'physics' ? styles.active : ''
+            activeTab === "physics" ? styles.active : ""
           }`}
-          onClick={() => handleTabChange('physics')}
+          onClick={() => handleTabChange("physics")}
           data-testid="physics-tab"
         >
           Physics
         </button>
         <button
           className={`${styles.tab} ${
-            activeTab === 'music' ? styles.active : ''
+            activeTab === "music" ? styles.active : ""
           }`}
-          onClick={() => handleTabChange('music')}
+          onClick={() => handleTabChange("music")}
           data-testid="music-tab"
         >
           Music
         </button>
         <button
           className={`${styles.tab} ${
-            activeTab === 'storyboard' ? styles.active : ''
+            activeTab === "storyboard" ? styles.active : ""
           }`}
-          onClick={() => handleTabChange('storyboard')}
+          onClick={() => handleTabChange("storyboard")}
           data-testid="storyboard-tab"
         >
           Storyboard
         </button>
         <button
           className={`${styles.tab} ${
-            activeTab === 'comments' ? styles.active : ''
+            activeTab === "comments" ? styles.active : ""
           }`}
-          onClick={() => handleTabChange('comments')}
+          onClick={() => handleTabChange("comments")}
           data-testid="comments-tab"
         >
           Comments

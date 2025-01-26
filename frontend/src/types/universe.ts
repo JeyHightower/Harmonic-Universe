@@ -1,4 +1,4 @@
-import { User } from './user';
+import { User } from "./user";
 
 export interface Universe {
   id: number;
@@ -33,7 +33,7 @@ export interface UniverseCollaborator {
   id: number;
   universe_id: number;
   user_id: number;
-  role: 'viewer' | 'editor' | 'admin';
+  role: "viewer" | "editor" | "admin";
   user?: User;
   created_at: string;
   updated_at: string;

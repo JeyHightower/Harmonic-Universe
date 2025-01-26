@@ -1,6 +1,6 @@
-import styles from './Loading.module.css';
+import styles from "./Loading.module.css";
 
-const Loading = ({ text = 'Loading...' }) => {
+const Loading = ({ text = "Loading..." }) => {
   return (
     <div className={styles.loading}>
       <div className={styles.spinner} />

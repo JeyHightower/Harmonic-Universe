@@ -6,16 +6,16 @@ import {
   Switch,
   TextField,
   Typography,
-} from '@mui/material';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { universeService } from '../../services/universeService';
+} from "@mui/material";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { universeService } from "../../services/universeService";
 
 const UniverseForm = ({ universe, isEdit = false }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    name: universe?.name || '',
-    description: universe?.description || '',
+    name: universe?.name || "",
+    description: universe?.description || "",
     is_public: universe?.is_public ?? true,
     physics_enabled: universe?.physics_enabled ?? true,
     music_enabled: universe?.music_enabled ?? true,
@@ -23,15 +23,15 @@ const UniverseForm = ({ universe, isEdit = false }) => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     const { name, value, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: e.target.type === 'checkbox' ? checked : value,
+      [name]: e.target.type === "checkbox" ? checked : value,
     }));
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -42,9 +42,9 @@ const UniverseForm = ({ universe, isEdit = false }) => {
       } else {
         await universeService.createUniverse(formData);
       }
-      navigate('/universes');
+      navigate("/universes");
     } catch (err) {
-      setError(err.response?.data?.error || 'Something went wrong');
+      setError(err.response?.data?.error || "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -54,7 +54,7 @@ const UniverseForm = ({ universe, isEdit = false }) => {
     <Container maxWidth="sm">
       <Box sx={{ mt: 4, mb: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          {isEdit ? 'Edit Universe' : 'Create Universe'}
+          {isEdit ? "Edit Universe" : "Create Universe"}
         </Typography>
 
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
@@ -128,7 +128,7 @@ const UniverseForm = ({ universe, isEdit = false }) => {
             </Typography>
           )}
 
-          <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
+          <Box sx={{ mt: 3, display: "flex", gap: 2 }}>
             <Button
               type="submit"
               fullWidth
@@ -137,16 +137,16 @@ const UniverseForm = ({ universe, isEdit = false }) => {
             >
               {loading
                 ? isEdit
-                  ? 'Saving...'
-                  : 'Creating...'
+                  ? "Saving..."
+                  : "Creating..."
                 : isEdit
-                ? 'Save Universe'
-                : 'Create Universe'}
+                  ? "Save Universe"
+                  : "Create Universe"}
             </Button>
             <Button
               fullWidth
               variant="outlined"
-              onClick={() => navigate('/universes')}
+              onClick={() => navigate("/universes")}
               disabled={loading}
             >
               Cancel

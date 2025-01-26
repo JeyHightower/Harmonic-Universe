@@ -1,7 +1,7 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface AlertMessage {
-  type: 'success' | 'error' | 'info' | 'warning';
+  type: "success" | "error" | "info" | "warning";
   message: string;
 }
 
@@ -16,7 +16,7 @@ interface ConfirmDialog {
 }
 
 interface UIState {
-  theme: 'light' | 'dark';
+  theme: "light" | "dark";
   sidebarOpen: boolean;
   alert: AlertMessage | null;
   confirmDialog: ConfirmDialog;
@@ -25,34 +25,34 @@ interface UIState {
 }
 
 const initialState: UIState = {
-  theme: (localStorage.getItem('theme') as 'light' | 'dark') || 'dark',
+  theme: (localStorage.getItem("theme") as "light" | "dark") || "dark",
   sidebarOpen: true,
   alert: null,
   confirmDialog: {
     isOpen: false,
-    title: '',
-    message: '',
-    confirmLabel: 'Confirm',
-    cancelLabel: 'Cancel',
+    title: "",
+    message: "",
+    confirmLabel: "Confirm",
+    cancelLabel: "Cancel",
     onConfirm: () => {},
   },
   isLoading: false,
-  loadingMessage: '',
+  loadingMessage: "",
 };
 
 const uiSlice = createSlice({
-  name: 'ui',
+  name: "ui",
   initialState,
   reducers: {
-    toggleTheme: state => {
-      state.theme = state.theme === 'light' ? 'dark' : 'light';
-      localStorage.setItem('theme', state.theme);
+    toggleTheme: (state) => {
+      state.theme = state.theme === "light" ? "dark" : "light";
+      localStorage.setItem("theme", state.theme);
     },
-    setTheme: (state, action: PayloadAction<'light' | 'dark'>) => {
+    setTheme: (state, action: PayloadAction<"light" | "dark">) => {
       state.theme = action.payload;
-      localStorage.setItem('theme', action.payload);
+      localStorage.setItem("theme", action.payload);
     },
-    toggleSidebar: state => {
+    toggleSidebar: (state) => {
       state.sidebarOpen = !state.sidebarOpen;
     },
     setSidebarOpen: (state, action: PayloadAction<boolean>) => {
@@ -61,19 +61,19 @@ const uiSlice = createSlice({
     showAlert: (state, action: PayloadAction<AlertMessage>) => {
       state.alert = action.payload;
     },
-    clearAlert: state => {
+    clearAlert: (state) => {
       state.alert = null;
     },
     showConfirmDialog: (
       state,
-      action: PayloadAction<Omit<ConfirmDialog, 'isOpen'>>
+      action: PayloadAction<Omit<ConfirmDialog, "isOpen">>,
     ) => {
       state.confirmDialog = {
         ...action.payload,
         isOpen: true,
       };
     },
-    hideConfirmDialog: state => {
+    hideConfirmDialog: (state) => {
       state.confirmDialog = {
         ...state.confirmDialog,
         isOpen: false,
@@ -81,10 +81,10 @@ const uiSlice = createSlice({
     },
     setLoading: (
       state,
-      action: PayloadAction<{ isLoading: boolean; message?: string }>
+      action: PayloadAction<{ isLoading: boolean; message?: string }>,
     ) => {
       state.isLoading = action.payload.isLoading;
-      state.loadingMessage = action.payload.message || '';
+      state.loadingMessage = action.payload.message || "";
     },
   },
 });

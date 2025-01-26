@@ -1,14 +1,14 @@
-import PropTypes from 'prop-types';
-import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { deleteComment, updateComment } from '../../store/slices/commentSlice';
-import styles from './Comments.module.css';
+import PropTypes from "prop-types";
+import React, { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { deleteComment, updateComment } from "../../store/slices/commentSlice";
+import styles from "./Comments.module.css";
 
 const Comment = ({ comment, universeId, onReply }) => {
   const dispatch = useDispatch();
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
-  const currentUser = useSelector(state => state.auth.user);
+  const currentUser = useSelector((state) => state.auth.user);
   const isOwner = currentUser?.id === comment.user.id;
 
   const handleEdit = async () => {
@@ -19,11 +19,11 @@ const Comment = ({ comment, universeId, onReply }) => {
             universeId,
             commentId: comment.id,
             content: editContent,
-          })
+          }),
         ).unwrap();
         setIsEditing(false);
       } catch (error) {
-        console.error('Failed to update comment:', error);
+        console.error("Failed to update comment:", error);
       }
     } else {
       setIsEditing(true);
@@ -31,16 +31,16 @@ const Comment = ({ comment, universeId, onReply }) => {
   };
 
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this comment?')) {
+    if (window.confirm("Are you sure you want to delete this comment?")) {
       try {
         await dispatch(
           deleteComment({
             universeId,
             commentId: comment.id,
-          })
+          }),
         ).unwrap();
       } catch (error) {
-        console.error('Failed to delete comment:', error);
+        console.error("Failed to delete comment:", error);
       }
     }
   };
@@ -49,14 +49,14 @@ const Comment = ({ comment, universeId, onReply }) => {
     onReply(comment.id);
   };
 
-  const formatDate = dateString => {
+  const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -71,7 +71,7 @@ const Comment = ({ comment, universeId, onReply }) => {
         {isEditing ? (
           <textarea
             value={editContent}
-            onChange={e => setEditContent(e.target.value)}
+            onChange={(e) => setEditContent(e.target.value)}
             className={styles.editTextarea}
           />
         ) : (
@@ -86,7 +86,7 @@ const Comment = ({ comment, universeId, onReply }) => {
         {isOwner && (
           <>
             <button onClick={handleEdit} className={styles.actionButton}>
-              {isEditing ? 'Save' : 'Edit'}
+              {isEditing ? "Save" : "Edit"}
             </button>
             <button onClick={handleDelete} className={styles.actionButton}>
               Delete
@@ -97,7 +97,7 @@ const Comment = ({ comment, universeId, onReply }) => {
 
       {comment.replies && comment.replies.length > 0 && (
         <div className={styles.replies}>
-          {comment.replies.map(reply => (
+          {comment.replies.map((reply) => (
             <Comment
               key={reply.id}
               comment={reply}

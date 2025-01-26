@@ -1,10 +1,10 @@
-import React from 'react';
-import { useSelector } from 'react-redux';
+import React from "react";
+import { useSelector } from "react-redux";
 import {
   selectCurrentSequence,
   selectIsPlaying,
-} from '../../store/slices/audioSlice';
-import styles from './SequenceDisplay.module.css';
+} from "../../store/slices/audioSlice";
+import styles from "./SequenceDisplay.module.css";
 
 const SequenceDisplay = () => {
   const sequence = useSelector(selectCurrentSequence);
@@ -27,7 +27,7 @@ const SequenceDisplay = () => {
           <div
             key={index}
             className={`${styles.note} ${note ? styles.active : styles.rest}`}
-            title={note || 'Rest'}
+            title={note || "Rest"}
           >
             <div className={styles.noteContent}>
               {note ? (
@@ -44,7 +44,7 @@ const SequenceDisplay = () => {
         ))}
       </div>
       {isPlaying && (
-        <div className={styles.playhead} style={{ animationDuration: '2s' }} />
+        <div className={styles.playhead} style={{ animationDuration: "2s" }} />
       )}
     </div>
   );

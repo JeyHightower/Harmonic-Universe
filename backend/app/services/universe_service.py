@@ -1,81 +1,110 @@
-from app.models.universe import Universe
-from app.models.user import User
-from app import db
+"""Universe service module."""
+from app.models import (
+    Universe,
+    PhysicsParameters,
+    MusicParameters,
+    VisualizationParameters,
+)
+from app.extensions import db
+
 
 class UniverseService:
-    def create_universe(self, user_id, data):
-        """Create a new universe."""
-        user = User.query.get(user_id)
-        if not user:
-            raise ValueError('User not found')
+    """Service class for handling universe operations."""
 
+    @staticmethod
+    def create_universe(data, user_id):
+        """Create a new universe with associated parameters."""
         universe = Universe(
-            name=data['name'],
-            description=data.get('description', ''),
+            name=data["name"],
+            description=data.get("description", ""),
             creator_id=user_id,
-            is_public=data.get('is_public', False),
-            allow_guests=data.get('allow_guests', False)
+            is_public=data.get("is_public", True),
         )
 
-        try:
-            db.session.add(universe)
-            db.session.commit()
-            return universe
-        except Exception as e:
-            db.session.rollback()
-            raise Exception('Failed to create universe') from e
+        physics_params = PhysicsParameters(
+            universe=universe,
+            gravity=data.get("physics", {}).get("gravity", 9.81),
+            particle_speed=data.get("physics", {}).get("particle_speed", 1.0),
+        )
 
-    def get_universe(self, universe_id):
+        music_params = MusicParameters(
+            universe=universe,
+            tempo=data.get("music", {}).get("tempo", 120),
+            key=data.get("music", {}).get("key", "C"),
+            scale=data.get("music", {}).get("scale", "major"),
+        )
+
+        viz_params = VisualizationParameters(
+            universe=universe,
+            color_scheme=data.get("visualization", {}).get("color_scheme", "default"),
+            particle_size=data.get("visualization", {}).get("particle_size", 1.0),
+        )
+
+        db.session.add(universe)
+        db.session.add(physics_params)
+        db.session.add(music_params)
+        db.session.add(viz_params)
+        db.session.commit()
+
+        return universe
+
+    @staticmethod
+    def get_universe(universe_id):
         """Get a universe by ID."""
         return Universe.query.get(universe_id)
 
-    def update_universe(self, universe_id, user_id, data):
-        """Update a universe."""
+    @staticmethod
+    def update_universe(universe_id, data):
+        """Update a universe and its parameters."""
         universe = Universe.query.get(universe_id)
         if not universe:
             return None
 
-        if universe.creator_id != user_id:
-            raise ValueError('Unauthorized to update this universe')
+        universe.name = data.get("name", universe.name)
+        universe.description = data.get("description", universe.description)
+        universe.is_public = data.get("is_public", universe.is_public)
 
-        try:
-            for key, value in data.items():
-                if hasattr(universe, key):
-                    setattr(universe, key, value)
+        if "physics" in data:
+            physics = universe.physics_parameters
+            physics.gravity = data["physics"].get("gravity", physics.gravity)
+            physics.particle_speed = data["physics"].get(
+                "particle_speed", physics.particle_speed
+            )
 
-            db.session.commit()
-            return universe
-        except Exception as e:
-            db.session.rollback()
-            raise Exception('Failed to update universe') from e
+        if "music" in data:
+            music = universe.music_parameters
+            music.tempo = data["music"].get("tempo", music.tempo)
+            music.key = data["music"].get("key", music.key)
+            music.scale = data["music"].get("scale", music.scale)
 
-    def delete_universe(self, universe_id, user_id):
+        if "visualization" in data:
+            viz = universe.visualization_parameters
+            viz.color_scheme = data["visualization"].get(
+                "color_scheme", viz.color_scheme
+            )
+            viz.particle_size = data["visualization"].get(
+                "particle_size", viz.particle_size
+            )
+
+        db.session.commit()
+        return universe
+
+    @staticmethod
+    def delete_universe(universe_id):
         """Delete a universe."""
         universe = Universe.query.get(universe_id)
-        if not universe:
-            return
-
-        if universe.creator_id != user_id:
-            raise ValueError('Unauthorized to delete this universe')
-
-        try:
+        if universe:
             db.session.delete(universe)
             db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            raise Exception('Failed to delete universe') from e
+            return True
+        return False
 
-    def get_user_universes(self, user_id):
-        """Get all universes created by a user."""
-        return Universe.query.filter_by(creator_id=user_id).all()
-
-    def get_public_universes(self):
-        """Get all public universes."""
-        return Universe.query.filter_by(is_public=True).all()
-
-    def search_universes(self, query):
-        """Search universes by name or description."""
-        return Universe.query.filter(
-            (Universe.name.ilike(f'%{query}%')) |
-            (Universe.description.ilike(f'%{query}%'))
-        ).all()
+    @staticmethod
+    def list_universes(user_id=None, public_only=False):
+        """List universes with optional filtering."""
+        query = Universe.query
+        if user_id:
+            query = query.filter_by(creator_id=user_id)
+        if public_only:
+            query = query.filter_by(is_public=True)
+        return query.all()

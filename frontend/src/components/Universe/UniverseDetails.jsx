@@ -1,255 +1,199 @@
-import { Edit as EditIcon, Share as ShareIcon } from '@mui/icons-material';
 import {
-  Avatar,
-  AvatarGroup,
-  Badge,
-  Box,
-  Button,
-  Container,
-  Grid,
-  Paper,
-  Tab,
-  Tabs,
-  Tooltip,
-  Typography,
+    Delete as DeleteIcon,
+    Edit as EditIcon,
+    Share as ShareIcon,
+    StarBorder as StarBorderIcon,
+    Star as StarIcon,
+} from '@mui/icons-material';
+import {
+    Box,
+    Card,
+    CardContent,
+    Container,
+    IconButton,
+    Tab,
+    Tabs,
+    Tooltip,
+    Typography,
+    alpha,
+    styled
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
-import { universeService } from '../../services/universeService';
-import websocketService from '../../services/websocketService';
-import ParameterForm from './ParameterForm';
-import PrivacySettings from './PrivacySettings';
-import ShareDialog from './ShareDialog';
+import { websocketService } from '../../services/websocketService';
+import { deleteUniverse, fetchUniverse, toggleFavorite } from '../../store/slices/universeSlice';
+import { RootState } from '../../store/store';
+import UniverseMusic from './UniverseMusic';
+import UniversePhysics from './UniversePhysics';
+import UniverseVisualization from './UniverseVisualization';
 
-const TabPanel = ({ children, value, index }) => (
-  <div hidden={value !== index} role="tabpanel">
-    {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-  </div>
-);
+const DetailsCard = styled(Card)(({ theme }) => ({
+  backgroundColor: alpha(theme.palette.background.paper, 0.6),
+  backdropFilter: 'blur(8px)',
+  transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+  '&:hover': {
+    transform: 'translateY(-4px)',
+    boxShadow: theme.shadows[8],
+  },
+}));
 
-const UniverseDetails = () => {
-  const { id } = useParams();
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+const TabPanel = styled((props: TabPanelProps) => {
+  const { children, value, index, ...other } = props;
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`universe-tabpanel-${index}`}
+      aria-labelledby={`universe-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box>{children}</Box>}
+    </div>
+  );
+})(({ theme }) => ({
+  padding: theme.spacing(3, 0),
+}));
+
+const UniverseDetails: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [universe, setUniverse] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const universe = useSelector((state: RootState) => state.universe.currentUniverse);
+  const loading = useSelector((state: RootState) => state.universe.loading);
+  const error = useSelector((state: RootState) => state.universe.error);
   const [tabValue, setTabValue] = useState(0);
-  const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [activeCollaborators, setActiveCollaborators] = useState(new Map());
 
   useEffect(() => {
-    const fetchUniverse = async () => {
-      try {
-        const data = await universeService.getUniverse(id);
-        setUniverse(data);
-        setLoading(false);
-      } catch (err) {
-        setError(err.message);
-        setLoading(false);
-      }
-    };
-
-    fetchUniverse();
-  }, [id]);
+    if (id) {
+      dispatch(fetchUniverse(parseInt(id, 10)));
+    }
+  }, [dispatch, id]);
 
   useEffect(() => {
-    if (!universe) return;
+    if (universe) {
+      websocketService.connect();
+      websocketService.joinUniverse(universe.id);
 
-    // Connect to WebSocket and join universe room
-    websocketService.joinUniverse(id);
-    websocketService.updatePresence(id, 'active');
+      return () => {
+        websocketService.leaveUniverse(universe.id);
+      };
+    }
+  }, [universe]);
 
-    // Listen for parameter updates
-    const parameterHandler = data => {
-      if (data.universe_id === id) {
-        setUniverse(prev => ({
-          ...prev,
-          [`${data.type}_parameters`]: data.value,
-        }));
-      }
-    };
-
-    // Listen for presence updates
-    const presenceHandler = data => {
-      if (data.universe_id === id) {
-        setActiveCollaborators(prev => {
-          const newMap = new Map(prev);
-          if (data.status === 'active') {
-            newMap.set(data.user_id, data.user);
-          } else {
-            newMap.delete(data.user_id);
-          }
-          return newMap;
-        });
-      }
-    };
-
-    websocketService.on('parameter_update', parameterHandler);
-    websocketService.on('presence_update', presenceHandler);
-
-    return () => {
-      websocketService.leaveUniverse(id);
-      websocketService.off('parameter_update', parameterHandler);
-      websocketService.off('presence_update', presenceHandler);
-    };
-  }, [id, universe]);
-
-  const handleEdit = () => {
-    navigate(`/universes/${id}/edit`);
-  };
-
-  const handleTabChange = (event, newValue) => {
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
-  const handleParameterUpdate = (type, params) => {
-    websocketService.updateParameter(id, type, params);
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this universe?')) {
+      try {
+        await dispatch(deleteUniverse(parseInt(id!, 10)));
+        navigate('/dashboard');
+      } catch (error) {
+        console.error('Failed to delete universe:', error);
+      }
+    }
   };
 
-  const handlePrivacyUpdate = updatedUniverse => {
-    setUniverse(updatedUniverse);
+  const handleFavorite = async () => {
+    try {
+      await dispatch(toggleFavorite(parseInt(id!, 10)));
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+    }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
-  if (!universe) return <div>Universe not found</div>;
+  if (loading) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 8, mb: 8 }}>
+        <Typography>Loading universe...</Typography>
+      </Container>
+    );
+  }
+
+  if (error || !universe) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 8, mb: 8 }}>
+        <Typography color="error">{error || 'Universe not found'}</Typography>
+      </Container>
+    );
+  }
 
   return (
-    <Container maxWidth="lg">
-      <Box sx={{ mt: 4, mb: 4 }}>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: 4,
-          }}
-        >
-          <Box>
-            <Typography variant="h4" component="h1" gutterBottom>
-              {universe.name}
-            </Typography>
-            <Typography variant="subtitle1" color="text.secondary">
-              {universe.description}
-            </Typography>
+    <Container maxWidth="lg" sx={{ mt: 8, mb: 8 }}>
+      <DetailsCard>
+        <CardContent sx={{ p: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 4 }}>
+            <Box>
+              <Typography variant="h4" component="h1" gutterBottom>
+                {universe.name}
+              </Typography>
+              <Typography variant="body1" color="text.secondary" paragraph>
+                {universe.description}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" display="block">
+                Last updated: {new Date(universe.updatedAt).toLocaleDateString()}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Tooltip title="Edit Universe">
+                <IconButton onClick={() => setTabValue(3)}>
+                  <EditIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={universe.isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}>
+                <IconButton
+                  onClick={handleFavorite}
+                  color={universe.isFavorite ? 'primary' : 'default'}
+                >
+                  {universe.isFavorite ? <StarIcon /> : <StarBorderIcon />}
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Share Universe">
+                <IconButton>
+                  <ShareIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Delete Universe">
+                <IconButton color="error" onClick={handleDelete}>
+                  <DeleteIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
           </Box>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            {activeCollaborators.size > 0 && (
-              <AvatarGroup max={4}>
-                {Array.from(activeCollaborators.values()).map(user => (
-                  <Tooltip key={user.id} title={user.username}>
-                    <Badge
-                      overlap="circular"
-                      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                      variant="dot"
-                      color="success"
-                    >
-                      <Avatar alt={user.username} src={user.avatarUrl}>
-                        {user.username[0]}
-                      </Avatar>
-                    </Badge>
-                  </Tooltip>
-                ))}
-              </AvatarGroup>
-            )}
-            <PrivacySettings
-              universe={universe}
-              onUpdate={handlePrivacyUpdate}
-            />
-            <Button
-              variant="outlined"
-              startIcon={<ShareIcon />}
-              onClick={() => setShareDialogOpen(true)}
-            >
-              Share
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<EditIcon />}
-              onClick={handleEdit}
-            >
-              Edit Universe
-            </Button>
-          </Box>
-        </Box>
 
-        <Paper sx={{ mb: 4 }}>
-          <Tabs value={tabValue} onChange={handleTabChange}>
-            <Tab label="Overview" />
-            <Tab label="Physics" />
-            <Tab label="Music" />
-            <Tab label="Visualization" />
-          </Tabs>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Tabs
+              value={tabValue}
+              onChange={handleTabChange}
+              aria-label="universe settings tabs"
+              variant="scrollable"
+              scrollButtons="auto"
+            >
+              <Tab label="Physics" />
+              <Tab label="Music" />
+              <Tab label="Visualization" />
+            </Tabs>
+          </Box>
 
           <TabPanel value={tabValue} index={0}>
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" gutterBottom>
-                  <strong>Created:</strong>{' '}
-                  {new Date(universe.created_at).toLocaleDateString()}
-                </Typography>
-                <Typography variant="subtitle1" gutterBottom>
-                  <strong>Last Updated:</strong>{' '}
-                  {new Date(universe.updated_at).toLocaleDateString()}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" gutterBottom>
-                  <strong>Status:</strong>{' '}
-                  {universe.is_public ? 'Public' : 'Private'}
-                </Typography>
-                <Typography variant="subtitle1" gutterBottom>
-                  <strong>Creator:</strong> {universe.creator}
-                </Typography>
-              </Grid>
-            </Grid>
+            <UniversePhysics universe={universe} />
           </TabPanel>
-
           <TabPanel value={tabValue} index={1}>
-            {universe.physics_enabled ? (
-              <ParameterForm
-                universeId={id}
-                type="physics"
-                initialParameters={universe.physics_parameters}
-                onUpdate={params => handleParameterUpdate('physics', params)}
-              />
-            ) : (
-              <Typography>Physics is disabled for this universe.</Typography>
-            )}
+            <UniverseMusic universe={universe} />
           </TabPanel>
-
           <TabPanel value={tabValue} index={2}>
-            {universe.music_enabled ? (
-              <ParameterForm
-                universeId={id}
-                type="music"
-                initialParameters={universe.music_parameters}
-                onUpdate={params => handleParameterUpdate('music', params)}
-              />
-            ) : (
-              <Typography>Music is disabled for this universe.</Typography>
-            )}
+            <UniverseVisualization universe={universe} />
           </TabPanel>
-
-          <TabPanel value={tabValue} index={3}>
-            <ParameterForm
-              universeId={id}
-              type="visualization"
-              initialParameters={universe.visualization_parameters}
-              onUpdate={params =>
-                handleParameterUpdate('visualization', params)
-              }
-            />
-          </TabPanel>
-        </Paper>
-
-        <ShareDialog
-          open={shareDialogOpen}
-          onClose={() => setShareDialogOpen(false)}
-          universeId={id}
-          currentCollaborators={universe.collaborators || []}
-        />
-      </Box>
+        </CardContent>
+      </DetailsCard>
     </Container>
   );
 };

@@ -1,16 +1,16 @@
-import { Close as CloseIcon } from '@mui/icons-material';
+import { Close as CloseIcon } from "@mui/icons-material";
 import {
-    Box,
-    Button,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    IconButton,
-    Typography,
-    useTheme,
-} from '@mui/material';
-import React from 'react';
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Typography,
+  useTheme,
+} from "@mui/material";
+import React from "react";
 
 const ModalForm = ({
   open,
@@ -18,8 +18,8 @@ const ModalForm = ({
   title,
   children,
   onSubmit,
-  submitText = 'Save',
-  maxWidth = 'sm',
+  submitText = "Save",
+  maxWidth = "sm",
   loading = false,
   hideActions = false,
 }) => {
@@ -34,15 +34,15 @@ const ModalForm = ({
       PaperProps={{
         sx: {
           background: theme.palette.background.paper,
-          backgroundImage: 'none',
+          backgroundImage: "none",
         },
       }}
     >
       <DialogTitle
         sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
           pb: 1,
         }}
       >
@@ -54,7 +54,7 @@ const ModalForm = ({
           onClick={onClose}
           sx={{
             color: theme.palette.text.secondary,
-            '&:hover': {
+            "&:hover": {
               color: theme.palette.text.primary,
             },
           }}
@@ -67,7 +67,7 @@ const ModalForm = ({
         sx={{
           py: 2,
           px: 3,
-          '&:first-of-type': {
+          "&:first-of-type": {
             pt: 2,
           },
         }}
@@ -89,9 +89,9 @@ const ModalForm = ({
                 variant="outlined"
                 color="inherit"
                 sx={{
-                  borderColor: 'rgba(255,255,255,0.12)',
-                  '&:hover': {
-                    borderColor: 'rgba(255,255,255,0.2)',
+                  borderColor: "rgba(255,255,255,0.12)",
+                  "&:hover": {
+                    borderColor: "rgba(255,255,255,0.2)",
                   },
                 }}
               >
@@ -105,17 +105,19 @@ const ModalForm = ({
                 sx={{
                   ml: 2,
                   px: 4,
-                  position: 'relative',
-                  '&::after': loading ? {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'rgba(255,255,255,0.1)',
-                    animation: 'pulse 1.5s infinite',
-                  } : {},
+                  position: "relative",
+                  "&::after": loading
+                    ? {
+                        content: '""',
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: "rgba(255,255,255,0.1)",
+                        animation: "pulse 1.5s infinite",
+                      }
+                    : {},
                 }}
               >
                 {submitText}

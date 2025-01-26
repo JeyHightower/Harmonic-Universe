@@ -1,5 +1,5 @@
-import React from 'react';
-import styles from './ErrorBoundary.module.css';
+import React from "react";
+import styles from "./ErrorBoundary.module.css";
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -26,7 +26,7 @@ class ErrorBoundary extends React.Component {
       this.props.onError(error);
     } else {
       // Fallback to console error
-      console.error('Error caught by boundary:', error, errorInfo);
+      console.error("Error caught by boundary:", error, errorInfo);
     }
   }
 

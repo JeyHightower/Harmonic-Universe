@@ -1,178 +1,146 @@
+import { useUI } from "@/hooks/useUI";
 import {
-  Delete as DeleteIcon,
-  PersonAdd as PersonAddIcon,
-} from '@mui/icons-material';
+  ContentCopy as ContentCopyIcon,
+  Facebook as FacebookIcon,
+  LinkedIn as LinkedInIcon,
+  Twitter as TwitterIcon,
+} from "@mui/icons-material";
 import {
-  Avatar,
   Box,
   Button,
   Dialog,
-  DialogActions,
   DialogContent,
   DialogTitle,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemSecondaryAction,
-  ListItemText,
+  IconButton,
+  InputAdornment,
+  Stack,
   TextField,
+  Tooltip,
   Typography,
-} from '@mui/material';
-import { useEffect, useState } from 'react';
-import { universeService } from '../../services/universeService';
-import { userService } from '../../services/userService';
+} from "@mui/material";
+import React, { useState } from "react";
 
-const ShareDialog = ({
+interface ShareDialogProps {
+  open: boolean;
+  onClose: () => void;
+  universeId: number;
+}
+
+const ShareDialog: React.FC<ShareDialogProps> = ({
   open,
   onClose,
   universeId,
-  currentCollaborators = [],
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [collaborators, setCollaborators] = useState(currentCollaborators);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const { showAlert } = useUI();
+  const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    setCollaborators(currentCollaborators);
-  }, [currentCollaborators]);
+  const shareUrl = `${window.location.origin}/universe/${universeId}`;
 
-  const handleSearch = async query => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      return;
-    }
-
+  const handleCopyClick = async () => {
     try {
-      const users = await userService.searchUsers(query);
-      setSearchResults(
-        users.filter(
-          user => !collaborators.some(collab => collab.id === user.id)
-        )
-      );
-    } catch (err) {
-      setError('Failed to search users');
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      showAlert({
+        type: "success",
+        message: "Link copied to clipboard",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      showAlert({
+        type: "error",
+        message: "Failed to copy link",
+      });
     }
   };
 
-  const handleAddCollaborator = async user => {
-    setLoading(true);
-    setError(null);
-    try {
-      await universeService.shareUniverse(universeId, user.id);
-      setCollaborators([...collaborators, user]);
-      setSearchResults(searchResults.filter(u => u.id !== user.id));
-      setSearchQuery('');
-    } catch (err) {
-      setError('Failed to add collaborator');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleSocialShare = (platform: string) => {
+    let url = "";
+    const text =
+      "Check out this amazing universe I found on Harmonic Universe!";
 
-  const handleRemoveCollaborator = async userId => {
-    setLoading(true);
-    setError(null);
-    try {
-      await universeService.unshareUniverse(universeId, userId);
-      setCollaborators(collaborators.filter(c => c.id !== userId));
-    } catch (err) {
-      setError('Failed to remove collaborator');
-    } finally {
-      setLoading(false);
+    switch (platform) {
+      case "twitter":
+        url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+          text,
+        )}&url=${encodeURIComponent(shareUrl)}`;
+        break;
+      case "facebook":
+        url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+          shareUrl,
+        )}`;
+        break;
+      case "linkedin":
+        url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+          shareUrl,
+        )}`;
+        break;
+      default:
+        return;
     }
+
+    window.open(url, "_blank", "width=600,height=400");
   };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Share Universe</DialogTitle>
       <DialogContent>
+        <Typography variant="body2" color="text.secondary" paragraph>
+          Share this universe with your friends and colleagues
+        </Typography>
+
+        <TextField
+          fullWidth
+          value={shareUrl}
+          InputProps={{
+            readOnly: true,
+            endAdornment: (
+              <InputAdornment position="end">
+                <Tooltip title={copied ? "Copied!" : "Copy link"}>
+                  <IconButton onClick={handleCopyClick} edge="end">
+                    <ContentCopyIcon />
+                  </IconButton>
+                </Tooltip>
+              </InputAdornment>
+            ),
+          }}
+          sx={{ mb: 3 }}
+        />
+
         <Box sx={{ mb: 2 }}>
-          <TextField
-            fullWidth
-            label="Search users"
-            value={searchQuery}
-            onChange={e => {
-              setSearchQuery(e.target.value);
-              handleSearch(e.target.value);
-            }}
-            placeholder="Type to search users..."
-          />
-        </Box>
-
-        {searchResults.length > 0 && (
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              Search Results
-            </Typography>
-            <List>
-              {searchResults.map(user => (
-                <ListItem key={user.id}>
-                  <ListItemAvatar>
-                    <Avatar>{user.username[0]}</Avatar>
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary={user.username}
-                    secondary={user.email}
-                  />
-                  <ListItemSecondaryAction>
-                    <Button
-                      startIcon={<PersonAddIcon />}
-                      onClick={() => handleAddCollaborator(user)}
-                      disabled={loading}
-                    >
-                      Add
-                    </Button>
-                  </ListItemSecondaryAction>
-                </ListItem>
-              ))}
-            </List>
-          </Box>
-        )}
-
-        <Box>
           <Typography variant="subtitle2" gutterBottom>
-            Current Collaborators
+            Share on social media
           </Typography>
-          {collaborators.length > 0 ? (
-            <List>
-              {collaborators.map(user => (
-                <ListItem key={user.id}>
-                  <ListItemAvatar>
-                    <Avatar>{user.username[0]}</Avatar>
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary={user.username}
-                    secondary={user.email}
-                  />
-                  <ListItemSecondaryAction>
-                    <Button
-                      startIcon={<DeleteIcon />}
-                      color="error"
-                      onClick={() => handleRemoveCollaborator(user.id)}
-                      disabled={loading}
-                    >
-                      Remove
-                    </Button>
-                  </ListItemSecondaryAction>
-                </ListItem>
-              ))}
-            </List>
-          ) : (
-            <Typography color="text.secondary">No collaborators yet</Typography>
-          )}
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              startIcon={<TwitterIcon />}
+              onClick={() => handleSocialShare("twitter")}
+            >
+              Twitter
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<FacebookIcon />}
+              onClick={() => handleSocialShare("facebook")}
+            >
+              Facebook
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<LinkedInIcon />}
+              onClick={() => handleSocialShare("linkedin")}
+            >
+              LinkedIn
+            </Button>
+          </Stack>
         </Box>
 
-        {error && (
-          <Typography color="error" sx={{ mt: 2 }}>
-            {error}
-          </Typography>
-        )}
+        <Typography variant="body2" color="text.secondary">
+          Note: Only users with appropriate permissions will be able to view
+          this universe.
+        </Typography>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Done</Button>
-      </DialogActions>
     </Dialog>
   );
 };

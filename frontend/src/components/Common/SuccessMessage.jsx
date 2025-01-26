@@ -1,13 +1,13 @@
-import PropTypes from 'prop-types';
-import React, { useEffect } from 'react';
-import './SuccessMessage.css';
+import PropTypes from "prop-types";
+import React, { useEffect } from "react";
+import "./SuccessMessage.css";
 
 const SuccessMessage = ({
   message,
   duration = 3000,
   onDismiss,
   showIcon = true,
-  variant = 'default',
+  variant = "default",
 }) => {
   useEffect(() => {
     if (duration && onDismiss) {
@@ -43,7 +43,7 @@ SuccessMessage.propTypes = {
   duration: PropTypes.number,
   onDismiss: PropTypes.func,
   showIcon: PropTypes.bool,
-  variant: PropTypes.oneOf(['default', 'toast', 'inline']),
+  variant: PropTypes.oneOf(["default", "toast", "inline"]),
 };
 
 export default SuccessMessage;

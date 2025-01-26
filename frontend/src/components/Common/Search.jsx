@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
-import { useDebounce } from '../../hooks/useDebounce';
-import styles from './Search.module.css';
+import { useState, useEffect, useRef } from "react";
+import { useDebounce } from "../../hooks/useDebounce";
+import styles from "./Search.module.css";
 
-const Search = ({ onSearch, filters = [], placeholder = 'Search...' }) => {
-  const [searchTerm, setSearchTerm] = useState('');
+const Search = ({ onSearch, filters = [], placeholder = "Search..." }) => {
+  const [searchTerm, setSearchTerm] = useState("");
   const [activeFilters, setActiveFilters] = useState({});
   const [isOpen, setIsOpen] = useState(false);
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -13,7 +13,7 @@ const Search = ({ onSearch, filters = [], placeholder = 'Search...' }) => {
     const handleSearch = () => {
       onSearch({
         term: debouncedSearchTerm,
-        filters: activeFilters
+        filters: activeFilters,
       });
     };
 
@@ -27,14 +27,14 @@ const Search = ({ onSearch, filters = [], placeholder = 'Search...' }) => {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleFilterChange = (filterId, value) => {
-    setActiveFilters(prev => ({
+    setActiveFilters((prev) => ({
       ...prev,
-      [filterId]: value
+      [filterId]: value,
     }));
   };
 
@@ -58,30 +58,34 @@ const Search = ({ onSearch, filters = [], placeholder = 'Search...' }) => {
 
       {isOpen && (
         <div className={styles.filterPanel}>
-          {filters.map(filter => (
+          {filters.map((filter) => (
             <div key={filter.id} className={styles.filterItem}>
               <label>{filter.label}</label>
-              {filter.type === 'select' ? (
+              {filter.type === "select" ? (
                 <select
-                  value={activeFilters[filter.id] || ''}
-                  onChange={(e) => handleFilterChange(filter.id, e.target.value)}
+                  value={activeFilters[filter.id] || ""}
+                  onChange={(e) =>
+                    handleFilterChange(filter.id, e.target.value)
+                  }
                   className={styles.select}
                 >
                   <option value="">All</option>
-                  {filter.options.map(option => (
+                  {filter.options.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
                   ))}
                 </select>
-              ) : filter.type === 'range' ? (
+              ) : filter.type === "range" ? (
                 <div className={styles.rangeContainer}>
                   <input
                     type="range"
                     min={filter.min}
                     max={filter.max}
                     value={activeFilters[filter.id] || filter.min}
-                    onChange={(e) => handleFilterChange(filter.id, e.target.value)}
+                    onChange={(e) =>
+                      handleFilterChange(filter.id, e.target.value)
+                    }
                     className={styles.range}
                   />
                   <span>{activeFilters[filter.id] || filter.min}</span>

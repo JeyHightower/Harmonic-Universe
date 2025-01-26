@@ -1,38 +1,38 @@
 import {
-    Dashboard,
-    Explore,
-    Favorite,
-    Menu as MenuIcon,
-    Person,
-    Settings,
-} from '@mui/icons-material';
+  Dashboard,
+  Explore,
+  Favorite,
+  Menu as MenuIcon,
+  Person,
+  Settings,
+} from "@mui/icons-material";
 import {
-    AppBar,
-    Avatar,
-    Box,
-    Drawer,
-    IconButton,
-    List,
-    ListItem,
-    ListItemIcon,
-    ListItemText,
-    Menu,
-    MenuItem,
-    Toolbar,
-    Tooltip,
-    Typography,
-    useMediaQuery,
-    useTheme,
-} from '@mui/material';
-import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import Logo from '../common/Logo';
+  AppBar,
+  Avatar,
+  Box,
+  Drawer,
+  IconButton,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
+  Toolbar,
+  Tooltip,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
+import React, { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import Logo from "../common/Logo";
 
 const DRAWER_WIDTH = 240;
 
 const AppLayout = ({ children }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
@@ -51,22 +51,22 @@ const AppLayout = ({ children }) => {
   };
 
   const menuItems = [
-    { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
-    { text: 'Explore', icon: <Explore />, path: '/explore' },
-    { text: 'Favorites', icon: <Favorite />, path: '/favorites' },
-    { text: 'Settings', icon: <Settings />, path: '/settings' },
+    { text: "Dashboard", icon: <Dashboard />, path: "/dashboard" },
+    { text: "Explore", icon: <Explore />, path: "/explore" },
+    { text: "Favorites", icon: <Favorite />, path: "/favorites" },
+    { text: "Settings", icon: <Settings />, path: "/settings" },
   ];
 
   const drawer = (
-    <Box sx={{ height: '100%', background: theme.palette.background.paper }}>
+    <Box sx={{ height: "100%", background: theme.palette.background.paper }}>
       <Box
         sx={{
           p: 2,
-          display: 'flex',
-          alignItems: 'center',
+          display: "flex",
+          alignItems: "center",
           gap: 1,
           borderBottom: 1,
-          borderColor: 'divider',
+          borderColor: "divider",
         }}
       >
         <Logo width={32} height={32} />
@@ -85,19 +85,20 @@ const AppLayout = ({ children }) => {
               mx: 1,
               borderRadius: 1,
               mb: 0.5,
-              '&.Mui-selected': {
-                backgroundColor: 'rgba(124, 77, 255, 0.08)',
-                '&:hover': {
-                  backgroundColor: 'rgba(124, 77, 255, 0.12)',
+              "&.Mui-selected": {
+                backgroundColor: "rgba(124, 77, 255, 0.08)",
+                "&:hover": {
+                  backgroundColor: "rgba(124, 77, 255, 0.12)",
                 },
               },
             }}
           >
             <ListItemIcon
               sx={{
-                color: location.pathname === item.path
-                  ? 'primary.main'
-                  : 'text.secondary',
+                color:
+                  location.pathname === item.path
+                    ? "primary.main"
+                    : "text.secondary",
               }}
             >
               {item.icon}
@@ -106,9 +107,10 @@ const AppLayout = ({ children }) => {
               primary={item.text}
               primaryTypographyProps={{
                 sx: {
-                  color: location.pathname === item.path
-                    ? 'text.primary'
-                    : 'text.secondary',
+                  color:
+                    location.pathname === item.path
+                      ? "text.primary"
+                      : "text.secondary",
                   fontWeight: location.pathname === item.path ? 500 : 400,
                 },
               }}
@@ -120,17 +122,17 @@ const AppLayout = ({ children }) => {
   );
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+    <Box sx={{ display: "flex", minHeight: "100vh" }}>
       <AppBar
         position="fixed"
         sx={{
           width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
           ml: { md: `${DRAWER_WIDTH}px` },
-          boxShadow: 'none',
+          boxShadow: "none",
           borderBottom: 1,
-          borderColor: 'divider',
-          backdropFilter: 'blur(8px)',
-          background: 'rgba(30, 30, 30, 0.8)',
+          borderColor: "divider",
+          backdropFilter: "blur(8px)",
+          background: "rgba(30, 30, 30, 0.8)",
         }}
       >
         <Toolbar>
@@ -139,7 +141,7 @@ const AppLayout = ({ children }) => {
             aria-label="open drawer"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { md: 'none' } }}
+            sx={{ mr: 2, display: { md: "none" } }}
           >
             <MenuIcon />
           </IconButton>
@@ -154,7 +156,7 @@ const AppLayout = ({ children }) => {
                 sx={{
                   width: 32,
                   height: 32,
-                  bgcolor: 'primary.main',
+                  bgcolor: "primary.main",
                 }}
               >
                 <Person />
@@ -180,12 +182,12 @@ const AppLayout = ({ children }) => {
               keepMounted: true,
             }}
             sx={{
-              display: { xs: 'block', md: 'none' },
-              '& .MuiDrawer-paper': {
-                boxSizing: 'border-box',
+              display: { xs: "block", md: "none" },
+              "& .MuiDrawer-paper": {
+                boxSizing: "border-box",
                 width: DRAWER_WIDTH,
                 borderRight: 1,
-                borderColor: 'divider',
+                borderColor: "divider",
               },
             }}
           >
@@ -195,12 +197,12 @@ const AppLayout = ({ children }) => {
           <Drawer
             variant="permanent"
             sx={{
-              display: { xs: 'none', md: 'block' },
-              '& .MuiDrawer-paper': {
-                boxSizing: 'border-box',
+              display: { xs: "none", md: "block" },
+              "& .MuiDrawer-paper": {
+                boxSizing: "border-box",
                 width: DRAWER_WIDTH,
                 borderRight: 1,
-                borderColor: 'divider',
+                borderColor: "divider",
               },
             }}
             open
@@ -216,7 +218,7 @@ const AppLayout = ({ children }) => {
           flexGrow: 1,
           p: 3,
           width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
-          minHeight: '100vh',
+          minHeight: "100vh",
           background: theme.palette.background.default,
         }}
       >
@@ -229,12 +231,12 @@ const AppLayout = ({ children }) => {
         open={Boolean(anchorEl)}
         onClose={handleProfileMenuClose}
         onClick={handleProfileMenuClose}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        transformOrigin={{ horizontal: "right", vertical: "top" }}
+        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
-        <MenuItem onClick={() => navigate('/profile')}>Profile</MenuItem>
-        <MenuItem onClick={() => navigate('/settings')}>Settings</MenuItem>
-        <MenuItem onClick={() => navigate('/logout')}>Logout</MenuItem>
+        <MenuItem onClick={() => navigate("/profile")}>Profile</MenuItem>
+        <MenuItem onClick={() => navigate("/settings")}>Settings</MenuItem>
+        <MenuItem onClick={() => navigate("/logout")}>Logout</MenuItem>
       </Menu>
     </Box>
   );

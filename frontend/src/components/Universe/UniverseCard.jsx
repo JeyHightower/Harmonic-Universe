@@ -1,184 +1,146 @@
-// UniverseCard.js
+import useAuth from "@/hooks/useAuth";
+import useUniverse from "@/hooks/useUniverse";
+import { Universe } from "@/types/universe";
+import FavoriteIcon from "@mui/icons-material/Favorite";
+import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
+import GroupIcon from "@mui/icons-material/Group";
+import ShareIcon from "@mui/icons-material/Share";
 import {
-    Delete,
-    Edit,
-    Favorite,
-    FavoriteBorder,
-    Lock,
-    MusicNote,
-    Public,
-    Science,
-    Share,
-} from '@mui/icons-material';
-import {
-    Avatar,
-    Box,
-    Card,
-    CardActions,
-    CardContent,
-    Chip,
-    IconButton,
-    Tooltip,
-    Typography,
-    useTheme,
-} from '@mui/material';
-import PropTypes from 'prop-types';
-import React from 'react';
+  Avatar,
+  Box,
+  Card,
+  CardActionArea,
+  CardActions,
+  CardContent,
+  CardHeader,
+  IconButton,
+  Tooltip,
+  Typography,
+} from "@mui/material";
+import { format } from "date-fns";
+import React from "react";
+import { useNavigate } from "react-router-dom";
 
-const UniverseCard = ({
-  universe,
-  onFavorite,
-  onShare,
-  onEdit,
-  onDelete,
-  isFavorite,
-  isOwner,
-}) => {
-  const theme = useTheme();
+interface UniverseCardProps {
+  universe: Universe;
+}
+
+const UniverseCard: React.FC<UniverseCardProps> = ({ universe }) => {
+  const navigate = useNavigate();
+  const { requireAuth } = useAuth();
+  const { handleToggleFavorite } = useUniverse();
+
+  const handleCardClick = () => {
+    navigate(`/universe/${universe.id}`);
+  };
+
+  const handleFavorite = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    requireAuth(() => {
+      handleToggleFavorite(universe.id, universe.is_favorited);
+    });
+  };
+
+  const handleShare = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    // TODO: Implement share functionality
+  };
 
   return (
     <Card
+      elevation={0}
       sx={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'relative',
-        overflow: 'visible',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 4,
-          background: theme.palette.primary.main,
-          borderTopLeftRadius: theme.shape.borderRadius,
-          borderTopRightRadius: theme.shape.borderRadius,
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        transition: "transform 0.2s ease-in-out",
+        "&:hover": {
+          transform: "translateY(-4px)",
         },
       }}
     >
-      <CardContent sx={{ flexGrow: 1, pb: 1 }}>
-        <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+      <CardActionArea onClick={handleCardClick}>
+        <CardHeader
+          avatar={
+            <Avatar
+              alt={universe.creator?.username}
+              src={universe.creator?.avatar}
+              sx={{ bgcolor: "primary.main" }}
+            >
+              {universe.creator?.username?.[0]?.toUpperCase()}
+            </Avatar>
+          }
+          title={universe.creator?.username}
+          subheader={format(new Date(universe.created_at), "MMM d, yyyy")}
+        />
+        <CardContent sx={{ flexGrow: 1, pb: 1 }}>
+          <Typography variant="h6" gutterBottom>
             {universe.name}
           </Typography>
-          {universe.is_public ? (
-            <Tooltip title="Public">
-              <Public fontSize="small" color="action" />
-            </Tooltip>
-          ) : (
-            <Tooltip title="Private">
-              <Lock fontSize="small" color="action" />
-            </Tooltip>
-          )}
-        </Box>
-
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{
-            mb: 2,
-            display: '-webkit-box',
-            WebkitLineClamp: 3,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-          }}
-        >
-          {universe.description}
-        </Typography>
-
-        <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-          {universe.physics_enabled && (
-            <Chip
-              icon={<Science fontSize="small" />}
-              label="Physics"
-              size="small"
-              variant="outlined"
-              sx={{ borderColor: 'rgba(255,255,255,0.12)' }}
-            />
-          )}
-          {universe.music_enabled && (
-            <Chip
-              icon={<MusicNote fontSize="small" />}
-              label="Music"
-              size="small"
-              variant="outlined"
-              sx={{ borderColor: 'rgba(255,255,255,0.12)' }}
-            />
-          )}
-        </Box>
-
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Avatar
-            src={universe.creator_avatar}
-            alt={universe.creator_name}
-            sx={{ width: 24, height: 24 }}
-          />
-          <Typography variant="body2" color="text.secondary">
-            {universe.creator_name}
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+            }}
+          >
+            {universe.description}
           </Typography>
-        </Box>
-      </CardContent>
+        </CardContent>
+      </CardActionArea>
 
-      <CardActions sx={{ px: 2, py: 1, borderTop: 1, borderColor: 'divider' }}>
-        <Box sx={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
-          <Box>
-            <Tooltip title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}>
-              <IconButton
-                size="small"
-                onClick={onFavorite}
-                color={isFavorite ? 'primary' : 'default'}
-              >
-                {isFavorite ? <Favorite /> : <FavoriteBorder />}
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Share">
-              <IconButton size="small" onClick={onShare}>
-                <Share />
-              </IconButton>
-            </Tooltip>
-          </Box>
-          {isOwner && (
-            <Box>
-              <Tooltip title="Edit">
-                <IconButton size="small" onClick={onEdit}>
-                  <Edit />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Delete">
-                <IconButton size="small" onClick={onDelete} color="error">
-                  <Delete />
-                </IconButton>
-              </Tooltip>
+      <CardActions
+        disableSpacing
+        sx={{
+          justifyContent: "space-between",
+          px: 2,
+          pb: 2,
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <Tooltip title={universe.is_public ? "Public" : "Private"}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                color: "text.secondary",
+                mr: 2,
+              }}
+            >
+              <GroupIcon
+                fontSize="small"
+                color={universe.is_public ? "primary" : "disabled"}
+              />
+              <Typography variant="body2" sx={{ ml: 0.5 }}>
+                {universe.collaborators_count}
+              </Typography>
             </Box>
-          )}
+          </Tooltip>
+        </Box>
+
+        <Box>
+          <IconButton
+            onClick={handleFavorite}
+            color={universe.is_favorited ? "error" : "default"}
+            size="small"
+          >
+            {universe.is_favorited ? (
+              <FavoriteIcon fontSize="small" />
+            ) : (
+              <FavoriteBorderIcon fontSize="small" />
+            )}
+          </IconButton>
+          <IconButton onClick={handleShare} size="small">
+            <ShareIcon fontSize="small" />
+          </IconButton>
         </Box>
       </CardActions>
     </Card>
   );
-};
-
-UniverseCard.propTypes = {
-  universe: PropTypes.shape({
-    id: PropTypes.number.isRequired,
-    name: PropTypes.string.isRequired,
-    description: PropTypes.string,
-    gravity_constant: PropTypes.number,
-    environment_harmony: PropTypes.number,
-    created_at: PropTypes.string,
-    favorite_count: PropTypes.number,
-    is_public: PropTypes.bool,
-    physics_enabled: PropTypes.bool,
-    music_enabled: PropTypes.bool,
-    creator_avatar: PropTypes.string,
-    creator_name: PropTypes.string,
-  }).isRequired,
-  onFavorite: PropTypes.func.isRequired,
-  onShare: PropTypes.func.isRequired,
-  onEdit: PropTypes.func.isRequired,
-  onDelete: PropTypes.func.isRequired,
-  isFavorite: PropTypes.bool.isRequired,
-  isOwner: PropTypes.bool.isRequired,
 };
 
 export default UniverseCard;

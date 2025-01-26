@@ -1,30 +1,30 @@
-import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import PropTypes from "prop-types";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   shareUniverse,
   unshareUniverse,
-} from '../../store/slices/universeSlice';
+} from "../../store/slices/universeSlice";
 import {
   clearSearchResults,
   fetchUsersByIds,
   searchUsers,
-} from '../../store/slices/userSlice';
-import styles from './Universe.module.css';
+} from "../../store/slices/userSlice";
+import styles from "./Universe.module.css";
 
 const ShareUniverse = ({ universeId }) => {
   const dispatch = useDispatch();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
   const { currentUniverse, isLoading: universeLoading } = useSelector(
-    state => state.universe
+    (state) => state.universe,
   );
   const {
     searchResults,
     userDetails,
     isLoading: userLoading,
-  } = useSelector(state => state.users);
-  const currentUser = useSelector(state => state.auth.user);
+  } = useSelector((state) => state.users);
+  const currentUser = useSelector((state) => state.auth.user);
   const isLoading = universeLoading || userLoading;
 
   // Only show sharing interface if user is the creator
@@ -36,7 +36,7 @@ const ShareUniverse = ({ universeId }) => {
     // Fetch usernames for shared users when component mounts or shared_with changes
     if (currentUniverse.shared_with?.length > 0) {
       const missingUserIds = currentUniverse.shared_with.filter(
-        id => !userDetails[id]
+        (id) => !userDetails[id],
       );
       if (missingUserIds.length > 0) {
         dispatch(fetchUsersByIds(missingUserIds));
@@ -65,31 +65,31 @@ const ShareUniverse = ({ universeId }) => {
         shareUniverse({
           universeId,
           userId: selectedUser.id,
-        })
+        }),
       ).unwrap();
       setSelectedUser(null);
-      setSearchQuery('');
+      setSearchQuery("");
     } catch (error) {
-      console.error('Failed to share universe:', error);
+      console.error("Failed to share universe:", error);
     }
   };
 
-  const handleUnshare = async userId => {
+  const handleUnshare = async (userId) => {
     try {
       await dispatch(
         unshareUniverse({
           universeId,
           userId,
-        })
+        }),
       ).unwrap();
     } catch (error) {
-      console.error('Failed to unshare universe:', error);
+      console.error("Failed to unshare universe:", error);
     }
   };
 
-  const handleSelectUser = user => {
+  const handleSelectUser = (user) => {
     setSelectedUser(user);
-    setSearchQuery('');
+    setSearchQuery("");
     dispatch(clearSearchResults());
   };
 
@@ -102,13 +102,13 @@ const ShareUniverse = ({ universeId }) => {
           <input
             type="text"
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search users..."
             className={styles.searchInput}
           />
           {searchQuery && searchResults.length > 0 && (
             <div className={styles.searchResults}>
-              {searchResults.map(user => (
+              {searchResults.map((user) => (
                 <div
                   key={user.id}
                   className={styles.searchResult}
@@ -142,9 +142,9 @@ const ShareUniverse = ({ universeId }) => {
         <h4>Shared with:</h4>
         {currentUniverse.shared_with?.length > 0 ? (
           <ul className={styles.sharedList}>
-            {currentUniverse.shared_with.map(userId => (
+            {currentUniverse.shared_with.map((userId) => (
               <li key={userId} className={styles.sharedUser}>
-                <span>{userDetails[userId]?.username || 'Loading...'}</span>
+                <span>{userDetails[userId]?.username || "Loading..."}</span>
                 <button
                   onClick={() => handleUnshare(userId)}
                   disabled={isLoading}

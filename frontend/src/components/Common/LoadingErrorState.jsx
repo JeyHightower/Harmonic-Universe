@@ -1,11 +1,11 @@
-import PropTypes from 'prop-types';
-import React from 'react';
-import commonStyles from '../../styles/common.module.css';
+import PropTypes from "prop-types";
+import React from "react";
+import commonStyles from "../../styles/common.module.css";
 
 const LoadingErrorState = ({
   isLoading,
   error,
-  loadingMessage = 'Loading...',
+  loadingMessage = "Loading...",
   errorMessage,
   onRetry,
 }) => {

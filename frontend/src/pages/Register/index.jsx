@@ -1,4 +1,4 @@
-import { LockOutlined as LockOutlinedIcon } from '@mui/icons-material';
+import { LockOutlined as LockOutlinedIcon } from "@mui/icons-material";
 import {
   Avatar,
   Box,
@@ -7,22 +7,22 @@ import {
   Link,
   TextField,
   Typography,
-} from '@mui/material';
-import { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { register } from '../../store/slices/authSlice';
+} from "@mui/material";
+import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { register } from "../../store/slices/authSlice";
 
 const Register = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error } = useSelector(state => state.auth);
+  const { loading, error } = useSelector((state) => state.auth);
 
   const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
 
   const [formErrors, setFormErrors] = useState({});
@@ -30,29 +30,29 @@ const Register = () => {
   const validateForm = () => {
     const errors = {};
     if (formData.password !== formData.confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
+      errors.confirmPassword = "Passwords do not match";
     }
     if (formData.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
+      errors.password = "Password must be at least 6 characters";
     }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
       const { confirmPassword, ...registerData } = formData;
       const result = await dispatch(register(registerData));
       if (!result.error) {
-        navigate('/login');
+        navigate("/login");
       }
     }
   };
@@ -62,12 +62,12 @@ const Register = () => {
       <Box
         sx={{
           mt: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
         }}
       >
-        <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
+        <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
           <LockOutlinedIcon />
         </Avatar>
         <Typography component="h1" variant="h5">
@@ -133,9 +133,9 @@ const Register = () => {
             sx={{ mt: 3, mb: 2 }}
             disabled={loading}
           >
-            {loading ? 'Signing up...' : 'Sign Up'}
+            {loading ? "Signing up..." : "Sign Up"}
           </Button>
-          <Box sx={{ textAlign: 'center' }}>
+          <Box sx={{ textAlign: "center" }}>
             <Link component={RouterLink} to="/login" variant="body2">
               Already have an account? Sign in
             </Link>

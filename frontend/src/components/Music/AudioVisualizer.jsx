@@ -1,7 +1,7 @@
-import PropTypes from 'prop-types';
-import React, { useEffect, useRef } from 'react';
-import * as Tone from 'tone';
-import styles from './AudioVisualizer.module.css';
+import PropTypes from "prop-types";
+import React, { useEffect, useRef } from "react";
+import * as Tone from "tone";
+import styles from "./AudioVisualizer.module.css";
 
 const AudioVisualizer = ({ isPlaying }) => {
   const canvasRef = useRef(null);
@@ -10,7 +10,7 @@ const AudioVisualizer = ({ isPlaying }) => {
 
   useEffect(() => {
     // Create analyzer node
-    const analyzer = new Tone.Analyser('waveform', 256);
+    const analyzer = new Tone.Analyser("waveform", 256);
     Tone.Destination.connect(analyzer);
     analyserRef.current = analyzer;
 
@@ -22,7 +22,7 @@ const AudioVisualizer = ({ isPlaying }) => {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     const analyzer = analyserRef.current;
 
     const resize = () => {
@@ -32,7 +32,7 @@ const AudioVisualizer = ({ isPlaying }) => {
     };
 
     resize();
-    window.addEventListener('resize', resize);
+    window.addEventListener("resize", resize);
 
     const draw = () => {
       const width = canvas.offsetWidth;
@@ -44,7 +44,7 @@ const AudioVisualizer = ({ isPlaying }) => {
 
       // Draw waveform
       ctx.beginPath();
-      ctx.strokeStyle = getComputedStyle(canvas).getPropertyValue('--accent');
+      ctx.strokeStyle = getComputedStyle(canvas).getPropertyValue("--accent");
       ctx.lineWidth = 2;
 
       const sliceWidth = width / values.length;
@@ -79,7 +79,7 @@ const AudioVisualizer = ({ isPlaying }) => {
         const y = height - barHeight;
 
         ctx.fillStyle =
-          getComputedStyle(canvas).getPropertyValue('--accent-light');
+          getComputedStyle(canvas).getPropertyValue("--accent-light");
         ctx.fillRect(x, y, barWidth, barHeight);
       }
 
@@ -97,7 +97,7 @@ const AudioVisualizer = ({ isPlaying }) => {
     }
 
     return () => {
-      window.removeEventListener('resize', resize);
+      window.removeEventListener("resize", resize);
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }

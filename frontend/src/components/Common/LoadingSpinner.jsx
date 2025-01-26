@@ -1,11 +1,11 @@
-import PropTypes from 'prop-types';
-import React from 'react';
-import './LoadingSpinner.css';
+import PropTypes from "prop-types";
+import React from "react";
+import "./LoadingSpinner.css";
 
 const LoadingSpinner = ({
-  size = 'medium',
+  size = "medium",
   overlay = false,
-  text = 'Loading...',
+  text = "Loading...",
 }) => {
   const spinnerClass = `spinner-${size}`;
 
@@ -29,7 +29,7 @@ const LoadingSpinner = ({
 };
 
 LoadingSpinner.propTypes = {
-  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  size: PropTypes.oneOf(["small", "medium", "large"]),
   overlay: PropTypes.bool,
   text: PropTypes.string,
 };

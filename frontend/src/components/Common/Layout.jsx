@@ -1,7 +1,7 @@
-import { useSelector } from 'react-redux';
-import Header from './Header';
-import Sidebar from './Sidebar';
-import styles from './Layout.module.css';
+import { useSelector } from "react-redux";
+import Header from "./Header";
+import Sidebar from "./Sidebar";
+import styles from "./Layout.module.css";
 
 const Layout = ({ children }) => {
   const { user } = useSelector((state) => state.auth);
@@ -11,9 +11,7 @@ const Layout = ({ children }) => {
       <Header />
       {user && <Sidebar />}
       <main className={styles.mainContent}>
-        <div className={styles.container}>
-          {children}
-        </div>
+        <div className={styles.container}>{children}</div>
       </main>
     </div>
   );

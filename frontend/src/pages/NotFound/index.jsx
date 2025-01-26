@@ -1,5 +1,5 @@
-import { Box, Button, Container, Typography } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { Box, Button, Container, Typography } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 const NotFound = () => {
   const navigate = useNavigate();
@@ -9,10 +9,10 @@ const NotFound = () => {
       <Box
         sx={{
           mt: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          textAlign: 'center',
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          textAlign: "center",
         }}
       >
         <Typography variant="h1" component="h1" gutterBottom>
@@ -28,7 +28,7 @@ const NotFound = () => {
         <Button
           variant="contained"
           size="large"
-          onClick={() => navigate('/')}
+          onClick={() => navigate("/")}
           sx={{ mt: 2 }}
         >
           Go to Home

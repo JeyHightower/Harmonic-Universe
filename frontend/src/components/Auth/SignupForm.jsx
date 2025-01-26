@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom';
-import { register } from '../../store/slices/authSlice';
-import './Auth.css';
+import React, { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Link, useNavigate } from "react-router-dom";
+import { register } from "../../store/slices/authSlice";
+import "./Auth.css";
 
 const SignupForm = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { isLoading, error } = useSelector(state => state.auth);
+  const { isLoading, error } = useSelector((state) => state.auth);
 
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
 
   const [validationErrors, setValidationErrors] = useState({});
@@ -22,43 +22,43 @@ const SignupForm = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!formData.email) {
-      errors.email = 'Email is required';
+      errors.email = "Email is required";
     } else if (!emailRegex.test(formData.email)) {
-      errors.email = 'Please enter a valid email address';
+      errors.email = "Please enter a valid email address";
     }
 
     if (!formData.password) {
-      errors.password = 'Password is required';
+      errors.password = "Password is required";
     } else if (formData.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters long';
+      errors.password = "Password must be at least 6 characters long";
     }
 
     if (!formData.confirmPassword) {
-      errors.confirmPassword = 'Please confirm your password';
+      errors.confirmPassword = "Please confirm your password";
     } else if (formData.password !== formData.confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
+      errors.confirmPassword = "Passwords do not match";
     }
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
     // Clear validation error when user starts typing
     if (validationErrors[name]) {
-      setValidationErrors(prev => ({
+      setValidationErrors((prev) => ({
         ...prev,
-        [name]: '',
+        [name]: "",
       }));
     }
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
@@ -66,10 +66,10 @@ const SignupForm = () => {
       const { confirmPassword, ...registrationData } = formData;
       const resultAction = await dispatch(register(registrationData));
       if (register.fulfilled.match(resultAction)) {
-        navigate('/login');
+        navigate("/login");
       }
     } catch (err) {
-      console.error('Registration failed:', err);
+      console.error("Registration failed:", err);
     }
   };
 
@@ -87,7 +87,7 @@ const SignupForm = () => {
             name="email"
             value={formData.email}
             onChange={handleChange}
-            className={validationErrors.email ? 'error' : ''}
+            className={validationErrors.email ? "error" : ""}
             placeholder="Enter your email"
           />
           {validationErrors.email && (
@@ -103,7 +103,7 @@ const SignupForm = () => {
             name="password"
             value={formData.password}
             onChange={handleChange}
-            className={validationErrors.password ? 'error' : ''}
+            className={validationErrors.password ? "error" : ""}
             placeholder="Create a password"
           />
           {validationErrors.password && (
@@ -119,7 +119,7 @@ const SignupForm = () => {
             name="confirmPassword"
             value={formData.confirmPassword}
             onChange={handleChange}
-            className={validationErrors.confirmPassword ? 'error' : ''}
+            className={validationErrors.confirmPassword ? "error" : ""}
             placeholder="Confirm your password"
           />
           {validationErrors.confirmPassword && (
@@ -130,7 +130,7 @@ const SignupForm = () => {
         </div>
 
         <button type="submit" className="auth-button" disabled={isLoading}>
-          {isLoading ? 'Creating Account...' : 'Sign Up'}
+          {isLoading ? "Creating Account..." : "Sign Up"}
         </button>
 
         <div className="auth-links">

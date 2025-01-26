@@ -1,7 +1,7 @@
-import PropTypes from 'prop-types';
-import { Link } from 'react-router-dom';
-import FavoriteButton from './FavoriteButton';
-import styles from './Universe.module.css';
+import PropTypes from "prop-types";
+import { Link } from "react-router-dom";
+import FavoriteButton from "./FavoriteButton";
+import styles from "./Universe.module.css";
 
 const UniverseCard = ({ universe }) => {
   return (

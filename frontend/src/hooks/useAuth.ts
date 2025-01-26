@@ -5,11 +5,11 @@ import {
   openAuthModal,
   register,
   setAuthModalView,
-} from '@/store/slices/authSlice';
-import { showAlert } from '@/store/slices/uiSlice';
-import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from './useRedux';
+} from "@/store/slices/authSlice";
+import { showAlert } from "@/store/slices/uiSlice";
+import { useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "./useRedux";
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
@@ -21,7 +21,7 @@ export const useAuth = () => {
     error,
     showAuthModal,
     authModalView,
-  } = useAppSelector(state => state.auth);
+  } = useAppSelector((state) => state.auth);
 
   const handleLogin = useCallback(
     async (credentials: { email: string; password: string }) => {
@@ -30,15 +30,15 @@ export const useAuth = () => {
         dispatch(closeAuthModal());
         dispatch(
           showAlert({
-            type: 'success',
-            message: 'Successfully logged in!',
-          })
+            type: "success",
+            message: "Successfully logged in!",
+          }),
         );
       } catch (error) {
         // Error is handled by the auth slice and displayed in the form
       }
     },
-    [dispatch]
+    [dispatch],
   );
 
   const handleRegister = useCallback(
@@ -48,26 +48,26 @@ export const useAuth = () => {
         dispatch(closeAuthModal());
         dispatch(
           showAlert({
-            type: 'success',
-            message: 'Successfully registered! Welcome aboard!',
-          })
+            type: "success",
+            message: "Successfully registered! Welcome aboard!",
+          }),
         );
       } catch (error) {
         // Error is handled by the auth slice and displayed in the form
       }
     },
-    [dispatch]
+    [dispatch],
   );
 
   const handleLogout = useCallback(async () => {
     try {
       await dispatch(logout()).unwrap();
-      navigate('/');
+      navigate("/");
       dispatch(
         showAlert({
-          type: 'success',
-          message: 'Successfully logged out!',
-        })
+          type: "success",
+          message: "Successfully logged out!",
+        }),
       );
     } catch (error) {
       // Error is handled by the auth slice
@@ -75,10 +75,10 @@ export const useAuth = () => {
   }, [dispatch, navigate]);
 
   const handleOpenAuthModal = useCallback(
-    (view: 'login' | 'register' | 'forgot-password' = 'login') => {
+    (view: "login" | "register" | "forgot-password" = "login") => {
       dispatch(openAuthModal(view));
     },
-    [dispatch]
+    [dispatch],
   );
 
   const handleCloseAuthModal = useCallback(() => {
@@ -86,21 +86,21 @@ export const useAuth = () => {
   }, [dispatch]);
 
   const handleSwitchAuthView = useCallback(
-    (view: 'login' | 'register' | 'forgot-password') => {
+    (view: "login" | "register" | "forgot-password") => {
       dispatch(setAuthModalView(view));
     },
-    [dispatch]
+    [dispatch],
   );
 
   const requireAuth = useCallback(
     (callback: () => void) => {
       if (!isAuthenticated) {
-        dispatch(openAuthModal('login'));
+        dispatch(openAuthModal("login"));
         return;
       }
       callback();
     },
-    [dispatch, isAuthenticated]
+    [dispatch, isAuthenticated],
   );
 
   return {

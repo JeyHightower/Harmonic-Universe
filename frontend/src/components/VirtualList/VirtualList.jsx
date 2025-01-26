@@ -1,13 +1,13 @@
-import PropTypes from 'prop-types';
+import PropTypes from "prop-types";
 import React, {
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
-} from 'react';
-import { debounce } from '../../utils/debounceUtils';
-import styles from './VirtualList.module.css';
+} from "react";
+import { debounce } from "../../utils/debounceUtils";
+import styles from "./VirtualList.module.css";
 
 const BUFFER_SIZE = 5;
 const DEFAULT_ITEM_HEIGHT = 120;
@@ -27,15 +27,15 @@ const VirtualList = ({
   // Memoize calculations
   const totalHeight = useMemo(
     () => items.length * itemHeight,
-    [items.length, itemHeight]
+    [items.length, itemHeight],
   );
   const visibleItems = useMemo(
     () => items.slice(visibleRange.start, visibleRange.end),
-    [items, visibleRange]
+    [items, visibleRange],
   );
   const offsetY = useMemo(
     () => visibleRange.start * itemHeight,
-    [visibleRange.start, itemHeight]
+    [visibleRange.start, itemHeight],
   );
 
   const updateVisibleRange = useCallback(
@@ -43,41 +43,41 @@ const VirtualList = ({
       const visibleCount = Math.ceil(height / itemHeight);
       const startIndex = Math.max(
         0,
-        Math.floor(scroll / itemHeight) - overscan
+        Math.floor(scroll / itemHeight) - overscan,
       );
       const endIndex = Math.min(
         items.length,
-        Math.ceil((scroll + height) / itemHeight) + overscan
+        Math.ceil((scroll + height) / itemHeight) + overscan,
       );
 
-      setVisibleRange(prev => {
+      setVisibleRange((prev) => {
         if (prev.start === startIndex && prev.end === endIndex) return prev;
         return { start: startIndex, end: endIndex };
       });
     },
-    [itemHeight, items.length, overscan]
+    [itemHeight, items.length, overscan],
   );
 
   // Debounced scroll handler
   const debouncedScroll = useMemo(
     () =>
-      debounce(newScrollTop => {
+      debounce((newScrollTop) => {
         setScrollTop(newScrollTop);
         updateVisibleRange(containerHeight, newScrollTop);
       }, SCROLL_DEBOUNCE_MS),
-    [containerHeight, updateVisibleRange]
+    [containerHeight, updateVisibleRange],
   );
 
   const handleScroll = useCallback(
-    e => {
+    (e) => {
       const newScrollTop = e.target.scrollTop;
       debouncedScroll(newScrollTop);
     },
-    [debouncedScroll]
+    [debouncedScroll],
   );
 
   useEffect(() => {
-    const observer = new ResizeObserver(entries => {
+    const observer = new ResizeObserver((entries) => {
       const { height } = entries[0].contentRect;
       setContainerHeight(height);
       updateVisibleRange(height, scrollTop);
@@ -107,7 +107,7 @@ const VirtualList = ({
           }}
         >
           {visibleItems.map((item, index) =>
-            renderItem(item, visibleRange.start + index)
+            renderItem(item, visibleRange.start + index),
           )}
         </div>
       </div>

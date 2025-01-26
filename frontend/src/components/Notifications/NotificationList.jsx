@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-import { useSelector } from 'react-redux';
-import NotificationItem from './NotificationItem';
-import styles from './NotificationList.module.css';
+import React, { useEffect, useState } from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { useSelector } from "react-redux";
+import NotificationItem from "./NotificationItem";
+import styles from "./NotificationList.module.css";
 
 const NotificationList = () => {
   const [notifications, setNotifications] = useState([]);
@@ -11,12 +11,12 @@ const NotificationList = () => {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [typeFilter, setTypeFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState("");
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
 
-  const user = useSelector(state => state.auth.user);
+  const user = useSelector((state) => state.auth.user);
 
   useEffect(() => {
     fetchNotifications();
@@ -31,12 +31,12 @@ const NotificationList = () => {
         unread: unreadOnly,
       });
 
-      if (typeFilter) params.append('type', typeFilter);
-      if (startDate) params.append('start_date', startDate.toISOString());
-      if (endDate) params.append('end_date', endDate.toISOString());
+      if (typeFilter) params.append("type", typeFilter);
+      if (startDate) params.append("start_date", startDate.toISOString());
+      if (endDate) params.append("end_date", endDate.toISOString());
 
       const response = await fetch(`/api/notifications?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch notifications');
+      if (!response.ok) throw new Error("Failed to fetch notifications");
 
       const data = await response.json();
       setNotifications(data.notifications);
@@ -48,50 +48,50 @@ const NotificationList = () => {
     }
   };
 
-  const handleMarkAsRead = async notificationId => {
+  const handleMarkAsRead = async (notificationId) => {
     try {
       const response = await fetch(
         `/api/notifications/${notificationId}/read`,
         {
-          method: 'POST',
-        }
+          method: "POST",
+        },
       );
-      if (!response.ok) throw new Error('Failed to mark notification as read');
+      if (!response.ok) throw new Error("Failed to mark notification as read");
 
       setNotifications(
-        notifications.map(n =>
-          n.id === notificationId ? { ...n, read: true } : n
-        )
+        notifications.map((n) =>
+          n.id === notificationId ? { ...n, read: true } : n,
+        ),
       );
     } catch (err) {
-      console.error('Error marking notification as read:', err);
+      console.error("Error marking notification as read:", err);
     }
   };
 
   const handleMarkAllAsRead = async () => {
     try {
-      const response = await fetch('/api/notifications/read-all', {
-        method: 'POST',
+      const response = await fetch("/api/notifications/read-all", {
+        method: "POST",
       });
       if (!response.ok)
-        throw new Error('Failed to mark all notifications as read');
+        throw new Error("Failed to mark all notifications as read");
 
-      setNotifications(notifications.map(n => ({ ...n, read: true })));
+      setNotifications(notifications.map((n) => ({ ...n, read: true })));
     } catch (err) {
-      console.error('Error marking all notifications as read:', err);
+      console.error("Error marking all notifications as read:", err);
     }
   };
 
-  const handleDelete = async notificationId => {
+  const handleDelete = async (notificationId) => {
     try {
       const response = await fetch(`/api/notifications/${notificationId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
-      if (!response.ok) throw new Error('Failed to delete notification');
+      if (!response.ok) throw new Error("Failed to delete notification");
 
-      setNotifications(notifications.filter(n => n.id !== notificationId));
+      setNotifications(notifications.filter((n) => n.id !== notificationId));
     } catch (err) {
-      console.error('Error deleting notification:', err);
+      console.error("Error deleting notification:", err);
     }
   };
 
@@ -106,7 +106,7 @@ const NotificationList = () => {
         <button
           className={styles.markAllRead}
           onClick={handleMarkAllAsRead}
-          disabled={notifications.every(n => n.read)}
+          disabled={notifications.every((n) => n.read)}
         >
           Mark all as read
         </button>
@@ -117,7 +117,7 @@ const NotificationList = () => {
           <label>Type:</label>
           <select
             value={typeFilter}
-            onChange={e => setTypeFilter(e.target.value)}
+            onChange={(e) => setTypeFilter(e.target.value)}
           >
             <option value="">All</option>
             <option value="system">System</option>
@@ -131,7 +131,7 @@ const NotificationList = () => {
             <input
               type="checkbox"
               checked={unreadOnly}
-              onChange={e => setUnreadOnly(e.target.checked)}
+              onChange={(e) => setUnreadOnly(e.target.checked)}
             />
             Unread only
           </label>
@@ -161,7 +161,7 @@ const NotificationList = () => {
       ) : (
         <>
           <div className={styles.list}>
-            {notifications.map(notification => (
+            {notifications.map((notification) => (
               <NotificationItem
                 key={notification.id}
                 notification={notification}
@@ -172,14 +172,14 @@ const NotificationList = () => {
           </div>
 
           <div className={styles.pagination}>
-            <button onClick={() => setPage(p => p - 1)} disabled={page === 1}>
+            <button onClick={() => setPage((p) => p - 1)} disabled={page === 1}>
               Previous
             </button>
             <span>
               Page {page} of {totalPages}
             </span>
             <button
-              onClick={() => setPage(p => p + 1)}
+              onClick={() => setPage((p) => p + 1)}
               disabled={page === totalPages}
             >
               Next

@@ -1,13 +1,13 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useParams } from 'react-router-dom';
+import React, { useCallback, useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useParams } from "react-router-dom";
 import {
   clearAnalytics,
   exportAnalytics,
   fetchActivityTimeline,
   fetchAnalytics,
   fetchMetrics,
-} from '../../store/slices/analyticsSlice';
+} from "../../store/slices/analyticsSlice";
 
 const EXPORT_MESSAGE_TIMEOUT = 3000; // 3 seconds
 
@@ -21,10 +21,10 @@ const Dashboard = () => {
     loading,
     error,
     export: exportState,
-  } = useSelector(state => state.analytics);
+  } = useSelector((state) => state.analytics);
 
-  const [timeRange, setTimeRange] = useState('7d');
-  const [exportFormat, setExportFormat] = useState('json');
+  const [timeRange, setTimeRange] = useState("7d");
+  const [exportFormat, setExportFormat] = useState("json");
   const [isExporting, setIsExporting] = useState(false);
   const [showExportMessage, setShowExportMessage] = useState(false);
 
@@ -36,7 +36,7 @@ const Dashboard = () => {
         dispatch(fetchActivityTimeline({ universeId: id, timeRange })).unwrap(),
       ]);
     } catch (err) {
-      console.error('Failed to fetch data:', err);
+      console.error("Failed to fetch data:", err);
     }
   }, [dispatch, id, timeRange]);
 
@@ -55,28 +55,28 @@ const Dashboard = () => {
         exportAnalytics({
           universeId: id,
           format: exportFormat,
-        })
+        }),
       ).unwrap();
       setShowExportMessage(true);
       setTimeout(() => {
         setShowExportMessage(false);
       }, EXPORT_MESSAGE_TIMEOUT);
     } catch (err) {
-      console.error('Failed to export analytics:', err);
+      console.error("Failed to export analytics:", err);
     } finally {
       setIsExporting(false);
     }
   };
 
-  const handleRetry = async type => {
+  const handleRetry = async (type) => {
     switch (type) {
-      case 'analytics':
+      case "analytics":
         await dispatch(fetchAnalytics(id));
         break;
-      case 'metrics':
+      case "metrics":
         await dispatch(fetchMetrics({ universeId: id, timeRange }));
         break;
-      case 'timeline':
+      case "timeline":
         await dispatch(fetchActivityTimeline({ universeId: id, timeRange }));
         break;
       default:
@@ -123,7 +123,7 @@ const Dashboard = () => {
           <select
             data-testid="time-period-select"
             value={timeRange}
-            onChange={e => setTimeRange(e.target.value)}
+            onChange={(e) => setTimeRange(e.target.value)}
             className="time-range-select"
           >
             <option value="24h">Last 24 Hours</option>
@@ -135,7 +135,7 @@ const Dashboard = () => {
           <div className="export-controls">
             <select
               value={exportFormat}
-              onChange={e => setExportFormat(e.target.value)}
+              onChange={(e) => setExportFormat(e.target.value)}
               className="format-select"
             >
               <option value="json">JSON</option>
@@ -148,7 +148,7 @@ const Dashboard = () => {
               disabled={isExporting || exportState.loading}
               className="btn-secondary"
             >
-              {isExporting || exportState.loading ? 'Exporting...' : 'Export'}
+              {isExporting || exportState.loading ? "Exporting..." : "Export"}
             </button>
             <button
               data-testid="refresh-button"
@@ -166,7 +166,7 @@ const Dashboard = () => {
           <h3>Total Views</h3>
           <div className="stat-value">{metrics?.totalViews || 0}</div>
           <div className="stat-trend">
-            {metrics?.viewsTrend > 0 ? '+' : ''}
+            {metrics?.viewsTrend > 0 ? "+" : ""}
             {metrics?.viewsTrend || 0}% from previous period
           </div>
         </div>
@@ -175,7 +175,7 @@ const Dashboard = () => {
           <h3>Active Participants</h3>
           <div className="stat-value">{metrics?.activeParticipants || 0}</div>
           <div className="stat-trend">
-            {metrics?.participantsTrend > 0 ? '+' : ''}
+            {metrics?.participantsTrend > 0 ? "+" : ""}
             {metrics?.participantsTrend || 0}% from previous period
           </div>
         </div>
@@ -183,11 +183,11 @@ const Dashboard = () => {
         <div className="stat-card" data-testid="stat-card">
           <h3>Average Session Duration</h3>
           <div className="stat-value">
-            {Math.floor((metrics?.avgSessionDuration || 0) / 60)}m{' '}
+            {Math.floor((metrics?.avgSessionDuration || 0) / 60)}m{" "}
             {(metrics?.avgSessionDuration || 0) % 60}s
           </div>
           <div className="stat-trend">
-            {metrics?.durationTrend > 0 ? '+' : ''}
+            {metrics?.durationTrend > 0 ? "+" : ""}
             {metrics?.durationTrend || 0}% from previous period
           </div>
         </div>
@@ -198,7 +198,7 @@ const Dashboard = () => {
             {((metrics?.engagementRate || 0) * 100).toFixed(1)}%
           </div>
           <div className="stat-trend">
-            {metrics?.engagementTrend > 0 ? '+' : ''}
+            {metrics?.engagementTrend > 0 ? "+" : ""}
             {metrics?.engagementTrend || 0}% from previous period
           </div>
         </div>
@@ -253,7 +253,7 @@ const Dashboard = () => {
           <h2>Popular Features</h2>
           <div className="chart-container">
             <div className="features-chart">
-              {(data?.featureUsage || []).map(feature => (
+              {(data?.featureUsage || []).map((feature) => (
                 <div key={feature.name} className="feature-item">
                   <div className="feature-label">{feature.name}</div>
                   <div className="feature-bar">
@@ -287,7 +287,7 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {(data?.recentActivity || []).map(activity => (
+              {(data?.recentActivity || []).map((activity) => (
                 <tr key={activity.id}>
                   <td>{new Date(activity.timestamp).toLocaleString()}</td>
                   <td>{activity.user}</td>
@@ -310,7 +310,7 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {data.topContributors.map(contributor => (
+              {data.topContributors.map((contributor) => (
                 <tr key={contributor.id}>
                   <td>{contributor.username}</td>
                   <td>{contributor.contributions}</td>

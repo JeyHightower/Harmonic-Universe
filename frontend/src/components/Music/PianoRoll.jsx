@@ -1,8 +1,8 @@
-import PropTypes from 'prop-types';
-import React, { useEffect, useRef, useState } from 'react';
-import styles from './PianoRoll.module.css';
+import PropTypes from "prop-types";
+import React, { useEffect, useRef, useState } from "react";
+import styles from "./PianoRoll.module.css";
 
-const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const OCTAVES = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 const GRID_SIZE = 16;
 const NOTE_HEIGHT = 20;
@@ -26,13 +26,13 @@ const PianoRoll = ({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
 
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Draw grid
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
     ctx.lineWidth = 1;
 
     // Vertical grid lines
@@ -52,25 +52,25 @@ const PianoRoll = ({
     }
 
     // Draw piano keys
-    ctx.fillStyle = 'white';
+    ctx.fillStyle = "white";
     OCTAVES.forEach((octave, octaveIndex) => {
       NOTES.forEach((note, noteIndex) => {
         const y =
           (octaveIndex * NOTES.length + noteIndex) * NOTE_HEIGHT -
           scrollPosition.y;
-        ctx.fillStyle = note.includes('#') ? '#333' : '#fff';
+        ctx.fillStyle = note.includes("#") ? "#333" : "#fff";
         ctx.fillRect(0, y, 40, NOTE_HEIGHT - 1);
 
-        if (!note.includes('#')) {
-          ctx.fillStyle = '#000';
-          ctx.font = '10px Arial';
+        if (!note.includes("#")) {
+          ctx.fillStyle = "#000";
+          ctx.font = "10px Arial";
           ctx.fillText(`${note}${octave}`, 5, y + 15);
         }
       });
     });
 
     // Draw notes
-    notes.forEach(note => {
+    notes.forEach((note) => {
       const isSelected = selectedNote?.id === note.id;
       const y =
         (Math.floor(note.pitch / 12) * NOTES.length + (note.pitch % 12)) *
@@ -80,23 +80,23 @@ const PianoRoll = ({
       const width = note.duration * scale;
 
       ctx.fillStyle = isSelected
-        ? 'rgba(255, 165, 0, 0.8)'
-        : 'rgba(0, 123, 255, 0.6)';
+        ? "rgba(255, 165, 0, 0.8)"
+        : "rgba(0, 123, 255, 0.6)";
       ctx.fillRect(x + 40, y, width, NOTE_HEIGHT - 1);
 
       // Draw velocity indicator
       const velocityHeight = (NOTE_HEIGHT - 1) * note.velocity;
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
       ctx.fillRect(x + 40, y + NOTE_HEIGHT - velocityHeight, 4, velocityHeight);
     });
   }, [notes, scale, scrollPosition, selectedNote, duration]);
 
-  const handleMouseDown = e => {
+  const handleMouseDown = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left + scrollPosition.x - 40;
     const y = e.clientY - rect.top + scrollPosition.y;
 
-    const clickedNote = notes.find(note => {
+    const clickedNote = notes.find((note) => {
       const noteY =
         (Math.floor(note.pitch / 12) * NOTES.length + (note.pitch % 12)) *
         NOTE_HEIGHT;
@@ -128,7 +128,7 @@ const PianoRoll = ({
     }
   };
 
-  const handleMouseMove = e => {
+  const handleMouseMove = (e) => {
     if (!isDragging || !selectedNote) return;
 
     const rect = canvasRef.current.getBoundingClientRect();
@@ -147,22 +147,22 @@ const PianoRoll = ({
     setDragStart(null);
   };
 
-  const handleWheel = e => {
+  const handleWheel = (e) => {
     if (e.ctrlKey) {
       // Zoom
       const newScale = Math.max(50, Math.min(200, scale + e.deltaY * -0.5));
       setScale(newScale);
     } else {
       // Scroll
-      setScrollPosition(prev => ({
+      setScrollPosition((prev) => ({
         x: Math.max(0, prev.x + e.deltaX),
         y: Math.max(0, prev.y + e.deltaY),
       }));
     }
   };
 
-  const handleKeyDown = e => {
-    if (e.key === 'Delete' && selectedNote) {
+  const handleKeyDown = (e) => {
+    if (e.key === "Delete" && selectedNote) {
       onNoteDelete?.(selectedNote);
       setSelectedNote(null);
     }
@@ -183,13 +183,13 @@ const PianoRoll = ({
       />
       <div className={styles.controls}>
         <button
-          onClick={() => setScale(prev => Math.min(200, prev + 10))}
+          onClick={() => setScale((prev) => Math.min(200, prev + 10))}
           className={styles.zoomButton}
         >
           Zoom In
         </button>
         <button
-          onClick={() => setScale(prev => Math.max(50, prev - 10))}
+          onClick={() => setScale((prev) => Math.max(50, prev - 10))}
           className={styles.zoomButton}
         >
           Zoom Out
@@ -207,7 +207,7 @@ PianoRoll.propTypes = {
       startTime: PropTypes.number.isRequired,
       duration: PropTypes.number.isRequired,
       velocity: PropTypes.number.isRequired,
-    })
+    }),
   ).isRequired,
   duration: PropTypes.number.isRequired,
   onNoteAdd: PropTypes.func,

@@ -1,16 +1,16 @@
-import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { addFavorite, removeFavorite } from '../../store/slices/favoriteSlice';
-import styles from './Universe.module.css';
+import PropTypes from "prop-types";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { addFavorite, removeFavorite } from "../../store/slices/favoriteSlice";
+import styles from "./Universe.module.css";
 
 const FavoriteButton = ({ universeId }) => {
   const dispatch = useDispatch();
-  const { favorites, isLoading } = useSelector(state => state.favorites);
+  const { favorites, isLoading } = useSelector((state) => state.favorites);
   const [isFavorited, setIsFavorited] = useState(false);
 
   useEffect(() => {
-    const isFav = favorites.some(fav => fav.universe_id === universeId);
+    const isFav = favorites.some((fav) => fav.universe_id === universeId);
     setIsFavorited(isFav);
   }, [favorites, universeId]);
 
@@ -24,22 +24,22 @@ const FavoriteButton = ({ universeId }) => {
         await dispatch(addFavorite(universeId)).unwrap();
       }
     } catch (error) {
-      console.error('Failed to toggle favorite:', error);
+      console.error("Failed to toggle favorite:", error);
     }
   };
 
   return (
     <button
       className={`${styles.favoriteButton} ${
-        isFavorited ? styles.favorited : ''
-      } ${isLoading ? styles.loading : ''}`}
+        isFavorited ? styles.favorited : ""
+      } ${isLoading ? styles.loading : ""}`}
       onClick={handleClick}
       disabled={isLoading}
-      aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+      aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
     >
       <svg
         viewBox="0 0 24 24"
-        fill={isFavorited ? 'currentColor' : 'none'}
+        fill={isFavorited ? "currentColor" : "none"}
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"

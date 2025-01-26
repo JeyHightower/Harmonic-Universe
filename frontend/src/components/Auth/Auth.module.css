@@ -1,147 +1,131 @@
-.authContainer {
+.auth-container {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
   min-height: 100vh;
   padding: 2rem;
-  background-color: var(--background-color);
+  background-color: #f5f5f5;
 }
 
-.authForm {
+.auth-form {
   width: 100%;
   max-width: 400px;
-  padding: 2.5rem;
-  background-color: var(--card-background);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 2rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.authForm h2 {
-  margin-bottom: 2rem;
+.auth-form h2 {
   text-align: center;
-  color: var(--text-primary);
-  font-size: 1.75rem;
-  font-weight: 600;
-}
-
-.formGroup {
   margin-bottom: 1.5rem;
+  color: #333;
+  font-size: 1.75rem;
 }
 
-.formGroup label {
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
+  color: #4a5568;
   font-weight: 500;
 }
 
-.formGroup input {
+.form-group input {
   width: 100%;
-  padding: 0.75rem 1rem;
-  border: 2px solid var(--border-color);
-  border-radius: 8px;
-  background-color: var(--input-background);
-  color: var(--text-primary);
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
   font-size: 1rem;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 
-.formGroup input:focus {
+.form-group input:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.15);
+  border-color: #4299e1;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
 }
 
-.formGroup input.error {
-  border-color: var(--error-color);
+.form-group input.error {
+  border-color: #e53e3e;
 }
 
-.formGroup input:disabled {
-  background-color: var(--disabled-background);
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-.errorText {
-  color: var(--error-color);
+.error-message {
+  color: #e53e3e;
   font-size: 0.875rem;
-  margin-top: 0.5rem;
-  display: block;
+  margin-top: 0.25rem;
 }
 
-.authButton {
+.auth-button {
   width: 100%;
-  padding: 0.875rem;
-  margin-top: 1rem;
-  background-color: var(--primary-color);
+  padding: 0.75rem;
+  background-color: #4299e1;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease;
 }
 
-.authButton:hover:not(:disabled) {
-  background-color: var(--primary-color-dark);
-  transform: translateY(-1px);
+.auth-button:hover {
+  background-color: #3182ce;
 }
 
-.authButton:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.authButton:disabled {
-  background-color: var(--disabled-background);
+.auth-button:disabled {
+  background-color: #a0aec0;
   cursor: not-allowed;
-  opacity: 0.7;
 }
 
-.authLinks {
+.auth-links {
   margin-top: 1.5rem;
   text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
 }
 
-.authLinks a {
-  color: var(--primary-color);
+.auth-links a {
+  color: #4299e1;
   text-decoration: none;
-  font-size: 0.875rem;
+  font-weight: 500;
   transition: color 0.2s ease;
 }
 
-.authLinks a:hover {
-  color: var(--primary-color-dark);
+.auth-links a:hover {
+  color: #3182ce;
   text-decoration: underline;
 }
 
-@media (max-width: 480px) {
-  .authContainer {
-    padding: 1rem;
-  }
+.auth-divider {
+  margin: 1.5rem 0;
+  text-align: center;
+  position: relative;
+}
 
-  .authForm {
-    padding: 1.5rem;
-  }
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 45%;
+  height: 1px;
+  background-color: #e2e8f0;
+}
 
-  .authForm h2 {
-    font-size: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
+.auth-divider::before {
+  left: 0;
+}
 
-  .formGroup {
-    margin-bottom: 1rem;
-  }
+.auth-divider::after {
+  right: 0;
+}
 
-  .formGroup input {
-    padding: 0.625rem 0.875rem;
-  }
-
-  .authButton {
-    padding: 0.75rem;
-  }
+.auth-divider span {
+  background-color: white;
+  padding: 0 1rem;
+  color: #718096;
+  font-size: 0.875rem;
 }

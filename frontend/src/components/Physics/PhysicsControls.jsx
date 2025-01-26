@@ -1,26 +1,26 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   fetchPhysicsParameters,
   setParameters,
   updateParameter,
-} from '../../store/slices/physicsSlice';
-import './PhysicsControls.css';
+} from "../../store/slices/physicsSlice";
+import "./PhysicsControls.css";
 
 const PARAMETER_DESCRIPTIONS = {
   gravity:
-    'Controls the strength of gravitational force in the universe (m/s²)',
+    "Controls the strength of gravitational force in the universe (m/s²)",
   friction:
-    'Determines how much objects slow down when moving against surfaces',
-  elasticity: 'Controls how bouncy objects are during collisions',
-  airResistance: 'Affects how much air slows down moving objects',
-  density: 'Controls the mass per unit volume of objects (kg/m³)',
-  timeScale: 'Adjusts the speed of time in the simulation',
+    "Determines how much objects slow down when moving against surfaces",
+  elasticity: "Controls how bouncy objects are during collisions",
+  airResistance: "Affects how much air slows down moving objects",
+  density: "Controls the mass per unit volume of objects (kg/m³)",
+  timeScale: "Adjusts the speed of time in the simulation",
 };
 
 const PhysicsControls = ({ universeId }) => {
   const dispatch = useDispatch();
-  const { parameters, status, error } = useSelector(state => state.physics);
+  const { parameters, status, error } = useSelector((state) => state.physics);
   const [localParameters, setLocalParameters] = useState({
     gravity: 9.81,
     friction: 0.5,
@@ -48,7 +48,7 @@ const PhysicsControls = ({ universeId }) => {
   const handleParameterChange = (name, value) => {
     const numericValue = parseFloat(value);
 
-    setLocalParameters(prev => ({
+    setLocalParameters((prev) => ({
       ...prev,
       [name]: numericValue,
     }));
@@ -67,7 +67,7 @@ const PhysicsControls = ({ universeId }) => {
             ...localParameters,
             [name]: numericValue,
           },
-        })
+        }),
       );
     }, 500);
 
@@ -82,7 +82,7 @@ const PhysicsControls = ({ universeId }) => {
     >
       <label htmlFor={name}>
         {name.charAt(0).toUpperCase() +
-          name.slice(1).replace(/([A-Z])/g, ' $1')}
+          name.slice(1).replace(/([A-Z])/g, " $1")}
         {activeTooltip === name && (
           <div className="tooltip">{PARAMETER_DESCRIPTIONS[name]}</div>
         )}
@@ -94,13 +94,13 @@ const PhysicsControls = ({ universeId }) => {
         max={max}
         step={step}
         value={localParameters[name]}
-        onChange={e => handleParameterChange(name, e.target.value)}
+        onChange={(e) => handleParameterChange(name, e.target.value)}
       />
       <span>{localParameters[name].toFixed(2)}</span>
     </div>
   );
 
-  if (status === 'loading' && !parameters) {
+  if (status === "loading" && !parameters) {
     return (
       <div className="loading-container">
         <div className="loading">Loading physics parameters...</div>
@@ -128,16 +128,16 @@ const PhysicsControls = ({ universeId }) => {
   return (
     <div className="physics-controls">
       <h3>Physics Parameters</h3>
-      {status === 'loading' && (
+      {status === "loading" && (
         <div className="saving-indicator">Saving changes...</div>
       )}
 
-      {renderParameter('gravity', 0, 20, 0.1)}
-      {renderParameter('friction', 0, 1, 0.01)}
-      {renderParameter('elasticity', 0, 1, 0.01)}
-      {renderParameter('air_resistance', 0, 1, 0.01)}
-      {renderParameter('density', 0, 5, 0.1)}
-      {renderParameter('time_scale', 0.1, 2, 0.1)}
+      {renderParameter("gravity", 0, 20, 0.1)}
+      {renderParameter("friction", 0, 1, 0.01)}
+      {renderParameter("elasticity", 0, 1, 0.01)}
+      {renderParameter("air_resistance", 0, 1, 0.01)}
+      {renderParameter("density", 0, 5, 0.1)}
+      {renderParameter("time_scale", 0.1, 2, 0.1)}
     </div>
   );
 };

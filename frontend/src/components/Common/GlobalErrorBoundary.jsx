@@ -1,12 +1,12 @@
-import PropTypes from 'prop-types';
-import React from 'react';
-import { connect } from 'react-redux';
+import PropTypes from "prop-types";
+import React from "react";
+import { connect } from "react-redux";
 import {
   ERROR_CATEGORIES,
   ERROR_SEVERITY,
   logError,
-} from '../../services/errorLogging';
-import styles from './GlobalErrorBoundary.module.css';
+} from "../../services/errorLogging";
+import styles from "./GlobalErrorBoundary.module.css";
 
 class GlobalErrorBoundary extends React.Component {
   constructor(props) {
@@ -26,7 +26,7 @@ class GlobalErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    this.setState(prevState => ({
+    this.setState((prevState) => ({
       errorInfo,
       errorCount: prevState.errorCount + 1,
       lastError: error,
@@ -35,9 +35,9 @@ class GlobalErrorBoundary extends React.Component {
 
     logError(
       error,
-      'React Component',
+      "React Component",
       ERROR_CATEGORIES.BUSINESS_LOGIC,
-      this.isErrorCritical() ? ERROR_SEVERITY.CRITICAL : ERROR_SEVERITY.ERROR
+      this.isErrorCritical() ? ERROR_SEVERITY.CRITICAL : ERROR_SEVERITY.ERROR,
     );
 
     // Report to error tracking service
@@ -49,8 +49,8 @@ class GlobalErrorBoundary extends React.Component {
     return (
       errorCount > 3 || // Multiple errors occurred
       (lastError && error && lastError.message === error.message) || // Same error repeating
-      error?.message?.includes('memory') || // Memory-related errors
-      error?.message?.includes('stack overflow') // Stack overflow errors
+      error?.message?.includes("memory") || // Memory-related errors
+      error?.message?.includes("stack overflow") // Stack overflow errors
     );
   }
 
@@ -77,11 +77,11 @@ class GlobalErrorBoundary extends React.Component {
     };
 
     // Send to your error tracking service
-    console.error('Error Report:', errorReport);
+    console.error("Error Report:", errorReport);
   }
 
   handleRetry = () => {
-    this.setState(prevState => ({
+    this.setState((prevState) => ({
       hasError: false,
       error: null,
       errorInfo: null,
@@ -99,9 +99,9 @@ class GlobalErrorBoundary extends React.Component {
     sessionStorage.clear();
 
     // Clear cookies
-    document.cookie.split(';').forEach(cookie => {
+    document.cookie.split(";").forEach((cookie) => {
       document.cookie = cookie
-        .replace(/^ +/, '')
+        .replace(/^ +/, "")
         .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
     });
 
@@ -116,12 +116,12 @@ class GlobalErrorBoundary extends React.Component {
     return (
       <div className={styles.errorContainer}>
         <div className={styles.errorContent}>
-          <div className={styles.errorIcon}>{isCritical ? '🚨' : '⚠️'}</div>
+          <div className={styles.errorIcon}>{isCritical ? "🚨" : "⚠️"}</div>
           <h1 className={styles.errorTitle}>
-            {isCritical ? 'Critical Error' : 'Something went wrong'}
+            {isCritical ? "Critical Error" : "Something went wrong"}
           </h1>
           <p className={styles.errorMessage}>
-            {error?.message || 'An unexpected error occurred'}
+            {error?.message || "An unexpected error occurred"}
           </p>
           {this.props.showDetails && (
             <details className={styles.errorDetails}>
@@ -143,7 +143,7 @@ class GlobalErrorBoundary extends React.Component {
                 href={`mailto:${
                   this.props.supportEmail
                 }?subject=Error Report&body=${encodeURIComponent(
-                  `Error: ${error?.message}\n\nStack: ${errorInfo?.componentStack}`
+                  `Error: ${error?.message}\n\nStack: ${errorInfo?.componentStack}`,
                 )}`}
                 className={styles.supportLink}
               >
@@ -177,11 +177,11 @@ GlobalErrorBoundary.propTypes = {
 };
 
 GlobalErrorBoundary.defaultProps = {
-  showDetails: process.env.NODE_ENV === 'development',
-  supportEmail: 'support@example.com',
+  showDetails: process.env.NODE_ENV === "development",
+  supportEmail: "support@example.com",
 };
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   user: state.auth.user,
 });
 

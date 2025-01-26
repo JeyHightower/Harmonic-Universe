@@ -1,24 +1,24 @@
-import PropTypes from 'prop-types';
-import React from 'react';
-import { useDispatch } from 'react-redux';
+import PropTypes from "prop-types";
+import React from "react";
+import { useDispatch } from "react-redux";
 import {
   deleteNotification,
   markAsRead,
-} from '../../store/slices/notificationSlice';
-import styles from './Notifications.module.css';
+} from "../../store/slices/notificationSlice";
+import styles from "./Notifications.module.css";
 
 const NotificationPanel = ({ notifications, onClose }) => {
   const dispatch = useDispatch();
 
-  const handleMarkAsRead = notificationId => {
+  const handleMarkAsRead = (notificationId) => {
     dispatch(markAsRead(notificationId));
   };
 
-  const handleDelete = notificationId => {
+  const handleDelete = (notificationId) => {
     dispatch(deleteNotification(notificationId));
   };
 
-  const formatDate = dateString => {
+  const formatDate = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInMinutes = Math.floor((now - date) / (1000 * 60));
@@ -36,16 +36,16 @@ const NotificationPanel = ({ notifications, onClose }) => {
     }
   };
 
-  const getNotificationIcon = type => {
+  const getNotificationIcon = (type) => {
     switch (type) {
-      case 'share':
-        return '🔗';
-      case 'comment':
-        return '💬';
-      case 'favorite':
-        return '⭐';
+      case "share":
+        return "🔗";
+      case "comment":
+        return "💬";
+      case "favorite":
+        return "⭐";
       default:
-        return '📢';
+        return "📢";
     }
   };
 
@@ -55,11 +55,11 @@ const NotificationPanel = ({ notifications, onClose }) => {
 
   return (
     <div className={styles.notificationList}>
-      {notifications.map(notification => (
+      {notifications.map((notification) => (
         <div
           key={notification.id}
           className={`${styles.notificationItem} ${
-            !notification.read ? styles.unread : ''
+            !notification.read ? styles.unread : ""
           }`}
           onClick={() => {
             if (!notification.read) {
@@ -82,7 +82,7 @@ const NotificationPanel = ({ notifications, onClose }) => {
           </div>
           <button
             className={styles.deleteButton}
-            onClick={e => {
+            onClick={(e) => {
               e.stopPropagation();
               handleDelete(notification.id);
             }}
@@ -105,7 +105,7 @@ NotificationPanel.propTypes = {
       read: PropTypes.bool.isRequired,
       created_at: PropTypes.string.isRequired,
       link: PropTypes.string,
-    })
+    }),
   ).isRequired,
   onClose: PropTypes.func.isRequired,
 };

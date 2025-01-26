@@ -1,6 +1,6 @@
-import { User, UserProfile, UserSettings } from '@/types/user';
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import axios from 'axios';
+import { User, UserProfile, UserSettings } from "@/types/user";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import axios from "axios";
 
 interface UserState {
   profile: UserProfile | null;
@@ -19,121 +19,121 @@ const initialState: UserState = {
 };
 
 export const fetchUserProfile = createAsyncThunk(
-  'user/fetchProfile',
+  "user/fetchProfile",
   async (userId: number, { rejectWithValue }) => {
     try {
       const response = await axios.get(`/api/users/${userId}`);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.error || 'Failed to fetch user profile'
+        error.response?.data?.error || "Failed to fetch user profile",
       );
     }
-  }
+  },
 );
 
 export const updateUserProfile = createAsyncThunk(
-  'user/updateProfile',
+  "user/updateProfile",
   async (profileData: Partial<UserProfile>, { rejectWithValue }) => {
     try {
-      const response = await axios.put('/api/users/me', profileData);
+      const response = await axios.put("/api/users/me", profileData);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.error || 'Failed to update profile'
+        error.response?.data?.error || "Failed to update profile",
       );
     }
-  }
+  },
 );
 
 export const fetchUserSettings = createAsyncThunk(
-  'user/fetchSettings',
+  "user/fetchSettings",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get('/api/users/me/settings');
+      const response = await axios.get("/api/users/me/settings");
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.error || 'Failed to fetch user settings'
+        error.response?.data?.error || "Failed to fetch user settings",
       );
     }
-  }
+  },
 );
 
 export const updateUserSettings = createAsyncThunk(
-  'user/updateSettings',
+  "user/updateSettings",
   async (settingsData: Partial<UserSettings>, { rejectWithValue }) => {
     try {
-      const response = await axios.put('/api/users/me/settings', settingsData);
+      const response = await axios.put("/api/users/me/settings", settingsData);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.error || 'Failed to update settings'
+        error.response?.data?.error || "Failed to update settings",
       );
     }
-  }
+  },
 );
 
 export const updatePassword = createAsyncThunk(
-  'user/updatePassword',
+  "user/updatePassword",
   async (
     {
       currentPassword,
       newPassword,
     }: { currentPassword: string; newPassword: string },
-    { rejectWithValue }
+    { rejectWithValue },
   ) => {
     try {
-      const response = await axios.put('/api/users/me/password', {
+      const response = await axios.put("/api/users/me/password", {
         current_password: currentPassword,
         new_password: newPassword,
       });
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.error || 'Failed to update password'
+        error.response?.data?.error || "Failed to update password",
       );
     }
-  }
+  },
 );
 
 export const searchUsers = createAsyncThunk(
-  'user/search',
+  "user/search",
   async (query: string, { rejectWithValue }) => {
     try {
-      const response = await axios.get('/api/users/search', {
+      const response = await axios.get("/api/users/search", {
         params: { q: query },
       });
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.error || 'Failed to search users'
+        error.response?.data?.error || "Failed to search users",
       );
     }
-  }
+  },
 );
 
 const userSlice = createSlice({
-  name: 'user',
+  name: "user",
   initialState,
   reducers: {
-    clearUserProfile: state => {
+    clearUserProfile: (state) => {
       state.profile = null;
     },
-    clearUserSettings: state => {
+    clearUserSettings: (state) => {
       state.settings = null;
     },
-    clearSearchResults: state => {
+    clearSearchResults: (state) => {
       state.searchResults = [];
     },
-    clearError: state => {
+    clearError: (state) => {
       state.error = null;
     },
   },
-  extraReducers: builder => {
+  extraReducers: (builder) => {
     // Fetch User Profile
     builder
-      .addCase(fetchUserProfile.pending, state => {
+      .addCase(fetchUserProfile.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
@@ -148,7 +148,7 @@ const userSlice = createSlice({
 
     // Update User Profile
     builder
-      .addCase(updateUserProfile.pending, state => {
+      .addCase(updateUserProfile.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
@@ -163,7 +163,7 @@ const userSlice = createSlice({
 
     // Fetch User Settings
     builder
-      .addCase(fetchUserSettings.pending, state => {
+      .addCase(fetchUserSettings.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
@@ -178,7 +178,7 @@ const userSlice = createSlice({
 
     // Update User Settings
     builder
-      .addCase(updateUserSettings.pending, state => {
+      .addCase(updateUserSettings.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
@@ -193,11 +193,11 @@ const userSlice = createSlice({
 
     // Update Password
     builder
-      .addCase(updatePassword.pending, state => {
+      .addCase(updatePassword.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(updatePassword.fulfilled, state => {
+      .addCase(updatePassword.fulfilled, (state) => {
         state.isLoading = false;
       })
       .addCase(updatePassword.rejected, (state, action) => {
@@ -207,7 +207,7 @@ const userSlice = createSlice({
 
     // Search Users
     builder
-      .addCase(searchUsers.pending, state => {
+      .addCase(searchUsers.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })

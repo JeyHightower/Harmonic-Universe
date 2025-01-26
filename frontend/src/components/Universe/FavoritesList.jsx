@@ -1,7 +1,7 @@
 import {
   Edit as EditIcon,
   Favorite as FavoriteIcon,
-} from '@mui/icons-material';
+} from "@mui/icons-material";
 import {
   Box,
   Card,
@@ -11,10 +11,10 @@ import {
   Grid,
   IconButton,
   Typography,
-} from '@mui/material';
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { universeService } from '../../services/universeService';
+} from "@mui/material";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { universeService } from "../../services/universeService";
 
 const FavoritesList = () => {
   const navigate = useNavigate();
@@ -26,7 +26,7 @@ const FavoritesList = () => {
     const fetchFavorites = async () => {
       try {
         const data = await universeService.getUniverses({
-          filter: 'favorites',
+          filter: "favorites",
         });
         setFavorites(data);
         setLoading(false);
@@ -39,20 +39,20 @@ const FavoritesList = () => {
     fetchFavorites();
   }, []);
 
-  const handleRemoveFavorite = async id => {
+  const handleRemoveFavorite = async (id) => {
     try {
       await universeService.toggleFavorite(id);
-      setFavorites(favorites.filter(universe => universe.id !== id));
+      setFavorites(favorites.filter((universe) => universe.id !== id));
     } catch (err) {
       setError(err.message);
     }
   };
 
-  const handleEdit = id => {
+  const handleEdit = (id) => {
     navigate(`/universes/${id}/edit`);
   };
 
-  const handleView = id => {
+  const handleView = (id) => {
     navigate(`/universes/${id}`);
   };
 
@@ -76,11 +76,11 @@ const FavoritesList = () => {
         </Typography>
       ) : (
         <Grid container spacing={3}>
-          {favorites.map(universe => (
+          {favorites.map((universe) => (
             <Grid item xs={12} sm={6} md={4} key={universe.id}>
               <Card>
                 <CardContent
-                  sx={{ cursor: 'pointer' }}
+                  sx={{ cursor: "pointer" }}
                   onClick={() => handleView(universe.id)}
                 >
                   <Typography variant="h6" component="h2" gutterBottom>
@@ -90,11 +90,11 @@ const FavoritesList = () => {
                     variant="body2"
                     color="text.secondary"
                     sx={{
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      display: '-webkit-box',
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      display: "-webkit-box",
                       WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
+                      WebkitBoxOrient: "vertical",
                     }}
                   >
                     {universe.description}
@@ -104,7 +104,7 @@ const FavoritesList = () => {
                     color="text.secondary"
                     display="block"
                   >
-                    Added to favorites:{' '}
+                    Added to favorites:{" "}
                     {new Date(universe.favorited_at).toLocaleDateString()}
                   </Typography>
                 </CardContent>

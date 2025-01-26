@@ -1,42 +1,42 @@
 // main.jsx
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { Provider } from 'react-redux';
-import { BrowserRouter } from 'react-router-dom';
-import { getCLS, getFCP, getFID, getLCP, getTTFB } from 'web-vitals';
-import App from './App';
-import GlobalErrorBoundary from './components/Common/GlobalErrorBoundary';
-import './index.css';
-import { monitoring } from './services/monitoring';
-import store from './store';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { Provider } from "react-redux";
+import { RouterProvider } from "react-router-dom";
+import { getCLS, getFCP, getFID, getLCP, getTTFB } from "web-vitals";
+import { ErrorBoundary } from "./components";
+import { router } from "./routes";
+import { monitoring } from "./services/monitoring";
+import { store } from "./store";
+import "./styles/index.css";
 
-console.log('Application initialization started');
+console.log("Application initialization started");
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const root = ReactDOM.createRoot(document.getElementById("root"));
 
-console.log('Root element found, mounting application');
+console.log("Root element found, mounting application");
 
 // Initialize monitoring with error tracking
 monitoring
   .init({
     appVersion: import.meta.env.VITE_APP_VERSION,
     environment: import.meta.env.MODE,
-    analyticsEndpoint: '/api/analytics',
-    errorEndpoint: '/api/errors',
-    onError: error => {
+    analyticsEndpoint: "/api/analytics",
+    errorEndpoint: "/api/errors",
+    onError: (error) => {
       // Global error handler for uncaught errors
-      console.error('Uncaught error:', error);
+      console.error("Uncaught error:", error);
 
       // If we have access to the notification system, show the error
       const notificationContainer = document.querySelector(
-        '.notification-container'
+        ".notification-container",
       );
       if (notificationContainer) {
-        const errorEvent = new CustomEvent('show-error', {
+        const errorEvent = new CustomEvent("show-error", {
           detail: {
-            message: 'An unexpected error occurred',
+            message: "An unexpected error occurred",
             details: error.message,
-            category: 'UNCAUGHT_ERROR',
+            category: "UNCAUGHT_ERROR",
           },
         });
         window.dispatchEvent(errorEvent);
@@ -65,32 +65,30 @@ getTTFB(reportWebVitals);
 getFCP(reportWebVitals);
 
 // Register service worker
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', async () => {
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", async () => {
     try {
-      const registration = await navigator.serviceWorker.register(
-        '/service-worker.js'
-      );
-      console.log('Service worker registered:', registration.scope);
+      const registration = await navigator.serviceWorker.register("/services/workers/service-worker.js");
+      console.log("Service worker registered:", registration.scope);
 
       // Handle updates
-      registration.addEventListener('updatefound', () => {
+      registration.addEventListener("updatefound", () => {
         const newWorker = registration.installing;
 
-        newWorker.addEventListener('statechange', () => {
+        newWorker.addEventListener("statechange", () => {
           if (
-            newWorker.state === 'installed' &&
+            newWorker.state === "installed" &&
             navigator.serviceWorker.controller
           ) {
             // New version available - show notification
-            const updateEvent = new CustomEvent('show-info', {
+            const updateEvent = new CustomEvent("show-info", {
               detail: {
-                message: 'A new version is available!',
-                details: 'Would you like to update now?',
-                category: 'UPDATE_AVAILABLE',
+                message: "A new version is available!",
+                details: "Would you like to update now?",
+                category: "UPDATE_AVAILABLE",
                 duration: null, // Don't auto-dismiss
                 onAction: () => {
-                  newWorker.postMessage({ type: 'SKIP_WAITING' });
+                  newWorker.postMessage({ type: "SKIP_WAITING" });
                   window.location.reload();
                 },
               },
@@ -100,12 +98,12 @@ if ('serviceWorker' in navigator) {
         });
       });
     } catch (error) {
-      console.error('Service worker registration failed:', error);
-      const errorEvent = new CustomEvent('show-error', {
+      console.error("Service worker registration failed:", error);
+      const errorEvent = new CustomEvent("show-error", {
         detail: {
-          message: 'Service Worker Registration Failed',
+          message: "Service Worker Registration Failed",
           details: error.message,
-          category: 'SERVICE_WORKER_ERROR',
+          category: "SERVICE_WORKER_ERROR",
         },
       });
       window.dispatchEvent(errorEvent);
@@ -114,7 +112,7 @@ if ('serviceWorker' in navigator) {
 
   // Handle controller change
   let refreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (!refreshing) {
       refreshing = true;
       window.location.reload();
@@ -125,36 +123,34 @@ if ('serviceWorker' in navigator) {
 // Update online/offline status
 function updateOnlineStatus() {
   const isOnline = navigator.onLine;
-  document.body.classList.toggle('offline', !isOnline);
+  document.body.classList.toggle("offline", !isOnline);
 
   // Show notification when connection status changes
-  const event = new CustomEvent(isOnline ? 'show-success' : 'show-warning', {
+  const event = new CustomEvent(isOnline ? "show-success" : "show-warning", {
     detail: {
-      message: isOnline ? 'Back Online' : 'Connection Lost',
+      message: isOnline ? "Back Online" : "Connection Lost",
       details: isOnline
-        ? 'Your internet connection has been restored'
-        : 'Please check your internet connection',
-      category: 'CONNECTIVITY',
+        ? "Your internet connection has been restored"
+        : "Please check your internet connection",
+      category: "CONNECTIVITY",
       duration: 3000,
     },
   });
   window.dispatchEvent(event);
 }
 
-window.addEventListener('online', updateOnlineStatus);
-window.addEventListener('offline', updateOnlineStatus);
+window.addEventListener("online", updateOnlineStatus);
+window.addEventListener("offline", updateOnlineStatus);
 updateOnlineStatus();
 
 root.render(
   <React.StrictMode>
-    <GlobalErrorBoundary>
+    <ErrorBoundary>
       <Provider store={store}>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
+        <RouterProvider router={router} />
       </Provider>
-    </GlobalErrorBoundary>
-  </React.StrictMode>
+    </ErrorBoundary>
+  </React.StrictMode>,
 );
 
-console.log('Application mounted successfully');
+console.log("Application mounted successfully");

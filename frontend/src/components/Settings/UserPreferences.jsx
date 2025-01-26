@@ -13,28 +13,28 @@ import {
   Slider,
   Switch,
   Typography,
-} from '@mui/material';
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+} from "@mui/material";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   fetchPreferences,
   updatePreferences,
-} from '../../store/slices/preferencesSlice';
+} from "../../store/slices/preferencesSlice";
 
 const UserPreferences = () => {
   const dispatch = useDispatch();
-  const preferences = useSelector(state => state);
-  const loading = useSelector(state => state.preferences.loading);
-  const error = useSelector(state => state.preferences.error);
+  const preferences = useSelector((state) => state);
+  const loading = useSelector((state) => state.preferences.loading);
+  const error = useSelector((state) => state.preferences.error);
   const [localPreferences, setLocalPreferences] = useState({
-    theme: 'light',
+    theme: "light",
     emailNotifications: true,
     pushNotifications: true,
     highContrast: false,
     fontSize: 16,
-    dashboardLayout: 'grid',
-    language: 'en',
-    timezone: 'UTC',
+    dashboardLayout: "grid",
+    language: "en",
+    timezone: "UTC",
   });
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -48,7 +48,7 @@ const UserPreferences = () => {
     }
   }, [preferences]);
 
-  const handleChange = name => event => {
+  const handleChange = (name) => (event) => {
     setLocalPreferences({
       ...localPreferences,
       [name]:
@@ -58,7 +58,7 @@ const UserPreferences = () => {
     });
   };
 
-  const handleSliderChange = name => (event, newValue) => {
+  const handleSliderChange = (name) => (event, newValue) => {
     setLocalPreferences({
       ...localPreferences,
       [name]: newValue,
@@ -80,7 +80,7 @@ const UserPreferences = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 800, mx: 'auto', py: 4 }}>
+    <Box sx={{ maxWidth: 800, mx: "auto", py: 4 }}>
       <Typography variant="h4" gutterBottom>
         User Preferences
       </Typography>
@@ -107,9 +107,9 @@ const UserPreferences = () => {
               <FormControlLabel
                 control={
                   <Switch
-                    checked={localPreferences.theme === 'dark'}
-                    onChange={e =>
-                      handleChange('theme')(e.target.checked ? 'dark' : 'light')
+                    checked={localPreferences.theme === "dark"}
+                    onChange={(e) =>
+                      handleChange("theme")(e.target.checked ? "dark" : "light")
                     }
                     data-testid="theme-toggle"
                   />
@@ -132,7 +132,7 @@ const UserPreferences = () => {
                 control={
                   <Switch
                     checked={localPreferences.emailNotifications}
-                    onChange={handleChange('emailNotifications')}
+                    onChange={handleChange("emailNotifications")}
                     data-testid="email-notifications-toggle"
                   />
                 }
@@ -144,7 +144,7 @@ const UserPreferences = () => {
                 control={
                   <Switch
                     checked={localPreferences.pushNotifications}
-                    onChange={handleChange('pushNotifications')}
+                    onChange={handleChange("pushNotifications")}
                     data-testid="push-notifications-toggle"
                   />
                 }
@@ -166,7 +166,7 @@ const UserPreferences = () => {
                 control={
                   <Switch
                     checked={localPreferences.highContrast}
-                    onChange={handleChange('highContrast')}
+                    onChange={handleChange("highContrast")}
                     data-testid="high-contrast-toggle"
                   />
                 }
@@ -177,7 +177,7 @@ const UserPreferences = () => {
               <Typography gutterBottom>Font Size</Typography>
               <Slider
                 value={localPreferences.fontSize}
-                onChange={handleSliderChange('fontSize')}
+                onChange={handleSliderChange("fontSize")}
                 min={12}
                 max={24}
                 step={1}
@@ -201,7 +201,7 @@ const UserPreferences = () => {
                 <InputLabel>Layout</InputLabel>
                 <Select
                   value={localPreferences.dashboardLayout}
-                  onChange={handleChange('dashboardLayout')}
+                  onChange={handleChange("dashboardLayout")}
                   data-testid="dashboard-layout-select"
                 >
                   <MenuItem value="grid">Grid</MenuItem>
@@ -224,7 +224,7 @@ const UserPreferences = () => {
                 <InputLabel>Language</InputLabel>
                 <Select
                   value={localPreferences.language}
-                  onChange={handleChange('language')}
+                  onChange={handleChange("language")}
                   data-testid="language-select"
                 >
                   <MenuItem value="en">English</MenuItem>
@@ -238,7 +238,7 @@ const UserPreferences = () => {
                 <InputLabel>Timezone</InputLabel>
                 <Select
                   value={localPreferences.timezone}
-                  onChange={handleChange('timezone')}
+                  onChange={handleChange("timezone")}
                   data-testid="timezone-select"
                 >
                   <MenuItem value="UTC">UTC</MenuItem>
@@ -251,7 +251,7 @@ const UserPreferences = () => {
         </CardContent>
       </Card>
 
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
         <Button
           variant="contained"
           onClick={handleSave}

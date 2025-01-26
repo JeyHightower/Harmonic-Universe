@@ -1,59 +1,85 @@
+import {
+    Box,
+    Button,
+    Card,
+    CardContent,
+    Container,
+    TextField,
+    Typography,
+    alpha,
+    styled,
+} from '@mui/material';
 import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { register } from '../../store/slices/authSlice';
-import styles from './Auth.module.css';
 
-const Register = () => {
-  const [formData, setFormData] = useState({
+const RegisterCard = styled(Card)(({ theme }) => ({
+  backgroundColor: alpha(theme.palette.background.paper, 0.6),
+  backdropFilter: 'blur(8px)',
+  transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+  '&:hover': {
+    transform: 'translateY(-4px)',
+    boxShadow: theme.shadows[8],
+  },
+}));
+
+const FormContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: theme.spacing(3),
+}));
+
+const StyledLink = styled(RouterLink)(({ theme }) => ({
+  color: theme.palette.primary.main,
+  textDecoration: 'none',
+  '&:hover': {
+    textDecoration: 'underline',
+  },
+}));
+
+interface RegisterFormData {
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
+const Register: React.FC = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState<RegisterFormData>({
     username: '',
     email: '',
     password: '',
     confirmPassword: '',
   });
-  const [errors, setErrors] = useState({});
-
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { isLoading, error } = useSelector(state => state.auth);
-
-  const handleChange = e => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: '',
-      }));
-    }
-  };
+  const [errors, setErrors] = useState<Partial<RegisterFormData>>({});
 
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors: Partial<RegisterFormData> = {};
 
     // Username validation
     if (!formData.username) {
       newErrors.username = 'Username is required';
     } else if (formData.username.length < 3) {
-      newErrors.username = 'Username must be at least 3 characters';
+      newErrors.username = 'Username must be at least 3 characters long';
     }
 
     // Email validation
     if (!formData.email) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Invalid email format';
+      newErrors.email = 'Please enter a valid email address';
     }
 
     // Password validation
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters long';
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
     }
 
     // Confirm password validation
@@ -63,120 +89,123 @@ const Register = () => {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
-    return newErrors;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const validationErrors = validateForm();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-
-    // Remove confirmPassword before sending to API
-    const { confirmPassword, ...registrationData } = formData;
-
-    try {
-      const result = await dispatch(register(registrationData)).unwrap();
-      if (result) {
+    if (validateForm()) {
+      try {
+        const { confirmPassword, ...registerData } = formData;
+        await dispatch(register(registerData));
         navigate('/dashboard');
+      } catch (error) {
+        setErrors({
+          email: 'This email is already registered',
+        });
       }
-    } catch (err) {
-      setErrors(prev => ({
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    // Clear error when user starts typing
+    if (errors[name as keyof RegisterFormData]) {
+      setErrors((prev) => ({
         ...prev,
-        submit: err.message || 'Registration failed. Please try again.',
+        [name]: undefined,
       }));
     }
   };
 
   return (
-    <div className={styles.authContainer}>
-      <form onSubmit={handleSubmit} className={styles.authForm}>
-        <h2>Create Your Account</h2>
+    <Container maxWidth="sm" sx={{ mt: 8, mb: 8 }}>
+      <Box sx={{ mb: 4, textAlign: 'center' }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Create Your Account
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Join Harmonic Universe and start creating your own universes
+        </Typography>
+      </Box>
 
-        <div className={styles.formGroup}>
-          <label htmlFor="username">Username</label>
-          <input
-            type="text"
-            id="username"
-            name="username"
-            value={formData.username}
-            onChange={handleChange}
-            className={errors.username ? styles.error : ''}
-            placeholder="Choose a username"
-          />
-          {errors.username && (
-            <span className={styles.errorText}>{errors.username}</span>
-          )}
-        </div>
+      <RegisterCard>
+        <CardContent sx={{ p: 4 }}>
+          <form onSubmit={handleSubmit}>
+            <FormContainer>
+              <TextField
+                fullWidth
+                label="Username"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                error={!!errors.username}
+                helperText={errors.username}
+                autoComplete="username"
+              />
 
-        <div className={styles.formGroup}>
-          <label htmlFor="email">Email</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className={errors.email ? styles.error : ''}
-            placeholder="Enter your email"
-          />
-          {errors.email && (
-            <span className={styles.errorText}>{errors.email}</span>
-          )}
-        </div>
+              <TextField
+                fullWidth
+                label="Email Address"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                error={!!errors.email}
+                helperText={errors.email}
+                autoComplete="email"
+              />
 
-        <div className={styles.formGroup}>
-          <label htmlFor="password">Password</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            className={errors.password ? styles.error : ''}
-            placeholder="Create a password"
-          />
-          {errors.password && (
-            <span className={styles.errorText}>{errors.password}</span>
-          )}
-        </div>
+              <TextField
+                fullWidth
+                label="Password"
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleChange}
+                error={!!errors.password}
+                helperText={errors.password}
+                autoComplete="new-password"
+              />
 
-        <div className={styles.formGroup}>
-          <label htmlFor="confirmPassword">Confirm Password</label>
-          <input
-            type="password"
-            id="confirmPassword"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            className={errors.confirmPassword ? styles.error : ''}
-            placeholder="Confirm your password"
-          />
-          {errors.confirmPassword && (
-            <span className={styles.errorText}>{errors.confirmPassword}</span>
-          )}
-        </div>
+              <TextField
+                fullWidth
+                label="Confirm Password"
+                name="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                error={!!errors.confirmPassword}
+                helperText={errors.confirmPassword}
+                autoComplete="new-password"
+              />
 
-        {(errors.submit || error) && (
-          <div className={styles.errorText}>{errors.submit || error}</div>
-        )}
+              <Button
+                type="submit"
+                variant="contained"
+                size="large"
+                fullWidth
+                sx={{ mt: 2 }}
+              >
+                Create Account
+              </Button>
 
-        <button
-          type="submit"
-          className={styles.authButton}
-          disabled={isLoading}
-        >
-          {isLoading ? 'Creating Account...' : 'Create Account'}
-        </button>
-
-        <div className={styles.authLinks}>
-          <a href="/login">Already have an account? Sign in</a>
-        </div>
-      </form>
-    </div>
+              <Box sx={{ textAlign: 'center', mt: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Already have an account?{' '}
+                  <StyledLink to="/login">Sign in</StyledLink>
+                </Typography>
+              </Box>
+            </FormContainer>
+          </form>
+        </CardContent>
+      </RegisterCard>
+    </Container>
   );
 };
 

@@ -1,20 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   fetchUniverse,
   updateUniverse,
-} from '../../store/slices/universeSlice';
+} from "../../store/slices/universeSlice";
 
 const UniverseEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const universe = useSelector(state => state.universe.currentUniverse);
+  const universe = useSelector((state) => state.universe.currentUniverse);
 
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
+    name: "",
+    description: "",
     isPublic: false,
     maxParticipants: 10,
   });
@@ -27,8 +27,8 @@ const UniverseEdit = () => {
       try {
         await dispatch(fetchUniverse(id)).unwrap();
       } catch (err) {
-        setError('Failed to load universe');
-        console.error('Error loading universe:', err);
+        setError("Failed to load universe");
+        console.error("Error loading universe:", err);
       }
     };
     loadUniverse();
@@ -37,35 +37,35 @@ const UniverseEdit = () => {
   useEffect(() => {
     if (universe) {
       setFormData({
-        name: universe.name || '',
-        description: universe.description || '',
+        name: universe.name || "",
+        description: universe.description || "",
         isPublic: universe.isPublic || false,
         maxParticipants: universe.maxParticipants || 10,
       });
     }
   }, [universe]);
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
   const validateForm = () => {
     const errors = {};
     if (!formData.name.trim()) {
-      errors.name = 'Name is required';
+      errors.name = "Name is required";
     }
     if (!formData.description.trim()) {
-      errors.description = 'Description is required';
+      errors.description = "Description is required";
     }
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
 
@@ -79,7 +79,7 @@ const UniverseEdit = () => {
       await dispatch(updateUniverse({ id, ...formData })).unwrap();
       navigate(`/universe/${id}`);
     } catch (err) {
-      setError(err.message || 'Failed to update universe');
+      setError(err.message || "Failed to update universe");
     } finally {
       setIsLoading(false);
     }
@@ -162,7 +162,7 @@ const UniverseEdit = () => {
             Cancel
           </button>
           <button type="submit" disabled={isLoading} className="btn-primary">
-            {isLoading ? 'Saving...' : 'Save Changes'}
+            {isLoading ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </form>

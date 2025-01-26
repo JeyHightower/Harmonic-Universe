@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useRef } from 'react';
-import { useAnimationFrame } from '../../hooks/useAnimationFrame';
-import { useResizeEvent } from '../../hooks/useEventListener';
-import { useInterval } from '../../hooks/useTimer';
-import styles from './PhysicsSimulation.module.css';
+import React, { useCallback, useEffect, useRef } from "react";
+import { useAnimationFrame } from "../../hooks/useAnimationFrame";
+import { useResizeEvent } from "../../hooks/useEventListener";
+import { useInterval } from "../../hooks/useTimer";
+import styles from "./PhysicsSimulation.module.css";
 
 const PhysicsSimulation = ({
   particles,
@@ -28,7 +28,7 @@ const PhysicsSimulation = ({
 
   const setupCanvas = useCallback(() => {
     const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
+    const context = canvas.getContext("2d");
 
     // Handle high DPI displays
     const dpr = window.devicePixelRatio || 1;
@@ -58,7 +58,7 @@ const PhysicsSimulation = ({
       state.velocity.y += gravity * deltaTime;
 
       // Apply force fields
-      forceFields.forEach(field => {
+      forceFields.forEach((field) => {
         const dx = field.position.x - state.position.x;
         const dy = field.position.y - state.position.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
@@ -78,7 +78,7 @@ const PhysicsSimulation = ({
       // Limit velocity
       const speed = Math.sqrt(
         state.velocity.x * state.velocity.x +
-          state.velocity.y * state.velocity.y
+          state.velocity.y * state.velocity.y,
       );
       if (speed > maxVelocity) {
         const scale = maxVelocity / speed;
@@ -94,21 +94,21 @@ const PhysicsSimulation = ({
       if (state.position.x < 0) {
         state.position.x = 0;
         state.velocity.x = -state.velocity.x * elasticity;
-        onCollision?.('left', particle);
+        onCollision?.("left", particle);
       } else if (state.position.x > width) {
         state.position.x = width;
         state.velocity.x = -state.velocity.x * elasticity;
-        onCollision?.('right', particle);
+        onCollision?.("right", particle);
       }
 
       if (state.position.y < 0) {
         state.position.y = 0;
         state.velocity.y = -state.velocity.y * elasticity;
-        onCollision?.('top', particle);
+        onCollision?.("top", particle);
       } else if (state.position.y > height) {
         state.position.y = height;
         state.velocity.y = -state.velocity.y * elasticity;
-        onCollision?.('bottom', particle);
+        onCollision?.("bottom", particle);
       }
 
       particleStatesRef.current.set(particle.id, state);
@@ -123,12 +123,12 @@ const PhysicsSimulation = ({
       height,
       forceFields,
       onCollision,
-    ]
+    ],
   );
 
   // Physics update loop
   useInterval(() => {
-    particles.forEach(particle => {
+    particles.forEach((particle) => {
       const newState = updateParticleState(particle, timeStep);
       onParticleUpdate?.(particle.id, newState);
     });
@@ -142,14 +142,14 @@ const PhysicsSimulation = ({
     context.clearRect(0, 0, width, height);
 
     // Draw force fields
-    forceFields.forEach(field => {
+    forceFields.forEach((field) => {
       context.beginPath();
       context.arc(
         field.position.x,
         field.position.y,
         field.radius,
         0,
-        Math.PI * 2
+        Math.PI * 2,
       );
       context.fillStyle = `rgba(0, 128, 255, ${
         Math.abs(field.strength) * 0.1
@@ -158,7 +158,7 @@ const PhysicsSimulation = ({
     });
 
     // Draw particles
-    particles.forEach(particle => {
+    particles.forEach((particle) => {
       const state = particleStatesRef.current.get(particle.id);
       if (!state) return;
 
@@ -168,9 +168,9 @@ const PhysicsSimulation = ({
         state.position.y,
         particle.radius || 5,
         0,
-        Math.PI * 2
+        Math.PI * 2,
       );
-      context.fillStyle = particle.color || '#FF4444';
+      context.fillStyle = particle.color || "#FF4444";
       context.fill();
     });
   }, [particles, forceFields, width, height]);

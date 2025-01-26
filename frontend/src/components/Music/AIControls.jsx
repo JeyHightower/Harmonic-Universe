@@ -1,4 +1,4 @@
-import { AutoFixHigh, Transform } from '@mui/icons-material';
+import { AutoFixHigh, Transform } from "@mui/icons-material";
 import {
   Alert,
   Box,
@@ -10,12 +10,12 @@ import {
   Select,
   Slider,
   Typography,
-} from '@mui/material';
-import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { musicService } from '../../services/musicService';
-import { selectUniverseList } from '../../store/slices/universeSlice';
-import styles from './AIControls.module.css';
+} from "@mui/material";
+import React, { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { musicService } from "../../services/musicService";
+import { selectUniverseList } from "../../store/slices/universeSlice";
+import styles from "./AIControls.module.css";
 
 const AIControls = ({ currentUniverseId }) => {
   const dispatch = useDispatch();
@@ -23,9 +23,9 @@ const AIControls = ({ currentUniverseId }) => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [sourceUniverse, setSourceUniverse] = useState('');
+  const [sourceUniverse, setSourceUniverse] = useState("");
   const [complexity, setComplexity] = useState(0.5);
-  const [mood, setMood] = useState('neutral');
+  const [mood, setMood] = useState("neutral");
 
   const handleGenerateMusic = async () => {
     try {
@@ -42,7 +42,7 @@ const AIControls = ({ currentUniverseId }) => {
 
       const response = await musicService.generateAIMusic(
         currentUniverseId,
-        parameters
+        parameters,
       );
 
       if (response.success) {
@@ -66,7 +66,7 @@ const AIControls = ({ currentUniverseId }) => {
       const response = await musicService.applyStyleTransfer(
         sourceUniverse,
         currentUniverseId,
-        ['music']
+        ["music"],
       );
 
       if (response.success) {
@@ -111,7 +111,7 @@ const AIControls = ({ currentUniverseId }) => {
         <InputLabel>Mood</InputLabel>
         <Select
           value={mood}
-          onChange={e => setMood(e.target.value)}
+          onChange={(e) => setMood(e.target.value)}
           disabled={loading}
         >
           <MenuItem value="energetic">Energetic</MenuItem>
@@ -131,7 +131,7 @@ const AIControls = ({ currentUniverseId }) => {
         fullWidth
         sx={{ mb: 2 }}
       >
-        {loading ? <CircularProgress size={24} /> : 'Generate Music'}
+        {loading ? <CircularProgress size={24} /> : "Generate Music"}
       </Button>
 
       <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
@@ -142,12 +142,12 @@ const AIControls = ({ currentUniverseId }) => {
         <InputLabel>Source Universe</InputLabel>
         <Select
           value={sourceUniverse}
-          onChange={e => setSourceUniverse(e.target.value)}
+          onChange={(e) => setSourceUniverse(e.target.value)}
           disabled={loading}
         >
           {universes
-            .filter(u => u.id !== currentUniverseId)
-            .map(universe => (
+            .filter((u) => u.id !== currentUniverseId)
+            .map((universe) => (
               <MenuItem key={universe.id} value={universe.id}>
                 {universe.name}
               </MenuItem>
@@ -162,7 +162,7 @@ const AIControls = ({ currentUniverseId }) => {
         disabled={loading || !sourceUniverse}
         fullWidth
       >
-        {loading ? <CircularProgress size={24} /> : 'Apply Style Transfer'}
+        {loading ? <CircularProgress size={24} /> : "Apply Style Transfer"}
       </Button>
     </div>
   );

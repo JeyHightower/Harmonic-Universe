@@ -1,21 +1,21 @@
-import React from 'react';
-import styles from './VersionHistory.module.css';
+import React from "react";
+import styles from "./VersionHistory.module.css";
 
 const VersionHistory = ({ versions, currentVersion, onRestore }) => {
   if (!versions || versions.length === 0) {
     return null;
   }
 
-  const formatDate = date => {
-    return new Date(date).toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+  const formatDate = (date) => {
+    return new Date(date).toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
-  const getChangeSummary = version => {
+  const getChangeSummary = (version) => {
     const wordCount = version.content.split(/\s+/).length;
     const charCount = version.content.length;
     return `${wordCount} words, ${charCount} characters`;
@@ -29,7 +29,7 @@ const VersionHistory = ({ versions, currentVersion, onRestore }) => {
           <div
             key={version.id}
             className={`${styles.version} ${
-              version.id === currentVersion ? styles.current : ''
+              version.id === currentVersion ? styles.current : ""
             }`}
           >
             <div className={styles.versionHeader}>

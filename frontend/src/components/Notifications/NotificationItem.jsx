@@ -1,44 +1,44 @@
-import { formatDistanceToNow } from 'date-fns';
-import React from 'react';
-import styles from './NotificationItem.module.css';
+import { formatDistanceToNow } from "date-fns";
+import React from "react";
+import styles from "./NotificationItem.module.css";
 
 const NotificationItem = ({ notification, onMarkAsRead, onDelete }) => {
   const { id, type, message, metadata, read, created_at } = notification;
 
   const getTypeIcon = () => {
     switch (type) {
-      case 'system':
-        return '🔧';
-      case 'alert':
-        return '⚠️';
-      case 'message':
-        return '💬';
+      case "system":
+        return "🔧";
+      case "alert":
+        return "⚠️";
+      case "message":
+        return "💬";
       default:
-        return '📢';
+        return "📢";
     }
   };
 
   const getTypeClass = () => {
     switch (type) {
-      case 'system':
+      case "system":
         return styles.system;
-      case 'alert':
+      case "alert":
         return styles.alert;
-      case 'message':
+      case "message":
         return styles.message;
       default:
-        return '';
+        return "";
     }
   };
 
-  const handleMarkAsRead = e => {
+  const handleMarkAsRead = (e) => {
     e.stopPropagation();
     if (!read) {
       onMarkAsRead(id);
     }
   };
 
-  const handleDelete = e => {
+  const handleDelete = (e) => {
     e.stopPropagation();
     onDelete(id);
   };
@@ -46,7 +46,7 @@ const NotificationItem = ({ notification, onMarkAsRead, onDelete }) => {
   return (
     <div
       className={`${styles.notification} ${
-        !read ? styles.unread : ''
+        !read ? styles.unread : ""
       } ${getTypeClass()}`}
       onClick={handleMarkAsRead}
     >

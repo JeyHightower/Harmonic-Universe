@@ -1,4 +1,4 @@
-import { showAlert, showConfirmDialog } from '@/store/slices/uiSlice';
+import { showAlert, showConfirmDialog } from "@/store/slices/uiSlice";
 import {
   clearFilters,
   createUniverse,
@@ -10,11 +10,11 @@ import {
   setSortBy,
   toggleFavorite,
   updateUniverse,
-} from '@/store/slices/universeSlice';
-import { Universe } from '@/types/universe';
-import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from './useRedux';
+} from "@/store/slices/universeSlice";
+import { Universe } from "@/types/universe";
+import { useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "./useRedux";
 
 export const useUniverse = () => {
   const dispatch = useAppDispatch();
@@ -30,7 +30,7 @@ export const useUniverse = () => {
     searchQuery,
     sortBy,
     filterBy,
-  } = useAppSelector(state => state.universe);
+  } = useAppSelector((state) => state.universe);
 
   const handleFetchUniverses = useCallback(async () => {
     try {
@@ -45,10 +45,10 @@ export const useUniverse = () => {
       try {
         await dispatch(fetchUniverseById(universeId)).unwrap();
       } catch (error) {
-        navigate('/404');
+        navigate("/404");
       }
     },
-    [dispatch, navigate]
+    [dispatch, navigate],
   );
 
   const handleCreateUniverse = useCallback(
@@ -58,15 +58,15 @@ export const useUniverse = () => {
         navigate(`/universes/${result.id}`);
         dispatch(
           showAlert({
-            type: 'success',
-            message: 'Universe created successfully!',
-          })
+            type: "success",
+            message: "Universe created successfully!",
+          }),
         );
       } catch (error) {
         // Error is handled by the universe slice
       }
     },
-    [dispatch, navigate]
+    [dispatch, navigate],
   );
 
   const handleUpdateUniverse = useCallback(
@@ -75,44 +75,44 @@ export const useUniverse = () => {
         await dispatch(updateUniverse({ id: universeId, data })).unwrap();
         dispatch(
           showAlert({
-            type: 'success',
-            message: 'Universe updated successfully!',
-          })
+            type: "success",
+            message: "Universe updated successfully!",
+          }),
         );
       } catch (error) {
         // Error is handled by the universe slice
       }
     },
-    [dispatch]
+    [dispatch],
   );
 
   const handleDeleteUniverse = useCallback(
     (universeId: number) => {
       dispatch(
         showConfirmDialog({
-          title: 'Delete Universe',
+          title: "Delete Universe",
           message:
-            'Are you sure you want to delete this universe? This action cannot be undone.',
-          confirmLabel: 'Delete',
-          cancelLabel: 'Cancel',
+            "Are you sure you want to delete this universe? This action cannot be undone.",
+          confirmLabel: "Delete",
+          cancelLabel: "Cancel",
           onConfirm: async () => {
             try {
               await dispatch(deleteUniverse(universeId)).unwrap();
-              navigate('/profile');
+              navigate("/profile");
               dispatch(
                 showAlert({
-                  type: 'success',
-                  message: 'Universe deleted successfully!',
-                })
+                  type: "success",
+                  message: "Universe deleted successfully!",
+                }),
               );
             } catch (error) {
               // Error is handled by the universe slice
             }
           },
-        })
+        }),
       );
     },
-    [dispatch, navigate]
+    [dispatch, navigate],
   );
 
   const handleToggleFavorite = useCallback(
@@ -121,38 +121,38 @@ export const useUniverse = () => {
         await dispatch(toggleFavorite({ universeId, isFavorited })).unwrap();
         dispatch(
           showAlert({
-            type: 'success',
+            type: "success",
             message: isFavorited
-              ? 'Universe removed from favorites!'
-              : 'Universe added to favorites!',
-          })
+              ? "Universe removed from favorites!"
+              : "Universe added to favorites!",
+          }),
         );
       } catch (error) {
         // Error is handled by the universe slice
       }
     },
-    [dispatch]
+    [dispatch],
   );
 
   const handleSearch = useCallback(
     (query: string) => {
       dispatch(setSearchQuery(query));
     },
-    [dispatch]
+    [dispatch],
   );
 
   const handleSort = useCallback(
-    (sortBy: 'recent' | 'popular' | 'name') => {
+    (sortBy: "recent" | "popular" | "name") => {
       dispatch(setSortBy(sortBy));
     },
-    [dispatch]
+    [dispatch],
   );
 
   const handleFilter = useCallback(
     (filters: { isPublic?: boolean | null; allowGuests?: boolean | null }) => {
       dispatch(setFilterBy(filters));
     },
-    [dispatch]
+    [dispatch],
   );
 
   const handleClearFilters = useCallback(() => {

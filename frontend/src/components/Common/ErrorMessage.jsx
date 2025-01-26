@@ -1,8 +1,8 @@
-import PropTypes from 'prop-types';
-import React from 'react';
-import './ErrorMessage.css';
+import PropTypes from "prop-types";
+import React from "react";
+import "./ErrorMessage.css";
 
-const ErrorMessage = ({ message, onDismiss, type = 'error' }) => {
+const ErrorMessage = ({ message, onDismiss, type = "error" }) => {
   if (!message) return null;
 
   return (
@@ -22,7 +22,7 @@ const ErrorMessage = ({ message, onDismiss, type = 'error' }) => {
 ErrorMessage.propTypes = {
   message: PropTypes.string,
   onDismiss: PropTypes.func,
-  type: PropTypes.oneOf(['error', 'warning', 'info']),
+  type: PropTypes.oneOf(["error", "warning", "info"]),
 };
 
 export default ErrorMessage;

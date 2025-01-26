@@ -3,7 +3,8 @@ import click
 from flask.cli import with_appcontext
 from .models import User, Universe, PhysicsParameters
 
-@click.command('reset-test-db')
+
+@click.command("reset-test-db")
 @with_appcontext
 def reset_test_db():
     """Reset test database."""
@@ -16,19 +17,16 @@ def reset_test_db():
     db.create_all()
 
     # Create test user
-    test_user = User(
-        username='testuser',
-        email='test@example.com'
-    )
-    test_user.set_password('password123')
+    test_user = User(username="testuser", email="test@example.com")
+    test_user.set_password("password123")
     db.session.add(test_user)
 
     # Create test universe
     test_universe = Universe(
-        name='Test Universe',
-        description='A test universe',
+        name="Test Universe",
+        description="A test universe",
         creator=test_user,
-        is_public=True
+        is_public=True,
     )
     db.session.add(test_universe)
 
@@ -40,11 +38,11 @@ def reset_test_db():
         collision_damping=0.8,
         boundary_damping=0.9,
         particle_mass=1.0,
-        particle_radius=0.5
+        particle_radius=0.5,
     )
     db.session.add(physics_params)
 
     # Commit changes
     db.session.commit()
 
-    click.echo('Test database has been reset with sample data.')
+    click.echo("Test database has been reset with sample data.")

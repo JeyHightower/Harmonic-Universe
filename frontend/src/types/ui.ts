@@ -1,5 +1,5 @@
 export interface AlertMessage {
-  type: 'success' | 'error' | 'info' | 'warning';
+  type: "success" | "error" | "info" | "warning";
   message: string;
 }
 
@@ -19,7 +19,7 @@ export interface LoadingState {
 }
 
 export interface ThemeConfig {
-  mode: 'light' | 'dark';
+  mode: "light" | "dark";
   primary: {
     main: string;
     light: string;
@@ -70,7 +70,7 @@ export interface ThemeConfig {
 }
 
 export interface UIState {
-  theme: 'light' | 'dark';
+  theme: "light" | "dark";
   sidebarOpen: boolean;
   alert: AlertMessage | null;
   confirmDialog: ConfirmDialog;

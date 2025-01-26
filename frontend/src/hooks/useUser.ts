@@ -1,4 +1,4 @@
-import { showAlert } from '@/store/slices/uiSlice';
+import { showAlert } from "@/store/slices/uiSlice";
 import {
   clearSearchResults,
   clearUserProfile,
@@ -9,15 +9,15 @@ import {
   updatePassword,
   updateUserProfile,
   updateUserSettings,
-} from '@/store/slices/userSlice';
-import { UserProfile, UserSettings } from '@/types/user';
-import { useCallback } from 'react';
-import { useAppDispatch, useAppSelector } from './useRedux';
+} from "@/store/slices/userSlice";
+import { UserProfile, UserSettings } from "@/types/user";
+import { useCallback } from "react";
+import { useAppDispatch, useAppSelector } from "./useRedux";
 
 export const useUser = () => {
   const dispatch = useAppDispatch();
   const { profile, settings, searchResults, isLoading, error } = useAppSelector(
-    state => state.user
+    (state) => state.user,
   );
 
   const handleFetchUserProfile = useCallback(
@@ -28,7 +28,7 @@ export const useUser = () => {
         // Error is handled by the user slice
       }
     },
-    [dispatch]
+    [dispatch],
   );
 
   const handleUpdateUserProfile = useCallback(
@@ -37,15 +37,15 @@ export const useUser = () => {
         await dispatch(updateUserProfile(profileData)).unwrap();
         dispatch(
           showAlert({
-            type: 'success',
-            message: 'Profile updated successfully!',
-          })
+            type: "success",
+            message: "Profile updated successfully!",
+          }),
         );
       } catch (error) {
         // Error is handled by the user slice
       }
     },
-    [dispatch]
+    [dispatch],
   );
 
   const handleFetchUserSettings = useCallback(async () => {
@@ -62,34 +62,34 @@ export const useUser = () => {
         await dispatch(updateUserSettings(settingsData)).unwrap();
         dispatch(
           showAlert({
-            type: 'success',
-            message: 'Settings updated successfully!',
-          })
+            type: "success",
+            message: "Settings updated successfully!",
+          }),
         );
       } catch (error) {
         // Error is handled by the user slice
       }
     },
-    [dispatch]
+    [dispatch],
   );
 
   const handleUpdatePassword = useCallback(
     async (currentPassword: string, newPassword: string) => {
       try {
         await dispatch(
-          updatePassword({ currentPassword, newPassword })
+          updatePassword({ currentPassword, newPassword }),
         ).unwrap();
         dispatch(
           showAlert({
-            type: 'success',
-            message: 'Password updated successfully!',
-          })
+            type: "success",
+            message: "Password updated successfully!",
+          }),
         );
       } catch (error) {
         // Error is handled by the user slice
       }
     },
-    [dispatch]
+    [dispatch],
   );
 
   const handleSearchUsers = useCallback(
@@ -100,7 +100,7 @@ export const useUser = () => {
         // Error is handled by the user slice
       }
     },
-    [dispatch]
+    [dispatch],
   );
 
   const handleClearUserProfile = useCallback(() => {

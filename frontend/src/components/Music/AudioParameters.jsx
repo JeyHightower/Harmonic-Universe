@@ -1,10 +1,10 @@
-import React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   selectParameters,
   updateParameters,
-} from '../../store/slices/audioSlice';
-import styles from './AudioParameters.module.css';
+} from "../../store/slices/audioSlice";
+import styles from "./AudioParameters.module.css";
 
 const AudioParameters = () => {
   const dispatch = useDispatch();
@@ -30,7 +30,9 @@ const AudioParameters = () => {
               max="2"
               step="0.01"
               value={parameters.attack}
-              onChange={e => handleChange('attack', parseFloat(e.target.value))}
+              onChange={(e) =>
+                handleChange("attack", parseFloat(e.target.value))
+              }
             />
             <span>{parameters.attack.toFixed(2)}s</span>
           </div>
@@ -44,7 +46,9 @@ const AudioParameters = () => {
               max="2"
               step="0.01"
               value={parameters.decay}
-              onChange={e => handleChange('decay', parseFloat(e.target.value))}
+              onChange={(e) =>
+                handleChange("decay", parseFloat(e.target.value))
+              }
             />
             <span>{parameters.decay.toFixed(2)}s</span>
           </div>
@@ -58,8 +62,8 @@ const AudioParameters = () => {
               max="1"
               step="0.01"
               value={parameters.sustain}
-              onChange={e =>
-                handleChange('sustain', parseFloat(e.target.value))
+              onChange={(e) =>
+                handleChange("sustain", parseFloat(e.target.value))
               }
             />
             <span>{parameters.sustain.toFixed(2)}</span>
@@ -74,8 +78,8 @@ const AudioParameters = () => {
               max="4"
               step="0.01"
               value={parameters.release}
-              onChange={e =>
-                handleChange('release', parseFloat(e.target.value))
+              onChange={(e) =>
+                handleChange("release", parseFloat(e.target.value))
               }
             />
             <span>{parameters.release.toFixed(2)}s</span>
@@ -95,8 +99,8 @@ const AudioParameters = () => {
               max="10"
               step="0.1"
               value={parameters.reverbDecay}
-              onChange={e =>
-                handleChange('reverbDecay', parseFloat(e.target.value))
+              onChange={(e) =>
+                handleChange("reverbDecay", parseFloat(e.target.value))
               }
             />
             <span>{parameters.reverbDecay.toFixed(1)}s</span>
@@ -111,8 +115,8 @@ const AudioParameters = () => {
               max="1"
               step="0.01"
               value={parameters.reverbWet}
-              onChange={e =>
-                handleChange('reverbWet', parseFloat(e.target.value))
+              onChange={(e) =>
+                handleChange("reverbWet", parseFloat(e.target.value))
               }
             />
             <span>{Math.round(parameters.reverbWet * 100)}%</span>
@@ -127,8 +131,8 @@ const AudioParameters = () => {
               max="0.9"
               step="0.01"
               value={parameters.delayFeedback}
-              onChange={e =>
-                handleChange('delayFeedback', parseFloat(e.target.value))
+              onChange={(e) =>
+                handleChange("delayFeedback", parseFloat(e.target.value))
               }
             />
             <span>{Math.round(parameters.delayFeedback * 100)}%</span>
@@ -143,8 +147,8 @@ const AudioParameters = () => {
               max="1"
               step="0.01"
               value={parameters.delayWet}
-              onChange={e =>
-                handleChange('delayWet', parseFloat(e.target.value))
+              onChange={(e) =>
+                handleChange("delayWet", parseFloat(e.target.value))
               }
             />
             <span>{Math.round(parameters.delayWet * 100)}%</span>
@@ -164,8 +168,8 @@ const AudioParameters = () => {
               max="20000"
               step="1"
               value={parameters.filterFreq}
-              onChange={e =>
-                handleChange('filterFreq', parseFloat(e.target.value))
+              onChange={(e) =>
+                handleChange("filterFreq", parseFloat(e.target.value))
               }
             />
             <span>{parameters.filterFreq}Hz</span>
@@ -180,8 +184,8 @@ const AudioParameters = () => {
               max="10"
               step="0.1"
               value={parameters.filterQ}
-              onChange={e =>
-                handleChange('filterQ', parseFloat(e.target.value))
+              onChange={(e) =>
+                handleChange("filterQ", parseFloat(e.target.value))
               }
             />
             <span>{parameters.filterQ.toFixed(1)}</span>
@@ -201,7 +205,7 @@ const AudioParameters = () => {
               max="180"
               step="1"
               value={parameters.tempo}
-              onChange={e => handleChange('tempo', parseInt(e.target.value))}
+              onChange={(e) => handleChange("tempo", parseInt(e.target.value))}
             />
             <span>{parameters.tempo} BPM</span>
           </div>
@@ -215,8 +219,8 @@ const AudioParameters = () => {
               max="1"
               step="0.01"
               value={parameters.probability}
-              onChange={e =>
-                handleChange('probability', parseFloat(e.target.value))
+              onChange={(e) =>
+                handleChange("probability", parseFloat(e.target.value))
               }
             />
             <span>{Math.round(parameters.probability * 100)}%</span>

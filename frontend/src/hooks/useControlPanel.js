@@ -1,11 +1,11 @@
-import { debounce } from 'lodash';
-import { useCallback, useEffect, useState } from 'react';
+import { debounce } from "lodash";
+import { useCallback, useEffect, useState } from "react";
 
 const useControlPanel = (
   initialValues,
   defaultValues,
   onChange,
-  debounceMs = 100
+  debounceMs = 100,
 ) => {
   // Initialize state with provided values or defaults
   const [parameters, setParameters] = useState(() => ({
@@ -15,10 +15,10 @@ const useControlPanel = (
 
   // Create debounced onChange handler
   const debouncedOnChange = useCallback(
-    debounce(newValues => {
+    debounce((newValues) => {
       onChange?.(newValues);
     }, debounceMs),
-    [onChange, debounceMs]
+    [onChange, debounceMs],
   );
 
   // Notify parent of changes
@@ -30,7 +30,7 @@ const useControlPanel = (
 
   // Handle parameter updates
   const updateParameter = useCallback((parameter, value) => {
-    setParameters(prev => ({
+    setParameters((prev) => ({
       ...prev,
       [parameter]: value,
     }));

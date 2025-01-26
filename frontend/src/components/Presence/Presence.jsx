@@ -1,6 +1,6 @@
-import React from 'react';
-import { useCollaboration } from '../../contexts/CollaborationContext';
-import styles from './Presence.module.css';
+import React from "react";
+import { useCollaboration } from "../../contexts/CollaborationContext";
+import styles from "./Presence.module.css";
 
 const Presence = () => {
   const { onlineUsers, activeEditors } = useCollaboration();
@@ -10,7 +10,7 @@ const Presence = () => {
       <div className={styles.onlineUsers}>
         <h4>Online Users</h4>
         <div className={styles.userList}>
-          {onlineUsers.map(user => (
+          {onlineUsers.map((user) => (
             <div key={user.id} className={styles.user}>
               <div className={styles.userAvatar}>
                 {user.name.charAt(0).toUpperCase()}
@@ -31,7 +31,7 @@ const Presence = () => {
                   Plot Point #{storyboardId}
                 </span>
                 <div className={styles.editors}>
-                  {users.map(user => (
+                  {users.map((user) => (
                     <div key={user.id} className={styles.editor}>
                       <div className={styles.editorAvatar}>
                         {user.name.charAt(0).toUpperCase()}

@@ -8,10 +8,10 @@ import {
   showConfirmDialog,
   toggleSidebar,
   toggleTheme,
-} from '@/store/slices/uiSlice';
-import { AlertMessage, ConfirmDialog } from '@/types/ui';
-import { useCallback } from 'react';
-import { useAppDispatch, useAppSelector } from './useRedux';
+} from "@/store/slices/uiSlice";
+import { AlertMessage, ConfirmDialog } from "@/types/ui";
+import { useCallback } from "react";
+import { useAppDispatch, useAppSelector } from "./useRedux";
 
 export const useUI = () => {
   const dispatch = useAppDispatch();
@@ -22,17 +22,17 @@ export const useUI = () => {
     confirmDialog,
     isLoading,
     loadingMessage,
-  } = useAppSelector(state => state.ui);
+  } = useAppSelector((state) => state.ui);
 
   const handleToggleTheme = useCallback(() => {
     dispatch(toggleTheme());
   }, [dispatch]);
 
   const handleSetTheme = useCallback(
-    (theme: 'light' | 'dark') => {
+    (theme: "light" | "dark") => {
       dispatch(setTheme(theme));
     },
-    [dispatch]
+    [dispatch],
   );
 
   const handleToggleSidebar = useCallback(() => {
@@ -43,7 +43,7 @@ export const useUI = () => {
     (isOpen: boolean) => {
       dispatch(setSidebarOpen(isOpen));
     },
-    [dispatch]
+    [dispatch],
   );
 
   const handleShowAlert = useCallback(
@@ -54,7 +54,7 @@ export const useUI = () => {
         dispatch(clearAlert());
       }, 5000);
     },
-    [dispatch]
+    [dispatch],
   );
 
   const handleClearAlert = useCallback(() => {
@@ -62,10 +62,10 @@ export const useUI = () => {
   }, [dispatch]);
 
   const handleShowConfirmDialog = useCallback(
-    (dialog: Omit<ConfirmDialog, 'isOpen'>) => {
+    (dialog: Omit<ConfirmDialog, "isOpen">) => {
       dispatch(showConfirmDialog(dialog));
     },
-    [dispatch]
+    [dispatch],
   );
 
   const handleHideConfirmDialog = useCallback(() => {
@@ -76,7 +76,7 @@ export const useUI = () => {
     (isLoading: boolean, message?: string) => {
       dispatch(setLoading({ isLoading, message }));
     },
-    [dispatch]
+    [dispatch],
   );
 
   return {

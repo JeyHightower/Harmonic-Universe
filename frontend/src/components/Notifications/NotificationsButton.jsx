@@ -1,4 +1,4 @@
-import NotificationsIcon from '@mui/icons-material/Notifications';
+import NotificationsIcon from "@mui/icons-material/Notifications";
 import {
   Badge,
   IconButton,
@@ -7,17 +7,17 @@ import {
   ListItemText,
   Popover,
   Typography,
-} from '@mui/material';
-import React, { useState } from 'react';
+} from "@mui/material";
+import React, { useState } from "react";
 
 const NotificationsButton = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [notifications] = useState([
-    { id: 1, message: 'New collaboration request' },
-    { id: 2, message: 'Your project was liked' },
+    { id: 1, message: "New collaboration request" },
+    { id: 2, message: "Your project was liked" },
   ]);
 
-  const handleClick = event => {
+  const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
 
@@ -26,7 +26,7 @@ const NotificationsButton = () => {
   };
 
   const open = Boolean(anchorEl);
-  const id = open ? 'notifications-popover' : undefined;
+  const id = open ? "notifications-popover" : undefined;
 
   return (
     <>
@@ -41,17 +41,17 @@ const NotificationsButton = () => {
         anchorEl={anchorEl}
         onClose={handleClose}
         anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right',
+          vertical: "bottom",
+          horizontal: "right",
         }}
         transformOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
+          vertical: "top",
+          horizontal: "right",
         }}
       >
-        <List sx={{ width: 300, maxHeight: 400, overflow: 'auto' }}>
+        <List sx={{ width: 300, maxHeight: 400, overflow: "auto" }}>
           {notifications.length > 0 ? (
-            notifications.map(notification => (
+            notifications.map((notification) => (
               <ListItem key={notification.id} divider>
                 <ListItemText primary={notification.message} />
               </ListItem>

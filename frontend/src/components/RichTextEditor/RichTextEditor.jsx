@@ -1,13 +1,13 @@
-import Image from '@tiptap/extension-image';
-import Link from '@tiptap/extension-link';
-import Placeholder from '@tiptap/extension-placeholder';
-import TaskItem from '@tiptap/extension-task-item';
-import TaskList from '@tiptap/extension-task-list';
-import { EditorContent, useEditor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import PropTypes from 'prop-types';
-import React from 'react';
-import styles from './RichTextEditor.module.css';
+import Image from "@tiptap/extension-image";
+import Link from "@tiptap/extension-link";
+import Placeholder from "@tiptap/extension-placeholder";
+import TaskItem from "@tiptap/extension-task-item";
+import TaskList from "@tiptap/extension-task-list";
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import PropTypes from "prop-types";
+import React from "react";
+import styles from "./RichTextEditor.module.css";
 
 const MenuBar = ({ editor }) => {
   if (!editor) {
@@ -18,25 +18,25 @@ const MenuBar = ({ editor }) => {
     <div className={styles.menuBar}>
       <button
         onClick={() => editor.chain().focus().toggleBold().run()}
-        className={editor.isActive('bold') ? styles.active : ''}
+        className={editor.isActive("bold") ? styles.active : ""}
       >
         bold
       </button>
       <button
         onClick={() => editor.chain().focus().toggleItalic().run()}
-        className={editor.isActive('italic') ? styles.active : ''}
+        className={editor.isActive("italic") ? styles.active : ""}
       >
         italic
       </button>
       <button
         onClick={() => editor.chain().focus().toggleStrike().run()}
-        className={editor.isActive('strike') ? styles.active : ''}
+        className={editor.isActive("strike") ? styles.active : ""}
       >
         strike
       </button>
       <button
         onClick={() => editor.chain().focus().toggleCode().run()}
-        className={editor.isActive('code') ? styles.active : ''}
+        className={editor.isActive("code") ? styles.active : ""}
       >
         code
       </button>
@@ -48,14 +48,14 @@ const MenuBar = ({ editor }) => {
       </button>
       <button
         onClick={() => editor.chain().focus().setParagraph().run()}
-        className={editor.isActive('paragraph') ? styles.active : ''}
+        className={editor.isActive("paragraph") ? styles.active : ""}
       >
         paragraph
       </button>
       <button
         onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
         className={
-          editor.isActive('heading', { level: 1 }) ? styles.active : ''
+          editor.isActive("heading", { level: 1 }) ? styles.active : ""
         }
       >
         h1
@@ -63,38 +63,38 @@ const MenuBar = ({ editor }) => {
       <button
         onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
         className={
-          editor.isActive('heading', { level: 2 }) ? styles.active : ''
+          editor.isActive("heading", { level: 2 }) ? styles.active : ""
         }
       >
         h2
       </button>
       <button
         onClick={() => editor.chain().focus().toggleBulletList().run()}
-        className={editor.isActive('bulletList') ? styles.active : ''}
+        className={editor.isActive("bulletList") ? styles.active : ""}
       >
         bullet list
       </button>
       <button
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        className={editor.isActive('orderedList') ? styles.active : ''}
+        className={editor.isActive("orderedList") ? styles.active : ""}
       >
         ordered list
       </button>
       <button
         onClick={() => editor.chain().focus().toggleTaskList().run()}
-        className={editor.isActive('taskList') ? styles.active : ''}
+        className={editor.isActive("taskList") ? styles.active : ""}
       >
         task list
       </button>
       <button
         onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-        className={editor.isActive('codeBlock') ? styles.active : ''}
+        className={editor.isActive("codeBlock") ? styles.active : ""}
       >
         code block
       </button>
       <button
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        className={editor.isActive('blockquote') ? styles.active : ''}
+        className={editor.isActive("blockquote") ? styles.active : ""}
       >
         blockquote
       </button>
@@ -145,8 +145,8 @@ RichTextEditor.propTypes = {
 };
 
 RichTextEditor.defaultProps = {
-  content: '',
-  placeholder: 'Write something...',
+  content: "",
+  placeholder: "Write something...",
 };
 
 export default RichTextEditor;

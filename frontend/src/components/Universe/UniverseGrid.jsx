@@ -1,6 +1,6 @@
-import { Box, CircularProgress, Grid, Typography } from '@mui/material';
-import React from 'react';
-import UniverseCard from './UniverseCard';
+import { Box, CircularProgress, Grid, Typography } from "@mui/material";
+import React from "react";
+import UniverseCard from "./UniverseCard";
 
 const UniverseGrid = ({
   universes,
@@ -17,9 +17,9 @@ const UniverseGrid = ({
     return (
       <Box
         sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
           minHeight: 400,
         }}
       >
@@ -32,9 +32,9 @@ const UniverseGrid = ({
     return (
       <Box
         sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
           minHeight: 400,
         }}
       >
@@ -47,9 +47,9 @@ const UniverseGrid = ({
     return (
       <Box
         sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
           minHeight: 400,
         }}
       >

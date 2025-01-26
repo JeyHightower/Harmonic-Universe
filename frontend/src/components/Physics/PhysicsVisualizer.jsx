@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import styles from './PhysicsVisualizer.module.css';
+import React, { useEffect, useRef } from "react";
+import styles from "./PhysicsVisualizer.module.css";
 
 class Particle {
   constructor(x, y, radius = 5) {
@@ -67,7 +67,7 @@ const PhysicsVisualizer = ({ parameters }) => {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     const width = canvas.width;
     const height = canvas.height;
 
@@ -75,16 +75,16 @@ const PhysicsVisualizer = ({ parameters }) => {
     if (particlesRef.current.length === 0) {
       for (let i = 0; i < 50; i++) {
         particlesRef.current.push(
-          new Particle(Math.random() * width, Math.random() * height)
+          new Particle(Math.random() * width, Math.random() * height),
         );
       }
     }
 
     const animate = () => {
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
       ctx.fillRect(0, 0, width, height);
 
-      particlesRef.current.forEach(particle => {
+      particlesRef.current.forEach((particle) => {
         particle.update(parameters, width, height);
         particle.draw(ctx);
       });
@@ -101,7 +101,7 @@ const PhysicsVisualizer = ({ parameters }) => {
     };
   }, [parameters]);
 
-  const handleCanvasClick = event => {
+  const handleCanvasClick = (event) => {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;

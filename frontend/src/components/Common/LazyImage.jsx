@@ -1,6 +1,6 @@
-import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
-import './LazyImage.css';
+import PropTypes from "prop-types";
+import React, { useEffect, useState } from "react";
+import "./LazyImage.css";
 
 const LazyImage = ({ src, alt, placeholder, className, onLoad, onError }) => {
   const [imageSrc, setImageSrc] = useState(placeholder);
@@ -17,7 +17,7 @@ const LazyImage = ({ src, alt, placeholder, className, onLoad, onError }) => {
       if (onLoad) onLoad();
     };
 
-    img.onerror = err => {
+    img.onerror = (err) => {
       setError(err);
       setIsLoading(false);
       if (onError) onError(err);
@@ -30,7 +30,7 @@ const LazyImage = ({ src, alt, placeholder, className, onLoad, onError }) => {
   }, [src, onLoad, onError]);
 
   return (
-    <div className={`lazy-image-container ${className || ''}`}>
+    <div className={`lazy-image-container ${className || ""}`}>
       {isLoading && (
         <div className="lazy-image-placeholder">
           <img src={placeholder} alt="Loading..." />
@@ -44,8 +44,8 @@ const LazyImage = ({ src, alt, placeholder, className, onLoad, onError }) => {
       <img
         src={imageSrc}
         alt={alt}
-        className={`lazy-image ${isLoading ? 'loading' : ''} ${
-          error ? 'error' : ''
+        className={`lazy-image ${isLoading ? "loading" : ""} ${
+          error ? "error" : ""
         }`}
         loading="lazy"
       />
@@ -64,8 +64,8 @@ LazyImage.propTypes = {
 
 LazyImage.defaultProps = {
   placeholder:
-    'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2VlZSIvPjwvc3ZnPg==',
-  className: '',
+    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2VlZSIvPjwvc3ZnPg==",
+  className: "",
   onLoad: null,
   onError: null,
 };

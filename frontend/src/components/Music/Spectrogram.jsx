@@ -1,6 +1,6 @@
-import PropTypes from 'prop-types';
-import React, { useEffect, useRef } from 'react';
-import styles from './Spectrogram.module.css';
+import PropTypes from "prop-types";
+import React, { useEffect, useRef } from "react";
+import styles from "./Spectrogram.module.css";
 
 const Spectrogram = ({ analyser, fftSize = 2048 }) => {
   const canvasRef = useRef(null);
@@ -13,7 +13,7 @@ const Spectrogram = ({ analyser, fftSize = 2048 }) => {
     const bufferLength = analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
 
     let scrollPos = 0;
     const draw = () => {

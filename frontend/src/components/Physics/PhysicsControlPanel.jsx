@@ -1,8 +1,8 @@
-import PropTypes from 'prop-types';
-import React, { useMemo } from 'react';
-import useControlPanel from '../../hooks/useControlPanel';
-import BaseControlPanel from '../Common/BaseControlPanel';
-import './PhysicsControlPanel.css';
+import PropTypes from "prop-types";
+import React, { useMemo } from "react";
+import useControlPanel from "../../hooks/useControlPanel";
+import BaseControlPanel from "../Common/BaseControlPanel";
+import "./PhysicsControlPanel.css";
 
 const DEFAULT_VALUES = {
   gravity: 9.81,
@@ -14,60 +14,60 @@ const DEFAULT_VALUES = {
 
 const PHYSICS_CONTROLS = [
   {
-    id: 'gravity',
-    label: 'Gravity (m/s²)',
-    type: 'range',
+    id: "gravity",
+    label: "Gravity (m/s²)",
+    type: "range",
     min: 0,
     max: 20,
     step: 0.1,
-    valueType: 'number',
-    unit: 'm/s²',
+    valueType: "number",
+    unit: "m/s²",
   },
   {
-    id: 'friction',
-    label: 'Friction Coefficient',
-    type: 'range',
+    id: "friction",
+    label: "Friction Coefficient",
+    type: "range",
     min: 0,
     max: 1,
     step: 0.01,
-    valueType: 'number',
+    valueType: "number",
   },
   {
-    id: 'elasticity',
-    label: 'Elasticity',
-    type: 'range',
+    id: "elasticity",
+    label: "Elasticity",
+    type: "range",
     min: 0,
     max: 1,
     step: 0.01,
-    valueType: 'number',
+    valueType: "number",
   },
   {
-    id: 'airResistance',
-    label: 'Air Resistance',
-    type: 'range',
+    id: "airResistance",
+    label: "Air Resistance",
+    type: "range",
     min: 0,
     max: 1,
     step: 0.01,
-    valueType: 'number',
+    valueType: "number",
   },
   {
-    id: 'density',
-    label: 'Density (kg/m³)',
-    type: 'range',
+    id: "density",
+    label: "Density (kg/m³)",
+    type: "range",
     min: 0,
     max: 5,
     step: 0.1,
-    valueType: 'number',
-    unit: 'kg/m³',
+    valueType: "number",
+    unit: "kg/m³",
   },
 ];
 
 const PHYSICS_INFO = [
-  'Gravity affects the vertical motion of objects',
-  'Friction determines the resistance between surfaces',
-  'Elasticity controls how bouncy objects are',
-  'Air Resistance affects object motion through air',
-  'Density influences object mass and buoyancy',
+  "Gravity affects the vertical motion of objects",
+  "Friction determines the resistance between surfaces",
+  "Elasticity controls how bouncy objects are",
+  "Air Resistance affects object motion through air",
+  "Density influences object mass and buoyancy",
 ];
 
 const PhysicsControlPanel = ({ initialValues, onChange }) => {
@@ -78,7 +78,7 @@ const PhysicsControlPanel = ({ initialValues, onChange }) => {
   const { parameters, updateParameter } = useControlPanel(
     initialValues,
     DEFAULT_VALUES,
-    onChange
+    onChange,
   );
 
   return (

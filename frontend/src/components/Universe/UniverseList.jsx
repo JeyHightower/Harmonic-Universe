@@ -1,160 +1,228 @@
 import {
-  Add as AddIcon,
-  Delete as DeleteIcon,
-  Edit as EditIcon,
-  FavoriteBorder as FavoriteBorderIcon,
-  Favorite as FavoriteIcon,
+    Add as AddIcon,
+    Delete as DeleteIcon,
+    Edit as EditIcon,
+    FavoriteBorder as FavoriteBorderIcon,
+    Favorite as FavoriteIcon,
+    FilterList as FilterListIcon,
+    Sort as SortIcon,
 } from '@mui/icons-material';
 import {
-  Box,
-  Button,
-  Card,
-  CardActions,
-  CardContent,
-  Container,
-  FormControl,
-  Grid,
-  IconButton,
-  InputLabel,
-  MenuItem,
-  Select,
-  Toolbar,
-  Typography,
+    Box,
+    Button,
+    Card,
+    CardActions,
+    CardContent,
+    Container,
+    Grid,
+    IconButton,
+    Menu,
+    MenuItem,
+    Tooltip,
+    Typography,
+    alpha,
+    styled,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { universeService } from '../../services/universeService';
+import {
+    deleteUniverse,
+    fetchUniverses,
+    toggleFavorite,
+} from '../../store/slices/universeSlice';
+import { RootState } from '../../store/store';
 
-const UniverseList = () => {
+const UniverseCard = styled(Card)(({ theme }) => ({
+  height: '100%',
+  backgroundColor: alpha(theme.palette.background.paper, 0.6),
+  backdropFilter: 'blur(8px)',
+  transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+  '&:hover': {
+    transform: 'translateY(-4px)',
+    boxShadow: theme.shadows[8],
+  },
+}));
+
+const ToolbarContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: theme.spacing(3),
+}));
+
+interface Universe {
+  id: number;
+  name: string;
+  description: string;
+  isFavorite: boolean;
+  isPrivate: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const UniverseList: React.FC = () => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [universes, setUniverses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('all'); // 'all', 'favorites', 'my'
-  const [sortBy, setSortBy] = useState('newest'); // 'newest', 'oldest', 'name'
+  const universes = useSelector((state: RootState) => state.universe.universes);
+  const loading = useSelector((state: RootState) => state.universe.loading);
+  const error = useSelector((state: RootState) => state.universe.error);
+
+  const [sortAnchorEl, setSortAnchorEl] = useState<null | HTMLElement>(null);
+  const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null);
+  const [sortBy, setSortBy] = useState<string>('updated');
+  const [filterBy, setFilterBy] = useState<string>('all');
 
   useEffect(() => {
-    fetchUniverses();
-  }, [filter, sortBy]);
+    dispatch(fetchUniverses());
+  }, [dispatch]);
 
-  const fetchUniverses = async () => {
-    try {
-      const data = await universeService.getUniverses({ filter, sortBy });
-      setUniverses(data);
-      setLoading(false);
-    } catch (err) {
-      setError(err.message);
-      setLoading(false);
+  const handleSortClick = (event: React.MouseEvent<HTMLElement>) => {
+    setSortAnchorEl(event.currentTarget);
+  };
+
+  const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
+    setFilterAnchorEl(event.currentTarget);
+  };
+
+  const handleSortClose = (value?: string) => {
+    setSortAnchorEl(null);
+    if (value) {
+      setSortBy(value);
     }
   };
 
-  const handleDelete = async id => {
-    try {
-      await universeService.deleteUniverse(id);
-      setUniverses(universes.filter(universe => universe.id !== id));
-    } catch (err) {
-      setError(err.message);
+  const handleFilterClose = (value?: string) => {
+    setFilterAnchorEl(null);
+    if (value) {
+      setFilterBy(value);
     }
   };
 
-  const handleEdit = id => {
-    navigate(`/universes/${id}/edit`);
-  };
-
-  const handleView = id => {
-    navigate(`/universes/${id}`);
-  };
-
-  const handleCreate = () => {
-    navigate('/universes/new');
-  };
-
-  const handleToggleFavorite = async id => {
-    try {
-      const universe = universes.find(u => u.id === id);
-      if (universe) {
-        const updatedUniverse = await universeService.toggleFavorite(id);
-        setUniverses(
-          universes.map(u =>
-            u.id === id ? { ...u, isFavorite: updatedUniverse.isFavorite } : u
-          )
-        );
+  const handleDelete = async (id: number) => {
+    if (window.confirm('Are you sure you want to delete this universe?')) {
+      try {
+        await dispatch(deleteUniverse(id));
+      } catch (error) {
+        console.error('Failed to delete universe:', error);
       }
-    } catch (err) {
-      setError(err.message);
     }
   };
 
-  const handleFilterChange = event => {
-    setFilter(event.target.value);
+  const handleFavorite = async (id: number) => {
+    try {
+      await dispatch(toggleFavorite(id));
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+    }
   };
 
-  const handleSortChange = event => {
-    setSortBy(event.target.value);
-  };
+  const filteredAndSortedUniverses = [...universes]
+    .filter((universe) => {
+      switch (filterBy) {
+        case 'favorites':
+          return universe.isFavorite;
+        case 'private':
+          return universe.isPrivate;
+        case 'public':
+          return !universe.isPrivate;
+        default:
+          return true;
+      }
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'created':
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case 'updated':
+          return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+        default:
+          return 0;
+      }
+    });
 
-  const getFavoriteCount = () => {
-    return universes.filter(u => u.isFavorite).length;
-  };
+  if (loading) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 8, mb: 8 }}>
+        <Typography>Loading universes...</Typography>
+      </Container>
+    );
+  }
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 8, mb: 8 }}>
+        <Typography color="error">{error}</Typography>
+      </Container>
+    );
+  }
 
   return (
-    <Container maxWidth="lg">
+    <Container maxWidth="lg" sx={{ mt: 8, mb: 8 }}>
       <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-          <Typography variant="h4" component="h1">
-            Your Universes
-            {filter === 'favorites' && (
-              <Typography
-                component="span"
-                color="text.secondary"
-                sx={{ ml: 1 }}
-              >
-                ({getFavoriteCount()} favorites)
-              </Typography>
-            )}
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleCreate}
-          >
-            Create Universe
-          </Button>
-        </Box>
-
-        <Toolbar sx={{ gap: 2 }}>
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>Filter</InputLabel>
-            <Select value={filter} onChange={handleFilterChange} label="Filter">
-              <MenuItem value="all">All Universes</MenuItem>
-              <MenuItem value="favorites">Favorites</MenuItem>
-              <MenuItem value="my">My Universes</MenuItem>
-            </Select>
-          </FormControl>
-
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>Sort By</InputLabel>
-            <Select value={sortBy} onChange={handleSortChange} label="Sort By">
-              <MenuItem value="newest">Newest First</MenuItem>
-              <MenuItem value="oldest">Oldest First</MenuItem>
-              <MenuItem value="name">Name</MenuItem>
-            </Select>
-          </FormControl>
-        </Toolbar>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Your Universes
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Manage and explore your created universes
+        </Typography>
       </Box>
 
+      <ToolbarContainer>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<SortIcon />}
+            onClick={handleSortClick}
+          >
+            Sort
+          </Button>
+          <Menu
+            anchorEl={sortAnchorEl}
+            open={Boolean(sortAnchorEl)}
+            onClose={() => handleSortClose()}
+          >
+            <MenuItem onClick={() => handleSortClose('name')}>By Name</MenuItem>
+            <MenuItem onClick={() => handleSortClose('created')}>By Creation Date</MenuItem>
+            <MenuItem onClick={() => handleSortClose('updated')}>By Last Updated</MenuItem>
+          </Menu>
+
+          <Button
+            variant="outlined"
+            startIcon={<FilterListIcon />}
+            onClick={handleFilterClick}
+          >
+            Filter
+          </Button>
+          <Menu
+            anchorEl={filterAnchorEl}
+            open={Boolean(filterAnchorEl)}
+            onClose={() => handleFilterClose()}
+          >
+            <MenuItem onClick={() => handleFilterClose('all')}>All Universes</MenuItem>
+            <MenuItem onClick={() => handleFilterClose('favorites')}>Favorites</MenuItem>
+            <MenuItem onClick={() => handleFilterClose('private')}>Private</MenuItem>
+            <MenuItem onClick={() => handleFilterClose('public')}>Public</MenuItem>
+          </Menu>
+        </Box>
+
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => navigate('/universe/create')}
+        >
+          Create Universe
+        </Button>
+      </ToolbarContainer>
+
       <Grid container spacing={3}>
-        {universes.map(universe => (
+        {filteredAndSortedUniverses.map((universe) => (
           <Grid item xs={12} sm={6} md={4} key={universe.id}>
-            <Card>
-              <CardContent
-                sx={{ cursor: 'pointer' }}
-                onClick={() => handleView(universe.id)}
-              >
-                <Typography variant="h6" component="h2" gutterBottom>
+            <UniverseCard>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
                   {universe.name}
                 </Typography>
                 <Typography
@@ -164,48 +232,48 @@ const UniverseList = () => {
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     display: '-webkit-box',
-                    WebkitLineClamp: 2,
+                    WebkitLineClamp: 3,
                     WebkitBoxOrient: 'vertical',
+                    mb: 2,
                   }}
                 >
                   {universe.description}
                 </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  display="block"
-                >
-                  Created: {new Date(universe.created_at).toLocaleDateString()}
+                <Typography variant="caption" color="text.secondary" display="block">
+                  Last updated: {new Date(universe.updatedAt).toLocaleDateString()}
                 </Typography>
               </CardContent>
-              <CardActions>
-                <IconButton
-                  size="small"
-                  onClick={() => handleEdit(universe.id)}
-                  aria-label="edit"
-                >
-                  <EditIcon />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={() => handleDelete(universe.id)}
-                  aria-label="delete"
-                >
-                  <DeleteIcon />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={() => handleToggleFavorite(universe.id)}
-                  aria-label="favorite"
-                >
-                  {universe.isFavorite ? (
-                    <FavoriteIcon color="error" />
-                  ) : (
-                    <FavoriteBorderIcon />
-                  )}
-                </IconButton>
+              <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}>
+                <Box>
+                  <Tooltip title="Edit Universe">
+                    <IconButton
+                      size="small"
+                      onClick={() => navigate(`/universe/${universe.id}`)}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title={universe.isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleFavorite(universe.id)}
+                      color={universe.isFavorite ? 'primary' : 'default'}
+                    >
+                      {universe.isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+                <Tooltip title="Delete Universe">
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => handleDelete(universe.id)}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Tooltip>
               </CardActions>
-            </Card>
+            </UniverseCard>
           </Grid>
         ))}
       </Grid>

@@ -1,12 +1,12 @@
-import PropTypes from 'prop-types';
-import React, { useState } from 'react';
-import { useCollaboration } from '../../contexts/CollaborationContext';
-import styles from './Comments.module.css';
+import PropTypes from "prop-types";
+import React, { useState } from "react";
+import { useCollaboration } from "../../contexts/CollaborationContext";
+import styles from "./Comments.module.css";
 
 const Comment = ({ comment, currentUser }) => (
   <div
     className={`${styles.comment} ${
-      comment.userId === currentUser ? styles.ownComment : ''
+      comment.userId === currentUser ? styles.ownComment : ""
     }`}
   >
     <div className={styles.commentHeader}>
@@ -21,17 +21,17 @@ const Comment = ({ comment, currentUser }) => (
 
 const Comments = ({ storyboardId }) => {
   const { comments, addComment } = useCollaboration();
-  const [newComment, setNewComment] = useState('');
+  const [newComment, setNewComment] = useState("");
 
   const storyboardComments = comments.filter(
-    comment => comment.storyboardId === storyboardId
+    (comment) => comment.storyboardId === storyboardId,
   );
 
-  const handleSubmit = e => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (newComment.trim()) {
       addComment(storyboardId, newComment.trim());
-      setNewComment('');
+      setNewComment("");
     }
   };
 
@@ -42,7 +42,7 @@ const Comments = ({ storyboardId }) => {
         {storyboardComments.length === 0 ? (
           <div className={styles.emptyState}>No comments yet</div>
         ) : (
-          storyboardComments.map(comment => (
+          storyboardComments.map((comment) => (
             <Comment
               key={comment.id}
               comment={comment}
@@ -55,7 +55,7 @@ const Comments = ({ storyboardId }) => {
         <input
           type="text"
           value={newComment}
-          onChange={e => setNewComment(e.target.value)}
+          onChange={(e) => setNewComment(e.target.value)}
           placeholder="Add a comment..."
           className={styles.commentInput}
         />

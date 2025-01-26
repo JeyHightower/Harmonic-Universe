@@ -1,10 +1,10 @@
-import { v4 as uuidv4 } from 'uuid';
-import { METRICS } from '../../../config/monitoring.config';
+import { v4 as uuidv4 } from "uuid";
+import { METRICS } from "../../../config/monitoring.config";
 
 class Monitoring {
   constructor() {
     this.config = {
-      appVersion: '',
+      appVersion: "",
       environment: process.env.NODE_ENV,
       enabled: true,
     };
@@ -44,7 +44,7 @@ class Monitoring {
     });
 
     // Track session end on page unload
-    window.addEventListener('beforeunload', () => {
+    window.addEventListener("beforeunload", () => {
       this.trackEvent(METRICS.SESSION.END, 1, {
         sessionId: this.sessionId,
         duration: (Date.now() - this.sessionStart) / 1000,
@@ -68,9 +68,9 @@ class Monitoring {
       });
     };
 
-    window.addEventListener('unhandledrejection', event => {
+    window.addEventListener("unhandledrejection", (event) => {
       this.logError({
-        message: event.reason?.message || 'Unhandled Promise Rejection',
+        message: event.reason?.message || "Unhandled Promise Rejection",
         stack: event.reason?.stack,
         timestamp: new Date().toISOString(),
       });
@@ -80,24 +80,24 @@ class Monitoring {
   setupPerformanceMonitoring() {
     if (window.performance && window.performance.getEntriesByType) {
       // Monitor page load performance
-      window.addEventListener('load', () => {
-        const navigationEntry = performance.getEntriesByType('navigation')[0];
-        this.logPerformance('pageLoad', {
+      window.addEventListener("load", () => {
+        const navigationEntry = performance.getEntriesByType("navigation")[0];
+        this.logPerformance("pageLoad", {
           loadTime: navigationEntry.loadEventEnd - navigationEntry.startTime,
           domContentLoaded:
             navigationEntry.domContentLoadedEventEnd -
             navigationEntry.startTime,
-          firstPaint: performance.getEntriesByName('first-paint')[0]?.startTime,
+          firstPaint: performance.getEntriesByName("first-paint")[0]?.startTime,
           firstContentfulPaint: performance.getEntriesByName(
-            'first-contentful-paint'
+            "first-contentful-paint",
           )[0]?.startTime,
         });
       });
 
       // Monitor resource loading
-      const observer = new PerformanceObserver(list => {
-        list.getEntries().forEach(entry => {
-          this.logPerformance('resourceTiming', {
+      const observer = new PerformanceObserver((list) => {
+        list.getEntries().forEach((entry) => {
+          this.logPerformance("resourceTiming", {
             name: entry.name,
             duration: entry.duration,
             transferSize: entry.transferSize,
@@ -106,15 +106,15 @@ class Monitoring {
         });
       });
 
-      observer.observe({ entryTypes: ['resource'] });
+      observer.observe({ entryTypes: ["resource"] });
     }
   }
 
   setupUserActionTracking() {
-    document.addEventListener('click', event => {
+    document.addEventListener("click", (event) => {
       const target = event.target;
       if (target.matches('button, a, [role="button"]')) {
-        this.logUserAction('click', {
+        this.logUserAction("click", {
           element: target.tagName.toLowerCase(),
           id: target.id,
           text: target.textContent?.trim(),
@@ -123,8 +123,8 @@ class Monitoring {
       }
     });
 
-    window.addEventListener('popstate', () => {
-      this.logUserAction('navigation', {
+    window.addEventListener("popstate", () => {
+      this.logUserAction("navigation", {
         path: window.location.pathname,
       });
     });
@@ -137,7 +137,7 @@ class Monitoring {
       appVersion: this.config.appVersion,
       environment: this.config.environment,
     });
-    this.sendMetrics('error', error);
+    this.sendMetrics("error", error);
   }
 
   logPerformance(type, data) {
@@ -152,7 +152,7 @@ class Monitoring {
       environment: this.config.environment,
     };
     this.metrics.performance[type].push(metric);
-    this.sendMetrics('performance', { type, data: metric });
+    this.sendMetrics("performance", { type, data: metric });
   }
 
   logUserAction(type, data) {
@@ -165,7 +165,7 @@ class Monitoring {
       environment: this.config.environment,
     };
     this.metrics.userActions.push(action);
-    this.sendMetrics('userAction', action);
+    this.sendMetrics("userAction", action);
   }
 
   async sendMetrics(type, data) {
@@ -180,21 +180,21 @@ class Monitoring {
       };
 
       // In development, just log to console
-      if (this.config.environment === 'development') {
-        console.log('[Monitoring]', payload);
+      if (this.config.environment === "development") {
+        console.log("[Monitoring]", payload);
         return;
       }
 
       // In production, send to monitoring service
-      await fetch('/api/monitoring/metrics', {
-        method: 'POST',
+      await fetch("/api/monitoring/metrics", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
       });
     } catch (error) {
-      console.error('[Monitoring] Failed to send metrics:', error);
+      console.error("[Monitoring] Failed to send metrics:", error);
     }
   }
 
@@ -220,11 +220,11 @@ class Monitoring {
     this.sessionStart = Date.now();
 
     // Track PWA installation
-    window.addEventListener('beforeinstallprompt', e => {
+    window.addEventListener("beforeinstallprompt", (e) => {
       e.preventDefault();
       this.trackEvent(METRICS.PWA.INSTALL_PROMPT, 1);
 
-      e.userChoice.then(choiceResult => {
+      e.userChoice.then((choiceResult) => {
         this.trackEvent(METRICS.PWA.INSTALL_RESULT, 1, {
           outcome: choiceResult.outcome,
         });
@@ -232,16 +232,16 @@ class Monitoring {
     });
 
     // Track service worker registration
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(registration => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.ready.then((registration) => {
         this.trackEvent(METRICS.SW.REGISTRATION, 1, {
-          state: 'ready',
+          state: "ready",
         });
 
-        registration.addEventListener('updatefound', () => {
+        registration.addEventListener("updatefound", () => {
           const newWorker = registration.installing;
 
-          newWorker.addEventListener('statechange', () => {
+          newWorker.addEventListener("statechange", () => {
             this.trackEvent(METRICS.SW.STATE_CHANGE, 1, {
               state: newWorker.state,
             });
@@ -249,8 +249,8 @@ class Monitoring {
         });
       });
 
-      navigator.serviceWorker.addEventListener('message', event => {
-        if (event.data.type === 'CACHE_UPDATED') {
+      navigator.serviceWorker.addEventListener("message", (event) => {
+        if (event.data.type === "CACHE_UPDATED") {
           this.trackEvent(METRICS.SW.CACHE_UPDATED, 1, {
             url: event.data.url,
           });
@@ -259,9 +259,9 @@ class Monitoring {
     }
 
     // Track performance metrics
-    if ('performance' in window) {
+    if ("performance" in window) {
       // First Paint
-      const observer = new PerformanceObserver(list => {
+      const observer = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
           this.trackPerformance(entry.name, entry.startTime, {
             entryType: entry.entryType,
@@ -270,20 +270,20 @@ class Monitoring {
       });
 
       observer.observe({
-        entryTypes: ['paint', 'largest-contentful-paint', 'first-input'],
+        entryTypes: ["paint", "largest-contentful-paint", "first-input"],
       });
 
       // Core Web Vitals
-      if ('web-vital' in window) {
-        window.webVitals.getCLS(metric => {
+      if ("web-vital" in window) {
+        window.webVitals.getCLS((metric) => {
           this.trackPerformance(METRICS.PERFORMANCE.CLS, metric.value);
         });
 
-        window.webVitals.getFID(metric => {
+        window.webVitals.getFID((metric) => {
           this.trackPerformance(METRICS.PERFORMANCE.FID, metric.value);
         });
 
-        window.webVitals.getLCP(metric => {
+        window.webVitals.getLCP((metric) => {
           this.trackPerformance(METRICS.PERFORMANCE.LCP, metric.value);
         });
       }
@@ -302,21 +302,21 @@ class Monitoring {
   }
 
   setupNetworkListeners() {
-    window.addEventListener('online', () => {
+    window.addEventListener("online", () => {
       if (this.offlineStart) {
         const duration = Date.now() - this.offlineStart;
         this.offlineDuration += duration;
         this.offlineStart = null;
 
         this.trackEvent(METRICS.PWA.OFFLINE_DURATION, duration);
-        this.notifyObservers({ type: 'online', duration });
+        this.notifyObservers({ type: "online", duration });
       }
       this.retryFailedMetrics();
     });
 
-    window.addEventListener('offline', () => {
+    window.addEventListener("offline", () => {
       this.offlineStart = Date.now();
-      this.notifyObservers({ type: 'offline' });
+      this.notifyObservers({ type: "offline" });
     });
   }
 
@@ -364,13 +364,13 @@ class Monitoring {
   trackPerformance(name, value, tags = {}) {
     return this.trackEvent(name, value, {
       ...tags,
-      type: 'performance',
+      type: "performance",
     });
   }
 
   _handleError(event) {
     this.trackError(event.error || new Error(event.message), {
-      type: 'uncaught_error',
+      type: "uncaught_error",
       filename: event.filename,
       lineno: event.lineno,
       colno: event.colno,
@@ -379,15 +379,15 @@ class Monitoring {
 
   _handlePromiseError(event) {
     this.trackError(event.reason, {
-      type: 'unhandled_rejection',
+      type: "unhandled_rejection",
     });
   }
 
   _getOrCreateSessionId() {
-    let sessionId = sessionStorage.getItem('monitoring_session_id');
+    let sessionId = sessionStorage.getItem("monitoring_session_id");
     if (!sessionId) {
       sessionId = uuidv4();
-      sessionStorage.setItem('monitoring_session_id', sessionId);
+      sessionStorage.setItem("monitoring_session_id", sessionId);
     }
     return sessionId;
   }
@@ -407,9 +407,9 @@ class Monitoring {
 
     try {
       const options = {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ errors }),
       };
@@ -418,9 +418,9 @@ class Monitoring {
         options.keepalive = true;
       }
 
-      await fetch('/api/monitoring/errors', options);
+      await fetch("/api/monitoring/errors", options);
     } catch (error) {
-      console.error('Failed to flush error buffer:', error);
+      console.error("Failed to flush error buffer:", error);
       // Re-add failed items back to buffer
       this.errorBuffer.unshift(...errors);
     }
@@ -434,9 +434,9 @@ class Monitoring {
 
     try {
       const options = {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ metrics }),
       };
@@ -445,9 +445,9 @@ class Monitoring {
         options.keepalive = true;
       }
 
-      await fetch('/api/monitoring/track', options);
+      await fetch("/api/monitoring/track", options);
     } catch (error) {
-      console.error('Failed to flush metric buffer:', error);
+      console.error("Failed to flush metric buffer:", error);
       // Re-add failed items back to buffer
       this.metricBuffer.unshift(...metrics);
     }
@@ -456,7 +456,7 @@ class Monitoring {
   storeFailedMetric(metric) {
     const key = `${metric.name}-${metric.timestamp}`;
     this.failedMetrics.set(key, metric);
-    this.notifyObservers({ type: 'metricFailed', metric });
+    this.notifyObservers({ type: "metricFailed", metric });
   }
 
   async retryFailedMetrics() {
@@ -469,7 +469,7 @@ class Monitoring {
       try {
         await this.trackEvent(metric.name, metric.value, metric.tags);
       } catch (error) {
-        console.warn('Failed to retry metric:', error);
+        console.warn("Failed to retry metric:", error);
         this.storeFailedMetric(metric);
       }
     }

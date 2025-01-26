@@ -1,14 +1,14 @@
-import PropTypes from 'prop-types';
-import React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { updateUniversePrivacy } from '../../store/slices/universeSlice';
-import styles from './Universe.module.css';
+import PropTypes from "prop-types";
+import React from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { updateUniversePrivacy } from "../../store/slices/universeSlice";
+import styles from "./Universe.module.css";
 
 const PrivacyToggle = ({ universeId, isPublic }) => {
   const dispatch = useDispatch();
-  const { isLoading } = useSelector(state => state.universe);
-  const currentUser = useSelector(state => state.auth.user);
-  const universe = useSelector(state => state.universe.currentUniverse);
+  const { isLoading } = useSelector((state) => state.universe);
+  const currentUser = useSelector((state) => state.auth.user);
+  const universe = useSelector((state) => state.universe.currentUniverse);
 
   // Only show toggle if user is the creator
   if (!universe || universe.creator_id !== currentUser?.id) {
@@ -21,10 +21,10 @@ const PrivacyToggle = ({ universeId, isPublic }) => {
         updateUniversePrivacy({
           universeId,
           isPublic: !isPublic,
-        })
+        }),
       ).unwrap();
     } catch (error) {
-      console.error('Failed to update privacy:', error);
+      console.error("Failed to update privacy:", error);
     }
   };
 
@@ -32,7 +32,7 @@ const PrivacyToggle = ({ universeId, isPublic }) => {
     <div className={styles.privacyToggle}>
       <label className={styles.toggleLabel}>
         <span className={styles.toggleText}>
-          {isPublic ? 'Public' : 'Private'}
+          {isPublic ? "Public" : "Private"}
         </span>
         <button
           onClick={handleToggle}
@@ -40,10 +40,10 @@ const PrivacyToggle = ({ universeId, isPublic }) => {
           className={`${styles.toggleButton} ${
             isPublic ? styles.public : styles.private
           }`}
-          title={isPublic ? 'Make Private' : 'Make Public'}
+          title={isPublic ? "Make Private" : "Make Public"}
         >
           <div className={styles.toggleSlider}>
-            <span className={styles.toggleIcon}>{isPublic ? '🌍' : '🔒'}</span>
+            <span className={styles.toggleIcon}>{isPublic ? "🌍" : "🔒"}</span>
           </div>
         </button>
       </label>

@@ -1,5 +1,5 @@
 // components/EmptyState.js
-import React from 'react';
+import React from "react";
 
 const EmptyState = ({ message, actionLabel, onAction }) => {
   return (
@@ -12,10 +12,7 @@ const EmptyState = ({ message, actionLabel, onAction }) => {
         />
         <p className="empty-state-message">{message}</p>
         {actionLabel && (
-          <button
-            className="empty-state-action"
-            onClick={onAction}
-          >
+          <button className="empty-state-action" onClick={onAction}>
             {actionLabel}
           </button>
         )}

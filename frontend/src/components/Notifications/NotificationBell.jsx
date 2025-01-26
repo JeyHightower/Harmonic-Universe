@@ -1,18 +1,18 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   fetchNotifications,
   markAllAsRead,
-} from '../../store/slices/notificationSlice';
-import NotificationPanel from './NotificationPanel';
-import styles from './Notifications.module.css';
+} from "../../store/slices/notificationSlice";
+import NotificationPanel from "./NotificationPanel";
+import styles from "./Notifications.module.css";
 
 const NotificationBell = () => {
   const dispatch = useDispatch();
   const [isOpen, setIsOpen] = useState(false);
   const bellRef = useRef(null);
   const { notifications, unreadCount } = useSelector(
-    state => state.notifications
+    (state) => state.notifications,
   );
 
   useEffect(() => {
@@ -20,14 +20,14 @@ const NotificationBell = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    const handleClickOutside = event => {
+    const handleClickOutside = (event) => {
       if (bellRef.current && !bellRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleBellClick = () => {

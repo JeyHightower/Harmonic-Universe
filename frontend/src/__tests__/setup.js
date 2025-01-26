@@ -1,30 +1,42 @@
-import '@testing-library/jest-dom';
-import { configure } from '@testing-library/react';
-import { TextDecoder, TextEncoder } from 'util';
+import "@testing-library/jest-dom";
+import { configure } from "@testing-library/react";
+import { TextDecoder, TextEncoder } from "util";
 
 // Configure testing library
-configure({ testIdAttribute: 'data-testid' });
+configure({ testIdAttribute: "data-testid" });
 
 // Mock IntersectionObserver
 class MockIntersectionObserver {
-  observe() { return null; }
-  unobserve() { return null; }
-  disconnect() { return null; }
+  observe() {
+    return null;
+  }
+  unobserve() {
+    return null;
+  }
+  disconnect() {
+    return null;
+  }
 }
 global.IntersectionObserver = MockIntersectionObserver;
 
 // Mock ResizeObserver
 class MockResizeObserver {
-  observe() { return null; }
-  unobserve() { return null; }
-  disconnect() { return null; }
+  observe() {
+    return null;
+  }
+  unobserve() {
+    return null;
+  }
+  disconnect() {
+    return null;
+  }
 }
 global.ResizeObserver = MockResizeObserver;
 
 // Mock window.matchMedia
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(window, "matchMedia", {
   writable: true,
-  value: jest.fn().mockImplementation(query => ({
+  value: jest.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -71,14 +83,14 @@ global.fetch = jest.fn(() =>
   Promise.resolve({
     ok: true,
     json: () => Promise.resolve({}),
-    text: () => Promise.resolve(''),
+    text: () => Promise.resolve(""),
     blob: () => Promise.resolve(new Blob()),
-  })
+  }),
 );
 
 // Suppress React 18 Strict Mode warnings
 const originalError = console.error;
 console.error = (...args) => {
-  if (args[0]?.includes?.('ReactDOM.render is no longer supported')) return;
+  if (args[0]?.includes?.("ReactDOM.render is no longer supported")) return;
   originalError.call(console, ...args);
 };

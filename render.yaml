@@ -1,0 +1,38 @@
+services:
+  # Backend API Service
+  - type: web
+    name: harmonic-universe-api
+    env: python
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && gunicorn run:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.0
+      - key: FLASK_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: harmonic-universe-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGIN
+        value: https://harmonic-universe.onrender.com
+
+  # Frontend Web Service
+  - type: web
+    name: harmonic-universe
+    env: static
+    buildCommand: cd frontend && yarn install && yarn build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: NODE_VERSION
+        value: 16.x
+      - key: VITE_API_URL
+        value: https://harmonic-universe-api.onrender.com
+
+databases:
+  - name: harmonic-universe-db
+    databaseName: harmonic_universe
+    user: harmonic_universe
+    plan: free

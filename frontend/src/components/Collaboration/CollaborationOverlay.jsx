@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import styles from './CollaborationOverlay.module.css';
+import React, { useEffect, useRef } from "react";
+import styles from "./CollaborationOverlay.module.css";
 
 const CollaboratorCursor = ({ position, username, color }) => (
   <div
@@ -19,7 +19,7 @@ const CollaboratorsList = ({ collaborators }) => (
   <div className={styles.collaboratorsList}>
     <h4>Collaborators</h4>
     <div className={styles.collaboratorsGrid}>
-      {collaborators.map(collaborator => (
+      {collaborators.map((collaborator) => (
         <div
           key={collaborator.id}
           className={styles.collaborator}
@@ -51,23 +51,23 @@ const CollaborationOverlay = ({
     const updateCursorPositions = () => {
       const rect = overlayRef.current.getBoundingClientRect();
       // Update relative positions based on overlay bounds
-      Object.values(cursorPositions).forEach(cursor => {
+      Object.values(cursorPositions).forEach((cursor) => {
         cursor.position.x = Math.max(
           0,
-          Math.min(cursor.position.x - rect.left, rect.width)
+          Math.min(cursor.position.x - rect.left, rect.width),
         );
         cursor.position.y = Math.max(
           0,
-          Math.min(cursor.position.y - rect.top, rect.height)
+          Math.min(cursor.position.y - rect.top, rect.height),
         );
       });
     };
 
-    window.addEventListener('resize', updateCursorPositions);
+    window.addEventListener("resize", updateCursorPositions);
     updateCursorPositions();
 
     return () => {
-      window.removeEventListener('resize', updateCursorPositions);
+      window.removeEventListener("resize", updateCursorPositions);
     };
   }, [cursorPositions]);
 
@@ -89,7 +89,7 @@ const CollaborationOverlay = ({
           }`}
           onClick={isCollaborating ? onStopCollaboration : onStartCollaboration}
         >
-          {isCollaborating ? 'Stop Collaboration' : 'Start Collaboration'}
+          {isCollaborating ? "Stop Collaboration" : "Start Collaboration"}
         </button>
       </div>
 
@@ -97,7 +97,7 @@ const CollaborationOverlay = ({
         <>
           <CollaboratorsList collaborators={collaborators} />
           {Object.entries(cursorPositions).map(([userId, cursor]) => {
-            const collaborator = collaborators.find(c => c.id === userId);
+            const collaborator = collaborators.find((c) => c.id === userId);
             if (!collaborator) return null;
 
             return (

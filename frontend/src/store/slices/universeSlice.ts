@@ -1,6 +1,6 @@
-import { Universe } from '@/types/universe';
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import axios from 'axios';
+import { Universe } from "@/types/universe";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import axios from "axios";
 
 interface UniverseState {
   universes: Universe[];
@@ -11,7 +11,7 @@ interface UniverseState {
   isLoading: boolean;
   error: string | null;
   searchQuery: string;
-  sortBy: 'recent' | 'popular' | 'name';
+  sortBy: "recent" | "popular" | "name";
   filterBy: {
     isPublic: boolean | null;
     allowGuests: boolean | null;
@@ -26,8 +26,8 @@ const initialState: UniverseState = {
   favoriteUniverses: [],
   isLoading: false,
   error: null,
-  searchQuery: '',
-  sortBy: 'recent',
+  searchQuery: "",
+  sortBy: "recent",
   filterBy: {
     isPublic: null,
     allowGuests: null,
@@ -35,130 +35,131 @@ const initialState: UniverseState = {
 };
 
 export const fetchUniverses = createAsyncThunk(
-  'universe/fetchUniverses',
+  "universe/fetchUniverses",
   async (_, { rejectWithValue, getState }) => {
     try {
       const { universe } = getState() as { universe: UniverseState };
       const { searchQuery, sortBy } = universe;
 
-      const response = await axios.get('/api/universes', {
+      const response = await axios.get("/api/universes", {
         params: { q: searchQuery, sort_by: sortBy },
       });
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.error || 'Failed to fetch universes'
+        error.response?.data?.error || "Failed to fetch universes",
       );
     }
-  }
+  },
 );
 
 export const fetchUniverseById = createAsyncThunk(
-  'universe/fetchUniverseById',
+  "universe/fetchUniverseById",
   async (universeId: number, { rejectWithValue }) => {
     try {
       const response = await axios.get(`/api/universes/${universeId}`);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.error || 'Failed to fetch universe'
+        error.response?.data?.error || "Failed to fetch universe",
       );
     }
-  }
+  },
 );
 
 export const createUniverse = createAsyncThunk(
-  'universe/createUniverse',
+  "universe/createUniverse",
   async (universeData: Partial<Universe>, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/api/universes', universeData);
+      const response = await axios.post("/api/universes", universeData);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.error || 'Failed to create universe'
+        error.response?.data?.error || "Failed to create universe",
       );
     }
-  }
+  },
 );
 
 export const updateUniverse = createAsyncThunk(
-  'universe/updateUniverse',
+  "universe/updateUniverse",
   async (
     { id, data }: { id: number; data: Partial<Universe> },
-    { rejectWithValue }
+    { rejectWithValue },
   ) => {
     try {
       const response = await axios.put(`/api/universes/${id}`, data);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.error || 'Failed to update universe'
+        error.response?.data?.error || "Failed to update universe",
       );
     }
-  }
+  },
 );
 
 export const deleteUniverse = createAsyncThunk(
-  'universe/deleteUniverse',
+  "universe/deleteUniverse",
   async (universeId: number, { rejectWithValue }) => {
     try {
       await axios.delete(`/api/universes/${universeId}`);
       return universeId;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.error || 'Failed to delete universe'
+        error.response?.data?.error || "Failed to delete universe",
       );
     }
-  }
+  },
 );
 
 export const fetchUserUniverses = createAsyncThunk(
-  'universe/fetchUserUniverses',
+  "universe/fetchUserUniverses",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get('/api/users/me/universes');
+      const response = await axios.get("/api/users/me/universes");
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.error || 'Failed to fetch user universes'
+        error.response?.data?.error || "Failed to fetch user universes",
       );
     }
-  }
+  },
 );
 
 export const fetchCollaboratingUniverses = createAsyncThunk(
-  'universe/fetchCollaboratingUniverses',
+  "universe/fetchCollaboratingUniverses",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get('/api/users/me/collaborations');
+      const response = await axios.get("/api/users/me/collaborations");
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.error || 'Failed to fetch collaborating universes'
+        error.response?.data?.error ||
+          "Failed to fetch collaborating universes",
       );
     }
-  }
+  },
 );
 
 export const fetchFavoriteUniverses = createAsyncThunk(
-  'universe/fetchFavoriteUniverses',
+  "universe/fetchFavoriteUniverses",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get('/api/users/me/favorites');
+      const response = await axios.get("/api/users/me/favorites");
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.error || 'Failed to fetch favorite universes'
+        error.response?.data?.error || "Failed to fetch favorite universes",
       );
     }
-  }
+  },
 );
 
 export const toggleFavorite = createAsyncThunk(
-  'universe/toggleFavorite',
+  "universe/toggleFavorite",
   async (
     { universeId, isFavorited }: { universeId: number; isFavorited: boolean },
-    { rejectWithValue }
+    { rejectWithValue },
   ) => {
     try {
       if (isFavorited) {
@@ -169,14 +170,14 @@ export const toggleFavorite = createAsyncThunk(
       return { universeId, isFavorited: !isFavorited };
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.error || 'Failed to toggle favorite'
+        error.response?.data?.error || "Failed to toggle favorite",
       );
     }
-  }
+  },
 );
 
 const universeSlice = createSlice({
-  name: 'universe',
+  name: "universe",
   initialState,
   reducers: {
     setSearchQuery: (state, action) => {
@@ -188,19 +189,19 @@ const universeSlice = createSlice({
     setFilterBy: (state, action) => {
       state.filterBy = { ...state.filterBy, ...action.payload };
     },
-    clearFilters: state => {
-      state.searchQuery = '';
-      state.sortBy = 'recent';
+    clearFilters: (state) => {
+      state.searchQuery = "";
+      state.sortBy = "recent";
       state.filterBy = {
         isPublic: null,
         allowGuests: null,
       };
     },
   },
-  extraReducers: builder => {
+  extraReducers: (builder) => {
     // Fetch Universes
     builder
-      .addCase(fetchUniverses.pending, state => {
+      .addCase(fetchUniverses.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
@@ -215,7 +216,7 @@ const universeSlice = createSlice({
 
     // Fetch Universe by ID
     builder
-      .addCase(fetchUniverseById.pending, state => {
+      .addCase(fetchUniverseById.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
@@ -230,7 +231,7 @@ const universeSlice = createSlice({
 
     // Create Universe
     builder
-      .addCase(createUniverse.pending, state => {
+      .addCase(createUniverse.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
@@ -246,18 +247,18 @@ const universeSlice = createSlice({
 
     // Update Universe
     builder
-      .addCase(updateUniverse.pending, state => {
+      .addCase(updateUniverse.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
       .addCase(updateUniverse.fulfilled, (state, action) => {
         state.isLoading = false;
         state.currentUniverse = action.payload;
-        state.universes = state.universes.map(u =>
-          u.id === action.payload.id ? action.payload : u
+        state.universes = state.universes.map((u) =>
+          u.id === action.payload.id ? action.payload : u,
         );
-        state.userUniverses = state.userUniverses.map(u =>
-          u.id === action.payload.id ? action.payload : u
+        state.userUniverses = state.userUniverses.map((u) =>
+          u.id === action.payload.id ? action.payload : u,
         );
       })
       .addCase(updateUniverse.rejected, (state, action) => {
@@ -267,15 +268,17 @@ const universeSlice = createSlice({
 
     // Delete Universe
     builder
-      .addCase(deleteUniverse.pending, state => {
+      .addCase(deleteUniverse.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
       .addCase(deleteUniverse.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.universes = state.universes.filter(u => u.id !== action.payload);
+        state.universes = state.universes.filter(
+          (u) => u.id !== action.payload,
+        );
         state.userUniverses = state.userUniverses.filter(
-          u => u.id !== action.payload
+          (u) => u.id !== action.payload,
         );
         if (state.currentUniverse?.id === action.payload) {
           state.currentUniverse = null;
@@ -288,7 +291,7 @@ const universeSlice = createSlice({
 
     // Fetch User Universes
     builder
-      .addCase(fetchUserUniverses.pending, state => {
+      .addCase(fetchUserUniverses.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
@@ -303,7 +306,7 @@ const universeSlice = createSlice({
 
     // Fetch Collaborating Universes
     builder
-      .addCase(fetchCollaboratingUniverses.pending, state => {
+      .addCase(fetchCollaboratingUniverses.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
@@ -318,7 +321,7 @@ const universeSlice = createSlice({
 
     // Fetch Favorite Universes
     builder
-      .addCase(fetchFavoriteUniverses.pending, state => {
+      .addCase(fetchFavoriteUniverses.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
@@ -337,14 +340,14 @@ const universeSlice = createSlice({
 
       // Update is_favorited in all universe lists
       const updateUniverseInList = (list: Universe[]) =>
-        list.map(u =>
-          u.id === universeId ? { ...u, is_favorited: isFavorited } : u
+        list.map((u) =>
+          u.id === universeId ? { ...u, is_favorited: isFavorited } : u,
         );
 
       state.universes = updateUniverseInList(state.universes);
       state.userUniverses = updateUniverseInList(state.userUniverses);
       state.collaboratingUniverses = updateUniverseInList(
-        state.collaboratingUniverses
+        state.collaboratingUniverses,
       );
 
       if (state.currentUniverse?.id === universeId) {
@@ -356,13 +359,13 @@ const universeSlice = createSlice({
 
       // Update favorite universes list
       if (isFavorited) {
-        const universe = state.universes.find(u => u.id === universeId);
+        const universe = state.universes.find((u) => u.id === universeId);
         if (universe) {
           state.favoriteUniverses.push({ ...universe, is_favorited: true });
         }
       } else {
         state.favoriteUniverses = state.favoriteUniverses.filter(
-          u => u.id !== universeId
+          (u) => u.id !== universeId,
         );
       }
     });

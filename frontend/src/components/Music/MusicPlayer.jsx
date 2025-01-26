@@ -1,7 +1,7 @@
-import PropTypes from 'prop-types';
-import React, { useCallback, useEffect, useState } from 'react';
-import AudioEngine from '../../services/audioEngine';
-import styles from './MusicPlayer.module.css';
+import PropTypes from "prop-types";
+import React, { useCallback, useEffect, useState } from "react";
+import AudioEngine from "../../services/audioEngine";
+import styles from "./MusicPlayer.module.css";
 
 const MusicPlayer = ({ parameters }) => {
   const [audioEngine] = useState(() => new AudioEngine());
@@ -15,7 +15,7 @@ const MusicPlayer = ({ parameters }) => {
         await audioEngine.initialize();
         setIsInitialized(true);
       } catch (err) {
-        setError('Failed to initialize audio engine. Please try again.');
+        setError("Failed to initialize audio engine. Please try again.");
       }
     };
 
@@ -51,12 +51,12 @@ const MusicPlayer = ({ parameters }) => {
     try {
       const blob = await audioEngine.exportAudio({
         duration: 10,
-        format: 'mp3',
+        format: "mp3",
       });
 
       // Create download link
       const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
       link.download = `harmony-${Date.now()}.mp3`;
       document.body.appendChild(link);
@@ -64,7 +64,7 @@ const MusicPlayer = ({ parameters }) => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (err) {
-      setError('Failed to export audio. Please try again.');
+      setError("Failed to export audio. Please try again.");
     }
   }, [audioEngine, isPlaying]);
 
@@ -84,11 +84,11 @@ const MusicPlayer = ({ parameters }) => {
       <div className={styles.controls}>
         <button
           onClick={handlePlayPause}
-          className={`${styles.playButton} ${isPlaying ? styles.playing : ''}`}
+          className={`${styles.playButton} ${isPlaying ? styles.playing : ""}`}
           disabled={!isInitialized}
         >
-          <i className={`fas fa-${isPlaying ? 'stop' : 'play'}`} />
-          {isPlaying ? 'Stop' : 'Play'}
+          <i className={`fas fa-${isPlaying ? "stop" : "play"}`} />
+          {isPlaying ? "Stop" : "Play"}
         </button>
 
         <button
@@ -108,11 +108,11 @@ const MusicPlayer = ({ parameters }) => {
       <div className={styles.parameters}>
         <div className={styles.parameter}>
           <span>Key:</span>
-          <strong>{parameters?.key || 'C'}</strong>
+          <strong>{parameters?.key || "C"}</strong>
         </div>
         <div className={styles.parameter}>
           <span>Scale:</span>
-          <strong>{parameters?.scale || 'Major'}</strong>
+          <strong>{parameters?.scale || "Major"}</strong>
         </div>
         <div className={styles.parameter}>
           <span>Tempo:</span>

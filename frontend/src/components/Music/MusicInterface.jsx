@@ -1,10 +1,10 @@
-import { Grid, Paper, Typography } from '@mui/material';
-import React from 'react';
-import AIControls from './AIControls';
-import AudioControls from './AudioControls';
-import AudioParameters from './AudioParameters';
-import styles from './MusicInterface.module.css';
-import MusicPlayer from './MusicPlayer';
+import { Grid, Paper, Typography } from "@mui/material";
+import React from "react";
+import AIControls from "./AIControls";
+import AudioControls from "./AudioControls";
+import AudioParameters from "./AudioParameters";
+import styles from "./MusicInterface.module.css";
+import MusicPlayer from "./MusicPlayer";
 
 const MusicInterface = ({ universeId }) => {
   return (

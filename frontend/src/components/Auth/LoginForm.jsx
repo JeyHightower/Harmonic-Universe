@@ -1,117 +1,157 @@
-import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom';
-import { login } from '../../store/slices/authSlice';
-import './Auth.css';
+import useAuth from "@/hooks/useAuth";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  IconButton,
+  InputAdornment,
+  Link,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { useFormik } from "formik";
+import React, { useState } from "react";
+import * as yup from "yup";
 
-const LoginForm = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { isLoading, error } = useSelector(state => state.auth);
+const validationSchema = yup.object({
+  email: yup
+    .string()
+    .email("Enter a valid email")
+    .required("Email is required"),
+  password: yup
+    .string()
+    .min(8, "Password should be of minimum 8 characters length")
+    .required("Password is required"),
+});
 
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+const LoginForm: React.FC = () => {
+  const { handleLogin, isLoading, error, handleSwitchAuthView } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+
+  const formik = useFormik({
+    initialValues: {
+      email: "",
+      password: "",
+    },
+    validationSchema: validationSchema,
+    onSubmit: (values) => {
+      handleLogin(values);
+    },
   });
 
-  const [validationErrors, setValidationErrors] = useState({});
-
-  const validateForm = () => {
-    const errors = {};
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!formData.email) {
-      errors.email = 'Email is required';
-    } else if (!emailRegex.test(formData.email)) {
-      errors.email = 'Please enter a valid email address';
-    }
-
-    if (!formData.password) {
-      errors.password = 'Password is required';
-    }
-
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
+  const handleClickShowPassword = () => {
+    setShowPassword(!showPassword);
   };
 
-  const handleChange = e => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-    // Clear validation error when user starts typing
-    if (validationErrors[name]) {
-      setValidationErrors(prev => ({
-        ...prev,
-        [name]: '',
-      }));
-    }
-  };
-
-  const handleSubmit = async e => {
-    e.preventDefault();
-    if (!validateForm()) return;
-
-    try {
-      const resultAction = await dispatch(login(formData));
-      if (login.fulfilled.match(resultAction)) {
-        navigate('/dashboard');
-      }
-    } catch (err) {
-      console.error('Login failed:', err);
-    }
+  const handleMouseDownPassword = (
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    event.preventDefault();
   };
 
   return (
-    <div className="auth-container">
-      <form className="auth-form" onSubmit={handleSubmit}>
-        <h2>Welcome Back</h2>
-        {error && <div className="error-message">{error}</div>}
+    <Box
+      component="form"
+      onSubmit={formik.handleSubmit}
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+        p: 2,
+      }}
+    >
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
-        <div className="form-group">
-          <label htmlFor="email">Email</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className={validationErrors.email ? 'error' : ''}
-            placeholder="Enter your email"
-          />
-          {validationErrors.email && (
-            <div className="error-message">{validationErrors.email}</div>
-          )}
-        </div>
+      <TextField
+        fullWidth
+        id="email"
+        name="email"
+        label="Email"
+        value={formik.values.email}
+        onChange={formik.handleChange}
+        onBlur={formik.handleBlur}
+        error={formik.touched.email && Boolean(formik.errors.email)}
+        helperText={formik.touched.email && formik.errors.email}
+      />
 
-        <div className="form-group">
-          <label htmlFor="password">Password</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            className={validationErrors.password ? 'error' : ''}
-            placeholder="Enter your password"
-          />
-          {validationErrors.password && (
-            <div className="error-message">{validationErrors.password}</div>
-          )}
-        </div>
+      <TextField
+        fullWidth
+        id="password"
+        name="password"
+        label="Password"
+        type={showPassword ? "text" : "password"}
+        value={formik.values.password}
+        onChange={formik.handleChange}
+        onBlur={formik.handleBlur}
+        error={formik.touched.password && Boolean(formik.errors.password)}
+        helperText={formik.touched.password && formik.errors.password}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton
+                aria-label="toggle password visibility"
+                onClick={handleClickShowPassword}
+                onMouseDown={handleMouseDownPassword}
+                edge="end"
+              >
+                {showPassword ? <VisibilityOff /> : <Visibility />}
+              </IconButton>
+            </InputAdornment>
+          ),
+        }}
+      />
 
-        <button type="submit" className="auth-button" disabled={isLoading}>
-          {isLoading ? 'Logging in...' : 'Login'}
-        </button>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          width: "100%",
+        }}
+      >
+        <Typography variant="body2">
+          <Link
+            component="button"
+            type="button"
+            variant="body2"
+            onClick={() => handleSwitchAuthView("forgot-password")}
+          >
+            Forgot password?
+          </Link>
+        </Typography>
+      </Box>
 
-        <div className="auth-links">
-          <p>
-            Don't have an account? <Link to="/signup">Sign up here</Link>
-          </p>
-        </div>
-      </form>
-    </div>
+      <Button
+        type="submit"
+        variant="contained"
+        fullWidth
+        disabled={isLoading}
+        sx={{ mt: 2 }}
+      >
+        {isLoading ? <CircularProgress size={24} /> : "Login"}
+      </Button>
+
+      <Box sx={{ textAlign: "center", mt: 2 }}>
+        <Typography variant="body2">
+          Don't have an account?{" "}
+          <Link
+            component="button"
+            type="button"
+            variant="body2"
+            onClick={() => handleSwitchAuthView("register")}
+          >
+            Sign up
+          </Link>
+        </Typography>
+      </Box>
+    </Box>
   );
 };
 

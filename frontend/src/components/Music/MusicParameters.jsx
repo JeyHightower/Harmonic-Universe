@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { musicService } from '../../services/musicService';
+import React, { useEffect, useState } from "react";
+import { musicService } from "../../services/musicService";
 
 const MusicParameters = ({ universeId }) => {
   const [parameters, setParameters] = useState({
     tempo: 120,
-    key: 'C',
-    scale: 'major',
+    key: "C",
+    scale: "major",
     harmony: 0.5,
     volume: 0.8,
     reverb: 0.3,
@@ -34,21 +34,21 @@ const MusicParameters = ({ universeId }) => {
     }
   };
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setParameters(prev => ({
+    setParameters((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await musicService.updateMusicParameters(parameters);
       setError(null);
     } catch (err) {
-      setError(err.message || 'Creation failed');
+      setError(err.message || "Creation failed");
     }
   };
 
@@ -58,8 +58,8 @@ const MusicParameters = ({ universeId }) => {
       await musicService.deleteSettings(universeId);
       setParameters({
         tempo: 120,
-        key: 'C',
-        scale: 'major',
+        key: "C",
+        scale: "major",
         harmony: 0.5,
         volume: 0.8,
         reverb: 0.3,
@@ -76,7 +76,7 @@ const MusicParameters = ({ universeId }) => {
     try {
       const response = await musicService.generateAIMusic(
         universeId,
-        parameters
+        parameters,
       );
       setParameters(response.data.parameters);
       setError(null);

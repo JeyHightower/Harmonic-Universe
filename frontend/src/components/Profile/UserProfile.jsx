@@ -1,19 +1,19 @@
-import { useDispatch, useSelector } from 'react-redux';
-import useForm from '../../hooks/useForm';
-import { updateUser } from '../../store/slices/userSlice';
-import { validateEmail } from '../../utils/validations';
-import styles from './Profile.module.css';
+import { useDispatch, useSelector } from "react-redux";
+import useForm from "../../hooks/useForm";
+import { updateUser } from "../../store/slices/userSlice";
+import { validateEmail } from "../../utils/validations";
+import styles from "./Profile.module.css";
 
 const UserProfile = () => {
   const dispatch = useDispatch();
-  const { user } = useSelector(state => state.auth);
+  const { user } = useSelector((state) => state.auth);
 
   const validations = {
     username: {
       required: true,
-      validate: value => ({
+      validate: (value) => ({
         isValid: value.length >= 3,
-        errors: ['Username must be at least 3 characters long'],
+        errors: ["Username must be at least 3 characters long"],
       }),
     },
     email: {
@@ -21,9 +21,9 @@ const UserProfile = () => {
       validate: validateEmail,
     },
     bio: {
-      validate: value => ({
+      validate: (value) => ({
         isValid: value.length <= 500,
-        errors: ['Bio must be less than 500 characters'],
+        errors: ["Bio must be less than 500 characters"],
       }),
     },
   };
@@ -38,14 +38,14 @@ const UserProfile = () => {
     setValues,
   } = useForm(
     {
-      username: user?.username || '',
-      email: user?.email || '',
-      bio: user?.bio || '',
+      username: user?.username || "",
+      email: user?.email || "",
+      bio: user?.bio || "",
     },
-    validations
+    validations,
   );
 
-  const onSubmit = async formData => {
+  const onSubmit = async (formData) => {
     try {
       await dispatch(updateUser(formData)).unwrap();
     } catch (error) {
@@ -57,7 +57,7 @@ const UserProfile = () => {
     <div className={styles.profileContainer}>
       <h2 className={styles.title}>Edit Profile</h2>
       <form
-        onSubmit={e => {
+        onSubmit={(e) => {
           e.preventDefault();
           handleSubmit(onSubmit);
         }}
@@ -106,7 +106,7 @@ const UserProfile = () => {
         {errors.submit && <div className={styles.error}>{errors.submit}</div>}
 
         <button type="submit" className={styles.button} disabled={isSubmitting}>
-          {isSubmitting ? 'Saving...' : 'Save Changes'}
+          {isSubmitting ? "Saving..." : "Save Changes"}
         </button>
       </form>
     </div>

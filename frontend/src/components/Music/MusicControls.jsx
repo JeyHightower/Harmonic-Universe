@@ -1,10 +1,10 @@
-import React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   selectActiveTrack,
   updateTrackParameters,
-} from '../../store/audioSlice';
-import styles from './MusicControls.module.css';
+} from "../../store/audioSlice";
+import styles from "./MusicControls.module.css";
 
 const MusicControls = () => {
   const dispatch = useDispatch();
@@ -18,7 +18,7 @@ const MusicControls = () => {
           parameters: {
             [parameter]: parseFloat(value),
           },
-        })
+        }),
       );
     }
   };
@@ -37,7 +37,7 @@ const MusicControls = () => {
         max={max}
         step={step}
         value={activeTrack.parameters[name] || 0.5}
-        onChange={e => handleParameterChange(name, e.target.value)}
+        onChange={(e) => handleParameterChange(name, e.target.value)}
         aria-label={name}
       />
     </div>
@@ -45,32 +45,32 @@ const MusicControls = () => {
 
   return (
     <div className={styles.controlsContainer}>
-      {renderParameter('harmony', 0, 1, 0.01)}
-      {renderParameter('tempo', 40, 200, 1)}
-      {renderParameter('key', [
-        'C',
-        'C#',
-        'D',
-        'D#',
-        'E',
-        'F',
-        'F#',
-        'G',
-        'G#',
-        'A',
-        'A#',
-        'B',
+      {renderParameter("harmony", 0, 1, 0.01)}
+      {renderParameter("tempo", 40, 200, 1)}
+      {renderParameter("key", [
+        "C",
+        "C#",
+        "D",
+        "D#",
+        "E",
+        "F",
+        "F#",
+        "G",
+        "G#",
+        "A",
+        "A#",
+        "B",
       ])}
-      {renderParameter('scale', [
-        'major',
-        'minor',
-        'harmonic minor',
-        'melodic minor',
-        'pentatonic',
-        'blues',
+      {renderParameter("scale", [
+        "major",
+        "minor",
+        "harmonic minor",
+        "melodic minor",
+        "pentatonic",
+        "blues",
       ])}
-      {renderParameter('rhythm_complexity', 0, 1, 0.01)}
-      {renderParameter('melody_range', 0, 1, 0.01)}
+      {renderParameter("rhythm_complexity", 0, 1, 0.01)}
+      {renderParameter("melody_range", 0, 1, 0.01)}
     </div>
   );
 };

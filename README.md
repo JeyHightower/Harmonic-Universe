@@ -1,141 +1,180 @@
 # Harmonic Universe
 
-A dynamic web application for creating and exploring musical universes with physics-based interactions.
-
-## Project Structure
-
-```
-harmonic-universe/
-├── backend/           # Python backend server
-│   ├── app/          # Application code
-│   ├── tests/        # Backend tests
-│   └── requirements.txt
-├── frontend/         # React frontend application
-│   ├── src/          # Source code
-│   ├── public/       # Static assets
-│   ├── cypress.config.js
-│   ├── k6.config.js
-│   └── vitest.config.js
-├── config/          # Global configuration
-│   └── .env        # Environment variables
-├── docs/           # Documentation
-├── scripts/        # Utility scripts
-├── tests/          # Integration tests
-└── .github/        # GitHub workflows and templates
-```
+A real-time interactive universe simulation platform that combines physics, music, and visualization.
 
 ## Features
 
-### Authentication
+### Core Features
+- **User Authentication**
+  - Secure login/registration
+  - Profile management
+  - Session handling
 
-- User registration and login
-- Token-based authentication with refresh mechanism
-- Secure session management
-- Password reset functionality
+- **Universe Management**
+  - Create, read, update, delete universes
+  - Privacy controls
+  - Real-time parameter updates
+  - Export functionality
 
-### Real-time Communication
+- **Physics Engine**
+  - Gravity simulation
+  - Particle interactions
+  - Collision detection
+  - Custom physics parameters
 
-- WebSocket-based real-time updates
-- Heartbeat monitoring for connection health
-- Automatic reconnection with exponential backoff
-- Circuit breaker pattern for failure handling
+- **Music Integration**
+  - Real-time music generation
+  - Harmony controls
+  - Scale selection
+  - Tempo management
 
-### Error Handling
+- **Visualization**
+  - Custom color schemes
+  - Particle effects
+  - Trail visualization
+  - Grid and axes options
 
-- Global error boundary for React components
-- Categorized error handling (network, auth, business logic)
-- Toast notification system
-- Error tracking and reporting
+- **Real-time Collaboration**
+  - WebSocket integration
+  - Live parameter updates
+  - Presence indicators
+  - Collaborative editing
 
-### Audio Processing
+### Additional Features
+- **Storyboard System**
+  - Create and manage story elements
+  - Harmony value tracking
+  - Sequential organization
 
-- Real-time audio visualization
-- Frequency analysis
-- Waveform display
-- Resource cleanup and memory management
+## Tech Stack
 
-### UI Components
+### Frontend
+- React with TypeScript
+- Redux Toolkit for state management
+- Material-UI for components
+- Socket.IO for real-time communication
+- Cypress for E2E testing
 
-- Toast notifications (success, error, warning, info)
-- Loading indicators
-- Error messages with different severity levels
-- Responsive design
+### Backend
+- Flask
+- SQLAlchemy
+- Flask-SocketIO
+- PostgreSQL
+- pytest for testing
 
-### Universe Management
-
-- Create and edit universes
-- Collaborative storyboard
-- Analytics dashboard
-- Real-time updates
-
-## Setup
+## Setup Instructions
 
 ### Prerequisites
-
-- Node.js (v16 or higher)
-- Python 3.9+
-- Yarn package manager
+- Node.js (v16+)
+- Python (3.8+)
+- PostgreSQL
+- Redis (for WebSocket)
 
 ### Backend Setup
+1. Create and activate virtual environment:
+   ```bash
+   cd backend
+   python -m venv venv
+   source venv/bin/activate  # On Windows: .\venv\Scripts\activate
+   ```
 
-```bash
-cd backend
-./setup.sh
-```
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   pip install -r requirements-test.txt
+   ```
+
+3. Set up environment variables:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your database credentials
+   ```
+
+4. Initialize database:
+   ```bash
+   python create_db.py
+   flask db upgrade
+   ```
+
+5. Run the server:
+   ```bash
+   python run.py
+   ```
 
 ### Frontend Setup
+1. Install dependencies:
+   ```bash
+   cd frontend
+   npm install
+   ```
 
-```bash
-cd frontend
-yarn install
-```
+2. Set up environment variables:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your backend API URL
+   ```
 
-### Environment Configuration
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
 
-1. Copy the example environment file:
+## Testing
 
-```bash
-cp config/.env.example config/.env
-```
-
-2. Update the environment variables as needed.
-
-## Development
-
-### Running the Backend
-
-```bash
-cd backend
-python -m flask run
-```
-
-### Running the Frontend
-
-```bash
-cd frontend
-yarn dev
-```
-
-### Running Tests
-
-Backend tests:
-
+### Backend Tests
 ```bash
 cd backend
-pytest
+python -m pytest tests/test_comprehensive.py -v
 ```
 
-Frontend tests:
-
+### Frontend Tests
 ```bash
 cd frontend
-yarn test
+npm run test:e2e
 ```
+
+## API Documentation
+
+### Authentication Endpoints
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - User login
+- `GET /api/auth/profile` - Get user profile
+- `PUT /api/auth/profile` - Update user profile
+
+### Universe Endpoints
+- `GET /api/universes` - List universes
+- `POST /api/universes` - Create universe
+- `GET /api/universes/{id}` - Get universe details
+- `PUT /api/universes/{id}` - Update universe
+- `DELETE /api/universes/{id}` - Delete universe
+- `PUT /api/universes/{id}/parameters/{type}` - Update parameters
+- `GET /api/universes/{id}/export` - Export universe data
+
+### Storyboard Endpoints
+- `GET /api/storyboards` - List storyboards
+- `POST /api/storyboards` - Create storyboard
+- `GET /api/storyboards/{id}` - Get storyboard details
+- `PUT /api/storyboards/{id}` - Update storyboard
+- `DELETE /api/storyboards/{id}` - Delete storyboard
+
+### WebSocket Events
+- `connect` - Client connection
+- `disconnect` - Client disconnection
+- `join_universe` - Join universe room
+- `leave_universe` - Leave universe room
+- `parameter_update` - Real-time parameter updates
+- `simulation_start` - Start simulation
+- `simulation_stop` - Stop simulation
+- `simulation_reset` - Reset simulation
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](docs/CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.

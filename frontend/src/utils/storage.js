@@ -1,6 +1,6 @@
 const STORAGE_KEYS = {
-  STORYBOARD_PREFERENCES: 'storyboard_preferences',
-  STORYBOARD_DRAFT: 'storyboard_draft',
+  STORYBOARD_PREFERENCES: "storyboard_preferences",
+  STORYBOARD_DRAFT: "storyboard_draft",
 };
 
 export const storage = {
@@ -41,7 +41,7 @@ export const storage = {
   setStoryboardPreferences(universeId, preferences) {
     return this.setItem(
       `${STORAGE_KEYS.STORYBOARD_PREFERENCES}_${universeId}`,
-      preferences
+      preferences,
     );
   },
 
@@ -52,7 +52,7 @@ export const storage = {
   setStoryboardDraft(universeId, draft) {
     return this.setItem(
       `${STORAGE_KEYS.STORYBOARD_DRAFT}_${universeId}`,
-      draft
+      draft,
     );
   },
 
@@ -67,11 +67,11 @@ export const STORAGE_DEFAULTS = {
       perPage: 10,
     },
     sort: {
-      field: 'created_at',
-      order: 'desc',
+      field: "created_at",
+      order: "desc",
     },
     filters: {
-      search: '',
+      search: "",
       harmonyMin: null,
       harmonyMax: null,
     },

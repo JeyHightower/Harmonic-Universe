@@ -1,16 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { updateUserSettings } from '../../store/slices/userSlice';
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { updateUserSettings } from "../../store/slices/userSlice";
 
 const Settings = () => {
   const dispatch = useDispatch();
-  const user = useSelector(state => state.user.currentUser);
+  const user = useSelector((state) => state.user.currentUser);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
   const [settings, setSettings] = useState({
-    theme: 'light',
+    theme: "light",
     notifications: {
       email: true,
       push: true,
@@ -18,11 +18,11 @@ const Settings = () => {
     },
     audioSettings: {
       volume: 75,
-      quality: 'high',
+      quality: "high",
       spatialAudio: true,
     },
     performanceSettings: {
-      graphicsQuality: 'high',
+      graphicsQuality: "high",
       particleEffects: true,
       shadows: true,
     },
@@ -30,25 +30,25 @@ const Settings = () => {
 
   useEffect(() => {
     if (user?.settings) {
-      setSettings(prevSettings => ({
+      setSettings((prevSettings) => ({
         ...prevSettings,
         ...user.settings,
       }));
     }
   }, [user]);
 
-  const handleThemeChange = e => {
+  const handleThemeChange = (e) => {
     const newTheme = e.target.value;
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
       theme: newTheme,
     }));
-    document.documentElement.setAttribute('data-theme', newTheme);
+    document.documentElement.setAttribute("data-theme", newTheme);
   };
 
-  const handleNotificationChange = e => {
+  const handleNotificationChange = (e) => {
     const { name, checked } = e.target;
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
       notifications: {
         ...prev.notifications,
@@ -57,29 +57,29 @@ const Settings = () => {
     }));
   };
 
-  const handleAudioSettingChange = e => {
+  const handleAudioSettingChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
       audioSettings: {
         ...prev.audioSettings,
-        [name]: type === 'checkbox' ? checked : value,
+        [name]: type === "checkbox" ? checked : value,
       },
     }));
   };
 
-  const handlePerformanceSettingChange = e => {
+  const handlePerformanceSettingChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
       performanceSettings: {
         ...prev.performanceSettings,
-        [name]: type === 'checkbox' ? checked : value,
+        [name]: type === "checkbox" ? checked : value,
       },
     }));
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
@@ -90,7 +90,7 @@ const Settings = () => {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
-      setError(err.message || 'Failed to update settings');
+      setError(err.message || "Failed to update settings");
     } finally {
       setIsLoading(false);
     }
@@ -241,7 +241,7 @@ const Settings = () => {
 
         <div className="form-actions">
           <button type="submit" disabled={isLoading} className="btn-primary">
-            {isLoading ? 'Saving...' : 'Save Settings'}
+            {isLoading ? "Saving..." : "Save Settings"}
           </button>
         </div>
       </form>

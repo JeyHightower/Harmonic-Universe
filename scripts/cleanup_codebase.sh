@@ -593,3 +593,62 @@ echo "Check the 'unused' directory for potentially unused files"
 
 # Disable debugging
 set +x
+
+# Frontend cleanup
+echo "Cleaning up frontend..."
+
+# Convert TypeScript files to JSX
+find frontend/src -name "*.tsx" -exec sh -c 'mv "$1" "${1%.tsx}.jsx"' _ {} \;
+
+# Standardize CSS modules
+find frontend/src -name "*.css" ! -name "*.module.css" -exec sh -c 'mv "$1" "${1%.css}.module.css"' _ {} \;
+
+# Remove duplicate test directories
+find frontend/src -type d -name "__tests__" ! -path "*/src/__tests__" -exec rm -rf {} +
+
+# Move all tests to central location
+mkdir -p frontend/src/__tests__/components
+mkdir -p frontend/src/__tests__/hooks
+mkdir -p frontend/src/__tests__/services
+mkdir -p frontend/src/__tests__/store
+
+# Move component tests
+find frontend/src/components -name "*.test.jsx" -exec mv {} frontend/src/__tests__/components/ \;
+
+# Move hook tests
+find frontend/src/hooks -name "*.test.js" -exec mv {} frontend/src/__tests__/hooks/ \;
+
+# Move service tests
+find frontend/src/services -name "*.test.js" -exec mv {} frontend/src/__tests__/services/ \;
+
+# Move store tests
+find frontend/src/store -name "*.test.js" -exec mv {} frontend/src/__tests__/store/ \;
+
+# Backend cleanup
+echo "Cleaning up backend..."
+
+# Consolidate models
+mkdir -p backend/app/models/temp
+cp -r backend/models/* backend/app/models/temp/
+rm -rf backend/models
+mv backend/app/models/temp/* backend/app/models/
+rm -rf backend/app/models/temp
+
+# Consolidate routes
+mkdir -p backend/app/routes/temp
+cp -r backend/routes/* backend/app/routes/temp/
+rm -rf backend/routes
+mv backend/app/routes/temp/* backend/app/routes/
+rm -rf backend/app/routes/temp
+
+# Clean up duplicate schema files
+rm -f backend/app/schemas/storyboard\ 2.py
+
+# Standardize service naming
+for file in backend/app/services/*; do
+  if [[ -f "$file" && ! "$file" =~ .*_service\.py$ && "$file" != */base.py && "$file" != */__init__.py ]]; then
+    mv "$file" "${file%.py}_service.py"
+  fi
+done
+
+echo "Cleanup complete!"

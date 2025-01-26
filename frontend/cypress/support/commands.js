@@ -8,27 +8,27 @@
 // https://on.cypress.io/custom-commands
 // ***********************************************
 
-Cypress.Commands.add('login', (email, password) => {
+Cypress.Commands.add("login", (email, password) => {
   cy.request({
-    method: 'POST',
-    url: '/api/auth/login',
+    method: "POST",
+    url: "/api/auth/login",
     body: { email, password },
-  }).then(response => {
-    window.localStorage.setItem('token', response.body.token);
+  }).then((response) => {
+    window.localStorage.setItem("token", response.body.token);
   });
 });
 
-Cypress.Commands.add('logout', () => {
-  window.localStorage.removeItem('token');
+Cypress.Commands.add("logout", () => {
+  window.localStorage.removeItem("token");
 });
 
 Cypress.Commands.add(
-  'createUniverse',
+  "createUniverse",
   ({ name, description, isPublic = true, allowGuests = true }) => {
-    const token = window.localStorage.getItem('token');
+    const token = window.localStorage.getItem("token");
     cy.request({
-      method: 'POST',
-      url: 'http://localhost:5000/api/universes',
+      method: "POST",
+      url: "http://localhost:5000/api/universes",
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -39,13 +39,13 @@ Cypress.Commands.add(
         allowGuests,
       },
     });
-  }
+  },
 );
 
-Cypress.Commands.add('deleteUniverse', universeId => {
-  const token = window.localStorage.getItem('token');
+Cypress.Commands.add("deleteUniverse", (universeId) => {
+  const token = window.localStorage.getItem("token");
   cy.request({
-    method: 'DELETE',
+    method: "DELETE",
     url: `http://localhost:5000/api/universes/${universeId}`,
     headers: {
       Authorization: `Bearer ${token}`,
@@ -53,10 +53,10 @@ Cypress.Commands.add('deleteUniverse', universeId => {
   });
 });
 
-Cypress.Commands.add('createTestUniverse', (options = {}) => {
+Cypress.Commands.add("createTestUniverse", (options = {}) => {
   const defaultOptions = {
-    name: 'Test Universe',
-    description: 'Test Description',
+    name: "Test Universe",
+    description: "Test Description",
     isPublic: false,
     maxParticipants: 10,
     physics: {
@@ -67,33 +67,33 @@ Cypress.Commands.add('createTestUniverse', (options = {}) => {
     audio: {
       volume: 1.0,
       tempo: 120,
-      scale: 'major',
+      scale: "major",
     },
   };
 
   const universeOptions = { ...defaultOptions, ...options };
 
   cy.request({
-    method: 'POST',
-    url: 'http://localhost:5000/api/universes',
+    method: "POST",
+    url: "http://localhost:5000/api/universes",
     headers: {
-      Authorization: `Bearer ${window.localStorage.getItem('token')}`,
+      Authorization: `Bearer ${window.localStorage.getItem("token")}`,
     },
     body: universeOptions,
-  }).then(response => {
+  }).then((response) => {
     return response.body;
   });
 });
 
 // Create test music parameters
-Cypress.Commands.add('createTestMusicParameters', universeId => {
+Cypress.Commands.add("createTestMusicParameters", (universeId) => {
   cy.request({
-    method: 'POST',
+    method: "POST",
     url: `/api/music/parameters/${universeId}`,
     body: {
       tempo: 120,
-      key: 'C',
-      scale: 'major',
+      key: "C",
+      scale: "major",
       harmony: 0.7,
       reverb: 0.3,
     },
@@ -101,25 +101,25 @@ Cypress.Commands.add('createTestMusicParameters', universeId => {
 });
 
 // Create test universe
-Cypress.Commands.add('createTestUniverse', () => {
+Cypress.Commands.add("createTestUniverse", () => {
   return cy
     .request({
-      method: 'POST',
-      url: '/api/universes',
+      method: "POST",
+      url: "/api/universes",
       body: {
-        name: 'Test Universe',
-        description: 'Created for testing',
+        name: "Test Universe",
+        description: "Created for testing",
       },
     })
-    .then(response => {
+    .then((response) => {
       return response.body.id;
     });
 });
 
 // Create test audio settings
-Cypress.Commands.add('createTestAudioSettings', universeId => {
+Cypress.Commands.add("createTestAudioSettings", (universeId) => {
   cy.request({
-    method: 'POST',
+    method: "POST",
     url: `/api/audio/settings/${universeId}`,
     body: {
       masterVolume: 0.8,
