@@ -1,6 +1,6 @@
 from functools import wraps
 from flask import jsonify
-from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request
+from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request, decode_token
 from .models import User
 
 
@@ -44,10 +44,10 @@ def require_admin(f):
     return decorated
 
 
-def validate_token():
-    """Validate the current JWT token."""
+def verify_token(token):
+    """Verify a JWT token and return the user ID."""
     try:
-        verify_jwt_in_request()
-        return True
+        decoded = decode_token(token)
+        return decoded['sub']  # sub contains the user ID
     except Exception:
-        return False
+        return None

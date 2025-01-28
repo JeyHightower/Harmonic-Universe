@@ -1,0 +1,159 @@
+.force-field-editor {
+  background: #1a1a1a;
+  border-radius: 8px;
+  padding: 20px;
+  color: #ffffff;
+  width: 100%;
+  max-width: 800px;
+  margin: 20px auto;
+}
+
+.force-field-editor h3 {
+  margin: 0 0 20px 0;
+  font-size: 20px;
+  color: #ff6b4a;
+}
+
+.field-list {
+  margin-bottom: 20px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.field-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #2a2a2a;
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.field-item:hover {
+  background: #3a3a3a;
+}
+
+.field-item.selected {
+  background: #3a3a3a;
+  border-left: 3px solid #ff6b4a;
+}
+
+.field-info {
+  display: flex;
+  gap: 15px;
+}
+
+.field-type {
+  color: #ff8f6b;
+  font-weight: 500;
+}
+
+.field-strength {
+  color: #cccccc;
+}
+
+.delete-button {
+  background: none;
+  border: none;
+  color: #ff4a4a;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 5px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.delete-button:hover {
+  opacity: 1;
+}
+
+.field-editor {
+  background: #2a2a2a;
+  border-radius: 6px;
+  padding: 15px;
+}
+
+.field-property {
+  margin-bottom: 15px;
+}
+
+.field-property label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: #cccccc;
+}
+
+.field-property input[type='range'] {
+  width: 100%;
+  margin: 10px 0;
+  -webkit-appearance: none;
+  background: #3a3a3a;
+  height: 5px;
+  border-radius: 5px;
+  outline: none;
+}
+
+.field-property input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 15px;
+  height: 15px;
+  background: #ff6b4a;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.field-property input[type='range']::-webkit-slider-thumb:hover {
+  background: #ff8f6b;
+}
+
+.field-property select {
+  width: 100%;
+  padding: 8px;
+  background: #3a3a3a;
+  border: none;
+  border-radius: 4px;
+  color: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.field-property select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 107, 74, 0.3);
+}
+
+.field-property span {
+  display: inline-block;
+  margin-left: 10px;
+  font-size: 14px;
+  color: #999999;
+}
+
+.field-actions {
+  margin-top: 20px;
+  text-align: right;
+}
+
+.field-actions button {
+  background: #ff6b4a;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.field-actions button:hover {
+  background: #ff8f6b;
+}
+
+.field-actions button:active {
+  transform: translateY(1px);
+}

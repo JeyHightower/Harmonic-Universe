@@ -6,13 +6,207 @@ This document describes the REST API endpoints and WebSocket events for the Harm
 
 ## Authentication
 
-### JWT Authentication
-
-```
-POST /api/auth/login
+### Register User
+```http
 POST /api/auth/register
-POST /api/auth/refresh
-POST /api/auth/logout
+```
+Request Body:
+```json
+{
+  "username": "string",
+  "email": "string",
+  "password": "string",
+  "bio": "string",
+  "preferences": {
+    "theme": "string"
+  }
+}
+```
+
+### Login
+```http
+POST /api/auth/login
+```
+Request Body:
+```json
+{
+  "email": "string",
+  "password": "string"
+}
+```
+
+### Get Current User
+```http
+GET /api/auth/user
+```
+Authorization: Bearer Token Required
+
+### Update User
+```http
+PUT /api/auth/me
+```
+Authorization: Bearer Token Required
+Request Body:
+```json
+{
+  "username": "string",
+  "bio": "string",
+  "preferences": {
+    "theme": "string"
+  }
+}
+```
+
+### Delete User
+```http
+DELETE /api/auth/me
+```
+Authorization: Bearer Token Required
+
+## Profile
+
+### Create Profile
+```http
+POST /api/profile
+```
+Authorization: Bearer Token Required
+Request Body:
+```json
+{
+  "bio": "string",
+  "preferences": {
+    "theme": "string",
+    "notifications": boolean
+  }
+}
+```
+
+### Get Profile
+```http
+GET /api/profile/me
+```
+Authorization: Bearer Token Required
+
+### Update Profile
+```http
+PUT /api/profile/me
+```
+Authorization: Bearer Token Required
+Request Body:
+```json
+{
+  "bio": "string",
+  "preferences": {
+    "theme": "string",
+    "notifications": boolean
+  }
+}
+```
+
+## Universe
+
+### Create Universe
+```http
+POST /api/universes
+```
+Authorization: Bearer Token Required
+Request Body:
+```json
+{
+  "name": "string",
+  "description": "string",
+  "is_public": boolean,
+  "max_participants": number,
+  "physics_parameters": {
+    "gravity": number,
+    "time_dilation": number
+  }
+}
+```
+
+### Get All Universes
+```http
+GET /api/universes
+```
+Authorization: Bearer Token Required
+
+### Get My Universes
+```http
+GET /api/universes/my
+```
+Authorization: Bearer Token Required
+
+### Update Universe Parameters
+```http
+PUT /api/universes/:id/parameters
+```
+Authorization: Bearer Token Required
+Request Body:
+```json
+{
+  "parameters": {
+    "gravity": number,
+    "time_dilation": number
+  }
+}
+```
+
+### Add Collaborator
+```http
+POST /api/universes/:id/collaborators
+```
+Authorization: Bearer Token Required
+Request Body:
+```json
+{
+  "email": "string"
+}
+```
+
+## Collaboration
+
+### Update Presence
+```http
+POST /api/collaboration/presence/:universe_id
+```
+Authorization: Bearer Token Required
+Request Body:
+```json
+{
+  "currentView": "string"
+}
+```
+
+### Get Activities
+```http
+GET /api/collaboration/activity/:universe_id
+```
+Authorization: Bearer Token Required
+
+## Response Formats
+
+### Success Response
+```json
+{
+  "data": {
+    // Response data
+  },
+  "message": "string"
+}
+```
+
+### Error Response
+```json
+{
+  "error": "string",
+  "details": {} // Optional error details
+}
+```
+
+## Authentication
+All protected endpoints require a Bearer token in the Authorization header:
+```
+Authorization: Bearer <token>
 ```
 
 ## Universe Management

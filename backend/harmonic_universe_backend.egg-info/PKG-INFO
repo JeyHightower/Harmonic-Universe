@@ -1,0 +1,19 @@
+Metadata-Version: 2.2
+Name: harmonic-universe-backend
+Version: 1.0.0
+Requires-Dist: flask
+Requires-Dist: flask-sqlalchemy
+Requires-Dist: flask-migrate
+Requires-Dist: flask-jwt-extended
+Requires-Dist: flask-cors
+Requires-Dist: flask-socketio
+Requires-Dist: pytest
+Requires-Dist: pytest-cov
+Requires-Dist: pytest-env
+Requires-Dist: python-dotenv
+Provides-Extra: test
+Requires-Dist: pytest; extra == "test"
+Requires-Dist: pytest-cov; extra == "test"
+Requires-Dist: pytest-env; extra == "test"
+Dynamic: provides-extra
+Dynamic: requires-dist

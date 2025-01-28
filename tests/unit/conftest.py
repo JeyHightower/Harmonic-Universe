@@ -15,7 +15,7 @@ from app import create_app
 from app.extensions import db as _db, socketio
 
 # Import all models
-from app.models import User, Universe, UniverseCollaborator, Profile
+from app.models import User, Universe, Profile
 
 
 @pytest.fixture(scope="session")
@@ -73,7 +73,7 @@ def cleanup_db(session):
     """Clean up the database after each test."""
     yield
     session.rollback()
-    for table in reversed(db.metadata.sorted_tables):
+    for table in reversed(_db.metadata.sorted_tables):
         session.execute(table.delete())
     session.commit()
 
@@ -92,7 +92,7 @@ def test_user(session):
 @pytest.fixture(scope="function")
 def auth_headers(app, test_user):
     """Get auth headers."""
-    access_token = create_access_token(identity=test_user)
+    access_token = create_access_token(identity=test_user.id)
     return {"Authorization": f"Bearer {access_token}"}
 
 
@@ -104,7 +104,7 @@ def test_universe(session, test_user):
         name="Test Universe",
         description="Test Description",
         is_public=True,
-        user_id=test_user.id,
+        creator_id=test_user.id,
     )
     session.add(universe)
     session.commit()
@@ -123,12 +123,10 @@ def test_profile(session, test_user):
 @pytest.fixture(scope="function")
 def test_collaborator(session, test_user, test_universe):
     """Create a test collaborator."""
-    collaborator = UniverseCollaborator(
-        universe_id=test_universe.id, user_id=test_user.id, role="editor"
-    )
-    session.add(collaborator)
+    # Add the user as a collaborator using the association table
+    test_universe.collaborators.append(test_user)
     session.commit()
-    return collaborator
+    return test_user
 
 
 # WebSocket Fixtures

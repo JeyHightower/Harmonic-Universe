@@ -1,149 +1,113 @@
-# Harmonic Universe Test Suite
+# Harmonic Universe Testing
 
-## Overview
+This directory contains all test files for the Harmonic Universe project. The tests are organized into the following categories:
 
-This test suite provides comprehensive testing for the Harmonic Universe application, covering both frontend and backend components.
+## Directory Structure
 
-## Test Categories
+- `frontend/` - Frontend tests
+  - Unit tests for React components
+  - Integration tests for features
+  - Redux store tests
+  - Service tests
+  - Hook tests
+  - Utility tests
 
-### Backend Tests
+- `backend/` - Backend tests
+  - Unit tests for Python modules
+  - Integration tests for APIs
+  - Database tests
+  - Service tests
+  - Utility tests
 
-- **Unit Tests**: Individual component testing
-- **Integration Tests**: API endpoint testing
-- **WebSocket Tests**: Real-time feature testing
-- **Security Tests**: Security vulnerability testing
-- **Performance Tests**: Load and stress testing
+- `e2e/` - End-to-end tests
+  - Cypress tests
+  - User flow tests
+  - Feature tests
+  - Cross-browser tests
 
-### Frontend Tests
+## Test Standards
 
-- **Unit Tests**: Component and Redux testing
-- **Integration Tests**: Feature integration testing
-- **End-to-End Tests**: Full user journey testing
+1. Test Organization
+   - Group tests by feature/module
+   - Follow consistent naming conventions
+   - Maintain test independence
+   - Use appropriate test categories
+
+2. Test Coverage
+   - Aim for high test coverage
+   - Focus on critical paths
+   - Include edge cases
+   - Test error conditions
+
+3. Test Quality
+   - Write clear test descriptions
+   - Use meaningful assertions
+   - Avoid test interdependence
+   - Keep tests maintainable
 
 ## Running Tests
 
-### Prerequisites
-
-- Python 3.9+
-- Node.js 16+
-- PostgreSQL 13+
-- Redis 6+
-
-### Backend Tests
-
-```bash
-# Install dependencies
-cd backend
-pip install -r requirements.txt
-pip install -r requirements-test.txt
-
-# Run all backend tests
-pytest
-
-# Run specific test categories
-pytest tests/test_core_features.py
-pytest tests/test_websocket.py
-pytest tests/test_security.py
-pytest tests/test_performance.py
-
-# Run with coverage
-pytest --cov=app --cov-report=term-missing
-```
-
-### Frontend Tests
-
-```bash
-# Install dependencies
-cd frontend
-npm install
-
-# Run unit tests
-npm test
-
-# Run tests with coverage
-npm run test:coverage
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run E2E tests
-npm run test:e2e
-
-# Open Cypress test runner
-npm run test:e2e:open
-```
-
-## Test Configuration
-
-### Backend
-
-- `pytest.ini`: Main pytest configuration
-- `conftest.py`: Test fixtures and setup
-- `app/config.py`: Test environment settings
-
-### Frontend
-
-- `vitest.config.js`: Vitest configuration
-- `cypress.config.js`: Cypress configuration
-- `src/tests/setupTests.js`: Test setup and mocks
-
-## Test Data
-
-- Test database is automatically reset before each test run
-- Fixtures provide consistent test data
-- Mock data available for frontend tests
-
-## Coverage Requirements
-
-- Backend: 80% line coverage
-- Frontend: 80% line coverage
-- Critical paths: 100% coverage
-
-## Continuous Integration
-
-Tests are automatically run on:
-
-- Every push to main branch
-- Every pull request
-- Nightly builds
-
-## Test Reports
-
-- Coverage reports generated after each test run
-- Performance metrics tracked over time
-- Security scan results included
-- Available in GitHub Actions artifacts
-
-## Best Practices
-
-1. Write tests before implementing features
-2. Keep tests focused and isolated
-3. Use meaningful test descriptions
-4. Mock external dependencies
-5. Maintain test data fixtures
-6. Regular test maintenance
-
-## Troubleshooting
-
-1. **Database Issues**
-
+1. Frontend Tests
    ```bash
-   flask reset-test-db
+   # Run all frontend tests
+   cd frontend
+   npm test
+
+   # Run specific test file
+   npm test -- path/to/test
+
+   # Run with coverage
+   npm test -- --coverage
    ```
 
-2. **WebSocket Test Failures**
+2. Backend Tests
+   ```bash
+   # Run all backend tests
+   cd backend
+   pytest
 
-   - Ensure Redis is running
-   - Check WebSocket connection settings
+   # Run specific test file
+   pytest path/to/test
 
-3. **E2E Test Failures**
-   - Verify both frontend and backend are running
-   - Check test database state
-   - Review Cypress screenshots and videos
+   # Run with coverage
+   pytest --cov
+   ```
+
+3. E2E Tests
+   ```bash
+   # Run all e2e tests
+   npm run cypress
+
+   # Run specific test
+   npm run cypress -- --spec "path/to/test"
+   ```
+
+## Test Development
+
+1. Creating New Tests
+   - Follow existing patterns
+   - Include setup and teardown
+   - Document test requirements
+   - Add appropriate assertions
+
+2. Test Maintenance
+   - Keep tests up to date
+   - Remove obsolete tests
+   - Update test data
+   - Refactor as needed
+
+3. Test Documentation
+   - Document test purpose
+   - Include test requirements
+   - Explain complex scenarios
+   - Update test documentation
 
 ## Contributing
 
-1. Follow existing test patterns
-2. Update test documentation
-3. Maintain coverage requirements
-4. Add test cases for bug fixes
+1. Follow test standards
+2. Write comprehensive tests
+3. Include test documentation
+4. Review test coverage
+5. Maintain test quality
+
+For more information about testing, please see the [Testing Guide](../docs/testing/README.md).

@@ -1,5 +1,73 @@
 # Harmonic Universe Documentation
 
+This directory contains all documentation for the Harmonic Universe project. The documentation is organized into the following categories:
+
+## Directory Structure
+
+- `api/` - API documentation and protocols
+  - API endpoints and usage
+  - WebSocket protocol specifications
+  - Parameter relationships and data models
+
+- `architecture/` - System architecture documentation
+  - Project structure
+  - System design
+  - Component relationships
+  - Technical specifications
+
+- `features/` - Feature documentation
+  - Feature specifications
+  - Feature checklists
+  - Analytics integration
+  - AI integration
+  - Implementation status
+
+- `setup/` - Setup and deployment guides
+  - Deployment instructions
+  - User guides
+  - Professional guide
+  - Educational guide
+  - Contributing guidelines
+
+- `testing/` - Testing documentation
+  - Test plans
+  - Test checklists
+  - Testing guidelines
+  - Test coverage reports
+
+## Additional Resources
+
+- `monitoring/` - System monitoring documentation
+- `pwa/` - Progressive Web App documentation
+
+## Documentation Standards
+
+1. All documentation should be written in Markdown format
+2. Use clear, concise language
+3. Include code examples where appropriate
+4. Keep documentation up-to-date with code changes
+5. Include diagrams when explaining complex systems
+6. Cross-reference related documentation
+
+## Contributing to Documentation
+
+1. Follow the existing directory structure
+2. Use consistent formatting
+3. Update the relevant README files
+4. Include necessary diagrams and screenshots
+5. Test all code examples
+6. Review and update related documentation
+
+## Documentation Review Process
+
+1. Technical accuracy review
+2. Clarity and completeness check
+3. Code example verification
+4. Cross-reference validation
+5. Final approval from project maintainers
+
+For more information about contributing to documentation, please see the [Contributing Guidelines](setup/CONTRIBUTING.md).
+
 ## Overview
 
 Welcome to the Harmonic Universe documentation. This guide provides comprehensive information about the system's architecture, features, and implementation details.
