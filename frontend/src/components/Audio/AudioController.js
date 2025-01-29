@@ -4,10 +4,13 @@ import * as Tone from 'tone';
 import { setAudioContext, setIsPlaying } from '../../redux/slices/musicSlice';
 import styles from './AudioController.module.css';
 
-const AudioController = ({ physicsParameters }) => {
+const AudioController = () => {
   const dispatch = useDispatch();
   const { isPlaying } = useSelector(state => state.music);
   const [volume, setVolume] = useState(-12);
+  const [frequency, setFrequency] = useState(440);
+  const [noteDuration, setNoteDuration] = useState(0.5);
+  const [filterCutoff, setFilterCutoff] = useState(5000);
   const synthRef = useRef(null);
   const sequencerRef = useRef(null);
 
@@ -36,41 +39,9 @@ const AudioController = ({ physicsParameters }) => {
   }, [volume]);
 
   useEffect(() => {
-    if (!physicsParameters) return;
-
-    // Map physics parameters to musical properties
+    // Update music parameters
     const updateMusicParameters = () => {
       if (!synthRef.current) return;
-
-      // Map gravity to base frequency
-      const baseFreq = Tone.Frequency(
-        Math.max(50, Math.min(1000, physicsParameters.gravity * 50)),
-        'hz'
-      );
-
-      // Map elasticity to note duration
-      const noteDuration = Math.max(
-        0.1,
-        Math.min(2, physicsParameters.elasticity * 2)
-      );
-
-      // Map friction to filter cutoff
-      const filterFreq = Math.max(
-        200,
-        Math.min(10000, (1 - physicsParameters.friction) * 10000)
-      );
-
-      // Map air resistance to reverb
-      const reverbAmount = Math.max(
-        0,
-        Math.min(0.9, physicsParameters.airResistance)
-      );
-
-      // Map density to harmonicity
-      const harmonicity = Math.max(
-        0.5,
-        Math.min(4, physicsParameters.density * 2)
-      );
 
       // Update synth parameters
       synthRef.current.set({
@@ -84,7 +55,7 @@ const AudioController = ({ physicsParameters }) => {
           release: noteDuration * 0.5,
         },
         filter: {
-          frequency: filterFreq,
+          frequency: filterCutoff,
         },
       });
 
@@ -94,7 +65,7 @@ const AudioController = ({ physicsParameters }) => {
       }
 
       const notes = ['C4', 'E4', 'G4', 'B4'].map(note =>
-        Tone.Frequency(note).harmonize(harmonicity)
+        Tone.Frequency(note).transpose(frequency / 440)
       );
 
       sequencerRef.current = new Tone.Sequence(
@@ -111,7 +82,7 @@ const AudioController = ({ physicsParameters }) => {
     };
 
     updateMusicParameters();
-  }, [physicsParameters, isPlaying]);
+  }, [frequency, noteDuration, filterCutoff, isPlaying]);
 
   const handlePlayPause = async () => {
     if (!isPlaying) {
@@ -131,6 +102,18 @@ const AudioController = ({ physicsParameters }) => {
 
   const handleVolumeChange = e => {
     setVolume(parseFloat(e.target.value));
+  };
+
+  const handleFrequencyChange = e => {
+    setFrequency(parseFloat(e.target.value));
+  };
+
+  const handleDurationChange = e => {
+    setNoteDuration(parseFloat(e.target.value));
+  };
+
+  const handleFilterChange = e => {
+    setFilterCutoff(parseFloat(e.target.value));
   };
 
   return (
@@ -159,26 +142,40 @@ const AudioController = ({ physicsParameters }) => {
 
       <div className={styles.parameterDisplay}>
         <div className={styles.parameter}>
-          <label>Frequency Base</label>
-          <span>{Math.round(physicsParameters?.gravity * 50)} Hz</span>
+          <label>Base Frequency</label>
+          <input
+            type="range"
+            min="220"
+            max="880"
+            step="1"
+            value={frequency}
+            onChange={handleFrequencyChange}
+          />
+          <span>{frequency} Hz</span>
         </div>
         <div className={styles.parameter}>
           <label>Note Duration</label>
-          <span>{(physicsParameters?.elasticity * 2).toFixed(2)} s</span>
+          <input
+            type="range"
+            min="0.1"
+            max="2.0"
+            step="0.1"
+            value={noteDuration}
+            onChange={handleDurationChange}
+          />
+          <span>{noteDuration.toFixed(1)} s</span>
         </div>
         <div className={styles.parameter}>
           <label>Filter Cutoff</label>
-          <span>
-            {Math.round((1 - physicsParameters?.friction) * 10000)} Hz
-          </span>
-        </div>
-        <div className={styles.parameter}>
-          <label>Reverb</label>
-          <span>{(physicsParameters?.airResistance * 100).toFixed(0)}%</span>
-        </div>
-        <div className={styles.parameter}>
-          <label>Harmonicity</label>
-          <span>{(physicsParameters?.density * 2).toFixed(2)}</span>
+          <input
+            type="range"
+            min="200"
+            max="10000"
+            step="100"
+            value={filterCutoff}
+            onChange={handleFilterChange}
+          />
+          <span>{filterCutoff} Hz</span>
         </div>
       </div>
     </div>

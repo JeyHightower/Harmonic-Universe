@@ -1,59 +1,82 @@
 from . import db
+from .association_tables import universe_collaborators, universe_access
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import jwt
 from flask import current_app
 import json
 from sqlalchemy import event
+from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, DateTime, Boolean
 
 class User(UserMixin, db.Model):
     """User model for storing user account information."""
 
     __tablename__ = 'users'
+    __table_args__ = (
+        db.Index("idx_email", "email"),
+        db.Index("idx_username", "username"),
+    )
 
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    is_active = db.Column(db.Boolean, default=True)
-    is_admin = db.Column(db.Boolean, default=False)
-    last_login = db.Column(db.DateTime)
+    id = Column(Integer, primary_key=True)
+    username = Column(String(80), unique=True, nullable=False)
+    email = Column(String(120), unique=True, nullable=False)
+    password_hash = Column(String(128))
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+    is_active = Column(Boolean, default=True)
+    is_admin = Column(Boolean, default=False)
+    last_login = Column(DateTime)
 
     # Relationships
-    profile = db.relationship('Profile', backref='user', uselist=False)
-    universes = db.relationship('Universe', backref='creator', lazy='dynamic')
-    owned_universes = db.relationship('Universe', backref=db.backref('owner', passive_deletes=True),
-                                    lazy='dynamic',
-                                    foreign_keys='Universe.creator_id',
-                                    passive_deletes=True)
-    collaborating_universes = db.relationship('Universe',
-                                            secondary='universe_collaborators',
-                                            lazy='dynamic',
-                                            back_populates='collaborators')
-    accessible_universes = db.relationship('Universe',
-                                         secondary='universe_access',
-                                         primaryjoin='and_(User.id == universe_access.c.user_id)',
-                                         secondaryjoin='Universe.id == universe_access.c.universe_id',
-                                         backref=db.backref('accessible_by', lazy='dynamic'),
-                                         lazy='dynamic')
+    owned_universes = relationship(
+        "Universe",
+        backref="owner",
+        lazy="dynamic",
+        cascade="all, delete-orphan",
+        foreign_keys="Universe.user_id"
+    )
 
-    def __init__(self, username, email):
+    collaborating_universes = relationship(
+        "Universe",
+        secondary="universe_collaborators",
+        backref=db.backref("collaborators", lazy="dynamic"),
+        lazy="dynamic"
+    )
+
+    accessible_universes = relationship(
+        "Universe",
+        secondary="universe_access",
+        backref=db.backref("accessible_by", lazy="dynamic"),
+        lazy="dynamic"
+    )
+
+    profile = db.relationship('Profile', backref='user', uselist=False)
+    # Relationships with Universe model are set up in relationships.py
+
+    def __init__(self, username, email, password=None):
+        """Initialize user."""
         self.username = username
         self.email = email
+        if password:
+            self.set_password(password)
 
     def set_password(self, password):
-        """Set the user's password."""
+        """Set password."""
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
-        """Check if the provided password matches the user's password."""
+        """Check password."""
         return check_password_hash(self.password_hash, password)
 
     def update_last_login(self):
-        self.last_login = datetime.utcnow()
+        """Update last login timestamp."""
+        self.last_login = datetime.now(timezone.utc)
         db.session.commit()
 
     def deactivate(self):
@@ -74,7 +97,7 @@ class User(UserMixin, db.Model):
                     self.set_password(value)
                 else:
                     setattr(self, key, value)
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
         db.session.commit()
 
     def get_id(self):
@@ -85,7 +108,8 @@ class User(UserMixin, db.Model):
         return f'<User {self.username}>'
 
     def __repr__(self):
-        return self.__str__()
+        """String representation."""
+        return f"<User(id={self.id}, username='{self.username}')>"
 
     def get_jwt_identity(self):
         """Return the identity for JWT tokens"""
@@ -103,13 +127,16 @@ class User(UserMixin, db.Model):
         return list(set(owned + collab))
 
     def to_dict(self):
-        """Convert user object to dictionary."""
+        """Convert user to dictionary."""
         return {
-            'id': self.id,
-            'username': self.username,
-            'email': self.email,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
+            "id": self.id,
+            "username": self.username,
+            "email": self.email,
+            "is_active": self.is_active,
+            "is_admin": self.is_admin,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+            "last_login": self.last_login.isoformat() if self.last_login else None
         }
 
     def __json__(self):
@@ -140,12 +167,12 @@ class User(UserMixin, db.Model):
     def can_access(self, universe):
         """Check if user can access universe."""
         return (universe.is_public or
-                universe.creator_id == self.id or
+                universe.user_id == self.id or
                 universe in self.accessible_universes)
 
     def can_modify(self, universe):
         """Check if user can modify universe."""
-        return universe.creator_id == self.id
+        return universe.user_id == self.id
 
     def grant_access(self, universe):
         """Grant access to universe."""
@@ -161,8 +188,8 @@ class User(UserMixin, db.Model):
 @event.listens_for(User, 'before_delete')
 def handle_user_deletion(mapper, connection, target):
     """Handle cleanup when a user is deleted"""
-    # Update creator_id to None for all universes created by this user
+    # Update user_id to None for all universes created by this user
     connection.execute(
-        db.text('UPDATE universes SET creator_id = NULL WHERE creator_id = :user_id'),
+        db.text('UPDATE universes SET user_id = NULL WHERE user_id = :user_id'),
         {'user_id': target.id}
     )

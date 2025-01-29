@@ -13,44 +13,14 @@ const StoryboardList = ({ storyboards, onStoryboardClick, isLoading }) => {
   }
 
   return (
-    <div className={styles.storyboardGrid}>
+    <div className={styles.storyboardList}>
       {storyboards.map(storyboard => (
-        <div
-          key={storyboard.id}
-          className={styles.storyboardCard}
-          onClick={() => onStoryboardClick(storyboard)}
-        >
-          {storyboard.thumbnail ? (
-            <img
-              src={storyboard.thumbnail}
-              alt={storyboard.title}
-              className={styles.thumbnail}
-            />
-          ) : (
-            <div className={styles.placeholderThumbnail}>
-              <span>No Preview</span>
-            </div>
-          )}
-          <div className={styles.cardContent}>
-            <h3>{storyboard.title}</h3>
-            <p className={styles.description}>{storyboard.description}</p>
-            <div className={styles.metadata}>
-              <span className={styles.timestamp}>
-                {new Date(storyboard.updatedAt).toLocaleDateString()}
-              </span>
-              <div className={styles.parameters}>
-                <span className={styles.parameter}>
-                  <i className="fas fa-music" />
-                  {storyboard.musicParameters?.key || 'C'}{' '}
-                  {storyboard.musicParameters?.scale || 'Major'}
-                </span>
-                <span className={styles.parameter}>
-                  <i className="fas fa-atom" />
-                  G:{' '}
-                  {storyboard.physicsParameters?.gravity?.toFixed(1) || '9.8'}
-                </span>
-              </div>
-            </div>
+        <div key={storyboard.id} className={styles.storyboardItem}>
+          <h3>{storyboard.title}</h3>
+          <p>{storyboard.description}</p>
+          <div className={styles.metadata}>
+            <span>Created: {new Date(storyboard.createdAt).toLocaleDateString()}</span>
+            <span>Updated: {new Date(storyboard.updatedAt).toLocaleDateString()}</span>
           </div>
         </div>
       ))}
@@ -75,18 +45,11 @@ const StoryboardList = ({ storyboards, onStoryboardClick, isLoading }) => {
 StoryboardList.propTypes = {
   storyboards: PropTypes.arrayOf(
     PropTypes.shape({
-      id: PropTypes.string.isRequired,
+      id: PropTypes.number.isRequired,
       title: PropTypes.string.isRequired,
       description: PropTypes.string,
-      thumbnail: PropTypes.string,
-      updatedAt: PropTypes.string.isRequired,
-      musicParameters: PropTypes.shape({
-        key: PropTypes.string,
-        scale: PropTypes.string,
-      }),
-      physicsParameters: PropTypes.shape({
-        gravity: PropTypes.number,
-      }),
+      createdAt: PropTypes.string.isRequired,
+      updatedAt: PropTypes.string.isRequired
     })
   ).isRequired,
   onStoryboardClick: PropTypes.func.isRequired,

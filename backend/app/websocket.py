@@ -4,7 +4,6 @@ from functools import wraps
 from . import db, socketio
 from .models.user import User
 from .models.universe import Universe
-from .models.physics_parameters import PhysicsParameters
 from datetime import datetime
 from flask_jwt_extended import decode_token
 import json

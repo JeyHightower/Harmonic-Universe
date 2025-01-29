@@ -1,7 +1,6 @@
 """Flask application factory."""
 from flask import Flask
 from flask_mail import Mail
-from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 from flask_marshmallow import Marshmallow
@@ -12,6 +11,16 @@ from .utils.error_handlers import register_error_handlers
 import redis
 from dotenv import load_dotenv
 import os
+from flask_login import LoginManager
+from .models import User
+from .routes import (
+    auth_routes,
+    user_routes,
+    universe_routes,
+    storyboard_routes,
+    scene_routes,
+    media_effect_routes,
+)
 
 # Load environment variables
 load_dotenv(override=True)
@@ -20,6 +29,12 @@ load_dotenv(override=True)
 mail = Mail()
 ma = Marshmallow()
 redis_client = None
+login_manager = LoginManager()
+
+@login_manager.user_loader
+def load_user(user_id):
+    """Load user by ID."""
+    return User.query.get(int(user_id))
 
 def create_app(config_name='development'):
     """Create and configure an instance of the Flask application."""
@@ -31,54 +46,17 @@ def create_app(config_name='development'):
     except OSError:
         pass
 
-    # Ensure we're using the right config
-    if config_name not in config:
-        app.logger.warning(f"Config '{config_name}' not found, using 'development'")
-        config_name = 'development'
-
-    if config_name == 'testing':
-        app.config.update({
-            'TESTING': True,
-            'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
-            'JWT_SECRET_KEY': 'test-secret-key',
-            'SECRET_KEY': 'test-secret-key',
-            'SOCKETIO_ASYNC_MODE': 'threading',
-            'SOCKETIO_MANAGE_SESSION': True,
-            'SOCKETIO_MESSAGE_QUEUE': None,
-            'SOCKETIO_PING_TIMEOUT': 10,
-            'SOCKETIO_PING_INTERVAL': 15,
-            'REDIS_URL': None
-        })
+    # Load config based on environment
+    if config_name == 'production':
+        app.config.from_object('backend.app.config.ProductionConfig')
+    elif config_name == 'testing':
+        app.config.from_object('backend.app.config.TestingConfig')
     else:
-        # Create config instance
-        config_instance = config[config_name]()
+        app.config.from_object('backend.app.config.DevelopmentConfig')
 
-        # Load config from object
-        app.config.from_object(config_instance)
-
-        # Override with environment variables if set
-        app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', app.config.get('SECRET_KEY'))
-        app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', app.config.get('JWT_SECRET_KEY'))
-
-        # Redis configuration
-        redis_url = app.config.get('REDIS_URL', 'redis://localhost:6379/0')
-        app.config.update({
-            'SOCKETIO_ASYNC_MODE': 'eventlet',
-            'SOCKETIO_MANAGE_SESSION': True,
-            'SOCKETIO_MESSAGE_QUEUE': redis_url,
-            'SOCKETIO_PING_TIMEOUT': int(os.getenv('SOCKETIO_PING_TIMEOUT', '10')),
-            'SOCKETIO_PING_INTERVAL': int(os.getenv('SOCKETIO_PING_INTERVAL', '15'))
-        })
-
-        # Test Redis connection
-        try:
-            global redis_client
-            redis_client = redis.from_url(redis_url)
-            redis_client.ping()
-        except redis.ConnectionError:
-            app.logger.warning('Redis connection failed. WebSocket message queue will not work properly.')
-        except Exception as e:
-            app.logger.error(f'Redis error: {str(e)}')
+    # Override with environment variables if set
+    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', app.config.get('SECRET_KEY'))
+    app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', app.config.get('JWT_SECRET_KEY'))
 
     # Initialize logging
     config[config_name].init_logging(app)
@@ -89,25 +67,24 @@ def create_app(config_name='development'):
     mail.init_app(app)
     ma.init_app(app)
     CORS(app)
+    db.init_app(app)
+    login_manager.init_app(app)
+    Migrate(app, db)
+
+    # Initialize models and relationships
+    from .models import init_db
+    init_db(app)
 
     # Register error handlers
     register_error_handlers(app)
 
-    # Import and register blueprints after db initialization
-    from .routes.auth import auth_bp
-    from .routes.profile import profile_bp
-    from .routes.universe import universe_bp
-    from .routes.collaboration import collaboration
-
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(profile_bp, url_prefix='/api/profile')
-    app.register_blueprint(universe_bp, url_prefix='/api/universes')
-    app.register_blueprint(collaboration, url_prefix='/api/collaboration')
-
-    # Initialize WebSocket service
-    from .websocket import WebSocketService
-    app.websocket_manager = WebSocketService(socketio)
-    app.websocket_manager.register_handlers()
+    # Register blueprints
+    app.register_blueprint(auth_routes.bp)
+    app.register_blueprint(user_routes.bp)
+    app.register_blueprint(universe_routes.bp)
+    app.register_blueprint(storyboard_routes.bp)
+    app.register_blueprint(scene_routes.bp)
+    app.register_blueprint(media_effect_routes.bp)
 
     # Additional JWT configuration
     @jwt.user_lookup_loader
@@ -116,10 +93,6 @@ def create_app(config_name='development'):
         from .models import User
         identity = jwt_data["sub"]
         return User.query.get(identity)
-
-    # Register CLI commands
-    from .cli import register_commands
-    register_commands(app)
 
     app.logger.info('Application initialization completed')
     return app

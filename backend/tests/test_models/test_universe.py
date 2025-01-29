@@ -1,26 +1,48 @@
 """Tests for Universe model."""
 import pytest
-from datetime import datetime, timezone
+from datetime import datetime
 from app.models.universe import Universe
-from app.models.physics_parameters import PhysicsParameters
+from app.models.user import User
+from app.extensions import db
 
-def test_universe_creation(app, user):
-    """Test creating a universe."""
-    universe = Universe(
-        name='Test Universe',
-        description='A test universe',
-        is_public=True,
-        allow_guests=True,
-        user_id=user.id
-    )
+def test_new_universe(app):
+    """Test creating a new universe."""
+    with app.app_context():
+        # Create and save user
+        user = User(username="testuser", email="test@example.com")
+        db.session.add(user)
+        db.session.commit()  # This will assign an ID to the user
 
-    assert universe.name == 'Test Universe'
-    assert universe.description == 'A test universe'
-    assert universe.is_public is True
-    assert universe.allow_guests is True
-    assert universe.user_id == user.id
-    assert isinstance(universe.created_at, datetime)
-    assert isinstance(universe.updated_at, datetime)
+        # Create and save universe
+        universe = Universe(
+            name="Test Universe",
+            description="Test Description",
+            user_id=user.id
+        )
+        db.session.add(universe)
+        db.session.commit()
+
+        # Test basic attributes
+        assert universe.name == "Test Universe"
+        assert universe.description == "Test Description"
+        assert universe.user_id == user.id
+        assert isinstance(universe.created_at, datetime)
+        assert isinstance(universe.updated_at, datetime)
+        assert universe.collaborators_count == 0
+
+        # Test relationships
+        assert universe in user.owned_universes
+        assert universe.owner == user
+        assert len(universe.collaborators.all()) == 0
+        assert len(user.collaborating_universes.all()) == 0
+
+        # Test dictionary representation
+        universe_dict = universe.to_dict()
+        assert universe_dict['name'] == "Test Universe"
+        assert universe_dict['description'] == "Test Description"
+        assert universe_dict['user_id'] == user.id
+        assert 'created_at' in universe_dict
+        assert 'updated_at' in universe_dict
 
 def test_universe_to_dict(app, universe_factory):
     """Test converting universe to dictionary."""
@@ -34,20 +56,30 @@ def test_universe_to_dict(app, universe_factory):
     assert universe_dict['user_id'] == universe.user_id
     assert 'created_at' in universe_dict
     assert 'updated_at' in universe_dict
-    assert 'physics_parameters' in universe_dict
+    assert 'music_parameters' in universe_dict
+    assert 'visual_parameters' in universe_dict
     assert 'collaborators_count' in universe_dict
 
-def test_universe_update_dependent_parameters(app, universe_factory):
-    """Test updating dependent parameters."""
-    universe = universe_factory(gravity=10.0)
+def test_universe_update_parameters(app, universe_factory):
+    """Test updating universe parameters."""
+    universe = universe_factory()
 
-    # Test physics update
-    universe.update_dependent_parameters('physics')
-    assert universe.physics_parameters.gravity == 10.0
+    # Test music parameters update
+    music_params = {
+        'tempo': 120,
+        'key': 'C',
+        'scale': 'major'
+    }
+    universe.update_parameters('music', music_params)
+    assert universe.music_parameters == music_params
 
-    # Test audio update (assuming default volume)
-    universe.update_dependent_parameters('audio')
-    assert 1.0 <= universe.physics_parameters.gravity <= 20.0
+    # Test visual parameters update
+    visual_params = {
+        'colorScheme': 'dark',
+        'particleSize': 1.5
+    }
+    universe.update_parameters('visual', visual_params)
+    assert universe.visual_parameters == visual_params
 
 def test_universe_get_public_universes(app, universe_factory):
     """Test getting public universes."""
@@ -63,7 +95,7 @@ def test_universe_get_public_universes(app, universe_factory):
 def test_universe_get_user_universes(app, universe_factory, user):
     """Test getting user universes."""
     # Create universes
-    user_universe = universe_factory(creator_id=user.id)
+    user_universe = universe_factory(user_id=user.id)
     other_universe = universe_factory(is_public=True)
     private_universe = universe_factory(is_public=False)
 
@@ -77,20 +109,40 @@ def test_universe_from_dict(app):
     """Test creating universe from dictionary."""
     data = {
         'name': 'Dict Universe',
-        'description': 'Created from dict'
+        'description': 'Created from dict',
+        'music_parameters': {
+            'tempo': 120,
+            'key': 'C',
+            'scale': 'major'
+        },
+        'visual_parameters': {
+            'colorScheme': 'dark',
+            'particleSize': 1.5
+        }
     }
 
     universe = Universe.from_dict(data)
 
     assert universe.name == data['name']
     assert universe.description == data['description']
+    assert universe.music_parameters == data['music_parameters']
+    assert universe.visual_parameters == data['visual_parameters']
 
-def test_universe_generate_music_notes(app, universe_factory):
-    """Test generating music notes."""
+def test_universe_generate_music(app, universe_factory):
+    """Test generating music."""
     universe = universe_factory()
 
-    # Test without music parameters
-    result = universe.generate_music_notes()
-    assert 'error' in result
-    assert result['error'] == 'No music parameters set'
+    # Set music parameters
+    music_params = {
+        'tempo': 120,
+        'key': 'C',
+        'scale': 'major'
+    }
+    universe.update_parameters('music', music_params)
+
+    # Test music generation
+    result = universe.generate_music()
+    assert 'notes' in result
+    assert 'tempo' in result
+    assert result['tempo'] == music_params['tempo']
 

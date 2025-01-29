@@ -1,122 +1,54 @@
-import {
-  closeAuthModal,
-  login,
-  logout,
-  openAuthModal,
-  register,
-  setAuthModalView,
-} from '@/store/slices/authSlice';
-import { showAlert } from '@/store/slices/uiSlice';
-import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from './useRedux';
+import { useCallback, useEffect, useState } from 'react';
+
+const TOKEN_KEY = 'auth_token';
+const USER_KEY = 'auth_user';
 
 export const useAuth = () => {
-  const dispatch = useAppDispatch();
-  const navigate = useNavigate();
-  const {
-    user,
-    isAuthenticated,
-    isLoading,
-    error,
-    showAuthModal,
-    authModalView,
-  } = useAppSelector(state => state.auth);
+  const [token, setToken] = useState(localStorage.getItem(TOKEN_KEY));
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem(USER_KEY)));
 
-  const handleLogin = useCallback(
-    async credentials => {
-      try {
-        await dispatch(login(credentials)).unwrap();
-        dispatch(closeAuthModal());
-        dispatch(
-          showAlert({
-            type: 'success',
-            message: 'Successfully logged in!',
-          })
-        );
-      } catch (error) {
-        // Error is handled by the auth slice and displayed in the form
-      }
-    },
-    [dispatch]
-  );
-
-  const handleRegister = useCallback(
-    async userData => {
-      try {
-        await dispatch(register(userData)).unwrap();
-        dispatch(closeAuthModal());
-        dispatch(
-          showAlert({
-            type: 'success',
-            message: 'Successfully registered! Welcome aboard!',
-          })
-        );
-      } catch (error) {
-        // Error is handled by the auth slice and displayed in the form
-      }
-    },
-    [dispatch]
-  );
-
-  const handleLogout = useCallback(async () => {
-    try {
-      await dispatch(logout()).unwrap();
-      navigate('/');
-      dispatch(
-        showAlert({
-          type: 'success',
-          message: 'Successfully logged out!',
-        })
-      );
-    } catch (error) {
-      // Error is handled by the auth slice
+  useEffect(() => {
+    if (token) {
+      localStorage.setItem(TOKEN_KEY, token);
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
     }
-  }, [dispatch, navigate]);
+  }, [token]);
 
-  const handleOpenAuthModal = useCallback(
-    (view = 'login') => {
-      dispatch(openAuthModal(view));
-    },
-    [dispatch]
-  );
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(USER_KEY);
+    }
+  }, [user]);
 
-  const handleCloseAuthModal = useCallback(() => {
-    dispatch(closeAuthModal());
-  }, [dispatch]);
+  const login = useCallback((userData, authToken) => {
+    setUser(userData);
+    setToken(authToken);
+  }, []);
 
-  const handleSwitchAuthView = useCallback(
-    view => {
-      dispatch(setAuthModalView(view));
-    },
-    [dispatch]
-  );
+  const logout = useCallback(() => {
+    setUser(null);
+    setToken(null);
+  }, []);
 
-  const requireAuth = useCallback(
-    callback => {
-      if (!isAuthenticated) {
-        dispatch(openAuthModal('login'));
-        return;
-      }
-      callback();
-    },
-    [dispatch, isAuthenticated]
-  );
+  const getToken = useCallback(() => {
+    return token;
+  }, [token]);
+
+  const updateUser = useCallback((userData) => {
+    setUser(prev => ({ ...prev, ...userData }));
+  }, []);
 
   return {
     user,
-    isAuthenticated,
-    isLoading,
-    error,
-    showAuthModal,
-    authModalView,
-    handleLogin,
-    handleRegister,
-    handleLogout,
-    handleOpenAuthModal,
-    handleCloseAuthModal,
-    handleSwitchAuthView,
-    requireAuth,
+    token,
+    isAuthenticated: !!token,
+    login,
+    logout,
+    getToken,
+    updateUser,
   };
 };
 

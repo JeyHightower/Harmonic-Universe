@@ -17,6 +17,7 @@ import threading
 from collections import deque
 import traceback
 from sqlalchemy.orm import scoped_session, sessionmaker
+from backend.app.models import Storyboard
 
 def pytest_configure(config):
     """Configure pytest."""
@@ -200,34 +201,71 @@ def create_test_token(user_id, expires_delta=None):
         expires_delta=expires_delta
     )
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def app():
-    """Create and configure a new app instance for each test session."""
+    """Create and configure a new app instance for each test."""
     app = create_app('testing')
 
-    app.config.update({
-        'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
-        'TESTING': True,
-        'SOCKETIO_ASYNC_MODE': 'threading',
-        'SOCKETIO_MANAGE_SESSION': False,
-        'SOCKETIO_MESSAGE_QUEUE': None,
-        'SOCKETIO_PING_TIMEOUT': 2,
-        'SOCKETIO_PING_INTERVAL': 5
-    })
+    # Create the database and load test data
+    with app.app_context():
+        db.create_all()
+        yield app
+        db.session.remove()
+        db.drop_all()
 
-    # Push an application context
-    ctx = app.app_context()
-    ctx.push()
+@pytest.fixture
+def client(app):
+    """A test client for the app."""
+    return app.test_client()
 
-    # Create all tables
-    db.create_all()
+@pytest.fixture
+def runner(app):
+    """A test runner for the app's Click commands."""
+    return app.test_cli_runner()
 
-    yield app
+@pytest.fixture
+def auth_headers():
+    """Authentication headers for protected routes."""
+    return {'Authorization': 'Bearer test-token'}
 
-    # Clean up
-    db.session.remove()
-    db.drop_all()
-    ctx.pop()
+@pytest.fixture
+def test_user(app):
+    """Create a test user."""
+    with app.app_context():
+        user = User(
+            username='testuser',
+            email='test@example.com'
+        )
+        user.set_password('password123')
+        db.session.add(user)
+        db.session.commit()
+        return user
+
+@pytest.fixture
+def test_universe(app, test_user):
+    """Create a test universe."""
+    with app.app_context():
+        universe = Universe(
+            name='Test Universe',
+            description='A test universe',
+            creator_id=test_user.id
+        )
+        db.session.add(universe)
+        db.session.commit()
+        return universe
+
+@pytest.fixture
+def test_storyboard(app, test_universe):
+    """Create a test storyboard."""
+    with app.app_context():
+        storyboard = Storyboard(
+            title='Test Storyboard',
+            description='A test storyboard',
+            universe_id=test_universe.id
+        )
+        db.session.add(storyboard)
+        db.session.commit()
+        return storyboard
 
 @pytest.fixture(scope='function')
 def session(app):
@@ -255,39 +293,9 @@ def session(app):
     db.session = old_session
 
 @pytest.fixture(scope='function')
-def test_user(session):
-    """Create a test user."""
-    user = User(
-        username='testuser',
-        email='test@example.com'
-    )
-    user.set_password('password123')
-    session.add(user)
-    session.commit()
-    return user
-
-@pytest.fixture(scope='function')
-def test_universe(session, test_user):
-    """Create a test universe."""
-    universe = Universe(
-        name='Test Universe',
-        description='Test Description',
-        creator=test_user,
-        owner=test_user
-    )
-    session.add(universe)
-    session.commit()
-    return universe
-
-@pytest.fixture(scope='function')
 def auth_token(test_user):
     """Create an authentication token."""
     return create_test_token(test_user.id)
-
-@pytest.fixture(scope='function')
-def client(app):
-    """A test client for the app."""
-    return app.test_client()
 
 @pytest.fixture(scope='function')
 def socketio_test_client(app, session):
@@ -305,23 +313,9 @@ def _push_request_context(app):
     ctx.pop()
 
 @pytest.fixture(scope='function')
-def runner(app):
-    """A test runner for the app's Click commands."""
-    return app.test_cli_runner()
-
-@pytest.fixture
 def socketio_client(app):
     """A test client for SocketIO."""
     return TestSocketIOClient(app, namespace='/test')
-
-@pytest.fixture(scope='function')
-def auth_headers(app, test_user):
-    """Get auth headers for test user."""
-    with app.app_context():
-        # Ensure user is attached to session
-        db.session.add(test_user)
-        access_token = create_access_token(identity=test_user.id)
-        return {'Authorization': f'Bearer {access_token}'}
 
 @pytest.fixture(scope='function')
 def auth_client(client, auth_headers):

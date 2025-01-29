@@ -2,26 +2,18 @@ from setuptools import setup, find_packages
 
 setup(
     name="harmonic-universe-backend",
-    version="1.0.0",
+    version="0.1.0",
     packages=find_packages(),
-    include_package_data=True,
     install_requires=[
-        "flask",
-        "flask-sqlalchemy",
-        "flask-migrate",
-        "flask-jwt-extended",
-        "flask-cors",
-        "flask-socketio",
-        "pytest",
-        "pytest-cov",
-        "pytest-env",
-        "python-dotenv",
+        'flask',
+        'flask-sqlalchemy',
+        'flask-migrate',
+        'flask-login',
+        'flask-cors',
+        'flask-jwt-extended',
+        'python-dotenv',
+        'pytest',
+        'pytest-cov',
     ],
-    extras_require={
-        "test": [
-            "pytest",
-            "pytest-cov",
-            "pytest-env",
-        ],
-    },
+    python_requires='>=3.9',
 )

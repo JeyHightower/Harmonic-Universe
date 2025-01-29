@@ -8,8 +8,8 @@ class Config:
     """Base configuration."""
 
     # Generate a random secret key if not set in environment
-    SECRET_KEY = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or secrets.token_hex(32)
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev')
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'dev')
 
     # Flask
     FLASK_ENV = os.environ.get("FLASK_ENV", "production")
@@ -17,7 +17,7 @@ class Config:
     TESTING = False
 
     # SQLAlchemy
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///dev.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False
 

@@ -1,121 +1,99 @@
-import { rest } from 'msw';
-
-const baseUrl = 'http://localhost:5000/api';
+import { http, HttpResponse } from 'msw';
 
 export const handlers = [
-  // Auth handlers
-  rest.post(`${baseUrl}/auth/register`, (req, res, ctx) => {
-    return res(
-      ctx.status(201),
-      ctx.json({
-        token: 'mock-token',
+  // Auth endpoints
+  http.post('/api/auth/login', async ({ request }) => {
+    const { username, password } = await request.json();
+
+    if (username === 'testuser' && password === 'password123') {
+      return HttpResponse.json({
+        access_token: 'fake-jwt-token',
         user: {
           id: 1,
           username: 'testuser',
-          email: req.body.email,
+          email: 'test@example.com',
         },
-      })
+      });
+    }
+
+    return HttpResponse.json(
+      { message: 'Invalid credentials' },
+      { status: 401 }
     );
   }),
 
-  rest.post(`${baseUrl}/auth/login`, (req, res, ctx) => {
-    return res(
-      ctx.status(200),
-      ctx.json({
-        token: 'mock-token',
+  http.post('/api/auth/register', async ({ request }) => {
+    const { username, email, password } = await request.json();
+
+    return HttpResponse.json(
+      {
+        message: 'User registered successfully',
         user: {
           id: 1,
-          username: 'testuser',
-          email: req.body.email,
+          username,
+          email,
         },
-      })
+      },
+      { status: 201 }
     );
   }),
 
-  // Universe handlers
-  rest.get(`${baseUrl}/universes`, (req, res, ctx) => {
-    return res(
-      ctx.status(200),
-      ctx.json({
-        universes: [
-          {
-            id: 1,
-            name: 'Test Universe',
-            description: 'A test universe',
-            physics_parameters: {
-              gravity: 9.81,
-              time_dilation: 1.0,
-            },
-            creator_id: 1,
-          },
-        ],
-      })
-    );
+  // User endpoints
+  http.get('/api/user/profile', ({ request }) => {
+    const auth = request.headers.get('Authorization');
+
+    if (!auth || !auth.startsWith('Bearer ')) {
+      return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    return HttpResponse.json({
+      id: 1,
+      username: 'testuser',
+      email: 'test@example.com',
+    });
   }),
 
-  rest.post(`${baseUrl}/universes`, (req, res, ctx) => {
-    return res(
-      ctx.status(201),
-      ctx.json({
-        id: 2,
-        name: req.body.name,
-        description: req.body.description,
-        physics_parameters: req.body.physics_parameters,
-        creator_id: 1,
-      })
-    );
-  }),
-
-  // Profile handlers
-  rest.get(`${baseUrl}/profile`, (req, res, ctx) => {
-    return res(
-      ctx.status(200),
-      ctx.json({
-        id: 1,
-        bio: 'Test bio',
-        preferences: {
-          theme: 'dark',
-          notifications: true,
+  // Universe endpoints
+  http.get('/api/universes', () => {
+    return HttpResponse.json({
+      universes: [
+        {
+          id: 1,
+          name: 'Test Universe',
+          description: 'A test universe',
         },
-      })
-    );
+      ],
+    });
   }),
 
-  rest.put(`${baseUrl}/profile`, (req, res, ctx) => {
-    return res(
-      ctx.status(200),
-      ctx.json({
-        id: 1,
-        bio: req.body.bio,
-        preferences: req.body.preferences,
-      })
-    );
+  // Storyboard endpoints
+  http.get('/api/universes/:universeId/storyboards', ({ params }) => {
+    return HttpResponse.json({
+      storyboards: [
+        {
+          id: 1,
+          title: 'Test Storyboard',
+          description: 'A test storyboard',
+          universeId: parseInt(params.universeId),
+        },
+      ],
+    });
   }),
 
-  // Collaboration handlers
-  rest.post(`${baseUrl}/universes/:id/collaborators`, (req, res, ctx) => {
-    return res(
-      ctx.status(201),
-      ctx.json({
-        universe_id: parseInt(req.params.id),
-        user_email: req.body.email,
-        role: req.body.role,
-      })
-    );
-  }),
+  http.post(
+    '/api/universes/:universeId/storyboards',
+    async ({ request, params }) => {
+      const { title, description } = await request.json();
 
-  rest.get(`${baseUrl}/universes/:id/collaborators`, (req, res, ctx) => {
-    return res(
-      ctx.status(200),
-      ctx.json({
-        collaborators: [
-          {
-            id: 2,
-            email: 'collaborator@example.com',
-            role: 'editor',
-          },
-        ],
-      })
-    );
-  }),
+      return HttpResponse.json(
+        {
+          id: 1,
+          title,
+          description,
+          universeId: parseInt(params.universeId),
+        },
+        { status: 201 }
+      );
+    }
+  ),
 ];

@@ -1,25 +1,31 @@
 """Database models for the application."""
-from flask_sqlalchemy import SQLAlchemy
-
-# Create the SQLAlchemy instance
-db = SQLAlchemy()
+from ..extensions import db
 
 def init_db(app):
     """Initialize the database with the app context."""
-    db.init_app(app)
+    with app.app_context():
+        # Import models
+        from .user import User
+        from .universe import Universe
 
-# Import models after db instance is created
+        # Set up relationships after models are initialized
+        from .relationships import setup_user_universe_relationships
+        setup_user_universe_relationships(User, Universe)
+
+        # Create all tables
+        db.create_all()
+
+# Import models for external use
+from .association_tables import universe_collaborators, universe_access
 from .user import User
-from .profile import Profile
 from .universe import Universe
-from .physics_parameters import PhysicsParameters
 
 __all__ = [
     'db',
     'init_db',
     'User',
-    'Profile',
     'Universe',
-    'PhysicsParameters'
+    'universe_collaborators',
+    'universe_access'
 ]
 

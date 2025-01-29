@@ -8,14 +8,19 @@
 // https://on.cypress.io/custom-commands
 // ***********************************************
 
-Cypress.Commands.add("login", (email, password) => {
-  cy.request({
-    method: "POST",
-    url: "/api/auth/login",
-    body: { email, password },
-  }).then((response) => {
-    window.localStorage.setItem("token", response.body.token);
-  });
+Cypress.Commands.add('login', (username, password) => {
+    cy.visit('/login');
+    cy.get('input[name="username"]').type(username);
+    cy.get('input[name="password"]').type(password);
+    cy.get('button[type="submit"]').click();
+});
+
+Cypress.Commands.add('register', (username, email, password) => {
+    cy.visit('/register');
+    cy.get('input[name="username"]').type(username);
+    cy.get('input[name="email"]').type(email);
+    cy.get('input[name="password"]').type(password);
+    cy.get('button[type="submit"]').click();
 });
 
 Cypress.Commands.add("logout", () => {
@@ -135,3 +140,13 @@ Cypress.Commands.add("createTestAudioSettings", (universeId) => {
     },
   });
 });
+
+// Force TypeScript to recognize the custom commands
+declare global {
+    namespace Cypress {
+        interface Chainable {
+            login(username: string, password: string): Chainable<void>;
+            register(username: string, email: string, password: string): Chainable<void>;
+        }
+    }
+}

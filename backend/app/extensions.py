@@ -30,13 +30,6 @@ def init_app(app):
     # Initialize SQLAlchemy
     db.init_app(app)
 
-    # Create tables within app context if they don't exist
-    with app.app_context():
-        try:
-            db.create_all()
-        except Exception as e:
-            app.logger.error(f"Error creating database tables: {e}")
-
     # Initialize migrations
     migrate.init_app(app, db)
 

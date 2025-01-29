@@ -1,4 +1,7 @@
 from marshmallow import Schema, fields, validates, ValidationError
+from pydantic import BaseModel, Field, validator
+from typing import Optional, Dict, Union, List
+import re
 
 
 class PhysicsParamsSchema(Schema):
@@ -81,3 +84,95 @@ class UniverseSchema(Schema):
     class Meta:
         """Meta class for UniverseSchema."""
         ordered = True
+
+
+class MusicParameters(BaseModel):
+    """Schema for music parameters validation."""
+    tempo: float = Field(60.0, ge=20.0, le=300.0, description="Tempo in BPM")
+    scale: str = Field("C major", description="Musical scale")
+    volume: float = Field(0.8, ge=0.0, le=1.0, description="Master volume")
+    reverb: Optional[float] = Field(0.3, ge=0.0, le=1.0, description="Reverb amount")
+    delay: Optional[float] = Field(0.2, ge=0.0, le=1.0, description="Delay amount")
+    base_frequency: Optional[float] = Field(440.0, ge=20.0, le=20000.0, description="Base frequency in Hz")
+
+    @validator('scale')
+    def validate_scale(cls, v):
+        """Validate musical scale format."""
+        valid_notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+        valid_types = ['major', 'minor', 'harmonic minor', 'melodic minor', 'pentatonic']
+        parts = v.split()
+        if len(parts) < 2:
+            raise ValueError('Scale must include note and type')
+        note = parts[0].upper()
+        scale_type = ' '.join(parts[1:]).lower()
+        if note not in valid_notes:
+            raise ValueError(f'Invalid note. Must be one of {valid_notes}')
+        if scale_type not in valid_types:
+            raise ValueError(f'Invalid scale type. Must be one of {valid_types}')
+        return f"{note} {scale_type}"
+
+
+class VisualParameters(BaseModel):
+    """Schema for visual parameters validation."""
+    background: str = Field("#000000", description="Background color in hex")
+    particle_count: int = Field(1000, ge=0, le=10000, description="Number of particles")
+    animation_speed: float = Field(1.0, ge=0.0, le=5.0, description="Animation speed multiplier")
+    color_scheme: List[str] = Field(
+        ["#FF0000", "#00FF00", "#0000FF"],
+        min_items=1,
+        max_items=10,
+        description="List of colors in hex format"
+    )
+    particle_size: float = Field(1.0, ge=0.1, le=10.0, description="Base particle size")
+    glow_intensity: float = Field(0.5, ge=0.0, le=1.0, description="Particle glow intensity")
+
+    @validator('background', 'color_scheme')
+    def validate_color(cls, v):
+        """Validate hex color format."""
+        if isinstance(v, list):
+            for color in v:
+                if not re.match(r'^#[0-9A-Fa-f]{6}$', color):
+                    raise ValueError(f'Invalid hex color format: {color}')
+            return v
+        if not re.match(r'^#[0-9A-Fa-f]{6}$', v):
+            raise ValueError('Invalid hex color format')
+        return v
+
+
+class UniverseCreate(BaseModel):
+    """Schema for creating a new universe."""
+    name: str = Field(..., min_length=1, max_length=100)
+    description: Optional[str] = Field(None, max_length=500)
+    is_public: bool = False
+    allow_guests: bool = False
+    music_parameters: Optional[MusicParameters] = None
+    visual_parameters: Optional[VisualParameters] = None
+
+
+class UniverseUpdate(BaseModel):
+    """Schema for updating an existing universe."""
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    description: Optional[str] = Field(None, max_length=500)
+    is_public: Optional[bool] = None
+    allow_guests: Optional[bool] = None
+    music_parameters: Optional[MusicParameters] = None
+    visual_parameters: Optional[VisualParameters] = None
+
+
+class UniverseResponse(BaseModel):
+    """Schema for universe response."""
+    id: int
+    name: str
+    description: Optional[str]
+    is_public: bool
+    allow_guests: bool
+    user_id: int
+    collaborators_count: int
+    created_at: str
+    updated_at: str
+    music_parameters: Dict
+    visual_parameters: Dict
+
+    class Config:
+        """Pydantic config."""
+        from_attributes = True

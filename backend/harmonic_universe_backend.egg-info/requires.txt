@@ -1,15 +1,9 @@
 flask
 flask-sqlalchemy
 flask-migrate
-flask-jwt-extended
+flask-login
 flask-cors
-flask-socketio
-pytest
-pytest-cov
-pytest-env
+flask-jwt-extended
 python-dotenv
-
-[test]
 pytest
 pytest-cov
-pytest-env

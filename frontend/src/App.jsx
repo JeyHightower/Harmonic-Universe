@@ -1,66 +1,55 @@
+import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProvider } from '@mui/material/styles';
 import React from 'react';
-import { Provider } from 'react-redux';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
-import PrivateRoute from './components/Auth/PrivateRoute';
-import Navbar from './components/Navigation/Navbar';
-import CreateUniverse from './pages/CreateUniverse';
-import Dashboard from './pages/Dashboard';
-import Login from './pages/Login';
-import NotFound from './pages/NotFound';
-import Profile from './pages/Profile';
-import Register from './pages/Register';
-import UniverseDetail from './pages/UniverseDetail';
-import { store } from './store';
+import { AuthProvider } from './contexts/AuthContext';
+import theme from './theme';
 
-function App() {
+// Pages
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import NotFoundPage from './pages/NotFoundPage';
+import RegisterPage from './pages/RegisterPage';
+import UniverseDetailsPage from './pages/UniverseDetailsPage';
+import UniverseListPage from './pages/UniverseListPage';
+import UniverseParametersPage from './pages/UniverseParametersPage';
+
+// Components
+import Layout from './components/Layout';
+import ProtectedRoute from './components/ProtectedRoute';
+
+const App = () => {
   return (
-    <Provider store={store}>
-      <Router>
-        <div className="app">
-          <Navbar />
-          <main className="main-content">
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AuthProvider>
+        <Router>
+          <Layout>
             <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+              <Route path="/" element={<HomePage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+
+              {/* Universe Routes */}
+              <Route path="/universes" element={<UniverseListPage />} />
+              <Route path="/universes/:universeId" element={<UniverseDetailsPage />} />
               <Route
-                path="/"
+                path="/universes/:universeId/parameters"
                 element={
-                  <PrivateRoute>
-                    <Dashboard />
-                  </PrivateRoute>
+                  <ProtectedRoute>
+                    <UniverseParametersPage />
+                  </ProtectedRoute>
                 }
               />
-              <Route
-                path="/universe/create"
-                element={
-                  <PrivateRoute>
-                    <CreateUniverse />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/universe/:id"
-                element={
-                  <PrivateRoute>
-                    <UniverseDetail />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <PrivateRoute>
-                    <Profile />
-                  </PrivateRoute>
-                }
-              />
-              <Route path="*" element={<NotFound />} />
+
+              {/* 404 Page */}
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
-          </main>
-        </div>
-      </Router>
-    </Provider>
+          </Layout>
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   );
-}
+};
 
 export default App;

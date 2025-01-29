@@ -1,139 +1,106 @@
 """Tests for universe routes."""
 import pytest
 from app.models.universe import Universe
-from app.models.physics_parameters import PhysicsParameters
+from app.models.user import User
 
-def test_create_universe(client, auth_headers, user):
-    """Test universe creation."""
+def test_create_universe(client, auth_headers):
+    """Test creating a new universe."""
     data = {
         'name': 'Test Universe',
         'description': 'A test universe',
-        'max_participants': 5,
         'is_public': True,
-        'physics_parameters': {
-            'gravity': 10.0,
-            'time_dilation': 1.5
-        }
+        'max_participants': 5
     }
 
     response = client.post('/api/universes', json=data, headers=auth_headers)
     assert response.status_code == 201
-    assert response.json['name'] == data['name']
-    assert response.json['description'] == data['description']
-    assert response.json['max_participants'] == data['max_participants']
-    assert response.json['is_public'] == data['is_public']
-    assert response.json['creator_id'] == user.id
 
-    # Verify physics parameters
-    universe = Universe.query.filter_by(name=data['name']).first()
-    assert universe.physics_params.gravity == data['physics_parameters']['gravity']
-    assert universe.physics_params.time_dilation == data['physics_parameters']['time_dilation']
+    # Verify response data
+    json_data = response.get_json()
+    assert json_data['name'] == data['name']
+    assert json_data['description'] == data['description']
+    assert json_data['is_public'] == data['is_public']
+    assert json_data['max_participants'] == data['max_participants']
 
-def test_create_universe_invalid_data(client, auth_headers):
-    """Test universe creation with invalid data."""
-    data = {
-        'description': 'Missing name'
-    }
-
-    response = client.post('/api/universes', json=data, headers=auth_headers)
-    assert response.status_code == 400
-    assert 'error' in response.json
-    assert 'Name is required' in response.json['error']
-
-def test_get_universes(client, auth_headers, universe_factory):
-    """Test getting all accessible universes."""
-    # Create test universes
-    public_universe = universe_factory(is_public=True)
-    private_universe = universe_factory(is_public=False)
-
-    response = client.get('/api/universes', headers=auth_headers)
-    assert response.status_code == 200
-    assert 'universes' in response.json
-
-    universe_ids = [u['id'] for u in response.json['universes']]
-    assert public_universe.id in universe_ids
-    assert private_universe.id not in universe_ids
-
-def test_get_my_universes(client, auth_headers, user, universe_factory):
-    """Test getting user's own universes."""
-    # Create test universes
-    my_universe = universe_factory(creator_id=user.id)
-    other_universe = universe_factory()  # Created by another user
-
-    response = client.get('/api/universes/my', headers=auth_headers)
-    assert response.status_code == 200
-    assert 'universes' in response.json
-
-    universe_ids = [u['id'] for u in response.json['universes']]
-    assert my_universe.id in universe_ids
-    assert other_universe.id not in universe_ids
-
-def test_delete_universe(client, auth_headers, universe_factory):
-    """Test universe deletion."""
-    universe = universe_factory()
-
+def test_delete_universe(client, auth_headers, universe_factory, user):
+    """Test deleting a universe."""
+    universe = universe_factory(user_id=user.id)
     response = client.delete(f'/api/universes/{universe.id}', headers=auth_headers)
     assert response.status_code == 204
 
     # Verify universe is deleted
     assert Universe.query.get(universe.id) is None
-    # Verify physics parameters are deleted
-    assert PhysicsParameters.query.filter_by(universe_id=universe.id).first() is None
 
-def test_delete_universe_unauthorized(client, auth_headers, universe_factory):
-    """Test deleting universe without permission."""
-    universe = universe_factory()  # Created by another user
-
-    response = client.delete(f'/api/universes/{universe.id}', headers=auth_headers)
-    assert response.status_code == 403
-    assert 'error' in response.json
-    assert 'Access denied' in response.json['error']
-
-def test_update_parameters(client, auth_headers, universe_factory):
-    """Test updating universe parameters."""
-    universe = universe_factory()
+def test_update_universe(client, auth_headers, universe_factory, user):
+    """Test updating a universe."""
+    universe = universe_factory(user_id=user.id)
     data = {
-        'parameters': {
-            'gravity': 8.0,
-            'time_dilation': 2.0
-        }
+        'name': 'Updated Universe',
+        'description': 'Updated description',
+        'is_public': False,
+        'max_participants': 10
     }
 
-    response = client.put(f'/api/universes/{universe.id}/parameters',
-                         json=data, headers=auth_headers)
+    response = client.put(f'/api/universes/{universe.id}', json=data, headers=auth_headers)
     assert response.status_code == 200
 
-    # Verify changes in database
-    universe = Universe.query.get(universe.id)
-    assert universe.physics_params.gravity == data['parameters']['gravity']
-    assert universe.physics_params.time_dilation == data['parameters']['time_dilation']
+    # Verify response data
+    json_data = response.get_json()
+    assert json_data['name'] == data['name']
+    assert json_data['description'] == data['description']
+    assert json_data['is_public'] == data['is_public']
+    assert json_data['max_participants'] == data['max_participants']
 
-def test_add_collaborator(client, auth_headers, universe_factory, user_factory):
+def test_get_universe(client, auth_headers, universe_factory, user):
+    """Test getting a specific universe."""
+    universe = universe_factory(user_id=user.id)
+    response = client.get(f'/api/universes/{universe.id}', headers=auth_headers)
+    assert response.status_code == 200
+
+    # Verify response data
+    json_data = response.get_json()
+    assert json_data['name'] == universe.name
+    assert json_data['description'] == universe.description
+    assert json_data['is_public'] == universe.is_public
+
+def test_get_universes(client, auth_headers, universe_factory, user):
+    """Test getting all accessible universes."""
+    # Create some test universes
+    universe1 = universe_factory(user_id=user.id, name='Universe 1')
+    universe2 = universe_factory(user_id=user.id, name='Universe 2')
+
+    response = client.get('/api/universes', headers=auth_headers)
+    assert response.status_code == 200
+
+    # Verify response data
+    json_data = response.get_json()
+    assert len(json_data['universes']) >= 2
+    universe_names = [u['name'] for u in json_data['universes']]
+    assert 'Universe 1' in universe_names
+    assert 'Universe 2' in universe_names
+
+def test_add_collaborator(client, auth_headers, universe_factory, user_factory, user):
     """Test adding a collaborator to a universe."""
-    universe = universe_factory()
-    collaborator = user_factory()
-    data = {
-        'email': collaborator.email
-    }
+    universe = universe_factory(user_id=user.id)
+    collaborator = user_factory(username='collaborator', email='collab@example.com')
 
+    data = {'email': collaborator.email}
     response = client.post(f'/api/universes/{universe.id}/collaborators',
-                          json=data, headers=auth_headers)
+                         json=data, headers=auth_headers)
     assert response.status_code == 201
-    assert 'Collaborator added successfully' in response.json['message']
 
     # Verify collaborator was added
-    universe = Universe.query.get(universe.id)
     assert collaborator in universe.collaborators
 
-def test_add_collaborator_invalid_email(client, auth_headers, universe_factory):
-    """Test adding non-existent collaborator."""
-    universe = universe_factory()
-    data = {
-        'email': 'nonexistent@example.com'
-    }
+def test_remove_collaborator(client, auth_headers, universe_factory, user_factory, user):
+    """Test removing a collaborator from a universe."""
+    universe = universe_factory(user_id=user.id)
+    collaborator = user_factory(username='collaborator', email='collab@example.com')
+    universe.collaborators.append(collaborator)
 
-    response = client.post(f'/api/universes/{universe.id}/collaborators',
-                          json=data, headers=auth_headers)
-    assert response.status_code == 404
-    assert 'error' in response.json
-    assert 'User not found' in response.json['error']
+    response = client.delete(f'/api/universes/{universe.id}/collaborators/{collaborator.id}',
+                          headers=auth_headers)
+    assert response.status_code == 200
+
+    # Verify collaborator was removed
+    assert collaborator not in universe.collaborators

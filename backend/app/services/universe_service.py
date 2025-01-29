@@ -1,7 +1,6 @@
 """Universe service module."""
 from app.models import (
     Universe,
-    PhysicsParameters,
     MusicParameters,
     VisualizationParameters,
 )
@@ -21,12 +20,6 @@ class UniverseService:
             is_public=data.get("is_public", True),
         )
 
-        physics_params = PhysicsParameters(
-            universe=universe,
-            gravity=data.get("physics", {}).get("gravity", 9.81),
-            particle_speed=data.get("physics", {}).get("particle_speed", 1.0),
-        )
-
         music_params = MusicParameters(
             universe=universe,
             tempo=data.get("music", {}).get("tempo", 120),
@@ -41,7 +34,6 @@ class UniverseService:
         )
 
         db.session.add(universe)
-        db.session.add(physics_params)
         db.session.add(music_params)
         db.session.add(viz_params)
         db.session.commit()
@@ -63,13 +55,6 @@ class UniverseService:
         universe.name = data.get("name", universe.name)
         universe.description = data.get("description", universe.description)
         universe.is_public = data.get("is_public", universe.is_public)
-
-        if "physics" in data:
-            physics = universe.physics_parameters
-            physics.gravity = data["physics"].get("gravity", physics.gravity)
-            physics.particle_speed = data["physics"].get(
-                "particle_speed", physics.particle_speed
-            )
 
         if "music" in data:
             music = universe.music_parameters

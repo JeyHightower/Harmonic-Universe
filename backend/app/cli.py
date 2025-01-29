@@ -1,7 +1,7 @@
 """CLI commands for the application."""
 import click
 from flask.cli import with_appcontext
-from .models import User, Universe, PhysicsParameters, db
+from .models import User, Universe, db
 import os
 
 
@@ -29,25 +29,20 @@ def reset_test_db():
     )
     db.session.add(test_universe)
 
-    # Create test physics parameters
-    physics_params = PhysicsParameters(
-        universe=test_universe,
-        gravity=9.81,
-        particle_speed=1.0,
-        collision_damping=0.8,
-        boundary_damping=0.9,
-        particle_mass=1.0,
-        particle_radius=0.5,
-    )
-    db.session.add(physics_params)
-
     # Commit changes
     db.session.commit()
 
     click.echo("Test database has been reset with sample data.")
 
 
-@click.command('init-db')
+def register_commands(app):
+    """Register CLI commands with the Flask application."""
+    # Register commands
+    app.cli.add_command(reset_test_db)
+    app.cli.add_command(init_db_command)
+
+
+@app.cli.command('init-db')
 @with_appcontext
 def init_db_command():
     """Initialize the database."""
@@ -58,10 +53,3 @@ def init_db_command():
     db.create_all()
 
     click.echo('Initialized the database.')
-
-
-def register_commands(app):
-    """Register CLI commands with the Flask application."""
-    # Register commands
-    app.cli.add_command(reset_test_db)
-    app.cli.add_command(init_db_command)
