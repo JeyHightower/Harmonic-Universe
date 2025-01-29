@@ -39,6 +39,52 @@ FRONTEND_PID=$!
 sleep 10 # Wait for frontend to start
 check_status "Frontend server startup"
 
+# Run TypeScript type checking
+print_header "Running TypeScript Type Check"
+npm run type-check
+check_status "TypeScript type check"
+
+# Run unit tests
+print_header "Running Unit Tests"
+
+echo "1. Running Store Tests..."
+npm test store/universeSlice.test.ts
+check_status "Universe slice tests"
+npm test store/storyboardSlice.test.ts
+check_status "Storyboard slice tests"
+npm test store/mediaEffectSlice.test.ts
+check_status "Media effect slice tests"
+
+echo "2. Running Hook Tests..."
+npm test hooks/useStoryboard.test.tsx
+check_status "useStoryboard hook tests"
+npm test hooks/useUniverseSocket.test.tsx
+check_status "useUniverseSocket hook tests"
+
+echo "3. Running Component Tests..."
+npm test components/Auth/Login.test.tsx
+check_status "Login component tests"
+npm test components/Universe/UniverseForm.test.tsx
+check_status "UniverseForm component tests"
+npm test components/Timeline/TimelineControls.test.tsx
+check_status "TimelineControls component tests"
+npm test components/Scene/SceneManager.test.tsx
+check_status "SceneManager component tests"
+npm test components/Storyboard/StoryboardEditor.test.tsx
+check_status "StoryboardEditor component tests"
+
+echo "4. Running Integration Tests..."
+npm test universe/universe.test.tsx
+check_status "Universe integration tests"
+npm test storyboard/storyboard.test.tsx
+check_status "Storyboard integration tests"
+npm test scene/scene.test.tsx
+check_status "Scene integration tests"
+
+echo "5. Running Performance Tests..."
+npm test performance/StoryboardPerformance.test.tsx
+check_status "Performance tests"
+
 # Run Cypress E2E tests
 print_header "Running Cypress E2E Tests"
 npm run test:e2e
