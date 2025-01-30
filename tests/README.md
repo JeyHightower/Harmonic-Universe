@@ -1,113 +1,83 @@
-# Harmonic Universe Testing
+# Testing Documentation
 
-This directory contains all test files for the Harmonic Universe project. The tests are organized into the following categories:
+This directory contains all tests for the Harmonic Universe project. The tests are organized into the following structure:
 
-## Directory Structure
-
-- `frontend/` - Frontend tests
-  - Unit tests for React components
-  - Integration tests for features
-  - Redux store tests
-  - Service tests
-  - Hook tests
-  - Utility tests
-
-- `backend/` - Backend tests
-  - Unit tests for Python modules
-  - Integration tests for APIs
-  - Database tests
-  - Service tests
-  - Utility tests
-
-- `e2e/` - End-to-end tests
-  - Cypress tests
-  - User flow tests
-  - Feature tests
-  - Cross-browser tests
-
-## Test Standards
-
-1. Test Organization
-   - Group tests by feature/module
-   - Follow consistent naming conventions
-   - Maintain test independence
-   - Use appropriate test categories
-
-2. Test Coverage
-   - Aim for high test coverage
-   - Focus on critical paths
-   - Include edge cases
-   - Test error conditions
-
-3. Test Quality
-   - Write clear test descriptions
-   - Use meaningful assertions
-   - Avoid test interdependence
-   - Keep tests maintainable
+```
+tests/
+├── unit/
+│   ├── backend/     # Backend unit tests
+│   └── frontend/    # Frontend unit tests
+├── integration/
+│   └── backend/     # Backend integration tests
+└── e2e/
+    └── frontend/    # Frontend end-to-end tests
+```
 
 ## Running Tests
 
-1. Frontend Tests
-   ```bash
-   # Run all frontend tests
-   cd frontend
-   npm test
+You can run all tests using the provided test runner script:
 
-   # Run specific test file
-   npm test -- path/to/test
+```bash
+./tests/run_tests.sh
+```
 
-   # Run with coverage
-   npm test -- --coverage
-   ```
+### Running Specific Test Suites
 
-2. Backend Tests
-   ```bash
-   # Run all backend tests
-   cd backend
-   pytest
+1. Backend Unit Tests:
+```bash
+python -m pytest tests/unit/backend
+```
 
-   # Run specific test file
-   pytest path/to/test
+2. Backend Integration Tests:
+```bash
+python -m pytest tests/integration/backend
+```
 
-   # Run with coverage
-   pytest --cov
-   ```
+3. Frontend Unit Tests:
+```bash
+cd frontend && yarn test
+```
 
-3. E2E Tests
-   ```bash
-   # Run all e2e tests
-   npm run cypress
+4. Frontend E2E Tests:
+```bash
+cd frontend && yarn cypress run
+```
 
-   # Run specific test
-   npm run cypress -- --spec "path/to/test"
-   ```
+## Coverage Reports
 
-## Test Development
+After running the tests, coverage reports will be generated in:
+- HTML: `tests/coverage_html/`
+- Terminal output shows missing lines
 
-1. Creating New Tests
-   - Follow existing patterns
-   - Include setup and teardown
-   - Document test requirements
-   - Add appropriate assertions
+## Test Categories
 
-2. Test Maintenance
-   - Keep tests up to date
-   - Remove obsolete tests
-   - Update test data
-   - Refactor as needed
+### Backend Tests
+- **Unit Tests**: Test individual components in isolation
+- **Integration Tests**: Test API endpoints and database interactions
 
-3. Test Documentation
-   - Document test purpose
-   - Include test requirements
-   - Explain complex scenarios
-   - Update test documentation
+### Frontend Tests
+- **Unit Tests**: Test React components and utilities
+- **E2E Tests**: Test full user workflows using Cypress
 
-## Contributing
+## Writing New Tests
 
-1. Follow test standards
-2. Write comprehensive tests
-3. Include test documentation
-4. Review test coverage
-5. Maintain test quality
+1. Follow the existing directory structure
+2. Name test files with `test_` prefix
+3. Use descriptive test names
+4. Include docstrings explaining test purpose
+5. Follow the AAA pattern (Arrange, Act, Assert)
 
-For more information about testing, please see the [Testing Guide](../docs/testing/README.md).
+## Continuous Integration
+
+Tests are automatically run on:
+- Pull requests to main branch
+- Direct pushes to main branch
+- Nightly builds
+
+## Troubleshooting
+
+If tests fail:
+1. Check test environment setup
+2. Verify database migrations are up to date
+3. Ensure all dependencies are installed
+4. Check test logs for specific error messages

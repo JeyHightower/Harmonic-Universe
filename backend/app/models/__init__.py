@@ -9,6 +9,8 @@ __all__ = [
     'Scene',
     'VisualEffect',
     'AudioTrack',
+    'PhysicsObject',
+    'PhysicsConstraint',
     'universe_collaborators'
 ]
 
@@ -19,4 +21,6 @@ from .universe import Universe, universe_collaborators
 from .storyboard import Storyboard
 from .scene import Scene
 from .media_effects import VisualEffect, AudioTrack
+from .physics_object import PhysicsObject
+from .physics_constraint import PhysicsConstraint
 

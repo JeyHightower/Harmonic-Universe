@@ -136,6 +136,58 @@ Component documentation is available at `/docs/components/README.md`
 
 Database schema documentation is available at `/docs/database/SCHEMA.md`
 
+## Physics Engine Features
+
+The application includes a powerful 2D physics engine that allows users to create interactive physics simulations within their scenes. Key features include:
+
+### Physics Objects
+- Support for multiple object types:
+  - Circles with radius and mass
+  - Rectangles with width, height, and mass
+  - Polygons with custom vertices
+- Dynamic and static objects
+- Configurable physical properties:
+  - Mass and density
+  - Friction and restitution
+  - Velocity and acceleration
+  - Angular velocity and rotation
+- Collision detection and response
+- Sensor objects for trigger events
+
+### Physics Constraints
+- Multiple constraint types:
+  - Distance constraints with min/max limits
+  - Revolute joints with angle limits
+  - Prismatic joints with translation limits
+- Configurable properties:
+  - Stiffness and damping
+  - Anchor points
+  - Axis of motion
+- Real-time constraint force calculation
+- Visual constraint representation
+
+### Scene Integration
+- Physics settings per scene:
+  - Gravity direction and magnitude
+  - Time step configuration
+  - Iteration settings
+- Real-time simulation controls:
+  - Play/pause functionality
+  - Step-by-step simulation
+  - Reset capability
+- Visual debugging tools
+- Performance optimization
+
+### User Interface
+- Intuitive object creation and editing
+- Visual constraint setup
+- Real-time property adjustment
+- Physics simulation controls
+- Object and constraint lists
+- Scene-specific settings
+
+For detailed information about using the physics engine, please refer to the [Physics Engine Documentation](docs/PHYSICS_FEATURES.md).
+
 ## Contributing
 
 1. Fork the repository

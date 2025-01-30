@@ -35,6 +35,7 @@ import {
     updateAudioTrack,
     updateVisualEffect,
 } from '../../store/slices/mediaEffectSlice';
+import PhysicsPanel from '../Scene/PhysicsPanel';
 
 interface SceneEditorProps {
   universeId: number;
@@ -250,12 +251,18 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     <Box>
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={tabValue} onChange={handleTabChange}>
-          <Tab label="Visual Effects" />
-          <Tab label="Audio Tracks" />
+          <Tab label="General" value="general" />
+          <Tab label="Visual Effects" value="visual" />
+          <Tab label="Audio Tracks" value="audio" />
+          <Tab label="Physics" value="physics" />
         </Tabs>
       </Box>
 
-      <TabPanel value={tabValue} index={0}>
+      <TabPanel value={tabValue} index="general">
+        {/* General tab content */}
+      </TabPanel>
+
+      <TabPanel value={tabValue} index="visual">
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
           <Typography variant="h6">Visual Effects</Typography>
           <Button
@@ -302,7 +309,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         </List>
       </TabPanel>
 
-      <TabPanel value={tabValue} index={1}>
+      <TabPanel value={tabValue} index="audio">
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
           <Typography variant="h6">Audio Tracks</Typography>
           <Button
@@ -347,6 +354,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             </Card>
           ))}
         </List>
+      </TabPanel>
+
+      <TabPanel value={tabValue} index="physics">
+        <PhysicsPanel sceneId={sceneId} />
       </TabPanel>
 
       <Dialog open={dialogState.open} onClose={handleDialogClose} maxWidth="sm" fullWidth>

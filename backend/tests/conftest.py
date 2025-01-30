@@ -136,6 +136,31 @@ def test_universe(session, test_user):
     return universe
 
 @pytest.fixture
+def test_storyboard(session, test_universe):
+    """Create a test storyboard."""
+    storyboard = Storyboard(
+        title="Test Storyboard",
+        description="Test Description",
+        universe_id=test_universe.id
+    )
+    session.add(storyboard)
+    session.commit()
+    return storyboard
+
+@pytest.fixture
+def test_scene(session, test_storyboard):
+    """Create a test scene."""
+    scene = Scene(
+        title="Test Scene",
+        sequence=1,
+        content={},
+        storyboard_id=test_storyboard.id
+    )
+    session.add(scene)
+    session.commit()
+    return scene
+
+@pytest.fixture
 def runner(app):
     """Create a test runner."""
     return app.test_cli_runner()
