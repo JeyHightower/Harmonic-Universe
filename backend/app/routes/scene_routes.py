@@ -4,10 +4,14 @@ from flask_login import login_required, current_user
 from ..models import db, Scene, Storyboard, Universe
 from ..utils.auth import check_universe_access
 from ..utils.validation import validate_scene_data
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 bp = Blueprint('scenes', __name__)
 
-@bp.route('/api/universes/<int:universe_id>/storyboards/<int:storyboard_id>/scenes', methods=['GET'])
+@bp.route(
+    '/api/universes/<int:universe_id>/storyboards/<int:storyboard_id>/scenes',
+    methods=['GET']
+)
 @login_required
 def get_scenes(universe_id, storyboard_id):
     """Get all scenes for a storyboard."""
@@ -20,10 +24,16 @@ def get_scenes(universe_id, storyboard_id):
         universe_id=universe_id
     ).first_or_404()
 
-    scenes = Scene.query.filter_by(storyboard_id=storyboard_id).order_by(Scene.sequence).all()
+    scenes = Scene.query.filter_by(
+        storyboard_id=storyboard_id
+    ).order_by(Scene.sequence).all()
+
     return jsonify([scene.to_dict() for scene in scenes])
 
-@bp.route('/api/universes/<int:universe_id>/storyboards/<int:storyboard_id>/scenes/<int:scene_id>', methods=['GET'])
+@bp.route(
+    '/api/universes/<int:universe_id>/storyboards/<int:storyboard_id>/scenes/<int:scene_id>',
+    methods=['GET']
+)
 @login_required
 def get_scene(universe_id, storyboard_id, scene_id):
     """Get a specific scene."""
@@ -43,7 +53,10 @@ def get_scene(universe_id, storyboard_id, scene_id):
 
     return jsonify(scene.to_dict())
 
-@bp.route('/api/universes/<int:universe_id>/storyboards/<int:storyboard_id>/scenes', methods=['POST'])
+@bp.route(
+    '/api/universes/<int:universe_id>/storyboards/<int:storyboard_id>/scenes',
+    methods=['POST']
+)
 @login_required
 def create_scene(universe_id, storyboard_id):
     """Create a new scene."""
@@ -86,7 +99,10 @@ def create_scene(universe_id, storyboard_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@bp.route('/api/universes/<int:universe_id>/storyboards/<int:storyboard_id>/scenes/<int:scene_id>', methods=['PUT'])
+@bp.route(
+    '/api/universes/<int:universe_id>/storyboards/<int:storyboard_id>/scenes/<int:scene_id>',
+    methods=['PUT']
+)
 @login_required
 def update_scene(universe_id, storyboard_id, scene_id):
     """Update a scene."""
@@ -147,7 +163,10 @@ def update_scene(universe_id, storyboard_id, scene_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@bp.route('/api/universes/<int:universe_id>/storyboards/<int:storyboard_id>/scenes/<int:scene_id>', methods=['DELETE'])
+@bp.route(
+    '/api/universes/<int:universe_id>/storyboards/<int:storyboard_id>/scenes/<int:scene_id>',
+    methods=['DELETE']
+)
 @login_required
 def delete_scene(universe_id, storyboard_id, scene_id):
     """Delete a scene."""
@@ -182,7 +201,10 @@ def delete_scene(universe_id, storyboard_id, scene_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@bp.route('/api/universes/<int:universe_id>/storyboards/<int:storyboard_id>/scenes/reorder', methods=['PUT'])
+@bp.route(
+    '/api/universes/<int:universe_id>/storyboards/<int:storyboard_id>/scenes/reorder',
+    methods=['PUT']
+)
 @login_required
 def reorder_scenes(universe_id, storyboard_id):
     """Reorder scenes in a storyboard."""

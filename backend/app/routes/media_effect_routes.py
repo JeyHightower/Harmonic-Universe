@@ -1,19 +1,24 @@
 """Media effect routes for the API."""
-from flask import Blueprint, jsonify, request, current_app, g
-from flask_jwt_extended import (
-    jwt_required, get_jwt_identity, verify_jwt_in_request,
-    decode_token, get_jwt, JWTManager, current_user
-)
-from ..models import db, VisualEffect, AudioTrack, Scene, Storyboard, Universe, User
-from ..utils.auth import check_universe_access
-from ..utils.validation import validate_visual_effect_data, validate_audio_track_data
-from functools import wraps
+from flask import Blueprint, jsonify, request, current_app
+from flask_jwt_extended import jwt_required
 from sqlalchemy import select
+
+from ..models import db, VisualEffect, AudioTrack, Scene
+from ..utils.validation import (
+    validate_visual_effect_data,
+    validate_audio_track_data
+)
 
 media_effects = Blueprint('media_effects', __name__)
 
+
 # Visual Effects Routes
-@media_effects.route('/api/scenes/<int:scene_id>/visual-effects', methods=['GET'])
+
+
+@media_effects.route(
+    '/api/scenes/<int:scene_id>/visual-effects',
+    methods=['GET']
+)
 @jwt_required()
 def get_visual_effects(scene_id):
     """Get all visual effects for a scene."""
@@ -32,7 +37,11 @@ def get_visual_effects(scene_id):
         current_app.logger.error(f"Error in get_visual_effects: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@media_effects.route('/api/scenes/<int:scene_id>/visual-effects', methods=['POST'])
+
+@media_effects.route(
+    '/api/scenes/<int:scene_id>/visual-effects',
+    methods=['POST']
+)
 @jwt_required()
 def create_visual_effect(scene_id):
     """Create a new visual effect."""
@@ -63,7 +72,11 @@ def create_visual_effect(scene_id):
         current_app.logger.error(f"Error in create_visual_effect: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@media_effects.route('/api/scenes/<int:scene_id>/visual-effects/<int:effect_id>', methods=['PUT'])
+
+@media_effects.route(
+    '/api/scenes/<int:scene_id>/visual-effects/<int:effect_id>',
+    methods=['PUT']
+)
 @jwt_required()
 def update_visual_effect(scene_id, effect_id):
     """Update a visual effect."""
@@ -93,7 +106,11 @@ def update_visual_effect(scene_id, effect_id):
         current_app.logger.error(f"Error in update_visual_effect: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@media_effects.route('/api/scenes/<int:scene_id>/visual-effects/<int:effect_id>', methods=['DELETE'])
+
+@media_effects.route(
+    '/api/scenes/<int:scene_id>/visual-effects/<int:effect_id>',
+    methods=['DELETE']
+)
 @jwt_required()
 def delete_visual_effect(scene_id, effect_id):
     """Delete a visual effect."""
@@ -111,8 +128,14 @@ def delete_visual_effect(scene_id, effect_id):
         current_app.logger.error(f"Error in delete_visual_effect: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+
 # Audio Track Routes
-@media_effects.route('/api/scenes/<int:scene_id>/audio-tracks', methods=['GET'])
+
+
+@media_effects.route(
+    '/api/scenes/<int:scene_id>/audio-tracks',
+    methods=['GET']
+)
 @jwt_required()
 def get_audio_tracks(scene_id):
     """Get all audio tracks for a scene."""
@@ -131,7 +154,11 @@ def get_audio_tracks(scene_id):
         current_app.logger.error(f"Error in get_audio_tracks: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@media_effects.route('/api/scenes/<int:scene_id>/audio-tracks', methods=['POST'])
+
+@media_effects.route(
+    '/api/scenes/<int:scene_id>/audio-tracks',
+    methods=['POST']
+)
 @jwt_required()
 def create_audio_track(scene_id):
     """Create a new audio track."""
@@ -163,7 +190,11 @@ def create_audio_track(scene_id):
         current_app.logger.error(f"Error in create_audio_track: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@media_effects.route('/api/scenes/<int:scene_id>/audio-tracks/<int:track_id>', methods=['PUT'])
+
+@media_effects.route(
+    '/api/scenes/<int:scene_id>/audio-tracks/<int:track_id>',
+    methods=['PUT']
+)
 @jwt_required()
 def update_audio_track(scene_id, track_id):
     """Update an audio track."""
@@ -194,7 +225,11 @@ def update_audio_track(scene_id, track_id):
         current_app.logger.error(f"Error in update_audio_track: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@media_effects.route('/api/scenes/<int:scene_id>/audio-tracks/<int:track_id>', methods=['DELETE'])
+
+@media_effects.route(
+    '/api/scenes/<int:scene_id>/audio-tracks/<int:track_id>',
+    methods=['DELETE']
+)
 @jwt_required()
 def delete_audio_track(scene_id, track_id):
     """Delete an audio track."""

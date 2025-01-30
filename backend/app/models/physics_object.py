@@ -1,55 +1,99 @@
 """Physics object model module."""
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, JSON, Boolean, Index
+from sqlalchemy import (
+    Column, Integer, String, Float, ForeignKey,
+    JSON, Boolean, Index
+)
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from typing import Dict, Any, List
-from datetime import datetime
-from .. import db
 from .base_models import BaseModel, TimestampMixin
+from .physics_constraint import PhysicsConstraint
+from .scene import Scene
+
 
 class PhysicsObject(BaseModel, TimestampMixin):
-    """Physics object model for simulating physical entities in scenes."""
+    """Physics object model for simulation."""
 
     __tablename__ = 'physics_objects'
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    scene_id: Mapped[int] = mapped_column(Integer, ForeignKey('scenes.id', ondelete='CASCADE'), nullable=False)
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
-    object_type: Mapped[str] = mapped_column(String(50), nullable=False)  # 'circle', 'rectangle', 'polygon'
-
-    # Physics properties
-    mass: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
-    position: Mapped[Dict[str, float]] = mapped_column(JSON, nullable=False)  # {x: float, y: float}
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True
+    )
+    scene_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey('scenes.id', ondelete='CASCADE'),
+        nullable=False
+    )
+    object_type: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False
+    )
+    name: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False
+    )
+    position: Mapped[Dict[str, float]] = mapped_column(
+        JSON,
+        default=lambda: {"x": 0, "y": 0}
+    )
     velocity: Mapped[Dict[str, float]] = mapped_column(
         JSON,
-        nullable=False,
         default=lambda: {"x": 0, "y": 0}
     )
-    acceleration: Mapped[Dict[str, float]] = mapped_column(
+    dimensions: Mapped[Dict[str, float]] = mapped_column(
         JSON,
-        nullable=False,
-        default=lambda: {"x": 0, "y": 0}
+        default=lambda: {"width": 1, "height": 1}
     )
-    angle: Mapped[float] = mapped_column(Float, nullable=False, default=0)
-    angular_velocity: Mapped[float] = mapped_column(Float, nullable=False, default=0)
-
-    # Shape properties
-    dimensions: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False)  # {radius: float} or {width: float, height: float} or {vertices: [{x: float, y: float}]}
-
-    # Material properties
-    restitution: Mapped[float] = mapped_column(Float, nullable=False, default=0.6)  # Bounciness
-    friction: Mapped[float] = mapped_column(Float, nullable=False, default=0.1)
-
-    # Simulation properties
-    is_static: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    is_sensor: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    angle: Mapped[float] = mapped_column(
+        Float,
+        default=0
+    )
+    angular_velocity: Mapped[float] = mapped_column(
+        Float,
+        default=0
+    )
     collision_filter: Mapped[Dict[str, Any]] = mapped_column(
         JSON,
-        nullable=False,
-        default=lambda: {"category": 1, "mask": 0xFFFFFFFF}
+        default=lambda: {
+            "category": 1,
+            "mask": 4294967295,
+            "group": 0
+        }
+    )
+    density: Mapped[float] = mapped_column(
+        Float,
+        default=0.001
+    )
+    restitution: Mapped[float] = mapped_column(
+        Float,
+        default=0
+    )
+    friction: Mapped[float] = mapped_column(
+        Float,
+        default=0.1
+    )
+    is_static: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False
+    )
+    is_sensor: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False
+    )
+    render_options: Mapped[Dict[str, Any]] = mapped_column(
+        JSON,
+        default=lambda: {
+            "fillStyle": "#ffffff",
+            "strokeStyle": "#000000",
+            "lineWidth": 1
+        }
     )
 
     # Relationships
-    scene = relationship('Scene', back_populates='physics_objects')
+    scene: Mapped["Scene"] = relationship(
+        "Scene",
+        back_populates="physics_objects"
+    )
     constraints_as_a: Mapped[List["PhysicsConstraint"]] = relationship(
         "PhysicsConstraint",
         foreign_keys='PhysicsConstraint.object_a_id',
@@ -65,9 +109,9 @@ class PhysicsObject(BaseModel, TimestampMixin):
         passive_deletes=True
     )
 
-    # Indexes for better query performance
+    # Indexes
     __table_args__ = (
-        Index('ix_physics_objects_scene_id', 'scene_id'),
+        Index('idx_physics_objects_scene_id', 'scene_id'),
     )
 
     def validate_object_type(self):
@@ -133,22 +177,28 @@ class PhysicsObject(BaseModel, TimestampMixin):
         return {
             'id': self.id,
             'scene_id': self.scene_id,
-            'name': self.name,
             'object_type': self.object_type,
-            'mass': self.mass,
+            'name': self.name,
             'position': self.position,
             'velocity': self.velocity,
-            'acceleration': self.acceleration,
+            'dimensions': self.dimensions,
             'angle': self.angle,
             'angular_velocity': self.angular_velocity,
-            'dimensions': self.dimensions,
+            'collision_filter': self.collision_filter,
+            'density': self.density,
             'restitution': self.restitution,
             'friction': self.friction,
             'is_static': self.is_static,
             'is_sensor': self.is_sensor,
-            'collision_filter': self.collision_filter,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+            'render_options': self.render_options,
+            'created_at': (
+                self.created_at.isoformat()
+                if self.created_at else None
+            ),
+            'updated_at': (
+                self.updated_at.isoformat()
+                if self.updated_at else None
+            )
         }
 
     def apply_force(self, force_x, force_y):

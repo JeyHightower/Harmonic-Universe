@@ -1,21 +1,42 @@
 """Scene model module."""
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, JSON
+from sqlalchemy import (
+    Column, Integer, String, Text,
+    ForeignKey, JSON
+)
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from typing import List, Optional, Dict, Any
 from .. import db
 from .base_models import BaseModel, TimestampMixin
+from .storyboard import Storyboard
+from .media_effects import VisualEffect, AudioTrack
+from .physics_object import PhysicsObject
+from .physics_constraint import PhysicsConstraint
+
 
 class Scene(BaseModel, TimestampMixin):
     """Scene model for organizing content within storyboards."""
 
     __tablename__ = 'scenes'
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True
+    )
+    name: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False
+    )
     description: Mapped[Optional[str]] = mapped_column(Text)
     sequence: Mapped[Optional[int]] = mapped_column(Integer)
-    storyboard_id: Mapped[int] = mapped_column(Integer, ForeignKey('storyboards.id'), nullable=False)
-    content: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
+    storyboard_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey('storyboards.id'),
+        nullable=False
+    )
+    content: Mapped[Dict[str, Any]] = mapped_column(
+        JSON,
+        default=dict
+    )
 
     # Physics simulation settings
     physics_settings: Mapped[Dict[str, Any]] = mapped_column(
@@ -30,7 +51,10 @@ class Scene(BaseModel, TimestampMixin):
     )
 
     # Relationships with type hints
-    storyboard: Mapped["Storyboard"] = relationship("Storyboard", back_populates="scenes")
+    storyboard: Mapped["Storyboard"] = relationship(
+        "Storyboard",
+        back_populates="scenes"
+    )
     visual_effects: Mapped[List["VisualEffect"]] = relationship(
         "VisualEffect",
         back_populates="scene",
@@ -49,15 +73,34 @@ class Scene(BaseModel, TimestampMixin):
         cascade="all, delete-orphan",
         passive_deletes=True
     )
-    physics_constraints: Mapped[List["PhysicsConstraint"]] = relationship(
-        "PhysicsConstraint",
-        back_populates="scene",
-        cascade="all, delete-orphan",
-        passive_deletes=True
+    physics_constraints: Mapped[List["PhysicsConstraint"]] = (
+        relationship(
+            "PhysicsConstraint",
+            back_populates="scene",
+            cascade="all, delete-orphan",
+            passive_deletes=True
+        )
     )
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert scene to dictionary."""
+        physics_constraints = [
+            constraint.to_dict()
+            for constraint in self.physics_constraints
+        ]
+        visual_effects = [
+            effect.to_dict()
+            for effect in self.visual_effects
+        ]
+        audio_tracks = [
+            track.to_dict()
+            for track in self.audio_tracks
+        ]
+        physics_objects = [
+            obj.to_dict()
+            for obj in self.physics_objects
+        ]
+
         return {
             'id': self.id,
             'name': self.name,
@@ -66,10 +109,16 @@ class Scene(BaseModel, TimestampMixin):
             'storyboard_id': self.storyboard_id,
             'content': self.content,
             'physics_settings': self.physics_settings,
-            'visual_effects': [effect.to_dict() for effect in self.visual_effects],
-            'audio_tracks': [track.to_dict() for track in self.audio_tracks],
-            'physics_objects': [obj.to_dict() for obj in self.physics_objects],
-            'physics_constraints': [constraint.to_dict() for constraint in self.physics_constraints],
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+            'visual_effects': visual_effects,
+            'audio_tracks': audio_tracks,
+            'physics_objects': physics_objects,
+            'physics_constraints': physics_constraints,
+            'created_at': (
+                self.created_at.isoformat()
+                if self.created_at else None
+            ),
+            'updated_at': (
+                self.updated_at.isoformat()
+                if self.updated_at else None
+            )
         }
