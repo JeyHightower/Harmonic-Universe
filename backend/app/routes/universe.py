@@ -4,249 +4,363 @@ from ..models.universe import Universe
 from ..models.user import User
 from .. import db
 import json
-from sqlalchemy import or_
+from sqlalchemy import or_, select
 from ..auth import get_current_user
 from ..schemas.universe import UniverseCreate, UniverseUpdate, UniverseResponse
 from flask_login import current_user, login_required
 from http import HTTPStatus
+from ..utils.auth import check_universe_access
 
-universe_bp = Blueprint('universe', __name__)
+bp = Blueprint('universe', __name__)
 
-@universe_bp.route('/universes', methods=['POST'])
-@login_required
+@bp.route('/universes', methods=['POST'])
+@jwt_required()
 def create_universe():
     """Create a new universe."""
     try:
+        user_id = get_jwt_identity()
+        try:
+            user_id = int(user_id)
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid user ID format"}), HTTPStatus.BAD_REQUEST
+
         data = request.get_json()
-        universe_data = UniverseCreate(**data)
+        if not data:
+            return jsonify({"error": "No data provided"}), HTTPStatus.BAD_REQUEST
+
+        # Validate required fields
+        if 'name' not in data:
+            return jsonify({"error": "Name is required"}), HTTPStatus.BAD_REQUEST
 
         universe = Universe(
-            name=universe_data.name,
-            description=universe_data.description,
-            is_public=universe_data.is_public,
-            allow_guests=universe_data.allow_guests,
-            user_id=current_user.id,
-            music_parameters=universe_data.music_parameters.dict() if universe_data.music_parameters else {},
-            visual_parameters=universe_data.visual_parameters.dict() if universe_data.visual_parameters else {}
+            name=data['name'],
+            description=data.get('description', ''),
+            user_id=user_id,
+            is_public=data.get('is_public', True),
+            max_participants=data.get('max_participants', 10),
+            music_parameters=data.get('music_parameters', {}),
+            visual_parameters=data.get('visual_parameters', {})
         )
 
         db.session.add(universe)
         db.session.commit()
 
-        return jsonify(UniverseResponse.from_orm(universe).dict()), HTTPStatus.CREATED
+        response_data = universe.to_dict()
+        return jsonify(response_data), HTTPStatus.CREATED
 
     except Exception as e:
         current_app.logger.error(f"Error creating universe: {str(e)}")
         db.session.rollback()
         return jsonify({"error": str(e)}), HTTPStatus.BAD_REQUEST
 
-@universe_bp.route('/universes/<int:universe_id>', methods=['PUT'])
-@login_required
-def update_universe(universe_id: int):
+@bp.route('/universes/<universe_id>', methods=['PUT'])
+@jwt_required()
+def update_universe(universe_id: str):
     """Update an existing universe."""
     try:
-        universe = Universe.query.get_or_404(universe_id)
+        try:
+            universe_id = int(universe_id)
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid universe ID format"}), HTTPStatus.BAD_REQUEST
 
-        if not universe.can_user_edit(current_user.id):
+        stmt = select(Universe).filter_by(id=universe_id)
+        universe = db.session.execute(stmt).unique().scalar_one_or_none()
+
+        if not universe:
+            return jsonify({"error": "Universe not found"}), HTTPStatus.NOT_FOUND
+
+        user_id = get_jwt_identity()
+        if not universe.can_user_edit(int(user_id)):
             return jsonify({"error": "Unauthorized"}), HTTPStatus.FORBIDDEN
 
         data = request.get_json()
-        update_data = UniverseUpdate(**data)
 
-        if update_data.name is not None:
-            universe.name = update_data.name
-        if update_data.description is not None:
-            universe.description = update_data.description
-        if update_data.is_public is not None:
-            universe.is_public = update_data.is_public
-        if update_data.allow_guests is not None:
-            universe.allow_guests = update_data.allow_guests
-        if update_data.music_parameters is not None:
-            universe.music_parameters = update_data.music_parameters.dict()
-        if update_data.visual_parameters is not None:
-            universe.visual_parameters = update_data.visual_parameters.dict()
+        if 'name' in data:
+            universe.name = data['name']
+        if 'description' in data:
+            universe.description = data['description']
+        if 'is_public' in data:
+            universe.is_public = data['is_public']
+        if 'max_participants' in data:
+            universe.max_participants = data['max_participants']
+        if 'music_parameters' in data:
+            universe.music_parameters = data['music_parameters']
+        if 'visual_parameters' in data:
+            universe.visual_parameters = data['visual_parameters']
 
         db.session.commit()
 
-        return jsonify(UniverseResponse.from_orm(universe).dict())
+        return jsonify(universe.to_dict())
 
     except Exception as e:
         current_app.logger.error(f"Error updating universe: {str(e)}")
         db.session.rollback()
         return jsonify({"error": str(e)}), HTTPStatus.BAD_REQUEST
 
-@universe_bp.route('/universes/<int:universe_id>', methods=['GET'])
-def get_universe(universe_id: int):
+@bp.route('/universes/<universe_id>', methods=['GET'])
+@jwt_required(optional=True)
+def get_universe(universe_id: str):
     """Get a specific universe."""
-    universe = Universe.query.get_or_404(universe_id)
+    try:
+        try:
+            universe_id = int(universe_id)
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid universe ID format"}), HTTPStatus.BAD_REQUEST
 
-    if not universe.can_user_access(current_user.id if current_user.is_authenticated else None):
-        return jsonify({"error": "Unauthorized"}), HTTPStatus.FORBIDDEN
+        stmt = select(Universe).filter_by(id=universe_id)
+        universe = db.session.execute(stmt).unique().scalar_one_or_none()
 
-    return jsonify(UniverseResponse.from_orm(universe).dict())
+        if not universe:
+            return jsonify({"error": "Universe not found"}), HTTPStatus.NOT_FOUND
 
-@universe_bp.route('/universes', methods=['GET'])
+        user_id = get_jwt_identity()
+        if not universe.can_user_access(int(user_id) if user_id else None):
+            return jsonify({"error": "Unauthorized"}), HTTPStatus.FORBIDDEN
+
+        return jsonify(universe.to_dict())
+    except Exception as e:
+        current_app.logger.error(f"Error getting universe: {str(e)}")
+        return jsonify({"error": str(e)}), HTTPStatus.BAD_REQUEST
+
+@bp.route('/universes', methods=['GET'])
+@jwt_required(optional=True)
 def list_universes():
     """List all accessible universes."""
-    universes = Universe.get_accessible_universes(
-        current_user.id if current_user.is_authenticated else None
-    )
-    return jsonify([UniverseResponse.from_orm(u).dict() for u in universes])
+    try:
+        user_id = get_jwt_identity()
+        user_id = int(user_id) if user_id else None
 
-@universe_bp.route('/universes/<int:universe_id>/parameters', methods=['PATCH'])
-@login_required
-def update_parameters(universe_id: int):
+        stmt = select(Universe).where(
+            (Universe.is_public == True) | (Universe.user_id == user_id)
+        )
+        universes = db.session.execute(stmt).unique().scalars().all()
+        return jsonify({
+            "universes": [u.to_dict() for u in universes]
+        }), HTTPStatus.OK
+    except Exception as e:
+        current_app.logger.error(f"Error listing universes: {str(e)}")
+        return jsonify({"error": str(e)}), HTTPStatus.BAD_REQUEST
+
+@bp.route('/universes/<universe_id>/parameters', methods=['PATCH'])
+@jwt_required()
+def update_parameters(universe_id: str):
     """Update universe parameters."""
     try:
-        universe = Universe.query.get_or_404(universe_id)
+        try:
+            universe_id = int(universe_id)
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid universe ID format"}), HTTPStatus.BAD_REQUEST
 
-        if not universe.can_user_edit(current_user.id):
+        stmt = select(Universe).filter_by(id=universe_id)
+        universe = db.session.execute(stmt).unique().scalar_one_or_none()
+
+        if not universe:
+            return jsonify({"error": "Universe not found"}), HTTPStatus.NOT_FOUND
+
+        user_id = get_jwt_identity()
+        if not universe.can_user_edit(int(user_id)):
             return jsonify({"error": "Unauthorized"}), HTTPStatus.FORBIDDEN
 
         data = request.get_json()
-        update_data = UniverseUpdate(**data)
 
-        if update_data.music_parameters is not None:
-            universe.music_parameters = update_data.music_parameters.dict()
-        if update_data.visual_parameters is not None:
-            universe.visual_parameters = update_data.visual_parameters.dict()
+        if 'music_parameters' in data:
+            universe.music_parameters.update(data['music_parameters'])
+        if 'visual_parameters' in data:
+            universe.visual_parameters.update(data['visual_parameters'])
 
         db.session.commit()
 
-        return jsonify(UniverseResponse.from_orm(universe).dict())
-
+        return jsonify(universe.to_dict())
     except Exception as e:
-        current_app.logger.error(f"Error updating parameters: {str(e)}")
+        current_app.logger.error(f"Error updating universe parameters: {str(e)}")
         db.session.rollback()
         return jsonify({"error": str(e)}), HTTPStatus.BAD_REQUEST
 
-@universe_bp.route('/my', methods=['GET'])
+@bp.route('/my', methods=['GET'])
 @jwt_required()
 def get_my_universes():
-    """Get universes owned by the current user"""
-    current_user = get_current_user()
-    if not current_user:
-        return jsonify({'error': 'User not found'}), 404
-
-    universes = Universe.query.filter_by(creator_id=current_user.id).all()
-    return jsonify({
-        'universes': [universe.to_dict() for universe in universes]
-    }), 200
-
-@universe_bp.route('/owned', methods=['GET'])
-@jwt_required()
-def get_owned_universes():
-    """Get universes owned by the current user"""
-    current_user = get_current_user()
-    if not current_user:
-        return jsonify({'error': 'User not found'}), 404
-
-    universes = Universe.query.filter_by(creator_id=current_user.id).all()
-    return jsonify({
-        'universes': [universe.to_dict() for universe in universes]
-    }), 200
-
-@universe_bp.route('/<int:id>', methods=['DELETE'])
-@jwt_required()
-def delete_universe(id):
-    """Delete a universe"""
-    universe = Universe.query.get_or_404(id)
-    user_id = get_jwt_identity()
-
-    if not universe.can_modify(user_id):
-        return {"error": "Access denied"}, 403
-
-    db.session.delete(universe)
-    db.session.commit()
-    return '', 204
-
-@universe_bp.route('/<int:id>/parameters', methods=['PUT'])
-@jwt_required()
-def update_parameters_old(id):
-    """Update universe parameters"""
-    universe = Universe.query.get_or_404(id)
-    user_id = get_jwt_identity()
-
-    if not universe.can_modify(user_id):
-        return {"error": "Access denied"}, 403
-
-    data = request.get_json()
-    universe.parameters.update(data['parameters'])
-    db.session.commit()
-
-    return universe.to_dict(), 200
-
-@universe_bp.route('/<int:id>/collaborators', methods=['POST'])
-@jwt_required()
-def add_collaborator(id):
-    """Add a collaborator to a universe"""
+    """Get universes where user is a collaborator."""
     try:
         user_id = get_jwt_identity()
-        universe = Universe.query.get_or_404(id)
+        try:
+            user_id = int(user_id)
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid user ID format"}), HTTPStatus.BAD_REQUEST
 
-        if not universe.can_modify(user_id):
-            return {'error': 'Not authorized'}, 403
+        stmt = select(Universe).join(
+            Universe.collaborators
+        ).filter(User.id == user_id)
+        universes = db.session.execute(stmt).scalars().all()
+
+        return jsonify({
+            "universes": [UniverseResponse.from_orm(u).dict() for u in universes]
+        }), HTTPStatus.OK
+
+    except Exception as e:
+        current_app.logger.error(f"Error getting user universes: {str(e)}")
+        return jsonify({"error": str(e)}), HTTPStatus.BAD_REQUEST
+
+@bp.route('/owned', methods=['GET'])
+@jwt_required()
+def get_owned_universes():
+    """Get universes owned by the user."""
+    try:
+        user_id = get_jwt_identity()
+        try:
+            user_id = int(user_id)
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid user ID format"}), HTTPStatus.BAD_REQUEST
+
+        stmt = select(Universe).filter_by(user_id=user_id)
+        universes = db.session.execute(stmt).scalars().all()
+
+        return jsonify({
+            "universes": [UniverseResponse.from_orm(u).dict() for u in universes]
+        }), HTTPStatus.OK
+
+    except Exception as e:
+        current_app.logger.error(f"Error getting owned universes: {str(e)}")
+        return jsonify({"error": str(e)}), HTTPStatus.BAD_REQUEST
+
+@bp.route('/universes/<universe_id>', methods=['DELETE'])
+@jwt_required()
+def delete_universe(universe_id: str):
+    """Delete a universe"""
+    try:
+        try:
+            universe_id = int(universe_id)
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid universe ID format"}), HTTPStatus.BAD_REQUEST
+
+        stmt = select(Universe).filter_by(id=universe_id).options(db.joinedload(Universe.collaborators))
+        universe = db.session.execute(stmt).unique().scalar_one_or_none()
+
+        if not universe:
+            return jsonify({"error": "Universe not found"}), HTTPStatus.NOT_FOUND
+
+        user_id = get_jwt_identity()
+        if not check_universe_access(universe, user_id, require_ownership=True):
+            return jsonify({"error": "Access denied"}), HTTPStatus.FORBIDDEN
+
+        db.session.delete(universe)
+        db.session.commit()
+        return '', HTTPStatus.NO_CONTENT
+    except Exception as e:
+        current_app.logger.error(f"Error deleting universe: {str(e)}")
+        db.session.rollback()
+        return jsonify({"error": str(e)}), HTTPStatus.BAD_REQUEST
+
+@bp.route('/universes/<universe_id>/collaborators', methods=['GET'])
+@jwt_required()
+def get_collaborators(universe_id: str):
+    """Get all collaborators for a universe"""
+    try:
+        try:
+            universe_id = int(universe_id)
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid universe ID format"}), HTTPStatus.BAD_REQUEST
+
+        stmt = select(Universe).filter_by(id=universe_id)
+        universe = db.session.execute(stmt).scalar_one_or_none()
+
+        if not universe:
+            return jsonify({"error": "Universe not found"}), HTTPStatus.NOT_FOUND
+
+        user_id = get_jwt_identity()
+        if not check_universe_access(universe, user_id):
+            return jsonify({"error": "Access denied"}), HTTPStatus.FORBIDDEN
+
+        collaborators = [u.to_dict() for u in universe.collaborators]
+        return jsonify({"collaborators": collaborators}), HTTPStatus.OK
+
+    except Exception as e:
+        current_app.logger.error(f"Error getting collaborators: {str(e)}")
+        return jsonify({"error": str(e)}), HTTPStatus.BAD_REQUEST
+
+@bp.route('/universes/<universe_id>/collaborators/<collaborator_id>', methods=['DELETE'])
+@jwt_required()
+def remove_collaborator(universe_id: str, collaborator_id: str):
+    """Remove a collaborator from a universe"""
+    try:
+        try:
+            universe_id = int(universe_id)
+            collaborator_id = int(collaborator_id)
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid ID format"}), HTTPStatus.BAD_REQUEST
+
+        stmt = select(Universe).filter_by(id=universe_id).options(db.joinedload(Universe.collaborators))
+        universe = db.session.execute(stmt).unique().scalar_one_or_none()
+
+        if not universe:
+            return jsonify({"error": "Universe not found"}), HTTPStatus.NOT_FOUND
+
+        user_id = get_jwt_identity()
+        if not check_universe_access(universe, user_id, require_ownership=True):
+            return jsonify({"error": "Access denied"}), HTTPStatus.FORBIDDEN
+
+        stmt = select(User).filter_by(id=collaborator_id)
+        collaborator = db.session.execute(stmt).scalar_one_or_none()
+
+        if not collaborator:
+            return jsonify({"error": "Collaborator not found"}), HTTPStatus.NOT_FOUND
+
+        if collaborator not in universe.collaborators:
+            return jsonify({"error": "User is not a collaborator"}), HTTPStatus.NOT_FOUND
+
+        universe.collaborators.remove(collaborator)
+        universe.collaborators_count = len(universe.collaborators)
+        db.session.commit()
+
+        return '', HTTPStatus.NO_CONTENT
+
+    except Exception as e:
+        current_app.logger.error(f"Error removing collaborator: {str(e)}")
+        db.session.rollback()
+        return jsonify({"error": str(e)}), HTTPStatus.BAD_REQUEST
+
+@bp.route('/universes/<universe_id>/collaborators', methods=['POST'])
+@jwt_required()
+def add_collaborator(universe_id: str):
+    """Add a collaborator to a universe"""
+    try:
+        try:
+            universe_id = int(universe_id)
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid universe ID format"}), HTTPStatus.BAD_REQUEST
+
+        stmt = select(Universe).filter_by(id=universe_id).options(db.joinedload(Universe.collaborators))
+        universe = db.session.execute(stmt).unique().scalar_one_or_none()
+
+        if not universe:
+            return jsonify({"error": "Universe not found"}), HTTPStatus.NOT_FOUND
+
+        user_id = get_jwt_identity()
+        if not check_universe_access(universe, user_id, require_ownership=True):
+            return jsonify({"error": "Access denied"}), HTTPStatus.FORBIDDEN
 
         data = request.get_json()
         if not data or 'email' not in data:
-            return {'error': 'Email is required'}, 400
+            return jsonify({"error": "Email is required"}), HTTPStatus.BAD_REQUEST
 
-        collaborator = User.query.filter_by(email=data['email']).first()
+        stmt = select(User).filter_by(email=data['email'])
+        collaborator = db.session.execute(stmt).scalar_one_or_none()
+
         if not collaborator:
-            return {'error': 'User not found'}, 404
+            return jsonify({"error": "User not found"}), HTTPStatus.NOT_FOUND
 
-        if collaborator.id == user_id:
-            return {'error': 'Cannot add yourself as collaborator'}, 400
+        if str(collaborator.id) == user_id:
+            return jsonify({"error": "Cannot add yourself as collaborator"}), HTTPStatus.BAD_REQUEST
 
         if collaborator in universe.collaborators:
-            return {'error': 'User is already a collaborator'}, 400
+            return jsonify({"error": "User is already a collaborator"}), HTTPStatus.BAD_REQUEST
 
         universe.collaborators.append(collaborator)
+        universe.collaborators_count = len(universe.collaborators)
         db.session.commit()
 
-        return {'message': 'Collaborator added successfully'}, 201
+        return jsonify({"message": "Collaborator added successfully"}), HTTPStatus.CREATED
 
     except Exception as e:
+        current_app.logger.error(f"Error adding collaborator: {str(e)}")
         db.session.rollback()
-        return {'error': str(e)}, 422
-
-@universe_bp.route('/<int:id>/collaborators', methods=['GET'])
-@jwt_required()
-def get_collaborators(id):
-    """Get all collaborators for a universe"""
-    try:
-        user_id = get_jwt_identity()
-        universe = Universe.query.get_or_404(id)
-
-        if not universe.can_access(user_id):
-            return {'error': 'Not authorized'}, 403
-
-        collaborators = [u.to_dict() for u in universe.collaborators]
-        return {'collaborators': collaborators}, 200
-
-    except Exception as e:
-        return {'error': str(e)}, 422
-
-@universe_bp.route('/<int:id>/collaborators/<int:user_id>', methods=['DELETE'])
-@jwt_required()
-def remove_collaborator(id, user_id):
-    """Remove a collaborator from a universe"""
-    try:
-        current_user_id = get_jwt_identity()
-        universe = Universe.query.get_or_404(id)
-
-        if not universe.can_modify(current_user_id):
-            return {'error': 'Not authorized'}, 403
-
-        collaborator = User.query.get_or_404(user_id)
-        if collaborator not in universe.collaborators:
-            return {'error': 'User is not a collaborator'}, 404
-
-        universe.collaborators.remove(collaborator)
-        db.session.commit()
-
-        return {'message': 'Collaborator removed successfully'}, 200
-
-    except Exception as e:
-        db.session.rollback()
-        return {'error': str(e)}, 422
+        return jsonify({"error": str(e)}), HTTPStatus.BAD_REQUEST

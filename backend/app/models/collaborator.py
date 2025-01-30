@@ -35,8 +35,8 @@ class Collaborator(db.Model):
     )
 
     # Relationships
-    universe = relationship("Universe", back_populates="collaborators")
-    user = relationship("User", back_populates="collaborations")
+    universe = relationship("Universe", backref=db.backref("direct_collaborators", lazy="dynamic"))
+    user = relationship("User", backref=db.backref("collaborations", lazy="dynamic"))
 
     def __init__(
         self,

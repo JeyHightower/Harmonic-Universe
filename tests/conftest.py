@@ -58,6 +58,7 @@ def session(db):
 
     yield session
 
+    session.close()
     transaction.rollback()
     connection.close()
     session.remove()
@@ -71,3 +72,37 @@ def client(app):
 def runner(app):
     """Create a test runner for the app's Click commands."""
     return app.test_cli_runner()
+
+@pytest.fixture
+def test_user(session):
+    """Create a test user."""
+    user = User(
+        username='testuser',
+        email='test@example.com'
+    )
+    user.set_password('password')
+    session.add(user)
+    session.commit()
+    return user
+
+@pytest.fixture
+def test_universe(test_user, session):
+    """Create a test universe."""
+    universe = Universe(
+        name='Test Universe',
+        description='Test Description',
+        user_id=test_user.id,
+        is_public=False,
+        allow_guests=False,
+        music_parameters={},
+        visual_parameters={}
+    )
+    session.add(universe)
+    session.commit()
+    return universe
+
+@pytest.fixture
+def auth_headers(test_user):
+    """Create authentication headers for test user."""
+    token = create_access_token(identity=str(test_user.id))
+    return {'Authorization': f'Bearer {token}'}

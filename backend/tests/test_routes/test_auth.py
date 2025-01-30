@@ -1,20 +1,21 @@
 """Tests for authentication routes."""
 import pytest
 from flask import url_for
-from app.models.user import User
-from app.models.profile import Profile
+from sqlalchemy import select
+from app.models import User, Profile
+from app import db
 
-def test_register(client, app):
+def test_register(client):
     """Test user registration."""
     data = {
         'username': 'testuser',
         'email': 'test@example.com',
         'password': 'testpass123',
-        'bio': 'Test bio',
-        'preferences': {'theme': 'dark'}
+        'bio': 'Test bio'
     }
 
     response = client.post('/api/auth/register', json=data)
+    print("Response:", response.json)
     assert response.status_code == 201
     assert 'access_token' in response.json
     assert response.json['username'] == data['username']
@@ -22,10 +23,10 @@ def test_register(client, app):
     assert 'profile' in response.json
     assert response.json['profile']['bio'] == data['bio']
 
-def test_register_duplicate_username(client, user):
+def test_register_duplicate_username(client, test_user):
     """Test registration with duplicate username."""
     data = {
-        'username': user.username,
+        'username': test_user.username,
         'email': 'new@example.com',
         'password': 'testpass123'
     }
@@ -35,23 +36,23 @@ def test_register_duplicate_username(client, user):
     assert 'error' in response.json
     assert 'Username already exists' in response.json['error']
 
-def test_login(client, user):
+def test_login(client, test_user):
     """Test user login."""
     data = {
-        'email': user.email,
+        'email': test_user.email,
         'password': 'password123'  # Set in conftest.py
     }
 
     response = client.post('/api/auth/login', json=data)
     assert response.status_code == 200
     assert 'access_token' in response.json
-    assert response.json['username'] == user.username
-    assert response.json['email'] == user.email
+    assert response.json['username'] == test_user.username
+    assert response.json['email'] == test_user.email
 
-def test_login_invalid_credentials(client, user):
+def test_login_invalid_credentials(client, test_user):
     """Test login with invalid credentials."""
     data = {
-        'email': user.email,
+        'email': test_user.email,
         'password': 'wrongpass'
     }
 
@@ -59,14 +60,15 @@ def test_login_invalid_credentials(client, user):
     assert response.status_code == 401
     assert 'error' in response.json
 
-def test_get_current_user(client, auth_headers, user):
+def test_get_current_user(client, auth_headers, test_user):
     """Test getting current user details."""
-    response = client.get('/api/auth/user', headers=auth_headers)
+    response = client.get('/api/auth/me', headers=auth_headers)
+    print("Response:", response.json)
     assert response.status_code == 200
-    assert response.json['username'] == user.username
-    assert response.json['email'] == user.email
+    assert response.json['username'] == test_user.username
+    assert response.json['email'] == test_user.email
 
-def test_update_user(client, auth_headers, user):
+def test_update_user(client, auth_headers, test_user):
     """Test updating user details."""
     data = {
         'username': 'newusername',
@@ -75,21 +77,24 @@ def test_update_user(client, auth_headers, user):
     }
 
     response = client.put('/api/auth/me', json=data, headers=auth_headers)
+    print("Response:", response.json)
     assert response.status_code == 200
     assert response.json['username'] == data['username']
     assert 'profile' in response.json
     assert response.json['profile']['bio'] == data['bio']
     assert response.json['profile']['preferences'] == data['preferences']
 
-def test_delete_user(client, auth_headers, user):
+def test_delete_user(client, auth_headers, test_user):
     """Test deleting user account."""
     response = client.delete('/api/auth/me', headers=auth_headers)
     assert response.status_code == 204
 
-    # Verify user is deleted
-    assert User.query.get(user.id) is None
+    # Verify user is deleted using select()
+    stmt = select(User).filter_by(id=test_user.id)
+    deleted_user = db.session.execute(stmt).scalar_one_or_none()
+    assert deleted_user is None
 
-def test_deactivate_activate_account(client, auth_headers, user):
+def test_deactivate_activate_account(client, auth_headers, test_user):
     """Test account deactivation and activation."""
     # Test deactivation
     response = client.post('/api/auth/me/deactivate', headers=auth_headers)
@@ -98,7 +103,7 @@ def test_deactivate_activate_account(client, auth_headers, user):
 
     # Verify login fails when deactivated
     login_data = {
-        'email': user.email,
+        'email': test_user.email,
         'password': 'password123'
     }
     response = client.post('/api/auth/login', json=login_data)

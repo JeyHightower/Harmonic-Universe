@@ -45,6 +45,9 @@ def register_error_handlers(app):
     @app.errorhandler(401)
     def unauthorized_error(error):
         """Handle 401 errors."""
+        app.logger.error(f"Unauthorized error occurred: {str(error)}")
+        app.logger.error(f"Error type: {type(error)}")
+        app.logger.error(f"Error description: {getattr(error, 'description', 'No description')}")
         response = {
             'error': 'Unauthorized',
             'message': 'Authentication is required'

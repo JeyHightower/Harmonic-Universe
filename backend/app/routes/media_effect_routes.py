@@ -1,283 +1,294 @@
 """Media effect routes for the API."""
-from flask import Blueprint, jsonify, request
-from flask_login import login_required, current_user
-from ..models import db, VisualEffect, AudioTrack, Scene, Storyboard, Universe
+from flask import Blueprint, jsonify, request, current_app, g
+from flask_jwt_extended import (
+    jwt_required, get_jwt_identity, verify_jwt_in_request,
+    decode_token, get_jwt, JWTManager, current_user
+)
+from ..models import db, VisualEffect, AudioTrack, Scene, Storyboard, Universe, User
 from ..utils.auth import check_universe_access
 from ..utils.validation import validate_visual_effect_data, validate_audio_track_data
+from functools import wraps
+from sqlalchemy import select
 
-bp = Blueprint('media_effects', __name__)
+media_effects = Blueprint('media_effects', __name__)
 
 # Visual Effects Routes
-@bp.route('/api/universes/<int:universe_id>/storyboards/<int:storyboard_id>/scenes/<int:scene_id>/visual-effects', methods=['GET'])
-@login_required
-def get_visual_effects(universe_id, storyboard_id, scene_id):
+@media_effects.route('/api/scenes/<int:scene_id>/visual-effects', methods=['GET'])
+@jwt_required()
+def get_visual_effects(scene_id):
     """Get all visual effects for a scene."""
-    universe = Universe.query.get_or_404(universe_id)
-    if not check_universe_access(universe, current_user):
-        return jsonify({'error': 'Unauthorized'}), 403
-
-    storyboard = Storyboard.query.filter_by(
-        id=storyboard_id,
-        universe_id=universe_id
-    ).first_or_404()
-
-    scene = Scene.query.filter_by(
-        id=scene_id,
-        storyboard_id=storyboard_id
-    ).first_or_404()
-
-    effects = VisualEffect.query.filter_by(scene_id=scene_id).order_by(VisualEffect.start_time).all()
-    return jsonify([effect.to_dict() for effect in effects])
-
-@bp.route('/api/universes/<int:universe_id>/storyboards/<int:storyboard_id>/scenes/<int:scene_id>/visual-effects', methods=['POST'])
-@login_required
-def create_visual_effect(universe_id, storyboard_id, scene_id):
-    """Create a new visual effect."""
-    universe = Universe.query.get_or_404(universe_id)
-    if not check_universe_access(universe, current_user):
-        return jsonify({'error': 'Unauthorized'}), 403
-
-    storyboard = Storyboard.query.filter_by(
-        id=storyboard_id,
-        universe_id=universe_id
-    ).first_or_404()
-
-    scene = Scene.query.filter_by(
-        id=scene_id,
-        storyboard_id=storyboard_id
-    ).first_or_404()
-
-    data = request.get_json()
-    validation_error = validate_visual_effect_data(data)
-    if validation_error:
-        return jsonify({'error': validation_error}), 400
-
-    effect = VisualEffect(
-        scene_id=scene_id,
-        effect_type=data['effect_type'],
-        parameters=data['parameters'],
-        start_time=data['start_time'],
-        duration=data['duration']
-    )
-
     try:
+        user_id = get_jwt_identity()  # Keep as string
+        current_app.logger.debug(f"User ID from JWT: {user_id}")
+
+        scene = db.session.get(Scene, scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
+
+        storyboard = scene.storyboard
+        universe = storyboard.universe
+
+        if not check_universe_access(universe, user_id):
+            return jsonify({'error': 'Unauthorized'}), 403
+
+        stmt = select(VisualEffect).filter_by(scene_id=scene_id)
+        effects = db.session.execute(stmt).scalars().all()
+        return jsonify([effect.to_dict() for effect in effects])
+    except Exception as e:
+        current_app.logger.error(f"Error in get_visual_effects: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@media_effects.route('/api/scenes/<int:scene_id>/visual-effects', methods=['POST'])
+@jwt_required()
+def create_visual_effect(scene_id):
+    """Create a new visual effect."""
+    try:
+        user_id = get_jwt_identity()  # Keep as string
+        current_app.logger.debug(f"User ID from JWT: {user_id}")
+
+        scene = db.session.get(Scene, scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
+
+        storyboard = scene.storyboard
+        universe = storyboard.universe
+
+        if not check_universe_access(universe, user_id):
+            return jsonify({'error': 'Unauthorized'}), 403
+
+        data = request.get_json()
+        validation_error = validate_visual_effect_data(data)
+        if validation_error:
+            return jsonify({'error': validation_error}), 400
+
+        effect = VisualEffect(
+            scene_id=scene_id,
+            name=data['name'],
+            effect_type=data['effect_type'],
+            parameters=data['parameters']
+        )
         db.session.add(effect)
         db.session.commit()
+
         return jsonify(effect.to_dict()), 201
     except Exception as e:
-        db.session.rollback()
+        current_app.logger.error(f"Error in create_visual_effect: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@bp.route('/api/universes/<int:universe_id>/storyboards/<int:storyboard_id>/scenes/<int:scene_id>/visual-effects/<int:effect_id>', methods=['PUT'])
-@login_required
-def update_visual_effect(universe_id, storyboard_id, scene_id, effect_id):
+@media_effects.route('/api/scenes/<int:scene_id>/visual-effects/<int:effect_id>', methods=['PUT'])
+@jwt_required()
+def update_visual_effect(scene_id, effect_id):
     """Update a visual effect."""
-    universe = Universe.query.get_or_404(universe_id)
-    if not check_universe_access(universe, current_user):
-        return jsonify({'error': 'Unauthorized'}), 403
-
-    storyboard = Storyboard.query.filter_by(
-        id=storyboard_id,
-        universe_id=universe_id
-    ).first_or_404()
-
-    scene = Scene.query.filter_by(
-        id=scene_id,
-        storyboard_id=storyboard_id
-    ).first_or_404()
-
-    effect = VisualEffect.query.filter_by(
-        id=effect_id,
-        scene_id=scene_id
-    ).first_or_404()
-
-    data = request.get_json()
-    validation_error = validate_visual_effect_data(data, update=True)
-    if validation_error:
-        return jsonify({'error': validation_error}), 400
-
     try:
-        if 'effect_type' in data:
-            effect.effect_type = data['effect_type']
-        if 'parameters' in data:
-            effect.parameters = data['parameters']
-        if 'start_time' in data:
-            effect.start_time = data['start_time']
-        if 'duration' in data:
-            effect.duration = data['duration']
+        user_id = get_jwt_identity()  # Keep as string
+        current_app.logger.debug(f"User ID from JWT: {user_id}")
 
-        db.session.commit()
-        return jsonify(effect.to_dict())
+        scene = db.session.get(Scene, scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
+
+        storyboard = scene.storyboard
+        universe = storyboard.universe
+
+        if not check_universe_access(universe, user_id):
+            return jsonify({'error': 'Unauthorized'}), 403
+
+        stmt = select(VisualEffect).filter_by(id=effect_id, scene_id=scene_id)
+        effect = db.session.execute(stmt).scalar_one_or_none()
+        if not effect:
+            return jsonify({'error': 'Visual effect not found'}), 404
+
+        data = request.get_json()
+        validation_error = validate_visual_effect_data(data, update=True)
+        if validation_error:
+            return jsonify({'error': validation_error}), 400
+
+        try:
+            if 'name' in data:
+                effect.name = data['name']
+            if 'effect_type' in data:
+                effect.effect_type = data['effect_type']
+            if 'parameters' in data:
+                effect.parameters = data['parameters']
+
+            db.session.commit()
+            return jsonify(effect.to_dict())
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
     except Exception as e:
-        db.session.rollback()
+        current_app.logger.error(f"Error in update_visual_effect: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@bp.route('/api/universes/<int:universe_id>/storyboards/<int:storyboard_id>/scenes/<int:scene_id>/visual-effects/<int:effect_id>', methods=['DELETE'])
-@login_required
-def delete_visual_effect(universe_id, storyboard_id, scene_id, effect_id):
+@media_effects.route('/api/scenes/<int:scene_id>/visual-effects/<int:effect_id>', methods=['DELETE'])
+@jwt_required()
+def delete_visual_effect(scene_id, effect_id):
     """Delete a visual effect."""
-    universe = Universe.query.get_or_404(universe_id)
-    if not check_universe_access(universe, current_user):
-        return jsonify({'error': 'Unauthorized'}), 403
-
-    storyboard = Storyboard.query.filter_by(
-        id=storyboard_id,
-        universe_id=universe_id
-    ).first_or_404()
-
-    scene = Scene.query.filter_by(
-        id=scene_id,
-        storyboard_id=storyboard_id
-    ).first_or_404()
-
-    effect = VisualEffect.query.filter_by(
-        id=effect_id,
-        scene_id=scene_id
-    ).first_or_404()
-
     try:
-        db.session.delete(effect)
-        db.session.commit()
-        return '', 204
+        user_id = get_jwt_identity()  # Keep as string
+        current_app.logger.debug(f"User ID from JWT: {user_id}")
+
+        scene = db.session.get(Scene, scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
+
+        storyboard = scene.storyboard
+        universe = storyboard.universe
+
+        if not check_universe_access(universe, user_id):
+            return jsonify({'error': 'Unauthorized'}), 403
+
+        stmt = select(VisualEffect).filter_by(id=effect_id, scene_id=scene_id)
+        effect = db.session.execute(stmt).scalar_one_or_none()
+        if not effect:
+            return jsonify({'error': 'Visual effect not found'}), 404
+
+        try:
+            db.session.delete(effect)
+            db.session.commit()
+            return '', 204
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
     except Exception as e:
-        db.session.rollback()
+        current_app.logger.error(f"Error in delete_visual_effect: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 # Audio Track Routes
-@bp.route('/api/universes/<int:universe_id>/storyboards/<int:storyboard_id>/scenes/<int:scene_id>/audio-tracks', methods=['GET'])
-@login_required
-def get_audio_tracks(universe_id, storyboard_id, scene_id):
+@media_effects.route('/api/scenes/<int:scene_id>/audio-tracks', methods=['GET'])
+@jwt_required()
+def get_audio_tracks(scene_id):
     """Get all audio tracks for a scene."""
-    universe = Universe.query.get_or_404(universe_id)
-    if not check_universe_access(universe, current_user):
-        return jsonify({'error': 'Unauthorized'}), 403
-
-    storyboard = Storyboard.query.filter_by(
-        id=storyboard_id,
-        universe_id=universe_id
-    ).first_or_404()
-
-    scene = Scene.query.filter_by(
-        id=scene_id,
-        storyboard_id=storyboard_id
-    ).first_or_404()
-
-    tracks = AudioTrack.query.filter_by(scene_id=scene_id).order_by(AudioTrack.start_time).all()
-    return jsonify([track.to_dict() for track in tracks])
-
-@bp.route('/api/universes/<int:universe_id>/storyboards/<int:storyboard_id>/scenes/<int:scene_id>/audio-tracks', methods=['POST'])
-@login_required
-def create_audio_track(universe_id, storyboard_id, scene_id):
-    """Create a new audio track."""
-    universe = Universe.query.get_or_404(universe_id)
-    if not check_universe_access(universe, current_user):
-        return jsonify({'error': 'Unauthorized'}), 403
-
-    storyboard = Storyboard.query.filter_by(
-        id=storyboard_id,
-        universe_id=universe_id
-    ).first_or_404()
-
-    scene = Scene.query.filter_by(
-        id=scene_id,
-        storyboard_id=storyboard_id
-    ).first_or_404()
-
-    data = request.get_json()
-    validation_error = validate_audio_track_data(data)
-    if validation_error:
-        return jsonify({'error': validation_error}), 400
-
-    track = AudioTrack(
-        scene_id=scene_id,
-        track_type=data['track_type'],
-        parameters=data['parameters'],
-        start_time=data['start_time'],
-        duration=data['duration'],
-        volume=data.get('volume', 1.0)
-    )
-
     try:
-        db.session.add(track)
-        db.session.commit()
-        return jsonify(track.to_dict()), 201
+        user_id = get_jwt_identity()  # Keep as string
+        current_app.logger.debug(f"User ID from JWT: {user_id}")
+
+        scene = db.session.get(Scene, scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
+
+        storyboard = scene.storyboard
+        universe = storyboard.universe
+
+        if not check_universe_access(universe, user_id):
+            return jsonify({'error': 'Unauthorized'}), 403
+
+        stmt = select(AudioTrack).filter_by(scene_id=scene_id)
+        tracks = db.session.execute(stmt).scalars().all()
+        return jsonify([track.to_dict() for track in tracks])
     except Exception as e:
-        db.session.rollback()
+        current_app.logger.error(f"Error in get_audio_tracks: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@bp.route('/api/universes/<int:universe_id>/storyboards/<int:storyboard_id>/scenes/<int:scene_id>/audio-tracks/<int:track_id>', methods=['PUT'])
-@login_required
-def update_audio_track(universe_id, storyboard_id, scene_id, track_id):
-    """Update an audio track."""
-    universe = Universe.query.get_or_404(universe_id)
-    if not check_universe_access(universe, current_user):
-        return jsonify({'error': 'Unauthorized'}), 403
-
-    storyboard = Storyboard.query.filter_by(
-        id=storyboard_id,
-        universe_id=universe_id
-    ).first_or_404()
-
-    scene = Scene.query.filter_by(
-        id=scene_id,
-        storyboard_id=storyboard_id
-    ).first_or_404()
-
-    track = AudioTrack.query.filter_by(
-        id=track_id,
-        scene_id=scene_id
-    ).first_or_404()
-
-    data = request.get_json()
-    validation_error = validate_audio_track_data(data, update=True)
-    if validation_error:
-        return jsonify({'error': validation_error}), 400
-
+@media_effects.route('/api/scenes/<int:scene_id>/audio-tracks', methods=['POST'])
+@jwt_required()
+def create_audio_track(scene_id):
+    """Create a new audio track."""
     try:
+        user_id = get_jwt_identity()  # Keep as string
+        current_app.logger.debug(f"User ID from JWT: {user_id}")
+
+        scene = db.session.get(Scene, scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
+
+        storyboard = scene.storyboard
+        universe = storyboard.universe
+
+        if not check_universe_access(universe, user_id):
+            return jsonify({'error': 'Unauthorized'}), 403
+
+        data = request.get_json()
+        validation_error = validate_audio_track_data(data)
+        if validation_error:
+            return jsonify({'error': validation_error}), 400
+
+        track = AudioTrack(
+            scene_id=scene_id,
+            name=data['name'],
+            track_type=data['track_type'],
+            file_path=data.get('file_path'),
+            parameters=data.get('parameters', {})
+        )
+        db.session.add(track)
+        db.session.commit()
+
+        return jsonify(track.to_dict()), 201
+    except Exception as e:
+        current_app.logger.error(f"Error in create_audio_track: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@media_effects.route('/api/scenes/<int:scene_id>/audio-tracks/<int:track_id>', methods=['PUT'])
+@jwt_required()
+def update_audio_track(scene_id, track_id):
+    """Update an audio track."""
+    try:
+        user_id = get_jwt_identity()  # Keep as string
+        current_app.logger.debug(f"User ID from JWT: {user_id}")
+
+        scene = db.session.get(Scene, scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
+
+        storyboard = scene.storyboard
+        universe = storyboard.universe
+
+        if not check_universe_access(universe, user_id):
+            return jsonify({'error': 'Unauthorized'}), 403
+
+        stmt = select(AudioTrack).filter_by(id=track_id, scene_id=scene_id)
+        track = db.session.execute(stmt).scalar_one_or_none()
+        if not track:
+            return jsonify({'error': 'Audio track not found'}), 404
+
+        data = request.get_json()
+        validation_error = validate_audio_track_data(data, update=True)
+        if validation_error:
+            return jsonify({'error': validation_error}), 400
+
+        if 'name' in data:
+            track.name = data['name']
         if 'track_type' in data:
             track.track_type = data['track_type']
+        if 'file_path' in data:
+            track.file_path = data['file_path']
         if 'parameters' in data:
             track.parameters = data['parameters']
-        if 'start_time' in data:
-            track.start_time = data['start_time']
-        if 'duration' in data:
-            track.duration = data['duration']
-        if 'volume' in data:
-            track.volume = data['volume']
 
         db.session.commit()
         return jsonify(track.to_dict())
     except Exception as e:
+        current_app.logger.error(f"Error in update_audio_track: {str(e)}")
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@bp.route('/api/universes/<int:universe_id>/storyboards/<int:storyboard_id>/scenes/<int:scene_id>/audio-tracks/<int:track_id>', methods=['DELETE'])
-@login_required
-def delete_audio_track(universe_id, storyboard_id, scene_id, track_id):
+@media_effects.route('/api/scenes/<int:scene_id>/audio-tracks/<int:track_id>', methods=['DELETE'])
+@jwt_required()
+def delete_audio_track(scene_id, track_id):
     """Delete an audio track."""
-    universe = Universe.query.get_or_404(universe_id)
-    if not check_universe_access(universe, current_user):
-        return jsonify({'error': 'Unauthorized'}), 403
-
-    storyboard = Storyboard.query.filter_by(
-        id=storyboard_id,
-        universe_id=universe_id
-    ).first_or_404()
-
-    scene = Scene.query.filter_by(
-        id=scene_id,
-        storyboard_id=storyboard_id
-    ).first_or_404()
-
-    track = AudioTrack.query.filter_by(
-        id=track_id,
-        scene_id=scene_id
-    ).first_or_404()
-
     try:
+        user_id = get_jwt_identity()  # Keep as string
+        current_app.logger.debug(f"User ID from JWT: {user_id}")
+
+        scene = db.session.get(Scene, scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
+
+        storyboard = scene.storyboard
+        universe = storyboard.universe
+
+        if not check_universe_access(universe, user_id):
+            return jsonify({'error': 'Unauthorized'}), 403
+
+        stmt = select(AudioTrack).filter_by(id=track_id, scene_id=scene_id)
+        track = db.session.execute(stmt).scalar_one_or_none()
+        if not track:
+            return jsonify({'error': 'Audio track not found'}), 404
+
         db.session.delete(track)
         db.session.commit()
         return '', 204
     except Exception as e:
+        current_app.logger.error(f"Error in delete_audio_track: {str(e)}")
         db.session.rollback()
         return jsonify({'error': str(e)}), 500

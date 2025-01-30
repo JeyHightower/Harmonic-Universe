@@ -1,15 +1,21 @@
-"""Association tables for model relationships."""
-from . import db
+"""Association tables for many-to-many relationships."""
+from sqlalchemy import Column, Integer, ForeignKey, Table
+from .. import db
 
-# Association tables
-universe_collaborators = db.Table(
+# Association table for universe collaborators
+universe_collaborators = Table(
     'universe_collaborators',
-    db.Column('user_id', db.Integer, db.ForeignKey('users.id', ondelete="CASCADE"), primary_key=True),
-    db.Column('universe_id', db.Integer, db.ForeignKey('universes.id', ondelete="CASCADE"), primary_key=True)
+    db.Model.metadata,
+    Column('universe_id', Integer, ForeignKey('universes.id'), primary_key=True),
+    Column('user_id', Integer, ForeignKey('users.id'), primary_key=True),
+    extend_existing=True
 )
 
-universe_access = db.Table(
+# Association table for universe access
+universe_access = Table(
     'universe_access',
-    db.Column('user_id', db.Integer, db.ForeignKey('users.id', ondelete="CASCADE"), primary_key=True),
-    db.Column('universe_id', db.Integer, db.ForeignKey('universes.id', ondelete="CASCADE"), primary_key=True)
+    db.Model.metadata,
+    Column('universe_id', Integer, ForeignKey('universes.id'), primary_key=True),
+    Column('user_id', Integer, ForeignKey('users.id'), primary_key=True),
+    extend_existing=True
 )

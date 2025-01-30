@@ -1,6 +1,7 @@
 """Tests for profile routes."""
 import pytest
-from app.models.profile import Profile
+from flask import url_for
+from app.models import Profile, User
 
 def test_create_profile(client, auth_headers, user):
     """Test profile creation."""

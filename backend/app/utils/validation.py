@@ -1,7 +1,38 @@
 """Validation utilities."""
 import re
 from typing import Optional, Dict, Any, Union
+from functools import wraps
+from flask import request, jsonify
 
+def validate_request_json(required_fields):
+    """
+    Decorator to validate that required fields are present in request JSON.
+
+    Args:
+        required_fields (list): List of field names that must be present in request JSON
+
+    Returns:
+        Function: Decorated function that validates request JSON
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not request.is_json:
+                return jsonify({"error": "Request must be JSON"}), 400
+
+            data = request.json
+            if not data:
+                return jsonify({"error": "No JSON data provided"}), 400
+
+            missing_fields = [field for field in required_fields if field not in data]
+            if missing_fields:
+                return jsonify({
+                    "error": f"Missing required fields: {', '.join(missing_fields)}"
+                }), 400
+
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
 def validate_registration(data):
     """
@@ -160,12 +191,18 @@ def validate_visual_effect_data(data: Dict[str, Any], update: bool = False) -> O
         Error message if validation fails, None otherwise
     """
     if not update:
-        required_fields = ['effect_type', 'parameters', 'start_time', 'duration']
+        required_fields = ['name', 'effect_type', 'parameters']
         for field in required_fields:
             if field not in data:
                 return f"{field.capitalize()} is required"
 
-    valid_effect_types = ['particle', 'shader', 'post_process', 'environment']
+    if 'name' in data:
+        if not isinstance(data['name'], str):
+            return "Name must be a string"
+        if len(data['name']) > 200:
+            return "Name must be at most 200 characters"
+
+    valid_effect_types = ['fade', 'blur', 'particle', 'shader', 'post_process', 'environment']
     if 'effect_type' in data:
         if not isinstance(data['effect_type'], str):
             return "Effect type must be a string"
@@ -175,18 +212,6 @@ def validate_visual_effect_data(data: Dict[str, Any], update: bool = False) -> O
     if 'parameters' in data:
         if not isinstance(data['parameters'], dict):
             return "Parameters must be an object"
-
-    if 'start_time' in data:
-        if not isinstance(data['start_time'], (int, float)):
-            return "Start time must be a number"
-        if data['start_time'] < 0:
-            return "Start time cannot be negative"
-
-    if 'duration' in data:
-        if not isinstance(data['duration'], (int, float)):
-            return "Duration must be a number"
-        if data['duration'] <= 0:
-            return "Duration must be positive"
 
     return None
 
@@ -203,12 +228,18 @@ def validate_audio_track_data(data: Dict[str, Any], update: bool = False) -> Opt
         Error message if validation fails, None otherwise
     """
     if not update:
-        required_fields = ['track_type', 'parameters', 'start_time', 'duration']
+        required_fields = ['name', 'track_type', 'parameters']
         for field in required_fields:
             if field not in data:
                 return f"{field.capitalize()} is required"
 
-    valid_track_types = ['procedural', 'ambient', 'effect', 'music']
+    if 'name' in data:
+        if not isinstance(data['name'], str):
+            return "Name must be a string"
+        if len(data['name']) > 200:
+            return "Name must be at most 200 characters"
+
+    valid_track_types = ['music', 'sfx', 'ambient', 'voice']
     if 'track_type' in data:
         if not isinstance(data['track_type'], str):
             return "Track type must be a string"
@@ -218,23 +249,11 @@ def validate_audio_track_data(data: Dict[str, Any], update: bool = False) -> Opt
     if 'parameters' in data:
         if not isinstance(data['parameters'], dict):
             return "Parameters must be an object"
-
-    if 'start_time' in data:
-        if not isinstance(data['start_time'], (int, float)):
-            return "Start time must be a number"
-        if data['start_time'] < 0:
-            return "Start time cannot be negative"
-
-    if 'duration' in data:
-        if not isinstance(data['duration'], (int, float)):
-            return "Duration must be a number"
-        if data['duration'] <= 0:
-            return "Duration must be positive"
-
-    if 'volume' in data:
-        if not isinstance(data['volume'], (int, float)):
-            return "Volume must be a number"
-        if not 0 <= data['volume'] <= 1:
-            return "Volume must be between 0 and 1"
+        if 'volume' in data['parameters']:
+            volume = data['parameters']['volume']
+            if not isinstance(volume, (int, float)):
+                return "Volume must be a number"
+            if not 0 <= volume <= 1:
+                return "Volume must be between 0 and 1"
 
     return None

@@ -10,7 +10,7 @@ bp = Blueprint('storyboard', __name__)
 # Storyboard routes
 @bp.route('/api/universes/<int:universe_id>/storyboards', methods=['GET'])
 @login_required
-@require_universe_access('viewer')
+@require_universe_access()  # Default role is 'viewer'
 def get_storyboards(universe_id):
     try:
         storyboards = Storyboard.query.filter_by(universe_id=universe_id).all()
@@ -40,7 +40,7 @@ def create_storyboard(universe_id):
 
 @bp.route('/api/storyboards/<int:storyboard_id>', methods=['GET'])
 @login_required
-@require_universe_access('viewer')
+@require_universe_access()  # Default role is 'viewer'
 def get_storyboard(storyboard_id):
     try:
         storyboard = Storyboard.query.get_or_404(storyboard_id)
@@ -85,7 +85,7 @@ def delete_storyboard(storyboard_id):
 # Scene routes
 @bp.route('/api/storyboards/<int:storyboard_id>/scenes', methods=['GET'])
 @login_required
-@require_universe_access('viewer')
+@require_universe_access()  # Default role is 'viewer'
 def get_scenes(storyboard_id):
     try:
         scenes = Scene.query.filter_by(storyboard_id=storyboard_id).order_by(Scene.sequence).all()
@@ -150,7 +150,7 @@ def delete_scene(scene_id):
 # Visual Effect routes
 @bp.route('/api/scenes/<int:scene_id>/visual-effects', methods=['GET'])
 @login_required
-@require_universe_access('viewer')
+@require_universe_access()  # Default role is 'viewer'
 def get_visual_effects(scene_id):
     try:
         effects = VisualEffect.query.filter_by(scene_id=scene_id).all()
@@ -182,7 +182,7 @@ def create_visual_effect(scene_id):
 # Audio Track routes
 @bp.route('/api/scenes/<int:scene_id>/audio-tracks', methods=['GET'])
 @login_required
-@require_universe_access('viewer')
+@require_universe_access()  # Default role is 'viewer'
 def get_audio_tracks(scene_id):
     try:
         tracks = AudioTrack.query.filter_by(scene_id=scene_id).all()

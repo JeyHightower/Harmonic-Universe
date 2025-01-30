@@ -220,9 +220,19 @@ class TestingConfig(Config):
     DEBUG = True
     # Use in-memory SQLite database
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ECHO = False
+
     # Security settings
     SECRET_KEY = "test-secret-key"
     JWT_SECRET_KEY = "test-jwt-secret-key"
+    JWT_TOKEN_LOCATION = ["headers"]
+    JWT_HEADER_NAME = "Authorization"
+    JWT_HEADER_TYPE = "Bearer"
+    JWT_ACCESS_TOKEN_EXPIRES = False
+    JWT_ALGORITHM = "HS256"
+    JWT_IDENTITY_CLAIM = "sub"
+
     # Disable rate limiting
     RATELIMIT_ENABLED = False
     # CORS settings
@@ -247,9 +257,6 @@ class TestingConfig(Config):
     SOCKETIO_MANAGE_SESSION = False
     SOCKETIO_UPGRADE_LOGGER = True
     SOCKETIO_JSON = False
-    # SQLAlchemy settings
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ECHO = False
     # Exception handling
     PROPAGATE_EXCEPTIONS = True
     PRESERVE_CONTEXT_ON_EXCEPTION = False

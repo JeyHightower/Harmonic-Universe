@@ -1,12 +1,12 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from ..models.user import User
-from ..models.profile import Profile
+from sqlalchemy import select
+from ..models import User, Profile
 from .. import db
 
-auth_bp = Blueprint('auth', __name__)
+bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 
-@auth_bp.route('register', methods=['POST'])
+@bp.route('/register', methods=['POST'])
 def register():
     """Create a new user account"""
     try:
@@ -20,10 +20,14 @@ def register():
             if not data[field]:
                 return {"error": f"{field} cannot be empty"}, 400
 
-        if User.query.filter_by(username=data['username']).first():
+        # Check for existing username
+        stmt = select(User).filter_by(username=data['username'])
+        if db.session.execute(stmt).scalar_one_or_none():
             return {"error": "Username already exists"}, 400
 
-        if User.query.filter_by(email=data['email']).first():
+        # Check for existing email
+        stmt = select(User).filter_by(email=data['email'])
+        if db.session.execute(stmt).scalar_one_or_none():
             return {"error": "Email already exists"}, 400
 
         # Create user
@@ -37,17 +41,16 @@ def register():
         db.session.add(user)
         db.session.commit()
 
-        # Create associated profile
+        # Create associated profile with only bio
         profile = Profile(
             user_id=user.id,
-            bio=data.get('bio', ''),
-            preferences=data.get('preferences', {})
+            bio=data.get('bio', '')
         )
         db.session.add(profile)
         db.session.commit()
 
-        # Generate access token
-        access_token = create_access_token(identity=user.id)
+        # Generate access token with string user ID
+        access_token = create_access_token(identity=str(user.id))
 
         # Return user data
         return {
@@ -61,7 +64,7 @@ def register():
         db.session.rollback()
         return {"error": str(e)}, 422
 
-@auth_bp.route('login', methods=['POST'])
+@bp.route('/login', methods=['POST'])
 def login():
     """Login user"""
     try:
@@ -75,7 +78,9 @@ def login():
             if not data[field]:
                 return {"error": f"{field} cannot be empty"}, 400
 
-        user = User.query.filter_by(email=data['email']).first()
+        # Find user by email using select()
+        stmt = select(User).filter_by(email=data['email'])
+        user = db.session.execute(stmt).scalar_one_or_none()
 
         if not user:
             return {"error": "Invalid email or password"}, 401
@@ -88,8 +93,10 @@ def login():
 
         # Update last login time
         user.update_last_login()
+        db.session.commit()
 
-        access_token = create_access_token(identity=user.id)
+        # Generate access token with string user ID
+        access_token = create_access_token(identity=str(user.id))
         return {
             "access_token": access_token,
             "username": user.username,
@@ -99,23 +106,48 @@ def login():
     except Exception as e:
         return {"error": str(e)}, 422
 
-@auth_bp.route('user', methods=['GET'])
+@bp.route('/me', methods=['GET'])
 @jwt_required()
 def get_current_user():
-    """Get current user"""
-    user_id = get_jwt_identity()
-    user = User.query.get(user_id)
-    if not user:
-        return {"error": "User not found"}, 404
-    return user.to_dict(), 200
+    """Get current user details"""
+    try:
+        current_user_id = get_jwt_identity()
+        try:
+            user_id = int(current_user_id)
+        except (ValueError, TypeError):
+            return {"error": "Invalid user ID format"}, 400
 
-@auth_bp.route('me', methods=['PUT'])
+        # Use select() instead of get()
+        stmt = select(User).filter_by(id=user_id)
+        user = db.session.execute(stmt).scalar_one_or_none()
+
+        if not user:
+            return {"error": "User not found"}, 404
+
+        return {
+            "id": str(user.id),
+            "username": user.username,
+            "email": user.email,
+            "profile": user.profile.to_dict() if user.profile else None
+        }, 200
+    except Exception as e:
+        return {"error": str(e)}, 422
+
+@bp.route('/me', methods=['PUT'])
 @jwt_required()
 def update_user():
     """Update user details"""
     try:
-        user_id = get_jwt_identity()
-        user = User.query.get(user_id)
+        current_user_id = get_jwt_identity()
+        try:
+            user_id = int(current_user_id)
+        except (ValueError, TypeError):
+            return {"error": "Invalid user ID format"}, 400
+
+        # Use select() instead of get()
+        stmt = select(User).filter_by(id=user_id)
+        user = db.session.execute(stmt).scalar_one_or_none()
+
         if not user:
             return {'error': 'User not found'}, 404
 
@@ -123,75 +155,99 @@ def update_user():
 
         # Check username uniqueness if being updated
         if 'username' in data and data['username'] != user.username:
-            if User.query.filter_by(username=data['username']).first():
+            stmt = select(User).filter_by(username=data['username'])
+            if db.session.execute(stmt).scalar_one_or_none():
                 return {'error': 'Username already exists'}, 409
 
-        # Handle profile updates
-        profile_data = {}
-        if 'bio' in data:
-            profile_data['bio'] = data.pop('bio')
-        if 'preferences' in data:
-            profile_data['preferences'] = data.pop('preferences')
+        # Update user fields
+        if 'username' in data:
+            user.username = data['username']
+        if 'email' in data:
+            user.email = data['email']
 
-        if profile_data:
+        # Handle profile updates
+        if 'bio' in data or 'preferences' in data:
             if not user.profile:
                 profile = Profile(user_id=user.id)
                 db.session.add(profile)
                 user.profile = profile
-            user.profile.update(profile_data)
 
-        # Update user fields
-        if data:
-            user.update(data)
+            if 'bio' in data:
+                user.profile.bio = data['bio']
+            if 'preferences' in data:
+                user.profile.preferences = data['preferences']
 
         db.session.commit()
-        return user.to_dict(), 200
+
+        return {
+            "id": str(user.id),
+            "username": user.username,
+            "email": user.email,
+            "profile": user.profile.to_dict() if user.profile else None
+        }, 200
 
     except Exception as e:
         db.session.rollback()
         return {'error': str(e)}, 422
 
-@auth_bp.route('me', methods=['DELETE'])
+@bp.route('/me', methods=['DELETE'])
 @jwt_required()
 def delete_user():
     """Delete current user account"""
-    user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    try:
+        user_id = get_jwt_identity()
+        stmt = select(User).filter_by(id=user_id)
+        user = db.session.execute(stmt).scalar_one_or_none()
 
-    if not user:
-        return {"error": "User not found"}, 404
+        if not user:
+            return {"error": "User not found"}, 404
 
-    db.session.delete(user)
-    db.session.commit()
-    return "", 204
+        db.session.delete(user)
+        db.session.commit()
+        return "", 204
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}, 422
 
-@auth_bp.route('me/deactivate', methods=['POST'])
+@bp.route('/me/deactivate', methods=['POST'])
 @jwt_required()
 def deactivate_account():
     """Deactivate current user account"""
-    user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    try:
+        user_id = get_jwt_identity()
+        stmt = select(User).filter_by(id=user_id)
+        user = db.session.execute(stmt).scalar_one_or_none()
 
-    if not user:
-        return {"error": "User not found"}, 404
+        if not user:
+            return {"error": "User not found"}, 404
 
-    user.deactivate()
-    return {"message": "Account deactivated"}, 200
+        user.deactivate()
+        db.session.commit()
+        return {"message": "Account deactivated"}, 200
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}, 422
 
-@auth_bp.route('me/activate', methods=['POST'])
+@bp.route('/me/activate', methods=['POST'])
 @jwt_required()
 def activate_account():
     """Activate current user account"""
-    user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    try:
+        user_id = get_jwt_identity()
+        stmt = select(User).filter_by(id=user_id)
+        user = db.session.execute(stmt).scalar_one_or_none()
 
-    if not user:
-        return {"error": "User not found"}, 404
+        if not user:
+            return {"error": "User not found"}, 404
 
-    user.activate()
-    return {"message": "Account activated"}, 200
+        user.activate()
+        db.session.commit()
+        return {"message": "Account activated"}, 200
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}, 422
 
-@auth_bp.route('logout', methods=['POST'])
+@bp.route('/logout', methods=['POST'])
 @jwt_required()
 def logout():
     """Logout user"""

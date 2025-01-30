@@ -20,7 +20,11 @@ def test_universe(test_user, session):
     universe = Universe(
         name='Test Universe',
         description='Test Description',
-        user_id=test_user.id
+        user_id=test_user.id,
+        is_public=False,
+        allow_guests=False,
+        music_parameters={},
+        visual_parameters={}
     )
     session.add(universe)
     session.commit()
@@ -46,12 +50,26 @@ def test_new_universe(session, test_user):
 
 def test_universe_to_dict(session, test_universe):
     """Test converting a universe to dictionary"""
-    universe_dict = test_universe.to_dict()
+    result = test_universe.to_dict()
 
-    assert universe_dict["name"] == "Test Universe"
-    assert universe_dict["description"] == "A test universe"
-    assert universe_dict["user_id"] == test_universe.user_id
-    assert universe_dict["is_public"] is True
+    # Debug output
+    print(f"test_universe.id: {test_universe.id} (type: {type(test_universe.id)})")
+    print(f"result['id']: {result['id']} (type: {type(result['id'])})")
+    print(f"test_universe.user_id: {test_universe.user_id} (type: {type(test_universe.user_id)})")
+    print(f"result['user_id']: {result['user_id']} (type: {type(result['user_id'])})")
+
+    # Assertions
+    assert result["name"] == "Test Universe"
+    assert result["description"] == "Test Description"
+    assert result["user_id"] == str(test_universe.user_id)
+    assert result["id"] == str(test_universe.id)
+    assert result["is_public"] is False
+    assert result["allow_guests"] is False
+    assert isinstance(result["created_at"], str)
+    assert isinstance(result["updated_at"], str)
+    assert isinstance(result["music_parameters"], dict)
+    assert isinstance(result["visual_parameters"], dict)
+    assert result["collaborators_count"] == 0
 
 def test_universe_relationships(session, test_user, test_universe):
     """Test universe relationships"""
@@ -66,45 +84,73 @@ def test_universe_relationships(session, test_user, test_universe):
     # Universe should be deleted when user is deleted
     assert session.query(Universe).filter_by(id=test_universe.id).first() is None
 
-def test_universe_access_control(session, test_user):
-    """Test universe access control"""
-    # Create a private universe
-    private_universe = Universe(
-        name="Private Universe",
-        description="A private universe",
-        user_id=test_user.id,
-        is_public=False
-    )
-    session.add(private_universe)
-    session.commit()
-
+def test_can_user_access(session, test_universe, test_user):
+    """Test universe access control."""
     # Create another user
-    other_user = User(
-        username="otheruser",
-        email="other@example.com",
-        password="password123"
-    )
+    other_user = User(username="other", email="other@test.com")
+    other_user.set_password("password")
     session.add(other_user)
     session.commit()
 
-    # Test access control
-    assert private_universe.can_user_access(test_user.id) is True  # Owner can access
-    assert private_universe.can_user_access(other_user.id) is False  # Other user cannot access
-
-    # Make universe public
-    private_universe.is_public = True
+    # Test private universe access
+    test_universe.is_public = False
     session.commit()
 
-    # Now other user should be able to access
-    assert private_universe.can_user_access(other_user.id) is True
+    # Owner should have access
+    assert test_universe.can_user_access(str(test_user.id)) is True
 
-    # Test edit permissions
-    assert private_universe.can_user_edit(test_user.id) is True  # Owner can edit
-    assert private_universe.can_user_edit(other_user.id) is False  # Other user cannot edit
+    # Other user should not have access
+    assert test_universe.can_user_access(str(other_user.id)) is False
 
-    # Test collaborator management permissions
-    assert private_universe.can_manage_collaborators(test_user.id) is True  # Owner can manage
-    assert private_universe.can_manage_collaborators(other_user.id) is False  # Other user cannot manage
+    # Test public universe access
+    test_universe.is_public = True
+    session.commit()
+
+    # Both users should have access to public universe
+    assert test_universe.can_user_access(str(test_user.id)) is True
+    assert test_universe.can_user_access(str(other_user.id)) is True
+
+    # Test collaborator access
+    test_universe.is_public = False
+    test_universe.collaborators.append(other_user)
+    session.commit()
+
+    # Collaborator should have access to private universe
+    assert test_universe.can_user_access(str(other_user.id)) is True
+
+def test_can_user_edit(session, test_universe, test_user):
+    """Test universe edit permissions."""
+    # Create another user
+    other_user = User(username="other", email="other@test.com")
+    other_user.set_password("password")
+    session.add(other_user)
+    session.commit()
+
+    # Only owner should be able to edit
+    assert test_universe.can_user_edit(str(test_user.id)) is True
+    assert test_universe.can_user_edit(str(other_user.id)) is False
+
+    # Even collaborators cannot edit
+    test_universe.collaborators.append(other_user)
+    session.commit()
+    assert test_universe.can_user_edit(str(other_user.id)) is False
+
+def test_can_user_manage_collaborators(session, test_universe, test_user):
+    """Test collaborator management permissions."""
+    # Create another user
+    other_user = User(username="other", email="other@test.com")
+    other_user.set_password("password")
+    session.add(other_user)
+    session.commit()
+
+    # Only owner should be able to manage collaborators
+    assert test_universe.can_user_manage_collaborators(str(test_user.id)) is True
+    assert test_universe.can_user_manage_collaborators(str(other_user.id)) is False
+
+    # Even collaborators cannot manage other collaborators
+    test_universe.collaborators.append(other_user)
+    session.commit()
+    assert test_universe.can_user_manage_collaborators(str(other_user.id)) is False
 
 def test_universe_validation(session, test_user):
     """Test universe validation constraints"""

@@ -1,59 +1,35 @@
-"""Storyboard model."""
-from datetime import datetime, timezone
+"""Storyboard model module."""
+from sqlalchemy import Column, Integer, String, Text, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, JSON
-from ..extensions import db
+from .. import db
+from .base_models import BaseModel, TimestampMixin
 
-class Storyboard(db.Model):
-    """Storyboard model for storing storyboard related details."""
+class Storyboard(BaseModel, TimestampMixin):
+    """Storyboard model for organizing scenes."""
 
-    __tablename__ = "storyboards"
-    __table_args__ = (
-        db.Index("idx_universe_id", "universe_id"),
-        db.Index("idx_created_at", "created_at"),
-    )
+    __tablename__ = 'storyboards'
 
     id = Column(Integer, primary_key=True)
-    universe_id = Column(Integer, ForeignKey("universes.id", ondelete="CASCADE"), nullable=False)
-    title = Column(String(200), nullable=False)
-    description = Column(String(1000))
-    metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(
-        DateTime,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
-    )
+    name = Column(String(100), nullable=False)
+    description = Column(Text)
+    universe_id = Column(Integer, ForeignKey('universes.id'), nullable=False)
 
     # Relationships
+    universe = relationship('Universe', back_populates='storyboards')
     scenes = relationship(
-        "Scene",
-        backref="storyboard",
-        lazy="dynamic",
-        cascade="all, delete-orphan",
-        order_by="Scene.sequence"
+        'Scene',
+        back_populates='storyboard',
+        cascade='all, delete-orphan',
+        lazy='dynamic'
     )
-
-    def __init__(self, universe_id, title, description=None, metadata=None):
-        """Initialize storyboard."""
-        self.universe_id = universe_id
-        self.title = title
-        self.description = description
-        self.metadata = metadata or {}
 
     def to_dict(self):
         """Convert storyboard to dictionary."""
         return {
-            "id": self.id,
-            "universe_id": self.universe_id,
-            "title": self.title,
-            "description": self.description,
-            "metadata": self.metadata,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat(),
-            "scenes": [scene.to_dict() for scene in self.scenes]
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'universe_id': self.universe_id,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
-
-    def __repr__(self):
-        """String representation."""
-        return f"<Storyboard(id={self.id}, title='{self.title}')>"

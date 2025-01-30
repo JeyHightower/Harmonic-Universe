@@ -1,6 +1,7 @@
 from marshmallow import Schema, fields, validates, ValidationError
-from pydantic import BaseModel, Field, validator
-from typing import Optional, Dict, Union, List
+from pydantic import BaseModel, Field, field_validator, ConfigDict
+from typing import Optional, Dict, Union, List, Any
+from collections import OrderedDict
 import re
 
 
@@ -83,7 +84,7 @@ class UniverseSchema(Schema):
 
     class Meta:
         """Meta class for UniverseSchema."""
-        ordered = True
+        dict_class = OrderedDict
 
 
 class MusicParameters(BaseModel):
@@ -95,8 +96,11 @@ class MusicParameters(BaseModel):
     delay: Optional[float] = Field(0.2, ge=0.0, le=1.0, description="Delay amount")
     base_frequency: Optional[float] = Field(440.0, ge=20.0, le=20000.0, description="Base frequency in Hz")
 
-    @validator('scale')
-    def validate_scale(cls, v):
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_validator('scale')
+    @classmethod
+    def validate_scale(cls, v: str) -> str:
         """Validate musical scale format."""
         valid_notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
         valid_types = ['major', 'minor', 'harmonic minor', 'melodic minor', 'pentatonic']
@@ -119,15 +123,18 @@ class VisualParameters(BaseModel):
     animation_speed: float = Field(1.0, ge=0.0, le=5.0, description="Animation speed multiplier")
     color_scheme: List[str] = Field(
         ["#FF0000", "#00FF00", "#0000FF"],
-        min_items=1,
-        max_items=10,
+        min_length=1,
+        max_length=10,
         description="List of colors in hex format"
     )
     particle_size: float = Field(1.0, ge=0.1, le=10.0, description="Base particle size")
     glow_intensity: float = Field(0.5, ge=0.0, le=1.0, description="Particle glow intensity")
 
-    @validator('background', 'color_scheme')
-    def validate_color(cls, v):
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_validator('background', 'color_scheme')
+    @classmethod
+    def validate_color(cls, v: Union[str, List[str]]) -> Union[str, List[str]]:
         """Validate hex color format."""
         if isinstance(v, list):
             for color in v:
@@ -139,40 +146,41 @@ class VisualParameters(BaseModel):
         return v
 
 
-class UniverseCreate(BaseModel):
-    """Schema for creating a new universe."""
-    name: str = Field(..., min_length=1, max_length=100)
-    description: Optional[str] = Field(None, max_length=500)
-    is_public: bool = False
-    allow_guests: bool = False
-    music_parameters: Optional[MusicParameters] = None
-    visual_parameters: Optional[VisualParameters] = None
+class UniverseBase(BaseModel):
+    """Base schema for Universe."""
+    name: str
+    description: Optional[str] = None
+    is_public: Optional[bool] = True
+    max_participants: Optional[int] = 10
+    music_parameters: Optional[Dict[str, Any]] = {}
+    visual_parameters: Optional[Dict[str, Any]] = {}
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UniverseCreate(UniverseBase):
+    """Schema for creating a Universe."""
+    pass
 
 
 class UniverseUpdate(BaseModel):
-    """Schema for updating an existing universe."""
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
-    description: Optional[str] = Field(None, max_length=500)
+    """Schema for updating a Universe."""
+    name: Optional[str] = None
+    description: Optional[str] = None
     is_public: Optional[bool] = None
-    allow_guests: Optional[bool] = None
-    music_parameters: Optional[MusicParameters] = None
-    visual_parameters: Optional[VisualParameters] = None
+    max_participants: Optional[int] = None
+    music_parameters: Optional[Dict[str, Any]] = None
+    visual_parameters: Optional[Dict[str, Any]] = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
-class UniverseResponse(BaseModel):
-    """Schema for universe response."""
+class UniverseResponse(UniverseBase):
+    """Schema for Universe response."""
     id: int
-    name: str
-    description: Optional[str]
-    is_public: bool
-    allow_guests: bool
     user_id: int
     collaborators_count: int
-    created_at: str
-    updated_at: str
-    music_parameters: Dict
-    visual_parameters: Dict
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
 
-    class Config:
-        """Pydantic config."""
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
