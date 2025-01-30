@@ -18,19 +18,13 @@ media_effects = Blueprint('media_effects', __name__)
 def get_visual_effects(scene_id):
     """Get all visual effects for a scene."""
     try:
-        user_id = get_jwt_identity()  # Keep as string
-        current_app.logger.debug(f"User ID from JWT: {user_id}")
-
-        scene = db.session.get(Scene, scene_id)
+        # Check scene exists
+        stmt = select(Scene).filter_by(id=scene_id)
+        scene = db.session.execute(stmt).scalar_one_or_none()
         if not scene:
             return jsonify({'error': 'Scene not found'}), 404
 
-        storyboard = scene.storyboard
-        universe = storyboard.universe
-
-        if not check_universe_access(universe, user_id):
-            return jsonify({'error': 'Unauthorized'}), 403
-
+        # Get visual effects
         stmt = select(VisualEffect).filter_by(scene_id=scene_id)
         effects = db.session.execute(stmt).scalars().all()
         return jsonify([effect.to_dict() for effect in effects])
@@ -43,18 +37,11 @@ def get_visual_effects(scene_id):
 def create_visual_effect(scene_id):
     """Create a new visual effect."""
     try:
-        user_id = get_jwt_identity()  # Keep as string
-        current_app.logger.debug(f"User ID from JWT: {user_id}")
-
-        scene = db.session.get(Scene, scene_id)
+        # Validate scene exists
+        stmt = select(Scene).filter_by(id=scene_id)
+        scene = db.session.execute(stmt).scalar_one_or_none()
         if not scene:
             return jsonify({'error': 'Scene not found'}), 404
-
-        storyboard = scene.storyboard
-        universe = storyboard.universe
-
-        if not check_universe_access(universe, user_id):
-            return jsonify({'error': 'Unauthorized'}), 403
 
         data = request.get_json()
         validation_error = validate_visual_effect_data(data)
@@ -65,13 +52,14 @@ def create_visual_effect(scene_id):
             scene_id=scene_id,
             name=data['name'],
             effect_type=data['effect_type'],
-            parameters=data['parameters']
+            parameters=data.get('parameters', {})
         )
         db.session.add(effect)
         db.session.commit()
 
         return jsonify(effect.to_dict()), 201
     except Exception as e:
+        db.session.rollback()
         current_app.logger.error(f"Error in create_visual_effect: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
@@ -80,19 +68,7 @@ def create_visual_effect(scene_id):
 def update_visual_effect(scene_id, effect_id):
     """Update a visual effect."""
     try:
-        user_id = get_jwt_identity()  # Keep as string
-        current_app.logger.debug(f"User ID from JWT: {user_id}")
-
-        scene = db.session.get(Scene, scene_id)
-        if not scene:
-            return jsonify({'error': 'Scene not found'}), 404
-
-        storyboard = scene.storyboard
-        universe = storyboard.universe
-
-        if not check_universe_access(universe, user_id):
-            return jsonify({'error': 'Unauthorized'}), 403
-
+        # Validate effect exists and belongs to scene
         stmt = select(VisualEffect).filter_by(id=effect_id, scene_id=scene_id)
         effect = db.session.execute(stmt).scalar_one_or_none()
         if not effect:
@@ -103,20 +79,17 @@ def update_visual_effect(scene_id, effect_id):
         if validation_error:
             return jsonify({'error': validation_error}), 400
 
-        try:
-            if 'name' in data:
-                effect.name = data['name']
-            if 'effect_type' in data:
-                effect.effect_type = data['effect_type']
-            if 'parameters' in data:
-                effect.parameters = data['parameters']
+        if 'name' in data:
+            effect.name = data['name']
+        if 'effect_type' in data:
+            effect.effect_type = data['effect_type']
+        if 'parameters' in data:
+            effect.parameters = data['parameters']
 
-            db.session.commit()
-            return jsonify(effect.to_dict())
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({'error': str(e)}), 500
+        db.session.commit()
+        return jsonify(effect.to_dict())
     except Exception as e:
+        db.session.rollback()
         current_app.logger.error(f"Error in update_visual_effect: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
@@ -125,32 +98,16 @@ def update_visual_effect(scene_id, effect_id):
 def delete_visual_effect(scene_id, effect_id):
     """Delete a visual effect."""
     try:
-        user_id = get_jwt_identity()  # Keep as string
-        current_app.logger.debug(f"User ID from JWT: {user_id}")
-
-        scene = db.session.get(Scene, scene_id)
-        if not scene:
-            return jsonify({'error': 'Scene not found'}), 404
-
-        storyboard = scene.storyboard
-        universe = storyboard.universe
-
-        if not check_universe_access(universe, user_id):
-            return jsonify({'error': 'Unauthorized'}), 403
-
         stmt = select(VisualEffect).filter_by(id=effect_id, scene_id=scene_id)
         effect = db.session.execute(stmt).scalar_one_or_none()
         if not effect:
             return jsonify({'error': 'Visual effect not found'}), 404
 
-        try:
-            db.session.delete(effect)
-            db.session.commit()
-            return '', 204
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({'error': str(e)}), 500
+        db.session.delete(effect)
+        db.session.commit()
+        return '', 204
     except Exception as e:
+        db.session.rollback()
         current_app.logger.error(f"Error in delete_visual_effect: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
@@ -160,19 +117,13 @@ def delete_visual_effect(scene_id, effect_id):
 def get_audio_tracks(scene_id):
     """Get all audio tracks for a scene."""
     try:
-        user_id = get_jwt_identity()  # Keep as string
-        current_app.logger.debug(f"User ID from JWT: {user_id}")
-
-        scene = db.session.get(Scene, scene_id)
+        # Check scene exists
+        stmt = select(Scene).filter_by(id=scene_id)
+        scene = db.session.execute(stmt).scalar_one_or_none()
         if not scene:
             return jsonify({'error': 'Scene not found'}), 404
 
-        storyboard = scene.storyboard
-        universe = storyboard.universe
-
-        if not check_universe_access(universe, user_id):
-            return jsonify({'error': 'Unauthorized'}), 403
-
+        # Get audio tracks
         stmt = select(AudioTrack).filter_by(scene_id=scene_id)
         tracks = db.session.execute(stmt).scalars().all()
         return jsonify([track.to_dict() for track in tracks])
@@ -185,18 +136,11 @@ def get_audio_tracks(scene_id):
 def create_audio_track(scene_id):
     """Create a new audio track."""
     try:
-        user_id = get_jwt_identity()  # Keep as string
-        current_app.logger.debug(f"User ID from JWT: {user_id}")
-
-        scene = db.session.get(Scene, scene_id)
+        # Validate scene exists
+        stmt = select(Scene).filter_by(id=scene_id)
+        scene = db.session.execute(stmt).scalar_one_or_none()
         if not scene:
             return jsonify({'error': 'Scene not found'}), 404
-
-        storyboard = scene.storyboard
-        universe = storyboard.universe
-
-        if not check_universe_access(universe, user_id):
-            return jsonify({'error': 'Unauthorized'}), 403
 
         data = request.get_json()
         validation_error = validate_audio_track_data(data)
@@ -215,6 +159,7 @@ def create_audio_track(scene_id):
 
         return jsonify(track.to_dict()), 201
     except Exception as e:
+        db.session.rollback()
         current_app.logger.error(f"Error in create_audio_track: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
@@ -223,19 +168,6 @@ def create_audio_track(scene_id):
 def update_audio_track(scene_id, track_id):
     """Update an audio track."""
     try:
-        user_id = get_jwt_identity()  # Keep as string
-        current_app.logger.debug(f"User ID from JWT: {user_id}")
-
-        scene = db.session.get(Scene, scene_id)
-        if not scene:
-            return jsonify({'error': 'Scene not found'}), 404
-
-        storyboard = scene.storyboard
-        universe = storyboard.universe
-
-        if not check_universe_access(universe, user_id):
-            return jsonify({'error': 'Unauthorized'}), 403
-
         stmt = select(AudioTrack).filter_by(id=track_id, scene_id=scene_id)
         track = db.session.execute(stmt).scalar_one_or_none()
         if not track:
@@ -258,8 +190,8 @@ def update_audio_track(scene_id, track_id):
         db.session.commit()
         return jsonify(track.to_dict())
     except Exception as e:
-        current_app.logger.error(f"Error in update_audio_track: {str(e)}")
         db.session.rollback()
+        current_app.logger.error(f"Error in update_audio_track: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @media_effects.route('/api/scenes/<int:scene_id>/audio-tracks/<int:track_id>', methods=['DELETE'])
@@ -267,19 +199,6 @@ def update_audio_track(scene_id, track_id):
 def delete_audio_track(scene_id, track_id):
     """Delete an audio track."""
     try:
-        user_id = get_jwt_identity()  # Keep as string
-        current_app.logger.debug(f"User ID from JWT: {user_id}")
-
-        scene = db.session.get(Scene, scene_id)
-        if not scene:
-            return jsonify({'error': 'Scene not found'}), 404
-
-        storyboard = scene.storyboard
-        universe = storyboard.universe
-
-        if not check_universe_access(universe, user_id):
-            return jsonify({'error': 'Unauthorized'}), 403
-
         stmt = select(AudioTrack).filter_by(id=track_id, scene_id=scene_id)
         track = db.session.execute(stmt).scalar_one_or_none()
         if not track:
@@ -289,6 +208,6 @@ def delete_audio_track(scene_id, track_id):
         db.session.commit()
         return '', 204
     except Exception as e:
-        current_app.logger.error(f"Error in delete_audio_track: {str(e)}")
         db.session.rollback()
+        current_app.logger.error(f"Error in delete_audio_track: {str(e)}")
         return jsonify({'error': str(e)}), 500

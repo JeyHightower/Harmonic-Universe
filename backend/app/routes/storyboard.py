@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
-from flask_login import login_required, current_user
+from flask_jwt_extended import jwt_required
+from sqlalchemy import select
 from app.models import db, Storyboard, Scene, VisualEffect, AudioTrack
 from app.utils.auth import require_universe_access
 from app.utils.validation import validate_request_json
@@ -9,17 +10,18 @@ bp = Blueprint('storyboard', __name__)
 
 # Storyboard routes
 @bp.route('/api/universes/<int:universe_id>/storyboards', methods=['GET'])
-@login_required
+@jwt_required()
 @require_universe_access()  # Default role is 'viewer'
 def get_storyboards(universe_id):
     try:
-        storyboards = Storyboard.query.filter_by(universe_id=universe_id).all()
+        stmt = select(Storyboard).filter_by(universe_id=universe_id)
+        storyboards = db.session.execute(stmt).scalars().all()
         return jsonify([storyboard.to_dict() for storyboard in storyboards])
     except SQLAlchemyError as e:
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/universes/<int:universe_id>/storyboards', methods=['POST'])
-@login_required
+@jwt_required()
 @require_universe_access('editor')
 @validate_request_json(['title'])
 def create_storyboard(universe_id):
@@ -39,23 +41,29 @@ def create_storyboard(universe_id):
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/storyboards/<int:storyboard_id>', methods=['GET'])
-@login_required
+@jwt_required()
 @require_universe_access()  # Default role is 'viewer'
 def get_storyboard(storyboard_id):
     try:
-        storyboard = Storyboard.query.get_or_404(storyboard_id)
+        stmt = select(Storyboard).filter_by(id=storyboard_id)
+        storyboard = db.session.execute(stmt).scalar_one_or_none()
+        if not storyboard:
+            return jsonify({'error': 'Storyboard not found'}), 404
         return jsonify(storyboard.to_dict())
     except SQLAlchemyError as e:
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/storyboards/<int:storyboard_id>', methods=['PUT'])
-@login_required
+@jwt_required()
 @require_universe_access('editor')
 def update_storyboard(storyboard_id):
     try:
-        storyboard = Storyboard.query.get_or_404(storyboard_id)
-        data = request.json
+        stmt = select(Storyboard).filter_by(id=storyboard_id)
+        storyboard = db.session.execute(stmt).scalar_one_or_none()
+        if not storyboard:
+            return jsonify({'error': 'Storyboard not found'}), 404
 
+        data = request.json
         if 'title' in data:
             storyboard.title = data['title']
         if 'description' in data:
@@ -70,11 +78,15 @@ def update_storyboard(storyboard_id):
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/storyboards/<int:storyboard_id>', methods=['DELETE'])
-@login_required
+@jwt_required()
 @require_universe_access('editor')
 def delete_storyboard(storyboard_id):
     try:
-        storyboard = Storyboard.query.get_or_404(storyboard_id)
+        stmt = select(Storyboard).filter_by(id=storyboard_id)
+        storyboard = db.session.execute(stmt).scalar_one_or_none()
+        if not storyboard:
+            return jsonify({'error': 'Storyboard not found'}), 404
+
         db.session.delete(storyboard)
         db.session.commit()
         return '', 204
@@ -84,17 +96,18 @@ def delete_storyboard(storyboard_id):
 
 # Scene routes
 @bp.route('/api/storyboards/<int:storyboard_id>/scenes', methods=['GET'])
-@login_required
+@jwt_required()
 @require_universe_access()  # Default role is 'viewer'
 def get_scenes(storyboard_id):
     try:
-        scenes = Scene.query.filter_by(storyboard_id=storyboard_id).order_by(Scene.sequence).all()
+        stmt = select(Scene).filter_by(storyboard_id=storyboard_id).order_by(Scene.sequence)
+        scenes = db.session.execute(stmt).scalars().all()
         return jsonify([scene.to_dict() for scene in scenes])
     except SQLAlchemyError as e:
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/storyboards/<int:storyboard_id>/scenes', methods=['POST'])
-@login_required
+@jwt_required()
 @require_universe_access('editor')
 @validate_request_json(['title', 'sequence'])
 def create_scene(storyboard_id):
@@ -114,13 +127,16 @@ def create_scene(storyboard_id):
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/scenes/<int:scene_id>', methods=['PUT'])
-@login_required
+@jwt_required()
 @require_universe_access('editor')
 def update_scene(scene_id):
     try:
-        scene = Scene.query.get_or_404(scene_id)
-        data = request.json
+        stmt = select(Scene).filter_by(id=scene_id)
+        scene = db.session.execute(stmt).scalar_one_or_none()
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
 
+        data = request.json
         if 'title' in data:
             scene.title = data['title']
         if 'sequence' in data:
@@ -135,11 +151,15 @@ def update_scene(scene_id):
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/scenes/<int:scene_id>', methods=['DELETE'])
-@login_required
+@jwt_required()
 @require_universe_access('editor')
 def delete_scene(scene_id):
     try:
-        scene = Scene.query.get_or_404(scene_id)
+        stmt = select(Scene).filter_by(id=scene_id)
+        scene = db.session.execute(stmt).scalar_one_or_none()
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
+
         db.session.delete(scene)
         db.session.commit()
         return '', 204
@@ -149,7 +169,7 @@ def delete_scene(scene_id):
 
 # Visual Effect routes
 @bp.route('/api/scenes/<int:scene_id>/visual-effects', methods=['GET'])
-@login_required
+@jwt_required()
 @require_universe_access()  # Default role is 'viewer'
 def get_visual_effects(scene_id):
     try:
@@ -159,7 +179,7 @@ def get_visual_effects(scene_id):
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/scenes/<int:scene_id>/visual-effects', methods=['POST'])
-@login_required
+@jwt_required()
 @require_universe_access('editor')
 @validate_request_json(['effect_type', 'start_time', 'duration'])
 def create_visual_effect(scene_id):
@@ -181,7 +201,7 @@ def create_visual_effect(scene_id):
 
 # Audio Track routes
 @bp.route('/api/scenes/<int:scene_id>/audio-tracks', methods=['GET'])
-@login_required
+@jwt_required()
 @require_universe_access()  # Default role is 'viewer'
 def get_audio_tracks(scene_id):
     try:
@@ -191,7 +211,7 @@ def get_audio_tracks(scene_id):
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/scenes/<int:scene_id>/audio-tracks', methods=['POST'])
-@login_required
+@jwt_required()
 @require_universe_access('editor')
 @validate_request_json(['track_type', 'start_time', 'duration'])
 def create_audio_track(scene_id):

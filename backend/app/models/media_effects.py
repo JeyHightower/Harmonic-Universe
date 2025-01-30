@@ -1,6 +1,7 @@
 """Media effects models module."""
 from sqlalchemy import Column, Integer, String, ForeignKey, JSON
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from typing import Optional, Dict, Any
 from .. import db
 from .base_models import BaseModel, TimestampMixin
 
@@ -9,16 +10,16 @@ class VisualEffect(BaseModel, TimestampMixin):
 
     __tablename__ = 'visual_effects'
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False)
-    effect_type = Column(String(50), nullable=False)
-    parameters = Column(JSON, default=dict)
-    scene_id = Column(Integer, ForeignKey('scenes.id'), nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    effect_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    parameters: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
+    scene_id: Mapped[int] = mapped_column(Integer, ForeignKey('scenes.id', ondelete='CASCADE'), nullable=False)
 
-    # Relationships
-    scene = relationship('Scene', back_populates='visual_effects')
+    # Relationships with type hints
+    scene: Mapped["Scene"] = relationship("Scene", back_populates="visual_effects")
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         """Convert visual effect to dictionary."""
         return {
             'id': self.id,
@@ -35,17 +36,17 @@ class AudioTrack(BaseModel, TimestampMixin):
 
     __tablename__ = 'audio_tracks'
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False)
-    track_type = Column(String(50), nullable=False)  # e.g., background, effect, voice
-    file_path = Column(String(255))
-    parameters = Column(JSON, default=dict)
-    scene_id = Column(Integer, ForeignKey('scenes.id'), nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    track_type: Mapped[str] = mapped_column(String(50), nullable=False)  # e.g., background, effect, voice
+    file_path: Mapped[Optional[str]] = mapped_column(String(255))
+    parameters: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
+    scene_id: Mapped[int] = mapped_column(Integer, ForeignKey('scenes.id', ondelete='CASCADE'), nullable=False)
 
-    # Relationships
-    scene = relationship('Scene', back_populates='audio_tracks')
+    # Relationships with type hints
+    scene: Mapped["Scene"] = relationship("Scene", back_populates="audio_tracks")
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         """Convert audio track to dictionary."""
         return {
             'id': self.id,
