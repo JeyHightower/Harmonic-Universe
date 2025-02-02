@@ -1,309 +1,275 @@
-"""Test fixtures for backend tests."""
+"""Test configuration and fixtures."""
+
 import os
-import tempfile
+import sys
 import pytest
-from app import create_app, db
-from app.extensions import jwt
-from app.models import User, Profile, Universe, Storyboard, Scene
-from app.models.base_models import db as models_db
-from app.models.collaborator import Collaborator
-from app.models.activity import Activity
-from app.models.association_tables import universe_collaborators, universe_access
-from flask_jwt_extended import create_access_token
-from contextlib import contextmanager
-from werkzeug.security import generate_password_hash
-from flask import current_app
-from sqlalchemy import event
-from sqlalchemy.orm import scoped_session, sessionmaker
+from typing import Dict, Generator, AsyncGenerator
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, event, inspect
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.pool import StaticPool
+from datetime import datetime, timedelta
+import logging
+from pathlib import Path
+from jose import jwt
+import asyncio
+import contextlib
+import platform
+from fastapi import HTTPException, FastAPI
+import alembic.config
+import alembic.command
+from flask import Flask
+from flask.testing import FlaskClient
 
-@pytest.fixture(scope='session')
-def app():
-    """Create and configure a new app instance for each test."""
-    # Create a temporary file for the test database
-    db_fd, db_path = tempfile.mkstemp()
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
-    # Create app with testing config
-    app = create_app("testing")
+# Add the project root directory to the Python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-    # Configure for testing with file-based SQLite
-    app.config.update({
-        "TESTING": True,
-        "SQLALCHEMY_DATABASE_URI": f"sqlite:///{db_path}",
-        "SQLALCHEMY_TRACK_MODIFICATIONS": False,
-        "JWT_SECRET_KEY": "test-secret-key"
-    })
+from app.main import app
+from app.db.base import Base
+from app.core.config import settings
+from app.core.security import create_access_token, get_password_hash
+from app.core.test_config import TestSettings
+from app.test_config import test_settings
+from app.db.init_db import init_db, verify_database_connection
 
-    # Push an application context
-    ctx = app.app_context()
-    ctx.push()
+# Import models needed for fixtures
+from app.models.user import User
+from app.models.universe import Universe
+from app.models import __all__ as model_names
+
+# Import crud and schemas for superuser creation
+from app import crud, schemas
+
+# Test directories
+TEST_UPLOAD_DIR = Path("tests/uploads")
+TEST_FIXTURES_DIR = Path("tests/fixtures")
+
+def create_test_engine():
+    """Create and configure the test database engine."""
+    logger.info("Creating test database engine")
+    engine = create_engine(
+        test_settings.SQLALCHEMY_DATABASE_URI,
+        poolclass=StaticPool,
+        connect_args={"check_same_thread": False}
+    )
+    logger.info(f"Test engine created with URL: {test_settings.SQLALCHEMY_DATABASE_URI}")
+    return engine
+
+# Create test engine
+engine = create_test_engine()
+
+# Create test session factory
+TestingSessionLocal = sessionmaker(
+    bind=engine,
+    autocommit=False,
+    autoflush=False
+)
+
+def run_migrations():
+    """Run database migrations."""
+    logger.info("Running database migrations")
+    try:
+        alembic_cfg = alembic.config.Config(str(test_settings.ALEMBIC_INI_PATH))
+        alembic_cfg.set_main_option("sqlalchemy.url", str(test_settings.SQLALCHEMY_DATABASE_URI))
+        alembic.command.upgrade(alembic_cfg, "head")
+        logger.info("Database migrations completed successfully")
+    except Exception as e:
+        logger.error(f"Error running migrations: {e}")
+        raise
+
+def verify_tables_exist(engine):
+    """Verify that all required tables exist in the database."""
+    logger.info("Verifying database tables")
+    inspector = inspect(engine)
+    existing_tables = inspector.get_table_names()
+    required_tables = [table.__tablename__ for table in Base.__subclasses__()]
+
+    missing_tables = set(required_tables) - set(existing_tables)
+    if missing_tables:
+        logger.error(f"Missing tables: {missing_tables}")
+        raise RuntimeError(f"Missing required tables: {missing_tables}")
+
+    logger.info("All required tables exist")
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_db():
+    """Set up test database."""
+    logger.info("Setting up test database")
+
+    # Drop existing test database if it exists
+    if test_settings.TEST_DB_PATH.exists():
+        logger.info("Removing existing test database")
+        test_settings.TEST_DB_PATH.unlink()
 
     # Create all tables
-    db.create_all()
+    logger.info("Creating database tables")
+    Base.metadata.create_all(bind=engine)
 
-    yield app
+    # Run migrations
+    run_migrations()
 
-    # Clean up
-    db.session.remove()
-    db.drop_all()
-    ctx.pop()
-    os.close(db_fd)
-    os.unlink(db_path)
+    # Verify tables exist
+    verify_tables_exist(engine)
 
-@pytest.fixture(scope='function')
-def app_context(app):
-    """Create an application context for tests."""
-    with app.app_context() as ctx:
-        yield ctx
+    # Initialize test data
+    db = TestingSessionLocal()
+    try:
+        logger.info("Initializing test data")
+        init_db(db, is_test=True)
+        verify_database_connection(db)
+    except Exception as e:
+        logger.error(f"Error initializing test data: {e}")
+        raise
+    finally:
+        db.close()
 
-@pytest.fixture(scope='function')
-def session(app_context):
+    yield
+
+    # Cleanup after all tests
+    logger.info("Cleaning up test database")
+    db = TestingSessionLocal()
+    try:
+        Base.metadata.drop_all(bind=engine)
+    finally:
+        db.close()
+
+    if test_settings.TEST_DB_PATH.exists():
+        test_settings.TEST_DB_PATH.unlink()
+
+@pytest.fixture(scope="function")
+def db_session() -> Generator:
     """Create a new database session for a test."""
-    # Get connection with serializable isolation level
-    connection = db.engine.connect()
-    connection = connection.execution_options(isolation_level="SERIALIZABLE")
-
-    # Start transaction
+    connection = engine.connect()
     transaction = connection.begin()
+    session = TestingSessionLocal(bind=connection)
 
-    # Create session bound to our connection
-    session_factory = sessionmaker(bind=connection)
-    session = scoped_session(session_factory)
+    try:
+        yield session
+    finally:
+        session.close()
+        transaction.rollback()
+        connection.close()
 
-    # Make this session the current one
-    db.session = session
+@pytest.fixture(scope="function", autouse=True)
+def setup_test_files():
+    """Set up test file directories."""
+    TEST_UPLOAD_DIR.mkdir(exist_ok=True, parents=True)
+    TEST_FIXTURES_DIR.mkdir(exist_ok=True, parents=True)
 
-    # Create all tables
-    db.create_all()
+    yield
 
-    # Begin a nested transaction (using SAVEPOINT)
-    session.begin_nested()
+    # Cleanup test files after each test
+    if TEST_UPLOAD_DIR.exists():
+        for file in TEST_UPLOAD_DIR.glob("*"):
+            file.unlink()
+    if TEST_FIXTURES_DIR.exists():
+        for file in TEST_FIXTURES_DIR.glob("*"):
+            file.unlink()
 
-    # Each time a SAVEPOINT ends, reopen it
-    @event.listens_for(session, 'after_transaction_end')
-    def restart_savepoint(session, transaction):
-        if transaction.nested and not transaction._parent.nested:
-            # Ensure we're still in a transaction
-            session.begin_nested()
+@pytest.fixture(scope="session")
+def test_engine():
+    """Create test database engine."""
+    return engine
 
-    yield session
+@pytest.fixture(scope="session")
+def event_loop():
+    """Create an instance of the default event loop for the test session."""
+    if platform.system() == "Windows":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    else:
+        asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
-    # Clean up
-    session.close()
-    transaction.rollback()
-    connection.close()
-    session.remove()
-
-    # Drop all tables
-    db.drop_all()
+def get_test_db_url():
+    """Get test database URL."""
+    return test_settings.SQLALCHEMY_DATABASE_URI
 
 @pytest.fixture
-def client(app):
-    """Create a test client for the app."""
-    return app.test_client()
+def auth_client(client, test_user) -> Generator:
+    """Create an authenticated test client."""
+    token = create_access_token(test_user.id)
+    client.headers = {"Authorization": f"Bearer {token}"}
+    yield client
 
 @pytest.fixture
-def test_user(session):
+def superuser_client(client, test_superuser) -> Generator:
+    """Create a superuser test client."""
+    token = create_access_token(test_superuser.id)
+    client.headers = {"Authorization": f"Bearer {token}"}
+    yield client
+
+@pytest.fixture
+def client() -> Generator:
+    """Create a test client for Flask."""
+    with app.test_client() as test_client:
+        yield test_client
+
+@pytest.fixture
+def test_user(db_session: Session) -> User:
     """Create a test user."""
     user = User(
-        username='testuser2',
-        email='test2@example.com'
+        email="test@example.com",
+        username="testuser",
+        full_name="Test User",
+        is_active=True,
+        is_superuser=False,
+        email_verified=True,
+        hashed_password=get_password_hash("test-password")
     )
-    user.set_password('password123')
-    session.add(user)
-    session.commit()
-    user.activate()  # This will set is_active to True
-    session.commit()
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
     return user
 
 @pytest.fixture
-def auth_headers(test_user):
-    """Create authentication headers for a test user."""
-    # Ensure user ID is converted to string
-    access_token = create_access_token(identity=str(test_user.id))
-    return {'Authorization': f'Bearer {access_token}'}
+def test_superuser(db_session: Session) -> User:
+    """Create a test superuser."""
+    user = User(
+        email="admin@example.com",
+        username="admin",
+        full_name="Admin User",
+        is_active=True,
+        is_superuser=True,
+        email_verified=True,
+        hashed_password=get_password_hash("admin-password")
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
 
 @pytest.fixture
-def test_universe(session, test_user):
+def test_universe(db_session: Session, test_user: User) -> Universe:
     """Create a test universe."""
     universe = Universe(
         name="Test Universe",
-        description="Test Description",
-        user_id=test_user.id,
-        is_public=True
+        description="A test universe",
+        physics_json={},
+        music_parameters={},
+        creator_id=test_user.id
     )
-    session.add(universe)
-    session.commit()
+    db_session.add(universe)
+    db_session.commit()
+    db_session.refresh(universe)
     return universe
 
 @pytest.fixture
-def test_storyboard(session, test_universe):
-    """Create a test storyboard."""
-    storyboard = Storyboard(
-        title="Test Storyboard",
-        description="Test Description",
-        universe_id=test_universe.id
-    )
-    session.add(storyboard)
-    session.commit()
-    return storyboard
+async def websocket_client(test_client):
+    """Websocket test client."""
+    async with test_client.websocket_connect("/ws") as websocket:
+        yield websocket
 
 @pytest.fixture
-def test_scene(session, test_storyboard):
-    """Create a test scene."""
-    scene = Scene(
-        title="Test Scene",
-        sequence=1,
-        content={},
-        storyboard_id=test_storyboard.id
-    )
-    session.add(scene)
-    session.commit()
-    return scene
-
-@pytest.fixture
-def runner(app):
-    """Create a test runner."""
-    return app.test_cli_runner()
-
-@contextmanager
-def session_scope(app):
-    """Provide a transactional scope around a series of operations."""
-    with app.app_context():
-        try:
-            yield db.session
-            db.session.commit()
-        except:
-            db.session.rollback()
-            raise
-        finally:
-            db.session.remove()
-
-class AuthActions:
-    def __init__(self, client):
-        self._client = client
-
-    def login(self, email='test@example.com', password='test'):
-        return self._client.post(
-            '/api/auth/login',
-            json={'email': email, 'password': password}
-        )
-
-    def logout(self):
-        return self._client.post('/api/auth/logout')
-
-@pytest.fixture
-def auth(client):
-    """Authentication helper."""
-    return AuthActions(client)
-
-@pytest.fixture(scope='function')
-def jwt_config(app):
-    """Configure JWT settings for testing."""
-    with app.app_context():
-        # First, update the config
-        app.config.update({
-            'JWT_SECRET_KEY': 'test-jwt-secret-key',
-            'JWT_TOKEN_LOCATION': ['headers'],
-            'JWT_HEADER_NAME': 'Authorization',
-            'JWT_HEADER_TYPE': 'Bearer',
-            'JWT_ACCESS_TOKEN_EXPIRES': False,
-            'JWT_ALGORITHM': 'HS256',
-            'JWT_IDENTITY_CLAIM': 'sub',
-            'PROPAGATE_EXCEPTIONS': True,
-            'JWT_ERROR_MESSAGE_KEY': 'error',
-            'JWT_DECODE_ALGORITHMS': ['HS256']
-        })
-
-        # Re-initialize JWT with the new config
-        jwt.init_app(app)
-
-        # Configure JWT error handlers
-        @jwt.invalid_token_loader
-        def invalid_token_callback(error_string):
-            """Handle invalid token errors."""
-            app.logger.error(f"Invalid token error: {error_string}")
-            return {"error": "Invalid token", "message": error_string}, 401
-
-        @jwt.unauthorized_loader
-        def missing_token_callback(error_string):
-            """Handle missing token errors."""
-            app.logger.error(f"Missing token error: {error_string}")
-            return {"error": "Authorization required", "message": error_string}, 401
-
-        @jwt.expired_token_loader
-        def expired_token_callback(_jwt_header, jwt_data):
-            """Handle expired token errors."""
-            app.logger.error("Token has expired")
-            return {"error": "Token expired", "message": "The token has expired"}, 401
-
-        # Configure JWT user lookup
-        @jwt.user_lookup_loader
-        def user_lookup_callback(_jwt_header, jwt_data):
-            """Look up user from JWT data."""
-            identity = jwt_data.get("sub")
-            if not identity:
-                app.logger.error("No identity found in JWT data")
-                return None
-
-            app.logger.debug(f"Looking up user with JWT identity: {identity}")
-            try:
-                user = User.query.get(identity)
-                if user:
-                    app.logger.debug(f"Found user {user.id} from JWT identity {identity}")
-                    return user
-                else:
-                    app.logger.error(f"No user found in database for ID {identity}")
-                    return None
-            except Exception as e:
-                app.logger.error(f"Error during user lookup: {str(e)}")
-                return None
-
-        app.logger.info("JWT configuration updated")
-        return app.config
-
-@pytest.fixture
-def user_with_profile(app, user):
-    """Create test user with profile."""
-    with app.app_context():
-        profile = Profile(
-            user_id=user.id,
-            bio='Test bio',
-            preferences={'theme': 'dark'}
-        )
-        db.session.add(profile)
-        db.session.commit()
-        return user
-
-@pytest.fixture
-def universe_factory(app, user):
-    """Factory for creating test universes."""
-    def _universe_factory(user_id=None, **kwargs):
-        with app.app_context():
-            # Ensure user is attached to session
-            db.session.merge(user)
-
-            universe = Universe(
-                name=kwargs.get('name', 'Test Universe'),
-                description=kwargs.get('description', 'Test Description'),
-                user_id=user_id or user.id,
-                is_public=kwargs.get('is_public', True)
-            )
-            db.session.add(universe)
-            db.session.commit()
-            return universe
-    return _universe_factory
-
-@pytest.fixture
-def user_factory(app):
-    """Factory for creating test users."""
-    def _user_factory(**kwargs):
-        with app.app_context():
-            user = User(
-                username=kwargs.get('username', 'testuser2'),
-                email=kwargs.get('email', 'test2@example.com')
-            )
-            user.set_password(kwargs.get('password', 'password123'))
-            db.session.add(user)
-            db.session.commit()
-            return user
-    return _user_factory
+def auth_headers(test_user: User) -> Dict[str, str]:
+    """Create authentication headers."""
+    access_token = create_access_token(test_user.id)
+    return {"Authorization": f"Bearer {access_token}"}

@@ -1,0 +1,64 @@
+from typing import List, Optional
+from uuid import UUID
+from sqlalchemy.orm import Session
+
+from app.crud.base import CRUDBase
+from app.models.audio_file import AudioFile, AudioFormat, AudioType
+from app.schemas.audio_file import AudioFileCreate, AudioFileUpdate
+
+class CRUDAudioFile(CRUDBase[AudioFile, AudioFileCreate, AudioFileUpdate]):
+    def get_by_universe(
+        self, db: Session, *, universe_id: UUID, skip: int = 0, limit: int = 100
+    ) -> List[AudioFile]:
+        return (
+            db.query(self.model)
+            .filter(AudioFile.universe_id == universe_id)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
+    def get_by_generation(
+        self, db: Session, *, generation_id: UUID
+    ) -> List[AudioFile]:
+        return (
+            db.query(self.model)
+            .filter(AudioFile.generation_id == generation_id)
+            .all()
+        )
+
+    def get_by_format(
+        self, db: Session, *, format: AudioFormat, skip: int = 0, limit: int = 100
+    ) -> List[AudioFile]:
+        return (
+            db.query(self.model)
+            .filter(AudioFile.format == format)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
+    def get_by_type(
+        self, db: Session, *, type: AudioType, skip: int = 0, limit: int = 100
+    ) -> List[AudioFile]:
+        return (
+            db.query(self.model)
+            .filter(AudioFile.type == type)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
+    def get_by_name(
+        self, db: Session, *, universe_id: UUID, name: str
+    ) -> Optional[AudioFile]:
+        return (
+            db.query(self.model)
+            .filter(
+                AudioFile.universe_id == universe_id,
+                AudioFile.name == name
+            )
+            .first()
+        )
+
+audio_file = CRUDAudioFile(AudioFile)

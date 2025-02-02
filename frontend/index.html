@@ -1,30 +1,18 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Harmonic Universe</title>
-
-    <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/manifest.json" />
+    <meta name="description" content="Harmonic Universe - A Modern Web Application" />
     <meta name="theme-color" content="#4a90e2" />
+    <title>Harmonic Universe</title>
+    <link rel="manifest" href="/manifest.json" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta
-      name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
-    />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Harmonic Universe" />
-
-    <!-- Icons -->
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="196x196"
-      href="/assets/icons/favicon-196.png"
-    />
+    <link rel="icon" type="image/png" sizes="196x196" href="/assets/icons/favicon-196.png" />
     <link rel="apple-touch-icon" href="/assets/icons/apple-icon-180.png" />
-
-    <!-- Splash Screens -->
     <link
       rel="apple-touch-startup-image"
       href="/assets/splash/apple-splash-2048-2732.png"
@@ -165,59 +153,9 @@
       href="/assets/splash/apple-splash-1136-640.png"
       media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
     />
-
-    <!-- Description -->
-    <meta
-      name="description"
-      content="Create and explore unique universes with collaborative storytelling"
-    />
-
-    <!-- Open Graph -->
-    <meta property="og:title" content="Harmonic Universe" />
-    <meta
-      property="og:description"
-      content="Create and explore unique universes with collaborative storytelling"
-    />
-    <meta property="og:image" content="/assets/social-preview.png" />
-    <meta property="og:url" content="https://harmonic-universe.com" />
-    <meta property="og:type" content="website" />
-
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Harmonic Universe" />
-    <meta
-      name="twitter:description"
-      content="Create and explore unique universes with collaborative storytelling"
-    />
-    <meta name="twitter:image" content="/assets/social-preview.png" />
-
-    <!-- Preload Critical Assets -->
-    <link
-      rel="preload"
-      href="/assets/fonts/main-font.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin
-    />
-    <link rel="preload" href="/assets/logo.png" as="image" />
-
-    <!-- Preconnect to Important Origins -->
-    <link rel="preconnect" href="https://api.harmonic-universe.com" />
-    <link rel="dns-prefetch" href="https://api.harmonic-universe.com" />
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-
-    <!-- No-JS Fallback -->
-    <noscript>
-      <div style="padding: 2rem; text-align: center">
-        <h1>JavaScript Required</h1>
-        <p>
-          Please enable JavaScript to use Harmonic Universe. We promise it's
-          worth it!
-        </p>
-      </div>
-    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

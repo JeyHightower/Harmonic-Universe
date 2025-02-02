@@ -2,9 +2,9 @@ name: CI/CD
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   test:
@@ -12,11 +12,11 @@ jobs:
 
     services:
       postgres:
-        image: postgres:13
+        image: postgres:14
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: harmonic_test
+          POSTGRES_DB: harmonic_universe_test
         ports:
           - 5432:5432
         options: >-
@@ -26,115 +26,109 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+    - uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-          cache: 'pip'
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+    - name: Install Dependencies
+      run: |
+        npm ci
+        cd frontend && npm ci
+        cd ../backend && npm ci
 
-      - name: Install Python dependencies
-        run: |
-          cd backend
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+    - name: Run Frontend Tests
+      run: |
+        cd frontend
+        npm run test:ci
 
-      - name: Install Node.js dependencies
-        run: |
-          cd frontend
-          npm ci
+    - name: Run Backend Tests
+      run: |
+        cd backend
+        npm run test:ci
+      env:
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_NAME: harmonic_universe_test
+        DB_USER: postgres
+        DB_PASSWORD: postgres
+        NODE_ENV: test
 
-      - name: Generate PWA assets
-        run: |
-          cd frontend
-          npm run generate-pwa-assets
+    - name: Upload Coverage Reports
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./frontend/coverage/coverage-final.json,./backend/coverage/coverage-final.json
 
-      - name: Run backend tests
-        run: |
-          cd backend
-          python -m pytest
-        env:
-          FLASK_ENV: testing
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/harmonic_test
-
-      - name: Run frontend unit tests
-        run: |
-          cd frontend
-          npm run test:ci
-
-      - name: Run PWA tests
-        run: |
-          cd frontend
-          npm run test:pwa
-          npm run test:monitoring
-
-      - name: Run E2E tests
-        run: |
-          cd frontend
-          npm run test:e2e
-
-      - name: Run load tests
-        run: |
-          cd frontend
-          npm install -g k6
-          k6 run src/tests/load/api.test.js
-          k6 run src/tests/load/websocket.test.js
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: test-results
-          path: |
-            backend/coverage.xml
-            frontend/coverage
-            frontend/cypress/videos
-            frontend/cypress/screenshots
-
-  deploy:
-    needs: test
-    if: github.ref == 'refs/heads/main'
+  lint:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+    - uses: actions/checkout@v3
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
 
-      - name: Install dependencies
-        run: |
-          cd frontend
-          npm ci
+    - name: Install Dependencies
+      run: |
+        npm ci
+        cd frontend && npm ci
+        cd ../backend && npm ci
 
-      - name: Generate PWA assets
-        run: |
-          cd frontend
-          npm run generate-pwa-assets
+    - name: Lint Frontend
+      run: |
+        cd frontend
+        npm run lint
 
-      - name: Build frontend
-        run: |
-          cd frontend
-          npm run build
+    - name: Lint Backend
+      run: |
+        cd backend
+        npm run lint
 
-      - name: Optimize assets
-        run: |
-          cd frontend
-          npm run optimize-assets
+  build:
+    needs: [test, lint]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
 
-      - name: Deploy to Render
-        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
-        env:
-          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install Dependencies
+      run: |
+        npm ci
+        cd frontend && npm ci
+        cd ../backend && npm ci
+
+    - name: Build Frontend
+      run: |
+        cd frontend
+        npm run build
+
+    - name: Build Backend
+      run: |
+        cd backend
+        npm run build
+
+    - name: Upload Frontend Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: frontend-build
+        path: frontend/dist
+
+    - name: Upload Backend Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: backend-build
+        path: backend/dist

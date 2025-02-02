@@ -1,0 +1,74 @@
+{
+  "metadata": {
+    "timestamp": "2025-02-01T09:19:41.921982",
+    "platform": "Darwin",
+    "python_version": "3.9.18 (main, Jan 10 2025, 09:57:10) \n[Clang 16.0.0 (clang-1600.0.26.6)]"
+  },
+  "results": {
+    "basic": {
+      "exit_code": 1,
+      "status": "failure",
+      "timestamp": "2025-02-01T09:19:51.120884",
+      "test_files": [
+        "tests/test_basic.py",
+        "tests/test_config.py",
+        "tests/test_db.py"
+      ]
+    },
+    "unit": {
+      "exit_code": 1,
+      "status": "failure",
+      "timestamp": "2025-02-01T09:19:51.582776",
+      "test_files": [
+        "tests/unit/test_models.py"
+      ]
+    },
+    "api": {
+      "exit_code": 1,
+      "status": "failure",
+      "timestamp": "2025-02-01T09:20:00.260125",
+      "test_files": [
+        "tests/api/test_scenes.py",
+        "tests/api/test_auth.py",
+        "tests/api/test_audio.py",
+        "tests/api/test_websocket.py",
+        "tests/api/test_universes.py",
+        "tests/api/test_users.py",
+        "tests/api/test_universe.py",
+        "tests/test_api.py"
+      ]
+    },
+    "integration": {
+      "exit_code": 1,
+      "status": "failure",
+      "timestamp": "2025-02-01T09:20:00.884396",
+      "test_files": [
+        "tests/integration/test_users_api.py"
+      ]
+    },
+    "analysis": {
+      "exit_code": 1,
+      "status": "failure",
+      "timestamp": "2025-02-01T09:20:01.479423",
+      "test_files": [
+        "tests/test_analyzer.py",
+        "tests/test_analysis.py",
+        "tests/test_monitoring.py"
+      ]
+    },
+    "websocket": {
+      "exit_code": 1,
+      "status": "failure",
+      "timestamp": "2025-02-01T09:20:03.116324",
+      "test_files": [
+        "tests/test_websocket.py"
+      ]
+    },
+    "e2e": {
+      "exit_code": 0,
+      "status": "skipped",
+      "timestamp": "2025-02-01T09:20:03.116417",
+      "message": "No test files found"
+    }
+  }
+}

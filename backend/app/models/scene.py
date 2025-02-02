@@ -1,124 +1,101 @@
-"""Scene model module."""
-from sqlalchemy import (
-    Column, Integer, String, Text,
-    ForeignKey, JSON
-)
-from sqlalchemy.orm import relationship, Mapped, mapped_column
-from typing import List, Optional, Dict, Any
-from .. import db
-from .base_models import BaseModel, TimestampMixin
-from .storyboard import Storyboard
-from .media_effects import VisualEffect, AudioTrack
-from .physics_object import PhysicsObject
-from .physics_constraint import PhysicsConstraint
+"""
+Scene model.
+"""
 
+from typing import Dict, List, Optional, TYPE_CHECKING
+from uuid import UUID, uuid4
+from sqlalchemy import String, ForeignKey, Enum, JSON
+from sqlalchemy.dialects.postgresql import JSONB
+from app.db.custom_types import GUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from datetime import datetime
+import enum
 
-class Scene(BaseModel, TimestampMixin):
-    """Scene model for organizing content within storyboards."""
+from app.db.base_class import Base
 
-    __tablename__ = 'scenes'
+if TYPE_CHECKING:
+    from app.models.user import User
+    from app.models.universe import Universe
+    from app.models.timeline import Timeline
+    from app.models.export import Export
+    from app.models.visualization import Visualization
+    from app.models.storyboard import Storyboard
 
-    id: Mapped[int] = mapped_column(
-        Integer,
-        primary_key=True
-    )
-    name: Mapped[str] = mapped_column(
-        String(100),
-        nullable=False
-    )
-    description: Mapped[Optional[str]] = mapped_column(Text)
-    sequence: Mapped[Optional[int]] = mapped_column(Integer)
-    storyboard_id: Mapped[int] = mapped_column(
-        Integer,
-        ForeignKey('storyboards.id'),
-        nullable=False
-    )
-    content: Mapped[Dict[str, Any]] = mapped_column(
-        JSON,
-        default=dict
-    )
+class RenderingMode(str, enum.Enum):
+    """Rendering mode enum."""
+    WIREFRAME = "wireframe"
+    SOLID = "solid"
+    TEXTURED = "textured"
+    REALISTIC = "realistic"
 
-    # Physics simulation settings
-    physics_settings: Mapped[Dict[str, Any]] = mapped_column(
-        JSON,
-        default=lambda: {
-            "gravity": {"x": 0, "y": -9.81},
-            "time_step": 1/60,
-            "velocity_iterations": 8,
-            "position_iterations": 3,
-            "enabled": False
-        }
-    )
+class SceneObjectType(str, enum.Enum):
+    """Scene object type enum."""
+    MESH = "mesh"
+    LIGHT = "light"
+    CAMERA = "camera"
+    PARTICLE = "particle"
+    SOUND = "sound"
+    EFFECT = "effect"
 
-    # Relationships with type hints
-    storyboard: Mapped["Storyboard"] = relationship(
-        "Storyboard",
-        back_populates="scenes"
-    )
-    visual_effects: Mapped[List["VisualEffect"]] = relationship(
-        "VisualEffect",
-        back_populates="scene",
-        cascade="all, delete-orphan",
-        passive_deletes=True
-    )
-    audio_tracks: Mapped[List["AudioTrack"]] = relationship(
-        "AudioTrack",
-        back_populates="scene",
-        cascade="all, delete-orphan",
-        passive_deletes=True
-    )
-    physics_objects: Mapped[List["PhysicsObject"]] = relationship(
-        "PhysicsObject",
-        back_populates="scene",
-        cascade="all, delete-orphan",
-        passive_deletes=True
-    )
-    physics_constraints: Mapped[List["PhysicsConstraint"]] = (
-        relationship(
-            "PhysicsConstraint",
-            back_populates="scene",
-            cascade="all, delete-orphan",
-            passive_deletes=True
-        )
-    )
+class Scene(Base):
+    """Scene model."""
+    __tablename__ = "scene"
+    __table_args__ = {'extend_existing': True}
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert scene to dictionary."""
-        physics_constraints = [
-            constraint.to_dict()
-            for constraint in self.physics_constraints
-        ]
-        visual_effects = [
-            effect.to_dict()
-            for effect in self.visual_effects
-        ]
-        audio_tracks = [
-            track.to_dict()
-            for track in self.audio_tracks
-        ]
-        physics_objects = [
-            obj.to_dict()
-            for obj in self.physics_objects
-        ]
+    id: Mapped[UUID] = mapped_column(GUID(), primary_key=True, default=uuid4)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    physics_parameters: Mapped[dict] = mapped_column(
+        JSONB().with_variant(JSON(), 'sqlite'),
+        server_default='{}'
+    )
+    music_parameters: Mapped[dict] = mapped_column(
+        JSONB().with_variant(JSON(), 'sqlite'),
+        server_default='{}'
+    )
+    rendering_mode: Mapped[RenderingMode] = mapped_column(Enum(RenderingMode), default=RenderingMode.SOLID)
+    creator_id: Mapped[UUID] = mapped_column(GUID(), ForeignKey("users.id"), nullable=False)
+    universe_id: Mapped[UUID] = mapped_column(GUID(), ForeignKey("universes.id", ondelete="CASCADE"), nullable=False)
+    storyboard_id: Mapped[UUID] = mapped_column(GUID(), ForeignKey("storyboards.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
-        return {
-            'id': self.id,
-            'name': self.name,
-            'description': self.description,
-            'sequence': self.sequence,
-            'storyboard_id': self.storyboard_id,
-            'content': self.content,
-            'physics_settings': self.physics_settings,
-            'visual_effects': visual_effects,
-            'audio_tracks': audio_tracks,
-            'physics_objects': physics_objects,
-            'physics_constraints': physics_constraints,
-            'created_at': (
-                self.created_at.isoformat()
-                if self.created_at else None
-            ),
-            'updated_at': (
-                self.updated_at.isoformat()
-                if self.updated_at else None
-            )
-        }
+    # Relationships
+    creator: Mapped["User"] = relationship("User", back_populates="scenes")
+    universe: Mapped["Universe"] = relationship("Universe", back_populates="scenes")
+    timelines: Mapped[List["Timeline"]] = relationship("Timeline", back_populates="scene", cascade="all, delete-orphan")
+    exports: Mapped[List["Export"]] = relationship("Export", back_populates="scene", cascade="all, delete-orphan")
+    visualizations: Mapped[List["Visualization"]] = relationship("Visualization", back_populates="scene", cascade="all, delete-orphan")
+    objects: Mapped[List["SceneObject"]] = relationship("SceneObject", back_populates="scene", cascade="all, delete-orphan")
+    storyboard: Mapped["Storyboard"] = relationship("Storyboard", back_populates="scenes")
+
+    def __repr__(self) -> str:
+        """Return string representation."""
+        return f"<Scene {self.name} (Storyboard ID: {self.storyboard_id})>"
+
+class SceneObject(Base):
+    """Scene object model."""
+    __tablename__ = "scene_object"
+    __table_args__ = {'extend_existing': True}
+
+    id: Mapped[UUID] = mapped_column(GUID(), primary_key=True)
+    scene_id: Mapped[UUID] = mapped_column(GUID(), ForeignKey("scene.id", ondelete="CASCADE"), nullable=False)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    type: Mapped[SceneObjectType] = mapped_column(Enum(SceneObjectType), nullable=False)
+    properties: Mapped[dict] = mapped_column(
+        JSONB().with_variant(JSON(), 'sqlite'),
+        server_default='{}'
+    )
+    object_metadata: Mapped[dict] = mapped_column(
+        JSONB().with_variant(JSON(), 'sqlite'),
+        server_default='{}'
+    )
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # Relationships
+    scene: Mapped["Scene"] = relationship("Scene", back_populates="objects")
+
+    def __repr__(self) -> str:
+        """Return string representation of scene object."""
+        return f"<SceneObject {self.name} ({self.type})>"

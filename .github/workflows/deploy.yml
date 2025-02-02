@@ -1,0 +1,66 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: ["CI/CD"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Download Frontend Artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: frontend-build
+        path: frontend/dist
+
+    - name: Download Backend Artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: backend-build
+        path: backend/dist
+
+    - name: Deploy to Production
+      env:
+        DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+        DEPLOY_URL: ${{ secrets.DEPLOY_URL }}
+      run: |
+        # Add your deployment commands here
+        # For example:
+        # - Deploy to AWS
+        # - Deploy to Google Cloud
+        # - Deploy to Azure
+        # - Deploy to Digital Ocean
+        echo "Deploying to production..."
+
+    - name: Notify Success
+      if: success()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '🚀 Deployment successful!'
+          })
+
+    - name: Notify Failure
+      if: failure()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '❌ Deployment failed!'
+          })

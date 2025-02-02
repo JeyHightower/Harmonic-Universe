@@ -1,0 +1,260 @@
+{
+  "metadata": {
+    "timestamp": "2025-02-01T03:12:21",
+    "test_run_id": "TEST-2025-02-01-0002",
+    "environment": "test",
+    "total_tests": 174,
+    "passed_tests": 9,
+    "failed_tests": 31,
+    "error_tests": 135
+  },
+  "total_errors": 175,
+  "categories": {
+    "mapper_errors": {
+      "description": "SQLAlchemy mapper initialization issues",
+      "count": 45,
+      "issues": [
+        {
+          "error": "Multiple classes found for path AudioFile",
+          "files": ["app/models/audio.py"],
+          "severity": "critical",
+          "affected_tests": ["test_audio.py", "test_models.py"],
+          "fix_steps": [
+            "Search for all AudioFile class definitions",
+            "Remove duplicate definitions",
+            "Update imports to use correct path",
+            "Add fully qualified path to AudioFile model"
+          ]
+        }
+      ]
+    },
+    "http_errors": {
+      "description": "HTTP status code mismatches",
+      "count": 8,
+      "issues": [
+        {
+          "error": "Incorrect status codes for unauthorized access",
+          "details": ["Expected 401, got 404"],
+          "severity": "high",
+          "affected_tests": [
+            "test_unauthorized_audio_access",
+            "test_unauthorized_access"
+          ],
+          "fix_steps": [
+            "Update auth middleware to return 401 instead of 404",
+            "Add proper error handlers for auth failures"
+          ]
+        },
+        {
+          "error": "Incorrect status codes for invalid operations",
+          "details": ["Expected 400, got 404"],
+          "severity": "high",
+          "affected_tests": [
+            "test_password_reset_invalid_token",
+            "test_verify_email_invalid_token"
+          ]
+        }
+      ]
+    },
+    "configuration_errors": {
+      "description": "Settings and configuration issues",
+      "count": 5,
+      "issues": [
+        {
+          "error": "Missing required settings",
+          "details": ["SMTP_PORT", "REDIS_PORT", "WS_HEARTBEAT_INTERVAL"],
+          "severity": "high",
+          "fix_steps": [
+            "Add missing configuration values to test settings",
+            "Set up proper test environment variables"
+          ]
+        },
+        {
+          "error": "Invalid configuration values",
+          "details": [
+            "SECRET_KEY length (15 < 32)",
+            "PROJECT_NAME mismatch",
+            "Version mismatch (0.1.0 vs 1.0.0)"
+          ],
+          "severity": "medium"
+        }
+      ]
+    },
+    "fixture_errors": {
+      "description": "Test fixture and setup issues",
+      "count": 87,
+      "issues": [
+        {
+          "error": "Missing required fixtures",
+          "details": ["session", "db"],
+          "severity": "high"
+        },
+        {
+          "error": "Scope mismatches",
+          "details": ["Function scope access violation"],
+          "severity": "high",
+          "affected_tests": ["test_users_api.py"]
+        }
+      ]
+    },
+    "event_loop_errors": {
+      "description": "AsyncIO and event loop issues",
+      "count": 35,
+      "issues": [
+        {
+          "error": "Selector configuration error",
+          "details": ["changelist must be an iterable of select.kevent"],
+          "severity": "high",
+          "affected_tests": ["test_websocket.py"],
+          "fix_steps": [
+            "Configure event loop policy for tests",
+            "Set up proper test fixtures for async tests",
+            "Handle event loop cleanup properly"
+          ]
+        }
+      ]
+    }
+  },
+  "files_affected": [
+    {
+      "file_path": "tests/conftest.py",
+      "line_numbers": [177, 219],
+      "error_count": 1,
+      "severity": "high",
+      "description": "Missing database session fixture",
+      "fix_required": true,
+      "fix_priority": 2
+    },
+    {
+      "file_path": "app/models/audio.py",
+      "line_numbers": [],
+      "error_count": 1,
+      "severity": "critical",
+      "description": "Duplicate AudioFile model definition",
+      "fix_required": true,
+      "fix_priority": 1
+    },
+    {
+      "file_path": "app/core/config.py",
+      "line_numbers": [],
+      "error_count": 5,
+      "severity": "high",
+      "description": "Missing and incorrect configuration values"
+    }
+  ],
+  "fix_history": [
+    {
+      "timestamp": "2025-02-01T03:12:21",
+      "file": "app/models/audio.py",
+      "error_type": "mapper_error",
+      "fix_applied": "Searching for duplicate AudioFile definitions",
+      "outcome": "pending",
+      "success": null
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "critical",
+      "description": "Fix AudioFile model conflict",
+      "suggested_fix": "Consolidate AudioFile model definitions",
+      "affected_files": ["app/models/audio.py"],
+      "steps": [
+        "Run: find . -type f -exec grep -l 'class AudioFile' {} \\;",
+        "Remove duplicate definitions",
+        "Update imports to use app.models.audio.AudioFile",
+        "Add __all__ = ['AudioFile'] to models/__init__.py"
+      ]
+    },
+    {
+      "priority": "high",
+      "description": "Fix event loop configuration",
+      "suggested_fix": "Update test fixtures for async support",
+      "affected_files": ["tests/conftest.py"],
+      "steps": [
+        "Add event_loop fixture with proper scope",
+        "Configure event loop policy for tests",
+        "Add proper cleanup in fixture teardown"
+      ]
+    },
+    {
+      "priority": "high",
+      "description": "Fix database session fixture",
+      "suggested_fix": "Implement session fixture in tests/conftest.py",
+      "affected_files": ["tests/conftest.py"],
+      "steps": [
+        "Add session fixture with proper scope",
+        "Ensure proper teardown",
+        "Update dependent fixtures"
+      ]
+    },
+    {
+      "priority": "high",
+      "description": "Update test settings",
+      "suggested_fix": "Add missing configuration values in test settings",
+      "affected_files": ["app/core/config.py", "tests/conftest.py"],
+      "steps": [
+        "Add missing port configurations",
+        "Update secret key length",
+        "Fix version number",
+        "Correct project name"
+      ]
+    },
+    {
+      "priority": "medium",
+      "description": "Fix HTTP status codes",
+      "suggested_fix": "Update route handlers to return correct status codes",
+      "affected_files": ["app/api/endpoints/*.py"],
+      "steps": [
+        "Update unauthorized access handlers to return 401",
+        "Update invalid operation handlers to return 400",
+        "Add proper error handling middleware"
+      ]
+    }
+  ],
+  "error_patterns": {
+    "mapper_init_failure": {
+      "description": "SQLAlchemy mapper initialization failures",
+      "frequency": 45,
+      "last_occurrence": "2025-02-01T03:12:21",
+      "common_fixes": [
+        "Use fully qualified model paths",
+        "Check for duplicate model definitions",
+        "Verify model registry configuration"
+      ]
+    },
+    "event_loop_error": {
+      "description": "AsyncIO event loop issues",
+      "frequency": 35,
+      "last_occurrence": "2025-02-01T03:12:21",
+      "common_fixes": [
+        "Configure event loop policy",
+        "Set up proper async fixtures",
+        "Handle event loop cleanup"
+      ]
+    },
+    "missing_fixture": {
+      "description": "Missing test fixtures",
+      "frequency": 87,
+      "last_occurrence": "2025-02-01T03:12:21",
+      "common_fixes": [
+        "Add required fixtures to conftest.py",
+        "Check fixture dependencies",
+        "Verify fixture scopes"
+      ]
+    }
+  },
+  "statistics": {
+    "success_rate": 5.17,
+    "most_common_errors": [
+      "AudioFile model conflict",
+      "Event loop configuration error",
+      "HTTP status code mismatch"
+    ],
+    "fix_effectiveness": 0,
+    "priority_distribution": {
+      "critical": 1,
+      "high": 3,
+      "medium": 2
+    }
+  }
+}

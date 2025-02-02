@@ -1,152 +1,97 @@
-# Harmonic Universe Documentation
+# Harmonic Universe
 
-This directory contains all documentation for the Harmonic Universe project. The documentation is organized into the following categories:
-
-## Directory Structure
-
-- `api/` - API documentation and protocols
-  - API endpoints and usage
-  - WebSocket protocol specifications
-  - Parameter relationships and data models
-
-- `architecture/` - System architecture documentation
-  - Project structure
-  - System design
-  - Component relationships
-  - Technical specifications
-
-- `features/` - Feature documentation
-  - Feature specifications
-  - Feature checklists
-  - Analytics integration
-  - AI integration
-  - Implementation status
-
-- `setup/` - Setup and deployment guides
-  - Deployment instructions
-  - User guides
-  - Professional guide
-  - Educational guide
-  - Contributing guidelines
-
-- `testing/` - Testing documentation
-  - Test plans
-  - Test checklists
-  - Testing guidelines
-  - Test coverage reports
-
-## Additional Resources
-
-- `monitoring/` - System monitoring documentation
-- `pwa/` - Progressive Web App documentation
-
-## Documentation Standards
-
-1. All documentation should be written in Markdown format
-2. Use clear, concise language
-3. Include code examples where appropriate
-4. Keep documentation up-to-date with code changes
-5. Include diagrams when explaining complex systems
-6. Cross-reference related documentation
-
-## Contributing to Documentation
-
-1. Follow the existing directory structure
-2. Use consistent formatting
-3. Update the relevant README files
-4. Include necessary diagrams and screenshots
-5. Test all code examples
-6. Review and update related documentation
-
-## Documentation Review Process
-
-1. Technical accuracy review
-2. Clarity and completeness check
-3. Code example verification
-4. Cross-reference validation
-5. Final approval from project maintainers
-
-For more information about contributing to documentation, please see the [Contributing Guidelines](setup/CONTRIBUTING.md).
+A modern web application for collaborative music creation and visualization.
 
 ## Overview
 
-Welcome to the Harmonic Universe documentation. This guide provides comprehensive information about the system's architecture, features, and implementation details.
+Harmonic Universe is a real-time collaborative platform that allows musicians and artists to create, share, and visualize music together. The application features a modern tech stack with React frontend and Flask backend, supporting real-time collaboration through WebSocket connections.
 
-## Documentation Structure
+## Features
 
-### Core Documentation
+- Real-time collaborative music creation
+- Interactive music visualization
+- User authentication and project management
+- Live collaboration features
+- Modern, responsive UI
 
-- [Architecture](ARCHITECTURE.md) - System architecture and component overview
-- [API Documentation](API.md) - REST API endpoints and WebSocket events
-- [Parameter Relationships](PARAMETER_RELATIONSHIPS.md) - How different parameters interact
-- [Features Checklist](FEATURES_CHECKLIST.md) - Complete feature list and implementation status
+## Tech Stack
 
-### User Guides
+### Frontend
 
-- [User Guide](USER_GUIDE.md) - End-user documentation
-- [Setup Guide](SETUP.md) - Installation and setup instructions
-- [Contributing Guide](CONTRIBUTING.md) - Guidelines for contributors
+- React with TypeScript
+- Vite
+- TailwindCSS
+- Socket.IO Client
 
-### Technical Documentation
+### Backend
 
-- [Project Structure](PROJECT_STRUCTURE.md) - Codebase organization
-- [WebSocket Protocol](WEBSOCKET_PROTOCOL.md) - Real-time communication details
-- [AI Integration](AI_INTEGRATION.md) - AI features and implementation
-- [Test Plan](TEST_PLAN.md) - Testing strategy and procedures
-- [Deployment](DEPLOYMENT.md) - Deployment procedures and configurations
-
-### Additional Resources
-
-- [Professional Guide](PROFESSIONAL_GUIDE.md) - Best practices and advanced usage
-- [Educational Guide](EDUCATIONAL_GUIDE.md) - Learning resources and tutorials
+- Flask
+- SQLAlchemy
+- PostgreSQL
+- Socket.IO
 
 ## Quick Start
 
-1. **Setup**
+1. Clone the repository:
 
    ```bash
-   # Clone the repository
    git clone https://github.com/yourusername/harmonic-universe.git
    cd harmonic-universe
-
-   # Install dependencies
-   ./setup.sh
    ```
 
-2. **Development**
+2. Start the backend:
 
    ```bash
-   # Start backend
    cd backend
+   python -m venv venv
+   source venv/bin/activate  # Unix
+   pip install -r requirements.txt
    flask run
-
-   # Start frontend
-   cd frontend
-   npm run dev
    ```
 
-3. **Testing**
+3. Start the frontend:
+
    ```bash
-   # Run all tests
-   ./run_all_tests.sh
+   cd frontend
+   yarn install
+   yarn dev
    ```
 
-## Directory Structure
+4. Open http://localhost:5173 in your browser
 
-```
-docs/
-├── api/              - Detailed API documentation
-├── features/         - Feature specifications
-├── monitoring/       - Monitoring and metrics
-├── pwa/             - Progressive Web App docs
-├── testing/         - Test documentation
-└── *.md             - Core documentation files
-```
+## Documentation
+
+For detailed documentation, please see the [docs](./docs) directory:
+
+- [Backend Documentation](./docs/backend/README.md)
+- [Frontend Documentation](./docs/frontend/README.md)
+- [Deployment Guide](./docs/deployment/README.md)
+- [Architecture Overview](./docs/architecture/README.md)
+
+## Development
+
+- Backend development server runs on `http://localhost:5000`
+- Frontend development server runs on `http://localhost:5173`
+- WebSocket server is integrated with the backend
+
+## Testing
+
+- Backend: `cd backend && pytest`
+- Frontend: `cd frontend && yarn test`
+- E2E: `cd frontend && yarn cypress:open`
 
 ## Contributing
 
-Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+For support and questions, please open an issue in the GitHub repository.

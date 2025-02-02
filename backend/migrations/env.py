@@ -1,4 +1,6 @@
-from __future__ import with_statement
+"""
+Flask-Migrate environment configuration.
+"""
 
 import logging
 from logging.config import fileConfig
@@ -6,11 +8,7 @@ from logging.config import fileConfig
 from flask import current_app
 
 from alembic import context
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
-# Import the application's models
-from app.models import User, Universe
+from app.db.base import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -18,27 +16,47 @@ config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+fileConfig(config.config_file_name)
 logger = logging.getLogger('alembic.env')
 
-def get_engine_url():
+
+def get_engine():
+    """Get SQLAlchemy engine from Flask app."""
     try:
-        return current_app.extensions['migrate'].db.get_engine().url
-    except:
-        return current_app.config.get('SQLALCHEMY_DATABASE_URI')
+        # this works with Flask-SQLAlchemy<3 and Alchemical
+        return current_app.extensions['migrate'].db.get_engine()
+    except TypeError:
+        # this works with Flask-SQLAlchemy>=3
+        return current_app.extensions['migrate'].db.engine
+
+
+def get_engine_url():
+    """Get database URL from Flask app."""
+    try:
+        return get_engine().url.render_as_string(hide_password=False).replace(
+            '%', '%%')
+    except AttributeError:
+        return str(get_engine().url).replace('%', '%%')
+
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-config.set_main_option(
-    'sqlalchemy.url',
-    str(get_engine_url()).replace('%', '%%'))
-target_metadata = current_app.extensions['migrate'].db.metadata
+# from myapp import mymodel
+# target_metadata = mymodel.Base.metadata
+config.set_main_option('sqlalchemy.url', get_engine_url())
+target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
+
+
+def get_metadata():
+    """Get database metadata."""
+    if hasattr(target_db, 'metadatas'):
+        return target_db.metadatas[None]
+    return target_db.metadata
 
 
 def run_migrations_offline():
@@ -83,16 +101,7 @@ def run_migrations_online():
                 directives[:] = []
                 logger.info('No changes in schema detected.')
 
-    # handle cases where migrate extension hasn't been initialized
-    if hasattr(current_app.extensions['migrate'].db, 'get_engine'):
-        connectable = current_app.extensions['migrate'].db.get_engine()
-    else:
-        # Create the engine directly using SQLAlchemy
-        connectable = engine_from_config(
-            config.get_section(config.config_ini_section),
-            prefix='sqlalchemy.',
-            poolclass=pool.NullPool,
-        )
+    connectable = get_engine()
 
     with connectable.connect() as connection:
         context.configure(

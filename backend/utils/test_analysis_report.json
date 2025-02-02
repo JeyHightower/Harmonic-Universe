@@ -1,0 +1,26 @@
+{
+  "timestamp": "2025-01-31T21:38:21.772448",
+  "summary": {
+    "total_errors": 0,
+    "error_counts": {
+      "assertion": 0,
+      "import": 0,
+      "syntax": 0,
+      "attribute": 0,
+      "type": 0,
+      "value": 0,
+      "fixture": 0,
+      "collection": 0
+    }
+  },
+  "details": {
+    "assertion": [],
+    "import": [],
+    "syntax": [],
+    "attribute": [],
+    "type": [],
+    "value": [],
+    "fixture": [],
+    "collection": []
+  }
+}

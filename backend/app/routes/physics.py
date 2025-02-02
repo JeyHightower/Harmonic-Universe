@@ -1,319 +1,302 @@
-"""Physics routes for the API."""
-from flask import Blueprint, jsonify, request
-from flask_login import login_required, current_user
-from ..models import db, Scene, PhysicsObject, PhysicsConstraint
-from ..utils.auth import check_universe_access
-from ..utils.validation import (
-    validate_physics_object,
-    validate_physics_constraint,
-    validate_simulation_settings
-)
-from datetime import datetime
+"""
+Physics routes.
+"""
 
-bp = Blueprint('physics', __name__)
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.models.scene import Scene
+from app.models.universe import Universe
+from app.models import db, PhysicsObject, PhysicsConstraint
+from app.utils.validation import validate_physics_object, validate_physics_constraint
+
+physics_bp = Blueprint('physics', __name__, url_prefix='/physics')
+
+@physics_bp.route('/universes/<uuid:universe_id>/parameters', methods=['GET'])
+@jwt_required()
+def get_universe_physics_parameters(universe_id):
+    """Get universe physics parameters."""
+    try:
+        universe = Universe.query.get(universe_id)
+        if not universe:
+            return jsonify({'error': 'Universe not found'}), 404
+        return jsonify(universe.physics_parameters), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@physics_bp.route('/universes/<uuid:universe_id>/parameters', methods=['PUT'])
+@jwt_required()
+def update_universe_physics_parameters(universe_id):
+    """Update universe physics parameters."""
+    try:
+        # Check if universe exists
+        universe = Universe.query.get(universe_id)
+        if not universe:
+            return jsonify({'error': 'Universe not found'}), 404
+
+        # Check if current user is the creator
+        current_user_id = get_jwt_identity()
+        if str(universe.creator_id) != current_user_id:
+            return jsonify({'error': 'Not authorized'}), 403
+
+        # Update physics parameters
+        universe.physics_parameters = request.json
+        db.session.commit()
+
+        return jsonify(universe.physics_parameters), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@physics_bp.route('/scenes/<uuid:scene_id>/parameters', methods=['GET'])
+@jwt_required()
+def get_scene_physics_parameters(scene_id):
+    """Get scene physics parameters."""
+    try:
+        scene = Scene.query.get(scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
+        return jsonify(scene.physics_parameters), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@physics_bp.route('/scenes/<uuid:scene_id>/parameters', methods=['PUT'])
+@jwt_required()
+def update_scene_physics_parameters(scene_id):
+    """Update scene physics parameters."""
+    try:
+        # Check if scene exists
+        scene = Scene.query.get(scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
+
+        # Check if current user is the creator
+        current_user_id = get_jwt_identity()
+        if str(scene.creator_id) != current_user_id:
+            return jsonify({'error': 'Not authorized'}), 403
+
+        # Update physics parameters
+        scene.physics_parameters = request.json
+        db.session.commit()
+
+        return jsonify(scene.physics_parameters), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@physics_bp.route('/scenes/<uuid:scene_id>/simulate', methods=['POST'])
+@jwt_required()
+def simulate_scene(scene_id):
+    """Simulate scene physics."""
+    try:
+        # Check if scene exists
+        scene = Scene.query.get(scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
+
+        # TODO: Implement physics simulation
+        # This is a placeholder response
+        simulation_result = {
+            'status': 'success',
+            'frames': [],
+            'metadata': {
+                'duration': 0.0,
+                'frame_count': 0,
+                'physics_parameters': scene.physics_parameters
+            }
+        }
+
+        return jsonify(simulation_result), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
 # Physics Object Routes
-
-@bp.route('/api/scenes/<int:scene_id>/physics/objects', methods=['POST'])
-@login_required
+@physics_bp.route('/scenes/<uuid:scene_id>/physics/objects', methods=['POST'])
+@jwt_required()
 def create_physics_object(scene_id):
     """Create a new physics object."""
-    scene = Scene.query.get_or_404(scene_id)
-    if not check_universe_access(scene.storyboard.universe, current_user):
-        return jsonify({'error': 'Unauthorized'}), 403
-
-    data = request.get_json()
-    validation_error = validate_physics_object(data)
-    if validation_error:
-        return jsonify({'error': validation_error}), 400
-
     try:
-        physics_object = PhysicsObject(
-            scene_id=scene_id,
-            name=data['name'],
-            object_type=data['object_type'],
-            mass=data.get('mass', 1.0),
-            position=data['position'],
-            dimensions=data['dimensions'],
-            is_static=data.get('is_static', False),
-            is_sensor=data.get('is_sensor', False),
-            restitution=data.get('restitution', 0.6),
-            friction=data.get('friction', 0.1),
-            collision_filter=data.get('collision_filter', {"category": 1, "mask": 0xFFFFFFFF})
-        )
-        physics_object.validate_object_type()
-        physics_object.validate_physics_properties()
+        scene = Scene.query.get(scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
 
+        current_user_id = get_jwt_identity()
+        if str(scene.creator_id) != current_user_id:
+            return jsonify({'error': 'Not authorized'}), 403
+
+        data = request.get_json()
+        validation_error = validate_physics_object(data)
+        if validation_error:
+            return jsonify({'error': validation_error}), 400
+
+        physics_object = PhysicsObject(scene_id=scene_id, **data)
         db.session.add(physics_object)
         db.session.commit()
         return jsonify(physics_object.to_dict()), 201
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
     except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 400
 
-@bp.route('/api/scenes/<int:scene_id>/physics/objects/<int:object_id>', methods=['GET'])
-@login_required
+@physics_bp.route('/scenes/<uuid:scene_id>/physics/objects/<int:object_id>', methods=['GET'])
+@jwt_required()
 def get_physics_object(scene_id, object_id):
     """Get a specific physics object."""
-    scene = Scene.query.get_or_404(scene_id)
-    if not check_universe_access(scene.storyboard.universe, current_user):
-        return jsonify({'error': 'Unauthorized'}), 403
+    try:
+        scene = Scene.query.get(scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
 
-    physics_object = PhysicsObject.query.filter_by(
-        id=object_id,
-        scene_id=scene_id
-    ).first_or_404()
+        physics_object = PhysicsObject.query.filter_by(id=object_id, scene_id=scene_id).first()
+        if not physics_object:
+            return jsonify({'error': 'Physics object not found'}), 404
 
-    return jsonify(physics_object.to_dict())
+        return jsonify(physics_object.to_dict()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
-@bp.route('/api/scenes/<int:scene_id>/physics/objects/<int:object_id>', methods=['PUT'])
-@login_required
+@physics_bp.route('/scenes/<uuid:scene_id>/physics/objects/<int:object_id>', methods=['PUT'])
+@jwt_required()
 def update_physics_object(scene_id, object_id):
     """Update a physics object."""
-    scene = Scene.query.get_or_404(scene_id)
-    if not check_universe_access(scene.storyboard.universe, current_user):
-        return jsonify({'error': 'Unauthorized'}), 403
-
-    physics_object = PhysicsObject.query.filter_by(
-        id=object_id,
-        scene_id=scene_id
-    ).first_or_404()
-
-    data = request.get_json()
-    validation_error = validate_physics_object(data, update=True)
-    if validation_error:
-        return jsonify({'error': validation_error}), 400
-
     try:
+        scene = Scene.query.get(scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
+
+        physics_object = PhysicsObject.query.filter_by(id=object_id, scene_id=scene_id).first()
+        if not physics_object:
+            return jsonify({'error': 'Physics object not found'}), 404
+
+        current_user_id = get_jwt_identity()
+        if str(scene.creator_id) != current_user_id:
+            return jsonify({'error': 'Not authorized'}), 403
+
+        data = request.get_json()
+        validation_error = validate_physics_object(data, update=True)
+        if validation_error:
+            return jsonify({'error': validation_error}), 400
+
         for key, value in data.items():
             if hasattr(physics_object, key):
                 setattr(physics_object, key, value)
 
-        physics_object.validate_object_type()
-        physics_object.validate_physics_properties()
-
         db.session.commit()
-        return jsonify(physics_object.to_dict())
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
+        return jsonify(physics_object.to_dict()), 200
     except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 400
 
-@bp.route('/api/scenes/<int:scene_id>/physics/objects/<int:object_id>', methods=['DELETE'])
-@login_required
+@physics_bp.route('/scenes/<uuid:scene_id>/physics/objects/<int:object_id>', methods=['DELETE'])
+@jwt_required()
 def delete_physics_object(scene_id, object_id):
     """Delete a physics object."""
-    scene = Scene.query.get_or_404(scene_id)
-    if not check_universe_access(scene.storyboard.universe, current_user):
-        return jsonify({'error': 'Unauthorized'}), 403
-
-    physics_object = PhysicsObject.query.filter_by(
-        id=object_id,
-        scene_id=scene_id
-    ).first_or_404()
-
     try:
+        scene = Scene.query.get(scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
+
+        physics_object = PhysicsObject.query.filter_by(id=object_id, scene_id=scene_id).first()
+        if not physics_object:
+            return jsonify({'error': 'Physics object not found'}), 404
+
+        current_user_id = get_jwt_identity()
+        if str(scene.creator_id) != current_user_id:
+            return jsonify({'error': 'Not authorized'}), 403
+
         db.session.delete(physics_object)
         db.session.commit()
         return '', 204
     except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 400
 
 # Physics Constraint Routes
-
-@bp.route('/api/scenes/<int:scene_id>/physics/constraints', methods=['POST'])
-@login_required
+@physics_bp.route('/scenes/<uuid:scene_id>/physics/constraints', methods=['POST'])
+@jwt_required()
 def create_physics_constraint(scene_id):
     """Create a new physics constraint."""
-    scene = Scene.query.get_or_404(scene_id)
-    if not check_universe_access(scene.storyboard.universe, current_user):
-        return jsonify({'error': 'Unauthorized'}), 403
-
-    data = request.get_json()
-    validation_error = validate_physics_constraint(data)
-    if validation_error:
-        return jsonify({'error': validation_error}), 400
-
     try:
-        constraint = PhysicsConstraint(
-            scene_id=scene_id,
-            name=data['name'],
-            constraint_type=data['constraint_type'],
-            object_a_id=data['object_a_id'],
-            object_b_id=data['object_b_id'],
-            anchor_a=data['anchor_a'],
-            anchor_b=data['anchor_b'],
-            stiffness=data.get('stiffness', 1.0),
-            damping=data.get('damping', 0.7),
-            properties=data.get('properties', {})
-        )
-        constraint.validate_constraint_type()
+        scene = Scene.query.get(scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
 
+        current_user_id = get_jwt_identity()
+        if str(scene.creator_id) != current_user_id:
+            return jsonify({'error': 'Not authorized'}), 403
+
+        data = request.get_json()
+        validation_error = validate_physics_constraint(data)
+        if validation_error:
+            return jsonify({'error': validation_error}), 400
+
+        constraint = PhysicsConstraint(scene_id=scene_id, **data)
         db.session.add(constraint)
         db.session.commit()
         return jsonify(constraint.to_dict()), 201
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
     except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 400
 
-@bp.route('/api/scenes/<int:scene_id>/physics/constraints/<int:constraint_id>', methods=['GET'])
-@login_required
+@physics_bp.route('/scenes/<uuid:scene_id>/physics/constraints/<int:constraint_id>', methods=['GET'])
+@jwt_required()
 def get_physics_constraint(scene_id, constraint_id):
     """Get a specific physics constraint."""
-    scene = Scene.query.get_or_404(scene_id)
-    if not check_universe_access(scene.storyboard.universe, current_user):
-        return jsonify({'error': 'Unauthorized'}), 403
+    try:
+        scene = Scene.query.get(scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
 
-    constraint = PhysicsConstraint.query.filter_by(
-        id=constraint_id,
-        scene_id=scene_id
-    ).first_or_404()
+        constraint = PhysicsConstraint.query.filter_by(id=constraint_id, scene_id=scene_id).first()
+        if not constraint:
+            return jsonify({'error': 'Physics constraint not found'}), 404
 
-    return jsonify(constraint.to_dict())
+        return jsonify(constraint.to_dict()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
-@bp.route('/api/scenes/<int:scene_id>/physics/constraints/<int:constraint_id>', methods=['PUT'])
-@login_required
+@physics_bp.route('/scenes/<uuid:scene_id>/physics/constraints/<int:constraint_id>', methods=['PUT'])
+@jwt_required()
 def update_physics_constraint(scene_id, constraint_id):
     """Update a physics constraint."""
-    scene = Scene.query.get_or_404(scene_id)
-    if not check_universe_access(scene.storyboard.universe, current_user):
-        return jsonify({'error': 'Unauthorized'}), 403
-
-    constraint = PhysicsConstraint.query.filter_by(
-        id=constraint_id,
-        scene_id=scene_id
-    ).first_or_404()
-
-    data = request.get_json()
-    validation_error = validate_physics_constraint(data, update=True)
-    if validation_error:
-        return jsonify({'error': validation_error}), 400
-
     try:
+        scene = Scene.query.get(scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
+
+        constraint = PhysicsConstraint.query.filter_by(id=constraint_id, scene_id=scene_id).first()
+        if not constraint:
+            return jsonify({'error': 'Physics constraint not found'}), 404
+
+        current_user_id = get_jwt_identity()
+        if str(scene.creator_id) != current_user_id:
+            return jsonify({'error': 'Not authorized'}), 403
+
+        data = request.get_json()
+        validation_error = validate_physics_constraint(data, update=True)
+        if validation_error:
+            return jsonify({'error': validation_error}), 400
+
         for key, value in data.items():
             if hasattr(constraint, key):
                 setattr(constraint, key, value)
 
-        constraint.validate_constraint_type()
-
         db.session.commit()
-        return jsonify(constraint.to_dict())
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
+        return jsonify(constraint.to_dict()), 200
     except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 400
 
-@bp.route('/api/scenes/<int:scene_id>/physics/constraints/<int:constraint_id>', methods=['DELETE'])
-@login_required
+@physics_bp.route('/scenes/<uuid:scene_id>/physics/constraints/<int:constraint_id>', methods=['DELETE'])
+@jwt_required()
 def delete_physics_constraint(scene_id, constraint_id):
     """Delete a physics constraint."""
-    scene = Scene.query.get_or_404(scene_id)
-    if not check_universe_access(scene.storyboard.universe, current_user):
-        return jsonify({'error': 'Unauthorized'}), 403
-
-    constraint = PhysicsConstraint.query.filter_by(
-        id=constraint_id,
-        scene_id=scene_id
-    ).first_or_404()
-
     try:
+        scene = Scene.query.get(scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
+
+        constraint = PhysicsConstraint.query.filter_by(id=constraint_id, scene_id=scene_id).first()
+        if not constraint:
+            return jsonify({'error': 'Physics constraint not found'}), 404
+
+        current_user_id = get_jwt_identity()
+        if str(scene.creator_id) != current_user_id:
+            return jsonify({'error': 'Not authorized'}), 403
+
         db.session.delete(constraint)
         db.session.commit()
         return '', 204
     except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-
-# Physics Simulation Routes
-
-@bp.route('/api/scenes/<int:scene_id>/physics/simulate/start', methods=['POST'])
-@login_required
-def start_simulation(scene_id):
-    """Start the physics simulation."""
-    scene = Scene.query.get_or_404(scene_id)
-    if not check_universe_access(scene.storyboard.universe, current_user):
-        return jsonify({'error': 'Unauthorized'}), 403
-
-    try:
-        scene.physics_settings['enabled'] = True
-        db.session.commit()
-        return jsonify({
-            'status': 'running',
-            'timestamp': datetime.utcnow().isoformat()
-        })
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-
-@bp.route('/api/scenes/<int:scene_id>/physics/simulate/stop', methods=['POST'])
-@login_required
-def stop_simulation(scene_id):
-    """Stop the physics simulation."""
-    scene = Scene.query.get_or_404(scene_id)
-    if not check_universe_access(scene.storyboard.universe, current_user):
-        return jsonify({'error': 'Unauthorized'}), 403
-
-    try:
-        scene.physics_settings['enabled'] = False
-        db.session.commit()
-        return jsonify({
-            'status': 'stopped',
-            'timestamp': datetime.utcnow().isoformat()
-        })
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-
-@bp.route('/api/scenes/<int:scene_id>/physics/simulate/step', methods=['POST'])
-@login_required
-def step_simulation(scene_id):
-    """Step the physics simulation."""
-    scene = Scene.query.get_or_404(scene_id)
-    if not check_universe_access(scene.storyboard.universe, current_user):
-        return jsonify({'error': 'Unauthorized'}), 403
-
-    try:
-        # Perform one step of physics simulation
-        updated_objects = []
-        for obj in scene.physics_objects:
-            if not obj.is_static:
-                # Apply gravity
-                gravity = scene.physics_settings['gravity']
-                obj.apply_force(
-                    gravity['x'] * obj.mass,
-                    gravity['y'] * obj.mass
-                )
-                # Update position based on velocity and acceleration
-                time_step = scene.physics_settings['time_step']
-                obj.position['x'] += obj.velocity['x'] * time_step
-                obj.position['y'] += obj.velocity['y'] * time_step
-                obj.velocity['x'] += obj.acceleration['x'] * time_step
-                obj.velocity['y'] += obj.acceleration['y'] * time_step
-                updated_objects.append(obj.to_dict())
-
-        db.session.commit()
-        return jsonify({'objects': updated_objects})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-
-@bp.route('/api/scenes/<int:scene_id>/physics/simulate/state', methods=['GET'])
-@login_required
-def get_simulation_state(scene_id):
-    """Get the current state of the physics simulation."""
-    scene = Scene.query.get_or_404(scene_id)
-    if not check_universe_access(scene.storyboard.universe, current_user):
-        return jsonify({'error': 'Unauthorized'}), 403
-
-    return jsonify({
-        'status': 'running' if scene.physics_settings['enabled'] else 'stopped',
-        'timestamp': datetime.utcnow().isoformat(),
-        'objects': [obj.to_dict() for obj in scene.physics_objects]
-    })
+        return jsonify({'error': str(e)}), 400

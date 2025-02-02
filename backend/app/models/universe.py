@@ -1,69 +1,70 @@
-"""Universe model module."""
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, JSON
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.mutable import MutableDict
-from .. import db
-from .base_models import BaseModel, TimestampMixin
-from typing import Optional
-from .association_tables import universe_collaborators
+"""
+Universe model.
+"""
 
-class Universe(BaseModel, TimestampMixin):
-    """Universe model for storing universe data."""
+from datetime import datetime
+from typing import List, Optional, Dict
+from uuid import UUID, uuid4
+from sqlalchemy import String, Text, ForeignKey, JSON
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from app.db.custom_types import GUID
+from app.db.base_class import Base
 
-    __tablename__ = 'universes'
+class Universe(Base):
+    """Universe model."""
+    __tablename__ = "universes"
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String(255), nullable=False)
-    description = Column(String(1000))
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    is_public = Column(Boolean, default=True)
-    max_participants = Column(Integer, default=10)
-    collaborators_count = Column(Integer, default=0)
-    music_parameters = Column(MutableDict.as_mutable(JSON), default=dict)
-    visual_parameters = Column(MutableDict.as_mutable(JSON), default=dict)
+    id: Mapped[UUID] = mapped_column(GUID(), primary_key=True, default=uuid4)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    physics_json: Mapped[Dict] = mapped_column(
+        'physics_parameters',  # Rename column but keep table name same
+        JSONB().with_variant(JSON(), 'sqlite'),
+        server_default='{}'
+    )
+    music_parameters: Mapped[Dict] = mapped_column(
+        JSONB().with_variant(JSON(), 'sqlite'),
+        server_default='{}'
+    )
+    creator_id: Mapped[UUID] = mapped_column(GUID(), ForeignKey("users.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
-    user = relationship('User', back_populates='universes')
-    collaborators = relationship(
-        'User',
-        secondary=universe_collaborators,
-        lazy='joined',
-        backref=db.backref('collaborated_universes', lazy=True)
+    creator: Mapped["User"] = relationship("User", back_populates="universes")
+    scenes: Mapped[List["Scene"]] = relationship("Scene", back_populates="universe", cascade="all, delete-orphan")
+    physics_parameters_rel: Mapped[List["PhysicsParameter"]] = relationship(
+        "PhysicsParameter",
+        back_populates="universe",
+        cascade="all, delete-orphan"
     )
-    storyboards = relationship(
-        'Storyboard',
-        back_populates='universe',
-        cascade='all, delete-orphan',
-        lazy='dynamic'
+    music_parameters_rel: Mapped[List["MusicParameter"]] = relationship(
+        "MusicParameter",
+        back_populates="universe",
+        cascade="all, delete-orphan"
+    )
+    audio_files: Mapped[List["AudioFile"]] = relationship(
+        "AudioFile",
+        back_populates="universe",
+        cascade="all, delete-orphan"
+    )
+    storyboards: Mapped[List["Storyboard"]] = relationship(
+        "Storyboard",
+        back_populates="universe",
+        cascade="all, delete-orphan"
+    )
+    ai_generations: Mapped[List["AIGeneration"]] = relationship(
+        "AIGeneration",
+        back_populates="universe",
+        cascade="all, delete-orphan"
     )
 
-    def can_user_edit(self, user_id: int) -> bool:
-        """Check if a user can edit this universe."""
-        if not user_id:
-            return False
-        return user_id == self.user_id or any(c.id == user_id for c in self.collaborators)
+    # Reintroduce collaboration features
+    is_public: Mapped[bool] = mapped_column(default=True)
+    max_participants: Mapped[int] = mapped_column(default=10)
+    collaborators_count: Mapped[int] = mapped_column(default=0)
 
-    def can_user_access(self, user_id: Optional[int]) -> bool:
-        """Check if a user can access this universe."""
-        if self.is_public:
-            return True
-        if not user_id:
-            return False
-        return user_id == self.user_id or any(c.id == user_id for c in self.collaborators)
-
-    def to_dict(self):
-        """Convert universe to dictionary."""
-        return {
-            'id': self.id,
-            'name': self.name,
-            'description': self.description,
-            'user_id': self.user_id,
-            'is_public': self.is_public,
-            'max_participants': self.max_participants,
-            'collaborators_count': self.collaborators_count,
-            'music_parameters': self.music_parameters,
-            'visual_parameters': self.visual_parameters,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
-        }
-
+    def __repr__(self) -> str:
+        """Return string representation of universe."""
+        return f"<Universe {self.name}>"
