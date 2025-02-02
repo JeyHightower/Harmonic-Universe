@@ -5,7 +5,7 @@ from unittest.mock import Mock, AsyncMock
 import json
 
 from app.core.visualization.renderer import Renderer
-from app.models.visualization import RenderingMode, SceneObjectType
+from app.models.scene import RenderingMode, SceneObjectType
 
 @pytest.fixture
 def scene_data():

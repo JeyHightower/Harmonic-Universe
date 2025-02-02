@@ -4,9 +4,9 @@ from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
 from app.models.audio_file import AudioFile, AudioFormat, AudioType
-from app.schemas.audio_file import AudioFileCreate, AudioFileUpdate
+from app.schemas.audio_file import AudioFileCreateSchema, AudioFileUpdateSchema
 
-class CRUDAudioFile(CRUDBase[AudioFile, AudioFileCreate, AudioFileUpdate]):
+class CRUDAudioFile(CRUDBase[AudioFile, AudioFileCreateSchema, AudioFileUpdateSchema]):
     def get_by_universe(
         self, db: Session, *, universe_id: UUID, skip: int = 0, limit: int = 100
     ) -> List[AudioFile]:

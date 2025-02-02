@@ -2,7 +2,7 @@
 Base schemas.
 """
 
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 from pydantic import BaseModel, EmailStr, UUID4
 from datetime import datetime
 
@@ -26,8 +26,8 @@ class UniverseBase(BaseModel):
     """Base universe schema."""
     name: str
     description: Optional[str] = None
-    physics_parameters: Dict = {}
-    music_parameters: Dict = {}
+    physics_parameters: List = []
+    music_parameters: List = []
 
 class SceneBase(BaseModel):
     """Base scene schema."""

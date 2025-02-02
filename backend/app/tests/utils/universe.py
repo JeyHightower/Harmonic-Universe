@@ -17,5 +17,5 @@ def create_random_universe(db: Session) -> Dict:
         description=description,
         owner_id=user.id
     )
-    universe = crud.universe.create(db=db, obj_in=universe_in)
+    universe = crud.universe.create_with_owner(db=db, obj_in=universe_in, owner_id=user.id)
     return universe

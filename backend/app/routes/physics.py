@@ -4,7 +4,7 @@ Physics routes.
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.models.scene import Scene
+from app.models.scene import Scene, PhysicsParameters
 from app.models.universe import Universe
 from app.models import db, PhysicsObject, PhysicsConstraint
 from app.utils.validation import validate_physics_object, validate_physics_constraint
@@ -73,8 +73,9 @@ def update_scene_physics_parameters(scene_id):
         if str(scene.creator_id) != current_user_id:
             return jsonify({'error': 'Not authorized'}), 403
 
-        # Update physics parameters
-        scene.physics_parameters = request.json
+        # Validate and update physics parameters
+        data = PhysicsParameters(**request.json)
+        scene.physics_parameters = data.dict()
         db.session.commit()
 
         return jsonify(scene.physics_parameters), 200

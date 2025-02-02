@@ -4,7 +4,7 @@ Music routes.
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.models.scene import Scene
+from app.models.scene import Scene, MusicParameters
 from app.models.universe import Universe
 
 music_bp = Blueprint('music', __name__, url_prefix='/music')
@@ -71,8 +71,9 @@ def update_scene_music_parameters(scene_id):
         if str(scene.creator_id) != current_user_id:
             return jsonify({'error': 'Not authorized'}), 403
 
-        # Update music parameters
-        scene.music_parameters = request.json
+        # Validate and update music parameters
+        data = MusicParameters(**request.json)
+        scene.music_parameters = data.dict()
         db.session.commit()
 
         return jsonify(scene.music_parameters), 200

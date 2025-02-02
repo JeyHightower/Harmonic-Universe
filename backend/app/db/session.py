@@ -10,16 +10,16 @@ from app.core.config import settings
 from app.db.base_class import Base
 
 # Create database engine
-if settings.SQLALCHEMY_DATABASE_URI.startswith('sqlite'):
+if str(settings.SQLALCHEMY_DATABASE_URI).startswith('sqlite'):
     engine = create_engine(
-        settings.SQLALCHEMY_DATABASE_URI,
+        str(settings.SQLALCHEMY_DATABASE_URI),
         connect_args={"check_same_thread": False},
         pool_pre_ping=True,
         echo=False
     )
 else:
     engine = create_engine(
-        settings.SQLALCHEMY_DATABASE_URI,
+        str(settings.SQLALCHEMY_DATABASE_URI),
         pool_pre_ping=True,
         pool_size=5,
         max_overflow=10,

@@ -7,7 +7,7 @@ from pathlib import Path
 from app import crud
 from app.core.config import settings
 from app.models.audio_file import AudioFormat, AudioType
-from app.schemas.audio_file import AudioFileCreate
+from app.schemas.audio_file import AudioFileCreateSchema
 from app.tests.utils.utils import random_lower_string
 from app.tests.utils.user import create_random_user
 from app.tests.utils.universe import create_random_universe
@@ -18,7 +18,7 @@ def test_create_audio_file(
     superuser_token_headers: dict,
 ) -> None:
     user = create_random_user(db)
-    universe = create_random_universe(db, owner_id=user.id)
+    universe = create_random_universe(db)
 
     # Create test audio file
     test_file = Path(__file__).parent / "test_files" / "test_audio.wav"
@@ -37,7 +37,7 @@ def test_create_audio_file(
             "file_size": os.path.getsize(test_file)
         }
 
-        audio_in = AudioFileCreate(**file_data)
+        audio_in = AudioFileCreateSchema(**file_data)
         audio = crud.audio_file.create(db=db, obj_in=audio_in)
 
         assert audio.name == name
@@ -55,7 +55,7 @@ def test_get_audio_file(
     superuser_token_headers: dict,
 ) -> None:
     user = create_random_user(db)
-    universe = create_random_universe(db, owner_id=user.id)
+    universe = create_random_universe(db)
 
     # Create test audio file
     test_file = Path(__file__).parent / "test_files" / "test_audio.wav"
@@ -63,7 +63,7 @@ def test_get_audio_file(
     test_file.write_bytes(b"test audio data")
 
     try:
-        audio_in = AudioFileCreate(
+        audio_in = AudioFileCreateSchema(
             name=random_lower_string(),
             format=AudioFormat.WAV,
             type=AudioType.UPLOADED,
@@ -89,7 +89,7 @@ def test_get_audio_files_by_universe(
     superuser_token_headers: dict,
 ) -> None:
     user = create_random_user(db)
-    universe = create_random_universe(db, owner_id=user.id)
+    universe = create_random_universe(db)
 
     # Create multiple test audio files
     test_files = []
@@ -103,7 +103,7 @@ def test_get_audio_files_by_universe(
         # Create audio files in database
         created_files = []
         for test_file in test_files:
-            audio_in = AudioFileCreate(
+            audio_in = AudioFileCreateSchema(
                 name=random_lower_string(),
                 format=AudioFormat.WAV,
                 type=AudioType.UPLOADED,
@@ -134,7 +134,7 @@ def test_delete_audio_file(
     superuser_token_headers: dict,
 ) -> None:
     user = create_random_user(db)
-    universe = create_random_universe(db, owner_id=user.id)
+    universe = create_random_universe(db)
 
     # Create test audio file
     test_file = Path(__file__).parent / "test_files" / "test_audio.wav"
@@ -142,7 +142,7 @@ def test_delete_audio_file(
     test_file.write_bytes(b"test audio data")
 
     try:
-        audio_in = AudioFileCreate(
+        audio_in = AudioFileCreateSchema(
             name=random_lower_string(),
             format=AudioFormat.WAV,
             type=AudioType.UPLOADED,

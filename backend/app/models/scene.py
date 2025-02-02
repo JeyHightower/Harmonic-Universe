@@ -10,6 +10,7 @@ from app.db.custom_types import GUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 import enum
+from pydantic import BaseModel
 
 from app.db.base_class import Base
 
@@ -27,6 +28,7 @@ class RenderingMode(str, enum.Enum):
     SOLID = "solid"
     TEXTURED = "textured"
     REALISTIC = "realistic"
+    WEBGL = "webgl"
 
 class SceneObjectType(str, enum.Enum):
     """Scene object type enum."""
@@ -37,6 +39,14 @@ class SceneObjectType(str, enum.Enum):
     SOUND = "sound"
     EFFECT = "effect"
 
+class PhysicsParameters(BaseModel):
+    gravity: float = 9.81
+    # Add other physics parameters as needed
+
+class MusicParameters(BaseModel):
+    tempo: int = 120
+    # Add other music parameters as needed
+
 class Scene(Base):
     """Scene model."""
     __tablename__ = "scene"
@@ -45,11 +55,11 @@ class Scene(Base):
     id: Mapped[UUID] = mapped_column(GUID(), primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    physics_parameters: Mapped[dict] = mapped_column(
+    physics_parameters: Mapped[PhysicsParameters] = mapped_column(
         JSONB().with_variant(JSON(), 'sqlite'),
         server_default='{}'
     )
-    music_parameters: Mapped[dict] = mapped_column(
+    music_parameters: Mapped[MusicParameters] = mapped_column(
         JSONB().with_variant(JSON(), 'sqlite'),
         server_default='{}'
     )
@@ -75,6 +85,14 @@ class Scene(Base):
         """Return string representation."""
         return f"<Scene {self.name} (Storyboard ID: {self.storyboard_id})>"
 
+class SceneObjectProperties(BaseModel):
+    # Define properties structure
+    pass
+
+class ObjectMetadata(BaseModel):
+    # Define metadata structure
+    pass
+
 class SceneObject(Base):
     """Scene object model."""
     __tablename__ = "scene_object"
@@ -84,11 +102,11 @@ class SceneObject(Base):
     scene_id: Mapped[UUID] = mapped_column(GUID(), ForeignKey("scene.id", ondelete="CASCADE"), nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
     type: Mapped[SceneObjectType] = mapped_column(Enum(SceneObjectType), nullable=False)
-    properties: Mapped[dict] = mapped_column(
+    properties: Mapped[SceneObjectProperties] = mapped_column(
         JSONB().with_variant(JSON(), 'sqlite'),
         server_default='{}'
     )
-    object_metadata: Mapped[dict] = mapped_column(
+    object_metadata: Mapped[ObjectMetadata] = mapped_column(
         JSONB().with_variant(JSON(), 'sqlite'),
         server_default='{}'
     )

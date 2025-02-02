@@ -5,7 +5,9 @@ from unittest.mock import Mock, AsyncMock
 import json
 
 from app.core.visualization.timeline import TimelineManager
-from app.models.visualization import Timeline, Keyframe, Animation
+from app.models.timeline import Timeline
+from app.models.keyframe import Keyframe
+from app.models.timeline import Animation
 
 @pytest.fixture
 def timeline_data():

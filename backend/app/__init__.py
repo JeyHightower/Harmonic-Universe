@@ -7,7 +7,7 @@ from app.config import settings
 from app.extensions import init_extensions
 from app.routes import init_routes
 
-def create_app():
+def create_app(info=None):
     """Create Flask application."""
     app = Flask(__name__)
 

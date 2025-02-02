@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.models.midi_event import MIDIEventType
 from app.models.audio_file import AudioFormat, AudioType
 from app.schemas.midi_event import MIDIEventCreate, MIDIEventBatch
-from app.schemas.audio_file import AudioFileCreate
+from app.schemas.audio_file import AudioFileCreateSchema
 from app.tests.utils.utils import random_lower_string
 from app.tests.utils.user import create_random_user
 from app.tests.utils.universe import create_random_universe
@@ -20,7 +20,7 @@ def create_test_midi_file(db: Session, universe_id: str) -> dict:
     test_file.parent.mkdir(exist_ok=True)
     test_file.write_bytes(b"test midi data")
 
-    audio_in = AudioFileCreate(
+    audio_in = AudioFileCreateSchema(
         name=random_lower_string(),
         format=AudioFormat.MIDI,
         type=AudioType.UPLOADED,
@@ -36,7 +36,7 @@ def test_create_midi_event(
     superuser_token_headers: dict,
 ) -> None:
     user = create_random_user(db)
-    universe = create_random_universe(db, owner_id=user.id)
+    universe = create_random_universe(db)
     audio_file = create_test_midi_file(db, str(universe.id))
 
     try:
@@ -66,7 +66,7 @@ def test_create_midi_events_batch(
     superuser_token_headers: dict,
 ) -> None:
     user = create_random_user(db)
-    universe = create_random_universe(db, owner_id=user.id)
+    universe = create_random_universe(db)
     audio_file = create_test_midi_file(db, str(universe.id))
 
     try:
@@ -101,7 +101,7 @@ def test_get_midi_events_by_audio_file(
     superuser_token_headers: dict,
 ) -> None:
     user = create_random_user(db)
-    universe = create_random_universe(db, owner_id=user.id)
+    universe = create_random_universe(db)
     audio_file = create_test_midi_file(db, str(universe.id))
 
     try:
@@ -140,7 +140,7 @@ def test_get_midi_events_by_type(
     superuser_token_headers: dict,
 ) -> None:
     user = create_random_user(db)
-    universe = create_random_universe(db, owner_id=user.id)
+    universe = create_random_universe(db)
     audio_file = create_test_midi_file(db, str(universe.id))
 
     try:
@@ -185,7 +185,7 @@ def test_get_midi_events_by_time_range(
     superuser_token_headers: dict,
 ) -> None:
     user = create_random_user(db)
-    universe = create_random_universe(db, owner_id=user.id)
+    universe = create_random_universe(db)
     audio_file = create_test_midi_file(db, str(universe.id))
 
     try:
@@ -225,7 +225,7 @@ def test_delete_midi_event(
     superuser_token_headers: dict,
 ) -> None:
     user = create_random_user(db)
-    universe = create_random_universe(db, owner_id=user.id)
+    universe = create_random_universe(db)
     audio_file = create_test_midi_file(db, str(universe.id))
 
     try:

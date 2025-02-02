@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.schemas.scene import SceneCreate, SceneUpdate
 from app.models.user import User
 from app.models.universe import Universe
-from app.models.scene import Scene, RenderingMode
+from app.models.scene import Scene, RenderingMode, PhysicsParameters, MusicParameters
 
 def test_create_scene(
     client: TestClient,
@@ -29,39 +29,39 @@ def test_create_scene(
         owner_id=test_user.id
     )
 
-    data = {
-        "name": "Test Scene",
-        "description": "A test scene",
-        "universe_id": str(universe.id),
-        "rendering_mode": "webgl",
-        "background_color": "#000000",
-        "camera_settings": {
+    scene_data = SceneCreate(
+        name="Test Scene",
+        description="A test scene",
+        universe_id=str(universe.id),
+        rendering_mode="webgl",
+        background_color="#000000",
+        camera_settings={
             "position": {"x": 0, "y": 0, "z": 5},
             "rotation": {"x": 0, "y": 0, "z": 0},
             "fov": 75
         },
-        "lighting_settings": {
+        lighting_settings={
             "ambient": {"intensity": 0.5},
             "directional": {
                 "position": {"x": 1, "y": 1, "z": 1},
                 "intensity": 0.8
             }
         },
-        "post_processing": {},
-        "scene_metadata": {"version": "1.0"}
-    }
+        post_processing={},
+        scene_metadata={"version": "1.0"}
+    )
 
     response = client.post(
         f"{settings.API_V1_STR}/scenes/",
         headers=token_headers,
-        json=data
+        json=scene_data.dict()
     )
     assert response.status_code == status.HTTP_201_CREATED
     content = response.json()
-    assert content["name"] == data["name"]
-    assert content["description"] == data["description"]
+    assert content["name"] == scene_data.name
+    assert content["description"] == scene_data.description
     assert content["universe_id"] == str(universe.id)
-    assert content["rendering_mode"] == data["rendering_mode"]
+    assert content["rendering_mode"] == scene_data.rendering_mode
     assert content["creator_id"] == str(test_user.id)
     assert "id" in content
 
@@ -154,26 +154,26 @@ def test_update_scene(
         creator_id=test_user.id
     )
 
-    data = {
-        "name": "Updated Scene",
-        "description": "Updated description",
-        "background_color": "#FFFFFF",
-        "camera_settings": {"fov": 90},
-        "lighting_settings": {"ambient": {"intensity": 0.7}}
-    }
+    data = SceneUpdate(
+        name="Updated Scene",
+        description="Updated description",
+        background_color="#FFFFFF",
+        camera_settings={"fov": 90},
+        lighting_settings={"ambient": {"intensity": 0.7}}
+    )
 
     response = client.put(
         f"{settings.API_V1_STR}/scenes/{scene.id}",
         headers=token_headers,
-        json=data
+        json=data.dict(exclude_unset=True)
     )
     assert response.status_code == status.HTTP_200_OK
     content = response.json()
-    assert content["name"] == data["name"]
-    assert content["description"] == data["description"]
-    assert content["background_color"] == data["background_color"]
-    assert content["camera_settings"] == data["camera_settings"]
-    assert content["lighting_settings"] == data["lighting_settings"]
+    assert content["name"] == data.name
+    assert content["description"] == data.description
+    assert content["background_color"] == data.background_color
+    assert content["camera_settings"] == data.camera_settings
+    assert content["lighting_settings"] == data.lighting_settings
 
 def test_delete_scene(
     client: TestClient,
@@ -315,3 +315,93 @@ def test_scene_position_validation(client: TestClient, auth_headers: Dict[str, s
     }
     response = client.post(f"{settings.API_V1_STR}/scenes/", json=data, headers=auth_headers)
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+def test_update_scene_physics_parameters(
+    client: TestClient,
+    test_user: User,
+    token_headers: Dict[str, str],
+    db: Session
+) -> None:
+    # Create universe and scene
+    universe = crud.universe.create_with_owner(
+        db=db,
+        obj_in=crud.schemas.UniverseCreate(
+            name="Test Universe",
+            description="Test description",
+            is_public=True,
+            settings={"theme": "dark"}
+        ),
+        owner_id=test_user.id
+    )
+
+    scene = crud.scene.create_with_creator(
+        db=db,
+        obj_in=SceneCreate(
+            name="Test Scene",
+            description="Test description",
+            universe_id=universe.id,
+            rendering_mode=RenderingMode.WEBGL,
+            background_color="#000000",
+            camera_settings={"fov": 75},
+            lighting_settings={"ambient": {"intensity": 0.5}},
+            post_processing={},
+            scene_metadata={"version": "1.0"}
+        ),
+        creator_id=test_user.id
+    )
+
+    data = PhysicsParameters(gravity=9.81)
+
+    response = client.put(
+        f"{settings.API_V1_STR}/scenes/{scene.id}/parameters",
+        headers=token_headers,
+        json=data.dict()
+    )
+    assert response.status_code == status.HTTP_200_OK
+    content = response.json()
+    assert content["gravity"] == data.gravity
+
+def test_update_scene_music_parameters(
+    client: TestClient,
+    test_user: User,
+    token_headers: Dict[str, str],
+    db: Session
+) -> None:
+    # Create universe and scene
+    universe = crud.universe.create_with_owner(
+        db=db,
+        obj_in=crud.schemas.UniverseCreate(
+            name="Test Universe",
+            description="Test description",
+            is_public=True,
+            settings={"theme": "dark"}
+        ),
+        owner_id=test_user.id
+    )
+
+    scene = crud.scene.create_with_creator(
+        db=db,
+        obj_in=SceneCreate(
+            name="Test Scene",
+            description="Test description",
+            universe_id=universe.id,
+            rendering_mode=RenderingMode.WEBGL,
+            background_color="#000000",
+            camera_settings={"fov": 75},
+            lighting_settings={"ambient": {"intensity": 0.5}},
+            post_processing={},
+            scene_metadata={"version": "1.0"}
+        ),
+        creator_id=test_user.id
+    )
+
+    data = MusicParameters(tempo=120)
+
+    response = client.put(
+        f"{settings.API_V1_STR}/scenes/{scene.id}/parameters",
+        headers=token_headers,
+        json=data.dict()
+    )
+    assert response.status_code == status.HTTP_200_OK
+    content = response.json()
+    assert content["tempo"] == data.tempo

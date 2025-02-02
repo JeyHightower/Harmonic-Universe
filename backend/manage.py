@@ -9,7 +9,7 @@ from alembic.config import Config
 from alembic import command
 
 app = create_app()
-cli = FlaskGroup(create_app=lambda info: app)
+cli = FlaskGroup(create_app=create_app)
 
 @cli.command()
 def create_db():

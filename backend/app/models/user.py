@@ -41,6 +41,8 @@ class User(Base):
     verification_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     reset_password_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     reset_password_expires: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    display_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    bio: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Relationships
     universes: Mapped[List["Universe"]] = relationship(

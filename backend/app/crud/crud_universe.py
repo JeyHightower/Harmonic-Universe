@@ -40,7 +40,9 @@ class CRUDUniverse(CRUDBase[Universe, UniverseCreate, UniverseUpdate]):
         self, db: Session, *, obj_in: UniverseCreate, owner_id: UUID
     ) -> Universe:
         obj_in_data = obj_in.model_dump()
-        db_obj = Universe(**obj_in_data, owner_id=owner_id)
+        obj_in_data['physics_parameters'] = obj_in_data.get('physics_parameters', [])
+        obj_in_data['music_parameters'] = obj_in_data.get('music_parameters', [])
+        db_obj = Universe(**obj_in_data, creator_id=owner_id)
         db.add(db_obj)
         db.commit()
         db.refresh(db_obj)

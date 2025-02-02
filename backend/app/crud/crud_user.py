@@ -18,9 +18,8 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             email=obj_in.email,
             username=obj_in.username,
             password=get_password_hash(obj_in.password),
-            display_name=obj_in.display_name,
-            avatar_url=obj_in.avatar_url,
-            bio=obj_in.bio,
+            full_name=obj_in.full_name,
+            bio=getattr(obj_in, 'bio', None),
             is_active=True,
         )
         db.add(db_obj)

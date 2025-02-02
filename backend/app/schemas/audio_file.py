@@ -15,19 +15,19 @@ class AudioFileBase(BaseModel):
     waveform_data: Optional[Dict] = None
     metadata: Dict = {}
 
-class AudioFileCreate(AudioFileBase):
+class AudioFileCreateSchema(AudioFileBase):
     universe_id: UUID4
     generation_id: Optional[UUID4] = None
     file_path: str
     file_size: int
 
-class AudioFileUpdate(AudioFileBase):
+class AudioFileUpdateSchema(AudioFileBase):
     name: Optional[str] = None
     description: Optional[str] = None
     waveform_data: Optional[Dict] = None
     metadata: Optional[Dict] = None
 
-class AudioFileInDBBase(AudioFileBase):
+class AudioFileInDBBaseSchema(AudioFileBase):
     id: UUID4
     universe_id: UUID4
     generation_id: Optional[UUID4]
@@ -39,10 +39,10 @@ class AudioFileInDBBase(AudioFileBase):
     class Config:
         from_attributes = True
 
-class AudioFile(AudioFileInDBBase):
+class AudioFileSchema(AudioFileInDBBaseSchema):
     pass
 
-class AudioFileWithDetails(AudioFile):
+class AudioFileWithDetailsSchema(AudioFileSchema):
     # Add additional fields for detailed view
     midi_events_count: Optional[int] = 0
     scenes_count: Optional[int] = 0
@@ -52,5 +52,5 @@ class AudioFileWithDetails(AudioFile):
     usage_stats: Optional[Dict] = None
     related_files: Optional[List[Dict]] = []
 
-class AudioFileInDB(AudioFileInDBBase):
+class AudioFileInDBSchema(AudioFileInDBBaseSchema):
     pass

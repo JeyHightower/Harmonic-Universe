@@ -7,7 +7,8 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.db import db
 from app.models.scene import Scene
 from app.models.universe import Universe
-from app.schemas.scene import Scene, SceneCreate, SceneUpdate, SceneResponse, SceneWithParameters
+from app.schemas.scene import SceneCreate, SceneUpdate, SceneResponse, SceneWithParameters
+from app.models.scene import PhysicsParameters, MusicParameters
 
 scenes_bp = Blueprint('scenes', __name__, url_prefix='/scenes')
 
@@ -30,26 +31,26 @@ def create_scene():
         creator_id = get_jwt_identity()
 
         # Validate request data
-        data = scene_create_schema.load(request.json)
+        data = SceneCreate(**request.json)
 
         # Check if universe exists
-        universe = Universe.query.get(data['universe_id'])
+        universe = Universe.query.get(data.universe_id)
         if not universe:
             return jsonify({'error': 'Universe not found'}), 404
 
         # Create scene
         scene = Scene(
-            name=data['name'],
-            description=data.get('description'),
+            name=data.name,
+            description=data.description,
             creator_id=creator_id,
-            universe_id=data['universe_id'],
-            physics_parameters=data.get('physics_parameters', {}),
-            music_parameters=data.get('music_parameters', {})
+            universe_id=data.universe_id,
+            physics_parameters=data.physics_parameters.dict(),
+            music_parameters=data.music_parameters.dict()
         )
         db.session.add(scene)
         db.session.commit()
 
-        return jsonify(scene_schema.dump(scene)), 201
+        return jsonify(SceneResponse.from_orm(scene).dict()), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
@@ -61,7 +62,7 @@ def get_scene(scene_id):
         scene = Scene.query.get(scene_id)
         if not scene:
             return jsonify({'error': 'Scene not found'}), 404
-        return jsonify(scene_schema.dump(scene)), 200
+        return jsonify(SceneResponse.from_orm(scene).dict()), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
@@ -81,12 +82,15 @@ def update_scene(scene_id):
             return jsonify({'error': 'Not authorized'}), 403
 
         # Validate and update scene data
-        data = scene_update_schema.load(request.json)
-        for key, value in data.items():
-            setattr(scene, key, value)
+        data = SceneUpdate(**request.json)
+        for key, value in data.dict(exclude_unset=True).items():
+            if key in ['physics_parameters', 'music_parameters']:
+                setattr(scene, key, value.dict())
+            else:
+                setattr(scene, key, value)
         db.session.commit()
 
-        return jsonify(scene_schema.dump(scene)), 200
+        return jsonify(SceneResponse.from_orm(scene).dict()), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
@@ -121,6 +125,6 @@ def get_scene_parameters(scene_id):
         scene = Scene.query.get(scene_id)
         if not scene:
             return jsonify({'error': 'Scene not found'}), 404
-        return jsonify(scene_with_parameters_schema.dump(scene)), 200
+        return jsonify(SceneWithParameters.from_orm(scene).dict()), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400

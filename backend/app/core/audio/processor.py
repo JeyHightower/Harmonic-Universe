@@ -89,7 +89,9 @@ class AudioProcessor:
 
         for effect, params in effects.items():
             if effect == "normalize":
+                print(f"Before normalization: {np.max(np.abs(self.audio_data))}")
                 self._audio_data = librosa.util.normalize(self.audio_data)
+                print(f"After normalization: {np.max(np.abs(self.audio_data))}")
             elif effect == "pitch_shift":
                 self._audio_data = librosa.effects.pitch_shift(
                     y=self.audio_data,

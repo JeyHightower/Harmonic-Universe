@@ -7,7 +7,7 @@ from PIL import Image
 import ffmpeg
 
 from app.core.visualization.export import ExportManager
-from app.models.visualization import RenderingMode, SceneObjectType
+from app.models.scene import RenderingMode, SceneObjectType
 
 @pytest.fixture
 def scene_data():

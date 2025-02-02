@@ -3,7 +3,7 @@ Audio file model.
 """
 
 from typing import Dict, List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 from sqlalchemy import String, Integer, Float, ForeignKey, Enum, JSON
 from sqlalchemy.dialects.postgresql import JSONB
 from app.db.custom_types import GUID
@@ -48,7 +48,7 @@ class AudioFile(Base):
     __tablename__ = "audio_file"
     __table_args__ = {'extend_existing': True}
 
-    id: Mapped[UUID] = mapped_column(GUID(), primary_key=True)
+    id: Mapped[UUID] = mapped_column(GUID(), primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String)
     format: Mapped[AudioFormat] = mapped_column(Enum(AudioFormat), nullable=False)

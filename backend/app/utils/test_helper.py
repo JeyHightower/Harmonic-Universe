@@ -11,7 +11,7 @@ import os
 backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.append(backend_dir)
 
-from utils.test_suite import TestSuite, TestError, TestErrorType
+from backend.utils.test_suite import TestSuite, TestError, TestErrorType
 
 class ErrorType(Enum):
     DATABASE = "database"
