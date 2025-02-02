@@ -68,6 +68,8 @@ class Scene(Base):
     visualizations: Mapped[List["Visualization"]] = relationship("Visualization", back_populates="scene", cascade="all, delete-orphan")
     objects: Mapped[List["SceneObject"]] = relationship("SceneObject", back_populates="scene", cascade="all, delete-orphan")
     storyboard: Mapped["Storyboard"] = relationship("Storyboard", back_populates="scenes")
+    physics_objects: Mapped[List["PhysicsObject"]] = relationship("PhysicsObject", back_populates="scene", cascade="all, delete-orphan")
+    physics_constraints: Mapped[List["PhysicsConstraint"]] = relationship("PhysicsConstraint", back_populates="scene", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         """Return string representation."""

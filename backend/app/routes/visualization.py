@@ -5,10 +5,8 @@ Visualization routes.
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models.scene import Scene
-from app.schemas.scene import (
-    render_request_schema, render_response_schema,
-    export_request_schema, export_response_schema
-)
+from app.schemas.scene import RenderRequest, RenderResponse, ExportRequest, ExportResponse
+from pydantic import ValidationError
 
 visualization_bp = Blueprint('visualization', __name__, url_prefix='/visualization')
 
@@ -23,17 +21,20 @@ def render_scene(scene_id):
             return jsonify({'error': 'Scene not found'}), 404
 
         # Validate request data
-        data = render_request_schema.load(request.json)
+        try:
+            data = RenderRequest(**request.json)
+        except ValidationError as e:
+            return jsonify({'error': e.errors()}), 400
 
         # TODO: Implement scene rendering
         # This is a placeholder response
         response = {
             'image_data': 'base64_encoded_image_data',
             'metadata': {
-                'width': data['settings']['width'],
-                'height': data['settings']['height'],
-                'format': data['settings']['format'],
-                'frame': data['settings'].get('frame', 0)
+                'width': data.settings.width,
+                'height': data.settings.height,
+                'format': data.settings.format,
+                'frame': data.settings.get('frame', 0)
             }
         }
 
@@ -52,16 +53,19 @@ def export_scene(scene_id):
             return jsonify({'error': 'Scene not found'}), 404
 
         # Validate request data
-        data = export_request_schema.load(request.json)
+        try:
+            data = ExportRequest(**request.json)
+        except ValidationError as e:
+            return jsonify({'error': e.errors()}), 400
 
         # TODO: Implement scene export
         # This is a placeholder response
-        response = {
-            'export_id': 'generated_uuid',
-            'status': 'pending'
-        }
+        response = ExportResponse(
+            export_id='generated_uuid',
+            status='pending'
+        )
 
-        return jsonify(export_response_schema.dump(response)), 202
+        return jsonify(response.dict()), 202
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 

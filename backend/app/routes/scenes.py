@@ -7,10 +7,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.db import db
 from app.models.scene import Scene
 from app.models.universe import Universe
-from app.schemas.scene import (
-    scene_schema, scenes_schema, scene_create_schema,
-    scene_update_schema, scene_with_parameters_schema
-)
+from app.schemas.scene import Scene, SceneCreate, SceneUpdate, SceneResponse, SceneWithParameters
 
 scenes_bp = Blueprint('scenes', __name__, url_prefix='/scenes')
 
@@ -20,7 +17,7 @@ def get_scenes():
     """Get all scenes."""
     try:
         scenes = Scene.query.all()
-        return jsonify(scenes_schema.dump(scenes)), 200
+        return jsonify(SceneResponse(many=True).dump(scenes)), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 

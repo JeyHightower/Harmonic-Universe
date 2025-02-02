@@ -13,6 +13,7 @@ import secrets
 
 from app.core.config import settings
 from app.db.base_class import Base, GUID
+from pydantic import BaseModel
 
 if TYPE_CHECKING:
     from app.models.audio_file import AudioFile
@@ -158,3 +159,16 @@ class User(Base):
     def __repr__(self) -> str:
         """Return string representation."""
         return f'<User {self.email}>'
+
+class UserResponseModel(BaseModel):
+    id: uuid.UUID
+    email: str
+    username: Optional[str]
+    full_name: str
+    is_active: bool
+    is_superuser: bool
+    last_login: Optional[datetime]
+    email_verified: bool
+
+    class Config:
+        orm_mode = True

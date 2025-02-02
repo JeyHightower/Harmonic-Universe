@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app.models.universe import Universe
     from app.models.keyframe import Keyframe
+    from app.models.scene import Scene
 
 class Storyboard(Base):
     """Storyboard model."""
@@ -68,6 +69,7 @@ class Storyboard(Base):
     universe: Mapped["Universe"] = relationship("Universe", back_populates="storyboards")
     creator: Mapped["User"] = relationship("User", back_populates="storyboards")
     keyframes: Mapped[List["Keyframe"]] = relationship("Keyframe", back_populates="storyboard", cascade="all, delete-orphan")
+    scenes: Mapped[List["Scene"]] = relationship("Scene", back_populates="storyboard", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         """Return string representation."""

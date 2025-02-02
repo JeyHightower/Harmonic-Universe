@@ -15,14 +15,7 @@ migrate = Migrate()
 cors = CORS()
 jwt = JWTManager()
 ma = Marshmallow()
-socketio = SocketIO(
-    async_mode='threading',
-    cors_allowed_origins=app.config['CORS_ORIGINS'],
-    logger=True,
-    engineio_logger=True,
-    ping_timeout=5,
-    ping_interval=25
-)
+socketio = SocketIO()
 
 def init_extensions(app):
     """Initialize Flask extensions."""
@@ -31,4 +24,12 @@ def init_extensions(app):
     cors.init_app(app)
     jwt.init_app(app)
     ma.init_app(app)
-    socketio.init_app(app)
+
+    # Initialize SocketIO with app context
+    socketio.init_app(app,
+                      async_mode='threading',
+                      cors_allowed_origins=app.config['CORS_ORIGINS'],
+                      logger=True,
+                      engineio_logger=True,
+                      ping_timeout=5,
+                      ping_interval=25)

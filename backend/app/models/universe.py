@@ -34,7 +34,7 @@ class Universe(Base):
     # Relationships
     creator: Mapped["User"] = relationship("User", back_populates="universes")
     scenes: Mapped[List["Scene"]] = relationship("Scene", back_populates="universe", cascade="all, delete-orphan")
-    physics_parameters_rel: Mapped[List["PhysicsParameter"]] = relationship(
+    physics_parameters: Mapped[List["PhysicsParameter"]] = relationship(
         "PhysicsParameter",
         back_populates="universe",
         cascade="all, delete-orphan"

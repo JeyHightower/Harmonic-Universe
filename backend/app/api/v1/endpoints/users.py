@@ -8,10 +8,11 @@ from app import crud, models, schemas
 from app.api import deps
 from app.core.security import get_password_hash
 from app.core.config import settings
+from app.schemas.user import UserResponse
 
 router = APIRouter()
 
-@router.post("/register", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register_user(
     *,
     db: Session = Depends(deps.get_db),
@@ -29,7 +30,7 @@ def register_user(
     user = crud.user.create(db, obj_in=user_in)
     return user
 
-@router.get("/", response_model=List[schemas.User])
+@router.get("/", response_model=List[UserResponse])
 def read_users(
     db: Session = Depends(deps.get_db),
     skip: int = 0,
@@ -42,7 +43,7 @@ def read_users(
     users = crud.user.get_multi(db, skip=skip, limit=limit)
     return users
 
-@router.post("/", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(
     *,
     db: Session = Depends(deps.get_db),
@@ -61,7 +62,7 @@ def create_user(
     user = crud.user.create(db, obj_in=user_in)
     return user
 
-@router.get("/me", response_model=schemas.User)
+@router.get("/me", response_model=UserResponse)
 def read_user_me(
     db: Session = Depends(deps.get_db),
     current_user: models.User = Depends(deps.get_current_active_user),
@@ -71,7 +72,7 @@ def read_user_me(
     """
     return current_user
 
-@router.put("/me", response_model=schemas.User)
+@router.put("/me", response_model=UserResponse)
 def update_user_me(
     *,
     db: Session = Depends(deps.get_db),
@@ -91,7 +92,7 @@ def update_user_me(
     user = crud.user.update(db, db_obj=current_user, obj_in=current_user_data)
     return user
 
-@router.get("/{user_id}", response_model=schemas.User)
+@router.get("/{user_id}", response_model=UserResponse)
 def read_user_by_id(
     user_id: int,
     current_user: models.User = Depends(deps.get_current_active_user),
@@ -110,7 +111,7 @@ def read_user_by_id(
         )
     return user
 
-@router.put("/{user_id}", response_model=schemas.User)
+@router.put("/{user_id}", response_model=UserResponse)
 def update_user(
     *,
     db: Session = Depends(deps.get_db),

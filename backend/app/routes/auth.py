@@ -6,9 +6,10 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
 from app.db import db
 from app.models.user import User
-from app.schemas.user import user_schema, user_create_schema, user_login_schema
-from app.schemas.token import token_schema
+from app.schemas.user import user_schema, user_create_schema, user_login_schema, UserCreate, UserLogin
+from app.schemas.token import Token
 import uuid
+from pydantic import ValidationError
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -17,17 +18,17 @@ def register():
     """Register a new user."""
     try:
         # Validate request data
-        data = user_create_schema.load(request.json)
+        data = UserCreate(**request.json)
 
         # Check if user already exists
-        if User.query.filter_by(email=data['email']).first():
+        if User.query.filter_by(email=data.email).first():
             return jsonify({'error': 'Email already registered'}), 400
 
         # Create new user
         user = User(
-            email=data['email'],
-            password=data['password'],
-            full_name=data['full_name']
+            email=data.email,
+            password=data.password,
+            full_name=data.full_name
         )
         db.session.add(user)
         db.session.commit()
@@ -38,10 +39,7 @@ def register():
         # Return response
         return jsonify({
             'user': user_schema.dump(user),
-            'token': token_schema.dump({
-                'access_token': access_token,
-                'token_type': 'bearer'
-            })
+            'token': Token(access_token=access_token, token_type='bearer').dict()
         }), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 400
@@ -51,11 +49,11 @@ def login():
     """Login user."""
     try:
         # Validate request data
-        data = user_login_schema.load(request.json)
+        data = UserLogin(**request.json)
 
         # Check user credentials
-        user = User.query.filter_by(email=data['email']).first()
-        if not user or not user.verify_password(data['password']):
+        user = User.query.filter_by(email=data.email).first()
+        if not user or not user.verify_password(data.password):
             return jsonify({'error': 'Invalid email or password'}), 401
 
         # Create access token
@@ -64,11 +62,10 @@ def login():
         # Return response
         return jsonify({
             'user': user_schema.dump(user),
-            'token': token_schema.dump({
-                'access_token': access_token,
-                'token_type': 'bearer'
-            })
+            'token': Token(access_token=access_token, token_type='bearer').dict()
         }), 200
+    except ValidationError as e:
+        return jsonify({'error': e.errors()}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 

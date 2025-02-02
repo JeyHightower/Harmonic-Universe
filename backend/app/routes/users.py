@@ -6,7 +6,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.db import db
 from app.models.user import User
-from app.schemas.user import user_schema, users_schema, user_update_schema
+from app.schemas.user import user_schema, UserUpdate
 
 users_bp = Blueprint('users', __name__, url_prefix='/users')
 
@@ -16,7 +16,7 @@ def get_users():
     """Get all users."""
     try:
         users = User.query.all()
-        return jsonify(users_schema.dump(users)), 200
+        return jsonify([user.dict() for user in users]), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
@@ -48,8 +48,9 @@ def update_user(user_id):
             return jsonify({'error': 'Not authorized'}), 403
 
         # Validate and update user data
-        data = user_update_schema.load(request.json)
-        for key, value in data.items():
+        data = UserUpdate(**request.json)
+        data_dict = data.dict()
+        for key, value in data_dict.items():
             setattr(user, key, value)
         db.session.commit()
 

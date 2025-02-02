@@ -7,6 +7,8 @@ from datetime import datetime
 from pydantic import BaseModel, EmailStr, constr, UUID4, Field, validator
 from app.schemas.universe import Universe
 from app.schemas.scene import Scene
+from app.extensions import ma
+from app.models.user import User
 
 # Shared properties
 class UserBase(BaseModel):
@@ -73,8 +75,8 @@ class UserInDBBase(UserBase):
             datetime: lambda v: v.isoformat()
         }
 
-# Properties to return to client
-class User(UserInDBBase):
+# Rename Pydantic User class to avoid conflict
+class UserResponseSchema(UserInDBBase):
     """User schema to return to client."""
     pass
 
@@ -83,7 +85,7 @@ class UserInDB(UserInDBBase):
     """DB user schema."""
     hashed_password: str
 
-class UserResponse(User):
+class UserResponse(UserResponseSchema):
     """User response schema."""
     universes: List[Universe] = []
     scenes: List[Scene] = []
@@ -109,3 +111,14 @@ class TokenPayload(BaseModel):
     """Token payload schema."""
     sub: Optional[UUID4] = None
     exp: Optional[int] = None
+
+# Update UserSchema to use the correct SQLAlchemy User model
+class UserSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = User  # Ensure this is the SQLAlchemy model
+        load_instance = True
+
+# Create an instance of the schema
+user_schema = UserSchema()
+user_create_schema = UserSchema()
+user_login_schema = UserSchema()

@@ -38,6 +38,7 @@ from app.core.security import create_access_token, get_password_hash
 from app.core.test_config import TestSettings
 from app.test_config import test_settings
 from app.db.init_db import init_db, verify_database_connection
+from app import create_app
 
 # Import models needed for fixtures
 from app.models.user import User

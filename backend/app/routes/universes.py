@@ -6,10 +6,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.db import db
 from app.models.universe import Universe
-from app.schemas.universe import (
-    universe_schema, universes_schema, universe_create_schema,
-    universe_update_schema, universe_with_parameters_schema
-)
+from app.schemas.universe import Universe, UniverseCreate, UniverseUpdate, UniverseResponse, UniverseWithParameters
 
 universes_bp = Blueprint('universes', __name__, url_prefix='/universes')
 
@@ -19,7 +16,7 @@ def get_universes():
     """Get all universes."""
     try:
         universes = Universe.query.all()
-        return jsonify(universes_schema.dump(universes)), 200
+        return jsonify([UniverseResponse.from_orm(u).dict() for u in universes]), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 

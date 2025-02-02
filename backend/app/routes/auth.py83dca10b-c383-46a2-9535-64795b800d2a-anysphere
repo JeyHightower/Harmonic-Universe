@@ -1,0 +1,2 @@
+# Validate and update user data
+data = UserUpdate.parse_obj(request.json)
