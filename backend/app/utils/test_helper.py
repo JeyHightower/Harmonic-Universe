@@ -8,8 +8,9 @@ import sys
 import os
 
 # Add the backend directory to the Python path
-backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-sys.path.append(backend_dir)
+resolved_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'backend'))
+print('Resolved backend path:', resolved_path)
+sys.path.append(resolved_path)
 
 from backend.utils.test_suite import TestSuite, TestError, TestErrorType
 
@@ -184,4 +185,5 @@ def run_tests_with_helper() -> int:
     return return_code
 
 if __name__ == "__main__":
+    print('Current Python path:', sys.path)
     exit(run_tests_with_helper())

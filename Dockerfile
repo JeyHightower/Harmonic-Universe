@@ -1,22 +1,36 @@
-# Build stage
-FROM node:18-alpine AS builder
+# Build stage for frontend
+FROM node:18 AS frontend-builder
+
+WORKDIR /app/frontend
+
+# Copy frontend package files
+COPY frontend/package*.json ./
+
+# Install frontend dependencies
+RUN npm ci --ignore-scripts
+
+# Copy frontend source code
+COPY frontend/ ./
+
+# Build frontend application
+RUN npm run build
+
+# Build stage for backend
+FROM node:18 AS backend-builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy backend package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci
+# Install backend dependencies
+RUN npm ci --ignore-scripts
 
-# Copy source code
+# Copy backend source code
 COPY . .
 
-# Build application
-RUN npm run build
-
 # Production stage
-FROM node:18-alpine
+FROM node:18-slim
 
 WORKDIR /app
 
@@ -24,10 +38,13 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install production dependencies only
-RUN npm ci --only=production
+RUN npm ci --only=production --ignore-scripts
 
-# Copy built application from builder stage
-COPY --from=builder /app/dist ./dist
+# Copy built frontend from frontend-builder stage
+COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
+
+# Copy built backend from backend-builder stage
+COPY --from=backend-builder /app/dist ./dist
 
 # Copy necessary files
 COPY .env.example .env

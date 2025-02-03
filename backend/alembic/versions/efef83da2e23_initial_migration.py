@@ -118,7 +118,7 @@ def upgrade() -> None:
     sa.Column('title', sa.String(), nullable=False),
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('timeline_data', postgresql.JSONB(astext_type=sa.Text()).with_variant(sa.JSON(), 'sqlite'), server_default='{}', nullable=False),
-    sa.Column('scene_order', postgresql.ARRAY(GUID()).with_variant(sa.JSON(), 'sqlite'), server_default='[]', nullable=False),
+    sa.Column('scene_order', postgresql.ARRAY(GUID()).with_variant(sa.JSON(), 'sqlite'), server_default=sa.text("ARRAY[]::UUID[]"), nullable=False),
     sa.Column('transitions', postgresql.JSONB(astext_type=sa.Text()).with_variant(sa.JSON(), 'sqlite'), server_default='{}', nullable=False),
     sa.Column('narrative', postgresql.JSONB(astext_type=sa.Text()).with_variant(sa.JSON(), 'sqlite'), server_default='{}', nullable=False),
     sa.Column('storyboard_metadata', postgresql.JSONB(astext_type=sa.Text()).with_variant(sa.JSON(), 'sqlite'), server_default='{}', nullable=False),

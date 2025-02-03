@@ -173,4 +173,4 @@ class UserResponseModel(BaseModel):
     email_verified: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True

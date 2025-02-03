@@ -31,6 +31,10 @@ logger = logging.getLogger(__name__)
 # Add the project root directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+# Add the backend directory to the Python path
+backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(backend_dir)
+
 from app.main import app
 from app.db.base import Base
 from app.core.config import settings

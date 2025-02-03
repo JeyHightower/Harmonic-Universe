@@ -6,6 +6,14 @@ from sqlalchemy import create_engine
 
 from alembic import context
 
+from app.models import Base
+
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Ensure the backend directory is included in the Python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'backend')))
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
@@ -19,13 +27,18 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = None
+target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
+# Construct the connection string dynamically using environment variables
+user = os.environ.get('DB_USER', 'user')
+password = os.environ.get('DB_PASSWORD', 'password')
+dbname = os.environ.get('DB_NAME', 'dbname')
+url = f"postgresql+psycopg2://{user}:{password}@localhost/{dbname}"
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -39,7 +52,6 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -58,8 +70,8 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    # Use a direct connection string for SQLite
-    connectable = create_engine('sqlite:///:memory:', poolclass=pool.NullPool)
+    # Use the constructed URL for the engine
+    connectable = create_engine(url, poolclass=pool.NullPool)
 
     with connectable.connect() as connection:
         context.configure(

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from test_suite import TestSuite
+from backend.utils.test_suite import TestSuite
 
 def main():
     """
