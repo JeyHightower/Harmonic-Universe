@@ -12,7 +12,7 @@ import uuid
 import secrets
 
 from app.core.config import settings
-from app.db.base_class import Base, GUID
+from app.db.base_model import Base, GUID
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from app.models.universe import Universe
     from app.models.scene import Scene
     from app.models.storyboard import Storyboard
+    from app.models.ai_generation import AIGeneration
 
 class User(Base):
     """User model."""
@@ -43,32 +44,6 @@ class User(Base):
     reset_password_expires: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     display_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     bio: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-
-    # Relationships
-    universes: Mapped[List["Universe"]] = relationship(
-        "Universe",
-        back_populates="creator",
-        cascade="all, delete-orphan",
-        lazy="selectin"
-    )
-    scenes: Mapped[List["Scene"]] = relationship(
-        "Scene",
-        back_populates="creator",
-        cascade="all, delete-orphan",
-        lazy="selectin"
-    )
-    audio_files: Mapped[List["AudioFile"]] = relationship(
-        "AudioFile",
-        back_populates="creator",
-        cascade="all, delete-orphan",
-        lazy="selectin"
-    )
-    storyboards: Mapped[List["Storyboard"]] = relationship(
-        "Storyboard",
-        back_populates="creator",
-        cascade="all, delete-orphan",
-        lazy="selectin"
-    )
 
     def __init__(self, **kwargs):
         """Initialize a new User instance."""

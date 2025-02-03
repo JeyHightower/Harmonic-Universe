@@ -1,28 +1,23 @@
 """
-Custom database types for SQLAlchemy.
+Custom SQLAlchemy types for cross-database compatibility.
 """
 
-from sqlalchemy.types import TypeDecorator, String
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.types import TypeDecorator, String, JSON
 import uuid
+import json
+from typing import Any, Optional
 
 class GUID(TypeDecorator):
     """Platform-independent GUID type.
-
-    Uses PostgreSQL's UUID type, otherwise uses String(32), storing as
-    stringified hex values. SQLite doesn't support UUID natively, so we use
-    String instead.
+    Uses PostgreSQL's UUID type, otherwise uses
+    CHAR(32), storing as stringified hex values.
     """
-
-    impl = String
+    impl = String(32)
     cache_ok = True
-
-    def __init__(self, as_uuid=True):
-        self.as_uuid = as_uuid
-        super(GUID, self).__init__(length=32)
 
     def load_dialect_impl(self, dialect):
         if dialect.name == 'postgresql':
+            from sqlalchemy.dialects.postgresql import UUID
             return dialect.type_descriptor(UUID())
         else:
             return dialect.type_descriptor(String(32))
@@ -41,9 +36,32 @@ class GUID(TypeDecorator):
     def process_result_value(self, value, dialect):
         if value is None:
             return value
-        if not isinstance(value, uuid.UUID):
-            if len(value) == 32:  # For SQLite hex format
-                value = uuid.UUID(hex=value)
-            else:
+        else:
+            if not isinstance(value, uuid.UUID):
                 value = uuid.UUID(value)
-        return value if self.as_uuid else str(value)
+            return value
+
+class JSONType(TypeDecorator):
+    """Platform-independent JSON type.
+    Uses PostgreSQL's JSONB type, otherwise uses
+    JSON type, storing as stringified JSON.
+    """
+    impl = JSON
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == 'postgresql':
+            from sqlalchemy.dialects.postgresql import JSONB
+            return dialect.type_descriptor(JSONB())
+        else:
+            return dialect.type_descriptor(JSON())
+
+    def process_bind_param(self, value: Any, dialect) -> Optional[str]:
+        if value is None:
+            return None
+        return json.dumps(value)
+
+    def process_result_value(self, value: Optional[str], dialect) -> Any:
+        if value is None:
+            return None
+        return json.loads(value) if isinstance(value, str) else value

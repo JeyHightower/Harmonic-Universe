@@ -62,12 +62,18 @@ class TestSettings(BaseSettings):
     def setup_test_environment(self):
         """Setup test environment directories and logging."""
         logger.info("Setting up test environment")
+
+        # Create test upload directory
         os.makedirs(self.TEST_UPLOAD_DIR, exist_ok=True)
         logger.info(f"Created test upload directory at {self.TEST_UPLOAD_DIR}")
 
+        # Remove existing test database if it exists
         if self.TEST_DB_PATH.exists():
             logger.info(f"Removing existing test database at {self.TEST_DB_PATH}")
             self.TEST_DB_PATH.unlink()
+
+        # Create test database directory if it doesn't exist
+        self.TEST_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
         logger.info("Test environment setup complete")
 

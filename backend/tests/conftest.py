@@ -6,7 +6,7 @@ import pytest
 from typing import Dict, Generator, AsyncGenerator
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event, inspect
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker, Session, scoped_session
 from sqlalchemy.pool import StaticPool
 from datetime import datetime, timedelta
 import logging
@@ -35,142 +35,105 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(backend_dir)
 
-from app.main import app
-from app.db.base import Base
+from app.db.base_model import Base
 from app.core.config import settings
 from app.core.security import create_access_token, get_password_hash
 from app.core.test_config import TestSettings
 from app.test_config import test_settings
 from app.db.init_db import init_db, verify_database_connection
 from app import create_app
+from app.extensions import db, init_extensions
 
-# Import models needed for fixtures
-from app.models.user import User
-from app.models.universe import Universe
-from app.models import __all__ as model_names
-
-# Import crud and schemas for superuser creation
-from app import crud, schemas
+# Import all models to ensure they're registered with SQLAlchemy
+from app.models import (
+    User, AIModel, Universe, Scene, PhysicsParameter, MusicParameter,
+    Timeline, Keyframe, Visualization, Export, AIGeneration, AudioFile,
+    Storyboard, MidiEvent, PhysicsObject, PhysicsConstraint
+)
 
 # Test directories
 TEST_UPLOAD_DIR = Path("tests/uploads")
 TEST_FIXTURES_DIR = Path("tests/fixtures")
 
-def create_test_engine():
-    """Create and configure the test database engine."""
+@pytest.fixture(scope="session")
+def test_app():
+    """Create Flask test application."""
+    app = Flask(__name__)
+    app.config.update({
+        'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
+        'SQLALCHEMY_TRACK_MODIFICATIONS': False,
+        'TESTING': True,
+        'CORS_ORIGINS': '*',  # Allow all origins in test
+        'SQLALCHEMY_ECHO': True  # Enable SQL logging
+    })
+
+    # Initialize extensions
+    init_extensions(app)
+
+    # Create tables in app context
+    with app.app_context():
+        # Import all models to ensure they're registered
+        from app.models import (
+            User, AIModel, Universe, Scene, PhysicsParameter, MusicParameter,
+            Timeline, Keyframe, Visualization, Export, AIGeneration, AudioFile,
+            Storyboard, MidiEvent, PhysicsObject, PhysicsConstraint
+        )
+        db.create_all()
+
+    return app
+
+@pytest.fixture(scope="session")
+def engine(test_app):
+    """Create the test database engine."""
     logger.info("Creating test database engine")
-    engine = create_engine(
-        test_settings.SQLALCHEMY_DATABASE_URI,
-        poolclass=StaticPool,
-        connect_args={"check_same_thread": False}
-    )
-    logger.info(f"Test engine created with URL: {test_settings.SQLALCHEMY_DATABASE_URI}")
-    return engine
 
-# Create test engine
-engine = create_test_engine()
+    with test_app.app_context():
+        # Create engine
+        yield db.engine
 
-# Create test session factory
-TestingSessionLocal = sessionmaker(
-    bind=engine,
-    autocommit=False,
-    autoflush=False
-)
-
-def run_migrations():
-    """Run database migrations."""
-    logger.info("Running database migrations")
-    try:
-        alembic_cfg = alembic.config.Config(str(test_settings.ALEMBIC_INI_PATH))
-        alembic_cfg.set_main_option("sqlalchemy.url", str(test_settings.SQLALCHEMY_DATABASE_URI))
-        alembic.command.upgrade(alembic_cfg, "head")
-        logger.info("Database migrations completed successfully")
-    except Exception as e:
-        logger.error(f"Error running migrations: {e}")
-        raise
-
-def verify_tables_exist(engine):
-    """Verify that all required tables exist in the database."""
-    logger.info("Verifying database tables")
-    inspector = inspect(engine)
-    existing_tables = inspector.get_table_names()
-    required_tables = [table.__tablename__ for table in Base.__subclasses__()]
-
-    missing_tables = set(required_tables) - set(existing_tables)
-    if missing_tables:
-        logger.error(f"Missing tables: {missing_tables}")
-        raise RuntimeError(f"Missing required tables: {missing_tables}")
-
-    logger.info("All required tables exist")
-
-@pytest.fixture(scope="session", autouse=True)
-def setup_test_db():
-    """Set up test database."""
-    logger.info("Setting up test database")
-
-    # Drop existing test database if it exists
-    if test_settings.TEST_DB_PATH.exists():
-        logger.info("Removing existing test database")
-        test_settings.TEST_DB_PATH.unlink()
-
-    # Create all tables
-    logger.info("Creating database tables")
-    Base.metadata.create_all(bind=engine)
-
-    # Run migrations
-    run_migrations()
-
-    # Verify tables exist
-    verify_tables_exist(engine)
-
-    # Initialize test data
-    db = TestingSessionLocal()
-    try:
-        logger.info("Initializing test data")
-        init_db(db, is_test=True)
-        verify_database_connection(db)
-    except Exception as e:
-        logger.error(f"Error initializing test data: {e}")
-        raise
-    finally:
-        db.close()
-
-    yield
-
-    # Cleanup after all tests
-    logger.info("Cleaning up test database")
-    db = TestingSessionLocal()
-    try:
-        Base.metadata.drop_all(bind=engine)
-    finally:
-        db.close()
-
-    if test_settings.TEST_DB_PATH.exists():
-        test_settings.TEST_DB_PATH.unlink()
+        # Clean up is handled by db_session fixture
+        logger.info("Test database engine cleanup complete")
 
 @pytest.fixture(scope="function")
-def db_session() -> Generator:
+def db_session(test_app):
     """Create a new database session for a test."""
-    connection = engine.connect()
-    transaction = connection.begin()
-    session = TestingSessionLocal(bind=connection)
+    logger.info("Creating new database session")
 
-    try:
+    with test_app.app_context():
+        # Start a transaction
+        connection = db.engine.connect()
+        transaction = connection.begin()
+
+        # Create a session bound to the connection
+        session = db.create_scoped_session(
+            options={"bind": connection, "binds": {}}
+        )
+
+        # Make the session available to the app
+        db.session = session
+
         yield session
-    finally:
+
+        # Clean up
+        logger.info("Cleaning up database session")
         session.close()
         transaction.rollback()
         connection.close()
 
-@pytest.fixture(scope="function", autouse=True)
-def setup_test_files():
-    """Set up test file directories."""
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_environment():
+    """Set up test environment."""
+    logger.info("Setting up test environment")
+
+    # Create test directories
     TEST_UPLOAD_DIR.mkdir(exist_ok=True, parents=True)
     TEST_FIXTURES_DIR.mkdir(exist_ok=True, parents=True)
+    logger.info(f"Created test upload directory at {TEST_UPLOAD_DIR}")
 
     yield
 
-    # Cleanup test files after each test
+    # Cleanup
+    logger.info("Cleaning up test environment")
     if TEST_UPLOAD_DIR.exists():
         for file in TEST_UPLOAD_DIR.glob("*"):
             file.unlink()
@@ -178,100 +141,62 @@ def setup_test_files():
         for file in TEST_FIXTURES_DIR.glob("*"):
             file.unlink()
 
-@pytest.fixture(scope="session")
-def test_engine():
-    """Create test database engine."""
-    return engine
-
-@pytest.fixture(scope="session")
-def event_loop():
-    """Create an instance of the default event loop for the test session."""
-    if platform.system() == "Windows":
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    else:
-        asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-def get_test_db_url():
-    """Get test database URL."""
-    return test_settings.SQLALCHEMY_DATABASE_URI
+@pytest.fixture
+def client(test_app):
+    """Create a test client."""
+    return test_app.test_client()
 
 @pytest.fixture
-def auth_client(client, test_user) -> Generator:
-    """Create an authenticated test client."""
-    token = create_access_token(test_user.id)
-    client.headers = {"Authorization": f"Bearer {token}"}
-    yield client
-
-@pytest.fixture
-def superuser_client(client, test_superuser) -> Generator:
-    """Create a superuser test client."""
-    token = create_access_token(test_superuser.id)
-    client.headers = {"Authorization": f"Bearer {token}"}
-    yield client
-
-@pytest.fixture
-def client() -> Generator:
-    """Create a test client for Flask."""
-    with app.test_client() as test_client:
-        yield test_client
-
-@pytest.fixture
-def test_user(db_session: Session) -> User:
+def test_user(test_app, db_session):
     """Create a test user."""
-    user = User(
-        email="test@example.com",
-        username="testuser",
-        full_name="Test User",
-        is_active=True,
-        is_superuser=False,
-        email_verified=True,
-        hashed_password=get_password_hash("test-password")
-    )
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
-    return user
+    with test_app.app_context():
+        user = User(
+            email="test@example.com",
+            username="testuser",
+            full_name="Test User",
+            is_active=True,
+            is_superuser=False,
+            email_verified=True,
+            hashed_password=get_password_hash("test-password")
+        )
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
+        return user
 
 @pytest.fixture
-def test_superuser(db_session: Session) -> User:
+def test_superuser(test_app, db_session):
     """Create a test superuser."""
-    user = User(
-        email="admin@example.com",
-        username="admin",
-        full_name="Admin User",
-        is_active=True,
-        is_superuser=True,
-        email_verified=True,
-        hashed_password=get_password_hash("admin-password")
-    )
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
-    return user
+    with test_app.app_context():
+        user = User(
+            email="admin@example.com",
+            username="admin",
+            full_name="Admin User",
+            is_active=True,
+            is_superuser=True,
+            email_verified=True,
+            hashed_password=get_password_hash("admin-password")
+        )
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
+        return user
 
 @pytest.fixture
-def test_universe(db_session: Session, test_user: User) -> Universe:
+def test_universe(test_app, db_session: Session, test_user: User) -> Universe:
     """Create a test universe."""
-    universe = Universe(
-        name="Test Universe",
-        description="A test universe",
-        physics_json={},
-        music_parameters={},
-        creator_id=test_user.id
-    )
-    db_session.add(universe)
-    db_session.commit()
-    db_session.refresh(universe)
-    return universe
-
-@pytest.fixture
-async def websocket_client(test_client):
-    """Websocket test client."""
-    async with test_client.websocket_connect("/ws") as websocket:
-        yield websocket
+    with test_app.app_context():
+        universe = Universe(
+            name="Test Universe",
+            description="A test universe",
+            physics_json={},
+            music_parameters={},
+            creator_id=test_user.id
+        )
+        db_session.add(universe)
+        db_session.commit()
+        db_session.refresh(universe)
+        return universe
 
 @pytest.fixture
 def auth_headers(test_user: User) -> Dict[str, str]:

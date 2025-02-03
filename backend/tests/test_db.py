@@ -10,7 +10,8 @@ from sqlalchemy.sql import text
 from app.db.session import engine, SessionLocal, Base
 from app.models.user import User
 from app.models.universe import Universe
-from app.models.scene import Scene, SceneObject, RenderingMode, SceneObjectType
+from app.models.scene import Scene, RenderingMode
+from app.models.scene_object import SceneObject, SceneObjectType
 from app.models.audio_file import AudioFile, AudioFormat, AudioType
 from app.models.timeline import Timeline
 from app.models.keyframe import Keyframe, ParameterType

@@ -1,15 +1,16 @@
 """
-SQLAlchemy base class configuration.
+Base model class for SQLAlchemy models.
+This module should have no dependencies on other app modules to avoid circular imports.
 """
 
 from typing import Any
 from datetime import datetime
+import uuid
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import DateTime, MetaData, String
 from sqlalchemy.types import TypeDecorator
-import uuid
-from app.extensions import db
+from flask_sqlalchemy.model import DefaultMeta
 
 # Custom UUID type that works with both PostgreSQL and SQLite
 class GUID(TypeDecorator):
@@ -60,6 +61,7 @@ metadata = MetaData(naming_convention=NAMING_CONVENTION)
 class Base(DeclarativeBase):
     """Base class for all models."""
     metadata = metadata
+    __abstract__ = True
 
     @declared_attr.directive
     def __tablename__(cls) -> str:
@@ -70,39 +72,3 @@ class Base(DeclarativeBase):
     id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-
-    @classmethod
-    def get_by_id(cls, id: Any) -> Any:
-        """Get a record by ID."""
-        return db.session.query(cls).filter(cls.id == id).first()
-
-    def save(self) -> None:
-        """Save the current instance."""
-        db.session.add(self)
-        db.session.commit()
-
-    def delete(self) -> None:
-        """Delete the current instance."""
-        db.session.delete(self)
-        db.session.commit()
-
-    def update(self, **kwargs) -> None:
-        """Update the current instance."""
-        for key, value in kwargs.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
-        self.save()
-
-    @classmethod
-    def create(cls, **kwargs) -> Any:
-        """Create a new instance."""
-        instance = cls(**kwargs)
-        instance.save()
-        return instance
-
-    def dict(self) -> dict[str, Any]:
-        """Convert model instance to dictionary."""
-        return {
-            column.name: getattr(self, column.name)
-            for column in self.__table__.columns
-        }

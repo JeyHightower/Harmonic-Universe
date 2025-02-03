@@ -3,7 +3,8 @@ SVG renderer module.
 """
 
 from typing import Dict, List, Optional
-from app.models.scene import RenderingMode, SceneObjectType
+from app.models.scene import RenderingMode
+from app.models.scene_object import SceneObjectType
 
 class SVGRenderer:
     """SVG renderer class."""

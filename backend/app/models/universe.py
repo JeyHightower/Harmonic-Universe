@@ -9,11 +9,12 @@ from sqlalchemy import String, Text, ForeignKey, JSON
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.custom_types import GUID
-from app.db.base_class import Base
+from app.db.base_model import Base
 
 class Universe(Base):
     """Universe model."""
     __tablename__ = "universes"
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[UUID] = mapped_column(GUID(), primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)

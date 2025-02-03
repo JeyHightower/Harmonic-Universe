@@ -4,20 +4,19 @@ Keyframe model.
 
 from typing import Dict
 from uuid import UUID
-from sqlalchemy import String, Float, ForeignKey, Enum, JSON
-from sqlalchemy.dialects.postgresql import JSONB
-from app.db.custom_types import GUID
+from sqlalchemy import String, Float, ForeignKey, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-import enum
 from datetime import datetime
+import enum
 
-from app.db.base_class import Base
+from app.db.base_model import Base
+from app.db.custom_types import GUID, JSONType
 
 # Handle circular imports
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app.models.storyboard import Storyboard
-    from app.models.timeline import Timeline, Animation
+    from app.models.timeline import Animation
 
 class ParameterType(str, enum.Enum):
     """Parameter type enum."""
@@ -29,11 +28,12 @@ class ParameterType(str, enum.Enum):
 class Keyframe(Base):
     """Keyframe model."""
     __tablename__ = "keyframes"
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[UUID] = mapped_column(GUID(), primary_key=True)
     timestamp: Mapped[float] = mapped_column(nullable=False)
     data: Mapped[dict] = mapped_column(
-        JSONB().with_variant(JSON(), 'sqlite'),
+        JSONType(),
         server_default='{}',
         nullable=False
     )
@@ -41,12 +41,12 @@ class Keyframe(Base):
     # Foreign keys
     storyboard_id: Mapped[UUID] = mapped_column(
         GUID(),
-        ForeignKey("storyboards.id"),  # Note: references "storyboards" not "storyboard"
+        ForeignKey("storyboards.id"),
         nullable=False
     )
     animation_id: Mapped[UUID] = mapped_column(
         GUID(),
-        ForeignKey("animation.id", ondelete="CASCADE"),
+        ForeignKey("animations.id", ondelete="CASCADE"),
         nullable=False
     )
 

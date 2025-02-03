@@ -6,7 +6,7 @@ from app.db.custom_types import GUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 
-from app.db.base_class import Base
+from app.db.base_model import Base
 
 # Handle circular imports
 from typing import TYPE_CHECKING
@@ -14,7 +14,8 @@ if TYPE_CHECKING:
     from app.models.universe import Universe
 
 class PhysicsParameter(Base):
-    __tablename__ = "physics_parameter"
+    __tablename__ = "physics_parameters"
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[UUID] = mapped_column(GUID(), primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)

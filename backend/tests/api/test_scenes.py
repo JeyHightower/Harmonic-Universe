@@ -9,7 +9,10 @@ from app.core.config import settings
 from app.schemas.scene import SceneCreate, SceneUpdate
 from app.models.user import User
 from app.models.universe import Universe
-from app.models.scene import Scene, RenderingMode, PhysicsParameters, MusicParameters
+from app.models.scene import Scene, RenderingMode
+from app.models.physics_parameter import PhysicsParameter
+from app.models.music_parameter import MusicParameter
+from app.models.scene_object import SceneObject
 
 def test_create_scene(
     client: TestClient,
@@ -350,7 +353,7 @@ def test_update_scene_physics_parameters(
         creator_id=test_user.id
     )
 
-    data = PhysicsParameters(gravity=9.81)
+    data = PhysicsParameter(gravity=9.81)
 
     response = client.put(
         f"{settings.API_V1_STR}/scenes/{scene.id}/parameters",
@@ -395,7 +398,7 @@ def test_update_scene_music_parameters(
         creator_id=test_user.id
     )
 
-    data = MusicParameters(tempo=120)
+    data = MusicParameter(tempo=120)
 
     response = client.put(
         f"{settings.API_V1_STR}/scenes/{scene.id}/parameters",

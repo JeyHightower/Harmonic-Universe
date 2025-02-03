@@ -2,9 +2,9 @@
 Database package.
 """
 
-from app.extensions import db
+from app.db.base_model import Base
 
-__all__ = ['db']
+__all__ = ['Base']
 
 def init_db(app):
     """Initialize database."""

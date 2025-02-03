@@ -35,10 +35,8 @@ target_metadata = Base.metadata
 # ... etc.
 
 # Construct the connection string dynamically using environment variables
-user = os.environ.get('DB_USER', 'user')
-password = os.environ.get('DB_PASSWORD', 'password')
-dbname = os.environ.get('DB_NAME', 'dbname')
-url = f"postgresql+psycopg2://{user}:{password}@localhost/{dbname}"
+# Use SQLite by default for development
+url = os.environ.get('DATABASE_URL', 'sqlite:///./app.db')
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.

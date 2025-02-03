@@ -4,7 +4,8 @@ from pathlib import Path
 import json
 import asyncio
 from fastapi import WebSocket
-from app.models.scene import RenderingMode, SceneObjectType
+from app.models.scene import RenderingMode
+from app.models.scene_object import SceneObjectType
 from PIL import Image
 from app.core.visualization.webgl import WebGLRenderer
 from app.core.visualization.canvas2d import Canvas2DRenderer

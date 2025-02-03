@@ -6,7 +6,7 @@ from typing import Dict, Optional
 from datetime import datetime
 from pydantic import BaseModel, UUID4
 
-from app.models.scene import SceneObjectType
+from app.models.scene_object import SceneObjectType
 
 class SceneObjectBase(BaseModel):
     """Base scene object schema."""

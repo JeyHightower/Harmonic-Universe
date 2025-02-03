@@ -1,42 +1,65 @@
-"""AI model definition."""
+"""
+AI model.
+"""
 
-from typing import Dict, Optional
+from typing import Optional
 from uuid import UUID
-from sqlalchemy import String, ForeignKey, Enum, JSON
-from sqlalchemy.dialects.postgresql import JSONB
-from app.db.custom_types import GUID
+from sqlalchemy import String, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 import enum
-import uuid
 
-from app.db.base_class import Base
+from app.db.base_model import Base
+from app.db.custom_types import GUID, JSONType
+
+# Handle circular imports
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from app.models.ai_generation import AIGeneration
 
 class AIModelType(str, enum.Enum):
-    PARAMETER_GENERATION = "parameter_generation"
-    MUSIC_GENERATION = "music_generation"
-    VISUALIZATION = "visualization"
+    """AI model type enum."""
+    TEXT_TO_SCENE = "TEXT_TO_SCENE"
+    TEXT_TO_ANIMATION = "TEXT_TO_ANIMATION"
+    TEXT_TO_MUSIC = "TEXT_TO_MUSIC"
+    TEXT_TO_PHYSICS = "TEXT_TO_PHYSICS"
 
 class AIModel(Base):
-    __tablename__ = "ai_model"
+    """AI model."""
+    __tablename__ = "ai_models"
+    __table_args__ = {'extend_existing': True}
 
-    id: Mapped[UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    id: Mapped[UUID] = mapped_column(GUID(), primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
-    model_type: Mapped[AIModelType] = mapped_column(Enum(AIModelType), nullable=False)
-    provider: Mapped[str] = mapped_column(String, nullable=False)  # e.g., "openai", "anthropic", "local"
-    configuration: Mapped[Dict] = mapped_column(
-        JSONB().with_variant(JSON(), 'sqlite'),
-        server_default='{}'
-    )  # Model-specific settings
-    api_key: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # Encrypted API key if needed
-    parameters: Mapped[Dict] = mapped_column(
-        JSONB().with_variant(JSON(), 'sqlite'),
-        server_default='{}'
-    )  # Model parameters and hyperparameters
-    model_metadata: Mapped[Dict] = mapped_column(
-        JSONB().with_variant(JSON(), 'sqlite'),
-        server_default='{}'
-    )  # Additional model properties
+    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    type: Mapped[AIModelType] = mapped_column(String, nullable=False)
+    version: Mapped[str] = mapped_column(String, nullable=False)
+
+    # Model configuration stored as JSON
+    config: Mapped[dict] = mapped_column(
+        JSONType(),
+        server_default='{}',
+        nullable=False
+    )
+
+    # Model metadata stored as JSON
+    model_metadata: Mapped[dict] = mapped_column(
+        JSONType(),
+        server_default='{}',
+        nullable=False
+    )
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(nullable=False)
+
+    # Relationships
+    generations: Mapped[list["AIGeneration"]] = relationship(
+        "AIGeneration",
+        back_populates="model",
+        cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
-        return f"<AIModel {self.name} ({self.model_type})>"
+        """Return string representation."""
+        return f"<AIModel {self.name} ({self.type})>"
