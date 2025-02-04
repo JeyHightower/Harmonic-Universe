@@ -4,23 +4,26 @@ This module defines relationships between models to avoid circular dependencies.
 """
 
 from sqlalchemy.orm import relationship
+from sqlalchemy import event
+from sqlalchemy.orm import configure_mappers
 
 def setup_relationships():
     """Set up relationships between models."""
-    from app.models.scene import Scene
-    from app.models.scene_object import SceneObject
-    from app.models.user import User
-    from app.models.universe import Universe
-    from app.models.ai_generation import AIGeneration
-    from app.models.ai_model import AIModel
-    from app.models.audio_file import AudioFile
-    from app.models.visualization import Visualization
-    from app.models.export import Export
-    from app.models.physics_constraint import PhysicsConstraint
-    from app.models.physics_object import PhysicsObject
-    from app.models.timeline import Timeline
-    from app.models.storyboard import Storyboard, storyboard_scenes
-    from app.models.midi_event import MidiEvent
+    from backend.app.models.scene import Scene
+    from backend.app.models.scene_object import SceneObject
+    from backend.app.models.user import User
+    from backend.app.models.universe import Universe
+    from backend.app.models.ai_generation import AIGeneration
+    from backend.app.models.ai_model import AIModel
+    from backend.app.models.audio_file import AudioFile
+    from backend.app.models.visualization import Visualization
+    from backend.app.models.export import Export
+    from backend.app.models.physics_constraint import PhysicsConstraint
+    from backend.app.models.physics_object import PhysicsObject
+    from backend.app.models.timeline import Timeline, Animation
+    from backend.app.models.storyboard import Storyboard, storyboard_scenes
+    from backend.app.models.midi_event import MidiEvent
+    from backend.app.models.keyframe import Keyframe
 
     # Scene and SceneObject relationships
     Scene.objects = relationship(
@@ -68,6 +71,11 @@ def setup_relationships():
     )
 
     # Universe relationships
+    Universe.creator = relationship(
+        "User",
+        back_populates="universes",
+        lazy="joined"
+    )
     Universe.scenes = relationship(
         "Scene",
         back_populates="universe",
@@ -208,3 +216,39 @@ def setup_relationships():
         back_populates="midi_events",
         lazy="selectin"
     )
+
+    # Timeline relationships
+    Timeline.scene = relationship(
+        "Scene",
+        back_populates="timelines",
+        lazy="selectin"
+    )
+    Timeline.animations = relationship(
+        "Animation",
+        back_populates="timeline",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
+
+    # Animation relationships
+    Animation.timeline = relationship(
+        "Timeline",
+        back_populates="animations",
+        lazy="selectin"
+    )
+    Animation.keyframes = relationship(
+        "Keyframe",
+        back_populates="animation",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
+
+    # Keyframe relationships
+    Keyframe.animation = relationship(
+        "Animation",
+        back_populates="keyframes",
+        lazy="selectin"
+    )
+
+    # Configure all mappers
+    configure_mappers()

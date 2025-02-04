@@ -2,267 +2,232 @@ import pytest
 from fastapi.testclient import TestClient
 from fastapi.websockets import WebSocket
 from unittest.mock import AsyncMock, patch, Mock
-from app import create_app
-from app.websocket import socketio
+from app.main import app
 from app.models.audio_file import AudioFile
 from app.core.config import settings
 from app.schemas.user import User as UserSchema
 
+# Create test client
+client = TestClient(app)
+
 @pytest.mark.asyncio
-async def test_websocket_connection(socketio_client):
+async def test_websocket_connection(test_client):
     """Test establishing WebSocket connection."""
-    socketio_client.connect()
-    assert socketio_client.is_connected()
-    socketio_client.disconnect()
+    with test_client.websocket_connect("/ws") as websocket:
+        assert websocket.can_receive()
 
 @pytest.mark.asyncio
-async def test_audio_stream(socketio_client, test_audio):
+async def test_audio_stream(test_client, test_audio, auth_headers):
     """Test streaming audio data over WebSocket."""
-    socketio_client.connect()
+    with test_client.websocket_connect(f"/ws/audio/{test_audio.id}", headers=auth_headers) as websocket:
+        # Send join room message
+        await websocket.send_json({"event": "join_room", "room": str(test_audio.id)})
+        data = await websocket.receive_json()
+        assert data["event"] == "joined"
 
-    # Emit join room event
-    socketio_client.emit('join', {'room': str(test_audio.id)})
-    received = socketio_client.get_received()
-    assert len(received) > 0
-    assert received[0]['name'] == 'joined'
-
-    # Emit start stream event
-    socketio_client.emit('start_stream', {'audio_id': str(test_audio.id)})
-    received = socketio_client.get_received()
-    assert len(received) > 0
-    assert received[0]['name'] == 'stream_started'
-
-    socketio_client.disconnect()
+        # Send start stream message
+        await websocket.send_json({"event": "start_stream", "audio_id": str(test_audio.id)})
+        data = await websocket.receive_json()
+        assert data["event"] == "stream_started"
 
 @pytest.mark.asyncio
-async def test_audio_stream_not_found(socketio_client):
+async def test_audio_stream_not_found(test_client, auth_headers):
     """Test attempting to stream non-existent audio."""
-    socketio_client.connect()
-
-    # Try to join non-existent room
-    socketio_client.emit('join', {'room': '999999'})
-    received = socketio_client.get_received()
-    assert len(received) > 0
-    assert received[0]['name'] == 'error'
-    assert 'Audio not found' in received[0]['args'][0]['message']
-
-    socketio_client.disconnect()
+    with test_client.websocket_connect("/ws/audio/999999", headers=auth_headers) as websocket:
+        # Try to join non-existent room
+        await websocket.send_json({"event": "join_room", "room": "999999"})
+        data = await websocket.receive_json()
+        assert data["event"] == "error"
+        assert "Audio not found" in data["message"]
 
 @pytest.mark.asyncio
-async def test_audio_stream_control(socketio_client, test_audio):
+async def test_audio_stream_control(test_client, test_audio, auth_headers):
     """Test audio stream control commands."""
-    socketio_client.connect()
+    with test_client.websocket_connect(f"/ws/audio/{test_audio.id}", headers=auth_headers) as websocket:
+        # Join audio room
+        await websocket.send_json({"event": "join_room", "room": str(test_audio.id)})
+        await websocket.receive_json()  # Receive join confirmation
 
-    # Join audio room
-    socketio_client.emit('join', {'room': str(test_audio.id)})
+        # Test play command
+        await websocket.send_json({
+            "event": "control",
+            "command": "play",
+            "audio_id": str(test_audio.id)
+        })
+        data = await websocket.receive_json()
+        assert data["event"] == "status"
+        assert data["status"] == "playing"
 
-    # Test play command
-    socketio_client.emit('control', {
-        'command': 'play',
-        'audio_id': str(test_audio.id)
-    })
-    received = socketio_client.get_received()
-    assert received[-1]['name'] == 'status'
-    assert received[-1]['args'][0]['status'] == 'playing'
+        # Test pause command
+        await websocket.send_json({
+            "event": "control",
+            "command": "pause",
+            "audio_id": str(test_audio.id)
+        })
+        data = await websocket.receive_json()
+        assert data["event"] == "status"
+        assert data["status"] == "paused"
 
-    # Test pause command
-    socketio_client.emit('control', {
-        'command': 'pause',
-        'audio_id': str(test_audio.id)
-    })
-    received = socketio_client.get_received()
-    assert received[-1]['name'] == 'status'
-    assert received[-1]['args'][0]['status'] == 'paused'
-
-    # Test seek command
-    socketio_client.emit('control', {
-        'command': 'seek',
-        'audio_id': str(test_audio.id),
-        'position': 60
-    })
-    received = socketio_client.get_received()
-    assert received[-1]['name'] == 'status'
-    assert received[-1]['args'][0]['status'] == 'seeked'
-    assert received[-1]['args'][0]['position'] == 60
-
-    socketio_client.disconnect()
+        # Test seek command
+        await websocket.send_json({
+            "event": "control",
+            "command": "seek",
+            "audio_id": str(test_audio.id),
+            "position": 60
+        })
+        data = await websocket.receive_json()
+        assert data["event"] == "status"
+        assert data["status"] == "seeked"
+        assert data["position"] == 60
 
 @patch('app.services.media_service.process_audio')
-def test_audio_stream_error_handling(mock_process, socketio_client, test_audio):
+async def test_audio_stream_error_handling(mock_process, test_client, test_audio, auth_headers):
     """Test error handling in audio streaming."""
     mock_process.side_effect = Exception("Processing error")
 
-    socketio_client.connect()
-    socketio_client.emit('start_stream', {'audio_id': str(test_audio.id)})
-
-    received = socketio_client.get_received()
-    assert received[-1]['name'] == 'error'
-    assert 'Processing error' in received[-1]['args'][0]['message']
-
-    socketio_client.disconnect()
+    with test_client.websocket_connect(f"/ws/audio/{test_audio.id}", headers=auth_headers) as websocket:
+        await websocket.send_json({"event": "start_stream", "audio_id": str(test_audio.id)})
+        data = await websocket.receive_json()
+        assert data["event"] == "error"
+        assert "Processing error" in data["message"]
 
 @pytest.mark.asyncio
-async def test_websocket_authentication(socketio_client, test_user, auth_headers):
+async def test_websocket_authentication(test_client):
     """Test WebSocket authentication."""
     # Without authentication
-    socketio_client.connect()
-    socketio_client.emit('join_protected')
-    received = socketio_client.get_received()
-    assert received[-1]['name'] == 'error'
-    assert 'Unauthorized' in received[-1]['args'][0]['message']
-    socketio_client.disconnect()
+    with pytest.raises(Exception):
+        with test_client.websocket_connect("/ws/protected") as websocket:
+            pass
 
     # With authentication
-    token = auth_headers['Authorization'].split()[1]
-    socketio_client.connect(headers={'Authorization': f'Bearer {token}'})
-    socketio_client.emit('join_protected')
-    received = socketio_client.get_received()
-    assert received[-1]['name'] == 'joined'
-    assert 'Authenticated' in received[-1]['args'][0]['message']
-    socketio_client.disconnect()
+    with test_client.websocket_connect("/ws/protected", headers=auth_headers) as websocket:
+        await websocket.send_json({"event": "join_protected"})
+        data = await websocket.receive_json()
+        assert data["event"] == "joined"
+        assert "Authenticated" in data["message"]
 
 @pytest.mark.asyncio
-async def test_websocket_broadcast(socketio_client):
+async def test_websocket_broadcast(test_client, auth_headers):
     """Test broadcasting messages to all connected clients."""
-    # Create two clients
-    client1 = socketio_client
-    client2 = socketio.test_client(create_app())
+    async with test_client.websocket_connect("/ws/broadcast", headers=auth_headers) as client1, \
+              test_client.websocket_connect("/ws/broadcast", headers=auth_headers) as client2:
 
-    client1.connect()
-    client2.connect()
+        # Join broadcast room
+        await client1.send_json({"event": "join_room", "room": "broadcast"})
+        await client2.send_json({"event": "join_room", "room": "broadcast"})
 
-    # Join broadcast room
-    client1.emit('join', {'room': 'broadcast'})
-    client2.emit('join', {'room': 'broadcast'})
+        # Wait for join confirmations
+        await client1.receive_json()
+        await client2.receive_json()
 
-    # Send broadcast message
-    client1.emit('broadcast', {'message': 'Hello everyone!'})
+        # Send broadcast message
+        await client1.send_json({"event": "broadcast", "message": "Hello everyone!"})
 
-    # Check both clients received the message
-    received1 = client1.get_received()
-    received2 = client2.get_received()
+        # Check both clients received the message
+        data1 = await client1.receive_json()
+        data2 = await client2.receive_json()
 
-    assert received1[-1]['name'] == 'message'
-    assert received2[-1]['name'] == 'message'
-    assert received1[-1]['args'][0]['message'] == 'Hello everyone!'
-    assert received2[-1]['args'][0]['message'] == 'Hello everyone!'
-
-    client1.disconnect()
-    client2.disconnect()
+        assert data1["event"] == "message"
+        assert data2["event"] == "message"
+        assert data1["message"] == "Hello everyone!"
+        assert data2["message"] == "Hello everyone!"
 
 @pytest.mark.asyncio
-async def test_websocket_room(socketio_client):
+async def test_websocket_room(test_client, auth_headers):
     """Test room-based WebSocket communication."""
-    # Create three clients
-    client1 = socketio_client
-    client2 = socketio.test_client(create_app())
-    client3 = socketio.test_client(create_app())
+    async with test_client.websocket_connect("/ws/room", headers=auth_headers) as client1, \
+              test_client.websocket_connect("/ws/room", headers=auth_headers) as client2, \
+              test_client.websocket_connect("/ws/room", headers=auth_headers) as client3:
 
-    client1.connect()
-    client2.connect()
-    client3.connect()
+        # Join rooms
+        await client1.send_json({"event": "join_room", "room": "room1"})
+        await client2.send_json({"event": "join_room", "room": "room1"})
+        await client3.send_json({"event": "join_room", "room": "room2"})
 
-    # Join rooms
-    client1.emit('join', {'room': 'room1'})
-    client2.emit('join', {'room': 'room1'})
-    client3.emit('join', {'room': 'room2'})
+        # Wait for join confirmations
+        await client1.receive_json()
+        await client2.receive_json()
+        await client3.receive_json()
 
-    # Send message to room1
-    client1.emit('room_message', {
-        'room': 'room1',
-        'message': 'Message for room1'
-    })
+        # Send message to room1
+        await client1.send_json({
+            "event": "room_message",
+            "room": "room1",
+            "message": "Message for room1"
+        })
 
-    # Check messages
-    received1 = client1.get_received()
-    received2 = client2.get_received()
-    received3 = client3.get_received()
+        # Check messages
+        data1 = await client1.receive_json()
+        data2 = await client2.receive_json()
 
-    assert received1[-1]['name'] == 'message'
-    assert received2[-1]['name'] == 'message'
-    assert received1[-1]['args'][0]['message'] == 'Message for room1'
-    assert received2[-1]['args'][0]['message'] == 'Message for room1'
+        assert data1["event"] == "message"
+        assert data2["event"] == "message"
+        assert data1["message"] == "Message for room1"
+        assert data2["message"] == "Message for room1"
 
-    # Client3 should not have received the message
-    assert not any(r['name'] == 'message' for r in received3)
-
-    client1.disconnect()
-    client2.disconnect()
-    client3.disconnect()
+        # Client3 should not receive the message (will raise TimeoutError)
+        with pytest.raises(TimeoutError):
+            await client3.receive_json(timeout=1.0)
 
 @pytest.mark.asyncio
-async def test_websocket_heartbeat(socketio_client):
+async def test_websocket_heartbeat(test_client, auth_headers):
     """Test WebSocket connection heartbeat."""
-    socketio_client.connect()
-
-    socketio_client.emit('ping')
-    received = socketio_client.get_received()
-    assert received[-1]['name'] == 'pong'
-
-    socketio_client.disconnect()
+    with test_client.websocket_connect("/ws", headers=auth_headers) as websocket:
+        await websocket.send_json({"event": "ping"})
+        data = await websocket.receive_json()
+        assert data["event"] == "pong"
 
 @pytest.mark.asyncio
-async def test_websocket_reconnection(socketio_client):
+async def test_websocket_reconnection(test_client, auth_headers):
     """Test WebSocket reconnection handling."""
     # First connection
-    socketio_client.connect()
-    socketio_client.emit('identify', {'client_id': '123'})
-    received = socketio_client.get_received()
-    assert received[-1]['name'] == 'connected'
-    socketio_client.disconnect()
+    with test_client.websocket_connect("/ws", headers=auth_headers) as websocket:
+        await websocket.send_json({"event": "identify", "client_id": "123"})
+        data = await websocket.receive_json()
+        assert data["event"] == "connected"
 
     # Reconnection
-    socketio_client.connect()
-    socketio_client.emit('identify', {'client_id': '123'})
-    received = socketio_client.get_received()
-    assert received[-1]['name'] == 'reconnected'
-    socketio_client.disconnect()
+    with test_client.websocket_connect("/ws", headers=auth_headers) as websocket:
+        await websocket.send_json({"event": "identify", "client_id": "123"})
+        data = await websocket.receive_json()
+        assert data["event"] == "reconnected"
 
 @pytest.mark.asyncio
-async def test_websocket_large_message(socketio_client):
+async def test_websocket_large_message(test_client, auth_headers):
     """Test handling large messages over WebSocket."""
-    socketio_client.connect()
+    with test_client.websocket_connect("/ws", headers=auth_headers) as websocket:
+        # Generate large message
+        large_message = "x" * (1024 * 1024)  # 1MB message
 
-    # Generate large message
-    large_message = "x" * (1024 * 1024)  # 1MB message
+        # Send large message in chunks
+        chunk_size = 1024
+        for i in range(0, len(large_message), chunk_size):
+            chunk = large_message[i:i + chunk_size]
+            await websocket.send_json({"event": "large_message", "chunk": chunk})
 
-    # Send large message in chunks
-    chunk_size = 1024
-    for i in range(0, len(large_message), chunk_size):
-        chunk = large_message[i:i + chunk_size]
-        socketio_client.emit('large_message', {'chunk': chunk})
-
-    received = socketio_client.get_received()
-    assert received[-1]['name'] == 'message_received'
-    assert "Received 1MB" in received[-1]['args'][0]['message']
-
-    socketio_client.disconnect()
+        data = await websocket.receive_json()
+        assert data["event"] == "message_received"
+        assert "Received 1MB" in data["message"]
 
 @pytest.mark.asyncio
-async def test_websocket_concurrent_connections():
+async def test_websocket_concurrent_connections(test_client, auth_headers):
     """Test handling multiple concurrent WebSocket connections."""
     max_connections = 10
-    clients = []
+    websockets = []
 
-    # Establish multiple connections
-    for i in range(max_connections):
-        client = socketio.test_client(create_app())
-        client.connect()
-        clients.append(client)
+    try:
+        # Establish multiple connections
+        for i in range(max_connections):
+            ws = await test_client.websocket_connect("/ws", headers=auth_headers)
+            websockets.append(ws)
 
-    # Verify all connections are active
-    for client in clients:
-        assert client.is_connected()
+        # Verify all connections are active
+        for ws in websockets:
+            await ws.send_json({"event": "ping"})
+            data = await ws.receive_json()
+            assert data["event"] == "pong"
 
-    # Test broadcasting to all clients
-    clients[0].emit('broadcast', {'message': 'Hello all!'})
-
-    # Verify all clients received the message
-    for client in clients:
-        received = client.get_received()
-        assert received[-1]['name'] == 'message'
-        assert received[-1]['args'][0]['message'] == 'Hello all!'
-
-    # Cleanup
-    for client in clients:
-        client.disconnect()
+    finally:
+        # Clean up connections
+        for ws in websockets:
+            await ws.close()

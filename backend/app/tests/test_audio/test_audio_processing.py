@@ -1,12 +1,18 @@
+"""
+Test audio processing functionality.
+"""
+
 import pytest
 import numpy as np
 from pathlib import Path
 import soundfile as sf
 import json
 import librosa
+from sqlalchemy.orm import Session
 
-from app.core.audio.processor import AudioProcessor
-from app.models.audio_file import AudioFormat
+from backend.app.core.audio.processor import AudioProcessor
+from backend.app.models.audio_file import AudioFormat
+from backend.app.tests.utils.utils import random_lower_string
 
 @pytest.fixture
 def test_wav_file(tmp_path):
@@ -102,3 +108,98 @@ def test_to_base64(test_wav_file):
     assert isinstance(base64_data, str)
     assert mime_type == "audio/wav"
     assert len(base64_data) > 0
+
+def test_load_audio_file(db: Session) -> None:
+    """Test loading an audio file."""
+    # Create a test audio file
+    test_file = Path("test_audio.wav")
+    sample_rate = 44100
+    duration = 2.0  # seconds
+    t = np.linspace(0, duration, int(sample_rate * duration))
+    audio_data = np.sin(2 * np.pi * 440 * t)  # 440 Hz sine wave
+
+    processor = AudioProcessor()
+    processor.save_audio(test_file, audio_data, sample_rate)
+
+    # Load and verify
+    loaded_data, loaded_rate = processor.load_audio(test_file)
+    assert loaded_rate == sample_rate
+    assert len(loaded_data) == len(audio_data)
+    np.testing.assert_array_almost_equal(loaded_data, audio_data)
+
+    # Cleanup
+    test_file.unlink()
+
+def test_process_audio(db: Session) -> None:
+    """Test audio processing functions."""
+    # Create test audio data
+    sample_rate = 44100
+    duration = 1.0
+    t = np.linspace(0, duration, int(sample_rate * duration))
+    audio_data = np.sin(2 * np.pi * 440 * t)
+
+    processor = AudioProcessor()
+
+    # Test normalization
+    normalized = processor.normalize(audio_data)
+    assert np.max(np.abs(normalized)) <= 1.0
+
+    # Test resampling
+    new_rate = 22050
+    resampled = processor.resample(audio_data, sample_rate, new_rate)
+    assert len(resampled) == int(len(audio_data) * new_rate / sample_rate)
+
+    # Test filtering
+    filtered = processor.apply_filter(audio_data, sample_rate, cutoff=1000, filter_type="lowpass")
+    assert len(filtered) == len(audio_data)
+
+def test_audio_analysis(db: Session) -> None:
+    """Test audio analysis functions."""
+    # Create test audio data
+    sample_rate = 44100
+    duration = 1.0
+    t = np.linspace(0, duration, int(sample_rate * duration))
+    frequency = 440  # Hz
+    audio_data = np.sin(2 * np.pi * frequency * t)
+
+    processor = AudioProcessor()
+
+    # Test frequency analysis
+    frequencies, magnitudes = processor.analyze_frequency_content(audio_data, sample_rate)
+    peak_freq_idx = np.argmax(magnitudes)
+    assert abs(frequencies[peak_freq_idx] - frequency) < 1.0  # Allow 1 Hz tolerance
+
+    # Test envelope detection
+    envelope = processor.detect_envelope(audio_data)
+    assert len(envelope) == len(audio_data)
+    assert np.all(envelope >= 0)  # Envelope should be non-negative
+
+    # Test onset detection
+    onsets = processor.detect_onsets(audio_data, sample_rate)
+    assert isinstance(onsets, np.ndarray)
+    assert np.all(onsets >= 0)  # Onset times should be non-negative
+
+def test_audio_effects(db: Session) -> None:
+    """Test audio effects processing."""
+    # Create test audio data
+    sample_rate = 44100
+    duration = 1.0
+    t = np.linspace(0, duration, int(sample_rate * duration))
+    audio_data = np.sin(2 * np.pi * 440 * t)
+
+    processor = AudioProcessor()
+
+    # Test reverb
+    reverb_audio = processor.apply_reverb(audio_data, sample_rate)
+    assert len(reverb_audio) >= len(audio_data)  # Reverb should add some length
+
+    # Test delay
+    delay_time = 0.1  # seconds
+    delay_audio = processor.apply_delay(audio_data, sample_rate, delay_time)
+    assert len(delay_audio) > len(audio_data)  # Delay should add length
+
+    # Test distortion
+    gain = 2.0
+    distorted = processor.apply_distortion(audio_data, gain)
+    assert len(distorted) == len(audio_data)
+    assert np.max(np.abs(distorted)) <= 1.0  # Should be normalized

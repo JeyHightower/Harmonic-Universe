@@ -5,11 +5,11 @@ SQLAlchemy base class configuration.
 from typing import Any
 from datetime import datetime
 from sqlalchemy.ext.declarative import declared_attr
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
 from sqlalchemy import DateTime, MetaData, String
 from sqlalchemy.types import TypeDecorator
 import uuid
-from app.extensions import db
+from app.db.database import SessionLocal
 
 # Custom UUID type that works with both PostgreSQL and SQLite
 class GUID(TypeDecorator):
@@ -72,32 +72,33 @@ class Base(DeclarativeBase):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     @classmethod
-    def get_by_id(cls, id: Any) -> Any:
+    def get_by_id(cls, id: Any, db: Session) -> Any:
         """Get a record by ID."""
-        return db.session.query(cls).filter(cls.id == id).first()
+        return db.query(cls).filter(cls.id == id).first()
 
-    def save(self) -> None:
+    def save(self, db: Session) -> None:
         """Save the current instance."""
-        db.session.add(self)
-        db.session.commit()
+        db.add(self)
+        db.commit()
+        db.refresh(self)
 
-    def delete(self) -> None:
+    def delete(self, db: Session) -> None:
         """Delete the current instance."""
-        db.session.delete(self)
-        db.session.commit()
+        db.delete(self)
+        db.commit()
 
-    def update(self, **kwargs) -> None:
+    def update(self, db: Session, **kwargs) -> None:
         """Update the current instance."""
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
-        self.save()
+        self.save(db)
 
     @classmethod
-    def create(cls, **kwargs) -> Any:
+    def create(cls, db: Session, **kwargs) -> Any:
         """Create a new instance."""
         instance = cls(**kwargs)
-        instance.save()
+        instance.save(db)
         return instance
 
     def dict(self) -> dict[str, Any]:

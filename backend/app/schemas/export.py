@@ -2,10 +2,10 @@
 Export schemas.
 """
 
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Any
 from datetime import datetime
-from pydantic import BaseModel, UUID4
-
+from pydantic import UUID4, BaseModel, Field
+from uuid import UUID
 from app.models.export import ExportFormat, ExportStatus
 
 class ExportBase(BaseModel):

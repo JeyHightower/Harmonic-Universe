@@ -3,7 +3,7 @@ Schemas package.
 """
 
 from app.schemas.user import (
-    User, UserCreate, UserUpdate, UserResponse, UserLogin
+    UserInDB as User, UserCreate, UserUpdate, UserInDB, UserResponse, UserLogin
 )
 from app.schemas.universe import (
     Universe, UniverseCreate, UniverseUpdate,
@@ -19,7 +19,8 @@ from app.schemas.scene import (
 from app.schemas.token import Token, TokenPayload
 from app.schemas.export import Export, ExportCreate, ExportUpdate
 from app.schemas.scene_object import (
-    SceneObject, SceneObjectCreate, SceneObjectUpdate
+    SceneObject, SceneObjectCreate, SceneObjectUpdate,
+    SceneObjectResponse, SceneObjectWithParameters
 )
 from app.schemas.parameter_visual import (
     ParameterVisual, ParameterVisualCreate, ParameterVisualUpdate,
@@ -46,6 +47,7 @@ __all__ = [
     'User',
     'UserCreate',
     'UserUpdate',
+    'UserInDB',
     'UserResponse',
     'UserLogin',
     'Universe',
@@ -72,6 +74,8 @@ __all__ = [
     'SceneObject',
     'SceneObjectCreate',
     'SceneObjectUpdate',
+    'SceneObjectResponse',
+    'SceneObjectWithParameters',
     'ParameterVisual',
     'ParameterVisualCreate',
     'ParameterVisualUpdate',

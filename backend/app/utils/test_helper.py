@@ -12,7 +12,7 @@ resolved_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 print('Resolved backend path:', resolved_path)
 sys.path.append(resolved_path)
 
-from backend.utils.test_suite import TestSuite, TestError, TestErrorType
+from backend.app.utils.test_suite import TestSuite, TestError, TestErrorType
 
 class ErrorType(Enum):
     DATABASE = "database"

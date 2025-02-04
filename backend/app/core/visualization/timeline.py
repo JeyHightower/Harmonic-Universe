@@ -1,10 +1,12 @@
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 from uuid import UUID
+import asyncio
 
 from app.models.timeline import Timeline, Animation
 from app.models.keyframe import Keyframe
 from app.db.session import SessionLocal
+from app.core.config import settings
 
 class TimelineManager:
     """
@@ -17,6 +19,9 @@ class TimelineManager:
         self.current_time = 0.0
         self.is_playing = False
         self.loop = False
+        self.playback_speed = 1.0
+        self.animations: List[Animation] = []
+        self.last_update = datetime.now()
 
     def _load_timeline(self) -> Timeline:
         """Load timeline data from the database."""
@@ -80,19 +85,13 @@ class TimelineManager:
         """Get all animations in the timeline."""
         return self.db.query(Animation).filter(Animation.timeline_id == self.timeline_id).all()
 
-    def add_animation(self, target_object: str, property_path: str,
-                     name: str = "New Animation") -> Animation:
-        """Add a new animation."""
-        animation = Animation(
-            timeline_id=self.timeline_id,
-            target_object=target_object,
-            property_path=property_path,
-            name=name
-        )
-        self.db.add(animation)
-        self.db.commit()
-        self.db.refresh(animation)
-        return animation
+    def add_animation(self, animation: Animation) -> None:
+        """Add animation to timeline."""
+        self.animations.append(animation)
+
+    def remove_animation(self, animation_id: str) -> None:
+        """Remove animation from timeline."""
+        self.animations = [a for a in self.animations if a.id != animation_id]
 
     def update_animation(self, animation_id: UUID,
                         name: Optional[str] = None,
@@ -118,39 +117,81 @@ class TimelineManager:
             self.db.delete(animation)
             self.db.commit()
 
-    def play(self) -> None:
-        """Start playing the timeline."""
-        self.is_playing = True
+    def set_time(self, time: float) -> None:
+        """Set current time."""
+        self.current_time = max(0.0, min(time, self.timeline.duration))
 
-    def pause(self) -> None:
-        """Pause timeline playback."""
-        self.is_playing = False
+    def set_playback_speed(self, speed: float) -> None:
+        """Set playback speed."""
+        self.playback_speed = max(0.1, min(speed, 10.0))
 
-    def stop(self) -> None:
-        """Stop timeline playback and reset to start."""
+    def set_loop(self, loop: bool) -> None:
+        """Set loop mode."""
+        self.loop = loop
+
+    def get_duration(self) -> float:
+        """Get total duration."""
+        if not self.animations:
+            return 0.0
+        return max(a.end_time for a in self.animations)
+
+    async def start(self) -> None:
+        """Start playback."""
+        if not self.is_playing:
+            self.is_playing = True
+            self.last_update = datetime.now()
+            await self._update_loop()
+
+    async def stop(self) -> None:
+        """Stop playback."""
         self.is_playing = False
         self.current_time = 0.0
 
-    def seek(self, time: float) -> None:
-        """Seek to a specific time in the timeline."""
-        self.current_time = max(0.0, min(time, self.timeline.duration))
+    async def pause(self) -> None:
+        """Pause playback."""
+        self.is_playing = False
 
-    def set_loop(self, loop: bool) -> None:
-        """Set whether the timeline should loop."""
-        self.loop = loop
-
-    def update(self, delta_time: float) -> None:
-        """Update timeline state."""
+    async def resume(self) -> None:
+        """Resume playback."""
         if not self.is_playing:
-            return
+            self.is_playing = True
+            self.last_update = datetime.now()
+            await self._update_loop()
 
-        self.current_time += delta_time
-        if self.current_time > self.timeline.duration:
-            if self.loop:
-                self.current_time = 0.0
-            else:
-                self.current_time = self.timeline.duration
-                self.is_playing = False
+    async def seek(self, time: float) -> None:
+        """Seek to specific time."""
+        self.set_time(time)
+        await self._update_animations()
+
+    async def _update_loop(self) -> None:
+        """Main update loop."""
+        while self.is_playing:
+            now = datetime.now()
+            delta = (now - self.last_update).total_seconds() * self.playback_speed
+            self.last_update = now
+
+            self.current_time += delta
+            if self.current_time >= self.get_duration():
+                if self.loop:
+                    self.current_time = 0.0
+                else:
+                    await self.stop()
+                    break
+
+            await self._update_animations()
+            await asyncio.sleep(1/60)  # 60 FPS target
+
+    async def _update_animations(self) -> None:
+        """Update all active animations."""
+        for animation in self.animations:
+            if animation.start_time <= self.current_time <= animation.end_time:
+                progress = (self.current_time - animation.start_time) / (animation.end_time - animation.start_time)
+                await self._apply_animation(animation, progress)
+
+    async def _apply_animation(self, animation: Animation, progress: float) -> None:
+        """Apply animation at current progress."""
+        # TODO: Implement actual animation logic
+        pass
 
     def cleanup(self) -> None:
         """Clean up resources."""

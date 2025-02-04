@@ -1,7 +1,7 @@
 import pytest
 from fastapi import status
-from app.services.monitoring import MonitoringService
-from app.models.metrics import PerformanceMetrics
+from backend.app.services.monitoring import MonitoringService
+from backend.app.models.metrics import PerformanceMetrics
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from app.schemas.metrics import MetricsCreate

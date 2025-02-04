@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 import json
 from pydantic import BaseModel, ValidationError
-from flask_socketio import SocketIO
 import asyncio
 import logging
 import time
@@ -24,15 +23,6 @@ from .models.user import User
 
 # Configure logging
 logger = logging.getLogger(__name__)
-
-# Initialize SocketIO with enhanced monitoring
-socketio = SocketIO(
-    cors_allowed_origins=settings.CORS_ORIGINS,
-    async_mode='asgi',
-    logger=settings.DEBUG,
-    engineio_logger=settings.DEBUG,
-    monitor_clients=True
-)
 
 # Rate limiting
 client_message_counts = defaultdict(lambda: {'count': 0, 'reset_time': datetime.now()})
@@ -118,7 +108,7 @@ class ConnectionManager:
         self.state_cache: Dict[str, Dict[str, Any]] = {}
         self.metrics_history: List[WebSocketMetrics] = []
         self.last_metrics_check = datetime.now()
-        self._metrics_lock = Lock()  # Use asyncio.Lock instead of threading.Lock
+        self._metrics_lock = Lock()
 
     async def connect(self, websocket: WebSocket, client_id: str):
         try:
@@ -153,569 +143,113 @@ class ConnectionManager:
                 details={"error": str(e)}
             )
 
-    async def monitor_connection(self, websocket: WebSocket, client_id: str):
-        """Monitor connection health and performance."""
-        while client_id in self.active_connections:
+    async def disconnect(self, client_id: str):
+        """Handle client disconnection."""
+        if client_id in self.active_connections:
+            websocket = self.active_connections[client_id]
             try:
-                # Check connection quality
-                quality = await self.assess_connection_quality(client_id)
-                client_states[client_id]['connection_quality'] = quality
-
-                # Collect and analyze metrics
-                metrics = await self.collect_metrics(client_id)
-                await self.analyze_metrics(metrics, client_id)
-
-                # Update metrics history
-                self.metrics_history.append(metrics)
-                if len(self.metrics_history) > 1000:  # Keep last 1000 metrics
-                    self.metrics_history.pop(0)
-
-                # Alert if necessary
-                await self.check_alerts(metrics, client_id)
-
-                await asyncio.sleep(5)  # Check every 5 seconds
+                await websocket.close()
             except Exception as e:
-                logger.error(f"Monitoring error for client {client_id}: {str(e)}")
+                logger.error(f"Error closing websocket for client {client_id}: {str(e)}")
 
-    async def assess_connection_quality(self, client_id: str) -> float:
-        """Assess connection quality based on multiple factors."""
-        state = client_states[client_id]
-
-        # Calculate factors
-        latency_factor = self.calculate_latency_factor(state['latency_history'])
-        error_factor = self.calculate_error_factor(state['error_history'])
-        reconnect_factor = max(0, 1 - (state['reconnect_attempts'] * 0.1))
-
-        # Weighted average
-        quality = (
-            latency_factor * 0.4 +
-            error_factor * 0.4 +
-            reconnect_factor * 0.2
-        )
-
-        return max(0, min(1, quality))
-
-    def calculate_latency_factor(self, latency_history: List[float]) -> float:
-        if not latency_history:
-            return 1.0
-        avg_latency = sum(latency_history) / len(latency_history)
-        return max(0, 1 - (avg_latency / PERFORMANCE_THRESHOLDS['LATENCY']['CRITICAL']))
-
-    def calculate_error_factor(self, error_history: List[Tuple[datetime, str]]) -> float:
-        recent_errors = [e for e in error_history if
-                        (datetime.now() - e[0]).total_seconds() < 300]  # Last 5 minutes
-        error_rate = len(recent_errors) / 5 if recent_errors else 0
-        return max(0, 1 - (error_rate / PERFORMANCE_THRESHOLDS['ERROR_RATE']['CRITICAL']))
-
-    async def collect_metrics(self, client_id: str) -> WebSocketMetrics:
-        """Collect comprehensive metrics for a connection with thread safety."""
-        with self._metrics_lock:  # Use with instead of async with for threading.Lock
-            state = client_states[client_id]
-            now = datetime.now()
-            time_window = (now - self.last_metrics_check).total_seconds() / 60
-
-            # Calculate rates with bounds checking
-            message_rate = (
-                sum(state['message_counts'].values()) / max(time_window, 0.1)
-                if state['message_counts']
-                else 0
-            )
-
-            error_rate = (
-                len([e for e in state['error_history']
-                     if (now - e[0]).total_seconds() < 60]) / max(time_window, 0.1)
-                if state['error_history']
-                else 0
-            )
-
-            # Calculate latency with bounds checking
-            recent_latency = state['latency_history'][-10:] if state['latency_history'] else []
-            avg_latency = (
-                sum(recent_latency) / len(recent_latency)
-                if recent_latency
-                else 0
-            )
-
-            metrics = WebSocketMetrics(
-                latency=avg_latency,
-                message_rate=message_rate,
-                error_rate=error_rate,
-                reconnect_rate=state['reconnect_attempts'] / max(time_window, 0.1),
-                connection_quality=state['connection_quality'],
-                bandwidth_usage=state['bandwidth_usage'],
-                timestamp=now
-            )
-
-            # Update metrics history with size limit
-            self.metrics_history.append(metrics)
-            if len(self.metrics_history) > 1000:
-                self.metrics_history = self.metrics_history[-1000:]
-
-            # Update last_metrics_check to current time
-            self.last_metrics_check = now
-
-            return metrics
-
-    async def analyze_metrics(self, metrics: WebSocketMetrics, client_id: str):
-        """Analyze metrics and take action if necessary."""
-        if metrics.connection_quality < 0.5:
-            logger.warning(f"Poor connection quality for client {client_id}: {metrics.connection_quality}")
-            await self.attempt_connection_optimization(client_id)
-
-        if metrics.error_rate > PERFORMANCE_THRESHOLDS['ERROR_RATE']['WARNING']:
-            logger.warning(f"High error rate for client {client_id}: {metrics.error_rate}/minute")
-
-        if metrics.latency > PERFORMANCE_THRESHOLDS['LATENCY']['WARNING']:
-            logger.warning(f"High latency for client {client_id}: {metrics.latency}ms")
-
-    async def attempt_connection_optimization(self, client_id: str):
-        """Attempt to optimize poor connections."""
-        state = client_states[client_id]
-
-        # Implement progressive enhancement/degradation
-        if state['connection_quality'] < 0.3:
-            # Severe quality issues - reduce message frequency
-            await self.send_optimization_command(client_id, 'reduce_frequency')
-        elif state['connection_quality'] < 0.6:
-            # Moderate quality issues - compress messages
-            await self.send_optimization_command(client_id, 'enable_compression')
-
-        # Update recovery metrics
-        state['last_recovery_attempt'] = datetime.now()
-
-    async def send_optimization_command(self, client_id: str, command: str):
-        """Send optimization commands to client."""
-        try:
-            websocket = self.active_connections.get(client_id)
-            if websocket:
-                await websocket.send_json({
-                    'event': 'connection_optimization',
-                    'data': {
-                        'command': command,
-                        'timestamp': datetime.now().isoformat()
-                    }
-                })
-        except Exception as e:
-            logger.error(f"Failed to send optimization command to client {client_id}: {str(e)}")
-
-    async def check_alerts(self, metrics: WebSocketMetrics, client_id: str):
-        """Check metrics against thresholds and send alerts if necessary."""
-        alerts = []
-
-        if metrics.latency > PERFORMANCE_THRESHOLDS['LATENCY']['CRITICAL']:
-            alerts.append(('CRITICAL', f"Critical latency: {metrics.latency}ms"))
-        elif metrics.latency > PERFORMANCE_THRESHOLDS['LATENCY']['WARNING']:
-            alerts.append(('WARNING', f"High latency: {metrics.latency}ms"))
-
-        if metrics.error_rate > PERFORMANCE_THRESHOLDS['ERROR_RATE']['CRITICAL']:
-            alerts.append(('CRITICAL', f"Critical error rate: {metrics.error_rate}/minute"))
-        elif metrics.error_rate > PERFORMANCE_THRESHOLDS['ERROR_RATE']['WARNING']:
-            alerts.append(('WARNING', f"High error rate: {metrics.error_rate}/minute"))
-
-        for level, message in alerts:
-            logger.warning(f"[{level}] Client {client_id}: {message}")
-            await self.notify_monitoring_service(client_id, level, message, metrics)
-
-    async def notify_monitoring_service(self, client_id: str, level: str, message: str, metrics: WebSocketMetrics):
-        """Notify monitoring service of issues."""
-        try:
-            # Send alert to monitoring service
-            alert_data = {
-                'client_id': client_id,
-                'level': level,
-                'message': message,
-                'metrics': metrics.dict(),
-                'timestamp': datetime.now().isoformat()
-            }
-            # Your monitoring service integration here
-            logger.info(f"Alert sent to monitoring service: {alert_data}")
-        except Exception as e:
-            logger.error(f"Failed to send alert to monitoring service: {str(e)}")
-
-    async def recover_state(self, websocket: WebSocket, client_id: str):
-        """Recover client state after reconnection."""
-        try:
-            last_state = client_states[client_id]['last_known_state']
-            if last_state:
-                await websocket.send_json({
-                    'event': 'state_recovery',
-                    'data': {
-                        'state': last_state,
-                        'sequence_number': client_states[client_id]['last_sequence_number'],
-                        'timestamp': datetime.now().isoformat()
-                    }
-                })
-
-                # Rejoin rooms
-                for room in client_states[client_id]['rooms']:
-                    await self.join_room(room, client_id)
-        except Exception as e:
-            logger.error(f"State recovery failed for client {client_id}: {str(e)}")
-            await self.handle_error(websocket, "State recovery failed", ErrorCode.WEBSOCKET_CONNECTION_ERROR)
-
-    async def join_room(self, room: str, client_id: str):
-        """Join a room."""
-        if client_id in self.active_connections:
-            websocket = self.active_connections[client_id]
-            self.rooms[room].append(websocket)
-            client_states[client_id]['rooms'].add(room)
-            logger.info(f"Client {client_id} joined room {room}")
-
-    async def leave_room(self, room: str, client_id: str):
-        """Leave a room."""
-        if client_id in self.active_connections:
-            websocket = self.active_connections[client_id]
-            if websocket in self.rooms[room]:
-                self.rooms[room].remove(websocket)
-                client_states[client_id]['rooms'].remove(room)
-                logger.info(f"Client {client_id} left room {room}")
-
-    async def broadcast(self, message: dict, room: Optional[str] = None, sender_id: Optional[str] = None):
-        """Broadcast message with sequence numbers."""
-        if sender_id and sender_id in client_states:
-            message['sequence_number'] = client_states[sender_id]['last_sequence_number'] + 1
-            client_states[sender_id]['last_sequence_number'] += 1
-
-        try:
-            if room:
-                for connection in self.rooms[room]:
-                    await connection.send_json(message)
-            else:
-                for connection in self.active_connections.values():
-                    await connection.send_json(message)
-        except Exception as e:
-            logger.error(f"Broadcast error: {str(e)}")
-            # Handle failed connections
-            await self.cleanup_failed_connections()
-
-    async def cleanup_failed_connections(self):
-        """Clean up failed connections."""
-        failed_clients = []
-        for client_id, websocket in self.active_connections.items():
-            try:
-                # Test connection with a ping
-                await websocket.send_json({"type": "ping"})
-            except Exception:
-                failed_clients.append(client_id)
-
-        for client_id in failed_clients:
-            self.disconnect(client_id)
-
-    async def cleanup_old_metrics(self):
-        """Clean up old metrics data periodically."""
-        with self._metrics_lock:  # Use with instead of async with for threading.Lock
-            now = datetime.now()
-            for client_id in client_states:
-                state = client_states[client_id]
-
-                # Clean up latency history (keep last hour)
-                state['latency_history'] = [
-                    lat for lat in state['latency_history'][-3600:]
-                ]
-
-                # Clean up error history (keep last hour)
-                state['error_history'] = [
-                    err for err in state['error_history']
-                    if (now - err[0]).total_seconds() < 3600
-                ]
-
-                # Clean up message counts (reset if too old)
-                if (now - state.get('last_message_count_reset', now)).total_seconds() > 3600:
-                    state['message_counts'] = defaultdict(int)
-                    state['last_message_count_reset'] = now
-
-    def disconnect(self, client_id: str):
-        """Handle client disconnection with state preservation and cleanup."""
-        if client_id in self.active_connections:
-            # Cache state before disconnection
-            self.state_cache[client_id] = client_states[client_id]['last_known_state']
-
-            # Clean up rooms
-            for room in list(client_states[client_id]['rooms']):
-                if self.active_connections[client_id] in self.rooms[room]:
-                    self.rooms[room].remove(self.active_connections[client_id])
-
-            # Update connection metrics
+            del self.active_connections[client_id]
+            client_states[client_id]['connected'] = False
             connection_metrics['active_connections'] -= 1
 
-            # Clean up connection
-            del self.active_connections[client_id]
+            # Update rooms
+            for room in client_states[client_id]['rooms']:
+                if client_id in self.rooms[room]:
+                    self.rooms[room].remove(client_id)
 
-        client_states[client_id]['connected'] = False
-        client_states[client_id]['reconnect_attempts'] += 1
+            # Log disconnection
+            logger.info(f"Client {client_id} disconnected")
 
-        # Keep room information for potential reconnection
-        if client_id in client_states:
-            client_states[client_id]['rooms'] = set(client_states[client_id]['rooms'])
+    async def broadcast(self, message: dict, room: Optional[str] = None, sender_id: Optional[str] = None):
+        """Broadcast message to all clients in a room or all connected clients."""
+        disconnected_clients = []
+        target_clients = (
+            self.rooms[room] if room
+            else self.active_connections.keys()
+        )
 
-        # Clean up old cache entries
-        self._cleanup_state_cache()
+        for client_id in target_clients:
+            if client_id != sender_id:  # Don't send back to sender
+                try:
+                    websocket = self.active_connections.get(client_id)
+                    if websocket:
+                        await websocket.send_json(message)
+                        client_states[client_id]['message_counts']['received'] += 1
+                except WebSocketDisconnect:
+                    disconnected_clients.append(client_id)
+                except Exception as e:
+                    logger.error(f"Error broadcasting to client {client_id}: {str(e)}")
+                    disconnected_clients.append(client_id)
 
-    def _cleanup_state_cache(self):
-        """Clean up old state cache entries."""
-        now = datetime.now()
-        expired_clients = [
-            client_id for client_id, state in self.state_cache.items()
-            if client_id not in self.active_connections and
-            (now - client_states[client_id].get('last_heartbeat', now)).total_seconds() > 3600
-        ]
-        for client_id in expired_clients:
-            del self.state_cache[client_id]
+        # Cleanup disconnected clients
+        for client_id in disconnected_clients:
+            await self.disconnect(client_id)
 
-    async def handle_error(self, websocket: WebSocket, message: str, error_code: str):
-        """Standardized error handling."""
-        try:
-            await websocket.send_json({
-                'event': 'error',
-                'data': {
-                    'code': error_code,
-                    'message': message,
-                    'timestamp': datetime.now().isoformat()
-                }
-            })
-        except Exception as e:
-            logger.error(f"Error sending error message: {str(e)}")
-
+# Initialize the connection manager
 manager = ConnectionManager()
 
-async def get_token(websocket: WebSocket, client_id: str) -> Optional[str]:
-    """Extract and validate token from WebSocket query parameters."""
-    try:
-        token = websocket.query_params.get('token')
-        if token:
-            payload = verify_jwt_token(token)
-            user_id = payload.get('sub')
-            if user_id:
-                client_states[client_id]['user_id'] = user_id
-                return token
-    except Exception as e:
-        logger.error(f"Token validation failed: {str(e)}")
-        return None
-    return None
-
 async def handle_websocket(websocket: WebSocket):
-    """Main WebSocket handler with improved error handling and recovery."""
-    token = await get_token(websocket, f"client_{id(websocket)}")
-    if not token:
-        await websocket.close(code=4001, reason="Authentication required")
-        return
-
-    client_id = f"client_{id(websocket)}"
+    """Main WebSocket handler."""
+    client_id = None
     try:
-        await manager.connect(websocket, client_id)
-        await websocket.send_json({
-            'event': 'connected',
-            'data': {
-                'message': 'Connected successfully',
-                'client_id': client_id,
-                'timestamp': datetime.now().isoformat()
-            }
-        })
-
-        while True:
-            try:
-                data = await websocket.receive_json()
-                message = WebSocketMessage(**data)
-
-                # Rate limiting check
-                now = datetime.now()
-                client_data = client_message_counts[client_id]
-                if now - client_data['reset_time'] > timedelta(seconds=RATE_LIMIT_WINDOW):
-                    client_data['count'] = 0
-                    client_data['reset_time'] = now
-                if client_data['count'] >= RATE_LIMIT:
-                    await manager.handle_error(
-                        websocket,
-                        "Rate limit exceeded",
-                        ErrorCode.WEBSOCKET_RATE_LIMIT
-                    )
-                    continue
-
-                client_data['count'] += 1
-
-                # Update last known state
-                if message.data.get('state'):
-                    client_states[client_id]['last_known_state'] = message.data['state']
-
-                # Handle different event types
-                if message.event == 'join':
-                    if message.room:
-                        await manager.join_room(message.room, client_id)
-                        await manager.broadcast({
-                            'event': 'joined',
-                            'data': {
-                                'room': message.room,
-                                'timestamp': datetime.now().isoformat()
-                            }
-                        }, room=message.room)
-
-                elif message.event == 'leave':
-                    if message.room:
-                        await manager.leave_room(message.room, client_id)
-                        await manager.broadcast({
-                            'event': 'left',
-                            'data': {
-                                'room': message.room,
-                                'timestamp': datetime.now().isoformat()
-                            }
-                        }, room=message.room)
-
-                elif message.event == 'heartbeat':
-                    client_states[client_id]['last_heartbeat'] = datetime.now()
-                    await websocket.send_json({
-                        'event': 'heartbeat_ack',
-                        'data': {
-                            'timestamp': datetime.now().isoformat()
-                        }
-                    })
-
-                elif message.event in ['scene_update', 'parameter_update', 'timeline_update']:
-                    if message.room:
-                        await manager.broadcast({
-                            'event': f"{message.event}d",
-                            'data': {
-                                **message.data,
-                                'timestamp': datetime.now().isoformat()
-                            }
-                        }, room=message.room)
-
-            except ValidationError as e:
-                await manager.handle_error(
-                    websocket,
-                    str(e),
-                    ErrorCode.VALIDATION_ERROR
-                )
-            except json.JSONDecodeError:
-                await manager.handle_error(
-                    websocket,
-                    "Invalid JSON data",
-                    ErrorCode.WEBSOCKET_CONNECTION_ERROR
-                )
-
-    except WebSocketDisconnect:
-        manager.disconnect(client_id)
-        logger.info(f"Client {client_id} disconnected")
-    except Exception as e:
-        logger.error(f"WebSocket error for client {client_id}: {str(e)}")
-        await manager.handle_error(
-            websocket,
-            str(e),
-            ErrorCode.WEBSOCKET_CONNECTION_ERROR
-        )
-        manager.disconnect(client_id)
-
-@socketio.on('connect')
-async def handle_connect(websocket: WebSocket, auth: Optional[Dict[str, str]] = None):
-    """Handle client connection."""
-    if not auth or 'token' not in auth:
-        await websocket.close(code=4001, reason="Authentication required")
-        return
-
-    try:
-        # Verify token
-        payload = verify_jwt_token(auth['token'])
-        user_id = payload.get('sub')
-
-        if not user_id:
-            await websocket.close(code=4001, reason="Invalid token")
+        # Accept the connection
+        token = await get_token(websocket)
+        if not token:
+            await websocket.close(code=4001)
             return
 
-        # Store connection
-        connections[user_id] = websocket
-        logger.info(f"Client connected: {user_id}")
+        # Verify token and get user
+        user = await verify_jwt_token(token)
+        if not user:
+            await websocket.close(code=4002)
+            return
 
-        await websocket.send_json({
-            'event': 'connected',
-            'data': {
-                'message': 'Connected successfully',
-                'user_id': user_id,
-                'timestamp': datetime.now().isoformat()
-            }
-        })
+        client_id = str(user.id)
+        await manager.connect(websocket, client_id)
+
+        try:
+            while True:
+                data = await websocket.receive_json()
+                try:
+                    message = WebSocketMessage(**data)
+                    # Process message based on event type
+                    if message.event == "join_room":
+                        await manager.join_room(message.room, client_id)
+                    elif message.event == "leave_room":
+                        await manager.leave_room(message.room, client_id)
+                    elif message.event == "broadcast":
+                        await manager.broadcast(message.data, message.room, client_id)
+                    # Add more event handlers as needed
+
+                except ValidationError as e:
+                    await handle_validation_error(websocket, e)
+
+        except WebSocketDisconnect:
+            await manager.disconnect(client_id)
+
     except Exception as e:
-        logger.error(f"Connection error: {str(e)}")
-        await websocket.close(code=4001, reason="Connection error")
+        logger.error(f"WebSocket error: {str(e)}")
+        if client_id:
+            await manager.disconnect(client_id)
 
-@socketio.on('disconnect')
-async def handle_disconnect(websocket: WebSocket):
-    """Handle client disconnection."""
-    user_id = None
-
-    # Find and remove the connection
-    for uid, conn_websocket in connections.items():
-        if conn_websocket == websocket:
-            user_id = uid
-            del connections[uid]
-            break
-
-    if user_id:
-        logger.info(f"Client disconnected: {user_id}")
-
-@socketio.on('message')
-async def handle_message(websocket: WebSocket, data: Dict[str, Any]):
-    """Handle incoming messages."""
+async def get_token(websocket: WebSocket) -> Optional[str]:
+    """Extract token from WebSocket connection."""
     try:
-        # Process message
-        response = await process_message(data)
+        # Try to get token from query parameters
+        token = websocket.query_params.get('token')
+        if token:
+            return token
 
-        # Broadcast response if needed
-        if response.get('broadcast'):
-            await socketio.emit('message', response['data'], room=response.get('room'))
-        else:
-            await websocket.send_json(response['data'])
+        # Try to get token from headers
+        auth_header = websocket.headers.get('authorization')
+        if auth_header and auth_header.startswith('Bearer '):
+            return auth_header.split(' ')[1]
+
     except Exception as e:
-        logger.error(f"Message handling error: {str(e)}")
-        await websocket.send_json({'event': 'error', 'data': {'message': str(e)}})
+        logger.error(f"Error extracting token: {str(e)}")
 
-async def process_message(data: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Process incoming message and return response.
-
-    Args:
-        data: Message data
-
-    Returns:
-        Dict containing response data and broadcast settings
-    """
-    message_type = data.get('type')
-
-    if message_type == 'scene_update':
-        # Handle scene updates
-        return {
-            'data': {
-                'type': 'scene_update_ack',
-                'timestamp': datetime.utcnow().isoformat(),
-                'status': 'success'
-            },
-            'broadcast': True,
-            'room': data.get('scene_id')
-        }
-    elif message_type == 'parameter_update':
-        # Handle parameter updates
-        return {
-            'data': {
-                'type': 'parameter_update_ack',
-                'timestamp': datetime.utcnow().isoformat(),
-                'status': 'success'
-            },
-            'broadcast': True,
-            'room': data.get('scene_id')
-        }
-
-    # Default response
-    return {
-        'data': {
-            'type': 'message_ack',
-            'timestamp': datetime.utcnow().isoformat(),
-            'status': 'success'
-        },
-        'broadcast': False
-    }
-
-def get_connection(user_id: str) -> Optional[str]:
-    """Get connection SID for user."""
-    return connections.get(user_id)
-
-def broadcast_to_scene(scene_id: str, data: Dict[str, Any]):
-    """Broadcast message to all clients in a scene room."""
-    socketio.emit('message', data, room=scene_id)
+    return None

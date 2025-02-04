@@ -1,3 +1,7 @@
+"""
+CRUD operations for Scene model.
+"""
+
 from typing import List, Optional, Dict, Any, Union
 from uuid import UUID
 from sqlalchemy.orm import Session

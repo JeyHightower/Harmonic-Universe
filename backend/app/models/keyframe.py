@@ -4,13 +4,12 @@ Keyframe model.
 
 from typing import Dict
 from uuid import UUID
-from sqlalchemy import String, Float, ForeignKey, Enum
+from sqlalchemy import String, Float, ForeignKey, Enum, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 import enum
 
-from app.db.base_model import Base
-from app.db.custom_types import GUID, JSONType
+from app.db.base_model import Base, GUID
 
 # Handle circular imports
 from typing import TYPE_CHECKING
@@ -32,8 +31,8 @@ class Keyframe(Base):
 
     id: Mapped[UUID] = mapped_column(GUID(), primary_key=True)
     timestamp: Mapped[float] = mapped_column(nullable=False)
-    data: Mapped[dict] = mapped_column(
-        JSONType(),
+    data: Mapped[Dict] = mapped_column(
+        JSON,
         server_default='{}',
         nullable=False
     )

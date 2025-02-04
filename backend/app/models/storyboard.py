@@ -1,13 +1,12 @@
 """Storyboard model."""
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, TYPE_CHECKING
 from uuid import UUID
 from sqlalchemy import String, Integer, ForeignKey, JSON, Text, Table, Column
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 
-from app.db.base_model import Base
-from app.db.custom_types import GUID
+from app.db.base_model import Base, GUID
 
 # Handle circular imports
 from typing import TYPE_CHECKING
@@ -22,7 +21,8 @@ storyboard_scenes = Table(
     "storyboard_scenes",
     Base.metadata,
     Column("storyboard_id", GUID(), ForeignKey("storyboards.id", ondelete="CASCADE"), primary_key=True),
-    Column("scene_id", GUID(), ForeignKey("scenes.id", ondelete="CASCADE"), primary_key=True)
+    Column("scene_id", GUID(), ForeignKey("scenes.id", ondelete="CASCADE"), primary_key=True),
+    extend_existing=True
 )
 
 class Storyboard(Base):
@@ -33,7 +33,7 @@ class Storyboard(Base):
     id: Mapped[UUID] = mapped_column(GUID(), primary_key=True)
     title: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    timeline_data: Mapped[dict] = mapped_column(
+    timeline_data: Mapped[Dict] = mapped_column(
         JSON,
         server_default='{}',
         nullable=False
@@ -43,17 +43,17 @@ class Storyboard(Base):
         server_default='[]',
         nullable=False
     )  # Ordered list of scene IDs
-    transitions: Mapped[dict] = mapped_column(
+    transitions: Mapped[Dict] = mapped_column(
         JSON,
         server_default='{}',
         nullable=False
     )  # Transition effects between scenes
-    narrative: Mapped[dict] = mapped_column(
+    narrative: Mapped[Dict] = mapped_column(
         JSON,
         server_default='{}',
         nullable=False
     )  # Narrative elements and annotations
-    storyboard_metadata: Mapped[dict] = mapped_column(
+    storyboard_metadata: Mapped[Dict] = mapped_column(
         JSON,
         server_default='{}',
         nullable=False
@@ -87,7 +87,7 @@ class Storyboard(Base):
         "Scene",
         secondary=storyboard_scenes,
         back_populates="storyboards",
-        cascade="all, delete-orphan"
+        cascade="all"
     )
 
     def __repr__(self) -> str:

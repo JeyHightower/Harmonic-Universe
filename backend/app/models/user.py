@@ -4,50 +4,64 @@ User model.
 
 from datetime import datetime, timedelta
 from typing import Optional, List, TYPE_CHECKING
+from uuid import UUID, uuid4
 from sqlalchemy import String, Boolean, DateTime, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from werkzeug.security import generate_password_hash, check_password_hash
+from passlib.context import CryptContext
 import jwt
 import uuid
 import secrets
 
-from app.core.config import settings
 from app.db.base_model import Base, GUID
+from app.core.config import settings
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
-    from app.models.audio_file import AudioFile
     from app.models.universe import Universe
     from app.models.scene import Scene
     from app.models.storyboard import Storyboard
     from app.models.ai_generation import AIGeneration
+    from app.models.audio_file import AudioFile
+
+# Password hashing context
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class User(Base):
     """User model."""
     __tablename__ = "users"
     __table_args__ = {'extend_existing': True}
 
-    # Override id from Base to use GUID type
-    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    # Primary fields
+    id: Mapped[UUID] = mapped_column(GUID(), primary_key=True, default=uuid4)
+    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean(), default=True, nullable=False)
+    full_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    hashed_password: Mapped[str] = mapped_column(Text, nullable=False)
+    is_superuser: Mapped[bool] = mapped_column(Boolean(), default=False, nullable=False)
+    email_verified: Mapped[bool] = mapped_column(Boolean(), default=False, nullable=False)
 
     # User-specific fields
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
-    username: Mapped[Optional[str]] = mapped_column(String(50), unique=True, index=True, nullable=True)
-    hashed_password: Mapped[str] = mapped_column(Text, nullable=False)
-    full_name: Mapped[str] = mapped_column(String(100), index=True)
-    is_active: Mapped[bool] = mapped_column(Boolean(), default=True)
-    is_superuser: Mapped[bool] = mapped_column(Boolean(), default=False)
     last_login: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    email_verified: Mapped[bool] = mapped_column(Boolean(), default=False)
     verification_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     reset_password_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     reset_password_expires: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     display_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     bio: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    active_scene_id: Mapped[Optional[UUID]] = mapped_column(GUID(), nullable=True)
+
+    # Relationships
+    scenes: Mapped[List["Scene"]] = relationship("Scene", back_populates="creator", lazy="selectin")
+    universes: Mapped[List["Universe"]] = relationship("Universe", back_populates="creator", lazy="selectin")
+    storyboards: Mapped[List["Storyboard"]] = relationship("Storyboard", back_populates="creator", lazy="selectin")
+    ai_generations: Mapped[List["AIGeneration"]] = relationship("AIGeneration", back_populates="user", lazy="selectin")
+    audio_files: Mapped[List["AudioFile"]] = relationship("AudioFile", back_populates="creator", lazy="selectin")
 
     def __init__(self, **kwargs):
         """Initialize a new User instance."""
         super().__init__(**kwargs)
+        if 'password' in kwargs:
+            self.password = kwargs['password']
 
     @property
     def password(self):
@@ -57,11 +71,11 @@ class User(Base):
     @password.setter
     def password(self, password):
         """Hash password on setting."""
-        self.hashed_password = generate_password_hash(password)
+        self.hashed_password = pwd_context.hash(password)
 
     def verify_password(self, password: str) -> bool:
         """Check if password matches."""
-        return check_password_hash(self.hashed_password, password)
+        return pwd_context.verify(password, self.hashed_password)
 
     def generate_auth_token(self, expires_delta: Optional[timedelta] = None) -> str:
         """Generate auth token."""
@@ -135,12 +149,12 @@ class User(Base):
 
     def __repr__(self) -> str:
         """Return string representation."""
-        return f'<User {self.email}>'
+        return f"<User {self.username}>"
 
 class UserResponseModel(BaseModel):
-    id: uuid.UUID
+    id: UUID
     email: str
-    username: Optional[str]
+    username: str
     full_name: str
     is_active: bool
     is_superuser: bool

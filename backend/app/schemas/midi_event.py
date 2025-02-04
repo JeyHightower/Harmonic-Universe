@@ -1,9 +1,9 @@
 from typing import Optional, List
 from pydantic import BaseModel, UUID4
-from app.models.midi_event import MIDIEventType
+from app.models.midi_event import MidiEventType
 
 class MIDIEventBase(BaseModel):
-    event_type: MIDIEventType
+    event_type: MidiEventType
     timestamp: float
     channel: Optional[int] = None
     note: Optional[int] = None

@@ -42,11 +42,11 @@ class Settings(BaseSettings):
         raise ValueError(v)
 
     # Database Configuration
-    POSTGRES_SERVER: str = os.getenv("POSTGRES_SERVER", "localhost")
-    POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres")
-    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "postgres")
-    POSTGRES_DB: str = os.getenv("POSTGRES_DB", "harmonic_universe")
-    POSTGRES_PORT: int = int(os.getenv("POSTGRES_PORT", "5432"))
+    POSTGRES_SERVER: str = os.getenv("DB_HOST", "postgres")
+    POSTGRES_USER: str = os.getenv("DB_USER", "postgres")
+    POSTGRES_PASSWORD: str = os.getenv("DB_PASSWORD", "postgres")
+    POSTGRES_DB: str = os.getenv("DB_NAME", "harmonic_universe")
+    POSTGRES_PORT: int = int(os.getenv("DB_PORT", "5432"))
     SQLALCHEMY_DATABASE_URI: Optional[PostgresDsn] = None
     SQLALCHEMY_ECHO: bool = False
 
@@ -55,7 +55,7 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             return v
         values = info.data
-        db_url = PostgresDsn.build(
+        return PostgresDsn.build(
             scheme="postgresql",
             username=values.get("POSTGRES_USER"),
             password=values.get("POSTGRES_PASSWORD"),
@@ -63,7 +63,6 @@ class Settings(BaseSettings):
             port=values.get("POSTGRES_PORT"),
             path=values.get("POSTGRES_DB")
         )
-        return str(db_url)
 
     # Test Database Configuration
     TEST_POSTGRES_DB: str = "test_harmonic_universe"
@@ -127,9 +126,9 @@ class TestSettings(Settings):
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
     ALGORITHM: str = "HS256"  # JWT encoding algorithm
 
-    # Use in-memory SQLite for tests by default
-    SQLALCHEMY_DATABASE_URI: str = "sqlite:///:memory:"
-    DATABASE_URI: str = "sqlite:///:memory:"
+    # Use file-based SQLite for tests
+    SQLALCHEMY_DATABASE_URI: str = "sqlite:///./test.db"
+    DATABASE_URI: str = "sqlite:///./test.db"
 
     # Test-specific settings
     TEST_USER_EMAIL: str = "test@example.com"

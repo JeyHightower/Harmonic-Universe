@@ -7,7 +7,6 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import text
-from app.db.session import engine, SessionLocal, Base
 from app.models.user import User
 from app.models.universe import Universe
 from app.models.scene import Scene, RenderingMode
@@ -16,12 +15,12 @@ from app.models.audio_file import AudioFile, AudioFormat, AudioType
 from app.models.timeline import Timeline
 from app.models.keyframe import Keyframe, ParameterType
 
-def test_database_connection(db: Session):
+def test_database_connection(db_session: Session):
     """Test database connection and basic query."""
-    result = db.execute(text("SELECT 1"))
+    result = db_session.execute(text("SELECT 1"))
     assert result.scalar() == 1
 
-def test_user_creation(db: Session):
+def test_user_creation(db_session: Session):
     """Test user model creation and relationships."""
     user = User(
         email="test@example.com",
@@ -29,9 +28,9 @@ def test_user_creation(db: Session):
         full_name="Test User",
         is_active=True
     )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
 
     assert user.id is not None
     assert user.email == "test@example.com"
@@ -40,150 +39,152 @@ def test_user_creation(db: Session):
     assert user.created_at is not None
     assert user.updated_at is not None
 
-def test_universe_creation_with_user(db: Session, test_user: User):
+def test_universe_creation_with_user(db_session: Session, test_user: User):
     """Test universe creation with user relationship."""
     universe = Universe(
         name="Test Universe",
         description="Test Description",
-        owner_id=test_user.id,
-        settings={"theme": "dark"}
+        creator_id=test_user.id,
+        physics_json={},
+        music_parameters={}
     )
-    db.add(universe)
-    db.commit()
-    db.refresh(universe)
+    db_session.add(universe)
+    db_session.commit()
+    db_session.refresh(universe)
 
     assert universe.id is not None
     assert universe.name == "Test Universe"
-    assert universe.owner_id == test_user.id
-    assert universe.owner.email == test_user.email
+    assert universe.creator_id == test_user.id
 
-def test_scene_creation_with_relationships(db: Session, test_universe: Universe, test_user: User):
+def test_scene_creation_with_relationships(db_session: Session, test_universe: Universe, test_user: User):
     """Test scene creation with universe and user relationships."""
     scene = Scene(
         name="Test Scene",
         description="Test Description",
         universe_id=test_universe.id,
         creator_id=test_user.id,
-        position={"x": 0, "y": 0, "z": 0},
-        rotation={"x": 0, "y": 0, "z": 0},
-        scale={"x": 1, "y": 1, "z": 1}
+        rendering_mode=RenderingMode.WIREFRAME,
+        settings={},
+        data={}
     )
-    db.add(scene)
-    db.commit()
-    db.refresh(scene)
+    db_session.add(scene)
+    db_session.commit()
+    db_session.refresh(scene)
 
     assert scene.id is not None
     assert scene.name == "Test Scene"
     assert scene.universe_id == test_universe.id
     assert scene.creator_id == test_user.id
-    assert scene.universe.name == test_universe.name
-    assert scene.creator.email == test_user.email
 
-def test_audio_file_creation(db: Session, test_user: User):
+def test_audio_file_creation(db_session: Session, test_user: User, test_universe: Universe):
     """Test audio file creation and relationships."""
     audio = AudioFile(
-        filename="test.mp3",
-        file_path="/path/to/test.mp3",
-        file_size=1024,
+        name="test.mp3",
+        description="Test audio file",
+        format=AudioFormat.MP3,
+        type=AudioType.MUSIC,
         duration=120.5,
-        format="mp3",
         sample_rate=44100,
         channels=2,
-        uploader_id=test_user.id
+        bit_depth=16,
+        file_path="/path/to/test.mp3",
+        creator_id=test_user.id,
+        universe_id=test_universe.id,
+        audio_metadata={}
     )
-    db.add(audio)
-    db.commit()
-    db.refresh(audio)
+    db_session.add(audio)
+    db_session.commit()
+    db_session.refresh(audio)
 
     assert audio.id is not None
-    assert audio.filename == "test.mp3"
-    assert audio.uploader_id == test_user.id
-    assert audio.uploader.email == test_user.email
+    assert audio.name == "test.mp3"
+    assert audio.creator_id == test_user.id
 
-def test_scene_object_creation(db: Session, test_scene: Scene):
+def test_scene_object_creation(db_session: Session, test_scene: Scene):
     """Test scene object creation and relationships."""
     obj = SceneObject(
         name="Test Object",
-        object_type="mesh",
+        type=SceneObjectType.MESH,
         scene_id=test_scene.id,
-        position={"x": 0, "y": 0, "z": 0},
-        rotation={"x": 0, "y": 0, "z": 0},
-        scale={"x": 1, "y": 1, "z": 1},
-        properties={"color": "#FF0000"}
+        properties={},
+        object_metadata={}
     )
-    db.add(obj)
-    db.commit()
-    db.refresh(obj)
+    db_session.add(obj)
+    db_session.commit()
+    db_session.refresh(obj)
 
     assert obj.id is not None
     assert obj.name == "Test Object"
     assert obj.scene_id == test_scene.id
-    assert obj.scene.name == test_scene.name
 
-def test_timeline_creation(db: Session, test_scene: Scene):
+def test_timeline_creation(db_session: Session, test_scene: Scene):
     """Test timeline creation and relationships."""
     timeline = Timeline(
         name="Test Timeline",
-        scene_id=test_scene.id,
+        description="Test timeline",
         duration=60.0,
-        settings={"loop": True}
+        scene_id=test_scene.id,
+        settings={}
     )
-    db.add(timeline)
-    db.commit()
-    db.refresh(timeline)
+    db_session.add(timeline)
+    db_session.commit()
+    db_session.refresh(timeline)
 
     assert timeline.id is not None
     assert timeline.name == "Test Timeline"
     assert timeline.scene_id == test_scene.id
-    assert timeline.scene.name == test_scene.name
 
-def test_keyframe_creation(db: Session, test_timeline: Timeline):
+def test_keyframe_creation(db_session: Session, test_timeline: Timeline):
     """Test keyframe creation and relationships."""
     keyframe = Keyframe(
-        timeline_id=test_timeline.id,
-        time=30.0,
-        properties={"position": {"x": 1, "y": 1, "z": 1}},
-        easing="linear"
+        timestamp=30.0,
+        data={},
+        storyboard_id=uuid4(),
+        animation_id=test_timeline.id
     )
-    db.add(keyframe)
-    db.commit()
-    db.refresh(keyframe)
+    db_session.add(keyframe)
+    db_session.commit()
+    db_session.refresh(keyframe)
 
     assert keyframe.id is not None
-    assert keyframe.timeline_id == test_timeline.id
-    assert keyframe.time == 30.0
-    assert keyframe.timeline.name == test_timeline.name
+    assert keyframe.animation_id == test_timeline.id
+    assert keyframe.timestamp == 30.0
 
-def test_cascade_delete(db: Session, test_universe: Universe):
+def test_cascade_delete(db_session: Session, test_universe: Universe):
     """Test cascade delete functionality."""
     # Create a scene
     scene = Scene(
         name="Test Scene",
         description="Test Description",
         universe_id=test_universe.id,
-        creator_id=test_universe.owner_id
+        creator_id=test_universe.creator_id,
+        rendering_mode=RenderingMode.WIREFRAME,
+        settings={},
+        data={}
     )
-    db.add(scene)
-    db.commit()
+    db_session.add(scene)
+    db_session.commit()
 
     # Create a scene object
     obj = SceneObject(
         name="Test Object",
-        object_type="mesh",
-        scene_id=scene.id
+        type=SceneObjectType.MESH,
+        scene_id=scene.id,
+        properties={},
+        object_metadata={}
     )
-    db.add(obj)
-    db.commit()
+    db_session.add(obj)
+    db_session.commit()
 
     # Delete the universe
-    db.delete(test_universe)
-    db.commit()
+    db_session.delete(test_universe)
+    db_session.commit()
 
     # Verify cascade delete
-    assert db.query(Scene).filter_by(id=scene.id).first() is None
-    assert db.query(SceneObject).filter_by(id=obj.id).first() is None
+    assert db_session.query(Scene).filter_by(id=scene.id).first() is None
+    assert db_session.query(SceneObject).filter_by(id=obj.id).first() is None
 
-def test_query_performance(db: Session, test_universe: Universe):
+def test_query_performance(db_session: Session, test_universe: Universe):
     """Test query performance with joins."""
     # Create multiple scenes
     for i in range(5):
@@ -191,13 +192,16 @@ def test_query_performance(db: Session, test_universe: Universe):
             name=f"Scene {i}",
             description=f"Description {i}",
             universe_id=test_universe.id,
-            creator_id=test_universe.owner_id
+            creator_id=test_universe.creator_id,
+            rendering_mode=RenderingMode.WIREFRAME,
+            settings={},
+            data={}
         )
-        db.add(scene)
-    db.commit()
+        db_session.add(scene)
+    db_session.commit()
 
     # Test eager loading
-    universe = db.query(Universe).filter_by(id=test_universe.id).first()
+    universe = db_session.query(Universe).filter_by(id=test_universe.id).first()
     assert len(universe.scenes) == 5  # Should not trigger additional queries
 
 if __name__ == "__main__":

@@ -2,14 +2,13 @@
 Timeline and Animation models.
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, TYPE_CHECKING
 from uuid import UUID
-from sqlalchemy import String, Float, ForeignKey
+from sqlalchemy import String, Float, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 
-from app.db.base_model import Base
-from app.db.custom_types import GUID, JSONType
+from app.db.base_model import Base, GUID
 
 # Handle circular imports
 from typing import TYPE_CHECKING
@@ -29,8 +28,8 @@ class Timeline(Base):
     scene_id: Mapped[UUID] = mapped_column(GUID(), ForeignKey("scenes.id", ondelete="CASCADE"), nullable=False)
 
     # Timeline settings stored as JSON
-    settings: Mapped[dict] = mapped_column(
-        JSONType(),
+    settings: Mapped[Dict] = mapped_column(
+        JSON,
         server_default='{}',
         nullable=False
     )
@@ -40,7 +39,7 @@ class Timeline(Base):
     updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
-    scene: Mapped["Scene"] = relationship("Scene", back_populates="timeline")
+    scene: Mapped["Scene"] = relationship("Scene", back_populates="timelines")
     animations: Mapped[List["Animation"]] = relationship(
         "Animation",
         back_populates="timeline",
@@ -64,8 +63,8 @@ class Animation(Base):
     timeline_id: Mapped[UUID] = mapped_column(GUID(), ForeignKey("timelines.id", ondelete="CASCADE"), nullable=False)
 
     # Animation settings stored as JSON
-    settings: Mapped[dict] = mapped_column(
-        JSONType(),
+    settings: Mapped[Dict] = mapped_column(
+        JSON,
         server_default='{}',
         nullable=False
     )

@@ -2,10 +2,14 @@
 Scene schemas.
 """
 
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Any, TYPE_CHECKING
 from datetime import datetime
-from pydantic import BaseModel, UUID4
+from pydantic import UUID4, BaseModel, Field
 from app.schemas.base import SceneBase, UserBase, UniverseBase
+
+if TYPE_CHECKING:
+    from app.schemas.universe import Universe
+    from app.schemas.user import User
 
 class SceneCreate(SceneBase):
     """Scene creation schema."""

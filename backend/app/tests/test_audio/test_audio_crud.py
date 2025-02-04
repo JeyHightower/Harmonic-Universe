@@ -1,16 +1,20 @@
+"""
+Test audio CRUD operations.
+"""
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 import os
 from pathlib import Path
 
-from app import crud
-from app.core.config import settings
-from app.models.audio_file import AudioFormat, AudioType
-from app.schemas.audio_file import AudioFileCreateSchema
-from app.tests.utils.utils import random_lower_string
-from app.tests.utils.user import create_random_user
-from app.tests.utils.universe import create_random_universe
+from backend.app import crud
+from backend.app.core.config import settings
+from backend.app.models.audio_file import AudioFormat, AudioType
+from backend.app.schemas.audio_file import AudioFileCreateSchema
+from backend.app.tests.utils.utils import random_lower_string
+from backend.app.tests.utils.user import create_random_user
+from backend.app.tests.utils.universe import create_random_universe
 
 def test_create_audio_file(
     client: TestClient,

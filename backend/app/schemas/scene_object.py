@@ -2,11 +2,14 @@
 Scene object schemas.
 """
 
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Any, TYPE_CHECKING
 from datetime import datetime
-from pydantic import BaseModel, UUID4
-
+from pydantic import UUID4, BaseModel, Field
+from uuid import UUID
 from app.models.scene_object import SceneObjectType
+
+if TYPE_CHECKING:
+    from app.schemas.scene import Scene
 
 class SceneObjectBase(BaseModel):
     """Base scene object schema."""
@@ -34,3 +37,18 @@ class SceneObjectUpdate(BaseModel):
     name: Optional[str] = None
     properties: Optional[Dict] = None
     metadata: Optional[Dict] = None
+
+class SceneObjectResponse(SceneObject):
+    """Scene object response schema."""
+    scene: "Scene"
+
+    class Config:
+        from_attributes = True
+
+class SceneObjectWithParameters(SceneObjectResponse):
+    """Scene object response schema with detailed parameters."""
+    physics_parameters: Dict = {}
+    music_parameters: Dict = {}
+
+    class Config:
+        from_attributes = True

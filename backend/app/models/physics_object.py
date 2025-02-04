@@ -2,14 +2,13 @@
 Physics object model.
 """
 
-from typing import Dict, Optional
+from typing import Dict, Optional, TYPE_CHECKING
 from uuid import UUID
-from sqlalchemy import String, Float, ForeignKey
+from sqlalchemy import String, Float, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 
-from app.db.base_model import Base
-from app.db.custom_types import GUID, JSONType
+from app.db.base_model import Base, GUID
 
 # Handle circular imports
 from typing import TYPE_CHECKING
@@ -24,8 +23,8 @@ class PhysicsObject(Base):
     id: Mapped[UUID] = mapped_column(GUID(), primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    properties: Mapped[dict] = mapped_column(
-        JSONType(),
+    properties: Mapped[Dict] = mapped_column(
+        JSON,
         server_default='{}',
         nullable=False
     )

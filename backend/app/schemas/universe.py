@@ -2,21 +2,27 @@
 Universe schemas.
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any, TYPE_CHECKING
 from datetime import datetime
-from pydantic import UUID4
+from pydantic import UUID4, BaseModel, Field
 from app.schemas.base import UniverseBase, UserBase
 
+if TYPE_CHECKING:
+    from app.schemas.scene import Scene
+
 class UniverseCreate(UniverseBase):
-    """Universe creation schema."""
-    pass
+    """Create universe schema."""
+    name: str
+    description: Optional[str] = None
+    physics_json: Dict[str, Any] = {}
+    music_parameters: Dict[str, Any] = {}
 
 class UniverseUpdate(UniverseBase):
-    """Universe update schema."""
+    """Update universe schema."""
     name: Optional[str] = None
     description: Optional[str] = None
-    physics_parameters: Optional[Dict] = None
-    music_parameters: Optional[Dict] = None
+    physics_json: Optional[Dict[str, Any]] = None
+    music_parameters: Optional[Dict[str, Any]] = None
 
 class Universe(UniverseBase):
     """Universe schema."""
@@ -28,18 +34,17 @@ class Universe(UniverseBase):
     class Config:
         from_attributes = True
 
+# For internal use
+UniverseInDB = Universe
+
 class UniverseResponse(Universe):
     """Universe response schema."""
-    creator: UserBase
-    scenes: List['Scene'] = []
+    pass
+
+class UniverseWithParameters(UniverseResponse):
+    """Universe with parameters schema."""
+    physics_parameters: List[Dict[str, Any]] = []
+    music_parameters: List[Dict[str, Any]] = []
 
     class Config:
         from_attributes = True
-
-class UniverseWithParameters(UniverseResponse):
-    """Universe response schema with detailed parameters."""
-    physics_parameters: Dict
-    music_parameters: Dict
-
-# Avoid circular imports
-from app.schemas.scene import Scene

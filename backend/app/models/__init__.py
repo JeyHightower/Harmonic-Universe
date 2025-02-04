@@ -1,53 +1,46 @@
 """
-Models package initialization.
-Import all models here to avoid circular imports.
+Import all models here to ensure they are registered with SQLAlchemy.
 """
 
 from app.db.base_class import Base
-from app.db.session import db
-
-# Import models in dependency order
-from app.models.user import User  # No dependencies
-from app.models.ai_model import AIModel  # No dependencies
-from app.models.universe import Universe  # Depends on User
-from app.models.scene import Scene, RenderingMode  # Depends on Universe, User
-from app.models.physics_parameter import PhysicsParameter  # Depends on Universe
-from app.models.music_parameter import MusicParameter  # Depends on Universe
-from app.models.timeline import Timeline  # Depends on Scene
-from app.models.keyframe import Keyframe  # Depends on Timeline
-from app.models.visualization import Visualization  # Depends on Scene
-from app.models.export import Export  # Depends on Scene
-from app.models.ai_generation import AIGeneration  # Depends on Universe, AIModel
-from app.models.audio_file import (  # Depends on Universe, User, AIGeneration
-    AudioFile,
-    AudioFormat,
-    AudioType
-)
-from app.models.storyboard import Storyboard  # Depends on Universe, User
-from app.models.midi_event import MidiEvent  # Depends on AudioFile
-from app.models.physics_object import PhysicsObject
+from app.models.user import User
+from app.models.universe import Universe
+from app.models.scene import Scene, RenderingMode
+from app.models.audio_file import AudioFile
+from app.models.ai_model import AIModel
+from app.models.ai_generation import AIGeneration
+from app.models.storyboard import Storyboard
+from app.models.timeline import Timeline
+from app.models.music_parameter import MusicParameter
+from app.models.midi_event import MidiEvent
+from app.models.metrics import PerformanceMetrics
+from app.models.physics_parameter import PhysicsParameter
+from app.models.visualization import Visualization
+from app.models.keyframe import Keyframe
+from app.models.export import Export
 from app.models.physics_constraint import PhysicsConstraint
-from app.models.relationships import setup_relationships
+from app.models.physics_object import PhysicsObject
+from app.models.scene_object import SceneObject
 
-# Define exported models in dependency order
 __all__ = [
-    "User",
-    "AIModel",
-    "Universe",
-    "Scene",
-    "PhysicsParameter",
-    "MusicParameter",
-    "Timeline",
-    "Keyframe",
-    "Visualization",
-    "Export",
-    "AIGeneration",
-    "AudioFile",
-    "Storyboard",
-    "MidiEvent",
-    "PhysicsObject",
-    "PhysicsConstraint"
+    'Base',
+    'User',
+    'Universe',
+    'Scene',
+    'RenderingMode',
+    'AudioFile',
+    'AIModel',
+    'AIGeneration',
+    'Storyboard',
+    'Timeline',
+    'MusicParameter',
+    'MidiEvent',
+    'PerformanceMetrics',
+    'PhysicsParameter',
+    'Visualization',
+    'Keyframe',
+    'Export',
+    'PhysicsConstraint',
+    'PhysicsObject',
+    'SceneObject'
 ]
-
-# Set up relationships between models
-setup_relationships()

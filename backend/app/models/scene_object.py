@@ -4,13 +4,12 @@ Scene object model.
 
 from typing import Dict, Optional, TYPE_CHECKING
 from uuid import UUID
-from sqlalchemy import String, ForeignKey, Enum as SQLAlchemyEnum
+from sqlalchemy import String, ForeignKey, Enum as SQLAlchemyEnum, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 import enum
 
-from app.db.base_model import Base
-from app.db.custom_types import GUID, JSONType
+from app.db.base_model import Base, GUID
 
 if TYPE_CHECKING:
     from app.models.scene import Scene
@@ -35,15 +34,15 @@ class SceneObject(Base):
     type: Mapped[SceneObjectType] = mapped_column(SQLAlchemyEnum(SceneObjectType), nullable=False)
 
     # Object properties stored as JSON
-    properties: Mapped[dict] = mapped_column(
-        JSONType(),
+    properties: Mapped[Dict] = mapped_column(
+        JSON,
         server_default='{}',
         nullable=False
     )
 
     # Additional metadata stored as JSON
-    object_metadata: Mapped[dict] = mapped_column(
-        JSONType(),
+    object_metadata: Mapped[Dict] = mapped_column(
+        JSON,
         server_default='{}',
         nullable=False
     )

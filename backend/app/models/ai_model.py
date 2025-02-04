@@ -2,15 +2,14 @@
 AI model.
 """
 
-from typing import Optional
+from typing import Optional, Dict, List, TYPE_CHECKING
 from uuid import UUID
-from sqlalchemy import String, ForeignKey
+from sqlalchemy import String, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 import enum
 
-from app.db.base_model import Base
-from app.db.custom_types import GUID, JSONType
+from app.db.base_model import Base, GUID
 
 # Handle circular imports
 from typing import TYPE_CHECKING
@@ -36,15 +35,15 @@ class AIModel(Base):
     version: Mapped[str] = mapped_column(String, nullable=False)
 
     # Model configuration stored as JSON
-    config: Mapped[dict] = mapped_column(
-        JSONType(),
+    config: Mapped[Dict] = mapped_column(
+        JSON,
         server_default='{}',
         nullable=False
     )
 
     # Model metadata stored as JSON
-    model_metadata: Mapped[dict] = mapped_column(
-        JSONType(),
+    model_metadata: Mapped[Dict] = mapped_column(
+        JSON,
         server_default='{}',
         nullable=False
     )

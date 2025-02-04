@@ -7,7 +7,7 @@ from pathlib import Path
 # Add the parent directory to the Python path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from config import config
+from backend.app.core.config import settings
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -17,7 +17,7 @@ def test_database_connection():
     """Test database connection using configuration."""
     try:
         # Create an engine using the configuration
-        engine = create_engine(config.DATABASE_URL)
+        engine = create_engine(settings.DATABASE_URL)
 
         # Attempt to connect to the database
         with engine.connect() as connection:

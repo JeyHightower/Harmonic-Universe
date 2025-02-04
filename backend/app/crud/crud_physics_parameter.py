@@ -1,4 +1,8 @@
-from typing import List, Optional
+"""
+CRUD operations for PhysicsParameter model.
+"""
+
+from typing import Any, Dict, Optional, Union, List
 from uuid import UUID
 from sqlalchemy.orm import Session
 

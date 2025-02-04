@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import Column, Integer, Float, String, DateTime, Boolean
-from app.db.base_class import Base
+from app.db.base_model import Base
 from app.db.custom_types import GUID
 
 class PerformanceMetrics(Base):

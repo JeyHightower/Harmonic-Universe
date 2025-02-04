@@ -1,32 +1,37 @@
 """
-Base model class for SQLAlchemy models.
-This module should have no dependencies on other app modules to avoid circular imports.
+Base SQLAlchemy model.
 """
-
-from typing import Any
 from datetime import datetime
-import uuid
-from sqlalchemy.ext.declarative import declared_attr
+from typing import Any
+from sqlalchemy import MetaData, event
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import DateTime, MetaData, String
-from sqlalchemy.types import TypeDecorator
-from flask_sqlalchemy.model import DefaultMeta
+from sqlalchemy.types import TypeDecorator, CHAR
+from sqlalchemy.dialects.postgresql import UUID
+import uuid
 
-# Custom UUID type that works with both PostgreSQL and SQLite
+# Naming convention for constraints
+convention = {
+    "ix": "ix_%(column_0_label)s",
+    "uq": "uq_%(table_name)s_%(column_0_name)s",
+    "ck": "ck_%(table_name)s_%(constraint_name)s",
+    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+    "pk": "pk_%(table_name)s"
+}
+
+# Create metadata with naming convention
+metadata = MetaData(naming_convention=convention)
+
+# Custom UUID type that works with both SQLite and PostgreSQL
 class GUID(TypeDecorator):
-    """Platform-independent GUID type.
-    Uses PostgreSQL's UUID type, otherwise uses
-    CHAR(32), storing as stringified hex values.
-    """
-    impl = String(32)
+    """Platform-independent GUID type."""
+    impl = CHAR
     cache_ok = True
 
     def load_dialect_impl(self, dialect):
         if dialect.name == 'postgresql':
-            from sqlalchemy.dialects.postgresql import UUID
             return dialect.type_descriptor(UUID())
         else:
-            return dialect.type_descriptor(String(32))
+            return dialect.type_descriptor(CHAR(32))
 
     def process_bind_param(self, value, dialect):
         if value is None:
@@ -47,28 +52,24 @@ class GUID(TypeDecorator):
                 value = uuid.UUID(value)
             return value
 
-# Recommended naming convention used by Alembic
-NAMING_CONVENTION = {
-    "ix": "ix_%(column_0_label)s",
-    "uq": "uq_%(table_name)s_%(column_0_name)s",
-    "ck": "ck_%(table_name)s_%(constraint_name)s",
-    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
-    "pk": "pk_%(table_name)s"
-}
-
-metadata = MetaData(naming_convention=NAMING_CONVENTION)
-
 class Base(DeclarativeBase):
-    """Base class for all models."""
+    """Base model class."""
     metadata = metadata
-    __abstract__ = True
 
-    @declared_attr.directive
-    def __tablename__(cls) -> str:
-        """Generate __tablename__ automatically."""
-        return cls.__name__.lower()
+    # Common columns
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow
+    )
 
-    # Common columns that all models should have
-    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    def update(self, **kwargs: Any) -> None:
+        """Update model attributes."""
+        for attr, value in kwargs.items():
+            setattr(self, attr, value)
+
+    @classmethod
+    def __declare_last__(cls):
+        """Called after mappings are completed."""
+        # Add any post-mapping initialization here
+        pass

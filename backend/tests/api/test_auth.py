@@ -1,12 +1,15 @@
 import pytest
-from flask import url_for
-from app import create_app
+from fastapi.testclient import TestClient
+from app.main import app
 from app.core.config import settings
 from app.core.security import create_access_token, verify_password
 from app.models.user import User
 from app.schemas.user import UserCreate
 from datetime import timedelta
 from fastapi import status
+
+# Create test client
+client = TestClient(app)
 
 def test_signup(client):
     """Test user signup."""
@@ -99,10 +102,9 @@ def test_login_incorrect_password(client, test_user):
         "password": "wrongpassword"
     }
     response = client.post("/api/v1/auth/login", json=login_data)
-    data = response.get_json()
-
-    assert response.status_code == 401
-    assert "Incorrect" in data["detail"]
+    content = response.json()
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert "Incorrect" in content["detail"]
 
 def test_login_invalid_user(client):
     """Test login with non-existent user."""
@@ -111,10 +113,9 @@ def test_login_invalid_user(client):
         "password": "password"
     }
     response = client.post("/api/v1/auth/login", json=login_data)
-    data = response.get_json()
-
-    assert response.status_code == 401
-    assert "User not found" in data["detail"]
+    content = response.json()
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert "User not found" in content["detail"]
 
 def test_register_user(client, session):
     """Test user registration."""
@@ -126,12 +127,11 @@ def test_register_user(client, session):
         "bio": "A new user"
     }
     response = client.post("/api/v1/auth/register", json=user_data)
-    data = response.get_json()
-
-    assert response.status_code == 201
-    assert data["email"] == user_data["email"]
-    assert data["username"] == user_data["username"]
-    assert "id" in data
+    content = response.json()
+    assert response.status_code == status.HTTP_201_CREATED
+    assert content["email"] == user_data["email"]
+    assert content["username"] == user_data["username"]
+    assert "id" in content
 
     # Verify user in database
     db_user = session.query(User).filter(User.email == user_data["email"]).first()
@@ -148,19 +148,17 @@ def test_register_existing_user(client, test_user):
         "bio": "Another user"
     }
     response = client.post("/api/v1/auth/register", json=user_data)
-    data = response.get_json()
-
-    assert response.status_code == 400
-    assert "Email already registered" in data["detail"]
+    content = response.json()
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "Email already registered" in content["detail"]
 
 def test_get_current_user_invalid_token(client):
     """Test getting user details with invalid token."""
     headers = {"Authorization": "Bearer invalid_token"}
     response = client.get("/api/v1/auth/me", headers=headers)
-    data = response.get_json()
-
-    assert response.status_code == 401
-    assert "Could not validate credentials" in data["detail"]
+    content = response.json()
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert "Could not validate credentials" in content["detail"]
 
 def test_refresh_token(client, auth_headers):
     """Test token refresh."""
@@ -252,4 +250,4 @@ def test_token_expiration(client):
     response = client.get("/api/auth/me", headers=headers)
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     content = response.json()
-    assert "detail" in content
+    assert "Token has expired" in content["detail"]

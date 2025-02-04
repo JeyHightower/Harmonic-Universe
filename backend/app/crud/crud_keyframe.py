@@ -1,4 +1,8 @@
-from typing import List, Optional
+"""
+CRUD operations for Keyframe model.
+"""
+
+from typing import Any, Dict, Optional, Union, List
 from uuid import UUID
 from sqlalchemy.orm import Session
 
@@ -13,7 +17,7 @@ class CRUDKeyframe(CRUDBase[Keyframe, KeyframeCreate, KeyframeUpdate]):
         return (
             db.query(self.model)
             .filter(Keyframe.storyboard_id == storyboard_id)
-            .order_by(Keyframe.timestamp)
+            .order_by(Keyframe.time)
             .offset(skip)
             .limit(limit)
             .all()

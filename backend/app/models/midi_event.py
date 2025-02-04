@@ -2,15 +2,14 @@
 MIDI event model.
 """
 
-from typing import Optional
+from typing import Dict, Optional, TYPE_CHECKING
 from uuid import UUID
 from sqlalchemy import String, Integer, Float, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 import enum
 
-from app.db.base_model import Base
-from app.db.custom_types import GUID, JSONType
+from app.db.base_model import Base, GUID
 
 # Handle circular imports
 from typing import TYPE_CHECKING
@@ -43,8 +42,8 @@ class MidiEvent(Base):
     value: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     # Additional metadata stored as JSON
-    event_metadata: Mapped[dict] = mapped_column(
-        JSONType(),
+    event_metadata: Mapped[Dict] = mapped_column(
+        JSON,
         server_default='{}',
         nullable=False
     )

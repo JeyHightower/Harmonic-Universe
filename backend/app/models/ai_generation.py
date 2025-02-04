@@ -2,15 +2,14 @@
 AI generation model.
 """
 
-from typing import Optional
+from typing import Optional, Dict
 from uuid import UUID
-from sqlalchemy import String, ForeignKey, Boolean, Text
+from sqlalchemy import String, ForeignKey, Boolean, Text, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 import enum
 
-from app.db.base_model import Base
-from app.db.custom_types import GUID, JSONType
+from app.db.base_model import Base, GUID
 
 # Handle circular imports
 from typing import TYPE_CHECKING
@@ -41,22 +40,22 @@ class AIGeneration(Base):
     error_message: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     # Generation parameters stored as JSON
-    parameters: Mapped[dict] = mapped_column(
-        JSONType(),
+    parameters: Mapped[Dict] = mapped_column(
+        JSON,
         server_default='{}',
         nullable=False
     )
 
     # Generation results stored as JSON
-    results: Mapped[dict] = mapped_column(
-        JSONType(),
+    results: Mapped[Dict] = mapped_column(
+        JSON,
         server_default='{}',
         nullable=False
     )
 
     # Generation metadata stored as JSON
-    generation_metadata: Mapped[dict] = mapped_column(
-        JSONType(),
+    generation_metadata: Mapped[Dict] = mapped_column(
+        JSON,
         server_default='{}',
         nullable=False
     )

@@ -1,11 +1,10 @@
 from typing import Dict, Optional
 from uuid import UUID
-from sqlalchemy import String, Float, ForeignKey, JSON
+from sqlalchemy import Column, String, Float, ForeignKey, JSON
 from sqlalchemy.dialects.postgresql import JSONB
 from app.db.custom_types import GUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
-
 from app.db.base_model import Base
 
 # Handle circular imports

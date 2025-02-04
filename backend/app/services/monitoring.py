@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from sqlalchemy.orm import Session
-from app.models.metrics import PerformanceMetrics
+from backend.app.models.metrics import PerformanceMetrics
 from app.schemas.metrics import MetricsCreate, MetricsUpdate
 
 class MonitoringService:

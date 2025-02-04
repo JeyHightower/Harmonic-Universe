@@ -2,49 +2,57 @@
 SVG renderer module.
 """
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
+from pathlib import Path
+from PIL import Image
+
 from app.models.scene import RenderingMode
 from app.models.scene_object import SceneObjectType
+from app.core.config import settings
 
 class SVGRenderer:
     """SVG renderer class."""
 
-    def __init__(self, width: int = 1920, height: int = 1080):
-        """Initialize SVG renderer."""
-        self.width = width
-        self.height = height
+    def __init__(self, scene_data: Dict[str, Any]):
+        self.scene_data = scene_data
+        self.width = 1920
+        self.height = 1080
+        self.quality = "high"
+        self.format = "png"
+        self.mode = RenderingMode.STANDARD
         self.scene_objects: Dict[str, Dict] = {}
         self.background_color = "#000000"
-        self.view_box = {"x": 0, "y": 0, "width": width, "height": height}
-        self.defs: List[Dict] = []
+        self.scale = 1.0
+        self.offset = {"x": 0, "y": 0}
 
-    def set_size(self, width: int, height: int) -> None:
-        """Set renderer size."""
+    def set_resolution(self, width: int, height: int) -> None:
+        """Set rendering resolution."""
         self.width = width
         self.height = height
-        self.view_box["width"] = width
-        self.view_box["height"] = height
+
+    def set_quality(self, quality: str) -> None:
+        """Set rendering quality."""
+        self.quality = quality
+
+    def set_format(self, format: str) -> None:
+        """Set output format."""
+        self.format = format
+
+    def set_mode(self, mode: RenderingMode) -> None:
+        """Set rendering mode."""
+        self.mode = mode
 
     def set_background_color(self, color: str) -> None:
         """Set background color."""
         self.background_color = color
 
-    def set_view_box(self, x: float, y: float, width: float, height: float) -> None:
-        """Set SVG viewBox."""
-        self.view_box = {
-            "x": x,
-            "y": y,
-            "width": width,
-            "height": height
-        }
+    def set_scale(self, scale: float) -> None:
+        """Set scale factor."""
+        self.scale = scale
 
-    def add_definition(self, def_id: str, def_type: str, properties: Dict) -> None:
-        """Add SVG definition (gradient, pattern, etc.)."""
-        self.defs.append({
-            "id": def_id,
-            "type": def_type,
-            "properties": properties
-        })
+    def set_offset(self, x: float, y: float) -> None:
+        """Set offset."""
+        self.offset = {"x": x, "y": y}
 
     def add_object(self, object_id: str, object_type: SceneObjectType, properties: Dict) -> None:
         """Add object to scene."""
@@ -63,12 +71,22 @@ class SVGRenderer:
         if object_id in self.scene_objects:
             self.scene_objects[object_id]["properties"].update(properties)
 
-    def render(self) -> str:
-        """Render scene and return SVG string."""
+    def render_frame(self, frame: Optional[int] = None) -> Image.Image:
+        """Render a single frame using SVG."""
+        # TODO: Implement actual SVG rendering logic
+        image = Image.new('RGB', (self.width, self.height), color='black')
+        return image
+
+    def save_frame(self, image: Image.Image, output_path: Path) -> None:
+        """Save rendered frame to file."""
+        image.save(output_path, format=self.format, quality=95 if self.quality == "high" else 85)
+
+    def render(self) -> bytes:
+        """Render scene and return SVG data."""
         # This is a placeholder. In a real implementation, this would:
         # 1. Create SVG document
-        # 2. Add definitions
-        # 3. Set background
-        # 4. Draw objects
-        # 5. Return SVG string
-        return f'<svg width="{self.width}" height="{self.height}"></svg>'  # Placeholder
+        # 2. Set viewBox and dimensions
+        # 3. Add background
+        # 4. Add objects with properties
+        # 5. Convert to string/bytes
+        return b""  # Placeholder

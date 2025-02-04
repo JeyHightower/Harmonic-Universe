@@ -1,13 +1,17 @@
 import pytest
 from unittest.mock import Mock, patch
-from app import create_app
+from fastapi.testclient import TestClient
+from app.main import app
 from app.models.audio_file import AudioFile, AudioFormat, AudioType
 from app.core.config import settings
-from app.db import db
+from app.db.session import SessionLocal
 from typing import Dict
 from fastapi import status
 from pathlib import Path
 import os
+
+# Create test client
+client = TestClient(app)
 
 TEST_FIXTURES_DIR = Path("tests/fixtures")
 
@@ -26,7 +30,7 @@ def test_create_audio(client, session, test_universe, auth_headers):
     }
 
     response = client.post("/api/v1/audio-files/", json=audio_data, headers=auth_headers)
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
 
     data = response.json()
     assert data["name"] == audio_data["name"]
@@ -60,7 +64,7 @@ def test_audio(session, test_universe):
 def test_get_audio(client, test_audio, auth_headers):
     """Test retrieving a single audio record."""
     response = client.get(f"/api/v1/audio-files/{test_audio.id}", headers=auth_headers)
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
     assert str(data["id"]) == str(test_audio.id)
@@ -69,7 +73,7 @@ def test_get_audio(client, test_audio, auth_headers):
 def test_get_audio_not_found(client, auth_headers):
     """Test retrieving a non-existent audio record."""
     response = client.get("/api/v1/audio-files/999999", headers=auth_headers)
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 def test_list_audio(client, session, test_universe, test_audio, auth_headers):
     """Test listing all audio records."""
@@ -90,7 +94,7 @@ def test_list_audio(client, session, test_universe, test_audio, auth_headers):
     session.commit()
 
     response = client.get(f"/api/v1/audio-files/universe/{test_universe.id}", headers=auth_headers)
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
     assert len(data) == 2
@@ -105,7 +109,7 @@ def test_update_audio(client, test_audio, auth_headers):
     }
 
     response = client.patch(f"/api/v1/audio-files/{test_audio.id}", json=update_data, headers=auth_headers)
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
     assert data["name"] == update_data["name"]
@@ -115,17 +119,17 @@ def test_update_audio(client, test_audio, auth_headers):
 def test_delete_audio(client, test_audio, auth_headers):
     """Test deleting an audio record."""
     response = client.delete(f"/api/v1/audio-files/{test_audio.id}", headers=auth_headers)
-    assert response.status_code == 204
+    assert response.status_code == status.HTTP_204_NO_CONTENT
 
     # Verify deletion
     get_response = client.get(f"/api/v1/audio-files/{test_audio.id}", headers=auth_headers)
-    assert get_response.status_code == 404
+    assert get_response.status_code == status.HTTP_404_NOT_FOUND
 
 @patch("app.services.media_service.delete_file")
 def test_delete_audio_with_file(mock_delete_file, client, test_audio, auth_headers):
     """Test deleting an audio record and its associated file."""
     response = client.delete(f"/api/v1/audio-files/{test_audio.id}", headers=auth_headers)
-    assert response.status_code == 204
+    assert response.status_code == status.HTTP_204_NO_CONTENT
 
     # Verify file deletion was attempted
     mock_delete_file.assert_called_once_with(test_audio.file_path)
@@ -180,7 +184,7 @@ def test_get_nonexistent_audio(client, auth_headers):
     response = client.get("/api/audio/nonexistent", headers=auth_headers)
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
-def test_delete_audio(client, auth_headers):
+def test_delete_audio_file(client, auth_headers):
     """Test deleting an audio file."""
     # First upload a file
     test_file = TEST_FIXTURES_DIR / "test.mp3"
@@ -225,7 +229,7 @@ def test_process_audio(client, auth_headers):
 def test_search_audio(client, session, test_audio):
     """Test searching for audio records."""
     response = client.get("/api/v1/audio-files/search?q=Test")
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
     assert len(data) == 1
@@ -234,7 +238,7 @@ def test_search_audio(client, session, test_audio):
 def test_get_audio_metadata(client, test_audio):
     """Test retrieving audio metadata."""
     response = client.get(f"/api/v1/audio-files/{test_audio.id}/metadata")
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
     assert data["duration"] == test_audio.duration
@@ -248,15 +252,15 @@ def test_batch_delete_audio(client, session, test_universe, auth_headers):
     audio_ids = []
     for i in range(3):
         audio = AudioFile(
-            name=f"Batch Audio {i}",
-            description="Batch audio description",
-            duration=120,
+            name=f"Test Audio {i}",
+            description=f"Test audio description {i}",
+            duration=180,
             format=AudioFormat.MP3,
             type=AudioType.UPLOADED,
-            file_path=f"/test/path/batch{i}.mp3",
+            file_path=f"/test/path/audio_{i}.mp3",
             sample_rate=44100,
             channels=2,
-            file_size=(i + 1) * 1024 * 1024,  # Different sizes for each file
+            file_size=1024 * 1024,
             universe_id=test_universe.id
         )
         session.add(audio)
@@ -264,12 +268,12 @@ def test_batch_delete_audio(client, session, test_universe, auth_headers):
         audio_ids.append(str(audio.id))
 
     response = client.post("/api/v1/audio-files/batch-delete", json={"ids": audio_ids}, headers=auth_headers)
-    assert response.status_code == 204
+    assert response.status_code == status.HTTP_204_NO_CONTENT
 
     # Verify all records are deleted
     for audio_id in audio_ids:
         get_response = client.get(f"/api/v1/audio-files/{audio_id}", headers=auth_headers)
-        assert get_response.status_code == 404
+        assert get_response.status_code == status.HTTP_404_NOT_FOUND
 
 def test_update_audio_metadata(client, test_audio):
     """Test updating audio metadata."""
@@ -284,7 +288,7 @@ def test_update_audio_metadata(client, test_audio):
         f"/api/v1/audio-files/{test_audio.id}/metadata",
         json=metadata
     )
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     data = response.json()
     assert data["metadata"]["name"] == metadata["name"]
