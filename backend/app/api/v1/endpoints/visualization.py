@@ -1,225 +1,86 @@
-from typing import Any, List
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
-from sqlalchemy.orm import Session
-from pathlib import Path
+"""
+Visualization routes.
+"""
 
-from app import crud, models, schemas
-from app.api import deps
-from app.core.visualization.renderer import Renderer
-from app.core.visualization.timeline import TimelineManager
-from app.core.visualization.export import ExportManager
-from app.core.config import settings
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.models.scene import Scene
+from app.schemas.scene import RenderRequest, RenderResponse, ExportRequest, ExportResponse
+from pydantic import ValidationError
 
-router = APIRouter()
+visualization_bp = Blueprint('visualization', __name__, url_prefix='/visualization')
 
-@router.websocket("/scene/{scene_id}/stream")
-async def stream_scene(
-    websocket: WebSocket,
-    scene_id: str,
-    db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_user),
-):
-    """
-    Stream scene visualization data over WebSocket.
-    """
-    scene = crud.scene.get(db=db, id=scene_id)
-    if not scene:
-        raise HTTPException(status_code=404, detail="Scene not found")
-
-    universe = crud.universe.get(db=db, id=scene.universe_id)
-    if not crud.universe.is_owner_or_collaborator(db=db, universe_id=universe.id, user_id=current_user.id):
-        raise HTTPException(status_code=403, detail="Not enough permissions")
-
-    # Initialize renderer and timeline
-    renderer = Renderer(scene.dict())
-    timeline = TimelineManager(scene.timeline.dict() if scene.timeline else {})
-
+@visualization_bp.route('/scenes/<uuid:scene_id>/render', methods=['POST'])
+@jwt_required()
+def render_scene(scene_id):
+    """Render scene."""
     try:
-        # Add client to renderer
-        await renderer.add_client(websocket)
+        # Check if scene exists
+        scene = Scene.query.get(scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
 
-        # Start rendering loop
-        await renderer.start()
+        # Validate request data
+        try:
+            data = RenderRequest(**request.json)
+        except ValidationError as e:
+            return jsonify({'error': e.errors()}), 400
 
-        # Handle WebSocket messages
-        while True:
-            try:
-                message = await websocket.receive_json()
-                command = message.get("command")
+        # TODO: Implement scene rendering
+        # This is a placeholder response
+        response = {
+            'image_data': 'base64_encoded_image_data',
+            'metadata': {
+                'width': data.settings.width,
+                'height': data.settings.height,
+                'format': data.settings.format,
+                'frame': data.settings.get('frame', 0)
+            }
+        }
 
-                if command == "play":
-                    await timeline.start()
-                elif command == "pause":
-                    await timeline.pause()
-                elif command == "stop":
-                    await timeline.stop()
-                elif command == "seek":
-                    await timeline.seek(message.get("time", 0))
-                elif command == "update_camera":
-                    scene.camera_settings.update(message.get("camera", {}))
-                    db.commit()
-
-            except WebSocketDisconnect:
-                break
-
-    finally:
-        await renderer.stop()
-        await timeline.stop()
-        await renderer.remove_client(websocket)
-
-@router.post("/scene/{scene_id}/export", response_model=schemas.Export)
-async def create_export(
-    *,
-    db: Session = Depends(deps.get_db),
-    scene_id: str,
-    export_in: schemas.ExportCreate,
-    current_user: models.User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Create a new export job.
-    """
-    scene = crud.scene.get(db=db, id=scene_id)
-    if not scene:
-        raise HTTPException(status_code=404, detail="Scene not found")
-
-    universe = crud.universe.get(db=db, id=scene.universe_id)
-    if not crud.universe.is_owner_or_collaborator(db=db, universe_id=universe.id, user_id=current_user.id):
-        raise HTTPException(status_code=403, detail="Not enough permissions")
-
-    # Create export record
-    export = crud.export.create(db=db, obj_in=export_in)
-
-    # Initialize export manager
-    export_dir = Path(settings.EXPORT_DIR) / str(export.id)
-    manager = ExportManager(
-        scene_data=scene.dict(),
-        export_data=export_in.dict(),
-        output_dir=export_dir
-    )
-
-    # Start export process
-    try:
-        await manager.start_export()
-        export.status = "completed"
-        export.progress = 100.0
+        return jsonify(render_response_schema.dump(response)), 200
     except Exception as e:
-        export.status = "failed"
-        export.metadata = {"error": str(e)}
+        return jsonify({'error': str(e)}), 400
 
-    db.commit()
-    db.refresh(export)
+@visualization_bp.route('/scenes/<uuid:scene_id>/export', methods=['POST'])
+@jwt_required()
+def export_scene(scene_id):
+    """Export scene."""
+    try:
+        # Check if scene exists
+        scene = Scene.query.get(scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
 
-    return export
+        # Validate request data
+        try:
+            data = ExportRequest(**request.json)
+        except ValidationError as e:
+            return jsonify({'error': e.errors()}), 400
 
-@router.get("/scene/{scene_id}/export/{export_id}", response_model=schemas.Export)
-def read_export(
-    *,
-    db: Session = Depends(deps.get_db),
-    scene_id: str,
-    export_id: str,
-    current_user: models.User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Get export status.
-    """
-    export = crud.export.get(db=db, id=export_id)
-    if not export or export.scene_id != scene_id:
-        raise HTTPException(status_code=404, detail="Export not found")
+        # TODO: Implement scene export
+        # This is a placeholder response
+        response = ExportResponse(
+            export_id='generated_uuid',
+            status='pending'
+        )
 
-    scene = crud.scene.get(db=db, id=scene_id)
-    universe = crud.universe.get(db=db, id=scene.universe_id)
-    if not crud.universe.is_owner_or_collaborator(db=db, universe_id=universe.id, user_id=current_user.id):
-        raise HTTPException(status_code=403, detail="Not enough permissions")
+        return jsonify(response.dict()), 202
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
-    return export
+@visualization_bp.route('/export/<uuid:export_id>', methods=['GET'])
+@jwt_required()
+def get_export_status(export_id):
+    """Get export status."""
+    try:
+        # TODO: Implement export status check
+        # This is a placeholder response
+        response = {
+            'export_id': str(export_id),
+            'status': 'processing'
+        }
 
-@router.delete("/scene/{scene_id}/export/{export_id}")
-def delete_export(
-    *,
-    db: Session = Depends(deps.get_db),
-    scene_id: str,
-    export_id: str,
-    current_user: models.User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Delete export.
-    """
-    export = crud.export.get(db=db, id=export_id)
-    if not export or export.scene_id != scene_id:
-        raise HTTPException(status_code=404, detail="Export not found")
-
-    scene = crud.scene.get(db=db, id=scene_id)
-    universe = crud.universe.get(db=db, id=scene.universe_id)
-    if not crud.universe.is_owner_or_collaborator(db=db, universe_id=universe.id, user_id=current_user.id):
-        raise HTTPException(status_code=403, detail="Not enough permissions")
-
-    # Delete export files
-    export_dir = Path(settings.EXPORT_DIR) / str(export.id)
-    if export_dir.exists():
-        for file in export_dir.glob("**/*"):
-            if file.is_file():
-                file.unlink()
-        for dir in reversed(list(export_dir.glob("**/*"))):
-            if dir.is_dir():
-                dir.rmdir()
-        export_dir.rmdir()
-
-    crud.export.remove(db=db, id=export_id)
-    return {"status": "success"}
-
-@router.post("/scene/{scene_id}/parameter-visual", response_model=schemas.SceneObject)
-def create_parameter_visual(
-    *,
-    db: Session = Depends(deps.get_db),
-    scene_id: str,
-    visual_in: schemas.ParameterVisualCreate,
-    current_user: models.User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Create a new parameter visualization object.
-    """
-    scene = crud.scene.get(db=db, id=scene_id)
-    if not scene:
-        raise HTTPException(status_code=404, detail="Scene not found")
-
-    universe = crud.universe.get(db=db, id=scene.universe_id)
-    if not crud.universe.is_owner_or_collaborator(db=db, universe_id=universe.id, user_id=current_user.id):
-        raise HTTPException(status_code=403, detail="Not enough permissions")
-
-    # Create scene object for visualization
-    object_in = schemas.SceneObjectCreate(
-        scene_id=scene_id,
-        name=visual_in.name,
-        type=models.SceneObjectType.PARAMETER_VISUAL,
-        parameters=visual_in.dict()
-    )
-
-    return crud.scene_object.create(db=db, obj_in=object_in)
-
-@router.put("/scene/{scene_id}/parameter-visual/{visual_id}", response_model=schemas.SceneObject)
-def update_parameter_visual(
-    *,
-    db: Session = Depends(deps.get_db),
-    scene_id: str,
-    visual_id: str,
-    visual_in: schemas.ParameterVisualUpdate,
-    current_user: models.User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Update parameter visualization object.
-    """
-    scene = crud.scene.get(db=db, id=scene_id)
-    if not scene:
-        raise HTTPException(status_code=404, detail="Scene not found")
-
-    universe = crud.universe.get(db=db, id=scene.universe_id)
-    if not crud.universe.is_owner_or_collaborator(db=db, universe_id=universe.id, user_id=current_user.id):
-        raise HTTPException(status_code=403, detail="Not enough permissions")
-
-    visual = crud.scene_object.get(db=db, id=visual_id)
-    if not visual or visual.scene_id != scene_id:
-        raise HTTPException(status_code=404, detail="Visual not found")
-
-    # Update scene object
-    object_in = schemas.SceneObjectUpdate(parameters=visual_in.dict())
-    return crud.scene_object.update(db=db, db_obj=visual, obj_in=object_in)
+        return jsonify(export_response_schema.dump(response)), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400

@@ -1,36 +1,33 @@
 # Harmonic Universe
 
-A modern web application for collaborative music creation and visualization.
+A modern web application for music visualization and analysis.
 
-## Overview
+## Project Structure
 
-Harmonic Universe is a real-time collaborative platform that allows musicians and artists to create, share, and visualize music together. The application features a modern tech stack with React frontend and Flask backend, supporting real-time collaboration through WebSocket connections.
+```
+harmonic-universe/
+├── backend/                 # FastAPI backend application
+│   ├── app/                # Application source code
+│   ├── tests/              # Backend tests
+│   ├── data/               # Database and data files
+│   ├── uploads/            # User uploaded files
+│   └── docs/               # Backend documentation
+├── frontend/               # React frontend application
+│   ├── src/                # Source files
+│   ├── public/             # Static files
+│   └── tests/              # Frontend tests
+└── docs/                   # Project documentation
+```
 
-## Features
+## Prerequisites
 
-- Real-time collaborative music creation
-- Interactive music visualization
-- User authentication and project management
-- Live collaboration features
-- Modern, responsive UI
+- Docker and Docker Compose
+- Node.js 18+
+- Python 3.11+
+- PostgreSQL 14+
+- Redis 7+
 
-## Tech Stack
-
-### Frontend
-
-- React with TypeScript
-- Vite
-- TailwindCSS
-- Socket.IO Client
-
-### Backend
-
-- Flask
-- SQLAlchemy
-- PostgreSQL
-- Socket.IO
-
-## Quick Start
+## Development Setup
 
 1. Clone the repository:
 
@@ -39,59 +36,69 @@ Harmonic Universe is a real-time collaborative platform that allows musicians an
    cd harmonic-universe
    ```
 
-2. Start the backend:
+2. Start the development environment:
+
+   ```bash
+   docker-compose up
+   ```
+
+   This will start:
+
+   - Backend API (http://localhost:3005)
+   - Frontend dev server (http://localhost:3000)
+   - PostgreSQL database
+   - Redis cache
+   - Adminer (http://localhost:8080)
+
+3. For local development without Docker:
+
+   Backend:
 
    ```bash
    cd backend
    python -m venv venv
-   source venv/bin/activate  # Unix
-   pip install -r requirements.txt
-   flask run
+   source venv/bin/activate  # On Windows: .\venv\Scripts\activate
+   pip install -r requirements.txt -r requirements-test.txt
+   uvicorn app.main:app --reload --port 3001
    ```
 
-3. Start the frontend:
+   Frontend:
 
    ```bash
    cd frontend
-   yarn install
-   yarn dev
+   npm install
+   npm run dev
    ```
-
-4. Open http://localhost:5173 in your browser
-
-## Documentation
-
-For detailed documentation, please see the [docs](./docs) directory:
-
-- [Backend Documentation](./docs/backend/README.md)
-- [Frontend Documentation](./docs/frontend/README.md)
-- [Deployment Guide](./docs/deployment/README.md)
-- [Architecture Overview](./docs/architecture/README.md)
-
-## Development
-
-- Backend development server runs on `http://localhost:5000`
-- Frontend development server runs on `http://localhost:5173`
-- WebSocket server is integrated with the backend
 
 ## Testing
 
-- Backend: `cd backend && pytest`
-- Frontend: `cd frontend && yarn test`
-- E2E: `cd frontend && yarn cypress:open`
+Backend tests:
+
+```bash
+cd backend
+pytest
+```
+
+Frontend tests:
+
+```bash
+cd frontend
+npm test
+```
+
+## Documentation
+
+- Backend API documentation: http://localhost:3005/docs
+- Frontend documentation: See frontend/README.md
+- Project documentation: See docs/
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. Create a new branch for your feature
+2. Make your changes
+3. Run tests
+4. Submit a pull request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-For support and questions, please open an issue in the GitHub repository.
+This project is licensed under the MIT License - see the LICENSE file for details.

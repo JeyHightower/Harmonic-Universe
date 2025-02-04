@@ -1,72 +1,81 @@
 # Harmonic Universe Backend
 
-A modern Python backend built with FastAPI, SQLAlchemy, and WebSocket support.
-
 ## Project Structure
 
 ```
 backend/
-├── app/                    # Application package
-│   ├── api/               # API endpoints
-│   ├── core/              # Core functionality
-│   ├── models/            # SQLAlchemy models
-│   ├── schemas/           # Pydantic schemas
-│   ├── services/          # Business logic
-│   ├── utils/             # Utility functions
-│   ├── routes/            # Route handlers
-│   └── db/                # Database configuration
-├── tests/                 # Test suite
-│   ├── unit/             # Unit tests
-│   ├── integration/      # Integration tests
-│   └── e2e/              # End-to-end tests
-├── logs/                  # Application logs
-│   ├── app/              # General app logs
-│   ├── error/            # Error logs
-│   └── access/           # Access logs
-├── scripts/              # Utility scripts
-│   ├── db/              # Database scripts
-│   └── deployment/      # Deployment scripts
-├── migrations/           # Alembic migrations
-├── alembic/             # Alembic configuration
-├── config.py            # Configuration settings
-├── requirements.txt     # Project dependencies
-└── manage.py           # Management commands
+├── app/                      # Application package
+│   ├── api/                  # API endpoints and routes
+│   │   └── v1/              # API version 1
+│   │       ├── api.py       # API router setup
+│   │       └── endpoints/   # API endpoint modules
+│   ├── core/                # Core application modules
+│   │   ├── config/         # Configuration settings
+│   │   ├── db/            # Database core functionality
+│   │   └── errors/        # Error handling
+│   ├── models/             # Database models
+│   ├── schemas/            # Pydantic schemas
+│   ├── services/           # Business logic services
+│   ├── crud/               # Database CRUD operations
+│   ├── utils/              # Utility functions
+│   └── websocket/          # WebSocket handlers
+├── tests/                   # Test suite
+├── migrations/              # Database migrations
+└── scripts/                # Utility scripts
 ```
 
-## Getting Started
+## Key Components
+
+- `api/`: Contains all API endpoints organized by version
+- `core/`: Core application functionality and configuration
+- `models/`: SQLAlchemy database models
+- `schemas/`: Pydantic models for request/response validation
+- `services/`: Business logic implementation
+- `crud/`: Database operations
+- `utils/`: Helper functions and utilities
+- `websocket/`: Real-time communication handlers
+
+## Development Setup
 
 1. Create and activate virtual environment:
-
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
 2. Install dependencies:
-
 ```bash
 pip install -r requirements.txt
 ```
 
 3. Set up environment variables:
-
 ```bash
 cp .env.example .env
-   # Edit .env with your settings
+# Edit .env with your configuration
 ```
 
-4. Initialize database:
-
+4. Run database migrations:
 ```bash
-   python manage.py db upgrade
-   python manage.py seed  # Optional: seed initial data
+alembic upgrade head
 ```
 
-5. Run development server:
-
+5. Start development server:
 ```bash
-   python manage.py runserver
+uvicorn app.main:app --reload
 ```
+
+## Testing
+
+Run tests with:
+```bash
+pytest
+```
+
+## API Documentation
+
+Once the server is running, access the API documentation at:
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
 
 ## Available Commands
 
@@ -77,19 +86,6 @@ cp .env.example .env
 - `python manage.py shell` - Open Python shell with app context
 - `python manage.py seed` - Seed initial data
 - `python manage.py routes` - List all routes
-
-## API Documentation
-
-- Swagger UI: `http://localhost:5000/docs`
-- ReDoc: `http://localhost:5000/redoc`
-
-## Testing
-
-Run tests with coverage:
-
-```bash
-python -m pytest --cov=app tests/
-```
 
 ## Development Guidelines
 

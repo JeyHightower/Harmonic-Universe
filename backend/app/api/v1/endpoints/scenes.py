@@ -1,136 +1,131 @@
-"""
-Scene endpoints.
-"""
+from typing import List, Optional
 
-from typing import Any, List
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
-from app import crud, models, schemas
 from app.api import deps
+from app.crud import crud_scene
+from app.schemas.scene import Scene, SceneCreate, SceneUpdate
 
 router = APIRouter()
 
-@router.get("/", response_model=List[schemas.SceneResponse])
-def read_scenes(
+class ReorderRequest(BaseModel):
+    universe_id: str
+    scene_ids: List[str]
+
+@router.get("/", response_model=List[Scene], status_code=status.HTTP_200_OK)
+def get_scenes(
     db: Session = Depends(deps.get_db),
     skip: int = 0,
     limit: int = 100,
-    current_user: models.User = Depends(deps.get_current_active_user),
-) -> Any:
+    universe_id: Optional[str] = Query(None),
+    creator_id: Optional[str] = Query(None),
+    current_user = Depends(deps.get_current_user),
+):
     """
-    Retrieve scenes.
+    Retrieve scenes with optional filtering.
     """
-    scenes = crud.scene.get_by_creator(
-        db=db, creator_id=current_user.id, skip=skip, limit=limit
-    )
-    return scenes
+    if universe_id:
+        return crud_scene.get_by_universe(db, universe_id=universe_id)
+    if creator_id:
+        return crud_scene.get_by_creator(db, creator_id=creator_id)
+    return crud_scene.get_multi(db, skip=skip, limit=limit)
 
-@router.post("/", response_model=schemas.SceneResponse)
+@router.post("/", response_model=Scene, status_code=status.HTTP_201_CREATED)
 def create_scene(
     *,
     db: Session = Depends(deps.get_db),
-    scene_in: schemas.SceneCreate,
-    current_user: models.User = Depends(deps.get_current_active_user),
-) -> Any:
+    scene_in: SceneCreate,
+    current_user = Depends(deps.get_current_user),
+):
     """
     Create new scene.
     """
-    universe = crud.universe.get(db=db, id=scene_in.universe_id)
-    if not universe:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Universe not found",
-        )
-    if not crud.universe.is_owner_or_collaborator(
-        db=db, universe_id=universe.id, user_id=current_user.id
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions",
-        )
-    scene = crud.scene.create_with_creator(
+    scene = crud_scene.create_with_creator(
         db=db, obj_in=scene_in, creator_id=current_user.id
     )
     return scene
 
-@router.get("/{scene_id}", response_model=schemas.SceneResponse)
-def read_scene(
-    *,
-    db: Session = Depends(deps.get_db),
+@router.get("/{scene_id}", response_model=Scene, status_code=status.HTTP_200_OK)
+def get_scene(
     scene_id: str,
-    current_user: models.User = Depends(deps.get_current_active_user),
-) -> Any:
+    db: Session = Depends(deps.get_db),
+):
     """
     Get scene by ID.
     """
-    scene = crud.scene.get(db=db, id=scene_id)
+    scene = crud_scene.get(db, id=scene_id)
     if not scene:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Scene not found",
         )
-    universe = crud.universe.get(db=db, id=scene.universe_id)
-    if not crud.universe.is_owner_or_collaborator(
-        db=db, universe_id=universe.id, user_id=current_user.id
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions",
-        )
     return scene
 
-@router.put("/{scene_id}", response_model=schemas.SceneResponse)
+@router.put("/{scene_id}", response_model=Scene, status_code=status.HTTP_200_OK)
 def update_scene(
     *,
     db: Session = Depends(deps.get_db),
     scene_id: str,
-    scene_in: schemas.SceneUpdate,
-    current_user: models.User = Depends(deps.get_current_active_user),
-) -> Any:
+    scene_in: SceneUpdate,
+    current_user = Depends(deps.get_current_user),
+):
     """
     Update scene.
     """
-    scene = crud.scene.get(db=db, id=scene_id)
+    scene = crud_scene.get(db, id=scene_id)
     if not scene:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Scene not found",
         )
-    universe = crud.universe.get(db=db, id=scene.universe_id)
-    if not crud.universe.is_owner_or_collaborator(
-        db=db, universe_id=universe.id, user_id=current_user.id
-    ):
+    if scene.creator_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions",
         )
-    scene = crud.scene.update(db=db, db_obj=scene, obj_in=scene_in)
+    scene = crud_scene.update(db, db_obj=scene, obj_in=scene_in)
     return scene
 
-@router.delete("/{scene_id}", response_model=schemas.SceneResponse)
+@router.delete("/{scene_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_scene(
     *,
     db: Session = Depends(deps.get_db),
     scene_id: str,
-    current_user: models.User = Depends(deps.get_current_active_user),
-) -> Any:
+    current_user = Depends(deps.get_current_user),
+):
     """
     Delete scene.
     """
-    scene = crud.scene.get(db=db, id=scene_id)
+    scene = crud_scene.get(db, id=scene_id)
     if not scene:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Scene not found",
         )
-    universe = crud.universe.get(db=db, id=scene.universe_id)
-    if not crud.universe.is_owner_or_collaborator(
-        db=db, universe_id=universe.id, user_id=current_user.id
-    ):
+    if scene.creator_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions",
         )
-    scene = crud.scene.remove(db=db, id=scene_id)
-    return scene
+    crud_scene.remove(db, id=scene_id)
+    return {"status": "success"}
+
+@router.post("/reorder", response_model=List[Scene], status_code=status.HTTP_200_OK)
+def reorder_scenes(
+    *,
+    db: Session = Depends(deps.get_db),
+    reorder_data: ReorderRequest,
+    current_user = Depends(deps.get_current_user),
+):
+    """
+    Reorder scenes within a universe.
+    """
+    scenes = crud_scene.reorder(
+        db=db,
+        universe_id=reorder_data.universe_id,
+        scene_ids=reorder_data.scene_ids,
+        current_user_id=current_user.id,
+    )
+    return scenes

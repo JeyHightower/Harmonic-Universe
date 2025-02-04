@@ -1,44 +1,74 @@
+version: '3.8'
+
 services:
-  app:
+  backend:
     build:
-      context: .
-      target: backend-builder
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
-      - '3001:3001'
-      - '3002:3002'
+      - '3005:3001'
     volumes:
-      - .:/app
-      - /app/node_modules
+      - ./backend:/app
+      - ./backend/data:/app/data
+      - ./backend/uploads:/app/uploads
     environment:
-      - NODE_ENV=development
+      - PYTHON_ENV=development
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=harmonic_universe
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - REDIS_URL=redis://redis:6379
+      - API_HOST=0.0.0.0
+      - API_PORT=3001
     depends_on:
-      - postgres
-      - redis
-    command: npm run dev
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:3005
+    depends_on:
+      - backend
 
   postgres:
     image: postgres:14-alpine
     ports:
-      - '5432:5432'
+      - '5433:5432'
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=harmonic_universe
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
     ports:
-      - '6379:6379'
+      - '6380:6379'
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   adminer:
     image: adminer

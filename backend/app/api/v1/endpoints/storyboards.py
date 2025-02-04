@@ -1,152 +1,90 @@
 """
-Storyboard endpoints.
+Storyboard routes.
 """
 
-from typing import Any, List
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.models.scene import Scene
 
-from app import crud, models, schemas
-from app.api import deps
+storyboards_bp = Blueprint('storyboards', __name__, url_prefix='/storyboards')
 
-router = APIRouter()
+@storyboards_bp.route('/scenes/<uuid:scene_id>/storyboard', methods=['GET'])
+@jwt_required()
+def get_scene_storyboard(scene_id):
+    """Get scene storyboard."""
+    try:
+        scene = Scene.query.get(scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
 
-@router.get("/", response_model=List[schemas.StoryboardWithDetails])
-def read_storyboards(
-    db: Session = Depends(deps.get_db),
-    skip: int = 0,
-    limit: int = 100,
-    current_user: models.User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Retrieve storyboards.
-    """
-    scene = crud.scene.get(db=db, id=current_user.active_scene_id)
-    if not scene:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Scene not found",
-        )
-    universe = crud.universe.get(db=db, id=scene.universe_id)
-    if not crud.universe.is_owner_or_collaborator(
-        db=db, universe_id=universe.id, user_id=current_user.id
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions",
-        )
-    return crud.storyboard.get_by_scene(
-        db=db, scene_id=scene.id, skip=skip, limit=limit
-    )
+        # TODO: Implement storyboard retrieval
+        # This is a placeholder response
+        storyboard = {
+            'scene_id': str(scene_id),
+            'frames': [],
+            'metadata': {
+                'frame_count': 0,
+                'duration': 0.0,
+                'resolution': {
+                    'width': 1920,
+                    'height': 1080
+                }
+            }
+        }
 
-@router.post("/", response_model=schemas.StoryboardWithDetails)
-def create_storyboard(
-    *,
-    db: Session = Depends(deps.get_db),
-    storyboard_in: schemas.StoryboardCreate,
-    current_user: models.User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Create new storyboard.
-    """
-    scene = crud.scene.get(db=db, id=current_user.active_scene_id)
-    if not scene:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Scene not found",
-        )
-    universe = crud.universe.get(db=db, id=scene.universe_id)
-    if not crud.universe.is_owner_or_collaborator(
-        db=db, universe_id=universe.id, user_id=current_user.id
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions",
-        )
-    return crud.storyboard.create_with_scene(
-        db=db, obj_in=storyboard_in, scene_id=scene.id
-    )
+        return jsonify(storyboard), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
-@router.get("/{storyboard_id}", response_model=schemas.StoryboardWithDetails)
-def read_storyboard(
-    *,
-    db: Session = Depends(deps.get_db),
-    storyboard_id: str,
-    current_user: models.User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Get storyboard by ID.
-    """
-    storyboard = crud.storyboard.get(db=db, id=storyboard_id)
-    if not storyboard:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Storyboard not found",
-        )
-    scene = crud.scene.get(db=db, id=storyboard.scene_id)
-    universe = crud.universe.get(db=db, id=scene.universe_id)
-    if not crud.universe.is_owner_or_collaborator(
-        db=db, universe_id=universe.id, user_id=current_user.id
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions",
-        )
-    return storyboard
+@storyboards_bp.route('/scenes/<uuid:scene_id>/storyboard', methods=['POST'])
+@jwt_required()
+def generate_scene_storyboard(scene_id):
+    """Generate scene storyboard."""
+    try:
+        # Check if scene exists
+        scene = Scene.query.get(scene_id)
+        if not scene:
+            return jsonify({'error': 'Scene not found'}), 404
 
-@router.put("/{storyboard_id}", response_model=schemas.StoryboardWithDetails)
-def update_storyboard(
-    *,
-    db: Session = Depends(deps.get_db),
-    storyboard_id: str,
-    storyboard_in: schemas.StoryboardUpdate,
-    current_user: models.User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Update storyboard.
-    """
-    storyboard = crud.storyboard.get(db=db, id=storyboard_id)
-    if not storyboard:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Storyboard not found",
-        )
-    scene = crud.scene.get(db=db, id=storyboard.scene_id)
-    universe = crud.universe.get(db=db, id=scene.universe_id)
-    if not crud.universe.is_owner_or_collaborator(
-        db=db, universe_id=universe.id, user_id=current_user.id
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions",
-        )
-    return crud.storyboard.update(
-        db=db, db_obj=storyboard, obj_in=storyboard_in
-    )
+        # Check if current user is the creator
+        current_user_id = get_jwt_identity()
+        if str(scene.creator_id) != current_user_id:
+            return jsonify({'error': 'Not authorized'}), 403
 
-@router.delete("/{storyboard_id}", response_model=schemas.StoryboardWithDetails)
-def delete_storyboard(
-    *,
-    db: Session = Depends(deps.get_db),
-    storyboard_id: str,
-    current_user: models.User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Delete storyboard.
-    """
-    storyboard = crud.storyboard.get(db=db, id=storyboard_id)
-    if not storyboard:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Storyboard not found",
-        )
-    scene = crud.scene.get(db=db, id=storyboard.scene_id)
-    universe = crud.universe.get(db=db, id=scene.universe_id)
-    if not crud.universe.is_owner_or_collaborator(
-        db=db, universe_id=universe.id, user_id=current_user.id
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions",
-        )
-    return crud.storyboard.remove(db=db, id=storyboard_id)
+        # TODO: Implement storyboard generation
+        # This is a placeholder response
+        generation_result = {
+            'status': 'success',
+            'storyboard_id': 'generated_uuid',
+            'metadata': {
+                'frame_count': 0,
+                'duration': 0.0,
+                'resolution': request.json.get('resolution', {
+                    'width': 1920,
+                    'height': 1080
+                })
+            }
+        }
+
+        return jsonify(generation_result), 202
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@storyboards_bp.route('/storyboard/<uuid:storyboard_id>', methods=['GET'])
+@jwt_required()
+def get_storyboard_status(storyboard_id):
+    """Get storyboard generation status."""
+    try:
+        # TODO: Implement storyboard status check
+        # This is a placeholder response
+        status = {
+            'storyboard_id': str(storyboard_id),
+            'status': 'processing',
+            'progress': 0.0,
+            'frames_completed': 0,
+            'total_frames': 0
+        }
+
+        return jsonify(status), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400

@@ -4,11 +4,11 @@ from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
+from app.core.config.settings import settings
 from app.core.errors import AppError, ErrorResponse
 from app.db.session import SessionLocal
 from app.api.v1.api import api_router
-from app.websocket import handle_websocket
+from app.websocket.handler import handle_websocket
 
 # Create FastAPI app
 app = FastAPI(
@@ -65,7 +65,7 @@ async def app_error_handler(request, exc: AppError):
         ).dict()
     )
 
-@app.options("/api/health")
+@app.options("/health")
 async def health_check_options():
     """Handle CORS preflight requests for health check endpoint."""
     headers = {
@@ -74,12 +74,3 @@ async def health_check_options():
         "Access-Control-Allow-Headers": "*",
     }
     return JSONResponse(content={}, headers=headers)
-
-@app.get("/api/health")
-async def health_check():
-    """Health check endpoint."""
-    return {
-        "status": "healthy",
-        "version": settings.VERSION,
-        "environment": settings.ENVIRONMENT
-    }

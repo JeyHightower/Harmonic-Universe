@@ -1,26 +1,74 @@
-"""
-Database initialization and configuration.
-"""
-
+"""Database configuration and connection management."""
+from typing import AsyncGenerator, Generator
 from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    create_async_engine,
+    AsyncEngine,
+    async_sessionmaker,
+)
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.pool import NullPool
+
 from app.core.config import settings
-from app.db.metadata import metadata
 
-# Create engine
-engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
+# Support both SQLite and PostgreSQL
+database_url = str(settings.SQLALCHEMY_DATABASE_URI)
 
-# Create session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+if 'sqlite' in database_url:
+    engine: AsyncEngine = create_async_engine(
+        database_url,
+        poolclass=NullPool,
+        connect_args={"check_same_thread": False},
+    )
+else:
+    engine: AsyncEngine = create_async_engine(
+        database_url,
+        poolclass=NullPool,
+    )
 
-def get_db() -> Session:
-    """Get database session."""
-    db = SessionLocal()
+# Create async session factory
+AsyncSessionFactory = async_sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)
+
+async def get_session() -> AsyncGenerator[AsyncSession, None]:
+    """Get an async database session."""
+    async with AsyncSessionFactory() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
+
+# For synchronous operations (like migrations)
+if 'sqlite' in database_url:
+    sync_engine: Engine = create_engine(
+        database_url.replace('+aiosqlite', ''),
+        connect_args={"check_same_thread": False},
+    )
+else:
+    sync_engine: Engine = create_engine(
+        database_url.replace('+asyncpg', ''),
+    )
+
+# Create sync session factory
+SyncSessionFactory = sessionmaker(
+    sync_engine,
+    class_=Session,
+)
+
+def get_sync_session() -> Generator[Session, None, None]:
+    """Get a synchronous database session."""
+    session = SyncSessionFactory()
     try:
-        yield db
+        yield session
     finally:
-        db.close()
+        session.close()
 
-def init_db():
+def init_db() -> None:
     """Initialize database."""
-    metadata.create_all(bind=engine)
+    from app.db.base_class import Base
+    Base.metadata.create_all(bind=sync_engine)

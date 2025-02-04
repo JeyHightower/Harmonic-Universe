@@ -12,136 +12,59 @@ build/
 dist/
 out/
 
-# Environment
+# Environment Variables
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# Logs
-logs/
-*.log
+# Debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Editor directories and files
+# IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+
+# OS
 .DS_Store
-*.pem
-
-# Cache
-.cache/
-.next/
-.nuxt/
-.vuepress/dist
-.serverless/
-.fusebox/
-.dynamodb/
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-ENV/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Testing
-/coverage
-.coverage
-coverage.xml
-.pytest_cache/
-htmlcov/
-cypress/videos/
-cypress/screenshots/
-
-# IDE
-.flaskenv
-*.sqlite
-*.db
-
-# IDE files
-.env.*.local
-
-# Generated files
-*.generated.*
-generated/
-auto-generated/
-.temp/
-
-# Media and large files
-*.avi
-*.wmv
-*.flv
-*.ogg
-*.psd
-*.ai
-*.zip
-*.tar.gz
-*.rar
+Thumbs.db
 
 # Project specific
-backup_20250130_183714/
-cleanup_*.log
-temp_hashes.txt
+backend/data/
+backend/uploads/
+backend/logs/
+backend/reports/
+backend/__pycache__/
+backend/*.pyc
+backend/*.pyo
+backend/*.pyd
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+backend/*.egg-info/
 
-# Additional ignores
-backups/
-.coverage
-venv/
-*.pyc
-__pycache__/
-.env.*
-!.env.example
-node_modules/
-dist/
-coverage/
-.DS_Store
+# Frontend specific
+frontend/.env
+frontend/dist/
+frontend/coverage/
+frontend/.next/
+frontend/out/
+frontend/.nuxt/
+frontend/.cache/
+frontend/.temp/
 
-# Additional ignores
-backups/
-.coverage
-venv/
-*.pyc
-__pycache__/
-.env.*
-!.env.example
-node_modules/
-dist/
-coverage/
-.DS_Store
+# Docker
+.docker/
+docker-compose.override.yml
 
-# Additional ignores
-backups/
-.coverage
-venv/
-*.pyc
-__pycache__/
-.env.*
-!.env.example
-node_modules/
-dist/
-coverage/
-.DS_Store
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
