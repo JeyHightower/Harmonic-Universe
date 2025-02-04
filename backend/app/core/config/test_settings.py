@@ -14,8 +14,11 @@ class TestSettings(Settings):
     DEBUG: bool = True
     ENVIRONMENT: str = "test"
 
+    # Base paths
+    BASE_DIR: str = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
     # Database settings
-    DB_DIR: str = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "tests", "test_db"))
+    DB_DIR: str = os.path.join(BASE_DIR, "tests", "test_db")
     DB_FILE: str = os.path.join(DB_DIR, "test.db")
     SQLALCHEMY_DATABASE_URI: str = f"sqlite:///{DB_FILE}"
     DATABASE_URI: str = f"sqlite:///{DB_FILE}"
@@ -30,18 +33,46 @@ class TestSettings(Settings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
     # Test directories
-    UPLOAD_DIR: str = "test_uploads"
-    TEST_REPORTS_DIR: str = "tests/reports"
+    UPLOAD_DIR: str = os.path.join(BASE_DIR, "test_uploads")
+    TEST_REPORTS_DIR: str = os.path.join(BASE_DIR, "tests", "reports")
 
     # Test logging
     LOG_LEVEL: str = "DEBUG"
     LOG_TO_STDOUT: bool = True
 
-    # Convert directories to Path and ensure they exist
+    class Config:
+        env_file = ".env.test"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Ensure test database directory exists
-        Path(self.DB_DIR).mkdir(parents=True, exist_ok=True)
-        # Ensure other test directories exist
-        for dir_path in [self.UPLOAD_DIR, self.TEST_REPORTS_DIR]:
-            Path(dir_path).mkdir(parents=True, exist_ok=True)
+        self._setup_directories()
+        self._validate_paths()
+
+    def _setup_directories(self):
+        """Ensure all required directories exist."""
+        directories = [
+            self.DB_DIR,
+            self.UPLOAD_DIR,
+            self.TEST_REPORTS_DIR
+        ]
+
+        for dir_path in directories:
+            os.makedirs(dir_path, exist_ok=True)
+
+    def _validate_paths(self):
+        """Validate that all paths are absolute and exist."""
+        paths = {
+            "DB_DIR": self.DB_DIR,
+            "UPLOAD_DIR": self.UPLOAD_DIR,
+            "TEST_REPORTS_DIR": self.TEST_REPORTS_DIR
+        }
+
+        for name, path in paths.items():
+            if not os.path.isabs(path):
+                raise ValueError(f"{name} must be an absolute path. Got: {path}")
+            if not os.path.exists(path):
+                raise ValueError(f"{name} directory does not exist: {path}")
+
+    def get_test_db_path(self) -> str:
+        """Get the absolute path to the test database file."""
+        return os.path.abspath(self.DB_FILE)

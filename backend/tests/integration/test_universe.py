@@ -1,6 +1,11 @@
 import pytest
 from fastapi import status
-from app.models.universe import Universe
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+from app.models.core.universe import Universe
+from app.models.core.scene import Scene
+from app.schemas.universe import UniverseCreate, UniverseUpdate
+from app.core.config import settings
 
 def test_create_universe(client, auth_headers):
     """Test creating a new universe."""

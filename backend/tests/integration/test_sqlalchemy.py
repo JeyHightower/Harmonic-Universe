@@ -3,54 +3,96 @@ SQLAlchemy test configuration and basic tests.
 """
 
 import pytest
-from flask import Flask
-from backend.app.extensions import db, init_extensions
-from backend.app.models.scene import Scene, RenderingMode
-from backend.app.config import settings
+import logging
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
+from app.db.session import SessionLocal, engine, init_db
+from app.models.core.scene import Scene
+from app.core.config.test_settings import TestSettings
 
-def create_test_app():
-    """Create a Flask app for testing."""
-    app = Flask(__name__)
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    init_extensions(app)
-    return app
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-def test_database_operations():
+@pytest.fixture(scope="function")
+def test_db():
+    """Create a fresh database for each test."""
+    settings = TestSettings()
+    try:
+        # Initialize database
+        init_db()
+        # Create a new session
+        session = SessionLocal()
+        yield session
+    except Exception as e:
+        logger.error(f"Error setting up test database: {str(e)}")
+        raise
+    finally:
+        if 'session' in locals():
+            session.close()
+
+def test_database_operations(test_db: Session):
     """Test basic database operations."""
-    app = create_test_app()
+    try:
+        # Create
+        scene = Scene(
+            name="Test Scene",
+            description="A test scene",
+            universe_id=None,
+            creator_id=None
+        )
+        test_db.add(scene)
+        test_db.commit()
+        test_db.refresh(scene)
 
-    with app.app_context():
-        # Create all tables
-        db.create_all()
+        # Verify creation
+        assert scene.id is not None
+        logger.info(f"Created scene with ID: {scene.id}")
 
-        try:
-            # Create a test scene
-            test_scene = Scene(
-                name="Test Scene",
-                description="A test scene",
-                rendering_mode=RenderingMode.SOLID
-            )
-            db.session.add(test_scene)
-            db.session.commit()
+        # Read
+        retrieved_scene = test_db.query(Scene).filter(Scene.id == scene.id).first()
+        assert retrieved_scene is not None
+        assert retrieved_scene.name == "Test Scene"
+        logger.info("Successfully retrieved scene")
 
-            # Query the scene
-            scene = db.session.query(Scene).filter(Scene.name == "Test Scene").first()
-            assert scene is not None
-            assert scene.name == "Test Scene"
-            assert scene.rendering_mode == RenderingMode.SOLID
+        # Update
+        retrieved_scene.name = "Updated Scene"
+        test_db.commit()
+        test_db.refresh(retrieved_scene)
+        assert retrieved_scene.name == "Updated Scene"
+        logger.info("Successfully updated scene")
 
-            print("✅ SQLAlchemy operations successful!")
+        # Delete
+        test_db.delete(retrieved_scene)
+        test_db.commit()
+        deleted_scene = test_db.query(Scene).filter(Scene.id == scene.id).first()
+        assert deleted_scene is None
+        logger.info("Successfully deleted scene")
 
-        except Exception as e:
-            print(f"❌ SQLAlchemy operations failed: {str(e)}")
-            raise
+    except SQLAlchemyError as e:
+        logger.error(f"Database operation failed: {str(e)}")
+        test_db.rollback()
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
+        test_db.rollback()
+        raise
 
-        finally:
-            db.session.close()
+def test_database_constraints(test_db: Session):
+    """Test database constraints and validations."""
+    try:
+        # Test required fields
+        scene = Scene()  # Missing required fields
+        test_db.add(scene)
+        with pytest.raises(SQLAlchemyError):
+            test_db.commit()
+        test_db.rollback()
+        logger.info("Successfully tested required field constraints")
 
-        # Clean up - drop tables
-        db.drop_all()
+    except Exception as e:
+        logger.error(f"Constraint test failed: {str(e)}")
+        test_db.rollback()
+        raise
 
 if __name__ == "__main__":
-    test_database_operations()
+    pytest.main([__file__])

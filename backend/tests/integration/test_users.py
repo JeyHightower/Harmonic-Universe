@@ -7,7 +7,7 @@ from fastapi import status
 from app import crud
 from app.core.config import settings
 from app.schemas.user import UserCreate
-from app.models.user import User
+from app.models.core.user import User
 from app.core.security import verify_password
 
 def test_create_user(client: TestClient, db: Session) -> None:

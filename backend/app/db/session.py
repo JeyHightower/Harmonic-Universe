@@ -14,51 +14,67 @@ from app.db.base_class import Base
 # Configure logging
 logger = logging.getLogger(__name__)
 
-# Create database engines
-database_url = str(settings.SQLALCHEMY_DATABASE_URI)
-logger.debug(f"Database URL: {database_url}")
+def get_sync_db_url() -> str:
+    """Get the synchronous database URL."""
+    database_url = str(settings.SQLALCHEMY_DATABASE_URI)
 
-# Check if using SQLite (with or without driver)
-is_sqlite = any(x in database_url.lower() for x in ['sqlite:', 'sqlite+pysqlite:', 'sqlite+aiosqlite:'])
+    # Check if using SQLite
+    is_sqlite = any(x in database_url.lower() for x in ['sqlite:', 'sqlite+pysqlite:', 'sqlite+aiosqlite:'])
 
-if is_sqlite:
-    # SQLite configuration
-    # Extract the database path from the URL
-    if '///' in database_url:
-        db_path = database_url.split('///')[1]
+    if is_sqlite:
+        # Extract the database path from the URL
+        if '///' in database_url:
+            db_path = database_url.split('///')[1]
+        else:
+            db_path = database_url.split('sqlite:')[1]
+        return f"sqlite+pysqlite:///{db_path}"
     else:
-        db_path = database_url.split('sqlite:')[1]
+        # PostgreSQL or other database
+        return database_url
 
-    # Create proper URLs with correct drivers
-    sync_url = f"sqlite+pysqlite:///{db_path}"
-    async_url = f"sqlite+aiosqlite:///{db_path}"
+def get_async_db_url() -> str:
+    """Get the asynchronous database URL."""
+    database_url = str(settings.SQLALCHEMY_DATABASE_URI)
 
-    logger.debug(f"Using SQLite - Sync URL: {sync_url}, Async URL: {async_url}")
+    # Check if using SQLite
+    is_sqlite = any(x in database_url.lower() for x in ['sqlite:', 'sqlite+pysqlite:', 'sqlite+aiosqlite:'])
 
-    sqlite_args = {
+    if is_sqlite:
+        # Extract the database path from the URL
+        if '///' in database_url:
+            db_path = database_url.split('///')[1]
+        else:
+            db_path = database_url.split('sqlite:')[1]
+        return f"sqlite+aiosqlite:///{db_path}"
+    else:
+        # PostgreSQL or other database
+        return database_url.replace('postgresql:', 'postgresql+asyncpg:')
+
+# Create database engines
+sync_url = get_sync_db_url()
+async_url = get_async_db_url()
+
+logger.debug(f"Sync Database URL: {sync_url}")
+logger.debug(f"Async Database URL: {async_url}")
+
+# SQLite configuration
+if 'sqlite' in sync_url.lower():
+    engine_args = {
         "connect_args": {"check_same_thread": False},
         "pool_pre_ping": True,
-        "echo": False
+        "echo": settings.SQLALCHEMY_ECHO
     }
-
-    engine = create_engine(sync_url, **sqlite_args)
-    async_engine = create_async_engine(async_url, **sqlite_args)
 else:
     # PostgreSQL configuration
-    sync_url = database_url
-    async_url = database_url.replace('postgresql:', 'postgresql+asyncpg:')
-
-    logger.debug(f"Using PostgreSQL - Sync URL: {sync_url}, Async URL: {async_url}")
-
-    postgres_args = {
+    engine_args = {
         "pool_pre_ping": True,
-        "pool_size": 5,
-        "max_overflow": 10,
-        "echo": False
+        "pool_size": settings.SQLALCHEMY_POOL_SIZE,
+        "max_overflow": settings.SQLALCHEMY_MAX_OVERFLOW,
+        "echo": settings.SQLALCHEMY_ECHO
     }
 
-    engine = create_engine(sync_url, **postgres_args)
-    async_engine = create_async_engine(async_url, **postgres_args)
+# Create engines
+engine = create_engine(sync_url, **engine_args)
 
 # Create session factories
 SessionLocal = sessionmaker(
@@ -67,17 +83,9 @@ SessionLocal = sessionmaker(
     bind=engine
 )
 
-AsyncSessionLocal = sessionmaker(
-    class_=AsyncSession,
-    autocommit=False,
-    autoflush=False,
-    bind=async_engine
-)
-
 # Create thread-safe session
 db = scoped_session(SessionLocal)
 
-# Dependency for sync operations
 def get_db() -> Generator[Session, None, None]:
     """Get database session."""
     session = SessionLocal()
@@ -85,15 +93,6 @@ def get_db() -> Generator[Session, None, None]:
         yield session
     finally:
         session.close()
-
-# Dependency for async operations
-async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
-    """Get async database session."""
-    async with AsyncSessionLocal() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
 
 def init_db() -> None:
     """Initialize database."""
@@ -136,12 +135,4 @@ def get_test_db() -> Generator[Session, None, None]:
     finally:
         session.close()
 
-async def get_session() -> AsyncGenerator[Session, None]:
-    """Get async database session for testing."""
-    async with AsyncSessionLocal() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
-
-__all__ = ['SessionLocal', 'AsyncSessionLocal', 'engine', 'async_engine', 'Base', 'get_db', 'get_async_db', 'get_session']
+__all__ = ['SessionLocal', 'engine', 'Base', 'get_db', 'get_test_db', 'init_db']

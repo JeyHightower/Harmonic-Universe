@@ -7,32 +7,31 @@ from alembic.config import Config
 import os
 
 from app.core.config import settings
-from app.db.session import SessionLocal, engine
+from app.db.session import SessionLocal, engine, init_db
 from app.db.base import Base
 from app.main import app
-from app.tests.utils.user import create_random_user
-from app.tests.utils.universe import create_random_universe
-from app.tests.utils.scene import create_random_scene
+from tests.utils.user import create_random_user
+from tests.utils.universe import create_random_universe
+from tests.utils.scene import create_random_scene
 
 # Import all models to ensure they are registered with SQLAlchemy
-from app.models.user import User
-from app.models.universe import Universe
-from app.models.scene import Scene
-from app.models.audio_file import AudioFile
-from app.models.ai_model import AIModel
-from app.models.ai_generation import AIGeneration
-from app.models.storyboard import Storyboard
-from app.models.timeline import Timeline
-from app.models.music_parameter import MusicParameter
-from app.models.midi_event import MidiEvent
+from app.models.core.user import User
+from app.models.core.universe import Universe
+from app.models.core.scene import Scene
+from app.models.audio.audio_file import AudioFile
+from app.models.ai.ai_model import AIModel
+from app.models.ai.ai_generation import AIGeneration
+from app.models.organization.storyboard import Storyboard
+from app.models.organization.timeline import Timeline
+from app.models.physics.physics_parameter import PhysicsParameter
+from app.models.physics.physics_constraint import PhysicsConstraint
+from app.models.physics.physics_object import PhysicsObject
+from app.models.audio.music_parameter import MusicParameter
+from app.models.audio.midi_event import MidiEvent
 from app.models.metrics import PerformanceMetrics
-from app.models.physics_parameter import PhysicsParameter
-from app.models.visualization import Visualization
+from app.models.visualization.visualization import Visualization
 from app.models.visualization.keyframe import Keyframe
 from app.models.export import Export
-from app.models.physics_constraint import PhysicsConstraint
-from app.models.physics_object import PhysicsObject
-from app.models.scene_object import SceneObject
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_db():
@@ -46,31 +45,39 @@ def setup_test_db():
         if os.path.exists(db_path):
             os.remove(db_path)
 
-    # Drop all tables first to ensure clean state
+    # Create all tables directly without migrations for testing
+    Base.metadata.create_all(bind=engine)
+
+    yield
+
+    # Cleanup after tests
     Base.metadata.drop_all(bind=engine)
-
-    # Run migrations
-    alembic_cfg = Config("alembic.ini")
-    command.upgrade(alembic_cfg, "head")
-
-    # Create a test session
-    test_session = SessionLocal()
-
-    try:
-        yield test_session
-    finally:
-        test_session.close()
-        # Don't drop tables after tests to preserve for debugging
-        # Base.metadata.drop_all(bind=engine)
+    engine.dispose()
 
 @pytest.fixture(scope="function")
-def db(setup_test_db) -> Generator:
-    """Create a fresh database session for a test."""
-    session = setup_test_db
+def db() -> Session:
+    """Get test database session."""
+    session = SessionLocal()
     try:
         yield session
     finally:
         session.rollback()
+        session.close()
+
+@pytest.fixture(scope="function")
+def test_db(db: Session):
+    """Create a fresh database for each test."""
+    # Clear all tables
+    for table in reversed(Base.metadata.sorted_tables):
+        db.execute(table.delete())
+    db.commit()
+
+    yield db
+
+    # Cleanup after test
+    for table in reversed(Base.metadata.sorted_tables):
+        db.execute(table.delete())
+    db.commit()
 
 @pytest.fixture(scope="module")
 def client() -> Generator:

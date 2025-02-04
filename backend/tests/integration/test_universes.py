@@ -7,8 +7,8 @@ from fastapi import status
 from app import crud
 from app.core.config import settings
 from app.schemas.universe import UniverseCreate, UniverseUpdate
-from app.models.user import User
-from app.models.universe import Universe
+from app.models.core.user import User
+from app.models.core.universe import Universe
 
 def test_create_universe(client, auth_headers):
     """Test creating a new universe."""
