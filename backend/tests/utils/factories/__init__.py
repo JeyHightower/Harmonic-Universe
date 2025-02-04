@@ -6,6 +6,10 @@ from sqlalchemy.orm import Session
 from typing import Dict, Any
 from datetime import datetime
 import uuid
+import logging
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 from app.db.session import SessionLocal
 from app.models.core.user import User
@@ -31,7 +35,15 @@ class BaseFactory(SQLAlchemyModelFactory):
     @classmethod
     def _create(cls, model_class, *args, **kwargs):
         """Override to support both sync and async sessions."""
-        session = cls._meta.sqlalchemy_session
+        session = kwargs.pop('db', None) or cls._meta.sqlalchemy_session
+        logger.debug(f"Creating {model_class.__name__} with session {session}")
+
+        # If universe_id is provided, use it directly
+        universe_id = kwargs.get('universe_id')
+        if universe_id:
+            kwargs['universe_id'] = universe_id
+            kwargs.pop('universe', None)  # Remove universe if it exists
+
         obj = model_class(*args, **kwargs)
         session.add(obj)
         session.commit()
@@ -44,12 +56,16 @@ class UserFactory(BaseFactory):
 
     class Meta:
         model = User
-        sqlalchemy_session = Session
+        # Don't set a default session - require it to be passed in
+        sqlalchemy_session = None
 
+    id = factory.LazyFunction(lambda: str(uuid.uuid4()))
     username = factory.Sequence(lambda n: f"user{n}")
     email = factory.LazyAttribute(lambda o: f"{o.username}@example.com")
     hashed_password = factory.LazyFunction(lambda: get_password_hash("testpass123"))
     is_superuser = False
+    is_active = True
+    full_name = factory.Faker("name")
 
 
 class UniverseFactory(BaseFactory):
@@ -57,12 +73,12 @@ class UniverseFactory(BaseFactory):
 
     class Meta:
         model = Universe
-        sqlalchemy_session = Session
+        sqlalchemy_session = None  # Don't set a default session
 
     name = factory.Sequence(lambda n: f"Universe {n}")
     description = factory.Faker("text")
-    creator = factory.SubFactory(UserFactory)
-    physics_json = factory.Dict({})
+    creator_id = None  # Will be overridden if provided
+    physics_parameters = factory.Dict({})
     music_parameters = factory.Dict({})
 
 
@@ -71,12 +87,20 @@ class SceneFactory(BaseFactory):
 
     class Meta:
         model = Scene
-        sqlalchemy_session = Session
+        sqlalchemy_session = None  # Don't set a default session
 
     name = factory.Sequence(lambda n: f"Scene {n}")
     description = factory.Faker("text")
-    creator = factory.SubFactory(UserFactory)
-    universe = factory.SubFactory(UniverseFactory)
+    universe_id = None  # Will be overridden if provided
+    universe = factory.Maybe(
+        'universe_id',
+        yes_declaration=None,  # If universe_id is provided, don't create a new universe
+        no_declaration=factory.SubFactory(UniverseFactory, db=factory.SelfAttribute('..db'))  # Pass session to UniverseFactory
+    )
+    creator = factory.LazyAttribute(lambda o:
+        o.db.query(User).join(Universe).filter(Universe.id == o.universe_id).first() if o.universe_id
+        else UserFactory(db=o.db)
+    )
 
 
 class AudioFileFactory(BaseFactory):
@@ -84,11 +108,11 @@ class AudioFileFactory(BaseFactory):
 
     class Meta:
         model = AudioFile
-        sqlalchemy_session = Session
+        sqlalchemy_session = None  # Don't set a default session
 
     name = factory.Sequence(lambda n: f"Audio {n}")
     description = factory.Faker("text")
-    creator = factory.SubFactory(UserFactory)
+    creator = factory.SubFactory(UserFactory, db=factory.SelfAttribute('..db'))  # Pass session to UserFactory
     universe = factory.SubFactory(UniverseFactory)
     scene = factory.SubFactory(SceneFactory)
     file_url = factory.Faker("url")

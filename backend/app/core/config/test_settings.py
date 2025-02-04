@@ -4,6 +4,7 @@ Test configuration settings.
 from typing import List
 from pydantic import EmailStr
 from pathlib import Path
+import os
 
 from .settings import Settings
 
@@ -14,9 +15,11 @@ class TestSettings(Settings):
     ENVIRONMENT: str = "test"
 
     # Database settings
-    SQLALCHEMY_DATABASE_URI: str = "sqlite:///./test.db"
-    DATABASE_URI: str = "sqlite:///./test.db"
-    TEST_DATABASE_URL: str = "sqlite:///./test.db"
+    DB_DIR: str = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "tests", "test_db"))
+    DB_FILE: str = os.path.join(DB_DIR, "test.db")
+    SQLALCHEMY_DATABASE_URI: str = f"sqlite:///{DB_FILE}"
+    DATABASE_URI: str = f"sqlite:///{DB_FILE}"
+    TEST_DATABASE_URL: str = f"sqlite:///{DB_FILE}"
 
     # Test-specific settings
     TEST_USER_EMAIL: str = "test@example.com"
@@ -37,5 +40,8 @@ class TestSettings(Settings):
     # Convert directories to Path and ensure they exist
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Ensure test database directory exists
+        Path(self.DB_DIR).mkdir(parents=True, exist_ok=True)
+        # Ensure other test directories exist
         for dir_path in [self.UPLOAD_DIR, self.TEST_REPORTS_DIR]:
             Path(dir_path).mkdir(parents=True, exist_ok=True)

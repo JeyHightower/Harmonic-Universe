@@ -10,6 +10,7 @@ from passlib.context import CryptContext
 import jwt
 import uuid
 import secrets
+import re
 from datetime import datetime, timedelta
 
 from app.db.base_model import Base, GUID
@@ -26,6 +27,9 @@ if TYPE_CHECKING:
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Email validation pattern
+EMAIL_PATTERN = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
 
 class User(Base):
     """User model."""
@@ -71,6 +75,20 @@ class User(Base):
 
     def __init__(self, **kwargs):
         """Initialize user."""
+        # Check required fields
+        missing_fields = []
+        if not kwargs.get('username'):
+            missing_fields.append('username')
+        if not kwargs.get('full_name'):
+            missing_fields.append('full_name')
+        if missing_fields:
+            raise ValueError(f"Missing required fields: {', '.join(missing_fields)}")
+
+        # Validate email format
+        email = kwargs.get('email')
+        if email and not EMAIL_PATTERN.match(email):
+            raise ValueError("Invalid email format")
+
         if 'password' in kwargs:
             kwargs['hashed_password'] = pwd_context.hash(kwargs.pop('password'))
         kwargs.setdefault('created_at', datetime.utcnow())

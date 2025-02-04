@@ -97,16 +97,35 @@ async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
 
 def init_db() -> None:
     """Initialize database."""
+    logger.debug("Initializing database and creating tables")
+
     # Import all models here to ensure they are registered
-    from app.db.base import Base
+    from app.db.base_model import Base
     from app.models.core.user import User
     from app.models.core.universe import Universe
     from app.models.core.scene import Scene
     from app.models.audio.audio_file import AudioFile
+    from app.models.ai.ai_model import AIModel
+    from app.models.ai.ai_generation import AIGeneration
     from app.models.organization.storyboard import Storyboard
+    from app.models.organization.timeline import Timeline
+    from app.models.audio.music_parameter import MusicParameter
+    from app.models.audio.midi_event import MidiEvent
+    from app.models.metrics import PerformanceMetrics
+    from app.models.physics.physics_parameter import PhysicsParameter
+    from app.models.visualization.visualization import Visualization
+    from app.models.visualization.keyframe import Keyframe
+    from app.models.export import Export
+    from app.models.physics.physics_constraint import PhysicsConstraint
+    from app.models.physics.physics_object import PhysicsObject
+    from app.models.visualization.scene_object import SceneObject
+
+    logger.debug("All models imported, creating tables")
 
     # Create all tables
     Base.metadata.create_all(bind=engine)
+
+    logger.debug("Tables created successfully")
 
 # For testing
 def get_test_db() -> Generator[Session, None, None]:
