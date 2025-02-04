@@ -1,14 +1,9 @@
 import pytest
-from fastapi.testclient import TestClient
 from fastapi.websockets import WebSocket
 from unittest.mock import AsyncMock, patch, Mock
-from app.main import app
 from app.models.audio_file import AudioFile
 from app.core.config import settings
 from app.schemas.user import User as UserSchema
-
-# Create test client
-client = TestClient(app)
 
 @pytest.mark.asyncio
 async def test_websocket_connection(test_client):

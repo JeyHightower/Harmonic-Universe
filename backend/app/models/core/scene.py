@@ -17,7 +17,7 @@ from app.models.visualization.scene_object import SceneObject
 if TYPE_CHECKING:
     from app.models.core.user import User
     from app.models.core.universe import Universe
-    from app.models.timeline import Timeline
+    from app.models.organization.timeline import Timeline
     from app.models.visualization.visualization import Visualization
     from app.models.export import Export
     from app.models.physics.physics_constraint import PhysicsConstraint
