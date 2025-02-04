@@ -2,15 +2,16 @@ from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 
-from app import crud, models, schemas
+from app import crud, models
+from app.schemas.midi_event import MIDIEvent, MIDIEventBatch
 from app.api import deps
 from app.core.audio.midi_processor import MIDIProcessor
-from app.models.midi_event import MIDIEventType
-from app.models.audio_file import AudioFormat
+from app.models.audio.midi_event import MidiEventType
+from app.models.audio.audio_file import AudioFormat
 
 router = APIRouter()
 
-@router.get("/audio-file/{audio_file_id}", response_model=List[schemas.MIDIEvent])
+@router.get("/audio-file/{audio_file_id}", response_model=List[MIDIEvent])
 def read_midi_events(
     audio_file_id: str,
     db: Session = Depends(deps.get_db),
@@ -36,7 +37,7 @@ def read_midi_events(
     )
     return events
 
-@router.post("/extract/{audio_file_id}", response_model=List[schemas.MIDIEvent])
+@router.post("/extract/{audio_file_id}", response_model=List[MIDIEvent])
 def extract_midi_events(
     *,
     db: Session = Depends(deps.get_db),
@@ -63,12 +64,12 @@ def extract_midi_events(
     # Create events in database
     return crud.midi_event.create_batch(db=db, events=events)
 
-@router.post("/create/{audio_file_id}", response_model=List[schemas.MIDIEvent])
+@router.post("/create/{audio_file_id}", response_model=List[MIDIEvent])
 def create_midi_events(
     *,
     db: Session = Depends(deps.get_db),
     audio_file_id: str,
-    events_in: schemas.MIDIEventBatch,
+    events_in: MIDIEventBatch,
     current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
@@ -90,10 +91,10 @@ def create_midi_events(
 
     return crud.midi_event.create_batch(db=db, events=events_in.events)
 
-@router.get("/type/{audio_file_id}/{event_type}", response_model=List[schemas.MIDIEvent])
+@router.get("/type/{audio_file_id}/{event_type}", response_model=List[MIDIEvent])
 def read_midi_events_by_type(
     audio_file_id: str,
-    event_type: MIDIEventType,
+    event_type: MidiEventType,
     db: Session = Depends(deps.get_db),
     current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
@@ -113,7 +114,7 @@ def read_midi_events_by_type(
     )
     return events
 
-@router.get("/timerange/{audio_file_id}", response_model=List[schemas.MIDIEvent])
+@router.get("/timerange/{audio_file_id}", response_model=List[MIDIEvent])
 def read_midi_events_by_timerange(
     audio_file_id: str,
     start_time: float,

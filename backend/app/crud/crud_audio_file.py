@@ -7,7 +7,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
-from app.models.audio_file import AudioFile, AudioFormat, AudioType
+from app.models.audio.audio_file import AudioFile, AudioFormat, AudioType
 from app.schemas.audio_file import AudioFileCreate, AudioFileUpdate
 
 class CRUDAudioFile(CRUDBase[AudioFile, AudioFileCreate, AudioFileUpdate]):

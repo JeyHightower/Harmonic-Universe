@@ -1,8 +1,9 @@
 """Unit tests for models."""
 
 import pytest
+from sqlalchemy.orm import Session
 from datetime import datetime
-from app.models.user import User
+from app.models.core.user import User
 
 def test_new_user():
     """Test User model creation."""

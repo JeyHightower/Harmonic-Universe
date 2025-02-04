@@ -4,17 +4,16 @@ Timeline and Animation models.
 
 from typing import Dict, List, Optional, TYPE_CHECKING
 from uuid import UUID
-from sqlalchemy import String, Float, ForeignKey, JSON
+from sqlalchemy import String, Float, ForeignKey, JSON, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 
 from app.db.base_model import Base, GUID
 
 # Handle circular imports
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app.models.scene import Scene
-    from app.models.keyframe import Keyframe
+    from app.models.visualization.keyframe import Keyframe
 
 class Timeline(Base):
     """Timeline model."""

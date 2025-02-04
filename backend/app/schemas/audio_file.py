@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime
 from pydantic import UUID4, BaseModel, Field
 from uuid import UUID
-from app.models.audio_file import AudioFormat, AudioType
+from app.models.audio.audio_file import AudioFormat, AudioType
 
 class AudioFileBase(BaseModel):
     """Base audio file schema."""

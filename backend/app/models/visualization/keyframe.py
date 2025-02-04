@@ -2,7 +2,7 @@
 Keyframe model.
 """
 
-from typing import Dict
+from typing import Dict, Optional, TYPE_CHECKING
 from uuid import UUID
 from sqlalchemy import String, Float, ForeignKey, Enum, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -10,11 +10,11 @@ from datetime import datetime
 import enum
 
 from app.db.base_model import Base, GUID
+from app.models.organization.storyboard import Storyboard
 
 # Handle circular imports
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from app.models.storyboard import Storyboard
+    from app.models.core.scene import Scene
     from app.models.timeline import Animation
 
 class ParameterType(str, enum.Enum):

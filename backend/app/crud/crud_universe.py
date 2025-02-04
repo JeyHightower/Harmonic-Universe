@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
 from app.crud.base import CRUDBase
-from app.models.universe import Universe
+from app.models.core.universe import Universe
 from app.schemas.universe import UniverseCreate, UniverseUpdate
 
 class CRUDUniverse(CRUDBase[Universe, UniverseCreate, UniverseUpdate]):

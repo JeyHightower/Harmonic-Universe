@@ -7,7 +7,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
-from app.models.keyframe import Keyframe, ParameterType
+from app.models.visualization.keyframe import Keyframe, ParameterType
 from app.schemas.keyframe import KeyframeCreate, KeyframeUpdate
 
 class CRUDKeyframe(CRUDBase[Keyframe, KeyframeCreate, KeyframeUpdate]):

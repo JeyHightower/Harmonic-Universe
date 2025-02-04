@@ -3,8 +3,8 @@ from datetime import datetime
 from uuid import UUID
 import asyncio
 
-from app.models.timeline import Timeline, Animation
-from app.models.keyframe import Keyframe
+from app.models.organization.timeline import Timeline, Animation
+from app.models.visualization.keyframe import Keyframe
 from app.db.session import SessionLocal
 from app.core.config import settings
 

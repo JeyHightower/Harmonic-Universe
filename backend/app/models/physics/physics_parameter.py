@@ -30,7 +30,7 @@ class PhysicsParameter(Base):
     updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
-    universe: Mapped["Universe"] = relationship("Universe", back_populates="physics_parameters")
+    universe: Mapped["Universe"] = relationship("Universe", back_populates="physics_parameters_rel")
 
     def __repr__(self) -> str:
         return f"<PhysicsParameter {self.name}: {self.value} {self.unit}>"

@@ -7,7 +7,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
-from app.models.music_parameter import MusicParameter
+from app.models.audio.music_parameter import MusicParameter
 from app.schemas.music_parameter import MusicParameterCreate, MusicParameterUpdate
 
 class CRUDMusicParameter(CRUDBase[MusicParameter, MusicParameterCreate, MusicParameterUpdate]):

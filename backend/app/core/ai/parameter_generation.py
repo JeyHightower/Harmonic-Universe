@@ -1,6 +1,6 @@
 from typing import Dict, Any
 import openai
-from app.models.ai_model import AIModel
+from app.models.ai.ai_model import AIModel
 
 async def generate_parameters(input_data: Dict[str, Any], ai_model: AIModel) -> Dict[str, Any]:
     """

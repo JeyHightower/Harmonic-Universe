@@ -1,6 +1,6 @@
 from typing import Optional, List
 from pydantic import BaseModel, UUID4
-from app.models.midi_event import MidiEventType
+from app.models.audio.midi_event import MidiEventType
 
 class MIDIEventBase(BaseModel):
     event_type: MidiEventType

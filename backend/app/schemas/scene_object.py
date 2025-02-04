@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Any, TYPE_CHECKING
 from datetime import datetime
 from pydantic import UUID4, BaseModel, Field
 from uuid import UUID
-from app.models.scene_object import SceneObjectType
+from app.models.visualization.scene_object import SceneObjectType
 
 if TYPE_CHECKING:
     from app.schemas.scene import Scene
@@ -16,27 +16,34 @@ class SceneObjectBase(BaseModel):
     type: SceneObjectType
     name: str
     properties: Dict = {}
-    metadata: Dict = {}
+    meta_data: Dict = {}
 
 class SceneObjectCreate(SceneObjectBase):
     """Scene object creation schema."""
     scene_id: UUID4
 
-class SceneObject(SceneObjectBase):
-    """Scene object schema."""
+class SceneObjectUpdate(SceneObjectBase):
+    """Scene object update schema."""
+    name: Optional[str] = None
+    properties: Optional[Dict] = None
+    meta_data: Optional[Dict] = None
+
+class SceneObjectInDBBase(SceneObjectBase):
+    """Base DB scene object schema."""
     id: UUID4
     scene_id: UUID4
-    created_at: datetime
-    updated_at: datetime
 
     class Config:
         from_attributes = True
 
-class SceneObjectUpdate(BaseModel):
-    """Scene object update schema."""
-    name: Optional[str] = None
-    properties: Optional[Dict] = None
-    metadata: Optional[Dict] = None
+class SceneObject(SceneObjectInDBBase):
+    """Complete scene object schema."""
+    created_at: datetime
+    updated_at: datetime
+
+class SceneObjectInDB(SceneObjectInDBBase):
+    """DB scene object schema."""
+    pass
 
 class SceneObjectResponse(SceneObject):
     """Scene object response schema."""

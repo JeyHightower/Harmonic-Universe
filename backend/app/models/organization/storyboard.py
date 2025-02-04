@@ -9,10 +9,9 @@ from datetime import datetime
 from app.db.base_model import Base, GUID
 
 # Handle circular imports
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app.models.universe import Universe
-    from app.models.keyframe import Keyframe
+    from app.models.visualization.keyframe import Keyframe
     from app.models.scene import Scene
     from app.models.user import User
 

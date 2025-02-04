@@ -6,7 +6,7 @@ import os
 import sys
 import secrets
 from typing import Any, Dict, Optional, List, Union
-from pydantic import AnyHttpUrl, EmailStr, HttpUrl, PostgresDsn, field_validator, validator, BaseSettings, SettingsConfigDict
+from pydantic import AnyHttpUrl, EmailStr, HttpUrl, PostgresDsn, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
 
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     SERVER_HOST: AnyHttpUrl = "http://localhost:8000"
 
     # Required settings with defaults
-    DATABASE_URI: str = "sqlite:///./test.db"
+    DATABASE_URI: str = "sqlite+aiosqlite:///./test.db"
     UPLOAD_DIR: str = "uploads"
     ALLOWED_AUDIO_TYPES: list = ["audio/mpeg", "audio/wav"]
     SMTP_HOST: str = "localhost"
@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    @classmethod
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
         if isinstance(v, str) and not v.startswith("["):
             return [i.strip() for i in v.split(",")]
@@ -48,11 +49,13 @@ class Settings(BaseSettings):
     POSTGRES_USER: str = os.getenv("POSTGRES_USER", "")
     POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "")
     POSTGRES_DB: str = os.getenv("POSTGRES_DB", "harmonic_universe")
-    SQLALCHEMY_DATABASE_URI: Optional[PostgresDsn] = None
+    POSTGRES_PORT: int = 5432
+    SQLALCHEMY_DATABASE_URI: str = "sqlite+aiosqlite:///./test.db"  # Changed to use aiosqlite
     SQLALCHEMY_ECHO: bool = False
 
-    @validator("SQLALCHEMY_DATABASE_URI", pre=True)
-    def assemble_db_connection(cls, v: Optional[str], values: Dict[str, Any]) -> Any:
+    @field_validator("SQLALCHEMY_DATABASE_URI", mode="before")
+    @classmethod
+    def assemble_db_connection(cls, v: Optional[str], info: Any) -> str:
         """Assemble database connection string."""
         if isinstance(v, str):
             return v
@@ -62,13 +65,16 @@ class Settings(BaseSettings):
             return "sqlite+aiosqlite:///./test.db"
 
         # For production, use PostgreSQL
-        return PostgresDsn.build(
-            scheme="postgresql+asyncpg",
-            user=values.get("POSTGRES_USER"),
-            password=values.get("POSTGRES_PASSWORD"),
-            host=values.get("POSTGRES_SERVER"),
-            path=f"/{values.get('POSTGRES_DB') or ''}",
-        )
+        postgres_user = info.data.get("POSTGRES_USER", "")
+        postgres_password = info.data.get("POSTGRES_PASSWORD", "")
+        postgres_server = info.data.get("POSTGRES_SERVER", "localhost")
+        postgres_db = info.data.get("POSTGRES_DB", "harmonic_universe")
+        postgres_port = info.data.get("POSTGRES_PORT", 5432)
+
+        if not all([postgres_user, postgres_password, postgres_server, postgres_db]):
+            return "sqlite+aiosqlite:///./test.db"
+
+        return f"postgresql+asyncpg://{postgres_user}:{postgres_password}@{postgres_server}:{postgres_port}/{postgres_db}"
 
     # Test Database Configuration
     TEST_POSTGRES_DB: str = "test_harmonic_universe"
@@ -103,19 +109,21 @@ class Settings(BaseSettings):
     EMAIL_TEMPLATES_DIR: str = "app/email-templates"
     EMAILS_ENABLED: bool = False
 
-    @validator("EMAILS_ENABLED", pre=True)
-    def get_emails_enabled(cls, v: bool, values: Dict[str, Any]) -> bool:
+    @field_validator("EMAILS_ENABLED", mode="before")
+    @classmethod
+    def get_emails_enabled(cls, v: bool, info: Any) -> bool:
         """Check if emails are enabled."""
         return bool(
-            values.get("SMTP_HOST")
-            and values.get("SMTP_PORT")
-            and values.get("EMAILS_FROM_EMAIL")
+            info.data.get("SMTP_HOST")
+            and info.data.get("SMTP_PORT")
+            and info.data.get("EMAILS_FROM_EMAIL")
         )
 
     @field_validator("EMAILS_FROM_NAME", mode="before")
-    def get_project_name(cls, v: Optional[str], info: Dict[str, Any]) -> str:
+    @classmethod
+    def get_project_name(cls, v: Optional[str], info: Any) -> str:
         if not v:
-            return info.data["PROJECT_NAME"]
+            return info.data.get("PROJECT_NAME", "Harmonic Universe API")
         return v
 
     # File Upload Configuration

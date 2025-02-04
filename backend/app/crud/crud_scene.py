@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc
 
 from app.crud.base import CRUDBase
-from app.models.scene import Scene
+from app.models.core.scene import Scene
 from app.schemas.scene import SceneCreate, SceneUpdate
 
 class CRUDScene(CRUDBase[Scene, SceneCreate, SceneUpdate]):

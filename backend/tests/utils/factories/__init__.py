@@ -3,17 +3,21 @@
 import factory
 from factory.alchemy import SQLAlchemyModelFactory
 from sqlalchemy.orm import Session
+from typing import Dict, Any
+from datetime import datetime
+import uuid
 
-from app.models.user import User
-from app.models.universe import Universe
-from app.models.scene import Scene
-from app.models.audio_file import AudioFile
-from app.models.ai_model import AIModel
-from app.models.ai_generation import AIGeneration
-from app.models.storyboard import Storyboard
-from app.models.timeline import Timeline
-from app.models.physics_parameter import PhysicsParameter
-from app.models.music_parameter import MusicParameter
+from app.db.session import SessionLocal
+from app.models.core.user import User
+from app.models.core.universe import Universe
+from app.models.core.scene import Scene
+from app.models.audio.audio_file import AudioFile
+from app.models.ai.ai_model import AIModel
+from app.models.ai.ai_generation import AIGeneration
+from app.models.organization.storyboard import Storyboard
+from app.models.organization.timeline import Timeline
+from app.models.physics.physics_parameter import PhysicsParameter
+from app.models.audio.music_parameter import MusicParameter
 from app.core.security import get_password_hash
 
 

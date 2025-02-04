@@ -1,7 +1,7 @@
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 from pydantic import BaseModel, UUID4
 from datetime import datetime
-from app.models.ai_model import AIModelType
+from app.models.ai.ai_model import AIModelType
 
 class AIModelBase(BaseModel):
     name: str

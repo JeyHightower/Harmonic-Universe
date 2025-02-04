@@ -7,7 +7,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
-from app.models.storyboard import Storyboard
+from app.models.organization.storyboard import Storyboard
 from app.schemas.storyboard import StoryboardCreate, StoryboardUpdate
 
 class CRUDStoryboard(CRUDBase[Storyboard, StoryboardCreate, StoryboardUpdate]):

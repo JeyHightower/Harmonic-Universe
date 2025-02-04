@@ -1,4 +1,10 @@
+"""Test timeline functionality."""
+
+from typing import Dict
+from uuid import UUID
 import pytest
+from sqlalchemy.orm import Session
+from fastapi.testclient import TestClient
 import asyncio
 from datetime import datetime, timedelta
 from unittest.mock import Mock, AsyncMock
@@ -6,7 +12,7 @@ import json
 
 from app.core.visualization.timeline import TimelineManager
 from app.models.timeline import Timeline
-from app.models.keyframe import Keyframe
+from app.models.visualization.keyframe import Keyframe
 from app.models.timeline import Animation
 
 @pytest.fixture

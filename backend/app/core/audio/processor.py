@@ -8,7 +8,7 @@ import io
 import base64
 from pathlib import Path
 
-from app.models.audio_file import AudioFormat
+from app.models.audio.audio_file import AudioFormat
 from app.core.config import settings
 
 class AudioProcessor:

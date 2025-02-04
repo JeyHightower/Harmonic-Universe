@@ -2,15 +2,16 @@ from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 
-from app import crud, models, schemas
-from app.api import deps
-from app.models.ai_generation import GenerationStatus
-from app.models.ai_model import AIModelType
+from app import crud, models
+from app.schemas.ai_generation import AIGeneration, AIGenerationCreate, AIGenerationUpdate
+from app.models.ai.ai_generation import GenerationStatus
+from app.models.ai.ai_model import AIModelType
 from app.core.ai import process_generation
+from app.api import deps
 
 router = APIRouter()
 
-@router.get("/universe/{universe_id}", response_model=List[schemas.AIGeneration])
+@router.get("/universe/{universe_id}", response_model=List[AIGeneration])
 def read_generations(
     universe_id: str,
     db: Session = Depends(deps.get_db),
@@ -31,11 +32,11 @@ def read_generations(
     )
     return generations
 
-@router.post("/", response_model=schemas.AIGeneration)
+@router.post("/", response_model=AIGeneration)
 def create_generation(
     *,
     db: Session = Depends(deps.get_db),
-    generation_in: schemas.AIGenerationCreate,
+    generation_in: AIGenerationCreate,
     background_tasks: BackgroundTasks,
     current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
@@ -67,7 +68,7 @@ def create_generation(
 
     return generation
 
-@router.get("/type/{generation_type}", response_model=List[schemas.AIGeneration])
+@router.get("/type/{generation_type}", response_model=List[AIGeneration])
 def read_generations_by_type(
     generation_type: AIModelType,
     db: Session = Depends(deps.get_db),
@@ -85,7 +86,7 @@ def read_generations_by_type(
     )
     return generations
 
-@router.get("/status/{status}", response_model=List[schemas.AIGeneration])
+@router.get("/status/{status}", response_model=List[AIGeneration])
 def read_generations_by_status(
     status: GenerationStatus,
     db: Session = Depends(deps.get_db),
@@ -103,7 +104,7 @@ def read_generations_by_status(
     )
     return generations
 
-@router.put("/{id}/approve", response_model=schemas.AIGeneration)
+@router.put("/{id}/approve", response_model=AIGeneration)
 def approve_generation(
     *,
     db: Session = Depends(deps.get_db),
@@ -127,11 +128,11 @@ def approve_generation(
     generation = crud.ai_generation.update(
         db=db,
         db_obj=generation,
-        obj_in=schemas.AIGenerationUpdate(is_approved=True)
+        obj_in=AIGenerationUpdate(is_approved=True)
     )
     return generation
 
-@router.get("/{id}", response_model=schemas.AIGeneration)
+@router.get("/{id}", response_model=AIGeneration)
 def read_generation(
     *,
     db: Session = Depends(deps.get_db),

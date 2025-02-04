@@ -5,9 +5,14 @@ SVG renderer module.
 from typing import Any, Dict, List, Optional
 from pathlib import Path
 from PIL import Image
+import numpy as np
+import json
+import asyncio
+from fastapi import WebSocket
+import matplotlib.pyplot as plt
 
-from app.models.scene import RenderingMode
-from app.models.scene_object import SceneObjectType
+from app.models.core.scene import RenderingMode
+from app.models.visualization.scene_object import SceneObjectType
 from app.core.config import settings
 
 class SVGRenderer:

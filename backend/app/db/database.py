@@ -29,15 +29,15 @@ else:
     )
 
 # Create async session factory
-AsyncSessionFactory = async_sessionmaker(
+SessionLocal = async_sessionmaker(
     engine,
     class_=AsyncSession,
     expire_on_commit=False,
 )
 
-async def get_session() -> AsyncGenerator[AsyncSession, None]:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Get an async database session."""
-    async with AsyncSessionFactory() as session:
+    async with SessionLocal() as session:
         try:
             yield session
         finally:
@@ -55,14 +55,14 @@ else:
     )
 
 # Create sync session factory
-SyncSessionFactory = sessionmaker(
+SyncSessionLocal = sessionmaker(
     sync_engine,
     class_=Session,
 )
 
-def get_sync_session() -> Generator[Session, None, None]:
+def get_sync_db() -> Generator[Session, None, None]:
     """Get a synchronous database session."""
-    session = SyncSessionFactory()
+    session = SyncSessionLocal()
     try:
         yield session
     finally:
@@ -72,3 +72,5 @@ def init_db() -> None:
     """Initialize database."""
     from app.db.base_class import Base
     Base.metadata.create_all(bind=sync_engine)
+
+__all__ = ["SessionLocal", "SyncSessionLocal", "engine", "sync_engine", "init_db", "get_db", "get_sync_db"]

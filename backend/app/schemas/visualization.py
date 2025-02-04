@@ -1,7 +1,10 @@
+"""Visualization schemas."""
+
 from typing import Optional, Dict, List
-from pydantic import BaseModel, UUID4
+from uuid import UUID4
+from pydantic import BaseModel
 from datetime import datetime
-from app.models.keyframe import ParameterType
+from app.models.visualization.keyframe import ParameterType
 
 class TimelineBase(BaseModel):
     name: Optional[str] = None

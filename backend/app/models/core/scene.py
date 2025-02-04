@@ -4,25 +4,32 @@ Scene model.
 
 from typing import Dict, Optional, TYPE_CHECKING, List
 from uuid import UUID, uuid4
-from sqlalchemy import String, Column, ForeignKey, Enum as SQLAlchemyEnum, JSON
+from sqlalchemy import String, Column, ForeignKey, Enum as SQLAlchemyEnum, JSON, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 import enum
 from pydantic import BaseModel
+from datetime import datetime
 
 from app.db.base_model import Base, GUID
-from app.models.storyboard import storyboard_scenes
+from app.models.organization.storyboard import Storyboard, storyboard_scenes
+from app.models.visualization.scene_object import SceneObject
 
 if TYPE_CHECKING:
-    from app.models.user import User
-    from app.models.universe import Universe
+    from app.models.core.user import User
+    from app.models.core.universe import Universe
     from app.models.timeline import Timeline
-    from app.models.storyboard import Storyboard
-    from app.models.visualization import Visualization
+    from app.models.visualization.visualization import Visualization
     from app.models.export import Export
-    from app.models.physics_constraint import PhysicsConstraint
-    from app.models.audio_file import AudioFile
-    from app.models.physics_object import PhysicsObject
-    from app.models.scene_object import SceneObject
+    from app.models.physics.physics_constraint import PhysicsConstraint
+    from app.models.audio.audio_file import AudioFile
+    from app.models.physics.physics_object import PhysicsObject
+    from app.models.visualization.keyframe import Keyframe
+
+class RenderingMode(str, enum.Enum):
+    """Scene rendering mode."""
+    DRAFT = "draft"
+    PREVIEW = "preview"
+    FINAL = "final"
 
 class PhysicsParameters(BaseModel):
     """Physics simulation parameters."""
@@ -48,17 +55,6 @@ class MusicParameters(BaseModel):
     enable_quantization: bool = True
     quantize_to: str = "1/4"
 
-class RenderingMode(str, enum.Enum):
-    """Rendering mode enum."""
-    WIREFRAME = "wireframe"
-    SOLID = "solid"
-    TEXTURED = "textured"
-    REALISTIC = "realistic"
-    WEBGL = "webgl"
-
-    def __str__(self) -> str:
-        return self.value
-
 class Scene(Base):
     """Scene model."""
     __tablename__ = "scenes"
@@ -68,40 +64,62 @@ class Scene(Base):
     id: Mapped[UUID] = mapped_column(GUID(), primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    creator_id: Mapped[UUID] = mapped_column(GUID(), ForeignKey("users.id"), nullable=False)
     universe_id: Mapped[UUID] = mapped_column(GUID(), ForeignKey("universes.id"), nullable=False)
-    rendering_mode: Mapped[RenderingMode] = mapped_column(
+    creator_id: Mapped[UUID] = mapped_column(GUID(), ForeignKey("users.id"), nullable=False)
+
+    # Scene configuration
+    rendering_mode: Mapped[str] = mapped_column(
         SQLAlchemyEnum(RenderingMode, name="rendering_mode_enum", create_constraint=True),
-        nullable=False,
-        default=RenderingMode.SOLID
+        default=RenderingMode.DRAFT,
+        nullable=False
+    )
+    physics_parameters: Mapped[Dict] = mapped_column(
+        JSON,
+        server_default='{}',
+        nullable=False
+    )
+    music_parameters: Mapped[Dict] = mapped_column(
+        JSON,
+        server_default='{}',
+        nullable=False
     )
 
     # Relationships
-    creator = relationship("User", back_populates="scenes", lazy="joined")
-    universe: Mapped["Universe"] = relationship("Universe", back_populates="scenes")
-    timelines: Mapped[List["Timeline"]] = relationship("Timeline", back_populates="scene", cascade="all, delete-orphan", lazy="selectin")
-    storyboards: Mapped[List["Storyboard"]] = relationship("Storyboard", secondary=storyboard_scenes, back_populates="scenes", lazy="selectin")
-    visualizations: Mapped[List["Visualization"]] = relationship("Visualization", back_populates="scene", cascade="all, delete-orphan", lazy="selectin")
-    exports: Mapped[List["Export"]] = relationship("Export", back_populates="scene", cascade="all, delete-orphan", lazy="selectin")
-    physics_constraints: Mapped[List["PhysicsConstraint"]] = relationship("PhysicsConstraint", back_populates="scene", cascade="all, delete-orphan", lazy="selectin")
-    audio_files: Mapped[List["AudioFile"]] = relationship("AudioFile", back_populates="scene", cascade="all, delete-orphan", lazy="selectin")
-    physics_objects: Mapped[List["PhysicsObject"]] = relationship("PhysicsObject", back_populates="scene", cascade="all, delete-orphan", lazy="selectin")
-    scene_objects: Mapped[List["SceneObject"]] = relationship("SceneObject", back_populates="scene", cascade="all, delete-orphan", lazy="selectin")
-
-    # Scene settings
-    settings: Mapped[Dict] = mapped_column(
-        JSON,
-        server_default='{}',
-        nullable=False
+    universe = relationship("Universe", back_populates="scenes")
+    creator = relationship("User", back_populates="scenes")
+    scene_objects = relationship("SceneObject", back_populates="scene", cascade="all, delete-orphan")
+    storyboards = relationship("Storyboard", secondary=storyboard_scenes, back_populates="scenes")
+    timelines: Mapped[List["Timeline"]] = relationship(
+        "Timeline",
+        back_populates="scene",
+        cascade="all, delete-orphan"
     )
-
-    # Scene data
-    data: Mapped[Dict] = mapped_column(
-        JSON,
-        server_default='{}',
-        nullable=False
+    visualizations: Mapped[List["Visualization"]] = relationship(
+        "Visualization",
+        back_populates="scene",
+        cascade="all, delete-orphan"
+    )
+    audio_files: Mapped[List["AudioFile"]] = relationship(
+        "AudioFile",
+        back_populates="scene",
+        cascade="all, delete-orphan"
+    )
+    physics_objects: Mapped[List["PhysicsObject"]] = relationship(
+        "PhysicsObject",
+        back_populates="scene",
+        cascade="all, delete-orphan"
+    )
+    physics_constraints: Mapped[List["PhysicsConstraint"]] = relationship(
+        "PhysicsConstraint",
+        back_populates="scene",
+        cascade="all, delete-orphan"
+    )
+    exports: Mapped[List["Export"]] = relationship(
+        "Export",
+        back_populates="scene",
+        cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:
-        """Return string representation."""
+        """String representation."""
         return f"<Scene {self.name}>"

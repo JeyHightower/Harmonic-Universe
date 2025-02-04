@@ -4,7 +4,7 @@ import midiutil
 import numpy as np
 from pathlib import Path
 
-from app.models.midi_event import MIDIEventType, MIDIEvent
+from app.models.audio.midi_event import MidiEventType, MidiEvent
 from app.schemas.midi_event import MIDIEventCreate
 
 class MIDIProcessor:
@@ -66,7 +66,7 @@ class MIDIProcessor:
             for note in instrument.notes:
                 # Note On event
                 events.append(MIDIEventCreate(
-                    event_type=MIDIEventType.NOTE_ON,
+                    event_type=MidiEventType.NOTE_ON,
                     timestamp=note.start,
                     channel=instrument.program,
                     note=note.pitch,
@@ -75,7 +75,7 @@ class MIDIProcessor:
 
                 # Note Off event
                 events.append(MIDIEventCreate(
-                    event_type=MIDIEventType.NOTE_OFF,
+                    event_type=MidiEventType.NOTE_OFF,
                     timestamp=note.end,
                     channel=instrument.program,
                     note=note.pitch,
@@ -85,7 +85,7 @@ class MIDIProcessor:
             # Process control changes
             for cc in instrument.control_changes:
                 events.append(MIDIEventCreate(
-                    event_type=MIDIEventType.CONTROL_CHANGE,
+                    event_type=MidiEventType.CONTROL_CHANGE,
                     timestamp=cc.time,
                     channel=instrument.program,
                     control=cc.number,

@@ -5,15 +5,16 @@ import shutil
 from pathlib import Path
 import os
 
-from app import crud, models, schemas
+from app import crud, models
+from app.schemas.audio_file import AudioFile, AudioFileCreate
 from app.api import deps
 from app.core.audio.processor import AudioProcessor
-from app.models.audio_file import AudioFormat, AudioType
+from app.models.audio.audio_file import AudioFormat, AudioType
 from app.core.config import settings
 
 router = APIRouter()
 
-@router.get("/universe/{universe_id}", response_model=List[schemas.AudioFile])
+@router.get("/universe/{universe_id}", response_model=List[AudioFile])
 def read_audio_files(
     universe_id: str,
     db: Session = Depends(deps.get_db),
@@ -34,7 +35,7 @@ def read_audio_files(
     )
     return audio_files
 
-@router.post("/upload", response_model=schemas.AudioFile)
+@router.post("/upload", response_model=AudioFile)
 async def upload_audio_file(
     *,
     db: Session = Depends(deps.get_db),
@@ -76,7 +77,7 @@ async def upload_audio_file(
     waveform_data = processor.get_waveform_data()
 
     # Create audio file record
-    audio_file_in = schemas.AudioFileCreate(
+    audio_file_in = AudioFileCreate(
         name=name,
         description=description,
         format=AudioFormat(file_format),
@@ -90,7 +91,7 @@ async def upload_audio_file(
 
     return crud.audio_file.create(db=db, obj_in=audio_file_in)
 
-@router.post("/convert/{id}", response_model=schemas.AudioFile)
+@router.post("/convert/{id}", response_model=AudioFile)
 def convert_audio_file(
     *,
     db: Session = Depends(deps.get_db),
@@ -114,7 +115,7 @@ def convert_audio_file(
     output_path = processor.convert_format(target_format)
 
     # Create new audio file record
-    audio_file_in = schemas.AudioFileCreate(
+    audio_file_in = AudioFileCreate(
         name=f"{audio_file.name}_{target_format}",
         description=f"Converted from {audio_file.format}",
         format=target_format,
@@ -128,7 +129,7 @@ def convert_audio_file(
 
     return crud.audio_file.create(db=db, obj_in=audio_file_in)
 
-@router.post("/effects/{id}", response_model=schemas.AudioFile)
+@router.post("/effects/{id}", response_model=AudioFile)
 def apply_audio_effects(
     *,
     db: Session = Depends(deps.get_db),
@@ -156,7 +157,7 @@ def apply_audio_effects(
     processor.save(output_path)
 
     # Create new audio file record
-    audio_file_in = schemas.AudioFileCreate(
+    audio_file_in = AudioFileCreate(
         name=f"{audio_file.name}_processed",
         description=f"Processed with effects: {', '.join(effects.keys())}",
         format=audio_file.format,
@@ -170,7 +171,7 @@ def apply_audio_effects(
 
     return crud.audio_file.create(db=db, obj_in=audio_file_in)
 
-@router.get("/{id}", response_model=schemas.AudioFile)
+@router.get("/{id}", response_model=AudioFile)
 def read_audio_file(
     *,
     db: Session = Depends(deps.get_db),

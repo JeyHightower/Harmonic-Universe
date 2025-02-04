@@ -1,8 +1,8 @@
 from typing import Optional, Dict
 from pydantic import BaseModel, UUID4
 from datetime import datetime
-from app.models.ai_model import AIModelType
-from app.models.ai_generation import GenerationStatus
+from app.models.ai.ai_model import AIModelType
+from app.models.ai.ai_generation import GenerationStatus
 
 class AIGenerationBase(BaseModel):
     generation_type: AIModelType

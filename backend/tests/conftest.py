@@ -23,23 +23,30 @@ logger = logging.getLogger(__name__)
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app.main import app
-from app.db.session import SessionLocal, get_session
+from app.db.session import SessionLocal, engine, get_db
 from app.db.base import Base
-from app.core.config import settings
+from app.core.config.test_settings import TestSettings
 from app.core.security import create_access_token, get_password_hash
-from app.models.user import User
-from app.models.ai import AIModel
-from app.models.universe import Universe
-from app.models.scene import Scene
-from app.models.physics import PhysicsParameter, PhysicsObject, PhysicsConstraint
-from app.models.music import MusicParameter, MidiEvent, AudioFile
-from app.models.visualization import Timeline, Keyframe, Visualization, Storyboard
-from app.models.generation import AIGeneration
+from app.models.core.user import User
+from app.models.ai.ai_model import AIModel
+from app.models.core.universe import Universe
+from app.models.core.scene import Scene
+from app.models.physics.physics_parameter import PhysicsParameter
+from app.models.physics.physics_object import PhysicsObject
+from app.models.physics.physics_constraint import PhysicsConstraint
+from app.models.audio.music_parameter import MusicParameter
+from app.models.audio.midi_event import MidiEvent
+from app.models.audio.audio_file import AudioFile
+from app.models.organization.timeline import Timeline
+from app.models.visualization.keyframe import Keyframe
+from app.models.visualization.visualization import Visualization
+from app.models.organization.storyboard import Storyboard
+from app.models.ai.ai_generation import AIGeneration
 
 from tests.utils.factories import UserFactory, UniverseFactory, SceneFactory
 
-# Create test settings instance
-test_settings = settings.Settings()
+# Use TestSettings instead of regular settings
+test_settings = TestSettings()
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_environment():
@@ -51,7 +58,7 @@ def setup_test_environment():
     os.environ["DATABASE_URL"] = test_settings.DATABASE_URI
 
     # Create test database tables
-    Base.metadata.create_all(bind=SessionLocal().get_bind())
+    Base.metadata.create_all(bind=engine)
 
     yield
 
@@ -64,7 +71,7 @@ def setup_test_environment():
                 file.unlink()
 
     # Drop test database tables
-    Base.metadata.drop_all(bind=SessionLocal().get_bind())
+    Base.metadata.drop_all(bind=engine)
 
     # Clean up environment
     os.environ.pop("TESTING", None)
@@ -116,10 +123,13 @@ def test_scene(db: Session, test_universe: Dict) -> Dict:
     }
 
 @pytest.fixture(scope="function")
-async def async_db() -> AsyncGenerator[AsyncSession, None]:
+def async_db() -> AsyncGenerator[AsyncSession, None]:
     """Create an async test database session."""
-    async for session in get_session():
-        yield session
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 @pytest.fixture(scope="session")
 async def async_client() -> AsyncGenerator[AsyncClient, None]:

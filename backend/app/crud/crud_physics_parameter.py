@@ -7,7 +7,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
-from app.models.physics_parameter import PhysicsParameter
+from app.models.physics.physics_parameter import PhysicsParameter
 from app.schemas.physics_parameter import PhysicsParameterCreate, PhysicsParameterUpdate
 
 class CRUDPhysicsParameter(CRUDBase[PhysicsParameter, PhysicsParameterCreate, PhysicsParameterUpdate]):

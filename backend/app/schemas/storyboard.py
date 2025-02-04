@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Any, TYPE_CHECKING
 from datetime import datetime
 from pydantic import UUID4, BaseModel, Field
 from uuid import UUID
-from app.models.keyframe import ParameterType
+from app.models.visualization.keyframe import ParameterType
 from app.schemas.keyframe import Keyframe
 
 class StoryboardBase(BaseModel):

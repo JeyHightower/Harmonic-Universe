@@ -28,7 +28,7 @@ from app.models.midi_event import MidiEvent
 from app.models.metrics import PerformanceMetrics
 from app.models.physics_parameter import PhysicsParameter
 from app.models.visualization import Visualization
-from app.models.keyframe import Keyframe
+from app.models.visualization.keyframe import Keyframe
 from app.models.export import Export
 from app.models.physics_constraint import PhysicsConstraint
 from app.models.physics_object import PhysicsObject

@@ -18,8 +18,8 @@ from .core.errors import (
 )
 from .core.security import verify_jwt_token
 from .core.config import settings
-from .db.session import SessionLocal
-from .models.user import User
+from app.db.session import SessionLocal
+from app.models.core.user import User
 
 # Configure logging
 logger = logging.getLogger(__name__)
