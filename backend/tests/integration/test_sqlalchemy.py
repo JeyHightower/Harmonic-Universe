@@ -3,54 +3,47 @@ SQLAlchemy test configuration and basic tests.
 """
 
 import pytest
-from flask import Flask
-from backend.app.extensions import db, init_extensions
-from backend.app.models.scene import Scene, RenderingMode
-from backend.app.config import settings
+import uuid
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from app.models.core.scene import Scene
+from app.models.core.scene import RenderingMode
+from app.db.session import AsyncSessionLocal, async_engine
 
-def create_test_app():
-    """Create a Flask app for testing."""
-    app = Flask(__name__)
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    init_extensions(app)
-    return app
-
-def test_database_operations():
-    """Test basic database operations."""
-    app = create_test_app()
-
-    with app.app_context():
-        # Create all tables
-        db.create_all()
-
-        try:
+@pytest.mark.asyncio
+async def test_database_operations(db: AsyncSession):
+    """Test basic database operations with async SQLAlchemy."""
+    try:
+        async with AsyncSessionLocal() as session:
             # Create a test scene
             test_scene = Scene(
+                id=uuid.uuid4(),
                 name="Test Scene",
                 description="A test scene",
-                rendering_mode=RenderingMode.SOLID
+                rendering_mode=RenderingMode.DRAFT,
+                universe_id=uuid.uuid4(),
+                creator_id=uuid.uuid4()
             )
-            db.session.add(test_scene)
-            db.session.commit()
+            session.add(test_scene)
+            await session.commit()
+            await session.refresh(test_scene)
 
             # Query the scene
-            scene = db.session.query(Scene).filter(Scene.name == "Test Scene").first()
+            stmt = select(Scene).where(Scene.name == "Test Scene")
+            result = await session.execute(stmt)
+            scene = result.scalar_one()
+
             assert scene is not None
             assert scene.name == "Test Scene"
-            assert scene.rendering_mode == RenderingMode.SOLID
+            assert scene.rendering_mode == RenderingMode.DRAFT
+            assert scene.description == "A test scene"
 
-            print("✅ SQLAlchemy operations successful!")
+            print("✅ SQLAlchemy async operations successful!")
 
-        except Exception as e:
-            print(f"❌ SQLAlchemy operations failed: {str(e)}")
-            raise
-
-        finally:
-            db.session.close()
-
-        # Clean up - drop tables
-        db.drop_all()
+    except Exception as e:
+        print(f"❌ SQLAlchemy async operations failed: {str(e)}")
+        raise
 
 if __name__ == "__main__":
-    test_database_operations()
+    import asyncio
+    asyncio.run(test_database_operations())

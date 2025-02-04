@@ -1,15 +1,10 @@
 import pytest
-from fastapi.testclient import TestClient
-from app.main import app
+from fastapi import status
 from app.core.config import settings
 from app.core.security import create_access_token, verify_password
-from app.models.user import User
+from app.models.core.user import User
 from app.schemas.user import UserCreate
 from datetime import timedelta
-from fastapi import status
-
-# Create test client
-client = TestClient(app)
 
 def test_signup(client):
     """Test user signup."""

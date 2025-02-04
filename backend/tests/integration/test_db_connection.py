@@ -1,6 +1,9 @@
 import logging
-from sqlalchemy import create_engine, text
+import pytest
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
+from app.db.session import AsyncSessionLocal
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -14,18 +17,30 @@ logger.info(f"POSTGRES_DB: {settings.POSTGRES_DB}")
 logger.info(f"POSTGRES_PORT: {settings.POSTGRES_PORT}")
 logger.info(f"SQLALCHEMY_DATABASE_URI: {settings.SQLALCHEMY_DATABASE_URI}")
 
-# Create database URL
-db_url = str(settings.SQLALCHEMY_DATABASE_URI)
-logger.info(f"\nAttempting to connect with: {db_url}")
+@pytest.mark.asyncio
+async def test_can_connect_to_db():
+    """Test that we can connect to the database."""
+    try:
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(text("SELECT 1"))
+            assert result is not None
+            row = result.fetchone()
+            assert row[0] == 1
+            logger.info("Successfully connected to the database")
+    except Exception as e:
+        logger.error(f"Failed to connect to the database: {str(e)}")
+        raise
 
-# Create engine
-engine = create_engine(db_url)
-
-try:
-    # Test connection with explicit query
-    with engine.connect() as connection:
-        result = connection.execute(text("SELECT 1"))
-        logger.info("✅ Successfully connected to the database!")
-except Exception as e:
-    logger.error(f"❌ Database connection failed: {str(e)}")
-    raise
+@pytest.mark.asyncio
+async def test_db_session():
+    """Test that we can create a database session and execute a query."""
+    try:
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(text("SELECT 1"))
+            assert result is not None
+            row = result.fetchone()
+            assert row[0] == 1
+            logger.info("Successfully executed query in database session")
+    except Exception as e:
+        logger.error(f"Failed to execute query in database session: {str(e)}")
+        raise
