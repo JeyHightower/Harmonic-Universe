@@ -1,36 +1,25 @@
-from typing import Dict, Optional
-from uuid import UUID
-from sqlalchemy import Column, String, Float, ForeignKey, JSON
-from sqlalchemy.dialects.postgresql import JSONB
-from app.db.custom_types import GUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from datetime import datetime
-from app.db.base_model import Base
+"""
+Physics parameter model.
+"""
 
-# Handle circular imports
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from app.models.universe import Universe
+from sqlalchemy import Column, Integer, Float, ForeignKey, Boolean
+from sqlalchemy.orm import relationship
+from app.db.base_class import Base
 
 class PhysicsParameter(Base):
+    """Physics parameters for a scene."""
     __tablename__ = "physics_parameters"
-    __table_args__ = {'extend_existing': True}
 
-    id: Mapped[UUID] = mapped_column(GUID(), primary_key=True)
-    name: Mapped[str] = mapped_column(String, nullable=False)
-    value: Mapped[float] = mapped_column(Float, nullable=False)
-    unit: Mapped[str] = mapped_column(String, nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    parameter_metadata: Mapped[dict] = mapped_column(
-        JSONB().with_variant(JSON(), 'sqlite'),
-        server_default='{}'
-    )
-    universe_id: Mapped[UUID] = mapped_column(GUID(), ForeignKey("universes.id", ondelete="CASCADE"), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    id = Column(Integer, primary_key=True, index=True)
+    scene_id = Column(Integer, ForeignKey("scenes.id", ondelete="CASCADE"), unique=True)
+    gravity = Column(Float, default=9.81)
+    air_resistance = Column(Float, default=0.1)
+    collision_elasticity = Column(Float, default=0.7)
+    friction = Column(Float, default=0.3)
 
     # Relationships
-    universe: Mapped["Universe"] = relationship("Universe", back_populates="physics_parameters_rel")
+    scene = relationship("Scene", back_populates="physics_parameters")
 
-    def __repr__(self) -> str:
-        return f"<PhysicsParameter {self.name}: {self.value} {self.unit}>"
+    def __repr__(self):
+        """String representation."""
+        return f"<PhysicsParameter(id={self.id}, scene_id={self.scene_id})>"

@@ -1,147 +1,161 @@
 """
-Physics parameters endpoints.
+Physics parameters routes.
 """
 
-from typing import Any, List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-
-from app import crud, models, schemas
-from app.api import deps
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from app.api.deps import get_current_user, get_async_db
+from app.models.core.user import User
+from app.models.core.scene import Scene
+from app.models.physics.physics_parameter import PhysicsParameter
+from app.schemas.physics_parameter import PhysicsParameterCreate, PhysicsParameterUpdate, PhysicsParameterResponse
 
 router = APIRouter()
 
-@router.get("/", response_model=List[schemas.PhysicsParameter])
-def read_physics_parameters(
-    db: Session = Depends(deps.get_db),
-    skip: int = 0,
-    limit: int = 100,
-    current_user: models.User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Retrieve physics parameters.
-    """
-    universe = crud.universe.get(db=db, id=current_user.active_universe_id)
-    if not universe:
+@router.post("", response_model=PhysicsParameterResponse)
+async def create_physics_parameters(
+    params_in: PhysicsParameterCreate,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Create new physics parameters."""
+    # Check if scene exists
+    scene = await db.get(Scene, params_in.scene_id)
+    if not scene:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Universe not found",
+            detail="Scene not found"
         )
-    if not crud.universe.is_owner_or_collaborator(
-        db=db, universe_id=universe.id, user_id=current_user.id
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions",
-        )
-    return crud.physics_parameter.get_by_universe(
-        db=db, universe_id=universe.id, skip=skip, limit=limit
+
+    # Check if parameters already exist for this scene
+    existing_params = await db.execute(
+        select(PhysicsParameter).where(PhysicsParameter.scene_id == params_in.scene_id)
     )
+    if existing_params.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Physics parameters already exist for this scene"
+        )
 
-@router.post("/", response_model=schemas.PhysicsParameter)
-def create_physics_parameter(
-    *,
-    db: Session = Depends(deps.get_db),
-    parameter_in: schemas.PhysicsParameterCreate,
-    current_user: models.User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Create new physics parameter.
-    """
-    universe = crud.universe.get(db=db, id=current_user.active_universe_id)
-    if not universe:
+    # Create new parameters
+    params = PhysicsParameter(**params_in.dict())
+    db.add(params)
+    await db.commit()
+    await db.refresh(params)
+    return params
+
+@router.get("/{params_id}", response_model=PhysicsParameterResponse)
+async def get_physics_parameters(
+    params_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get physics parameters by ID."""
+    params = await db.get(PhysicsParameter, params_id)
+    if not params:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Universe not found",
+            detail="Physics parameters not found"
         )
-    if not crud.universe.is_owner_or_collaborator(
-        db=db, universe_id=universe.id, user_id=current_user.id
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions",
-        )
-    return crud.physics_parameter.create_with_universe(
-        db=db, obj_in=parameter_in, universe_id=universe.id
+    return params
+
+@router.get("/scene/{scene_id}", response_model=PhysicsParameterResponse)
+async def get_scene_physics_parameters(
+    scene_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get physics parameters for a scene."""
+    params = await db.execute(
+        select(PhysicsParameter).where(PhysicsParameter.scene_id == scene_id)
     )
-
-@router.get("/{parameter_id}", response_model=schemas.PhysicsParameter)
-def read_physics_parameter(
-    *,
-    db: Session = Depends(deps.get_db),
-    parameter_id: str,
-    current_user: models.User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Get physics parameter by ID.
-    """
-    parameter = crud.physics_parameter.get(db=db, id=parameter_id)
-    if not parameter:
+    params = params.scalar_one_or_none()
+    if not params:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Physics parameter not found",
+            detail="Physics parameters not found for this scene"
         )
-    universe = crud.universe.get(db=db, id=parameter.universe_id)
-    if not crud.universe.is_owner_or_collaborator(
-        db=db, universe_id=universe.id, user_id=current_user.id
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions",
-        )
-    return parameter
+    return params
 
-@router.put("/{parameter_id}", response_model=schemas.PhysicsParameter)
-def update_physics_parameter(
-    *,
-    db: Session = Depends(deps.get_db),
-    parameter_id: str,
-    parameter_in: schemas.PhysicsParameterUpdate,
-    current_user: models.User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Update physics parameter.
-    """
-    parameter = crud.physics_parameter.get(db=db, id=parameter_id)
-    if not parameter:
+@router.put("/{params_id}", response_model=PhysicsParameterResponse)
+async def update_physics_parameters(
+    params_id: int,
+    params_in: PhysicsParameterUpdate,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Update physics parameters."""
+    params = await db.get(PhysicsParameter, params_id)
+    if not params:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Physics parameter not found",
+            detail="Physics parameters not found"
         )
-    universe = crud.universe.get(db=db, id=parameter.universe_id)
-    if not crud.universe.is_owner_or_collaborator(
-        db=db, universe_id=universe.id, user_id=current_user.id
-    ):
+
+    # Update parameters
+    for field, value in params_in.dict(exclude_unset=True).items():
+        setattr(params, field, value)
+
+    await db.commit()
+    await db.refresh(params)
+    return params
+
+@router.delete("/{params_id}")
+async def delete_physics_parameters(
+    params_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Delete physics parameters."""
+    params = await db.get(PhysicsParameter, params_id)
+    if not params:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Physics parameters not found"
         )
-    return crud.physics_parameter.update(
-        db=db, db_obj=parameter, obj_in=parameter_in
+
+    await db.delete(params)
+    await db.commit()
+    return {"status": "success"}
+
+@router.get("/defaults/{scene_type}", response_model=PhysicsParameterResponse)
+async def get_default_physics_parameters(
+    scene_type: str,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get default physics parameters for a scene type."""
+    # Define default parameters for different scene types
+    defaults = {
+        "space": {
+            "gravity": 0.0,
+            "air_resistance": 0.0,
+            "collision_elasticity": 1.0,
+            "friction": 0.0
+        },
+        "earth": {
+            "gravity": 9.81,
+            "air_resistance": 0.1,
+            "collision_elasticity": 0.7,
+            "friction": 0.3
+        },
+        "water": {
+            "gravity": 9.81,
+            "air_resistance": 0.5,
+            "collision_elasticity": 0.3,
+            "friction": 0.8
+        }
+    }
+
+    if scene_type not in defaults:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"No default parameters for scene type: {scene_type}"
+        )
+
+    return PhysicsParameter(
+        scene_id=0,  # Placeholder
+        **defaults[scene_type]
     )
-
-@router.delete("/{parameter_id}", response_model=schemas.PhysicsParameter)
-def delete_physics_parameter(
-    *,
-    db: Session = Depends(deps.get_db),
-    parameter_id: str,
-    current_user: models.User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Delete physics parameter.
-    """
-    parameter = crud.physics_parameter.get(db=db, id=parameter_id)
-    if not parameter:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Physics parameter not found",
-        )
-    universe = crud.universe.get(db=db, id=parameter.universe_id)
-    if not crud.universe.is_owner_or_collaborator(
-        db=db, universe_id=universe.id, user_id=current_user.id
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions",
-        )
-    return crud.physics_parameter.remove(db=db, id=parameter_id)

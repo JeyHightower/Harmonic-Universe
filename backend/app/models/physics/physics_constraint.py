@@ -2,39 +2,63 @@
 Physics constraint model.
 """
 
-from typing import Dict, Optional, TYPE_CHECKING
-from uuid import UUID
-from sqlalchemy import String, Float, ForeignKey, JSON
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from datetime import datetime
-
-from app.db.base_model import Base, GUID
-
-# Handle circular imports
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from app.models.scene import Scene
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, JSON
+from sqlalchemy.orm import relationship
+from app.db.base_class import Base
 
 class PhysicsConstraint(Base):
-    """Physics constraint model."""
+    """Physical constraint between objects in a scene."""
     __tablename__ = "physics_constraints"
-    __table_args__ = {'extend_existing': True}
 
-    id: Mapped[UUID] = mapped_column(GUID(), primary_key=True)
-    name: Mapped[str] = mapped_column(String, nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    parameters: Mapped[Dict] = mapped_column(
-        JSON,
-        server_default='{}',
-        nullable=False
-    )
-    scene_id: Mapped[UUID] = mapped_column(GUID(), ForeignKey("scenes.id", ondelete="CASCADE"), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    id = Column(Integer, primary_key=True, index=True)
+    scene_id = Column(Integer, ForeignKey("scenes.id", ondelete="CASCADE"))
+    name = Column(String, index=True)
+    constraint_type = Column(String)
+    object_a_id = Column(Integer, ForeignKey("physics_objects.id", ondelete="CASCADE"))
+    object_b_id = Column(Integer, ForeignKey("physics_objects.id", ondelete="CASCADE"), nullable=True)
+    anchor_a = Column(JSON, default=lambda: {"x": 0.0, "y": 0.0, "z": 0.0})
+    anchor_b = Column(JSON, nullable=True)
+    axis_a = Column(JSON, default=lambda: {"x": 0.0, "y": 1.0, "z": 0.0})
+    axis_b = Column(JSON, nullable=True)
+    limits = Column(JSON, default=dict)
+    spring_properties = Column(JSON, nullable=True)
+    breaking_force = Column(Float, nullable=True)
+    enabled = Column(Boolean, default=True)
 
     # Relationships
-    scene: Mapped["Scene"] = relationship("Scene", back_populates="physics_constraints")
+    scene = relationship("Scene", back_populates="physics_constraints")
+    object_a = relationship(
+        "PhysicsObject",
+        foreign_keys=[object_a_id],
+        back_populates="constraints_a"
+    )
+    object_b = relationship(
+        "PhysicsObject",
+        foreign_keys=[object_b_id],
+        back_populates="constraints_b"
+    )
 
-    def __repr__(self) -> str:
-        """Return string representation."""
-        return f"<PhysicsConstraint {self.name}>"
+    def __repr__(self):
+        """String representation."""
+        return (
+            f"<PhysicsConstraint(id={self.id}, name='{self.name}', "
+            f"type='{self.constraint_type}', scene_id={self.scene_id})>"
+        )
+
+    def to_dict(self):
+        """Convert constraint to dictionary for physics engine."""
+        return {
+            "id": self.id,
+            "name": self.name,
+            "constraint_type": self.constraint_type,
+            "object_a_id": self.object_a_id,
+            "object_b_id": self.object_b_id,
+            "anchor_a": self.anchor_a,
+            "anchor_b": self.anchor_b,
+            "axis_a": self.axis_a,
+            "axis_b": self.axis_b,
+            "limits": self.limits,
+            "spring_properties": self.spring_properties,
+            "breaking_force": self.breaking_force,
+            "enabled": self.enabled
+        }

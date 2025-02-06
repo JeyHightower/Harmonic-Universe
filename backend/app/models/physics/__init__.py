@@ -1,11 +1,13 @@
-"""Physics models."""
+"""
+Physics models package.
+"""
 
-from app.models.physics.physics_object import PhysicsObject
-from app.models.physics.physics_constraint import PhysicsConstraint
-from app.models.physics.physics_parameter import PhysicsParameter
+from .physics_parameter import PhysicsParameter
+from .physics_object import PhysicsObject
+from .physics_constraint import PhysicsConstraint
 
 __all__ = [
-    'PhysicsObject',
-    'PhysicsConstraint',
-    'PhysicsParameter',
+    "PhysicsParameter",
+    "PhysicsObject",
+    "PhysicsConstraint"
 ]

@@ -28,34 +28,10 @@ from app.models.core.user import User
 from app.models.core.universe import Universe
 from app.models.core.scene import Scene
 from app.api.deps import get_db
-from tests.utils.factories import (
-    UserFactory,
-    UniverseFactory,
-    SceneFactory,
-    AudioFileFactory,
-    AIModelFactory,
-    AIGenerationFactory,
-    StoryboardFactory,
-    TimelineFactory
-)
 from tests.utils.override_get_db import override_get_db
 
-# Import all models to ensure they are registered with SQLAlchemy
-from app.models.audio.audio_file import AudioFile
-from app.models.ai.ai_model import AIModel
-from app.models.ai.ai_generation import AIGeneration
-from app.models.organization.storyboard import Storyboard
-from app.models.organization.timeline import Timeline
-from app.models.audio.music_parameter import MusicParameter
-from app.models.audio.midi_event import MidiEvent
-from app.models.metrics import PerformanceMetrics
-from app.models.physics.physics_parameter import PhysicsParameter
-from app.models.visualization.visualization import Visualization
-from app.models.visualization.keyframe import Keyframe
-from app.models.export import Export
-from app.models.physics.physics_constraint import PhysicsConstraint
-from app.models.physics.physics_object import PhysicsObject
-from app.models.visualization.scene_object import SceneObject
+# Import all fixtures
+from tests.fixtures import *
 
 # Initialize test settings
 test_settings = TestSettings()
@@ -66,7 +42,13 @@ def verify_tables_exist():
     existing_tables = inspector.get_table_names()
     logger.debug(f"Existing tables: {existing_tables}")
 
-    required_tables = ['users', 'universes', 'scenes']  # Add other required tables
+    required_tables = [
+        'users', 'universes', 'scenes', 'audio_files', 'ai_models',
+        'ai_generations', 'storyboards', 'timelines', 'music_parameters',
+        'midi_events', 'performance_metrics', 'physics_parameters',
+        'visualizations', 'keyframes', 'exports', 'physics_constraints',
+        'physics_objects', 'scene_objects'
+    ]
     for table in required_tables:
         if table not in existing_tables:
             raise Exception(f"Required table '{table}' does not exist in the database")
@@ -124,9 +106,7 @@ def setup_test_environment():
 
 @pytest.fixture(scope="function")
 def db() -> Generator:
-    """
-    Get test database session.
-    """
+    """Get test database session."""
     connection = engine.connect()
     transaction = connection.begin()
     session = SessionLocal(bind=connection)
@@ -142,9 +122,7 @@ def db() -> Generator:
 
 @pytest.fixture(scope="function")
 def client(db: Session) -> Generator:
-    """
-    Create test client with database session.
-    """
+    """Create test client with database session."""
     app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as test_client:
         yield test_client
