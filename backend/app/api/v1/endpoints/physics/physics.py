@@ -13,13 +13,21 @@ from app.models.physics.physics_parameter import PhysicsParameter
 from app.models.physics.physics_object import PhysicsObject
 from app.models.physics.physics_constraint import PhysicsConstraint
 from app.core.physics import physics_engine
-from app.schemas.physics_parameter import PhysicsParameterCreate, PhysicsParameterUpdate
-from app.schemas.physics_object import PhysicsObjectCreate, PhysicsObjectUpdate
-from app.schemas.physics_constraint import PhysicsConstraintCreate, PhysicsConstraintUpdate
+from app.schemas.physics import (
+    PhysicsParameterCreate,
+    PhysicsParameterUpdate,
+    PhysicsParameterResponse,
+    PhysicsObjectCreate,
+    PhysicsObjectUpdate,
+    PhysicsObjectResponse,
+    PhysicsConstraintCreate,
+    PhysicsConstraintUpdate,
+    PhysicsConstraintResponse
+)
 
 router = APIRouter()
 
-@router.get("/scenes/{scene_id}/parameters", response_model=PhysicsParameter)
+@router.get("/scenes/{scene_id}/parameters", response_model=PhysicsParameterResponse)
 async def get_scene_physics_parameters(
     scene_id: int,
     db: AsyncSession = Depends(get_async_db),
@@ -34,7 +42,7 @@ async def get_scene_physics_parameters(
         )
     return params
 
-@router.put("/scenes/{scene_id}/parameters", response_model=PhysicsParameter)
+@router.put("/scenes/{scene_id}/parameters", response_model=PhysicsParameterResponse)
 async def update_scene_physics_parameters(
     scene_id: int,
     params_in: PhysicsParameterUpdate,
@@ -94,7 +102,7 @@ async def simulate_scene(
     await db.commit()
     return {"status": "success", "updated_objects": len(updated_objects)}
 
-@router.post("/scenes/{scene_id}/objects", response_model=PhysicsObject)
+@router.post("/scenes/{scene_id}/objects", response_model=PhysicsObjectResponse)
 async def create_physics_object(
     scene_id: int,
     obj_in: PhysicsObjectCreate,
@@ -115,7 +123,7 @@ async def create_physics_object(
     await db.refresh(obj)
     return obj
 
-@router.get("/scenes/{scene_id}/objects/{object_id}", response_model=PhysicsObject)
+@router.get("/scenes/{scene_id}/objects/{object_id}", response_model=PhysicsObjectResponse)
 async def get_physics_object(
     scene_id: int,
     object_id: int,
@@ -131,7 +139,7 @@ async def get_physics_object(
         )
     return obj
 
-@router.put("/scenes/{scene_id}/objects/{object_id}", response_model=PhysicsObject)
+@router.put("/scenes/{scene_id}/objects/{object_id}", response_model=PhysicsObjectResponse)
 async def update_physics_object(
     scene_id: int,
     object_id: int,
@@ -174,7 +182,7 @@ async def delete_physics_object(
     await db.commit()
     return {"status": "success"}
 
-@router.post("/scenes/{scene_id}/constraints", response_model=PhysicsConstraint)
+@router.post("/scenes/{scene_id}/constraints", response_model=PhysicsConstraintResponse)
 async def create_physics_constraint(
     scene_id: int,
     constraint_in: PhysicsConstraintCreate,
@@ -195,7 +203,7 @@ async def create_physics_constraint(
     await db.refresh(constraint)
     return constraint
 
-@router.get("/scenes/{scene_id}/constraints/{constraint_id}", response_model=PhysicsConstraint)
+@router.get("/scenes/{scene_id}/constraints/{constraint_id}", response_model=PhysicsConstraintResponse)
 async def get_physics_constraint(
     scene_id: int,
     constraint_id: int,
@@ -211,7 +219,7 @@ async def get_physics_constraint(
         )
     return constraint
 
-@router.put("/scenes/{scene_id}/constraints/{constraint_id}", response_model=PhysicsConstraint)
+@router.put("/scenes/{scene_id}/constraints/{constraint_id}", response_model=PhysicsConstraintResponse)
 async def update_physics_constraint(
     scene_id: int,
     constraint_id: int,

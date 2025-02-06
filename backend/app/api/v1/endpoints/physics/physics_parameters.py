@@ -10,7 +10,11 @@ from app.api.deps import get_current_user, get_async_db
 from app.models.core.user import User
 from app.models.core.scene import Scene
 from app.models.physics.physics_parameter import PhysicsParameter
-from app.schemas.physics_parameter import PhysicsParameterCreate, PhysicsParameterUpdate, PhysicsParameterResponse
+from app.schemas.physics import (
+    PhysicsParameterCreate,
+    PhysicsParameterUpdate,
+    PhysicsParameterResponse
+)
 
 router = APIRouter()
 
