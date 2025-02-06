@@ -8,13 +8,13 @@ from sqlalchemy.orm import Session
 import os
 from pathlib import Path
 
-from backend.app import crud
-from backend.app.core.config import settings
-from backend.app.models.audio_file import AudioFormat, AudioType
-from backend.app.schemas.audio_file import AudioFileCreateSchema
-from backend.app.tests.utils.utils import random_lower_string
-from backend.app.tests.utils.user import create_random_user
-from backend.app.tests.utils.universe import create_random_universe
+from app import crud
+from app.core.config import settings
+from app.models.audio.audio_file import AudioFile, AudioFormat, AudioType
+from app.schemas.audio_file import AudioFileCreate
+from tests.utils.utils import random_lower_string
+from tests.utils.user import create_random_user
+from tests.utils.universe import create_random_universe
 
 def test_create_audio_file(
     client: TestClient,
@@ -36,17 +36,17 @@ def test_create_audio_file(
             "description": "Test audio file",
             "format": AudioFormat.WAV,
             "type": AudioType.UPLOADED,
-            "universe_id": str(universe.id),
+            "scene_id": str(universe.id),
             "file_path": str(test_file),
             "file_size": os.path.getsize(test_file)
         }
 
-        audio_in = AudioFileCreateSchema(**file_data)
+        audio_in = AudioFileCreate(**file_data)
         audio = crud.audio_file.create(db=db, obj_in=audio_in)
 
         assert audio.name == name
         assert audio.format == AudioFormat.WAV
-        assert audio.universe_id == universe.id
+        assert audio.scene_id == universe.id
         assert os.path.exists(audio.file_path)
 
     finally:

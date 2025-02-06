@@ -11,16 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.util._concurrency_py3k import greenlet_spawn
 
 from app.core.config import settings
-<<<<<<< HEAD
-from app.db.session import SessionLocal, engine, init_db
-from app.db.base import Base
-from app.main import app
-=======
 from app.db.session import SessionLocal, engine, async_engine
 from app.db.base import Base
 from app.main import app
 from app.core.security import create_access_token
->>>>>>> eff55919 (fixed core db functionalithy and async sqlalchemy operations are workink)
 from tests.utils.user import create_random_user
 from tests.utils.universe import create_random_universe
 from tests.utils.scene import create_random_scene
@@ -34,27 +28,16 @@ from app.models.ai.ai_model import AIModel
 from app.models.ai.ai_generation import AIGeneration
 from app.models.organization.storyboard import Storyboard
 from app.models.organization.timeline import Timeline
-<<<<<<< HEAD
+from app.models.audio.music_parameter import MusicParameter
+from app.models.audio.midi_event import MidiEvent
+from app.models.metrics import PerformanceMetrics
 from app.models.physics.physics_parameter import PhysicsParameter
 from app.models.physics.physics_constraint import PhysicsConstraint
 from app.models.physics.physics_object import PhysicsObject
-from app.models.audio.music_parameter import MusicParameter
-from app.models.audio.midi_event import MidiEvent
-from app.models.metrics import PerformanceMetrics
-from app.models.visualization.visualization import Visualization
-from app.models.visualization.keyframe import Keyframe
-from app.models.export import Export
-=======
-from app.models.audio.music_parameter import MusicParameter
-from app.models.audio.midi_event import MidiEvent
-from app.models.metrics import PerformanceMetrics
-from app.models.physics.physics_parameter import PhysicsParameter
 from app.models.visualization import Visualization
 from app.models.visualization.keyframe import Keyframe
-from app.models.export import Export
-from app.models.physics.physics_constraint import PhysicsConstraint
-from app.models.physics.physics_object import PhysicsObject
 from app.models.visualization.scene_object import SceneObject
+from app.models.export import Export
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -62,7 +45,6 @@ def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
->>>>>>> eff55919 (fixed core db functionalithy and async sqlalchemy operations are workink)
 
 @pytest.fixture(scope="session", autouse=True)
 async def setup_test_db():
@@ -76,41 +58,6 @@ async def setup_test_db():
         if os.path.exists(db_path):
             os.remove(db_path)
 
-<<<<<<< HEAD
-    # Create all tables directly without migrations for testing
-    Base.metadata.create_all(bind=engine)
-
-    yield
-
-    # Cleanup after tests
-    Base.metadata.drop_all(bind=engine)
-    engine.dispose()
-
-@pytest.fixture(scope="function")
-def db() -> Session:
-    """Get test database session."""
-    session = SessionLocal()
-    try:
-        yield session
-    finally:
-        session.rollback()
-        session.close()
-
-@pytest.fixture(scope="function")
-def test_db(db: Session):
-    """Create a fresh database for each test."""
-    # Clear all tables
-    for table in reversed(Base.metadata.sorted_tables):
-        db.execute(table.delete())
-    db.commit()
-
-    yield db
-
-    # Cleanup after test
-    for table in reversed(Base.metadata.sorted_tables):
-        db.execute(table.delete())
-    db.commit()
-=======
     def run_sync():
         # Drop all tables first to ensure clean state
         Base.metadata.drop_all(bind=engine)
@@ -136,13 +83,12 @@ async def db() -> AsyncGenerator[AsyncSession, None]:
         finally:
             await session.rollback()
             await session.close()
->>>>>>> eff55919 (fixed core db functionalithy and async sqlalchemy operations are workink)
 
 @pytest.fixture(scope="module")
 def client() -> Generator:
     """Create a test client for the FastAPI app."""
-    with TestClient(app) as c:
-        yield c
+    client = TestClient(app)
+    yield client
 
 @pytest.fixture(scope="module")
 def test_client() -> Generator:

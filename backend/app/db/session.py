@@ -6,7 +6,7 @@ from typing import Generator, AsyncGenerator
 import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session, Session
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.pool import QueuePool
 from app.core.config import settings
 from app.db.base_class import Base
@@ -75,12 +75,21 @@ else:
 
 # Create engines
 engine = create_engine(sync_url, **engine_args)
+async_engine = create_async_engine(async_url, **engine_args)
 
 # Create session factories
 SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
     bind=engine
+)
+
+AsyncSessionLocal = async_sessionmaker(
+    async_engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autocommit=False,
+    autoflush=False
 )
 
 # Create thread-safe session
@@ -93,6 +102,14 @@ def get_db() -> Generator[Session, None, None]:
         yield session
     finally:
         session.close()
+
+async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
+    """Get async database session."""
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
 
 def init_db() -> None:
     """Initialize database."""
@@ -135,4 +152,4 @@ def get_test_db() -> Generator[Session, None, None]:
     finally:
         session.close()
 
-__all__ = ['SessionLocal', 'engine', 'Base', 'get_db', 'get_test_db', 'init_db']
+__all__ = ['SessionLocal', 'AsyncSessionLocal', 'engine', 'async_engine', 'Base', 'get_db', 'get_async_db', 'get_test_db', 'init_db']

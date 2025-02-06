@@ -10,9 +10,9 @@ import json
 import librosa
 from sqlalchemy.orm import Session
 
-from backend.app.core.audio.processor import AudioProcessor
-from backend.app.models.audio_file import AudioFormat
-from backend.app.tests.utils.utils import random_lower_string
+from app.core.audio.processor import AudioProcessor
+from app.models.audio.audio_file import AudioFormat
+from tests.utils.utils import random_lower_string
 
 @pytest.fixture
 def test_wav_file(tmp_path):
@@ -100,15 +100,6 @@ def test_save_audio(test_wav_file, tmp_path):
     assert len(loaded_data) == len(processor.audio_data)
     assert sr == processor.sample_rate
 
-def test_to_base64(test_wav_file):
-    """Test converting audio to base64."""
-    processor = AudioProcessor(str(test_wav_file), AudioFormat.WAV)
-    base64_data, mime_type = processor.to_base64()
-
-    assert isinstance(base64_data, str)
-    assert mime_type == "audio/wav"
-    assert len(base64_data) > 0
-
 def test_load_audio_file(db: Session) -> None:
     """Test loading an audio file."""
     # Create a test audio file
@@ -118,7 +109,8 @@ def test_load_audio_file(db: Session) -> None:
     t = np.linspace(0, duration, int(sample_rate * duration))
     audio_data = np.sin(2 * np.pi * 440 * t)  # 440 Hz sine wave
 
-    processor = AudioProcessor()
+    # Initialize processor with the test file
+    processor = AudioProcessor(str(test_file), AudioFormat.WAV)
     processor.save_audio(test_file, audio_data, sample_rate)
 
     # Load and verify
@@ -138,7 +130,11 @@ def test_process_audio(db: Session) -> None:
     t = np.linspace(0, duration, int(sample_rate * duration))
     audio_data = np.sin(2 * np.pi * 440 * t)
 
-    processor = AudioProcessor()
+    # Create a temporary file for testing
+    test_file = Path("test_process.wav")
+    sf.write(test_file, audio_data, sample_rate)
+
+    processor = AudioProcessor(str(test_file), AudioFormat.WAV)
 
     # Test normalization
     normalized = processor.normalize(audio_data)
@@ -153,6 +149,9 @@ def test_process_audio(db: Session) -> None:
     filtered = processor.apply_filter(audio_data, sample_rate, cutoff=1000, filter_type="lowpass")
     assert len(filtered) == len(audio_data)
 
+    # Cleanup
+    test_file.unlink()
+
 def test_audio_analysis(db: Session) -> None:
     """Test audio analysis functions."""
     # Create test audio data
@@ -162,7 +161,11 @@ def test_audio_analysis(db: Session) -> None:
     frequency = 440  # Hz
     audio_data = np.sin(2 * np.pi * frequency * t)
 
-    processor = AudioProcessor()
+    # Create a temporary file for testing
+    test_file = Path("test_analysis.wav")
+    sf.write(test_file, audio_data, sample_rate)
+
+    processor = AudioProcessor(str(test_file), AudioFormat.WAV)
 
     # Test frequency analysis
     frequencies, magnitudes = processor.analyze_frequency_content(audio_data, sample_rate)
@@ -179,6 +182,9 @@ def test_audio_analysis(db: Session) -> None:
     assert isinstance(onsets, np.ndarray)
     assert np.all(onsets >= 0)  # Onset times should be non-negative
 
+    # Cleanup
+    test_file.unlink()
+
 def test_audio_effects(db: Session) -> None:
     """Test audio effects processing."""
     # Create test audio data
@@ -187,7 +193,11 @@ def test_audio_effects(db: Session) -> None:
     t = np.linspace(0, duration, int(sample_rate * duration))
     audio_data = np.sin(2 * np.pi * 440 * t)
 
-    processor = AudioProcessor()
+    # Create a temporary file for testing
+    test_file = Path("test_effects.wav")
+    sf.write(test_file, audio_data, sample_rate)
+
+    processor = AudioProcessor(str(test_file), AudioFormat.WAV)
 
     # Test reverb
     reverb_audio = processor.apply_reverb(audio_data, sample_rate)
@@ -203,3 +213,15 @@ def test_audio_effects(db: Session) -> None:
     distorted = processor.apply_distortion(audio_data, gain)
     assert len(distorted) == len(audio_data)
     assert np.max(np.abs(distorted)) <= 1.0  # Should be normalized
+
+    # Cleanup
+    test_file.unlink()
+
+def test_to_base64(test_wav_file):
+    """Test converting audio to base64."""
+    processor = AudioProcessor(str(test_wav_file), AudioFormat.WAV)
+    base64_data, mime_type = processor.to_base64()
+
+    assert isinstance(base64_data, str)
+    assert mime_type.lower() == "audio/wav"  # Case-insensitive comparison
+    assert len(base64_data) > 0

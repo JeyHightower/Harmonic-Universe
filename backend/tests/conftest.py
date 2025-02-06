@@ -140,15 +140,11 @@ def db() -> Generator:
     transaction.rollback()
     connection.close()
 
-@pytest.fixture(scope="function")
-def client(db: Session) -> Generator:
-    """
-    Create test client with database session.
-    """
-    app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as test_client:
-        yield test_client
-    app.dependency_overrides = {}
+@pytest.fixture(scope="module")
+def client() -> Generator:
+    """Create a test client for the FastAPI app."""
+    with TestClient(app) as c:
+        yield c
 
 @pytest.fixture(scope="function")
 def test_user(db: Session) -> Dict[str, Any]:

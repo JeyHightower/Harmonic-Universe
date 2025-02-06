@@ -2,7 +2,7 @@ from typing import Dict, Any, List, Optional
 import numpy as np
 import sounddevice as sd
 import pretty_midi
-from scipy import signal
+from scipy import signal as scipy_signal
 
 class Synthesizer:
     def __init__(self, sample_rate: int = 44100):
@@ -67,11 +67,11 @@ class Synthesizer:
         if waveform == "sine":
             return np.sin(2 * np.pi * frequency * t)
         elif waveform == "square":
-            return signal.square(2 * np.pi * frequency * t)
+            return scipy_signal.square(2 * np.pi * frequency * t)
         elif waveform == "sawtooth":
-            return signal.sawtooth(2 * np.pi * frequency * t)
+            return scipy_signal.sawtooth(2 * np.pi * frequency * t)
         elif waveform == "triangle":
-            return signal.sawtooth(2 * np.pi * frequency * t, 0.5)
+            return scipy_signal.sawtooth(2 * np.pi * frequency * t, 0.5)
         else:
             raise ValueError(f"Unsupported waveform type: {waveform}")
 
@@ -119,18 +119,18 @@ class Synthesizer:
         normalized_cutoff = filter_params["cutoff"] / nyquist
 
         if filter_params["type"] == "lowpass":
-            b, a = signal.butter(2, normalized_cutoff, "low")
+            b, a = scipy_signal.butter(2, normalized_cutoff, "low")
         elif filter_params["type"] == "highpass":
-            b, a = signal.butter(2, normalized_cutoff, "high")
+            b, a = scipy_signal.butter(2, normalized_cutoff, "high")
         elif filter_params["type"] == "bandpass":
-            b, a = signal.butter(2, [
+            b, a = scipy_signal.butter(2, [
                 normalized_cutoff / 2,
                 normalized_cutoff
             ], "band")
         else:
             raise ValueError(f"Unsupported filter type: {filter_params['type']}")
 
-        return signal.filtfilt(b, a, audio)
+        return scipy_signal.filtfilt(b, a, audio)
 
     def synthesize_note(
         self,
@@ -202,3 +202,29 @@ class Synthesizer:
                 output[start_idx:end_idx] += note_audio * (note.velocity / 127.0)
 
         return np.clip(output, -1, 1)
+
+def apply_filter(audio_data: np.ndarray, sample_rate: int, cutoff: float, filter_type: str = "lowpass", high_cutoff: float = None) -> np.ndarray:
+    """Apply a filter to the audio data.
+
+    Args:
+        audio_data: The audio data to filter
+        sample_rate: The sample rate of the audio data
+        cutoff: The cutoff frequency in Hz
+        filter_type: The type of filter to apply ("lowpass", "highpass", or "bandpass")
+        high_cutoff: The high cutoff frequency for bandpass filter
+
+    Returns:
+        The filtered audio data
+    """
+    nyquist = sample_rate / 2
+    normalized_cutoff = cutoff / nyquist
+
+    # Apply filter based on filter type
+    if filter_type == "lowpass":
+        b, a = scipy_signal.butter(2, normalized_cutoff, "low")
+    elif filter_type == "highpass":
+        b, a = scipy_signal.butter(2, normalized_cutoff, "high")
+    else:  # bandpass
+        b, a = scipy_signal.butter(2, [normalized_cutoff / 2, high_cutoff / nyquist], "band")
+
+    return scipy_signal.filtfilt(b, a, audio_data)
