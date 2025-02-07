@@ -1,10 +1,21 @@
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
+import compression from 'vite-plugin-compression';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    compression({
+      algorithm: 'gzip',
+      ext: '.gz',
+    }),
+    compression({
+      algorithm: 'brotliCompress',
+      ext: '.br',
+    }),
+  ],
   server: {
     host: true,
     port: 3000,
@@ -13,10 +24,21 @@ export default defineConfig({
     },
   },
   build: {
+    target: 'esnext',
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor': ['react', 'react-dom', 'react-router-dom', '@reduxjs/toolkit', 'react-redux'],
+          'react-core': ['react', 'react-dom'],
+          'react-router': ['react-router-dom'],
+          'redux-core': ['@reduxjs/toolkit', 'react-redux'],
+          'material-ui': ['@mui/material', '@mui/icons-material'],
           'audio': ['@/store/slices/audioSlice'],
           'physics': ['@/store/slices/physicsSlice'],
           'universe': ['@/store/slices/universeSlice'],
@@ -24,9 +46,24 @@ export default defineConfig({
           'auth': ['@/store/slices/authSlice'],
           'ai': ['@/store/slices/aiSlice'],
         },
+        assetFileNames: (assetInfo) => {
+          let extType = assetInfo.name.split('.').at(1);
+          if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(extType)) {
+            extType = 'img';
+          } else if (/woff|woff2|eot|ttf|otf/i.test(extType)) {
+            extType = 'fonts';
+          }
+          return `assets/${extType}/[name]-[hash][extname]`;
+        },
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
       },
     },
     chunkSizeWarningLimit: 600,
+    assetsInlineLimit: 4096,
+    sourcemap: false,
+    cssCodeSplit: true,
+    reportCompressedSize: true,
   },
   resolve: {
     alias: {
