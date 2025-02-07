@@ -1,77 +1,84 @@
-import { useAudioEngine } from '@hooks/useAudioEngine';
+import { useAudio } from '@/hooks/useAudio';
+import { useAudioEngine } from '@/hooks/useAudioEngine';
 import { Box, Grid, Paper } from '@mui/material';
-import React, { useState } from 'react';
-import EffectsRack from './EffectsRack';
-import MIDIEditor from './MIDIEditor';
-import TrackList from './TrackList';
-import TransportControls from './TransportControls';
-import WaveformEditor from './WaveformEditor';
+import React, { useEffect } from 'react';
+import { MIDIEditor } from './MIDIEditor';
+import { TrackList } from './TrackList';
+import { WaveformEditor } from './WaveformEditor';
 
-const AudioWorkspace: React.FC = () => {
-    const [selectedTrackId, setSelectedTrackId] = useState<number | null>(null);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [currentTime, setCurrentTime] = useState(0);
-    const audioEngine = useAudioEngine();
+interface AudioWorkspaceProps {
+    projectId: number;
+}
 
-    const handleTrackSelect = (trackId: number) => {
-        setSelectedTrackId(trackId);
-    };
+export const AudioWorkspace: React.FC<AudioWorkspaceProps> = ({ projectId }) => {
+    const {
+        currentTrack,
+        isPlaying,
+        volume,
+        currentTime,
+        duration,
+        setIsPlaying,
+        setVolume,
+        setCurrentTime,
+    } = useAudio(projectId);
 
-    const handlePlayPause = () => {
-        if (isPlaying) {
-            audioEngine.pause();
-        } else {
-            audioEngine.play();
+    const {
+        isInitialized,
+        initializeEngine,
+        loadTrack,
+        playTrack,
+        stopTrack,
+    } = useAudioEngine();
+
+    useEffect(() => {
+        if (!isInitialized) {
+            initializeEngine();
         }
-        setIsPlaying(!isPlaying);
-    };
+    }, [isInitialized, initializeEngine]);
 
-    const handleTimeUpdate = (time: number) => {
-        setCurrentTime(time);
-    };
+    useEffect(() => {
+        if (currentTrack && isInitialized) {
+            loadTrack(currentTrack);
+        }
+    }, [currentTrack, isInitialized, loadTrack]);
+
+    useEffect(() => {
+        if (currentTrack) {
+            if (isPlaying) {
+                playTrack(currentTrack);
+            } else {
+                stopTrack(currentTrack.id);
+            }
+        }
+    }, [currentTrack, isPlaying, playTrack, stopTrack]);
 
     return (
-        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <TransportControls
-                isPlaying={isPlaying}
-                currentTime={currentTime}
-                onPlayPause={handlePlayPause}
-                onTimeUpdate={handleTimeUpdate}
-            />
-            <Grid container spacing={2} sx={{ flexGrow: 1, overflow: 'hidden' }}>
-                <Grid item xs={3}>
-                    <Paper sx={{ height: '100%', overflow: 'auto' }}>
-                        <TrackList
-                            selectedTrackId={selectedTrackId}
-                            onTrackSelect={handleTrackSelect}
-                        />
+        <Box sx={{ p: 2 }}>
+            <Grid container spacing={2}>
+                <Grid item xs={12} md={4}>
+                    <Paper sx={{ p: 2 }}>
+                        <TrackList projectId={projectId} />
                     </Paper>
                 </Grid>
-                <Grid item xs={9}>
-                    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                        <Paper sx={{ flexGrow: 1, mb: 2, overflow: 'hidden' }}>
-                            <WaveformEditor
-                                trackId={selectedTrackId}
-                                isPlaying={isPlaying}
-                                currentTime={currentTime}
-                                onTimeUpdate={handleTimeUpdate}
-                            />
-                        </Paper>
-                        <Paper sx={{ height: '200px', mb: 2 }}>
-                            <MIDIEditor
-                                trackId={selectedTrackId}
-                                isPlaying={isPlaying}
-                                currentTime={currentTime}
-                            />
-                        </Paper>
-                        <Paper sx={{ height: '150px' }}>
-                            <EffectsRack trackId={selectedTrackId} />
-                        </Paper>
-                    </Box>
+                <Grid item xs={12} md={8}>
+                    <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                            <Paper sx={{ p: 2 }}>
+                                {currentTrack && (
+                                    <WaveformEditor track={currentTrack} projectId={projectId} />
+                                )}
+                            </Paper>
+                        </Grid>
+                        <Grid item xs={12}>
+                            <Paper sx={{ p: 2 }}>
+                                {currentTrack && (
+                                    <MIDIEditor track={currentTrack} projectId={projectId} />
+                                )}
+                            </Paper>
+                        </Grid>
+                    </Grid>
                 </Grid>
             </Grid>
         </Box>
     );
 };
-
-export default AudioWorkspace;

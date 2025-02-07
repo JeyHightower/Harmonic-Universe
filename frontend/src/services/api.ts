@@ -1,5 +1,7 @@
+import { store } from '@/store/store';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '@store/index';
+import axios from 'axios';
 
 // Create our baseQuery instance
 const baseQuery = fetchBaseQuery({
@@ -27,20 +29,17 @@ export const {
   util: { getRunningQueriesThunk },
 } = api;
 
-// Export axios instance for direct API calls
-import axios from 'axios';
-
-const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+const apiInstance = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Add request interceptor for authentication
-axiosInstance.interceptors.request.use(
+// Add a request interceptor
+apiInstance.interceptors.request.use(
   config => {
-    const token = localStorage.getItem('token');
+    const token = store.getState().auth.token;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -51,38 +50,16 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Add response interceptor for error handling
-axiosInstance.interceptors.response.use(
+// Add a response interceptor
+apiInstance.interceptors.response.use(
   response => response,
   async error => {
-    const originalRequest = error.config;
-
-    // Handle token refresh
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        const response = await axiosInstance.post('/auth/refresh', {
-          refreshToken,
-        });
-        const { token } = response.data;
-
-        localStorage.setItem('token', token);
-        originalRequest.headers.Authorization = `Bearer ${token}`;
-
-        return axiosInstance(originalRequest);
-      } catch (refreshError) {
-        // Handle refresh token failure (e.g., logout user)
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
-      }
+    if (error.response?.status === 401) {
+      // Handle token expiration
+      store.dispatch({ type: 'auth/logout' });
     }
-
     return Promise.reject(error);
   }
 );
 
-export default axiosInstance;
+export default apiInstance;

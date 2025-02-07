@@ -1,206 +1,146 @@
-import { RootState } from '@store/index';
-import { updateVisualization } from '@store/slices/visualizationSlice';
-import { useCallback, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { Visualization } from '@/types/visualization';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useDispatch } from 'react-redux';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
-interface VisualizationEngineContext {
-  canvas: HTMLCanvasElement | null;
-  ctx: CanvasRenderingContext2D | null;
-  analyzer: AnalyserNode | null;
-  dataArray: Uint8Array | null;
-  animationFrame: number | null;
+interface VisualizationEngineState {
+  scene: THREE.Scene;
+  camera: THREE.PerspectiveCamera;
+  renderer: THREE.WebGLRenderer;
+  controls: OrbitControls;
+  objects: Map<number, THREE.Object3D>;
 }
 
 export const useVisualizationEngine = () => {
   const dispatch = useDispatch();
-  const { visualizations } = useSelector((state: RootState) => state.visualization);
-  const [engineContext, setEngineContext] = useState<VisualizationEngineContext>({
-    canvas: null,
-    ctx: null,
-    analyzer: null,
-    dataArray: null,
-    animationFrame: null,
-  });
+  const engineState = useRef<VisualizationEngineState | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const initEngine = useCallback((canvas: HTMLCanvasElement) => {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  const initializeEngine = useCallback(() => {
+    if (!containerRef.current || engineState.current) return;
 
-    setEngineContext(prev => ({
-      ...prev,
-      canvas,
-      ctx,
-    }));
+    const container = containerRef.current;
+    const width = container.clientWidth;
+    const height = container.clientHeight;
 
-    // Set up canvas size
-    const resizeCanvas = () => {
-      canvas.width = canvas.clientWidth;
-      canvas.height = canvas.clientHeight;
+    // Create scene
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000);
+
+    // Create camera
+    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+    camera.position.set(0, 0, 5);
+
+    // Create renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    container.appendChild(renderer.domElement);
+
+    // Create controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+
+    // Create state
+    engineState.current = {
+      scene,
+      camera,
+      renderer,
+      controls,
+      objects: new Map(),
     };
 
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    setIsInitialized(true);
+
+    // Handle resize
+    const handleResize = () => {
+      if (!engineState.current || !containerRef.current) return;
+
+      const width = containerRef.current.clientWidth;
+      const height = containerRef.current.clientHeight;
+
+      engineState.current.camera.aspect = width / height;
+      engineState.current.camera.updateProjectionMatrix();
+      engineState.current.renderer.setSize(width, height);
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    // Animation loop
+    const animate = () => {
+      if (!engineState.current) return;
+
+      requestAnimationFrame(animate);
+      engineState.current.controls.update();
+      engineState.current.renderer.render(engineState.current.scene, engineState.current.camera);
+    };
+
+    animate();
 
     return () => {
-      window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener('resize', handleResize);
+      if (engineState.current) {
+        engineState.current.renderer.dispose();
+        engineState.current.scene.clear();
+        container.removeChild(engineState.current.renderer.domElement);
+        engineState.current = null;
+      }
     };
   }, []);
 
-  const connectAnalyzer = useCallback((audioContext: AudioContext, source: AudioNode) => {
-    const analyzer = audioContext.createAnalyser();
-    analyzer.fftSize = 2048;
-    source.connect(analyzer);
+  const addObject = useCallback((visualization: Visualization) => {
+    if (!engineState.current) return;
 
-    setEngineContext(prev => ({
-      ...prev,
-      analyzer,
-      dataArray: new Uint8Array(analyzer.frequencyBinCount),
-    }));
+    const geometry = new THREE.BoxGeometry();
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const mesh = new THREE.Mesh(geometry, material);
+
+    engineState.current.scene.add(mesh);
+    engineState.current.objects.set(visualization.id, mesh);
   }, []);
 
-  const startVisualization = useCallback(
-    (visualizationId: number) => {
-      const visualization = visualizations.find(v => v.id === visualizationId);
-      if (
-        !visualization ||
-        !engineContext.ctx ||
-        !engineContext.analyzer ||
-        !engineContext.dataArray
-      )
-        return;
+  const removeObject = useCallback((id: number) => {
+    if (!engineState.current) return;
 
-      const animate = () => {
-        const frame = requestAnimationFrame(animate);
-        setEngineContext(prev => ({ ...prev, animationFrame: frame }));
-
-        engineContext.analyzer!.getByteFrequencyData(engineContext.dataArray!);
-
-        // Clear canvas
-        engineContext.ctx!.fillStyle = 'rgba(0, 0, 0, 0.1)';
-        engineContext.ctx!.fillRect(
-          0,
-          0,
-          engineContext.canvas!.width,
-          engineContext.canvas!.height
-        );
-
-        // Draw visualization based on type
-        switch (visualization.visualization_type) {
-          case 'waveform':
-            drawWaveform(engineContext);
-            break;
-          case 'spectrum':
-            drawSpectrum(engineContext);
-            break;
-          case 'particles':
-            drawParticles(engineContext);
-            break;
-        }
-
-        // Update visualization metrics
-        dispatch(
-          updateVisualization({
-            id: visualizationId,
-            metrics: {
-              fps: 60,
-              dataPoints: engineContext.dataArray!.length,
-              peakAmplitude: Math.max(...Array.from(engineContext.dataArray!)),
-            },
-          })
-        );
-      };
-
-      animate();
-    },
-    [dispatch, engineContext, visualizations]
-  );
-
-  const stopVisualization = useCallback(() => {
-    if (engineContext.animationFrame !== null) {
-      cancelAnimationFrame(engineContext.animationFrame);
-      setEngineContext(prev => ({ ...prev, animationFrame: null }));
+    const object = engineState.current.objects.get(id);
+    if (object) {
+      engineState.current.scene.remove(object);
+      engineState.current.objects.delete(id);
     }
-  }, [engineContext.animationFrame]);
+  }, []);
 
-  const drawWaveform = (context: VisualizationEngineContext) => {
-    if (!context.ctx || !context.dataArray) return;
+  const updateObject = useCallback((id: number, data: any) => {
+    if (!engineState.current) return;
 
-    const width = context.canvas!.width;
-    const height = context.canvas!.height;
-    const bufferLength = context.dataArray.length;
-    const sliceWidth = width / bufferLength;
-
-    context.ctx.beginPath();
-    context.ctx.strokeStyle = 'rgb(0, 255, 0)';
-    context.ctx.lineWidth = 2;
-
-    for (let i = 0; i < bufferLength; i++) {
-      const x = i * sliceWidth;
-      const v = context.dataArray[i] / 128.0;
-      const y = (v * height) / 2;
-
-      if (i === 0) {
-        context.ctx.moveTo(x, y);
-      } else {
-        context.ctx.lineTo(x, y);
-      }
+    const object = engineState.current.objects.get(id);
+    if (object) {
+      // Update object based on data
+      // This will depend on your visualization requirements
     }
-
-    context.ctx.stroke();
-  };
-
-  const drawSpectrum = (context: VisualizationEngineContext) => {
-    if (!context.ctx || !context.dataArray) return;
-
-    const width = context.canvas!.width;
-    const height = context.canvas!.height;
-    const bufferLength = context.dataArray.length;
-    const barWidth = width / bufferLength;
-
-    for (let i = 0; i < bufferLength; i++) {
-      const barHeight = (context.dataArray[i] / 255) * height;
-      const hue = (i / bufferLength) * 360;
-
-      context.ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
-      context.ctx.fillRect(i * barWidth, height - barHeight, barWidth, barHeight);
-    }
-  };
-
-  const drawParticles = (context: VisualizationEngineContext) => {
-    if (!context.ctx || !context.dataArray) return;
-
-    const width = context.canvas!.width;
-    const height = context.canvas!.height;
-    const bufferLength = context.dataArray.length;
-    const particles = 100;
-
-    for (let i = 0; i < particles; i++) {
-      const amplitude = context.dataArray[i % bufferLength] / 255;
-      const angle = (i / particles) * Math.PI * 2;
-      const radius = (amplitude * Math.min(width, height)) / 3;
-
-      const x = width / 2 + Math.cos(angle) * radius;
-      const y = height / 2 + Math.sin(angle) * radius;
-      const size = amplitude * 10;
-
-      context.ctx.beginPath();
-      context.ctx.arc(x, y, size, 0, Math.PI * 2);
-      context.ctx.fillStyle = `hsla(${(angle * 180) / Math.PI}, 100%, 50%, ${amplitude})`;
-      context.ctx.fill();
-    }
-  };
+  }, []);
 
   useEffect(() => {
     return () => {
-      stopVisualization();
+      if (engineState.current) {
+        engineState.current.renderer.dispose();
+        engineState.current.scene.clear();
+        if (containerRef.current && engineState.current.renderer.domElement) {
+          containerRef.current.removeChild(engineState.current.renderer.domElement);
+        }
+        engineState.current = null;
+      }
     };
-  }, [stopVisualization]);
+  }, []);
 
   return {
-    initEngine,
-    connectAnalyzer,
-    startVisualization,
-    stopVisualization,
-    visualizations,
+    containerRef,
+    isInitialized,
+    initializeEngine,
+    addObject,
+    removeObject,
+    updateObject,
   };
 };

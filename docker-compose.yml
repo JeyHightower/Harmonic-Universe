@@ -6,21 +6,18 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - '8000:8000'
+      - '5000:5000'
     volumes:
       - ./backend:/app
-      - backend_data:/app/data
+      - ./backend/uploads:/app/uploads
     environment:
-      - POSTGRES_SERVER=db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=harmonic_universe
-      - REDIS_HOST=redis
+      - FLASK_APP=app
+      - FLASK_ENV=development
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/harmonic_universe
+      - SECRET_KEY=your-secret-key
+      - JWT_SECRET_KEY=your-jwt-secret
     depends_on:
       - db
-      - redis
-    networks:
-      - app_network
 
   frontend:
     build:
@@ -32,12 +29,9 @@ services:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:8000
-      - VITE_WS_URL=ws://localhost:8000/ws
+      - VITE_API_URL=http://localhost:5000
     depends_on:
       - backend
-    networks:
-      - app_network
 
   db:
     image: postgres:15
@@ -49,63 +43,6 @@ services:
       - POSTGRES_DB=harmonic_universe
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - app_network
-
-  redis:
-    image: redis:7
-    ports:
-      - '6379:6379'
-    volumes:
-      - redis_data:/data
-    networks:
-      - app_network
-
-  celery_worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    command: celery -A app.worker worker --loglevel=info
-    volumes:
-      - ./backend:/app
-    environment:
-      - POSTGRES_SERVER=db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=harmonic_universe
-      - REDIS_HOST=redis
-    depends_on:
-      - backend
-      - db
-      - redis
-    networks:
-      - app_network
-
-  celery_beat:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    command: celery -A app.worker beat --loglevel=info
-    volumes:
-      - ./backend:/app
-    environment:
-      - POSTGRES_SERVER=db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=harmonic_universe
-      - REDIS_HOST=redis
-    depends_on:
-      - backend
-      - db
-      - redis
-    networks:
-      - app_network
 
 volumes:
   postgres_data:
-  redis_data:
-  backend_data:
-
-networks:
-  app_network:
-    driver: bridge

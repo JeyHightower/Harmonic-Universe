@@ -1,27 +1,36 @@
-import axiosInstance from '@/services/api';
-import { User } from '@/types';
+import axios from '@/services/api';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { RootState } from '../store';
 
-interface AuthState {
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
-  loading: boolean;
   error: string | null;
+  loading: boolean;
 }
 
 const initialState: AuthState = {
   user: null,
   token: localStorage.getItem('token'),
-  isAuthenticated: Boolean(localStorage.getItem('token')),
-  loading: false,
+  isAuthenticated: !!localStorage.getItem('token'),
   error: null,
+  loading: false,
 };
 
+// Async thunks
 export const login = createAsyncThunk(
   'auth/login',
-  async (credentials: { email: string; password: string }) => {
-    const response = await axiosInstance.post('/auth/login', credentials);
+  async ({ email, password }: { email: string; password: string }) => {
+    const response = await axios.post('/api/v1/auth/login', { email, password });
     const { token, user } = response.data;
     localStorage.setItem('token', token);
     return { token, user };
@@ -30,8 +39,8 @@ export const login = createAsyncThunk(
 
 export const register = createAsyncThunk(
   'auth/register',
-  async (userData: { email: string; password: string; username: string }) => {
-    const response = await axiosInstance.post('/auth/register', userData);
+  async ({ username, email, password }: { username: string; email: string; password: string }) => {
+    const response = await axios.post('/api/v1/auth/register', { username, email, password });
     const { token, user } = response.data;
     localStorage.setItem('token', token);
     return { token, user };
@@ -40,12 +49,6 @@ export const register = createAsyncThunk(
 
 export const logout = createAsyncThunk('auth/logout', async () => {
   localStorage.removeItem('token');
-  localStorage.removeItem('refreshToken');
-});
-
-export const validateToken = createAsyncThunk('auth/validateToken', async () => {
-  const response = await axiosInstance.get('/auth/validate');
-  return response.data;
 });
 
 const authSlice = createSlice({
@@ -58,60 +61,51 @@ const authSlice = createSlice({
   },
   extraReducers: builder => {
     builder
-      // Login
       .addCase(login.pending, state => {
         state.loading = true;
         state.error = null;
       })
       .addCase(login.fulfilled, (state, action) => {
         state.loading = false;
-        state.isAuthenticated = true;
         state.user = action.payload.user;
         state.token = action.payload.token;
+        state.isAuthenticated = true;
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Login failed';
+        state.error = action.error.message || 'Failed to login';
+        state.isAuthenticated = false;
       })
-      // Register
       .addCase(register.pending, state => {
         state.loading = true;
         state.error = null;
       })
       .addCase(register.fulfilled, (state, action) => {
         state.loading = false;
-        state.isAuthenticated = true;
         state.user = action.payload.user;
         state.token = action.payload.token;
+        state.isAuthenticated = true;
       })
       .addCase(register.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Registration failed';
+        state.error = action.error.message || 'Failed to register';
+        state.isAuthenticated = false;
       })
-      // Logout
       .addCase(logout.fulfilled, state => {
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;
-      })
-      // Validate Token
-      .addCase(validateToken.pending, state => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(validateToken.fulfilled, (state, action) => {
-        state.loading = false;
-        state.isAuthenticated = true;
-        state.user = action.payload.user;
-      })
-      .addCase(validateToken.rejected, state => {
-        state.loading = false;
-        state.isAuthenticated = false;
-        state.user = null;
-        state.token = null;
       });
   },
 });
 
 export const { clearError } = authSlice.actions;
+
+export const selectAuthState = (state: RootState) => state.auth;
+export const selectUser = (state: RootState) => state.auth.user;
+export const selectToken = (state: RootState) => state.auth.token;
+export const selectAuthError = (state: RootState) => state.auth.error;
+export const selectAuthLoading = (state: RootState) => state.auth.loading;
+export const selectIsAuthenticated = (state: RootState) => state.auth.isAuthenticated;
+
 export default authSlice.reducer;

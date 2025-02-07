@@ -1,191 +1,172 @@
-import {
-    Add as AddIcon,
-    GridOff,
-    GridOn,
-    Remove as RemoveIcon,
-} from '@mui/icons-material';
-import { Box, IconButton, Stack, Typography } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-import { RootState } from '@store/index';
-import React, { useEffect, useRef, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useAudio } from '@/hooks/useAudio';
+import { AudioTrack, MIDIEvent, Note } from '@/types/audio';
+import { PlayArrow, Save, Stop } from '@mui/icons-material';
+import { Box, Grid, IconButton, Paper } from '@mui/material';
+import React, { useCallback, useEffect, useState } from 'react';
+import * as Tone from 'tone';
 
 interface MIDIEditorProps {
-    trackId: number | null;
-    isPlaying: boolean;
-    currentTime: number;
+    track: AudioTrack;
+    projectId: number;
 }
 
-interface Note {
-    id: number;
-    pitch: number;
-    startTime: number;
-    duration: number;
-    velocity: number;
-}
+const GRID_COLS = 32;
+const GRID_ROWS = 12;
+const NOTE_DURATION = '8n';
 
-const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-const OCTAVES = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-const NOTE_HEIGHT = 20;
-const PIXELS_PER_SECOND = 100;
+export const MIDIEditor: React.FC<MIDIEditorProps> = ({ track, projectId }) => {
+    const {
+        isPlaying,
+        updateTrackState,
+    } = useAudio(projectId);
 
-const MIDIEditor: React.FC<MIDIEditorProps> = ({ trackId, isPlaying, currentTime }) => {
-    const theme = useTheme();
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const [zoom, setZoom] = useState(1);
-    const [showGrid, setShowGrid] = useState(true);
     const [selectedNote, setSelectedNote] = useState<Note | null>(null);
-    const [scrollPosition, setScrollPosition] = useState({ x: 0, y: 0 });
-
-    const track = useSelector((state: RootState) =>
-        state.audio.tracks.find((t) => t.id === trackId)
-    );
-
-    const midiSequence = useSelector((state: RootState) =>
-        track ? state.audio.midiSequences.find((s) => s.id === track.midi_sequence_id) : null
-    );
+    const [notes, setNotes] = useState<Note[]>([]);
+    const [synth, setSynth] = useState<Tone.PolySynth | null>(null);
 
     useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas || !midiSequence) return;
+        const newSynth = new Tone.PolySynth().toDestination();
+        setSynth(synth);
 
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+        return () => {
+            newSynth.dispose();
+        };
+    }, []);
 
-        // Clear canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    useEffect(() => {
+        if (track.midiSequenceId) {
+            // Load MIDI sequence from track
+            const midiEvents = track.midiSequenceId;
+            const loadedNotes = midiEvents
+                .filter(event => event.type === 'note_on')
+                .map(event => ({
+                    pitch: event.note || 0,
+                    startTime: event.timestamp,
+                    duration: event.duration || 0.5,
+                    velocity: event.velocity || 0.7,
+                }));
+            setNotes(loadedNotes);
+        }
+    }, [track.midiSequenceId]);
 
-        // Draw grid
-        if (showGrid) {
-            ctx.strokeStyle = theme.palette.divider;
-            ctx.lineWidth = 1;
+    const handleCellClick = useCallback((row: number, col: number) => {
+        const pitch = 72 - row; // Start from C5 and go down
+        const startTime = col * 0.25; // Each column represents a 16th note
 
-            // Vertical lines (time)
-            for (let x = 0; x < canvas.width; x += PIXELS_PER_SECOND * zoom) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, canvas.height);
-                ctx.stroke();
-            }
-
-            // Horizontal lines (notes)
-            for (let y = 0; y < canvas.height; y += NOTE_HEIGHT) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
-                ctx.stroke();
-            }
+        if (selectedNote && selectedNote.pitch === pitch && selectedNote.startTime === startTime) {
+            // Remove note if clicking on selected note
+            setNotes(prev => prev.filter(n => n !== selectedNote));
+            setSelectedNote(null);
+        } else {
+            // Add new note
+            const newNote: Note = {
+                pitch,
+                startTime,
+                duration: 0.25,
+                velocity: 0.7,
+            };
+            setNotes(prev => [...prev, newNote]);
+            setSelectedNote(newNote);
         }
 
-        // Draw notes
-        midiSequence.events
-            .filter((event) => event.event_type === 'note_on')
-            .forEach((note) => {
-                const x = note.timestamp * PIXELS_PER_SECOND * zoom;
-                const y = (127 - note.note) * NOTE_HEIGHT;
-                const width = (note.duration || 0) * PIXELS_PER_SECOND * zoom;
-
-                ctx.fillStyle =
-                    selectedNote?.id === note.id
-                        ? theme.palette.secondary.main
-                        : theme.palette.primary.main;
-                ctx.fillRect(x, y, width, NOTE_HEIGHT - 1);
-            });
-
-        // Draw playhead
-        if (isPlaying) {
-            const playheadX = currentTime * PIXELS_PER_SECOND * zoom;
-            ctx.strokeStyle = theme.palette.error.main;
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(playheadX, 0);
-            ctx.lineTo(playheadX, canvas.height);
-            ctx.stroke();
+        // Play the note
+        if (synth) {
+            const freq = Tone.Frequency(pitch, 'midi');
+            synth.triggerAttackRelease(freq, NOTE_DURATION);
         }
-    }, [midiSequence, zoom, showGrid, selectedNote, isPlaying, currentTime, theme]);
+    }, [selectedNote, synth]);
 
-    const handleZoomIn = () => {
-        setZoom((prev) => Math.min(prev * 1.5, 10));
-    };
+    const handlePlay = useCallback(() => {
+        if (!synth) return;
 
-    const handleZoomOut = () => {
-        setZoom((prev) => Math.max(prev / 1.5, 0.1));
-    };
+        const now = Tone.now();
+        notes.forEach(note => {
+            const freq = Tone.Frequency(note.pitch, 'midi');
+            synth.triggerAttackRelease(freq, NOTE_DURATION, now + note.startTime);
+        });
+    }, [notes, synth]);
 
-    const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
-        const canvas = canvasRef.current;
-        if (!canvas || !midiSequence) return;
+    const handleStop = useCallback(() => {
+        if (synth) {
+            synth.releaseAll();
+        }
+    }, [synth]);
 
-        const rect = canvas.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
+    const handleSave = useCallback(() => {
+        // Convert notes to MIDI events
+        const midiEvents: MIDIEvent[] = notes.flatMap((note, index) => [
+            {
+                id: index * 2,
+                type: 'note_on',
+                timestamp: note.startTime,
+                note: note.pitch,
+                velocity: note.velocity,
+            },
+            {
+                id: index * 2 + 1,
+                type: 'note_off',
+                timestamp: note.startTime + note.duration,
+                note: note.pitch,
+            },
+        ]);
 
-        const time = x / (PIXELS_PER_SECOND * zoom);
-        const pitch = 127 - Math.floor(y / NOTE_HEIGHT);
-
-        // Find clicked note
-        const clickedNote = midiSequence.events
-            .filter((event) => event.event_type === 'note_on')
-            .find(
-                (note) =>
-                    note.note === pitch &&
-                    time >= note.timestamp &&
-                    time <= note.timestamp + (note.duration || 0)
-            );
-
-        setSelectedNote(clickedNote || null);
-    };
-
-    if (!track || !midiSequence) {
-        return (
-            <Box
-                sx={{
-                    height: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                }}
-            >
-                <Typography variant="subtitle1" color="text.secondary">
-                    No MIDI sequence available
-                </Typography>
-            </Box>
-        );
-    }
+        // Update track with new MIDI sequence
+        updateTrackState(track.id, { midiSequenceId: midiEvents });
+    }, [notes, track.id, updateTrackState]);
 
     return (
-        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
-            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-                <Typography variant="subtitle1">MIDI Editor</Typography>
-                <IconButton onClick={handleZoomIn}>
-                    <AddIcon />
+        <Box sx={{ width: '100%', p: 2 }}>
+            <Box sx={{ mb: 2 }}>
+                <IconButton onClick={handlePlay} disabled={isPlaying}>
+                    <PlayArrow />
                 </IconButton>
-                <IconButton onClick={handleZoomOut}>
-                    <RemoveIcon />
+                <IconButton onClick={handleStop} disabled={!isPlaying}>
+                    <Stop />
                 </IconButton>
-                <IconButton onClick={() => setShowGrid((prev) => !prev)}>
-                    {showGrid ? <GridOn /> : <GridOff />}
+                <IconButton onClick={handleSave}>
+                    <Save />
                 </IconButton>
-            </Stack>
-            <Box
-                sx={{
-                    flexGrow: 1,
-                    position: 'relative',
-                    overflow: 'auto',
-                    border: 1,
-                    borderColor: 'divider',
-                }}
-            >
-                <canvas
-                    ref={canvasRef}
-                    width={midiSequence.duration * PIXELS_PER_SECOND * zoom}
-                    height={128 * NOTE_HEIGHT}
-                    onClick={handleCanvasClick}
-                    style={{ cursor: 'pointer' }}
-                />
             </Box>
+            <Paper sx={{ p: 1 }}>
+                <Grid container spacing={0.5}>
+                    {Array.from({ length: GRID_ROWS }).map((_, row) => (
+                        <Grid item xs={12} key={row}>
+                            <Box sx={{ display: 'flex' }}>
+                                {Array.from({ length: GRID_COLS }).map((_, col) => {
+                                    const pitch = 72 - row;
+                                    const startTime = col * 0.25;
+                                    const hasNote = notes.some(
+                                        n => n.pitch === pitch && n.startTime === startTime
+                                    );
+                                    const isSelected = selectedNote?.pitch === pitch && selectedNote?.startTime === startTime;
+
+                                    return (
+                                        <Box
+                                            key={col}
+                                            onClick={() => handleCellClick(row, col)}
+                                            sx={{
+                                                width: 24,
+                                                height: 24,
+                                                border: '1px solid',
+                                                borderColor: 'divider',
+                                                backgroundColor: isSelected
+                                                    ? 'primary.main'
+                                                    : hasNote
+                                                        ? 'primary.light'
+                                                        : 'background.paper',
+                                                '&:hover': {
+                                                    backgroundColor: 'action.hover',
+                                                },
+                                                cursor: 'pointer',
+                                            }}
+                                        />
+                                    );
+                                })}
+                            </Box>
+                        </Grid>
+                    ))}
+                </Grid>
+            </Paper>
         </Box>
     );
 };
-
-export default MIDIEditor;

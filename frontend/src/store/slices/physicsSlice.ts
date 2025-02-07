@@ -1,131 +1,174 @@
-import axiosInstance from '@/services/api';
-import { PhysicsObject } from '@/types';
+import api from '@/services/api';
+import { PhysicsObject } from '@/types/physics';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
 interface PhysicsState {
   objects: PhysicsObject[];
-  selectedObjectId: number | null;
-  isSimulating: boolean;
-  timeStep: number;
+  currentObject: PhysicsObject | null;
   loading: boolean;
   error: string | null;
+  isSimulating: boolean;
+  timeStep: number;
 }
 
 const initialState: PhysicsState = {
   objects: [],
-  selectedObjectId: null,
-  isSimulating: false,
-  timeStep: 1 / 60,
+  currentObject: null,
   loading: false,
   error: null,
+  isSimulating: false,
+  timeStep: 1 / 60,
 };
 
-export const fetchObjects = createAsyncThunk('physics/fetchObjects', async () => {
-  const response = await axiosInstance.get('/physics/objects');
-  return response.data;
-});
+export const fetchPhysicsObjects = createAsyncThunk(
+  'physics/fetchObjects',
+  async (projectId: number) => {
+    const response = await api.get(`/api/projects/${projectId}/physics/objects`);
+    return response.data;
+  }
+);
 
-export const createObject = createAsyncThunk(
+export const fetchPhysicsObject = createAsyncThunk(
+  'physics/fetchObject',
+  async ({ projectId, objectId }: { projectId: number; objectId: number }) => {
+    const response = await api.get(`/api/projects/${projectId}/physics/objects/${objectId}`);
+    return response.data;
+  }
+);
+
+export const createPhysicsObject = createAsyncThunk(
   'physics/createObject',
-  async (object: Omit<PhysicsObject, 'id'>) => {
-    const response = await axiosInstance.post('/physics/objects', object);
+  async ({ projectId, data }: { projectId: number; data: Partial<PhysicsObject> }) => {
+    const response = await api.post(`/api/projects/${projectId}/physics/objects`, data);
     return response.data;
   }
 );
 
-export const updateObject = createAsyncThunk(
+export const updatePhysicsObject = createAsyncThunk(
   'physics/updateObject',
-  async ({ id, ...updates }: Partial<PhysicsObject> & { id: number }) => {
-    const response = await axiosInstance.patch(`/physics/objects/${id}`, updates);
+  async ({
+    projectId,
+    objectId,
+    data,
+  }: {
+    projectId: number;
+    objectId: number;
+    data: Partial<PhysicsObject>;
+  }) => {
+    const response = await api.put(`/api/projects/${projectId}/physics/objects/${objectId}`, data);
     return response.data;
   }
 );
 
-export const deleteObject = createAsyncThunk('physics/deleteObject', async (id: number) => {
-  await axiosInstance.delete(`/physics/objects/${id}`);
-  return id;
-});
+export const deletePhysicsObject = createAsyncThunk(
+  'physics/deleteObject',
+  async ({ projectId, objectId }: { projectId: number; objectId: number }) => {
+    await api.delete(`/api/projects/${projectId}/physics/objects/${objectId}`);
+    return objectId;
+  }
+);
 
 const physicsSlice = createSlice({
   name: 'physics',
   initialState,
   reducers: {
-    setSelectedObject: (state, action) => {
-      state.selectedObjectId = action.payload;
-    },
-    setSimulationState: (state, action) => {
-      state.isSimulating = action.payload;
-    },
     setTimeStep: (state, action) => {
       state.timeStep = action.payload;
     },
-    clearError: state => {
-      state.error = null;
+    startSimulation: state => {
+      state.isSimulating = true;
+    },
+    stopSimulation: state => {
+      state.isSimulating = false;
     },
   },
   extraReducers: builder => {
     builder
       // Fetch Objects
-      .addCase(fetchObjects.pending, state => {
+      .addCase(fetchPhysicsObjects.pending, state => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchObjects.fulfilled, (state, action) => {
+      .addCase(fetchPhysicsObjects.fulfilled, (state, action) => {
         state.loading = false;
         state.objects = action.payload;
       })
-      .addCase(fetchObjects.rejected, (state, action) => {
+      .addCase(fetchPhysicsObjects.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to fetch objects';
+        state.error = action.error.message || 'Failed to fetch physics objects';
       })
-      // Create Object
-      .addCase(createObject.pending, state => {
+      // Fetch Object
+      .addCase(fetchPhysicsObject.pending, state => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(createObject.fulfilled, (state, action) => {
+      .addCase(fetchPhysicsObject.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentObject = action.payload;
+      })
+      .addCase(fetchPhysicsObject.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch physics object';
+      })
+      // Create Object
+      .addCase(createPhysicsObject.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createPhysicsObject.fulfilled, (state, action) => {
         state.loading = false;
         state.objects.push(action.payload);
       })
-      .addCase(createObject.rejected, (state, action) => {
+      .addCase(createPhysicsObject.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to create object';
+        state.error = action.error.message || 'Failed to create physics object';
       })
       // Update Object
-      .addCase(updateObject.pending, state => {
+      .addCase(updatePhysicsObject.pending, state => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(updateObject.fulfilled, (state, action) => {
+      .addCase(updatePhysicsObject.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.objects.findIndex(obj => obj.id === action.payload.id);
+        const index = state.objects.findIndex(o => o.id === action.payload.id);
         if (index !== -1) {
           state.objects[index] = action.payload;
         }
+        if (state.currentObject?.id === action.payload.id) {
+          state.currentObject = action.payload;
+        }
       })
-      .addCase(updateObject.rejected, (state, action) => {
+      .addCase(updatePhysicsObject.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to update object';
+        state.error = action.error.message || 'Failed to update physics object';
       })
       // Delete Object
-      .addCase(deleteObject.pending, state => {
+      .addCase(deletePhysicsObject.pending, state => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(deleteObject.fulfilled, (state, action) => {
+      .addCase(deletePhysicsObject.fulfilled, (state, action) => {
         state.loading = false;
-        state.objects = state.objects.filter(obj => obj.id !== action.payload);
-        if (state.selectedObjectId === action.payload) {
-          state.selectedObjectId = null;
+        state.objects = state.objects.filter(o => o.id !== action.payload);
+        if (state.currentObject?.id === action.payload) {
+          state.currentObject = null;
         }
       })
-      .addCase(deleteObject.rejected, (state, action) => {
+      .addCase(deletePhysicsObject.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to delete object';
+        state.error = action.error.message || 'Failed to delete physics object';
       });
   },
 });
 
-export const { setSelectedObject, setSimulationState, setTimeStep, clearError } =
-  physicsSlice.actions;
+export const { setTimeStep, startSimulation, stopSimulation } = physicsSlice.actions;
+
+export const selectPhysicsObjects = (state: { physics: PhysicsState }) => state.physics.objects;
+export const selectCurrentPhysicsObject = (state: { physics: PhysicsState }) =>
+  state.physics.currentObject;
+export const selectPhysicsLoading = (state: { physics: PhysicsState }) => state.physics.loading;
+export const selectPhysicsError = (state: { physics: PhysicsState }) => state.physics.error;
+export const selectIsSimulating = (state: { physics: PhysicsState }) => state.physics.isSimulating;
+export const selectTimeStep = (state: { physics: PhysicsState }) => state.physics.timeStep;
+
 export default physicsSlice.reducer;

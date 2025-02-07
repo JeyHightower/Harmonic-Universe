@@ -1,105 +1,73 @@
-import axiosInstance from '@/services/api';
-import { Visualization } from '@/types';
+import api from '@/services/api';
+import { Visualization } from '@/types/visualization';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-
-export interface DataMapping {
-  id: number;
-  data_field: string;
-  visual_property: string;
-  mapping_type: string;
-  range_min?: number;
-  range_max?: number;
-  scale_factor?: number;
-  enabled: boolean;
-}
-
-export interface StreamConfig {
-  stream_type: string;
-  buffer_size: number;
-  sample_rate: number;
-  connection_settings: {
-    [key: string]: any;
-  };
-  processing_pipeline: Array<{
-    type: string;
-    params: {
-      [key: string]: any;
-    };
-  }>;
-}
-
-export interface Visualization {
-  id: number;
-  name: string;
-  description: string;
-  visualization_type: string;
-  data_source: string;
-  settings: {
-    [key: string]: any;
-  };
-  layout: {
-    position: string;
-    size: string;
-  };
-  style: {
-    backgroundColor: string;
-    [key: string]: any;
-  };
-  is_real_time: boolean;
-  update_interval: number;
-  data_mappings?: DataMapping[];
-  stream_config?: StreamConfig;
-  metrics?: {
-    fps: number;
-    dataPoints: number;
-    peakAmplitude: number;
-    [key: string]: any;
-  };
-}
 
 interface VisualizationState {
   visualizations: Visualization[];
-  selectedVisualizationId: number | null;
+  currentVisualization: Visualization | null;
   loading: boolean;
   error: string | null;
+  isRealTime: boolean;
+  updateInterval: number;
 }
 
 const initialState: VisualizationState = {
   visualizations: [],
-  selectedVisualizationId: null,
+  currentVisualization: null,
   loading: false,
   error: null,
+  isRealTime: false,
+  updateInterval: 1000,
 };
 
 export const fetchVisualizations = createAsyncThunk(
   'visualization/fetchVisualizations',
-  async () => {
-    const response = await axiosInstance.get('/visualization/visualizations');
+  async (projectId: number) => {
+    const response = await api.get(`/api/projects/${projectId}/visualizations`);
+    return response.data;
+  }
+);
+
+export const fetchVisualization = createAsyncThunk(
+  'visualization/fetchVisualization',
+  async ({ projectId, visualizationId }: { projectId: number; visualizationId: number }) => {
+    const response = await api.get(`/api/projects/${projectId}/visualizations/${visualizationId}`);
     return response.data;
   }
 );
 
 export const createVisualization = createAsyncThunk(
   'visualization/createVisualization',
-  async (visualization: Omit<Visualization, 'id'>) => {
-    const response = await axiosInstance.post('/visualization/visualizations', visualization);
+  async ({ projectId, data }: { projectId: number; data: Partial<Visualization> }) => {
+    const response = await api.post(`/api/projects/${projectId}/visualizations`, data);
     return response.data;
   }
 );
 
 export const updateVisualization = createAsyncThunk(
   'visualization/updateVisualization',
-  async ({ id, ...updates }: Partial<Visualization> & { id: number }) => {
-    const response = await axiosInstance.patch(`/visualization/visualizations/${id}`, updates);
+  async ({
+    projectId,
+    visualizationId,
+    data,
+  }: {
+    projectId: number;
+    visualizationId: number;
+    data: Partial<Visualization>;
+  }) => {
+    const response = await api.put(
+      `/api/projects/${projectId}/visualizations/${visualizationId}`,
+      data
+    );
     return response.data;
   }
 );
 
 export const deleteVisualization = createAsyncThunk(
   'visualization/deleteVisualization',
-  async (id: number) => {
-    await axiosInstance.delete(`/visualization/visualizations/${id}`);
-    return id;
+  async ({ projectId, visualizationId }: { projectId: number; visualizationId: number }) => {
+    await api.delete(`/api/projects/${projectId}/visualizations/${visualizationId}`);
+    return visualizationId;
   }
 );
 
@@ -107,11 +75,14 @@ const visualizationSlice = createSlice({
   name: 'visualization',
   initialState,
   reducers: {
-    setSelectedVisualization: (state, action) => {
-      state.selectedVisualizationId = action.payload;
+    setUpdateInterval: (state, action) => {
+      state.updateInterval = action.payload;
     },
-    clearError: state => {
-      state.error = null;
+    startRealTime: state => {
+      state.isRealTime = true;
+    },
+    stopRealTime: state => {
+      state.isRealTime = false;
     },
   },
   extraReducers: builder => {
@@ -128,6 +99,19 @@ const visualizationSlice = createSlice({
       .addCase(fetchVisualizations.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to fetch visualizations';
+      })
+      // Fetch Visualization
+      .addCase(fetchVisualization.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchVisualization.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentVisualization = action.payload;
+      })
+      .addCase(fetchVisualization.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch visualization';
       })
       // Create Visualization
       .addCase(createVisualization.pending, state => {
@@ -149,9 +133,12 @@ const visualizationSlice = createSlice({
       })
       .addCase(updateVisualization.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.visualizations.findIndex(vis => vis.id === action.payload.id);
+        const index = state.visualizations.findIndex(v => v.id === action.payload.id);
         if (index !== -1) {
           state.visualizations[index] = action.payload;
+        }
+        if (state.currentVisualization?.id === action.payload.id) {
+          state.currentVisualization = action.payload;
         }
       })
       .addCase(updateVisualization.rejected, (state, action) => {
@@ -165,9 +152,9 @@ const visualizationSlice = createSlice({
       })
       .addCase(deleteVisualization.fulfilled, (state, action) => {
         state.loading = false;
-        state.visualizations = state.visualizations.filter(vis => vis.id !== action.payload);
-        if (state.selectedVisualizationId === action.payload) {
-          state.selectedVisualizationId = null;
+        state.visualizations = state.visualizations.filter(v => v.id !== action.payload);
+        if (state.currentVisualization?.id === action.payload) {
+          state.currentVisualization = null;
         }
       })
       .addCase(deleteVisualization.rejected, (state, action) => {
@@ -177,5 +164,19 @@ const visualizationSlice = createSlice({
   },
 });
 
-export const { setSelectedVisualization, clearError } = visualizationSlice.actions;
+export const { setUpdateInterval, startRealTime, stopRealTime } = visualizationSlice.actions;
+
+export const selectVisualizations = (state: { visualization: VisualizationState }) =>
+  state.visualization.visualizations;
+export const selectCurrentVisualization = (state: { visualization: VisualizationState }) =>
+  state.visualization.currentVisualization;
+export const selectVisualizationLoading = (state: { visualization: VisualizationState }) =>
+  state.visualization.loading;
+export const selectVisualizationError = (state: { visualization: VisualizationState }) =>
+  state.visualization.error;
+export const selectIsRealTime = (state: { visualization: VisualizationState }) =>
+  state.visualization.isRealTime;
+export const selectUpdateInterval = (state: { visualization: VisualizationState }) =>
+  state.visualization.updateInterval;
+
 export default visualizationSlice.reducer;

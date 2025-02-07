@@ -1,6 +1,7 @@
-import axiosInstance from '@/services/api';
-import { AudioTrack } from '@/types';
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import axios from '@/services/api';
+import { AudioFormData, AudioTrack } from '@/types/audio';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { RootState } from '../store';
 
 export interface AudioTrack {
   id: number;
@@ -50,7 +51,20 @@ export interface MIDIEvent {
   value?: number;
 }
 
-interface AudioState {
+interface AudioFile {
+  id: number;
+  filename: string;
+  file_type: string;
+  duration: number;
+  sample_rate: number;
+  channels: number;
+  user_id: number;
+  project_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AudioState {
   tracks: AudioTrack[];
   midiSequences: MIDISequence[];
   nextTrackId: number;
@@ -72,6 +86,12 @@ interface AudioState {
   isPlaying: boolean;
   loading: boolean;
   error: string | null;
+  audioFiles: AudioFile[];
+  currentAudio: AudioFile | null;
+  currentTrack: AudioTrack | null;
+  currentTime: number;
+  duration: number;
+  volume: number;
 }
 
 const initialState: AudioState = {
@@ -96,33 +116,79 @@ const initialState: AudioState = {
   isPlaying: false,
   loading: false,
   error: null,
+  audioFiles: [],
+  currentAudio: null,
+  currentTrack: null,
+  currentTime: 0,
+  duration: 0,
+  volume: 1,
 };
 
-export const fetchTracks = createAsyncThunk('audio/fetchTracks', async () => {
-  const response = await axiosInstance.get('/audio/tracks');
+export const fetchTracks = createAsyncThunk('audio/fetchTracks', async (projectId: number) => {
+  const response = await axios.get(`/api/projects/${projectId}/audio`);
   return response.data;
 });
 
 export const createTrack = createAsyncThunk(
   'audio/createTrack',
   async (track: Omit<AudioTrack, 'id'>) => {
-    const response = await axiosInstance.post('/audio/tracks', track);
+    const response = await axios.post('/audio/tracks', track);
     return response.data;
   }
 );
 
-export const updateTrackAsync = createAsyncThunk(
+export const updateTrack = createAsyncThunk(
   'audio/updateTrack',
-  async ({ id, ...updates }: Partial<AudioTrack> & { id: number }) => {
-    const response = await axiosInstance.patch(`/audio/tracks/${id}`, updates);
+  async ({
+    projectId,
+    trackId,
+    updates,
+  }: {
+    projectId: number;
+    trackId: number;
+    updates: Partial<AudioTrack>;
+  }) => {
+    const response = await axios.put(`/api/projects/${projectId}/audio/${trackId}`, updates);
     return response.data;
   }
 );
 
-export const deleteTrackAsync = createAsyncThunk('audio/deleteTrack', async (id: number) => {
-  await axiosInstance.delete(`/audio/tracks/${id}`);
-  return id;
+export const deleteTrack = createAsyncThunk(
+  'audio/deleteTrack',
+  async ({ projectId, trackId }: { projectId: number; trackId: number }) => {
+    await axios.delete(`/api/projects/${projectId}/audio/${trackId}`);
+    return trackId;
+  }
+);
+
+export const uploadAudio = createAsyncThunk(
+  'audio/uploadAudio',
+  async ({ projectId, formData }: { projectId: number; formData: AudioFormData }) => {
+    const response = await axios.post(`/api/projects/${projectId}/audio`, formData);
+    return response.data;
+  }
+);
+
+export const fetchProjectAudio = createAsyncThunk(
+  'audio/fetchProjectAudio',
+  async (projectId: number) => {
+    const response = await axios.get(`/api/v1/project/${projectId}/audio`);
+    return response.data;
+  }
+);
+
+export const fetchAudioFile = createAsyncThunk('audio/fetchAudioFile', async (audioId: number) => {
+  const response = await axios.get(`/api/v1/audio/${audioId}`);
+  return response.data;
 });
+
+export const deleteAudioFile = createAsyncThunk(
+  'audio/deleteAudioFile',
+  async (audioId: number) => {
+    await axios.delete(`/api/v1/audio/${audioId}`);
+    return audioId;
+  }
+);
 
 const audioSlice = createSlice({
   name: 'audio',
@@ -135,13 +201,13 @@ const audioSlice = createSlice({
         effects: [],
       });
     },
-    updateTrack: (state, action: PayloadAction<Partial<AudioTrack> & { id: number }>) => {
-      const index = state.tracks.findIndex(track => track.id === action.payload.id);
-      if (index !== -1) {
-        state.tracks[index] = {
-          ...state.tracks[index],
-          ...action.payload,
-        };
+    updateTrackState: (
+      state,
+      action: PayloadAction<{ trackId: number; updates: Partial<AudioTrack> }>
+    ) => {
+      const track = state.tracks.find(t => t.id === action.payload.trackId);
+      if (track) {
+        Object.assign(track, action.payload.updates);
       }
     },
     deleteTrack: (state, action: PayloadAction<number>) => {
@@ -207,10 +273,10 @@ const audioSlice = createSlice({
       state.playbackState.currentTime = 0;
       state.selectedTrackId = null;
     },
-    setCurrentTrack: (state, action) => {
-      state.currentTrackId = action.payload;
+    setCurrentTrack: (state, action: PayloadAction<AudioTrack | null>) => {
+      state.currentTrack = action.payload;
     },
-    setCurrentTime: (state, action) => {
+    setCurrentTime: (state, action: PayloadAction<number>) => {
       state.playbackState.currentTime = action.payload;
     },
     clearError: state => {
@@ -246,43 +312,47 @@ const audioSlice = createSlice({
         state.error = action.error.message || 'Failed to create track';
       })
       // Update Track
-      .addCase(updateTrackAsync.pending, state => {
+      .addCase(updateTrack.pending, state => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(updateTrackAsync.fulfilled, (state, action) => {
+      .addCase(updateTrack.fulfilled, (state, action) => {
         state.loading = false;
         const index = state.tracks.findIndex(track => track.id === action.payload.id);
         if (index !== -1) {
           state.tracks[index] = action.payload;
         }
       })
-      .addCase(updateTrackAsync.rejected, (state, action) => {
+      .addCase(updateTrack.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to update track';
       })
       // Delete Track
-      .addCase(deleteTrackAsync.pending, state => {
+      .addCase(deleteTrack.pending, state => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(deleteTrackAsync.fulfilled, (state, action) => {
+      .addCase(deleteTrack.fulfilled, (state, action) => {
         state.loading = false;
         state.tracks = state.tracks.filter(track => track.id !== action.payload);
         if (state.currentTrackId === action.payload) {
           state.currentTrackId = null;
         }
       })
-      .addCase(deleteTrackAsync.rejected, (state, action) => {
+      .addCase(deleteTrack.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to delete track';
+      })
+      // Upload Audio
+      .addCase(uploadAudio.fulfilled, (state, action) => {
+        state.tracks.push(action.payload);
       });
   },
 });
 
 export const {
   addTrack,
-  updateTrack,
+  updateTrackState,
   deleteTrack,
   addMIDISequence,
   addMIDIEvent,
@@ -296,5 +366,15 @@ export const {
   setCurrentTime,
   clearError,
 } = audioSlice.actions;
+
+export const selectAudioState = (state: RootState) => state.audio;
+export const selectTracks = (state: RootState) => state.audio.tracks;
+export const selectCurrentTrack = (state: RootState) => state.audio.currentTrack;
+export const selectIsPlaying = (state: RootState) => state.audio.isPlaying;
+export const selectCurrentTime = (state: RootState) => state.audio.playbackState.currentTime;
+export const selectDuration = (state: RootState) => state.audio.duration;
+export const selectVolume = (state: RootState) => state.audio.masterVolume;
+export const selectError = (state: RootState) => state.audio.error;
+export const selectLoading = (state: RootState) => state.audio.loading;
 
 export default audioSlice.reducer;

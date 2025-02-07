@@ -1,8 +1,9 @@
+import { useAudio } from '@/hooks/useAudio';
+import { AudioTrack } from '@/types/audio';
 import {
-    Add as AddIcon,
-    Delete,
-    VolumeOff,
-    VolumeUp,
+    Delete as DeleteIcon,
+    VolumeOff as VolumeOffIcon,
+    VolumeUp as VolumeUpIcon,
 } from '@mui/icons-material';
 import {
     Box,
@@ -11,99 +12,86 @@ import {
     ListItem,
     ListItemSecondaryAction,
     ListItemText,
-    Slider,
-    Stack,
+    Tooltip,
     Typography,
 } from '@mui/material';
-import { RootState } from '@store/index';
-import { deleteTrack, updateTrack } from '@store/slices/audioSlice';
-import React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useEffect } from 'react';
+import { AudioPlayer } from './AudioPlayer';
 
 interface TrackListProps {
-    selectedTrackId: number | null;
-    onTrackSelect: (trackId: number) => void;
+    projectId: number;
 }
 
-const TrackList: React.FC<TrackListProps> = ({ selectedTrackId, onTrackSelect }) => {
-    const dispatch = useDispatch();
-    const tracks = useSelector((state: RootState) => state.audio.tracks);
+export const TrackList: React.FC<TrackListProps> = ({ projectId }) => {
+    const {
+        tracks,
+        currentTrack,
+        loading,
+        error,
+        loadTracks,
+        deleteTrack,
+        setCurrentTrack,
+        updateTrackState,
+    } = useAudio(projectId);
 
-    const handleVolumeChange = (trackId: number, value: number) => {
-        dispatch(updateTrack({ id: trackId, volume: value / 100 }));
+    useEffect(() => {
+        loadTracks();
+    }, [loadTracks]);
+
+    const handleDeleteTrack = async (trackId: number) => {
+        await deleteTrack(trackId);
     };
 
-    const handleMuteToggle = (trackId: number, isMuted: boolean) => {
-        dispatch(updateTrack({ id: trackId, isMuted: !isMuted }));
+    const handleToggleMute = (track: AudioTrack) => {
+        updateTrackState(track.id, { isMuted: !track.isMuted });
     };
 
-    const handleDeleteTrack = (trackId: number) => {
-        dispatch(deleteTrack(trackId));
-    };
+    if (loading) {
+        return <Typography>Loading tracks...</Typography>;
+    }
 
-    const handleAddTrack = () => {
-        // TODO: Implement track creation dialog
-    };
+    if (error) {
+        return <Typography color="error">Error: {error}</Typography>;
+    }
+
+    if (!tracks.length) {
+        return <Typography>No tracks available</Typography>;
+    }
 
     return (
-        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-                <Typography variant="h6" gutterBottom>
-                    Tracks
-                </Typography>
-                <IconButton onClick={handleAddTrack} color="primary">
-                    <AddIcon />
-                </IconButton>
-            </Box>
-            <List sx={{ flexGrow: 1, overflow: 'auto' }}>
+        <Box>
+            <List>
                 {tracks.map((track) => (
                     <ListItem
                         key={track.id}
-                        selected={track.id === selectedTrackId}
-                        onClick={() => onTrackSelect(track.id)}
-                        sx={{
-                            cursor: 'pointer',
-                            '&:hover': {
-                                backgroundColor: 'action.hover',
-                            },
-                        }}
+                        button
+                        selected={currentTrack?.id === track.id}
+                        onClick={() => setCurrentTrack(track)}
                     >
-                        <Stack spacing={1} sx={{ width: '100%' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <ListItemText
-                                    primary={track.name}
-                                    secondary={`${track.file_type} - ${Math.round(track.duration)}s`}
-                                />
-                                <ListItemSecondaryAction>
-                                    <IconButton
-                                        edge="end"
-                                        onClick={() => handleMuteToggle(track.id, track.is_muted)}
-                                    >
-                                        {track.is_muted ? <VolumeOff /> : <VolumeUp />}
-                                    </IconButton>
-                                    <IconButton
-                                        edge="end"
-                                        onClick={() => handleDeleteTrack(track.id)}
-                                        sx={{ ml: 1 }}
-                                    >
-                                        <Delete />
-                                    </IconButton>
-                                </ListItemSecondaryAction>
-                            </Box>
-                            <Box sx={{ px: 2, width: '100%' }}>
-                                <Slider
-                                    size="small"
-                                    value={track.volume * 100}
-                                    onChange={(_, value) => handleVolumeChange(track.id, value as number)}
-                                    disabled={track.is_muted}
-                                />
-                            </Box>
-                        </Stack>
+                        <ListItemText
+                            primary={track.title}
+                            secondary={`${track.fileType} - ${Math.round(track.duration)}s`}
+                        />
+                        <ListItemSecondaryAction>
+                            <Tooltip title={track.isMuted ? 'Unmute' : 'Mute'}>
+                                <IconButton onClick={() => handleToggleMute(track)}>
+                                    {track.isMuted ? <VolumeOffIcon /> : <VolumeUpIcon />}
+                                </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete">
+                                <IconButton onClick={() => handleDeleteTrack(track.id)}>
+                                    <DeleteIcon />
+                                </IconButton>
+                            </Tooltip>
+                        </ListItemSecondaryAction>
                     </ListItem>
                 ))}
             </List>
+            {currentTrack && (
+                <Box sx={{ mt: 2 }}>
+                    <AudioPlayer track={currentTrack} projectId={projectId} />
+                </Box>
+            )}
         </Box>
     );
 };
-
-export default TrackList;

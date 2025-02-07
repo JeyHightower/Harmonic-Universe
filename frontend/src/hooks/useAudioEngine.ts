@@ -1,249 +1,169 @@
-import { RootState } from '@store/index';
-import { setCurrentTime, updateTrack } from '@store/slices/audioSlice';
+import { setCurrentTime, setDuration, setIsPlaying, setVolume } from '@/store/slices/audioSlice';
+import { AudioTrack } from '@/types/audio';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 
-interface AudioEngineContext {
+interface AudioEngineState {
   audioContext: AudioContext;
   masterGain: GainNode;
-}
-
-interface AudioBuffer {
-  buffer: AudioBuffer;
-  source: AudioBufferSourceNode | null;
-  gainNode: GainNode;
-  panNode: StereoPannerNode;
-  effectNodes: AudioNode[];
+  tracks: Map<
+    number,
+    {
+      source: AudioBufferSourceNode | null;
+      gainNode: GainNode;
+      buffer: AudioBuffer | null;
+    }
+  >;
 }
 
 export const useAudioEngine = () => {
   const dispatch = useDispatch();
-  const { tracks, isPlaying, currentTime } = useSelector((state: RootState) => state.audio);
-  const [engineContext, setEngineContext] = useState<AudioEngineContext | null>(null);
-  const audioBuffers = useRef<Map<number, AudioBuffer>>(new Map());
-  const rafId = useRef<number>();
+  const engineState = useRef<AudioEngineState | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  const initEngine = useCallback(() => {
-    const audioContext = new AudioContext();
-    const masterGain = audioContext.createGain();
-    masterGain.connect(audioContext.destination);
-    setEngineContext({ audioContext, masterGain });
-    return { audioContext, masterGain };
+  const initializeEngine = useCallback(() => {
+    if (!engineState.current) {
+      const audioContext = new AudioContext();
+      const masterGain = audioContext.createGain();
+      masterGain.connect(audioContext.destination);
+
+      engineState.current = {
+        audioContext,
+        masterGain,
+        tracks: new Map(),
+      };
+
+      setIsInitialized(true);
+    }
+    return engineState.current;
   }, []);
 
-  const loadAudioBuffer = useCallback(
-    async (url: string) => {
-      if (!engineContext) return null;
+  const loadTrack = useCallback(
+    async (track: AudioTrack) => {
+      if (!engineState.current) return;
+
+      const { audioContext, tracks } = engineState.current;
+
+      // If track is already loaded, return
+      if (tracks.has(track.id)) return;
 
       try {
-        const response = await fetch(url);
+        const response = await fetch(track.url);
         const arrayBuffer = await response.arrayBuffer();
-        const audioBuffer = await engineContext.audioContext.decodeAudioData(arrayBuffer);
-        return audioBuffer;
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+        const gainNode = audioContext.createGain();
+        gainNode.connect(engineState.current.masterGain);
+        gainNode.gain.value = track.volume;
+
+        tracks.set(track.id, {
+          source: null,
+          gainNode,
+          buffer: audioBuffer,
+        });
+
+        dispatch(setDuration(audioBuffer.duration));
       } catch (error) {
-        console.error('Error loading audio buffer:', error);
-        return null;
+        console.error('Error loading track:', error);
       }
     },
-    [engineContext]
-  );
-
-  const createTrack = useCallback(
-    async (buffer: AudioBuffer, trackId: number) => {
-      if (!engineContext) return;
-
-      const source = engineContext.audioContext.createBufferSource();
-      source.buffer = buffer;
-
-      const gainNode = engineContext.audioContext.createGain();
-      const panNode = engineContext.audioContext.createStereoPanner();
-
-      source.connect(gainNode);
-      gainNode.connect(panNode);
-      panNode.connect(engineContext.masterGain);
-
-      audioBuffers.current.set(trackId, {
-        buffer,
-        source,
-        gainNode,
-        panNode,
-        effectNodes: [],
-      });
-
-      dispatch(
-        updateTrack({
-          id: trackId,
-          is_playing: false,
-        })
-      );
-    },
-    [dispatch, engineContext]
+    [dispatch]
   );
 
   const playTrack = useCallback(
-    (trackId: number) => {
-      const audioBuffer = audioBuffers.current.get(trackId);
-      if (!audioBuffer || !engineContext) return;
+    (track: AudioTrack) => {
+      if (!engineState.current) return;
 
-      if (audioBuffer.source) {
-        audioBuffer.source.stop();
+      const { audioContext, tracks } = engineState.current;
+      const trackData = tracks.get(track.id);
+
+      if (!trackData || !trackData.buffer) return;
+
+      // Stop any existing playback
+      if (trackData.source) {
+        trackData.source.stop();
+        trackData.source.disconnect();
       }
 
-      const newSource = engineContext.audioContext.createBufferSource();
-      newSource.buffer = audioBuffer.buffer;
-      newSource.connect(audioBuffer.gainNode);
-      newSource.start(0, currentTime);
+      // Create and configure new source
+      const source = audioContext.createBufferSource();
+      source.buffer = trackData.buffer;
+      source.connect(trackData.gainNode);
 
-      audioBuffer.source = newSource;
-      audioBuffers.current.set(trackId, audioBuffer);
+      // Update track data with new source
+      trackData.source = source;
 
-      dispatch(
-        updateTrack({
-          id: trackId,
-          is_playing: true,
-        })
-      );
+      // Start playback
+      source.start(0);
+      dispatch(setIsPlaying(true));
+
+      // Set up ended callback
+      source.onended = () => {
+        dispatch(setIsPlaying(false));
+        dispatch(setCurrentTime(0));
+      };
     },
-    [currentTime, dispatch, engineContext]
+    [dispatch]
   );
 
   const stopTrack = useCallback(
     (trackId: number) => {
-      const audioBuffer = audioBuffers.current.get(trackId);
-      if (!audioBuffer) return;
+      if (!engineState.current) return;
 
-      if (audioBuffer.source) {
-        audioBuffer.source.stop();
-        audioBuffer.source = null;
+      const trackData = engineState.current.tracks.get(trackId);
+      if (trackData?.source) {
+        trackData.source.stop();
+        trackData.source.disconnect();
+        trackData.source = null;
       }
 
-      dispatch(
-        updateTrack({
-          id: trackId,
-          is_playing: false,
-        })
-      );
+      dispatch(setIsPlaying(false));
+      dispatch(setCurrentTime(0));
     },
     [dispatch]
   );
 
-  const setTrackVolume = useCallback(
-    (trackId: number, volume: number) => {
-      const audioBuffer = audioBuffers.current.get(trackId);
-      if (!audioBuffer) return;
+  const setTrackVolume = useCallback((trackId: number, volume: number) => {
+    if (!engineState.current) return;
 
-      audioBuffer.gainNode.gain.value = volume;
-      dispatch(
-        updateTrack({
-          id: trackId,
-          volume,
-        })
-      );
-    },
-    [dispatch]
-  );
-
-  const setTrackPan = useCallback(
-    (trackId: number, pan: number) => {
-      const audioBuffer = audioBuffers.current.get(trackId);
-      if (!audioBuffer) return;
-
-      audioBuffer.panNode.pan.value = pan;
-      dispatch(
-        updateTrack({
-          id: trackId,
-          pan,
-        })
-      );
-    },
-    [dispatch]
-  );
-
-  const addEffect = useCallback((trackId: number, effect: AudioNode) => {
-    const audioBuffer = audioBuffers.current.get(trackId);
-    if (!audioBuffer) return;
-
-    const lastNode =
-      audioBuffer.effectNodes.length > 0
-        ? audioBuffer.effectNodes[audioBuffer.effectNodes.length - 1]
-        : audioBuffer.gainNode;
-
-    lastNode.disconnect();
-    lastNode.connect(effect);
-    effect.connect(audioBuffer.panNode);
-
-    audioBuffer.effectNodes.push(effect);
-    audioBuffers.current.set(trackId, audioBuffer);
-  }, []);
-
-  const removeEffect = useCallback((trackId: number, index: number) => {
-    const audioBuffer = audioBuffers.current.get(trackId);
-    if (!audioBuffer) return;
-
-    const effect = audioBuffer.effectNodes[index];
-    if (!effect) return;
-
-    const prevNode = index === 0 ? audioBuffer.gainNode : audioBuffer.effectNodes[index - 1];
-    const nextNode =
-      index === audioBuffer.effectNodes.length - 1
-        ? audioBuffer.panNode
-        : audioBuffer.effectNodes[index + 1];
-
-    effect.disconnect();
-    prevNode.disconnect();
-    prevNode.connect(nextNode);
-
-    audioBuffer.effectNodes.splice(index, 1);
-    audioBuffers.current.set(trackId, audioBuffer);
-  }, []);
-
-  useEffect(() => {
-    if (!engineContext) return;
-
-    const updatePlaybackTime = () => {
-      dispatch(setCurrentTime(engineContext.audioContext.currentTime));
-      rafId.current = requestAnimationFrame(updatePlaybackTime);
-    };
-
-    if (isPlaying) {
-      rafId.current = requestAnimationFrame(updatePlaybackTime);
-    } else {
-      if (rafId.current) {
-        cancelAnimationFrame(rafId.current);
-      }
+    const trackData = engineState.current.tracks.get(trackId);
+    if (trackData) {
+      trackData.gainNode.gain.value = volume;
     }
+  }, []);
 
-    return () => {
-      if (rafId.current) {
-        cancelAnimationFrame(rafId.current);
-      }
-    };
-  }, [dispatch, engineContext, isPlaying]);
+  const setMasterVolume = useCallback(
+    (volume: number) => {
+      if (!engineState.current) return;
+      engineState.current.masterGain.gain.value = volume;
+      dispatch(setVolume(volume));
+    },
+    [dispatch]
+  );
 
   useEffect(() => {
     return () => {
-      audioBuffers.current.forEach(audioBuffer => {
-        if (audioBuffer.source) {
-          audioBuffer.source.stop();
-        }
-        audioBuffer.effectNodes.forEach(effect => effect.disconnect());
-        audioBuffer.gainNode.disconnect();
-        audioBuffer.panNode.disconnect();
-      });
-      audioBuffers.current.clear();
+      if (engineState.current) {
+        engineState.current.tracks.forEach(trackData => {
+          if (trackData.source) {
+            trackData.source.stop();
+            trackData.source.disconnect();
+          }
+          trackData.gainNode.disconnect();
+        });
+        engineState.current.masterGain.disconnect();
+        engineState.current.audioContext.close();
+      }
     };
   }, []);
 
   return {
-    initEngine,
-    loadAudioBuffer,
-    createTrack,
+    isInitialized,
+    initializeEngine,
+    loadTrack,
     playTrack,
     stopTrack,
     setTrackVolume,
-    setTrackPan,
-    addEffect,
-    removeEffect,
-    tracks,
+    setMasterVolume,
   };
 };

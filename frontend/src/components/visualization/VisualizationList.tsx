@@ -1,34 +1,35 @@
+import { useVisualization } from '@/hooks/useVisualization';
+import { VisualizationFormData } from '@/types/visualization';
 import {
-    Add as AddIcon,
     Delete as DeleteIcon,
-    Edit as EditIcon,
-    PlayArrow,
-    Stop,
+    PlayArrow as PlayArrowIcon,
+    Stop as StopIcon
 } from '@mui/icons-material';
 import {
     Box,
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    FormControl,
     IconButton,
+    InputLabel,
     List,
     ListItem,
     ListItemSecondaryAction,
     ListItemText,
-    Menu,
     MenuItem,
-    Stack,
-    Typography,
+    Select,
+    TextField,
+    Tooltip,
+    Typography
 } from '@mui/material';
-import { RootState } from '@store/index';
-import {
-    addVisualization,
-    deleteVisualization,
-    updateVisualization,
-} from '@store/slices/visualizationSlice';
-import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 
 interface VisualizationListProps {
-    selectedVisualizationId: number | null;
-    onVisualizationSelect: (id: number) => void;
+    projectId: number;
 }
 
 const VISUALIZATION_TEMPLATES = {
@@ -101,113 +102,150 @@ const VISUALIZATION_TEMPLATES = {
     },
 };
 
-const VisualizationList: React.FC<VisualizationListProps> = ({
-    selectedVisualizationId,
-    onVisualizationSelect,
-}) => {
+export const VisualizationList: React.FC<VisualizationListProps> = ({ projectId }) => {
     const dispatch = useDispatch();
-    const visualizations = useSelector(
-        (state: RootState) => state.visualization.visualizations
-    );
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const {
+        visualizations,
+        loading,
+        error,
+        isRealTime,
+        fetchVisualizations,
+        createVisualization,
+        deleteVisualization: deleteVisualizationHook,
+        startRealTime,
+        stopRealTime,
+    } = useVisualization(projectId);
 
-    const handleAddClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-        setAnchorEl(event.currentTarget);
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
+    const [formData, setFormData] = React.useState<VisualizationFormData>({
+        name: '',
+        type: 'waveform',
+        dataSource: '',
+    });
+
+    useEffect(() => {
+        fetchVisualizations();
+    }, [fetchVisualizations]);
+
+    const handleCreateDialogOpen = () => {
+        setIsCreateDialogOpen(true);
     };
 
-    const handleMenuClose = () => {
-        setAnchorEl(null);
+    const handleCreateDialogClose = () => {
+        setIsCreateDialogOpen(false);
+        setFormData({
+            name: '',
+            type: 'waveform',
+            dataSource: '',
+        });
     };
 
-    const handleAddVisualization = (type: keyof typeof VISUALIZATION_TEMPLATES) => {
-        const template = VISUALIZATION_TEMPLATES[type];
-        dispatch(addVisualization(template));
-        handleMenuClose();
+    const handleCreate = async () => {
+        await createVisualization(formData);
+        handleCreateDialogClose();
     };
 
-    const handleDeleteVisualization = (id: number) => {
-        dispatch(deleteVisualization(id));
-        if (selectedVisualizationId === id) {
-            onVisualizationSelect(-1);
-        }
+    const handleDelete = async (visualizationId: number) => {
+        await deleteVisualizationHook(visualizationId);
     };
 
-    const handleToggleRealTime = (id: number, isRealTime: boolean) => {
-        dispatch(
-            updateVisualization({
-                id,
-                is_real_time: !isRealTime,
-            })
+    if (loading) {
+        return <Typography>Loading visualizations...</Typography>;
+    }
+
+    if (error) {
+        return <Typography color="error">Error: {error}</Typography>;
+    }
+
+    if (!visualizations.length) {
+        return (
+            <Box>
+                <Typography sx={{ mb: 2 }}>No visualizations available</Typography>
+                <Button variant="contained" onClick={handleCreateDialogOpen}>
+                    Create Visualization
+                </Button>
+            </Box>
         );
-    };
+    }
 
     return (
-        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
-            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-                <Typography variant="h6">Visualizations</Typography>
-                <IconButton onClick={handleAddClick} size="small">
-                    <AddIcon />
-                </IconButton>
-                <Menu
-                    anchorEl={anchorEl}
-                    open={Boolean(anchorEl)}
-                    onClose={handleMenuClose}
-                >
-                    <MenuItem onClick={() => handleAddVisualization('waveform')}>
-                        Waveform
-                    </MenuItem>
-                    <MenuItem onClick={() => handleAddVisualization('spectrum')}>
-                        Spectrum
-                    </MenuItem>
-                    <MenuItem onClick={() => handleAddVisualization('physics3d')}>
-                        Physics 3D
-                    </MenuItem>
-                </Menu>
-            </Stack>
+        <Box>
+            <Box sx={{ mb: 2 }}>
+                <Button variant="contained" onClick={handleCreateDialogOpen}>
+                    Create Visualization
+                </Button>
+            </Box>
 
-            <List sx={{ flexGrow: 1, overflow: 'auto' }}>
+            <List>
                 {visualizations.map((visualization) => (
-                    <ListItem
-                        key={visualization.id}
-                        selected={visualization.id === selectedVisualizationId}
-                        onClick={() => onVisualizationSelect(visualization.id)}
-                        sx={{
-                            cursor: 'pointer',
-                            '&:hover': {
-                                backgroundColor: 'action.hover',
-                            },
-                        }}
-                    >
+                    <ListItem key={visualization.id}>
                         <ListItemText
                             primary={visualization.name}
-                            secondary={visualization.description}
+                            secondary={`Type: ${visualization.type} | Data Source: ${visualization.dataSource}`}
                         />
                         <ListItemSecondaryAction>
-                            <IconButton
-                                edge="end"
-                                onClick={() =>
-                                    handleToggleRealTime(
-                                        visualization.id,
-                                        visualization.is_real_time
-                                    )
-                                }
-                            >
-                                {visualization.is_real_time ? <Stop /> : <PlayArrow />}
-                            </IconButton>
-                            <IconButton edge="end" sx={{ ml: 1 }}>
-                                <EditIcon />
-                            </IconButton>
-                            <IconButton
-                                edge="end"
-                                onClick={() => handleDeleteVisualization(visualization.id)}
-                                sx={{ ml: 1 }}
-                            >
-                                <DeleteIcon />
-                            </IconButton>
+                            <Tooltip title={isRealTime ? 'Stop' : 'Start'}>
+                                <IconButton
+                                    onClick={() => (isRealTime ? stopRealTime() : startRealTime())}
+                                    color={isRealTime ? 'secondary' : 'primary'}
+                                >
+                                    {isRealTime ? <StopIcon /> : <PlayArrowIcon />}
+                                </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete">
+                                <IconButton onClick={() => handleDelete(visualization.id)}>
+                                    <DeleteIcon />
+                                </IconButton>
+                            </Tooltip>
                         </ListItemSecondaryAction>
                     </ListItem>
                 ))}
             </List>
+
+            <Dialog open={isCreateDialogOpen} onClose={handleCreateDialogClose}>
+                <DialogTitle>Create Visualization</DialogTitle>
+                <DialogContent>
+                    <Box sx={{ pt: 2 }}>
+                        <TextField
+                            fullWidth
+                            label="Name"
+                            value={formData.name}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                            sx={{ mb: 2 }}
+                        />
+                        <FormControl fullWidth sx={{ mb: 2 }}>
+                            <InputLabel>Type</InputLabel>
+                            <Select
+                                value={formData.type}
+                                label="Type"
+                                onChange={(e) =>
+                                    setFormData((prev) => ({ ...prev, type: e.target.value as any }))
+                                }
+                            >
+                                <MenuItem value="waveform">Waveform</MenuItem>
+                                <MenuItem value="spectrogram">Spectrogram</MenuItem>
+                                <MenuItem value="3d">3D</MenuItem>
+                                <MenuItem value="realtime">Real-time</MenuItem>
+                            </Select>
+                        </FormControl>
+                        <TextField
+                            fullWidth
+                            label="Data Source"
+                            value={formData.dataSource}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, dataSource: e.target.value }))}
+                        />
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCreateDialogClose}>Cancel</Button>
+                    <Button
+                        onClick={handleCreate}
+                        disabled={!formData.name || !formData.type || !formData.dataSource}
+                    >
+                        Create
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };
