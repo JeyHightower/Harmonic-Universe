@@ -1,22 +1,20 @@
 export interface AudioTrack {
   id: number;
-  title: string;
-  url: string;
+  name: string;
+  type: 'audio' | 'midi';
+  fileType: string;
+  filePath: string;
   duration: number;
-  waveform?: number[];
+  volume: number;
+  pan: number;
+  muted: boolean;
+  soloed: boolean;
+  isPlaying: boolean;
+  midiSequenceId?: number;
+  effects: AudioEffect[];
   projectId: number;
   createdAt: string;
   updatedAt: string;
-  volume: number;
-  isMuted: boolean;
-  isSolo: boolean;
-  isArmed: boolean;
-  midiSequenceId?: number;
-  effects: AudioEffect[];
-  isPlaying: boolean;
-  pan: number;
-  fileType: string;
-  filePath: string;
 }
 
 export interface AudioBuffer {
@@ -66,13 +64,13 @@ export interface AudioEffectParameter {
 
 export interface MIDIEvent {
   id: number;
-  type: 'note_on' | 'note_off' | 'control_change';
-  timestamp: number;
+  type: 'noteOn' | 'noteOff' | 'controlChange';
   note?: number;
   velocity?: number;
-  duration?: number;
   controller?: number;
   value?: number;
+  time: number;
+  trackId: number;
 }
 
 export interface Note {
@@ -84,7 +82,21 @@ export interface Note {
 
 export interface MIDISequence {
   id: number;
-  trackId: number;
-  duration: number;
+  name: string;
   events: MIDIEvent[];
+  duration: number;
+  loop: boolean;
+  trackId: number;
+  projectId: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AudioParameters {
+  sampleRate: number;
+  bitDepth: number;
+  channels: number;
+  format: 'wav' | 'mp3' | 'ogg';
+  normalize: boolean;
+  compressionQuality?: number;
 }

@@ -1,9 +1,10 @@
-import { useAITraining } from '@hooks/useAITraining';
-import { useModelExperiments } from '@hooks/useModelExperiments';
-import { useModelMonitoring } from '@hooks/useModelMonitoring';
-import { useModelPipelines } from '@hooks/useModelPipelines';
-import { useModelServing } from '@hooks/useModelServing';
-import { useModelVersioning } from '@hooks/useModelVersioning';
+import { useAITraining } from '@/hooks/useAITraining';
+import { useModelExperiments } from '@/hooks/useModelExperiments';
+import { useModelMonitoring } from '@/hooks/useModelMonitoring';
+import { useModelPipelines } from '@/hooks/useModelPipelines';
+import { useModelServing } from '@/hooks/useModelServing';
+import { useModelVersioning } from '@/hooks/useModelVersioning';
+import { selectModels } from '@/store/slices/aiSlice';
 import {
     Box,
     Grid,
@@ -11,7 +12,6 @@ import {
     Tab,
     Tabs,
 } from '@mui/material';
-import { RootState } from '@store/index';
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import DatasetManager from './DatasetManager';
@@ -47,9 +47,8 @@ function TabPanel(props: TabPanelProps) {
 const AIWorkspace: React.FC = () => {
     const [selectedModelId, setSelectedModelId] = useState<number | null>(null);
     const [selectedTab, setSelectedTab] = useState(0);
-    const model = useSelector((state: RootState) =>
-        state.ai.models.find((m) => m.id === selectedModelId)
-    );
+    const models = useSelector(selectModels);
+    const model = models.find((m) => m.id === selectedModelId);
 
     // Initialize hooks
     const training = useAITraining(selectedModelId);
@@ -63,7 +62,7 @@ const AIWorkspace: React.FC = () => {
         setSelectedModelId(id);
     };
 
-    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
         setSelectedTab(newValue);
     };
 
@@ -102,29 +101,30 @@ const AIWorkspace: React.FC = () => {
 
                         <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
                             <TabPanel value={selectedTab} index={0}>
-                                <TrainingPanel
-                                    model={model}
-                                    training={training}
-                                    experiments={experiments}
-                                    versioning={versioning}
-                                    pipelines={pipelines}
-                                    serving={serving}
-                                />
+                                {model && (
+                                    <TrainingPanel
+                                        model={model}
+                                        training={training}
+                                        experiments={experiments}
+                                        versioning={versioning}
+                                        pipelines={pipelines}
+                                        serving={serving}
+                                    />
+                                )}
                             </TabPanel>
 
                             <TabPanel value={selectedTab} index={1}>
-                                <ExperimentPanel model={model} />
+                                {model && <ExperimentPanel model={model} />}
                             </TabPanel>
 
                             <TabPanel value={selectedTab} index={2}>
-                                <ModelServing model={model} />
+                                {model && <ModelServing model={model} />}
                             </TabPanel>
 
                             <TabPanel value={selectedTab} index={3}>
                                 <DatasetManager
-                                    modelType={model?.model_type}
-                                    onSelectDataset={(datasetId) => {
-                                        // Handle dataset selection
+                                    modelType={model?.type}
+                                    onSelectDataset={() => {
                                         setSelectedTab(0); // Switch back to training tab
                                     }}
                                 />
@@ -134,12 +134,14 @@ const AIWorkspace: React.FC = () => {
                 </Grid>
                 <Grid item xs={3}>
                     <Paper sx={{ height: '100%', overflow: 'auto' }}>
-                        <ResultsViewer
-                            model={model}
-                            training={training}
-                            monitoring={monitoring}
-                            experiments={experiments}
-                        />
+                        {model && (
+                            <ResultsViewer
+                                model={model}
+                                training={training}
+                                monitoring={monitoring}
+                                experiments={experiments}
+                            />
+                        )}
                     </Paper>
                 </Grid>
             </Grid>

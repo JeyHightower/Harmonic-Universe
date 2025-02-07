@@ -12,7 +12,7 @@ class User(BaseModel):
     is_admin = db.Column(db.Boolean, default=False)
 
     # Relationships
-    projects = db.relationship('Project', back_populates='user', lazy='dynamic')
+    universes = db.relationship('Universe', back_populates='user', lazy='dynamic')
     audio_files = db.relationship('AudioFile', back_populates='user', lazy='dynamic')
     visualizations = db.relationship('Visualization', back_populates='user', lazy='dynamic')
 

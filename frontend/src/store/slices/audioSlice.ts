@@ -1,5 +1,5 @@
-import axios from '@/services/api';
-import { AudioFormData, AudioTrack } from '@/types/audio';
+import api from '@/services/api';
+import { AudioTrack, MIDIEvent, MIDISequence } from '@/types/audio';
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../store';
 
@@ -10,11 +10,12 @@ export interface AudioTrack {
   file_path: string;
   duration: number;
   volume: number;
-  is_muted: boolean;
-  is_solo: boolean;
-  is_armed: boolean;
+  muted: boolean;
+  solo: boolean;
+  armed: boolean;
   midi_sequence_id?: number;
   effects: AudioEffect[];
+  url?: string;
 }
 
 export interface AudioEffect {
@@ -35,14 +36,16 @@ export interface AudioEffectParameter {
 
 export interface MIDISequence {
   id: number;
-  track_id: number;
+  trackId: number;
   duration: number;
   events: MIDIEvent[];
 }
 
 export interface MIDIEvent {
   id: number;
-  event_type: 'note_on' | 'note_off' | 'control_change';
+  time: number;
+  trackId: number;
+  type: 'note_on' | 'note_off' | 'control_change';
   timestamp: number;
   note?: number;
   velocity?: number;
@@ -64,7 +67,7 @@ interface AudioFile {
   updated_at: string;
 }
 
-export interface AudioState {
+interface AudioState {
   tracks: AudioTrack[];
   midiSequences: MIDISequence[];
   nextTrackId: number;
@@ -108,7 +111,7 @@ const initialState: AudioState = {
     loopEnd: 4,
     isMetronomeEnabled: false,
     isSnapToGridEnabled: true,
-    gridSize: 0.25, // Quarter note
+    gridSize: 0.25,
   },
   masterVolume: 1,
   selectedTrackId: null,
@@ -125,14 +128,14 @@ const initialState: AudioState = {
 };
 
 export const fetchTracks = createAsyncThunk('audio/fetchTracks', async (projectId: number) => {
-  const response = await axios.get(`/api/projects/${projectId}/audio`);
+  const response = await api.get(`/api/projects/${projectId}/audio`);
   return response.data;
 });
 
 export const createTrack = createAsyncThunk(
   'audio/createTrack',
   async (track: Omit<AudioTrack, 'id'>) => {
-    const response = await axios.post('/audio/tracks', track);
+    const response = await api.post('/api/audio/tracks', track);
     return response.data;
   }
 );
@@ -148,7 +151,7 @@ export const updateTrack = createAsyncThunk(
     trackId: number;
     updates: Partial<AudioTrack>;
   }) => {
-    const response = await axios.put(`/api/projects/${projectId}/audio/${trackId}`, updates);
+    const response = await api.put(`/api/projects/${projectId}/audio/${trackId}`, updates);
     return response.data;
   }
 );
@@ -156,15 +159,15 @@ export const updateTrack = createAsyncThunk(
 export const deleteTrack = createAsyncThunk(
   'audio/deleteTrack',
   async ({ projectId, trackId }: { projectId: number; trackId: number }) => {
-    await axios.delete(`/api/projects/${projectId}/audio/${trackId}`);
+    await api.delete(`/api/projects/${projectId}/audio/${trackId}`);
     return trackId;
   }
 );
 
 export const uploadAudio = createAsyncThunk(
   'audio/uploadAudio',
-  async ({ projectId, formData }: { projectId: number; formData: AudioFormData }) => {
-    const response = await axios.post(`/api/projects/${projectId}/audio`, formData);
+  async ({ projectId, formData }: { projectId: number; formData: FormData }) => {
+    const response = await api.post(`/api/projects/${projectId}/audio`, formData);
     return response.data;
   }
 );
@@ -172,20 +175,20 @@ export const uploadAudio = createAsyncThunk(
 export const fetchProjectAudio = createAsyncThunk(
   'audio/fetchProjectAudio',
   async (projectId: number) => {
-    const response = await axios.get(`/api/v1/project/${projectId}/audio`);
+    const response = await api.get(`/api/v1/project/${projectId}/audio`);
     return response.data;
   }
 );
 
 export const fetchAudioFile = createAsyncThunk('audio/fetchAudioFile', async (audioId: number) => {
-  const response = await axios.get(`/api/v1/audio/${audioId}`);
+  const response = await api.get(`/api/v1/audio/${audioId}`);
   return response.data;
 });
 
 export const deleteAudioFile = createAsyncThunk(
   'audio/deleteAudioFile',
   async (audioId: number) => {
-    await axios.delete(`/api/v1/audio/${audioId}`);
+    await api.delete(`/api/v1/audio/${audioId}`);
     return audioId;
   }
 );
@@ -212,7 +215,7 @@ const audioSlice = createSlice({
     },
     deleteTrack: (state, action: PayloadAction<number>) => {
       state.tracks = state.tracks.filter(track => track.id !== action.payload);
-      state.midiSequences = state.midiSequences.filter(seq => seq.track_id !== action.payload);
+      state.midiSequences = state.midiSequences.filter(seq => seq.trackId !== action.payload);
     },
     addMIDISequence: (state, action: PayloadAction<Omit<MIDISequence, 'events'>>) => {
       state.midiSequences.push({
@@ -277,7 +280,16 @@ const audioSlice = createSlice({
       state.currentTrack = action.payload;
     },
     setCurrentTime: (state, action: PayloadAction<number>) => {
-      state.playbackState.currentTime = action.payload;
+      state.currentTime = action.payload;
+    },
+    setDuration: (state, action: PayloadAction<number>) => {
+      state.duration = action.payload;
+    },
+    setIsPlaying: (state, action: PayloadAction<boolean>) => {
+      state.isPlaying = action.payload;
+    },
+    setVolume: (state, action: PayloadAction<number>) => {
+      state.volume = action.payload;
     },
     clearError: state => {
       state.error = null;
@@ -364,6 +376,9 @@ export const {
   clearAll,
   setCurrentTrack,
   setCurrentTime,
+  setDuration,
+  setIsPlaying,
+  setVolume,
   clearError,
 } = audioSlice.actions;
 
@@ -371,9 +386,9 @@ export const selectAudioState = (state: RootState) => state.audio;
 export const selectTracks = (state: RootState) => state.audio.tracks;
 export const selectCurrentTrack = (state: RootState) => state.audio.currentTrack;
 export const selectIsPlaying = (state: RootState) => state.audio.isPlaying;
-export const selectCurrentTime = (state: RootState) => state.audio.playbackState.currentTime;
+export const selectCurrentTime = (state: RootState) => state.audio.currentTime;
 export const selectDuration = (state: RootState) => state.audio.duration;
-export const selectVolume = (state: RootState) => state.audio.masterVolume;
+export const selectVolume = (state: RootState) => state.audio.volume;
 export const selectError = (state: RootState) => state.audio.error;
 export const selectLoading = (state: RootState) => state.audio.loading;
 

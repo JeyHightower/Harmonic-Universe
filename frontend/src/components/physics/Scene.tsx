@@ -1,8 +1,7 @@
 import { usePhysicsEngine } from '@hooks/usePhysicsEngine';
 import { useFrame } from '@react-three/fiber';
-import { RootState } from '@store/index';
+import { useAppSelector } from '@store/store';
 import { forwardRef, useEffect, useImperativeHandle } from 'react';
-import { useSelector } from 'react-redux';
 import PhysicsObject from './PhysicsObject';
 
 interface SceneProps {
@@ -11,29 +10,37 @@ interface SceneProps {
 
 export interface SceneHandle {
     reset: () => void;
-    getObjectPositions: () => { [key: number]: [number, number, number] };
+    getObjectPositions: () => Record<number, [number, number, number]>;
 }
 
 const Scene = forwardRef<SceneHandle, SceneProps>(({ isSimulating }, ref) => {
     const physicsEngine = usePhysicsEngine();
-    const objects = useSelector((state: RootState) => state.physics.objects);
-    const constraints = useSelector((state: RootState) => state.physics.constraints);
+    const objects = useAppSelector(state => state.physics.objects);
+    const constraints = useAppSelector(state => state.physics.constraints);
 
     useEffect(() => {
-        // Initialize physics world
-        physicsEngine.init();
-
+        const world = physicsEngine.init();
         return () => {
-            physicsEngine.cleanup();
+            if (physicsEngine.cleanup) {
+                physicsEngine.cleanup();
+            }
         };
     }, []);
 
     useImperativeHandle(ref, () => ({
         reset: () => {
-            physicsEngine.reset();
+            if (physicsEngine.reset) {
+                physicsEngine.reset();
+            }
         },
         getObjectPositions: () => {
-            return physicsEngine.getObjectPositions();
+            const positions = physicsEngine.getObjectPositions();
+            return Object.fromEntries(
+                Object.entries(positions).map(([id, pos]) => [
+                    Number(id),
+                    pos as [number, number, number],
+                ])
+            );
         },
     }));
 
@@ -48,8 +55,7 @@ const Scene = forwardRef<SceneHandle, SceneProps>(({ isSimulating }, ref) => {
             {objects.map((object) => (
                 <PhysicsObject
                     key={object.id}
-                    object={object}
-                    isSimulating={isSimulating}
+                    {...object}
                 />
             ))}
             {/* Visualization of constraints would go here */}

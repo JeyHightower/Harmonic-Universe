@@ -1,7 +1,7 @@
 import { useGetModelQuery } from '@services/aiService';
 import { RootState } from '@store/index';
 import { updateModel } from '@store/slices/aiSlice';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 export interface ServingMetrics {
@@ -28,7 +28,36 @@ export interface ServingMetrics {
   }[];
 }
 
-export const useModelServing = (modelId: number | null) => {
+export interface ModelDeployment {
+  id: number;
+  status: 'pending' | 'running' | 'stopped' | 'failed';
+  endpoint: string | null;
+  version: string;
+  resources: {
+    cpu: number;
+    memory: number;
+    gpu?: number;
+  };
+  metrics?: {
+    requestCount: number;
+    errorRate: number;
+    latency: number;
+    throughput: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ModelServing {
+  deployments: ModelDeployment[];
+  createDeployment: (data: Partial<ModelDeployment>) => Promise<void>;
+  updateDeployment: (id: number, data: Partial<ModelDeployment>) => Promise<void>;
+  deleteDeployment: (id: number) => Promise<void>;
+  loading: boolean;
+  error: string | null;
+}
+
+export const useModelServing = (modelId: number | null): ModelServing => {
   const dispatch = useDispatch();
   const model = useSelector((state: RootState) => state.ai.models.find(m => m.id === modelId));
   const { data: modelData } = useGetModelQuery(modelId || 0, { skip: !modelId });
@@ -39,6 +68,9 @@ export const useModelServing = (modelId: number | null) => {
     interval: null,
     metrics: [],
   });
+  const [deployments, setDeployments] = useState<ModelDeployment[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Start collecting serving metrics
   const startMetricsCollection = useCallback(() => {
@@ -175,6 +207,60 @@ export const useModelServing = (modelId: number | null) => {
     return null;
   }, [model]);
 
+  const createDeployment = useCallback(async (data: Partial<ModelDeployment>) => {
+    try {
+      setLoading(true);
+      setError(null);
+      // API call would go here
+      const newDeployment: ModelDeployment = {
+        id: Math.random(),
+        status: 'pending',
+        endpoint: null,
+        version: data.version || '1.0.0',
+        resources: data.resources || { cpu: 1, memory: 1024 },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setDeployments(prev => [...prev, newDeployment]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create deployment');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const updateDeployment = useCallback(async (id: number, data: Partial<ModelDeployment>) => {
+    try {
+      setLoading(true);
+      setError(null);
+      // API call would go here
+      setDeployments(prev =>
+        prev.map(deployment =>
+          deployment.id === id
+            ? { ...deployment, ...data, updatedAt: new Date().toISOString() }
+            : deployment
+        )
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update deployment');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const deleteDeployment = useCallback(async (id: number) => {
+    try {
+      setLoading(true);
+      setError(null);
+      // API call would go here
+      setDeployments(prev => prev.filter(deployment => deployment.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete deployment');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Cleanup on unmount or model change
   useEffect(() => {
     return () => {
@@ -183,6 +269,12 @@ export const useModelServing = (modelId: number | null) => {
   }, [model, stopMetricsCollection]);
 
   return {
+    deployments,
+    createDeployment,
+    updateDeployment,
+    deleteDeployment,
+    loading,
+    error,
     startMetricsCollection,
     stopMetricsCollection,
     isCollectingMetrics: !!metricsRef.current.interval,

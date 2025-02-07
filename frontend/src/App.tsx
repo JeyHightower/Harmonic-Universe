@@ -5,8 +5,8 @@ import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Home from './pages/Home';
 import Login from './pages/Login';
-import Project from './pages/Project';
 import Register from './pages/Register';
+import UniverseDetail from './pages/UniverseDetail';
 import { store } from './store';
 
 function App() {
@@ -27,10 +27,10 @@ function App() {
               }
             />
             <Route
-              path="/project/:projectId"
+              path="/universe/:universeId"
               element={
                 <ProtectedRoute>
-                  <Project />
+                  <UniverseDetail />
                 </ProtectedRoute>
               }
             />

@@ -1,10 +1,15 @@
 import { useStartTrainingMutation, useStopTrainingMutation } from '@services/aiService';
 import { RootState } from '@store/index';
-import { startTraining, updateTrainingMetrics } from '@store/slices/aiSlice';
+import { startTraining, stopTraining, updateTrainingMetrics } from '@store/slices/aiSlice';
 import { useCallback, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-export const useAITraining = (modelId: number | null) => {
+export interface AITraining {
+  start: () => Promise<void>;
+  stop: () => Promise<void>;
+}
+
+export const useAITraining = (modelId: number | null): AITraining => {
   const dispatch = useDispatch();
   const model = useSelector((state: RootState) => state.ai.models.find(m => m.id === modelId));
   const [startTrainingMutation] = useStartTrainingMutation();
@@ -52,7 +57,7 @@ export const useAITraining = (modelId: number | null) => {
   );
 
   // Stop model training
-  const stopTraining = useCallback(async () => {
+  const stopTrainingProcess = useCallback(async () => {
     if (!model) return false;
 
     try {
@@ -90,7 +95,7 @@ export const useAITraining = (modelId: number | null) => {
   }, [model]);
 
   return {
-    startTraining: startTrainingProcess,
-    stopTraining,
+    start: startTrainingProcess,
+    stop: stopTrainingProcess,
   };
 };

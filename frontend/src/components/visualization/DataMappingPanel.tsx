@@ -1,72 +1,65 @@
+import { updateVisualization } from '@/store/slices/visualizationSlice';
+import { AppDispatch } from '@/store/store';
+import { DataMapping, DataSource, VisualizationUpdateData } from '@/types/visualization';
 import {
     Add as AddIcon,
-    Delete as DeleteIcon,
-    PowerSettingsNew as PowerIcon,
+    Delete as DeleteIcon
 } from '@mui/icons-material';
 import {
     Box,
+    Button,
+    Card,
+    CardContent,
+    Divider,
     FormControl,
+    Grid,
     IconButton,
     InputLabel,
     List,
     ListItem,
-    ListItemSecondaryAction,
     ListItemText,
     MenuItem,
     Select,
+    SelectChangeEvent,
     Stack,
-    TextField,
     Typography,
 } from '@mui/material';
-import { updateVisualization } from '@store/slices/visualizationSlice';
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 
-interface DataMappingPanelProps {
-    visualization: {
-        id: number;
-        data_source: string;
-        data_mappings?: Array<{
-            id: number;
-            data_field: string;
-            visual_property: string;
-            mapping_type: string;
-            range_min?: number;
-            range_max?: number;
-            scale_factor?: number;
-            enabled: boolean;
-        }>;
-    } | null;
-}
-
 const MAPPING_TYPES = [
-    { value: 'linear', label: 'Linear' },
-    { value: 'logarithmic', label: 'Logarithmic' },
-    { value: 'exponential', label: 'Exponential' },
-    { value: 'categorical', label: 'Categorical' },
-];
+    { value: 'direct', label: 'Direct' },
+    { value: 'scale', label: 'Scale' },
+    { value: 'map', label: 'Map' },
+    { value: 'custom', label: 'Custom' },
+] as const;
 
-const VISUAL_PROPERTIES = {
-    waveform: [
+type VisualProperty = {
+    value: string;
+    label: string;
+};
+
+const VISUAL_PROPERTIES: Record<DataSource, VisualProperty[]> = {
+    audio: [
         { value: 'amplitude', label: 'Amplitude' },
         { value: 'color', label: 'Color' },
         { value: 'opacity', label: 'Opacity' },
     ],
-    spectrum: [
-        { value: 'height', label: 'Height' },
-        { value: 'color', label: 'Color' },
-        { value: 'width', label: 'Width' },
-    ],
-    physics_3d: [
+    physics: [
         { value: 'position', label: 'Position' },
         { value: 'rotation', label: 'Rotation' },
         { value: 'scale', label: 'Scale' },
         { value: 'color', label: 'Color' },
         { value: 'opacity', label: 'Opacity' },
     ],
+    ai_model: [
+        { value: 'height', label: 'Height' },
+        { value: 'color', label: 'Color' },
+        { value: 'width', label: 'Width' },
+    ],
 };
 
-const DATA_FIELDS = {
+const DATA_FIELDS: Record<DataSource, VisualProperty[]> = {
     audio: [
         { value: 'amplitude', label: 'Amplitude' },
         { value: 'frequency', label: 'Frequency' },
@@ -87,266 +80,237 @@ const DATA_FIELDS = {
     ],
 };
 
+type NewMapping = {
+    sourceField: string;
+    targetField: string;
+    transformationType: typeof MAPPING_TYPES[number]['value'];
+};
+
+interface DataMappingPanelProps {
+    visualization: {
+        id: number;
+        data_source: DataSource;
+        dataMappings?: DataMapping[];
+    };
+}
+
 const DataMappingPanel: React.FC<DataMappingPanelProps> = ({ visualization }) => {
-    const dispatch = useDispatch();
-    const [newMapping, setNewMapping] = useState({
-        data_field: '',
-        visual_property: '',
-        mapping_type: 'linear',
+    const dispatch = useDispatch<AppDispatch>();
+    const [newMapping, setNewMapping] = useState<NewMapping>({
+        sourceField: '',
+        targetField: '',
+        transformationType: 'direct',
     });
 
     const handleAddMapping = () => {
-        if (!visualization || !newMapping.data_field || !newMapping.visual_property) return;
+        if (!visualization || !newMapping.sourceField || !newMapping.targetField) return;
 
-        const mapping = {
-            id: Date.now(),
-            ...newMapping,
-            range_min: 0,
-            range_max: 1,
-            scale_factor: 1,
-            enabled: true,
+        const mapping: DataMapping = {
+            sourceField: newMapping.sourceField,
+            targetField: newMapping.targetField,
+            transformationType: newMapping.transformationType,
+            transformationConfig: {
+                inputRange: [0, 1],
+                outputRange: [0, 1],
+            },
         };
 
-        dispatch(
-            updateVisualization({
-                id: visualization.id,
-                data_mappings: [...(visualization.data_mappings || []), mapping],
-            })
-        );
+        const updateData: VisualizationUpdateData = {
+            dataMappings: [...(visualization.dataMappings || []), mapping],
+        };
+
+        dispatch(updateVisualization({ id: visualization.id, data: updateData }));
 
         setNewMapping({
-            data_field: '',
-            visual_property: '',
-            mapping_type: 'linear',
+            sourceField: '',
+            targetField: '',
+            transformationType: 'direct',
         });
     };
 
-    const handleUpdateMapping = (
-        mappingId: number,
-        field: string,
-        value: any
-    ) => {
-        if (!visualization) return;
+    const handleUpdateMapping = (index: number, field: keyof DataMapping, value: string) => {
+        if (!visualization?.dataMappings) return;
 
-        dispatch(
-            updateVisualization({
-                id: visualization.id,
-                data_mappings: visualization.data_mappings?.map(mapping =>
-                    mapping.id === mappingId
-                        ? {
-                            ...mapping,
-                            [field]: value,
-                        }
-                        : mapping
-                ),
-            })
-        );
+        const updatedMappings = [...visualization.dataMappings];
+        updatedMappings[index] = {
+            ...updatedMappings[index],
+            [field]: value,
+        };
+
+        const updateData: VisualizationUpdateData = {
+            dataMappings: updatedMappings,
+        };
+
+        dispatch(updateVisualization({ id: visualization.id, data: updateData }));
     };
 
-    const handleDeleteMapping = (mappingId: number) => {
-        if (!visualization) return;
+    const handleDeleteMapping = (index: number) => {
+        if (!visualization?.dataMappings) return;
 
-        dispatch(
-            updateVisualization({
-                id: visualization.id,
-                data_mappings: visualization.data_mappings?.filter(
-                    mapping => mapping.id !== mappingId
-                ),
-            })
-        );
+        const updateData: VisualizationUpdateData = {
+            dataMappings: visualization.dataMappings.filter((_, i) => i !== index),
+        };
+
+        dispatch(updateVisualization({ id: visualization.id, data: updateData }));
     };
 
-    if (!visualization) {
-        return (
-            <Box sx={{ p: 2 }}>
-                <Typography variant="subtitle1" color="text.secondary">
-                    Select a visualization to configure data mappings
-                </Typography>
-            </Box>
-        );
-    }
+    const handleSourceFieldChange = (event: SelectChangeEvent<string>) => {
+        setNewMapping(prev => ({
+            ...prev,
+            sourceField: event.target.value,
+        }));
+    };
 
-    const dataFields = DATA_FIELDS[visualization.data_source as keyof typeof DATA_FIELDS] || [];
-    const visualProperties =
-        VISUAL_PROPERTIES[
-        visualization.visualization_type as keyof typeof VISUAL_PROPERTIES
-        ] || [];
+    const handleTargetFieldChange = (event: SelectChangeEvent<string>) => {
+        setNewMapping(prev => ({
+            ...prev,
+            targetField: event.target.value,
+        }));
+    };
+
+    const handleTransformationTypeChange = (event: SelectChangeEvent<string>) => {
+        setNewMapping(prev => ({
+            ...prev,
+            transformationType: event.target.value as typeof MAPPING_TYPES[number]['value'],
+        }));
+    };
+
+    if (!visualization) return null;
 
     return (
-        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-                Data Mappings
-            </Typography>
-
-            <Stack spacing={3}>
-                <Box>
-                    <Typography variant="subtitle2" gutterBottom>
-                        Add New Mapping
-                    </Typography>
-                    <Stack spacing={2}>
-                        <FormControl size="small">
-                            <InputLabel>Data Field</InputLabel>
-                            <Select
-                                value={newMapping.data_field}
-                                label="Data Field"
-                                onChange={e =>
-                                    setNewMapping(prev => ({
-                                        ...prev,
-                                        data_field: e.target.value,
-                                    }))
-                                }
-                            >
-                                {dataFields.map(field => (
-                                    <MenuItem key={field.value} value={field.value}>
-                                        {field.label}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-
-                        <FormControl size="small">
-                            <InputLabel>Visual Property</InputLabel>
-                            <Select
-                                value={newMapping.visual_property}
-                                label="Visual Property"
-                                onChange={e =>
-                                    setNewMapping(prev => ({
-                                        ...prev,
-                                        visual_property: e.target.value,
-                                    }))
-                                }
-                            >
-                                {visualProperties.map(prop => (
-                                    <MenuItem key={prop.value} value={prop.value}>
-                                        {prop.label}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-
-                        <FormControl size="small">
-                            <InputLabel>Mapping Type</InputLabel>
-                            <Select
-                                value={newMapping.mapping_type}
-                                label="Mapping Type"
-                                onChange={e =>
-                                    setNewMapping(prev => ({
-                                        ...prev,
-                                        mapping_type: e.target.value,
-                                    }))
-                                }
-                            >
-                                {MAPPING_TYPES.map(type => (
-                                    <MenuItem key={type.value} value={type.value}>
-                                        {type.label}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-
-                        <IconButton
-                            onClick={handleAddMapping}
-                            disabled={!newMapping.data_field || !newMapping.visual_property}
-                            color="primary"
-                        >
-                            <AddIcon />
-                        </IconButton>
-                    </Stack>
+        <Card>
+            <CardContent>
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Typography variant="h6">Data Mappings</Typography>
+                    <Button
+                        startIcon={<AddIcon />}
+                        onClick={handleAddMapping}
+                        disabled={!newMapping.sourceField || !newMapping.targetField}
+                    >
+                        Add Mapping
+                    </Button>
                 </Box>
+                <Divider sx={{ my: 2 }} />
 
-                <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
-                    <Typography variant="subtitle2" gutterBottom>
-                        Active Mappings
-                    </Typography>
+                <Stack spacing={2}>
+                    <Grid container spacing={2}>
+                        <Grid item xs={4}>
+                            <FormControl fullWidth>
+                                <InputLabel>Source Field</InputLabel>
+                                <Select
+                                    value={newMapping.sourceField}
+                                    onChange={handleSourceFieldChange}
+                                    label="Source Field"
+                                >
+                                    {DATA_FIELDS[visualization.data_source].map(field => (
+                                        <MenuItem key={field.value} value={field.value}>
+                                            {field.label}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={4}>
+                            <FormControl fullWidth>
+                                <InputLabel>Target Field</InputLabel>
+                                <Select
+                                    value={newMapping.targetField}
+                                    onChange={handleTargetFieldChange}
+                                    label="Target Field"
+                                >
+                                    {VISUAL_PROPERTIES[visualization.data_source].map(prop => (
+                                        <MenuItem key={prop.value} value={prop.value}>
+                                            {prop.label}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={4}>
+                            <FormControl fullWidth>
+                                <InputLabel>Transformation Type</InputLabel>
+                                <Select
+                                    value={newMapping.transformationType}
+                                    onChange={handleTransformationTypeChange}
+                                    label="Transformation Type"
+                                >
+                                    {MAPPING_TYPES.map(type => (
+                                        <MenuItem key={type.value} value={type.value}>
+                                            {type.label}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                    </Grid>
+
                     <List>
-                        {visualization.data_mappings?.map(mapping => (
+                        {visualization.dataMappings?.map((mapping, index) => (
                             <ListItem
-                                key={mapping.id}
-                                sx={{
-                                    opacity: mapping.enabled ? 1 : 0.5,
-                                }}
-                            >
-                                <ListItemText
-                                    primary={`${dataFields.find(f => f.value === mapping.data_field)
-                                            ?.label
-                                        } → ${visualProperties.find(
-                                            p => p.value === mapping.visual_property
-                                        )?.label
-                                        }`}
-                                    secondary={`${MAPPING_TYPES.find(t => t.value === mapping.mapping_type)
-                                            ?.label
-                                        } Mapping`}
-                                />
-                                <Stack spacing={2} sx={{ mx: 2, minWidth: 120 }}>
-                                    <TextField
-                                        label="Min"
-                                        type="number"
-                                        size="small"
-                                        value={mapping.range_min}
-                                        onChange={e =>
-                                            handleUpdateMapping(
-                                                mapping.id,
-                                                'range_min',
-                                                parseFloat(e.target.value)
-                                            )
-                                        }
-                                    />
-                                    <TextField
-                                        label="Max"
-                                        type="number"
-                                        size="small"
-                                        value={mapping.range_max}
-                                        onChange={e =>
-                                            handleUpdateMapping(
-                                                mapping.id,
-                                                'range_max',
-                                                parseFloat(e.target.value)
-                                            )
-                                        }
-                                    />
-                                    <TextField
-                                        label="Scale"
-                                        type="number"
-                                        size="small"
-                                        value={mapping.scale_factor}
-                                        onChange={e =>
-                                            handleUpdateMapping(
-                                                mapping.id,
-                                                'scale_factor',
-                                                parseFloat(e.target.value)
-                                            )
-                                        }
-                                    />
-                                </Stack>
-                                <ListItemSecondaryAction>
-                                    <IconButton
-                                        edge="end"
-                                        onClick={() =>
-                                            handleUpdateMapping(
-                                                mapping.id,
-                                                'enabled',
-                                                !mapping.enabled
-                                            )
-                                        }
-                                    >
-                                        <PowerIcon
-                                            color={mapping.enabled ? 'primary' : 'disabled'}
-                                        />
-                                    </IconButton>
-                                    <IconButton
-                                        edge="end"
-                                        onClick={() => handleDeleteMapping(mapping.id)}
-                                        sx={{ ml: 1 }}
-                                    >
+                                key={index}
+                                secondaryAction={
+                                    <IconButton edge="end" onClick={() => handleDeleteMapping(index)}>
                                         <DeleteIcon />
                                     </IconButton>
-                                </ListItemSecondaryAction>
+                                }
+                            >
+                                <ListItemText
+                                    primary={
+                                        <Grid container spacing={2}>
+                                            <Grid item xs={4}>
+                                                <FormControl fullWidth>
+                                                    <Select
+                                                        value={mapping.sourceField}
+                                                        onChange={(e) => handleUpdateMapping(index, 'sourceField', e.target.value)}
+                                                        size="small"
+                                                    >
+                                                        {DATA_FIELDS[visualization.data_source].map(field => (
+                                                            <MenuItem key={field.value} value={field.value}>
+                                                                {field.label}
+                                                            </MenuItem>
+                                                        ))}
+                                                    </Select>
+                                                </FormControl>
+                                            </Grid>
+                                            <Grid item xs={4}>
+                                                <FormControl fullWidth>
+                                                    <Select
+                                                        value={mapping.targetField}
+                                                        onChange={(e) => handleUpdateMapping(index, 'targetField', e.target.value)}
+                                                        size="small"
+                                                    >
+                                                        {VISUAL_PROPERTIES[visualization.data_source].map(prop => (
+                                                            <MenuItem key={prop.value} value={prop.value}>
+                                                                {prop.label}
+                                                            </MenuItem>
+                                                        ))}
+                                                    </Select>
+                                                </FormControl>
+                                            </Grid>
+                                            <Grid item xs={4}>
+                                                <FormControl fullWidth>
+                                                    <Select
+                                                        value={mapping.transformationType}
+                                                        onChange={(e) => handleUpdateMapping(index, 'transformationType', e.target.value as typeof MAPPING_TYPES[number]['value'])}
+                                                        size="small"
+                                                    >
+                                                        {MAPPING_TYPES.map(type => (
+                                                            <MenuItem key={type.value} value={type.value}>
+                                                                {type.label}
+                                                            </MenuItem>
+                                                        ))}
+                                                    </Select>
+                                                </FormControl>
+                                            </Grid>
+                                        </Grid>
+                                    }
+                                />
                             </ListItem>
                         ))}
                     </List>
-                </Box>
-            </Stack>
-        </Box>
+                </Stack>
+            </CardContent>
+        </Card>
     );
 };
 

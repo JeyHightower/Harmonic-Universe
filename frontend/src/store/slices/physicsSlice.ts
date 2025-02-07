@@ -1,23 +1,41 @@
 import api from '@/services/api';
 import { PhysicsObject } from '@/types/physics';
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { RootState } from '../store';
 
-interface PhysicsState {
+export interface PhysicsConstraint {
+  id: number;
+  type: 'hinge' | 'point' | 'distance' | 'spring';
+  objectA: number;
+  objectB: number;
+  anchor: [number, number, number];
+  axis?: [number, number, number];
+  limits?: {
+    lower: number;
+    upper: number;
+  };
+  stiffness?: number;
+  damping?: number;
+}
+
+export interface PhysicsState {
   objects: PhysicsObject[];
+  constraints: PhysicsConstraint[];
   currentObject: PhysicsObject | null;
-  loading: boolean;
-  error: string | null;
   isSimulating: boolean;
   timeStep: number;
+  loading: boolean;
+  error: string | null;
 }
 
 const initialState: PhysicsState = {
   objects: [],
+  constraints: [],
   currentObject: null,
-  loading: false,
-  error: null,
   isSimulating: false,
   timeStep: 1 / 60,
+  loading: false,
+  error: null,
 };
 
 export const fetchPhysicsObjects = createAsyncThunk(
@@ -55,7 +73,10 @@ export const updatePhysicsObject = createAsyncThunk(
     objectId: number;
     data: Partial<PhysicsObject>;
   }) => {
-    const response = await api.put(`/api/projects/${projectId}/physics/objects/${objectId}`, data);
+    const response = await api.patch(
+      `/api/projects/${projectId}/physics/objects/${objectId}`,
+      data
+    );
     return response.data;
   }
 );
@@ -72,7 +93,7 @@ const physicsSlice = createSlice({
   name: 'physics',
   initialState,
   reducers: {
-    setTimeStep: (state, action) => {
+    setTimeStep: (state, action: PayloadAction<number>) => {
       state.timeStep = action.payload;
     },
     startSimulation: state => {
@@ -80,6 +101,53 @@ const physicsSlice = createSlice({
     },
     stopSimulation: state => {
       state.isSimulating = false;
+    },
+    updateObjectTransform: (
+      state,
+      action: PayloadAction<{
+        id: number;
+        position: [number, number, number];
+        rotation: [number, number, number];
+      }>
+    ) => {
+      const object = state.objects.find(obj => obj.id === action.payload.id);
+      if (object) {
+        object.position = action.payload.position;
+        object.rotation = action.payload.rotation;
+      }
+    },
+    addObject: (state, action: PayloadAction<PhysicsObject>) => {
+      state.objects.push(action.payload);
+    },
+    updateObject: (state, action: PayloadAction<Partial<PhysicsObject> & { id: number }>) => {
+      const index = state.objects.findIndex(obj => obj.id === action.payload.id);
+      if (index !== -1) {
+        state.objects[index] = { ...state.objects[index], ...action.payload };
+      }
+    },
+    deleteObject: (state, action: PayloadAction<number>) => {
+      state.objects = state.objects.filter(obj => obj.id !== action.payload);
+      if (state.currentObject?.id === action.payload) {
+        state.currentObject = null;
+      }
+    },
+    setCurrentObject: (state, action: PayloadAction<PhysicsObject | null>) => {
+      state.currentObject = action.payload;
+    },
+    addConstraint: (state, action: PayloadAction<PhysicsConstraint>) => {
+      state.constraints.push(action.payload);
+    },
+    updateConstraint: (
+      state,
+      action: PayloadAction<Partial<PhysicsConstraint> & { id: number }>
+    ) => {
+      const index = state.constraints.findIndex(c => c.id === action.payload.id);
+      if (index !== -1) {
+        state.constraints[index] = { ...state.constraints[index], ...action.payload };
+      }
+    },
+    deleteConstraint: (state, action: PayloadAction<number>) => {
+      state.constraints = state.constraints.filter(c => c.id !== action.payload);
     },
   },
   extraReducers: builder => {
@@ -130,7 +198,7 @@ const physicsSlice = createSlice({
       })
       .addCase(updatePhysicsObject.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.objects.findIndex(o => o.id === action.payload.id);
+        const index = state.objects.findIndex(obj => obj.id === action.payload.id);
         if (index !== -1) {
           state.objects[index] = action.payload;
         }
@@ -149,7 +217,7 @@ const physicsSlice = createSlice({
       })
       .addCase(deletePhysicsObject.fulfilled, (state, action) => {
         state.loading = false;
-        state.objects = state.objects.filter(o => o.id !== action.payload);
+        state.objects = state.objects.filter(obj => obj.id !== action.payload);
         if (state.currentObject?.id === action.payload) {
           state.currentObject = null;
         }
@@ -161,14 +229,26 @@ const physicsSlice = createSlice({
   },
 });
 
-export const { setTimeStep, startSimulation, stopSimulation } = physicsSlice.actions;
+export const {
+  setTimeStep,
+  startSimulation,
+  stopSimulation,
+  updateObjectTransform,
+  addObject,
+  updateObject,
+  deleteObject,
+  setCurrentObject,
+  addConstraint,
+  updateConstraint,
+  deleteConstraint,
+} = physicsSlice.actions;
 
-export const selectPhysicsObjects = (state: { physics: PhysicsState }) => state.physics.objects;
-export const selectCurrentPhysicsObject = (state: { physics: PhysicsState }) =>
-  state.physics.currentObject;
-export const selectPhysicsLoading = (state: { physics: PhysicsState }) => state.physics.loading;
-export const selectPhysicsError = (state: { physics: PhysicsState }) => state.physics.error;
-export const selectIsSimulating = (state: { physics: PhysicsState }) => state.physics.isSimulating;
-export const selectTimeStep = (state: { physics: PhysicsState }) => state.physics.timeStep;
+// Selectors
+export const selectPhysicsState = (state: RootState) => state.physics;
+export const selectObjects = (state: RootState) => state.physics.objects;
+export const selectConstraints = (state: RootState) => state.physics.constraints;
+export const selectCurrentObject = (state: RootState) => state.physics.currentObject;
+export const selectIsSimulating = (state: RootState) => state.physics.isSimulating;
+export const selectTimeStep = (state: RootState) => state.physics.timeStep;
 
 export default physicsSlice.reducer;

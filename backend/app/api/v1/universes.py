@@ -1,7 +1,8 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models.universe import Universe
 from app.models.user import User
+from app.services.export import ExportService
 from app import db
 from app.websocket.handler import manager
 import json
@@ -159,9 +160,20 @@ def export_universe(universe_id):
     format = request.args.get('format', 'json')
 
     if format == 'json':
-        return jsonify(json.loads(universe.export_to_json())), 200
+        data = ExportService.export_to_json(universe)
+        return jsonify(data), 200
     elif format == 'audio':
-        audio_url = universe.export_audio()
-        return jsonify({'audio_url': audio_url}), 200
+        try:
+            filepath = ExportService.export_to_audio(universe)
+            return send_file(
+                filepath,
+                mimetype='audio/wav',
+                as_attachment=True,
+                download_name=f'universe_{universe_id}_harmony.wav'
+            )
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+        finally:
+            ExportService.cleanup_export_file(filepath)
     else:
         return jsonify({'error': 'Unsupported export format'}), 400

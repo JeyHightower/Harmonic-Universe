@@ -1,27 +1,24 @@
 import {
-    Add as AddIcon,
-    Delete as DeleteIcon,
-    Edit as EditIcon,
-    PlayArrow,
-    Stop,
+    Add as AddIcon
 } from '@mui/icons-material';
+import ModelIcon from '@mui/icons-material/Memory';
 import {
     Box,
     Button,
-    IconButton,
     List,
     ListItem,
-    ListItemSecondaryAction,
+    ListItemButton,
+    ListItemIcon,
     ListItemText,
     Menu,
     MenuItem,
     Stack,
-    Typography,
+    Typography
 } from '@mui/material';
-import { RootState } from '@store/index';
 import {
     addModel,
     deleteModel,
+    selectModels,
     startTraining,
     stopTraining
 } from '@store/slices/aiSlice';
@@ -87,7 +84,7 @@ const ModelList: React.FC<ModelListProps> = ({
     onModelSelect,
 }) => {
     const dispatch = useDispatch();
-    const models = useSelector((state: RootState) => state.ai.models);
+    const models = useSelector(selectModels);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
     const handleAddClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -149,53 +146,39 @@ const ModelList: React.FC<ModelListProps> = ({
             </Stack>
 
             <List sx={{ flexGrow: 1, overflow: 'auto' }}>
-                {models.map((model) => (
-                    <ListItem
-                        key={model.id}
-                        selected={model.id === selectedModelId}
-                        onClick={() => onModelSelect(model.id)}
-                        sx={{
-                            cursor: 'pointer',
-                            '&:hover': {
-                                backgroundColor: 'action.hover',
-                            },
-                        }}
-                    >
-                        <ListItemText
-                            primary={model.name}
-                            secondary={
-                                <>
-                                    {model.description}
-                                    <br />
-                                    Status: {model.status}
-                                </>
-                            }
-                        />
-                        <ListItemSecondaryAction>
-                            <IconButton
-                                edge="end"
-                                onClick={() =>
-                                    handleToggleTraining(
-                                        model.id,
-                                        model.status === 'training'
-                                    )
-                                }
-                            >
-                                {model.status === 'training' ? <Stop /> : <PlayArrow />}
-                            </IconButton>
-                            <IconButton edge="end" sx={{ ml: 1 }}>
-                                <EditIcon />
-                            </IconButton>
-                            <IconButton
-                                edge="end"
-                                onClick={() => handleDeleteModel(model.id)}
-                                sx={{ ml: 1 }}
-                            >
-                                <DeleteIcon />
-                            </IconButton>
-                        </ListItemSecondaryAction>
+                {models.length === 0 ? (
+                    <ListItem>
+                        <Typography variant="body2" color="text.secondary">
+                            No models available
+                        </Typography>
                     </ListItem>
-                ))}
+                ) : (
+                    models.map((model) => (
+                        <ListItem key={model.id} disablePadding>
+                            <ListItemButton
+                                selected={model.id === selectedModelId}
+                                onClick={() => onModelSelect(model.id)}
+                            >
+                                <ListItemIcon>
+                                    <ModelIcon />
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary={model.name}
+                                    secondary={
+                                        <>
+                                            <Typography variant="body2" color="text.secondary">
+                                                {model.type}
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                Version: {model.version}
+                                            </Typography>
+                                        </>
+                                    }
+                                />
+                            </ListItemButton>
+                        </ListItem>
+                    ))
+                )}
             </List>
         </Box>
     );

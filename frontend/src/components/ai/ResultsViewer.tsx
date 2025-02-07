@@ -1,247 +1,147 @@
+import { AITraining } from '@/hooks/useAITraining';
+import { ModelExperiments } from '@/hooks/useModelExperiments';
+import { ModelMonitoring } from '@/hooks/useModelMonitoring';
+import { AIModel } from '@/store/slices/aiSlice';
 import {
     Box,
-    Paper,
-    Stack,
-    Tab,
-    Tabs,
+    Card,
+    CardContent,
+    CardHeader,
+    Divider,
+    LinearProgress,
     Typography,
 } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-import React, { useState } from 'react';
-import {
-    CartesianGrid,
-    Legend,
-    Line,
-    LineChart,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
-} from 'recharts';
+import React from 'react';
 
 interface ResultsViewerProps {
-    model: {
-        id: number;
-        metrics: {
-            [key: string]: any;
-        };
-        training_sessions?: Array<{
-            id: number;
-            start_time: number;
-            end_time?: number;
-            status: string;
-            metrics: {
-                [key: string]: any;
-            };
-            validation_results: {
-                [key: string]: any;
-            };
-            error_message?: string;
-        }>;
-    } | null;
+    model: AIModel;
+    training: AITraining;
+    monitoring: ModelMonitoring;
+    experiments: ModelExperiments;
 }
 
-interface TabPanelProps {
-    children?: React.ReactNode;
-    index: number;
-    value: number;
-}
-
-function TabPanel(props: TabPanelProps) {
-    const { children, value, index, ...other } = props;
-
+const ResultsViewer: React.FC<ResultsViewerProps> = ({ model, training, monitoring, experiments }) => {
     return (
-        <div
-            role="tabpanel"
-            hidden={value !== index}
-            id={`results-tabpanel-${index}`}
-            aria-labelledby={`results-tab-${index}`}
-            {...other}
-            style={{ height: '100%', overflow: 'auto' }}
-        >
-            {value === index && (
-                <Box sx={{ p: 2 }}>
-                    {children}
-                </Box>
-            )}
-        </div>
-    );
-}
+        <Box sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+                Results & Metrics
+            </Typography>
 
-const ResultsViewer: React.FC<ResultsViewerProps> = ({ model }) => {
-    const theme = useTheme();
-    const [selectedTab, setSelectedTab] = useState(0);
+            <Card sx={{ mb: 2 }}>
+                <CardHeader title="Model Information" />
+                <CardContent>
+                    <Typography variant="body2" gutterBottom>
+                        Name: {model.name}
+                    </Typography>
+                    <Typography variant="body2" gutterBottom>
+                        Type: {model.type}
+                    </Typography>
+                    <Typography variant="body2" gutterBottom>
+                        Version: {model.version}
+                    </Typography>
+                    <Typography variant="body2" gutterBottom>
+                        Status: {model.status}
+                    </Typography>
+                </CardContent>
+            </Card>
 
-    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-        setSelectedTab(newValue);
-    };
-
-    const renderMetricsChart = (metrics: { [key: string]: any }) => {
-        const data = Object.entries(metrics).map(([key, value]) => ({
-            name: key,
-            value: typeof value === 'number' ? value : 0,
-        }));
-
-        return (
-            <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={data}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line
-                        type="monotone"
-                        dataKey="value"
-                        stroke="#8884d8"
-                        activeDot={{ r: 8 }}
-                    />
-                </LineChart>
-            </ResponsiveContainer>
-        );
-    };
-
-    if (!model) {
-        return (
-            <Box sx={{ p: 2 }}>
-                <Typography variant="subtitle1" color="text.secondary">
-                    Select a model to view results
-                </Typography>
-            </Box>
-        );
-    }
-
-    const latestSession = model.training_sessions?.slice(-1)[0];
-
-    return (
-        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                <Tabs value={selectedTab} onChange={handleTabChange}>
-                    <Tab label="Overview" />
-                    <Tab label="Training" />
-                    <Tab label="Validation" />
-                </Tabs>
-            </Box>
-
-            <TabPanel value={selectedTab} index={0}>
-                <Stack spacing={3}>
-                    <Paper sx={{ p: 2 }}>
-                        <Typography variant="subtitle2" gutterBottom>
-                            Model Status
-                        </Typography>
-                        <Typography variant="h6" color="primary">
-                            {model.status}
-                        </Typography>
-                    </Paper>
-
-                    <Paper sx={{ p: 2 }}>
-                        <Typography variant="subtitle2" gutterBottom>
-                            Latest Metrics
-                        </Typography>
-                        {renderMetricsChart(model.metrics)}
-                    </Paper>
-
-                    {latestSession && (
-                        <Paper sx={{ p: 2 }}>
-                            <Typography variant="subtitle2" gutterBottom>
-                                Latest Training Session
-                            </Typography>
-                            <Stack spacing={1}>
-                                <Typography>
-                                    Status: {latestSession.status}
+            <Card sx={{ mb: 2 }}>
+                <CardHeader title="Training Metrics" />
+                <CardContent>
+                    {model.training.status === 'running' && <LinearProgress sx={{ mb: 2 }} />}
+                    <Typography variant="body2" gutterBottom>
+                        Status: {model.training.status}
+                    </Typography>
+                    <Typography variant="body2" gutterBottom>
+                        Progress: {(model.training.progress * 100).toFixed(1)}%
+                    </Typography>
+                    {model.training.metrics && (
+                        <>
+                            <Divider sx={{ my: 1 }} />
+                            {Object.entries(model.training.metrics).map(([key, value]) => (
+                                <Typography key={key} variant="body2" gutterBottom>
+                                    {key}: {typeof value === 'number' ? value.toFixed(4) : value}
                                 </Typography>
-                                <Typography>
-                                    Started:{' '}
-                                    {new Date(latestSession.start_time).toLocaleString()}
-                                </Typography>
-                                {latestSession.end_time && (
-                                    <Typography>
-                                        Ended:{' '}
-                                        {new Date(latestSession.end_time).toLocaleString()}
-                                    </Typography>
-                                )}
-                                {latestSession.error_message && (
-                                    <Typography color="error">
-                                        Error: {latestSession.error_message}
-                                    </Typography>
-                                )}
-                            </Stack>
-                        </Paper>
+                            ))}
+                        </>
                     )}
-                </Stack>
-            </TabPanel>
-
-            <TabPanel value={selectedTab} index={1}>
-                <Stack spacing={3}>
-                    {model.training_sessions?.map((session) => (
-                        <Paper key={session.id} sx={{ p: 2 }}>
-                            <Typography variant="subtitle2" gutterBottom>
-                                Training Session {session.id}
+                    {model.training.error && (
+                        <>
+                            <Divider sx={{ my: 1 }} />
+                            <Typography variant="body2" color="error">
+                                Error: {model.training.error}
                             </Typography>
-                            <Stack spacing={2}>
-                                <Box>
-                                    <Typography variant="caption" color="text.secondary">
-                                        Training Metrics
-                                    </Typography>
-                                    {renderMetricsChart(session.metrics)}
-                                </Box>
+                        </>
+                    )}
+                </CardContent>
+            </Card>
 
-                                <Stack spacing={1}>
-                                    <Typography>
-                                        Status: {session.status}
-                                    </Typography>
-                                    <Typography>
-                                        Started:{' '}
-                                        {new Date(session.start_time).toLocaleString()}
-                                    </Typography>
-                                    {session.end_time && (
-                                        <Typography>
-                                            Ended:{' '}
-                                            {new Date(session.end_time).toLocaleString()}
-                                        </Typography>
-                                    )}
-                                    {session.error_message && (
-                                        <Typography color="error">
-                                            Error: {session.error_message}
-                                        </Typography>
-                                    )}
-                                </Stack>
-                            </Stack>
-                        </Paper>
-                    ))}
-                </Stack>
-            </TabPanel>
+            <Card sx={{ mb: 2 }}>
+                <CardHeader title="Monitoring Metrics" />
+                <CardContent>
+                    {monitoring.loading && <LinearProgress sx={{ mb: 2 }} />}
+                    {monitoring.metrics.length > 0 ? (
+                        monitoring.metrics.map((metric, index) => (
+                            <Box key={index} sx={{ mb: 1 }}>
+                                <Typography variant="body2" gutterBottom>
+                                    Accuracy: {(metric.accuracy * 100).toFixed(2)}%
+                                </Typography>
+                                <Typography variant="body2" gutterBottom>
+                                    Loss: {metric.loss.toFixed(4)}
+                                </Typography>
+                                <Typography variant="body2" gutterBottom>
+                                    Precision: {(metric.precision * 100).toFixed(2)}%
+                                </Typography>
+                                <Typography variant="body2" gutterBottom>
+                                    Recall: {(metric.recall * 100).toFixed(2)}%
+                                </Typography>
+                                <Typography variant="body2" gutterBottom>
+                                    F1 Score: {(metric.f1Score * 100).toFixed(2)}%
+                                </Typography>
+                                {index < monitoring.metrics.length - 1 && <Divider sx={{ my: 1 }} />}
+                            </Box>
+                        ))
+                    ) : (
+                        <Typography variant="body2" color="text.secondary">
+                            No monitoring data available
+                        </Typography>
+                    )}
+                </CardContent>
+            </Card>
 
-            <TabPanel value={selectedTab} index={2}>
-                <Stack spacing={3}>
-                    {model.training_sessions?.map((session) => (
-                        <Paper key={session.id} sx={{ p: 2 }}>
-                            <Typography variant="subtitle2" gutterBottom>
-                                Validation Results - Session {session.id}
-                            </Typography>
-                            <Stack spacing={2}>
-                                <Box>
-                                    <Typography variant="caption" color="text.secondary">
-                                        Validation Metrics
-                                    </Typography>
-                                    {renderMetricsChart(session.validation_results)}
-                                </Box>
-
-                                <Stack spacing={1}>
-                                    <Typography>
-                                        Status: {session.status}
-                                    </Typography>
-                                    {session.error_message && (
-                                        <Typography color="error">
-                                            Error: {session.error_message}
-                                        </Typography>
-                                    )}
-                                </Stack>
-                            </Stack>
-                        </Paper>
-                    ))}
-                </Stack>
-            </TabPanel>
+            <Card>
+                <CardHeader title="Experiment Results" />
+                <CardContent>
+                    {experiments.loading && <LinearProgress sx={{ mb: 2 }} />}
+                    {experiments.experiments.length > 0 ? (
+                        experiments.experiments.map((experiment, index) => (
+                            <Box key={experiment.id} sx={{ mb: 1 }}>
+                                <Typography variant="subtitle2" gutterBottom>
+                                    {experiment.name}
+                                </Typography>
+                                <Typography variant="body2" gutterBottom>
+                                    Status: {experiment.status}
+                                </Typography>
+                                {experiment.metrics && (
+                                    <>
+                                        <Divider sx={{ my: 1 }} />
+                                        {Object.entries(experiment.metrics).map(([key, value]) => (
+                                            <Typography key={key} variant="body2" gutterBottom>
+                                                {key}: {typeof value === 'number' ? value.toFixed(4) : value}
+                                            </Typography>
+                                        ))}
+                                    </>
+                                )}
+                                {index < experiments.experiments.length - 1 && <Divider sx={{ my: 2 }} />}
+                            </Box>
+                        ))
+                    ) : (
+                        <Typography variant="body2" color="text.secondary">
+                            No experiment results available
+                        </Typography>
+                    )}
+                </CardContent>
+            </Card>
         </Box>
     );
 };

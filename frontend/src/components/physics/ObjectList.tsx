@@ -1,3 +1,4 @@
+import { PhysicsObject } from '@/types/physics';
 import {
     Add as AddIcon,
     Delete as DeleteIcon,
@@ -17,68 +18,61 @@ import {
     Stack,
     Typography,
 } from '@mui/material';
-import { RootState } from '@store/index';
 import { addObject, deleteObject, updateObject } from '@store/slices/physicsSlice';
+import { useAppDispatch, useAppSelector } from '@store/store';
 import React, { useState } from 'react';
-import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
-import { useDispatch, useSelector } from 'react-redux';
+import { DragDropContext, Draggable, Droppable, DropResult } from 'react-beautiful-dnd';
 
 interface ObjectListProps {
     selectedObjectId: number | null;
     onObjectSelect: (objectId: number) => void;
 }
 
-const OBJECT_TEMPLATES = {
+const OBJECT_TEMPLATES: Record<string, Partial<PhysicsObject>> = {
     box: {
-        type: 'box',
+        name: 'Box',
+        shape: 'box',
         position: [0, 0, 0],
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
         mass: 1,
         material: {
-            color: '#808080',
-            metalness: 0,
-            roughness: 1,
-        },
-        physics: {
-            type: 'dynamic',
-            restitution: 0.5,
             friction: 0.5,
+            restitution: 0.5,
+            density: 1,
         },
+        dimensions: [1, 1, 1],
+        isStatic: false,
     },
     sphere: {
-        type: 'sphere',
+        name: 'Sphere',
+        shape: 'sphere',
         position: [0, 0, 0],
         rotation: [0, 0, 0],
         scale: [0.5, 0.5, 0.5],
         mass: 1,
         material: {
-            color: '#808080',
-            metalness: 0,
-            roughness: 1,
-        },
-        physics: {
-            type: 'dynamic',
-            restitution: 0.7,
             friction: 0.3,
+            restitution: 0.7,
+            density: 1,
         },
+        dimensions: [1, 1, 1],
+        isStatic: false,
     },
     cylinder: {
-        type: 'cylinder',
+        name: 'Cylinder',
+        shape: 'cylinder',
         position: [0, 0, 0],
         rotation: [0, 0, 0],
         scale: [0.5, 1, 0.5],
         mass: 1,
         material: {
-            color: '#808080',
-            metalness: 0,
-            roughness: 1,
-        },
-        physics: {
-            type: 'dynamic',
-            restitution: 0.5,
             friction: 0.5,
+            restitution: 0.5,
+            density: 1,
         },
+        dimensions: [1, 2, 1],
+        isStatic: false,
     },
 };
 
@@ -86,8 +80,8 @@ const ObjectList: React.FC<ObjectListProps> = ({
     selectedObjectId,
     onObjectSelect,
 }) => {
-    const dispatch = useDispatch();
-    const objects = useSelector((state: RootState) => state.physics.objects);
+    const dispatch = useAppDispatch();
+    const objects = useAppSelector(state => state.physics.objects);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
     const handleAddClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -100,27 +94,28 @@ const ObjectList: React.FC<ObjectListProps> = ({
 
     const handleAddObject = (type: keyof typeof OBJECT_TEMPLATES) => {
         const template = OBJECT_TEMPLATES[type];
+        const position: [number, number, number] = [0, template.scale?.[1] || 0, 0];
         dispatch(
             addObject({
                 ...template,
-                position: [0, template.scale[1], 0], // Place object above ground
+                position,
             })
         );
         handleMenuClose();
     };
 
     const handleDeleteObject = (objectId: number) => {
-        dispatch(deleteObject(objectId));
+        dispatch(deleteObject({ objectId }));
         if (selectedObjectId === objectId) {
             onObjectSelect(-1);
         }
     };
 
     const handleToggleVisibility = (objectId: number, isVisible: boolean) => {
-        dispatch(updateObject({ id: objectId, isVisible: !isVisible }));
+        dispatch(updateObject({ objectId, data: { isVisible: !isVisible } }));
     };
 
-    const handleDragEnd = (result: any) => {
+    const handleDragEnd = (result: DropResult) => {
         if (!result.destination) return;
 
         const items = Array.from(objects);
@@ -129,7 +124,7 @@ const ObjectList: React.FC<ObjectListProps> = ({
 
         // Update object order in Redux
         items.forEach((item, index) => {
-            dispatch(updateObject({ id: item.id, order: index }));
+            dispatch(updateObject({ objectId: item.id, data: { order: index } }));
         });
     };
 
@@ -182,14 +177,14 @@ const ObjectList: React.FC<ObjectListProps> = ({
                                                 <DragHandle sx={{ mr: 1 }} />
                                             </div>
                                             <ListItemText
-                                                primary={`${object.type} ${object.id}`}
+                                                primary={`${object.name || object.shape} ${object.id}`}
                                                 secondary={`Mass: ${object.mass}kg`}
                                             />
                                             <ListItemSecondaryAction>
                                                 <IconButton
                                                     edge="end"
                                                     onClick={() =>
-                                                        handleToggleVisibility(object.id, object.isVisible)
+                                                        handleToggleVisibility(object.id, object.isVisible || false)
                                                     }
                                                 >
                                                     {object.isVisible ? <Visibility /> : <VisibilityOff />}

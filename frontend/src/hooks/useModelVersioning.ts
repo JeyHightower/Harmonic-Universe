@@ -1,109 +1,114 @@
-import { useGetModelQuery } from '@services/aiService';
-import { RootState } from '@store/index';
-import { updateModel } from '@store/slices/aiSlice';
-import { useCallback } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useCallback, useState } from 'react';
 
 export interface ModelVersion {
   id: number;
   version: string;
   description: string;
-  created_at: number;
-  metrics: {
-    [key: string]: any;
-  };
+  status: 'draft' | 'published' | 'archived';
   artifacts: {
     type: string;
     path: string;
-    metadata: any;
+    size: number;
+    hash: string;
   }[];
-  status: string;
+  metadata: {
+    framework: string;
+    frameworkVersion: string;
+    pythonVersion: string;
+    dependencies: { [key: string]: string };
+  };
+  performance: {
+    accuracy: number;
+    loss: number;
+    trainingTime: number;
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
-export const useModelVersioning = (modelId: number | null) => {
-  const dispatch = useDispatch();
-  const model = useSelector((state: RootState) => state.ai.models.find(m => m.id === modelId));
-  const { data: modelData } = useGetModelQuery(modelId || 0, { skip: !modelId });
+export interface ModelVersioning {
+  versions: ModelVersion[];
+  createVersion: (data: Partial<ModelVersion>) => Promise<void>;
+  updateVersion: (id: number, data: Partial<ModelVersion>) => Promise<void>;
+  deleteVersion: (id: number) => Promise<void>;
+  loading: boolean;
+  error: string | null;
+}
 
-  // Create new version
-  const createVersion = useCallback(
-    async (version: string, description: string) => {
-      if (!model) return null;
+export const useModelVersioning = (modelId: number | null): ModelVersioning => {
+  const [versions, setVersions] = useState<ModelVersion[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-      try {
-        dispatch(
-          updateModel({
-            id: model.id,
-            versions: [
-              ...(modelData?.versions || []),
-              {
-                id: Date.now(), // Temporary ID until backend responds
-                version,
-                description,
-                created_at: Date.now(),
-                metrics: {},
-                artifacts: [],
-                status: 'created',
-              },
-            ],
-          })
-        );
-        return true;
-      } catch (error) {
-        console.error('Failed to create version:', error);
-        return null;
-      }
-    },
-    [model, dispatch, modelData]
-  );
+  const createVersion = useCallback(async (data: Partial<ModelVersion>) => {
+    try {
+      setLoading(true);
+      setError(null);
+      // API call would go here
+      const newVersion: ModelVersion = {
+        id: Math.random(),
+        version: data.version || '1.0.0',
+        description: data.description || '',
+        status: 'draft',
+        artifacts: [],
+        metadata: {
+          framework: 'pytorch',
+          frameworkVersion: '2.0.0',
+          pythonVersion: '3.9',
+          dependencies: {},
+        },
+        performance: {
+          accuracy: 0,
+          loss: 0,
+          trainingTime: 0,
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setVersions(prev => [...prev, newVersion]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create version');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  // Delete version
-  const deleteVersion = useCallback(
-    async (versionId: number) => {
-      if (!model) return false;
+  const updateVersion = useCallback(async (id: number, data: Partial<ModelVersion>) => {
+    try {
+      setLoading(true);
+      setError(null);
+      // API call would go here
+      setVersions(prev =>
+        prev.map(version =>
+          version.id === id ? { ...version, ...data, updatedAt: new Date().toISOString() } : version
+        )
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update version');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-      try {
-        dispatch(
-          updateModel({
-            id: model.id,
-            versions: modelData?.versions?.filter(v => v.id !== versionId),
-          })
-        );
-        return true;
-      } catch (error) {
-        console.error('Failed to delete version:', error);
-        return false;
-      }
-    },
-    [model, dispatch, modelData]
-  );
-
-  // Set active version
-  const setActiveVersion = useCallback(
-    async (versionId: number) => {
-      if (!model) return false;
-
-      try {
-        dispatch(
-          updateModel({
-            id: model.id,
-            version: modelData?.versions?.find(v => v.id === versionId)?.version || model.version,
-          })
-        );
-        return true;
-      } catch (error) {
-        console.error('Failed to set active version:', error);
-        return false;
-      }
-    },
-    [model, dispatch, modelData]
-  );
+  const deleteVersion = useCallback(async (id: number) => {
+    try {
+      setLoading(true);
+      setError(null);
+      // API call would go here
+      setVersions(prev => prev.filter(version => version.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete version');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   return {
+    versions,
     createVersion,
+    updateVersion,
     deleteVersion,
-    setActiveVersion,
-    versions: modelData?.versions || [],
-    activeVersion: modelData?.version,
+    loading,
+    error,
   };
 };

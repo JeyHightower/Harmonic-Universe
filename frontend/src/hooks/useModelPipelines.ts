@@ -1,7 +1,7 @@
 import { useGetModelQuery } from '@services/aiService';
 import { RootState } from '@store/index';
 import { updateModel } from '@store/slices/aiSlice';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 export interface PipelineStage {
@@ -29,52 +29,78 @@ export interface Pipeline {
   id: number;
   name: string;
   description: string;
-  stages: PipelineStage[];
-  status: string;
-  created_at: number;
-  updated_at: number;
-  metrics?: {
-    [key: string]: any;
-  };
+  status: 'idle' | 'running' | 'completed' | 'failed';
+  stages: Array<{
+    id: number;
+    name: string;
+    status: 'pending' | 'running' | 'completed' | 'failed';
+    progress: number;
+    error?: string;
+  }>;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export const useModelPipelines = (modelId: number | null) => {
+export interface ModelPipelines {
+  pipelines: Pipeline[];
+  createPipeline: (data: Partial<Pipeline>) => Promise<void>;
+  updatePipeline: (id: number, data: Partial<Pipeline>) => Promise<void>;
+  deletePipeline: (id: number) => Promise<void>;
+  loading: boolean;
+  error: string | null;
+}
+
+export const useModelPipelines = (modelId: number | null): ModelPipelines => {
   const dispatch = useDispatch();
   const model = useSelector((state: RootState) => state.ai.models.find(m => m.id === modelId));
   const { data: modelData } = useGetModelQuery(modelId || 0, { skip: !modelId });
+  const [pipelines, setPipelines] = useState<Pipeline[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Create new pipeline
   const createPipeline = useCallback(
-    async (
-      name: string,
-      config: {
-        description: string;
-        stages: Omit<PipelineStage, 'id' | 'status' | 'metrics'>[];
-      }
-    ) => {
-      if (!model) return null;
-
+    async (data: Partial<Pipeline>) => {
       try {
-        dispatch(
-          updateModel({
-            id: model.id,
-            pipelines: [
-              ...(modelData?.pipelines || []),
-              {
-                id: Date.now(), // Temporary ID until backend responds
-                name,
-                ...config,
-                status: 'created',
-                created_at: Date.now(),
-                updated_at: Date.now(),
-              },
-            ],
-          })
-        );
-        return true;
-      } catch (error) {
-        console.error('Failed to create pipeline:', error);
-        return null;
+        setLoading(true);
+        setError(null);
+        if (!model) return;
+
+        try {
+          dispatch(
+            updateModel({
+              id: model.id,
+              pipelines: [
+                ...(modelData?.pipelines || []),
+                {
+                  id: Date.now(), // Temporary ID until backend responds
+                  name: data.name || '',
+                  description: data.description || '',
+                  status: 'idle',
+                  stages: [],
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                },
+              ],
+            })
+          );
+          setPipelines(prev => [
+            ...prev,
+            {
+              id: Date.now(),
+              name: data.name || '',
+              description: data.description || '',
+              status: 'idle',
+              stages: [],
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+          ]);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Failed to create pipeline');
+        }
+      } finally {
+        setLoading(false);
       }
     },
     [model, dispatch, modelData]
@@ -163,7 +189,7 @@ export const useModelPipelines = (modelId: number | null) => {
                   ? {
                       ...p,
                       stages: p.stages.map(s => (s.id === stageId ? { ...s, ...updates } : s)),
-                      updated_at: Date.now(),
+                      updatedAt: Date.now(),
                     }
                   : p
               ),
@@ -200,25 +226,31 @@ export const useModelPipelines = (modelId: number | null) => {
   // Delete pipeline
   const deletePipeline = useCallback(
     async (pipelineId: number) => {
-      if (!model) return false;
-
       try {
-        dispatch(
-          updateModel({
-            id: model.id,
-            pipelines: modelData?.pipelines?.filter(p => p.id !== pipelineId),
-          })
-        );
-        return true;
-      } catch (error) {
-        console.error('Failed to delete pipeline:', error);
-        return false;
+        setLoading(true);
+        setError(null);
+        if (!model) return;
+
+        try {
+          dispatch(
+            updateModel({
+              id: model.id,
+              pipelines: modelData?.pipelines?.filter(p => p.id !== pipelineId),
+            })
+          );
+          setPipelines(prev => prev.filter(p => p.id !== pipelineId));
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Failed to delete pipeline');
+        }
+      } finally {
+        setLoading(false);
       }
     },
     [model, dispatch, modelData]
   );
 
   return {
+    pipelines,
     createPipeline,
     startPipeline,
     stopPipeline,
@@ -226,6 +258,7 @@ export const useModelPipelines = (modelId: number | null) => {
     updatePipelineStage,
     getPipelineMetrics,
     deletePipeline,
-    pipelines: modelData?.pipelines || [],
+    loading,
+    error,
   };
 };

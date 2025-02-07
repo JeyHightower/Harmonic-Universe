@@ -1,32 +1,32 @@
-import { useDatasets } from '@hooks/useDatasets';
+import React, { useState } from 'react';
 import {
-    CloudUpload,
-    Delete as DeleteIcon,
-    ExpandMore,
-    Preview as PreviewIcon,
-    QueryStats as StatsIcon,
-} from '@mui/icons-material';
-import {
-    Accordion,
-    AccordionDetails,
-    AccordionSummary,
     Box,
     Button,
-    Chip,
+    Card,
+    CardContent,
+    CardHeader,
+    Grid,
     IconButton,
-    List,
-    ListItem,
-    ListItemText,
-    Stack,
-    Typography
+    LinearProgress,
+    Typography,
+    TextField,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
 } from '@mui/material';
-import React, { useRef, useState } from 'react';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+import UploadIcon from '@mui/icons-material/Upload';
 
 interface DatasetManagerProps {
     modelType?: string;
-    onSelectDataset?: (datasetId: number) => void;
+    onSelectDataset: () => void;
 }
 
+interface Dataset {
+    id: number;
+    name: string;
 const DatasetManager: React.FC<DatasetManagerProps> = ({ modelType, onSelectDataset }) => {
     const { datasets, uploadDataset, getDatasetPreview, getDatasetStats, deleteDataset } =
         useDatasets();

@@ -1,198 +1,172 @@
+import { useVisualization } from '@/hooks/useVisualization';
+import { StreamConfig, Visualization } from '@/types/visualization';
 import {
     Box,
-    FormControl,
-    InputLabel,
+    Button,
+    Card,
+    CardContent,
+    Divider,
+    Grid,
     MenuItem,
-    Select,
-    Stack,
-    Switch,
     TextField,
     Typography,
 } from '@mui/material';
-import { updateVisualization } from '@store/slices/visualizationSlice';
 import React from 'react';
-import { useDispatch } from 'react-redux';
 
 interface StreamConfigPanelProps {
-    visualization: {
-        id: number;
-        is_real_time: boolean;
-        update_interval: number;
-        stream_config?: {
-            stream_type: string;
-            buffer_size: number;
-            sample_rate: number;
-            connection_settings: {
-                [key: string]: any;
-            };
-            processing_pipeline: Array<{
-                type: string;
-                params: {
-                    [key: string]: any;
-                };
-            }>;
-        };
-    } | null;
+    visualization: Visualization;
 }
 
-const STREAM_TYPES = [
-    { value: 'websocket', label: 'WebSocket' },
-    { value: 'sse', label: 'Server-Sent Events' },
-    { value: 'polling', label: 'HTTP Polling' },
-];
-
 const StreamConfigPanel: React.FC<StreamConfigPanelProps> = ({ visualization }) => {
-    const dispatch = useDispatch();
+    const { updateConfig } = useVisualization();
+    const [config, setConfig] = React.useState<StreamConfig>(
+        visualization.streamConfig || {
+            streamType: 'websocket',
+            bufferSize: 1024,
+            sampleRate: 44100,
+            connectionSettings: {},
+            processingPipeline: [],
+        }
+    );
 
-    if (!visualization) {
-        return (
-            <Box sx={{ p: 2 }}>
-                <Typography variant="subtitle1" color="text.secondary">
-                    Select a visualization to configure streaming
-                </Typography>
-            </Box>
-        );
-    }
-
-    const handleUpdateConfig = (field: string, value: any) => {
-        dispatch(
-            updateVisualization({
-                id: visualization.id,
-                stream_config: {
-                    ...(visualization.stream_config || {}),
-                    [field]: value,
-                },
-            })
-        );
+    const handleConfigChange = (key: keyof StreamConfig, value: any) => {
+        setConfig(prev => ({
+            ...prev,
+            [key]: value,
+        }));
     };
 
-    const handleToggleRealTime = () => {
-        dispatch(
-            updateVisualization({
-                id: visualization.id,
-                is_real_time: !visualization.is_real_time,
-            })
-        );
+    const handleConnectionSettingChange = (key: string, value: any) => {
+        setConfig(prev => ({
+            ...prev,
+            connectionSettings: {
+                ...prev.connectionSettings,
+                [key]: value,
+            },
+        }));
+    };
+
+    const handleSave = async () => {
+        try {
+            await updateConfig(visualization.id, config);
+        } catch (error) {
+            console.error('Failed to update stream configuration:', error);
+        }
     };
 
     return (
-        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
-            <Stack spacing={3}>
-                <Stack
-                    direction="row"
-                    spacing={2}
-                    alignItems="center"
-                    justifyContent="space-between"
-                >
-                    <Typography variant="h6">Stream Configuration</Typography>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                        <Typography>Real-time</Typography>
-                        <Switch
-                            checked={visualization.is_real_time}
-                            onChange={handleToggleRealTime}
+        <Card>
+            <CardContent>
+                <Typography variant="h6" gutterBottom>
+                    Stream Configuration
+                </Typography>
+                <Divider sx={{ my: 2 }} />
+
+                <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                        <TextField
+                            fullWidth
+                            select
+                            label="Stream Type"
+                            value={config.streamType}
+                            onChange={e => handleConfigChange('streamType', e.target.value)}
+                            margin="normal"
+                        >
+                            <MenuItem value="websocket">WebSocket</MenuItem>
+                            <MenuItem value="midi">MIDI</MenuItem>
+                            <MenuItem value="audio">Audio</MenuItem>
+                            <MenuItem value="custom">Custom</MenuItem>
+                        </TextField>
+                    </Grid>
+
+                    <Grid item xs={6}>
+                        <TextField
+                            fullWidth
+                            type="number"
+                            label="Buffer Size"
+                            value={config.bufferSize}
+                            onChange={e => handleConfigChange('bufferSize', parseInt(e.target.value))}
+                            margin="normal"
                         />
-                    </Stack>
-                </Stack>
+                    </Grid>
 
-                {visualization.is_real_time && (
-                    <>
-                        <FormControl fullWidth size="small">
-                            <InputLabel>Stream Type</InputLabel>
-                            <Select
-                                value={visualization.stream_config?.stream_type || 'websocket'}
-                                onChange={(e) => handleUpdateConfig('stream_type', e.target.value)}
-                                label="Stream Type"
-                            >
-                                {STREAM_TYPES.map((type) => (
-                                    <MenuItem key={type.value} value={type.value}>
-                                        {type.label}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                    <Grid item xs={6}>
+                        <TextField
+                            fullWidth
+                            type="number"
+                            label="Sample Rate"
+                            value={config.sampleRate}
+                            onChange={e => handleConfigChange('sampleRate', parseInt(e.target.value))}
+                            margin="normal"
+                        />
+                    </Grid>
+                </Grid>
 
-                        <Box>
-                            <Typography gutterBottom>Update Interval (ms)</Typography>
+                <Box mt={3}>
+                    <Typography variant="subtitle1" gutterBottom>
+                        Connection Settings
+                    </Typography>
+                    {config.streamType === 'websocket' && (
+                        <>
                             <TextField
                                 fullWidth
-                                size="small"
-                                type="number"
-                                value={visualization.update_interval * 1000}
-                                onChange={(e) =>
-                                    dispatch(
-                                        updateVisualization({
-                                            id: visualization.id,
-                                            update_interval: parseFloat(e.target.value) / 1000,
-                                        })
-                                    )
-                                }
-                                inputProps={{
-                                    min: 16,
-                                    max: 1000,
-                                    step: 1,
-                                }}
+                                label="WebSocket URL"
+                                value={config.connectionSettings.url || ''}
+                                onChange={e => handleConnectionSettingChange('url', e.target.value)}
+                                margin="normal"
                             />
-                        </Box>
-
-                        <Box>
-                            <Typography gutterBottom>Buffer Size</Typography>
                             <TextField
                                 fullWidth
-                                size="small"
-                                type="number"
-                                value={visualization.stream_config?.buffer_size || 1024}
-                                onChange={(e) =>
-                                    handleUpdateConfig('buffer_size', parseInt(e.target.value))
-                                }
-                                inputProps={{
-                                    min: 64,
-                                    max: 8192,
-                                    step: 64,
-                                }}
+                                label="Protocol"
+                                value={config.connectionSettings.protocol || ''}
+                                onChange={e => handleConnectionSettingChange('protocol', e.target.value)}
+                                margin="normal"
                             />
-                        </Box>
+                        </>
+                    )}
 
-                        <Box>
-                            <Typography gutterBottom>Sample Rate (Hz)</Typography>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                type="number"
-                                value={visualization.stream_config?.sample_rate || 44100}
-                                onChange={(e) =>
-                                    handleUpdateConfig('sample_rate', parseInt(e.target.value))
-                                }
-                                inputProps={{
-                                    min: 8000,
-                                    max: 192000,
-                                    step: 100,
-                                }}
-                            />
-                        </Box>
+                    {config.streamType === 'midi' && (
+                        <TextField
+                            fullWidth
+                            label="Device ID"
+                            value={config.connectionSettings.deviceId || ''}
+                            onChange={e => handleConnectionSettingChange('deviceId', e.target.value)}
+                            margin="normal"
+                        />
+                    )}
 
-                        {visualization.stream_config?.stream_type === 'websocket' && (
-                            <Box>
-                                <Typography gutterBottom>WebSocket URL</Typography>
+                    {config.streamType === 'custom' && (
+                        <Box mt={2}>
+                            {Object.entries(config.connectionSettings).map(([key, value]) => (
                                 <TextField
+                                    key={key}
                                     fullWidth
-                                    size="small"
-                                    value={
-                                        visualization.stream_config?.connection_settings?.url ||
-                                        'ws://localhost:8000/ws'
-                                    }
-                                    onChange={(e) =>
-                                        handleUpdateConfig('connection_settings', {
-                                            ...visualization.stream_config?.connection_settings,
-                                            url: e.target.value,
-                                        })
-                                    }
+                                    label={key}
+                                    value={value}
+                                    onChange={e => handleConnectionSettingChange(key, e.target.value)}
+                                    margin="normal"
                                 />
-                            </Box>
-                        )}
-                    </>
-                )}
-            </Stack>
-        </Box>
+                            ))}
+                            <Button
+                                variant="outlined"
+                                onClick={() =>
+                                    handleConnectionSettingChange(`setting_${Date.now()}`, '')
+                                }
+                                sx={{ mt: 1 }}
+                            >
+                                Add Custom Setting
+                            </Button>
+                        </Box>
+                    )}
+                </Box>
+
+                <Box mt={3}>
+                    <Button variant="contained" color="primary" onClick={handleSave} fullWidth>
+                        Save Configuration
+                    </Button>
+                </Box>
+            </CardContent>
+        </Card>
     );
 };
 

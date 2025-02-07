@@ -1,139 +1,56 @@
-import { useVisualizationEngine } from '@hooks/useVisualizationEngine';
-import { Box, Typography } from '@mui/material';
-import { OrbitControls } from '@react-three/drei';
-import { Canvas } from '@react-three/fiber';
+import { useVisualizationEngine } from '@/hooks/useVisualizationEngine';
+import { Visualization } from '@/types/visualization';
+import { Box, Paper } from '@mui/material';
 import React, { useEffect, useRef } from 'react';
-import Physics3DVisualization from './types/Physics3DVisualization';
-import SpectrumVisualization from './types/SpectrumVisualization';
-import WaveformVisualization from './types/WaveformVisualization';
 
 interface VisualizationCanvasProps {
-    visualization: {
-        id: number;
-        name: string;
-        visualization_type: string;
-        data_source: string;
-        settings: any;
-        layout: {
-            position: string;
-            size: string;
-        };
-        style: {
-            backgroundColor: string;
-        };
-        is_real_time: boolean;
-        update_interval: number;
-    } | null;
+    visualization: Visualization;
 }
 
-const VisualizationCanvas: React.FC<VisualizationCanvasProps> = ({
-    visualization,
-}) => {
-    const canvasRef = useRef<HTMLDivElement>(null);
-    const visualizationEngine = useVisualizationEngine();
+const VisualizationCanvas: React.FC<VisualizationCanvasProps> = ({ visualization }) => {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const { initializeEngine, updateVisualization, cleanupEngine } = useVisualizationEngine();
 
     useEffect(() => {
-        if (visualization && canvasRef.current) {
-            visualizationEngine.init(canvasRef.current, visualization);
+        if (!canvasRef.current) return;
 
-            return () => {
-                visualizationEngine.cleanup();
-            };
-        }
-    }, [visualization]);
+        const engine = initializeEngine(canvasRef.current, visualization);
 
-    if (!visualization) {
-        return (
-            <Box
-                sx={{
-                    height: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                }}
-            >
-                <Typography variant="subtitle1" color="text.secondary">
-                    Select a visualization to view
-                </Typography>
-            </Box>
-        );
-    }
+        const animate = () => {
+            if (!canvasRef.current) return;
+            updateVisualization(engine, visualization);
+            requestAnimationFrame(animate);
+        };
 
-    const renderVisualization = () => {
-        switch (visualization.visualization_type) {
-            case 'waveform':
-                return (
-                    <Box ref={canvasRef} sx={{ width: '100%', height: '100%' }}>
-                        <WaveformVisualization
-                            settings={visualization.settings}
-                            isRealTime={visualization.is_real_time}
-                            updateInterval={visualization.update_interval}
-                        />
-                    </Box>
-                );
+        animate();
 
-            case 'spectrum':
-                return (
-                    <Box ref={canvasRef} sx={{ width: '100%', height: '100%' }}>
-                        <SpectrumVisualization
-                            settings={visualization.settings}
-                            isRealTime={visualization.is_real_time}
-                            updateInterval={visualization.update_interval}
-                        />
-                    </Box>
-                );
-
-            case 'physics_3d':
-                return (
-                    <Canvas
-                        camera={{
-                            position: visualization.settings.cameraPosition,
-                            fov: visualization.settings.cameraFov,
-                        }}
-                        style={{ background: visualization.style.backgroundColor }}
-                    >
-                        <Physics3DVisualization
-                            settings={visualization.settings}
-                            isRealTime={visualization.is_real_time}
-                            updateInterval={visualization.update_interval}
-                        />
-                        <OrbitControls />
-                        <ambientLight intensity={0.5} />
-                        <directionalLight position={[10, 10, 5]} intensity={1} />
-                        {visualization.settings.showGrid && <gridHelper args={[20, 20]} />}
-                        {visualization.settings.showAxes && <axesHelper args={[5]} />}
-                    </Canvas>
-                );
-
-            default:
-                return (
-                    <Box
-                        sx={{
-                            height: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <Typography variant="subtitle1" color="text.secondary">
-                            Unsupported visualization type
-                        </Typography>
-                    </Box>
-                );
-        }
-    };
+        return () => {
+            cleanupEngine(engine);
+        };
+    }, [visualization, initializeEngine, updateVisualization, cleanupEngine]);
 
     return (
-        <Box
+        <Paper
+            elevation={3}
             sx={{
-                height: '100%',
-                width: '100%',
-                position: 'relative',
-                backgroundColor: visualization.style.backgroundColor,
+                width: visualization.settings.width,
+                height: visualization.settings.height,
+                backgroundColor: visualization.settings.backgroundColor,
+                overflow: 'hidden',
             }}
         >
-            {renderVisualization()}
-        </Box>
+            <Box
+                component="canvas"
+                ref={canvasRef}
+                width={visualization.settings.width}
+                height={visualization.settings.height}
+                sx={{
+                    display: 'block',
+                    width: '100%',
+                    height: '100%',
+                }}
+            />
+        </Paper>
     );
 };
 

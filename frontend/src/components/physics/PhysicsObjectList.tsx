@@ -27,6 +27,7 @@ import {
     Typography,
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
+import { PhysicsObjectEditor } from './PhysicsObjectEditor';
 
 interface PhysicsObjectListProps {
     projectId: number;
@@ -40,12 +41,14 @@ export const PhysicsObjectList: React.FC<PhysicsObjectListProps> = ({ projectId 
         isSimulating,
         fetchPhysicsObjects,
         createPhysicsObject,
+        updatePhysicsObject,
         deletePhysicsObject,
         startSimulation,
         stopSimulation,
     } = usePhysics(projectId);
 
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [selectedObject, setSelectedObject] = useState<PhysicsObject | null>(null);
     const [formData, setFormData] = useState({
         name: '',
         type: 'sphere' as PhysicsObject['type'],
@@ -84,8 +87,21 @@ export const PhysicsObjectList: React.FC<PhysicsObjectListProps> = ({ projectId 
         handleCreateDialogClose();
     };
 
+    const handleEdit = (object: PhysicsObject) => {
+        setSelectedObject(object);
+    };
+
+    const handleEditClose = () => {
+        setSelectedObject(null);
+    };
+
+    const handleEditSave = async (objectId: number, updates: Partial<PhysicsObject>) => {
+        await updatePhysicsObject({ projectId, objectId, data: updates });
+        setSelectedObject(null);
+    };
+
     const handleDelete = async (objectId: number) => {
-        await deletePhysicsObject(objectId);
+        await deletePhysicsObject({ projectId, objectId });
     };
 
     if (loading) {
@@ -131,7 +147,7 @@ export const PhysicsObjectList: React.FC<PhysicsObjectListProps> = ({ projectId 
                         />
                         <ListItemSecondaryAction>
                             <Tooltip title="Edit">
-                                <IconButton>
+                                <IconButton onClick={() => handleEdit(object)}>
                                     <EditIcon />
                                 </IconButton>
                             </Tooltip>
@@ -225,6 +241,12 @@ export const PhysicsObjectList: React.FC<PhysicsObjectListProps> = ({ projectId 
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            <PhysicsObjectEditor
+                object={selectedObject}
+                onClose={handleEditClose}
+                onSave={handleEditSave}
+            />
         </Box>
     );
 };

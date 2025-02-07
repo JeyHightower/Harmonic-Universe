@@ -1,10 +1,10 @@
 import { AppDispatch, RootState } from '@/store';
 import {
-    createProject,
-    deleteProject,
-    fetchProjects,
-    updateProject,
-} from '@/store/slices/projectSlice';
+    createUniverse,
+    deleteUniverse,
+    fetchUniverses,
+    updateUniverse,
+} from '@/store/slices/universeSlice';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -30,34 +30,34 @@ const Dashboard = () => {
     const dispatch = useDispatch<AppDispatch>();
     const navigate = useNavigate();
     const { user } = useSelector((state: RootState) => state.auth);
-    const { projects, loading, error } = useSelector((state: RootState) => state.projects);
+    const { universes, loading, error } = useSelector((state: RootState) => state.universe);
 
     const [openDialog, setOpenDialog] = useState(false);
-    const [editingProject, setEditingProject] = useState<any>(null);
+    const [editingUniverse, setEditingUniverse] = useState<any>(null);
     const [formData, setFormData] = useState({
-        title: '',
+        name: '',
         description: '',
-        is_public: false,
+        isPublic: false,
     });
 
     useEffect(() => {
-        dispatch(fetchProjects());
+        dispatch(fetchUniverses());
     }, [dispatch]);
 
-    const handleOpenDialog = (project?: any) => {
-        if (project) {
-            setEditingProject(project);
+    const handleOpenDialog = (universe?: any) => {
+        if (universe) {
+            setEditingUniverse(universe);
             setFormData({
-                title: project.title,
-                description: project.description,
-                is_public: project.is_public,
+                name: universe.name,
+                description: universe.description,
+                isPublic: universe.isPublic,
             });
         } else {
-            setEditingProject(null);
+            setEditingUniverse(null);
             setFormData({
-                title: '',
+                name: '',
                 description: '',
-                is_public: false,
+                isPublic: false,
             });
         }
         setOpenDialog(true);
@@ -65,39 +65,39 @@ const Dashboard = () => {
 
     const handleCloseDialog = () => {
         setOpenDialog(false);
-        setEditingProject(null);
+        setEditingUniverse(null);
         setFormData({
-            title: '',
+            name: '',
             description: '',
-            is_public: false,
+            isPublic: false,
         });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            if (editingProject) {
+            if (editingUniverse) {
                 await dispatch(
-                    updateProject({
-                        projectId: editingProject.id,
+                    updateUniverse({
+                        universeId: editingUniverse.id,
                         data: formData,
                     })
                 ).unwrap();
             } else {
-                await dispatch(createProject(formData)).unwrap();
+                await dispatch(createUniverse(formData)).unwrap();
             }
             handleCloseDialog();
         } catch (err) {
-            console.error('Failed to save project:', err);
+            console.error('Failed to save universe:', err);
         }
     };
 
-    const handleDelete = async (projectId: number) => {
-        if (window.confirm('Are you sure you want to delete this project?')) {
+    const handleDelete = async (universeId: number) => {
+        if (window.confirm('Are you sure you want to delete this universe?')) {
             try {
-                await dispatch(deleteProject(projectId)).unwrap();
+                await dispatch(deleteUniverse(universeId)).unwrap();
             } catch (err) {
-                console.error('Failed to delete project:', err);
+                console.error('Failed to delete universe:', err);
             }
         }
     };
@@ -114,13 +114,13 @@ const Dashboard = () => {
                         startIcon={<AddIcon />}
                         onClick={() => handleOpenDialog()}
                     >
-                        New Project
+                        New Universe
                     </Button>
                 </Box>
 
                 <Grid container spacing={3}>
-                    {projects.map((project) => (
-                        <Grid item xs={12} md={6} key={project.id}>
+                    {universes.map((universe) => (
+                        <Grid item xs={12} md={6} key={universe.id}>
                             <Paper
                                 sx={{
                                     p: 3,
@@ -128,14 +128,14 @@ const Dashboard = () => {
                                     '&:hover': { boxShadow: 6 },
                                     position: 'relative',
                                 }}
-                                onClick={() => navigate(`/project/${project.id}`)}
+                                onClick={() => navigate(`/universe/${universe.id}`)}
                             >
                                 <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
                                     <IconButton
                                         size="small"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleOpenDialog(project);
+                                            handleOpenDialog(universe);
                                         }}
                                     >
                                         <EditIcon />
@@ -144,29 +144,29 @@ const Dashboard = () => {
                                         size="small"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleDelete(project.id);
+                                            handleDelete(universe.id);
                                         }}
                                     >
                                         <DeleteIcon />
                                     </IconButton>
                                 </Box>
                                 <Typography variant="h6" gutterBottom>
-                                    {project.title}
+                                    {universe.name}
                                 </Typography>
                                 <Typography color="text.secondary" sx={{ mb: 2 }}>
-                                    {project.description}
+                                    {universe.description}
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
-                                    Created: {new Date(project.created_at).toLocaleDateString()}
+                                    Created: {new Date(universe.createdAt).toLocaleDateString()}
                                 </Typography>
                             </Paper>
                         </Grid>
                     ))}
-                    {projects.length === 0 && !loading && (
+                    {universes.length === 0 && !loading && (
                         <Grid item xs={12}>
                             <Paper sx={{ p: 3, textAlign: 'center' }}>
                                 <Typography color="text.secondary">
-                                    No projects yet. Start by creating one!
+                                    No universes yet. Start by creating one!
                                 </Typography>
                             </Paper>
                         </Grid>
@@ -174,16 +174,16 @@ const Dashboard = () => {
                 </Grid>
 
                 <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-                    <DialogTitle>{editingProject ? 'Edit Project' : 'New Project'}</DialogTitle>
+                    <DialogTitle>{editingUniverse ? 'Edit Universe' : 'New Universe'}</DialogTitle>
                     <DialogContent>
                         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
                             <TextField
                                 fullWidth
-                                label="Title"
-                                name="title"
-                                value={formData.title}
+                                label="Name"
+                                name="name"
+                                value={formData.name}
                                 onChange={(e) =>
-                                    setFormData((prev) => ({ ...prev, title: e.target.value }))
+                                    setFormData((prev) => ({ ...prev, name: e.target.value }))
                                 }
                                 required
                                 sx={{ mb: 2 }}
@@ -205,7 +205,7 @@ const Dashboard = () => {
                     <DialogActions>
                         <Button onClick={handleCloseDialog}>Cancel</Button>
                         <Button onClick={handleSubmit} variant="contained">
-                            {editingProject ? 'Save' : 'Create'}
+                            {editingUniverse ? 'Save' : 'Create'}
                         </Button>
                     </DialogActions>
                 </Dialog>

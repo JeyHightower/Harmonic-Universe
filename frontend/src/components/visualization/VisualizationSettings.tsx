@@ -1,151 +1,155 @@
-import { Visualization } from '@/types/visualization';
+import { useVisualization } from '@/hooks/useVisualization';
+import { Visualization, VisualizationUpdateData } from '@/types/visualization';
 import {
     Box,
-    Checkbox,
-    FormControl,
+    Button,
+    Card,
+    CardContent,
+    Divider,
     FormControlLabel,
-    InputLabel,
-    MenuItem,
-    Paper,
-    Select,
-    Slider,
+    Grid,
+    Switch,
     TextField,
     Typography,
 } from '@mui/material';
-import { useCallback } from 'react';
+import React from 'react';
 
 interface VisualizationSettingsProps {
     visualization: Visualization;
-    onSettingsChange: (settings: Record<string, any>) => void;
 }
 
-const VisualizationSettings = ({ visualization, onSettingsChange }: VisualizationSettingsProps) => {
-    const handleSettingChange = useCallback(
-        (key: string, value: any) => {
-            onSettingsChange({
-                ...visualization.settings,
-                [key]: value,
-            });
-        },
-        [visualization.settings, onSettingsChange]
-    );
+const VisualizationSettings: React.FC<VisualizationSettingsProps> = ({ visualization }) => {
+    const { update } = useVisualization();
+    const [settings, setSettings] = React.useState(visualization.settings);
 
-    const renderSettingControl = (key: string, setting: any) => {
-        switch (typeof setting) {
-            case 'boolean':
-                return (
-                    <FormControlLabel
-                        control={
-                            <Checkbox
-                                checked={setting}
-                                onChange={(e) => handleSettingChange(key, e.target.checked)}
-                            />
-                        }
-                        label={key}
-                    />
-                );
-            case 'number':
-                if (key.includes('color') || key.includes('opacity')) {
-                    return (
-                        <Box sx={{ width: '100%', mt: 2 }}>
-                            <Typography gutterBottom>{key}</Typography>
-                            <Slider
-                                value={setting}
-                                min={0}
-                                max={key.includes('opacity') ? 1 : 255}
-                                step={key.includes('opacity') ? 0.01 : 1}
-                                onChange={(_, value) => handleSettingChange(key, value)}
-                            />
-                        </Box>
-                    );
-                }
-                return (
-                    <TextField
-                        fullWidth
-                        label={key}
-                        type="number"
-                        value={setting}
-                        onChange={(e) => handleSettingChange(key, parseFloat(e.target.value))}
-                        sx={{ mt: 2 }}
-                    />
-                );
-            case 'string':
-                if (key === 'type' || key.includes('mode')) {
-                    return (
-                        <FormControl fullWidth sx={{ mt: 2 }}>
-                            <InputLabel>{key}</InputLabel>
-                            <Select
-                                value={setting}
-                                label={key}
-                                onChange={(e) => handleSettingChange(key, e.target.value)}
-                            >
-                                <MenuItem value="waveform">Waveform</MenuItem>
-                                <MenuItem value="frequency">Frequency</MenuItem>
-                                <MenuItem value="circular">Circular</MenuItem>
-                                <MenuItem value="3d">3D</MenuItem>
-                            </Select>
-                        </FormControl>
-                    );
-                }
-                return (
-                    <TextField
-                        fullWidth
-                        label={key}
-                        value={setting}
-                        onChange={(e) => handleSettingChange(key, e.target.value)}
-                        sx={{ mt: 2 }}
-                    />
-                );
-            default:
-                return null;
+    const handleSettingChange = (key: keyof typeof settings, value: any) => {
+        setSettings(prev => ({
+            ...prev,
+            [key]: value,
+        }));
+    };
+
+    const handleSave = async () => {
+        const updateData: VisualizationUpdateData = {
+            settings,
+        };
+        try {
+            await update(visualization.id, updateData);
+        } catch (error) {
+            console.error('Failed to update visualization settings:', error);
         }
     };
 
     return (
-        <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-                Visualization Settings
-            </Typography>
-            <Box sx={{ mt: 2 }}>
-                {Object.entries(visualization.settings).map(([key, value]) => (
-                    <Box key={key}>{renderSettingControl(key, value)}</Box>
-                ))}
-            </Box>
-            <Box sx={{ mt: 3 }}>
-                <Typography variant="subtitle2" gutterBottom>
-                    Real-time Settings
+        <Card>
+            <CardContent>
+                <Typography variant="h6" gutterBottom>
+                    Visualization Settings
                 </Typography>
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={visualization.isRealTime}
-                            onChange={(e) =>
-                                onSettingsChange({
-                                    ...visualization.settings,
-                                    isRealTime: e.target.checked,
-                                })
-                            }
+                <Divider sx={{ my: 2 }} />
+
+                <Grid container spacing={2}>
+                    <Grid item xs={6}>
+                        <TextField
+                            fullWidth
+                            label="Width"
+                            type="number"
+                            value={settings.width}
+                            onChange={e => handleSettingChange('width', parseInt(e.target.value))}
+                            margin="normal"
                         />
-                    }
-                    label="Enable Real-time Updates"
-                />
-                {visualization.isRealTime && (
+                    </Grid>
+                    <Grid item xs={6}>
+                        <TextField
+                            fullWidth
+                            label="Height"
+                            type="number"
+                            value={settings.height}
+                            onChange={e => handleSettingChange('height', parseInt(e.target.value))}
+                            margin="normal"
+                        />
+                    </Grid>
+                </Grid>
+
+                <Box mt={2}>
                     <TextField
                         fullWidth
-                        label="Update Interval (ms)"
-                        type="number"
-                        value={visualization.updateInterval}
-                        onChange={(e) =>
-                            onSettingsChange({
-                                ...visualization.settings,
-                                updateInterval: parseInt(e.target.value),
-                            })
-                        }
-                        sx={{ mt: 2 }}
+                        label="Background Color"
+                        type="color"
+                        value={settings.backgroundColor}
+                        onChange={e => handleSettingChange('backgroundColor', e.target.value)}
+                        margin="normal"
                     />
+                    <TextField
+                        fullWidth
+                        label="Foreground Color"
+                        type="color"
+                        value={settings.foregroundColor}
+                        onChange={e => handleSettingChange('foregroundColor', e.target.value)}
+                        margin="normal"
+                    />
+                </Box>
+
+                <Box mt={2}>
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={settings.showAxes}
+                                onChange={e => handleSettingChange('showAxes', e.target.checked)}
+                            />
+                        }
+                        label="Show Axes"
+                    />
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={settings.showGrid}
+                                onChange={e => handleSettingChange('showGrid', e.target.checked)}
+                            />
+                        }
+                        label="Show Grid"
+                    />
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={settings.showLabels}
+                                onChange={e => handleSettingChange('showLabels', e.target.checked)}
+                            />
+                        }
+                        label="Show Labels"
+                    />
+                </Box>
+
+                {visualization.type === 'custom' && settings.customSettings && (
+                    <Box mt={2}>
+                        <Typography variant="subtitle1" gutterBottom>
+                            Custom Settings
+                        </Typography>
+                        {Object.entries(settings.customSettings).map(([key, value]) => (
+                            <TextField
+                                key={key}
+                                fullWidth
+                                label={key}
+                                value={value}
+                                onChange={e =>
+                                    handleSettingChange('customSettings', {
+                                        ...settings.customSettings,
+                                        [key]: e.target.value,
+                                    })
+                                }
+                                margin="normal"
+                            />
+                        ))}
+                    </Box>
                 )}
-            </Box>
-        </Paper>
+
+                <Box mt={3}>
+                    <Button variant="contained" color="primary" onClick={handleSave} fullWidth>
+                        Save Settings
+                    </Button>
+                </Box>
+            </CardContent>
+        </Card>
     );
 };
 

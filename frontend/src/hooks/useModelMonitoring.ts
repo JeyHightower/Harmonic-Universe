@@ -1,37 +1,27 @@
 import { useGetModelQuery } from '@services/aiService';
 import { RootState } from '@store/index';
 import { updateModel } from '@store/slices/aiSlice';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 export interface ModelMetrics {
+  accuracy: number;
+  loss: number;
+  precision: number;
+  recall: number;
+  f1Score: number;
   timestamp: number;
-  metrics: {
-    [key: string]: number;
-  };
-  predictions: {
-    total: number;
-    correct: number;
-    incorrect: number;
-    accuracy: number;
-  };
-  performance: {
-    latency_ms: number;
-    throughput: number;
-    memory_usage: number;
-    cpu_usage: number;
-    gpu_usage?: number;
-  };
-  drift: {
-    feature_drift: {
-      [key: string]: number;
-    };
-    prediction_drift: number;
-    data_quality_score: number;
-  };
 }
 
-export const useModelMonitoring = (modelId: number | null) => {
+export interface ModelMonitoring {
+  metrics: ModelMetrics[];
+  addMetrics: (metrics: ModelMetrics) => void;
+  clearMetrics: () => void;
+  loading: boolean;
+  error: string | null;
+}
+
+export const useModelMonitoring = (modelId: number | null): ModelMonitoring => {
   const dispatch = useDispatch();
   const model = useSelector((state: RootState) => state.ai.models.find(m => m.id === modelId));
   const { data: modelData } = useGetModelQuery(modelId || 0, { skip: !modelId });
@@ -39,6 +29,9 @@ export const useModelMonitoring = (modelId: number | null) => {
     socket: WebSocket | null;
     interval: NodeJS.Timeout | null;
   }>({ socket: null, interval: null });
+  const [metrics, setMetrics] = useState<ModelMetrics[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Initialize monitoring WebSocket
   const initMonitoring = useCallback(() => {
@@ -107,9 +100,19 @@ export const useModelMonitoring = (modelId: number | null) => {
     };
   }, [model, stopMonitoring]);
 
+  const addMetrics = useCallback((newMetrics: ModelMetrics) => {
+    setMetrics(prev => [...prev, newMetrics]);
+  }, []);
+
+  const clearMetrics = useCallback(() => {
+    setMetrics([]);
+  }, []);
+
   return {
-    initMonitoring,
-    stopMonitoring,
-    isMonitoring: !!monitoringRef.current.socket,
+    metrics,
+    addMetrics,
+    clearMetrics,
+    loading,
+    error,
   };
 };

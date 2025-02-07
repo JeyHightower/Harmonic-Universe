@@ -1,94 +1,130 @@
+import { AppDispatch } from '@/store';
 import {
   createVisualization,
   deleteVisualization,
-  fetchVisualization,
-  fetchVisualizations,
   selectCurrentVisualization,
-  selectIsRealTime,
-  selectUpdateInterval,
   selectVisualizationError,
   selectVisualizationLoading,
   selectVisualizations,
-  setUpdateInterval,
-  startRealTime,
-  stopRealTime,
+  setCurrentVisualization,
+  updateDataMappings,
+  updateStreamConfig,
   updateVisualization,
 } from '@/store/slices/visualizationSlice';
-import { AppDispatch } from '@/store/store';
-import { VisualizationFormData, VisualizationUpdateData } from '@/types/visualization';
+import {
+  DataMapping,
+  StreamConfig,
+  Visualization,
+  VisualizationFormData,
+  VisualizationUpdateData,
+} from '@/types/visualization';
 import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-export const useVisualization = (projectId: number) => {
+interface UseVisualizationProps {
+  projectId: number;
+  audioId?: number;
+}
+
+export const useVisualization = ({ projectId, audioId }: UseVisualizationProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const visualizations = useSelector(selectVisualizations);
   const currentVisualization = useSelector(selectCurrentVisualization);
   const loading = useSelector(selectVisualizationLoading);
   const error = useSelector(selectVisualizationError);
-  const isRealTime = useSelector(selectIsRealTime);
-  const updateInterval = useSelector(selectUpdateInterval);
 
-  const handleFetchVisualizations = useCallback(async () => {
-    await dispatch(fetchVisualizations(projectId));
-  }, [dispatch, projectId]);
-
-  const handleFetchVisualization = useCallback(
-    async (visualizationId: number) => {
-      await dispatch(fetchVisualization({ projectId, visualizationId }));
-    },
-    [dispatch, projectId]
-  );
-
-  const handleCreateVisualization = useCallback(
+  const create = useCallback(
     async (data: VisualizationFormData) => {
-      await dispatch(createVisualization({ projectId, data }));
+      if (!audioId) {
+        throw new Error('Audio ID is required to create a visualization');
+      }
+      try {
+        const resultAction = await dispatch(createVisualization({ projectId, audioId, data }));
+        if (createVisualization.fulfilled.match(resultAction)) {
+          return resultAction.payload;
+        }
+      } catch (error) {
+        console.error('Failed to create visualization:', error);
+        throw error;
+      }
     },
-    [dispatch, projectId]
+    [dispatch, projectId, audioId]
   );
 
-  const handleUpdateVisualization = useCallback(
-    async (visualizationId: number, data: VisualizationUpdateData) => {
-      await dispatch(updateVisualization({ projectId, visualizationId, data }));
-    },
-    [dispatch, projectId]
-  );
-
-  const handleDeleteVisualization = useCallback(
-    async (visualizationId: number) => {
-      await dispatch(deleteVisualization({ projectId, visualizationId }));
-    },
-    [dispatch, projectId]
-  );
-
-  const handleSetUpdateInterval = useCallback(
-    (interval: number) => {
-      dispatch(setUpdateInterval(interval));
+  const update = useCallback(
+    async (id: number, data: VisualizationUpdateData) => {
+      try {
+        const resultAction = await dispatch(updateVisualization({ id, data }));
+        if (updateVisualization.fulfilled.match(resultAction)) {
+          return resultAction.payload;
+        }
+      } catch (error) {
+        console.error('Failed to update visualization:', error);
+        throw error;
+      }
     },
     [dispatch]
   );
 
-  const handleStartRealTime = useCallback(() => {
-    dispatch(startRealTime());
-  }, [dispatch]);
+  const remove = useCallback(
+    async (id: number) => {
+      try {
+        await dispatch(deleteVisualization(id));
+      } catch (error) {
+        console.error('Failed to delete visualization:', error);
+        throw error;
+      }
+    },
+    [dispatch]
+  );
 
-  const handleStopRealTime = useCallback(() => {
-    dispatch(stopRealTime());
-  }, [dispatch]);
+  const updateMappings = useCallback(
+    async (id: number, dataMappings: DataMapping[]) => {
+      try {
+        const resultAction = await dispatch(updateDataMappings({ id, dataMappings }));
+        if (updateDataMappings.fulfilled.match(resultAction)) {
+          return resultAction.payload;
+        }
+      } catch (error) {
+        console.error('Failed to update data mappings:', error);
+        throw error;
+      }
+    },
+    [dispatch]
+  );
+
+  const updateConfig = useCallback(
+    async (id: number, streamConfig: StreamConfig) => {
+      try {
+        const resultAction = await dispatch(updateStreamConfig({ id, streamConfig }));
+        if (updateStreamConfig.fulfilled.match(resultAction)) {
+          return resultAction.payload;
+        }
+      } catch (error) {
+        console.error('Failed to update stream config:', error);
+        throw error;
+      }
+    },
+    [dispatch]
+  );
+
+  const setCurrent = useCallback(
+    (visualization: Visualization | null) => {
+      dispatch(setCurrentVisualization(visualization));
+    },
+    [dispatch]
+  );
 
   return {
     visualizations,
     currentVisualization,
     loading,
     error,
-    isRealTime,
-    updateInterval,
-    fetchVisualizations: handleFetchVisualizations,
-    fetchVisualization: handleFetchVisualization,
-    createVisualization: handleCreateVisualization,
-    updateVisualization: handleUpdateVisualization,
-    deleteVisualization: handleDeleteVisualization,
-    setUpdateInterval: handleSetUpdateInterval,
-    startRealTime: handleStartRealTime,
-    stopRealTime: handleStopRealTime,
+    create,
+    update,
+    remove,
+    updateMappings,
+    updateConfig,
+    setCurrent,
   };
 };

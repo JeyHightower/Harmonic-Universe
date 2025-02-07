@@ -1,8 +1,11 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { setupListeners } from '@reduxjs/toolkit/query';
+import aiReducer from './slices/aiSlice';
 import audioReducer from './slices/audioSlice';
 import authReducer from './slices/authSlice';
+import physicsReducer from './slices/physicsSlice';
 import projectReducer from './slices/projectSlice';
+import universeReducer from './slices/universeSlice';
 import visualizationReducer from './slices/visualizationSlice';
 
 export const store = configureStore({
@@ -11,6 +14,9 @@ export const store = configureStore({
     projects: projectReducer,
     audio: audioReducer,
     visualization: visualizationReducer,
+    ai: aiReducer,
+    physics: physicsReducer,
+    universe: universeReducer,
   },
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({

@@ -1,5 +1,5 @@
 import api from '@/services/api';
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../store';
 
 export interface Universe {
@@ -9,7 +9,7 @@ export interface Universe {
   userId: number;
   isPublic: boolean;
   physicsParams: {
-    gravity: number;
+    gravity: [number, number, number];
     friction: number;
     elasticity: number;
     airResistance: number;
@@ -17,108 +17,98 @@ export interface Universe {
   };
   harmonyParams: {
     baseFrequency: number;
-    scale: string;
-    tempo: number;
-    volume: number;
+    harmonicSeries: number[];
+    resonance: number;
+    damping: number;
+    interference: number;
   };
   storyPoints: Array<{
     id: number;
-    content: string;
-    timestamp: string;
-    harmonyTie?: {
-      frequency?: number;
-      tempo?: number;
-      scale?: string;
-    };
+    title: string;
+    description: string;
+    timestamp: number;
+    position: [number, number, number];
+    rotation: [number, number, number];
   }>;
-  createdAt: string;
-  updatedAt: string;
 }
 
 interface UniverseState {
   universes: Universe[];
   currentUniverse: Universe | null;
-  error: string | null;
   loading: boolean;
+  error: string | null;
 }
 
 const initialState: UniverseState = {
   universes: [],
   currentUniverse: null,
-  error: null,
   loading: false,
+  error: null,
 };
 
-// Async thunks
-export const fetchUniverses = createAsyncThunk('universe/fetchAll', async () => {
-  const response = await api.get('/api/v1/universes');
-  return response.data;
-});
+// Thunks
+export const fetchUniverses = createAsyncThunk(
+  'universe/fetchUniverses',
+  async (projectId: number) => {
+    const response = await api.get(`/api/projects/${projectId}/universes`);
+    return response.data;
+  }
+);
 
-export const fetchUniverse = createAsyncThunk('universe/fetchOne', async (universeId: number) => {
-  const response = await api.get(`/api/v1/universes/${universeId}`);
-  return response.data;
-});
+export const fetchUniverse = createAsyncThunk(
+  'universe/fetchUniverse',
+  async ({ projectId, universeId }: { projectId: number; universeId: number }) => {
+    const response = await api.get(`/api/projects/${projectId}/universes/${universeId}`);
+    return response.data;
+  }
+);
 
 export const createUniverse = createAsyncThunk(
-  'universe/create',
-  async (data: {
-    name: string;
-    description: string;
-    isPublic: boolean;
-    physicsParams?: Partial<Universe['physicsParams']>;
-    harmonyParams?: Partial<Universe['harmonyParams']>;
-  }) => {
-    const response = await api.post('/api/v1/universes', data);
+  'universe/createUniverse',
+  async ({ projectId, data }: { projectId: number; data: Partial<Universe> }) => {
+    const response = await api.post(`/api/projects/${projectId}/universes`, data);
     return response.data;
   }
 );
 
 export const updateUniverse = createAsyncThunk(
-  'universe/update',
-  async ({ universeId, data }: { universeId: number; data: Partial<Universe> }) => {
-    const response = await api.put(`/api/v1/universes/${universeId}`, data);
+  'universe/updateUniverse',
+  async ({
+    projectId,
+    universeId,
+    data,
+  }: {
+    projectId: number;
+    universeId: number;
+    data: Partial<Universe>;
+  }) => {
+    const response = await api.put(`/api/projects/${projectId}/universes/${universeId}`, data);
     return response.data;
   }
 );
 
-export const deleteUniverse = createAsyncThunk('universe/delete', async (universeId: number) => {
-  await api.delete(`/api/v1/universes/${universeId}`);
-  return universeId;
-});
-
-export const updatePhysics = createAsyncThunk(
-  'universe/updatePhysics',
-  async ({
-    universeId,
-    parameters,
-  }: {
-    universeId: number;
-    parameters: Partial<Universe['physicsParams']>;
-  }) => {
-    const response = await api.put(`/api/v1/universes/${universeId}/physics`, parameters);
-    return response.data;
-  }
-);
-
-export const addStoryPoint = createAsyncThunk(
-  'universe/addStoryPoint',
-  async ({
-    universeId,
-    storyPoint,
-  }: {
-    universeId: number;
-    storyPoint: Omit<Universe['storyPoints'][0], 'id' | 'timestamp'>;
-  }) => {
-    const response = await api.post(`/api/v1/universes/${universeId}/story`, storyPoint);
-    return response.data;
+export const deleteUniverse = createAsyncThunk(
+  'universe/deleteUniverse',
+  async ({ projectId, universeId }: { projectId: number; universeId: number }) => {
+    await api.delete(`/api/projects/${projectId}/universes/${universeId}`);
+    return universeId;
   }
 );
 
 export const exportUniverse = createAsyncThunk(
-  'universe/export',
-  async ({ universeId, format }: { universeId: number; format: 'json' | 'audio' }) => {
-    const response = await api.get(`/api/v1/universes/${universeId}/export?format=${format}`);
+  'universe/exportUniverse',
+  async ({
+    projectId,
+    universeId,
+    format,
+  }: {
+    projectId: number;
+    universeId: number;
+    format: 'audio' | 'json';
+  }) => {
+    const response = await api.get(
+      `/api/projects/${projectId}/universes/${universeId}/export?format=${format}`
+    );
     return response.data;
   }
 );
@@ -127,32 +117,93 @@ const universeSlice = createSlice({
   name: 'universe',
   initialState,
   reducers: {
-    setCurrentUniverse: (state, action) => {
+    setCurrentUniverse: (state, action: PayloadAction<Universe | null>) => {
       state.currentUniverse = action.payload;
     },
-    clearError: state => {
-      state.error = null;
-    },
-    updatePhysicsLocally: (state, action) => {
-      if (state.currentUniverse) {
+    updatePhysicsParams: (
+      state,
+      action: PayloadAction<{
+        universeId: number;
+        params: Partial<Universe['physicsParams']>;
+      }>
+    ) => {
+      const universe = state.universes.find(u => u.id === action.payload.universeId);
+      if (universe) {
+        universe.physicsParams = { ...universe.physicsParams, ...action.payload.params };
+      }
+      if (state.currentUniverse?.id === action.payload.universeId) {
         state.currentUniverse.physicsParams = {
           ...state.currentUniverse.physicsParams,
-          ...action.payload,
+          ...action.payload.params,
         };
       }
     },
-    updateHarmonyLocally: (state, action) => {
-      if (state.currentUniverse) {
+    updateHarmonyParams: (
+      state,
+      action: PayloadAction<{
+        universeId: number;
+        params: Partial<Universe['harmonyParams']>;
+      }>
+    ) => {
+      const universe = state.universes.find(u => u.id === action.payload.universeId);
+      if (universe) {
+        universe.harmonyParams = { ...universe.harmonyParams, ...action.payload.params };
+      }
+      if (state.currentUniverse?.id === action.payload.universeId) {
         state.currentUniverse.harmonyParams = {
           ...state.currentUniverse.harmonyParams,
-          ...action.payload,
+          ...action.payload.params,
         };
+      }
+    },
+    addStoryPoint: (
+      state,
+      action: PayloadAction<{
+        universeId: number;
+        storyPoint: Omit<Universe['storyPoints'][0], 'id'>;
+      }>
+    ) => {
+      const universe = state.universes.find(u => u.id === action.payload.universeId);
+      if (universe) {
+        const newId = Math.max(0, ...universe.storyPoints.map(p => p.id)) + 1;
+        universe.storyPoints.push({ ...action.payload.storyPoint, id: newId });
+      }
+    },
+    updateStoryPoint: (
+      state,
+      action: PayloadAction<{
+        universeId: number;
+        storyPointId: number;
+        updates: Partial<Universe['storyPoints'][0]>;
+      }>
+    ) => {
+      const universe = state.universes.find(u => u.id === action.payload.universeId);
+      if (universe) {
+        const pointIndex = universe.storyPoints.findIndex(
+          p => p.id === action.payload.storyPointId
+        );
+        if (pointIndex !== -1) {
+          universe.storyPoints[pointIndex] = {
+            ...universe.storyPoints[pointIndex],
+            ...action.payload.updates,
+          };
+        }
+      }
+    },
+    deleteStoryPoint: (
+      state,
+      action: PayloadAction<{ universeId: number; storyPointId: number }>
+    ) => {
+      const universe = state.universes.find(u => u.id === action.payload.universeId);
+      if (universe) {
+        universe.storyPoints = universe.storyPoints.filter(
+          p => p.id !== action.payload.storyPointId
+        );
       }
     },
   },
   extraReducers: builder => {
     builder
-      // Fetch all universes
       .addCase(fetchUniverses.pending, state => {
         state.loading = true;
         state.error = null;
@@ -165,40 +216,20 @@ const universeSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || 'Failed to fetch universes';
       })
-      // Fetch single universe
-      .addCase(fetchUniverse.pending, state => {
-        state.loading = true;
-        state.error = null;
-      })
       .addCase(fetchUniverse.fulfilled, (state, action) => {
-        state.loading = false;
         state.currentUniverse = action.payload;
-      })
-      .addCase(fetchUniverse.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Failed to fetch universe';
-      })
-      // Create universe
-      .addCase(createUniverse.pending, state => {
-        state.loading = true;
-        state.error = null;
+        const index = state.universes.findIndex(u => u.id === action.payload.id);
+        if (index !== -1) {
+          state.universes[index] = action.payload;
+        } else {
+          state.universes.push(action.payload);
+        }
       })
       .addCase(createUniverse.fulfilled, (state, action) => {
-        state.loading = false;
         state.universes.push(action.payload);
         state.currentUniverse = action.payload;
       })
-      .addCase(createUniverse.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Failed to create universe';
-      })
-      // Update universe
-      .addCase(updateUniverse.pending, state => {
-        state.loading = true;
-        state.error = null;
-      })
       .addCase(updateUniverse.fulfilled, (state, action) => {
-        state.loading = false;
         const index = state.universes.findIndex(u => u.id === action.payload.id);
         if (index !== -1) {
           state.universes[index] = action.payload;
@@ -207,49 +238,29 @@ const universeSlice = createSlice({
           state.currentUniverse = action.payload;
         }
       })
-      .addCase(updateUniverse.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Failed to update universe';
-      })
-      // Delete universe
-      .addCase(deleteUniverse.pending, state => {
-        state.loading = true;
-        state.error = null;
-      })
       .addCase(deleteUniverse.fulfilled, (state, action) => {
-        state.loading = false;
         state.universes = state.universes.filter(u => u.id !== action.payload);
         if (state.currentUniverse?.id === action.payload) {
           state.currentUniverse = null;
-        }
-      })
-      .addCase(deleteUniverse.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Failed to delete universe';
-      })
-      // Update physics
-      .addCase(updatePhysics.fulfilled, (state, action) => {
-        if (state.currentUniverse) {
-          state.currentUniverse.physicsParams = action.payload.physics;
-          state.currentUniverse.harmonyParams = action.payload.harmony;
-        }
-      })
-      // Add story point
-      .addCase(addStoryPoint.fulfilled, (state, action) => {
-        if (state.currentUniverse) {
-          state.currentUniverse = action.payload;
         }
       });
   },
 });
 
-export const { setCurrentUniverse, clearError, updatePhysicsLocally, updateHarmonyLocally } =
-  universeSlice.actions;
+export const {
+  setCurrentUniverse,
+  updatePhysicsParams,
+  updateHarmonyParams,
+  addStoryPoint,
+  updateStoryPoint,
+  deleteStoryPoint,
+} = universeSlice.actions;
 
+// Selectors
 export const selectUniverseState = (state: RootState) => state.universe;
 export const selectUniverses = (state: RootState) => state.universe.universes;
 export const selectCurrentUniverse = (state: RootState) => state.universe.currentUniverse;
-export const selectUniverseError = (state: RootState) => state.universe.error;
-export const selectUniverseLoading = (state: RootState) => state.universe.loading;
+export const selectLoading = (state: RootState) => state.universe.loading;
+export const selectError = (state: RootState) => state.universe.error;
 
 export default universeSlice.reducer;

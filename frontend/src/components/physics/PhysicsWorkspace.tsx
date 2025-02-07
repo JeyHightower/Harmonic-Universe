@@ -5,7 +5,7 @@ import { Canvas } from '@react-three/fiber';
 import React, { useRef, useState } from 'react';
 import ObjectList from './ObjectList';
 import PropertiesPanel from './PropertiesPanel';
-import Scene from './Scene';
+import Scene, { SceneHandle } from './Scene';
 import SimulationControls from './SimulationControls';
 
 const PhysicsWorkspace: React.FC = () => {
@@ -13,7 +13,7 @@ const PhysicsWorkspace: React.FC = () => {
     const [isSimulating, setIsSimulating] = useState(false);
     const [timeStep, setTimeStep] = useState(1 / 60);
     const physicsEngine = usePhysicsEngine();
-    const sceneRef = useRef();
+    const sceneRef = useRef<SceneHandle>(null);
 
     const handleObjectSelect = (objectId: number) => {
         setSelectedObjectId(objectId);
@@ -30,7 +30,9 @@ const PhysicsWorkspace: React.FC = () => {
 
     const handleTimeStepChange = (step: number) => {
         setTimeStep(step);
-        physicsEngine.setTimeStep(step);
+        if (physicsEngine.setTimeStep) {
+            physicsEngine.setTimeStep(step);
+        }
     };
 
     return (

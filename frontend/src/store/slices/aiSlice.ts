@@ -1,97 +1,102 @@
-import axiosInstance from '@/services/api';
-import { AIModel } from '@/types';
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import api from '@/services/api';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { RootState } from '../store';
 
-export interface TrainingSession {
+export interface AIModel {
   id: number;
-  model_id: number;
-  start_time: number;
-  end_time?: number;
+  name: string;
+  description: string;
+  type: string;
   status: string;
-  hyperparameters: {
-    [key: string]: any;
+  version: string;
+  userId: number;
+  createdAt: string;
+  updatedAt: string;
+  deployment: {
+    status: string;
+    endpoint: string | null;
+    metrics?: { [key: string]: any };
   };
-  metrics: {
-    [key: string]: any;
+  training: {
+    status: string;
+    progress: number;
+    metrics?: { [key: string]: any };
+    error?: string;
   };
-  validation_results: {
-    [key: string]: any;
-  };
-  error_message?: string;
-}
-
-export interface InferenceResult {
-  id: number;
-  model_id: number;
-  timestamp: number;
-  input_data: any;
-  output_data: any;
-  metrics: {
-    [key: string]: any;
-  };
-  processing_time: number;
+  datasets: Array<{
+    id: number;
+    name: string;
+    description: string;
+    type: string;
+    metadata: {
+      features: string[];
+      target?: string;
+      format: string;
+      schema: { [key: string]: string };
+    };
+  }>;
+  experiments: Array<{
+    id: number;
+    name: string;
+    description: string;
+    status: string;
+    config: {
+      hyperparameters: { [key: string]: any };
+      tags?: string[];
+    };
+    metrics?: { [key: string]: any };
+    error?: string;
+  }>;
 }
 
 interface AIState {
   models: AIModel[];
-  selectedModelId: number | null;
+  currentModel: AIModel | null;
   loading: boolean;
   error: string | null;
 }
 
 const initialState: AIState = {
   models: [],
-  selectedModelId: null,
+  currentModel: null,
   loading: false,
   error: null,
 };
 
+// Thunks
 export const fetchModels = createAsyncThunk('ai/fetchModels', async () => {
-  const response = await axiosInstance.get('/ai/models');
+  const response = await api.get('/api/ai/models');
   return response.data;
 });
 
 export const createModel = createAsyncThunk(
   'ai/createModel',
-  async (model: Omit<AIModel, 'id'>) => {
-    const response = await axiosInstance.post('/ai/models', model);
+  async (data: { name: string; description: string; type: string }) => {
+    const response = await api.post('/api/ai/models', data);
     return response.data;
   }
 );
 
 export const updateModel = createAsyncThunk(
   'ai/updateModel',
-  async ({ id, ...updates }: Partial<AIModel> & { id: number }) => {
-    const response = await axiosInstance.patch(`/ai/models/${id}`, updates);
+  async (data: Partial<AIModel> & { id: number }) => {
+    const response = await api.put(`/api/ai/models/${data.id}`, data);
     return response.data;
   }
 );
 
 export const deleteModel = createAsyncThunk('ai/deleteModel', async (id: number) => {
-  await axiosInstance.delete(`/ai/models/${id}`);
+  await api.delete(`/api/ai/models/${id}`);
   return id;
 });
 
 export const startTraining = createAsyncThunk('ai/startTraining', async (modelId: number) => {
-  const response = await axiosInstance.post(`/ai/models/${modelId}/train`);
+  const response = await api.post(`/api/ai/models/${modelId}/training/start`);
   return response.data;
 });
 
 export const stopTraining = createAsyncThunk('ai/stopTraining', async (modelId: number) => {
-  const response = await axiosInstance.post(`/ai/models/${modelId}/stop`);
-  return response.data;
-});
-
-export const deployModel = createAsyncThunk(
-  'ai/deployModel',
-  async ({ id, config }: { id: number; config: any }) => {
-    const response = await axiosInstance.post(`/ai/models/${id}/deploy`, config);
-    return response.data;
-  }
-);
-
-export const stopDeployment = createAsyncThunk('ai/stopDeployment', async (modelId: number) => {
-  const response = await axiosInstance.post(`/ai/models/${modelId}/deployment/stop`);
+  const response = await api.post(`/api/ai/models/${modelId}/training/stop`);
   return response.data;
 });
 
@@ -99,16 +104,12 @@ const aiSlice = createSlice({
   name: 'ai',
   initialState,
   reducers: {
-    setSelectedModel: (state, action) => {
-      state.selectedModelId = action.payload;
-    },
-    clearError: state => {
-      state.error = null;
+    setCurrentModel: (state, action: PayloadAction<AIModel | null>) => {
+      state.currentModel = action.payload;
     },
   },
   extraReducers: builder => {
     builder
-      // Fetch Models
       .addCase(fetchModels.pending, state => {
         state.loading = true;
         state.error = null;
@@ -121,132 +122,31 @@ const aiSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || 'Failed to fetch models';
       })
-      // Create Model
-      .addCase(createModel.pending, state => {
-        state.loading = true;
-        state.error = null;
-      })
       .addCase(createModel.fulfilled, (state, action) => {
-        state.loading = false;
         state.models.push(action.payload);
       })
-      .addCase(createModel.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Failed to create model';
-      })
-      // Update Model
-      .addCase(updateModel.pending, state => {
-        state.loading = true;
-        state.error = null;
-      })
       .addCase(updateModel.fulfilled, (state, action) => {
-        state.loading = false;
         const index = state.models.findIndex(model => model.id === action.payload.id);
         if (index !== -1) {
           state.models[index] = action.payload;
         }
       })
-      .addCase(updateModel.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Failed to update model';
-      })
-      // Delete Model
-      .addCase(deleteModel.pending, state => {
-        state.loading = true;
-        state.error = null;
-      })
       .addCase(deleteModel.fulfilled, (state, action) => {
-        state.loading = false;
         state.models = state.models.filter(model => model.id !== action.payload);
-        if (state.selectedModelId === action.payload) {
-          state.selectedModelId = null;
+        if (state.currentModel?.id === action.payload) {
+          state.currentModel = null;
         }
-      })
-      .addCase(deleteModel.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Failed to delete model';
-      })
-      // Start Training
-      .addCase(startTraining.pending, state => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(startTraining.fulfilled, (state, action) => {
-        state.loading = false;
-        const index = state.models.findIndex(model => model.id === action.payload.id);
-        if (index !== -1) {
-          state.models[index] = {
-            ...state.models[index],
-            status: 'training',
-          };
-        }
-      })
-      .addCase(startTraining.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Failed to start training';
-      })
-      // Stop Training
-      .addCase(stopTraining.pending, state => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(stopTraining.fulfilled, (state, action) => {
-        state.loading = false;
-        const index = state.models.findIndex(model => model.id === action.payload.id);
-        if (index !== -1) {
-          state.models[index] = {
-            ...state.models[index],
-            status: 'ready',
-          };
-        }
-      })
-      .addCase(stopTraining.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Failed to stop training';
-      })
-      // Deploy Model
-      .addCase(deployModel.pending, state => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(deployModel.fulfilled, (state, action) => {
-        state.loading = false;
-        const index = state.models.findIndex(model => model.id === action.payload.id);
-        if (index !== -1) {
-          state.models[index] = {
-            ...state.models[index],
-            deployment: action.payload.deployment,
-          };
-        }
-      })
-      .addCase(deployModel.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Failed to deploy model';
-      })
-      // Stop Deployment
-      .addCase(stopDeployment.pending, state => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(stopDeployment.fulfilled, (state, action) => {
-        state.loading = false;
-        const index = state.models.findIndex(model => model.id === action.payload.id);
-        if (index !== -1) {
-          state.models[index] = {
-            ...state.models[index],
-            deployment: {
-              ...state.models[index].deployment,
-              status: 'stopped',
-            },
-          };
-        }
-      })
-      .addCase(stopDeployment.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Failed to stop deployment';
       });
   },
 });
 
-export const { setSelectedModel, clearError } = aiSlice.actions;
+export const { setCurrentModel } = aiSlice.actions;
+
+// Selectors
+export const selectAIState = (state: RootState) => state.ai;
+export const selectModels = (state: RootState) => state.ai.models;
+export const selectCurrentModel = (state: RootState) => state.ai.currentModel;
+export const selectLoading = (state: RootState) => state.ai.loading;
+export const selectError = (state: RootState) => state.ai.error;
+
 export default aiSlice.reducer;

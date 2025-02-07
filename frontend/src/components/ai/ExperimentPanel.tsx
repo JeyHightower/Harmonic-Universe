@@ -1,79 +1,55 @@
-import { useModelExperiments } from '@hooks/useModelExperiments';
+import { useModelExperiments } from '@/hooks/useModelExperiments';
+import { AIModel } from '@/store/slices/aiSlice';
 import {
     Add as AddIcon,
-    Compare as CompareIcon,
-    Delete as DeleteIcon,
-    ExpandMore,
-    PlayArrow,
-    Stop,
+    Delete as DeleteIcon
 } from '@mui/icons-material';
 import {
-    Accordion,
-    AccordionDetails,
-    AccordionSummary,
     Box,
     Button,
-    Chip,
+    Card,
+    CardContent,
+    CardHeader,
+    Grid,
     IconButton,
-    List,
-    ListItem,
-    ListItemText,
-    Stack,
-    TextField,
+    LinearProgress,
     Typography
 } from '@mui/material';
 import React, { useState } from 'react';
 
 interface ExperimentPanelProps {
-    model: {
-        id: number;
-        name: string;
-        parameters: {
-            [key: string]: any;
-        };
-    } | null;
+    model: AIModel;
 }
 
 const ExperimentPanel: React.FC<ExperimentPanelProps> = ({ model }) => {
-    const experiments = useModelExperiments(model?.id ?? null);
+    const { experiments, createExperiment, deleteExperiment, loading } = useModelExperiments(model.id);
     const [newExperimentName, setNewExperimentName] = useState('');
     const [selectedExperiments, setSelectedExperiments] = useState<number[]>([]);
 
-    if (!model) {
-        return (
-            <Box sx={{ p: 2 }}>
-                <Typography variant="subtitle1" color="text.secondary">
-                    Select a model to view experiments
-                </Typography>
-            </Box>
-        );
-    }
-
-    const handleCreateExperiment = async () => {
-        if (!newExperimentName.trim()) return;
-
-        await experiments.createExperiment(newExperimentName, {
-            description: `Experiment for ${model.name}`,
-            hyperparameters: model.parameters,
+    const handleCreateExperiment = () => {
+        createExperiment({
+            name: `Experiment ${experiments.length + 1}`,
+            description: 'New experiment',
+            config: {
+                hyperparameters: {
+                    learningRate: 0.001,
+                    batchSize: 32,
+                    epochs: 10,
+                },
+            },
         });
-
-        setNewExperimentName('');
     };
 
     const handleStartExperiment = async (experimentId: number) => {
-        await experiments.startExperiment(experimentId);
+        // Implementation needed
     };
 
     const handleStopExperiment = async (experimentId: number) => {
-        await experiments.stopExperiment(experimentId);
+        // Implementation needed
     };
 
     const handleDeleteExperiment = async (experimentId: number) => {
-        const experiment = experiments.experiments.find(e => e.id === experimentId);
-        if (experiment?.status === 'running') {
-            await experiments.stopExperiment(experimentId);
-        }
-        // Note: Delete functionality would be handled by the backend
+        deleteExperiment(experimentId);
     };
 
     const handleToggleExperimentSelection = (experimentId: number) => {
@@ -86,159 +62,67 @@ const ExperimentPanel: React.FC<ExperimentPanelProps> = ({ model }) => {
 
     const handleCompareExperiments = async () => {
         if (selectedExperiments.length < 2) return;
-        const comparison = await experiments.compareExperiments(selectedExperiments);
-        // Handle comparison results (e.g., show in a modal or new panel)
+        // Implementation needed
     };
 
     return (
-        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
-            <Stack spacing={3}>
-                <Box>
-                    <Typography variant="h6" gutterBottom>
-                        Experiments
-                    </Typography>
-                    <Stack direction="row" spacing={2} alignItems="center">
-                        <TextField
-                            size="small"
-                            value={newExperimentName}
-                            onChange={e => setNewExperimentName(e.target.value)}
-                            placeholder="New experiment name"
-                            fullWidth
-                        />
-                        <Button
-                            startIcon={<AddIcon />}
-                            onClick={handleCreateExperiment}
-                            disabled={!newExperimentName.trim()}
-                            variant="contained"
-                        >
-                            Create
-                        </Button>
-                    </Stack>
-                </Box>
+        <Box sx={{ p: 2 }}>
+            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="h6">Experiments</Typography>
+                <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={handleCreateExperiment}
+                    disabled={loading}
+                >
+                    New Experiment
+                </Button>
+            </Box>
 
-                {selectedExperiments.length >= 2 && (
-                    <Button
-                        startIcon={<CompareIcon />}
-                        onClick={handleCompareExperiments}
-                        variant="outlined"
-                        fullWidth
-                    >
-                        Compare Selected ({selectedExperiments.length})
-                    </Button>
-                )}
+            {loading && <LinearProgress sx={{ mb: 2 }} />}
 
-                <List sx={{ flexGrow: 1, overflow: 'auto' }}>
-                    {experiments.experiments.map(experiment => (
-                        <Accordion key={experiment.id}>
-                            <AccordionSummary expandIcon={<ExpandMore />}>
-                                <Stack
-                                    direction="row"
-                                    spacing={2}
-                                    alignItems="center"
-                                    sx={{ width: '100%' }}
-                                >
-                                    <IconButton
-                                        size="small"
-                                        onClick={e => {
-                                            e.stopPropagation();
-                                            handleToggleExperimentSelection(experiment.id);
-                                        }}
-                                        color={
-                                            selectedExperiments.includes(experiment.id)
-                                                ? 'primary'
-                                                : 'default'
-                                        }
-                                    >
-                                        <CompareIcon />
+            <Grid container spacing={2}>
+                {experiments.map(experiment => (
+                    <Grid item xs={12} md={6} key={experiment.id}>
+                        <Card>
+                            <CardHeader
+                                title={experiment.name}
+                                action={
+                                    <IconButton onClick={() => handleDeleteExperiment(experiment.id)}>
+                                        <DeleteIcon />
                                     </IconButton>
-                                    <Typography>{experiment.name}</Typography>
-                                    <Chip
-                                        label={experiment.status}
-                                        size="small"
-                                        color={experiment.status === 'running' ? 'success' : 'default'}
-                                    />
-                                </Stack>
-                            </AccordionSummary>
-                            <AccordionDetails>
-                                <Stack spacing={2}>
+                                }
+                            />
+                            <CardContent>
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                    {experiment.description}
+                                </Typography>
+                                <Typography variant="subtitle2" gutterBottom>
+                                    Status: {experiment.status}
+                                </Typography>
+                                {experiment.metrics && (
                                     <Box>
-                                        <Typography variant="subtitle2" gutterBottom>
-                                            Description
-                                        </Typography>
-                                        <Typography variant="body2">
-                                            {experiment.description}
-                                        </Typography>
-                                    </Box>
-
-                                    <Box>
-                                        <Typography variant="subtitle2" gutterBottom>
-                                            Hyperparameters
-                                        </Typography>
-                                        <List dense>
-                                            {Object.entries(experiment.hyperparameters).map(
-                                                ([key, value]) => (
-                                                    <ListItem key={key}>
-                                                        <ListItemText
-                                                            primary={key}
-                                                            secondary={value.toString()}
-                                                        />
-                                                    </ListItem>
-                                                )
-                                            )}
-                                        </List>
-                                    </Box>
-
-                                    {experiment.metrics && Object.keys(experiment.metrics).length > 0 && (
-                                        <Box>
-                                            <Typography variant="subtitle2" gutterBottom>
-                                                Metrics
+                                        <Typography variant="subtitle2">Metrics:</Typography>
+                                        {Object.entries(experiment.metrics).map(([key, value]) => (
+                                            <Typography key={key} variant="body2">
+                                                {key}: {value}
                                             </Typography>
-                                            <List dense>
-                                                {Object.entries(experiment.metrics).map(
-                                                    ([key, value]) => (
-                                                        <ListItem key={key}>
-                                                            <ListItemText
-                                                                primary={key}
-                                                                secondary={value.toString()}
-                                                            />
-                                                        </ListItem>
-                                                    )
-                                                )}
-                                            </List>
-                                        </Box>
-                                    )}
-
-                                    <Stack direction="row" spacing={2} justifyContent="flex-end">
-                                        {experiment.status === 'running' ? (
-                                            <Button
-                                                startIcon={<Stop />}
-                                                onClick={() => handleStopExperiment(experiment.id)}
-                                                color="error"
-                                            >
-                                                Stop
-                                            </Button>
-                                        ) : (
-                                            <Button
-                                                startIcon={<PlayArrow />}
-                                                onClick={() => handleStartExperiment(experiment.id)}
-                                                disabled={experiment.status === 'completed'}
-                                            >
-                                                Start
-                                            </Button>
-                                        )}
-                                        <IconButton
-                                            onClick={() => handleDeleteExperiment(experiment.id)}
-                                            color="error"
-                                        >
-                                            <DeleteIcon />
-                                        </IconButton>
-                                    </Stack>
-                                </Stack>
-                            </AccordionDetails>
-                        </Accordion>
-                    ))}
-                </List>
-            </Stack>
+                                        ))}
+                                    </Box>
+                                )}
+                                <Typography variant="subtitle2" sx={{ mt: 1 }}>
+                                    Hyperparameters:
+                                </Typography>
+                                {Object.entries(experiment.config.hyperparameters).map(([key, value]) => (
+                                    <Typography key={key} variant="body2">
+                                        {key}: {value}
+                                    </Typography>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                ))}
+            </Grid>
         </Box>
     );
 };

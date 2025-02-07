@@ -1,24 +1,36 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
-import audioReducer from './slices/audioSlice';
-import authReducer from './slices/authSlice';
-import physicsReducer from './slices/physicsSlice';
-import projectReducer from './slices/projectSlice';
-import visualizationReducer from './slices/visualizationSlice';
+import { audioReducer } from './slices/audioSlice';
+import { authReducer } from './slices/authSlice';
+import { physicsReducer } from './slices/physicsSlice';
+import { projectsReducer } from './slices/projectsSlice';
+import { universeReducer } from './slices/universeSlice';
+import { visualizationReducer } from './slices/visualizationSlice';
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
-    projects: projectReducer,
+    projects: projectsReducer,
     audio: audioReducer,
     visualization: visualizationReducer,
     physics: physicsReducer,
+    universe: universeReducer,
   },
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['audio/uploadAudio/fulfilled'],
-        ignoredPaths: ['audio.tracks'],
+        ignoredActions: [
+          'audio/setAudioBuffer',
+          'physics/updateObjectTransform',
+          'universe/updateHarmonyParameters',
+          'visualization/updateData',
+        ],
+        ignoredPaths: [
+          'audio.audioBuffers',
+          'physics.objects',
+          'universe.harmony',
+          'visualization.data',
+        ],
       },
     }),
 });

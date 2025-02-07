@@ -1,36 +1,28 @@
-import axios from '@/services/api';
+import api from '@/services/api';
+import { User } from '@/types/auth';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { RootState } from '../store';
 
-export interface User {
-  id: number;
-  username: string;
-  email: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface AuthState {
+interface AuthState {
   user: User | null;
   token: string | null;
-  isAuthenticated: boolean;
-  error: string | null;
   loading: boolean;
+  error: string | null;
+  isAuthenticated: boolean;
 }
 
 const initialState: AuthState = {
   user: null,
   token: localStorage.getItem('token'),
-  isAuthenticated: !!localStorage.getItem('token'),
-  error: null,
   loading: false,
+  error: null,
+  isAuthenticated: !!localStorage.getItem('token'),
 };
 
-// Async thunks
 export const login = createAsyncThunk(
   'auth/login',
-  async ({ email, password }: { email: string; password: string }) => {
-    const response = await axios.post('/api/v1/auth/login', { email, password });
+  async (credentials: { email: string; password: string }) => {
+    const response = await api.post('/api/auth/login', credentials);
     const { token, user } = response.data;
     localStorage.setItem('token', token);
     return { token, user };
@@ -39,8 +31,8 @@ export const login = createAsyncThunk(
 
 export const register = createAsyncThunk(
   'auth/register',
-  async ({ username, email, password }: { username: string; email: string; password: string }) => {
-    const response = await axios.post('/api/v1/auth/register', { username, email, password });
+  async (data: { email: string; password: string; username: string }) => {
+    const response = await api.post('/api/auth/register', data);
     const { token, user } = response.data;
     localStorage.setItem('token', token);
     return { token, user };
@@ -48,14 +40,25 @@ export const register = createAsyncThunk(
 );
 
 export const logout = createAsyncThunk('auth/logout', async () => {
+  await api.post('/api/auth/logout');
   localStorage.removeItem('token');
+});
+
+export const fetchUser = createAsyncThunk('auth/fetchUser', async () => {
+  const response = await api.get('/api/auth/user');
+  return response.data;
+});
+
+export const updateUser = createAsyncThunk('auth/updateUser', async (data: Partial<User>) => {
+  const response = await api.patch('/api/auth/user', data);
+  return response.data;
 });
 
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    clearError: state => {
+    clearAuthError: state => {
       state.error = null;
     },
   },
@@ -67,14 +70,13 @@ const authSlice = createSlice({
       })
       .addCase(login.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.user;
         state.token = action.payload.token;
+        state.user = action.payload.user;
         state.isAuthenticated = true;
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to login';
-        state.isAuthenticated = false;
+        state.error = action.error.message || 'Login failed';
       })
       .addCase(register.pending, state => {
         state.loading = true;
@@ -82,30 +84,34 @@ const authSlice = createSlice({
       })
       .addCase(register.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.user;
         state.token = action.payload.token;
+        state.user = action.payload.user;
         state.isAuthenticated = true;
       })
       .addCase(register.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to register';
-        state.isAuthenticated = false;
+        state.error = action.error.message || 'Registration failed';
       })
       .addCase(logout.fulfilled, state => {
-        state.user = null;
         state.token = null;
+        state.user = null;
         state.isAuthenticated = false;
+      })
+      .addCase(fetchUser.fulfilled, (state, action) => {
+        state.user = action.payload;
+      })
+      .addCase(updateUser.fulfilled, (state, action) => {
+        state.user = action.payload;
       });
   },
 });
 
-export const { clearError } = authSlice.actions;
+export const { clearAuthError } = authSlice.actions;
 
-export const selectAuthState = (state: RootState) => state.auth;
 export const selectUser = (state: RootState) => state.auth.user;
 export const selectToken = (state: RootState) => state.auth.token;
-export const selectAuthError = (state: RootState) => state.auth.error;
 export const selectAuthLoading = (state: RootState) => state.auth.loading;
+export const selectAuthError = (state: RootState) => state.auth.error;
 export const selectIsAuthenticated = (state: RootState) => state.auth.isAuthenticated;
 
-export default authSlice.reducer;
+export const authReducer = authSlice.reducer;
