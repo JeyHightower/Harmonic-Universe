@@ -1,151 +1,196 @@
-# Backend Directory Structure
+# 🏗️ Backend Structure
 
-The backend of Harmonic Universe follows a modular, domain-driven design pattern. Below is the complete directory structure with explanations for each component.
-
-## Directory Tree
+## 📁 Directory Structure
 
 ```
 backend/
-├── app/                      # Main application package
-│   ├── api/                 # API endpoints
-│   │   └── v1/
-│   │       └── endpoints/   # API route handlers
-│   │           └── physics/ # Physics-related endpoints
-│   ├── background/          # Background tasks and workers
-│   ├── core/               # Core functionality
-│   │   ├── config/        # Application configuration
-│   │   └── physics/       # Physics engine core
-│   ├── crud/               # Database CRUD operations
-│   ├── db/                 # Database configuration and sessions
-│   ├── middleware/         # Custom middleware components
-│   ├── models/            # SQLAlchemy models
-│   │   ├── ai/           # AI-related models
-│   │   ├── audio/        # Audio processing models
-│   │   ├── core/         # Core data models
-│   │   ├── export/       # Export functionality models
-│   │   ├── organization/ # Organization models
-│   │   ├── physics/      # Physics simulation models
-│   │   └── visualization/# Visualization models
-│   ├── schemas/           # Pydantic schemas for validation
-│   ├── services/         # Business logic services
-│   ├── utils/           # Utility functions
-│   ├── websocket/       # WebSocket handling
-│   └── main.py         # Application entry point
-├── migrations/          # Alembic database migrations
-├── reports/            # Test and coverage reports
-├── scripts/            # Utility scripts
-│   ├── analyze_errors.py
-│   ├── apply_fixes.py
-│   ├── cleanup.py
-│   ├── db_ops.py
-│   ├── fix_tests.py
-│   ├── init_db.py
-│   ├── run_tests.sh
-│   ├── update_uuid_types.py
-│   └── verify_db.py
-├── .env               # Environment variables
-├── .env.example      # Example environment configuration
-├── .gitignore       # Git ignore rules
-├── Dockerfile       # Development Docker configuration
-├── Dockerfile.prod  # Production Docker configuration
-├── README.md       # Project documentation
-├── alembic.ini    # Alembic migration configuration
-├── pytest.ini    # PyTest configuration
-├── requirements.txt        # Main dependencies
-└── requirements-test.txt  # Test dependencies
+├── app/                    # Application package
+│   ├── api/               # API endpoints
+│   │   └── v1/           # API version 1
+│   │       ├── auth.py   # Authentication endpoints
+│   │       ├── universes.py  # Universe management
+│   │       ├── audio.py  # Audio processing
+│   │       └── visualizations.py  # Visualization
+│   ├── models/           # Database models
+│   │   ├── user.py      # User model
+│   │   ├── universe.py  # Universe model
+│   │   └── base.py      # Base model class
+│   ├── services/        # Business logic
+│   │   ├── export.py   # Export functionality
+│   │   └── audio.py    # Audio generation
+│   ├── websocket/      # WebSocket handlers
+│   ├── core/           # Core functionality
+│   ├── schemas/        # Pydantic schemas
+│   ├── crud/          # Database operations
+│   └── utils/         # Utility functions
+├── migrations/        # Database migrations
+└── tests/            # Test suite
 ```
 
-## Key Components
+## 🔧 Core Components
 
-### Application Core (app/)
+### Models
 
-- **api/**: REST API endpoints organized by version and domain
-- **background/**: Asynchronous task processing and background jobs
-- **core/**: Essential application functionality and configurations
-- **crud/**: Database operations following the Repository pattern
-- **models/**: SQLAlchemy models organized by domain
-- **schemas/**: Pydantic models for request/response validation
-- **services/**: Business logic implementation
-- **websocket/**: Real-time communication handling
+1. **User Model**
 
-### Configuration
+   - Authentication fields
+   - Profile information
+   - Relationship management
 
-- **.env**: Environment-specific configuration
-- **alembic.ini**: Database migration settings
-- **pytest.ini**: Testing configuration
-- **Dockerfile(s)**: Container configurations for different environments
+2. **Universe Model**
 
-### Development Tools
+   - Basic properties
+   - Physics parameters
+   - Music parameters
+   - Story points
 
-- **scripts/**: Maintenance and utility scripts
-- **migrations/**: Database version control
-- **reports/**: Test coverage and analysis reports
+3. **Base Model**
+   - Common fields
+   - Timestamp tracking
+   - CRUD operations
 
-## Architecture Decisions
+### API Endpoints
 
-1. **Domain-Driven Design**
+1. **Authentication (`/api/v1/auth`)**
 
-   - Organized by business domains (physics, audio, ai, etc.)
-   - Clear separation of concerns
-   - Modular and maintainable structure
+   - User registration
+   - Login/logout
+   - Token management
+   - Profile updates
 
-2. **API Versioning**
+2. **Universe Management (`/api/v1/universes`)**
 
-   - Versioned API structure (v1)
-   - Future-proof for API evolution
-   - Backward compatibility support
+   - CRUD operations
+   - Parameter management
+   - Access control
+   - Real-time updates
 
-3. **Clean Architecture**
+3. **Audio Processing (`/api/v1/audio`)**
 
-   - Separation of business logic (services)
-   - Data access abstraction (crud)
-   - Clear dependency flow
+   - Music generation
+   - Audio export
+   - Parameter processing
 
-4. **Configuration Management**
-   - Environment-based configuration
-   - Secure credential handling
-   - Flexible deployment options
+4. **Visualization (`/api/v1/visualizations`)**
+   - Real-time visualization
+   - Data mapping
+   - Export functionality
 
-## File Purposes
+### Services
 
-### Core Files
+1. **Export Service**
 
-- **main.py**: Application entry point and FastAPI setup
-- **alembic.ini**: Database migration configuration
-- **requirements.txt**: Project dependencies
+   - Universe export
+   - Audio export
+   - Data formatting
 
-### Docker Files
+2. **Audio Service**
+   - Music generation
+   - Parameter processing
+   - Real-time updates
 
-- **Dockerfile**: Development environment configuration
-- **Dockerfile.prod**: Production-optimized configuration
+### WebSocket Integration
 
-### Configuration Files
+1. **Connection Management**
 
-- **.env**: Runtime configuration and secrets
-- **pytest.ini**: Test suite configuration
-- **.gitignore**: Version control exclusions
+   - User sessions
+   - Universe rooms
+   - Real-time updates
 
-## Best Practices
+2. **Event Handlers**
+   - Physics updates
+   - Music generation
+   - Visualization updates
 
-1. **Modularity**
+## 🔐 Security Implementation
 
-   - Each module has a single responsibility
-   - Clear interfaces between components
-   - Minimal coupling between domains
+1. **Authentication**
 
-2. **Scalability**
+   - JWT token management
+   - Password hashing
+   - Session handling
 
-   - Versioned API design
-   - Modular service architecture
-   - Background task support
+2. **Authorization**
 
-3. **Maintainability**
+   - Route protection
+   - Resource ownership
+   - Access control
 
-   - Consistent code organization
-   - Comprehensive documentation
-   - Automated testing support
+3. **Input Validation**
+   - Request validation
+   - Parameter sanitization
+   - Error handling
 
-4. **Security**
-   - Environment-based secrets
-   - Proper credential management
-   - Secure default configurations
+## 📡 Real-time Features
+
+1. **WebSocket Handlers**
+
+   - Live parameter updates
+   - Music generation
+   - Visualization updates
+
+2. **Event Broadcasting**
+   - Universe updates
+   - Parameter changes
+   - Story updates
+
+## 🗃️ Database Design
+
+1. **Models**
+
+   - Proper relationships
+   - Indexed fields
+   - Cascade behavior
+
+2. **Migrations**
+   - Version control
+   - Schema updates
+   - Data integrity
+
+## 🧪 Testing
+
+1. **Unit Tests**
+
+   - Model testing
+   - Service testing
+   - Utility testing
+
+2. **Integration Tests**
+   - API endpoints
+   - WebSocket functionality
+   - Database operations
+
+## 🔄 Dependencies
+
+- Flask: Web framework
+- SQLAlchemy: ORM
+- PyJWT: Token management
+- WebSocket: Real-time communication
+- NumPy: Numerical operations
+- SciPy: Audio processing
+
+## 📦 Configuration
+
+1. **Environment Variables**
+
+   - Database settings
+   - JWT settings
+   - API configurations
+
+2. **Development Settings**
+   - Debug mode
+   - Testing configuration
+   - Local development
+
+## 🚀 Deployment
+
+1. **Production Setup**
+
+   - Environment configuration
+   - Database setup
+   - WebSocket setup
+
+2. **Performance**
+   - Database optimization
+   - Caching strategy
+   - Request handling

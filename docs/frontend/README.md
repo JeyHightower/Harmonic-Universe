@@ -82,157 +82,230 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduc
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-# Frontend Documentation
+# 🎨 Frontend Architecture
 
-## Overview
-
-The frontend is built using React with TypeScript, providing a modern and responsive user interface for the Harmonic Universe application.
-
-## Project Structure
+## 📁 Directory Structure
 
 ```
-frontend/src/
-├── assets/         # Static assets (images, fonts, etc.)
-├── components/     # React components
-│   └── shared/     # Reusable components
-├── contexts/       # React context providers
-├── engine/         # Game/visualization engine logic
-├── features/       # Feature modules (auth, profile, etc.)
-├── hooks/          # Custom React hooks
-│   └── shared/     # Reusable hooks
-├── layouts/        # Page layout components
-├── models/         # TypeORM entities and DTOs
-├── pages/          # Page components
-├── repositories/   # Data access layer
-├── routes/         # Routing configuration
-├── services/       # Business logic and API services
-├── store/          # Redux store configuration
-│   ├── slices/     # Redux slices
-│   └── middleware/ # Redux middleware
-├── styles/         # Global styles and theme
-├── types/          # TypeScript type definitions
-└── utils/          # Utility functions
-
-Key Files:
-├── App.tsx        # Root component
-├── main.tsx       # Application entry point
-└── config.ts      # Application configuration
+frontend/
+├── src/
+│   ├── components/         # React components
+│   │   ├── auth/          # Authentication components
+│   │   ├── universe/      # Universe management
+│   │   ├── visualization/ # Visualization components
+│   │   └── common/        # Shared components
+│   ├── store/             # Redux store
+│   │   ├── slices/        # Redux slices
+│   │   ├── middleware/    # Redux middleware
+│   │   └── reducers/      # Redux reducers
+│   ├── hooks/             # Custom React hooks
+│   ├── utils/             # Utility functions
+│   ├── styles/            # Global styles
+│   ├── types/             # TypeScript types
+│   └── App.tsx            # Root component
+├── public/                # Static assets
+└── tests/                 # Test suite
 ```
 
-## Directory Purposes
+## 🧩 Core Components
 
-### Core Application
+### Authentication
 
-- `App.tsx`: Root component that sets up providers and routing
-- `main.tsx`: Entry point that renders the root component
-- `config.ts`: Global configuration variables
+1. **Login/Register**
 
-### Components and UI
+   - JWT authentication
+   - Form validation
+   - Error handling
 
-- `components/`: Reusable React components
-- `layouts/`: Page layout templates
-- `pages/`: Full page components
-- `features/`: Feature-specific modules
+2. **Profile Management**
+   - User settings
+   - Profile updates
+   - Session handling
 
-### State Management
+### Universe Management
 
-- `store/`: Redux store configuration and slices
-- `contexts/`: React Context providers
-- `models/`: Data models and TypeORM entities
+1. **Universe Creation**
 
-### Data and Logic
+   - Parameter configuration
+   - Template selection
+   - Real-time preview
 
-- `repositories/`: Data access layer (API calls)
-- `services/`: Business logic layer
-- `engine/`: Game and visualization logic
+2. **Universe Detail**
+   - Physics parameters
+   - Music parameters
+   - Story points
+   - Real-time updates
 
-### Styling
+### Visualization
 
-- `styles/`: Global styles, theme, and CSS modules
-- `assets/`: Static files like images and fonts
+1. **Canvas**
 
-### Utilities
+   - WebGL rendering
+   - Real-time updates
+   - Interactive elements
 
-- `hooks/`: Custom React hooks
-- `utils/`: Helper functions and utilities
-- `types/`: TypeScript type definitions
+2. **Controls**
+   - Parameter adjustment
+   - View manipulation
+   - Export options
 
-## Development Guidelines
+### Music Generation
 
-### Component Organization
+1. **Audio Controls**
 
-- Place reusable components in `components/shared/`
-- Feature-specific components go in their feature directory
-- Page components go in `pages/`
+   - Playback controls
+   - Parameter adjustment
+   - Real-time generation
 
-### State Management
+2. **Visualization**
+   - Frequency analysis
+   - Waveform display
+   - Parameter mapping
 
-- Use Redux for global state
-- Use Context for theme/auth state
-- Use local state for component-specific state
+## 🔄 State Management
 
-### Styling
+### Redux Store
 
-- Use CSS modules for component styles
-- Global styles go in `styles/`
-- Follow theme definitions for consistency
+1. **Slices**
 
-### Data Handling
+   - Universe slice
+   - Auth slice
+   - Visualization slice
+   - Audio slice
 
-- Use repositories for API calls
-- Use services for business logic
-- Keep data transformation in services
+2. **Middleware**
 
-### Type Safety
+   - WebSocket middleware
+   - API middleware
+   - Logger middleware
 
-- Define interfaces in `types/`
-- Use TypeScript strictly
-- Document complex types
+3. **Reducers**
+   - Combined reducers
+   - State normalization
+   - Performance optimization
 
-## Testing
+## 🎨 Styling
 
-### Unit Tests
+1. **Global Styles**
 
-```bash
-yarn test
-```
+   - Theme configuration
+   - Color schemes
+   - Typography
 
-### E2E Tests
+2. **Component Styles**
+   - Styled components
+   - CSS modules
+   - Responsive design
 
-```bash
-yarn cypress:open  # Interactive mode
-yarn cypress:run   # Headless mode
-```
+## 🔌 API Integration
 
-## Building
+1. **REST API**
 
-```bash
-yarn build
-```
+   - Axios configuration
+   - Request/response handling
+   - Error management
 
-The build output will be in the `dist/` directory.
+2. **WebSocket**
+   - Real-time updates
+   - Event handling
+   - Connection management
 
-## Best Practices
+## 🧪 Testing
 
-1. Follow the established directory structure
-2. Use TypeScript strictly
-3. Write tests for critical components
-4. Document complex logic
-5. Follow the styling guide
-6. Use proper error boundaries
-7. Implement proper loading states
-8. Handle errors gracefully
+1. **Unit Tests**
 
-## Performance
+   - Component testing
+   - Hook testing
+   - Utility testing
 
-- Use React.memo for expensive components
-- Implement code splitting
-- Optimize bundle size
-- Use proper caching strategies
-- Monitor performance metrics
+2. **Integration Tests**
+   - Store testing
+   - API testing
+   - Flow testing
 
-For more detailed documentation, see:
+## 📱 Responsive Design
 
-- [Component Documentation](./components.md)
-- [API Documentation](./api.md)
-- [State Management](./state.md)
+1. **Breakpoints**
+
+   - Mobile first
+   - Tablet support
+   - Desktop optimization
+
+2. **Layout**
+   - Fluid grids
+   - Flexible components
+   - Adaptive UI
+
+## 🔒 Security
+
+1. **Authentication**
+
+   - Token management
+   - Route protection
+   - Session handling
+
+2. **Data Protection**
+   - Input validation
+   - XSS prevention
+   - CSRF protection
+
+## 🚀 Performance
+
+1. **Optimization**
+
+   - Code splitting
+   - Lazy loading
+   - Bundle optimization
+
+2. **Caching**
+   - API response caching
+   - Asset caching
+   - State persistence
+
+## 📦 Dependencies
+
+- React: UI framework
+- Redux: State management
+- TypeScript: Type safety
+- Styled Components: Styling
+- Three.js: 3D visualization
+- Tone.js: Audio processing
+
+## 🛠️ Development
+
+1. **Setup**
+
+   - Environment configuration
+   - Development tools
+   - IDE integration
+
+2. **Workflow**
+   - Component development
+   - Testing process
+   - Code review
+
+## 📚 Documentation
+
+1. **Components**
+
+   - Props documentation
+   - Usage examples
+   - Best practices
+
+2. **API**
+   - Endpoint documentation
+   - Request/response formats
+   - Error handling
+
+## 🔄 Continuous Integration
+
+1. **Build Process**
+
+   - Automated builds
+   - Testing pipeline
+   - Deployment workflow
+
+2. **Quality Assurance**
+   - Code linting
+   - Type checking
+   - Test coverage

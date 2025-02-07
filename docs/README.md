@@ -1,104 +1,140 @@
-# Harmonic Universe
+# 🌌 Harmonic Universe Documentation
 
-A modern web application for music visualization and analysis.
+Welcome to the Harmonic Universe documentation. This repository contains comprehensive documentation for all aspects of the Harmonic Universe application.
 
-## Project Structure
+## 📚 Documentation Structure
 
-```
-harmonic-universe/
-├── backend/                 # FastAPI backend application
-│   ├── app/                # Application source code
-│   ├── tests/              # Backend tests
-│   ├── data/               # Database and data files
-│   ├── uploads/            # User uploaded files
-│   └── docs/               # Backend documentation
-├── frontend/               # React frontend application
-│   ├── src/                # Source files
-│   ├── public/             # Static files
-│   └── tests/              # Frontend tests
-└── docs/                   # Project documentation
-```
+- [Features](./FEATURES.md) - Complete list of implemented features
+- [Backend](./backend/) - Backend implementation details
+- [Frontend](./frontend/) - Frontend implementation details
+- [Architecture](./architecture/) - System architecture documentation
+- [Deployment](./deployment/) - Deployment guides and configurations
 
-## Prerequisites
+## 🚀 Core Features
 
-- Docker and Docker Compose
-- Node.js 18+
-- Python 3.11+
-- PostgreSQL 14+
-- Redis 7+
+### User Management
 
-## Development Setup
+- Complete authentication system
+- Profile management
+- Session handling
+- Security features
 
-1. Clone the repository:
+### Universe Creation
 
-   ```bash
-   git clone https://github.com/yourusername/harmonic-universe.git
-   cd harmonic-universe
-   ```
+- Universe CRUD operations
+- Physics parameter management
+- Music parameter integration
+- Real-time updates
 
-2. Start the development environment:
+### Physics & Music Integration
 
-   ```bash
-   docker-compose up
-   ```
+- Dynamic physics simulation
+- Real-time music generation
+- Parameter-based harmony
+- Interactive visualization
 
-   This will start:
+### Story Management
 
-   - Backend API (http://localhost:3005)
-   - Frontend dev server (http://localhost:3000)
-   - PostgreSQL database
-   - Redis cache
-   - Adminer (http://localhost:8080)
+- Plot point creation
+- Harmony integration
+- Timeline visualization
+- Filtering and sorting
 
-3. For local development without Docker:
+## 🔧 Technical Implementation
 
-   Backend:
+### Frontend
 
-   ```bash
-   cd backend
-   python -m venv venv
-   source venv/bin/activate  # On Windows: .\venv\Scripts\activate
-   pip install -r requirements.txt -r requirements-test.txt
-   uvicorn app.main:app --reload --port 3001
-   ```
+- React/Redux architecture
+- Real-time WebSocket integration
+- Material-UI components
+- TypeScript implementation
 
-   Frontend:
+### Backend
 
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
+- Flask/SQLAlchemy backend
+- RESTful API design
+- WebSocket support
+- JWT authentication
 
-## Testing
+### Database
 
-Backend tests:
+- PostgreSQL database
+- Efficient indexing
+- Relationship management
+- Data integrity
 
-```bash
-cd backend
-pytest
-```
+## 🔄 Real-time Features
 
-Frontend tests:
+- Live parameter updates
+- Dynamic music generation
+- Interactive visualizations
+- WebSocket communication
 
-```bash
-cd frontend
-npm test
-```
+## 🎵 Music System
 
-## Documentation
+- Physics-based generation
+- Real-time harmony
+- Audio export
+- Parameter modulation
 
-- Backend API documentation: http://localhost:3005/docs
-- Frontend documentation: See frontend/README.md
-- Project documentation: See docs/
+## 👁️ Visualization
 
-## Contributing
+- Real-time physics
+- Interactive controls
+- WebGL rendering
+- Data mapping
 
-1. Create a new branch for your feature
-2. Make your changes
-3. Run tests
-4. Submit a pull request
+## 🤖 AI Integration
 
-## License
+- Parameter optimization
+- Harmony suggestions
+- Physics recommendations
+- Real-time adjustments
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+## 📦 Export Features
+
+- Universe parameters
+- Audio generation
+- Visualization data
+- Backup/restore
+
+## 🔐 Security
+
+- JWT authentication
+- Route protection
+- Input validation
+- Error handling
+
+## 📱 Responsive Design
+
+- Mobile-first approach
+- Responsive components
+- Touch interactions
+- Cross-browser support
+
+## 🛠️ Development
+
+For detailed development information, please refer to:
+
+- [Backend Development](./backend/README.md)
+- [Frontend Development](./frontend/README.md)
+- [Architecture Overview](./architecture/README.md)
+
+## 📋 API Documentation
+
+API documentation can be found in the [frontend/api](./frontend/api/) directory.
+
+## 🚀 Getting Started
+
+For setup instructions, please refer to:
+
+- [Backend Setup](./backend/README.md#setup)
+- [Frontend Setup](./frontend/README.md#setup)
+
+## 🤝 Contributing
+
+Please read our [Contributing Guide](./CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.

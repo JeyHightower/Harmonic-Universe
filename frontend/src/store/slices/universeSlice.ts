@@ -10,10 +10,12 @@ export interface Universe {
   isPublic: boolean;
   physicsParams: {
     gravity: [number, number, number];
-    friction: number;
-    elasticity: number;
-    airResistance: number;
+    friction: [number, number, number];
+    elasticity: [number, number, number];
+    airResistance: [number, number, number];
     timeDilation: number;
+    particleMass: number;
+    energyDissipation: number;
   };
   harmonyParams: {
     baseFrequency: number;
@@ -21,6 +23,23 @@ export interface Universe {
     resonance: number;
     damping: number;
     interference: number;
+    scale: string;
+    tempo: number;
+    rhythmPattern: string[];
+    aiGenerationParams: {
+      style: string;
+      complexity: number;
+      mood: string;
+      intensity: number;
+    };
+  };
+  visualizationParams: {
+    colorScheme: string;
+    particleCount: number;
+    particleSize: number;
+    trailLength: number;
+    blendMode: string;
+    renderQuality: number;
   };
   storyPoints: Array<{
     id: number;
@@ -29,6 +48,19 @@ export interface Universe {
     timestamp: number;
     position: [number, number, number];
     rotation: [number, number, number];
+    harmonyTie: {
+      frequency: number;
+      tempo: number;
+      scale: string;
+      intensity: number;
+    };
+    aiGenerated: boolean;
+    aiPrompt?: string;
+  }>;
+  collaborators: Array<{
+    userId: number;
+    role: 'viewer' | 'editor' | 'admin';
+    lastActive: string;
   }>;
 }
 
@@ -37,6 +69,11 @@ interface UniverseState {
   currentUniverse: Universe | null;
   loading: boolean;
   error: string | null;
+  realtimeStatus: {
+    connected: boolean;
+    lastSync: string;
+    activeCollaborators: number[];
+  };
 }
 
 const initialState: UniverseState = {
@@ -44,53 +81,47 @@ const initialState: UniverseState = {
   currentUniverse: null,
   loading: false,
   error: null,
+  realtimeStatus: {
+    connected: false,
+    lastSync: '',
+    activeCollaborators: [],
+  },
 };
 
 // Thunks
-export const fetchUniverses = createAsyncThunk(
-  'universe/fetchUniverses',
-  async (projectId: number) => {
-    const response = await api.get(`/api/projects/${projectId}/universes`);
-    return response.data;
-  }
-);
+export const fetchUniverses = createAsyncThunk('universe/fetchUniverses', async () => {
+  const response = await api.get('/api/universes');
+  return response.data;
+});
 
 export const fetchUniverse = createAsyncThunk(
   'universe/fetchUniverse',
-  async ({ projectId, universeId }: { projectId: number; universeId: number }) => {
-    const response = await api.get(`/api/projects/${projectId}/universes/${universeId}`);
+  async (universeId: number) => {
+    const response = await api.get(`/api/universes/${universeId}`);
     return response.data;
   }
 );
 
 export const createUniverse = createAsyncThunk(
   'universe/createUniverse',
-  async ({ projectId, data }: { projectId: number; data: Partial<Universe> }) => {
-    const response = await api.post(`/api/projects/${projectId}/universes`, data);
+  async (data: Partial<Universe>) => {
+    const response = await api.post('/api/universes', data);
     return response.data;
   }
 );
 
 export const updateUniverse = createAsyncThunk(
   'universe/updateUniverse',
-  async ({
-    projectId,
-    universeId,
-    data,
-  }: {
-    projectId: number;
-    universeId: number;
-    data: Partial<Universe>;
-  }) => {
-    const response = await api.put(`/api/projects/${projectId}/universes/${universeId}`, data);
+  async ({ universeId, data }: { universeId: number; data: Partial<Universe> }) => {
+    const response = await api.put(`/api/universes/${universeId}`, data);
     return response.data;
   }
 );
 
 export const deleteUniverse = createAsyncThunk(
   'universe/deleteUniverse',
-  async ({ projectId, universeId }: { projectId: number; universeId: number }) => {
-    await api.delete(`/api/projects/${projectId}/universes/${universeId}`);
+  async (universeId: number) => {
+    await api.delete(`/api/universes/${universeId}`);
     return universeId;
   }
 );
@@ -98,17 +129,29 @@ export const deleteUniverse = createAsyncThunk(
 export const exportUniverse = createAsyncThunk(
   'universe/exportUniverse',
   async ({
-    projectId,
     universeId,
     format,
   }: {
-    projectId: number;
     universeId: number;
-    format: 'audio' | 'json';
+    format: 'audio' | 'json' | 'visualization';
   }) => {
-    const response = await api.get(
-      `/api/projects/${projectId}/universes/${universeId}/export?format=${format}`
-    );
+    const response = await api.get(`/api/universes/${universeId}/export?format=${format}`);
+    return response.data;
+  }
+);
+
+export const generateWithAI = createAsyncThunk(
+  'universe/generateWithAI',
+  async ({
+    universeId,
+    prompt,
+    type,
+  }: {
+    universeId: number;
+    prompt: string;
+    type: 'story' | 'harmony' | 'physics';
+  }) => {
+    const response = await api.post(`/api/universes/${universeId}/generate`, { prompt, type });
     return response.data;
   }
 );
@@ -201,6 +244,58 @@ const universeSlice = createSlice({
         );
       }
     },
+    updateRealtimeStatus: (
+      state,
+      action: PayloadAction<{
+        connected: boolean;
+        lastSync: string;
+        activeCollaborators: number[];
+      }>
+    ) => {
+      state.realtimeStatus = action.payload;
+    },
+    updateVisualizationParams: (
+      state,
+      action: PayloadAction<{
+        universeId: number;
+        params: Partial<Universe['visualizationParams']>;
+      }>
+    ) => {
+      const universe = state.universes.find(u => u.id === action.payload.universeId);
+      if (universe) {
+        universe.visualizationParams = {
+          ...universe.visualizationParams,
+          ...action.payload.params,
+        };
+      }
+      if (state.currentUniverse?.id === action.payload.universeId) {
+        state.currentUniverse.visualizationParams = {
+          ...state.currentUniverse.visualizationParams,
+          ...action.payload.params,
+        };
+      }
+    },
+    updateAIGenerationParams: (
+      state,
+      action: PayloadAction<{
+        universeId: number;
+        params: Partial<Universe['harmonyParams']['aiGenerationParams']>;
+      }>
+    ) => {
+      const universe = state.universes.find(u => u.id === action.payload.universeId);
+      if (universe) {
+        universe.harmonyParams.aiGenerationParams = {
+          ...universe.harmonyParams.aiGenerationParams,
+          ...action.payload.params,
+        };
+      }
+      if (state.currentUniverse?.id === action.payload.universeId) {
+        state.currentUniverse.harmonyParams.aiGenerationParams = {
+          ...state.currentUniverse.harmonyParams.aiGenerationParams,
+          ...action.payload.params,
+        };
+      }
+    },
   },
   extraReducers: builder => {
     builder
@@ -243,6 +338,36 @@ const universeSlice = createSlice({
         if (state.currentUniverse?.id === action.payload) {
           state.currentUniverse = null;
         }
+      })
+      .addCase(generateWithAI.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(generateWithAI.fulfilled, (state, action) => {
+        state.loading = false;
+        if (state.currentUniverse) {
+          switch (action.meta.arg.type) {
+            case 'story':
+              state.currentUniverse.storyPoints.push(action.payload);
+              break;
+            case 'harmony':
+              state.currentUniverse.harmonyParams = {
+                ...state.currentUniverse.harmonyParams,
+                ...action.payload,
+              };
+              break;
+            case 'physics':
+              state.currentUniverse.physicsParams = {
+                ...state.currentUniverse.physicsParams,
+                ...action.payload,
+              };
+              break;
+          }
+        }
+      })
+      .addCase(generateWithAI.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'AI generation failed';
       });
   },
 });
@@ -254,6 +379,9 @@ export const {
   addStoryPoint,
   updateStoryPoint,
   deleteStoryPoint,
+  updateRealtimeStatus,
+  updateVisualizationParams,
+  updateAIGenerationParams,
 } = universeSlice.actions;
 
 // Selectors
