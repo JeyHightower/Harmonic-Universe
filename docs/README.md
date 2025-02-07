@@ -1,140 +1,111 @@
-# 🌌 Harmonic Universe Documentation
+# Harmonic Universe
 
-Welcome to the Harmonic Universe documentation. This repository contains comprehensive documentation for all aspects of the Harmonic Universe application.
+A creative platform for generating and visualizing harmonious audio-visual experiences through physics-based interactions.
 
-## 📚 Documentation Structure
+## Project Structure
 
-- [Features](./FEATURES.md) - Complete list of implemented features
-- [Backend](./backend/) - Backend implementation details
-- [Frontend](./frontend/) - Frontend implementation details
-- [Architecture](./architecture/) - System architecture documentation
-- [Deployment](./deployment/) - Deployment guides and configurations
+```
+.
+├── frontend/
+│   ├── src/
+│   │   ├── components/    # Reusable UI components
+│   │   ├── pages/        # Page components
+│   │   ├── store/        # Redux store configuration
+│   │   ├── features/     # Feature-specific components and logic
+│   │   ├── styles/       # CSS styles and theme configuration
+│   │   ├── utils/        # Utility functions
+│   │   ├── hooks/        # Custom React hooks
+│   │   ├── services/     # API service functions
+│   │   └── types/        # TypeScript type definitions
+│   └── public/           # Static assets
+│
+├── backend/
+│   ├── app/
+│   │   ├── api/          # API routes and endpoints
+│   │   ├── models/       # Database models
+│   │   │   ├── core/     # Core models (Universe, User)
+│   │   │   ├── audio/    # Audio-related models
+│   │   │   └── visualization/  # Visualization models
+│   │   ├── schemas/      # Pydantic schemas
+│   │   ├── services/     # Business logic
+│   │   └── utils/        # Utility functions
+│   └── migrations/       # Database migrations
+│
+└── docs/                 # Project documentation
+```
 
-## 🚀 Core Features
+## Features
 
-### User Management
+- Physics-based audio generation
+- Real-time visualization
+- Collaborative universe creation
+- Audio file management
+- Custom visualization settings
 
-- Complete authentication system
-- Profile management
-- Session handling
-- Security features
-
-### Universe Creation
-
-- Universe CRUD operations
-- Physics parameter management
-- Music parameter integration
-- Real-time updates
-
-### Physics & Music Integration
-
-- Dynamic physics simulation
-- Real-time music generation
-- Parameter-based harmony
-- Interactive visualization
-
-### Story Management
-
-- Plot point creation
-- Harmony integration
-- Timeline visualization
-- Filtering and sorting
-
-## 🔧 Technical Implementation
+## Technology Stack
 
 ### Frontend
 
-- React/Redux architecture
-- Real-time WebSocket integration
-- Material-UI components
-- TypeScript implementation
+- React
+- Redux Toolkit
+- Material-UI
+- Vite
+- CSS Modules
 
 ### Backend
 
-- Flask/SQLAlchemy backend
-- RESTful API design
-- WebSocket support
-- JWT authentication
+- FastAPI
+- SQLAlchemy
+- Pydantic
+- Alembic
+- PostgreSQL
 
-### Database
+## Getting Started
 
-- PostgreSQL database
-- Efficient indexing
-- Relationship management
-- Data integrity
+1. Clone the repository
+2. Install dependencies:
 
-## 🔄 Real-time Features
+   ```bash
+   # Frontend
+   cd frontend
+   npm install
 
-- Live parameter updates
-- Dynamic music generation
-- Interactive visualizations
-- WebSocket communication
+   # Backend
+   cd backend
+   pip install -r requirements.txt
+   ```
 
-## 🎵 Music System
+3. Set up environment variables:
 
-- Physics-based generation
-- Real-time harmony
-- Audio export
-- Parameter modulation
+   - Copy `.env.example` to `.env` in both frontend and backend directories
+   - Update the variables as needed
 
-## 👁️ Visualization
+4. Run the development servers:
 
-- Real-time physics
-- Interactive controls
-- WebGL rendering
-- Data mapping
+   ```bash
+   # Frontend
+   npm run dev
 
-## 🤖 AI Integration
+   # Backend
+   uvicorn app.main:app --reload
+   ```
 
-- Parameter optimization
-- Harmony suggestions
-- Physics recommendations
-- Real-time adjustments
+## Development Guidelines
 
-## 📦 Export Features
+- Follow the established directory structure
+- Use appropriate naming conventions
+- Write tests for new features
+- Update documentation as needed
+- Follow the style guide for consistent code formatting
 
-- Universe parameters
-- Audio generation
-- Visualization data
-- Backup/restore
+## Contributing
 
-## 🔐 Security
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
-- JWT authentication
-- Route protection
-- Input validation
-- Error handling
+## License
 
-## 📱 Responsive Design
-
-- Mobile-first approach
-- Responsive components
-- Touch interactions
-- Cross-browser support
-
-## 🛠️ Development
-
-For detailed development information, please refer to:
-
-- [Backend Development](./backend/README.md)
-- [Frontend Development](./frontend/README.md)
-- [Architecture Overview](./architecture/README.md)
-
-## 📋 API Documentation
-
-API documentation can be found in the [frontend/api](./frontend/api/) directory.
-
-## 🚀 Getting Started
-
-For setup instructions, please refer to:
-
-- [Backend Setup](./backend/README.md#setup)
-- [Frontend Setup](./frontend/README.md#setup)
-
-## 🤝 Contributing
-
-Please read our [Contributing Guide](./CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.

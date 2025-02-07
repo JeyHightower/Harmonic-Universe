@@ -4,26 +4,27 @@ import aiReducer from './slices/aiSlice';
 import audioReducer from './slices/audioSlice';
 import authReducer from './slices/authSlice';
 import physicsReducer from './slices/physicsSlice';
-import projectReducer from './slices/projectSlice';
 import universeReducer from './slices/universeSlice';
 import visualizationReducer from './slices/visualizationSlice';
 
 export const store = configureStore({
   reducer: {
-    auth: authReducer,
-    projects: projectReducer,
     audio: audioReducer,
-    visualization: visualizationReducer,
-    ai: aiReducer,
-    physics: physicsReducer,
     universe: universeReducer,
+    visualization: visualizationReducer,
+    physics: physicsReducer,
+    ai: aiReducer,
+    auth: authReducer,
   },
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['persist/PERSIST'],
-        ignoredActionPaths: ['payload.timestamp', 'meta.arg'],
-        ignoredPaths: ['items.dates'],
+        // Ignore these action types
+        ignoredActions: ['universe/updateRealtimeStatus'],
+        // Ignore these field paths in all actions
+        ignoredActionPaths: ['payload.socket', 'payload.connection'],
+        // Ignore these paths in the state
+        ignoredPaths: ['universe.realtimeStatus.socket'],
       },
     }),
   devTools: process.env.NODE_ENV !== 'production',

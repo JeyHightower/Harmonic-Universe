@@ -9,6 +9,7 @@ import json
 import logging
 from ..models.user import User
 from ..models.universe import Universe
+from fastapi import WebSocket, WebSocketDisconnect
 
 logger = logging.getLogger(__name__)
 
@@ -16,27 +17,23 @@ socketio = SocketIO()
 
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: Dict[str, Set[str]] = {}
-        self.user_sessions: Dict[str, str] = {}
+        self.active_connections: Dict[int, Set[WebSocket]] = {}
 
-    def connect(self, session_id: str, universe_id: str):
+    async def connect(self, websocket: WebSocket, universe_id: int):
+        await websocket.accept()
         if universe_id not in self.active_connections:
             self.active_connections[universe_id] = set()
-        self.active_connections[universe_id].add(session_id)
+        self.active_connections[universe_id].add(websocket)
 
-    def disconnect(self, session_id: str):
-        universe_id = self.user_sessions.get(session_id)
-        if universe_id:
-            if universe_id in self.active_connections:
-                self.active_connections[universe_id].discard(session_id)
-                if not self.active_connections[universe_id]:
-                    del self.active_connections[universe_id]
-            del self.user_sessions[session_id]
+    def disconnect(self, websocket: WebSocket, universe_id: int):
+        self.active_connections[universe_id].remove(websocket)
+        if not self.active_connections[universe_id]:
+            del self.active_connections[universe_id]
 
-    def broadcast_to_universe(self, universe_id: str, event: str, data: dict):
+    async def broadcast(self, message: dict, universe_id: int):
         if universe_id in self.active_connections:
-            for session_id in self.active_connections[universe_id]:
-                emit(event, data, room=session_id)
+            for connection in self.active_connections[universe_id]:
+                await connection.send_json(message)
 
 manager = ConnectionManager()
 
@@ -161,3 +158,16 @@ def handle_export_request(data):
     except Exception as e:
         logger.error(f"Error exporting universe: {e}")
         emit('error', {'message': 'Failed to export universe'})
+
+async def handle_websocket(websocket: WebSocket, universe_id: int):
+    await manager.connect(websocket, universe_id)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            await manager.broadcast(data, universe_id)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, universe_id)
+        await manager.broadcast(
+            {"type": "disconnect", "message": "Client disconnected"},
+            universe_id
+        )

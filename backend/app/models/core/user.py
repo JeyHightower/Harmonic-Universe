@@ -1,39 +1,42 @@
-"""User model."""
+from app import db, bcrypt
+from .base import BaseModel
+from sqlalchemy.ext.hybrid import hybrid_property
 
-from typing import TYPE_CHECKING
-from sqlalchemy import Boolean, Column, Integer, String
-from sqlalchemy.orm import relationship
+class User(BaseModel):
+    __tablename__ = 'users'
 
-from app.db.base_class import Base
-
-if TYPE_CHECKING:
-    from ..physics import PhysicsModel  # noqa: F401
-    from .scene import Scene  # noqa: F401
-
-class User(Base):
-    """User model."""
-
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    full_name = Column(String)
-    is_active = Column(Boolean, default=True)
-    is_superuser = Column(Boolean, default=False)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    _password = db.Column('password', db.String(255), nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    is_admin = db.Column(db.Boolean, default=False)
 
     # Relationships
-    physics_models = relationship(
-        "PhysicsModel",
-        back_populates="owner",
-        cascade="all, delete-orphan"
-    )
-    scenes = relationship(
-        "Scene",
-        back_populates="creator",
-        cascade="all, delete-orphan"
-    )
+    universes = db.relationship('Universe', back_populates='user', lazy='dynamic')
+    audio_files = db.relationship('AudioFile', back_populates='user', lazy='dynamic')
+    visualizations = db.relationship('Visualization', back_populates='user', lazy='dynamic')
 
-    def __repr__(self) -> str:
-        """String representation of User."""
-        return f"<User {self.email}>"
+    @hybrid_property
+    def password(self):
+        return self._password
+
+    @password.setter
+    def password(self, value):
+        self._password = bcrypt.generate_password_hash(value).decode('utf-8')
+
+    def check_password(self, password):
+        return bcrypt.check_password_hash(self._password, password)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'email': self.email,
+            'is_active': self.is_active,
+            'is_admin': self.is_admin,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
+
+    def __repr__(self):
+        return f'<User {self.username}>'

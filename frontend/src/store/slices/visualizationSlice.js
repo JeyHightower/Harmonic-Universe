@@ -1,4 +1,4 @@
-import visualizationApi from '@/services/visualizationApi';
+import api from '@/services/api';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
@@ -9,60 +9,62 @@ const initialState = {
   error: null,
 };
 
-export const fetchVisualizations = createAsyncThunk(
-  'visualization/fetchAll',
-  async (projectId) => {
-    return visualizationApi.fetchAll(projectId);
-  }
-);
+export const fetchVisualizations = createAsyncThunk('visualization/fetchAll', async projectId => {
+  const response = await api.get(`/api/visualizations?project_id=${projectId}`);
+  return response.data;
+});
 
 export const fetchVisualizationsByAudio = createAsyncThunk(
   'visualization/fetchByAudio',
-  async (audioId) => {
-    return visualizationApi.fetchByAudio(audioId);
+  async audioId => {
+    const response = await api.get(`/api/visualizations?audio_id=${audioId}`);
+    return response.data;
   }
 );
 
-export const fetchVisualization = createAsyncThunk(
-  'visualization/fetchOne',
-  async (id) => {
-    return visualizationApi.fetchOne(id);
-  }
-);
+export const fetchVisualization = createAsyncThunk('visualization/fetchOne', async id => {
+  const response = await api.get(`/api/visualizations/${id}`);
+  return response.data;
+});
 
 export const createVisualization = createAsyncThunk(
   'visualization/create',
   async ({ projectId, audioId, data }) => {
-    return visualizationApi.create(projectId, audioId, data);
+    const response = await api.post('/api/visualizations', {
+      ...data,
+      project_id: projectId,
+      audio_id: audioId,
+    });
+    return response.data;
   }
 );
 
 export const updateVisualization = createAsyncThunk(
   'visualization/update',
   async ({ id, data }) => {
-    return visualizationApi.update(id, data);
+    const response = await api.put(`/api/visualizations/${id}`, data);
+    return response.data;
   }
 );
 
-export const deleteVisualization = createAsyncThunk(
-  'visualization/delete',
-  async (id) => {
-    await visualizationApi.delete(id);
-    return id;
-  }
-);
+export const deleteVisualization = createAsyncThunk('visualization/delete', async id => {
+  await api.delete(`/api/visualizations/${id}`);
+  return id;
+});
 
 export const updateDataMappings = createAsyncThunk(
   'visualization/updateDataMappings',
   async ({ id, dataMappings }) => {
-    return visualizationApi.updateDataMappings(id, dataMappings);
+    const response = await api.put(`/api/visualizations/${id}/mappings`, { dataMappings });
+    return response.data;
   }
 );
 
 export const updateStreamConfig = createAsyncThunk(
   'visualization/updateStreamConfig',
   async ({ id, streamConfig }) => {
-    return visualizationApi.updateStreamConfig(id, streamConfig);
+    const response = await api.put(`/api/visualizations/${id}/stream-config`, { streamConfig });
+    return response.data;
   }
 );
 
