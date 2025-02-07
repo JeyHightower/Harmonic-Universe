@@ -1,263 +1,195 @@
 """
-Physics routes.
+Physics API endpoints.
 """
 
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from app.api.deps import get_current_user, get_async_db
-from app.models.core.user import User
-from app.models.core.scene import Scene
-from app.models.physics.physics_parameter import PhysicsParameter
-from app.models.physics.physics_object import PhysicsObject
-from app.models.physics.physics_constraint import PhysicsConstraint
-from app.core.physics import physics_engine
+from typing import List
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from app.api import deps
+from app.crud.physics import (
+    crud_physics_object,
+    crud_physics_constraint,
+    crud_physics_parameter
+)
 from app.schemas.physics import (
-    PhysicsParameterCreate,
-    PhysicsParameterUpdate,
-    PhysicsParameterResponse,
+    PhysicsObject,
     PhysicsObjectCreate,
     PhysicsObjectUpdate,
-    PhysicsObjectResponse,
+    PhysicsConstraint,
     PhysicsConstraintCreate,
     PhysicsConstraintUpdate,
-    PhysicsConstraintResponse
+    PhysicsParameter,
+    PhysicsParameterCreate,
+    PhysicsParameterUpdate
 )
 
 router = APIRouter()
 
-@router.get("/scenes/{scene_id}/parameters", response_model=PhysicsParameterResponse)
-async def get_scene_physics_parameters(
-    scene_id: int,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Get scene physics parameters."""
-    params = await db.get(PhysicsParameter, scene_id)
-    if not params:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Physics parameters not found"
-        )
-    return params
+# Physics Objects
+@router.get("/objects/", response_model=List[PhysicsObject])
+def read_physics_objects(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(deps.get_db)
+) -> List[PhysicsObject]:
+    """Retrieve physics objects."""
+    return crud_physics_object.get_multi(db, skip=skip, limit=limit)
 
-@router.put("/scenes/{scene_id}/parameters", response_model=PhysicsParameterResponse)
-async def update_scene_physics_parameters(
-    scene_id: int,
-    params_in: PhysicsParameterUpdate,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Update scene physics parameters."""
-    params = await db.get(PhysicsParameter, scene_id)
-    if not params:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Physics parameters not found"
-        )
+@router.post("/objects/", response_model=PhysicsObject)
+def create_physics_object(
+    *,
+    db: Session = Depends(deps.get_db),
+    obj_in: PhysicsObjectCreate
+) -> PhysicsObject:
+    """Create new physics object."""
+    return crud_physics_object.create(db, obj_in=obj_in)
 
-    # Update parameters
-    for field, value in params_in.dict(exclude_unset=True).items():
-        setattr(params, field, value)
-
-    await db.commit()
-    await db.refresh(params)
-    return params
-
-@router.post("/scenes/{scene_id}/simulate")
-async def simulate_scene(
-    scene_id: int,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Run physics simulation for a scene."""
-    scene = await db.get(Scene, scene_id)
-    if not scene:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Scene not found"
-        )
-
-    # Get all physics objects in the scene
-    objects = await db.execute(
-        select(PhysicsObject).where(PhysicsObject.scene_id == scene_id)
-    )
-    objects = objects.scalars().all()
-
-    # Convert to list of dicts for physics engine
-    object_data = [obj.to_dict() for obj in objects]
-
-    # Run simulation step
-    updated_objects = physics_engine.apply_forces(object_data)
-    updated_objects = physics_engine.check_collisions(updated_objects)
-
-    # Update objects in database
-    for obj_data in updated_objects:
-        obj = next(obj for obj in objects if obj.id == obj_data["id"])
-        for field, value in obj_data.items():
-            if hasattr(obj, field):
-                setattr(obj, field, value)
-
-    await db.commit()
-    return {"status": "success", "updated_objects": len(updated_objects)}
-
-@router.post("/scenes/{scene_id}/objects", response_model=PhysicsObjectResponse)
-async def create_physics_object(
-    scene_id: int,
-    obj_in: PhysicsObjectCreate,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Create a new physics object."""
-    scene = await db.get(Scene, scene_id)
-    if not scene:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Scene not found"
-        )
-
-    obj = PhysicsObject(**obj_in.dict(), scene_id=scene_id)
-    db.add(obj)
-    await db.commit()
-    await db.refresh(obj)
+@router.get("/objects/{object_id}", response_model=PhysicsObject)
+def read_physics_object(
+    object_id: int,
+    db: Session = Depends(deps.get_db)
+) -> PhysicsObject:
+    """Get specific physics object."""
+    obj = crud_physics_object.get(db, id=object_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Physics object not found")
     return obj
 
-@router.get("/scenes/{scene_id}/objects/{object_id}", response_model=PhysicsObjectResponse)
-async def get_physics_object(
-    scene_id: int,
+@router.put("/objects/{object_id}", response_model=PhysicsObject)
+def update_physics_object(
+    *,
+    db: Session = Depends(deps.get_db),
     object_id: int,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Get a physics object."""
-    obj = await db.get(PhysicsObject, object_id)
-    if not obj or obj.scene_id != scene_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Physics object not found"
-        )
-    return obj
+    obj_in: PhysicsObjectUpdate
+) -> PhysicsObject:
+    """Update physics object."""
+    obj = crud_physics_object.get(db, id=object_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Physics object not found")
+    return crud_physics_object.update(db, db_obj=obj, obj_in=obj_in)
 
-@router.put("/scenes/{scene_id}/objects/{object_id}", response_model=PhysicsObjectResponse)
-async def update_physics_object(
-    scene_id: int,
-    object_id: int,
-    obj_in: PhysicsObjectUpdate,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Update a physics object."""
-    obj = await db.get(PhysicsObject, object_id)
-    if not obj or obj.scene_id != scene_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Physics object not found"
-        )
-
-    # Update object
-    for field, value in obj_in.dict(exclude_unset=True).items():
-        setattr(obj, field, value)
-
-    await db.commit()
-    await db.refresh(obj)
-    return obj
-
-@router.delete("/scenes/{scene_id}/objects/{object_id}")
-async def delete_physics_object(
-    scene_id: int,
-    object_id: int,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Delete a physics object."""
-    obj = await db.get(PhysicsObject, object_id)
-    if not obj or obj.scene_id != scene_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Physics object not found"
-        )
-
-    await db.delete(obj)
-    await db.commit()
+@router.delete("/objects/{object_id}")
+def delete_physics_object(
+    *,
+    db: Session = Depends(deps.get_db),
+    object_id: int
+) -> dict:
+    """Delete physics object."""
+    obj = crud_physics_object.get(db, id=object_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Physics object not found")
+    crud_physics_object.remove(db, id=object_id)
     return {"status": "success"}
 
-@router.post("/scenes/{scene_id}/constraints", response_model=PhysicsConstraintResponse)
-async def create_physics_constraint(
-    scene_id: int,
-    constraint_in: PhysicsConstraintCreate,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Create a new physics constraint."""
-    scene = await db.get(Scene, scene_id)
-    if not scene:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Scene not found"
-        )
+# Physics Constraints
+@router.get("/constraints/", response_model=List[PhysicsConstraint])
+def read_physics_constraints(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(deps.get_db)
+) -> List[PhysicsConstraint]:
+    """Retrieve physics constraints."""
+    return crud_physics_constraint.get_multi(db, skip=skip, limit=limit)
 
-    constraint = PhysicsConstraint(**constraint_in.dict(), scene_id=scene_id)
-    db.add(constraint)
-    await db.commit()
-    await db.refresh(constraint)
+@router.post("/constraints/", response_model=PhysicsConstraint)
+def create_physics_constraint(
+    *,
+    db: Session = Depends(deps.get_db),
+    constraint_in: PhysicsConstraintCreate
+) -> PhysicsConstraint:
+    """Create new physics constraint."""
+    return crud_physics_constraint.create(db, obj_in=constraint_in)
+
+@router.get("/constraints/{constraint_id}", response_model=PhysicsConstraint)
+def read_physics_constraint(
+    constraint_id: int,
+    db: Session = Depends(deps.get_db)
+) -> PhysicsConstraint:
+    """Get specific physics constraint."""
+    constraint = crud_physics_constraint.get(db, id=constraint_id)
+    if not constraint:
+        raise HTTPException(status_code=404, detail="Physics constraint not found")
     return constraint
 
-@router.get("/scenes/{scene_id}/constraints/{constraint_id}", response_model=PhysicsConstraintResponse)
-async def get_physics_constraint(
-    scene_id: int,
+@router.put("/constraints/{constraint_id}", response_model=PhysicsConstraint)
+def update_physics_constraint(
+    *,
+    db: Session = Depends(deps.get_db),
     constraint_id: int,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Get a physics constraint."""
-    constraint = await db.get(PhysicsConstraint, constraint_id)
-    if not constraint or constraint.scene_id != scene_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Physics constraint not found"
-        )
-    return constraint
+    constraint_in: PhysicsConstraintUpdate
+) -> PhysicsConstraint:
+    """Update physics constraint."""
+    constraint = crud_physics_constraint.get(db, id=constraint_id)
+    if not constraint:
+        raise HTTPException(status_code=404, detail="Physics constraint not found")
+    return crud_physics_constraint.update(db, db_obj=constraint, obj_in=constraint_in)
 
-@router.put("/scenes/{scene_id}/constraints/{constraint_id}", response_model=PhysicsConstraintResponse)
-async def update_physics_constraint(
-    scene_id: int,
-    constraint_id: int,
-    constraint_in: PhysicsConstraintUpdate,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Update a physics constraint."""
-    constraint = await db.get(PhysicsConstraint, constraint_id)
-    if not constraint or constraint.scene_id != scene_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Physics constraint not found"
-        )
+@router.delete("/constraints/{constraint_id}")
+def delete_physics_constraint(
+    *,
+    db: Session = Depends(deps.get_db),
+    constraint_id: int
+) -> dict:
+    """Delete physics constraint."""
+    constraint = crud_physics_constraint.get(db, id=constraint_id)
+    if not constraint:
+        raise HTTPException(status_code=404, detail="Physics constraint not found")
+    crud_physics_constraint.remove(db, id=constraint_id)
+    return {"status": "success"}
 
-    # Update constraint
-    for field, value in constraint_in.dict(exclude_unset=True).items():
-        setattr(constraint, field, value)
+# Physics Parameters
+@router.get("/parameters/", response_model=List[PhysicsParameter])
+def read_physics_parameters(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(deps.get_db)
+) -> List[PhysicsParameter]:
+    """Retrieve physics parameters."""
+    return crud_physics_parameter.get_multi(db, skip=skip, limit=limit)
 
-    await db.commit()
-    await db.refresh(constraint)
-    return constraint
+@router.post("/parameters/", response_model=PhysicsParameter)
+def create_physics_parameter(
+    *,
+    db: Session = Depends(deps.get_db),
+    parameter_in: PhysicsParameterCreate
+) -> PhysicsParameter:
+    """Create new physics parameter."""
+    return crud_physics_parameter.create(db, obj_in=parameter_in)
 
-@router.delete("/scenes/{scene_id}/constraints/{constraint_id}")
-async def delete_physics_constraint(
-    scene_id: int,
-    constraint_id: int,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Delete a physics constraint."""
-    constraint = await db.get(PhysicsConstraint, constraint_id)
-    if not constraint or constraint.scene_id != scene_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Physics constraint not found"
-        )
+@router.get("/parameters/{parameter_id}", response_model=PhysicsParameter)
+def read_physics_parameter(
+    parameter_id: int,
+    db: Session = Depends(deps.get_db)
+) -> PhysicsParameter:
+    """Get specific physics parameter."""
+    parameter = crud_physics_parameter.get(db, id=parameter_id)
+    if not parameter:
+        raise HTTPException(status_code=404, detail="Physics parameter not found")
+    return parameter
 
-    await db.delete(constraint)
-    await db.commit()
+@router.put("/parameters/{parameter_id}", response_model=PhysicsParameter)
+def update_physics_parameter(
+    *,
+    db: Session = Depends(deps.get_db),
+    parameter_id: int,
+    parameter_in: PhysicsParameterUpdate
+) -> PhysicsParameter:
+    """Update physics parameter."""
+    parameter = crud_physics_parameter.get(db, id=parameter_id)
+    if not parameter:
+        raise HTTPException(status_code=404, detail="Physics parameter not found")
+    return crud_physics_parameter.update(db, db_obj=parameter, obj_in=parameter_in)
+
+@router.delete("/parameters/{parameter_id}")
+def delete_physics_parameter(
+    *,
+    db: Session = Depends(deps.get_db),
+    parameter_id: int
+) -> dict:
+    """Delete physics parameter."""
+    parameter = crud_physics_parameter.get(db, id=parameter_id)
+    if not parameter:
+        raise HTTPException(status_code=404, detail="Physics parameter not found")
+    crud_physics_parameter.remove(db, id=parameter_id)
     return {"status": "success"}

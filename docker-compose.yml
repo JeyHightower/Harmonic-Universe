@@ -6,26 +6,21 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - '3005:3001'
+      - '8000:8000'
     volumes:
       - ./backend:/app
-      - ./backend/data:/app/data
-      - ./backend/uploads:/app/uploads
+      - backend_data:/app/data
     environment:
-      - PYTHON_ENV=development
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=harmonic_universe
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - REDIS_URL=redis://redis:6379
-      - API_HOST=0.0.0.0
-      - API_PORT=3001
+      - POSTGRES_SERVER=db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=harmonic_universe
+      - REDIS_HOST=redis
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - db
+      - redis
+    networks:
+      - app_network
 
   frontend:
     build:
@@ -37,46 +32,80 @@ services:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - NODE_ENV=development
-      - VITE_API_URL=http://localhost:3005
+      - VITE_API_URL=http://localhost:8000
+      - VITE_WS_URL=ws://localhost:8000/ws
     depends_on:
       - backend
+    networks:
+      - app_network
 
-  postgres:
-    image: postgres:14-alpine
+  db:
+    image: postgres:15
     ports:
-      - '5433:5432'
+      - '5432:5432'
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=harmonic_universe
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+    networks:
+      - app_network
 
   redis:
-    image: redis:7-alpine
+    image: redis:7
     ports:
-      - '6380:6379'
+      - '6379:6379'
     volumes:
       - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+    networks:
+      - app_network
 
-  adminer:
-    image: adminer
-    ports:
-      - '8080:8080'
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A app.worker worker --loglevel=info
+    volumes:
+      - ./backend:/app
+    environment:
+      - POSTGRES_SERVER=db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=harmonic_universe
+      - REDIS_HOST=redis
     depends_on:
-      - postgres
+      - backend
+      - db
+      - redis
+    networks:
+      - app_network
+
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A app.worker beat --loglevel=info
+    volumes:
+      - ./backend:/app
+    environment:
+      - POSTGRES_SERVER=db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=harmonic_universe
+      - REDIS_HOST=redis
+    depends_on:
+      - backend
+      - db
+      - redis
+    networks:
+      - app_network
 
 volumes:
   postgres_data:
   redis_data:
+  backend_data:
+
+networks:
+  app_network:
+    driver: bridge

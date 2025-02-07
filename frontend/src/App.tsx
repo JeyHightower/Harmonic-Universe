@@ -1,24 +1,33 @@
-import { CssBaseline, ThemeProvider } from '@mui/material';
 import { Provider } from 'react-redux';
-import { BrowserRouter as Router, Routes } from 'react-router-dom';
+import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import ProtectedRoute from './components/common/ProtectedRoute';
+import Layout from './components/layout/Layout';
+import Dashboard from './pages/Dashboard';
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Register from './pages/Register';
 import { store } from './store';
-import theme from './styles/theme';
-
-// Import your components here
-// Example: import Home from './pages/Home';
 
 function App() {
   return (
     <Provider store={store}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <Router>
+      <Router>
+        <Layout>
           <Routes>
-            {/* Add your routes here */}
-            {/* Example: <Route path="/" element={<Home />} /> */}
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
-        </Router>
-      </ThemeProvider>
+        </Layout>
+      </Router>
     </Provider>
   );
 }

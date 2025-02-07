@@ -1,6 +1,6 @@
-# Build stage
-FROM node:18 AS builder
+FROM node:20-slim
 
+# Set working directory
 WORKDIR /app
 
 # Copy package files
@@ -12,18 +12,11 @@ RUN npm install
 # Copy source code
 COPY . .
 
-# Build the application
+# Build the app
 RUN npm run build
 
-# Production stage
-FROM nginx:alpine
-
-# Copy built assets from builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Copy nginx configuration if you have custom config
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
-
+# Expose port
 EXPOSE 3000
 
-CMD ["nginx", "-g", "daemon off;"]
+# Start development server
+CMD ["npm", "run", "dev", "--", "--host"]
