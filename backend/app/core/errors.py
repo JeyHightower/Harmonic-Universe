@@ -1,61 +1,64 @@
-"""Error handling module for the application."""
+"""
+Custom error handling module.
+"""
 
 from typing import Any, Dict, Optional
 from fastapi import HTTPException, status
 
-class AppError(Exception):
-    """Base exception class for application errors."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail: Optional[Dict[str, Any]] = None
-    ):
+class BaseAppError(Exception):
+    """Base error class for application errors."""
+    def __init__(self, message: str, status_code: int = 500, details: Optional[Dict[str, Any]] = None):
         self.message = message
         self.status_code = status_code
-        self.detail = detail or {}
+        self.details = details or {}
         super().__init__(self.message)
 
-class ErrorResponse:
-    """Standard error response format."""
+class ValidationError(BaseAppError):
+    """Raised when data validation fails."""
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+        super().__init__(message, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, details=details)
 
-    def __init__(
-        self,
-        message: str,
-        status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail: Optional[Dict[str, Any]] = None
-    ):
-        self.message = message
-        self.status_code = status_code
-        self.detail = detail or {}
+class NotFoundError(BaseAppError):
+    """Raised when a resource is not found."""
+    def __init__(self, resource: str, resource_id: Any):
+        super().__init__(
+            message=f"{resource} with id {resource_id} not found",
+            status_code=status.HTTP_404_NOT_FOUND
+        )
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert error response to dictionary format."""
-        return {
-            "error": {
-                "message": self.message,
-                "status_code": self.status_code,
-                "detail": self.detail
-            }
+class AuthenticationError(BaseAppError):
+    """Raised when authentication fails."""
+    def __init__(self, message: str = "Authentication failed"):
+        super().__init__(message, status_code=status.HTTP_401_UNAUTHORIZED)
+
+class AuthorizationError(BaseAppError):
+    """Raised when user doesn't have required permissions."""
+    def __init__(self, message: str = "Insufficient permissions"):
+        super().__init__(message, status_code=status.HTTP_403_FORBIDDEN)
+
+class DatabaseError(BaseAppError):
+    """Raised when database operations fail."""
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+        super().__init__(message, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, details=details)
+
+class FileOperationError(BaseAppError):
+    """Raised when file operations fail."""
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+        super().__init__(message, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, details=details)
+
+def handle_app_error(error: BaseAppError) -> Dict[str, Any]:
+    """Convert application error to response format."""
+    return {
+        "error": {
+            "message": error.message,
+            "type": error.__class__.__name__,
+            "details": error.details
         }
+    }
 
-    @classmethod
-    def from_exception(cls, exc: Exception) -> "ErrorResponse":
-        """Create an ErrorResponse from an exception."""
-        if isinstance(exc, AppError):
-            return cls(
-                message=exc.message,
-                status_code=exc.status_code,
-                detail=exc.detail
-            )
-        elif isinstance(exc, HTTPException):
-            return cls(
-                message=str(exc.detail),
-                status_code=exc.status_code
-            )
-        else:
-            return cls(
-                message=str(exc),
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+def get_http_exception(error: BaseAppError) -> HTTPException:
+    """Convert application error to FastAPI HTTPException."""
+    return HTTPException(
+        status_code=error.status_code,
+        detail=handle_app_error(error)
+    )
