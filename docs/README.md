@@ -1,111 +1,172 @@
 # Harmonic Universe
 
-A creative platform for generating and visualizing harmonious audio-visual experiences through physics-based interactions.
-
-## Project Structure
-
-```
-.
-├── frontend/
-│   ├── src/
-│   │   ├── components/    # Reusable UI components
-│   │   ├── pages/        # Page components
-│   │   ├── store/        # Redux store configuration
-│   │   ├── features/     # Feature-specific components and logic
-│   │   ├── styles/       # CSS styles and theme configuration
-│   │   ├── utils/        # Utility functions
-│   │   ├── hooks/        # Custom React hooks
-│   │   ├── services/     # API service functions
-│   │   └── types/        # TypeScript type definitions
-│   └── public/           # Static assets
-│
-├── backend/
-│   ├── app/
-│   │   ├── api/          # API routes and endpoints
-│   │   ├── models/       # Database models
-│   │   │   ├── core/     # Core models (Universe, User)
-│   │   │   ├── audio/    # Audio-related models
-│   │   │   └── visualization/  # Visualization models
-│   │   ├── schemas/      # Pydantic schemas
-│   │   ├── services/     # Business logic
-│   │   └── utils/        # Utility functions
-│   └── migrations/       # Database migrations
-│
-└── docs/                 # Project documentation
-```
+Harmonic Universe is an innovative web application that creates immersive audio-visual experiences by combining physics simulations, real-time music generation, and dynamic visualizations. The application allows users to create and explore unique "universes" where physical parameters directly influence musical harmony and visual effects.
 
 ## Features
 
-- Physics-based audio generation
-- Real-time visualization
-- Collaborative universe creation
-- Audio file management
-- Custom visualization settings
+### Universe Creation and Management
+
+- Create personalized universes with custom physics and harmony parameters
+- Real-time parameter adjustment
+- Public/private universe sharing
+- Story point system for creating narrative experiences
+
+### Physics Engine
+
+- Real-time particle physics simulation
+- Customizable parameters:
+  - Gravity
+  - Air resistance
+  - Elasticity
+  - Friction
+- Force field system
+- Collision detection and response
+
+### Music Generation
+
+- AI-powered real-time music generation
+- Multiple musical styles:
+  - Ambient
+  - Electronic
+  - Classical
+  - Jazz
+  - Cinematic
+  - Experimental
+- Mood-based generation:
+  - Calm
+  - Energetic
+  - Melancholic
+  - Uplifting
+  - Mysterious
+  - Intense
+- Parameter control:
+  - Tempo
+  - Complexity
+  - Harmony
+  - Rhythm
+
+### Visualization System
+
+- Real-time WebGL rendering
+- Multiple visualization types:
+  - Spectrum analysis
+  - Waveform display
+  - Particle effects
+  - Kaleidoscope patterns
+- Post-processing effects:
+  - Bloom
+  - Custom shaders
+  - Anti-aliasing
+
+### Audio Analysis
+
+- Real-time frequency analysis
+- Waveform visualization
+- Multi-band audio processing
+- Dynamic parameter mapping
+
+### AI Integration
+
+- Intelligent parameter suggestions
+- Style transfer between universes
+- Advanced music generation algorithms
 
 ## Technology Stack
 
 ### Frontend
 
-- React
-- Redux Toolkit
-- Material-UI
-- Vite
-- CSS Modules
+- React with Redux for state management
+- Three.js for 3D rendering
+- Tone.js for audio synthesis
+- WebGL for graphics processing
+- Material-UI for component design
 
 ### Backend
 
-- FastAPI
-- SQLAlchemy
-- Pydantic
-- Alembic
-- PostgreSQL
+- Python with FastAPI/Flask
+- PostgreSQL database
+- Redis for caching
+- Celery for task queue
+- WebSocket for real-time updates
+
+### Infrastructure
+
+- Docker containerization
+- Nginx for reverse proxy
+- JWT authentication
+- WebSocket protocol
 
 ## Getting Started
 
-1. Clone the repository
-2. Install dependencies:
+### Prerequisites
 
-   ```bash
-   # Frontend
-   cd frontend
-   npm install
+- Docker and Docker Compose
+- Node.js 20.x or higher
+- Python 3.9 or higher
+- PostgreSQL 13 or higher
+- Redis 7 or higher
 
-   # Backend
-   cd backend
-   pip install -r requirements.txt
-   ```
+### Installation
 
-3. Set up environment variables:
+1. Clone the repository:
 
-   - Copy `.env.example` to `.env` in both frontend and backend directories
-   - Update the variables as needed
+```bash
+git clone https://github.com/yourusername/harmonic-universe.git
+cd harmonic-universe
+```
 
-4. Run the development servers:
+2. Create and configure environment files:
 
-   ```bash
-   # Frontend
-   npm run dev
+```bash
+cp .env.example .env
+cp frontend/.env.example frontend/.env
+cp backend/.env.example backend/.env
+```
 
-   # Backend
-   uvicorn app.main:app --reload
-   ```
+3. Build and start the containers:
 
-## Development Guidelines
+```bash
+docker-compose up --build
+```
 
-- Follow the established directory structure
-- Use appropriate naming conventions
-- Write tests for new features
-- Update documentation as needed
-- Follow the style guide for consistent code formatting
+4. Access the application:
+
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:5000
+- API Documentation: http://localhost:5000/docs
+- Flower (Celery monitoring): http://localhost:5555
+
+## Development
+
+### Frontend Development
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Backend Development
+
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # or `venv\Scripts\activate` on Windows
+pip install -r requirements.txt
+python run.py
+```
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Three.js community for 3D rendering support
+- Tone.js team for audio synthesis capabilities
+- FastAPI/Flask communities for backend framework
+- All contributors and supporters of the project

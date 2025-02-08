@@ -4,27 +4,43 @@
 
 ```
 backend/
-├── app/                    # Application package
-│   ├── api/               # API endpoints
-│   │   └── v1/           # API version 1
-│   │       ├── auth.py   # Authentication endpoints
-│   │       ├── universes.py  # Universe management
-│   │       ├── audio.py  # Audio processing
-│   │       └── visualizations.py  # Visualization
-│   ├── models/           # Database models
-│   │   ├── user.py      # User model
-│   │   ├── universe.py  # Universe model
-│   │   └── base.py      # Base model class
-│   ├── services/        # Business logic
-│   │   ├── export.py   # Export functionality
-│   │   └── audio.py    # Audio generation
-│   ├── websocket/      # WebSocket handlers
-│   ├── core/           # Core functionality
-│   ├── schemas/        # Pydantic schemas
-│   ├── crud/          # Database operations
-│   └── utils/         # Utility functions
-├── migrations/        # Database migrations
-└── tests/            # Test suite
+├── app/
+│   ├── api/
+│   │   ├── v1/
+│   │   │   ├── endpoints/
+│   │   │   │   ├── physics/
+│   │   │   │   ├── audio/
+│   │   │   │   └── visualization/
+│   │   │   └── api.py
+│   │   └── routes/
+│   │       ├── auth.py
+│   │       ├── universe.py
+│   │       └── music_generation.py
+│   ├── core/
+│   │   ├── config.py
+│   │   ├── security.py
+│   │   └── errors.py
+│   ├── db/
+│   │   ├── session.py
+│   │   └── base.py
+│   ├── models/
+│   │   ├── core/
+│   │   │   ├── user.py
+│   │   │   └── universe.py
+│   │   ├── audio/
+│   │   └── visualization/
+│   ├── services/
+│   │   ├── audio_processing.py
+│   │   ├── physics_simulation.py
+│   │   └── visualization_generation.py
+│   └── websocket/
+│       └── handler.py
+├── tests/
+│   ├── api/
+│   ├── core/
+│   └── services/
+└── alembic/
+    └── versions/
 ```
 
 ## 🔧 Core Components

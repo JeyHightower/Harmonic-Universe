@@ -1,311 +1,249 @@
-# Harmonic Universe
+# Frontend Documentation
 
-A modern web application for music collaboration and creation.
+## Overview
 
-## Project Structure
+The frontend of Harmonic Universe is built with React and provides an immersive interface for creating and experiencing audio-visual universes. It integrates with Three.js for 3D rendering, Tone.js for audio synthesis, and WebGL for advanced graphics processing.
 
-```
-.
-├── backend/           # FastAPI backend service
-├── frontend/         # React frontend application
-└── root/             # Project-level configuration and documentation
-```
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js (v18 or higher)
-- Python (v3.9 or higher)
-- PostgreSQL
-- Docker (optional)
-
-### Installation
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/yourusername/harmonic-universe.git
-cd harmonic-universe
-```
-
-2. Set up the backend:
-
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-3. Set up the frontend:
-
-```bash
-cd frontend
-npm install
-```
-
-4. Create environment files:
-
-```bash
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
-```
-
-### Development
-
-1. Start the backend server:
-
-```bash
-cd backend
-uvicorn app.main:app --reload
-```
-
-2. Start the frontend development server:
-
-```bash
-cd frontend
-npm run dev
-```
-
-## Documentation
-
-- [Backend Documentation](backend/README.md)
-- [Frontend Documentation](frontend/README.md)
-- [API Documentation](docs/api.md)
-
-## Contributing
-
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-# 🎨 Frontend Architecture
-
-## 📁 Directory Structure
+## Directory Structure
 
 ```
 frontend/
 ├── src/
-│   ├── components/         # React components
-│   │   ├── auth/          # Authentication components
-│   │   ├── universe/      # Universe management
-│   │   ├── visualization/ # Visualization components
-│   │   └── common/        # Shared components
-│   ├── store/             # Redux store
-│   │   ├── slices/        # Redux slices
-│   │   ├── middleware/    # Redux middleware
-│   │   └── reducers/      # Redux reducers
-│   ├── hooks/             # Custom React hooks
-│   ├── utils/             # Utility functions
-│   ├── styles/            # Global styles
-│   ├── types/             # TypeScript types
-│   └── App.tsx            # Root component
-├── public/                # Static assets
-└── tests/                 # Test suite
+│   ├── components/
+│   │   ├── ai/
+│   │   │   └── MusicGenerator.jsx
+│   │   ├── audio/
+│   │   │   └── AudioAnalyzer.jsx
+│   │   ├── physics/
+│   │   │   └── PhysicsSystem.js
+│   │   ├── universe/
+│   │   │   └── UniverseHarmony.jsx
+│   │   └── visualization/
+│   │       ├── PhysicsVisualization.jsx
+│   │       ├── SpectrumVisualization.jsx
+│   │       └── effects/
+│   ├── hooks/
+│   │   ├── useAudioAnalyzer.js
+│   │   └── usePhysicsSystem.js
+│   ├── store/
+│   │   ├── slices/
+│   │   │   ├── authSlice.js
+│   │   │   ├── audioSlice.js
+│   │   │   ├── physicsSlice.js
+│   │   │   └── visualizationSlice.js
+│   │   └── index.js
+│   ├── pages/
+│   │   ├── Dashboard.jsx
+│   │   ├── UniverseDetail.jsx
+│   │   └── Home.jsx
+│   └── services/
+│       ├── api.js
+│       └── websocket.js
+└── public/
+    └── assets/
 ```
 
-## 🧩 Core Components
+## Key Components
 
-### Authentication
+### Universe Components
 
-1. **Login/Register**
+- UniverseHarmony: Manages universe parameters and harmony generation
+- UniverseDetail: Displays detailed universe information and controls
+- Dashboard: Main interface for universe management
 
-   - JWT authentication
-   - Form validation
-   - Error handling
+### Physics Components
 
-2. **Profile Management**
-   - User settings
-   - Profile updates
-   - Session handling
+- PhysicsSystem: Handles particle physics simulation
+- PhysicsVisualization: Renders physics-based visual effects
+- Force field management and collision detection
 
-### Universe Management
+### Audio Components
 
-1. **Universe Creation**
+- MusicGenerator: AI-powered music generation interface
+- AudioAnalyzer: Real-time audio analysis and visualization
+- Audio parameter controls and effect processing
 
-   - Parameter configuration
-   - Template selection
-   - Real-time preview
+### Visualization Components
 
-2. **Universe Detail**
-   - Physics parameters
-   - Music parameters
-   - Story points
-   - Real-time updates
+- SpectrumVisualization: Frequency spectrum display
+- WaveformVisualization: Time-domain audio visualization
+- Effect components for post-processing and special effects
 
-### Visualization
+## State Management
 
-1. **Canvas**
+### Redux Store Structure
 
-   - WebGL rendering
-   - Real-time updates
-   - Interactive elements
+```javascript
+{
+  auth: {
+    user: Object,
+    isAuthenticated: boolean,
+    loading: boolean
+  },
+  universe: {
+    currentUniverse: Object,
+    universes: Array,
+    loading: boolean
+  },
+  audio: {
+    tracks: Array,
+    effects: Array,
+    analyzing: boolean
+  },
+  physics: {
+    objects: Array,
+    parameters: Object,
+    simulation: Object
+  },
+  visualization: {
+    settings: Object,
+    effects: Array,
+    rendering: boolean
+  }
+}
+```
 
-2. **Controls**
-   - Parameter adjustment
-   - View manipulation
-   - Export options
+### Slices
 
-### Music Generation
+- authSlice: Authentication state and user management
+- universeSlice: Universe data and parameters
+- audioSlice: Audio processing and analysis
+- physicsSlice: Physics simulation state
+- visualizationSlice: Rendering settings and effects
 
-1. **Audio Controls**
+## Real-time Features
 
-   - Playback controls
-   - Parameter adjustment
-   - Real-time generation
+### WebSocket Integration
 
-2. **Visualization**
-   - Frequency analysis
-   - Waveform display
-   - Parameter mapping
+- Live parameter updates
+- Physics state synchronization
+- Audio analysis streaming
+- Collaborative features
 
-## 🔄 State Management
+### WebGL Rendering
 
-### Redux Store
+- Three.js integration
+- Custom shaders
+- Post-processing effects
+- Performance optimization
 
-1. **Slices**
+## User Interface
 
-   - Universe slice
-   - Auth slice
-   - Visualization slice
-   - Audio slice
+### Dashboard
 
-2. **Middleware**
+- Universe management interface
+- Parameter controls
+- Real-time visualization
+- Audio controls
 
-   - WebSocket middleware
-   - API middleware
-   - Logger middleware
+### Universe Editor
 
-3. **Reducers**
-   - Combined reducers
-   - State normalization
-   - Performance optimization
+- Physics parameter adjustment
+- Harmony settings
+- Visual effect controls
+- Preview functionality
 
-## 🎨 Styling
+### Audio Interface
 
-1. **Global Styles**
+- Music generation controls
+- Effect parameters
+- Analysis visualization
+- Playback controls
 
-   - Theme configuration
-   - Color schemes
-   - Typography
+## Development
 
-2. **Component Styles**
-   - Styled components
-   - CSS modules
-   - Responsive design
+### Prerequisites
 
-## 🔌 API Integration
+- Node.js 20.x or higher
+- npm or yarn
+- Modern web browser with WebGL support
 
-1. **REST API**
+### Setup
 
-   - Axios configuration
-   - Request/response handling
-   - Error management
+```bash
+# Install dependencies
+npm install
 
-2. **WebSocket**
-   - Real-time updates
-   - Event handling
-   - Connection management
+# Start development server
+npm run dev
 
-## 🧪 Testing
+# Build for production
+npm run build
 
-1. **Unit Tests**
+# Run tests
+npm test
+```
 
-   - Component testing
-   - Hook testing
-   - Utility testing
+### Environment Variables
 
-2. **Integration Tests**
-   - Store testing
-   - API testing
-   - Flow testing
+```env
+VITE_API_URL=http://localhost:5000
+VITE_WS_URL=ws://localhost:5000/ws
+VITE_AUTH_TOKEN_KEY=harmonic_universe_token
+```
 
-## 📱 Responsive Design
+## Testing
 
-1. **Breakpoints**
+### Unit Tests
 
-   - Mobile first
-   - Tablet support
-   - Desktop optimization
+- Component testing with Jest
+- Redux state testing
+- Utility function testing
 
-2. **Layout**
-   - Fluid grids
-   - Flexible components
-   - Adaptive UI
+### Integration Tests
 
-## 🔒 Security
+- API integration tests
+- WebSocket communication
+- State management flow
 
-1. **Authentication**
+### Performance Testing
 
-   - Token management
-   - Route protection
-   - Session handling
+- Rendering performance
+- Audio processing
+- Physics simulation
+- Memory management
 
-2. **Data Protection**
-   - Input validation
-   - XSS prevention
-   - CSRF protection
+## Deployment
 
-## 🚀 Performance
+### Build Process
 
-1. **Optimization**
+- Asset optimization
+- Code splitting
+- Cache management
+- Environment configuration
 
-   - Code splitting
-   - Lazy loading
-   - Bundle optimization
+### Performance Optimization
 
-2. **Caching**
-   - API response caching
-   - Asset caching
-   - State persistence
+- Lazy loading
+- Code splitting
+- Asset optimization
+- Caching strategies
 
-## 📦 Dependencies
+## Browser Support
 
-- React: UI framework
-- Redux: State management
-- TypeScript: Type safety
-- Styled Components: Styling
-- Three.js: 3D visualization
-- Tone.js: Audio processing
+- Chrome (latest)
+- Firefox (latest)
+- Safari (latest)
+- Edge (latest)
 
-## 🛠️ Development
+## Dependencies
 
-1. **Setup**
+### Core
 
-   - Environment configuration
-   - Development tools
-   - IDE integration
+- React
+- Redux Toolkit
+- Three.js
+- Tone.js
+- Material-UI
 
-2. **Workflow**
-   - Component development
-   - Testing process
-   - Code review
+### Development
 
-## 📚 Documentation
+- Vite
+- TypeScript
+- ESLint
+- Prettier
+- Jest
 
-1. **Components**
+## Contributing
 
-   - Props documentation
-   - Usage examples
-   - Best practices
-
-2. **API**
-   - Endpoint documentation
-   - Request/response formats
-   - Error handling
-
-## 🔄 Continuous Integration
-
-1. **Build Process**
-
-   - Automated builds
-   - Testing pipeline
-   - Deployment workflow
-
-2. **Quality Assurance**
-   - Code linting
-   - Type checking
-   - Test coverage
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for development guidelines and contribution process.
