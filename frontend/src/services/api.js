@@ -59,17 +59,28 @@ apiInstance.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // Try to refresh token
-        const response = await apiInstance.post('/api/auth/refresh');
-        const { token } = response.data;
-        localStorage.setItem('token', token);
+        // Get refresh token from storage
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (!refreshToken) {
+          throw new Error('No refresh token available');
+        }
 
-        // Retry original request
-        originalRequest.headers.Authorization = `Bearer ${token}`;
+        // Try to refresh token
+        const response = await apiInstance.post('/api/auth/refresh', {
+          refresh_token: refreshToken,
+        });
+
+        const { access_token } = response.data;
+        localStorage.setItem('token', access_token);
+
+        // Update the original request with new token
+        originalRequest.headers.Authorization = `Bearer ${access_token}`;
         return apiInstance(originalRequest);
       } catch (refreshError) {
-        // If refresh fails, logout user
+        // If refresh fails, clear tokens and redirect to login
         localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }

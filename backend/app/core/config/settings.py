@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = "your-secret-key-here"  # Change in production
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30  # 30 days
     JWT_ALGORITHM: str = "HS256"
 
     # CORS

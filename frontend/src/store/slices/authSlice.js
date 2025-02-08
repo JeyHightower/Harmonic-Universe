@@ -11,33 +11,37 @@ const initialState = {
 
 export const login = createAsyncThunk('auth/login', async credentials => {
   const response = await api.post('/api/auth/login', credentials);
-  const { token, user } = response.data;
-  localStorage.setItem('token', token);
-  return { token, user };
+  const { access_token, refresh_token, user } = response.data;
+  localStorage.setItem('token', access_token);
+  localStorage.setItem('refreshToken', refresh_token);
+  return { token: access_token, user };
 });
 
 export const demoLogin = createAsyncThunk('auth/demoLogin', async () => {
-  // Use demo credentials
   const demoCredentials = {
-    email: 'demo@harmonic-universe.com',
-    password: 'demo123',
+    email: 'demo@example.com',
+    password: 'password',
   };
   const response = await api.post('/api/auth/login', demoCredentials);
-  const { token, user } = response.data;
-  localStorage.setItem('token', token);
-  return { token, user };
+  const { access_token, refresh_token, user } = response.data;
+  localStorage.setItem('token', access_token);
+  localStorage.setItem('refreshToken', refresh_token);
+  return { token: access_token, user };
 });
 
 export const register = createAsyncThunk('auth/register', async data => {
   const response = await api.post('/api/auth/register', data);
-  const { token, user } = response.data;
-  localStorage.setItem('token', token);
-  return { token, user };
+  const { access_token, refresh_token, user } = response.data;
+  localStorage.setItem('token', access_token);
+  localStorage.setItem('refreshToken', refresh_token);
+  return { token: access_token, user };
 });
 
 export const logout = createAsyncThunk('auth/logout', async () => {
   await api.post('/api/auth/logout');
   localStorage.removeItem('token');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('user');
 });
 
 export const fetchUser = createAsyncThunk('auth/fetchUser', async () => {
