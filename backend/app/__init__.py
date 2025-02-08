@@ -1,22 +1,19 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_socketio import SocketIO
 from flask_bcrypt import Bcrypt
 from config import Config
-from .db.session import SessionLocal, get_db, Base
-from sqlalchemy import create_engine
 import os
 import logging
-from .seeds.demo_user import create_demo_user
+from .db.session import init_engine, Base
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-db = SQLAlchemy()
+# Initialize extensions
 migrate = Migrate()
 jwt = JWTManager()
 socketio = SocketIO()
@@ -34,12 +31,14 @@ def create_app(config_class=Config):
     database_url = app.config['SQLALCHEMY_DATABASE_URI']
     logger.debug(f"Using database URL: {database_url}")
 
-    engine = create_engine(database_url)
+    # Initialize database engine with the Flask config URL
+    engine = init_engine(database_url)
+
+    # Create all tables
     Base.metadata.create_all(bind=engine)
 
     # Initialize extensions
-    db.init_app(app)
-    migrate.init_app(app, db)
+    migrate.init_app(app, Base)
     jwt.init_app(app)
     bcrypt.init_app(app)
     CORS(app)
@@ -72,7 +71,7 @@ def create_app(config_class=Config):
 
     # Create demo user on app startup
     with app.app_context():
-        db.create_all()
+        from .seeds.demo_user import create_demo_user
         create_demo_user()
 
     return app

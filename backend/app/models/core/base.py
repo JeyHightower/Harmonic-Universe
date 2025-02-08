@@ -1,42 +1,45 @@
 from datetime import datetime
-from app import db
+import uuid
+from app.db.session import Base
+from sqlalchemy import Column, Integer, DateTime, String, Text, JSON, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 
-class BaseModel(db.Model):
+class BaseModel(Base):
     """Base model class that includes common fields and methods."""
     __abstract__ = True
 
-    id = db.Column(db.Integer, primary_key=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    def save(self):
+    def save(self, session):
         """Save the model instance to the database."""
-        db.session.add(self)
-        db.session.commit()
+        session.add(self)
+        session.commit()
         return self
 
-    def delete(self):
+    def delete(self, session):
         """Delete the model instance from the database."""
-        db.session.delete(self)
-        db.session.commit()
+        session.delete(self)
+        session.commit()
 
-    def update(self, **kwargs):
+    def update(self, session, **kwargs):
         """Update the model instance with the given kwargs."""
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
-        self.save()
-        return self
+        return self.save(session)
 
     @classmethod
-    def get_by_id(cls, id):
+    def get_by_id(cls, session, id):
         """Get a model instance by its ID."""
-        return cls.query.get(id)
+        return session.query(cls).get(id)
 
     @classmethod
-    def get_all(cls):
+    def get_all(cls, session):
         """Get all instances of the model."""
-        return cls.query.all()
+        return session.query(cls).all()
 
     def to_dict(self):
         """Convert the model instance to a dictionary."""
@@ -48,14 +51,14 @@ class BaseModel(db.Model):
 
 class NameDescriptionMixin:
     """Mixin that adds name and description fields."""
-    name = db.Column(db.String(255), nullable=False)
-    description = db.Column(db.Text)
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
 
 class MetadataMixin:
     """Mixin that adds a metadata JSON field."""
-    metadata = db.Column(db.JSON, default=dict)
+    metadata = Column(JSON, default=dict)
 
 class UserMixin:
     """Mixin that adds a user relationship."""
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    user = db.relationship('User', back_populates='items')
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
+    user = relationship('User')

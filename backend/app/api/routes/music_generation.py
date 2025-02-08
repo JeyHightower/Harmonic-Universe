@@ -7,16 +7,75 @@ import io
 import time
 import requests
 from app.core.config import settings
-from app.core.security import get_current_user
-from app.models.user import User
+from app.core.auth import get_current_user, require_auth
+from app.models.core.user import User
+from app.models.core.universe import Universe
+from app.models.audio.audio_file import AudioFile
+from app.models.audio.audio_track import AudioTrack
+from app.models.visualization.visualization import Visualization
+from app.models.physics.physics_object import PhysicsObject
+from app.models.ai.ai_model import AIModel
 from app.services.audio_processing import process_audio_data
 from app.db.session import get_db
+from app.core.errors import ValidationError, NotFoundError, AuthorizationError
 
 # Create blueprints for different route categories
 audio_bp = Blueprint('audio', __name__, url_prefix='/api/v1/audio')
 visualization_bp = Blueprint('visualization', __name__, url_prefix='/api/v1/visualization')
 physics_bp = Blueprint('physics', __name__, url_prefix='/api/v1/physics')
 ai_bp = Blueprint('ai', __name__, url_prefix='/api/v1/ai')
+
+@audio_bp.route('/', methods=['POST'])
+@jwt_required()
+def upload_audio():
+    current_user_id = get_jwt_identity()
+
+    with get_db() as db:
+        user = User.get_by_id(db, current_user_id)
+        if not user:
+            raise AuthorizationError('User not found')
+
+        if 'file' not in request.files:
+            raise ValidationError('No file part')
+
+        file = request.files['file']
+        if file.filename == '':
+            raise ValidationError('No selected file')
+
+        # Process and save the audio file
+        audio_file = AudioFile(
+            filename=file.filename,
+            user_id=current_user_id
+        )
+        audio_file.save(db)
+
+        return jsonify(audio_file.to_dict()), 201
+
+@visualization_bp.route('/', methods=['POST'])
+@jwt_required()
+def create_visualization():
+    current_user_id = get_jwt_identity()
+    data = request.get_json()
+
+    with get_db() as db:
+        user = User.get_by_id(db, current_user_id)
+        if not user:
+            raise AuthorizationError('User not found')
+
+        # Validate required fields
+        if not all(k in data for k in ('title', 'type', 'audio_file_id')):
+            raise ValidationError('Missing required fields')
+
+        # Create visualization
+        visualization = Visualization(
+            title=data['title'],
+            type=data['type'],
+            user_id=current_user_id,
+            audio_file_id=data['audio_file_id']
+        )
+        visualization.save(db)
+
+        return jsonify(visualization.to_dict()), 201
 
 @audio_bp.route('/generate-music', methods=['POST'])
 @jwt_required()

@@ -1,20 +1,22 @@
-from app import db
+from sqlalchemy import Column, String, JSON, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 from app.models.core.base import BaseModel
 
 class Visualization(BaseModel):
     __tablename__ = 'visualizations'
 
-    title = db.Column(db.String(100), nullable=False)
-    type = db.Column(db.String(50), nullable=False)  # waveform, spectrogram, 3d, etc.
-    settings = db.Column(db.JSON)  # Store visualization settings
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
-    audio_file_id = db.Column(db.Integer, db.ForeignKey('audio_files.id'), nullable=False)
+    title = Column(String(100), nullable=False)
+    type = Column(String(50), nullable=False)  # waveform, spectrogram, 3d, etc.
+    settings = Column(JSON)  # Store visualization settings
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
+    project_id = Column(UUID(as_uuid=True), ForeignKey('projects.id'), nullable=False)
+    audio_file_id = Column(UUID(as_uuid=True), ForeignKey('audio_files.id'), nullable=False)
 
     # Relationships
-    user = db.relationship('User', back_populates='visualizations')
-    project = db.relationship('Project', back_populates='visualizations')
-    audio_file = db.relationship('AudioFile', back_populates='visualizations')
+    user = relationship('User', back_populates='visualizations')
+    project = relationship('Project', back_populates='visualizations')
+    audio_file = relationship('AudioFile', back_populates='visualizations')
 
     def to_dict(self):
         return {

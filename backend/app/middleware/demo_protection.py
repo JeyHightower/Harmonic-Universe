@@ -1,33 +1,26 @@
+"""Middleware to protect demo user from certain actions."""
 from functools import wraps
-from flask import jsonify, request
+from flask import jsonify
 from flask_jwt_extended import get_jwt_identity
-from app.models import User
+from app.db.session import get_db
+from app.models.core.user import User
+from app.core.errors import AuthorizationError
 
-def protect_demo_user():
-    """Middleware to protect demo user from modifications"""
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            current_user_id = get_jwt_identity()
-            user = User.query.get(current_user_id)
+def protect_demo_user(f):
+    """Decorator to prevent demo user from performing certain actions."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        current_user_id = get_jwt_identity()
 
-            # Check if this is the demo user
-            if user and user.email == 'demo@harmonic-universe.com':
-                # List of protected routes/methods
-                protected_routes = [
-                    ('/api/auth/update', ['PUT', 'PATCH']),
-                    ('/api/auth/password', ['PUT']),
-                    ('/api/auth/delete', ['DELETE']),
-                ]
+        with get_db() as db:
+            user = User.get_by_id(db, current_user_id)
+            if not user:
+                raise AuthorizationError('User not found')
 
-                # Check if current route is protected
-                for route, methods in protected_routes:
-                    if request.path.startswith(route) and request.method in methods:
-                        return jsonify({
-                            'error': 'Demo user cannot perform this action',
-                            'message': 'This feature is disabled for the demo account'
-                        }), 403
+            if user.email == 'demo@example.com':
+                return jsonify({
+                    'error': 'Demo user cannot perform this action'
+                }), 403
 
-            return f(*args, **kwargs)
-        return decorated_function
-    return decorator
+        return f(*args, **kwargs)
+    return decorated_function

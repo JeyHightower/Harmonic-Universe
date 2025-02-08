@@ -3,16 +3,17 @@ Physics object model.
 """
 
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, JSON
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from app.db.base_class import Base
+from app.models.core.base import BaseModel
 
-class PhysicsObject(Base):
+class PhysicsObject(BaseModel):
     """Physical object in a scene."""
     __tablename__ = "physics_objects"
 
-    id = Column(Integer, primary_key=True, index=True)
-    scene_id = Column(Integer, ForeignKey("scenes.id", ondelete="CASCADE"))
     name = Column(String, index=True)
+    scene_id = Column(UUID(as_uuid=True), ForeignKey("scenes.id", ondelete="CASCADE"))
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     mass = Column(Float, default=1.0)
     position = Column(JSON, default=lambda: {"x": 0.0, "y": 0.0, "z": 0.0})
     velocity = Column(JSON, default=lambda: {"x": 0.0, "y": 0.0, "z": 0.0})
@@ -34,6 +35,7 @@ class PhysicsObject(Base):
     )
 
     # Relationships
+    user = relationship("User", back_populates="physics_objects")
     scene = relationship("Scene", back_populates="physics_objects")
     constraints_a = relationship(
         "PhysicsConstraint",
@@ -66,5 +68,9 @@ class PhysicsObject(Base):
             "is_trigger": self.is_trigger,
             "collision_shape": self.collision_shape,
             "collision_params": self.collision_params,
-            "material_properties": self.material_properties
+            "material_properties": self.material_properties,
+            "user_id": self.user_id,
+            "scene_id": self.scene_id,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat()
         }

@@ -3,9 +3,10 @@ Audio control models for markers and automation.
 """
 
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, JSON, Enum, Boolean
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import enum
-from app.db.base_class import Base
+from app.models.core.base import BaseModel
 
 class AutomationType(str, enum.Enum):
     """Types of automation parameters."""
@@ -14,12 +15,11 @@ class AutomationType(str, enum.Enum):
     EFFECT_PARAM = "effect_param"
     CUSTOM = "custom"
 
-class AudioMarker(Base):
+class AudioMarker(BaseModel):
     """Marker in an audio track."""
     __tablename__ = "audio_markers"
 
-    id = Column(Integer, primary_key=True, index=True)
-    track_id = Column(Integer, ForeignKey("audio_tracks.id", ondelete="CASCADE"))
+    track_id = Column(UUID(as_uuid=True), ForeignKey("audio_tracks.id", ondelete="CASCADE"))
     name = Column(String, index=True)
     time = Column(Float)
     color = Column(String, nullable=True)
@@ -33,12 +33,25 @@ class AudioMarker(Base):
         """String representation."""
         return f"<AudioMarker(id={self.id}, name='{self.name}', time={self.time})>"
 
-class AudioAutomation(Base):
+    def to_dict(self):
+        """Convert to dictionary."""
+        return {
+            "id": self.id,
+            "track_id": self.track_id,
+            "name": self.name,
+            "time": self.time,
+            "color": self.color,
+            "description": self.description,
+            "parameters": self.parameters,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat()
+        }
+
+class AudioAutomation(BaseModel):
     """Automation data for audio parameters."""
     __tablename__ = "audio_automation"
 
-    id = Column(Integer, primary_key=True, index=True)
-    track_id = Column(Integer, ForeignKey("audio_tracks.id", ondelete="CASCADE"))
+    track_id = Column(UUID(as_uuid=True), ForeignKey("audio_tracks.id", ondelete="CASCADE"))
     parameter_type = Column(Enum(AutomationType))
     target_id = Column(String, nullable=True)  # For effect parameters
     points = Column(JSON, default=list)  # List of {time, value} points
@@ -91,3 +104,18 @@ class AudioAutomation(Base):
                     return p1["value"] + t * (p2["value"] - p1["value"])
 
         return sorted_points[-1]["value"]
+
+    def to_dict(self):
+        """Convert to dictionary."""
+        return {
+            "id": self.id,
+            "track_id": self.track_id,
+            "parameter_type": self.parameter_type.value,
+            "target_id": self.target_id,
+            "points": self.points,
+            "curve_type": self.curve_type,
+            "enabled": self.enabled,
+            "parameters": self.parameters,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat()
+        }

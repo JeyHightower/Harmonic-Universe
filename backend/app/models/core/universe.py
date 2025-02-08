@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Boolean, JSON, String, Integer, ForeignKey
+from sqlalchemy import Column, Boolean, JSON, String, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from .base import BaseModel
 
@@ -9,7 +10,7 @@ class Universe(BaseModel):
     name = Column(String(255), nullable=False)
     description = Column(String(1000))
     is_public = Column(Boolean, default=False)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
 
     # Physics parameters
     physics_params = Column(JSON, default=lambda: {
@@ -32,8 +33,7 @@ class Universe(BaseModel):
 
     # Relationships
     user = relationship('User', back_populates='universes')
-    visualizations = relationship('Visualization', back_populates='universe')
-    audio_files = relationship('AudioFile', back_populates='universe')
+    scenes = relationship('Scene', back_populates='universe', cascade='all, delete-orphan')
 
     def to_dict(self):
         return {
@@ -44,7 +44,9 @@ class Universe(BaseModel):
             'physics_params': self.physics_params,
             'harmony_params': self.harmony_params,
             'story_points': self.story_points,
-            'user_id': self.user_id
+            'user_id': self.user_id,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
         }
 
     def update_physics(self, params):
