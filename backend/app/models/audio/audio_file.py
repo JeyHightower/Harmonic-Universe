@@ -1,5 +1,5 @@
 from app import db
-from .base import BaseModel
+from app.models.core.base import BaseModel
 
 class AudioFile(BaseModel):
     __tablename__ = 'audio_files'

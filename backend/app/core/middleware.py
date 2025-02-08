@@ -2,78 +2,98 @@
 Middleware for global error handling and request processing.
 """
 
-from typing import Callable
-from fastapi import Request, Response
-from fastapi.responses import JSONResponse
-from sqlalchemy.exc import SQLAlchemyError
-from .errors import (
-    BaseAppError,
-    DatabaseError,
-    handle_app_error,
-    ValidationError,
-    NotFoundError,
-    AuthenticationError,
-    AuthorizationError
-)
+from functools import wraps
+from flask import request, g, current_app
+from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+from app.models.core.user import User
+import time
+import uuid
 
-async def error_handling_middleware(request: Request, call_next: Callable) -> Response:
-    """Global error handling middleware."""
+def load_user():
+    """Load user from JWT token and store in g."""
     try:
-        return await call_next(request)
-    except ValidationError as e:
-        return JSONResponse(
-            status_code=e.status_code,
-            content=handle_app_error(e)
-        )
-    except NotFoundError as e:
-        return JSONResponse(
-            status_code=e.status_code,
-            content=handle_app_error(e)
-        )
-    except AuthenticationError as e:
-        return JSONResponse(
-            status_code=e.status_code,
-            content=handle_app_error(e)
-        )
-    except AuthorizationError as e:
-        return JSONResponse(
-            status_code=e.status_code,
-            content=handle_app_error(e)
-        )
-    except SQLAlchemyError as e:
-        db_error = DatabaseError(str(e), details={"original_error": str(e.__cause__)})
-        return JSONResponse(
-            status_code=db_error.status_code,
-            content=handle_app_error(db_error)
-        )
-    except BaseAppError as e:
-        return JSONResponse(
-            status_code=e.status_code,
-            content=handle_app_error(e)
-        )
+        verify_jwt_in_request()
+        user_id = get_jwt_identity()
+        user = User.query.get(user_id)
+        if not user:
+            raise AuthenticationError("User not found")
+        g.current_user = user
     except Exception as e:
-        error = BaseAppError(str(e))
-        return JSONResponse(
-            status_code=error.status_code,
-            content=handle_app_error(error)
+        g.current_user = None
+        raise AuthenticationError(str(e))
+
+def require_auth(f):
+    """Decorator to require authentication."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        load_user()
+        return f(*args, **kwargs)
+    return decorated
+
+def require_admin(f):
+    """Decorator to require admin role."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        load_user()
+        if not g.current_user.is_admin:
+            raise AuthorizationError("Admin access required")
+        return f(*args, **kwargs)
+    return decorated
+
+class RequestMiddleware:
+    """Middleware for request processing."""
+
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        # Store request start time
+        request._start_time = time.time()
+
+        def custom_start_response(status, headers, exc_info=None):
+            # Add custom headers
+            headers.append(('X-Request-ID', str(uuid.uuid4())))
+            return start_response(status, headers, exc_info)
+
+        return self.app(environ, custom_start_response)
+
+def setup_middleware(app):
+    """Setup middleware for the Flask app."""
+
+    @app.before_request
+    def before_request():
+        # Set request ID
+        g.request_id = str(uuid.uuid4())
+
+        # Log request
+        current_app.logger.info(f"Request {g.request_id}: {request.method} {request.path}")
+
+        # Handle CORS preflight requests
+        if request.method == 'OPTIONS':
+            headers = {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+                'Access-Control-Max-Age': '3600'
+            }
+            return '', 204, headers
+
+    @app.after_request
+    def after_request(response):
+        # Add CORS headers
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+
+        # Log response
+        duration = time.time() - request._start_time
+        current_app.logger.info(
+            f"Request {g.request_id} completed: {response.status_code} ({duration:.2f}s)"
         )
 
-class RequestValidationMiddleware:
-    """Middleware for request validation and processing."""
+        return response
 
-    async def __call__(self, request: Request, call_next: Callable) -> Response:
-        try:
-            # Add request validation logic here if needed
-            response = await call_next(request)
-            return response
-        except Exception as e:
-            if isinstance(e, BaseAppError):
-                return JSONResponse(
-                    status_code=e.status_code,
-                    content=handle_app_error(e)
-                )
-            error = BaseAppError(str(e))
-            return JSONResponse(
-                status_code=error.status_code,
-                content=handle_app_error(error)
-            )
+    # Register middleware
+    app.wsgi_app = RequestMiddleware(app.wsgi_app)
+
+    return app

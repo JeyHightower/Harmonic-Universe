@@ -1,10 +1,60 @@
+# Flask and extensions
+Flask==2.3.3
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.5
+Flask-JWT-Extended==4.6.0
+Flask-CORS==4.0.0
+Flask-SocketIO==5.3.6
+Flask-Login==0.6.3
+Flask-Bcrypt==1.0.1
+
+# Database
+SQLAlchemy==2.0.25
+psycopg2-binary==2.9.9
+alembic==1.13.1
+redis==5.0.1
+
+# WebSocket
+python-socketio==5.9.0
+eventlet==0.33.3
+
+# Audio processing
+librosa==0.10.1
+soundfile==0.12.1
+numpy==1.24.3
+scipy==1.11.2
+
+# Utils
+python-dotenv==1.0.0
+requests==2.31.0
+Werkzeug==2.3.7
+gunicorn==21.2.0
+celery==5.3.4
+
+# Development
+pytest==7.4.2
+pytest-cov==4.1.0
+black==23.12.1
+flake8==7.0.0
+isort==5.13.2
+pytest-asyncio==0.23.3
+pytest-mock==3.12.0
+pytest-html==4.1.1
+httpx==0.25.1
+
+# Security
+bcrypt==4.0.1
+pyjwt==2.8.0
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Task Queue
+flower==2.0.1
+
 # Web Framework and Extensions
-flask==3.0.0
-flask-sqlalchemy==3.1.1
-flask-migrate==4.0.5
-flask-cors==4.0.0
-flask-jwt-extended==4.6.0
 flask-bcrypt==1.0.1
+flask-jwt-extended==4.6.0
+flask-migrate==4.0.5
 flask-socketio==5.3.6
 gunicorn==21.2.0
 
@@ -15,16 +65,8 @@ psycopg2-binary==2.9.9
 redis==5.0.1
 
 # WebSocket and Async
-python-socketio==5.10.0
-eventlet==0.33.3
 aiohttp==3.9.1
 aiofiles==23.2.1
-
-# Security
-bcrypt==4.0.1
-pyjwt==2.8.0
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
 
 # Data Validation
 pydantic==2.5.3
@@ -32,15 +74,12 @@ pydantic-settings==2.1.0
 email-validator==2.1.0
 
 # Testing
-pytest==7.4.4
 pytest-asyncio==0.23.3
-pytest-cov==4.1.0
 pytest-mock==3.12.0
 pytest-html==4.1.1
 httpx==0.25.1
 
 # Task Queue
-celery==5.3.6
 flower==2.0.1
 
 # Development
@@ -50,7 +89,6 @@ mypy==1.8.0
 isort==5.13.2
 
 # Utilities
-python-dotenv==1.0.0
 requests==2.31.0
 python-multipart==0.0.6
 python-dateutil==2.8.2
@@ -59,12 +97,10 @@ python-magic==0.4.27
 structlog==23.2.0
 
 # Visualization and Audio Processing
-numpy==1.26.3
 matplotlib==3.8.0
 pandas==2.1.0
 seaborn==0.13.0
 ffmpeg-python==0.2.0
-librosa==0.10.1
 soundfile==0.12.1
 audioread==3.0.1
 midiutil==1.2.1

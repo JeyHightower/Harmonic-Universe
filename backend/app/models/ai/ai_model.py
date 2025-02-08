@@ -99,7 +99,7 @@ class Dataset(Base):
     format = Column(String)  # file format or data structure
     size = Column(Integer)  # Size in bytes or number of samples
     features = Column(JSON, default=dict)  # Dataset features/schema
-    metadata = Column(JSON, default=dict)  # Additional metadata
+    dataset_metadata = Column(JSON, default=dict)  # Additional metadata
     file_path = Column(String)  # Path to dataset files
     created_by = Column(Integer, ForeignKey("users.id"))
 

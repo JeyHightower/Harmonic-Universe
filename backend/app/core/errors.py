@@ -4,6 +4,8 @@ Custom error handling module.
 
 from typing import Any, Dict, Optional
 from fastapi import HTTPException, status
+from flask import jsonify
+from werkzeug.exceptions import HTTPException as WerkzeugHTTPException
 
 class BaseAppError(Exception):
     """Base error class for application errors."""
@@ -62,3 +64,83 @@ def get_http_exception(error: BaseAppError) -> HTTPException:
         status_code=error.status_code,
         detail=handle_app_error(error)
     )
+
+class AppError(Exception):
+    """Base application error class."""
+    def __init__(self, message, code=500, payload=None):
+        super().__init__()
+        self.message = message
+        self.code = code
+        self.payload = payload
+
+    def to_dict(self):
+        rv = dict(self.payload or ())
+        rv['message'] = self.message
+        rv['code'] = self.code
+        rv['status'] = 'error'
+        return rv
+
+def register_error_handlers(app):
+    """Register error handlers for the Flask app."""
+
+    @app.errorhandler(AppError)
+    def handle_app_error(error):
+        response = jsonify(error.to_dict())
+        response.status_code = error.code
+        return response
+
+    @app.errorhandler(WerkzeugHTTPException)
+    def handle_http_error(error):
+        response = jsonify({
+            'status': 'error',
+            'message': error.description,
+            'code': error.code
+        })
+        response.status_code = error.code
+        return response
+
+    @app.errorhandler(Exception)
+    def handle_generic_error(error):
+        # Log the error here
+        app.logger.error(f"Unhandled exception: {str(error)}")
+        response = jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred',
+            'code': 500
+        })
+        response.status_code = 500
+        return response
+
+    @app.errorhandler(404)
+    def not_found_error(error):
+        return jsonify({
+            'status': 'error',
+            'message': 'Resource not found',
+            'code': 404
+        }), 404
+
+    @app.errorhandler(400)
+    def bad_request_error(error):
+        return jsonify({
+            'status': 'error',
+            'message': 'Bad request',
+            'code': 400
+        }), 400
+
+    @app.errorhandler(405)
+    def method_not_allowed_error(error):
+        return jsonify({
+            'status': 'error',
+            'message': 'Method not allowed',
+            'code': 405
+        }), 405
+
+    @app.errorhandler(500)
+    def internal_error(error):
+        # Log the error here
+        app.logger.error(f"Internal server error: {str(error)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Internal server error',
+            'code': 500
+        }), 500

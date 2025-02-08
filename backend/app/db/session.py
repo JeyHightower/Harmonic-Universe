@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.declarative import declarative_base
 
-from app.core.config import settings
+from app.core import settings
 
 # Create SQLAlchemy engine
 engine = create_engine(
@@ -20,7 +20,7 @@ SessionLocal = sessionmaker(
     bind=engine
 )
 
-# Create Base class for models
+# Create base class
 Base = declarative_base()
 
 def get_db() -> Session:

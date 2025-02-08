@@ -7,6 +7,184 @@ from typing import Dict, List, Optional, Union
 from pydantic import BaseModel, Field, validator
 from ..base import BaseAppModel, NameDescriptionModel, MetadataModel
 
+class WebGLSettings(BaseModel):
+    """WebGL rendering settings."""
+    antialias: bool = Field(default=True, description="Enable antialiasing")
+    pixelRatio: float = Field(
+        default=1.0,
+        ge=0.5,
+        le=2.0,
+        description="Device pixel ratio"
+    )
+    shadowMap: bool = Field(default=True, description="Enable shadow mapping")
+    maxLights: int = Field(
+        default=4,
+        ge=1,
+        le=8,
+        description="Maximum number of lights"
+    )
+    postProcessing: Dict[str, bool] = Field(
+        default_factory=lambda: {
+            "bloom": True,
+            "ssao": False,
+            "fxaa": True
+        },
+        description="Post-processing effects"
+    )
+
+class AudioAnalysisSettings(BaseModel):
+    """Audio analysis configuration."""
+    fftSize: int = Field(
+        default=2048,
+        ge=32,
+        le=32768,
+        description="FFT size for analysis"
+    )
+    smoothingTimeConstant: float = Field(
+        default=0.8,
+        ge=0,
+        le=1,
+        description="Smoothing time constant"
+    )
+    minDecibels: float = Field(
+        default=-100,
+        ge=-150,
+        le=-50,
+        description="Minimum decibels"
+    )
+    maxDecibels: float = Field(
+        default=-30,
+        ge=-80,
+        le=0,
+        description="Maximum decibels"
+    )
+    frequencyBands: List[Dict[str, Union[float, str]]] = Field(
+        default_factory=lambda: [
+            {"min": 20, "max": 60, "name": "sub-bass"},
+            {"min": 60, "max": 250, "name": "bass"},
+            {"min": 250, "max": 500, "name": "low-mid"},
+            {"min": 500, "max": 2000, "name": "mid"},
+            {"min": 2000, "max": 4000, "name": "upper-mid"},
+            {"min": 4000, "max": 6000, "name": "presence"},
+            {"min": 6000, "max": 20000, "name": "brilliance"}
+        ],
+        description="Frequency band definitions"
+    )
+
+class AdvancedEffect(BaseModel):
+    """Advanced effect configuration."""
+    type: str = Field(..., description="Effect type")
+    enabled: bool = Field(default=True, description="Effect enabled state")
+    parameters: Dict[str, Union[float, str, bool]] = Field(
+        default_factory=dict,
+        description="Effect parameters"
+    )
+    uniforms: Dict[str, Union[float, List[float]]] = Field(
+        default_factory=dict,
+        description="GLSL uniforms"
+    )
+    blendMode: str = Field(
+        default="normal",
+        description="Effect blend mode"
+    )
+
+    @validator('type')
+    def validate_effect_type(cls, v: str) -> str:
+        """Validate effect type."""
+        allowed_types = [
+            "blur", "bloom", "noise", "distortion", "glitch",
+            "pixelation", "dotScreen", "rgbShift", "kaleidoscope",
+            "fractal", "waveform", "frequency", "particleSystem"
+        ]
+        if v not in allowed_types:
+            raise ValueError(f"Effect type must be one of: {allowed_types}")
+        return v
+
+    @validator('blendMode')
+    def validate_blend_mode(cls, v: str) -> str:
+        """Validate blend mode."""
+        allowed_modes = [
+            "normal", "multiply", "screen", "overlay", "darken",
+            "lighten", "colorDodge", "colorBurn", "hardLight",
+            "softLight", "difference", "exclusion", "hue",
+            "saturation", "color", "luminosity"
+        ]
+        if v not in allowed_modes:
+            raise ValueError(f"Blend mode must be one of: {allowed_modes}")
+        return v
+
+class VisualizationPreset(BaseModel):
+    """Visualization preset configuration."""
+    name: str = Field(..., min_length=1, max_length=255)
+    description: str = Field(..., min_length=1, max_length=1000)
+    category: str = Field(..., description="Preset category")
+    effects: List[AdvancedEffect] = Field(
+        default_factory=list,
+        description="Preset effects"
+    )
+    parameters: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Preset parameters"
+    )
+
+    @validator('category')
+    def validate_category(cls, v: str) -> str:
+        """Validate preset category."""
+        allowed_categories = [
+            "audio", "geometric", "particle", "fractal",
+            "abstract", "nature", "space", "custom"
+        ]
+        if v not in allowed_categories:
+            raise ValueError(f"Category must be one of: {allowed_categories}")
+        return v
+
+class VisualizationSettings(BaseModel):
+    """Enhanced visualization settings."""
+    type: str = Field(
+        default="waveform",
+        description="Type of visualization"
+    )
+    preset: Optional[VisualizationPreset] = Field(
+        None,
+        description="Active visualization preset"
+    )
+    webgl: WebGLSettings = Field(
+        default_factory=WebGLSettings,
+        description="WebGL settings"
+    )
+    audioAnalysis: AudioAnalysisSettings = Field(
+        default_factory=AudioAnalysisSettings,
+        description="Audio analysis settings"
+    )
+    effects: List[AdvancedEffect] = Field(
+        default_factory=list,
+        description="Active effects"
+    )
+    dimensions: Dict[str, int] = Field(
+        default_factory=lambda: {"width": 1920, "height": 1080},
+        description="Visualization dimensions"
+    )
+    performance: Dict[str, Union[bool, int]] = Field(
+        default_factory=lambda: {
+            "useWorkers": True,
+            "maxWorkers": 4,
+            "bufferSize": 8192,
+            "lowLatencyMode": False
+        },
+        description="Performance settings"
+    )
+
+    @validator('type')
+    def validate_type(cls, v: str) -> str:
+        """Validate visualization type."""
+        allowed_types = [
+            "waveform", "spectrum", "particles", "3d", "custom",
+            "circular", "bars", "mesh", "terrain", "oscilloscope"
+        ]
+        if v not in allowed_types:
+            raise ValueError(f"Type must be one of: {allowed_types}")
+        return v
+
 class ColorScheme(BaseModel):
     """Color scheme configuration."""
     primary: str = Field(
@@ -29,69 +207,6 @@ class ColorScheme(BaseModel):
         pattern="^#[0-9a-fA-F]{6}$",
         description="Accent color in hex format"
     )
-
-class VisualizationSettings(BaseModel):
-    """Visualization settings configuration."""
-    type: str = Field(
-        default="waveform",
-        description="Type of visualization"
-    )
-    color_scheme: ColorScheme = Field(
-        default_factory=ColorScheme,
-        description="Color scheme settings"
-    )
-    resolution: int = Field(
-        default=1080,
-        ge=480,
-        le=4320,
-        description="Visualization resolution"
-    )
-    frame_rate: int = Field(
-        default=60,
-        ge=24,
-        le=144,
-        description="Frame rate in FPS"
-    )
-    effects: Dict[str, float] = Field(
-        default_factory=dict,
-        description="Visual effects configuration"
-    )
-    dimensions: Dict[str, int] = Field(
-        default_factory=lambda: {"width": 1920, "height": 1080},
-        description="Visualization dimensions"
-    )
-
-    @validator('type')
-    def validate_type(cls, v: str) -> str:
-        """Validate visualization type."""
-        allowed_types = ["waveform", "spectrum", "particles", "3d", "custom"]
-        if v not in allowed_types:
-            raise ValueError(f"Type must be one of: {allowed_types}")
-        return v
-
-    @validator('effects')
-    def validate_effects(cls, v: Dict[str, float]) -> Dict[str, float]:
-        """Validate effects configuration."""
-        allowed_effects = ["blur", "glow", "noise", "distortion"]
-        for effect in v:
-            if effect not in allowed_effects:
-                raise ValueError(f"Effect {effect} not supported")
-            if not 0 <= v[effect] <= 1:
-                raise ValueError(f"Effect {effect} value must be between 0 and 1")
-        return v
-
-    @validator('dimensions')
-    def validate_dimensions(cls, v: Dict[str, int]) -> Dict[str, int]:
-        """Validate visualization dimensions."""
-        required_keys = ["width", "height"]
-        for key in required_keys:
-            if key not in v:
-                raise ValueError(f"Missing required dimension: {key}")
-            if v[key] < 1:
-                raise ValueError(f"{key} must be positive")
-            if v[key] > 7680:  # 8K resolution limit
-                raise ValueError(f"{key} cannot exceed 7680")
-        return v
 
 class VisualizationBase(NameDescriptionModel, MetadataModel):
     """Base visualization model."""
