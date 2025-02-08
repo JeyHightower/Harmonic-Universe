@@ -47,9 +47,6 @@ class RequestMiddleware:
         self.app = app
 
     def __call__(self, environ, start_response):
-        # Store request start time
-        request._start_time = time.time()
-
         def custom_start_response(status, headers, exc_info=None):
             # Add custom headers
             headers.append(('X-Request-ID', str(uuid.uuid4())))
@@ -62,8 +59,9 @@ def setup_middleware(app):
 
     @app.before_request
     def before_request():
-        # Set request ID
+        # Set request ID and start time
         g.request_id = str(uuid.uuid4())
+        request._start_time = time.time()
 
         # Log request
         current_app.logger.info(f"Request {g.request_id}: {request.method} {request.path}")

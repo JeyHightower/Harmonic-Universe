@@ -30,7 +30,7 @@ def create_app(config_class=Config):
     load_dotenv()
 
     # Initialize database
-    database_url = os.environ.get('DATABASE_URL')
+    database_url = app.config['SQLALCHEMY_DATABASE_URI']
     logger.debug(f"Using database URL: {database_url}")
 
     engine = create_engine(database_url)
