@@ -8,8 +8,9 @@ class Config:
     TESTING = False
 
     # Database
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'postgresql://localhost/harmonic_universe'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('SQLALCHEMY_DATABASE_URI') or \
+        os.environ.get('DATABASE_URL') or \
+        'postgresql://postgres:postgres@localhost:5432/harmonic_universe'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # JWT settings
@@ -48,7 +49,7 @@ class DevelopmentConfig(Config):
 
 class TestingConfig(Config):
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'postgresql://localhost/harmonic_universe_test'
+    SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postgres@localhost:5432/harmonic_universe_test'
 
 class ProductionConfig(Config):
     # Production-specific settings

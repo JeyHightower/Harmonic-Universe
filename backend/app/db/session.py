@@ -3,14 +3,16 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.declarative import declarative_base
-
-from app.core import settings
+import os
 
 # Create SQLAlchemy engine
+database_url = os.environ.get('SQLALCHEMY_DATABASE_URI') or \
+    os.environ.get('DATABASE_URL') or \
+    'postgresql://postgres:postgres@localhost:5432/harmonic_universe'
 engine = create_engine(
-    settings.SQLALCHEMY_DATABASE_URI,
+    database_url,
     pool_pre_ping=True,
-    echo=settings.SQLALCHEMY_ECHO
+    echo=True
 )
 
 # Create sessionmaker

@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app import db, socketio
-from app.models.universe import Universe
+from app.models.core.universe import Universe
 from app.core.errors import ValidationError, NotFoundError, AuthorizationError
+from app import db, socketio
 
 universe_bp = Blueprint('universe', __name__)
 
@@ -10,82 +10,55 @@ universe_bp = Blueprint('universe', __name__)
 @jwt_required()
 def get_universes():
     current_user_id = get_jwt_identity()
-    universes = Universe.query.filter(
-        (Universe.user_id == current_user_id) | (Universe.is_public == True)
-    ).all()
-    return jsonify([u.to_dict() for u in universes])
+    universes = Universe.query.filter_by(user_id=current_user_id).all()
+    return jsonify([universe.to_dict() for universe in universes])
 
-@universe_bp.route('/<int:universe_id>', methods=['GET'])
+@universe_bp.route('/<int:id>', methods=['GET'])
 @jwt_required()
-def get_universe(universe_id):
-    current_user_id = get_jwt_identity()
-    universe = Universe.query.get_or_404(universe_id)
-
-    if not universe.is_public and universe.user_id != current_user_id:
-        raise AuthorizationError('Not authorized to view this universe')
-
+def get_universe(id):
+    universe = Universe.query.get_or_404(id)
     return jsonify(universe.to_dict())
 
 @universe_bp.route('/', methods=['POST'])
 @jwt_required()
 def create_universe():
-    current_user_id = get_jwt_identity()
     data = request.get_json()
+    current_user_id = get_jwt_identity()
 
     # Validate required fields
-    if not all(k in data for k in ('name',)):
+    if not all(k in data for k in ('name', 'description')):
         raise ValidationError('Missing required fields')
 
     universe = Universe(
         name=data['name'],
-        description=data.get('description'),
-        is_public=data.get('is_public', False),
-        physics_params=data.get('physics_params', {}),
-        harmony_params=data.get('harmony_params', {}),
-        story_points=data.get('story_points', []),
-        metadata=data.get('metadata', {}),
+        description=data['description'],
         user_id=current_user_id
     )
-    universe.save()
+    db.session.add(universe)
+    db.session.commit()
 
     return jsonify(universe.to_dict()), 201
 
-@universe_bp.route('/<int:universe_id>', methods=['PUT'])
+@universe_bp.route('/<int:id>', methods=['PUT'])
 @jwt_required()
-def update_universe(universe_id):
-    current_user_id = get_jwt_identity()
-    universe = Universe.query.get_or_404(universe_id)
-
-    if universe.user_id != current_user_id:
-        raise AuthorizationError('Not authorized to update this universe')
-
+def update_universe(id):
+    universe = Universe.query.get_or_404(id)
     data = request.get_json()
-    allowed_fields = {
-        'name', 'description', 'is_public', 'physics_params',
-        'harmony_params', 'story_points', 'metadata'
-    }
-    update_data = {k: v for k, v in data.items() if k in allowed_fields}
 
-    universe.update(**update_data)
+    # Update fields
+    for key, value in data.items():
+        if hasattr(universe, key):
+            setattr(universe, key, value)
 
-    # Notify connected clients about the update
-    socketio.emit('universe_updated', {
-        'universe_id': universe_id,
-        'data': universe.to_dict()
-    }, room=f'universe_{universe_id}')
-
+    db.session.commit()
     return jsonify(universe.to_dict())
 
-@universe_bp.route('/<int:universe_id>', methods=['DELETE'])
+@universe_bp.route('/<int:id>', methods=['DELETE'])
 @jwt_required()
-def delete_universe(universe_id):
-    current_user_id = get_jwt_identity()
-    universe = Universe.query.get_or_404(universe_id)
-
-    if universe.user_id != current_user_id:
-        raise AuthorizationError('Not authorized to delete this universe')
-
-    universe.delete()
+def delete_universe(id):
+    universe = Universe.query.get_or_404(id)
+    db.session.delete(universe)
+    db.session.commit()
     return '', 204
 
 @universe_bp.route('/<int:universe_id>/physics', methods=['PUT'])

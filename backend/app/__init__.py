@@ -8,6 +8,12 @@ from flask_bcrypt import Bcrypt
 from config import Config
 from .db.session import SessionLocal, get_db, Base
 from sqlalchemy import create_engine
+import os
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -19,8 +25,18 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    # Load the .env file
+    from dotenv import load_dotenv
+    load_dotenv()
+
     # Initialize database
-    engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
+    database_url = os.environ.get('SQLALCHEMY_DATABASE_URI') or \
+        os.environ.get('DATABASE_URL') or \
+        'postgresql://postgres:postgres@localhost:5432/harmonic_universe'
+
+    logger.debug(f"Using database URL: {database_url}")
+
+    engine = create_engine(database_url)
     Base.metadata.create_all(bind=engine)
 
     # Initialize extensions

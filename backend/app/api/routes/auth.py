@@ -31,7 +31,8 @@ def register():
         email=data['email']
     )
     user.password = data['password']
-    user.save()
+    db.session.add(user)
+    db.session.commit()
 
     # Generate tokens
     access_token = create_access_token(identity=user.id)
@@ -100,7 +101,10 @@ def update_user():
         if existing and existing.id != current_user_id:
             raise ValidationError('Email already exists')
 
-    user.update(**update_data)
+    for key, value in update_data.items():
+        setattr(user, key, value)
+    db.session.commit()
+
     return jsonify(user.to_dict())
 
 @auth_bp.route('/logout', methods=['POST'])

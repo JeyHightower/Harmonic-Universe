@@ -1,187 +1,160 @@
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from flask import Blueprint, request, jsonify, send_file, current_app
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from typing import Dict, Optional
 import numpy as np
 import soundfile as sf
 import io
-import asyncio
-import aiohttp
+import time
+import requests
 from app.core.config import settings
 from app.core.security import get_current_user
 from app.models.user import User
 from app.services.audio_processing import process_audio_data
 from app.db.session import get_db
-from sqlalchemy.orm import Session
 
-router = APIRouter()
+# Create blueprints for different route categories
+audio_bp = Blueprint('audio', __name__, url_prefix='/api/v1/audio')
+visualization_bp = Blueprint('visualization', __name__, url_prefix='/api/v1/visualization')
+physics_bp = Blueprint('physics', __name__, url_prefix='/api/v1/physics')
+ai_bp = Blueprint('ai', __name__, url_prefix='/api/v1/ai')
 
-class MusicGenerationParameters(BaseModel):
-    style: str
-    mood: str
-    parameters: Dict[str, float]
-    user_id: Optional[int] = None
-
-class AudioGenerationResponse(BaseModel):
-    status: str
-    message: str
-    task_id: Optional[str] = None
-
-@router.post("/generate-music", response_model=AudioGenerationResponse)
-async def generate_music(
-    params: MusicGenerationParameters,
-    background_tasks: BackgroundTasks,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
+@audio_bp.route('/generate-music', methods=['POST'])
+@jwt_required()
+def generate_music():
     try:
+        # Get current user
+        current_user = get_current_user()
+
+        # Get request data
+        data = request.get_json()
+        style = data.get('style')
+        mood = data.get('mood')
+        parameters = data.get('parameters', {})
+
         # Validate parameters
-        if not params.style or not params.mood:
-            raise HTTPException(
-                status_code=400,
-                detail="Style and mood are required parameters"
-            )
+        if not style or not mood:
+            return jsonify({
+                'error': 'Style and mood are required parameters'
+            }), 400
 
         # Initialize audio generation task
-        task_id = f"music_gen_{current_user.id}_{int(asyncio.get_event_loop().time())}"
+        task_id = f"music_gen_{current_user.id}_{int(time.time())}"
 
         # Start background task for music generation
-        background_tasks.add_task(
+        current_app.task_queue.enqueue(
             generate_music_task,
             task_id,
-            params,
-            current_user.id,
-            db
+            style,
+            mood,
+            parameters,
+            current_user.id
         )
 
-        return AudioGenerationResponse(
-            status="processing",
-            message="Music generation started",
-            task_id=task_id
-        )
+        return jsonify({
+            'status': 'processing',
+            'message': 'Music generation started',
+            'task_id': task_id
+        })
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error starting music generation: {str(e)}"
-        )
+        return jsonify({
+            'error': f'Error starting music generation: {str(e)}'
+        }), 500
 
-@router.get("/music-status/{task_id}")
-async def get_music_status(
-    task_id: str,
-    current_user: User = Depends(get_current_user)
-):
+@audio_bp.route('/music-status/<task_id>', methods=['GET'])
+@jwt_required()
+def get_music_status(task_id):
     try:
         # Check task status in cache/database
-        status = await check_task_status(task_id)
-        return {"status": status}
+        status = check_task_status(task_id)
+        return jsonify({'status': status})
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error checking music generation status: {str(e)}"
-        )
+        return jsonify({
+            'error': f'Error checking music generation status: {str(e)}'
+        }), 500
 
-@router.get("/download-music/{task_id}")
-async def download_music(
-    task_id: str,
-    current_user: User = Depends(get_current_user)
-):
+@audio_bp.route('/download-music/<task_id>', methods=['GET'])
+@jwt_required()
+def download_music(task_id):
     try:
         # Get generated audio data
-        audio_data = await get_generated_audio(task_id)
-        if not audio_data:
-            raise HTTPException(
-                status_code=404,
-                detail="Generated audio not found"
-            )
+        audio_data = get_generated_audio(task_id)
+        if audio_data is None:
+            return jsonify({
+                'error': 'Generated audio not found'
+            }), 404
 
         # Create in-memory file-like object
         audio_io = io.BytesIO()
         sf.write(audio_io, audio_data, settings.AUDIO_SAMPLE_RATE, format='wav')
         audio_io.seek(0)
 
-        return StreamingResponse(
+        return send_file(
             audio_io,
-            media_type="audio/wav",
+            mimetype='audio/wav',
+            as_attachment=True,
+            download_name=f'generated_music_{task_id}.wav'
+        )
+
+    except Exception as e:
+        return jsonify({
+            'error': f'Error downloading generated music: {str(e)}'
+        }), 500
+
+def generate_music_task(task_id, style, mood, parameters, user_id):
+    try:
+        # Call AI music generation service
+        response = requests.post(
+            settings.AI_MUSIC_SERVICE_URL,
+            json={
+                'style': style,
+                'mood': mood,
+                'parameters': parameters
+            },
             headers={
-                "Content-Disposition": f"attachment; filename=generated_music_{task_id}.wav"
+                'Authorization': f'Bearer {settings.AI_SERVICE_API_KEY}'
             }
         )
 
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error downloading generated music: {str(e)}"
-        )
+        if response.status_code != 200:
+            raise Exception(f'AI service returned status {response.status_code}')
 
-async def generate_music_task(
-    task_id: str,
-    params: MusicGenerationParameters,
-    user_id: int,
-    db: Session
-):
-    try:
-        # Call AI music generation service
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                settings.AI_MUSIC_SERVICE_URL,
-                json={
-                    "style": params.style,
-                    "mood": params.mood,
-                    "parameters": params.parameters
-                },
-                headers={
-                    "Authorization": f"Bearer {settings.AI_SERVICE_API_KEY}"
-                }
-            ) as response:
-                if response.status != 200:
-                    raise Exception(f"AI service returned status {response.status}")
-
-                audio_data = await response.read()
+        audio_data = response.content
 
         # Process the generated audio
-        processed_audio = await process_audio_data(
+        processed_audio = process_audio_data(
             audio_data,
-            params.parameters.get("tempo", 120),
-            params.parameters.get("complexity", 0.5)
+            parameters.get('tempo', 120),
+            parameters.get('complexity', 0.5)
         )
 
         # Store the processed audio
-        await store_generated_audio(task_id, processed_audio, user_id, db)
+        store_generated_audio(task_id, processed_audio, user_id)
 
         # Update task status
-        await update_task_status(task_id, "completed")
+        update_task_status(task_id, 'completed')
 
     except Exception as e:
-        await update_task_status(task_id, "failed", str(e))
+        update_task_status(task_id, 'failed', str(e))
         raise
 
-async def check_task_status(task_id: str) -> str:
+def check_task_status(task_id: str) -> str:
     # Implementation depends on your task management system
     # This could use Redis, database, or other storage
     pass
 
-async def get_generated_audio(task_id: str) -> np.ndarray:
+def get_generated_audio(task_id: str) -> np.ndarray:
     # Implementation depends on your storage system
     # This could retrieve from file system, S3, or other storage
     pass
 
-async def store_generated_audio(
-    task_id: str,
-    audio_data: np.ndarray,
-    user_id: int,
-    db: Session
-):
+def store_generated_audio(task_id: str, audio_data: np.ndarray, user_id: int):
     # Implementation depends on your storage system
     # This could store to file system, S3, or other storage
     pass
 
-async def update_task_status(
-    task_id: str,
-    status: str,
-    error_message: Optional[str] = None
-):
+def update_task_status(task_id: str, status: str, error_message: Optional[str] = None):
     # Implementation depends on your task management system
     # This could use Redis, database, or other storage
     pass
