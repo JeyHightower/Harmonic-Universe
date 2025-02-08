@@ -3,14 +3,14 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.declarative import declarative_base
-
-from app.core.config import settings
+import os
 
 # Create SQLAlchemy engine
+database_url = os.environ.get('DATABASE_URL')
 engine = create_engine(
-    settings.SQLALCHEMY_DATABASE_URI,
+    database_url,
     pool_pre_ping=True,
-    echo=settings.SQLALCHEMY_ECHO
+    echo=True
 )
 
 # Create sessionmaker
@@ -20,7 +20,7 @@ SessionLocal = sessionmaker(
     bind=engine
 )
 
-# Create Base class for models
+# Create base class
 Base = declarative_base()
 
 def get_db() -> Session:

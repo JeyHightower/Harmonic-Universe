@@ -1,61 +1,113 @@
-"""Error handling module for the application."""
+"""
+Custom error handling module for Flask application.
+"""
 
 from typing import Any, Dict, Optional
-from fastapi import HTTPException, status
+from werkzeug.exceptions import HTTPException as WerkzeugHTTPException
+from flask import jsonify
 
-class AppError(Exception):
-    """Base exception class for application errors."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail: Optional[Dict[str, Any]] = None
-    ):
+class BaseAppError(Exception):
+    """Base error class for application errors."""
+    def __init__(self, message: str, status_code: int = 500, details: Optional[Dict[str, Any]] = None):
         self.message = message
         self.status_code = status_code
-        self.detail = detail or {}
+        self.details = details or {}
         super().__init__(self.message)
 
-class ErrorResponse:
-    """Standard error response format."""
+class ValidationError(BaseAppError):
+    """Raised when data validation fails."""
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+        super().__init__(message, status_code=422, details=details)
 
-    def __init__(
-        self,
-        message: str,
-        status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail: Optional[Dict[str, Any]] = None
-    ):
-        self.message = message
-        self.status_code = status_code
-        self.detail = detail or {}
+class NotFoundError(BaseAppError):
+    """Raised when a resource is not found."""
+    def __init__(self, resource: str, resource_id: Any):
+        super().__init__(
+            message=f"{resource} with id {resource_id} not found",
+            status_code=404
+        )
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert error response to dictionary format."""
-        return {
-            "error": {
-                "message": self.message,
-                "status_code": self.status_code,
-                "detail": self.detail
+class AuthenticationError(BaseAppError):
+    """Raised when authentication fails."""
+    def __init__(self, message: str = "Authentication failed"):
+        super().__init__(message, status_code=401)
+
+class AuthorizationError(BaseAppError):
+    """Raised when user doesn't have required permissions."""
+    def __init__(self, message: str = "Insufficient permissions"):
+        super().__init__(message, status_code=403)
+
+class DatabaseError(BaseAppError):
+    """Raised when database operations fail."""
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+        super().__init__(message, status_code=500, details=details)
+
+class FileOperationError(BaseAppError):
+    """Raised when file operations fail."""
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+        super().__init__(message, status_code=500, details=details)
+
+def register_error_handlers(app):
+    """Register error handlers for the Flask app."""
+
+    @app.errorhandler(BaseAppError)
+    def handle_base_error(error):
+        response = jsonify({
+            'error': {
+                'message': error.message,
+                'type': error.__class__.__name__,
+                'details': error.details
             }
-        }
+        })
+        response.status_code = error.status_code
+        return response
 
-    @classmethod
-    def from_exception(cls, exc: Exception) -> "ErrorResponse":
-        """Create an ErrorResponse from an exception."""
-        if isinstance(exc, AppError):
-            return cls(
-                message=exc.message,
-                status_code=exc.status_code,
-                detail=exc.detail
-            )
-        elif isinstance(exc, HTTPException):
-            return cls(
-                message=str(exc.detail),
-                status_code=exc.status_code
-            )
-        else:
-            return cls(
-                message=str(exc),
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+    @app.errorhandler(WerkzeugHTTPException)
+    def handle_http_error(error):
+        response = jsonify({
+            'error': {
+                'message': error.description,
+                'type': error.__class__.__name__,
+                'code': error.code
+            }
+        })
+        response.status_code = error.code
+        return response
+
+    @app.errorhandler(Exception)
+    def handle_generic_error(error):
+        app.logger.error(f"Unhandled exception: {str(error)}")
+        response = jsonify({
+            'error': {
+                'message': 'An unexpected error occurred',
+                'type': 'InternalServerError',
+                'code': 500
+            }
+        })
+        response.status_code = 500
+        return response
+
+    # Register specific error handlers
+    @app.errorhandler(ValidationError)
+    def handle_validation_error(error):
+        return handle_base_error(error)
+
+    @app.errorhandler(NotFoundError)
+    def handle_not_found_error(error):
+        return handle_base_error(error)
+
+    @app.errorhandler(AuthenticationError)
+    def handle_authentication_error(error):
+        return handle_base_error(error)
+
+    @app.errorhandler(AuthorizationError)
+    def handle_authorization_error(error):
+        return handle_base_error(error)
+
+    @app.errorhandler(DatabaseError)
+    def handle_database_error(error):
+        return handle_base_error(error)
+
+    @app.errorhandler(FileOperationError)
+    def handle_file_operation_error(error):
+        return handle_base_error(error)

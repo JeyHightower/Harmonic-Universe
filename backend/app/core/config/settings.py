@@ -47,8 +47,18 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER_EMAIL: str = "admin@example.com"
     FIRST_SUPERUSER_PASSWORD: str = "admin123"
 
+    # Audio settings
+    AUDIO_SAMPLE_RATE: int = 44100  # Standard CD-quality sample rate
+    AUDIO_CHANNELS: int = 2  # Stereo
+    AUDIO_BIT_DEPTH: int = 16  # CD-quality bit depth
+    AUDIO_BUFFER_SIZE: int = 2048  # Buffer size for real-time processing
+    AUDIO_MAX_LENGTH: int = 300  # Maximum audio length in seconds
+    AUDIO_FORMAT: str = "wav"  # Default audio format
+    AUDIO_QUALITY: float = 0.9  # Audio quality for compression (0.0 to 1.0)
+
     class Config:
         case_sensitive = True
         env_file = ".env"
+        extra = "allow"  # Allow extra fields in the settings
 
 settings = Settings()

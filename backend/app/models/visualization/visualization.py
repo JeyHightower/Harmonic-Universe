@@ -1,5 +1,5 @@
 from app import db
-from .base import BaseModel
+from app.models.core.base import BaseModel
 
 class Visualization(BaseModel):
     __tablename__ = 'visualizations'
