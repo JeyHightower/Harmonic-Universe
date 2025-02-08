@@ -9,25 +9,31 @@ const initialState = {
   isAuthenticated: !!localStorage.getItem('token'),
 };
 
-export const login = createAsyncThunk(
-  'auth/login',
-  async (credentials) => {
-    const response = await api.post('/api/auth/login', credentials);
-    const { token, user } = response.data;
-    localStorage.setItem('token', token);
-    return { token, user };
-  }
-);
+export const login = createAsyncThunk('auth/login', async credentials => {
+  const response = await api.post('/api/auth/login', credentials);
+  const { token, user } = response.data;
+  localStorage.setItem('token', token);
+  return { token, user };
+});
 
-export const register = createAsyncThunk(
-  'auth/register',
-  async (data) => {
-    const response = await api.post('/api/auth/register', data);
-    const { token, user } = response.data;
-    localStorage.setItem('token', token);
-    return { token, user };
-  }
-);
+export const demoLogin = createAsyncThunk('auth/demoLogin', async () => {
+  // Use demo credentials
+  const demoCredentials = {
+    email: 'demo@harmonic-universe.com',
+    password: 'demo123',
+  };
+  const response = await api.post('/api/auth/login', demoCredentials);
+  const { token, user } = response.data;
+  localStorage.setItem('token', token);
+  return { token, user };
+});
+
+export const register = createAsyncThunk('auth/register', async data => {
+  const response = await api.post('/api/auth/register', data);
+  const { token, user } = response.data;
+  localStorage.setItem('token', token);
+  return { token, user };
+});
 
 export const logout = createAsyncThunk('auth/logout', async () => {
   await api.post('/api/auth/logout');
@@ -39,7 +45,7 @@ export const fetchUser = createAsyncThunk('auth/fetchUser', async () => {
   return response.data;
 });
 
-export const updateUser = createAsyncThunk('auth/updateUser', async (data) => {
+export const updateUser = createAsyncThunk('auth/updateUser', async data => {
   const response = await api.patch('/api/auth/user', data);
   return response.data;
 });
@@ -92,6 +98,20 @@ const authSlice = createSlice({
       })
       .addCase(updateUser.fulfilled, (state, action) => {
         state.user = action.payload;
+      })
+      .addCase(demoLogin.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(demoLogin.fulfilled, (state, action) => {
+        state.loading = false;
+        state.token = action.payload.token;
+        state.user = action.payload.user;
+        state.isAuthenticated = true;
+      })
+      .addCase(demoLogin.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Demo login failed';
       });
   },
 });

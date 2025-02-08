@@ -28,7 +28,7 @@ export const {
 } = api;
 
 const apiInstance = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -95,31 +95,31 @@ export const endpoints = {
   },
   projects: {
     base: '/api/projects',
-    detail: (id) => `/api/projects/${id}`,
-    universes: (id) => `/api/projects/${id}/universes`,
-    audio: (id) => `/api/projects/${id}/audio`,
-    visualizations: (id) => `/api/projects/${id}/visualizations`,
+    detail: id => `/api/projects/${id}`,
+    universes: id => `/api/projects/${id}/universes`,
+    audio: id => `/api/projects/${id}/audio`,
+    visualizations: id => `/api/projects/${id}/visualizations`,
   },
   universes: {
     base: '/api/universes',
-    detail: (id) => `/api/universes/${id}`,
-    physics: (id) => `/api/universes/${id}/physics`,
-    harmony: (id) => `/api/universes/${id}/harmony`,
-    story: (id) => `/api/universes/${id}/story`,
-    export: (id) => `/api/universes/${id}/export`,
+    detail: id => `/api/universes/${id}`,
+    physics: id => `/api/universes/${id}/physics`,
+    harmony: id => `/api/universes/${id}/harmony`,
+    story: id => `/api/universes/${id}/story`,
+    export: id => `/api/universes/${id}/export`,
   },
   audio: {
     base: '/api/audio',
     tracks: '/api/audio/tracks',
-    track: (id) => `/api/audio/tracks/${id}`,
-    upload: (id) => `/api/audio/tracks/${id}/upload`,
-    effects: (id) => `/api/audio/tracks/${id}/effects`,
+    track: id => `/api/audio/tracks/${id}`,
+    upload: id => `/api/audio/tracks/${id}/upload`,
+    effects: id => `/api/audio/tracks/${id}/effects`,
   },
   visualizations: {
     base: '/api/visualizations',
-    detail: (id) => `/api/visualizations/${id}`,
-    data: (id) => `/api/visualizations/${id}/data`,
-    stream: (id) => `/api/visualizations/${id}/stream`,
+    detail: id => `/api/visualizations/${id}`,
+    data: id => `/api/visualizations/${id}/data`,
+    stream: id => `/api/visualizations/${id}/stream`,
   },
 };
 

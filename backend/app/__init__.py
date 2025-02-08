@@ -10,6 +10,7 @@ from .db.session import SessionLocal, get_db, Base
 from sqlalchemy import create_engine
 import os
 import logging
+from .seeds.demo_user import create_demo_user
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -68,5 +69,10 @@ def create_app(config_class=Config):
     @app.route('/health')
     def health_check():
         return {'status': 'healthy'}
+
+    # Create demo user on app startup
+    with app.app_context():
+        db.create_all()
+        create_demo_user()
 
     return app
