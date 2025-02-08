@@ -10,7 +10,7 @@ class Config:
     # Database
     SQLALCHEMY_DATABASE_URI = os.environ.get('SQLALCHEMY_DATABASE_URI') or \
         os.environ.get('DATABASE_URL') or \
-        'postgresql://postgres:postgres@localhost:5432/harmonic_universe'
+        'postgresql://postgres:postgres@db:5432/harmonic_universe'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # JWT settings
@@ -33,7 +33,7 @@ class Config:
     AI_SERVICE_API_KEY = os.environ.get('AI_SERVICE_API_KEY')
 
     # Redis (for WebSocket and task queue)
-    REDIS_URL = os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
+    REDIS_URL = os.environ.get('REDIS_URL') or 'redis://redis:6379/0'
 
     # Celery
     CELERY_BROKER_URL = REDIS_URL
@@ -49,7 +49,7 @@ class DevelopmentConfig(Config):
 
 class TestingConfig(Config):
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postgres@localhost:5432/harmonic_universe_test'
+    SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postgres@db:5432/harmonic_universe_test'
 
 class ProductionConfig(Config):
     # Production-specific settings

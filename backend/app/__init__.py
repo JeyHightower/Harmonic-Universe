@@ -30,10 +30,7 @@ def create_app(config_class=Config):
     load_dotenv()
 
     # Initialize database
-    database_url = os.environ.get('SQLALCHEMY_DATABASE_URI') or \
-        os.environ.get('DATABASE_URL') or \
-        'postgresql://postgres:postgres@localhost:5432/harmonic_universe'
-
+    database_url = os.environ.get('DATABASE_URL')
     logger.debug(f"Using database URL: {database_url}")
 
     engine = create_engine(database_url)

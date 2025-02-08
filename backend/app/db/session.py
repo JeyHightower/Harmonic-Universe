@@ -6,9 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 import os
 
 # Create SQLAlchemy engine
-database_url = os.environ.get('SQLALCHEMY_DATABASE_URI') or \
-    os.environ.get('DATABASE_URL') or \
-    'postgresql://postgres:postgres@localhost:5432/harmonic_universe'
+database_url = os.environ.get('DATABASE_URL')
 engine = create_engine(
     database_url,
     pool_pre_ping=True,
