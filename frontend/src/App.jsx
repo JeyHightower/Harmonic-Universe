@@ -1,10 +1,11 @@
 import Layout from '@/components/layout/Layout';
+import { ThemeProvider as CustomThemeProvider, useTheme } from '@/hooks/useTheme.jsx';
 import Dashboard from '@/pages/Dashboard';
 import Home from '@/pages/Home';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import UniverseDetail from '@/pages/UniverseDetail';
-import theme from '@/theme/index';
+import getTheme from '@/theme/index';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import { useSelector } from 'react-redux';
@@ -15,8 +16,10 @@ const PrivateRoute = ({ children }) => {
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
-const App = () => {
+const AppContent = () => {
   const { isAuthenticated } = useSelector(state => state.auth);
+  const { mode } = useTheme();
+  const theme = getTheme(mode);
 
   return (
     <ThemeProvider theme={theme}>
@@ -59,6 +62,14 @@ const App = () => {
         </Layout>
       </Router>
     </ThemeProvider>
+  );
+};
+
+const App = () => {
+  return (
+    <CustomThemeProvider>
+      <AppContent />
+    </CustomThemeProvider>
   );
 };
 

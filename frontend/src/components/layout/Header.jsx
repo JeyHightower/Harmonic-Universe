@@ -12,17 +12,17 @@ import {
   MenuItem,
   Toolbar,
   Tooltip,
-  useTheme,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { useTheme as useAppTheme } from '../../hooks/useTheme';
+import { useTheme } from '../../hooks/useTheme.jsx';
 import Logo from '../common/Logo';
 
 const Header = ({ onToggleSidebar }) => {
-  const theme = useTheme();
-  const { toggleTheme } = useAppTheme();
+  const muiTheme = useMuiTheme();
+  const { mode, toggleTheme } = useTheme();
   const { isAuthenticated, user, logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState(null);
 
@@ -44,9 +44,9 @@ const Header = ({ onToggleSidebar }) => {
       position="fixed"
       elevation={0}
       sx={{
-        zIndex: theme.zIndex.drawer + 1,
-        backgroundColor: theme.palette.background.paper,
-        color: theme.palette.text.primary,
+        zIndex: muiTheme.zIndex.drawer + 1,
+        backgroundColor: muiTheme.palette.background.paper,
+        color: muiTheme.palette.text.primary,
       }}
     >
       <Container maxWidth="xl">
@@ -72,9 +72,9 @@ const Header = ({ onToggleSidebar }) => {
           {/* Right section */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             {/* Theme toggle */}
-            <Tooltip title={theme.palette.mode === 'dark' ? 'Light mode' : 'Dark mode'}>
+            <Tooltip title={mode === 'dark' ? 'Light mode' : 'Dark mode'}>
               <IconButton color="inherit" onClick={toggleTheme} sx={{ ml: 1 }}>
-                {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+                {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
               </IconButton>
             </Tooltip>
 
