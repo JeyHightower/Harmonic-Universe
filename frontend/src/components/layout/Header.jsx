@@ -5,7 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import Logo from '../common/Logo';
 
 const Header = ({ onToggleSidebar }) => {
-  const { isAuthenticated, handleLogout } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
 
   return (
     <AppBar position="fixed" elevation={0}>
@@ -39,7 +39,27 @@ const Header = ({ onToggleSidebar }) => {
                 </Button>
               </>
             ) : (
-              <Button variant="outlined" color="primary" onClick={handleLogout}>
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={logout}
+                sx={{
+                  borderWidth: '2px',
+                  borderColor: 'primary.main',
+                  color: 'primary.main',
+                  fontWeight: 600,
+                  '&:hover': {
+                    borderWidth: '2px',
+                    borderColor: 'primary.dark',
+                    backgroundColor: 'primary.main',
+                    color: 'white',
+                  },
+                  transition: theme =>
+                    theme.transitions.create(['background-color', 'border-color', 'color'], {
+                      duration: theme.transitions.duration.short,
+                    }),
+                }}
+              >
                 Log Out
               </Button>
             )}

@@ -17,9 +17,17 @@ db_session = None
 
 def get_database_url():
     """Get database URL from environment or config."""
+    # First try environment variable
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url:
+        return database_url
+
+    # Then try Flask config if available
     if current_app:
-        return current_app.config['SQLALCHEMY_DATABASE_URI']
-    return os.environ.get('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/harmonic_universe')
+        return current_app.config.get('SQLALCHEMY_DATABASE_URI', 'postgresql://postgres:postgres@localhost:5432/harmonic_universe')
+
+    # Default fallback
+    return 'postgresql://postgres:postgres@localhost:5432/harmonic_universe'
 
 def init_engine(database_url=None):
     """Initialize database engine."""

@@ -2,48 +2,166 @@
 Physics parameter schemas for request/response validation.
 """
 
-from typing import Any, Dict, Optional, Union
-from pydantic import BaseModel, Field
+from typing import Any, Dict, Optional, List
+from pydantic import BaseModel, Field, validator
+from uuid import UUID
+
+class PhysicsParameterValue(BaseModel):
+    """Structure for a physics parameter value."""
+    value: float = Field(..., description="Current value of the parameter")
+    unit: str = Field(..., description="Unit of measurement")
+    min: float = Field(..., description="Minimum allowed value")
+    max: float = Field(..., description="Maximum allowed value")
+    enabled: bool = Field(default=True, description="Whether the parameter is enabled")
 
 class PhysicsParameterBase(BaseModel):
-    """Shared properties for physics parameters."""
-    name: str = Field(..., description="Name of the parameter")
-    parameter_type: str = Field(..., description="Type of parameter (scalar, vector, etc.)")
-    value: Union[float, Dict[str, float]] = Field(..., description="Parameter value")
-    min_value: Optional[Union[float, Dict[str, float]]] = Field(None, description="Minimum allowed value")
-    max_value: Optional[Union[float, Dict[str, float]]] = Field(None, description="Maximum allowed value")
-    units: Optional[str] = Field(None, description="Units of measurement")
-    description: Optional[str] = Field(None, description="Parameter description")
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+    """Base physics parameters."""
+    scene_id: UUID
+    version: Optional[int] = Field(default=1, description="Version of the parameters")
+    is_active: Optional[bool] = Field(default=True, description="Whether the parameters are active")
+
+    # Basic physics parameters
+    gravity: PhysicsParameterValue = Field(
+        default_factory=lambda: {
+            "value": 9.81,
+            "unit": "m/s²",
+            "min": 0,
+            "max": 20,
+            "enabled": True
+        }
+    )
+    air_resistance: PhysicsParameterValue = Field(
+        default_factory=lambda: {
+            "value": 0.1,
+            "unit": "kg/m³",
+            "min": 0,
+            "max": 1,
+            "enabled": True
+        }
+    )
+    collision_elasticity: PhysicsParameterValue = Field(
+        default_factory=lambda: {
+            "value": 0.7,
+            "unit": "coefficient",
+            "min": 0,
+            "max": 1,
+            "enabled": True
+        }
+    )
+    friction: PhysicsParameterValue = Field(
+        default_factory=lambda: {
+            "value": 0.3,
+            "unit": "coefficient",
+            "min": 0,
+            "max": 1,
+            "enabled": True
+        }
+    )
+
+    # Advanced physics parameters
+    temperature: PhysicsParameterValue = Field(
+        default_factory=lambda: {
+            "value": 293.15,
+            "unit": "K",
+            "min": 0,
+            "max": 1000,
+            "enabled": True
+        }
+    )
+    pressure: PhysicsParameterValue = Field(
+        default_factory=lambda: {
+            "value": 101.325,
+            "unit": "kPa",
+            "min": 0,
+            "max": 200,
+            "enabled": True
+        }
+    )
+
+    # Fluid dynamics parameters
+    fluid_density: PhysicsParameterValue = Field(
+        default_factory=lambda: {
+            "value": 1.225,
+            "unit": "kg/m³",
+            "min": 0,
+            "max": 2000,
+            "enabled": False
+        }
+    )
+    viscosity: PhysicsParameterValue = Field(
+        default_factory=lambda: {
+            "value": 1.81e-5,
+            "unit": "Pa·s",
+            "min": 0,
+            "max": 1,
+            "enabled": False
+        }
+    )
+
+    # Simulation parameters
+    time_step: PhysicsParameterValue = Field(
+        default_factory=lambda: {
+            "value": 0.016,
+            "unit": "s",
+            "min": 0.001,
+            "max": 0.1,
+            "enabled": True
+        }
+    )
+    substeps: PhysicsParameterValue = Field(
+        default_factory=lambda: {
+            "value": 8,
+            "unit": "steps",
+            "min": 1,
+            "max": 32,
+            "enabled": True
+        }
+    )
+
+    # Custom parameters
+    custom_parameters: Dict[str, PhysicsParameterValue] = Field(
+        default_factory=dict,
+        description="Custom physics parameters"
+    )
+
+    @validator("*")
+    def validate_parameter_values(cls, v, field):
+        """Validate parameter values are within bounds."""
+        if isinstance(v, PhysicsParameterValue):
+            if not (v.min <= v.value <= v.max):
+                raise ValueError(
+                    f"Value {v.value} for {field.name} must be between {v.min} and {v.max}"
+                )
+        return v
 
 class PhysicsParameterCreate(PhysicsParameterBase):
     """Properties to receive on parameter creation."""
-    object_id: int = Field(..., description="ID of the physics object this parameter belongs to")
+    pass
 
-class PhysicsParameterUpdate(PhysicsParameterBase):
+class PhysicsParameterUpdate(BaseModel):
     """Properties to receive on parameter update."""
-    name: Optional[str] = None
-    parameter_type: Optional[str] = None
-    value: Optional[Union[float, Dict[str, float]]] = None
-    min_value: Optional[Union[float, Dict[str, float]]] = None
-    max_value: Optional[Union[float, Dict[str, float]]] = None
-    units: Optional[str] = None
-    description: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
+    version: Optional[int] = None
+    is_active: Optional[bool] = None
+    gravity: Optional[PhysicsParameterValue] = None
+    air_resistance: Optional[PhysicsParameterValue] = None
+    collision_elasticity: Optional[PhysicsParameterValue] = None
+    friction: Optional[PhysicsParameterValue] = None
+    temperature: Optional[PhysicsParameterValue] = None
+    pressure: Optional[PhysicsParameterValue] = None
+    fluid_density: Optional[PhysicsParameterValue] = None
+    viscosity: Optional[PhysicsParameterValue] = None
+    time_step: Optional[PhysicsParameterValue] = None
+    substeps: Optional[PhysicsParameterValue] = None
+    custom_parameters: Optional[Dict[str, PhysicsParameterValue]] = None
 
 class PhysicsParameterInDBBase(PhysicsParameterBase):
     """Properties shared by models stored in DB."""
     id: int
-    object_id: int
 
     class Config:
         """Pydantic configuration."""
         from_attributes = True
 
-class PhysicsParameter(PhysicsParameterInDBBase):
+class PhysicsParameterResponse(PhysicsParameterInDBBase):
     """Properties to return to client."""
-    pass
-
-class PhysicsParameterInDB(PhysicsParameterInDBBase):
-    """Properties stored in DB."""
     pass

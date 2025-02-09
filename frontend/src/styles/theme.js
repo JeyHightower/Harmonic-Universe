@@ -21,9 +21,9 @@ const theme = createTheme({
       dark: '#D99559',
     },
     background: {
-      default: '#F8FAFC', // Light cool gray
+      default: '#EDF2F7', // Slightly darker cool gray
       paper: '#FFFFFF',
-      accent: '#E9EEF6', // Light blue-gray
+      accent: '#E1E8F0', // Slightly darker blue-gray
     },
     text: {
       primary: '#1A2B42', // Dark blue-gray
@@ -102,25 +102,104 @@ const theme = createTheme({
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: 8,
+          borderRadius: '12px',
           textTransform: 'none',
-          fontWeight: 500,
-          padding: '8px 20px',
-          transition: 'all 0.2s ease-in-out',
+          fontWeight: 600,
+          fontSize: '0.95rem',
+          padding: '10px 24px',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          position: 'relative',
+          overflow: 'hidden',
           '&:hover': {
-            transform: 'translateY(-1px)',
+            transform: 'translateY(-2px)',
+          },
+          '&:active': {
+            transform: 'translateY(1px)',
+          },
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background:
+              'linear-gradient(120deg, rgba(255,255,255,0) 30%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 70%)',
+            transform: 'translateX(-100%)',
+            transition: 'transform 0.8s',
+          },
+          '&:hover::before': {
+            transform: 'translateX(100%)',
           },
         },
         contained: {
-          boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+          background: `linear-gradient(135deg, #1E4D8C 0%, #34A29E 100%)`,
+          boxShadow: '0 4px 12px rgba(30, 77, 140, 0.15)',
           '&:hover': {
-            boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+            background: `linear-gradient(135deg, #1E4D8C 20%, #34A29E 120%)`,
+            boxShadow: '0 6px 16px rgba(30, 77, 140, 0.25)',
+          },
+          '&:active': {
+            boxShadow: '0 2px 8px rgba(30, 77, 140, 0.15)',
           },
         },
         outlined: {
-          borderWidth: '1.5px',
+          borderWidth: '2px',
+          borderColor: '#1E4D8C',
           '&:hover': {
-            borderWidth: '1.5px',
+            borderWidth: '2px',
+            background: 'rgba(30, 77, 140, 0.04)',
+          },
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            inset: '-2px',
+            borderRadius: 'inherit',
+            background: `linear-gradient(135deg, #1E4D8C 0%, #34A29E 100%)`,
+            opacity: 0,
+            transition: 'opacity 0.3s ease',
+            zIndex: -1,
+          },
+          '&:hover::after': {
+            opacity: 0.08,
+          },
+        },
+        text: {
+          position: 'relative',
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            width: '100%',
+            height: '2px',
+            background: `linear-gradient(90deg, #1E4D8C 0%, #34A29E 100%)`,
+            transform: 'scaleX(0)',
+            transformOrigin: 'right',
+            transition: 'transform 0.3s ease',
+          },
+          '&:hover::after': {
+            transform: 'scaleX(1)',
+            transformOrigin: 'left',
+          },
+        },
+        // Size variants
+        sizeLarge: {
+          padding: '12px 32px',
+          fontSize: '1.1rem',
+        },
+        sizeSmall: {
+          padding: '6px 16px',
+          fontSize: '0.85rem',
+          borderRadius: '8px',
+        },
+        // State styles
+        disabled: {
+          background: '#E5E7EB !important',
+          color: '#9CA3AF !important',
+          boxShadow: 'none !important',
+          '&::before': {
+            display: 'none',
           },
         },
       },
