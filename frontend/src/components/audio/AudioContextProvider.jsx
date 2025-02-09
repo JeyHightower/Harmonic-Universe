@@ -1,13 +1,25 @@
 import { Box, Button } from '@mui/material';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import * as Tone from 'tone';
 
 const AudioContextProvider = ({ children }) => {
   const [isAudioContextStarted, setIsAudioContextStarted] = useState(false);
 
+  useEffect(() => {
+    // Check if AudioContext is already running
+    if (Tone.context.state === 'running') {
+      setIsAudioContextStarted(true);
+    }
+  }, []);
+
   const startAudioContext = async () => {
-    await Tone.start();
-    setIsAudioContextStarted(true);
+    try {
+      await Tone.start();
+      await Tone.context.resume();
+      setIsAudioContextStarted(true);
+    } catch (error) {
+      console.error('Failed to start audio context:', error);
+    }
   };
 
   if (!isAudioContextStarted) {
@@ -26,7 +38,17 @@ const AudioContextProvider = ({ children }) => {
           zIndex: 9999,
         }}
       >
-        <Button variant="contained" color="primary" onClick={startAudioContext}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={startAudioContext}
+          size="large"
+          sx={{
+            py: 2,
+            px: 4,
+            fontSize: '1.2rem',
+          }}
+        >
           Click to Enable Audio
         </Button>
       </Box>

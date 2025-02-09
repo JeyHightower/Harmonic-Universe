@@ -38,13 +38,45 @@ export const fetchUniverses = createAsyncThunk(
   async (_, { rejectWithValue, getState }) => {
     try {
       const { auth } = getState();
-      if (!auth.isAuthenticated) {
+
+      // Check authentication
+      if (!auth.isAuthenticated || !auth.token) {
         return rejectWithValue('Please log in to continue');
       }
-      const response = await api.get('/api/universes/');
+
+      // Add authorization header
+      const response = await api.get('/api/universes/', {
+        headers: {
+          Authorization: `Bearer ${auth.token}`,
+        },
+      });
+
+      // Validate response
+      if (!response.data) {
+        throw new Error('No data received from server');
+      }
+
+      // Return empty array if no universes found
+      if (!Array.isArray(response.data)) {
+        console.warn('Expected array of universes but got:', response.data);
+        return [];
+      }
+
       return response.data;
     } catch (err) {
       console.error('Fetch Universes Error:', err);
+      console.error('Error Response:', err.response?.data);
+
+      if (err.response?.status === 401) {
+        return rejectWithValue('Please log in to continue');
+      }
+
+      if (err.response?.status === 422) {
+        // Return empty array for validation errors
+        console.warn('Validation error when fetching universes, returning empty array');
+        return [];
+      }
+
       return rejectWithValue(err.message || 'Failed to fetch universes');
     }
   }
@@ -80,87 +112,123 @@ export const createUniverse = createAsyncThunk(
         name: data.name.trim(),
         description: data.description?.trim() || '',
         is_public: Boolean(data.isPublic),
-        physics_parameters: {
+        physics_params: {
           gravity: {
             value: 9.81,
-            enabled: true,
             unit: 'm/s²',
             min: 0,
-            max: 100,
-          },
-          friction: {
-            value: 0.2,
-            enabled: true,
-            unit: 'coefficient',
-            min: 0,
-            max: 1,
-          },
-          collision_elasticity: {
-            value: 0.8,
-            enabled: true,
-            unit: 'coefficient',
-            min: 0,
-            max: 1,
+            max: 20,
           },
           air_resistance: {
             value: 0.1,
-            enabled: true,
+            unit: 'kg/m³',
+            min: 0,
+            max: 1,
+          },
+          elasticity: {
+            value: 0.7,
             unit: 'coefficient',
             min: 0,
             max: 1,
           },
+          friction: {
+            value: 0.5,
+            unit: 'coefficient',
+            min: 0,
+            max: 1,
+          },
+          temperature: {
+            value: 293.15,
+            unit: 'K',
+            min: 0,
+            max: 1000,
+          },
+          pressure: {
+            value: 101.325,
+            unit: 'kPa',
+            min: 0,
+            max: 200,
+          },
         },
-        harmony_parameters: {
+        harmony_params: {
           resonance: {
             value: 1.0,
-            enabled: true,
-            unit: 'factor',
             min: 0,
-            max: 10,
+            max: 1,
           },
           dissonance: {
-            value: 0.2,
-            enabled: true,
-            unit: 'factor',
+            value: 0.0,
             min: 0,
             max: 1,
           },
           harmony_scale: {
-            value: 1.5,
-            enabled: true,
-            unit: 'factor',
-            min: 0.1,
-            max: 10,
+            value: 1.0,
+            min: 0,
+            max: 2,
           },
           balance: {
-            value: 0.6,
-            enabled: true,
-            unit: 'factor',
+            value: 0.5,
             min: 0,
             max: 1,
+          },
+          tempo: {
+            value: 120,
+            unit: 'bpm',
+            min: 60,
+            max: 200,
+          },
+          key: {
+            value: 'C',
+            options: ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#', 'F', 'Bb', 'Eb', 'Ab'],
+          },
+          scale: {
+            value: 'major',
+            options: ['major', 'minor', 'harmonic_minor', 'melodic_minor', 'pentatonic'],
+          },
+          instruments: {
+            primary: 'piano',
+            secondary: ['strings', 'pad'],
+            options: ['piano', 'strings', 'pad', 'bass', 'drums', 'synth'],
           },
         },
       };
 
-      console.log('Sending universe data to API:', universeData);
+      console.log('Sending universe data to API:', JSON.stringify(universeData, null, 2));
 
       const response = await api.post('/api/universes/', universeData);
+
+      if (!response.data) {
+        throw new Error('No data received from server');
+      }
+
       return response.data;
     } catch (err) {
       console.error('Create Universe Error:', err);
+      console.error('Error Response:', err.response?.data);
 
-      // Handle specific error cases
+      // Handle validation errors
+      if (err.response?.status === 422) {
+        const errorDetail = err.response.data.detail || err.response.data;
+        console.error('Validation Error Details:', errorDetail);
+
+        if (typeof errorDetail === 'object') {
+          const formattedError = Object.entries(errorDetail)
+            .map(([field, message]) => `${field}: ${message}`)
+            .join('\n');
+          return rejectWithValue(formattedError);
+        }
+        return rejectWithValue(String(errorDetail) || 'Invalid data provided');
+      }
+
+      // Handle authentication errors
       if (err.response?.status === 401) {
         return rejectWithValue('Please log in to continue');
       }
-      if (err.response?.data?.error) {
-        return rejectWithValue(err.response.data.error);
-      }
-      if (err.response?.data?.detail) {
-        return rejectWithValue(err.response.data.detail);
-      }
 
-      return rejectWithValue(err.message || 'Failed to create universe');
+      // Handle other errors
+      const errorMessage =
+        err.response?.data?.message || err.message || 'Failed to create universe';
+      return rejectWithValue(errorMessage);
     }
   }
 );

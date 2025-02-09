@@ -24,7 +24,7 @@ import { useNavigate } from 'react-router-dom';
 const Dashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useSelector(state => state.auth);
+  const { user, isAuthenticated, token } = useSelector(state => state.auth);
   const { universes, loading, error: globalError } = useSelector(state => state.universe);
 
   const [openDialog, setOpenDialog] = useState(false);
@@ -37,12 +37,12 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
+    const checkAuthAndFetchData = async () => {
+      if (!isAuthenticated || !token) {
+        navigate('/login');
+        return;
+      }
 
-    const fetchData = async () => {
       try {
         await dispatch(fetchUniverses()).unwrap();
       } catch (err) {
@@ -52,8 +52,8 @@ const Dashboard = () => {
       }
     };
 
-    fetchData();
-  }, [dispatch, isAuthenticated, navigate]);
+    checkAuthAndFetchData();
+  }, [dispatch, isAuthenticated, token, navigate]);
 
   const handleOpenDialog = universe => {
     setFormError(null);
@@ -110,19 +110,15 @@ const Dashboard = () => {
     }
 
     try {
-      console.log('Submitting universe data:', {
-        ...formData,
+      const universeData = {
         name,
         description,
-      });
+        isPublic: Boolean(formData.isPublic),
+      };
 
-      const resultAction = await dispatch(
-        createUniverse({
-          ...formData,
-          name,
-          description,
-        })
-      ).unwrap();
+      console.log('Submitting universe data:', universeData);
+
+      const resultAction = await dispatch(createUniverse(universeData)).unwrap();
 
       if (resultAction) {
         handleCloseDialog();
@@ -131,31 +127,24 @@ const Dashboard = () => {
     } catch (err) {
       console.error('Failed to save universe:', err);
 
-      // Handle different types of errors
-      if (typeof err === 'string') {
-        if (err.includes('log in')) {
-          navigate('/login');
-          return;
-        }
-        setFormError(err);
-      } else if (err.message) {
-        // Parse validation errors
-        const message = err.message;
-        if (message.includes(':')) {
-          // This is a field-specific error
-          const [field, errorMsg] = message.split(':').map(s => s.trim());
-          if (field.toLowerCase().includes('name')) {
-            setFormError(`Name ${errorMsg}`);
-          } else if (field.toLowerCase().includes('description')) {
-            setFormError(`Description ${errorMsg}`);
-          } else {
-            setFormError(message);
-          }
-        } else {
-          setFormError(message);
-        }
-      } else {
-        setFormError('An unexpected error occurred. Please try again.');
+      // Handle login redirect
+      if (typeof err === 'string' && err.includes('log in')) {
+        navigate('/login');
+        return;
+      }
+
+      // Display error message
+      const errorMessage =
+        err.response?.data?.detail || err.response?.data?.message || err.message || err;
+      setFormError(errorMessage);
+
+      // Log additional error details for debugging
+      if (err.response) {
+        console.error('Error Response:', {
+          status: err.response.status,
+          data: err.response.data,
+          headers: err.response.headers,
+        });
       }
     }
   };
