@@ -1,218 +1,255 @@
 import {
-    createUniverse,
-    deleteUniverse,
-    fetchUniverses,
-    updateUniverse,
+  createUniverse,
+  deleteUniverse,
+  fetchUniverses,
+  updateUniverse,
 } from '@/store/slices/universeSlice';
-import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import {
-    Box,
-    Button,
-    Container,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    Grid,
-    IconButton,
-    Paper,
-    TextField,
-    Typography,
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  IconButton,
+  Paper,
+  TextField,
+  Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
-    const dispatch = useDispatch();
-    const navigate = useNavigate();
-    const { user } = useSelector(state => state.auth);
-    const { universes, loading, error } = useSelector(state => state.universe);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useSelector(state => state.auth);
+  const { universes, loading, error: globalError } = useSelector(state => state.universe);
 
-    const [openDialog, setOpenDialog] = useState(false);
-    const [editingUniverse, setEditingUniverse] = useState(null);
-    const [formData, setFormData] = useState({
+  const [openDialog, setOpenDialog] = useState(false);
+  const [editingUniverse, setEditingUniverse] = useState(null);
+  const [formError, setFormError] = useState(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    isPublic: false,
+  });
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    dispatch(fetchUniverses());
+  }, [dispatch, isAuthenticated, navigate]);
+
+  const handleOpenDialog = universe => {
+    setFormError(null);
+    if (universe) {
+      setEditingUniverse(universe);
+      setFormData({
+        name: universe.name,
+        description: universe.description,
+        isPublic: universe.isPublic,
+      });
+    } else {
+      setEditingUniverse(null);
+      setFormData({
         name: '',
         description: '',
         isPublic: false,
+      });
+    }
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setEditingUniverse(null);
+    setFormError(null);
+    setFormData({
+      name: '',
+      description: '',
+      isPublic: false,
     });
+  };
 
-    useEffect(() => {
-        dispatch(fetchUniverses());
-    }, [dispatch]);
+  const handleSubmit = async e => {
+    e.preventDefault();
+    setFormError(null);
 
-    const handleOpenDialog = (universe) => {
-        if (universe) {
-            setEditingUniverse(universe);
-            setFormData({
-                name: universe.name,
-                description: universe.description,
-                isPublic: universe.isPublic,
-            });
-        } else {
-            setEditingUniverse(null);
-            setFormData({
-                name: '',
-                description: '',
-                isPublic: false,
-            });
+    if (!formData.name.trim()) {
+      setFormError('Name is required');
+      return;
+    }
+
+    if (!formData.description.trim()) {
+      setFormError('Description is required');
+      return;
+    }
+
+    try {
+      if (editingUniverse) {
+        await dispatch(
+          updateUniverse({
+            universeId: editingUniverse.id,
+            data: formData,
+          })
+        ).unwrap();
+      } else {
+        const result = await dispatch(createUniverse(formData)).unwrap();
+        if (result) {
+          navigate(`/universe/${result.id}`);
         }
-        setOpenDialog(true);
-    };
+      }
+      handleCloseDialog();
+    } catch (err) {
+      console.error('Failed to save universe:', err);
+      setFormError(err.message || 'Failed to save universe. Please try again.');
+    }
+  };
 
-    const handleCloseDialog = () => {
-        setOpenDialog(false);
-        setEditingUniverse(null);
-        setFormData({
-            name: '',
-            description: '',
-            isPublic: false,
-        });
-    };
+  const handleDelete = async universeId => {
+    if (window.confirm('Are you sure you want to delete this universe?')) {
+      try {
+        await dispatch(deleteUniverse(universeId)).unwrap();
+      } catch (err) {
+        console.error('Failed to delete universe:', err);
+      }
+    }
+  };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            if (editingUniverse) {
-                await dispatch(
-                    updateUniverse({
-                        universeId: editingUniverse.id,
-                        data: formData,
-                    })
-                ).unwrap();
-            } else {
-                await dispatch(createUniverse(formData)).unwrap();
-            }
-            handleCloseDialog();
-        } catch (err) {
-            console.error('Failed to save universe:', err);
-        }
-    };
-
-    const handleDelete = async (universeId) => {
-        if (window.confirm('Are you sure you want to delete this universe?')) {
-            try {
-                await dispatch(deleteUniverse(universeId)).unwrap();
-            } catch (err) {
-                console.error('Failed to delete universe:', err);
-            }
-        }
-    };
-
+  if (loading === 'pending') {
     return (
-        <Container>
-            <Box sx={{ mt: 4 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                    <Typography variant="h4" gutterBottom>
-                        Welcome back, {user?.username}!
-                    </Typography>
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={() => handleOpenDialog()}
-                    >
-                        New Universe
-                    </Button>
-                </Box>
-
-                <Grid container spacing={3}>
-                    {universes.map((universe) => (
-                        <Grid item xs={12} md={6} key={universe.id}>
-                            <Paper
-                                sx={{
-                                    p: 3,
-                                    cursor: 'pointer',
-                                    '&:hover': { boxShadow: 6 },
-                                    position: 'relative',
-                                }}
-                                onClick={() => navigate(`/universe/${universe.id}`)}
-                            >
-                                <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
-                                    <IconButton
-                                        size="small"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleOpenDialog(universe);
-                                        }}
-                                    >
-                                        <EditIcon />
-                                    </IconButton>
-                                    <IconButton
-                                        size="small"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDelete(universe.id);
-                                        }}
-                                    >
-                                        <DeleteIcon />
-                                    </IconButton>
-                                </Box>
-                                <Typography variant="h6" gutterBottom>
-                                    {universe.name}
-                                </Typography>
-                                <Typography color="text.secondary" sx={{ mb: 2 }}>
-                                    {universe.description}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                    Created: {new Date(universe.createdAt).toLocaleDateString()}
-                                </Typography>
-                            </Paper>
-                        </Grid>
-                    ))}
-                    {universes.length === 0 && !loading && (
-                        <Grid item xs={12}>
-                            <Paper sx={{ p: 3, textAlign: 'center' }}>
-                                <Typography color="text.secondary">
-                                    No universes yet. Start by creating one!
-                                </Typography>
-                            </Paper>
-                        </Grid>
-                    )}
-                </Grid>
-
-                <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-                    <DialogTitle>
-                        {editingUniverse ? 'Edit Universe' : 'New Universe'}
-                    </DialogTitle>
-                    <DialogContent>
-                        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
-                            <TextField
-                                fullWidth
-                                label="Name"
-                                name="name"
-                                value={formData.name}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({ ...prev, name: e.target.value }))
-                                }
-                                required
-                                sx={{ mb: 2 }}
-                            />
-                            <TextField
-                                fullWidth
-                                label="Description"
-                                name="description"
-                                value={formData.description}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({ ...prev, description: e.target.value }))
-                                }
-                                multiline
-                                rows={4}
-                                sx={{ mb: 2 }}
-                            />
-                        </Box>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={handleCloseDialog}>Cancel</Button>
-                        <Button onClick={handleSubmit} variant="contained">
-                            {editingUniverse ? 'Save' : 'Create'}
-                        </Button>
-                    </DialogActions>
-                </Dialog>
-            </Box>
-        </Container>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <CircularProgress />
+      </Box>
     );
+  }
+
+  return (
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+        <Typography variant="h4" component="h1">
+          My Universes
+        </Typography>
+        <Button variant="contained" color="primary" onClick={() => handleOpenDialog()}>
+          Create Universe
+        </Button>
+      </Box>
+
+      {globalError && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {globalError}
+        </Alert>
+      )}
+
+      <Grid container spacing={3}>
+        {universes.map(universe => (
+          <Grid item xs={12} sm={6} md={4} key={universe.id}>
+            <Paper
+              sx={{
+                p: 3,
+                cursor: 'pointer',
+                '&:hover': { boxShadow: 6 },
+                position: 'relative',
+              }}
+              onClick={() => navigate(`/universe/${universe.id}`)}
+            >
+              <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
+                <IconButton
+                  size="small"
+                  onClick={e => {
+                    e.stopPropagation();
+                    handleOpenDialog(universe);
+                  }}
+                >
+                  <EditIcon />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={e => {
+                    e.stopPropagation();
+                    handleDelete(universe.id);
+                  }}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
+              <Typography variant="h6" gutterBottom>
+                {universe.name}
+              </Typography>
+              <Typography color="text.secondary" sx={{ mb: 2 }}>
+                {universe.description}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Created: {new Date(universe.createdAt).toLocaleDateString()}
+              </Typography>
+            </Paper>
+          </Grid>
+        ))}
+        {universes.length === 0 && !loading && (
+          <Grid item xs={12}>
+            <Paper sx={{ p: 3, textAlign: 'center' }}>
+              <Typography color="text.secondary">
+                No universes yet. Start by creating one!
+              </Typography>
+            </Paper>
+          </Grid>
+        )}
+      </Grid>
+
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>Create New Universe</DialogTitle>
+        <form onSubmit={handleSubmit}>
+          <DialogContent>
+            {formError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {formError}
+              </Alert>
+            )}
+            <TextField
+              autoFocus
+              margin="dense"
+              name="name"
+              label="Universe Name"
+              type="text"
+              fullWidth
+              required
+              value={formData.name}
+              onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              error={!!formError}
+            />
+            <TextField
+              margin="dense"
+              name="description"
+              label="Description"
+              type="text"
+              fullWidth
+              multiline
+              rows={4}
+              required
+              value={formData.description}
+              onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              error={!!formError}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog}>Cancel</Button>
+            <Button type="submit" variant="contained" color="primary">
+              Create
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+    </Container>
+  );
 };
 
 export default Dashboard;

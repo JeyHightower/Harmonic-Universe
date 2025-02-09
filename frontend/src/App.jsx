@@ -1,44 +1,65 @@
-import { Provider } from 'react-redux';
-import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
-import ProtectedRoute from './components/common/ProtectedRoute';
-import Layout from './components/layout/Layout';
-import Dashboard from './pages/Dashboard';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import UniverseDetail from './pages/UniverseDetail';
-import { store } from './store';
+import Layout from '@/components/layout/Layout';
+import Dashboard from '@/pages/Dashboard';
+import Home from '@/pages/Home';
+import Login from '@/pages/Login';
+import Register from '@/pages/Register';
+import UniverseDetail from '@/pages/UniverseDetail';
+import theme from '@/theme/index';
+import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProvider } from '@mui/material/styles';
+import { useSelector } from 'react-redux';
+import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 
-function App() {
+const PrivateRoute = ({ children }) => {
+  const { isAuthenticated } = useSelector(state => state.auth);
+  return isAuthenticated ? children : <Navigate to="/login" />;
+};
+
+const App = () => {
+  const { isAuthenticated } = useSelector(state => state.auth);
+
   return (
-    <Provider store={store}>
-      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Router>
         <Layout>
           <Routes>
+            {/* Public Routes */}
             <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            <Route
+              path="/login"
+              element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />}
+            />
+            <Route
+              path="/register"
+              element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register />}
+            />
+
+            {/* Protected Routes */}
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute>
+                <PrivateRoute>
                   <Dashboard />
-                </ProtectedRoute>
+                </PrivateRoute>
               }
             />
             <Route
-              path="/universe/:universeId"
+              path="/universe/:id"
               element={
-                <ProtectedRoute>
+                <PrivateRoute>
                   <UniverseDetail />
-                </ProtectedRoute>
+                </PrivateRoute>
               }
             />
+
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Layout>
       </Router>
-    </Provider>
+    </ThemeProvider>
   );
-}
+};
 
 export default App;

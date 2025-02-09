@@ -108,7 +108,7 @@ export const UniverseList = () => {
     }
 
     return (
-        
+
             <Box
                 sx={{
                     display: 'flex',
@@ -130,8 +130,8 @@ export const UniverseList = () => {
             <Grid container spacing={3}>
                 {universes.map((universe) => (
                     <Grid item xs={12} sm={6} md={4} key={universe.id}>
-                        
-                            
+
+
                                 <Typography variant="h6" gutterBottom>
                                     {universe.name}
                                 </Typography>
@@ -149,7 +149,7 @@ export const UniverseList = () => {
                                     ).toLocaleDateString()}
                                 </Typography>
                             </CardContent>
-                            
+
                                 <IconButton
                                     size="small"
                                     onClick={() => handleOpenDialog(universe)}
@@ -185,10 +185,10 @@ export const UniverseList = () => {
                 maxWidth="sm"
                 fullWidth
             >
-                
+
                     {selectedUniverse ? 'Edit Universe' : 'Create Universe'}
                 </DialogTitle>
-                
+
                     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
                         <TextField
                             fullWidth
@@ -217,11 +217,12 @@ export const UniverseList = () => {
                             }
                             multiline
                             rows={4}
+                            required
                             sx={{ mb: 2 }}
                         />
                     </Box>
                 </DialogContent>
-                
+
                     <Button onClick={handleCloseDialog}>Cancel</Button>
                     <Button onClick={handleSubmit} variant="contained">
                         {selectedUniverse ? 'Save' : 'Create'}

@@ -33,24 +33,38 @@ const initialState = {
 };
 
 // Thunks
-export const fetchUniverses = createAsyncThunk('universe/fetchUniverses', async () => {
-  const response = await api.get('/api/universes');
-  return response.data;
-});
-
-export const fetchUniverse = createAsyncThunk(
-  'universe/fetchUniverse',
-  async (universeId) => {
-    const response = await api.get(`/api/universes/${universeId}`);
-    return response.data;
+export const fetchUniverses = createAsyncThunk(
+  'universe/fetchUniverses',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/api/universes/');
+      return response.data;
+    } catch (err) {
+      console.error('Fetch Universes Error:', err);
+      return rejectWithValue(err.message || 'Failed to fetch universes');
+    }
   }
 );
 
+export const fetchUniverse = createAsyncThunk('universe/fetchUniverse', async universeId => {
+  const response = await api.get(`/api/universes/${universeId}`);
+  return response.data;
+});
+
 export const createUniverse = createAsyncThunk(
   'universe/createUniverse',
-  async (data) => {
-    const response = await api.post('/api/universes', data);
-    return response.data;
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/api/universes/', {
+        name: data.name.trim(),
+        description: data.description.trim(),
+        is_public: data.isPublic || false,
+      });
+      return response.data;
+    } catch (err) {
+      console.error('Create Universe Error:', err);
+      return rejectWithValue(err.message || 'Failed to create universe');
+    }
   }
 );
 
@@ -62,13 +76,10 @@ export const updateUniverse = createAsyncThunk(
   }
 );
 
-export const deleteUniverse = createAsyncThunk(
-  'universe/deleteUniverse',
-  async (universeId) => {
-    await api.delete(`/api/universes/${universeId}`);
-    return universeId;
-  }
-);
+export const deleteUniverse = createAsyncThunk('universe/deleteUniverse', async universeId => {
+  await api.delete(`/api/universes/${universeId}`);
+  return universeId;
+});
 
 export const exportUniverse = createAsyncThunk(
   'universe/exportUniverse',
@@ -109,7 +120,7 @@ const universeSlice = createSlice({
     setCurrentUniverse: (state, action) => {
       state.currentUniverse = action.payload;
     },
-    clearError: (state) => {
+    clearError: state => {
       state.error = null;
     },
     updatePhysicsParams: (state, action) => {
@@ -207,7 +218,7 @@ const universeSlice = createSlice({
       }
     },
   },
-  extraReducers: (builder) => {
+  extraReducers: builder => {
     builder
       .addCase(fetchUniverses.pending, state => {
         state.loading = true;
@@ -311,11 +322,11 @@ export const {
 } = universeSlice.actions;
 
 // Selectors
-export const selectUniverseState = (state) => state.universe;
-export const selectUniverses = (state) => state.universe.universes;
-export const selectCurrentUniverse = (state) => state.universe.currentUniverse;
-export const selectUniverseLoading = (state) => state.universe.loading;
-export const selectUniverseError = (state) => state.universe.error;
-export const selectRealtimeStatus = (state) => state.universe.realtimeStatus;
+export const selectUniverseState = state => state.universe;
+export const selectUniverses = state => state.universe.universes;
+export const selectCurrentUniverse = state => state.universe.currentUniverse;
+export const selectUniverseLoading = state => state.universe.loading;
+export const selectUniverseError = state => state.universe.error;
+export const selectRealtimeStatus = state => state.universe.realtimeStatus;
 
 export default universeSlice.reducer;

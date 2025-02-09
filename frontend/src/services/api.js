@@ -41,8 +41,6 @@ apiInstance.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    // Ensure content type is set
-    config.headers['Content-Type'] = 'application/json';
     return config;
   },
   error => {
@@ -53,52 +51,36 @@ apiInstance.interceptors.request.use(
 // Response interceptor
 apiInstance.interceptors.response.use(
   response => response,
-  async error => {
-    const originalRequest = error.config;
+  error => {
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      console.error('API Error Response:', error.response);
 
-    // Handle token expiration
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-        // Get refresh token from storage
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken) {
-          throw new Error('No refresh token available');
-        }
-
-        // Try to refresh token
-        const response = await apiInstance.post('/api/auth/refresh', {
-          refresh_token: refreshToken,
-        });
-
-        const { access_token } = response.data;
-        localStorage.setItem('token', access_token);
-
-        // Update the original request with new token
-        originalRequest.headers.Authorization = `Bearer ${access_token}`;
-        return apiInstance(originalRequest);
-      } catch (refreshError) {
-        // If refresh fails, clear tokens and redirect to login
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
+      if (error.response.status === 422) {
+        // Handle validation errors
+        const validationErrors = error.response.data.errors;
+        throw new Error(
+          validationErrors ? Object.values(validationErrors).flat().join(', ') : 'Validation failed'
+        );
       }
-    }
 
-    // Special handling for logout - always resolve successfully
-    if (error.config.url === '/api/auth/logout') {
-      return Promise.resolve({ data: { message: 'Logged out successfully' } });
-    }
+      if (error.response.status === 401) {
+        // Handle authentication errors
+        localStorage.removeItem('token');
+        throw new Error('Please log in to continue');
+      }
 
-    // Handle other errors
-    if (error.response?.data?.message) {
-      return Promise.reject(new Error(error.response.data.message));
+      throw new Error(error.response.data.message || 'An error occurred');
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error('API Request Error:', error.request);
+      throw new Error('No response from server');
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      console.error('API Setup Error:', error.message);
+      throw new Error('Error setting up request');
     }
-
-    return Promise.reject(error);
   }
 );
 
