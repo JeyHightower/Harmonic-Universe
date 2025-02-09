@@ -7,6 +7,7 @@ from app.core.errors import ValidationError, NotFoundError, AuthorizationError
 from app.db.session import get_db
 from app.websocket.handler import manager
 import json
+import logging
 
 universes_bp = Blueprint('universes', __name__)
 
@@ -34,6 +35,7 @@ def get_universe(id):
 def create_universe():
     """Create a new universe."""
     data = request.get_json()
+    logging.info(f"Received data for universe creation: {data}")
     current_user_id = get_jwt_identity()
 
     # Validate required fields

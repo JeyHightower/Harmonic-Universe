@@ -12,11 +12,13 @@ class Visualization(BaseModel):
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
     project_id = Column(UUID(as_uuid=True), ForeignKey('projects.id'), nullable=False)
     audio_file_id = Column(UUID(as_uuid=True), ForeignKey('audio_files.id'), nullable=False)
+    universe_id = Column(UUID(as_uuid=True), ForeignKey('universes.id', ondelete='CASCADE'), nullable=True)
 
     # Relationships
     user = relationship('User', back_populates='visualizations')
     project = relationship('Project', back_populates='visualizations')
     audio_file = relationship('AudioFile', back_populates='visualizations')
+    universe = relationship('Universe', back_populates='visualizations')
 
     def to_dict(self):
         return {
@@ -27,6 +29,7 @@ class Visualization(BaseModel):
             'user_id': self.user_id,
             'project_id': self.project_id,
             'audio_file_id': self.audio_file_id,
+            'universe_id': self.universe_id,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }

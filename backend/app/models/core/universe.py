@@ -142,7 +142,6 @@ class Universe(BaseModel):
     # Relationships
     user = relationship('User', back_populates='universes')
     scenes = relationship('Scene', back_populates='universe', cascade='all, delete-orphan')
-    audio_tracks = relationship('AudioTrack', back_populates='universe', cascade='all, delete-orphan')
     visualizations = relationship('Visualization', back_populates='universe', cascade='all, delete-orphan')
 
     def to_dict(self):
