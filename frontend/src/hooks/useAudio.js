@@ -18,12 +18,11 @@ import {
   updateTrackState,
   uploadAudio,
 } from '@/store/slices/audioSlice';
-import { AppDispatch } from '@/store/store';
 
 import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-export const useAudio = (projectId: number) => {
+export const useAudio = projectId => {
   const dispatch = useDispatch();
   const tracks = useSelector(selectTracks);
   const currentTrack = useSelector(selectCurrentTrack);
@@ -39,63 +38,63 @@ export const useAudio = (projectId: number) => {
   }, [dispatch, projectId]);
 
   const handleUploadAudio = useCallback(
-    async (formData: AudioFormData) => {
+    async formData => {
       await dispatch(uploadAudio({ projectId, formData }));
     },
     [dispatch, projectId]
   );
 
   const handleDeleteTrack = useCallback(
-    async (trackId: number) => {
+    async trackId => {
       await dispatch(deleteTrack({ projectId, trackId }));
     },
     [dispatch, projectId]
   );
 
   const handleUpdateTrack = useCallback(
-    async (trackId: number, updates: Partial) => {
+    async (trackId, updates) => {
       await dispatch(updateTrack({ projectId, trackId, updates }));
     },
     [dispatch, projectId]
   );
 
   const handleSetCurrentTrack = useCallback(
-    (track: AudioTrack | null) => {
+    track => {
       dispatch(setCurrentTrack(track));
     },
     [dispatch]
   );
 
   const handleSetIsPlaying = useCallback(
-    (playing: boolean) => {
+    playing => {
       dispatch(setIsPlaying(playing));
     },
     [dispatch]
   );
 
   const handleSetVolume = useCallback(
-    (newVolume: number) => {
+    newVolume => {
       dispatch(setVolume(newVolume));
     },
     [dispatch]
   );
 
   const handleSetDuration = useCallback(
-    (newDuration: number) => {
+    newDuration => {
       dispatch(setDuration(newDuration));
     },
     [dispatch]
   );
 
   const handleSetCurrentTime = useCallback(
-    (time: number) => {
+    time => {
       dispatch(setCurrentTime(time));
     },
     [dispatch]
   );
 
   const handleUpdateTrackState = useCallback(
-    (trackId: number, updates: Partial) => {
+    (trackId, updates) => {
       dispatch(updateTrackState({ trackId, updates }));
     },
     [dispatch]

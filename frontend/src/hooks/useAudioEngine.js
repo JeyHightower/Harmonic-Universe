@@ -3,10 +3,9 @@ import { setCurrentTime, setDuration, setIsPlaying, setVolume } from '@/store/sl
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 
-
 export const useAudioEngine = () => {
   const dispatch = useDispatch();
-  const engineState = useRef<AudioEngineState | null>(null);
+  const engineState = useRef(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
   const initializeEngine = useCallback(() => {
@@ -27,7 +26,7 @@ export const useAudioEngine = () => {
   }, []);
 
   const loadTrack = useCallback(
-    async (track: AudioTrack) => {
+    async track => {
       if (!engineState.current) return;
 
       const { audioContext, tracks } = engineState.current;
@@ -59,7 +58,7 @@ export const useAudioEngine = () => {
   );
 
   const playTrack = useCallback(
-    (track: AudioTrack) => {
+    track => {
       if (!engineState.current) return;
 
       const { audioContext, tracks } = engineState.current;
@@ -95,7 +94,7 @@ export const useAudioEngine = () => {
   );
 
   const stopTrack = useCallback(
-    (trackId: number) => {
+    trackId => {
       if (!engineState.current) return;
 
       const trackData = engineState.current.tracks.get(trackId);
@@ -111,7 +110,7 @@ export const useAudioEngine = () => {
     [dispatch]
   );
 
-  const setTrackVolume = useCallback((trackId: number, volume: number) => {
+  const setTrackVolume = useCallback((trackId, volume) => {
     if (!engineState.current) return;
 
     const trackData = engineState.current.tracks.get(trackId);
@@ -121,7 +120,7 @@ export const useAudioEngine = () => {
   }, []);
 
   const setMasterVolume = useCallback(
-    (volume: number) => {
+    volume => {
       if (!engineState.current) return;
       engineState.current.masterGain.gain.value = volume;
       dispatch(setVolume(volume));

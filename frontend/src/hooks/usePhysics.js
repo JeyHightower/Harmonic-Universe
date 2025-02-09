@@ -3,26 +3,25 @@ import {
   deletePhysicsObject,
   fetchPhysicsObject,
   fetchPhysicsObjects,
-  selectCurrentPhysicsObject,
+  selectCurrentObject,
   selectIsSimulating,
+  selectObjects,
   selectPhysicsError,
   selectPhysicsLoading,
-  selectPhysicsObjects,
   selectTimeStep,
   setTimeStep,
   startSimulation,
   stopSimulation,
   updatePhysicsObject,
 } from '@/store/slices/physicsSlice';
-import { AppDispatch } from '@/store/store';
 
 import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-export const usePhysics = (projectId: number) => {
+export const usePhysics = projectId => {
   const dispatch = useDispatch();
-  const objects = useSelector(selectPhysicsObjects);
-  const currentObject = useSelector(selectCurrentPhysicsObject);
+  const objects = useSelector(selectObjects);
+  const currentObject = useSelector(selectCurrentObject);
   const loading = useSelector(selectPhysicsLoading);
   const error = useSelector(selectPhysicsError);
   const isSimulating = useSelector(selectIsSimulating);
@@ -38,7 +37,7 @@ export const usePhysics = (projectId: number) => {
   }, [dispatch, projectId]);
 
   const fetchObject = useCallback(
-    async (objectId: number) => {
+    async objectId => {
       try {
         await dispatch(fetchPhysicsObject({ projectId, objectId })).unwrap();
         return true;
@@ -50,7 +49,7 @@ export const usePhysics = (projectId: number) => {
   );
 
   const createObject = useCallback(
-    async (data: Partial) => {
+    async data => {
       try {
         const result = await dispatch(createPhysicsObject({ projectId, data })).unwrap();
         return result;
@@ -62,7 +61,7 @@ export const usePhysics = (projectId: number) => {
   );
 
   const updateObject = useCallback(
-    async (objectId: number, data: Partial) => {
+    async (objectId, data) => {
       try {
         await dispatch(updatePhysicsObject({ projectId, objectId, data })).unwrap();
         return true;
@@ -74,7 +73,7 @@ export const usePhysics = (projectId: number) => {
   );
 
   const deleteObject = useCallback(
-    async (objectId: number) => {
+    async objectId => {
       try {
         await dispatch(deletePhysicsObject({ projectId, objectId })).unwrap();
         return true;
@@ -86,7 +85,7 @@ export const usePhysics = (projectId: number) => {
   );
 
   const handleSetTimeStep = useCallback(
-    (step: number) => {
+    step => {
       dispatch(setTimeStep(step));
     },
     [dispatch]

@@ -1,33 +1,35 @@
 import { Box, FormControlLabel, Grid, Slider, Switch, Typography } from '@mui/material';
 import PropTypes from 'prop-types';
 
-const UniverseParameters = ({ params, onParamChange }) => {
+export const UniverseParameters = ({ universe, onUpdate }) => {
   const handleChange = (paramName, value) => {
-    if (params[paramName]) {
-      onParamChange({
-        ...params,
+    if (universe.physics_parameters[paramName]) {
+      const updatedParams = {
+        ...universe.physics_parameters,
         [paramName]: {
-          ...params[paramName],
+          ...universe.physics_parameters[paramName],
           value: value,
         },
-      });
+      };
+      onUpdate(updatedParams);
     }
   };
 
   const handleToggle = paramName => {
-    if (params[paramName]) {
-      onParamChange({
-        ...params,
+    if (universe.physics_parameters[paramName]) {
+      const updatedParams = {
+        ...universe.physics_parameters,
         [paramName]: {
-          ...params[paramName],
-          enabled: !params[paramName].enabled,
+          ...universe.physics_parameters[paramName],
+          enabled: !universe.physics_parameters[paramName].enabled,
         },
-      });
+      };
+      onUpdate(updatedParams);
     }
   };
 
   const renderParameter = (paramName, label) => {
-    const param = params[paramName];
+    const param = universe.physics_parameters[paramName];
     if (!param) return null;
 
     return (
@@ -83,8 +85,10 @@ const UniverseParameters = ({ params, onParamChange }) => {
 };
 
 UniverseParameters.propTypes = {
-  params: PropTypes.object.isRequired,
-  onParamChange: PropTypes.func.isRequired,
+  universe: PropTypes.shape({
+    physics_parameters: PropTypes.object.isRequired,
+  }).isRequired,
+  onUpdate: PropTypes.func.isRequired,
 };
 
 export default UniverseParameters;

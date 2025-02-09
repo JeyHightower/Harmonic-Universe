@@ -1,4 +1,5 @@
 import { api } from '@/services/api';
+import { apiSlice } from '@/services/apiSlice';
 import { configureStore } from '@reduxjs/toolkit';
 import { setupListeners } from '@reduxjs/toolkit/query';
 import aiReducer from './slices/aiSlice';
@@ -12,6 +13,7 @@ import visualizationReducer from './slices/visualizationSlice';
 export const store = configureStore({
   reducer: {
     [api.reducerPath]: api.reducer,
+    [apiSlice.reducerPath]: apiSlice.reducer,
     audio: audioReducer,
     universe: universeReducer,
     visualization: visualizationReducer,
@@ -23,7 +25,7 @@ export const store = configureStore({
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
       serializableCheck: false,
-    }).concat(api.middleware),
+    }).concat(api.middleware, apiSlice.middleware),
   devTools: import.meta.env.VITE_DEBUG_MODE === 'true',
 });
 

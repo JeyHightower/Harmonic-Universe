@@ -1,4 +1,3 @@
-import { AppDispatch } from '@/store';
 import {
   createVisualization,
   deleteVisualization,
@@ -11,18 +10,10 @@ import {
   updateStreamConfig,
   updateVisualization,
 } from '@/store/slices/visualizationSlice';
-import {
-  DataMapping,
-  StreamConfig,
-  Visualization,
-  VisualizationFormData,
-  VisualizationUpdateData,
-} from '@/types/visualization';
 import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-
-export const useVisualization = ({ projectId, audioId }: UseVisualizationProps) => {
+export const useVisualization = ({ projectId, audioId }) => {
   const dispatch = useDispatch();
   const visualizations = useSelector(selectVisualizations);
   const currentVisualization = useSelector(selectCurrentVisualization);
@@ -30,7 +21,7 @@ export const useVisualization = ({ projectId, audioId }: UseVisualizationProps) 
   const error = useSelector(selectVisualizationError);
 
   const create = useCallback(
-    async (data: VisualizationFormData) => {
+    async data => {
       if (!audioId) {
         throw new Error('Audio ID is required to create a visualization');
       }
@@ -48,7 +39,7 @@ export const useVisualization = ({ projectId, audioId }: UseVisualizationProps) 
   );
 
   const update = useCallback(
-    async (id: number, data: VisualizationUpdateData) => {
+    async (id, data) => {
       try {
         const resultAction = await dispatch(updateVisualization({ id, data }));
         if (updateVisualization.fulfilled.match(resultAction)) {
@@ -63,7 +54,7 @@ export const useVisualization = ({ projectId, audioId }: UseVisualizationProps) 
   );
 
   const remove = useCallback(
-    async (id: number) => {
+    async id => {
       try {
         await dispatch(deleteVisualization(id));
       } catch (error) {
@@ -75,7 +66,7 @@ export const useVisualization = ({ projectId, audioId }: UseVisualizationProps) 
   );
 
   const updateMappings = useCallback(
-    async (id: number, dataMappings: DataMapping[]) => {
+    async (id, dataMappings) => {
       try {
         const resultAction = await dispatch(updateDataMappings({ id, dataMappings }));
         if (updateDataMappings.fulfilled.match(resultAction)) {
@@ -90,7 +81,7 @@ export const useVisualization = ({ projectId, audioId }: UseVisualizationProps) 
   );
 
   const updateConfig = useCallback(
-    async (id: number, streamConfig: StreamConfig) => {
+    async (id, streamConfig) => {
       try {
         const resultAction = await dispatch(updateStreamConfig({ id, streamConfig }));
         if (updateStreamConfig.fulfilled.match(resultAction)) {
@@ -105,7 +96,7 @@ export const useVisualization = ({ projectId, audioId }: UseVisualizationProps) 
   );
 
   const setCurrent = useCallback(
-    (visualization: Visualization | null) => {
+    visualization => {
       dispatch(setCurrentVisualization(visualization));
     },
     [dispatch]

@@ -80,45 +80,67 @@ export const createUniverse = createAsyncThunk(
         name: data.name.trim(),
         description: data.description?.trim() || '',
         is_public: Boolean(data.isPublic),
-        physics_params: {
-          gravity: 9.81,          // m/s², range: 0-100
-          air_resistance: 0.1,    // coefficient, range: 0-1
-          elasticity: 0.8,        // coefficient, range: 0-1
-          friction: 0.2           // coefficient, range: 0-1
+        physics_parameters: {
+          gravity: {
+            value: 9.81,
+            enabled: true,
+            unit: 'm/s²',
+            min: 0,
+            max: 100,
+          },
+          friction: {
+            value: 0.2,
+            enabled: true,
+            unit: 'coefficient',
+            min: 0,
+            max: 1,
+          },
+          collision_elasticity: {
+            value: 0.8,
+            enabled: true,
+            unit: 'coefficient',
+            min: 0,
+            max: 1,
+          },
+          air_resistance: {
+            value: 0.1,
+            enabled: true,
+            unit: 'coefficient',
+            min: 0,
+            max: 1,
+          },
         },
-        harmony_params: {
-          resonance: 1.0,         // range: 0-10
-          dissonance: 0.2,        // range: 0-1
-          harmony_scale: 1.5,     // range: 0.1-10
-          balance: 0.6            // range: 0-1
-        }
+        harmony_parameters: {
+          resonance: {
+            value: 1.0,
+            enabled: true,
+            unit: 'factor',
+            min: 0,
+            max: 10,
+          },
+          dissonance: {
+            value: 0.2,
+            enabled: true,
+            unit: 'factor',
+            min: 0,
+            max: 1,
+          },
+          harmony_scale: {
+            value: 1.5,
+            enabled: true,
+            unit: 'factor',
+            min: 0.1,
+            max: 10,
+          },
+          balance: {
+            value: 0.6,
+            enabled: true,
+            unit: 'factor',
+            min: 0,
+            max: 1,
+          },
+        },
       };
-
-      // Validate parameter ranges according to backend schema
-      const validateParams = (params, ranges) => {
-        Object.entries(params).forEach(([key, value]) => {
-          const range = ranges[key];
-          if (value < range.min || value > range.max) {
-            throw new Error(`${key} must be between ${range.min} and ${range.max}`);
-          }
-        });
-      };
-
-      // Physics parameter ranges
-      validateParams(universeData.physics_params, {
-        gravity: { min: 0, max: 100 },
-        air_resistance: { min: 0, max: 1 },
-        elasticity: { min: 0, max: 1 },
-        friction: { min: 0, max: 1 }
-      });
-
-      // Harmony parameter ranges
-      validateParams(universeData.harmony_params, {
-        resonance: { min: 0, max: 10 },
-        dissonance: { min: 0, max: 1 },
-        harmony_scale: { min: 0.1, max: 10 },
-        balance: { min: 0, max: 1 }
-      });
 
       console.log('Sending universe data to API:', universeData);
 

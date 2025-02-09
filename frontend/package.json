@@ -29,6 +29,7 @@
     "framer-motion": "^11.0.3",
     "immer": "^10.0.3",
     "lodash": "^4.17.21",
+    "notistack": "^3.0.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-error-boundary": "^4.0.12",
@@ -44,6 +45,7 @@
     "three": "^0.161.0",
     "tone": "^14.7.77",
     "uuid": "^9.0.1",
+    "wavesurfer.js": "^7.9.0",
     "web-audio-api": "^0.2.2",
     "zod": "^3.22.4"
   },

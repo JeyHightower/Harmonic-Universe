@@ -364,12 +364,12 @@ export const {
 export const selectVisualizationState = state => state.visualization;
 export const selectVisualizations = state => state.visualization.visualizations;
 export const selectCurrentVisualization = state => state.visualization.currentVisualization;
-export const selectIsPlaying = state => state.visualization.isPlaying;
-export const selectLoading = state => state.visualization.loading;
-export const selectError = state => state.visualization.error;
+export const selectVisualizationLoading = state => state.visualization.loading;
+export const selectVisualizationError = state => state.visualization.error;
 export const selectWebGLState = state => state.visualization.webgl;
 export const selectAudioAnalysisState = state => state.visualization.audioAnalysis;
 export const selectPresets = state => state.visualization.presets;
 export const selectActivePreset = state => state.visualization.activePreset;
+export const selectIsPlaying = state => state.visualization.isPlaying;
 
 export default visualizationSlice.reducer;

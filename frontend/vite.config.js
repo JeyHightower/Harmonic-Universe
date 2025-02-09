@@ -6,7 +6,9 @@ import compression from 'vite-plugin-compression';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
-    react(),
+    react({
+      include: '**/*.{jsx,js}',
+    }),
     compression({
       algorithm: 'gzip',
       ext: '.gz',
@@ -48,7 +50,7 @@ export default defineConfig({
   publicDir: 'public',
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
+      '@': path.resolve(__dirname, './src'),
       '@components': path.resolve(__dirname, './src/components'),
       '@pages': path.resolve(__dirname, './src/pages'),
       '@store': path.resolve(__dirname, './src/store'),
@@ -58,5 +60,10 @@ export default defineConfig({
       '@types': path.resolve(__dirname, './src/types'),
       '@assets': path.resolve(__dirname, './src/assets'),
     },
+  },
+  esbuild: {
+    loader: 'jsx',
+    include: /src\/.*\.jsx?$/,
+    exclude: [],
   },
 });

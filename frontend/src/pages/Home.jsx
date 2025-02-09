@@ -52,11 +52,7 @@ const Home = () => {
             maxWidth: '400px',
           }}
         >
-          {isAuthenticated ? (
-            <Button variant="contained" size="large" onClick={() => navigate('/dashboard')}>
-              Go to Dashboard
-            </Button>
-          ) : (
+          {!isAuthenticated && (
             <Button
               variant="contained"
               size="large"
@@ -73,6 +69,11 @@ const Home = () => {
               }}
             >
               Try Demo Account
+            </Button>
+          )}
+          {isAuthenticated && (
+            <Button variant="contained" size="large" onClick={() => navigate('/dashboard')}>
+              Go to Dashboard
             </Button>
           )}
         </Box>
