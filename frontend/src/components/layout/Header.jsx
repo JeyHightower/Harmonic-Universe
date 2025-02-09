@@ -170,7 +170,7 @@ const Header = ({ onToggleSidebar }) => {
                 <Button
                   variant="outlined"
                   color="inherit"
-                  onClick={logout}
+                  onClick={handleLogout}
                   sx={{
                     display: { xs: 'none', sm: 'flex' },
                     borderColor: 'divider',

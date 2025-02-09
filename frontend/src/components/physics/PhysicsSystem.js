@@ -58,7 +58,7 @@ class ParticleSystem {
     const frequencies = audioData.frequencies;
     const waveform = audioData.waveform;
 
-    // Update particles based on audio data
+    // Update particles based on audio data and physics parameters
     for (let i = 0; i < this.count; i++) {
       const particle = this.particles[i];
       const body = this.bodies[i];
@@ -72,7 +72,7 @@ class ParticleSystem {
       particle.scale.set(scale, scale, scale);
       particle.material.emissiveIntensity = frequency / 255;
 
-      // Apply forces based on audio
+      // Apply forces based on audio and physics parameters
       const force = new CANNON.Vec3(
         (Math.random() - 0.5) * frequency * 0.1,
         (Math.random() - 0.5) * frequency * 0.1,
@@ -133,26 +133,33 @@ class ParticleSystem {
   }
 }
 
-export const usePhysicsSystem = audioData => {
+export const usePhysicsSystem = (params, audioData) => {
   const worldRef = useRef(null);
   const sceneRef = useRef(null);
   const particleSystemRef = useRef(null);
   const frameRef = useRef(null);
 
-  // Physics world configuration
+  // Physics world configuration with all parameters
   const worldConfig = useMemo(
     () => ({
-      gravity: new CANNON.Vec3(0, -9.82, 0),
+      gravity: new CANNON.Vec3(0, -params.gravity.value, 0),
       broadphase: new CANNON.SAPBroadphase(),
       solver: new CANNON.GSSolver(),
     }),
-    []
+    [params.gravity.value]
   );
 
   useEffect(() => {
+    if (!params.is_active) return;
+
     // Initialize physics world
     const world = new CANNON.World(worldConfig);
     worldRef.current = world;
+
+    // Configure solver with all parameters
+    world.solver.iterations = params.substeps.value;
+    world.defaultContactMaterial.friction = params.friction.value;
+    world.defaultContactMaterial.restitution = params.collision_elasticity.value;
 
     // Create Three.js scene
     const scene = new THREE.Scene();
@@ -171,12 +178,74 @@ export const usePhysicsSystem = audioData => {
     groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
     world.addBody(groundBody);
 
-    // Animation loop
+    // Animation loop with advanced physics
     const animate = () => {
       frameRef.current = requestAnimationFrame(animate);
 
-      // Update physics
-      world.step(1 / 60);
+      // Update physics with time step
+      world.step(params.time_step.value);
+
+      // Apply forces based on all enabled parameters
+      world.bodies.forEach(body => {
+        if (body.type !== CANNON.Body.STATIC) {
+          // Air resistance force
+          if (params.air_resistance.enabled) {
+            const velocity = body.velocity;
+            const airResistance = params.air_resistance.value;
+            const force = new CANNON.Vec3(
+              -velocity.x * airResistance,
+              -velocity.y * airResistance,
+              -velocity.z * airResistance
+            );
+            body.applyForce(force, body.position);
+          }
+
+          // Fluid dynamics forces
+          if (params.fluid_density.enabled) {
+            const fluidDensity = params.fluid_density.value;
+            const viscosity = params.viscosity.enabled ? params.viscosity.value : 0;
+
+            // Calculate drag force
+            const velocity = body.velocity;
+            const speed = velocity.length();
+            const dragCoefficient = 0.47; // Sphere drag coefficient
+            const area = Math.PI * Math.pow(1, 2); // Assuming unit radius
+            const dragMagnitude = 0.5 * fluidDensity * speed * speed * dragCoefficient * area;
+
+            if (speed > 0) {
+              const dragForce = new CANNON.Vec3(
+                (-velocity.x / speed) * dragMagnitude,
+                (-velocity.y / speed) * dragMagnitude,
+                (-velocity.z / speed) * dragMagnitude
+              );
+              body.applyForce(dragForce, body.position);
+            }
+
+            // Apply viscous force
+            if (viscosity > 0) {
+              const viscousForce = new CANNON.Vec3(
+                -velocity.x * viscosity,
+                -velocity.y * viscosity,
+                -velocity.z * viscosity
+              );
+              body.applyForce(viscousForce, body.position);
+            }
+          }
+
+          // Temperature effects (simplified)
+          if (params.temperature.enabled) {
+            const temperatureEffect = (params.temperature.value - 293.15) / 293.15; // Relative to room temperature
+            body.velocity.scale(1 + temperatureEffect * 0.1); // Simplified thermal energy effect
+          }
+
+          // Pressure effects (simplified)
+          if (params.pressure.enabled) {
+            const pressureEffect = (params.pressure.value - 101.325) / 101.325; // Relative to atmospheric pressure
+            const pressureForce = new CANNON.Vec3(0, pressureEffect * 9.81, 0); // Simplified buoyancy
+            body.applyForce(pressureForce, body.position);
+          }
+        }
+      });
 
       // Update particle system
       if (audioData) {
@@ -190,7 +259,7 @@ export const usePhysicsSystem = audioData => {
       cancelAnimationFrame(frameRef.current);
       particleSystem.dispose();
     };
-  }, [worldConfig]);
+  }, [worldConfig, params, audioData]);
 
   // Expose methods to control the physics system
   const api = useMemo(

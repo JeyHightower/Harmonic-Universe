@@ -1,5 +1,4 @@
 import { useUniverse } from '@/hooks/useUniverse';
-import { Universe } from '@/store/slices/universeSlice';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import GroupIcon from '@mui/icons-material/Group';
 import {
@@ -14,17 +13,16 @@ import {
     Tabs,
     TextField,
     Tooltip,
-    Typography,
+    Typography
 } from '@mui/material';
+import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AIPromptDialog } from '../common/AIPromptDialog';
 import { HarmonyControl } from '../common/HarmonyControl';
-import { Vector3Control } from '../common/Vector3Control';
 import { VisualizationControl } from '../common/VisualizationControl';
 
-
-function TabPanel(props: TabPanelProps) {
+function TabPanel(props) {
     const { children, value, index, ...other } = props;
 
     return (
@@ -40,8 +38,14 @@ function TabPanel(props: TabPanelProps) {
     );
 }
 
+TabPanel.propTypes = {
+    children: PropTypes.node,
+    index: PropTypes.number.isRequired,
+    value: PropTypes.number.isRequired,
+};
+
 export const UniverseDetail = () => {
-    const { universeId } = useParams<{ universeId: string }>();
+    const { universeId } = useParams();
     const {
         currentUniverse,
         loading,
@@ -61,53 +65,17 @@ export const UniverseDetail = () => {
     const [aiDialogOpen, setAiDialogOpen] = useState(false);
     const [aiPromptType, setAiPromptType] = useState('story');
     const [physicsParams, setPhysicsParams] = useState({
-        gravity: {
-            value: 9.81,
-            unit: 'm/s²',
-            min: 0,
-            max: 20,
-            enabled: true
-        },
-        friction: {
-            value: 0.5,
-            unit: 'coefficient',
-            min: 0,
-            max: 1,
-            enabled: true
-        },
-        elasticity: {
-            value: 0.7,
-            unit: 'coefficient',
-            min: 0,
-            max: 1,
-            enabled: true
-        },
-        air_resistance: {
-            value: 0.1,
-            unit: 'kg/m³',
-            min: 0,
-            max: 1,
-            enabled: true
-        },
-        time_step: {
-            value: 0.016,
-            unit: 's',
-            min: 0.001,
-            max: 0.1,
-            enabled: true
-        },
-        substeps: {
-            value: 8,
-            unit: 'steps',
-            min: 1,
-            max: 32,
-            enabled: true
-        }
+        gravity: 9.81,
+        air_resistance: 0.1,
+        elasticity: 0.8,
+        friction: 0.2,
+        temperature: 293.15,
+        pressure: 101.325
     });
 
     useEffect(() => {
         if (universeId) {
-            fetchUniverse(parseInt(universeId));
+            fetchUniverse(parseInt(universeId, 10));
         }
     }, [universeId, fetchUniverse]);
 
@@ -126,16 +94,48 @@ export const UniverseDetail = () => {
 
         const newParams = {
             ...physicsParams,
-            [param]: {
-                ...physicsParams[param],
-                value
-            }
+            [param]: value
         };
         setPhysicsParams(newParams);
 
         // Debounce the API call
         const timeoutId = setTimeout(() => {
-            updatePhysics(currentUniverse.id, { [param]: newParams[param] });
+            updatePhysics(currentUniverse.id, { [param]: value });
+        }, 500);
+
+        return () => clearTimeout(timeoutId);
+    };
+
+    const handlePhysicsToggle = async (param) => {
+        if (!currentUniverse) return;
+
+        const newParams = {
+            ...physicsParams,
+            [param]: {
+                ...physicsParams[param],
+                enabled: !physicsParams[param].enabled
+            }
+        };
+        setPhysicsParams(newParams);
+
+        updatePhysics(currentUniverse.id, { [param]: newParams[param] });
+    };
+
+    const handleHarmonyChange = async (param, value) => {
+        if (!currentUniverse) return;
+
+        const newParams = {
+            ...harmonyParams,
+            [param]: {
+                ...harmonyParams[param],
+                value
+            }
+        };
+        setHarmonyParams(newParams);
+
+        // Debounce the API call
+        const timeoutId = setTimeout(() => {
+            updateHarmonyParams(currentUniverse.id, { [param]: newParams[param] });
         }, 500);
 
         return () => clearTimeout(timeoutId);
@@ -203,18 +203,49 @@ export const UniverseDetail = () => {
         }
     };
 
+    const renderPhysicsParameter = (param, label, unit, min, max) => {
+        if (!physicsParams[param]) return null;
+
+        return (
+            <Grid item xs={12} md={6}>
+                <Card>
+                    <CardContent>
+                        <Box sx={{ mb: 2 }}>
+                            <Typography variant="subtitle1">
+                                {label} ({unit})
+                            </Typography>
+                            <Slider
+                                value={physicsParams[param]}
+                                onChange={(_, value) => handlePhysicsChange(param, value)}
+                                min={min}
+                                max={max}
+                                step={(max - min) / 100}
+                                valueLabelDisplay="auto"
+                                valueLabelFormat={value => `${value} ${unit}`}
+                                marks={[
+                                    { value: min, label: min },
+                                    { value: max, label: max },
+                                ]}
+                            />
+                        </Box>
+                    </CardContent>
+                </Card>
+            </Grid>
+        );
+    };
+
     if (loading || !currentUniverse) {
-        return Loading...</Typography>;
+        return <Typography>Loading...</Typography>;
     }
 
     return (
-
+        <Box sx={{ width: '100%' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4">{currentUniverse.name}</Typography>
-
+                <Box sx={{ display: 'flex', gap: 2 }}>
                     {realtimeStatus.connected && (
                         <Tooltip title="Active Collaborators">
-
+                            <IconButton>
                                 <GroupIcon />
                                 <Typography variant="caption" sx={{ ml: 1 }}>
                                     {realtimeStatus.activeCollaborators.length}
@@ -271,104 +302,12 @@ export const UniverseDetail = () => {
                     </Tooltip>
                 </Box>
                 <Grid container spacing={3}>
-                    <Grid item xs={12}>
-
-
-                                <Typography variant="h6" gutterBottom>
-                                    Gravity
-                                </Typography>
-                                <Vector3Control
-                                    value={physicsParams.gravity.value}
-                                    onChange={(value) => handlePhysicsChange('gravity', value)}
-                                    min={physicsParams.gravity.min}
-                                    max={physicsParams.gravity.max}
-                                />
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                    <Grid item xs={12}>
-
-
-                                <Typography variant="h6" gutterBottom>
-                                    Friction
-                                </Typography>
-                                <Vector3Control
-                                    value={physicsParams.friction.value}
-                                    onChange={(value) => handlePhysicsChange('friction', value)}
-                                    min={physicsParams.friction.min}
-                                    max={physicsParams.friction.max}
-                                />
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                    <Grid item xs={12}>
-
-
-                                <Typography variant="h6" gutterBottom>
-                                    Elasticity
-                                </Typography>
-                                <Vector3Control
-                                    value={physicsParams.elasticity.value}
-                                    onChange={(value) => handlePhysicsChange('elasticity', value)}
-                                    min={physicsParams.elasticity.min}
-                                    max={physicsParams.elasticity.max}
-                                />
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                    <Grid item xs={12}>
-
-
-                                <Typography variant="h6" gutterBottom>
-                                    Air Resistance
-                                </Typography>
-                                <Vector3Control
-                                    value={physicsParams.air_resistance.value}
-                                    onChange={(value) => handlePhysicsChange('air_resistance', value)}
-                                    min={physicsParams.air_resistance.min}
-                                    max={physicsParams.air_resistance.max}
-                                />
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-
-
-                                <Typography variant="h6" gutterBottom>
-                                    Time Step
-                                </Typography>
-                                <Slider
-                                    value={physicsParams.time_step.value}
-                                    min={physicsParams.time_step.min}
-                                    max={physicsParams.time_step.max}
-                                    step={0.001}
-                                    onChange={(_, value) =>
-                                        handlePhysicsChange('time_step', value as number)
-                                    }
-                                    valueLabelDisplay="auto"
-                                />
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-
-
-                                <Typography variant="h6" gutterBottom>
-                                    Substeps
-                                </Typography>
-                                <Slider
-                                    value={physicsParams.substeps.value}
-                                    min={physicsParams.substeps.min}
-                                    max={physicsParams.substeps.max}
-                                    step={1}
-                                    onChange={(_, value) =>
-                                        handlePhysicsChange('substeps', value as number)
-                                    }
-                                    valueLabelDisplay="auto"
-                                />
-                            </CardContent>
-                        </Card>
-                    </Grid>
+                    {renderPhysicsParameter('gravity', 'Gravity', 'm/s²', 0, 20)}
+                    {renderPhysicsParameter('friction', 'Friction', 'coefficient', 0, 1)}
+                    {renderPhysicsParameter('elasticity', 'Elasticity', 'coefficient', 0, 1)}
+                    {renderPhysicsParameter('air_resistance', 'Air Resistance', 'kg/m³', 0, 1)}
+                    {renderPhysicsParameter('temperature', 'Temperature', 'K', 0, 1000)}
+                    {renderPhysicsParameter('pressure', 'Pressure', 'kPa', 0, 200)}
                 </Grid>
             </TabPanel>
 
@@ -413,32 +352,28 @@ export const UniverseDetail = () => {
                 </Box>
                 <Grid container spacing={3}>
                     <Grid item xs={12}>
-
-
-                                <TextField
-                                    fullWidth
-                                    multiline
-                                    rows={4}
-                                    variant="outlined"
-                                    label="New Story Point"
-                                    value={storyPoint}
-                                    onChange={(e) => setStoryPoint(e.target.value)}
-                                />
-                                <Button
-                                    variant="contained"
-                                    onClick={handleAddStoryPoint}
-                                    disabled={!storyPoint}
-                                    sx={{ mt: 2 }}
-                                >
-                                    Add Story Point
-                                </Button>
-                            </CardContent>
-                        </Card>
+                        <TextField
+                            fullWidth
+                            multiline
+                            rows={4}
+                            variant="outlined"
+                            label="New Story Point"
+                            value={storyPoint}
+                            onChange={(e) => setStoryPoint(e.target.value)}
+                        />
+                        <Button
+                            variant="contained"
+                            onClick={handleAddStoryPoint}
+                            disabled={!storyPoint}
+                            sx={{ mt: 2 }}
+                        >
+                            Add Story Point
+                        </Button>
                     </Grid>
                     {currentUniverse.storyPoints.map((point, index) => (
                         <Grid item xs={12} key={point.id}>
-
-
+                            <Card>
+                                <CardContent>
                                     <Typography
                                         variant="subtitle2"
                                         color="text.secondary"
@@ -455,7 +390,7 @@ export const UniverseDetail = () => {
                                             </Tooltip>
                                         )}
                                     </Typography>
-                                    {point.content}</Typography>
+                                    {point.content}
                                     {point.harmonyTie && (
                                         <Box sx={{ mt: 2 }}>
                                             <Typography

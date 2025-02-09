@@ -7,17 +7,57 @@ class PhysicsService {
     this.isRunning = false;
     this.timeStep = 1 / 60;
     this.lastTime = 0;
+    this.animationFrameId = null;
+    this.postStepCallback = null;
   }
 
   initialize(params) {
+    // Cleanup existing world if it exists
+    if (this.world) {
+      this.cleanup();
+    }
+
     this.world = new CANNON.World({
-      gravity: new CANNON.Vec3(...params.gravity),
+      gravity: new CANNON.Vec3(0, -params.gravity.value, 0),
     });
 
-    this.world.solver.iterations = params.iterations;
-    this.world.defaultContactMaterial.friction = 0.3;
-    this.world.defaultContactMaterial.restitution = 0.3;
-    this.timeStep = params.timeStep;
+    this.world.solver.iterations = params.substeps.value;
+    this.world.defaultContactMaterial.friction = params.friction.value;
+    this.world.defaultContactMaterial.restitution = params.collision_elasticity.value;
+    this.timeStep = params.time_step.value;
+
+    // Apply air resistance as a global force
+    this.postStepCallback = () => {
+      this.world.bodies.forEach(body => {
+        if (body.type !== CANNON.Body.STATIC) {
+          const velocity = body.velocity;
+          const airResistance = params.air_resistance.value;
+          const force = new CANNON.Vec3(
+            -velocity.x * airResistance,
+            -velocity.y * airResistance,
+            -velocity.z * airResistance
+          );
+          body.applyForce(force, body.position);
+        }
+      });
+    };
+
+    this.world.addEventListener('postStep', this.postStepCallback);
+  }
+
+  cleanup() {
+    if (this.world && this.postStepCallback) {
+      this.world.removeEventListener('postStep', this.postStepCallback);
+    }
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+    this.world = null;
+    this.bodies = {};
+    this.isRunning = false;
+    this.lastTime = 0;
+    this.postStepCallback = null;
   }
 
   createBody(object) {
@@ -65,13 +105,11 @@ class PhysicsService {
   }
 
   removeObject(objectId) {
-    if (!this.world) return;
+    if (!this.world || !this.bodies[objectId]) return;
 
     const body = this.bodies[objectId];
-    if (body) {
-      this.world.removeBody(body);
-      delete this.bodies[objectId];
-    }
+    this.world.removeBody(body);
+    delete this.bodies[objectId];
   }
 
   updateObject(objectId, updates) {
@@ -114,47 +152,45 @@ class PhysicsService {
     return positions;
   }
 
-  step() {
-    if (!this.world || !this.isRunning) return;
-
-    const currentTime = performance.now();
-    const deltaTime = currentTime - this.lastTime;
-    this.lastTime = currentTime;
-
-    this.world.step(this.timeStep, deltaTime / 1000, 3);
-  }
-
   start() {
+    if (!this.world || this.isRunning) return;
+
     this.isRunning = true;
     this.lastTime = performance.now();
+    this.animate();
   }
 
-  pause() {
+  stop() {
     this.isRunning = false;
-  }
-
-  reset() {
-    if (!this.world) return;
-
-    for (const body of Object.values(this.bodies)) {
-      body.position.setZero();
-      body.velocity.setZero();
-      body.angularVelocity.setZero();
-      body.quaternion.set(0, 0, 0, 1);
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
     }
   }
 
-  dispose() {
-    if (this.world) {
-      for (const body of Object.values(this.bodies)) {
-        this.world.removeBody(body);
-      }
-      this.bodies = {};
-      this.world = null;
-    }
-    this.isRunning = false;
+  animate() {
+    if (!this.isRunning) return;
+
+    const time = performance.now();
+    const deltaTime = (time - this.lastTime) / 1000;
+    this.lastTime = time;
+
+    this.world.step(this.timeStep, deltaTime);
+
+    this.animationFrameId = requestAnimationFrame(() => this.animate());
+  }
+
+  getObjectState(objectId) {
+    const body = this.bodies[objectId];
+    if (!body) return null;
+
+    return {
+      position: [body.position.x, body.position.y, body.position.z],
+      rotation: [body.quaternion.x, body.quaternion.y, body.quaternion.z, body.quaternion.w],
+      velocity: [body.velocity.x, body.velocity.y, body.velocity.z],
+      angularVelocity: [body.angularVelocity.x, body.angularVelocity.y, body.angularVelocity.z],
+    };
   }
 }
 
-export const physicsService = new PhysicsService();
-export default physicsService;
+export default PhysicsService;

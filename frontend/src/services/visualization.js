@@ -1,6 +1,44 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import api from './api';
+import axiosInstance from './api';
+
+// API Service Methods
+const apiService = {
+  fetchAll: async () => {
+    const response = await axiosInstance.get('/visualization');
+    return response.data;
+  },
+
+  create: async data => {
+    const response = await axiosInstance.post('/visualization', data);
+    return response.data;
+  },
+
+  update: async (id, data) => {
+    const response = await axiosInstance.patch(`/visualization/${id}`, data);
+    return response.data;
+  },
+
+  delete: async id => {
+    await axiosInstance.delete(`/visualization/${id}`);
+  },
+
+  updateDataMappings: async (id, mappings) => {
+    await axiosInstance.patch(`/visualization/${id}/mappings`, { mappings });
+  },
+
+  updateStreamConfig: async (id, config) => {
+    await axiosInstance.patch(`/visualization/${id}/stream`, config);
+  },
+
+  startStream: async id => {
+    await axiosInstance.post(`/visualization/${id}/stream/start`);
+  },
+
+  stopStream: async id => {
+    await axiosInstance.post(`/visualization/${id}/stream/stop`);
+  },
+};
 
 class VisualizationService {
   constructor() {
@@ -13,6 +51,7 @@ class VisualizationService {
     this.animationFrameId = null;
   }
 
+  // Scene Management
   initialize(container) {
     if (this.isInitialized) return;
 
@@ -76,6 +115,7 @@ class VisualizationService {
     this.renderer.render(this.scene, this.camera);
   };
 
+  // Object Management
   addObject(visualization) {
     if (!this.scene) return;
 
@@ -197,40 +237,8 @@ class VisualizationService {
     this.objects = {};
     this.isInitialized = false;
   }
-
-  async fetchAll() {
-    const response = await api.get('/api/visualizations');
-    return response.data;
-  }
-
-  async create(data) {
-    const response = await api.post('/api/visualizations', data);
-    return response.data;
-  }
-
-  async update(id, data) {
-    const response = await api.patch(`/api/visualizations/${id}`, data);
-    return response.data;
-  }
-
-  async delete(id) {
-    await api.delete(`/api/visualizations/${id}`);
-  }
-
-  async updateDataMappings(id, dataMappings) {
-    const response = await api.patch(`/api/visualizations/${id}/mappings`, {
-      dataMappings,
-    });
-    return response.data;
-  }
-
-  async updateStreamConfig(id, streamConfig) {
-    const response = await api.patch(`/api/visualizations/${id}/stream-config`, {
-      streamConfig,
-    });
-    return response.data;
-  }
 }
 
+// Create and export service instances
 const visualizationService = new VisualizationService();
-export default visualizationService;
+export { apiService, visualizationService as default };

@@ -56,7 +56,7 @@ export const fetchUniverse = createAsyncThunk('universe/fetchUniverse', async un
 });
 
 export const createUniverse = createAsyncThunk(
-  'universe/createUniverse',
+  'universe/create',
   async (data, { rejectWithValue, getState }) => {
     try {
       const { auth } = getState();
@@ -71,98 +71,54 @@ export const createUniverse = createAsyncThunk(
       if (data.name.trim().length > 255) {
         return rejectWithValue('Name must be less than 255 characters');
       }
-      if (data.description?.trim().length > 1000) {
+      if (data.description?.trim()?.length > 1000) {
         return rejectWithValue('Description must be less than 1000 characters');
       }
 
-      // Format physics parameters according to backend schema
-      const defaultPhysicsParams = {
-        gravity: {
-          value: 9.81,
-          unit: 'm/s²',
-          min: 0,
-          max: 20,
-          enabled: true,
-        },
-        air_resistance: {
-          value: 0.0,
-          unit: 'kg/m³',
-          min: 0,
-          max: 1,
-          enabled: true,
-        },
-        elasticity: {
-          value: 1.0,
-          unit: 'coefficient',
-          min: 0,
-          max: 1,
-          enabled: true,
-        },
-        friction: {
-          value: 0.1,
-          unit: 'coefficient',
-          min: 0,
-          max: 1,
-          enabled: true,
-        },
-        time_step: {
-          value: 0.016,
-          unit: 's',
-          min: 0.001,
-          max: 0.1,
-          enabled: true,
-        },
-        substeps: {
-          value: 8,
-          unit: 'steps',
-          min: 1,
-          max: 32,
-          enabled: true,
-        },
-      };
-
-      // Format harmony parameters according to backend schema
-      const defaultHarmonyParams = {
-        resonance: {
-          value: 1.0,
-          min: 0,
-          max: 10,
-          enabled: true,
-        },
-        dissonance: {
-          value: 0.0,
-          min: 0,
-          max: 1,
-          enabled: true,
-        },
-        harmony_scale: {
-          value: 1.0,
-          min: 0.1,
-          max: 10,
-          enabled: true,
-        },
-        balance: {
-          value: 0.5,
-          min: 0,
-          max: 1,
-          enabled: true,
-        },
-      };
-
-      // Format data for API
+      // Format data according to backend schema
       const universeData = {
         name: data.name.trim(),
         description: data.description?.trim() || '',
         is_public: Boolean(data.isPublic),
         physics_params: {
-          ...defaultPhysicsParams,
-          ...(data.physics_params || {}),
+          gravity: 9.81,          // m/s², range: 0-100
+          air_resistance: 0.1,    // coefficient, range: 0-1
+          elasticity: 0.8,        // coefficient, range: 0-1
+          friction: 0.2           // coefficient, range: 0-1
         },
         harmony_params: {
-          ...defaultHarmonyParams,
-          ...(data.harmony_params || {}),
-        },
+          resonance: 1.0,         // range: 0-10
+          dissonance: 0.2,        // range: 0-1
+          harmony_scale: 1.5,     // range: 0.1-10
+          balance: 0.6            // range: 0-1
+        }
       };
+
+      // Validate parameter ranges according to backend schema
+      const validateParams = (params, ranges) => {
+        Object.entries(params).forEach(([key, value]) => {
+          const range = ranges[key];
+          if (value < range.min || value > range.max) {
+            throw new Error(`${key} must be between ${range.min} and ${range.max}`);
+          }
+        });
+      };
+
+      // Physics parameter ranges
+      validateParams(universeData.physics_params, {
+        gravity: { min: 0, max: 100 },
+        air_resistance: { min: 0, max: 1 },
+        elasticity: { min: 0, max: 1 },
+        friction: { min: 0, max: 1 }
+      });
+
+      // Harmony parameter ranges
+      validateParams(universeData.harmony_params, {
+        resonance: { min: 0, max: 10 },
+        dissonance: { min: 0, max: 1 },
+        harmony_scale: { min: 0.1, max: 10 },
+        balance: { min: 0, max: 1 }
+      });
 
       console.log('Sending universe data to API:', universeData);
 
@@ -369,9 +325,17 @@ const universeSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || 'Failed to fetch universe';
       })
+      .addCase(createUniverse.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(createUniverse.fulfilled, (state, action) => {
-        state.universes.push(action.payload);
+        state.loading = false;
         state.currentUniverse = action.payload;
+      })
+      .addCase(createUniverse.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       })
       .addCase(updateUniverse.fulfilled, (state, action) => {
         const index = state.universes.findIndex(u => u.id === action.payload.id);

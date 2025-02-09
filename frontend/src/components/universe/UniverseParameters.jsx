@@ -1,54 +1,62 @@
-import { Box, Card, CardContent, Grid, Slider, Tooltip, Typography } from '@mui/material';
-import { useCallback } from 'react';
+import { Box, FormControlLabel, Grid, Slider, Switch, Typography } from '@mui/material';
+import PropTypes from 'prop-types';
 
-export const UniverseParameters = ({ universe, onUpdate }) => {
-  const handlePhysicsChange = useCallback(
-    (param, value) => {
-      if (!universe?.physicsParams?.[param]) return;
-
-      const paramConfig = universe.physicsParams[param];
-      const clampedValue = Math.min(Math.max(value, paramConfig.min), paramConfig.max);
-
-      onUpdate(universe.id, {
-        [param]: {
-          ...paramConfig,
-          value: clampedValue,
+const UniverseParameters = ({ params, onParamChange }) => {
+  const handleChange = (paramName, value) => {
+    if (params[paramName]) {
+      onParamChange({
+        ...params,
+        [paramName]: {
+          ...params[paramName],
+          value: value,
         },
       });
-    },
-    [universe, onUpdate]
-  );
+    }
+  };
 
-  if (!universe?.physicsParams) return null;
+  const handleToggle = paramName => {
+    if (params[paramName]) {
+      onParamChange({
+        ...params,
+        [paramName]: {
+          ...params[paramName],
+          enabled: !params[paramName].enabled,
+        },
+      });
+    }
+  };
 
-  const renderParameter = (param, label) => {
-    const config = universe.physicsParams[param];
-    if (!config || !config.enabled) return null;
+  const renderParameter = (paramName, label) => {
+    const param = params[paramName];
+    if (!param) return null;
 
     return (
-      <Grid item xs={12} md={6}>
-        <Card>
-          <CardContent>
-            <Tooltip title={`Unit: ${config.unit || 'N/A'}`}>
-              <Typography variant="subtitle1" gutterBottom>
-                {label}
-              </Typography>
-            </Tooltip>
-            <Slider
-              value={config.value}
-              min={config.min}
-              max={config.max}
-              step={(config.max - config.min) / 100}
-              onChange={(_, value) => handlePhysicsChange(param, value)}
-              valueLabelDisplay="auto"
-              valueLabelFormat={value => `${value} ${config.unit || ''}`}
-              marks={[
-                { value: config.min, label: config.min },
-                { value: config.max, label: config.max },
-              ]}
-            />
-          </CardContent>
-        </Card>
+      <Grid item xs={12} key={paramName}>
+        <Box sx={{ mb: 2 }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={param.enabled}
+                onChange={() => handleToggle(paramName)}
+                name={`${paramName}-toggle`}
+              />
+            }
+            label={`${label} (${param.unit})`}
+          />
+          <Slider
+            value={param.value}
+            onChange={(_, value) => handleChange(paramName, value)}
+            min={param.min}
+            max={param.max}
+            step={(param.max - param.min) / 100}
+            disabled={!param.enabled}
+            valueLabelDisplay="auto"
+            aria-label={label}
+          />
+          <Typography variant="caption" color="textSecondary" display="block">
+            {param.description}
+          </Typography>
+        </Box>
       </Grid>
     );
   };
@@ -61,13 +69,22 @@ export const UniverseParameters = ({ universe, onUpdate }) => {
       <Grid container spacing={3}>
         {renderParameter('gravity', 'Gravity')}
         {renderParameter('friction', 'Friction')}
-        {renderParameter('elasticity', 'Elasticity')}
+        {renderParameter('collision_elasticity', 'Elasticity')}
         {renderParameter('air_resistance', 'Air Resistance')}
+        {renderParameter('temperature', 'Temperature')}
+        {renderParameter('pressure', 'Pressure')}
+        {renderParameter('fluid_density', 'Fluid Density')}
+        {renderParameter('viscosity', 'Viscosity')}
         {renderParameter('time_step', 'Time Step')}
         {renderParameter('substeps', 'Simulation Steps')}
       </Grid>
     </Box>
   );
+};
+
+UniverseParameters.propTypes = {
+  params: PropTypes.object.isRequired,
+  onParamChange: PropTypes.func.isRequired,
 };
 
 export default UniverseParameters;

@@ -1,324 +1,115 @@
-import { Universe } from '@/store/slices/universeSlice';
-import {
-    Box,
-    Card,
-    CardContent,
-    FormControl,
-    Grid,
-    InputLabel,
-    MenuItem,
-    Select,
-    Slider,
-    TextField,
-    Typography,
-} from '@mui/material';
+import { Box, Grid, Slider, Typography } from '@mui/material';
+import PropTypes from 'prop-types';
 import { useState } from 'react';
 
+const PARAMETER_CONFIG = {
+  resonance: {
+    label: 'Resonance',
+    unit: 'coefficient',
+    min: 0,
+    max: 10,
+  },
+  dissonance: {
+    label: 'Dissonance',
+    unit: 'coefficient',
+    min: 0,
+    max: 1,
+  },
+  harmony_scale: {
+    label: 'Harmony Scale',
+    unit: 'coefficient',
+    min: 0.1,
+    max: 10,
+  },
+  balance: {
+    label: 'Balance',
+    unit: 'coefficient',
+    min: 0,
+    max: 1,
+  },
+  base_frequency: {
+    label: 'Base Frequency',
+    unit: 'Hz',
+    min: 20,
+    max: 2000,
+  },
+  tempo: {
+    label: 'Tempo',
+    unit: 'BPM',
+    min: 40,
+    max: 240,
+  },
+  volume: {
+    label: 'Volume',
+    unit: 'coefficient',
+    min: 0,
+    max: 1,
+  },
+};
 
-const SCALES = [
-    'Major',
-    'Minor',
-    'Harmonic Minor',
-    'Melodic Minor',
-    'Dorian',
-    'Phrygian',
-    'Lydian',
-    'Mixolydian',
-    'Locrian',
-    'Pentatonic Major',
-    'Pentatonic Minor',
-    'Blues',
-];
+export const HarmonyControl = ({ value, onChange }) => {
+  const [localValue, setLocalValue] = useState(value);
 
-const STYLES = [
-    'Classical',
-    'Jazz',
-    'Electronic',
-    'Ambient',
-    'Experimental',
-    'Minimalist',
-];
-
-export const HarmonyControl = ({ value, onChange }: HarmonyControlProps) => {
-    const [localValue, setLocalValue] = useState(value);
-
-    const handleChange = (
-        param: keyof Universe['harmonyParams'],
-        newValue: any
-    ) => {
-        const updatedValue = {
-            ...localValue,
-            [param]: newValue,
-        };
-        setLocalValue(updatedValue);
-        onChange({ [param]: newValue });
+  const handleChange = (param, newValue) => {
+    const updatedValue = {
+      ...localValue,
+      [param]: newValue,
     };
+    setLocalValue(updatedValue);
+    onChange({ [param]: newValue });
+  };
 
-    const handleAIParamChange = (
-        param: keyof Universe['harmonyParams']['aiGenerationParams'],
-        newValue: any
-    ) => {
-        const updatedAIParams = {
-            ...localValue.aiGenerationParams,
-            [param]: newValue,
-        };
-        setLocalValue({
-            ...localValue,
-            aiGenerationParams: updatedAIParams,
-        });
-        onChange({
-            aiGenerationParams: updatedAIParams,
-        });
-    };
+  const renderParameter = param => {
+    const config = PARAMETER_CONFIG[param];
+    if (!config) return null;
 
     return (
-        
-            <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
-                    
-                        
-                            <Typography variant="h6" gutterBottom>
-                                Base Parameters
-                            </Typography>
-                            <Grid container spacing={2}>
-                                <Grid item xs={12}>
-                                    <Typography variant="body2" gutterBottom>
-                                        Base Frequency (Hz)
-                                    </Typography>
-                                    <Slider
-                                        value={localValue.baseFrequency}
-                                        min={20}
-                                        max={2000}
-                                        step={1}
-                                        onChange={(_, value) =>
-                                            handleChange(
-                                                'baseFrequency',
-                                                value as number
-                                            )
-                                        }
-                                        valueLabelDisplay="auto"
-                                    />
-                                </Grid>
-                                <Grid item xs={12}>
-                                    <FormControl fullWidth>
-                                        Scale</InputLabel>
-                                        <Select
-                                            value={localValue.scale}
-                                            onChange={(e) =>
-                                                handleChange('scale', e.target.value)
-                                            }
-                                            label="Scale"
-                                        >
-                                            {SCALES.map((scale) => (
-                                                <MenuItem
-                                                    key={scale}
-                                                    value={scale}
-                                                >
-                                                    {scale}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-                                </Grid>
-                                <Grid item xs={12}>
-                                    <Typography variant="body2" gutterBottom>
-                                        Tempo (BPM)
-                                    </Typography>
-                                    <Slider
-                                        value={localValue.tempo}
-                                        min={40}
-                                        max={200}
-                                        step={1}
-                                        onChange={(_, value) =>
-                                            handleChange('tempo', value as number)
-                                        }
-                                        valueLabelDisplay="auto"
-                                    />
-                                </Grid>
-                            </Grid>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                    
-                        
-                            <Typography variant="h6" gutterBottom>
-                                Advanced Parameters
-                            </Typography>
-                            <Grid container spacing={2}>
-                                <Grid item xs={12}>
-                                    <Typography variant="body2" gutterBottom>
-                                        Resonance
-                                    </Typography>
-                                    <Slider
-                                        value={localValue.resonance}
-                                        min={0}
-                                        max={1}
-                                        step={0.01}
-                                        onChange={(_, value) =>
-                                            handleChange(
-                                                'resonance',
-                                                value as number
-                                            )
-                                        }
-                                        valueLabelDisplay="auto"
-                                    />
-                                </Grid>
-                                <Grid item xs={12}>
-                                    <Typography variant="body2" gutterBottom>
-                                        Damping
-                                    </Typography>
-                                    <Slider
-                                        value={localValue.damping}
-                                        min={0}
-                                        max={1}
-                                        step={0.01}
-                                        onChange={(_, value) =>
-                                            handleChange(
-                                                'damping',
-                                                value as number
-                                            )
-                                        }
-                                        valueLabelDisplay="auto"
-                                    />
-                                </Grid>
-                                <Grid item xs={12}>
-                                    <Typography variant="body2" gutterBottom>
-                                        Interference
-                                    </Typography>
-                                    <Slider
-                                        value={localValue.interference}
-                                        min={0}
-                                        max={1}
-                                        step={0.01}
-                                        onChange={(_, value) =>
-                                            handleChange(
-                                                'interference',
-                                                value as number
-                                            )
-                                        }
-                                        valueLabelDisplay="auto"
-                                    />
-                                </Grid>
-                            </Grid>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid item xs={12}>
-                    
-                        
-                            <Typography variant="h6" gutterBottom>
-                                AI Generation Parameters
-                            </Typography>
-                            <Grid container spacing={2}>
-                                <Grid item xs={12} md={6}>
-                                    <FormControl fullWidth>
-                                        Style</InputLabel>
-                                        <Select
-                                            value={
-                                                localValue.aiGenerationParams.style
-                                            }
-                                            onChange={(e) =>
-                                                handleAIParamChange(
-                                                    'style',
-                                                    e.target.value
-                                                )
-                                            }
-                                            label="Style"
-                                        >
-                                            {STYLES.map((style) => (
-                                                <MenuItem
-                                                    key={style}
-                                                    value={style}
-                                                >
-                                                    {style}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-                                </Grid>
-                                <Grid item xs={12} md={6}>
-                                    <Typography variant="body2" gutterBottom>
-                                        Complexity
-                                    </Typography>
-                                    <Slider
-                                        value={
-                                            localValue.aiGenerationParams
-                                                .complexity
-                                        }
-                                        min={0}
-                                        max={1}
-                                        step={0.1}
-                                        onChange={(_, value) =>
-                                            handleAIParamChange(
-                                                'complexity',
-                                                value as number
-                                            )
-                                        }
-                                        valueLabelDisplay="auto"
-                                        marks={[
-                                            { value: 0, label: 'Simple' },
-                                            {
-                                                value: 0.5,
-                                                label: 'Moderate',
-                                            },
-                                            { value: 1, label: 'Complex' },
-                                        ]}
-                                    />
-                                </Grid>
-                                <Grid item xs={12} md={6}>
-                                    <Typography variant="body2" gutterBottom>
-                                        Intensity
-                                    </Typography>
-                                    <Slider
-                                        value={
-                                            localValue.aiGenerationParams
-                                                .intensity
-                                        }
-                                        min={0}
-                                        max={1}
-                                        step={0.1}
-                                        onChange={(_, value) =>
-                                            handleAIParamChange(
-                                                'intensity',
-                                                value as number
-                                            )
-                                        }
-                                        valueLabelDisplay="auto"
-                                        marks={[
-                                            { value: 0, label: 'Subtle' },
-                                            {
-                                                value: 0.5,
-                                                label: 'Balanced',
-                                            },
-                                            { value: 1, label: 'Intense' },
-                                        ]}
-                                    />
-                                </Grid>
-                                <Grid item xs={12} md={6}>
-                                    <FormControl fullWidth>
-                                        <TextField
-                                            label="Mood"
-                                            value={
-                                                localValue.aiGenerationParams.mood
-                                            }
-                                            onChange={(e) =>
-                                                handleAIParamChange(
-                                                    'mood',
-                                                    e.target.value
-                                                )
-                                            }
-                                            placeholder="e.g., Calm, Energetic, Mysterious"
-                                        />
-                                    </FormControl>
-                                </Grid>
-                            </Grid>
-                        </CardContent>
-                    </Card>
-                </Grid>
-            </Grid>
+      <Grid item xs={12} md={6} key={param}>
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="subtitle1">
+            {config.label} ({config.unit})
+          </Typography>
+          <Slider
+            value={localValue[param]}
+            onChange={(_, value) => handleChange(param, value)}
+            min={config.min}
+            max={config.max}
+            step={(config.max - config.min) / 100}
+            valueLabelDisplay="auto"
+            valueLabelFormat={value => `${value} ${config.unit}`}
+            marks={[
+              { value: config.min, label: config.min },
+              { value: config.max, label: config.max },
+            ]}
+          />
         </Box>
+      </Grid>
     );
+  };
+
+  return (
+    <Box sx={{ p: 2 }}>
+      <Typography variant="h6" gutterBottom>
+        Harmony Parameters
+      </Typography>
+      <Grid container spacing={3}>
+        {Object.keys(PARAMETER_CONFIG).map(param => renderParameter(param))}
+      </Grid>
+    </Box>
+  );
+};
+
+HarmonyControl.propTypes = {
+  value: PropTypes.shape({
+    resonance: PropTypes.number,
+    dissonance: PropTypes.number,
+    harmony_scale: PropTypes.number,
+    balance: PropTypes.number,
+    base_frequency: PropTypes.number,
+    tempo: PropTypes.number,
+    volume: PropTypes.number,
+  }).isRequired,
+  onChange: PropTypes.func.isRequired,
 };
 
 export default HarmonyControl;
