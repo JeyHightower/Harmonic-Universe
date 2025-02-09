@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models.core.universe import Universe
 from app.models.core.user import User
 from app.services.export import ExportService
-from app.core.errors import ValidationError, NotFoundError, AuthorizationError
+from app.core.errors import ValidationError, NotFoundError, AuthorizationError, AuthenticationError
 from app.db.session import get_db
 from app.websocket.handler import manager
 import json
@@ -15,10 +15,16 @@ universes_bp = Blueprint('universes', __name__)
 @jwt_required()
 def get_universes():
     """Get all universes accessible to the user."""
-    current_user_id = get_jwt_identity()
-    with get_db() as db:
-        universes = db.query(Universe).filter_by(user_id=current_user_id).all()
-        return jsonify([universe.to_dict() for universe in universes])
+    try:
+        current_user_id = get_jwt_identity()
+        if not current_user_id:
+            raise AuthenticationError('Authentication required')
+
+        with get_db() as db:
+            universes = db.query(Universe).filter_by(user_id=current_user_id).all()
+            return jsonify([universe.to_dict() for universe in universes])
+    except Exception as e:
+        raise ValidationError(str(e))
 
 @universes_bp.route('/<int:id>', methods=['GET'])
 @jwt_required()
@@ -34,22 +40,32 @@ def get_universe(id):
 @jwt_required()
 def create_universe():
     """Create a new universe."""
-    data = request.get_json()
-    logging.info(f"Received data for universe creation: {data}")
-    current_user_id = get_jwt_identity()
+    try:
+        current_user_id = get_jwt_identity()
+        if not current_user_id:
+            raise AuthenticationError('Authentication required')
 
-    # Validate required fields
-    if not all(k in data for k in ('name', 'description')):
-        raise ValidationError('Missing required fields')
+        data = request.get_json()
+        if not data:
+            raise ValidationError('No data provided')
 
-    with get_db() as db:
-        universe = Universe(
-            name=data['name'],
-            description=data['description'],
-            user_id=current_user_id
-        )
-        universe.save(db)
-        return jsonify(universe.to_dict()), 201
+        # Validate required fields
+        if not data.get('name'):
+            raise ValidationError('Name is required')
+
+        with get_db() as db:
+            universe = Universe(
+                name=data['name'],
+                description=data.get('description', ''),
+                is_public=data.get('is_public', False),
+                user_id=current_user_id,
+                physics_params=data.get('physics_params', {}),
+                harmony_params=data.get('harmony_params', {})
+            )
+            universe.save(db)
+            return jsonify(universe.to_dict()), 201
+    except Exception as e:
+        raise ValidationError(str(e))
 
 @universes_bp.route('/<int:id>', methods=['PUT'])
 @jwt_required()

@@ -38,49 +38,70 @@ const apiInstance = axios.create({
 apiInstance.interceptors.request.use(
   config => {
     const token = localStorage.getItem('token');
+
+    // Log request data for debugging
+    if (config.method === 'post' || config.method === 'put') {
+      console.log(`API ${config.method.toUpperCase()} Request to ${config.url}:`, {
+        headers: config.headers,
+        data: config.data,
+      });
+    }
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
   error => {
+    console.error('API Request Setup Error:', error);
     return Promise.reject(error);
   }
 );
 
 // Response interceptor
 apiInstance.interceptors.response.use(
-  response => response,
+  response => {
+    // Log successful responses for debugging
+    console.log(`API Response from ${response.config.url}:`, {
+      status: response.status,
+      data: response.data,
+    });
+    return response;
+  },
   error => {
     if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
-      console.error('API Error Response:', error.response);
+      console.error('API Error Response:', {
+        url: error.config.url,
+        method: error.config.method,
+        status: error.response.status,
+        data: error.response.data,
+        headers: error.response.headers,
+        requestData: error.config.data,
+      });
 
       if (error.response.status === 422) {
         // Handle validation errors
-        const validationErrors = error.response.data.errors;
-        throw new Error(
-          validationErrors ? Object.values(validationErrors).flat().join(', ') : 'Validation failed'
-        );
+        const validationErrors =
+          error.response.data.error?.message ||
+          error.response.data.error ||
+          'Invalid data provided';
+        throw new Error(validationErrors);
       }
 
       if (error.response.status === 401) {
         // Handle authentication errors
         localStorage.removeItem('token');
+        window.location.href = '/login';
         throw new Error('Please log in to continue');
       }
 
-      throw new Error(error.response.data.message || 'An error occurred');
-    } else if (error.request) {
-      // The request was made but no response was received
-      console.error('API Request Error:', error.request);
-      throw new Error('No response from server');
-    } else {
-      // Something happened in setting up the request that triggered an Error
-      console.error('API Setup Error:', error.message);
-      throw new Error('Error setting up request');
+      // Handle other error responses
+      const errorMessage =
+        error.response.data.error?.message || error.response.data.message || error.message;
+      throw new Error(errorMessage || 'An error occurred');
     }
+
+    return Promise.reject(error);
   }
 );
 

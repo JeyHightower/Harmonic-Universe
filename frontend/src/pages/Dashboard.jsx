@@ -1,9 +1,4 @@
-import {
-  createUniverse,
-  deleteUniverse,
-  fetchUniverses,
-  updateUniverse,
-} from '@/store/slices/universeSlice';
+import { createUniverse, deleteUniverse, fetchUniverses } from '@/store/slices/universeSlice';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import {
@@ -46,7 +41,18 @@ const Dashboard = () => {
       navigate('/login');
       return;
     }
-    dispatch(fetchUniverses());
+
+    const fetchData = async () => {
+      try {
+        await dispatch(fetchUniverses()).unwrap();
+      } catch (err) {
+        if (err.includes('log in')) {
+          navigate('/login');
+        }
+      }
+    };
+
+    fetchData();
   }, [dispatch, isAuthenticated, navigate]);
 
   const handleOpenDialog = universe => {
@@ -84,34 +90,73 @@ const Dashboard = () => {
     e.preventDefault();
     setFormError(null);
 
-    if (!formData.name.trim()) {
+    // Client-side validation
+    const name = formData.name.trim();
+    const description = formData.description?.trim() || '';
+
+    if (!name) {
       setFormError('Name is required');
       return;
     }
 
-    if (!formData.description.trim()) {
-      setFormError('Description is required');
+    if (name.length > 255) {
+      setFormError('Name must be less than 255 characters');
+      return;
+    }
+
+    if (description.length > 1000) {
+      setFormError('Description must be less than 1000 characters');
       return;
     }
 
     try {
-      if (editingUniverse) {
-        await dispatch(
-          updateUniverse({
-            universeId: editingUniverse.id,
-            data: formData,
-          })
-        ).unwrap();
-      } else {
-        const result = await dispatch(createUniverse(formData)).unwrap();
-        if (result) {
-          navigate(`/universe/${result.id}`);
-        }
+      console.log('Submitting universe data:', {
+        ...formData,
+        name,
+        description,
+      });
+
+      const resultAction = await dispatch(
+        createUniverse({
+          ...formData,
+          name,
+          description,
+        })
+      ).unwrap();
+
+      if (resultAction) {
+        handleCloseDialog();
+        await dispatch(fetchUniverses()).unwrap();
       }
-      handleCloseDialog();
     } catch (err) {
       console.error('Failed to save universe:', err);
-      setFormError(err.message || 'Failed to save universe. Please try again.');
+
+      // Handle different types of errors
+      if (typeof err === 'string') {
+        if (err.includes('log in')) {
+          navigate('/login');
+          return;
+        }
+        setFormError(err);
+      } else if (err.message) {
+        // Parse validation errors
+        const message = err.message;
+        if (message.includes(':')) {
+          // This is a field-specific error
+          const [field, errorMsg] = message.split(':').map(s => s.trim());
+          if (field.toLowerCase().includes('name')) {
+            setFormError(`Name ${errorMsg}`);
+          } else if (field.toLowerCase().includes('description')) {
+            setFormError(`Description ${errorMsg}`);
+          } else {
+            setFormError(message);
+          }
+        } else {
+          setFormError(message);
+        }
+      } else {
+        setFormError('An unexpected error occurred. Please try again.');
+      }
     }
   };
 
@@ -224,7 +269,13 @@ const Dashboard = () => {
               required
               value={formData.name}
               onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              error={!!formError}
+              error={!!formError && formError.includes('Name')}
+              helperText={
+                formError && formError.includes('Name')
+                  ? formError
+                  : 'Required, maximum 255 characters'
+              }
+              inputProps={{ maxLength: 255 }}
             />
             <TextField
               margin="dense"
@@ -234,15 +285,25 @@ const Dashboard = () => {
               fullWidth
               multiline
               rows={4}
-              required
               value={formData.description}
               onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              error={!!formError}
+              error={!!formError && formError.includes('Description')}
+              helperText={
+                formError && formError.includes('Description')
+                  ? formError
+                  : 'Optional, maximum 1000 characters'
+              }
+              inputProps={{ maxLength: 1000 }}
             />
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseDialog}>Cancel</Button>
-            <Button type="submit" variant="contained" color="primary">
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              disabled={!formData.name.trim()}
+            >
               Create
             </Button>
           </DialogActions>
