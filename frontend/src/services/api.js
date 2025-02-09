@@ -41,6 +41,8 @@ apiInstance.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Ensure content type is set
+    config.headers['Content-Type'] = 'application/json';
     return config;
   },
   error => {
@@ -84,6 +86,11 @@ apiInstance.interceptors.response.use(
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }
+    }
+
+    // Special handling for logout - always resolve successfully
+    if (error.config.url === '/api/auth/logout') {
+      return Promise.resolve({ data: { message: 'Logged out successfully' } });
     }
 
     // Handle other errors

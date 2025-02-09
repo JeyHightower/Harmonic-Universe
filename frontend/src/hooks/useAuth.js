@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/auth';
 
 export const useAuth = () => {
@@ -6,25 +7,36 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const navigate = useNavigate();
 
   // Load user from local storage on mount
   useEffect(() => {
     const loadUser = async () => {
       try {
         const storedUser = localStorage.getItem('user');
-        if (storedUser) {
+        const token = localStorage.getItem('token');
+
+        if (storedUser && token) {
           setUser(JSON.parse(storedUser));
           // Attempt to refresh token on mount
           await handleRefreshToken();
+          // Verify the token is still valid
+          await authService.getCurrentUser();
+          // If user is on login page, redirect to dashboard
+          if (window.location.pathname === '/login') {
+            navigate('/dashboard');
+          }
         }
       } catch (err) {
         console.error('Error loading user:', err);
+        // If there's an error, clear the stored data
+        handleLogout();
       } finally {
         setLoading(false);
       }
     };
     loadUser();
-  }, []);
+  }, [navigate]);
 
   // Set up token refresh interval
   useEffect(() => {
@@ -42,35 +54,62 @@ export const useAuth = () => {
     };
   }, [user]);
 
-  const handleLogin = useCallback(async (email, password) => {
+  const handleRefreshToken = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      const response = await authService.login({ email, password });
-      setUser(response.user);
-      return true;
+      setRefreshing(true);
+      await authService.refreshToken();
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed');
-      return false;
+      console.error('Error refreshing token:', err);
+      handleLogout();
     } finally {
-      setLoading(false);
+      setRefreshing(false);
     }
-  }, []);
+  };
+
+  const handleLogin = useCallback(
+    async (email, password) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await authService.login({ email, password });
+        setUser(response.user);
+        navigate('/dashboard', { replace: true });
+        return true;
+      } catch (err) {
+        setError(err.message || 'Login failed');
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [navigate]
+  );
 
   const handleDemoLogin = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await authService.demoLogin();
+
+      // Set user and tokens in a single batch
+      localStorage.setItem('user', JSON.stringify(response.user));
+      localStorage.setItem('token', response.access_token);
+      localStorage.setItem('refreshToken', response.refresh_token);
       setUser(response.user);
+
+      // Ensure auth state is set before navigation
+      setTimeout(() => {
+        navigate('/dashboard', { replace: true });
+      }, 0);
+
       return true;
     } catch (err) {
-      setError(err.response?.data?.message || 'Demo login failed');
+      setError(err.message || 'Demo login failed');
       return false;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [navigate]);
 
   const handleRegister = useCallback(async (username, email, password) => {
     try {
@@ -90,14 +129,16 @@ export const useAuth = () => {
   const handleLogout = useCallback(async () => {
     try {
       setLoading(true);
-      authService.logout();
-      setUser(null);
+      await authService.logout();
     } catch (err) {
-      console.error('Error during logout:', err);
+      console.error('Logout error:', err);
     } finally {
+      setUser(null);
+      setError(null);
       setLoading(false);
+      navigate('/', { replace: true });
     }
-  }, []);
+  }, [navigate]);
 
   const handleUpdateProfile = useCallback(async data => {
     try {
@@ -113,24 +154,6 @@ export const useAuth = () => {
       setLoading(false);
     }
   }, []);
-
-  const handleRefreshToken = useCallback(async () => {
-    // Prevent multiple simultaneous refresh attempts
-    if (refreshing) return false;
-
-    try {
-      setRefreshing(true);
-      await authService.refreshToken();
-      return true;
-    } catch (err) {
-      console.error('Token refresh failed:', err);
-      // If refresh fails, log out the user
-      handleLogout();
-      return false;
-    } finally {
-      setRefreshing(false);
-    }
-  }, [refreshing, handleLogout]);
 
   const clearError = useCallback(() => {
     setError(null);

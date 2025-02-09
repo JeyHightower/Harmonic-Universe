@@ -1,15 +1,52 @@
 /* Layout Styles */
+:root {
+  /* Colors */
+  --color-primary: #2b6cb0;
+  --color-primary-light: #4299e1;
+  --color-primary-dark: #2c5282;
+  --color-secondary: #805ad5;
+  --color-secondary-light: #9f7aea;
+  --color-secondary-dark: #6b46c1;
+  --color-background: #f7fafc;
+  --color-paper: #ffffff;
+  --color-text: #2d3748;
+  --color-text-secondary: #4a5568;
+  --color-border: rgba(0, 0, 0, 0.06);
+  --color-shadow: rgba(0, 0, 0, 0.1);
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px var(--color-shadow);
+  --shadow-md: 0 4px 6px var(--color-shadow);
+  --shadow-lg: 0 10px 15px var(--color-shadow);
+
+  /* Border Radius */
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+}
+
 .app-layout {
   display: flex;
   min-height: 100vh;
-  background-color: var(--background-dark);
+  background-color: var(--color-background);
 }
 
 /* Sidebar */
 .sidebar {
   width: 260px;
-  background-color: var(--background-paper);
-  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  background-color: var(--color-paper);
+  border-right: 1px solid var(--color-border);
   transition: width var(--transition-normal);
   overflow-x: hidden;
   overflow-y: auto;
@@ -24,7 +61,8 @@
   display: flex;
   align-items: center;
   padding: 0 var(--spacing-md);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-paper);
 }
 
 .sidebar-content {
@@ -37,19 +75,21 @@
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+  background-color: var(--color-background);
 }
 
 /* Header */
 .header {
   height: 64px;
-  background-color: var(--background-paper);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background-color: var(--color-paper);
+  border-bottom: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   padding: 0 var(--spacing-md);
   position: sticky;
   top: 0;
   z-index: 1000;
+  box-shadow: var(--shadow-sm);
 }
 
 /* Content Area */
@@ -61,10 +101,11 @@
 
 /* Footer */
 .footer {
-  background-color: var(--background-paper);
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  background-color: var(--color-paper);
+  border-top: 1px solid var(--color-border);
   padding: var(--spacing-md);
   text-align: center;
+  color: var(--color-text-secondary);
 }
 
 /* Grid System */
@@ -87,19 +128,25 @@
 
 /* Card Layout */
 .card {
-  background-color: var(--background-paper);
-  border-radius: var(--border-radius-md);
+  background-color: var(--color-paper);
+  border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--transition-fast);
+  transition:
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .card:hover {
   box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 
 .card-header {
   padding: var(--spacing-md);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-paper);
+  border-top-left-radius: var(--border-radius-lg);
+  border-top-right-radius: var(--border-radius-lg);
 }
 
 .card-content {
@@ -108,7 +155,10 @@
 
 .card-footer {
   padding: var(--spacing-md);
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid var(--color-border);
+  background-color: var(--color-paper);
+  border-bottom-left-radius: var(--border-radius-lg);
+  border-bottom-right-radius: var(--border-radius-lg);
 }
 
 /* Flex Utilities */
@@ -144,29 +194,20 @@
 }
 
 @media (max-width: 768px) {
+  .grid-2,
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: 1fr;
+  }
+
   .sidebar {
     position: fixed;
-    left: 0;
-    top: 0;
-    bottom: 0;
+    left: -260px;
     z-index: 1001;
-    transform: translateX(-100%);
   }
 
-  .sidebar-open {
-    transform: translateX(0);
-  }
-
-  .grid-3 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .grid-4 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .content {
-    padding: var(--spacing-md);
+  .sidebar.open {
+    left: 0;
   }
 }
 

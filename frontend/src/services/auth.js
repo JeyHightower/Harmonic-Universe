@@ -16,12 +16,25 @@ export const authService = {
 
   // Demo login
   demoLogin: async () => {
-    const demoCredentials = {
-      email: 'demo@example.com',
-      password: 'password',
-    };
+    try {
+      const demoCredentials = {
+        email: 'demo@example.com',
+        password: 'password',
+      };
 
-    return authService.login(demoCredentials);
+      const response = await api.post('/api/auth/login', demoCredentials);
+      const { user, access_token, refresh_token } = response.data;
+
+      // Return all necessary data
+      return {
+        user,
+        access_token,
+        refresh_token,
+      };
+    } catch (error) {
+      console.error('Demo login error:', error);
+      throw new Error(error.response?.data?.message || 'Demo login failed');
+    }
   },
 
   // Register user
@@ -90,11 +103,38 @@ export const authService = {
     return response.data;
   },
 
-  // Logout (client-side only)
-  logout: () => {
-    // Clear tokens and user data from local storage
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+  // Logout
+  logout: async () => {
+    try {
+      // Get current token
+      const token = localStorage.getItem('token');
+
+      // Clear storage first to prevent any race conditions
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+
+      // Attempt to call logout endpoint if we have a token
+      if (token) {
+        await api.post(
+          '/api/auth/logout',
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+      }
+
+      // Clear any other application state if needed
+      sessionStorage.clear(); // Clear any session storage
+
+      return { success: true };
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still consider it a success since we've cleared local storage
+      return { success: true };
+    }
   },
 };

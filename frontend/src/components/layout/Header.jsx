@@ -1,49 +1,53 @@
-import { logout } from '@/store/slices/authSlice';
-import { AppBar, Box, Button, Toolbar, Typography } from '@mui/material';
-import { useDispatch, useSelector } from 'react-redux';
+import MenuIcon from '@mui/icons-material/Menu';
+import { AppBar, Box, Button, Container, IconButton, Toolbar } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import Logo from '../common/Logo';
 
-const Header = () => {
-    const dispatch = useDispatch();
-    const { isAuthenticated, user } = useSelector(state => state.auth);
+const Header = ({ onToggleSidebar }) => {
+  const { isAuthenticated, handleLogout } = useAuth();
 
-    const handleLogout = () => {
-        dispatch(logout());
-    };
+  return (
+    <AppBar position="fixed" elevation={0}>
+      <Container maxWidth="xl">
+        <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {isAuthenticated && (
+              <IconButton
+                color="inherit"
+                aria-label="open drawer"
+                edge="start"
+                onClick={onToggleSidebar}
+                sx={{ display: { sm: 'none' } }}
+              >
+                <MenuIcon />
+              </IconButton>
+            )}
+            <RouterLink to="/" style={{ textDecoration: 'none' }}>
+              <Logo variant={isAuthenticated ? 'small' : 'default'} />
+            </RouterLink>
+          </Box>
 
-    return (
-        <AppBar position="static">
-            <Toolbar>
-                <Typography variant="h6" component={RouterLink} to="/" sx={{ flexGrow: 1, textDecoration: 'none', color: 'inherit' }}>
-                    Harmonic Universe
-                </Typography>
-                <Box>
-                    {isAuthenticated ? (
-                        <>
-                            <Button color="inherit" component={RouterLink} to="/dashboard">
-                                Dashboard
-                            </Button>
-                            <Button color="inherit" onClick={handleLogout}>
-                                Logout
-                            </Button>
-                            <Typography variant="body1" component="span" sx={{ ml: 2 }}>
-                                {user?.username}
-                            </Typography>
-                        </>
-                    ) : (
-                        <>
-                            <Button color="inherit" component={RouterLink} to="/login">
-                                Login
-                            </Button>
-                            <Button color="inherit" component={RouterLink} to="/register">
-                                Register
-                            </Button>
-                        </>
-                    )}
-                </Box>
-            </Toolbar>
-        </AppBar>
-    );
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            {!isAuthenticated ? (
+              <>
+                <Button component={RouterLink} to="/login" variant="outlined" color="primary">
+                  Log In
+                </Button>
+                <Button component={RouterLink} to="/register" variant="contained" color="primary">
+                  Sign Up
+                </Button>
+              </>
+            ) : (
+              <Button variant="outlined" color="primary" onClick={handleLogout}>
+                Log Out
+              </Button>
+            )}
+          </Box>
+        </Toolbar>
+      </Container>
+    </AppBar>
+  );
 };
 
 export default Header;
