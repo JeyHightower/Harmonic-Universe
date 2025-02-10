@@ -3,29 +3,33 @@
   "version": "1.0.0",
   "description": "A collaborative universe creation platform",
   "private": true,
-  "workspaces": [
-    "frontend",
-    "backend"
-  ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "dev:frontend": "npm run dev -w frontend",
-    "dev:backend": "npm run dev -w backend",
-    "build": "npm run build:frontend && npm run build:backend",
-    "build:frontend": "npm run build -w frontend",
-    "build:backend": "npm run build -w backend",
-    "test": "npm run test:frontend && npm run test:backend",
-    "test:frontend": "npm run test -w frontend",
-    "test:backend": "npm run test -w backend",
-    "lint": "npm run lint:frontend && npm run lint:backend",
-    "lint:frontend": "npm run lint -w frontend",
-    "lint:backend": "npm run lint -w backend",
-    "format": "npm run format:frontend && npm run format:backend",
-    "format:frontend": "npm run format -w frontend",
-    "format:backend": "npm run format -w backend"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,md}\""
+  },
+  "dependencies": {
+    "@reduxjs/toolkit": "^1.9.5",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-redux": "^8.1.0",
+    "react-router-dom": "^6.11.2"
   },
   "devDependencies": {
+    "@types/react": "^18.0.37",
+    "@types/react-dom": "^18.0.11",
+    "@vitejs/plugin-react": "^4.0.0",
     "concurrently": "^8.0.0",
-    "husky": "^8.0.0"
+    "eslint": "^8.38.0",
+    "eslint-plugin-react": "^7.32.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.3.4",
+    "husky": "^8.0.0",
+    "prettier": "^2.8.8",
+    "vite": "^4.3.9",
+    "vitest": "^0.32.0"
   }
 }
