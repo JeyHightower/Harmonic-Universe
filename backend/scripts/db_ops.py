@@ -16,6 +16,7 @@ from sqlalchemy import create_engine, text, inspect
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 from app.db.init_db import init_db
+from app.db.session import init_engine
 from alembic.config import Config
 from alembic import command
 
@@ -27,20 +28,7 @@ def get_db_session(database_url: str = None):
     if database_url is None:
         database_url = str(settings.SQLALCHEMY_DATABASE_URI)
 
-    # Parse the URL to handle both SQLite and PostgreSQL
-    parsed_url = urlparse(database_url)
-
-    # Add SQLite-specific connect args if needed
-    connect_args = {}
-    if parsed_url.scheme == 'sqlite':
-        connect_args['check_same_thread'] = False
-
-    engine = create_engine(
-        database_url,
-        connect_args=connect_args,
-        echo=settings.SQLALCHEMY_ECHO
-    )
-
+    engine = init_engine(database_url)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     return SessionLocal(), engine
 
@@ -131,7 +119,7 @@ def verify(fix):
             except (ProgrammingError, OperationalError) as e:
                 missing_tables.append(table.name)
                 logger.warning(f"Error checking table {table.name}: {e}")
-                db.rollback()  # Roll back the transaction to keep the connection usable
+                db.rollback()
 
         if missing_tables:
             if fix:

@@ -56,15 +56,15 @@ class Initializer:
     def setup_database(self) -> None:
         """Initialize and verify database."""
         try:
-            # Run database initialization
+            # Run database initialization using db_ops script
             subprocess.run(
-                [sys.executable, 'scripts/init_db.py', '--env', self.env],
+                [sys.executable, 'scripts/db_ops.py', 'init', '--env', self.env],
                 check=True
             )
 
             # Verify database setup
             subprocess.run(
-                [sys.executable, 'scripts/verify_db.py', '--env', self.env],
+                [sys.executable, 'scripts/db_ops.py', 'verify'],
                 check=True
             )
 
@@ -88,7 +88,7 @@ class Initializer:
         """Run database migrations."""
         try:
             subprocess.run(
-                ['alembic', 'upgrade', 'head'],
+                [sys.executable, 'scripts/db_ops.py', 'migrate'],
                 check=True
             )
             logger.info("Database migrations completed successfully")
@@ -101,7 +101,7 @@ class Initializer:
         if self.env == "test":
             try:
                 subprocess.run(
-                    [sys.executable, 'scripts/run_tests.py', '--setup-only'],
+                    [sys.executable, 'scripts/db_ops.py', 'init', '--test'],
                     check=True
                 )
                 logger.info("Test environment setup completed successfully")
