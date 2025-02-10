@@ -2,17 +2,36 @@ import { useModal } from '@/contexts/ModalContext';
 import { useUniverse } from '@/hooks/useUniverse';
 import { commonStyles } from '@/styles/commonStyles';
 import { Add as AddIcon } from '@mui/icons-material';
-import { Box, Button, Grid, Typography } from '@mui/material';
+import { Box, Button, CircularProgress, Grid, Typography } from '@mui/material';
 import { useEffect } from 'react';
 import UniverseCard from './UniverseCard';
 
 const UniverseList = () => {
-  const { universes, fetchUniverses } = useUniverse();
+  const { universes, loading, error, fetchUniverses } = useUniverse();
   const { openModal } = useModal();
 
   useEffect(() => {
-    fetchUniverses();
-  }, [fetchUniverses]);
+    // Only fetch if we don't have any universes yet
+    if (!universes.length) {
+      fetchUniverses();
+    }
+  }, [fetchUniverses, universes.length]);
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography color="error">{error}</Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={commonStyles.pageContainer}>

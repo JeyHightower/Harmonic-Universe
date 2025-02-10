@@ -1,176 +1,178 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { authService } from '../services/auth';
+import { useNotification } from '@/components/common/Notification';
+import api from '@/services/api';
+import { demoLogin, login, logoutUser, refreshToken as refreshTokenThunk, setUser } from '@/store/slices/authSlice';
+import { useCallback, useEffect, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export const useAuth = () => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { showNotification } = useNotification();
+  const refreshTimeoutRef = useRef(null);
 
-  // Load user from local storage on mount
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const storedUser = localStorage.getItem('user');
-        const token = localStorage.getItem('token');
+  const {
+    isAuthenticated,
+    token,
+    user,
+    loading,
+    error
+  } = useSelector(state => state.auth);
 
-        if (storedUser && token) {
-          setUser(JSON.parse(storedUser));
-          // Attempt to refresh token on mount
-          await handleRefreshToken();
-          // Verify the token is still valid
-          await authService.getCurrentUser();
-          // If user is on login page, redirect to dashboard
-          if (window.location.pathname === '/login') {
-            navigate('/dashboard');
+  const clearAuthState = useCallback(() => {
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+    }
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    delete api.defaults.headers.common['Authorization'];
+    dispatch(logoutUser());
+  }, [dispatch]);
+
+  const handleAuthFailed = useCallback((event) => {
+    const error = event.detail?.error || 'Authentication failed';
+    showNotification(error, 'error');
+    clearAuthState();
+    navigate('/login', { state: { from: location } });
+  }, [clearAuthState, navigate, location, showNotification]);
+
+  const setupTokenRefresh = useCallback((token) => {
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+    }
+
+    try {
+      // Decode token to get expiration
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const expiresIn = payload.exp * 1000 - Date.now(); // Convert to milliseconds
+
+      // Refresh 5 minutes before expiration
+      const refreshTime = Math.max(0, expiresIn - 5 * 60 * 1000);
+
+      refreshTimeoutRef.current = setTimeout(async () => {
+        try {
+          const refreshToken = localStorage.getItem('refreshToken');
+          if (!refreshToken) {
+            throw new Error('No refresh token available');
           }
+
+          const response = await api.post('/api/auth/refresh', {
+            refresh_token: refreshToken,
+            access_token: token
+          });
+
+          const { access_token, refresh_token } = response.data;
+
+          localStorage.setItem('token', access_token);
+          localStorage.setItem('refreshToken', refresh_token);
+          api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+
+          dispatch(refreshTokenThunk({ token: access_token }));
+          setupTokenRefresh(access_token);
+        } catch (error) {
+          console.error('Token refresh failed:', error);
+          handleAuthFailed({ detail: { error: 'Session expired. Please log in again.' } });
         }
-      } catch (err) {
-        console.error('Error loading user:', err);
-        // If there's an error, clear the stored data
-        handleLogout();
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadUser();
-  }, [navigate]);
-
-  // Set up token refresh interval
-  useEffect(() => {
-    let refreshInterval;
-
-    if (user) {
-      // Refresh token every 25 minutes (5 minutes before expiry)
-      refreshInterval = setInterval(handleRefreshToken, 25 * 60 * 1000);
+      }, refreshTime);
+    } catch (error) {
+      console.error('Error setting up token refresh:', error);
+      handleAuthFailed({ detail: { error: 'Invalid token. Please log in again.' } });
     }
+  }, [dispatch, handleAuthFailed]);
 
-    return () => {
-      if (refreshInterval) {
-        clearInterval(refreshInterval);
-      }
-    };
-  }, [user]);
-
-  const handleRefreshToken = async () => {
+  const handleLogin = useCallback(async (credentials) => {
     try {
-      setRefreshing(true);
-      await authService.refreshToken();
-    } catch (err) {
-      console.error('Error refreshing token:', err);
-      handleLogout();
-    } finally {
-      setRefreshing(false);
-    }
-  };
+      const response = await dispatch(login(credentials)).unwrap();
+      const { access_token, refresh_token, user } = response;
 
-  const handleLogin = useCallback(
-    async (email, password) => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await authService.login({ email, password });
-        setUser(response.user);
-        navigate('/dashboard', { replace: true });
-        return true;
-      } catch (err) {
-        setError(err.message || 'Login failed');
-        return false;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [navigate]
-  );
+      localStorage.setItem('token', access_token);
+      localStorage.setItem('refreshToken', refresh_token);
+      localStorage.setItem('user', JSON.stringify(user));
 
-  const handleDemoLogin = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await authService.demoLogin();
+      api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+      setupTokenRefresh(access_token);
 
-      // Set user and tokens in a single batch
-      localStorage.setItem('user', JSON.stringify(response.user));
-      localStorage.setItem('token', response.access_token);
-      localStorage.setItem('refreshToken', response.refresh_token);
-      setUser(response.user);
-
-      // Ensure auth state is set before navigation
-      setTimeout(() => {
-        navigate('/dashboard', { replace: true });
-      }, 0);
+      // Navigate to the page they tried to visit or default to dashboard
+      const from = location.state?.from?.pathname || '/dashboard';
+      navigate(from, { replace: true });
 
       return true;
-    } catch (err) {
-      setError(err.message || 'Demo login failed');
+    } catch (error) {
+      showNotification(error.message || 'Login failed', 'error');
       return false;
-    } finally {
-      setLoading(false);
     }
-  }, [navigate]);
-
-  const handleRegister = useCallback(async (username, email, password) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await authService.register({ username, email, password });
-      setUser(response.user);
-      return true;
-    } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed');
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  }, [dispatch, navigate, location, setupTokenRefresh, showNotification]);
 
   const handleLogout = useCallback(async () => {
     try {
-      setLoading(true);
-      await authService.logout();
-    } catch (err) {
-      console.error('Logout error:', err);
-    } finally {
-      setUser(null);
-      setError(null);
-      setLoading(false);
-      navigate('/', { replace: true });
+      await dispatch(logoutUser()).unwrap();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      clearAuthState();
+      navigate('/login');
     }
-  }, [navigate]);
+  }, [dispatch, navigate, clearAuthState]);
 
-  const handleUpdateProfile = useCallback(async data => {
+  const handleDemoLogin = useCallback(async () => {
     try {
-      setLoading(true);
-      setError(null);
-      const updatedUser = await authService.updateProfile(data);
-      setUser(updatedUser);
-      return true;
-    } catch (err) {
-      setError(err.response?.data?.message || 'Profile update failed');
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      const response = await dispatch(demoLogin()).unwrap();
+      const { access_token, refresh_token, user } = response;
 
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
+      localStorage.setItem('token', access_token);
+      localStorage.setItem('refreshToken', refresh_token);
+      localStorage.setItem('user', JSON.stringify(user));
+
+      api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+      setupTokenRefresh(access_token);
+
+      navigate('/dashboard');
+
+      return true;
+    } catch (error) {
+      showNotification('Demo login failed', 'error');
+      return false;
+    }
+  }, [dispatch, navigate, setupTokenRefresh, showNotification]);
+
+  useEffect(() => {
+    // Listen for authentication failures
+    window.addEventListener('auth:failed', handleAuthFailed);
+
+    // Initialize auth state from localStorage
+    const storedToken = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+
+    if (storedToken && storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+        dispatch(setUser({ user, token: storedToken }));
+        setupTokenRefresh(storedToken);
+      } catch (error) {
+        console.error('Error restoring auth state:', error);
+        clearAuthState();
+      }
+    }
+
+    return () => {
+      window.removeEventListener('auth:failed', handleAuthFailed);
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+    };
+  }, [dispatch, setupTokenRefresh, handleAuthFailed, clearAuthState]);
 
   return {
+    isAuthenticated,
+    token,
     user,
     loading,
     error,
-    refreshing,
-    isAuthenticated: !!user,
     login: handleLogin,
-    demoLogin: handleDemoLogin,
-    register: handleRegister,
     logout: handleLogout,
-    updateProfile: handleUpdateProfile,
-    refreshToken: handleRefreshToken,
-    clearError,
+    demoLogin: handleDemoLogin
   };
 };

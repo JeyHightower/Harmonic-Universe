@@ -1,11 +1,12 @@
 import { Box, Button, Typography } from '@mui/material';
 import { useSnackbar } from 'notistack';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as Tone from 'tone';
 
 const AudioContextProvider = ({ children }) => {
   const [isAudioContextStarted, setIsAudioContextStarted] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
+  const audioContextRef = useRef(null);
 
   useEffect(() => {
     // Check if AudioContext is already running
@@ -15,17 +16,23 @@ const AudioContextProvider = ({ children }) => {
 
     // Cleanup function
     return () => {
-      if (Tone.context.state === 'running') {
-        Tone.context.close();
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
       }
     };
   }, []);
 
   const startAudioContext = async () => {
     try {
+      // Create and store AudioContext only when user interacts
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      }
+
       // Ensure we're in a user gesture context
       await Tone.start();
       await Tone.context.resume();
+      await audioContextRef.current.resume();
 
       // Initialize any default Tone.js settings
       Tone.Transport.bpm.value = 120;

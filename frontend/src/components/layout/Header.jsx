@@ -1,5 +1,5 @@
 import { useAuth } from '@/hooks/useAuth';
-import { logout } from '@/store/slices/authSlice';
+import { logoutUserAsync } from '@/store/slices/authSlice';
 import { commonStyles } from '@/styles/commonStyles';
 import { useTheme } from '@/theme/ThemeProvider';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
@@ -42,7 +42,7 @@ const Header = ({ onToggleSidebar }) => {
   const handleLogout = async () => {
     try {
       handleClose();
-      await dispatch(logout()).unwrap();
+      await dispatch(logoutUserAsync()).unwrap();
       navigate('/', { replace: true });
     } catch (error) {
       console.error('Logout failed:', error);

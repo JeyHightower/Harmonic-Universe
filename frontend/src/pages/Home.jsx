@@ -1,138 +1,73 @@
-import { demoLogin } from '@/store/slices/authSlice';
-import { Box, Button, Container, Typography } from '@mui/material';
-import { useDispatch, useSelector } from 'react-redux';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { useAuth } from '@/hooks/useAuth';
+import { Box, Button, Typography } from '@mui/material';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const { isAuthenticated, loading } = useSelector(state => state.auth);
+  const { isAuthenticated, loading, demoLogin } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleDemoLogin = async () => {
     try {
-      console.log('Attempting demo login from home page...');
-      await dispatch(demoLogin()).unwrap();
-      console.log('Demo login successful, navigating to dashboard...');
-    } catch (err) {
-      console.error('Demo login failed:', err);
+      await demoLogin();
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Demo login failed:', error);
     }
   };
 
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
   return (
-    <Container>
-      <Box
-        sx={{
-          mt: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          textAlign: 'center',
-          gap: 4,
-        }}
-      >
-        <Typography variant="h2" component="h1" gutterBottom>
-          Welcome to Harmonic Universe
-        </Typography>
+    <Box
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      minHeight="100vh"
+      gap={4}
+      p={3}
+    >
+      <Typography variant="h2" component="h1" gutterBottom>
+        Welcome to Harmonic Universe
+      </Typography>
 
-        <Typography variant="h5" color="text.secondary" sx={{ mb: 4, maxWidth: '800px' }}>
-          Create, explore, and share your musical universes. Experience the harmony of infinite
-          possibilities.
-        </Typography>
+      <Typography variant="h5" component="h2" gutterBottom>
+        Explore the intersection of music and technology
+      </Typography>
 
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2,
-            width: '100%',
-            maxWidth: '400px',
-          }}
+      <Box display="flex" gap={2}>
+        <Button
+          variant="contained"
+          color="primary"
+          size="large"
+          onClick={handleDemoLogin}
+          disabled={loading}
         >
-          {!isAuthenticated && (
-            <Button
-              variant="contained"
-              size="large"
-              color="secondary"
-              onClick={handleDemoLogin}
-              disabled={loading}
-              sx={{
-                py: 2,
-                fontSize: '1.2rem',
-                fontWeight: 600,
-                boxShadow: theme => theme.shadows[4],
-                '&:hover': {
-                  boxShadow: theme => theme.shadows[8],
-                },
-              }}
-            >
-              {loading ? 'Loading...' : 'Try Demo Account'}
-            </Button>
-          )}
-          {isAuthenticated && (
-            <Button
-              variant="contained"
-              size="large"
-              onClick={() => navigate('/dashboard')}
-              sx={{
-                py: 2,
-                fontSize: '1.2rem',
-                fontWeight: 600,
-              }}
-            >
-              Go to Dashboard
-            </Button>
-          )}
-        </Box>
+          {loading ? 'Logging in...' : 'Try Demo'}
+        </Button>
 
-        <Box sx={{ mt: 4, display: 'flex', flexDirection: 'column', gap: 3, maxWidth: '800px' }}>
-          <Typography variant="h4" component="h2">
-            Features
-          </Typography>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
-            <FeatureCard
-              title="Musical Universes"
-              description="Create and customize your own musical universes with unique parameters and harmonies."
-            />
-            <FeatureCard
-              title="Real-time Collaboration"
-              description="Work together with others in real-time to compose and explore musical possibilities."
-            />
-            <FeatureCard
-              title="Advanced Visualization"
-              description="See your music come to life with beautiful, interactive visualizations."
-            />
-            <FeatureCard
-              title="AI-Powered Generation"
-              description="Let AI help you discover new musical patterns and compositions."
-            />
-          </Box>
-        </Box>
+        <Button
+          variant="outlined"
+          color="primary"
+          size="large"
+          onClick={() => navigate('/login')}
+          disabled={loading}
+        >
+          Login
+        </Button>
       </Box>
-    </Container>
+    </Box>
   );
 };
-
-const FeatureCard = ({ title, description }) => (
-  <Box
-    sx={{
-      p: 3,
-      borderRadius: 2,
-      bgcolor: 'background.paper',
-      boxShadow: theme => theme.shadows[1],
-      transition: 'all 0.3s ease-in-out',
-      '&:hover': {
-        boxShadow: theme => theme.shadows[4],
-        transform: 'translateY(-4px)',
-      },
-    }}
-  >
-    <Typography variant="h6" gutterBottom>
-      {title}
-    </Typography>
-    <Typography variant="body1" color="text.secondary">
-      {description}
-    </Typography>
-  </Box>
-);
 
 export default Home;

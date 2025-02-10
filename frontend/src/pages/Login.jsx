@@ -1,4 +1,4 @@
-import { demoLogin, login } from '@/store/slices/authSlice';
+import { clearError, demoLogin, login } from '@/store/slices/authSlice';
 import { commonStyles } from '@/styles/commonStyles';
 import {
     Alert,
@@ -27,10 +27,19 @@ const Login = () => {
   });
 
   useEffect(() => {
+    // Clear any existing errors when component mounts
+    dispatch(clearError());
+  }, [dispatch]);
+
+  useEffect(() => {
     // If already authenticated, navigate to the intended destination
     if (isAuthenticated) {
       console.log('Authenticated, navigating to:', from);
-      navigate(from, { replace: true });
+      // Add a small delay to ensure state is fully updated
+      const timer = setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [isAuthenticated, navigate, from]);
 
@@ -56,10 +65,14 @@ const Login = () => {
   const handleDemoLogin = async () => {
     try {
       console.log('Attempting demo login...');
+      // Clear any existing errors before attempting login
+      dispatch(clearError());
       await dispatch(demoLogin()).unwrap();
       console.log('Demo login successful');
+      // No need to manually navigate - useEffect will handle it
     } catch (err) {
       console.error('Demo login failed:', err);
+      // Error state will be handled by the reducer
     }
   };
 
@@ -93,7 +106,7 @@ const Login = () => {
 
           {error && (
             <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
-              {error}
+              {typeof error === 'string' ? error : 'Login failed. Please try again.'}
             </Alert>
           )}
 
@@ -148,7 +161,7 @@ const Login = () => {
               disabled={loading}
               sx={commonStyles.button}
             >
-              Try Demo Account
+              {loading ? 'Logging in...' : 'Try Demo Account'}
             </Button>
 
             <Button

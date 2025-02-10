@@ -195,3 +195,30 @@ def logout():
             'message': 'Successfully logged out',
             'status': 'success'
         }), 200  # Always return success for logout
+
+@auth_bp.route('/demo-login', methods=['POST'])
+def demo_login():
+    """Login as demo user."""
+    with get_db() as db:
+        demo_user = db.query(User).filter_by(email='demo@example.com').first()
+        if not demo_user:
+            raise AuthenticationError('Demo user not found')
+
+        if not demo_user.is_active:
+            raise AuthenticationError('Demo user account is inactive')
+
+        access_token = create_access_token(
+            subject=str(demo_user.id),
+            expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        )
+        refresh_token = create_refresh_token(
+            subject=str(demo_user.id),
+            expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        )
+
+        return jsonify({
+            'user': demo_user.to_dict(),
+            'access_token': access_token,
+            'refresh_token': refresh_token,
+            'token_type': 'bearer'
+        })

@@ -29,6 +29,7 @@ export const {
 
 const apiInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -64,64 +65,87 @@ apiInstance.interceptors.request.use(
 
 // Response interceptor
 apiInstance.interceptors.response.use(
-  response => {
-    return response;
-  },
+  response => response,
   async error => {
     const originalRequest = error.config;
 
-    // If the error is not 401 or it's a refresh token request that failed
-    if (error.response?.status !== 401 || originalRequest.url === '/api/auth/refresh') {
+    // If error response is undefined, it's a network error
+    if (!error.response) {
+      return Promise.reject(new Error('Network error - please check your connection'));
+    }
+
+    // If the error is not 401 or it's a refresh token request or we've already tried to refresh
+    if (
+      error.response.status !== 401 ||
+      originalRequest.url.includes('/refresh') ||
+      originalRequest._retry
+    ) {
       return Promise.reject(error);
     }
 
-    // If we're already refreshing, queue this request
-    if (isRefreshing) {
-      return new Promise((resolve, reject) => {
-        failedQueue.push({ resolve, reject });
-      })
-        .then(token => {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return apiInstance(originalRequest);
-        })
-        .catch(err => {
-          return Promise.reject(err);
-        });
-    }
-
-    isRefreshing = true;
-
-    try {
+    if (!isRefreshing) {
+      isRefreshing = true;
       const refreshToken = localStorage.getItem('refreshToken');
+
       if (!refreshToken) {
-        throw new Error('No refresh token available');
+        isRefreshing = false;
+        // Clear auth state since we can't refresh
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        delete apiInstance.defaults.headers.common['Authorization'];
+        window.dispatchEvent(new CustomEvent('auth:failed', {
+          detail: { error: 'No refresh token available' }
+        }));
+        return Promise.reject(error);
       }
 
-      const response = await apiInstance.post('/api/auth/refresh', {
-        refresh_token: refreshToken,
-      });
+      try {
+        const response = await apiInstance.post('/api/auth/refresh', {
+          refresh_token: refreshToken,
+          access_token: localStorage.getItem('token') // Include current access token
+        });
 
-      const { access_token } = response.data;
-      localStorage.setItem('token', access_token);
+        const { access_token, refresh_token } = response.data;
 
-      // Update authorization header
-      originalRequest.headers.Authorization = `Bearer ${access_token}`;
-      apiInstance.defaults.headers.common.Authorization = `Bearer ${access_token}`;
+        localStorage.setItem('token', access_token);
+        localStorage.setItem('refreshToken', refresh_token);
+        apiInstance.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
 
-      processQueue(null, access_token);
-      return apiInstance(originalRequest);
-    } catch (refreshError) {
-      processQueue(refreshError, null);
-      // Clear auth state
-      localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
-      // Redirect to login
-      window.location.href = '/login';
-      return Promise.reject(refreshError);
-    } finally {
-      isRefreshing = false;
+        originalRequest.headers['Authorization'] = `Bearer ${access_token}`;
+        originalRequest._retry = true;
+
+        processQueue(null, access_token);
+        return apiInstance(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+
+        // Clear auth state
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        delete apiInstance.defaults.headers.common['Authorization'];
+
+        // Dispatch auth failed event
+        window.dispatchEvent(new CustomEvent('auth:failed', {
+          detail: {
+            error: refreshError.response?.data || refreshError.message
+          }
+        }));
+
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
     }
+
+    // Add request to queue if we're already refreshing
+    return new Promise((resolve, reject) => {
+      failedQueue.push({ resolve, reject });
+    }).then(token => {
+      originalRequest.headers['Authorization'] = `Bearer ${token}`;
+      return apiInstance(originalRequest);
+    }).catch(err => {
+      return Promise.reject(err);
+    });
   }
 );
 
