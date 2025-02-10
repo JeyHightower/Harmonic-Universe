@@ -64,7 +64,7 @@ class Role(BaseModel):
 
     name = Column(String, nullable=False)
     description = Column(String)
-    permissions = Column(Enum(Permission), nullable=False, default=Permission.READ)
+    permissions = Column(JSON, nullable=False, default=lambda: [Permission.READ.value])
     organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"))
 
     # Relationships

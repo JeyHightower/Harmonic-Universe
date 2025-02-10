@@ -40,6 +40,8 @@ class Initializer:
         """Create necessary directories."""
         directories = [
             'logs',
+            'logs/errors',
+            'logs/metrics',
             'uploads',
             'uploads/audio',
             'uploads/exports',
@@ -56,19 +58,41 @@ class Initializer:
     def setup_database(self) -> None:
         """Initialize and verify database."""
         try:
-            # Run database initialization using db_ops script
+            # Create database first
             subprocess.run(
-                [sys.executable, 'scripts/db_ops.py', 'init', '--env', self.env],
+                [sys.executable, 'scripts/create_db.py', '--env', self.env],
                 check=True
             )
+            logger.info("Database created successfully")
+
+            # Initialize database schema and initial data
+            subprocess.run(
+                [sys.executable, 'scripts/db_ops.py', 'init'],
+                check=True
+            )
+            logger.info("Database initialized successfully")
+
+            # Run migrations
+            subprocess.run(
+                [sys.executable, 'scripts/db_ops.py', 'migrate'],
+                check=True
+            )
+            logger.info("Database migrations completed successfully")
 
             # Verify database setup
             subprocess.run(
                 [sys.executable, 'scripts/db_ops.py', 'verify'],
                 check=True
             )
+            logger.info("Database verification completed successfully")
 
-            logger.info("Database setup completed successfully")
+            # Verify demo user setup
+            subprocess.run(
+                [sys.executable, 'scripts/user_management.py', 'verify'],
+                check=True
+            )
+            logger.info("Demo user verification completed successfully")
+
         except subprocess.CalledProcessError as e:
             logger.error(f"Database setup failed: {str(e)}")
             raise
@@ -83,18 +107,6 @@ class Initializer:
                 f.write(f"SECRET_KEY={self.config.get('secret_key', '')}\n")
                 f.write(f"DEBUG={str(self.env == 'development').lower()}\n")
             logger.info(f"Created environment file: {env_file}")
-
-    def run_migrations(self) -> None:
-        """Run database migrations."""
-        try:
-            subprocess.run(
-                [sys.executable, 'scripts/db_ops.py', 'migrate'],
-                check=True
-            )
-            logger.info("Database migrations completed successfully")
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Database migrations failed: {str(e)}")
-            raise
 
     def setup_test_environment(self) -> None:
         """Set up test environment if needed."""
@@ -126,10 +138,10 @@ class Initializer:
         try:
             logger.info(f"Starting initialization for {self.env} environment")
 
+            # Setup in correct order
             self.setup_directories()
             self.setup_environment()
             self.setup_database()
-            self.run_migrations()
 
             if self.env == "test":
                 self.setup_test_environment()

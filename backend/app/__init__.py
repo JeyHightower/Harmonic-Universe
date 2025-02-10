@@ -35,7 +35,8 @@ def create_app(config_class=Config):
     engine = init_engine(database_url)
 
     # Create all tables
-    Base.metadata.create_all(bind=engine)
+    # Temporarily commented out to let migrations handle table creation
+    # Base.metadata.create_all(bind=engine)
 
     # Initialize extensions
     migrate.init_app(app, Base)
@@ -69,9 +70,13 @@ def create_app(config_class=Config):
     def health_check():
         return {'status': 'healthy'}
 
-    # Create demo user on app startup
-    with app.app_context():
-        from .seeds.demo_user import create_demo_user
-        create_demo_user()
+    # Create demo user on app startup only if SKIP_DEMO_USER is not set
+    if not os.getenv('SKIP_DEMO_USER'):
+        with app.app_context():
+            from .seeds.demo_user import create_demo_user
+            try:
+                create_demo_user()
+            except Exception as e:
+                logger.warning(f"Failed to create demo user: {e}")
 
     return app

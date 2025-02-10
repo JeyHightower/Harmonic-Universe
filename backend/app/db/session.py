@@ -5,6 +5,8 @@ from sqlalchemy.orm import sessionmaker, Session, scoped_session
 from sqlalchemy.ext.declarative import declarative_base
 from flask import current_app
 import os
+import json
+from pathlib import Path
 from contextlib import contextmanager
 
 # Create base class for models
@@ -17,12 +19,20 @@ def get_database_url():
     if database_url:
         return database_url
 
+    # Then try config file
+    config_path = Path(__file__).parent.parent.parent / 'config' / 'development.json'
+    if config_path.exists():
+        with open(config_path) as f:
+            config = json.load(f)
+            if 'database' in config and 'url' in config['database']:
+                return config['database']['url']
+
     # Then try Flask config if available
     if current_app:
-        return current_app.config.get('SQLALCHEMY_DATABASE_URI', 'postgresql://postgres:postgres@localhost:5432/harmonic_universe')
+        return current_app.config.get('SQLALCHEMY_DATABASE_URI')
 
-    # Default fallback
-    return 'postgresql://postgres:postgres@localhost:5432/harmonic_universe'
+    # Default fallback for development
+    return 'postgresql://postgres:postgres@localhost:5432/harmonic_universe_dev'
 
 def init_engine(database_url=None):
     """Initialize database engine."""
@@ -41,18 +51,10 @@ def init_engine(database_url=None):
         engine = create_engine(
             database_url,
             pool_pre_ping=True,
+            pool_size=5,
+            max_overflow=10,
             echo=True
         )
-
-    # Create sessionmaker
-    session_local = sessionmaker(
-        autocommit=False,
-        autoflush=False,
-        bind=engine
-    )
-
-    # Create scoped session
-    db_session = scoped_session(session_local)
 
     return engine
 
