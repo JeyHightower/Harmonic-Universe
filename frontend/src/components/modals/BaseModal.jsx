@@ -10,6 +10,7 @@ import {
     useTheme,
 } from '@mui/material';
 import PropTypes from 'prop-types';
+import { useCallback, useEffect } from 'react';
 
 const BaseModal = ({
   open,
@@ -21,14 +22,33 @@ const BaseModal = ({
   fullWidth = true,
   disableBackdropClick = false,
   disableEscapeKeyDown = false,
+  'aria-describedby': ariaDescribedby,
+  'aria-labelledby': ariaLabelledby,
 }) => {
   const theme = useTheme();
+  const titleId = ariaLabelledby || 'modal-title';
+  const descriptionId = ariaDescribedby || 'modal-description';
 
-  const handleClose = (event, reason) => {
+  const handleClose = useCallback((event, reason) => {
     if (disableBackdropClick && reason === 'backdropClick') return;
     if (disableEscapeKeyDown && reason === 'escapeKeyDown') return;
     onClose();
-  };
+  }, [disableBackdropClick, disableEscapeKeyDown, onClose]);
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (e) => {
+      // Close on Escape if not disabled
+      if (e.key === 'Escape' && !disableEscapeKeyDown) {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, onClose, disableEscapeKeyDown]);
 
   return (
     <Dialog
@@ -36,6 +56,8 @@ const BaseModal = ({
       onClose={handleClose}
       maxWidth={maxWidth}
       fullWidth={fullWidth}
+      aria-labelledby={titleId}
+      aria-describedby={descriptionId}
       sx={{
         '& .MuiBackdrop-root': {
           backdropFilter: 'blur(8px)',
@@ -62,10 +84,21 @@ const BaseModal = ({
       PaperComponent={Paper}
       PaperProps={{
         elevation: 0,
+        role: 'dialog',
+        'aria-modal': true,
+      }}
+      keepMounted={false}
+      disablePortal={false}
+      closeAfterTransition
+      slotProps={{
+        backdrop: {
+          timeout: 300,
+        },
       }}
     >
       {/* Modal Header */}
       <DialogTitle
+        id={titleId}
         sx={{
           p: 2.5,
           m: 0,
@@ -83,7 +116,7 @@ const BaseModal = ({
           {title}
         </Box>
         <IconButton
-          aria-label="close"
+          aria-label="close modal"
           onClick={onClose}
           size="small"
           sx={{
@@ -102,6 +135,7 @@ const BaseModal = ({
 
       {/* Modal Content */}
       <DialogContent
+        id={descriptionId}
         sx={{
           p: 3,
           bgcolor: theme.palette.background.paper,
@@ -144,6 +178,8 @@ BaseModal.propTypes = {
   fullWidth: PropTypes.bool,
   disableBackdropClick: PropTypes.bool,
   disableEscapeKeyDown: PropTypes.bool,
+  'aria-describedby': PropTypes.string,
+  'aria-labelledby': PropTypes.string,
 };
 
 export default BaseModal;

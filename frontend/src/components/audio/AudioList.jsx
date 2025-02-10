@@ -1,35 +1,60 @@
 import { useModal } from '@/contexts/ModalContext';
-import { useVisualization } from '@/hooks/useVisualization';
+import { useAudio } from '@/hooks/useAudio';
 import { commonStyles } from '@/styles/commonStyles';
 import {
-  Delete as DeleteIcon,
-  Edit as EditIcon,
-  OpenInNew as OpenInNewIcon,
-  Share as ShareIcon,
+    Delete as DeleteIcon,
+    Edit as EditIcon,
+    OpenInNew as OpenInNewIcon,
+    Share as ShareIcon,
+    VolumeMute as VolumeMuteIcon,
+    VolumeUp as VolumeUpIcon,
 } from '@mui/icons-material';
 import {
-  Box,
-  Card,
-  CardActions,
-  CardContent,
-  CircularProgress,
-  Grid,
-  IconButton,
-  Tooltip,
-  Typography,
+    Box,
+    Card,
+    CardActions,
+    CardContent,
+    CircularProgress,
+    Grid,
+    IconButton,
+    Tooltip,
+    Typography,
 } from '@mui/material';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const VisualizationList = () => {
+const AudioList = () => {
   const navigate = useNavigate();
-  const { visualizations, loading, error, fetchVisualizations } =
-    useVisualization();
+  const { audioTracks, loading, error, fetchAudioTracks } = useAudio();
   const { openModal } = useModal();
+  const [playingTrack, setPlayingTrack] = useState(null);
+  const [audio] = useState(new Audio());
 
   useEffect(() => {
-    fetchVisualizations();
-  }, [fetchVisualizations]);
+    fetchAudioTracks();
+  }, [fetchAudioTracks]);
+
+  useEffect(() => {
+    return () => {
+      if (audio) {
+        audio.pause();
+        audio.src = '';
+      }
+    };
+  }, [audio]);
+
+  const handlePlayPause = (track) => {
+    if (playingTrack === track.id) {
+      audio.pause();
+      setPlayingTrack(null);
+    } else {
+      if (audio.src !== track.url) {
+        audio.src = track.url;
+      }
+      audio.play();
+      setPlayingTrack(track.id);
+    }
+  };
 
   if (loading) {
     return (
@@ -49,12 +74,12 @@ const VisualizationList = () => {
 
   return (
     <Grid container spacing={3}>
-      {visualizations.map(visualization => (
-        <Grid item xs={12} sm={6} md={4} key={visualization.id}>
+      {audioTracks.map(track => (
+        <Grid item xs={12} sm={6} md={4} key={track.id}>
           <Card sx={{ ...commonStyles.card, ...commonStyles.slideIn }}>
             <CardContent sx={commonStyles.cardContent}>
               <Typography variant="h6" gutterBottom noWrap>
-                {visualization.name}
+                {track.title}
               </Typography>
               <Typography
                 variant="body2"
@@ -67,19 +92,26 @@ const VisualizationList = () => {
                   mb: 1,
                 }}
               >
-                {visualization.description}
+                {track.description}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Type: {visualization.type}
+                Duration: {track.duration}s
               </Typography>
             </CardContent>
             <CardActions sx={{ justifyContent: 'flex-end', p: 1 }}>
-              <Tooltip title="Open Visualization">
+              <Tooltip title={playingTrack === track.id ? 'Pause' : 'Play'}>
+                <IconButton size="small" onClick={() => handlePlayPause(track)}>
+                  {track.muted ? (
+                    <VolumeMuteIcon />
+                  ) : (
+                    <VolumeUpIcon />
+                  )}
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Open Audio">
                 <IconButton
                   size="small"
-                  onClick={() =>
-                    navigate(`/dashboard/visualizations/${visualization.id}`)
-                  }
+                  onClick={() => navigate(`/dashboard/audio/${track.id}`)}
                 >
                   <OpenInNewIcon />
                 </IconButton>
@@ -87,9 +119,7 @@ const VisualizationList = () => {
               <Tooltip title="Edit">
                 <IconButton
                   size="small"
-                  onClick={() =>
-                    openModal('EDIT_VISUALIZATION', { visualization })
-                  }
+                  onClick={() => openModal('EDIT_AUDIO', { track })}
                 >
                   <EditIcon />
                 </IconButton>
@@ -102,9 +132,7 @@ const VisualizationList = () => {
               <Tooltip title="Delete">
                 <IconButton
                   size="small"
-                  onClick={() =>
-                    openModal('DELETE_VISUALIZATION', { visualization })
-                  }
+                  onClick={() => openModal('DELETE_AUDIO', { track })}
                 >
                   <DeleteIcon />
                 </IconButton>
@@ -117,4 +145,4 @@ const VisualizationList = () => {
   );
 };
 
-export default VisualizationList;
+export default AudioList;

@@ -1,7 +1,11 @@
+import { useModal } from '@/contexts/ModalContext';
 import { useVisualization } from '@/hooks/useVisualization';
+import { commonStyles } from '@/styles/commonStyles';
+import { Add as AddIcon } from '@mui/icons-material';
 import {
   Alert,
   Box,
+  Button,
   CircularProgress,
   Grid,
   Paper,
@@ -47,6 +51,7 @@ const VisualizationWorkspace = () => {
     fetchVisualization,
     updateVisualization,
   } = useVisualization();
+  const { openModal } = useModal();
 
   const [tabValue, setTabValue] = useState(0);
   const socketRef = useRef(null);
@@ -114,7 +119,22 @@ const VisualizationWorkspace = () => {
 
   // If no visualizationId, we're in list view
   if (!visualizationId) {
-    return <VisualizationList />;
+    return (
+      <Box sx={commonStyles.pageContainer}>
+        <Box sx={{ ...commonStyles.flexBetween, mb: 4 }}>
+          <h1>Visualizations</h1>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => openModal('CREATE_VISUALIZATION')}
+            sx={commonStyles.button}
+          >
+            Create Visualization
+          </Button>
+        </Box>
+        <VisualizationList />
+      </Box>
+    );
   }
 
   if (loading || !currentVisualization) {
@@ -135,6 +155,35 @@ const VisualizationWorkspace = () => {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
+      <Box sx={{ ...commonStyles.flexBetween, mb: 3 }}>
+        <h2>{currentVisualization.name}</h2>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="outlined"
+            onClick={() =>
+              openModal('EDIT_VISUALIZATION', {
+                visualization: currentVisualization,
+              })
+            }
+            sx={commonStyles.button}
+          >
+            Edit
+          </Button>
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={() =>
+              openModal('DELETE_VISUALIZATION', {
+                visualization: currentVisualization,
+              })
+            }
+            sx={commonStyles.button}
+          >
+            Delete
+          </Button>
+        </Box>
+      </Box>
+
       <Paper sx={{ width: '100%', mb: 2 }}>
         <Tabs
           value={tabValue}
