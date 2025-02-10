@@ -1,153 +1,197 @@
-import { useVisualization } from '@/hooks/useVisualization';
-import PropTypes from 'prop-types';
-import { useState } from 'react';
-
 import {
   Box,
-  Button,
-  Card,
-  CardContent,
-  Divider,
+  FormControl,
   FormControlLabel,
-  Grid,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
   Switch,
   TextField,
   Typography,
 } from '@mui/material';
+import PropTypes from 'prop-types';
+import { useState } from 'react';
+import { ChromePicker } from 'react-color';
 
-const VisualizationSettings = ({ visualization }) => {
-  const { update } = useVisualization();
-  const [settings, setSettings] = useState(visualization.settings);
+const VisualizationSettings = ({ visualization, onUpdate }) => {
+  const [showColorPicker, setShowColorPicker] = useState(false);
+
+  const handleTypeChange = event => {
+    onUpdate({ type: event.target.value });
+  };
+
+  const handleBackgroundColorChange = color => {
+    onUpdate({ backgroundColor: color.hex });
+  };
+
+  const handleAutoRotateChange = event => {
+    onUpdate({ autoRotate: event.target.checked });
+  };
 
   const handleSettingChange = (key, value) => {
-    const newSettings = { ...settings, [key]: value };
-    setSettings(newSettings);
-    update(visualization.id, { settings: newSettings });
+    onUpdate({ [key]: value });
   };
 
   return (
-    <Card>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Visualization Settings
-        </Typography>
-        <Divider sx={{ my: 2 }} />
+    <Paper sx={{ p: 3 }}>
+      <Typography variant="h6" gutterBottom>
+        Visualization Settings
+      </Typography>
 
-        <Grid container spacing={2}>
-          <Grid item xs={6}>
-            <TextField
-              fullWidth
-              label="Width"
-              type="number"
-              value={settings.width}
-              onChange={e => handleSettingChange('width', parseInt(e.target.value))}
-              margin="normal"
-            />
-          </Grid>
-          <Grid item xs={6}>
-            <TextField
-              fullWidth
-              label="Height"
-              type="number"
-              value={settings.height}
-              onChange={e => handleSettingChange('height', parseInt(e.target.value))}
-              margin="normal"
-            />
-          </Grid>
-        </Grid>
+      <Box sx={{ mt: 3 }}>
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel>Visualization Type</InputLabel>
+          <Select
+            value={visualization.type}
+            label="Visualization Type"
+            onChange={handleTypeChange}
+          >
+            <MenuItem value="waveform">Waveform</MenuItem>
+            <MenuItem value="spectrum">Spectrum</MenuItem>
+            <MenuItem value="particles">Particles</MenuItem>
+          </Select>
+        </FormControl>
 
-        <Box mt={2}>
-          <TextField
-            fullWidth
-            label="Background Color"
-            type="color"
-            value={settings.backgroundColor}
-            onChange={e => handleSettingChange('backgroundColor', e.target.value)}
-            margin="normal"
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Background Color
+          </Typography>
+          <Box
+            sx={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '4px',
+              border: '2px solid #ccc',
+              backgroundColor:
+                visualization.settings.backgroundColor || '#000000',
+              cursor: 'pointer',
+            }}
+            onClick={() => setShowColorPicker(!showColorPicker)}
           />
-          <TextField
-            fullWidth
-            label="Foreground Color"
-            type="color"
-            value={settings.foregroundColor}
-            onChange={e => handleSettingChange('foregroundColor', e.target.value)}
-            margin="normal"
-          />
+          {showColorPicker && (
+            <Box sx={{ position: 'absolute', zIndex: 2 }}>
+              <Box
+                sx={{
+                  position: 'fixed',
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  left: 0,
+                }}
+                onClick={() => setShowColorPicker(false)}
+              />
+              <ChromePicker
+                color={visualization.settings.backgroundColor || '#000000'}
+                onChange={handleBackgroundColorChange}
+              />
+            </Box>
+          )}
         </Box>
 
-        <Box mt={2}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={settings.showAxes}
-                onChange={e => handleSettingChange('showAxes', e.target.checked)}
-              />
-            }
-            label="Show Axes"
-          />
-          <FormControlLabel
-            control={
-              <Switch
-                checked={settings.showGrid}
-                onChange={e => handleSettingChange('showGrid', e.target.checked)}
-              />
-            }
-            label="Show Grid"
-          />
-          <FormControlLabel
-            control={
-              <Switch
-                checked={settings.showLabels}
-                onChange={e => handleSettingChange('showLabels', e.target.checked)}
-              />
-            }
-            label="Show Labels"
-          />
-        </Box>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={visualization.settings.autoRotate || false}
+              onChange={handleAutoRotateChange}
+            />
+          }
+          label="Auto Rotate"
+          sx={{ mb: 2 }}
+        />
 
-        {visualization.type === 'custom' && settings.customSettings && (
-          <Box mt={2}>
-            <Typography variant="subtitle1" gutterBottom>
-              Custom Settings
-            </Typography>
-            {Object.entries(settings.customSettings).map(([key, value]) => (
-              <TextField
-                key={key}
-                fullWidth
-                label={key}
-                value={value}
-                onChange={e =>
-                  handleSettingChange('customSettings', {
-                    ...settings.customSettings,
-                    [key]: e.target.value,
-                  })
-                }
-                margin="normal"
-              />
-            ))}
-          </Box>
+        {/* Type-specific settings */}
+        {visualization.type === 'waveform' && (
+          <>
+            <TextField
+              fullWidth
+              label="Line Width"
+              type="number"
+              value={visualization.settings.lineWidth || 1}
+              onChange={e =>
+                handleSettingChange('lineWidth', Number(e.target.value))
+              }
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Line Color"
+              value={visualization.settings.lineColor || '#ffffff'}
+              onChange={e => handleSettingChange('lineColor', e.target.value)}
+              sx={{ mb: 2 }}
+            />
+          </>
         )}
 
-        <Box mt={3}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => handleSettingChange('settings', settings)}
-            fullWidth
-          >
-            Save Settings
-          </Button>
-        </Box>
-      </CardContent>
-    </Card>
+        {visualization.type === 'spectrum' && (
+          <>
+            <TextField
+              fullWidth
+              label="Bar Width"
+              type="number"
+              value={visualization.settings.barWidth || 1}
+              onChange={e =>
+                handleSettingChange('barWidth', Number(e.target.value))
+              }
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Bar Spacing"
+              type="number"
+              value={visualization.settings.barSpacing || 1}
+              onChange={e =>
+                handleSettingChange('barSpacing', Number(e.target.value))
+              }
+              sx={{ mb: 2 }}
+            />
+          </>
+        )}
+
+        {visualization.type === 'particles' && (
+          <>
+            <TextField
+              fullWidth
+              label="Particle Count"
+              type="number"
+              value={visualization.settings.particleCount || 1000}
+              onChange={e =>
+                handleSettingChange('particleCount', Number(e.target.value))
+              }
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Particle Size"
+              type="number"
+              value={visualization.settings.particleSize || 1}
+              onChange={e =>
+                handleSettingChange('particleSize', Number(e.target.value))
+              }
+              sx={{ mb: 2 }}
+            />
+          </>
+        )}
+      </Box>
+    </Paper>
   );
 };
 
 VisualizationSettings.propTypes = {
   visualization: PropTypes.shape({
-    id: PropTypes.string.isRequired,
-    settings: PropTypes.object.isRequired,
+    type: PropTypes.string.isRequired,
+    settings: PropTypes.shape({
+      backgroundColor: PropTypes.string,
+      autoRotate: PropTypes.bool,
+      lineWidth: PropTypes.number,
+      lineColor: PropTypes.string,
+      barWidth: PropTypes.number,
+      barSpacing: PropTypes.number,
+      particleCount: PropTypes.number,
+      particleSize: PropTypes.number,
+    }).isRequired,
   }).isRequired,
+  onUpdate: PropTypes.func.isRequired,
 };
 
 export default VisualizationSettings;

@@ -1,105 +1,109 @@
+import { useNotification } from '@/components/common/Notification';
 import {
   createVisualization,
   deleteVisualization,
+  fetchVisualization,
+  fetchVisualizations,
   selectCurrentVisualization,
   selectVisualizationError,
   selectVisualizationLoading,
   selectVisualizations,
-  setCurrentVisualization,
-  updateDataMappings,
-  updateStreamConfig,
   updateVisualization,
 } from '@/store/slices/visualizationSlice';
 import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-export const useVisualization = ({ projectId, audioId }) => {
+export const useVisualization = () => {
   const dispatch = useDispatch();
+  const { showNotification } = useNotification();
   const visualizations = useSelector(selectVisualizations);
   const currentVisualization = useSelector(selectCurrentVisualization);
-  const loading = useSelector(selectVisualizationLoading);
   const error = useSelector(selectVisualizationError);
+  const loading = useSelector(selectVisualizationLoading);
 
-  const create = useCallback(
-    async data => {
-      if (!audioId) {
-        throw new Error('Audio ID is required to create a visualization');
-      }
+  const handleFetchVisualizations = useCallback(
+    async projectId => {
       try {
-        const resultAction = await dispatch(createVisualization({ projectId, audioId, data }));
-        if (createVisualization.fulfilled.match(resultAction)) {
-          return resultAction.payload;
-        }
+        await dispatch(fetchVisualizations(projectId)).unwrap();
+        return true;
       } catch (error) {
-        console.error('Failed to create visualization:', error);
-        throw error;
+        showNotification(
+          error.message || 'Failed to fetch visualizations',
+          'error'
+        );
+        return false;
       }
     },
-    [dispatch, projectId, audioId]
+    [dispatch, showNotification]
   );
 
-  const update = useCallback(
-    async (id, data) => {
-      try {
-        const resultAction = await dispatch(updateVisualization({ id, data }));
-        if (updateVisualization.fulfilled.match(resultAction)) {
-          return resultAction.payload;
-        }
-      } catch (error) {
-        console.error('Failed to update visualization:', error);
-        throw error;
-      }
-    },
-    [dispatch]
-  );
-
-  const remove = useCallback(
+  const handleFetchVisualization = useCallback(
     async id => {
       try {
-        await dispatch(deleteVisualization(id));
+        await dispatch(fetchVisualization(id)).unwrap();
+        return true;
       } catch (error) {
-        console.error('Failed to delete visualization:', error);
-        throw error;
+        showNotification(
+          error.message || 'Failed to fetch visualization',
+          'error'
+        );
+        return false;
       }
     },
-    [dispatch]
+    [dispatch, showNotification]
   );
 
-  const updateMappings = useCallback(
-    async (id, dataMappings) => {
+  const handleCreateVisualization = useCallback(
+    async ({ projectId, data }) => {
       try {
-        const resultAction = await dispatch(updateDataMappings({ id, dataMappings }));
-        if (updateDataMappings.fulfilled.match(resultAction)) {
-          return resultAction.payload;
-        }
+        const visualization = await dispatch(
+          createVisualization({ projectId, data })
+        ).unwrap();
+        showNotification('Visualization created successfully', 'success');
+        return visualization;
       } catch (error) {
-        console.error('Failed to update data mappings:', error);
-        throw error;
+        showNotification(
+          error.message || 'Failed to create visualization',
+          'error'
+        );
+        return null;
       }
     },
-    [dispatch]
+    [dispatch, showNotification]
   );
 
-  const updateConfig = useCallback(
-    async (id, streamConfig) => {
+  const handleUpdateVisualization = useCallback(
+    async ({ id, data }) => {
       try {
-        const resultAction = await dispatch(updateStreamConfig({ id, streamConfig }));
-        if (updateStreamConfig.fulfilled.match(resultAction)) {
-          return resultAction.payload;
-        }
+        await dispatch(updateVisualization({ id, data })).unwrap();
+        showNotification('Visualization updated successfully', 'success');
+        return true;
       } catch (error) {
-        console.error('Failed to update stream config:', error);
-        throw error;
+        showNotification(
+          error.message || 'Failed to update visualization',
+          'error'
+        );
+        return false;
       }
     },
-    [dispatch]
+    [dispatch, showNotification]
   );
 
-  const setCurrent = useCallback(
-    visualization => {
-      dispatch(setCurrentVisualization(visualization));
+  const handleDeleteVisualization = useCallback(
+    async id => {
+      try {
+        await dispatch(deleteVisualization(id)).unwrap();
+        showNotification('Visualization deleted successfully', 'success');
+        return true;
+      } catch (error) {
+        showNotification(
+          error.message || 'Failed to delete visualization',
+          'error'
+        );
+        return false;
+      }
     },
-    [dispatch]
+    [dispatch, showNotification]
   );
 
   return {
@@ -107,11 +111,10 @@ export const useVisualization = ({ projectId, audioId }) => {
     currentVisualization,
     loading,
     error,
-    create,
-    update,
-    remove,
-    updateMappings,
-    updateConfig,
-    setCurrent,
+    fetchVisualizations: handleFetchVisualizations,
+    fetchVisualization: handleFetchVisualization,
+    createVisualization: handleCreateVisualization,
+    updateVisualization: handleUpdateVisualization,
+    deleteVisualization: handleDeleteVisualization,
   };
 };

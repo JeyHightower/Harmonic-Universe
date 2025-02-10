@@ -1,18 +1,35 @@
-import { login } from '@/store/slices/authSlice';
-import { Alert, Box, Button, Container, Divider, TextField, Typography } from '@mui/material';
-import { useState } from 'react';
+import { demoLogin, login } from '@/store/slices/authSlice';
+import { commonStyles } from '@/styles/commonStyles';
+import {
+    Alert,
+    Box,
+    Button,
+    Container,
+    Divider,
+    Paper,
+    TextField,
+    Typography,
+} from '@mui/material';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error } = useSelector(state => state.auth);
+  const { loading, error, isAuthenticated } = useSelector(state => state.auth);
 
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
+
+  // Navigate to dashboard if authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -26,7 +43,6 @@ const Login = () => {
     e.preventDefault();
     try {
       await dispatch(login(formData)).unwrap();
-      navigate('/dashboard');
     } catch (err) {
       // Error is handled by the Redux slice
     }
@@ -34,81 +50,110 @@ const Login = () => {
 
   const handleDemoLogin = async () => {
     try {
-      await dispatch(
-        login({
-          email: 'demo@example.com',
-          password: 'password',
-        })
-      ).unwrap();
-      navigate('/dashboard');
+      await dispatch(demoLogin()).unwrap();
     } catch (err) {
       // Error is handled by the Redux slice
     }
   };
 
+  // If already authenticated, don't show login form
+  if (isAuthenticated) {
+    return null;
+  }
+
   return (
     <Container component="main" maxWidth="xs">
       <Box
         sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
+          ...commonStyles.flexCenter,
+          minHeight: '100vh',
+          py: 8,
         }}
       >
-        <Typography component="h1" variant="h5">
-          Sign in
-        </Typography>
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
+        <Paper
+          elevation={3}
+          sx={{
+            p: 4,
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}
+        >
+          <Typography component="h1" variant="h5" gutterBottom>
+            Sign in
+          </Typography>
+
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
               {error}
             </Alert>
           )}
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="email"
-            label="Email Address"
-            name="email"
-            autoComplete="email"
-            autoFocus
-            value={formData.email}
-            onChange={handleChange}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="password"
-            label="Password"
-            type="password"
-            id="password"
-            autoComplete="current-password"
-            value={formData.password}
-            onChange={handleChange}
-          />
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-            disabled={loading}
+
+          <Box
+            component="form"
+            onSubmit={handleSubmit}
+            sx={{ width: '100%', mt: 1 }}
           >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </Button>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="email"
+              label="Email Address"
+              name="email"
+              autoComplete="email"
+              autoFocus
+              value={formData.email}
+              onChange={handleChange}
+              disabled={loading}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="password"
+              label="Password"
+              type="password"
+              id="password"
+              autoComplete="current-password"
+              value={formData.password}
+              onChange={handleChange}
+              disabled={loading}
+            />
 
-          <Divider sx={{ my: 2 }}>or</Divider>
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{ ...commonStyles.button, mt: 3, mb: 2 }}
+              disabled={loading}
+            >
+              {loading ? 'Signing in...' : 'Sign In'}
+            </Button>
 
-          <Button fullWidth variant="outlined" onClick={handleDemoLogin} disabled={loading}>
-            Try Demo Account
-          </Button>
+            <Divider sx={{ my: 2 }}>or</Divider>
 
-          <Button fullWidth sx={{ mt: 2 }} onClick={() => navigate('/register')}>
-            Don't have an account? Sign Up
-          </Button>
-        </Box>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={handleDemoLogin}
+              disabled={loading}
+              sx={commonStyles.button}
+            >
+              Try Demo Account
+            </Button>
+
+            <Button
+              fullWidth
+              sx={{ ...commonStyles.button, mt: 2 }}
+              onClick={() => navigate('/register')}
+              disabled={loading}
+            >
+              Don't have an account? Sign Up
+            </Button>
+          </Box>
+        </Paper>
       </Box>
     </Container>
   );

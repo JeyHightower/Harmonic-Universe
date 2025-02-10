@@ -1,29 +1,34 @@
+import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/hooks/useTheme';
+import { logout } from '@/store/slices/authSlice';
+import { commonStyles } from '@/styles/commonStyles';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import MenuIcon from '@mui/icons-material/Menu';
 import {
-  AppBar,
-  Box,
-  Button,
-  Container,
-  IconButton,
-  Menu,
-  MenuItem,
-  Toolbar,
-  Tooltip,
-  useTheme as useMuiTheme,
+    AppBar,
+    Box,
+    Button,
+    Container,
+    IconButton,
+    Menu,
+    MenuItem,
+    Toolbar,
+    Tooltip,
+    useTheme as useMuiTheme,
 } from '@mui/material';
 import { useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
-import { useTheme } from '../../hooks/useTheme.jsx';
+import { useDispatch } from 'react-redux';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import Logo from '../common/Logo';
 
 const Header = ({ onToggleSidebar }) => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const muiTheme = useMuiTheme();
   const { mode, toggleTheme } = useTheme();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [anchorEl, setAnchorEl] = useState(null);
 
   const handleMenu = event => {
@@ -34,9 +39,14 @@ const Header = ({ onToggleSidebar }) => {
     setAnchorEl(null);
   };
 
-  const handleLogout = () => {
-    handleClose();
-    logout();
+  const handleLogout = async () => {
+    try {
+      handleClose();
+      await dispatch(logout()).unwrap();
+      navigate('/', { replace: true });
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   return (
@@ -47,19 +57,21 @@ const Header = ({ onToggleSidebar }) => {
         zIndex: muiTheme.zIndex.drawer + 1,
         backgroundColor: muiTheme.palette.background.paper,
         color: muiTheme.palette.text.primary,
+        borderBottom: 1,
+        borderColor: 'divider',
       }}
     >
       <Container maxWidth="xl">
-        <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
+        <Toolbar disableGutters sx={commonStyles.flexBetween}>
           {/* Left section */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={commonStyles.flexCenter}>
             {isAuthenticated && (
               <IconButton
                 color="inherit"
                 aria-label="open drawer"
                 edge="start"
                 onClick={onToggleSidebar}
-                sx={{ display: { sm: 'none' } }}
+                sx={{ display: { sm: 'none' }, mr: 2 }}
               >
                 <MenuIcon />
               </IconButton>
@@ -70,30 +82,26 @@ const Header = ({ onToggleSidebar }) => {
           </Box>
 
           {/* Right section */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={commonStyles.flexCenter}>
             {/* Theme toggle */}
             <Tooltip title={mode === 'dark' ? 'Light mode' : 'Dark mode'}>
-              <IconButton color="inherit" onClick={toggleTheme} sx={{ ml: 1 }}>
+              <IconButton
+                color="inherit"
+                onClick={toggleTheme}
+                sx={commonStyles.iconButton}
+              >
                 {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
               </IconButton>
             </Tooltip>
 
             {!isAuthenticated ? (
-              <>
+              <Box sx={{ display: 'flex', gap: 2 }}>
                 <Button
                   component={RouterLink}
                   to="/login"
                   variant="outlined"
                   color="primary"
-                  sx={{
-                    borderColor: 'primary.main',
-                    color: 'primary.main',
-                    '&:hover': {
-                      borderColor: 'primary.light',
-                      backgroundColor: 'primary.dark',
-                      color: 'common.white',
-                    },
-                  }}
+                  sx={commonStyles.button}
                 >
                   Log In
                 </Button>
@@ -102,27 +110,18 @@ const Header = ({ onToggleSidebar }) => {
                   to="/register"
                   variant="contained"
                   color="primary"
-                  sx={{
-                    '&:hover': {
-                      backgroundColor: 'primary.dark',
-                    },
-                  }}
+                  sx={commonStyles.button}
                 >
                   Sign Up
                 </Button>
-              </>
+              </Box>
             ) : (
-              <>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Tooltip title="Account settings">
                   <IconButton
                     color="inherit"
                     onClick={handleMenu}
-                    sx={{
-                      ml: 2,
-                      '&:hover': {
-                        backgroundColor: 'action.hover',
-                      },
-                    }}
+                    sx={commonStyles.iconButton}
                   >
                     <AccountCircleIcon />
                   </IconButton>
@@ -145,24 +144,26 @@ const Header = ({ onToggleSidebar }) => {
                       overflow: 'visible',
                       filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
                       mt: 1.5,
-                      '& .MuiAvatar-root': {
-                        width: 32,
-                        height: 32,
-                        ml: -0.5,
-                        mr: 1,
-                      },
                     },
                   }}
                 >
                   {user && (
                     <MenuItem sx={{ opacity: 0.6, cursor: 'default' }}>
-                      Signed in as {user.email}
+                      {user.email}
                     </MenuItem>
                   )}
-                  <MenuItem component={RouterLink} to="/profile">
+                  <MenuItem
+                    component={RouterLink}
+                    to="/dashboard/profile"
+                    onClick={handleClose}
+                  >
                     Profile
                   </MenuItem>
-                  <MenuItem component={RouterLink} to="/settings">
+                  <MenuItem
+                    component={RouterLink}
+                    to="/dashboard/settings"
+                    onClick={handleClose}
+                  >
                     Settings
                   </MenuItem>
                   <MenuItem onClick={handleLogout}>Logout</MenuItem>
@@ -172,18 +173,13 @@ const Header = ({ onToggleSidebar }) => {
                   color="inherit"
                   onClick={handleLogout}
                   sx={{
+                    ...commonStyles.button,
                     display: { xs: 'none', sm: 'flex' },
-                    borderColor: 'divider',
-                    '&:hover': {
-                      borderColor: 'primary.light',
-                      backgroundColor: 'primary.dark',
-                      color: 'common.white',
-                    },
                   }}
                 >
                   Logout
                 </Button>
-              </>
+              </Box>
             )}
           </Box>
         </Toolbar>

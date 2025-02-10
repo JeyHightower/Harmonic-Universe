@@ -1,24 +1,49 @@
-import { CssBaseline, ThemeProvider } from '@mui/material';
+import { Box } from '@mui/material';
 import { SnackbarProvider } from 'notistack';
-import { useRoutes } from 'react-router-dom';
+import { useState } from 'react';
+import { useLocation, useRoutes } from 'react-router-dom';
 import AudioContextProvider from './components/audio/AudioContextProvider';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import Header from './components/layout/Header';
 import routes from './routes';
-import getTheme from './theme';
+import { ThemeProvider } from './theme/ThemeProvider';
 
 function App() {
   const routing = useRoutes(routes);
-  const theme = getTheme('light'); // Create theme with light mode
+  const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleToggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  // Only show header on non-dashboard routes
+  const showHeader = !location.pathname.startsWith('/dashboard');
 
   return (
-    <ThemeProvider theme={theme}>
-      <SnackbarProvider maxSnack={3}>
-        <CssBaseline />
+    <ThemeProvider>
+      <SnackbarProvider
+        maxSnack={3}
+        anchorOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
         <ErrorBoundary>
           <AudioContextProvider>
-            <Header />
-            {routing}
+            <Box sx={{
+              minHeight: '100vh',
+              display: 'flex',
+              flexDirection: 'column',
+              bgcolor: 'background.default',
+              color: 'text.primary',
+              transition: 'all 0.3s ease',
+            }}>
+              {showHeader && <Header onToggleSidebar={handleToggleSidebar} />}
+              <Box component="main" sx={{ flexGrow: 1 }}>
+                {routing}
+              </Box>
+            </Box>
           </AudioContextProvider>
         </ErrorBoundary>
       </SnackbarProvider>

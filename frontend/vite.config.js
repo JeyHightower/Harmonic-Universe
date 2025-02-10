@@ -30,7 +30,6 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
-    historyApiFallback: true,
   },
   build: {
     target: 'esnext',
@@ -60,10 +59,19 @@ export default defineConfig({
       '@types': path.resolve(__dirname, './src/types'),
       '@assets': path.resolve(__dirname, './src/assets'),
     },
+    extensions: ['.mjs', '.js', '.jsx', '.ts', '.tsx', '.json']
   },
   esbuild: {
     loader: 'jsx',
-    include: /src\/.*\.jsx?$/,
+    include: /src\/.*\.[jt]sx?$/,
     exclude: [],
+  },
+  optimizeDeps: {
+    include: ['@mui/material', '@mui/icons-material'],
+    esbuildOptions: {
+      loader: {
+        '.js': 'jsx',
+      },
+    },
   },
 });

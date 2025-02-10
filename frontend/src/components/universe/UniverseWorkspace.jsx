@@ -1,5 +1,13 @@
 import { useUniverse } from '@/hooks/useUniverse';
-import { Alert, Box, CircularProgress, Grid, Paper, Tab, Tabs, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  CircularProgress,
+  Grid,
+  Paper,
+  Tab,
+  Tabs,
+} from '@mui/material';
 import PropTypes from 'prop-types';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -7,6 +15,7 @@ import { io } from 'socket.io-client';
 import { PhysicsObjectList } from '../physics/PhysicsObjectList';
 import { StoryBoard } from './StoryBoard';
 import { UniverseHarmony } from './UniverseHarmony';
+import UniverseList from './UniverseList';
 import { UniverseParameters } from './UniverseParameters';
 
 function TabPanel(props) {
@@ -112,14 +121,7 @@ const UniverseWorkspace = () => {
 
   // If no universeId, we're in list view
   if (!universeId) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Typography variant="h4" gutterBottom>
-          My Universes
-        </Typography>
-        {/* Add universe list component here */}
-      </Box>
-    );
+    return <UniverseList />;
   }
 
   if (loading || !currentUniverse) {
@@ -141,7 +143,11 @@ const UniverseWorkspace = () => {
   return (
     <Box sx={{ flexGrow: 1 }}>
       <Paper sx={{ width: '100%', mb: 2 }}>
-        <Tabs value={tabValue} onChange={handleTabChange} aria-label="universe workspace tabs">
+        <Tabs
+          value={tabValue}
+          onChange={handleTabChange}
+          aria-label="universe workspace tabs"
+        >
           <Tab label="Parameters" />
           <Tab label="Physics" />
           <Tab label="Harmony" />
@@ -152,7 +158,10 @@ const UniverseWorkspace = () => {
       <Grid container spacing={2}>
         <Grid item xs={12}>
           <TabPanel value={tabValue} index={0}>
-            <UniverseParameters universe={currentUniverse} onUpdate={handlePhysicsUpdate} />
+            <UniverseParameters
+              universe={currentUniverse}
+              onUpdate={handlePhysicsUpdate}
+            />
           </TabPanel>
           <TabPanel value={tabValue} index={1}>
             <PhysicsObjectList projectId={universeId} />
@@ -165,7 +174,10 @@ const UniverseWorkspace = () => {
             />
           </TabPanel>
           <TabPanel value={tabValue} index={3}>
-            <StoryBoard universe={currentUniverse} onAddStoryPoint={addStoryPoint} />
+            <StoryBoard
+              universe={currentUniverse}
+              onAddStoryPoint={addStoryPoint}
+            />
           </TabPanel>
         </Grid>
       </Grid>
