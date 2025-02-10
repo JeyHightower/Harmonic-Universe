@@ -1,9 +1,12 @@
+import ErrorBoundary from '@/components/common/ErrorBoundary';
+import ProtectedRoute from '@/components/common/ProtectedRoute';
+import Layout from '@/components/layout/Layout';
 import Dashboard from '@/pages/Dashboard';
 import Home from '@/pages/Home';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
-import { lazy } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
+import { Navigate, Outlet } from 'react-router-dom';
 
 // Lazy-loaded components
 const VerifyEmail = lazy(() => import('@/pages/VerifyEmail'));
@@ -14,87 +17,109 @@ const AudioWorkspace = lazy(() => import('@/components/audio/AudioWorkspace'));
 const Settings = lazy(() => import('@/pages/Settings'));
 const Profile = lazy(() => import('@/pages/Profile'));
 
+// Wrap lazy components with Suspense and ErrorBoundary
+const withSuspense = (Component) => (
+  <ErrorBoundary>
+    <Suspense fallback={<div>Loading...</div>}>
+      {Component}
+    </Suspense>
+  </ErrorBoundary>
+);
+
+// Wrap protected components with both ProtectedRoute and Suspense
+const withProtection = (Component) => (
+  <ProtectedRoute>
+    {withSuspense(Component)}
+  </ProtectedRoute>
+);
+
 const routes = [
   {
-    path: '/',
-    element: <Home />,
-  },
-  {
-    path: '/login',
-    element: <Login />,
-  },
-  {
-    path: '/register',
-    element: <Register />,
-  },
-  {
-    path: '/verify-email',
-    element: <VerifyEmail />,
-  },
-  {
-    path: '/reset-password',
-    element: <ResetPassword />,
-  },
-  {
-    path: '/dashboard',
-    element: <Dashboard />,
+    element: <Layout><Outlet /></Layout>,
+    errorElement: <ErrorBoundary />,
     children: [
       {
-        path: '',
-        element: <Navigate to="universes" replace />,
+        path: '/',
+        element: <Home />,
       },
       {
-        path: 'universes',
+        path: '/login',
+        element: <Login />,
+      },
+      {
+        path: '/register',
+        element: <Register />,
+      },
+      {
+        path: '/verify-email',
+        element: withSuspense(<VerifyEmail />),
+      },
+      {
+        path: '/reset-password',
+        element: withSuspense(<ResetPassword />),
+      },
+      {
+        path: '/dashboard',
+        element: <ProtectedRoute><Dashboard /></ProtectedRoute>,
         children: [
           {
             path: '',
-            element: <UniverseWorkspace />,
+            element: <Navigate to="universes" replace />,
           },
           {
-            path: ':id',
-            element: <UniverseWorkspace />,
+            path: 'universes',
+            children: [
+              {
+                path: '',
+                element: withProtection(<UniverseWorkspace />),
+              },
+              {
+                path: ':id',
+                element: withProtection(<UniverseWorkspace />),
+              },
+            ],
+          },
+          {
+            path: 'visualizations',
+            children: [
+              {
+                path: '',
+                element: withProtection(<VisualizationWorkspace />),
+              },
+              {
+                path: ':id',
+                element: withProtection(<VisualizationWorkspace />),
+              },
+            ],
+          },
+          {
+            path: 'audio',
+            children: [
+              {
+                path: '',
+                element: withProtection(<AudioWorkspace />),
+              },
+              {
+                path: ':id',
+                element: withProtection(<AudioWorkspace />),
+              },
+            ],
+          },
+          {
+            path: 'settings',
+            element: withProtection(<Settings />),
+          },
+          {
+            path: 'profile',
+            element: withProtection(<Profile />),
           },
         ],
       },
       {
-        path: 'visualizations',
-        children: [
-          {
-            path: '',
-            element: <VisualizationWorkspace />,
-          },
-          {
-            path: ':id',
-            element: <VisualizationWorkspace />,
-          },
-        ],
-      },
-      {
-        path: 'audio',
-        children: [
-          {
-            path: '',
-            element: <AudioWorkspace />,
-          },
-          {
-            path: ':id',
-            element: <AudioWorkspace />,
-          },
-        ],
-      },
-      {
-        path: 'settings',
-        element: <Settings />,
-      },
-      {
-        path: 'profile',
-        element: <Profile />,
+        path: '*',
+        element: <Navigate to="/" replace />,
       },
     ],
-  },
-  {
-    path: '*',
-    element: <Navigate to="/" replace />,
   },
 ];
 

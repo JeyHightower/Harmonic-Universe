@@ -1,12 +1,15 @@
+import { modalTypes, useModal } from '@/contexts/ModalContext';
 import { useUniverse } from '@/hooks/useUniverse';
 import {
   Alert,
   Box,
+  Button,
   CircularProgress,
   Grid,
   Paper,
   Tab,
   Tabs,
+  Typography,
 } from '@mui/material';
 import PropTypes from 'prop-types';
 import { useEffect, useRef, useState } from 'react';
@@ -51,6 +54,7 @@ const UniverseWorkspace = () => {
     addStoryPoint,
     exportUniverse,
   } = useUniverse();
+  const { openModal } = useModal();
 
   const [tabValue, setTabValue] = useState(0);
   const socketRef = useRef(null);
@@ -121,10 +125,24 @@ const UniverseWorkspace = () => {
 
   // If no universeId, we're in list view
   if (!universeId) {
-    return <UniverseList />;
+    return (
+      <Box sx={{ p: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+          <Typography variant="h5">My Universes</Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => openModal(modalTypes.CREATE_UNIVERSE)}
+          >
+            Create Universe
+          </Button>
+        </Box>
+        <UniverseList />
+      </Box>
+    );
   }
 
-  if (loading || !currentUniverse) {
+  if (loading) {
     return (
       <Box sx={{ p: 3, display: 'flex', justifyContent: 'center' }}>
         <CircularProgress />
@@ -136,6 +154,27 @@ const UniverseWorkspace = () => {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="error">{error}</Alert>
+      </Box>
+    );
+  }
+
+  if (!currentUniverse) {
+    return (
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Typography variant="h6" gutterBottom>
+          No Universe Found
+        </Typography>
+        <Typography color="text.secondary" paragraph>
+          The universe you're looking for doesn't exist or you don't have access
+          to it.
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => openModal(modalTypes.CREATE_UNIVERSE)}
+        >
+          Create Universe
+        </Button>
       </Box>
     );
   }

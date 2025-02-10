@@ -28,32 +28,36 @@ export const {
 } = api;
 
 const apiInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 // Request interceptor
 apiInstance.interceptors.request.use(
   config => {
     const token = localStorage.getItem('token');
-
-    // Log request data for debugging
-    if (config.method === 'post' || config.method === 'put') {
-      console.log(`API ${config.method.toUpperCase()} Request to ${config.url}:`, {
-        headers: config.headers,
-        data: config.data,
-      });
-    }
-
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
   error => {
-    console.error('API Request Setup Error:', error);
     return Promise.reject(error);
   }
 );
@@ -61,47 +65,63 @@ apiInstance.interceptors.request.use(
 // Response interceptor
 apiInstance.interceptors.response.use(
   response => {
-    // Log successful responses for debugging
-    console.log(`API Response from ${response.config.url}:`, {
-      status: response.status,
-      data: response.data,
-    });
     return response;
   },
-  error => {
-    if (error.response) {
-      console.error('API Error Response:', {
-        url: error.config.url,
-        method: error.config.method,
-        status: error.response.status,
-        data: error.response.data,
-        headers: error.response.headers,
-        requestData: error.config.data,
-      });
+  async error => {
+    const originalRequest = error.config;
 
-      if (error.response.status === 422) {
-        // Handle validation errors
-        const validationErrors =
-          error.response.data.error?.message ||
-          error.response.data.error ||
-          'Invalid data provided';
-        throw new Error(validationErrors);
-      }
-
-      if (error.response.status === 401) {
-        // Handle authentication errors
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-        throw new Error('Please log in to continue');
-      }
-
-      // Handle other error responses
-      const errorMessage =
-        error.response.data.error?.message || error.response.data.message || error.message;
-      throw new Error(errorMessage || 'An error occurred');
+    // If the error is not 401 or it's a refresh token request that failed
+    if (error.response?.status !== 401 || originalRequest.url === '/api/auth/refresh') {
+      return Promise.reject(error);
     }
 
-    return Promise.reject(error);
+    // If we're already refreshing, queue this request
+    if (isRefreshing) {
+      return new Promise((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      })
+        .then(token => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return apiInstance(originalRequest);
+        })
+        .catch(err => {
+          return Promise.reject(err);
+        });
+    }
+
+    isRefreshing = true;
+
+    try {
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (!refreshToken) {
+        throw new Error('No refresh token available');
+      }
+
+      const response = await apiInstance.post('/api/auth/refresh', {
+        refresh_token: refreshToken,
+      });
+
+      const { access_token } = response.data;
+      localStorage.setItem('token', access_token);
+
+      // Update authorization header
+      originalRequest.headers.Authorization = `Bearer ${access_token}`;
+      apiInstance.defaults.headers.common.Authorization = `Bearer ${access_token}`;
+
+      processQueue(null, access_token);
+      return apiInstance(originalRequest);
+    } catch (refreshError) {
+      processQueue(refreshError, null);
+      // Clear auth state
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      // Redirect to login
+      window.location.href = '/login';
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
+    }
   }
 );
 

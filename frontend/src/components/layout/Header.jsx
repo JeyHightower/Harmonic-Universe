@@ -1,7 +1,7 @@
 import { useAuth } from '@/hooks/useAuth';
-import { useTheme } from '@/hooks/useTheme';
 import { logout } from '@/store/slices/authSlice';
 import { commonStyles } from '@/styles/commonStyles';
+import { useTheme } from '@/theme/ThemeProvider';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';

@@ -68,9 +68,9 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!isAuthenticated || !token) {
-      navigate('/login');
+      navigate('/login', { state: { from: location } });
     }
-  }, [isAuthenticated, token, navigate]);
+  }, [isAuthenticated, token, navigate, location]);
 
   const handleOpenDialog = universe => {
     setFormError(null);
@@ -181,13 +181,13 @@ const Dashboard = () => {
     }
   };
 
-  if (loading === 'pending') {
+  if (loading) {
     return (
       <Box
         display="flex"
         justifyContent="center"
         alignItems="center"
-        minHeight="60vh"
+        minHeight="100vh"
       >
         <CircularProgress />
       </Box>
@@ -208,6 +208,8 @@ const Dashboard = () => {
             width: DRAWER_WIDTH,
             boxSizing: 'border-box',
             mt: '64px', // Height of the header
+            borderRight: '1px solid',
+            borderColor: 'divider',
           },
         }}
       >
@@ -233,6 +235,7 @@ const Dashboard = () => {
           flexGrow: 1,
           p: 3,
           mt: '64px', // Height of the header
+          ml: `${DRAWER_WIDTH}px`,
           width: { sm: `calc(100% - ${DRAWER_WIDTH}px)` },
         }}
       >

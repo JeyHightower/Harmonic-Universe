@@ -3,15 +3,28 @@ import api from './api';
 export const authService = {
   // Login user
   login: async data => {
-    const response = await api.post('/api/auth/login', data);
-    const { user, access_token, refresh_token } = response.data;
+    try {
+      const response = await api.post('/api/auth/login', data);
+      const { user, access_token, refresh_token } = response.data;
 
-    // Store tokens and user data
-    localStorage.setItem('token', access_token);
-    localStorage.setItem('refreshToken', refresh_token);
-    localStorage.setItem('user', JSON.stringify(user));
+      // Store tokens and user data
+      localStorage.setItem('token', access_token);
+      localStorage.setItem('refreshToken', refresh_token);
+      localStorage.setItem('user', JSON.stringify(user));
 
-    return response.data;
+      // Update axios default headers
+      api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+
+      return response.data;
+    } catch (error) {
+      console.error('Login error:', error);
+      // Clear any stale data
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      delete api.defaults.headers.common['Authorization'];
+      throw error;
+    }
   },
 
   // Demo login
@@ -30,15 +43,18 @@ export const authService = {
       localStorage.setItem('refreshToken', refresh_token);
       localStorage.setItem('user', JSON.stringify(user));
 
-      // Return all necessary data
-      return {
-        user,
-        access_token,
-        refresh_token,
-      };
+      // Update axios default headers
+      api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+
+      return response.data;
     } catch (error) {
       console.error('Demo login error:', error);
-      throw new Error(error.response?.data?.message || 'Demo login failed');
+      // Clear any stale data
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      delete api.defaults.headers.common['Authorization'];
+      throw error;
     }
   },
 
@@ -57,8 +73,15 @@ export const authService = {
 
   // Get current user
   getCurrentUser: async () => {
-    const response = await api.get('/api/auth/me');
-    return response.data;
+    try {
+      const response = await api.get('/api/auth/me');
+      // Update stored user data
+      localStorage.setItem('user', JSON.stringify(response.data));
+      return response.data;
+    } catch (error) {
+      console.error('Get current user error:', error);
+      throw error;
+    }
   },
 
   // Update user profile
@@ -91,55 +114,63 @@ export const authService = {
     await api.post('/api/auth/verify-email', { token });
   },
 
-  // Refresh access token
-  refreshToken: async () => {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
-    }
-
-    const response = await api.post('/api/auth/refresh', {
-      refresh_token: refreshToken,
-    });
-
-    const { access_token } = response.data;
-    localStorage.setItem('token', access_token);
-
-    return response.data;
-  },
-
-  // Logout
+  // Logout user
   logout: async () => {
     try {
-      // Get current token
-      const token = localStorage.getItem('token');
-
+      const refreshToken = localStorage.getItem('refreshToken');
       // Clear storage first to prevent any race conditions
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
+      delete api.defaults.headers.common['Authorization'];
 
       // Attempt to call logout endpoint if we have a token
-      if (token) {
-        await api.post(
-          '/api/auth/logout',
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+      if (refreshToken) {
+        await api.post('/api/auth/logout', { refresh_token: refreshToken });
       }
-
-      // Clear any other application state if needed
-      sessionStorage.clear(); // Clear any session storage
-
-      return { success: true };
     } catch (error) {
       console.error('Logout error:', error);
-      // Still consider it a success since we've cleared local storage
-      return { success: true };
+      // Still clear local storage and headers even if the API call fails
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      delete api.defaults.headers.common['Authorization'];
+      throw error;
+    }
+  },
+
+  // Refresh token
+  refreshToken: async () => {
+    try {
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (!refreshToken) {
+        throw new Error('No refresh token available');
+      }
+
+      const response = await api.post('/api/auth/refresh', {
+        refresh_token: refreshToken,
+      });
+
+      const { access_token, refresh_token } = response.data;
+
+      // Update stored tokens
+      localStorage.setItem('token', access_token);
+      if (refresh_token) {
+        localStorage.setItem('refreshToken', refresh_token);
+      }
+
+      // Update axios default headers
+      api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+
+      return response.data;
+    } catch (error) {
+      console.error('Token refresh error:', error);
+      // Clear auth data on refresh failure
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      delete api.defaults.headers.common['Authorization'];
+      throw error;
     }
   },
 };

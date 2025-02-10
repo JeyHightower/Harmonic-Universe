@@ -1,4 +1,4 @@
-import { login } from '@/store/slices/authSlice';
+import { demoLogin } from '@/store/slices/authSlice';
 import { Box, Button, Container, Typography } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -6,19 +6,15 @@ import { useNavigate } from 'react-router-dom';
 const Home = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { isAuthenticated } = useSelector(state => state.auth);
+  const { isAuthenticated, loading } = useSelector(state => state.auth);
 
   const handleDemoLogin = async () => {
     try {
-      await dispatch(
-        login({
-          email: 'demo@example.com',
-          password: 'password',
-        })
-      ).unwrap();
-      navigate('/dashboard');
+      console.log('Attempting demo login from home page...');
+      await dispatch(demoLogin()).unwrap();
+      console.log('Demo login successful, navigating to dashboard...');
     } catch (err) {
-      // Error is handled by the Redux slice
+      console.error('Demo login failed:', err);
     }
   };
 
@@ -58,6 +54,7 @@ const Home = () => {
               size="large"
               color="secondary"
               onClick={handleDemoLogin}
+              disabled={loading}
               sx={{
                 py: 2,
                 fontSize: '1.2rem',
@@ -68,11 +65,20 @@ const Home = () => {
                 },
               }}
             >
-              Try Demo Account
+              {loading ? 'Loading...' : 'Try Demo Account'}
             </Button>
           )}
           {isAuthenticated && (
-            <Button variant="contained" size="large" onClick={() => navigate('/dashboard')}>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={() => navigate('/dashboard')}
+              sx={{
+                py: 2,
+                fontSize: '1.2rem',
+                fontWeight: 600,
+              }}
+            >
               Go to Dashboard
             </Button>
           )}

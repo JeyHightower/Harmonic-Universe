@@ -1,7 +1,5 @@
-import { useModal } from '@/contexts/ModalContext';
+import { modalTypes, useModal } from '@/contexts/ModalContext';
 import { useVisualization } from '@/hooks/useVisualization';
-import { commonStyles } from '@/styles/commonStyles';
-import { Add as AddIcon } from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -9,38 +7,14 @@ import {
   CircularProgress,
   Grid,
   Paper,
-  Tab,
-  Tabs,
+  Typography,
 } from '@mui/material';
-import PropTypes from 'prop-types';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import VisualizationList from './VisualizationList';
-import VisualizationPreview from './VisualizationPreview';
+import VisualizationRenderer from './VisualizationRenderer';
 import VisualizationSettings from './VisualizationSettings';
-
-function TabPanel(props) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`visualization-tabpanel-${index}`}
-      aria-labelledby={`visualization-tab-${index}`}
-      {...other}
-    >
-      {value === index && children}
-    </div>
-  );
-}
-
-TabPanel.propTypes = {
-  children: PropTypes.node,
-  index: PropTypes.number.isRequired,
-  value: PropTypes.number.isRequired,
-};
 
 const VisualizationWorkspace = () => {
   const { id: visualizationId } = useParams();
@@ -48,6 +22,7 @@ const VisualizationWorkspace = () => {
     currentVisualization,
     loading,
     error,
+    visualizations,
     fetchVisualization,
     updateVisualization,
   } = useVisualization();
@@ -98,10 +73,6 @@ const VisualizationWorkspace = () => {
     }
   }, [visualizationId, fetchVisualization]);
 
-  const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
-  };
-
   const handleSettingsUpdate = async updates => {
     await updateVisualization({
       id: visualizationId,
@@ -120,24 +91,47 @@ const VisualizationWorkspace = () => {
   // If no visualizationId, we're in list view
   if (!visualizationId) {
     return (
-      <Box sx={commonStyles.pageContainer}>
-        <Box sx={{ ...commonStyles.flexBetween, mb: 4 }}>
-          <h1>Visualizations</h1>
+      <Box sx={{ p: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+          <Typography variant="h5">My Visualizations</Typography>
           <Button
             variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => openModal('CREATE_VISUALIZATION')}
-            sx={commonStyles.button}
+            color="primary"
+            onClick={() => openModal(modalTypes.CREATE_VISUALIZATION)}
           >
             Create Visualization
           </Button>
         </Box>
-        <VisualizationList />
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+            <CircularProgress />
+          </Box>
+        ) : error ? (
+          <Alert severity="error">{error}</Alert>
+        ) : !visualizations || visualizations.length === 0 ? (
+          <Box sx={{ textAlign: 'center', p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              No Visualizations Found
+            </Typography>
+            <Typography color="text.secondary" paragraph>
+              Get started by creating your first visualization.
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => openModal(modalTypes.CREATE_VISUALIZATION)}
+            >
+              Create Visualization
+            </Button>
+          </Box>
+        ) : (
+          <VisualizationList />
+        )}
       </Box>
     );
   }
 
-  if (loading || !currentVisualization) {
+  if (loading) {
     return (
       <Box sx={{ p: 3, display: 'flex', justifyContent: 'center' }}>
         <CircularProgress />
@@ -153,62 +147,42 @@ const VisualizationWorkspace = () => {
     );
   }
 
+  if (!currentVisualization) {
+    return (
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Typography variant="h6" gutterBottom>
+          No Visualization Found
+        </Typography>
+        <Typography color="text.secondary" paragraph>
+          The visualization you're looking for doesn't exist or you don't have
+          access to it.
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => openModal(modalTypes.CREATE_VISUALIZATION)}
+        >
+          Create Visualization
+        </Button>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <Box sx={{ ...commonStyles.flexBetween, mb: 3 }}>
-        <h2>{currentVisualization.name}</h2>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button
-            variant="outlined"
-            onClick={() =>
-              openModal('EDIT_VISUALIZATION', {
-                visualization: currentVisualization,
-              })
-            }
-            sx={commonStyles.button}
-          >
-            Edit
-          </Button>
-          <Button
-            variant="outlined"
-            color="error"
-            onClick={() =>
-              openModal('DELETE_VISUALIZATION', {
-                visualization: currentVisualization,
-              })
-            }
-            sx={commonStyles.button}
-          >
-            Delete
-          </Button>
-        </Box>
-      </Box>
-
-      <Paper sx={{ width: '100%', mb: 2 }}>
-        <Tabs
-          value={tabValue}
-          onChange={handleTabChange}
-          aria-label="visualization workspace tabs"
-        >
-          <Tab label="Preview" />
-          <Tab label="Settings" />
-        </Tabs>
-      </Paper>
-
       <Grid container spacing={2}>
-        <Grid item xs={12}>
-          <TabPanel value={tabValue} index={0}>
-            <VisualizationPreview
-              visualization={currentVisualization}
-              onUpdate={handleSettingsUpdate}
-            />
-          </TabPanel>
-          <TabPanel value={tabValue} index={1}>
+        <Grid item xs={12} md={8}>
+          <Paper sx={{ p: 2, height: '600px' }}>
+            <VisualizationRenderer visualization={currentVisualization} />
+          </Paper>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Paper sx={{ p: 2 }}>
             <VisualizationSettings
               visualization={currentVisualization}
               onUpdate={handleSettingsUpdate}
             />
-          </TabPanel>
+          </Paper>
         </Grid>
       </Grid>
     </Box>

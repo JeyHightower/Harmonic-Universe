@@ -12,24 +12,27 @@ import {
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const { loading, error, isAuthenticated } = useSelector(state => state.auth);
+  const from = location.state?.from?.pathname || '/dashboard';
 
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
 
-  // Navigate to dashboard if authenticated
   useEffect(() => {
+    // If already authenticated, navigate to the intended destination
     if (isAuthenticated) {
-      navigate('/dashboard', { replace: true });
+      console.log('Authenticated, navigating to:', from);
+      navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, from]);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -42,17 +45,21 @@ const Login = () => {
   const handleSubmit = async e => {
     e.preventDefault();
     try {
+      console.log('Attempting login...');
       await dispatch(login(formData)).unwrap();
+      console.log('Login successful');
     } catch (err) {
-      // Error is handled by the Redux slice
+      console.error('Login failed:', err);
     }
   };
 
   const handleDemoLogin = async () => {
     try {
+      console.log('Attempting demo login...');
       await dispatch(demoLogin()).unwrap();
+      console.log('Demo login successful');
     } catch (err) {
-      // Error is handled by the Redux slice
+      console.error('Demo login failed:', err);
     }
   };
 

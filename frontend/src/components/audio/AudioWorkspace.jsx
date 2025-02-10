@@ -1,5 +1,6 @@
+import { modalTypes, useModal } from '@/contexts/ModalContext';
 import { useAudioEngine } from '@/hooks/useAudioEngine';
-import { Box, Grid, Paper } from '@mui/material';
+import { Box, Button, CircularProgress, Grid, Paper, Typography } from '@mui/material';
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { MIDIEditor } from './MIDIEditor';
@@ -13,11 +14,15 @@ const AudioWorkspace = ({ projectId }) => {
     volume,
     currentTime,
     duration,
+    loading,
+    error,
+    tracks,
     setIsPlaying,
     setVolume,
     setCurrentTime,
   } = useSelector(state => state.audio);
   const dispatch = useDispatch();
+  const { openModal } = useModal();
 
   const { isInitialized, initializeEngine, loadTrack, playTrack, stopTrack } = useAudioEngine();
 
@@ -43,8 +48,54 @@ const AudioWorkspace = ({ projectId }) => {
     }
   }, [currentTrack, isPlaying, playTrack, stopTrack]);
 
+  if (loading) {
+    return (
+      <Box sx={{ p: 3, display: 'flex', justifyContent: 'center' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    );
+  }
+
+  if (!tracks || tracks.length === 0) {
+    return (
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Typography variant="h6" gutterBottom>
+          No Audio Tracks Found
+        </Typography>
+        <Typography color="text.secondary" paragraph>
+          Get started by creating your first audio track.
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => openModal(modalTypes.CREATE_AUDIO)}
+        >
+          Create Audio Track
+        </Button>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ p: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+        <Typography variant="h5">Audio Workspace</Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => openModal(modalTypes.CREATE_AUDIO)}
+        >
+          Add Track
+        </Button>
+      </Box>
       <Grid container spacing={2}>
         <Grid item xs={12} md={4}>
           <Paper sx={{ p: 2 }}>
