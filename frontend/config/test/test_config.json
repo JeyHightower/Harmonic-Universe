@@ -1,0 +1,54 @@
+{
+    "backend": {
+        "test_db_url": "sqlite:///test.db",
+        "test_secret_key": "test-secret-key",
+        "test_jwt_secret_key": "test-jwt-secret-key",
+        "coverage_threshold": 80,
+        "test_directories": [
+            "tests/unit",
+            "tests/integration",
+            "tests/e2e"
+        ],
+        "exclude_patterns": [
+            "*/migrations/*",
+            "*/alembic/*",
+            "*/tests/*"
+        ]
+    },
+    "frontend": {
+        "test_api_url": "http://localhost:5000",
+        "coverage_threshold": 80,
+        "test_directories": [
+            "src/__tests__",
+            "src/components/__tests__",
+            "src/pages/__tests__"
+        ],
+        "exclude_patterns": [
+            "node_modules",
+            "build",
+            "dist"
+        ]
+    },
+    "e2e": {
+        "baseUrl": "http://localhost:3000",
+        "apiUrl": "http://localhost:5000",
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "video": false,
+        "screenshotOnFailure": true,
+        "trashAssetsBeforeRuns": true
+    },
+    "reporting": {
+        "output_dir": "test_results",
+        "coverage_dir": "coverage",
+        "report_format": "detailed",
+        "fail_on_coverage": true,
+        "notify_on_failure": true
+    },
+    "environment": {
+        "NODE_ENV": "test",
+        "FLASK_ENV": "testing",
+        "PYTHONPATH": "backend",
+        "COVERAGE_FILE": ".coverage"
+    }
+}

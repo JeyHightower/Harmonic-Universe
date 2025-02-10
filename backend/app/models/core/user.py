@@ -28,6 +28,7 @@ class User(BaseModel, UserMixin):
     projects = relationship('Project', secondary='project_users', back_populates='users')
     physics_objects = relationship('PhysicsObject', back_populates='user')
     ai_models = relationship('AIModel', back_populates='user')
+    activities = relationship('Activity', back_populates='user', cascade="all, delete-orphan")
 
     def __init__(self, **kwargs):
         """Initialize user."""

@@ -4,7 +4,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_socketio import SocketIO
 from flask_bcrypt import Bcrypt
-from config import Config
+from .core.config import Config
 import os
 import logging
 from .db.session import init_engine, Base

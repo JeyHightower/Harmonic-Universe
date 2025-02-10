@@ -38,28 +38,33 @@ backend/
 ## Development Setup
 
 1. Create and activate virtual environment:
+
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
 2. Install dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
 
 3. Set up environment variables:
+
 ```bash
 cp .env.example .env
 # Edit .env with your configuration
 ```
 
 4. Run database migrations:
+
 ```bash
 alembic upgrade head
 ```
 
 5. Start development server:
+
 ```bash
 uvicorn app.main:app --reload
 ```
@@ -67,6 +72,7 @@ uvicorn app.main:app --reload
 ## Testing
 
 Run tests with:
+
 ```bash
 pytest
 ```
@@ -74,6 +80,7 @@ pytest
 ## API Documentation
 
 Once the server is running, access the API documentation at:
+
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
@@ -224,3 +231,171 @@ If you encounter database-related issues:
 - Test database configuration is in `app/core/test_config.py`
 - Migration scripts are stored in `migrations/versions/`
 - Database models are in `app/models/`
+
+# Backend Utilities Documentation
+
+This document provides an overview of the utility functions available in the backend application.
+
+## Table of Contents
+
+- [Security Utilities](#security-utilities)
+- [Logging Utilities](#logging-utilities)
+- [Error Handling Utilities](#error-handling-utilities)
+- [Configuration Utilities](#configuration-utilities)
+- [Caching Utilities](#caching-utilities)
+- [Monitoring Utilities](#monitoring-utilities)
+- [Testing Utilities](#testing-utilities)
+
+## Security Utilities
+
+Located in `utils/security.py`, these utilities provide secure token generation, encryption, and data protection.
+
+### Key Functions:
+
+- `generate_token(length: int = 32)`: Generate secure random tokens
+- `generate_api_key()`: Generate secure API keys
+- `create_jwt_token(data: dict, secret_key: str)`: Create JWT tokens
+- `verify_jwt_token(token: str, secret_key: str)`: Verify JWT tokens
+- `encrypt_data(data: str, key: bytes)`: Encrypt data using Fernet
+- `decrypt_data(encrypted_data: bytes, key: bytes)`: Decrypt data
+- `hash_data(data: str, salt: Optional[str] = None)`: Hash data with optional salt
+
+## Logging Utilities
+
+Located in `utils/logging.py`, these utilities provide structured logging capabilities.
+
+### Key Functions:
+
+- `setup_logger(name: str, log_file: Optional[str] = None)`: Configure logger
+- `log_exception(logger: logging.Logger, exc: Exception)`: Log exceptions
+- `rotate_logs(log_dir: Union[str, Path])`: Manage log rotation
+- `log_to_json(logger: logging.Logger, level: int, message: str)`: JSON logging
+- `log_performance(logger: logging.Logger)`: Performance logging decorator
+
+## Error Handling Utilities
+
+Located in `utils/errors.py`, these utilities provide standardized error handling.
+
+### Key Components:
+
+- `ErrorSeverity`: Enum for error severity levels
+- `ErrorCategory`: Enum for error categories
+- `AppError`: Base application error class
+- `handle_exceptions(logger: logging.Logger)`: Exception handling decorator
+- `validate_or_raise(condition: bool, message: str)`: Validation helper
+
+## Configuration Utilities
+
+Located in `utils/config.py`, these utilities manage application configuration.
+
+### Key Functions:
+
+- `load_config(config_path: Union[str, Path])`: Load configuration files
+- `merge_configs(*configs: Dict[str, Any])`: Merge multiple configs
+- `load_env_vars(env_file: Optional[str] = None)`: Load environment variables
+- `validate_config(config: Dict[str, Any])`: Validate configuration
+
+## Caching Utilities
+
+Located in `utils/cache.py`, these utilities provide caching functionality.
+
+### Key Components:
+
+- `Cache`: In-memory cache implementation
+- `cache_decorator`: Function result caching decorator
+- Methods for get, set, delete, and cleanup operations
+
+## Monitoring Utilities
+
+Located in `utils/monitoring.py`, these utilities monitor application performance.
+
+### Key Components:
+
+- `RequestMetrics`: Track request-level metrics
+- `ResourceMetrics`: Track system resource metrics
+- `PerformanceMonitor`: Monitor system performance
+- `monitor_performance`: Performance monitoring decorator
+
+## Testing Utilities
+
+Located in `utils/testing.py`, these utilities facilitate testing.
+
+### Key Functions:
+
+- `random_string()`, `random_email()`, `random_password()`: Generate test data
+- `temp_dir()`, `temp_file()`: Temporary file handling fixtures
+- `mock_datetime()`: DateTime mocking context manager
+- `TestClient`: API testing client
+- Database testing utilities
+
+## Installation
+
+1. Create a virtual environment:
+
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+## Usage Examples
+
+### Security Example
+
+```python
+from utils.security import generate_token, encrypt_data
+
+# Generate a secure token
+token = generate_token(length=32)
+
+# Encrypt sensitive data
+key = generate_encryption_key()
+encrypted_data, iv = encrypt_data("sensitive information", key)
+```
+
+### Logging Example
+
+```python
+from utils.logging import setup_logger
+
+# Setup application logger
+logger = setup_logger("app_logger", "logs/app.log")
+logger.info("Application started")
+```
+
+### Error Handling Example
+
+```python
+from utils.errors import handle_exceptions, ValidationError
+
+@handle_exceptions(logger)
+def process_data(data):
+    if not data:
+        raise ValidationError("Data cannot be empty")
+    return data
+```
+
+### Configuration Example
+
+```python
+from utils.config import load_config, load_env_vars
+
+# Load configuration
+config = load_config("config.yaml")
+env_vars = load_env_vars(".env")
+```
+
+## Contributing
+
+1. Follow the project's coding standards
+2. Write tests for new functionality
+3. Update documentation as needed
+4. Submit pull requests for review
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

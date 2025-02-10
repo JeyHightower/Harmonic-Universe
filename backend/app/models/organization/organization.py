@@ -36,6 +36,13 @@ project_users = Table(
     Column("role", String),  # admin, member, viewer
 )
 
+user_roles = Table(
+    "user_roles",
+    BaseModel.metadata,
+    Column("user_id", UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE")),
+    Column("role_id", UUID(as_uuid=True), ForeignKey("roles.id", ondelete="CASCADE")),
+)
+
 class ResourceType(str, enum.Enum):
     """Types of resources that can have permissions."""
     WORKSPACE = "workspace"
@@ -45,182 +52,91 @@ class ResourceType(str, enum.Enum):
     VISUALIZATION = "visualization"
     AI_MODEL = "ai_model"
 
-class Permission(BaseModel):
-    """Permission definition."""
-    __tablename__ = "permissions"
-
-    name = Column(String, unique=True, index=True)
-    description = Column(String, nullable=True)
-    resource_type = Column(Enum(ResourceType))
-    actions = Column(JSON, default=list)  # List of allowed actions
-
-    def __repr__(self):
-        """String representation."""
-        return f"<Permission(id={self.id}, name='{self.name}')>"
-
-    def to_dict(self):
-        """Convert to dictionary."""
-        return {
-            "id": self.id,
-            "name": self.name,
-            "description": self.description,
-            "resource_type": self.resource_type.value,
-            "actions": self.actions,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat()
-        }
+class Permission(str, enum.Enum):
+    """Permission levels for organization roles."""
+    READ = "read"
+    WRITE = "write"
+    ADMIN = "admin"
 
 class Role(BaseModel):
-    """Role definition with associated permissions."""
+    """Role model for organization members."""
     __tablename__ = "roles"
 
-    name = Column(String, unique=True, index=True)
-    description = Column(String, nullable=True)
-    permissions = Column(JSON, default=list)  # List of permission IDs
-    is_system_role = Column(Boolean, default=False)
+    name = Column(String, nullable=False)
+    description = Column(String)
+    permissions = Column(Enum(Permission), nullable=False, default=Permission.READ)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"))
 
-    def __repr__(self):
-        """String representation."""
-        return f"<Role(id={self.id}, name='{self.name}')>"
+    # Relationships
+    organization = relationship("Organization", back_populates="roles")
+    users = relationship("User", secondary="user_roles")
 
-    def to_dict(self):
-        """Convert to dictionary."""
-        return {
-            "id": self.id,
-            "name": self.name,
-            "description": self.description,
-            "permissions": self.permissions,
-            "is_system_role": self.is_system_role,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat()
-        }
+class Organization(BaseModel):
+    """Organization model."""
+    __tablename__ = "organizations"
+
+    name = Column(String, nullable=False)
+    description = Column(String)
+    website = Column(String)
+    logo_url = Column(String)
+    is_active = Column(Boolean, default=True)
+
+    # Relationships
+    roles = relationship("Role", back_populates="organization", cascade="all, delete-orphan")
+    workspaces = relationship("Workspace", back_populates="organization", cascade="all, delete-orphan")
+    projects = relationship("Project", back_populates="organization", cascade="all, delete-orphan")
 
 class Workspace(BaseModel):
-    """Workspace for organizing projects and resources."""
+    """Workspace model for organizing projects."""
     __tablename__ = "workspaces"
 
-    name = Column(String, index=True)
-    description = Column(String, nullable=True)
-    settings = Column(JSON, default=dict)
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    is_personal = Column(Boolean, default=False)
+    name = Column(String, nullable=False)
+    description = Column(String)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"))
 
     # Relationships
+    organization = relationship("Organization", back_populates="workspaces")
     projects = relationship("Project", back_populates="workspace", cascade="all, delete-orphan")
-    users = relationship("User", secondary=workspace_users, backref="workspaces")
-
-    def __repr__(self):
-        """String representation."""
-        return f"<Workspace(id={self.id}, name='{self.name}')>"
-
-    def to_dict(self):
-        """Convert to dictionary."""
-        return {
-            "id": self.id,
-            "name": self.name,
-            "description": self.description,
-            "settings": self.settings,
-            "created_by": self.created_by,
-            "is_personal": self.is_personal,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat()
-        }
 
 class Project(BaseModel):
-    """Project within a workspace."""
+    """Project model."""
     __tablename__ = "projects"
 
+    name = Column(String, nullable=False)
+    description = Column(String)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"))
     workspace_id = Column(UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"))
-    name = Column(String, index=True)
-    description = Column(String, nullable=True)
-    settings = Column(JSON, default=dict)
-    status = Column(String, default="active")  # active, archived, deleted
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
 
     # Relationships
+    organization = relationship("Organization", back_populates="projects")
     workspace = relationship("Workspace", back_populates="projects")
-    users = relationship("User", secondary=project_users, back_populates="projects")
     resources = relationship("Resource", back_populates="project", cascade="all, delete-orphan")
+    activities = relationship("Activity", back_populates="project", cascade="all, delete-orphan")
+    users = relationship("User", secondary="project_users", back_populates="projects")
     audio_files = relationship("AudioFile", back_populates="project", cascade="all, delete-orphan")
     visualizations = relationship("Visualization", back_populates="project", cascade="all, delete-orphan")
 
-    def __repr__(self):
-        """String representation."""
-        return f"<Project(id={self.id}, name='{self.name}')>"
-
-    def to_dict(self):
-        """Convert to dictionary."""
-        return {
-            "id": self.id,
-            "workspace_id": self.workspace_id,
-            "name": self.name,
-            "description": self.description,
-            "settings": self.settings,
-            "status": self.status,
-            "created_by": self.created_by,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat()
-        }
-
 class Resource(BaseModel):
-    """Generic resource within a project."""
+    """Resource model for project assets."""
     __tablename__ = "resources"
 
+    name = Column(String, nullable=False)
+    type = Column(String, nullable=False)  # file, link, etc.
+    url = Column(String, nullable=False)
     project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"))
-    resource_type = Column(Enum(ResourceType))
-    resource_id = Column(UUID(as_uuid=True))  # ID of the actual resource
-    name = Column(String, index=True)
-    description = Column(String, nullable=True)
-    resource_metadata = Column(JSON, default=dict)
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
 
     # Relationships
     project = relationship("Project", back_populates="resources")
 
-    def __repr__(self):
-        """String representation."""
-        return f"<Resource(id={self.id}, type='{self.resource_type}', name='{self.name}')>"
-
-    def to_dict(self):
-        """Convert to dictionary."""
-        return {
-            "id": self.id,
-            "project_id": self.project_id,
-            "resource_type": self.resource_type.value,
-            "resource_id": self.resource_id,
-            "name": self.name,
-            "description": self.description,
-            "resource_metadata": self.resource_metadata,
-            "created_by": self.created_by,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat()
-        }
-
 class Activity(BaseModel):
-    """Activity log for tracking changes and collaboration."""
+    """Activity model for tracking project activities."""
     __tablename__ = "activities"
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    resource_type = Column(Enum(ResourceType))
-    resource_id = Column(UUID(as_uuid=True))
-    action = Column(String)  # created, updated, deleted, etc.
-    timestamp = Column(Float)
-    details = Column(JSON, default=dict)
+    action = Column(String, nullable=False)
+    description = Column(String)
+    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"))
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"))
 
-    def __repr__(self):
-        """String representation."""
-        return f"<Activity(id={self.id}, user_id={self.user_id}, action='{self.action}')>"
-
-    def to_dict(self):
-        """Convert to dictionary."""
-        return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "resource_type": self.resource_type.value,
-            "resource_id": self.resource_id,
-            "action": self.action,
-            "timestamp": self.timestamp,
-            "details": self.details,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat()
-        }
+    # Relationships
+    project = relationship("Project", back_populates="activities")
+    user = relationship("User", back_populates="activities")

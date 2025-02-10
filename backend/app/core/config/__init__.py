@@ -2,7 +2,6 @@
 Configuration module.
 """
 
-from .settings import settings
-from .test_settings import test_settings
+from .settings import Config, config, settings
 
-__all__ = ["settings", "test_settings"]
+__all__ = ['Config', 'config', 'settings']

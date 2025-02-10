@@ -1,34 +1,62 @@
-# Use Python 3.9 slim image
-FROM python:3.9-slim
+# Unified Dockerfile for development and production
+
+# Build stage
+FROM python:3.11-slim as builder
 
 # Set working directory
-WORKDIR /app/backend
+WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
-    curl \
-    netcat-openbsd \
-    libsndfile1 \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-COPY requirements.txt .
+COPY requirements.txt requirements-test.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Development stage
+FROM builder as development
+
+# Copy development requirements and install
+COPY requirements-test.txt .
+RUN pip install --no-cache-dir -r requirements-test.txt
 
 # Copy application code
 COPY . .
 
-# Create upload and logs directories
-RUN mkdir -p uploads logs
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV FLASK_ENV=development
+ENV FLASK_DEBUG=1
 
 # Expose port
 EXPOSE 5000
 
-# Set environment variables
-ENV FLASK_APP=app
-ENV FLASK_ENV=development
-ENV PYTHONPATH=/app/backend
+# Start development server
+CMD ["python", "run.py"]
 
-# Run the application
-CMD ["sh", "-c", "while ! nc -z db 5432; do sleep 1; done && flask db upgrade && flask run --host=0.0.0.0"]
+# Production stage
+FROM builder as production
+
+# Copy application code
+COPY . .
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV FLASK_ENV=production
+ENV FLASK_DEBUG=0
+
+# Create non-root user
+RUN useradd -m appuser && \
+    chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
+EXPOSE 5000
+
+# Start production server with gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--threads", "2", "app.main:app"]

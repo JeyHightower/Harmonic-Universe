@@ -1,0 +1,31 @@
+{
+  "name": "harmonic-universe",
+  "version": "1.0.0",
+  "description": "A collaborative universe creation platform",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "npm run dev -w frontend",
+    "dev:backend": "npm run dev -w backend",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "npm run build -w frontend",
+    "build:backend": "npm run build -w backend",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "npm run test -w frontend",
+    "test:backend": "npm run test -w backend",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint:frontend": "npm run lint -w frontend",
+    "lint:backend": "npm run lint -w backend",
+    "format": "npm run format:frontend && npm run format:backend",
+    "format:frontend": "npm run format -w frontend",
+    "format:backend": "npm run format -w backend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.0",
+    "husky": "^8.0.0"
+  }
+}

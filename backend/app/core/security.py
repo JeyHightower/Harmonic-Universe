@@ -2,52 +2,48 @@
 
 from datetime import datetime, timedelta
 from typing import Optional, Union
-from jose import jwt
+from flask_jwt_extended import create_access_token as jwt_create_access_token
+from flask_jwt_extended import create_refresh_token as jwt_create_refresh_token
+from flask_jwt_extended import decode_token
 
-from app.core.config import settings
 from app.core.pwd_context import verify_password, get_password_hash
 
 def create_access_token(subject: Union[str, int], expires_delta: Optional[timedelta] = None) -> str:
     """Create access token."""
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-
-    to_encode = {
-        "exp": expire,
-        "sub": str(subject),
-        "type": "access"
-    }
-    encoded_jwt = jwt.encode(
-        to_encode,
-        settings.SECRET_KEY,
-        algorithm=settings.ALGORITHM
+    expires = expires_delta if expires_delta else None
+    identity = str(subject)
+    additional_claims = {"type": "access"}
+    return jwt_create_access_token(
+        identity=identity,
+        expires_delta=expires,
+        additional_claims=additional_claims
     )
-    return encoded_jwt
 
 def create_refresh_token(subject: Union[str, int], expires_delta: Optional[timedelta] = None) -> str:
     """Create refresh token."""
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-
-    to_encode = {
-        "exp": expire,
-        "sub": str(subject),
-        "type": "refresh"
-    }
-    encoded_jwt = jwt.encode(
-        to_encode,
-        settings.SECRET_KEY,
-        algorithm=settings.ALGORITHM
+    expires = expires_delta if expires_delta else None
+    identity = str(subject)
+    additional_claims = {"type": "refresh"}
+    return jwt_create_refresh_token(
+        identity=identity,
+        expires_delta=expires,
+        additional_claims=additional_claims
     )
-    return encoded_jwt
+
+def verify_access_token(token: str) -> Optional[dict]:
+    """Verify access token."""
+    try:
+        decoded_token = decode_token(token)
+        if decoded_token["type"] != "access":
+            return None
+        return decoded_token
+    except Exception:
+        return None
 
 __all__ = [
     "verify_password",
     "get_password_hash",
     "create_access_token",
-    "create_refresh_token"
+    "create_refresh_token",
+    "verify_access_token"
 ]

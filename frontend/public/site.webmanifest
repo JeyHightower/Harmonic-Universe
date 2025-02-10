@@ -1,0 +1,62 @@
+{
+  "name": "Harmonic Universe",
+  "short_name": "Harmonic",
+  "description": "A real-time interactive universe simulation platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#4a90e2",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/maskable_icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Create Universe",
+      "short_name": "Create",
+      "description": "Create a new universe",
+      "url": "/universe/create",
+      "icons": [{ "src": "/create-universe.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "My Universes",
+      "short_name": "Universes",
+      "description": "View your universes",
+      "url": "/dashboard",
+      "icons": [{ "src": "/my-universes.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-1.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "Universe Creation"
+    },
+    {
+      "src": "/screenshot-2.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "Physics Simulation"
+    }
+  ],
+  "categories": ["simulation", "music", "science", "education"],
+  "orientation": "any",
+  "prefer_related_applications": false
+}

@@ -1,113 +1,134 @@
-"""
-Custom error handling module for Flask application.
-"""
+"""Error handling utilities."""
 
-from typing import Any, Dict, Optional
-from werkzeug.exceptions import HTTPException as WerkzeugHTTPException
-from flask import jsonify
+from typing import Optional, Dict, Any
+from datetime import datetime
 
-class BaseAppError(Exception):
-    """Base error class for application errors."""
-    def __init__(self, message: str, status_code: int = 500, details: Optional[Dict[str, Any]] = None):
+class AppError(Exception):
+    """Base application error."""
+    def __init__(
+        self,
+        message: str,
+        code: str = "UNKNOWN_ERROR",
+        status_code: int = 500,
+        details: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(message)
         self.message = message
+        self.code = code
         self.status_code = status_code
         self.details = details or {}
-        super().__init__(self.message)
+        self.timestamp = datetime.utcnow()
 
-class ValidationError(BaseAppError):
-    """Raised when data validation fails."""
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
-        super().__init__(message, status_code=422, details=details)
-
-class NotFoundError(BaseAppError):
-    """Raised when a resource is not found."""
-    def __init__(self, resource: str, resource_id: Any):
+class ValidationError(AppError):
+    """Validation error."""
+    def __init__(
+        self,
+        message: str,
+        details: Optional[Dict[str, Any]] = None
+    ):
         super().__init__(
-            message=f"{resource} with id {resource_id} not found",
-            status_code=404
+            message=message,
+            code="VALIDATION_ERROR",
+            status_code=400,
+            details=details
         )
 
-class AuthenticationError(BaseAppError):
-    """Raised when authentication fails."""
-    def __init__(self, message: str = "Authentication failed"):
-        super().__init__(message, status_code=401)
+class AuthenticationError(AppError):
+    """Authentication error."""
+    def __init__(
+        self,
+        message: str,
+        details: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            code="AUTHENTICATION_ERROR",
+            status_code=401,
+            details=details
+        )
 
-class AuthorizationError(BaseAppError):
-    """Raised when user doesn't have required permissions."""
-    def __init__(self, message: str = "Insufficient permissions"):
-        super().__init__(message, status_code=403)
+class AuthorizationError(AppError):
+    """Authorization error."""
+    def __init__(
+        self,
+        message: str,
+        details: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            code="AUTHORIZATION_ERROR",
+            status_code=403,
+            details=details
+        )
 
-class DatabaseError(BaseAppError):
-    """Raised when database operations fail."""
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
-        super().__init__(message, status_code=500, details=details)
+class NotFoundError(AppError):
+    """Not found error."""
+    def __init__(
+        self,
+        message: str,
+        details: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            code="NOT_FOUND_ERROR",
+            status_code=404,
+            details=details
+        )
 
-class FileOperationError(BaseAppError):
-    """Raised when file operations fail."""
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
-        super().__init__(message, status_code=500, details=details)
+class DatabaseError(AppError):
+    """Database error."""
+    def __init__(
+        self,
+        message: str,
+        details: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            code="DATABASE_ERROR",
+            status_code=500,
+            details=details
+        )
 
 def register_error_handlers(app):
-    """Register error handlers for the Flask app."""
-
-    @app.errorhandler(BaseAppError)
-    def handle_base_error(error):
-        response = jsonify({
+    """Register error handlers for the application."""
+    @app.errorhandler(AppError)
+    def handle_app_error(error):
+        response = {
             'error': {
+                'code': error.code,
                 'message': error.message,
-                'type': error.__class__.__name__,
-                'details': error.details
+                'details': error.details,
+                'timestamp': error.timestamp.isoformat()
             }
-        })
-        response.status_code = error.status_code
-        return response
+        }
+        return response, error.status_code
 
-    @app.errorhandler(WerkzeugHTTPException)
-    def handle_http_error(error):
-        response = jsonify({
+    @app.errorhandler(404)
+    def handle_404(error):
+        return {
             'error': {
-                'message': error.description,
-                'type': error.__class__.__name__,
-                'code': error.code
+                'code': 'NOT_FOUND',
+                'message': 'Resource not found',
+                'timestamp': datetime.utcnow().isoformat()
             }
-        })
-        response.status_code = error.code
-        return response
+        }, 404
 
-    @app.errorhandler(Exception)
-    def handle_generic_error(error):
-        app.logger.error(f"Unhandled exception: {str(error)}")
-        response = jsonify({
+    @app.errorhandler(500)
+    def handle_500(error):
+        return {
             'error': {
-                'message': 'An unexpected error occurred',
-                'type': 'InternalServerError',
-                'code': 500
+                'code': 'INTERNAL_SERVER_ERROR',
+                'message': 'Internal server error',
+                'timestamp': datetime.utcnow().isoformat()
             }
-        })
-        response.status_code = 500
-        return response
+        }, 500
 
-    # Register specific error handlers
-    @app.errorhandler(ValidationError)
-    def handle_validation_error(error):
-        return handle_base_error(error)
-
-    @app.errorhandler(NotFoundError)
-    def handle_not_found_error(error):
-        return handle_base_error(error)
-
-    @app.errorhandler(AuthenticationError)
-    def handle_authentication_error(error):
-        return handle_base_error(error)
-
-    @app.errorhandler(AuthorizationError)
-    def handle_authorization_error(error):
-        return handle_base_error(error)
-
-    @app.errorhandler(DatabaseError)
-    def handle_database_error(error):
-        return handle_base_error(error)
-
-    @app.errorhandler(FileOperationError)
-    def handle_file_operation_error(error):
-        return handle_base_error(error)
+__all__ = [
+    'AppError',
+    'ValidationError',
+    'AuthenticationError',
+    'AuthorizationError',
+    'NotFoundError',
+    'DatabaseError',
+    'register_error_handlers'
+]

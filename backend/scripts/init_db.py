@@ -20,41 +20,43 @@ from alembic import command
 # Add the parent directory to the Python path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from config import config
+from app.core.config import config
+from app.db.session import init_engine
+from app.db.base import Base
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def create_database() -> None:
-    """Create the database if it doesn't exist."""
-    try:
-        # Connect to PostgreSQL server
-        conn = psycopg2.connect(
-            host=config.DB_HOST,
-            port=config.DB_PORT,
-            user=config.DB_USER,
-            password=config.DB_PASSWORD,
-            dbname="postgres"
-        )
-        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+def create_database(database_url: str) -> None:
+    """Create database if it doesn't exist."""
+    parsed = database_url.split('/')
+    db_name = parsed[-1]
+    db_url_without_name = '/'.join(parsed[:-1])
 
-        with conn.cursor() as cursor:
-            # Check if database exists
-            cursor.execute(f"SELECT 1 FROM pg_database WHERE datname = '{config.DB_NAME}'")
-            if not cursor.fetchone():
-                # Create database if it doesn't exist
-                cursor.execute(f'CREATE DATABASE "{config.DB_NAME}"')
-                logger.info(f"Created database {config.DB_NAME}")
-            else:
-                logger.info(f"Database {config.DB_NAME} already exists")
+    try:
+        # Connect to postgres database to create new database
+        conn = psycopg2.connect(f"{db_url_without_name}/postgres")
+        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        cur = conn.cursor()
+
+        # Check if database exists
+        cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (db_name,))
+        exists = cur.fetchone()
+
+        if not exists:
+            # Create database
+            cur.execute(f'CREATE DATABASE "{db_name}"')
+            logger.info(f"Created database: {db_name}")
+        else:
+            logger.info(f"Database already exists: {db_name}")
+
+        cur.close()
+        conn.close()
 
     except Exception as e:
-        logger.error(f"Error creating database: {e}")
+        logger.error(f"Error creating database: {str(e)}")
         raise
-    finally:
-        if conn:
-            conn.close()
 
 def run_migrations() -> None:
     """Run all Alembic migrations."""
@@ -74,11 +76,11 @@ def create_initial_data() -> None:
     """Create initial data in the database if needed."""
     try:
         # Create an engine
-        engine = create_engine(config.DATABASE_URL)
+        engine = create_engine(config['development'].SQLALCHEMY_DATABASE_URI)
 
         with engine.connect() as conn:
             # Check if we need to create initial data
-            result = conn.execute(text("SELECT COUNT(*) FROM visualizations"))
+            result = conn.execute(text("SELECT COUNT(*) FROM users"))
             if result.scalar() == 0:
                 # Add your initial data creation logic here
                 logger.info("Created initial data")
@@ -89,25 +91,41 @@ def create_initial_data() -> None:
         logger.error(f"Error creating initial data: {e}")
         raise
 
-def main() -> None:
-    """Main function to initialize the database."""
+def init_database(config_name: str = 'development') -> None:
+    """Initialize database with all tables."""
     try:
-        logger.info("Starting database initialization...")
+        # Get configuration
+        conf = config[config_name]
+        database_url = conf.SQLALCHEMY_DATABASE_URI
 
-        # Create database
-        create_database()
+        # Create database if it doesn't exist
+        create_database(database_url)
 
-        # Run migrations
-        run_migrations()
+        # Initialize engine
+        engine = init_engine(database_url)
 
-        # Create initial data if needed
-        create_initial_data()
-
-        logger.info("Database initialization completed successfully!")
+        # Create all tables
+        Base.metadata.create_all(bind=engine)
+        logger.info("Successfully initialized database schema")
 
     except Exception as e:
-        logger.error(f"Database initialization failed: {e}")
+        logger.error(f"Error initializing database: {str(e)}")
+        raise
+
+def main():
+    """Main entry point."""
+    import argparse
+    parser = argparse.ArgumentParser(description='Initialize database')
+    parser.add_argument('--env', choices=['development', 'testing', 'production'],
+                      default='development', help='Environment to initialize')
+    args = parser.parse_args()
+
+    try:
+        init_database(args.env)
+        logger.info("Database initialization completed successfully")
+    except Exception as e:
+        logger.error(f"Database initialization failed: {str(e)}")
         sys.exit(1)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
