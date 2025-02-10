@@ -1,10 +1,12 @@
 import { Close as CloseIcon } from '@mui/icons-material';
 import {
+    Box,
     Dialog,
     DialogActions,
     DialogContent,
     DialogTitle,
     IconButton,
+    Paper,
     useTheme,
 } from '@mui/material';
 import PropTypes from 'prop-types';
@@ -23,12 +25,8 @@ const BaseModal = ({
   const theme = useTheme();
 
   const handleClose = (event, reason) => {
-    if (disableBackdropClick && reason === 'backdropClick') {
-      return;
-    }
-    if (disableEscapeKeyDown && reason === 'escapeKeyDown') {
-      return;
-    }
+    if (disableBackdropClick && reason === 'backdropClick') return;
+    if (disableEscapeKeyDown && reason === 'escapeKeyDown') return;
     onClose();
   };
 
@@ -39,40 +37,74 @@ const BaseModal = ({
       maxWidth={maxWidth}
       fullWidth={fullWidth}
       sx={{
+        '& .MuiBackdrop-root': {
+          backdropFilter: 'blur(8px)',
+          backgroundColor: 'rgba(0, 0, 0, 0.2)',
+        },
         '& .MuiDialog-paper': {
           borderRadius: theme.shape.borderRadius * 2,
+          boxShadow: theme.customShadows?.modal || '0 8px 32px rgba(0, 0, 0, 0.08)',
+          border: `1px solid ${theme.palette.divider}`,
+          overflow: 'hidden',
+          animation: 'modalEnter 0.3s ease-out',
+          '@keyframes modalEnter': {
+            from: {
+              opacity: 0,
+              transform: 'scale(0.95) translateY(-8px)',
+            },
+            to: {
+              opacity: 1,
+              transform: 'scale(1) translateY(0)',
+            },
+          },
         },
       }}
+      PaperComponent={Paper}
+      PaperProps={{
+        elevation: 0,
+      }}
     >
+      {/* Modal Header */}
       <DialogTitle
         sx={{
+          p: 2.5,
           m: 0,
-          p: 2,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderBottom: 1,
-          borderColor: 'divider',
+          bgcolor: theme.palette.background.default,
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          fontSize: '1.25rem',
+          fontWeight: 600,
+          color: theme.palette.text.primary,
         }}
       >
-        {title}
+        <Box component="span" sx={{ mr: 2 }}>
+          {title}
+        </Box>
         <IconButton
           aria-label="close"
           onClick={onClose}
+          size="small"
           sx={{
-            position: 'absolute',
-            right: 8,
-            top: 8,
-            color: theme => theme.palette.grey[500],
+            color: theme.palette.text.secondary,
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              color: theme.palette.text.primary,
+              bgcolor: theme.palette.action.hover,
+              transform: 'rotate(90deg)',
+            },
           }}
         >
           <CloseIcon />
         </IconButton>
       </DialogTitle>
 
+      {/* Modal Content */}
       <DialogContent
         sx={{
           p: 3,
+          bgcolor: theme.palette.background.paper,
           '&:first-of-type': {
             pt: 3,
           },
@@ -81,12 +113,18 @@ const BaseModal = ({
         {children}
       </DialogContent>
 
+      {/* Modal Actions */}
       {actions && (
         <DialogActions
           sx={{
-            p: 2,
-            borderTop: 1,
-            borderColor: 'divider',
+            px: 3,
+            py: 2.5,
+            bgcolor: theme.palette.background.default,
+            borderTop: `1px solid ${theme.palette.divider}`,
+            gap: 1,
+            '& .MuiButton-root': {
+              minWidth: 100,
+            },
           }}
         >
           {actions}
