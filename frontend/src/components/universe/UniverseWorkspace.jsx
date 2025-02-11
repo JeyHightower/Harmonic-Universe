@@ -127,16 +127,6 @@ const UniverseWorkspace = () => {
   if (!universeId) {
     return (
       <Box sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-          <Typography variant="h5">My Universes</Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => openModal(modalTypes.CREATE_UNIVERSE)}
-          >
-            Create Universe
-          </Button>
-        </Box>
         <UniverseList />
       </Box>
     );

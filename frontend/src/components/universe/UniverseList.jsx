@@ -3,18 +3,33 @@ import { useUniverse } from '@/hooks/useUniverse';
 import { commonStyles } from '@/styles/commonStyles';
 import { Add as AddIcon } from '@mui/icons-material';
 import { Box, Button, CircularProgress, Grid, Typography } from '@mui/material';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import UniverseCard from './UniverseCard';
 
 const UniverseList = () => {
   const { universes, loading, error, fetchUniverses } = useUniverse();
   const { openModal } = useModal();
+  const hasFetchedRef = useRef(false);
 
   useEffect(() => {
-    // Only fetch if we don't have any universes yet
-    if (!universes.length) {
-      fetchUniverses();
-    }
+    const fetchData = async () => {
+      try {
+        // Only fetch if we haven't fetched before and don't have any universes
+        if (!hasFetchedRef.current && !universes.length) {
+          await fetchUniverses();
+          hasFetchedRef.current = true;
+        }
+      } catch (error) {
+        console.error('Error fetching universes:', error);
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      // Reset the fetch flag when component unmounts
+      hasFetchedRef.current = false;
+    };
   }, [fetchUniverses, universes.length]);
 
   if (loading) {
@@ -27,8 +42,20 @@ const UniverseList = () => {
 
   if (error) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Typography color="error">{error}</Typography>
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Typography color="error" gutterBottom>
+          {error}
+        </Typography>
+        <Button
+          variant="contained"
+          onClick={() => {
+            hasFetchedRef.current = false;
+            fetchUniverses();
+          }}
+          sx={{ mt: 2 }}
+        >
+          Retry
+        </Button>
       </Box>
     );
   }
@@ -59,6 +86,13 @@ const UniverseList = () => {
             />
           </Grid>
         ))}
+        {universes.length === 0 && (
+          <Grid item xs={12}>
+            <Typography variant="body1" color="textSecondary" align="center">
+              No universes found. Create one to get started!
+            </Typography>
+          </Grid>
+        )}
       </Grid>
     </Box>
   );

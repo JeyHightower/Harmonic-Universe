@@ -7,12 +7,13 @@ import { Navigate, useLocation } from 'react-router-dom';
 const ProtectedRoute = ({ children }) => {
   const dispatch = useDispatch();
   const location = useLocation();
-  const { isAuthenticated, loading, token, refreshToken: refresh } = useSelector((state) => state.auth);
+  const { isAuthenticated, loading, token } = useSelector((state) => state.auth);
   const [isChecking, setIsChecking] = useState(true);
   const [checkCount, setCheckCount] = useState(0);
 
   useEffect(() => {
     let mounted = true;
+    let timeoutId = null;
 
     const checkAuth = async () => {
       try {
@@ -24,38 +25,41 @@ const ProtectedRoute = ({ children }) => {
           return;
         }
 
-        // Only attempt refresh if we have both tokens and aren't authenticated
-        if (!isAuthenticated && refresh && token) {
+        // Only check if we're not authenticated and have a token
+        if (!isAuthenticated && token) {
           console.log('Attempting to refresh token...');
           setCheckCount(prev => prev + 1);
           await dispatch(refreshToken()).unwrap();
-        } else if (!isAuthenticated && (!refresh || !token)) {
-          // If we don't have both tokens, clear everything
-          console.log('Missing tokens, clearing auth state...');
-          dispatch(logoutUserAsync());
+        }
+
+        if (mounted) {
+          setIsChecking(false);
         }
       } catch (error) {
         console.error('Token refresh failed:', error);
         dispatch(logoutUserAsync());
-      } finally {
         if (mounted) {
           setIsChecking(false);
         }
       }
     };
 
-    // Only run auth check if we're not already authenticated
-    if (!isAuthenticated) {
-      checkAuth();
-    } else {
-      setIsChecking(false);
-    }
+    // Add a small delay before checking auth to prevent rapid rechecks
+    timeoutId = setTimeout(() => {
+      if (!isAuthenticated && token) {
+        checkAuth();
+      } else {
+        setIsChecking(false);
+      }
+    }, 100);
 
-    // Cleanup function
     return () => {
       mounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
-  }, [dispatch, isAuthenticated, refresh, token, checkCount]);
+  }, [dispatch, isAuthenticated, token, checkCount]);
 
   // Show loading spinner while checking authentication or during other loading states
   if (loading || isChecking) {
@@ -64,7 +68,6 @@ const ProtectedRoute = ({ children }) => {
 
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
-    console.log('Not authenticated, redirecting to login from:', location.pathname);
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
