@@ -8,8 +8,8 @@ import time
 import requests
 from app.core.config import settings
 from app.core.auth import get_current_user, require_auth
-from app.models.core.user import User
-from app.models.core.universe import Universe
+from app.models.user import User
+from app.models.universe.universe import Universe
 from app.models.audio.audio_file import AudioFile
 from app.models.audio.audio_track import AudioTrack
 from app.models.visualization.visualization import Visualization

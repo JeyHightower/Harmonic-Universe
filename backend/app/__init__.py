@@ -4,10 +4,11 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_socketio import SocketIO
 from flask_bcrypt import Bcrypt
+from flask_sqlalchemy import SQLAlchemy
 from .core.config import Config
 import os
 import logging
-from .db.session import init_engine, Base
+from .db.session import init_engine, Base, db_session
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -34,9 +35,10 @@ def create_app(config_class=Config):
     # Initialize database engine with the Flask config URL
     engine = init_engine(database_url)
 
-    # Create all tables
-    # Temporarily commented out to let migrations handle table creation
-    # Base.metadata.create_all(bind=engine)
+    # Set up SQLAlchemy session
+    @app.teardown_appcontext
+    def shutdown_session(exception=None):
+        db_session.remove()
 
     # Initialize extensions
     migrate.init_app(app, Base)

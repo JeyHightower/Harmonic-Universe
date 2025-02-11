@@ -5,7 +5,7 @@ Physics parameter model.
 from sqlalchemy import Column, Float, ForeignKey, Boolean, String, Integer
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
-from app.models.core.base import BaseModel
+from ..base import BaseModel
 from typing import Dict, Optional
 
 class PhysicsParameter(BaseModel):

@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Boolean, JSON, String, ForeignKey, Float, Integer
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
-from .base import BaseModel
+from ..base import BaseModel
 from typing import Dict, List, Optional
 import json
 

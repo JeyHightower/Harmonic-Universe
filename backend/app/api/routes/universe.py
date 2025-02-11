@@ -1,8 +1,8 @@
 """Universe routes."""
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.models.core.universe import Universe
-from app.models.core.user import User
+from app.models.universe.universe import Universe
+from app.models.user import User
 from app.core.errors import ValidationError, AuthenticationError, AuthorizationError
 from app.db.session import get_db
 from app import socketio

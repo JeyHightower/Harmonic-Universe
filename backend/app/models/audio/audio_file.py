@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, Float, Integer, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from app.models.core.base import BaseModel
+from ..base import BaseModel
 
 class AudioFile(BaseModel):
     __tablename__ = 'audio_files'

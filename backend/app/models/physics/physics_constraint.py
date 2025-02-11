@@ -5,7 +5,7 @@ Physics constraint model.
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from app.models.core.base import BaseModel
+from ..base import BaseModel
 
 class PhysicsConstraint(BaseModel):
     """Physical constraint between objects in a scene."""

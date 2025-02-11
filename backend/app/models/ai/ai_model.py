@@ -6,7 +6,7 @@ from sqlalchemy import Column, Integer, String, Float, JSON, ForeignKey, Enum, B
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import enum
-from app.models.core.base import BaseModel
+from ..base import BaseModel
 
 class ModelType(str, enum.Enum):
     """Types of AI models."""

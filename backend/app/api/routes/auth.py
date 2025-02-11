@@ -7,7 +7,7 @@ from flask_jwt_extended import (
 )
 from datetime import timedelta
 from app.db.session import get_db
-from app.models.core.user import User
+from app.models.user import User
 from app.core.errors import AuthenticationError, ValidationError
 from app.core.security import (
     verify_password,

@@ -1,15 +1,16 @@
 """Base model for all database models."""
 
 from datetime import datetime
-from app import db
+from sqlalchemy import Column, Integer, DateTime
+from app.db.base_class import Base
 
-class BaseModel(db.Model):
+class BaseModel(Base):
     """Base model class that includes common fields and methods."""
     __abstract__ = True
 
-    id = db.Column(db.Integer, primary_key=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = Column(Integer, primary_key=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
         """Convert model instance to dictionary."""
@@ -19,12 +20,12 @@ class BaseModel(db.Model):
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 
-    def save(self):
+    def save(self, db_session):
         """Save the model instance to the database."""
-        db.session.add(self)
-        db.session.commit()
+        db_session.add(self)
+        db_session.commit()
 
-    def delete(self):
+    def delete(self, db_session):
         """Delete the model instance from the database."""
-        db.session.delete(self)
-        db.session.commit()
+        db_session.delete(self)
+        db_session.commit()

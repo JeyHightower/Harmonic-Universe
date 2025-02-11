@@ -22,6 +22,16 @@ class AppError(Exception):
             'details': self.details
         }
 
+class AuthenticationError(AppError):
+    """Authentication error."""
+    def __init__(self, message: str = "Authentication failed"):
+        super().__init__(message=message, status_code=401)
+
+class AuthorizationError(AppError):
+    """Authorization error."""
+    def __init__(self, message: str = "Not authorized"):
+        super().__init__(message=message, status_code=403)
+
 class InvalidCredentialsError(AppError):
     """Invalid credentials error."""
     def __init__(self, message: str = "Invalid email or password"):

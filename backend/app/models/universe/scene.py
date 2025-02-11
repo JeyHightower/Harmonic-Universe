@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Dict, Optional
 from sqlalchemy import Column, String, Text, ForeignKey, Boolean, Integer
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
-from app.models.core.base import BaseModel
+from ..base import BaseModel
 
 if TYPE_CHECKING:
     from .user import User  # noqa: F401

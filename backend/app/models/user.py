@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 from sqlalchemy import Column, String, Boolean, DateTime
-from app.db.base_class import Base
+from .base import BaseModel
 from werkzeug.security import check_password_hash, generate_password_hash
 
-class User(Base):
+class User(BaseModel):
     """User model."""
 
     email = Column(String(255), unique=True, nullable=False)

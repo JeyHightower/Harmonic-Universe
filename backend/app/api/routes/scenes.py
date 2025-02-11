@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from app.api import deps
 from app.crud import crud_scene
-from app.schemas.scene import Scene, SceneCreate, SceneUpdate
+from app.models.universe.scene import Scene
 from app.core.errors import ValidationError, NotFoundError
 from flask_jwt_extended import jwt_required, get_jwt_identity
 

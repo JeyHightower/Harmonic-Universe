@@ -5,7 +5,7 @@ Audio track model.
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, JSON, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from app.models.core.base import BaseModel
+from ..base import BaseModel
 
 class AudioTrack(BaseModel):
     """Audio track in a scene."""

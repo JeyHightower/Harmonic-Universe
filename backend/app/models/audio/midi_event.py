@@ -5,7 +5,7 @@ MIDI event model.
 from sqlalchemy import Column, Integer, Float, String, ForeignKey, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from app.models.core.base import BaseModel
+from ..base import BaseModel
 
 class MIDIEvent(BaseModel):
     """MIDI event in a sequence."""

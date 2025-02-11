@@ -6,7 +6,7 @@ from sqlalchemy import Column, Integer, String, Float, ForeignKey, JSON, Enum, B
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import enum
-from app.models.core.base import BaseModel
+from ..base import BaseModel
 
 class AutomationType(str, enum.Enum):
     """Types of automation parameters."""

@@ -5,7 +5,7 @@ from flask import current_app, g
 from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request
 from functools import wraps
 
-from app.models.core.user import User
+from app.models.user import User
 from app.db.session import get_db
 from .errors import AuthenticationError, AuthorizationError
 

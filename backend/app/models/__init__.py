@@ -2,10 +2,10 @@
 Models package initialization.
 """
 
-from .core.base import BaseModel
-from .core.user import User
-from .core.universe import Universe
-from .core.scene import Scene
+from .base import BaseModel
+from .user import User
+from .universe.universe import Universe
+from .universe.scene import Scene
 from .audio.audio_file import AudioFile
 from .audio.audio_track import AudioTrack
 from .audio.audio_control import AudioMarker, AudioAutomation

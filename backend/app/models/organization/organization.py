@@ -8,7 +8,7 @@ from sqlalchemy import (
     String,
     JSON,
     ForeignKey,
-    Enum,
+    Enum as SQLAlchemyEnum,
     Boolean,
     Table,
     Float,
@@ -17,7 +17,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import enum
-from app.models.core.base import BaseModel
+from ..base import BaseModel
 
 # Association tables
 workspace_users = Table(
