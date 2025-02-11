@@ -1,0 +1,14 @@
+.physics-simulation {
+  width: 100%;
+  height: 400px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+.physics-simulation canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}

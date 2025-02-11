@@ -1,0 +1,67 @@
+.midiControls {
+  margin: 1rem 0;
+}
+
+.fileInput {
+  display: none;
+}
+
+.buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.importButton,
+.exportButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.importButton {
+  background: var(--accent);
+  color: white;
+}
+
+.importButton:hover {
+  background: var(--accent-dark);
+  transform: translateY(-1px);
+}
+
+.exportButton {
+  background: var(--background-dark);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.exportButton:hover:not(:disabled) {
+  background: var(--background-darker);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.exportButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .buttons {
+    flex-direction: column;
+  }
+
+  .importButton,
+  .exportButton {
+    width: 100%;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+  }
+}

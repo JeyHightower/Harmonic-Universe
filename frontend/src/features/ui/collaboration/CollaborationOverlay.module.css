@@ -1,0 +1,146 @@
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.header {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  pointer-events: auto;
+  background-color: var(--background-secondary);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.status {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.collaborating {
+  color: var(--success);
+}
+
+.notCollaborating {
+  color: var(--text-muted);
+}
+
+.button {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.startButton {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.startButton:hover {
+  background-color: var(--primary-dark);
+}
+
+.stopButton {
+  background-color: var(--error);
+  color: white;
+}
+
+.stopButton:hover {
+  background-color: var(--error-dark);
+}
+
+.collaboratorsList {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background-color: var(--background-secondary);
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  pointer-events: auto;
+  max-width: 300px;
+}
+
+.collaboratorsList h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.collaboratorsGrid {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.collaborator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  background-color: var(--background-light);
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.collaboratorDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.cursor {
+  position: absolute;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+}
+
+.cursorPoint {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+}
+
+.cursorLabel {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: inherit;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  margin-top: 0.25rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .collaboratorsList {
+    max-width: calc(100% - 2rem);
+  }
+}

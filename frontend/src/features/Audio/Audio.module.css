@@ -1,0 +1,341 @@
+.waveformSelector {
+  margin: 1rem 0;
+}
+
+.waveformTitle {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.waveformButtons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 0.5rem;
+}
+
+.waveformButton {
+  padding: 0.5rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.waveformButton:hover {
+  border-color: #4a90e2;
+}
+
+.waveformButton.selected {
+  border-color: #4a90e2;
+  background: #f5f9ff;
+}
+
+.waveformButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.waveformIcon {
+  width: 40px;
+  height: 40px;
+}
+
+.waveformLabel {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.harmonicsEditor {
+  margin: 1rem 0;
+}
+
+.sectionTitle {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.harmonicsCanvas {
+  width: 100%;
+  height: 200px;
+  border: 2px solid #e0e0e0;
+  border-radius: 4px;
+  cursor: pointer;
+  background: white;
+}
+
+.harmonicsCanvas.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.harmonicsControls {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.resetButton,
+.presetButton {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.resetButton {
+  background-color: #f44336;
+  color: white;
+}
+
+.resetButton:hover {
+  background-color: #d32f2f;
+}
+
+.presetButton {
+  background-color: #4a90e2;
+  color: white;
+}
+
+.presetButton:hover {
+  background-color: #357abd;
+}
+
+.resetButton:disabled,
+.presetButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Audio Export Styles */
+.audioExport {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.exportControls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.exportControl {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.exportControl label {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.exportSelect,
+.exportInput {
+  padding: 0.5rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 4px;
+  background: white;
+  font-size: 1rem;
+}
+
+.exportSelect:focus,
+.exportInput:focus {
+  border-color: #4a90e2;
+  outline: none;
+}
+
+.exportSelect:disabled,
+.exportInput:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f5f5f5;
+}
+
+.exportButton {
+  padding: 0.75rem 1.5rem;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-weight: 500;
+  align-self: flex-end;
+}
+
+.exportButton:hover {
+  background-color: #388e3c;
+}
+
+.exportButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #4caf50;
+}
+
+.exportNote {
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 1rem;
+  font-style: italic;
+}
+
+/* Preset Bank Styles */
+.presetBank {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.presetList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.customPreset {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.customPreset .presetButton {
+  flex: 1;
+}
+
+.deletePresetButton {
+  padding: 0.25rem 0.5rem;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.deletePresetButton:hover {
+  background-color: #d32f2f;
+}
+
+.deletePresetButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.savePresetForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.presetInput {
+  padding: 0.5rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.presetInput:focus {
+  border-color: #4a90e2;
+  outline: none;
+}
+
+.savePresetButtons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.saveButton,
+.cancelButton {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  flex: 1;
+}
+
+.saveButton {
+  background-color: #4caf50;
+  color: white;
+}
+
+.saveButton:hover {
+  background-color: #388e3c;
+}
+
+.cancelButton {
+  background-color: #f44336;
+  color: white;
+}
+
+.cancelButton:hover {
+  background-color: #d32f2f;
+}
+
+.addPresetButton {
+  width: 100%;
+  padding: 0.5rem;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.addPresetButton:hover {
+  background-color: #357abd;
+}
+
+.addPresetButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .waveformButtons {
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  }
+
+  .waveformIcon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .harmonicsCanvas {
+    height: 150px;
+  }
+
+  .exportControls {
+    grid-template-columns: 1fr;
+  }
+
+  .exportButton {
+    width: 100%;
+  }
+
+  .presetList {
+    grid-template-columns: 1fr;
+  }
+
+  .savePresetButtons {
+    flex-direction: column;
+  }
+}
