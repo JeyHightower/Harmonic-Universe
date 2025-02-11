@@ -1,48 +1,43 @@
-import { Box, CircularProgress, Typography } from '@mui/material';
+function LoadingSpinner({ size = 'medium', color = 'primary' }) {
+  const sizeClass = {
+    small: 'w-4 h-4',
+    medium: 'w-8 h-8',
+    large: 'w-12 h-12',
+  }[size];
 
-const LoadingSpinner = ({ message = 'Loading...', size = 40, fullScreen = false }) => {
-    const content = (
-        <Box
-            sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 2,
-                p: 3,
-            }}
-        >
-            <CircularProgress size={size} />
-            {message && (
-                <Typography variant="body2" color="text.secondary">
-                    {message}
-                </Typography>
-            )}
-        </Box>
-    );
+  const colorClass = {
+    primary: 'border-primary',
+    secondary: 'border-secondary',
+    white: 'border-white',
+  }[color];
 
-    if (fullScreen) {
-        return (
-            <Box
-                sx={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    bgcolor: 'background.paper',
-                    zIndex: theme => theme.zIndex.modal + 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                }}
-            >
-                {content}
-            </Box>
-        );
-    }
-
-    return content;
-};
+  return (
+    <div className="flex justify-center items-center">
+      <div
+        className={`spinner ${sizeClass} ${colorClass}`}
+        style={{
+          border: '4px solid transparent',
+          borderTopColor: 'currentColor',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+        }}
+      />
+      <style jsx>{`
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        .spinner {
+          border-top-width: 4px;
+          border-right-width: 4px;
+          border-bottom-width: 4px;
+          border-left-width: 4px;
+          opacity: 0.7;
+        }
+      `}</style>
+    </div>
+  );
+}
 
 export default LoadingSpinner;

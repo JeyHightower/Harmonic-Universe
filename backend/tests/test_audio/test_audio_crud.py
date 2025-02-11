@@ -1,5 +1,5 @@
 import pytest
-from fastapi.testclient import TestClient
+from flask.testing import FlaskClient
 from sqlalchemy.orm import Session
 import os
 from pathlib import Path
@@ -13,7 +13,7 @@ from app.tests.utils.user import create_random_user
 from app.tests.utils.universe import create_random_universe
 
 def test_create_audio_file(
-    client: TestClient,
+    client: FlaskClient,
     db: Session,
     superuser_token_headers: dict,
 ) -> None:
@@ -50,7 +50,7 @@ def test_create_audio_file(
             test_file.unlink()
 
 def test_get_audio_file(
-    client: TestClient,
+    client: FlaskClient,
     db: Session,
     superuser_token_headers: dict,
 ) -> None:
@@ -84,7 +84,7 @@ def test_get_audio_file(
             test_file.unlink()
 
 def test_get_audio_files_by_universe(
-    client: TestClient,
+    client: FlaskClient,
     db: Session,
     superuser_token_headers: dict,
 ) -> None:
@@ -129,7 +129,7 @@ def test_get_audio_files_by_universe(
                 test_file.unlink()
 
 def test_delete_audio_file(
-    client: TestClient,
+    client: FlaskClient,
     db: Session,
     superuser_token_headers: dict,
 ) -> None:

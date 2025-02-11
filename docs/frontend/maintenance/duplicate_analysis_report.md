@@ -26,7 +26,7 @@ VisualParametersEditor
 Checking components in features:
 #### Audio Feature
 ```
-frontend/src/components/features/Audio/AudioParametersEditor.tsx
+frontend/src/components/features/Audio/AudioParametersEditor.jsx
 ```
 #### Auth Feature
 ```
@@ -36,13 +36,13 @@ frontend/src/components/features/Audio/AudioParametersEditor.tsx
 ```
 #### Scene Feature
 ```
-frontend/src/components/features/Scene/SceneParametersEditor.tsx
+frontend/src/components/features/Scene/SceneParametersEditor.jsx
 ```
 #### Storyboard Feature
 ```
-frontend/src/components/features/Storyboard/StoryboardEditor.tsx
+frontend/src/components/features/Storyboard/StoryboardEditor.jsx
 frontend/src/components/features/Storyboard/TimelineControls.jsx
-frontend/src/components/features/Storyboard/StoryboardParametersEditor.tsx
+frontend/src/components/features/Storyboard/StoryboardParametersEditor.jsx
 frontend/src/components/features/Storyboard/StoryboardEditor.jsx
 ```
 #### Universe Feature
@@ -50,7 +50,7 @@ frontend/src/components/features/Storyboard/StoryboardEditor.jsx
 ```
 #### material Feature
 ```
-frontend/src/components/features/material/MaterialParametersEditor.tsx
+frontend/src/components/features/material/MaterialParametersEditor.jsx
 ```
 #### ui Feature
 ```
@@ -67,14 +67,14 @@ Analyzing frontend/src/services/physicsService.js...
 Analyzing frontend/src/services/errorLogging.js...
 Analyzing frontend/src/services/websocket.js...
 Analyzing frontend/src/services/CollaborationService.js...
-Analyzing frontend/src/services/index.ts...
+Analyzing frontend/src/services/index.js...
 Analyzing frontend/src/services/universe.js...
 Analyzing frontend/src/services/authService.js...
 frontend/src/services/authService.js
 Analyzing frontend/src/services/api.js...
 frontend/src/services/api.js
-Analyzing frontend/src/services/base/BaseApiService.ts...
-frontend/src/services/base/BaseApiService.ts
+Analyzing frontend/src/services/base/BaseApiService.js...
+frontend/src/services/base/BaseApiService.js
 Analyzing frontend/src/services/physicsService.test.js...
 ```
 ### Backend Services
@@ -83,12 +83,12 @@ Analyzing frontend/src/services/physicsService.test.js...
 ## Utility Function Analysis
 ### Frontend Utilities
 ```
-Analyzing frontend/src/utils/validation.ts...
-frontend/src/utils/validation.ts
+Analyzing frontend/src/utils/validation.js...
+frontend/src/utils/validation.js
 Analyzing frontend/src/utils/errorHandling.js...
 Analyzing frontend/src/utils/validation.js...
-Analyzing frontend/src/utils/test-auth-helper.ts...
-frontend/src/utils/test-auth-helper.ts
+Analyzing frontend/src/utils/test-auth-helper.js...
+frontend/src/utils/test-auth-helper.js
 Analyzing frontend/src/utils/storage.js...
 ```
 ### Backend Utilities

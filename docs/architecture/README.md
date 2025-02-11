@@ -68,7 +68,7 @@ The Harmonic Universe application follows a modern microservices architecture wi
 
 ### Frontend
 
-1. **React + TypeScript**
+1. **React + JavaScript**
 
    - Type safety
    - Better developer experience

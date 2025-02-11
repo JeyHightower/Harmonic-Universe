@@ -43,18 +43,18 @@ class ErrorAnalyzer:
                     r"HTTP/1.1 404 Not Found",
                     r"Method Not Allowed"
                 ],
-                description="FastAPI route and HTTP method issues",
+                description="Flask route and blueprint issues",
                 fix_function="fix_route_errors"
             ),
             'async_errors': ErrorCategory(
                 name="Async/Event Loop",
                 severity=3,
                 patterns=[
-                    r"_UnixSelectorEventLoop.*?_signal_handlers",
-                    r"changelist must be an iterable",
+                    r"RuntimeError: Working outside of application context",
+                    r"RuntimeError: Working outside of request context",
                     r"ScopeMismatch"
                 ],
-                description="Async test configuration and event loop issues",
+                description="Flask context and request handling issues",
                 fix_function="fix_async_errors"
             ),
             'config_errors': ErrorCategory(
@@ -109,12 +109,12 @@ class ErrorAnalyzer:
                 'file': 'app/models/__init__.py',
                 'description': "Update model imports to use fully qualified paths",
                 'code': """
-from app.db.base import Base
+from app.db.base import db
 from app.models.user import User  # Import each model directly
 from app.models.audio_file import AudioFile
 # ... other model imports
 
-__all__ = ['Base', 'User', 'AudioFile']  # List all models
+__all__ = ['db', 'User', 'AudioFile']  # List all models
 """
             })
 
@@ -124,7 +124,7 @@ __all__ = ['Base', 'User', 'AudioFile']  # List all models
                 'file': 'app/db/base.py',
                 'description': "Update base configuration",
                 'code': """
-from sqlalchemy.ext.declarative import declarative_base
+from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
 
 convention = {
@@ -136,7 +136,7 @@ convention = {
 }
 
 metadata = MetaData(naming_convention=convention)
-Base = declarative_base(metadata=metadata)
+db = SQLAlchemy(metadata=metadata)
 """
             })
 
@@ -146,20 +146,20 @@ Base = declarative_base(metadata=metadata)
         """Generate fixes for async/event loop errors."""
         fixes = []
 
-        if any("_UnixSelectorEventLoop" in e['message'] for e in errors):
+        if any("Working outside of application context" in e['message'] for e in errors):
             fixes.append({
                 'file': 'tests/conftest.py',
-                'description': "Fix event loop setup",
+                'description': "Fix Flask application context setup",
                 'code': """
-@pytest.fixture(scope="session")
-def event_loop():
-    \"\"\"Create event loop for tests.\"\"\"
-    policy = asyncio.get_event_loop_policy()
-    loop = policy.new_event_loop()
-    asyncio.set_event_loop(loop)
-    yield loop
-    with contextlib.suppress(Exception):
-        loop.close()
+@pytest.fixture(scope="function")
+def app():
+    '''Create Flask app for testing.'''
+    app = create_app('testing')
+    with app.app_context():
+        db.create_all()
+        yield app
+        db.session.remove()
+        db.drop_all()
 """
             })
 
@@ -171,16 +171,17 @@ def event_loop():
 
         if any("404 Not Found" in e['message'] for e in errors):
             fixes.append({
-                'file': 'app/api/v1/api.py',
-                'description': "Update API router configuration",
+                'file': 'app/api/routes.py',
+                'description': "Update Flask blueprint configuration",
                 'code': """
-from fastapi import APIRouter
-from app.api.v1.endpoints import auth, users, audio
+from flask import Blueprint
 
-api_router = APIRouter()
-api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
-api_router.include_router(users.router, prefix="/users", tags=["users"])
-api_router.include_router(audio.router, prefix="/audio", tags=["audio"])
+auth_bp = Blueprint('auth', __name__)
+users_bp = Blueprint('users', __name__)
+audio_bp = Blueprint('audio', __name__)
+
+# Register routes with blueprints
+from app.api.endpoints import auth, users, audio
 """
             })
 
@@ -195,10 +196,14 @@ api_router.include_router(audio.router, prefix="/audio", tags=["audio"])
                 'file': 'app/core/config.py',
                 'description': "Update version and project settings",
                 'code': """
-class Settings:
-    PROJECT_NAME: str = "Harmonic Universe"
-    VERSION: str = "1.0.0"
-    API_V1_STR: str = "/api/v1"
+class Config:
+    PROJECT_NAME = "Harmonic Universe"
+    VERSION = "1.0.0"
+    API_PREFIX = "/api"
+
+    # Flask-SQLAlchemy settings
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_DATABASE_URI = "sqlite:///test.db"
 """
             })
 

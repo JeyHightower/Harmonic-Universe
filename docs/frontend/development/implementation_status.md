@@ -80,10 +80,10 @@
 ### Tests ✓
 
 - [x] Component Tests
-  - CollaboratorsList.test.tsx
-  - PhysicsControls.test.tsx
+  - CollaboratorsList.test.jsx
+  - PhysicsControls.test.jsx
 - [x] Hook Tests
-  - useUniverseSocket.test.tsx
+  - useUniverseSocket.test.jsx
 
 ## Features
 

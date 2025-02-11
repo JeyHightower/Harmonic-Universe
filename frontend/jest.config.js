@@ -1,1 +1,0 @@
-config/development/frontend/jest.config.js

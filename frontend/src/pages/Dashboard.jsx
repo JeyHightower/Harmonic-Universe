@@ -1,250 +1,180 @@
-import Header from '@/components/layout/Header';
-import { useAuth } from '@/hooks/useAuth';
-import {
-  createUniverse,
-  deleteUniverse,
-  fetchUniverses,
-} from '@/store/slices/universeSlice';
-import {
-  LibraryMusic as AudioIcon,
-  Person as PersonIcon,
-  Settings as SettingsIcon,
-  Public as UniverseIcon,
-  Visibility as VisualizationIcon,
-} from '@mui/icons-material';
-import {
-  Box,
-  CircularProgress,
-  Container,
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-} from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import LoadingSpinner from '../components/common/LoadingSpinner';
+import UniverseCard from '../components/universe/UniverseCard';
+import { universeService } from '../services/universe';
+import { openModal } from '../store/slices/modalSlice';
 
-const DRAWER_WIDTH = 240;
-
-const menuItems = [
-  { text: 'Universes', icon: <UniverseIcon />, path: '/dashboard/universes' },
-  {
-    text: 'Visualizations',
-    icon: <VisualizationIcon />,
-    path: '/dashboard/visualizations',
-  },
-  { text: 'Audio', icon: <AudioIcon />, path: '/dashboard/audio' },
-  { text: 'Settings', icon: <SettingsIcon />, path: '/dashboard/settings' },
-  { text: 'Profile', icon: <PersonIcon />, path: '/dashboard/profile' },
-];
-
-const Dashboard = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { isAuthenticated, token } = useAuth();
-  const {
-    universes,
-    loading,
-    error: globalError,
-  } = useSelector(state => state.universe);
-
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [editingUniverse, setEditingUniverse] = useState(null);
-  const [formError, setFormError] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    isPublic: false,
-  });
-
-  const handleToggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
-  useEffect(() => {
-    if (!isAuthenticated || !token) {
-      navigate('/login', { state: { from: location } });
-    }
-  }, [isAuthenticated, token, navigate, location]);
-
-  const handleOpenDialog = universe => {
-    setFormError(null);
-    if (universe) {
-      setEditingUniverse(universe);
-      setFormData({
-        name: universe.name,
-        description: universe.description,
-        isPublic: universe.isPublic,
-      });
-    } else {
-      setEditingUniverse(null);
-      setFormData({
-        name: '',
-        description: '',
-        isPublic: false,
-      });
-    }
-    setOpenDialog(true);
-  };
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setEditingUniverse(null);
-    setFormError(null);
-    setFormData({
-      name: '',
-      description: '',
-      isPublic: false,
+function CreateUniverseForm({ onSubmit }) {
+  const handleSubmit = e => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    onSubmit({
+      name: formData.get('name'),
+      description: formData.get('description'),
     });
   };
 
-  const handleSubmit = async e => {
-    e.preventDefault();
-    setFormError(null);
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label htmlFor="name">Universe Name:</label>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          required
+          placeholder="Enter universe name"
+        />
+      </div>
+      <div>
+        <label htmlFor="description">Description:</label>
+        <textarea
+          id="description"
+          name="description"
+          rows="3"
+          placeholder="Describe your universe"
+        />
+      </div>
+      <button type="submit">Create Universe</button>
+    </form>
+  );
+}
 
-    // Client-side validation
-    const name = formData.name.trim();
-    const description = formData.description?.trim() || '';
+function Dashboard() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { user } = useSelector(state => state.auth);
+  const [universes, setUniverses] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-    if (!name) {
-      setFormError('Name is required');
-      return;
-    }
-
-    if (name.length > 255) {
-      setFormError('Name must be less than 255 characters');
-      return;
-    }
-
-    if (description.length > 1000) {
-      setFormError('Description must be less than 1000 characters');
-      return;
-    }
-
-    try {
-      const universeData = {
-        name,
-        description,
-        isPublic: Boolean(formData.isPublic),
-      };
-
-      console.log('Submitting universe data:', universeData);
-
-      const resultAction = await dispatch(
-        createUniverse(universeData)
-      ).unwrap();
-
-      if (resultAction) {
-        handleCloseDialog();
-        await dispatch(fetchUniverses()).unwrap();
-      }
-    } catch (err) {
-      console.error('Failed to save universe:', err);
-
-      // Handle login redirect
-      if (typeof err === 'string' && err.includes('log in')) {
-        navigate('/login');
-        return;
-      }
-
-      // Display error message
-      const errorMessage =
-        err.response?.data?.detail ||
-        err.response?.data?.message ||
-        err.message ||
-        err;
-      setFormError(errorMessage);
-
-      // Log additional error details for debugging
-      if (err.response) {
-        console.error('Error Response:', {
-          status: err.response.status,
-          data: err.response.data,
-          headers: err.response.headers,
-        });
-      }
-    }
-  };
-
-  const handleDelete = async universeId => {
-    if (window.confirm('Are you sure you want to delete this universe?')) {
+  useEffect(() => {
+    const fetchUniverses = async () => {
       try {
-        await dispatch(deleteUniverse(universeId)).unwrap();
-      } catch (err) {
-        console.error('Failed to delete universe:', err);
+        const data = await universeService.getAll();
+        setUniverses(data);
+      } catch (error) {
+        console.error('Failed to fetch universes:', error);
+      } finally {
+        setLoading(false);
       }
-    }
+    };
+
+    fetchUniverses();
+  }, []);
+
+  const handleCreateUniverse = () => {
+    dispatch(
+      openModal({
+        title: 'Create New Universe',
+        content: (
+          <CreateUniverseForm
+            onSubmit={async data => {
+              try {
+                const newUniverse = await universeService.create(data);
+                setUniverses(prev => [...prev, newUniverse]);
+                navigate(`/universe/${newUniverse.id}/edit`);
+              } catch (error) {
+                console.error('Failed to create universe:', error);
+              }
+            }}
+          />
+        ),
+        showCancel: true,
+      })
+    );
   };
 
   if (loading) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="100vh"
-      >
-        <CircularProgress />
-      </Box>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <Header onToggleSidebar={handleToggleSidebar} />
+    <div className="dashboard">
+      <div className="dashboard-header">
+        <h1>Welcome, {user?.name}!</h1>
+        <button onClick={handleCreateUniverse} className="create-button">
+          Create Universe
+        </button>
+      </div>
 
-      {/* Sidebar */}
-      <Drawer
-        variant="permanent"
-        sx={{
-          width: DRAWER_WIDTH,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: DRAWER_WIDTH,
-            boxSizing: 'border-box',
-            mt: '64px', // Height of the header
-            borderRight: '1px solid',
-            borderColor: 'divider',
-          },
-        }}
-      >
-        <List>
-          {menuItems.map(item => (
-            <ListItem key={item.text} disablePadding>
-              <ListItemButton
-                selected={location.pathname.startsWith(item.path)}
-                onClick={() => navigate(item.path)}
-              >
-                <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
-      </Drawer>
+      <div className="dashboard-content">
+        {universes.length === 0 ? (
+          <div className="empty-state">
+            <p>You haven't created any universes yet.</p>
+            <p>Start by creating your first universe!</p>
+          </div>
+        ) : (
+          <div className="universe-grid">
+            {universes.map(universe => (
+              <UniverseCard
+                key={universe.id}
+                universe={universe}
+                onDelete={id => {
+                  setUniverses(prev => prev.filter(u => u.id !== id));
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
-      {/* Main content */}
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 3,
-          mt: '64px', // Height of the header
-          ml: `${DRAWER_WIDTH}px`,
-          width: { sm: `calc(100% - ${DRAWER_WIDTH}px)` },
-        }}
-      >
-        <Container maxWidth="xl">
-          <Outlet />
-        </Container>
-      </Box>
-    </Box>
+      <style jsx>{`
+        .dashboard {
+          padding: 2rem;
+        }
+
+        .dashboard-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 2rem;
+        }
+
+        .create-button {
+          background-color: var(--primary-color);
+          color: white;
+          padding: 0.75rem 1.5rem;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-weight: 500;
+          transition: background-color 0.2s;
+        }
+
+        .create-button:hover {
+          background-color: #357abd;
+        }
+
+        .empty-state {
+          text-align: center;
+          padding: 3rem;
+          background-color: white;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .universe-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 2rem;
+        }
+
+        @media (max-width: 768px) {
+          .dashboard-header {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+          }
+
+          .create-button {
+            width: 100%;
+          }
+        }
+      `}</style>
+    </div>
   );
-};
+}
 
 export default Dashboard;

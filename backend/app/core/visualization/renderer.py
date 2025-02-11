@@ -3,7 +3,7 @@ import numpy as np
 from pathlib import Path
 import json
 import asyncio
-from fastapi import WebSocket
+from flask_socketio import emit
 from app.models.visualization import RenderingMode, SceneObjectType
 
 class Renderer:
@@ -12,24 +12,26 @@ class Renderer:
         self.mode = RenderingMode(scene_data["rendering_mode"])
         self.frame_count = 0
         self.is_running = False
-        self.clients: List[WebSocket] = []
+        self.rooms = set()  # Track connected rooms instead of clients
         self.frame_buffer = []
         self.last_frame_time = 0
 
-    async def start(self):
+    def start(self):
         """Start the rendering loop."""
         self.is_running = True
         while self.is_running:
-            frame_data = await self.render_frame()
-            await self.broadcast_frame(frame_data)
+            frame_data = self.render_frame()
+            self.broadcast_frame(frame_data)
             self.frame_count += 1
-            await asyncio.sleep(1 / self.scene_data.get("fps", 60))
+            # Use eventlet/gevent sleep instead of asyncio
+            from eventlet import sleep
+            sleep(1 / self.scene_data.get("fps", 60))
 
-    async def stop(self):
+    def stop(self):
         """Stop the rendering loop."""
         self.is_running = False
 
-    async def render_frame(self) -> Dict[str, Any]:
+    def render_frame(self) -> Dict[str, Any]:
         """Render a single frame."""
         frame_data = {
             "frame_number": self.frame_count,
@@ -160,29 +162,18 @@ class Renderer:
 
         return frame_data
 
-    async def add_client(self, websocket: WebSocket):
-        """Add a new WebSocket client."""
-        await websocket.accept()
-        self.clients.append(websocket)
+    def add_room(self, room):
+        """Add a room to broadcast to."""
+        self.rooms.add(room)
 
-    async def remove_client(self, websocket: WebSocket):
-        """Remove a WebSocket client."""
-        if websocket in self.clients:
-            self.clients.remove(websocket)
+    def remove_room(self, room):
+        """Remove a room from broadcasting."""
+        self.rooms.discard(room)
 
-    async def broadcast_frame(self, frame_data: Dict[str, Any]):
-        """Broadcast frame data to all connected clients."""
-        disconnected_clients = []
-
-        for client in self.clients:
-            try:
-                await client.send_json(frame_data)
-            except:
-                disconnected_clients.append(client)
-
-        # Remove disconnected clients
-        for client in disconnected_clients:
-            await self.remove_client(client)
+    def broadcast_frame(self, frame_data: Dict[str, Any]):
+        """Broadcast frame data to all rooms."""
+        for room in self.rooms:
+            emit('frame', frame_data, room=room)
 
     def export_frame(self, frame_data: Dict[str, Any], output_path: Path):
         """Export a frame to file."""

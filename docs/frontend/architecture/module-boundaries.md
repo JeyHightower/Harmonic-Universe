@@ -4,7 +4,7 @@
 
 ### Features
 - Each feature is self-contained
-- Exports only through public interface (index.ts)
+- Exports only through public interface (index.js)
 - No direct imports between features
 
 ### Common Components

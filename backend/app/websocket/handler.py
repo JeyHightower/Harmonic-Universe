@@ -1,16 +1,18 @@
 """
-WebSocket handler for real-time collaboration.
+WebSocket event handlers using Flask-SocketIO.
 """
 
 from datetime import datetime
 from typing import Dict, List, Optional, Set, Any
 from dataclasses import dataclass, asdict
 from flask_socketio import emit, join_room, leave_room
+from flask_jwt_extended import jwt_required, get_jwt_identity
 import json
 import logging
 from ..models.core.user import User
 from ..models.core.universe import Universe
-from ..core.errors import NotFoundError, AuthorizationError
+from ..core.errors import NotFoundError, AuthorizationError, WebSocketError
+from app import socketio
 
 logger = logging.getLogger(__name__)
 
@@ -100,15 +102,69 @@ class CollaborationManager:
 
 manager = CollaborationManager()
 
+@socketio.on('connect')
+@jwt_required()
+def handle_connect():
+    """Handle client connection."""
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    if not user:
+        raise WebSocketError("User not found")
+
+    join_room(f"user_{current_user_id}")
+    emit('connection_established', {
+        'user_id': current_user_id,
+        'message': 'Connected successfully'
+    })
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    """Handle client disconnection."""
+    current_user_id = get_jwt_identity()
+    if current_user_id:
+        leave_room(f"user_{current_user_id}")
+
+@socketio.on('join_universe')
+@jwt_required()
+def handle_join_universe(data):
+    """Handle joining a universe room."""
+    universe_id = data.get('universe_id')
+    if not universe_id:
+        raise WebSocketError("Universe ID is required")
+
+    current_user_id = get_jwt_identity()
+    room = f"universe_{universe_id}"
+    join_room(room)
+    emit('universe_joined', {
+        'universe_id': universe_id,
+        'user_id': current_user_id
+    }, room=room)
+
+@socketio.on('leave_universe')
+@jwt_required()
+def handle_leave_universe(data):
+    """Handle leaving a universe room."""
+    universe_id = data.get('universe_id')
+    if not universe_id:
+        raise WebSocketError("Universe ID is required")
+
+    current_user_id = get_jwt_identity()
+    room = f"universe_{universe_id}"
+    leave_room(room)
+    emit('universe_left', {
+        'universe_id': universe_id,
+        'user_id': current_user_id
+    }, room=room)
+
+@socketio.on_error()
+def error_handler(e):
+    """Handle WebSocket errors."""
+    emit('error', {
+        'message': str(e),
+        'type': e.__class__.__name__
+    })
+
 def init_socketio(socketio):
-    @socketio.on('connect')
-    def handle_connect():
-        logger.info("Client connected")
-
-    @socketio.on('disconnect')
-    def handle_disconnect():
-        logger.info("Client disconnected")
-
     @socketio.on('join')
     def handle_join(data):
         universe_id = data['universe_id']

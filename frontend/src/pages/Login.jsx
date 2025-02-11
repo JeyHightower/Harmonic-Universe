@@ -1,47 +1,24 @@
-import { clearError, demoLogin, login } from '@/store/slices/authSlice';
-import { commonStyles } from '@/styles/commonStyles';
-import {
-    Alert,
-    Box,
-    Button,
-    Container,
-    Divider,
-    Paper,
-    TextField,
-    Typography,
-} from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
+import {
+  loginFailure,
+  loginStart,
+  loginSuccess,
+} from '../store/slices/authSlice';
 
-const Login = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { loading, error, isAuthenticated } = useSelector(state => state.auth);
-  const from = location.state?.from?.pathname || '/dashboard';
-
+function Login() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
 
-  useEffect(() => {
-    // Clear any existing errors when component mounts
-    dispatch(clearError());
-  }, [dispatch]);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { loading, error } = useSelector(state => state.auth);
 
-  useEffect(() => {
-    // If already authenticated, navigate to the intended destination
-    if (isAuthenticated) {
-      console.log('Authenticated, navigating to:', from);
-      // Add a small delay to ensure state is fully updated
-      const timer = setTimeout(() => {
-        navigate(from, { replace: true });
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [isAuthenticated, navigate, from]);
+  const from = location.state?.from?.pathname || '/dashboard';
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -53,130 +30,64 @@ const Login = () => {
 
   const handleSubmit = async e => {
     e.preventDefault();
+
     try {
-      console.log('Attempting login...');
-      await dispatch(login(formData)).unwrap();
-      console.log('Login successful');
+      dispatch(loginStart());
+
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      dispatch(loginSuccess(data));
+      navigate(from, { replace: true });
     } catch (err) {
-      console.error('Login failed:', err);
+      dispatch(loginFailure(err.message));
     }
   };
-
-  const handleDemoLogin = async () => {
-    try {
-      console.log('Attempting demo login...');
-      // Clear any existing errors before attempting login
-      dispatch(clearError());
-      await dispatch(demoLogin()).unwrap();
-      console.log('Demo login successful');
-      // No need to manually navigate - useEffect will handle it
-    } catch (err) {
-      console.error('Demo login failed:', err);
-      // Error state will be handled by the reducer
-    }
-  };
-
-  // If already authenticated, don't show login form
-  if (isAuthenticated) {
-    return null;
-  }
 
   return (
-    <Container component="main" maxWidth="xs">
-      <Box
-        sx={{
-          ...commonStyles.flexCenter,
-          minHeight: '100vh',
-          py: 8,
-        }}
-      >
-        <Paper
-          elevation={3}
-          sx={{
-            p: 4,
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}
-        >
-          <Typography component="h1" variant="h5" gutterBottom>
-            Sign in
-          </Typography>
-
-          {error && (
-            <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
-              {typeof error === 'string' ? error : 'Login failed. Please try again.'}
-            </Alert>
-          )}
-
-          <Box
-            component="form"
-            onSubmit={handleSubmit}
-            sx={{ width: '100%', mt: 1 }}
-          >
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="email"
-              label="Email Address"
-              name="email"
-              autoComplete="email"
-              autoFocus
-              value={formData.email}
-              onChange={handleChange}
-              disabled={loading}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="Password"
-              type="password"
-              id="password"
-              autoComplete="current-password"
-              value={formData.password}
-              onChange={handleChange}
-              disabled={loading}
-            />
-
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ ...commonStyles.button, mt: 3, mb: 2 }}
-              disabled={loading}
-            >
-              {loading ? 'Signing in...' : 'Sign In'}
-            </Button>
-
-            <Divider sx={{ my: 2 }}>or</Divider>
-
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={handleDemoLogin}
-              disabled={loading}
-              sx={commonStyles.button}
-            >
-              {loading ? 'Logging in...' : 'Try Demo Account'}
-            </Button>
-
-            <Button
-              fullWidth
-              sx={{ ...commonStyles.button, mt: 2 }}
-              onClick={() => navigate('/register')}
-              disabled={loading}
-            >
-              Don't have an account? Sign Up
-            </Button>
-          </Box>
-        </Paper>
-      </Box>
-    </Container>
+    <div className="login-page">
+      <h1>Login</h1>
+      <form onSubmit={handleSubmit}>
+        {error && <div className="error">{error}</div>}
+        <div>
+          <label htmlFor="email">Email:</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div>
+          <label htmlFor="password">Password:</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <button type="submit" disabled={loading}>
+          {loading ? 'Logging in...' : 'Login'}
+        </button>
+      </form>
+    </div>
   );
-};
+}
 
 export default Login;

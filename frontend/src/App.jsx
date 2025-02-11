@@ -1,37 +1,68 @@
 import { SnackbarProvider } from 'notistack';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import AudioContextProvider from './components/audio/AudioContextProvider';
-import ErrorBoundary from './components/common/ErrorBoundary';
-import routes from './routes';
-import { ThemeProvider } from './theme/ThemeProvider';
+import { Provider } from 'react-redux';
+import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import store from './store';
 
-// Create router with future flags enabled
-const router = createBrowserRouter(routes, {
-  future: {
-    v7_startTransition: true,
-    v7_relativeSplatPath: true
-  }
-});
+// Import components
+import Modal from './components/common/Modal';
+import Layout from './components/Layout';
+import ProtectedRoute from './components/ProtectedRoute';
+import Dashboard from './pages/Dashboard';
+import Login from './pages/Login';
+import NotFound from './pages/NotFound';
+import Profile from './pages/Profile';
+import Register from './pages/Register';
+import Simulation from './pages/Simulation';
+import UniverseEditor from './pages/UniverseEditor';
 
 function App() {
   return (
-    <ErrorBoundary>
-      <ThemeProvider>
-        <SnackbarProvider
-          maxSnack={3}
-          anchorOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
-          }}
-          autoHideDuration={3000}
-          preventDuplicate
-        >
-          <AudioContextProvider>
-            <RouterProvider router={router} />
-          </AudioContextProvider>
-        </SnackbarProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
+    <Provider store={store}>
+      <SnackbarProvider maxSnack={3}>
+        <Router>
+          <Layout>
+            <Modal /> {/* Global modal component */}
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/universe/:id/edit"
+                element={
+                  <ProtectedRoute>
+                    <UniverseEditor />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/universe/:id/simulate"
+                element={
+                  <ProtectedRoute>
+                    <Simulation />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Layout>
+        </Router>
+      </SnackbarProvider>
+    </Provider>
   );
 }
 

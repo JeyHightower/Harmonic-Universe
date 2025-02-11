@@ -1,6 +1,6 @@
 import pytest
 import asyncio
-from fastapi import WebSocket
+from flask_socketio import SocketIO
 from unittest.mock import Mock, AsyncMock
 import json
 
@@ -188,29 +188,29 @@ async def test_post_processing(renderer):
 
 @pytest.mark.asyncio
 async def test_client_management(renderer):
-    """Test WebSocket client management."""
-    # Create mock WebSocket client
-    mock_ws = AsyncMock(spec=WebSocket)
+    """Test SocketIO client management."""
+    # Create mock SocketIO client
+    mock_client = Mock(spec=SocketIO)
 
     # Add client
-    await renderer.add_client(mock_ws)
+    await renderer.add_client(mock_client)
     assert len(renderer.clients) == 1
-    assert renderer.clients[0] == mock_ws
+    assert renderer.clients[0] == mock_client
 
     # Remove client
-    await renderer.remove_client(mock_ws)
+    await renderer.remove_client(mock_client)
     assert len(renderer.clients) == 0
 
 @pytest.mark.asyncio
 async def test_broadcast_frame(renderer):
     """Test broadcasting frame data to clients."""
-    # Create mock WebSocket clients
-    mock_ws1 = AsyncMock(spec=WebSocket)
-    mock_ws2 = AsyncMock(spec=WebSocket)
+    # Create mock SocketIO clients
+    mock_client1 = Mock(spec=SocketIO)
+    mock_client2 = Mock(spec=SocketIO)
 
     # Add clients
-    await renderer.add_client(mock_ws1)
-    await renderer.add_client(mock_ws2)
+    await renderer.add_client(mock_client1)
+    await renderer.add_client(mock_client2)
 
     # Create test frame data
     frame_data = {
@@ -222,11 +222,11 @@ async def test_broadcast_frame(renderer):
     await renderer.broadcast_frame(frame_data)
 
     # Verify both clients received the frame
-    mock_ws1.send_json.assert_called_once_with(frame_data)
-    mock_ws2.send_json.assert_called_once_with(frame_data)
+    mock_client1.emit.assert_called_once_with('frame', frame_data)
+    mock_client2.emit.assert_called_once_with('frame', frame_data)
 
     # Test handling disconnected client
-    mock_ws1.send_json.side_effect = Exception("Connection lost")
+    mock_client1.emit.side_effect = Exception("Connection lost")
     await renderer.broadcast_frame(frame_data)
     assert len(renderer.clients) == 1
-    assert renderer.clients[0] == mock_ws2
+    assert renderer.clients[0] == mock_client2

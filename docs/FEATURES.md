@@ -168,7 +168,7 @@ This document provides a comprehensive overview of all implemented features in H
 ### Frontend
 
 - React/Redux Architecture
-- TypeScript Implementation
+- JavaScript Implementation
 - Material-UI Components
 - WebSocket Integration
 

@@ -79,9 +79,9 @@ frontend/
 │   │   ├── Profile/
 │   │   └── Settings/
 │   ├── services/      # API clients
-│   │   ├── api.ts
-│   │   ├── websocket.ts
-│   │   └── auth.ts
+│   │   ├── api.js
+│   │   ├── websocket.js
+│   │   └── auth.js
 │   ├── store/         # Redux store
 │   │   ├── slices/
 │   │   └── middleware/
@@ -127,10 +127,11 @@ scripts/
 ./
 ├── .env                # Environment variables
 ├── .gitignore         # Git ignore rules
-├── package.json       # Node.js dependencies
+├── package.json       # Project dependencies and scripts
 ├── requirements.txt   # Python dependencies
-├── tsconfig.json     # TypeScript config
-└── vite.config.js    # Vite build config
+├── jsconfig.json      # JavaScript path aliases and module resolution
+├── tsconfig.json     # JavaScript config
+└── vite.config.js     # Vite bundler configuration
 ```
 
 ## Key Files
@@ -145,9 +146,9 @@ scripts/
 
 ### Frontend
 
-- `src/App.tsx`: Root component
-- `src/main.tsx`: Application entry
-- `src/store/index.ts`: Redux store setup
+- `src/App.jsx`: Root component
+- `src/main.jsx`: Application entry
+- `src/store/index.js`: Redux store setup
 - `src/styles/global.css`: Global styles
 - `index.html`: HTML template
 

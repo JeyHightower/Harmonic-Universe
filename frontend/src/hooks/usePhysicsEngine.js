@@ -1,207 +1,143 @@
+import { useEffect, useRef, useState } from 'react';
 
-import { RootState } from '@store/index';
-import { updateObject } from '@store/slices/physicsSlice';
-import * as CANNON from 'cannon-es';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+export function usePhysicsEngine(initialParams = {}) {
+  const engineRef = useRef(null);
+  const [isRunning, setIsRunning] = useState(false);
+  const [timeScale, setTimeScale] = useState(1);
+  const [objects, setObjects] = useState([]);
 
+  const defaultParams = {
+    gravity: 9.81,
+    elasticity: 0.7,
+    friction: 0.1,
+    airResistance: 0.01,
+    ...initialParams,
+  };
 
-export const usePhysicsEngine = () => {
-  const dispatch = useDispatch();
-  const { objects, isSimulating, timeStep } = useSelector((state: RootState) => state.physics);
-  const [engineContext, setEngineContext] = useState<PhysicsEngineContext | null>(null);
-  const rafId = useRef();
+  const [params, setParams] = useState(defaultParams);
 
-  const init = useCallback(() => {
-    const world = new CANNON.World();
-    world.gravity.set(0, -9.81, 0);
-    world.solver.iterations = 10;
-    world.broadphase = new CANNON.NaiveBroadphase();
+  useEffect(() => {
+    // Initialize physics engine
+    engineRef.current = {
+      lastTime: 0,
+      accumulator: 0,
+      step: 1 / 60, // 60 FPS
+      objects: [],
 
-    setEngineContext({
-      world,
-      bodies: new Map(),
-    });
+      update(currentTime) {
+        if (!isRunning) return;
 
-    return { world };
-  }, []);
+        if (engineRef.current.lastTime) {
+          const deltaTime = (currentTime - engineRef.current.lastTime) / 1000;
+          engineRef.current.accumulator += deltaTime * timeScale;
 
-  const createBody = useCallback(
-    (object: PhysicsObject) => {
-      if (!engineContext) return;
-
-      const shape = (() => {
-        switch (object.type) {
-          case 'box':
-            return new CANNON.Box(
-              new CANNON.Vec3(object.scale[0] / 2, object.scale[1] / 2, object.scale[2] / 2)
-            );
-          case 'sphere':
-            return new CANNON.Sphere(object.scale[0] / 2);
-          case 'cylinder':
-            return new CANNON.Cylinder(
-              object.scale[0] / 2,
-              object.scale[0] / 2,
-              object.scale[1],
-              16
-            );
-          default:
-            return new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
+          while (engineRef.current.accumulator >= engineRef.current.step) {
+            updatePhysics(engineRef.current.step);
+            engineRef.current.accumulator -= engineRef.current.step;
+          }
         }
-      })();
 
-      const body = new CANNON.Body({
-        mass: object.mass,
-        position: new CANNON.Vec3(...object.position),
-        quaternion: new CANNON.Quaternion().setFromEuler(...object.rotation),
-        material: new CANNON.Material({
-          friction: object.physics.friction,
-          restitution: object.physics.restitution,
-        }),
-      });
+        engineRef.current.lastTime = currentTime;
+        requestAnimationFrame(engineRef.current.update);
+      },
+    };
 
-      body.addShape(shape);
-      engineContext.world.addBody(body);
-      engineContext.bodies.set(object.id, body);
+    return () => {
+      engineRef.current = null;
+    };
+  }, [isRunning, timeScale]);
 
-      return body;
-    },
-    [engineContext]
-  );
+  const updatePhysics = deltaTime => {
+    // Update each object's position and velocity
+    engineRef.current.objects.forEach(obj => {
+      // Apply gravity
+      obj.velocity.y += params.gravity * deltaTime;
 
-  const removeBody = useCallback(
-    (objectId: number) => {
-      if (!engineContext) return;
-
-      const body = engineContext.bodies.get(objectId);
-      if (body) {
-        engineContext.world.removeBody(body);
-        engineContext.bodies.delete(objectId);
+      // Apply air resistance
+      const speed = Math.sqrt(obj.velocity.x ** 2 + obj.velocity.y ** 2);
+      const dragForce = speed * params.airResistance;
+      if (speed > 0) {
+        obj.velocity.x -= (obj.velocity.x / speed) * dragForce * deltaTime;
+        obj.velocity.y -= (obj.velocity.y / speed) * dragForce * deltaTime;
       }
-    },
-    [engineContext]
-  );
 
-  const step = useCallback(() => {
-    if (!engineContext || !isSimulating) return;
+      // Update position
+      obj.position.x += obj.velocity.x * deltaTime;
+      obj.position.y += obj.velocity.y * deltaTime;
 
-    engineContext.world.step(timeStep);
-
-    engineContext.bodies.forEach((body, objectId) => {
-      dispatch(
-        updateObject({
-          id: objectId,
-          position: [body.position.x, body.position.y, body.position.z],
-          rotation: [body.quaternion.x, body.quaternion.y, body.quaternion.z],
-        })
-      );
+      // Handle collisions
+      handleCollisions(obj);
     });
 
-    rafId.current = requestAnimationFrame(step);
-  }, [dispatch, engineContext, isSimulating, timeStep]);
+    // Update state with new object positions
+    setObjects([...engineRef.current.objects]);
+  };
 
-  useEffect(() => {
-    if (!engineContext) return;
-
-    // Add/update bodies for all objects
-    objects.forEach(object => {
-      const existingBody = engineContext.bodies.get(object.id);
-      if (!existingBody) {
-        createBody(object);
-      } else {
-        // Update existing body properties
-        existingBody.position.set(...object.position);
-        existingBody.quaternion.setFromEuler(...object.rotation);
-        existingBody.mass = object.mass;
-        existingBody.material.friction = object.physics.friction;
-        existingBody.material.restitution = object.physics.restitution;
-      }
-    });
-
-    // Remove bodies for deleted objects
-    engineContext.bodies.forEach((_, objectId) => {
-      if (!objects.find(obj => obj.id === objectId)) {
-        removeBody(objectId);
-      }
-    });
-  }, [createBody, engineContext, objects, removeBody]);
-
-  useEffect(() => {
-    if (isSimulating) {
-      rafId.current = requestAnimationFrame(step);
-    } else if (rafId.current) {
-      cancelAnimationFrame(rafId.current);
+  const handleCollisions = obj => {
+    // Boundary collisions
+    if (obj.position.y < 0) {
+      obj.position.y = 0;
+      obj.velocity.y = -obj.velocity.y * params.elasticity;
+      obj.velocity.x *= 1 - params.friction;
     }
+    // Add more collision handling as needed
+  };
 
-    return () => {
-      if (rafId.current) {
-        cancelAnimationFrame(rafId.current);
-      }
-    };
-  }, [isSimulating, step]);
+  const addObject = object => {
+    engineRef.current.objects.push({
+      ...object,
+      velocity: { x: 0, y: 0 },
+      mass: object.mass || 1,
+    });
+    setObjects([...engineRef.current.objects]);
+  };
 
-  useEffect(() => {
-    return () => {
-      if (engineContext) {
-        engineContext.bodies.forEach(body => {
-          engineContext.world.removeBody(body);
-        });
-        engineContext.bodies.clear();
-      }
-    };
-  }, [engineContext]);
+  const removeObject = objectId => {
+    engineRef.current.objects = engineRef.current.objects.filter(
+      obj => obj.id !== objectId
+    );
+    setObjects([...engineRef.current.objects]);
+  };
+
+  const start = () => {
+    if (!isRunning) {
+      setIsRunning(true);
+      engineRef.current.lastTime = 0;
+      engineRef.current.update(performance.now());
+    }
+  };
+
+  const stop = () => {
+    setIsRunning(false);
+  };
+
+  const reset = () => {
+    stop();
+    engineRef.current.objects.forEach(obj => {
+      obj.position = { ...obj.initialPosition };
+      obj.velocity = { x: 0, y: 0 };
+    });
+    setObjects([...engineRef.current.objects]);
+  };
+
+  const updateParams = newParams => {
+    setParams(prev => ({
+      ...prev,
+      ...newParams,
+    }));
+  };
 
   return {
-    init,
-    step,
-    reset: () => {
-      if (engineContext) {
-        engineContext.bodies.forEach(body => {
-          body.position.set(0, 0, 0);
-          body.velocity.set(0, 0, 0);
-          body.angularVelocity.set(0, 0, 0);
-          body.quaternion.set(0, 0, 0, 1);
-        });
-      }
-    },
-    start: () => {
-      if (engineContext) {
-        rafId.current = requestAnimationFrame(step);
-      }
-    },
-    pause: () => {
-      if (rafId.current) {
-        cancelAnimationFrame(rafId.current);
-      }
-    },
-    cleanup: () => {
-      if (engineContext) {
-        engineContext.bodies.forEach(body => {
-          engineContext.world.removeBody(body);
-        });
-        engineContext.bodies.clear();
-      }
-    },
-    getObjectTransform: (objectId: number) => {
-      if (!engineContext) return null;
-
-      const body = engineContext.bodies.get(objectId);
-      if (!body) return null;
-
-      return {
-        position: [body.position.x, body.position.y, body.position.z],
-        rotation: [body.quaternion.x, body.quaternion.y, body.quaternion.z],
-      };
-    },
-    getObjectPositions: () => {
-      if (!engineContext) return {};
-
-      const positions: Record<number, number[]> = {};
-      engineContext.bodies.forEach((body, objectId) => {
-        positions[objectId] = [body.position.x, body.position.y, body.position.z];
-      });
-      return positions;
-    },
+    isRunning,
+    timeScale,
     objects,
+    params,
+    setTimeScale,
+    addObject,
+    removeObject,
+    start,
+    stop,
+    reset,
+    updateParams,
   };
-};
+}

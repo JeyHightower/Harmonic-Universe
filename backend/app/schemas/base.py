@@ -3,66 +3,78 @@ Base schemas with common validation patterns.
 """
 
 from datetime import datetime
-from typing import Any, Dict, Optional
-from pydantic import BaseModel, Field, validator
+from typing import Dict, Any
+from marshmallow import Schema, fields, validates, ValidationError, pre_load, post_dump
 
-class TimestampedModel(BaseModel):
-    """Base model with timestamp fields."""
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+class TimestampedSchema(Schema):
+    """Base schema with timestamp fields."""
+    created_at = fields.DateTime(dump_only=True)
+    updated_at = fields.DateTime(dump_only=True)
 
-    @validator("updated_at", pre=True, always=True)
-    def default_updated_at(cls, v: datetime, values: Dict[str, Any]) -> datetime:
-        """Set updated_at to current time on update."""
-        return datetime.utcnow()
+    @pre_load
+    def set_timestamps(self, data: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+        """Set timestamps on creation/update."""
+        now = datetime.utcnow()
+        if not data.get('created_at'):
+            data['created_at'] = now
+        data['updated_at'] = now
+        return data
 
-class IDModel(BaseModel):
-    """Base model with ID field."""
-    id: int = Field(..., gt=0)
+class IDSchema(Schema):
+    """Base schema with ID field."""
+    id = fields.Integer(required=True, validate=lambda x: x > 0)
 
-class NameDescriptionModel(BaseModel):
-    """Base model with name and description fields."""
-    name: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = Field(None, max_length=1000)
+class NameDescriptionSchema(Schema):
+    """Base schema with name and description fields."""
+    name = fields.String(required=True, validate=lambda x: 0 < len(x) <= 255)
+    description = fields.String(validate=lambda x: len(x) <= 1000, allow_none=True)
 
-class MetadataModel(BaseModel):
-    """Base model with metadata field."""
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+class MetadataSchema(Schema):
+    """Base schema with metadata field."""
+    metadata = fields.Dict(keys=fields.String(), values=fields.Raw(), missing=dict)
 
-class BaseAppModel(TimestampedModel, IDModel):
-    """Base model for all application models."""
-    class Config:
-        from_attributes = True
-        validate_assignment = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+class BaseAppSchema(TimestampedSchema, IDSchema):
+    """Base schema for all application schemas."""
 
-class BaseResponseModel(BaseModel):
-    """Base model for all response models."""
-    success: bool = Field(True)
-    message: Optional[str] = None
-    data: Optional[Dict[str, Any]] = None
+    @post_dump
+    def format_dates(self, data: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+        """Format datetime fields as ISO strings."""
+        if 'created_at' in data:
+            data['created_at'] = data['created_at'].isoformat()
+        if 'updated_at' in data:
+            data['updated_at'] = data['updated_at'].isoformat()
+        return data
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+class BaseResponseSchema(Schema):
+    """Base schema for all response schemas."""
+    success = fields.Boolean(dump_only=True, default=True)
+    message = fields.String(allow_none=True)
+    data = fields.Dict(allow_none=True)
 
-class PaginationParams(BaseModel):
+class PaginationSchema(Schema):
     """Common pagination parameters."""
-    page: int = Field(1, gt=0)
-    per_page: int = Field(10, gt=0, le=100)
-    sort_by: Optional[str] = None
-    sort_order: Optional[str] = Field(None, pattern="^(asc|desc)$")
+    page = fields.Integer(validate=lambda x: x > 0, missing=1)
+    per_page = fields.Integer(validate=lambda x: 0 < x <= 100, missing=10)
+    sort_by = fields.String(allow_none=True)
+    sort_order = fields.String(validate=lambda x: x in ['asc', 'desc'], allow_none=True)
 
-class ErrorResponseModel(BaseModel):
-    """Standard error response model."""
-    success: bool = Field(False)
-    error: Dict[str, Any]
-    message: str
+    @validates('sort_order')
+    def validate_sort_order(self, value):
+        """Validate sort order value."""
+        if value and value not in ['asc', 'desc']:
+            raise ValidationError('Sort order must be either "asc" or "desc"')
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+class ErrorResponseSchema(Schema):
+    """Standard error response schema."""
+    success = fields.Boolean(dump_only=True, default=False)
+    error = fields.Dict()
+    message = fields.String(required=True)
+
+    @post_dump
+    def format_dates(self, data: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+        """Format any datetime fields in error details as ISO strings."""
+        if 'error' in data and isinstance(data['error'], dict):
+            for key, value in data['error'].items():
+                if isinstance(value, datetime):
+                    data['error'][key] = value.isoformat()
+        return data

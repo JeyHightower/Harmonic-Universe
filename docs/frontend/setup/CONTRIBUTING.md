@@ -77,13 +77,13 @@ def calculate_physics(
     }
 ```
 
-#### JavaScript/TypeScript (Frontend)
+#### JavaScript/JavaScript (Frontend)
 
 1. **Style Guide**
 
    - Use ESLint with Airbnb config
    - Use Prettier for formatting
-   - Use TypeScript for type safety
+   - Use JavaScript for type safety
 
 2. **Component Structure**
 

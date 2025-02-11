@@ -1,6 +1,0 @@
-AddType application/manifest+json .webmanifest
-AddType application/manifest+json .json
-
-<Files "manifest.json">
-    Header set Content-Type "application/manifest+json"
-</Files>
