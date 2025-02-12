@@ -1,11 +1,31 @@
 :root {
+  /* Light theme variables */
   --primary-color: #4a90e2;
+  --primary-hover: #357abd;
   --secondary-color: #2c3e50;
-  --background-color: #f5f6fa;
-  --text-color: #2c3e50;
+  --secondary-hover: #1a252f;
+  --background-primary: #ffffff;
+  --background-secondary: #f5f6fa;
+  --background-tertiary: #e9ecef;
+  --text-primary: #2c3e50;
+  --text-secondary: #6c757d;
+  --border-color: #dcdde1;
   --error-color: #e74c3c;
   --success-color: #2ecc71;
-  --border-color: #dcdde1;
+  --transition-speed: 0.3s;
+}
+
+[data-theme='dark'] {
+  --primary-color: #818cf8;
+  --primary-hover: #6366f1;
+  --secondary-color: #a78bfa;
+  --secondary-hover: #8b5cf6;
+  --background-primary: #1a1b1e;
+  --background-secondary: #141517;
+  --background-tertiary: #2c2e33;
+  --text-primary: #e9ecef;
+  --text-secondary: #adb5bd;
+  --border-color: #2c2e33;
 }
 
 * {
@@ -18,8 +38,10 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
   line-height: 1.6;
-  color: var(--text-color);
-  background-color: var(--background-color);
+  color: var(--text-primary);
+  background-color: var(--background-secondary);
+  transition: color var(--transition-speed),
+    background-color var(--transition-speed);
 }
 
 .app {
@@ -55,7 +77,7 @@ body {
 }
 
 .nav-links a {
-  color: var(--text-color);
+  color: var(--text-primary);
   text-decoration: none;
   padding: 0.5rem 1rem;
   border-radius: 4px;
@@ -63,7 +85,7 @@ body {
 }
 
 .nav-links a:hover {
-  background-color: var(--background-color);
+  background-color: var(--background-secondary);
 }
 
 .main-content {
@@ -86,9 +108,10 @@ form {
   max-width: 400px;
   margin: 2rem auto;
   padding: 2rem;
-  background-color: white;
+  background-color: var(--background-primary);
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: background-color var(--transition-speed);
 }
 
 form > div {
@@ -99,6 +122,7 @@ label {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
+  color: var(--text-primary);
 }
 
 input {
@@ -107,6 +131,15 @@ input {
   border: 1px solid var(--border-color);
   border-radius: 4px;
   font-size: 1rem;
+  background-color: var(--background-primary);
+  color: var(--text-primary);
+  transition: border-color var(--transition-speed),
+    background-color var(--transition-speed), color var(--transition-speed);
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--primary-color);
 }
 
 button {

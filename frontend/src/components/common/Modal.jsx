@@ -21,15 +21,21 @@ export function ModalProvider({ children }) {
   const closeModal = () => {
     setIsOpen(false);
     document.body.style.overflow = 'unset';
-    setTimeout(() => setModalContent(null), 300); // Clear after animation
+    setTimeout(() => setModalContent(null), 300);
+  };
+
+  const value = {
+    openModal,
+    closeModal,
   };
 
   return (
-    <ModalContext.Provider value={{ openModal, closeModal }}>
+    <ModalContext.Provider value={value}>
       {children}
       {isOpen &&
+        modalContent &&
         createPortal(
-          <Modal onClose={closeModal}>{modalContent}</Modal>,
+          <ModalComponent onClose={closeModal}>{modalContent}</ModalComponent>,
           document.body
         )}
     </ModalContext.Provider>
@@ -37,49 +43,41 @@ export function ModalProvider({ children }) {
 }
 
 export function useModal() {
-  return useContext(ModalContext);
+  const context = useContext(ModalContext);
+  if (!context) {
+    throw new Error('useModal must be used within a ModalProvider');
+  }
+  return context;
 }
 
-function Modal() {
+function ModalComponent({ children, onClose }) {
+  const modalState = useSelector(state => state.modal);
   const dispatch = useDispatch();
-  const {
-    isOpen,
-    content,
-    title,
-    onConfirm,
-    showCancel = true,
-  } = useSelector(state => state.modal);
+
+  const handleClose = () => {
+    dispatch(closeModal());
+    if (onClose) onClose();
+  };
+
+  const handleConfirm = () => {
+    if (modalState.onConfirm) {
+      modalState.onConfirm();
+    }
+    handleClose();
+  };
+
+  const { title, content = children, showCancel = true } = modalState;
 
   useEffect(() => {
     const handleEscape = e => {
       if (e.key === 'Escape') {
-        dispatch(closeModal());
+        handleClose();
       }
     };
 
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden';
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen, dispatch]);
-
-  if (!isOpen) return null;
-
-  const handleConfirm = () => {
-    if (onConfirm) {
-      onConfirm();
-    }
-    dispatch(closeModal());
-  };
-
-  const handleClose = () => {
-    dispatch(closeModal());
-  };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, []);
 
   return (
     <div className="modal-overlay" onClick={handleClose}>
@@ -109,26 +107,37 @@ function Modal() {
           justify-content: center;
           align-items: center;
           z-index: 1000;
+          animation: fadeIn var(--transition-speed) ease-out;
         }
 
         .modal-content {
-          background: white;
+          background: var(--background-primary);
+          color: var(--text-primary);
           padding: 2rem;
-          border-radius: 8px;
+          border-radius: var(--border-radius);
           max-width: 500px;
           width: 90%;
           max-height: 90vh;
           overflow-y: auto;
+          box-shadow: var(--box-shadow);
+          border: 1px solid var(--border-color);
+          animation: slideIn var(--transition-speed) ease-out;
+          transition: background-color var(--transition-speed),
+            color var(--transition-speed), border-color var(--transition-speed);
         }
 
         .modal-title {
-          margin-bottom: 1rem;
+          margin-bottom: 1.5rem;
           font-size: 1.5rem;
           font-weight: 600;
+          color: var(--text-primary);
+          padding-bottom: 1rem;
+          border-bottom: 1px solid var(--border-color);
         }
 
         .modal-body {
           margin-bottom: 1.5rem;
+          color: var(--text-secondary);
         }
 
         .modal-actions {
@@ -138,35 +147,77 @@ function Modal() {
         }
 
         .modal-button {
-          padding: 0.5rem 1rem;
-          border-radius: 4px;
+          padding: 0.75rem 1.5rem;
+          border-radius: var(--border-radius);
           font-weight: 500;
           cursor: pointer;
-          transition: background-color 0.2s;
+          transition: all var(--transition-speed);
+          font-size: 0.875rem;
         }
 
         .modal-button.cancel {
-          background-color: #f3f4f6;
-          color: #374151;
-          border: 1px solid #d1d5db;
+          background-color: var(--background-tertiary);
+          color: var(--text-primary);
+          border: 1px solid var(--border-color);
         }
 
         .modal-button.cancel:hover {
-          background-color: #e5e7eb;
+          background-color: var(--background-secondary);
         }
 
         .modal-button.confirm {
-          background-color: var(--primary-color);
+          background: linear-gradient(
+            135deg,
+            var(--primary-color),
+            var(--secondary-color)
+          );
           color: white;
           border: none;
         }
 
         .modal-button.confirm:hover {
-          background-color: #357abd;
+          transform: translateY(-1px);
+          box-shadow: var(--box-shadow);
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes slideIn {
+          from {
+            transform: translateY(-20px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .modal-content {
+            width: 95%;
+            padding: 1.5rem;
+          }
+
+          .modal-actions {
+            flex-direction: column-reverse;
+          }
+
+          .modal-button {
+            width: 100%;
+            text-align: center;
+          }
         }
       `}</style>
     </div>
   );
 }
 
-export default Modal;
+export default ModalComponent;

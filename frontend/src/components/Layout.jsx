@@ -1,9 +1,12 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { logout } from '../store/slices/authSlice';
 import { openModal } from '../store/slices/modalSlice';
+import Logo from './common/Logo';
+import ThemeToggle from './common/ThemeToggle';
+import './Layout.css';
 
-function Layout({ children }) {
+function Layout() {
   const { isAuthenticated } = useSelector(state => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -25,14 +28,18 @@ function Layout({ children }) {
     <div className="app">
       <header className="header">
         <nav>
-          <Link to="/" className="logo">
-            Harmonic Universe
+          <Link to="/" className="logo-link">
+            <div className="logo-container">
+              <Logo size={32} />
+              <span className="logo-text">Harmonic Universe</span>
+            </div>
           </Link>
           <div className="nav-links">
             {isAuthenticated ? (
               <>
-                <Link to="/">Dashboard</Link>
+                <Link to="/dashboard">Dashboard</Link>
                 <Link to="/profile">Profile</Link>
+                <ThemeToggle />
                 <button onClick={handleLogout} className="nav-button">
                   Logout
                 </button>
@@ -41,30 +48,18 @@ function Layout({ children }) {
               <>
                 <Link to="/login">Login</Link>
                 <Link to="/register">Register</Link>
+                <ThemeToggle />
               </>
             )}
           </div>
         </nav>
       </header>
-      <main className="main-content">{children}</main>
+      <main className="main-content">
+        <Outlet />
+      </main>
       <footer className="footer">
         <p>&copy; 2024 Harmonic Universe. All rights reserved.</p>
       </footer>
-      <style jsx>{`
-        .nav-button {
-          background: none;
-          border: none;
-          color: var(--text-color);
-          padding: 0.5rem 1rem;
-          cursor: pointer;
-          font-size: 1rem;
-        }
-
-        .nav-button:hover {
-          background-color: var(--background-color);
-          border-radius: 4px;
-        }
-      `}</style>
     </div>
   );
 }

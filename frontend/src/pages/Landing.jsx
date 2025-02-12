@@ -2,8 +2,8 @@ import { useSnackbar } from 'notistack';
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import logo from '../assets/logo.svg';
 import { login, setError, setLoading } from '../features/auth/authSlice';
+import './Landing.css';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -42,12 +42,6 @@ const Landing = () => {
 
   return (
     <div className="landing-page fade-in">
-      <nav className="nav">
-        <div className="container">
-          <img src={logo} alt="Harmonic Universe" className="nav-logo" />
-        </div>
-      </nav>
-
       <main className="container">
         <div className="hero mt-2">
           <h1 className="text-center">Welcome to Harmonic Universe</h1>
@@ -97,73 +91,6 @@ const Landing = () => {
           </div>
         </div>
       </main>
-
-      <style>{`
-        .landing-page {
-          min-height: 100vh;
-          background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        }
-
-        .hero {
-          padding: 4rem 0;
-        }
-
-        .hero h1 {
-          font-size: 3rem;
-          background: linear-gradient(
-            135deg,
-            var(--primary-color),
-            var(--secondary-color)
-          );
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          margin-bottom: 1.5rem;
-        }
-
-        .hero p {
-          font-size: 1.25rem;
-          color: #666;
-          max-width: 600px;
-          margin: 0 auto;
-        }
-
-        .cta-buttons {
-          margin-top: 2rem;
-        }
-
-        .cta-buttons button {
-          margin: 0 0.5rem;
-        }
-
-        .cta-buttons button:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
-        }
-
-        .card-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-          gap: 2rem;
-          padding: 2rem 0;
-        }
-
-        .card {
-          text-align: center;
-          transition: transform var(--transition-speed) ease;
-        }
-
-        .card:hover {
-          transform: translateY(-5px);
-        }
-
-        .card h3 {
-          color: var(--primary-color);
-        }
-
-        .ml-2 {
-          margin-left: 1rem;
-        }
-      `}</style>
     </div>
   );
 };
