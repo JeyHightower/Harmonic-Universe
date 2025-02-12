@@ -1,277 +1,199 @@
-# Validation System
+# Validation Utilities
 
-A comprehensive validation system using Zod with built-in form integration.
+## Overview
 
-## Installation
+This document describes the validation utilities available for form validation and data validation.
 
-```tsx
-import {
-  commonSchemas,
-  createValidator,
-  formRules,
-  createSchema,
-} from '@/utils/validation';
-```
+## Basic Usage
 
-## Usage
+```javascript
+import { createValidator, formRules } from '../utils/validation';
 
-### Basic Schema Creation
-
-```tsx
-const userSchema = createSchema({
-  username: commonSchemas.username,
-  email: commonSchemas.email,
-  password: commonSchemas.password,
+// Create a validator
+const validateUser = createValidator({
+  username: formRules.username,
+  email: formRules.email,
+  password: formRules.password,
 });
 
-const validateUser = createValidator(userSchema);
-
-const result = validateUser({
-  username: 'john_doe',
-  email: 'john@example.com',
-  password: 'Password123',
-});
-
-if (result.success) {
-  // Data is valid
-  console.log(result.data);
-} else {
-  // Handle validation errors
-  console.error(result.errors);
-}
-```
-
-### Form Integration
-
-```tsx
-function UserForm() {
-  const [form] = Form.useForm();
-
-  return (
-    <Form form={form}>
-      <Form.Item
-        name="email"
-        rules={[
-          formRules.required('Email'),
-          formRules.email,
-        ]}
-      >
-        <Input />
-      </Form.Item>
-
-      <Form.Item
-        name="password"
-        rules={[
-          formRules.required('Password'),
-          formRules.password,
-        ]}
-      >
-        <Input.Password />
-      </Form.Item>
-    </Form>
-  );
-}
-```
-
-## Common Schemas
-
-### Email
-
-```tsx
-const emailSchema = commonSchemas.email;
-// Validates:
-// - Must be a valid email format
-// - Cannot be empty
-```
-
-### Password
-
-```tsx
-const passwordSchema = commonSchemas.password;
-// Validates:
-// - Minimum 8 characters
-// - At least one uppercase letter
-// - At least one lowercase letter
-// - At least one number
-```
-
-### Username
-
-```tsx
-const usernameSchema = commonSchemas.username;
-// Validates:
-// - 3-20 characters
-// - Only letters, numbers, underscores, and hyphens
-```
-
-### Required Fields
-
-```tsx
-const requiredSchema = commonSchemas.required(commonSchemas.string);
-// Validates:
-// - Value is not null
-// - Value is not undefined
-// - Value is not empty string
-```
-
-### Arrays
-
-```tsx
-const tagsSchema = commonSchemas.array(commonSchemas.string);
-// Validates array of strings
-```
-
-### Objects
-
-```tsx
-const addressSchema = commonSchemas.object({
-  street: commonSchemas.string,
-  city: commonSchemas.string,
-  country: commonSchemas.string,
-});
+// Use in form submission
+const handleSubmit = async values => {
+  const errors = validateUser(values);
+  if (errors) {
+    setFormErrors(errors);
+    return;
+  }
+  // Proceed with form submission
+};
 ```
 
 ## Form Rules
 
-### Required Fields
-
-```tsx
-<Form.Item
-  name="field"
-  rules={[formRules.required('Field Name')]}
->
-  <Input />
-</Form.Item>
-```
-
 ### Email Validation
 
-```tsx
-<Form.Item
+```javascript
+const emailRule = formRules.email;
+
+// Usage in form
+<input
+  type="email"
   name="email"
-  rules={[formRules.email]}
->
-  <Input />
-</Form.Item>
+  onChange={handleChange}
+  onBlur={() => {
+    const error = emailRule.validate(email);
+    setFieldError('email', error);
+  }}
+/>;
 ```
 
 ### Password Validation
 
-```tsx
-<Form.Item
+```javascript
+const passwordRule = formRules.password;
+
+// Usage in form
+<input
+  type="password"
   name="password"
-  rules={[formRules.password]}
->
-  <Input.Password />
-</Form.Item>
+  onChange={handleChange}
+  onBlur={() => {
+    const error = passwordRule.validate(password);
+    setFieldError('password', error);
+  }}
+/>;
 ```
 
-### Combining Rules
+### Username Validation
 
-```tsx
-<Form.Item
-  name="email"
-  rules={combineRules(
-    formRules.required('Email'),
-    formRules.email
-  )}
->
+```javascript
+const usernameRule = formRules.username;
+
+// Usage in form
+<input
+  type="text"
+  name="username"
+  onChange={handleChange}
+  onBlur={() => {
+    const error = usernameRule.validate(username);
+    setFieldError('username', error);
+  }}
+/>;
+```
+
+### Required Fields
+
+```javascript
+const requiredRule = formRules.required('Field Name');
+
+// Usage in form field
+<Form.Item name="field" rules={[formRules.required('Field Name')]}>
   <Input />
-</Form.Item>
+</Form.Item>;
+```
+
+### Array Validation
+
+```javascript
+const arrayRule = formRules.array(formRules.string);
+
+// Usage
+const validateTags = tags => {
+  const error = arrayRule.validate(tags);
+  setFieldError('tags', error);
+};
+```
+
+### Object Validation
+
+```javascript
+const addressRule = formRules.object({
+  street: formRules.string,
+  city: formRules.string,
+  country: formRules.string,
+});
+
+// Usage
+const validateAddress = address => {
+  const error = addressRule.validate(address);
+  setFieldError('address', error);
+};
 ```
 
 ## Custom Validation
 
-### Creating Custom Schemas
-
-```tsx
-const phoneSchema = z.string()
-  .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format')
-  .min(1, 'Phone number is required');
-
-const schema = createSchema({
-  phone: phoneSchema,
-});
-```
-
-### Custom Form Rules
-
-```tsx
+```javascript
+// Custom phone number validation
 const phoneRule = {
-  validator: async (_: any, value: string) => {
-    if (!value) return;
-    const result = phoneSchema.safeParse(value);
-    if (!result.success) {
-      throw new Error(result.error.errors[0].message);
-    }
+  validate: value => {
+    const phoneRegex = /^\+?[\d\s-]{10,}$/;
+    return phoneRegex.test(value) ? null : 'Invalid phone number';
   },
+};
+
+// Usage in validator
+const validator = createValidator({
+  phone: phoneRule,
+});
+
+// Usage in component
+const validatePhone = async value => {
+  try {
+    const result = await validator.validateField('phone', value);
+    if (result.error) {
+      console.error(`${result.field}: ${result.error}`);
+    }
+  } catch (error) {
+    console.error('Validation failed:', error);
+  }
 };
 ```
 
-## Error Handling
+## Form Integration
 
-### Validation Errors
+```javascript
+import React from 'react';
+import { Form } from 'antd';
+import PropTypes from 'prop-types';
+import { formRules } from '../utils/validation';
 
-```tsx
-const result = validateUser(data);
-if (!result.success) {
-  Object.entries(result.errors).forEach(([field, errors]) => {
-    console.error(`${field}: ${errors.join(', ')}`);
-  });
-}
-```
+function UserForm({ onSubmit }) {
+  const [form] = Form.useForm();
 
-### Form Errors
-
-```tsx
-<Form
-  onFinish={async (values) => {
-    const result = validateUser(values);
-    if (!result.success) {
-      form.setFields(
-        Object.entries(result.errors).map(([name, errors]) => ({
-          name,
-          errors: errors.map(error => new Error(error)),
-        }))
-      );
-      return;
+  const handleSubmit = async values => {
+    try {
+      await form.validateFields();
+      onSubmit(values);
+    } catch (error) {
+      console.error('Form validation failed:', error);
     }
-    // Process valid data
-  }}
->
-  {/* Form fields */}
-</Form>
+  };
+
+  return (
+    <Form form={form} onFinish={handleSubmit}>
+      <Form.Item name="username" rules={[formRules.required('Username')]}>
+        <Input />
+      </Form.Item>
+      {/* Other form fields */}
+    </Form>
+  );
+}
+
+UserForm.propTypes = {
+  onSubmit: PropTypes.func.isRequired,
+};
+
+export default UserForm;
 ```
 
 ## Best Practices
 
-1. Define schemas in a central location
-2. Use type inference for better JavaScript support
-3. Combine multiple rules when needed
-4. Handle all validation errors appropriately
-5. Use consistent error messages
-
-## JavaScript
-
-The validation system is fully typed:
-
-```tsx
-interface User {
-  username: string;
-  email: string;
-  password: string;
-}
-
-const userSchema = createSchema<User>({
-  username: commonSchemas.username,
-  email: commonSchemas.email,
-  password: commonSchemas.password,
-});
-
-// Type-safe validation
-const validateUser = createValidator<User>(userSchema);
-```
+1. Define validation rules in a central location
+2. Use consistent error messages
+3. Handle async validation properly
+4. Validate on blur for better UX
+5. Show validation errors clearly
+6. Use appropriate validation timing
 
 ## Testing
 
-See `validation.test.js` for examples of testing schemas, validators, and form rules.
+See `validation.test.js` for examples of testing validators and form rules.

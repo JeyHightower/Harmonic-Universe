@@ -1,11 +1,14 @@
 from datetime import datetime, timedelta
-from sqlalchemy import Column, String, Boolean, DateTime
+from sqlalchemy import Column, String, Boolean, DateTime, UUID
+from sqlalchemy.orm import relationship
 from .base import BaseModel
 from werkzeug.security import check_password_hash, generate_password_hash
 
 class User(BaseModel):
     """User model."""
+    __tablename__ = "users"
 
+    username = Column(String(255), unique=True, nullable=False)
     email = Column(String(255), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     is_active = Column(Boolean(), default=True)
@@ -16,6 +19,22 @@ class User(BaseModel):
     reset_token_expires = Column(DateTime, nullable=True)
     refresh_token = Column(String(255), unique=True, nullable=True)
     refresh_token_expires = Column(DateTime, nullable=True)
+    color = Column(String(7), nullable=True)
+
+    # Relationships
+    universes = relationship(
+        'Universe',
+        back_populates='user',
+        cascade='all, delete-orphan',
+        primaryjoin='User.id == Universe.user_id'
+    )
+    scenes = relationship('Scene', back_populates='creator')
+    activities = relationship('Activity', back_populates='user')
+    projects = relationship('Project', secondary='project_users', back_populates='users')
+    audio_files = relationship('AudioFile', back_populates='user', cascade='all, delete-orphan')
+    visualizations = relationship('Visualization', back_populates='user', cascade='all, delete-orphan')
+    physics_objects = relationship('PhysicsObject', back_populates='user', cascade='all, delete-orphan')
+    ai_models = relationship('AIModel', back_populates='user', cascade='all, delete-orphan')
 
     def set_password(self, password):
         """Set password hash."""

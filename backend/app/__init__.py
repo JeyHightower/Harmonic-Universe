@@ -65,7 +65,7 @@ def create_app(config_class=Config):
     app.register_blueprint(ai_bp, url_prefix='/api/ai')
 
     # Register error handlers
-    from app.core.errors import register_error_handlers
+    from app.core.error_handlers import register_error_handlers
     register_error_handlers(app)
 
     @app.route('/health')

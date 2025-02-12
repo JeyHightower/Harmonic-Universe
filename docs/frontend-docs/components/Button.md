@@ -1,157 +1,196 @@
 # Button Component
 
-A flexible and customizable button component that extends Ant Design's Button with additional features.
+## Basic Usage
 
-## Installation
-
-```tsx
+```jsx
 import { Button } from '@/components/common/ui/Button';
-```
 
-## Usage
-
-### Basic Usage
-
-```tsx
-<Button>Click me</Button>
+function Example() {
+  return <Button>Click Me</Button>;
+}
 ```
 
 ### Variants
 
-```tsx
+```jsx
+// Primary button
 <Button variant="primary">Primary</Button>
-<Button variant="ghost">Ghost</Button>
-<Button variant="dashed">Dashed</Button>
-<Button variant="link">Link</Button>
-<Button variant="text">Text</Button>
+
+// Secondary button
+<Button variant="secondary">Secondary</Button>
+
+// Outline button
+<Button variant="outline">Outline</Button>
 ```
 
 ### Sizes
 
-```tsx
+```jsx
 <Button size="small">Small</Button>
-<Button size="middle">Middle</Button>
+<Button size="medium">Medium</Button>
 <Button size="large">Large</Button>
+```
+
+### States
+
+```jsx
+<Button disabled>Disabled</Button>
+<Button loading>Loading</Button>
+<Button active>Active</Button>
+```
+
+### Icons
+
+```jsx
+<Button icon={<Icon name="plus" />}>Add Item</Button>
+<Button icon={<Icon name="trash" />} variant="danger">Delete</Button>
 ```
 
 ### Full Width
 
-```tsx
+```jsx
 <Button fullWidth>Full Width Button</Button>
 ```
 
-### With Icon
+### Custom Styling
 
-```tsx
-import { SearchOutlined } from '@ant-design/icons';
-
-<Button icon={<SearchOutlined />}>Search</Button>
+```jsx
+<Button className="custom-button" style={{ backgroundColor: 'purple' }}>
+  Custom Style
+</Button>
 ```
 
-### Button Group
+### With Event Handlers
 
-```tsx
-<Button.Group>
-  <Button>Left</Button>
-  <Button>Middle</Button>
-  <Button>Right</Button>
-</Button.Group>
+```jsx
+function Example() {
+  const handleClick = () => {
+    console.log('Button clicked!');
+  };
+
+  return <Button onClick={handleClick}>Click Me</Button>;
+}
+```
+
+### With Loading State
+
+```jsx
+function Example() {
+  const [loading, setLoading] = useState(false);
+
+  const handleClick = async () => {
+    setLoading(true);
+    try {
+      await someAsyncOperation();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Button onClick={handleClick} loading={loading} disabled={loading}>
+      {loading ? 'Processing...' : 'Submit'}
+    </Button>
+  );
+}
 ```
 
 ## Props
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| variant | 'default' \| 'primary' \| 'ghost' \| 'dashed' \| 'link' \| 'text' | 'default' | The variant of the button |
-| size | 'small' \| 'middle' \| 'large' | 'middle' | The size of the button |
-| fullWidth | boolean | false | Whether the button should take up the full width |
-| icon | ReactNode | - | Icon element to display |
-| disabled | boolean | false | Whether the button is disabled |
-| loading | boolean | false | Whether to show loading state |
-| onClick | () => void | - | Click handler |
-| className | string | - | Additional CSS class |
+The Button component accepts the following props:
 
-## Customization
-
-The Button component uses the theme system for consistent styling. You can customize the appearance by modifying the theme:
-
-```tsx
-// styles/theme.js
-export const theme = {
-  colors: {
-    primary: {
-      light: '#40a9ff',
-      main: '#1890ff',
-      dark: '#096dd9',
-    },
-    // ...
-  },
-  // ...
-};
-```
-
-## Examples
-
-### Loading State
-
-```tsx
-const [loading, setLoading] = useState(false);
-
-<Button
-  loading={loading}
-  onClick={() => {
-    setLoading(true);
-    setTimeout(() => setLoading(false), 2000);
-  }}
->
-  Click me
-</Button>
-```
-
-### Disabled State
-
-```tsx
-<Button disabled>Disabled Button</Button>
-```
-
-### With Custom Styles
-
-```tsx
-<Button
-  variant="primary"
-  className={css`
-    border-radius: 20px;
-    text-transform: uppercase;
-  `}
->
-  Custom Styled Button
-</Button>
-```
+- `variant`: 'primary' | 'secondary' | 'outline' | 'danger'
+- `size`: 'small' | 'medium' | 'large'
+- `disabled`: boolean
+- `loading`: boolean
+- `active`: boolean
+- `fullWidth`: boolean
+- `icon`: React.ReactNode
+- `className`: string
+- `style`: React.CSSProperties
+- `onClick`: (event: React.MouseEvent) => void
+- `children`: React.ReactNode
 
 ## Best Practices
 
 1. Use appropriate variants for different actions:
+
    - Primary for main actions
-   - Ghost for secondary actions
-   - Text for subtle actions
+   - Secondary for alternative actions
+   - Outline for less prominent actions
+   - Danger for destructive actions
 
-2. Maintain consistent sizing within the same view
+2. Maintain consistent sizing:
 
-3. Use meaningful labels that describe the action
+   - Use the same size for buttons in a group
+   - Match size to the context (form, header, etc.)
 
-4. Include loading states for async actions
+3. Provide clear feedback:
 
-5. Group related buttons using Button.Group
+   - Show loading states during async operations
+   - Disable buttons when actions are unavailable
+   - Use hover and active states for interaction
 
-## Accessibility
+4. Accessibility:
+   - Include descriptive text
+   - Support keyboard navigation
+   - Maintain sufficient contrast
 
-The Button component follows WAI-ARIA guidelines:
+## Examples
 
-- Uses native button element
-- Supports keyboard navigation
-- Includes proper ARIA attributes
-- Maintains sufficient color contrast
+### Form Submit Button
 
-## Testing
+```jsx
+function SubmitButton({ onSubmit }) {
+  const [loading, setLoading] = useState(false);
 
-See `Button.test.jsx` for examples of testing different button states and interactions.
+  const handleSubmit = async () => {
+    setLoading(true);
+    try {
+      await onSubmit();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Button
+      variant="primary"
+      onClick={handleSubmit}
+      loading={loading}
+      disabled={loading}
+      fullWidth
+    >
+      {loading ? 'Submitting...' : 'Submit'}
+    </Button>
+  );
+}
+
+SubmitButton.propTypes = {
+  onSubmit: PropTypes.func.isRequired,
+};
+```
+
+### Button Group
+
+```jsx
+function ButtonGroup() {
+  return (
+    <div className="button-group">
+      <Button variant="outline">Cancel</Button>
+      <Button variant="primary">Save</Button>
+    </div>
+  );
+}
+```
+
+## Features
+
+- Consistent styling across variants
+- Loading state management
+- Icon support
+- Responsive sizing
+- Keyboard navigation
+- ARIA attributes
+- Custom styling support
+- Event handling

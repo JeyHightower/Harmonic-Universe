@@ -71,23 +71,22 @@ Harmonic Universe is an innovative web application that creates immersive audio-
 - Style transfer between universes
 - Advanced music generation algorithms
 
-## Technology Stack
-
-### Frontend
-
-- React with Redux for state management
-- Three.js for 3D rendering
-- Tone.js for audio synthesis
-- WebGL for graphics processing
-- Material-UI for component design
+## Tech Stack
 
 ### Backend
 
-- Python with FastAPI/Flask
-- PostgreSQL database
+- Python with Flask
+- SQLAlchemy ORM
+- PostgreSQL Database
 - Redis for caching
-- Celery for task queue
-- WebSocket for real-time updates
+- WebSocket support via Flask-SocketIO
+
+### Frontend
+
+- React for UI components
+- Redux for state management
+- React Router for navigation
+- Socket.IO for real-time features
 
 ### Infrastructure
 
@@ -138,22 +137,43 @@ docker-compose up --build
 
 ## Development
 
-### Frontend Development
+### Backend Setup
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-### Backend Development
+1. Install Python dependencies:
 
 ```bash
 cd backend
 python -m venv venv
 source venv/bin/activate  # or `venv\Scripts\activate` on Windows
 pip install -r requirements.txt
-python run.py
+```
+
+2. Set up environment variables:
+
+```bash
+cp .env.example .env
+```
+
+3. Initialize the database:
+
+```bash
+flask db upgrade
+python scripts/init_db.py
+```
+
+### Frontend Setup
+
+1. Install Node.js dependencies:
+
+```bash
+cd frontend
+npm install
+```
+
+2. Start development server:
+
+```bash
+npm run dev
 ```
 
 ## Contributing
@@ -166,7 +186,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-- Three.js community for 3D rendering support
-- Tone.js team for audio synthesis capabilities
-- FastAPI/Flask communities for backend framework
-- All contributors and supporters of the project
+- React and Redux communities for frontend framework
+- Flask community for backend framework
+- SQLAlchemy community for ORM
+- All other open source contributors

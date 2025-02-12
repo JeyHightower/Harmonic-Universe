@@ -1,7 +1,10 @@
 import { SnackbarProvider } from 'notistack';
+import React from 'react';
 import { Provider } from 'react-redux';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import Landing from './pages/Landing';
 import store from './store';
+import './styles/global.css';
 
 // Import components
 import Modal from './components/common/Modal';
@@ -23,10 +26,11 @@ function App() {
           <Layout>
             <Modal /> {/* Global modal component */}
             <Routes>
+              <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route
-                path="/"
+                path="/dashboard"
                 element={
                   <ProtectedRoute>
                     <Dashboard />

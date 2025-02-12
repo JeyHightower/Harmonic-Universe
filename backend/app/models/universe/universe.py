@@ -140,7 +140,11 @@ class Universe(BaseModel):
     })
 
     # Relationships
-    user = relationship('User', back_populates='universes')
+    user = relationship(
+        'User',
+        back_populates='universes',
+        primaryjoin='Universe.user_id == User.id'
+    )
     scenes = relationship('Scene', back_populates='universe', cascade='all, delete-orphan')
     visualizations = relationship('Visualization', back_populates='universe', cascade='all, delete-orphan')
 

@@ -1,27 +1,35 @@
 #!/bin/bash
 
-# Remove TypeScript configuration files
-rm -f frontend/jsconfig.json
-rm -f frontend/tsconfig.json
-rm -f frontend/**/*.d.ts
+# Clean Python cache files
+find . -type d -name "__pycache__" -exec rm -r {} +
+find . -type f -name "*.pyc" -delete
+find . -type f -name "*.pyo" -delete
+find . -type d -name ".pytest_cache" -exec rm -r {} +
 
-# Remove TypeScript dependencies from package.json
-cd frontend
-npm uninstall @types/* typescript ts-node ts-jest @typescript-eslint/*
+# Clean Node modules and build artifacts
+rm -rf frontend/node_modules
+rm -rf frontend/build
+rm -rf frontend/dist
 
-# Consolidate environment files
-cd ..
-cp .env.example frontend/.env.example
-cp .env.example backend/.env.example
+# Clean environment files
+find . -type f -name ".env" ! -path "./backend/.env" ! -path "./.env" -delete
 
-# Move frontend documentation to root
-mkdir -p docs/frontend
-mv frontend/src/docs/* docs/frontend/ 2>/dev/null || true
-rm -rf frontend/src/docs
+# Clean logs
+rm -rf logs/*
+rm -rf backend/logs/*
 
-# Clean up TypeScript references in documentation
-find docs -type f -name "*.md" -exec sed -i '' 's/\.tsx/\.jsx/g' {} +
-find docs -type f -name "*.md" -exec sed -i '' 's/\.ts/\.js/g' {} +
-find docs -type f -name "*.md" -exec sed -i '' 's/TypeScript/JavaScript/g' {} +
+# Clean temporary files
+find . -type f -name ".DS_Store" -delete
+find . -type f -name "*.log" -delete
+find . -type f -name "*.swp" -delete
+find . -type f -name "*.swo" -delete
 
-echo "Cleanup completed successfully!"
+# Clean database files
+rm -f backend/*.db
+rm -f backend/test.db
+
+# Clean coverage reports
+rm -rf backend/htmlcov
+rm -f backend/.coverage
+
+echo "Cleanup complete!"

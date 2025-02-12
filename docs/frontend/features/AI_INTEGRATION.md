@@ -39,17 +39,17 @@ AI helps users explore new creative possibilities by:
 
 ```python
 class AIService:
-    def __init__(self, model_config: Dict[str, Any]):
+    def __init__(self, model_config):
         self.model = load_model(model_config)
         self.parameter_constraints = load_constraints()
         self.history = ParameterHistory()
 
     async def get_parameter_suggestions(
         self,
-        current_parameters: Dict[str, Any],
-        user_preferences: Dict[str, Any],
-        creative_goals: List[str]
-    ) -> Dict[str, Any]:
+        current_parameters,
+        user_preferences,
+        creative_goals
+    ):
         """
         Generate parameter suggestions based on current state and user input.
         """
@@ -77,10 +77,10 @@ class AIService:
 
     def _prepare_context(
         self,
-        current_parameters: Dict[str, Any],
-        user_preferences: Dict[str, Any],
-        creative_goals: List[str]
-    ) -> str:
+        current_parameters,
+        user_preferences,
+        creative_goals
+    ):
         """
         Prepare context for AI model input.
         """
@@ -100,8 +100,8 @@ class AIService:
 
     def _validate_suggestions(
         self,
-        suggestions: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        suggestions
+    ):
         """
         Validate and refine AI suggestions.
         """
@@ -122,10 +122,10 @@ class AIService:
 
     def _is_valid_parameter(
         self,
-        category: str,
-        param: str,
-        value: Any
-    ) -> bool:
+        category,
+        param,
+        value
+    ):
         """
         Check if parameter value is valid.
         """
@@ -143,10 +143,10 @@ class AIService:
 
     def _adjust_parameter(
         self,
-        category: str,
-        param: str,
-        value: Any
-    ) -> Any:
+        category,
+        param,
+        value
+    ):
         """
         Adjust invalid parameter to nearest valid value.
         """
@@ -167,14 +167,14 @@ class AIService:
 
 ```python
 class ParameterHistory:
-    def __init__(self, max_history: int = 1000):
+    def __init__(self, max_history=1000):
         self.history = []
         self.max_history = max_history
 
     def add_suggestions(
         self,
-        suggestions: Dict[str, Any],
-        metadata: Dict[str, Any] = None
+        suggestions,
+        metadata=None
     ):
         """
         Add suggestions to history with metadata.
@@ -192,9 +192,9 @@ class ParameterHistory:
 
     def get_relevant_examples(
         self,
-        current_parameters: Dict[str, Any] = None,
-        limit: int = 5
-    ) -> List[Dict[str, Any]]:
+        current_parameters=None,
+        limit=5
+    ):
         """
         Get relevant historical examples.
         """
@@ -214,9 +214,9 @@ class ParameterHistory:
 
     def _calculate_relevance(
         self,
-        entry: Dict[str, Any],
-        current_parameters: Dict[str, Any]
-    ) -> float:
+        entry,
+        current_parameters
+    ):
         """
         Calculate relevance score for historical entry.
         """
@@ -242,9 +242,9 @@ class ParameterHistory:
 
     def _parameter_similarity(
         self,
-        value1: Any,
-        value2: Any
-    ) -> float:
+        value1,
+        value2
+    ):
         """
         Calculate similarity between parameter values.
         """
@@ -318,133 +318,118 @@ def transfer_style():
 
 ### 1. AI Suggestion Component
 
-```typescript
-interface AISuggestionProps {
-  currentParameters: Parameters;
-  onApplySuggestion: (suggestion: Parameters) => void;
-}
+```jsx
+import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 
-const AISuggestion: React.FC<AISuggestionProps> = ({
-  currentParameters,
-  onApplySuggestion,
-}) => {
-  const [suggestions, setSuggestions] = useState<Parameters[]>([]);
+function AISuggestion({ parameters, onApply }) {
+  const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
 
-  const fetchSuggestions = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await api.post('/ai/suggestions', {
-        current_parameters: currentParameters,
-        user_preferences: getUserPreferences(),
-        creative_goals: getCreativeGoals(),
-      });
-
-      if (response.data.success) {
-        setSuggestions(response.data.suggestions);
-      } else {
-        setError('Failed to get suggestions');
+  useEffect(() => {
+    async function fetchSuggestions() {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/ai/suggestions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ parameters }),
+        });
+        const data = await response.json();
+        setSuggestions(data.suggestions);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
     }
-  };
+
+    fetchSuggestions();
+  }, [parameters]);
 
   return (
-    <div className="ai-suggestion-panel">
-      <h3>AI Suggestions</h3>
-
-      <button onClick={fetchSuggestions} disabled={loading}>
-        {loading ? 'Getting Suggestions...' : 'Get Suggestions'}
-      </button>
-
+    <div className="ai-suggestions">
+      {loading && <div className="loading">Loading suggestions...</div>}
       {error && <div className="error-message">{error}</div>}
-
-      <div className="suggestions-list">
-        {suggestions.map((suggestion, index) => (
-          <SuggestionCard
-            key={index}
-            suggestion={suggestion}
-            onApply={() => onApplySuggestion(suggestion)}
-          />
-        ))}
-      </div>
+      {suggestions.map((suggestion, index) => (
+        <div key={index} className="suggestion">
+          <h3>{suggestion.title}</h3>
+          <p>{suggestion.description}</p>
+          <button onClick={() => onApply(suggestion.parameters)}>Apply</button>
+        </div>
+      ))}
     </div>
   );
+}
+
+AISuggestion.propTypes = {
+  parameters: PropTypes.object.isRequired,
+  onApply: PropTypes.func.isRequired,
 };
+
+export default AISuggestion;
 ```
 
 ### 2. Style Transfer Component
 
-```typescript
-interface StyleTransferProps {
-  sourceUniverse: Universe;
-  targetUniverse: Universe;
-  onStyleTransferred: (parameters: Parameters) => void;
-}
+```jsx
+import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 
-const StyleTransfer: React.FC<StyleTransferProps> = ({
-  sourceUniverse,
-  targetUniverse,
-  onStyleTransferred,
-}) => {
-  const [styleStrength, setStyleStrength] = useState(0.5);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+function StyleTransfer({ sourceId, targetId, onComplete }) {
+  const [progress, setProgress] = useState(0);
+  const [status, setStatus] = useState('idle');
+  const [error, setError] = useState(null);
 
-  const handleTransfer = async () => {
-    setLoading(true);
-    setError(null);
-
+  const startTransfer = async () => {
     try {
-      const response = await api.post('/ai/style-transfer', {
-        source_universe_id: sourceUniverse.id,
-        target_universe_id: targetUniverse.id,
-        style_strength: styleStrength,
+      setStatus('processing');
+      const response = await fetch('/api/ai/style-transfer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sourceId,
+          targetId,
+        }),
       });
-
-      if (response.data.success) {
-        onStyleTransferred(response.data.parameters);
-      } else {
-        setError('Style transfer failed');
-      }
+      const result = await response.json();
+      onComplete(result);
+      setStatus('complete');
     } catch (err) {
       setError(err.message);
-    } finally {
-      setLoading(false);
+      setStatus('error');
     }
   };
 
   return (
-    <div className="style-transfer-panel">
-      <h3>Style Transfer</h3>
-
-      <div className="strength-slider">
-        <label>Style Strength</label>
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.1}
-          value={styleStrength}
-          onChange={e => setStyleStrength(parseFloat(e.target.value))}
-        />
-        <span>{(styleStrength * 100).toFixed(0)}%</span>
-      </div>
-
-      <button onClick={handleTransfer} disabled={loading}>
-        {loading ? 'Transferring Style...' : 'Transfer Style'}
-      </button>
-
+    <div className="style-transfer">
+      <h2>Style Transfer</h2>
+      {status === 'processing' && (
+        <div className="progress">
+          <progress value={progress} max="100" />
+          <span>{progress}%</span>
+        </div>
+      )}
       {error && <div className="error-message">{error}</div>}
+      <button onClick={startTransfer} disabled={status === 'processing'}>
+        Start Transfer
+      </button>
     </div>
   );
+}
+
+StyleTransfer.propTypes = {
+  sourceId: PropTypes.string.isRequired,
+  targetId: PropTypes.string.isRequired,
+  onComplete: PropTypes.func.isRequired,
 };
+
+export default StyleTransfer;
 ```
 
 ## Best Practices

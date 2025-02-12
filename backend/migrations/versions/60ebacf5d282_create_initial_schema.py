@@ -1,8 +1,8 @@
-"""initial migration
+"""create initial schema
 
-Revision ID: bcda4365b813
+Revision ID: 60ebacf5d282
 Revises: 
-Create Date: 2025-02-09 22:10:15.099083
+Create Date: 2025-02-11 19:22:58.178143
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = 'bcda4365b813'
+revision = '60ebacf5d282'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -30,17 +30,24 @@ def upgrade():
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('users',
-    sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('username', sa.String(length=255), nullable=False),
     sa.Column('email', sa.String(length=255), nullable=False),
     sa.Column('password_hash', sa.String(length=255), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=True),
-    sa.Column('color', sa.String(length=7), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
-    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('is_verified', sa.Boolean(), nullable=True),
+    sa.Column('verification_token', sa.String(length=255), nullable=True),
+    sa.Column('verification_token_expires', sa.DateTime(), nullable=True),
+    sa.Column('reset_token', sa.String(length=255), nullable=True),
+    sa.Column('reset_token_expires', sa.DateTime(), nullable=True),
+    sa.Column('refresh_token', sa.String(length=255), nullable=True),
+    sa.Column('refresh_token_expires', sa.DateTime(), nullable=True),
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email'),
-    sa.UniqueConstraint('username')
+    sa.UniqueConstraint('refresh_token'),
+    sa.UniqueConstraint('reset_token'),
+    sa.UniqueConstraint('verification_token')
     )
     op.create_table('ai_models',
     sa.Column('name', sa.String(), nullable=True),

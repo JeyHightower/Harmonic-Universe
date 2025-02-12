@@ -40,25 +40,22 @@ npm install
 1. **Style Guide**
 
    - Follow PEP 8
-   - Use type hints
+   - Use docstrings
    - Maximum line length: 88 characters (Black formatter)
 
 2. **Documentation**
 
    - Docstrings for all public functions/methods
-   - Type hints for parameters and return values
    - Inline comments for complex logic
 
 3. **Example**
 
 ```python
-from typing import Dict, Optional
-
 def calculate_physics(
     gravity: float,
     friction: float,
     time_step: float = 0.016
-) -> Dict[str, float]:
+) -> dict:
     """
     Calculate physics parameters for the simulation.
 
@@ -77,37 +74,38 @@ def calculate_physics(
     }
 ```
 
-#### JavaScript/JavaScript (Frontend)
+#### JavaScript (Frontend)
 
 1. **Style Guide**
 
    - Use ESLint with Airbnb config
    - Use Prettier for formatting
-   - Use JavaScript for type safety
+   - Use PropTypes for prop validation
 
 2. **Component Structure**
 
    - One component per file
    - Use functional components with hooks
-   - Props interface definition
+   - PropTypes validation
    - Styled components in separate files
 
 3. **Example**
 
-```typescript
-interface PhysicsControlsProps {
-  universeId: string;
-  onChange: (parameters: PhysicsParameters) => void;
-  initialValues?: Partial<PhysicsParameters>;
+```jsx
+import React from 'react';
+import PropTypes from 'prop-types';
+
+function PhysicsControls({ universeId, onUpdate }) {
+  // Component logic here
+  return <div className="physics-controls">{/* Component JSX */}</div>;
 }
 
-const PhysicsControls: React.FC<PhysicsControlsProps> = ({
-  universeId,
-  onChange,
-  initialValues = {},
-}) => {
-  // Component implementation
+PhysicsControls.propTypes = {
+  universeId: PropTypes.string.isRequired,
+  onUpdate: PropTypes.func.isRequired,
 };
+
+export default PhysicsControls;
 ```
 
 ### 3. Git Workflow

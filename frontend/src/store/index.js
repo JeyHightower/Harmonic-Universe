@@ -2,7 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { setupListeners } from '@reduxjs/toolkit/query';
 
 // Import reducers
-import authReducer from './slices/authSlice';
+import authReducer from '../features/auth/authSlice';
 import modalReducer from './slices/modalSlice';
 
 export const store = configureStore({
@@ -12,7 +12,10 @@ export const store = configureStore({
   },
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
-      serializableCheck: false,
+      serializableCheck: {
+        // Ignore these action types
+        ignoredActions: ['persist/PERSIST'],
+      },
     }),
   devTools: process.env.NODE_ENV !== 'production',
 });

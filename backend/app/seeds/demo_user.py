@@ -1,8 +1,8 @@
 """Demo user creation and management."""
 from app.db.session import get_db
-from app.models.core.user import User
-from app.models.core.universe import Universe
-from app.models.core.scene import Scene
+from app.models.user import User
+from app.models.universe import Universe
+from app.models.universe.scene import Scene
 from sqlalchemy.exc import IntegrityError
 import logging
 
@@ -18,12 +18,12 @@ def create_demo_user():
             if not demo_user:
                 # Create demo user
                 demo_user = User(
-                    username='Demo',
+                    username='demo_user',
                     email='demo@example.com',
-                    password='password',
                     is_active=True,
                     color='#FF0000'
                 )
+                demo_user.set_password('demo123')  # Set a known password for demo user
                 db.add(demo_user)
                 db.flush()  # Get the user ID
 

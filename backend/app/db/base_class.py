@@ -1,18 +1,10 @@
 """SQLAlchemy base class module."""
 
-from datetime import datetime
-from sqlalchemy import Column, Integer, DateTime
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
-
 
 @as_declarative()
 class Base:
     """Base class for all database models."""
-
-    # Auto-generated columns
-    id = Column(Integer, primary_key=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Generate __tablename__ automatically
     @declared_attr

@@ -3,8 +3,8 @@
 from app.db.base_class import Base  # noqa
 
 # Core models
-from app.models.core.user import User  # noqa
-from app.models.universe import Universe  # noqa
+from app.models.user import User  # noqa
+from app.models.universe.universe import Universe  # noqa
 
 # Physics models
 from app.models.physics.physics_parameter import PhysicsParameter  # noqa
@@ -24,15 +24,15 @@ from app.models.visualization.visualization import Visualization  # noqa
 # AI models
 from app.models.ai.ai_model import AIModel, TrainingSession, InferenceResult, Dataset  # noqa
 
-# Organization models - temporarily commented out
-# from app.models.organization.organization import (  # noqa
-#     Role,
-#     Organization,
-#     Workspace,
-#     Project,
-#     Resource,
-#     Activity
-# )
+# Organization models
+from app.models.organization.organization import (  # noqa
+    Role,
+    Organization,
+    Workspace,
+    Project,
+    Resource,
+    Activity
+)
 
 # Import all models here to ensure they are registered with SQLAlchemy
 # The noqa comments prevent flake8 from complaining about unused imports

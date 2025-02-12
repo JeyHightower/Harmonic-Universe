@@ -4,7 +4,8 @@ from logging.config import fileConfig
 from flask import current_app
 
 from alembic import context
-from app.db.session import Base, init_engine
+from app.db.base import Base
+from app.core.config import settings
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -15,38 +16,17 @@ config = context.config
 fileConfig(config.config_file_name)
 logger = logging.getLogger('alembic.env')
 
-
-def get_engine():
-    return init_engine(current_app.config['SQLALCHEMY_DATABASE_URI'])
-
-
-def get_engine_url():
-    return current_app.config['SQLALCHEMY_DATABASE_URI'].replace('%', '%%')
-
-
 # add your model's MetaData object here
 # for 'autogenerate' support
 target_metadata = Base.metadata
-config.set_main_option('sqlalchemy.url', get_engine_url())
 
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
+def get_url():
+    return settings.SQLALCHEMY_DATABASE_URI
 
+config.set_main_option("sqlalchemy.url", get_url())
 
 def run_migrations_offline():
-    """Run migrations in 'offline' mode.
-
-    This configures the context with just a URL
-    and not an Engine, though an Engine is acceptable
-    here as well.  By skipping the Engine creation
-    we don't even need a DBAPI to be available.
-
-    Calls to context.execute() here emit the given string to the
-    script output.
-
-    """
+    """Run migrations in 'offline' mode."""
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
@@ -58,18 +38,10 @@ def run_migrations_offline():
     with context.begin_transaction():
         context.run_migrations()
 
-
 def run_migrations_online():
-    """Run migrations in 'online' mode.
-
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
-
-    """
-
+    """Run migrations in 'online' mode."""
     # this callback is used to prevent an auto-migration from being generated
     # when there are no changes to the schema
-    # reference: http://alembic.zzzcomputing.com/en/latest/cookbook.html
     def process_revision_directives(context, revision, directives):
         if getattr(config.cmd_opts, 'autogenerate', False):
             script = directives[0]
@@ -77,19 +49,21 @@ def run_migrations_online():
                 directives[:] = []
                 logger.info('No changes in schema detected.')
 
-    connectable = get_engine()
+    connectable = context.config.attributes.get('connection', None)
+
+    if connectable is None:
+        from sqlalchemy import create_engine
+        connectable = create_engine(get_url())
 
     with connectable.connect() as connection:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
             process_revision_directives=process_revision_directives,
-            compare_type=True
         )
 
         with context.begin_transaction():
             context.run_migrations()
-
 
 if context.is_offline_mode():
     run_migrations_offline()
