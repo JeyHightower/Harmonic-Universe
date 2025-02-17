@@ -4,6 +4,7 @@ import Layout from '../components/layout/Layout';
 import ProtectedRoute from './ProtectedRoute';
 
 // Lazy-loaded components
+const Home = lazy(() => import('../components/features/home/Home'));
 const Login = lazy(() => import('../components/features/auth/Login'));
 const Register = lazy(() => import('../components/features/auth/Register'));
 const Dashboard = lazy(() =>
@@ -30,6 +31,10 @@ export const router = createBrowserRouter([
     path: '/',
     element: <Layout />,
     children: [
+      {
+        path: ROUTES.HOME,
+        element: <Home />,
+      },
       {
         path: ROUTES.LOGIN,
         element: <Login />,

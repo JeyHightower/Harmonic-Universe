@@ -1,19 +1,19 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export const endpoints = {
   auth: {
-    login: `${API_BASE_URL}/auth/login`,
-    register: `${API_BASE_URL}/auth/register`,
-    logout: `${API_BASE_URL}/auth/logout`,
-    me: `${API_BASE_URL}/auth/me`,
+    login: `${API_BASE_URL}/api/auth/login`,
+    register: `${API_BASE_URL}/api/auth/register`,
+    logout: `${API_BASE_URL}/api/auth/logout`,
+    me: `${API_BASE_URL}/api/auth/me`,
+    demoLogin: `${API_BASE_URL}/api/auth/demo-login`,
   },
   universes: {
-    list: `${API_BASE_URL}/universes`,
-    detail: id => `${API_BASE_URL}/universes/${id}`,
-    create: `${API_BASE_URL}/universes`,
-    update: id => `${API_BASE_URL}/universes/${id}`,
-    delete: id => `${API_BASE_URL}/universes/${id}`,
+    list: `${API_BASE_URL}/api/universes`,
+    detail: id => `${API_BASE_URL}/api/universes/${id}`,
+    create: `${API_BASE_URL}/api/universes`,
+    update: id => `${API_BASE_URL}/api/universes/${id}`,
+    delete: id => `${API_BASE_URL}/api/universes/${id}`,
   },
 };
 

@@ -4,7 +4,7 @@ const initialState = {
   isOpen: false,
   title: '',
   content: null,
-  onConfirm: null,
+  actionType: null,
   showCancel: true,
 };
 
@@ -16,14 +16,14 @@ const modalSlice = createSlice({
       state.isOpen = true;
       state.title = action.payload.title;
       state.content = action.payload.content;
-      state.onConfirm = action.payload.onConfirm;
+      state.actionType = action.payload.actionType;
       state.showCancel = action.payload.showCancel ?? true;
     },
     closeModal: state => {
       state.isOpen = false;
       state.title = '';
       state.content = null;
-      state.onConfirm = null;
+      state.actionType = null;
       state.showCancel = true;
     },
   },

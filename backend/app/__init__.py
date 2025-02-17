@@ -44,7 +44,13 @@ def create_app(config_class=Config):
     migrate.init_app(app, Base)
     jwt.init_app(app)
     bcrypt.init_app(app)
-    CORS(app)
+    CORS(app, resources={
+        r"/*": {
+            "origins": "*",
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"]
+        }
+    })
     socketio.init_app(app, cors_allowed_origins="*")
 
     # Register blueprints

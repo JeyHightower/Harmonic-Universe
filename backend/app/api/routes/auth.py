@@ -198,9 +198,12 @@ def logout():
             'status': 'success'
         }), 200  # Always return success for logout
 
-@auth_bp.route('/demo-login', methods=['POST'])
+@auth_bp.route('/demo-login', methods=['POST', 'OPTIONS'])
 def demo_login():
     """Login as demo user."""
+    if request.method == 'OPTIONS':
+        return '', 204
+
     try:
         with get_db() as db:
             demo_user = db.query(User).filter_by(email='demo@example.com').first()

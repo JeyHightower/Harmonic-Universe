@@ -1,35 +1,67 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   fetchUniversesFailure,
   fetchUniversesStart,
   fetchUniversesSuccess,
 } from '../../../store/slices/universeSlice';
-import { api } from '../../../utils/api';
+import { api, endpoints } from '../../../utils/api';
 import Button from '../../common/Button';
 import './Dashboard.css';
 
 function Dashboard() {
   const dispatch = useDispatch();
-  const { universes, loading, error } = useSelector(state => state.universe);
-  const { user } = useSelector(state => state.auth);
+  const navigate = useNavigate();
+  const {
+    universes,
+    loading: universesLoading,
+    error,
+  } = useSelector(state => state.universe);
+  const {
+    user,
+    isAuthenticated,
+    loading: authLoading,
+  } = useSelector(state => state.auth);
 
   useEffect(() => {
-    const fetchUniverses = async () => {
-      try {
-        dispatch(fetchUniversesStart());
-        const response = await api.get('/universes');
-        dispatch(fetchUniversesSuccess(response));
-      } catch (error) {
-        dispatch(fetchUniversesFailure(error.message));
-      }
-    };
+    // Only redirect if we're sure about the authentication state
+    if (!authLoading && !isAuthenticated) {
+      navigate('/login');
+      return;
+    }
 
-    fetchUniverses();
-  }, [dispatch]);
+    // Only fetch universes if authenticated
+    if (isAuthenticated) {
+      const fetchUniverses = async () => {
+        try {
+          dispatch(fetchUniversesStart());
+          const response = await api.get(endpoints.universes.list);
+          dispatch(fetchUniversesSuccess(response));
+        } catch (error) {
+          dispatch(fetchUniversesFailure(error.message));
+        }
+      };
 
-  if (loading) {
+      fetchUniverses();
+    }
+  }, [dispatch, isAuthenticated, authLoading, navigate]);
+
+  // Show loading state while checking auth
+  if (authLoading) {
+    return (
+      <div className="dashboard-container">
+        <div className="dashboard-loading">Loading...</div>
+      </div>
+    );
+  }
+
+  // Will be redirected by useEffect if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  if (universesLoading) {
     return (
       <div className="dashboard-container">
         <div className="dashboard-loading">Loading...</div>
@@ -51,7 +83,7 @@ function Dashboard() {
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
-        <h1>Welcome, {user?.username}</h1>
+        <h1>Welcome, {user?.username || 'User'}</h1>
         <Button as={Link} to="/universes/create">
           Create Universe
         </Button>
@@ -59,7 +91,7 @@ function Dashboard() {
 
       <section className="dashboard-section">
         <h2>Your Universes</h2>
-        {universes.length === 0 ? (
+        {!universes || universes.length === 0 ? (
           <div className="dashboard-empty">
             <p>You haven't created any universes yet.</p>
             <Button as={Link} to="/universes/create">
@@ -78,7 +110,10 @@ function Dashboard() {
                 <p>{universe.description}</p>
                 <div className="universe-card-footer">
                   <span>
-                    Created: {new Date(universe.createdAt).toLocaleDateString()}
+                    Created:{' '}
+                    {new Date(
+                      universe.created_at || Date.now()
+                    ).toLocaleDateString()}
                   </span>
                 </div>
               </Link>

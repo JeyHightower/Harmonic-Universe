@@ -3,6 +3,7 @@ import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { logout } from '../../store/slices/authSlice';
 import { openModal } from '../../store/slices/modalSlice';
 import Logo from '../common/Logo';
+import Modal from '../common/Modal';
 import ThemeToggle from '../common/ThemeToggle';
 import './Layout.css';
 
@@ -59,6 +60,7 @@ function Layout() {
       <footer className="footer">
         <p>&copy; 2024 Harmonic Universe. All rights reserved.</p>
       </footer>
+      <Modal />
     </div>
   );
 }

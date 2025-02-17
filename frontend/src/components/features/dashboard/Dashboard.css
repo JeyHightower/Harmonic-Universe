@@ -9,6 +9,10 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  background-color: var(--surface-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 .dashboard-header h1 {
@@ -58,12 +62,15 @@
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
   padding: var(--spacing-md);
-  transition: all var(--transition-normal);
+  transition: all var(--transition-speed);
+  text-decoration: none;
+  color: var(--text-color);
 }
 
 .universe-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
+  border-color: var(--primary-color);
 }
 
 .universe-card h3 {
