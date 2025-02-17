@@ -1,0 +1,119 @@
+.universe-container {
+  padding: var(--spacing-lg);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.universe-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.universe-header h1 {
+  color: var(--text-color);
+  font-size: var(--font-size-xl);
+  margin: 0;
+}
+
+.universe-loading,
+.universe-error,
+.universe-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xl);
+  text-align: center;
+  color: var(--text-color);
+}
+
+.universe-error {
+  color: var(--error-color);
+}
+
+.universe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.universe-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  transition: all var(--transition-normal);
+  text-decoration: none;
+}
+
+.universe-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.universe-card h3 {
+  color: var(--text-color);
+  font-size: var(--font-size-md);
+  margin-bottom: var(--spacing-sm);
+}
+
+.universe-card p {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.universe-card-footer {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  border-top: 1px solid var(--border-color);
+  padding-top: var(--spacing-sm);
+}
+
+/* Universe Detail Styles */
+.universe-detail {
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.universe-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.universe-detail-header h1 {
+  color: var(--text-color);
+  font-size: var(--font-size-xl);
+  margin: 0;
+}
+
+.universe-detail-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.universe-detail-info {
+  display: grid;
+  gap: var(--spacing-lg);
+}
+
+.universe-detail-field h2 {
+  color: var(--text-secondary);
+  font-size: var(--font-size-md);
+  margin-bottom: var(--spacing-sm);
+}
+
+.universe-detail-field p {
+  color: var(--text-color);
+  font-size: var(--font-size-md);
+  line-height: 1.6;
+}
