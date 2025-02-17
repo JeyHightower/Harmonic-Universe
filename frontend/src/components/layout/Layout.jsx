@@ -38,7 +38,6 @@ function Layout() {
             {isAuthenticated ? (
               <>
                 <Link to="/dashboard">Dashboard</Link>
-                <Link to="/profile">Profile</Link>
                 <ThemeToggle />
                 <button onClick={handleLogout} className="nav-button">
                   Logout

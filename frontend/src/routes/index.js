@@ -15,7 +15,6 @@ const UniverseList = lazy(() =>
 const UniverseDetail = lazy(() =>
   import('../components/features/universe/UniverseDetail')
 );
-const Profile = lazy(() => import('../components/features/profile/Profile'));
 
 export const ROUTES = {
   HOME: '/',
@@ -24,7 +23,6 @@ export const ROUTES = {
   DASHBOARD: '/dashboard',
   UNIVERSES: '/universes',
   UNIVERSE_DETAIL: '/universes/:id',
-  PROFILE: '/profile',
 };
 
 export const router = createBrowserRouter([
@@ -61,14 +59,6 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <UniverseDetail />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: ROUTES.PROFILE,
-        element: (
-          <ProtectedRoute>
-            <Profile />
           </ProtectedRoute>
         ),
       },
