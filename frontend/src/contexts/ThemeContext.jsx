@@ -1,27 +1,27 @@
+import PropTypes from 'prop-types';
 import { createContext, useContext, useEffect, useState } from 'react';
 
-const ThemeContext = createContext({
-  theme: 'light',
-  toggleTheme: () => {},
-});
+const ThemeContext = createContext();
+
+export const THEMES = {
+  LIGHT: 'light',
+  DARK: 'dark',
+};
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(() => {
-    const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia(
-      '(prefers-color-scheme: dark)'
-    ).matches;
-    return savedTheme || (prefersDark ? 'dark' : 'light');
-  });
+  const [theme, setTheme] = useState(
+    localStorage.getItem('theme') || THEMES.LIGHT
+  );
 
   useEffect(() => {
-    const root = document.documentElement;
-    root.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
+    document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'));
+    setTheme(prevTheme =>
+      prevTheme === THEMES.LIGHT ? THEMES.DARK : THEMES.LIGHT
+    );
   };
 
   return (
@@ -29,6 +29,10 @@ export const ThemeProvider = ({ children }) => {
       {children}
     </ThemeContext.Provider>
   );
+};
+
+ThemeProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 export const useTheme = () => {

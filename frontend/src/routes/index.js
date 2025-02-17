@@ -1,0 +1,77 @@
+import { lazy } from 'react';
+import { createBrowserRouter } from 'react-router-dom';
+import Layout from '../components/layout/Layout';
+import ProtectedRoute from './ProtectedRoute';
+
+// Lazy-loaded components
+const Login = lazy(() => import('../components/features/auth/Login'));
+const Register = lazy(() => import('../components/features/auth/Register'));
+const Dashboard = lazy(() =>
+  import('../components/features/dashboard/Dashboard')
+);
+const UniverseList = lazy(() =>
+  import('../components/features/universe/UniverseList')
+);
+const UniverseDetail = lazy(() =>
+  import('../components/features/universe/UniverseDetail')
+);
+const Profile = lazy(() => import('../components/features/profile/Profile'));
+
+export const ROUTES = {
+  HOME: '/',
+  LOGIN: '/login',
+  REGISTER: '/register',
+  DASHBOARD: '/dashboard',
+  UNIVERSES: '/universes',
+  UNIVERSE_DETAIL: '/universes/:id',
+  PROFILE: '/profile',
+};
+
+export const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <Layout />,
+    children: [
+      {
+        path: ROUTES.LOGIN,
+        element: <Login />,
+      },
+      {
+        path: ROUTES.REGISTER,
+        element: <Register />,
+      },
+      {
+        path: ROUTES.DASHBOARD,
+        element: (
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTES.UNIVERSES,
+        element: (
+          <ProtectedRoute>
+            <UniverseList />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTES.UNIVERSE_DETAIL,
+        element: (
+          <ProtectedRoute>
+            <UniverseDetail />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTES.PROFILE,
+        element: (
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        ),
+      },
+    ],
+  },
+]);

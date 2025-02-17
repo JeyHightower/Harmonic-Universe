@@ -1,0 +1,26 @@
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 64px);
+  padding: var(--spacing-lg);
+}
+
+.auth-form {
+  background-color: var(--surface-color);
+  padding: var(--spacing-xl);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.auth-form h1 {
+  color: var(--text-color);
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--spacing-md);
+  text-align: center;
+}

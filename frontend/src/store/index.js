@@ -1,25 +1,14 @@
 import { configureStore } from '@reduxjs/toolkit';
-import { setupListeners } from '@reduxjs/toolkit/query';
-
-// Import reducers
-import authReducer from '../features/auth/authSlice';
+import authReducer from './slices/authSlice';
 import modalReducer from './slices/modalSlice';
+import universeReducer from './slices/universeSlice';
 
-export const store = configureStore({
+const store = configureStore({
   reducer: {
     auth: authReducer,
     modal: modalReducer,
+    universe: universeReducer,
   },
-  middleware: getDefaultMiddleware =>
-    getDefaultMiddleware({
-      serializableCheck: {
-        // Ignore these action types
-        ignoredActions: ['persist/PERSIST'],
-      },
-    }),
-  devTools: process.env.NODE_ENV !== 'production',
 });
-
-setupListeners(store.dispatch);
 
 export default store;
