@@ -2,9 +2,9 @@ name: CI/CD
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test:
@@ -26,70 +26,70 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-        cache: 'npm'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
 
-    - name: Install Dependencies
-      run: |
-        npm ci
-        cd frontend && npm ci
-        cd ../backend && npm ci
+      - name: Install Dependencies
+        run: |
+          npm ci
+          cd frontend && npm ci
+          cd ../backend && npm ci
 
-    - name: Run Frontend Tests
-      run: |
-        cd frontend
-        npm run test:ci
+      - name: Run Frontend Tests
+        run: |
+          cd frontend
+          npm run test:ci
 
-    - name: Run Backend Tests
-      run: |
-        cd backend
-        npm run test:ci
-      env:
-        DB_HOST: localhost
-        DB_PORT: 5432
-        DB_NAME: harmonic_universe_test
-        DB_USER: postgres
-        DB_PASSWORD: postgres
-        NODE_ENV: test
+      - name: Run Backend Tests
+        run: |
+          cd backend
+          npm run test:ci
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: harmonic_universe_test
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          NODE_ENV: test
 
-    - name: Upload Coverage Reports
-      uses: codecov/codecov-action@v3
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        files: ./frontend/coverage/coverage-final.json,./backend/coverage/coverage-final.json
+      - name: Upload Coverage Reports
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./frontend/coverage/coverage-final.json,./backend/coverage/coverage-final.json
 
   lint:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-        cache: 'npm'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
 
-    - name: Install Dependencies
-      run: |
-        npm ci
-        cd frontend && npm ci
-        cd ../backend && npm ci
+      - name: Install Dependencies
+        run: |
+          npm ci
+          cd frontend && npm ci
+          cd ../backend && npm ci
 
-    - name: Lint Frontend
-      run: |
-        cd frontend
-        npm run lint
+      - name: Lint Frontend
+        run: |
+          cd frontend
+          npm run lint
 
-    - name: Lint Backend
-      run: |
-        cd backend
-        npm run lint
+      - name: Lint Backend
+        run: |
+          cd backend
+          npm run lint
 
   build:
     needs: [test, lint]
@@ -97,38 +97,38 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-        cache: 'npm'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
 
-    - name: Install Dependencies
-      run: |
-        npm ci
-        cd frontend && npm ci
-        cd ../backend && npm ci
+      - name: Install Dependencies
+        run: |
+          npm ci
+          cd frontend && npm ci
+          cd ../backend && npm ci
 
-    - name: Build Frontend
-      run: |
-        cd frontend
-        npm run build
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm run build
 
-    - name: Build Backend
-      run: |
-        cd backend
-        npm run build
+      - name: Build Backend
+        run: |
+          cd backend
+          npm run build
 
-    - name: Upload Frontend Artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: frontend-build
-        path: frontend/dist
+      - name: Upload Frontend Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/dist
 
-    - name: Upload Backend Artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: backend-build
-        path: backend/dist
+      - name: Upload Backend Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build
+          path: backend/dist
