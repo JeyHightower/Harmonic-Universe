@@ -44,8 +44,16 @@ function Home() {
         localStorage.setItem('refreshToken', response.refresh_token);
       }
 
-      dispatch(loginSuccess(response.user));
-      navigate('/dashboard', { replace: true });
+      // Fetch user info after successful demo login
+      try {
+        const userResponse = await api.get(endpoints.auth.me);
+        console.debug('User info response:', userResponse);
+        dispatch(loginSuccess(userResponse));
+        navigate('/dashboard', { replace: true });
+      } catch (error) {
+        console.error('Failed to fetch user info:', error);
+        throw error;
+      }
     } catch (error) {
       console.error('Demo login error:', error);
       let errorMessage =

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
-import { checkAuthState } from '../../../store/slices/authSlice';
+import { checkAuthState, loginSuccess } from '../../../store/slices/authSlice';
 import {
   fetchUniversesFailure,
   fetchUniversesStart,
@@ -25,19 +25,42 @@ function Dashboard() {
     loading: authLoading,
   } = useSelector(state => state.auth);
 
+  console.log('user', user);
+
   useEffect(() => {
     console.debug('Dashboard mounted, checking auth state');
     dispatch(checkAuthState());
   }, [dispatch]);
 
   useEffect(() => {
-    console.debug('Auth state changed:', { isAuthenticated, authLoading });
+    console.debug('Auth state changed:', {
+      isAuthenticated,
+      authLoading,
+      user,
+    });
 
     // Only redirect if we're sure about the authentication state
     if (!authLoading && !isAuthenticated) {
       console.debug('Not authenticated, redirecting to login');
       navigate('/login');
       return;
+    }
+
+    // If authenticated but no user data, fetch it
+    if (isAuthenticated && !authLoading && !user) {
+      console.debug('Authenticated but no user data, fetching user info');
+      const fetchUserInfo = async () => {
+        try {
+          const response = await api.get(endpoints.auth.me);
+          dispatch(loginSuccess(response));
+        } catch (error) {
+          console.error('Failed to fetch user info:', error);
+          if (error.response?.status === 401) {
+            navigate('/login');
+          }
+        }
+      };
+      fetchUserInfo();
     }
 
     // Only fetch universes if authenticated and not loading
@@ -74,6 +97,7 @@ function Dashboard() {
     universesLoading,
     universes,
     navigate,
+    user,
   ]);
 
   console.debug('Rendering Dashboard:', {

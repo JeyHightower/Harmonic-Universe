@@ -35,6 +35,7 @@ function Login() {
     try {
       dispatch(loginStart());
       const response = await api.post('/api/auth/login', values);
+      console.debug('Login response:', response);
 
       if (response.access_token) {
         localStorage.setItem('accessToken', response.access_token);
@@ -43,9 +44,18 @@ function Login() {
         localStorage.setItem('refreshToken', response.refresh_token);
       }
 
-      dispatch(loginSuccess(response.user));
-      navigate('/dashboard');
+      // Fetch user info after successful login
+      try {
+        const userResponse = await api.get(endpoints.auth.me);
+        console.debug('User info response:', userResponse);
+        dispatch(loginSuccess(userResponse));
+        navigate('/dashboard');
+      } catch (error) {
+        console.error('Failed to fetch user info:', error);
+        throw error;
+      }
     } catch (error) {
+      console.error('Login error:', error);
       let errorMessage = 'An error occurred during login. Please try again.';
 
       if (error.response) {
