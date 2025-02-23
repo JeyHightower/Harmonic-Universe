@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
+  checkAuthState,
   loginFailure,
   loginStart,
   loginSuccess,
@@ -17,17 +18,25 @@ function Home() {
   const { isAuthenticated, loading } = useSelector(state => state.auth);
 
   useEffect(() => {
+    console.debug('Home component mounted');
+    dispatch(checkAuthState());
+  }, [dispatch]);
+
+  useEffect(() => {
+    console.debug('Auth state updated:', { isAuthenticated, loading });
     if (isAuthenticated && !loading) {
+      console.debug('Redirecting to dashboard');
       navigate('/dashboard', { replace: true });
     }
   }, [isAuthenticated, loading, navigate]);
 
   const handleDemoLogin = async () => {
     try {
+      console.debug('Starting demo login');
       dispatch(loginStart());
       const response = await api.post('/api/auth/demo-login');
+      console.debug('Demo login response:', response);
 
-      // Store tokens first
       if (response.access_token) {
         localStorage.setItem('accessToken', response.access_token);
       }
@@ -35,10 +44,10 @@ function Home() {
         localStorage.setItem('refreshToken', response.refresh_token);
       }
 
-      // Then update the auth state
       dispatch(loginSuccess(response.user));
       navigate('/dashboard', { replace: true });
     } catch (error) {
+      console.error('Demo login error:', error);
       let errorMessage =
         'An error occurred during demo login. Please try again.';
 
@@ -64,10 +73,27 @@ function Home() {
     }
   };
 
+  console.debug('Rendering Home component:', { isAuthenticated, loading });
+
   if (loading) {
     return (
       <div className="home-container">
-        <div className="loading">Loading...</div>
+        <div className="loading">
+          <p>Loading...</p>
+          <small>Please wait while we check your session.</small>
+        </div>
+      </div>
+    );
+  }
+
+  // If authenticated, the useEffect will handle redirect
+  if (isAuthenticated) {
+    return (
+      <div className="home-container">
+        <div className="loading">
+          <p>Redirecting to dashboard...</p>
+          <small>Please wait while we redirect you.</small>
+        </div>
       </div>
     );
   }

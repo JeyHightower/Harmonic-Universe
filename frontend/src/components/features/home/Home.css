@@ -31,11 +31,23 @@
 
 .loading {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   min-height: 200px;
-  color: var(--text-secondary);
+  text-align: center;
+  padding: var(--spacing-lg);
+}
+
+.loading p {
+  color: var(--text-primary);
   font-size: var(--font-size-lg);
+  margin-bottom: var(--spacing-sm);
+}
+
+.loading small {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
 }
 
 @media (max-width: 768px) {
@@ -44,6 +56,10 @@
   }
 
   .home-content p {
+    font-size: var(--font-size-md);
+  }
+
+  .loading p {
     font-size: var(--font-size-md);
   }
 }
