@@ -35,16 +35,35 @@ function Register() {
     if (!validateForm()) return;
 
     try {
-      const response = await api.post('/auth/register', values);
+      const response = await api.post('/api/auth/register', values);
+
+      if (response.access_token) {
+        localStorage.setItem('accessToken', response.access_token);
+      }
+      if (response.refresh_token) {
+        localStorage.setItem('refreshToken', response.refresh_token);
+      }
+
       dispatch(loginSuccess(response.user));
       navigate('/dashboard');
     } catch (error) {
+      let errorMessage =
+        'An error occurred during registration. Please try again.';
+
+      if (error.response) {
+        const { data } = error.response;
+        if (data.message) {
+          errorMessage = data.message;
+        } else if (data.error) {
+          errorMessage = data.error;
+        }
+      }
+
       dispatch(
         openModal({
           title: 'Registration Error',
-          content:
-            error.message ||
-            'An error occurred during registration. Please try again.',
+          content: errorMessage,
+          severity: 'error',
         })
       );
     }
@@ -55,6 +74,7 @@ function Register() {
       <form onSubmit={handleSubmit} className="auth-form">
         <h1>Register</h1>
         <Input
+          type="text"
           label="Username"
           name="username"
           value={values.username}

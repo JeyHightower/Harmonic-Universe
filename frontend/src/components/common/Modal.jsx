@@ -2,12 +2,14 @@ import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
+  clearError,
   loginFailure,
   loginStart,
   loginSuccess,
 } from '../../store/slices/authSlice';
 import { closeModal } from '../../store/slices/modalSlice';
-import { api, endpoints } from '../../utils/api';
+import { api } from '../../utils/api';
+import Button from './Button';
 import './Modal.css';
 
 function Modal() {
@@ -27,7 +29,7 @@ function Modal() {
     if (actionType === 'RETRY_DEMO_LOGIN') {
       try {
         dispatch(loginStart());
-        const response = await api.post(endpoints.auth.demoLogin);
+        const response = await api.post('/api/auth/demo-login');
 
         if (response && response.user) {
           if (response.access_token) {
@@ -51,22 +53,23 @@ function Modal() {
   };
 
   const handleClose = () => {
+    dispatch(clearError());
     dispatch(closeModal());
   };
 
   return (
-    <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <h2 className="modal-title">{title}</h2>
-        <div className="modal-body">{content}</div>
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <h2>{title}</h2>
+        <p>{content}</p>
         <div className="modal-actions">
-          <button className="btn btn-primary" onClick={handleConfirm}>
-            {actionType === 'RETRY_DEMO_LOGIN' ? 'Retry' : 'Confirm'}
-          </button>
+          <Button onClick={handleConfirm} variant="primary">
+            {actionType === 'RETRY_DEMO_LOGIN' ? 'Retry' : 'OK'}
+          </Button>
           {showCancel && (
-            <button className="btn btn-secondary" onClick={handleClose}>
+            <Button onClick={handleClose} variant="secondary">
               Cancel
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -75,10 +78,7 @@ function Modal() {
 }
 
 Modal.propTypes = {
-  title: PropTypes.string,
-  content: PropTypes.node,
-  actionType: PropTypes.string,
-  showCancel: PropTypes.bool,
+  children: PropTypes.node,
 };
 
 export default Modal;

@@ -8,7 +8,12 @@ from flask_jwt_extended import (
 from datetime import timedelta
 from app.db.session import get_db
 from app.models.user import User
-from app.core.errors import AuthenticationError, ValidationError
+from app.core.errors import (
+    ValidationError,
+    AuthenticationError,
+    UserAlreadyExistsError,
+    InvalidCredentialsError
+)
 from app.core.security import (
     verify_password,
     create_access_token,
@@ -23,72 +28,91 @@ logger = logging.getLogger(__name__)
 @auth_bp.route('/register', methods=['POST'])
 def register():
     """Register a new user."""
-    data = request.get_json()
+    try:
+        data = request.get_json()
+        if not data:
+            raise ValidationError('No input data provided')
 
-    if not all(k in data for k in ('email', 'password', 'username')):
-        raise ValidationError('Missing required fields')
+        if not all(k in data for k in ('email', 'password', 'username')):
+            raise ValidationError('Missing required fields: email, password, username')
 
-    with get_db() as db:
-        if db.query(User).filter_by(email=data['email']).first():
-            raise ValidationError('Email already registered')
-        if db.query(User).filter_by(username=data['username']).first():
-            raise ValidationError('Username already taken')
+        with get_db() as db:
+            if db.query(User).filter_by(email=data['email']).first():
+                raise UserAlreadyExistsError('Email already registered')
+            if db.query(User).filter_by(username=data['username']).first():
+                raise UserAlreadyExistsError('Username already taken')
 
-        user = User(
-            email=data['email'],
-            username=data['username'],
-            password=data['password'],
-            is_active=True
-        )
-        user.save(db)
+            user = User(
+                email=data['email'],
+                username=data['username'],
+                is_active=True
+            )
+            user.set_password(data['password'])
+            db.add(user)
+            db.commit()
 
-        access_token = create_access_token(
-            subject=str(user.id),
-            expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        )
-        refresh_token = create_refresh_token(
-            subject=str(user.id),
-            expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-        )
+            access_token = create_access_token(
+                subject=str(user.id),
+                expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            )
+            refresh_token = create_refresh_token(
+                subject=str(user.id),
+                expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+            )
 
-        return jsonify({
-            'user': user.to_dict(),
-            'access_token': access_token,
-            'refresh_token': refresh_token,
-            'token_type': 'bearer'
-        }), 201
+            return jsonify({
+                'user': user.to_dict(),
+                'access_token': access_token,
+                'refresh_token': refresh_token,
+                'token_type': 'bearer'
+            }), 201
+
+    except Exception as e:
+        logger.error(f"Registration error: {str(e)}", exc_info=True)
+        if not isinstance(e, (ValidationError, UserAlreadyExistsError)):
+            raise ValidationError('Registration failed. Please try again.')
+        raise
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
     """Login user."""
-    data = request.get_json()
+    try:
+        data = request.get_json()
+        if not data:
+            raise ValidationError('No input data provided')
 
-    if not all(k in data for k in ('email', 'password')):
-        raise ValidationError('Missing required fields')
+        if not all(k in data for k in ('email', 'password')):
+            raise ValidationError('Missing required fields: email, password')
 
-    with get_db() as db:
-        user = db.query(User).filter_by(email=data['email']).first()
-        if not user or not verify_password(data['password'], user.password_hash):
-            raise AuthenticationError('Invalid email or password')
+        with get_db() as db:
+            user = db.query(User).filter_by(email=data['email']).first()
+            if not user or not user.check_password(data['password']):
+                raise InvalidCredentialsError('Invalid email or password')
 
-        if not user.is_active:
-            raise AuthenticationError('User account is inactive')
+            if not user.is_active:
+                raise AuthenticationError('User account is inactive')
 
-        access_token = create_access_token(
-            subject=str(user.id),
-            expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        )
-        refresh_token = create_refresh_token(
-            subject=str(user.id),
-            expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-        )
+            access_token = create_access_token(
+                subject=str(user.id),
+                expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            )
+            refresh_token = create_refresh_token(
+                subject=str(user.id),
+                expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+            )
 
-        return jsonify({
-            'user': user.to_dict(),
-            'access_token': access_token,
-            'refresh_token': refresh_token,
-            'token_type': 'bearer'
-        })
+            return jsonify({
+                'user': user.to_dict(),
+                'access_token': access_token,
+                'refresh_token': refresh_token,
+                'token_type': 'bearer'
+            })
+
+    except Exception as e:
+        logger.error(f"Login error: {str(e)}", exc_info=True)
+        if not isinstance(e, (ValidationError, InvalidCredentialsError, AuthenticationError)):
+            raise AuthenticationError('Login failed. Please try again.')
+        raise
 
 @auth_bp.route('/refresh', methods=['POST'])
 @jwt_required(refresh=True)

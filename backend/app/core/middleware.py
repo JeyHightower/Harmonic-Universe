@@ -5,7 +5,8 @@ Middleware for global error handling and request processing.
 from functools import wraps
 from flask import request, g, current_app
 from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
-from app.models.core.user import User
+from app.models.user import User
+from app.core.errors import AuthenticationError
 import time
 import uuid
 
@@ -55,39 +56,21 @@ class RequestMiddleware:
         return self.app(environ, custom_start_response)
 
 def setup_middleware(app):
-    """Setup middleware for the Flask app."""
-
+    """Setup middleware for the application."""
     @app.before_request
     def before_request():
-        # Set request ID and start time
         g.request_id = str(uuid.uuid4())
-        request._start_time = time.time()
-
-        # Log request
-        current_app.logger.info(f"Request {g.request_id}: {request.method} {request.path}")
-
-        # Handle CORS preflight requests
-        if request.method == 'OPTIONS':
-            headers = {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-                'Access-Control-Max-Age': '3600'
-            }
-            return '', 204, headers
+        g.request_start_time = time.time()
 
     @app.after_request
     def after_request(response):
-        # Add CORS headers
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        # Add request ID to response headers
+        response.headers['X-Request-ID'] = g.get('request_id', '')
 
-        # Log response
-        duration = time.time() - request._start_time
-        current_app.logger.info(
-            f"Request {g.request_id} completed: {response.status_code} ({duration:.2f}s)"
-        )
+        # Calculate and add response time
+        if hasattr(g, 'request_start_time'):
+            response_time = time.time() - g.request_start_time
+            response.headers['X-Response-Time'] = f"{response_time:.3f}s"
 
         return response
 

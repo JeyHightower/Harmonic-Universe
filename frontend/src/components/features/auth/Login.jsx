@@ -34,17 +34,35 @@ function Login() {
 
     try {
       dispatch(loginStart());
-      const response = await api.post('/auth/login', values);
+      const response = await api.post('/api/auth/login', values);
+
+      if (response.access_token) {
+        localStorage.setItem('accessToken', response.access_token);
+      }
+      if (response.refresh_token) {
+        localStorage.setItem('refreshToken', response.refresh_token);
+      }
+
       dispatch(loginSuccess(response.user));
       navigate('/dashboard');
     } catch (error) {
-      dispatch(loginFailure(error.message));
+      let errorMessage = 'An error occurred during login. Please try again.';
+
+      if (error.response) {
+        const { data } = error.response;
+        if (data.message) {
+          errorMessage = data.message;
+        } else if (data.error) {
+          errorMessage = data.error;
+        }
+      }
+
+      dispatch(loginFailure(errorMessage));
       dispatch(
         openModal({
           title: 'Login Error',
-          content:
-            error.message ||
-            'An error occurred during login. Please try again.',
+          content: errorMessage,
+          severity: 'error',
         })
       );
     }

@@ -47,8 +47,11 @@ def create_app(config_class=Config):
     CORS(app, resources={
         r"/*": {
             "origins": "*",
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization"]
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+            "allow_headers": ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+            "expose_headers": ["Content-Range", "X-Content-Range"],
+            "supports_credentials": True,
+            "max_age": 600
         }
     })
     socketio.init_app(app, cors_allowed_origins="*")

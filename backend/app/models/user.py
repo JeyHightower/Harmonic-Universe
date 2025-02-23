@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import Column, String, Boolean, DateTime, UUID
 from sqlalchemy.orm import relationship
 from .base import BaseModel
-from werkzeug.security import check_password_hash, generate_password_hash
+from app.core.pwd_context import get_password_hash, verify_password
 
 class User(BaseModel):
     """User model."""
@@ -38,11 +38,11 @@ class User(BaseModel):
 
     def set_password(self, password):
         """Set password hash."""
-        self.password_hash = generate_password_hash(password)
+        self.password_hash = get_password_hash(password)
 
     def check_password(self, password):
         """Check password against hash."""
-        return check_password_hash(self.password_hash, password)
+        return verify_password(password, self.password_hash)
 
     def generate_verification_token(self):
         """Generate email verification token."""

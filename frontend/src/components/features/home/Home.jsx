@@ -7,7 +7,7 @@ import {
   loginSuccess,
 } from '../../../store/slices/authSlice';
 import { openModal } from '../../../store/slices/modalSlice';
-import { api, endpoints } from '../../../utils/api';
+import { api } from '../../../utils/api';
 import Button from '../../common/Button';
 import './Home.css';
 
@@ -25,29 +25,39 @@ function Home() {
   const handleDemoLogin = async () => {
     try {
       dispatch(loginStart());
-      const response = await api.post(endpoints.auth.demoLogin);
+      const response = await api.post('/api/auth/demo-login');
 
-      if (response && response.user) {
-        // Store tokens if they exist
-        if (response.access_token) {
-          localStorage.setItem('accessToken', response.access_token);
-        }
-        if (response.refresh_token) {
-          localStorage.setItem('refreshToken', response.refresh_token);
-        }
-
-        dispatch(loginSuccess(response.user));
-        // Navigation will be handled by the useEffect hook
-      } else {
-        throw new Error('Invalid response from server');
+      // Store tokens first
+      if (response.access_token) {
+        localStorage.setItem('accessToken', response.access_token);
       }
+      if (response.refresh_token) {
+        localStorage.setItem('refreshToken', response.refresh_token);
+      }
+
+      // Then update the auth state
+      dispatch(loginSuccess(response.user));
+      navigate('/dashboard', { replace: true });
     } catch (error) {
-      dispatch(loginFailure(error.message));
+      let errorMessage =
+        'An error occurred during demo login. Please try again.';
+
+      if (error.response) {
+        const { data } = error.response;
+        if (data.message) {
+          errorMessage = data.message;
+        } else if (data.error) {
+          errorMessage = data.error;
+        }
+      }
+
+      dispatch(loginFailure(errorMessage));
       dispatch(
         openModal({
           title: 'Demo Login Error',
-          content: error.message || 'An error occurred during demo login.',
+          content: errorMessage,
           actionType: 'RETRY_DEMO_LOGIN',
+          severity: 'error',
           showCancel: true,
         })
       );
@@ -66,12 +76,9 @@ function Home() {
     <div className="home-container">
       <div className="home-content">
         <h1>Welcome to Harmonic Universe</h1>
-        <p>
-          Experience the harmony of physics and music in a unique simulation
-          environment.
-        </p>
+        <p>Experience the harmony of sound and physics in a unique way.</p>
         <div className="home-actions">
-          <Button onClick={handleDemoLogin} variant="primary" size="large">
+          <Button onClick={handleDemoLogin} variant="primary">
             Try Demo
           </Button>
         </div>

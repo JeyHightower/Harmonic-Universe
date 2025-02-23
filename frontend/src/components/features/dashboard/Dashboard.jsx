@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
+import { checkAuthState } from '../../../store/slices/authSlice';
 import {
   fetchUniversesFailure,
   fetchUniversesStart,
@@ -25,46 +26,95 @@ function Dashboard() {
   } = useSelector(state => state.auth);
 
   useEffect(() => {
+    console.debug('Dashboard mounted, checking auth state');
+    dispatch(checkAuthState());
+  }, [dispatch]);
+
+  useEffect(() => {
+    console.debug('Auth state changed:', { isAuthenticated, authLoading });
+
     // Only redirect if we're sure about the authentication state
     if (!authLoading && !isAuthenticated) {
+      console.debug('Not authenticated, redirecting to login');
       navigate('/login');
       return;
     }
 
-    // Only fetch universes if authenticated
-    if (isAuthenticated) {
+    // Only fetch universes if authenticated and not loading
+    if (isAuthenticated && !authLoading && !universesLoading && !universes) {
+      console.debug('Fetching universes');
       const fetchUniverses = async () => {
         try {
           dispatch(fetchUniversesStart());
           const response = await api.get(endpoints.universes.list);
+          console.debug('Universes fetched successfully:', response);
           dispatch(fetchUniversesSuccess(response));
         } catch (error) {
-          dispatch(fetchUniversesFailure(error.message));
+          console.error('Failed to fetch universes:', error);
+          let errorMessage = 'Failed to fetch universes';
+          if (error.response?.data?.message) {
+            errorMessage = error.response.data.message;
+          }
+          dispatch(fetchUniversesFailure(errorMessage));
+
+          // If unauthorized, redirect to login
+          if (error.response?.status === 401) {
+            console.debug('Unauthorized, redirecting to login');
+            navigate('/login');
+          }
         }
       };
 
       fetchUniverses();
     }
-  }, [dispatch, isAuthenticated, authLoading, navigate]);
+  }, [
+    dispatch,
+    isAuthenticated,
+    authLoading,
+    universesLoading,
+    universes,
+    navigate,
+  ]);
+
+  console.debug('Rendering Dashboard:', {
+    authLoading,
+    isAuthenticated,
+    universesLoading,
+    error,
+    universes,
+  });
 
   // Show loading state while checking auth
   if (authLoading) {
     return (
       <div className="dashboard-container">
-        <div className="dashboard-loading">Loading...</div>
+        <div className="dashboard-loading">
+          <p>Checking authentication...</p>
+          <small>Please wait while we verify your session.</small>
+        </div>
       </div>
     );
   }
 
   // Will be redirected by useEffect if not authenticated
   if (!isAuthenticated) {
-    return null;
+    return (
+      <div className="dashboard-container">
+        <div className="dashboard-loading">
+          <p>Redirecting to login...</p>
+          <small>You must be logged in to view this page.</small>
+        </div>
+      </div>
+    );
   }
 
   if (universesLoading) {
     return (
       <div className="dashboard-container">
-        <div className="dashboard-loading">Loading...</div>
+        <div className="dashboard-loading">
+          <p>Loading universes...</p>
+          <small>Please wait while we fetch your universes.</small>
+        </div>
       </div>
     );
   }
@@ -73,7 +123,8 @@ function Dashboard() {
     return (
       <div className="dashboard-container">
         <div className="dashboard-error">
-          {error}
+          <p>{error}</p>
+          <small>There was an error loading your universes.</small>
           <Button onClick={() => window.location.reload()}>Retry</Button>
         </div>
       </div>
