@@ -1,6 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { logout } from '../../store/slices/authSlice';
+import { Link, Outlet } from 'react-router-dom';
 import { openModal } from '../../store/slices/modalSlice';
 import Logo from '../common/Logo';
 import Modal from '../common/Modal';
@@ -10,17 +9,15 @@ import './Layout.css';
 function Layout() {
   const { isAuthenticated } = useSelector(state => state.auth);
   const dispatch = useDispatch();
-  const navigate = useNavigate();
 
   const handleLogout = () => {
     dispatch(
       openModal({
         title: 'Confirm Logout',
         content: 'Are you sure you want to logout?',
-        onConfirm: () => {
-          dispatch(logout());
-          navigate('/login');
-        },
+        actionType: 'CONFIRM_LOGOUT',
+        severity: 'warning',
+        showCancel: true,
       })
     );
   };
