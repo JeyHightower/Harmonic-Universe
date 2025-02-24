@@ -1,18 +1,21 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { useParams } from 'react-router-dom';
-import { openModal } from '../../../store/slices/modalSlice';
+import { useNavigate, useParams } from 'react-router-dom';
+import { deleteUniverse } from '../../../store/thunks/universeThunks';
 import { api, endpoints } from '../../../utils/api';
 import Button from '../../common/Button';
+import Modal from '../../common/Modal';
 import Spinner from '../../common/Spinner';
 import './Universe.css';
 
-function UniverseDetail() {
-  const { id } = useParams();
+const UniverseDetail = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { id } = useParams();
   const [universe, setUniverse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     const fetchUniverse = async () => {
@@ -20,25 +23,31 @@ function UniverseDetail() {
         setLoading(true);
         const response = await api.get(endpoints.universes.detail(id));
         setUniverse(response);
+        setError(null);
       } catch (error) {
         console.error('Failed to fetch universe:', error);
-        setError(
-          error.response?.data?.message || 'Failed to load universe details'
-        );
-        dispatch(
-          openModal({
-            title: 'Error',
-            content: 'Failed to load universe details. Please try again.',
-            severity: 'error',
-          })
-        );
+        setError(error.response?.data?.message || 'Failed to load universe');
       } finally {
         setLoading(false);
       }
     };
 
     fetchUniverse();
-  }, [id, dispatch]);
+  }, [id]);
+
+  const handleEdit = () => {
+    navigate(`/universes/${id}/edit`);
+  };
+
+  const handleDelete = async () => {
+    try {
+      await dispatch(deleteUniverse(id));
+      setShowDeleteModal(false);
+      navigate('/universes');
+    } catch (error) {
+      console.error('Failed to delete universe:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -67,6 +76,9 @@ function UniverseDetail() {
       <div className="universe-container">
         <div className="universe-error">
           <p>Universe not found</p>
+          <Button onClick={() => navigate('/universes')}>
+            Back to Universes
+          </Button>
         </div>
       </div>
     );
@@ -78,10 +90,10 @@ function UniverseDetail() {
         <header className="universe-detail-header">
           <h1>{universe.name}</h1>
           <div className="universe-detail-actions">
-            <Button variant="secondary" onClick={() => {}}>
+            <Button variant="secondary" onClick={handleEdit}>
               Edit
             </Button>
-            <Button variant="danger" onClick={() => {}}>
+            <Button variant="danger" onClick={() => setShowDeleteModal(true)}>
               Delete
             </Button>
           </div>
@@ -109,8 +121,32 @@ function UniverseDetail() {
           </div>
         </section>
       </div>
+
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Delete Universe"
+      >
+        <div className="delete-modal-content">
+          <p>
+            Are you sure you want to delete this universe? This action cannot be
+            undone.
+          </p>
+          <div className="delete-modal-actions">
+            <Button
+              variant="secondary"
+              onClick={() => setShowDeleteModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={handleDelete}>
+              Delete
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
-}
+};
 
 export default UniverseDetail;
