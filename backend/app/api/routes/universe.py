@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models.universe.universe import Universe
 from app.models.user import User
-from app.core.errors import ValidationError, AuthenticationError, AuthorizationError
+from app.core.errors import ValidationError, AuthenticationError, AuthorizationError, NotFoundError
 from app.db.session import get_db
 from app import socketio
 from app.core.auth import require_auth
@@ -16,10 +16,28 @@ universe_bp = Blueprint('universe', __name__)
 def get_universes():
     """Get all universes for the current user."""
     current_user_id = get_jwt_identity()
+    sort_by = request.args.get('sort_by', 'updated_at')  # Default to updated_at
+    sort_order = request.args.get('sort_order', 'desc')  # Default to descending
+
+    valid_sort_fields = {'created_at', 'updated_at', 'name', 'is_public'}
+    valid_sort_orders = {'asc', 'desc'}
+
+    if sort_by not in valid_sort_fields:
+        raise ValidationError('Invalid sort field')
+    if sort_order not in valid_sort_orders:
+        raise ValidationError('Invalid sort order')
+
     with get_db() as db:
         try:
-            universes = db.query(Universe).filter_by(user_id=current_user_id).all()
-            db.commit()
+            query = db.query(Universe).filter_by(user_id=current_user_id)
+
+            # Apply sorting
+            if sort_order == 'desc':
+                query = query.order_by(getattr(Universe, sort_by).desc())
+            else:
+                query = query.order_by(getattr(Universe, sort_by).asc())
+
+            universes = query.all()
             return jsonify([universe.to_dict() for universe in universes])
         except Exception as e:
             db.rollback()
@@ -92,32 +110,36 @@ def get_universe(universe_id):
 @jwt_required()
 def update_universe(universe_id):
     """Update a universe."""
-    current_user_id = get_jwt_identity()
-    data = request.get_json()
+    try:
+        data = request.get_json()
+        if not data:
+            raise ValidationError('No input data provided')
 
-    with get_db() as db:
-        try:
+        with get_db() as db:
             universe = Universe.get_by_id(db, universe_id)
             if not universe:
-                raise ValidationError('Universe not found')
-            if universe.user_id != current_user_id:
+                raise NotFoundError('Universe not found')
+
+            # Check if the current user is the owner
+            current_user_id = get_jwt_identity()
+            if str(universe.user_id) != current_user_id:
                 raise AuthorizationError('Not authorized to modify this universe')
 
+            # Update allowed fields
             allowed_fields = {'name', 'description', 'is_public'}
             update_data = {k: v for k, v in data.items() if k in allowed_fields}
 
             for key, value in update_data.items():
                 setattr(universe, key, value)
 
-            db.add(universe)
-            db.commit()
+            universe.save(db)
             return jsonify(universe.to_dict())
-        except (ValidationError, AuthorizationError) as e:
-            db.rollback()
-            raise
-        except Exception as e:
-            db.rollback()
-            raise ValidationError(f"Error updating universe: {str(e)}")
+
+    except Exception as e:
+        logger.error(f"Update universe error: {str(e)}", exc_info=True)
+        if not isinstance(e, (ValidationError, NotFoundError, AuthorizationError)):
+            raise ValidationError('Failed to update universe')
+        raise
 
 @universe_bp.route('/<uuid:universe_id>/', methods=['DELETE'])
 @jwt_required()

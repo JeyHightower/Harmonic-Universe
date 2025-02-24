@@ -1,7 +1,7 @@
 import { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '../../../routes';
-import { api, endpoints } from '../../../utils/api';
+import { createUniverse } from '../../../store/thunks/universeThunks';
 import {
   validateDescription,
   validateUniverseName,
@@ -12,6 +12,7 @@ import './Universe.css';
 
 function UniverseCreate() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
@@ -57,16 +58,11 @@ function UniverseCreate() {
     setError(null);
 
     try {
-      const response = await api.post(endpoints.universes.create, {
-        name: formData.name,
-        description: formData.description,
-        is_public: formData.is_public,
-      });
-      navigate(ROUTES.UNIVERSE_DETAIL.replace(':id', response.id));
+      const result = await dispatch(createUniverse(formData)).unwrap();
+      navigate(`/universes/${result.id}`);
     } catch (error) {
       console.error('Failed to create universe:', error);
       setError(error.response?.data?.message || 'Failed to create universe');
-    } finally {
       setIsSubmitting(false);
     }
   };

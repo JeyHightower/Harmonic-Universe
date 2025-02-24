@@ -178,6 +178,61 @@ export const api = {
       headers,
     });
 
-    return handleResponse(response);
+    if (!response.ok) {
+      console.error('DELETE request failed:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url,
+      });
+
+      const error = new Error('API request failed');
+      try {
+        const data = await response.json();
+        error.response = { data, status: response.status };
+        console.error('Error response data:', data);
+
+        // Check if this is an auth error
+        if (response.status === 403) {
+          // Try to refresh the token and retry the request
+          const refreshToken = localStorage.getItem('refreshToken');
+          if (refreshToken) {
+            try {
+              const refreshResponse = await fetch(endpoints.auth.refresh, {
+                method: 'POST',
+                headers: {
+                  ...defaultHeaders,
+                  Authorization: `Bearer ${refreshToken}`,
+                },
+              });
+
+              if (!refreshResponse.ok) {
+                throw new Error(
+                  `Token refresh failed: ${refreshResponse.status}`
+                );
+              }
+
+              const refreshData = await refreshResponse.json();
+              if (refreshData.access_token) {
+                localStorage.setItem('accessToken', refreshData.access_token);
+                // Retry the original request
+                return this.delete(endpoint);
+              }
+            } catch (refreshError) {
+              console.error('Token refresh failed:', refreshError);
+              // Clear tokens on refresh failure
+              localStorage.removeItem('accessToken');
+              localStorage.removeItem('refreshToken');
+            }
+          }
+        }
+      } catch {
+        error.response = {
+          data: { message: response.statusText },
+          status: response.status,
+        };
+      }
+      throw error;
+    }
+    return response.json();
   },
 };

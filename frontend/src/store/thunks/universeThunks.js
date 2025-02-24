@@ -1,64 +1,79 @@
-import { api } from '../../utils/api';
-import {
-  createUniverseFailure,
-  createUniverseStart,
-  createUniverseSuccess,
-  deleteUniverseFailure,
-  deleteUniverseStart,
-  deleteUniverseSuccess,
-  fetchUniversesFailure,
-  fetchUniversesStart,
-  fetchUniversesSuccess,
-  updateUniverseFailure,
-  updateUniverseStart,
-  updateUniverseSuccess,
-} from '../slices/universeSlice';
+import { createAsyncThunk } from '@reduxjs/toolkit';
+import { api, endpoints } from '../../utils/api';
+
+const handleError = error => {
+  console.error('API Error:', error);
+  return {
+    message:
+      error.response?.data?.message || error.message || 'An error occurred',
+    status: error.response?.status,
+    data: error.response?.data,
+  };
+};
 
 // Fetch all universes
-export const fetchUniverses = () => async dispatch => {
-  try {
-    dispatch(fetchUniversesStart());
-    const response = await api.get('/universes/');
-    dispatch(fetchUniversesSuccess(response.data));
-  } catch (error) {
-    dispatch(fetchUniversesFailure(error.message));
+export const fetchUniverses = createAsyncThunk(
+  'universe/fetchUniverses',
+  async (_, { rejectWithValue }) => {
+    try {
+      console.debug('Fetching universes from API...');
+      const response = await api.get(endpoints.universes.list);
+      console.debug('Universes fetched:', response);
+      return response || [];
+    } catch (error) {
+      console.error('Failed to fetch universes:', error);
+      return rejectWithValue(handleError(error));
+    }
   }
-};
+);
 
 // Create a new universe
-export const createUniverse = universeData => async dispatch => {
-  try {
-    dispatch(createUniverseStart());
-    const response = await api.post('/universes/', universeData);
-    dispatch(createUniverseSuccess(response.data));
-    return response.data;
-  } catch (error) {
-    dispatch(createUniverseFailure(error.message));
-    throw error;
+export const createUniverse = createAsyncThunk(
+  'universe/createUniverse',
+  async (universeData, { rejectWithValue }) => {
+    try {
+      console.debug('Creating universe:', universeData);
+      const response = await api.post(endpoints.universes.create, universeData);
+      console.debug('Universe created:', response);
+      return response;
+    } catch (error) {
+      console.error('Failed to create universe:', error);
+      return rejectWithValue(handleError(error));
+    }
   }
-};
+);
 
 // Update an existing universe
-export const updateUniverse = (universeId, universeData) => async dispatch => {
-  try {
-    dispatch(updateUniverseStart());
-    const response = await api.put(`/universes/${universeId}/`, universeData);
-    dispatch(updateUniverseSuccess(response.data));
-    return response.data;
-  } catch (error) {
-    dispatch(updateUniverseFailure(error.message));
-    throw error;
+export const updateUniverse = createAsyncThunk(
+  'universe/updateUniverse',
+  async ({ universeId, universeData }, { rejectWithValue }) => {
+    try {
+      console.debug('Updating universe:', { universeId, universeData });
+      const response = await api.put(
+        endpoints.universes.update(universeId),
+        universeData
+      );
+      console.debug('Universe updated:', response);
+      return response;
+    } catch (error) {
+      console.error('Failed to update universe:', error);
+      return rejectWithValue(handleError(error));
+    }
   }
-};
+);
 
 // Delete a universe
-export const deleteUniverse = universeId => async dispatch => {
-  try {
-    dispatch(deleteUniverseStart());
-    await api.delete(`/universes/${universeId}/`);
-    dispatch(deleteUniverseSuccess(universeId));
-  } catch (error) {
-    dispatch(deleteUniverseFailure(error.message));
-    throw error;
+export const deleteUniverse = createAsyncThunk(
+  'universe/deleteUniverse',
+  async (universeId, { rejectWithValue }) => {
+    try {
+      console.debug('Deleting universe:', universeId);
+      await api.delete(endpoints.universes.delete(universeId));
+      console.debug('Universe deleted:', universeId);
+      return universeId;
+    } catch (error) {
+      console.error('Failed to delete universe:', error);
+      return rejectWithValue(handleError(error));
+    }
   }
-};
+);

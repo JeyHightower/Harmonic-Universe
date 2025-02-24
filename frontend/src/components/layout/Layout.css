@@ -81,3 +81,29 @@
   text-align: center;
   color: var(--text-secondary);
 }
+
+.modal-content {
+  padding: var(--spacing-lg);
+}
+
+.modal-content p {
+  margin-bottom: var(--spacing-lg);
+  color: var(--text-primary);
+  font-size: var(--font-size-md);
+  line-height: 1.5;
+}
+
+.modal-content .error-message {
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background-color: var(--error-bg);
+  color: var(--error-color);
+  border-radius: var(--border-radius);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-xl);
+}

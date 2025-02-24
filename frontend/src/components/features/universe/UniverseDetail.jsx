@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { deleteUniverse } from '../../../store/thunks/universeThunks';
@@ -16,6 +16,7 @@ const UniverseDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchUniverse = async () => {
@@ -35,19 +36,70 @@ const UniverseDetail = () => {
     fetchUniverse();
   }, [id]);
 
+  // Check if user has permission to modify this universe
+  const canModifyUniverse = universe?.user_role === 'owner';
+
   const handleEdit = () => {
+    if (!canModifyUniverse) {
+      setError('You do not have permission to edit this universe');
+      return;
+    }
     navigate(`/universes/${id}/edit`);
   };
 
-  const handleDelete = async () => {
+  const handleDeleteClick = e => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!canModifyUniverse) {
+      setError('You do not have permission to delete this universe');
+      return;
+    }
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
     try {
-      await dispatch(deleteUniverse(id));
+      setIsDeleting(true);
+      setError(null);
+      await dispatch(deleteUniverse(id)).unwrap();
       setShowDeleteModal(false);
-      navigate('/universes');
+      navigate('/dashboard');
     } catch (error) {
-      console.error('Failed to delete universe:', error);
+      console.error('Delete failed:', error);
+      if (error.response?.data?.message) {
+        setError(error.response.data.message);
+        // If it's an auth error, redirect to login
+        if (error.response.status === 403 || error.response.status === 401) {
+          setTimeout(() => {
+            navigate('/login', {
+              state: {
+                from: `/universes/${id}`,
+                message: 'Please log in again to continue.',
+              },
+            });
+          }, 2000);
+        }
+      } else {
+        setError('Failed to delete universe. Please try again.');
+      }
+    } finally {
+      setIsDeleting(false);
     }
   };
+
+  const handleCloseModal = useCallback(
+    e => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      if (!isDeleting) {
+        setShowDeleteModal(false);
+        setError(null);
+      }
+    },
+    [isDeleting]
+  );
 
   if (loading) {
     return (
@@ -76,8 +128,8 @@ const UniverseDetail = () => {
       <div className="universe-container">
         <div className="universe-error">
           <p>Universe not found</p>
-          <Button onClick={() => navigate('/universes')}>
-            Back to Universes
+          <Button onClick={() => navigate('/dashboard')}>
+            Back to Dashboard
           </Button>
         </div>
       </div>
@@ -89,14 +141,16 @@ const UniverseDetail = () => {
       <div className="universe-detail">
         <header className="universe-detail-header">
           <h1>{universe.name}</h1>
-          <div className="universe-detail-actions">
-            <Button variant="secondary" onClick={handleEdit}>
-              Edit
-            </Button>
-            <Button variant="danger" onClick={() => setShowDeleteModal(true)}>
-              Delete
-            </Button>
-          </div>
+          {canModifyUniverse && (
+            <div className="universe-detail-actions">
+              <Button variant="secondary" onClick={handleEdit}>
+                Edit
+              </Button>
+              <Button variant="danger" onClick={handleDeleteClick}>
+                Delete
+              </Button>
+            </div>
+          )}
         </header>
 
         <section className="universe-detail-info">
@@ -124,7 +178,7 @@ const UniverseDetail = () => {
 
       <Modal
         isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
+        onClose={handleCloseModal}
         title="Delete Universe"
       >
         <div className="delete-modal-content">
@@ -132,15 +186,22 @@ const UniverseDetail = () => {
             Are you sure you want to delete this universe? This action cannot be
             undone.
           </p>
-          <div className="delete-modal-actions">
+          {error && <div className="error-message">{error}</div>}
+          <div className="modal-actions">
+            <Button
+              variant="danger"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              loading={isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </Button>
             <Button
               variant="secondary"
-              onClick={() => setShowDeleteModal(false)}
+              onClick={handleCloseModal}
+              disabled={isDeleting}
             >
               Cancel
-            </Button>
-            <Button variant="danger" onClick={handleDelete}>
-              Delete
             </Button>
           </div>
         </div>
