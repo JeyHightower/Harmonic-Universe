@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { checkAuthState, loginSuccess } from '../../../store/slices/authSlice';
@@ -25,6 +25,7 @@ function Dashboard() {
     loading: authLoading,
   } = useSelector(state => state.auth);
 
+  const [isModalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     console.debug('Dashboard mounted, checking auth state');
@@ -168,7 +169,7 @@ function Dashboard() {
         {!universes || universes.length === 0 ? (
           <div className="dashboard-empty">
             <p>You haven't created any universes yet.</p>
-            <Button as={Link} to="/universes/create">
+            <Button onClick={() => setModalOpen(true)}>
               Create Your First Universe
             </Button>
           </div>
@@ -195,6 +196,21 @@ function Dashboard() {
           </div>
         )}
       </section>
+
+      {isModalOpen && (
+        <div className="modal">
+          <h2>Create Your First Universe</h2>
+          <p>Click the button below to get started!</p>
+          <Button
+            as={Link}
+            to="/universes/create"
+            onClick={() => setModalOpen(false)}
+          >
+            Create Universe
+          </Button>
+          <Button onClick={() => setModalOpen(false)}>Close</Button>
+        </div>
+      )}
     </div>
   );
 }
