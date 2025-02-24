@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
+import { ROUTES } from '../../../routes';
 import { checkAuthState, loginSuccess } from '../../../store/slices/authSlice';
 import {
   fetchUniversesFailure,
@@ -9,6 +10,7 @@ import {
 } from '../../../store/slices/universeSlice';
 import { api, endpoints } from '../../../utils/api';
 import Button from '../../common/Button';
+import Spinner from '../../common/Spinner';
 import './Dashboard.css';
 
 function Dashboard() {
@@ -26,29 +28,23 @@ function Dashboard() {
   } = useSelector(state => state.auth);
 
   const [isModalOpen, setModalOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const modalRef = useRef(null);
+  const previousFocusRef = useRef(null);
 
+  // Fetch initial data
   useEffect(() => {
-    console.debug('Dashboard mounted, checking auth state');
     dispatch(checkAuthState());
   }, [dispatch]);
 
+  // Handle authentication and data fetching
   useEffect(() => {
-    console.debug('Auth state changed:', {
-      isAuthenticated,
-      authLoading,
-      user,
-    });
-
-    // Only redirect if we're sure about the authentication state
     if (!authLoading && !isAuthenticated) {
-      console.debug('Not authenticated, redirecting to login');
       navigate('/login');
       return;
     }
 
-    // If authenticated but no user data, fetch it
     if (isAuthenticated && !authLoading && !user) {
-      console.debug('Authenticated but no user data, fetching user info');
       const fetchUserInfo = async () => {
         try {
           const response = await api.get(endpoints.auth.me);
@@ -63,31 +59,23 @@ function Dashboard() {
       fetchUserInfo();
     }
 
-    // Only fetch universes if authenticated and not loading
     if (isAuthenticated && !authLoading && !universesLoading && !universes) {
-      console.debug('Fetching universes');
       const fetchUniverses = async () => {
         try {
           dispatch(fetchUniversesStart());
           const response = await api.get(endpoints.universes.list);
-          console.debug('Universes fetched successfully:', response);
           dispatch(fetchUniversesSuccess(response));
         } catch (error) {
           console.error('Failed to fetch universes:', error);
-          let errorMessage = 'Failed to fetch universes';
-          if (error.response?.data?.message) {
-            errorMessage = error.response.data.message;
-          }
+          const errorMessage =
+            error.response?.data?.message || 'Failed to fetch universes';
           dispatch(fetchUniversesFailure(errorMessage));
 
-          // If unauthorized, redirect to login
           if (error.response?.status === 401) {
-            console.debug('Unauthorized, redirecting to login');
             navigate('/login');
           }
         }
       };
-
       fetchUniverses();
     }
   }, [
@@ -100,19 +88,85 @@ function Dashboard() {
     user,
   ]);
 
-  console.debug('Rendering Dashboard:', {
-    authLoading,
-    isAuthenticated,
-    universesLoading,
-    error,
-    universes,
-  });
+  // Modal handlers
+  const handleModalClose = useCallback(e => {
+    if (e?.target?.classList?.contains('modal-overlay')) {
+      setModalOpen(false);
+    }
+  }, []);
 
-  // Show loading state while checking auth
+  const handleEscapeKey = useCallback(e => {
+    if (e.key === 'Escape') {
+      setModalOpen(false);
+    }
+  }, []);
+
+  const handleTabKey = useCallback(e => {
+    if (!modalRef.current) return;
+
+    const focusableElements = modalRef.current.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    if (e.shiftKey) {
+      if (document.activeElement === firstElement) {
+        lastElement.focus();
+        e.preventDefault();
+      }
+    } else {
+      if (document.activeElement === lastElement) {
+        firstElement.focus();
+        e.preventDefault();
+      }
+    }
+  }, []);
+
+  // Modal focus management
+  useEffect(() => {
+    if (isModalOpen) {
+      previousFocusRef.current = document.activeElement;
+      document.addEventListener('keydown', handleEscapeKey);
+      document.addEventListener('keydown', handleTabKey);
+
+      if (modalRef.current) {
+        const focusableElement = modalRef.current.querySelector(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        focusableElement?.focus();
+      }
+    } else {
+      document.removeEventListener('keydown', handleEscapeKey);
+      document.removeEventListener('keydown', handleTabKey);
+      previousFocusRef.current?.focus();
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+      document.removeEventListener('keydown', handleTabKey);
+    };
+  }, [isModalOpen, handleEscapeKey, handleTabKey]);
+
+  const handleCreateUniverse = useCallback(() => {
+    setIsCreating(true);
+  }, []);
+
+  const handleKeyDown = useCallback(
+    (e, universeId) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        navigate(`/universes/${universeId}`);
+      }
+    },
+    [navigate]
+  );
+
   if (authLoading) {
     return (
-      <div className="dashboard-container">
+      <div className="dashboard-container" role="status">
         <div className="dashboard-loading">
+          <Spinner size="large" />
           <p>Checking authentication...</p>
           <small>Please wait while we verify your session.</small>
         </div>
@@ -120,11 +174,11 @@ function Dashboard() {
     );
   }
 
-  // Will be redirected by useEffect if not authenticated
   if (!isAuthenticated) {
     return (
-      <div className="dashboard-container">
+      <div className="dashboard-container" role="status">
         <div className="dashboard-loading">
+          <Spinner size="large" />
           <p>Redirecting to login...</p>
           <small>You must be logged in to view this page.</small>
         </div>
@@ -134,8 +188,9 @@ function Dashboard() {
 
   if (universesLoading) {
     return (
-      <div className="dashboard-container">
+      <div className="dashboard-container" role="status">
         <div className="dashboard-loading">
+          <Spinner size="large" />
           <p>Loading universes...</p>
           <small>Please wait while we fetch your universes.</small>
         </div>
@@ -145,7 +200,7 @@ function Dashboard() {
 
   if (error) {
     return (
-      <div className="dashboard-container">
+      <div className="dashboard-container" role="alert">
         <div className="dashboard-error">
           <p>{error}</p>
           <small>There was an error loading your universes.</small>
@@ -158,8 +213,22 @@ function Dashboard() {
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
-        <h1>Welcome, {user?.username || 'User'}</h1>
-        <Button as={Link} to="/universes/create">
+        <h1>
+          Welcome,{' '}
+          {user?.username || (
+            <span className="loading-text">
+              <Spinner size="small" />
+              Loading...
+            </span>
+          )}
+        </h1>
+        <Button
+          as={Link}
+          to={ROUTES.UNIVERSE_CREATE}
+          onClick={handleCreateUniverse}
+          disabled={isCreating || !user}
+          loading={isCreating}
+        >
           Create Universe
         </Button>
       </header>
@@ -167,19 +236,27 @@ function Dashboard() {
       <section className="dashboard-section">
         <h2>Your Universes</h2>
         {!universes || universes.length === 0 ? (
-          <div className="dashboard-empty">
+          <div className="dashboard-empty" role="status">
             <p>You haven't created any universes yet.</p>
-            <Button onClick={() => setModalOpen(true)}>
+            <Button
+              onClick={() => setModalOpen(true)}
+              disabled={isCreating}
+              loading={isCreating}
+            >
               Create Your First Universe
             </Button>
           </div>
         ) : (
-          <div className="universe-grid">
+          <div className="universe-grid" role="grid">
             {universes.map(universe => (
               <Link
                 key={universe.id}
                 to={`/universes/${universe.id}`}
                 className="universe-card"
+                role="gridcell"
+                tabIndex="0"
+                onKeyDown={e => handleKeyDown(e, universe.id)}
+                aria-label={`Universe: ${universe.name}`}
               >
                 <h3>{universe.name}</h3>
                 <p>{universe.description}</p>
@@ -198,18 +275,53 @@ function Dashboard() {
       </section>
 
       {isModalOpen && (
-        <div className="modal">
-          <h2>Create Your First Universe</h2>
-          <p>Click the button below to get started!</p>
-          <Button
-            as={Link}
-            to="/universes/create"
-            onClick={() => setModalOpen(false)}
+        <>
+          <div
+            className="modal-overlay"
+            onClick={handleModalClose}
+            aria-hidden="true"
+          />
+          <div
+            className="modal"
+            ref={modalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-title"
           >
-            Create Universe
-          </Button>
-          <Button onClick={() => setModalOpen(false)}>Close</Button>
-        </div>
+            <div className="modal-header">
+              <h2 id="modal-title">Create Your First Universe</h2>
+              <button
+                className="modal-close"
+                onClick={() => setModalOpen(false)}
+                aria-label="Close modal"
+              >
+                ×
+              </button>
+            </div>
+            <p>Click the button below to get started!</p>
+            <div className="modal-actions">
+              <Button
+                as={Link}
+                to={ROUTES.UNIVERSE_CREATE}
+                onClick={() => {
+                  setModalOpen(false);
+                  handleCreateUniverse();
+                }}
+                disabled={isCreating}
+                loading={isCreating}
+              >
+                Create Universe
+              </Button>
+              <Button
+                onClick={() => setModalOpen(false)}
+                variant="secondary"
+                disabled={isCreating}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

@@ -13,6 +13,7 @@ function Input({
   disabled = false,
   required = false,
   className = '',
+  rows = 3,
 }) {
   const inputId = `input-${name}`;
   const hasError = Boolean(error);
@@ -25,20 +26,39 @@ function Input({
           {required && <span className="input-required">*</span>}
         </label>
       )}
-      <input
-        id={inputId}
-        type={type}
-        name={name}
-        value={value}
-        onChange={onChange}
-        onBlur={onBlur}
-        placeholder={placeholder}
-        disabled={disabled}
-        required={required}
-        className={`input-field ${hasError ? 'input-error' : ''}`}
-        aria-invalid={hasError}
-        aria-describedby={hasError ? `${inputId}-error` : undefined}
-      />
+      {type === 'textarea' ? (
+        <textarea
+          id={inputId}
+          name={name}
+          value={value}
+          onChange={onChange}
+          onBlur={onBlur}
+          placeholder={placeholder}
+          disabled={disabled}
+          required={required}
+          className={`input-field input-textarea ${
+            hasError ? 'input-error' : ''
+          }`}
+          aria-invalid={hasError}
+          aria-describedby={hasError ? `${inputId}-error` : undefined}
+          rows={rows}
+        />
+      ) : (
+        <input
+          id={inputId}
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          onBlur={onBlur}
+          placeholder={placeholder}
+          disabled={disabled}
+          required={required}
+          className={`input-field ${hasError ? 'input-error' : ''}`}
+          aria-invalid={hasError}
+          aria-describedby={hasError ? `${inputId}-error` : undefined}
+        />
+      )}
       {hasError && (
         <span id={`${inputId}-error`} className="input-error-message">
           {error}
@@ -49,7 +69,15 @@ function Input({
 }
 
 Input.propTypes = {
-  type: PropTypes.oneOf(['text', 'password', 'email', 'number', 'tel', 'url']),
+  type: PropTypes.oneOf([
+    'text',
+    'password',
+    'email',
+    'number',
+    'tel',
+    'url',
+    'textarea',
+  ]),
   label: PropTypes.string,
   name: PropTypes.string.isRequired,
   value: PropTypes.string.isRequired,
@@ -60,6 +88,7 @@ Input.propTypes = {
   disabled: PropTypes.bool,
   required: PropTypes.bool,
   className: PropTypes.string,
+  rows: PropTypes.number,
 };
 
 export default Input;

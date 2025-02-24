@@ -9,11 +9,11 @@ export const endpoints = {
     refresh: '/api/auth/refresh',
   },
   universes: {
-    list: '/api/universes',
-    detail: id => `/api/universes/${id}`,
-    create: '/api/universes',
-    update: id => `/api/universes/${id}`,
-    delete: id => `/api/universes/${id}`,
+    list: '/api/universes/',
+    detail: id => `/api/universes/${id}/`,
+    create: '/api/universes/',
+    update: id => `/api/universes/${id}/`,
+    delete: id => `/api/universes/${id}/`,
   },
 };
 

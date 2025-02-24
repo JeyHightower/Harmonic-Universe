@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { openModal } from '../../../store/slices/modalSlice';
-import { api } from '../../../utils/api';
+import { api, endpoints } from '../../../utils/api';
 import Button from '../../common/Button';
+import Spinner from '../../common/Spinner';
 import './Universe.css';
 
 function UniverseDetail() {
@@ -17,14 +18,18 @@ function UniverseDetail() {
     const fetchUniverse = async () => {
       try {
         setLoading(true);
-        const response = await api.get(`/universes/${id}`);
-        setUniverse(response.data);
+        const response = await api.get(endpoints.universes.detail(id));
+        setUniverse(response);
       } catch (error) {
-        setError(error.message);
+        console.error('Failed to fetch universe:', error);
+        setError(
+          error.response?.data?.message || 'Failed to load universe details'
+        );
         dispatch(
           openModal({
             title: 'Error',
             content: 'Failed to load universe details. Please try again.',
+            severity: 'error',
           })
         );
       } finally {
@@ -38,7 +43,10 @@ function UniverseDetail() {
   if (loading) {
     return (
       <div className="universe-container">
-        <div className="universe-loading">Loading universe details...</div>
+        <div className="universe-loading">
+          <Spinner size="large" />
+          <p>Loading universe details...</p>
+        </div>
       </div>
     );
   }
@@ -47,7 +55,7 @@ function UniverseDetail() {
     return (
       <div className="universe-container">
         <div className="universe-error">
-          {error}
+          <p>{error}</p>
           <Button onClick={() => window.location.reload()}>Retry</Button>
         </div>
       </div>
@@ -57,7 +65,9 @@ function UniverseDetail() {
   if (!universe) {
     return (
       <div className="universe-container">
-        <div className="universe-error">Universe not found</div>
+        <div className="universe-error">
+          <p>Universe not found</p>
+        </div>
       </div>
     );
   }
@@ -85,12 +95,17 @@ function UniverseDetail() {
 
           <div className="universe-detail-field">
             <h2>Created</h2>
-            <p>{new Date(universe.createdAt).toLocaleDateString()}</p>
+            <p>{new Date(universe.created_at).toLocaleDateString()}</p>
           </div>
 
           <div className="universe-detail-field">
             <h2>Last Updated</h2>
-            <p>{new Date(universe.updatedAt).toLocaleDateString()}</p>
+            <p>{new Date(universe.updated_at).toLocaleDateString()}</p>
+          </div>
+
+          <div className="universe-detail-field">
+            <h2>Visibility</h2>
+            <p>{universe.is_public ? 'Public' : 'Private'}</p>
           </div>
         </section>
       </div>

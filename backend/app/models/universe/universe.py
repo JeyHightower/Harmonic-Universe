@@ -148,6 +148,11 @@ class Universe(BaseModel):
     scenes = relationship('Scene', back_populates='universe', cascade='all, delete-orphan')
     visualizations = relationship('Visualization', back_populates='universe', cascade='all, delete-orphan')
 
+    @classmethod
+    def get_by_id(cls, db, universe_id):
+        """Get universe by ID."""
+        return db.query(cls).filter(cls.id == universe_id).first()
+
     def to_dict(self):
         """Convert universe to dictionary with all parameters."""
         return {

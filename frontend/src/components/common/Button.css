@@ -93,3 +93,130 @@
     transform: rotate(360deg);
   }
 }
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Variants */
+.button-primary {
+  background-color: var(--primary-color);
+  color: var(--text-on-primary);
+}
+
+.button-primary:hover:not(.button-disabled) {
+  background-color: var(--primary-hover);
+}
+
+.button-secondary {
+  background-color: var(--secondary-color);
+  color: var(--text-on-secondary);
+}
+
+.button-secondary:hover:not(.button-disabled) {
+  background-color: var(--secondary-hover);
+}
+
+.button-tertiary {
+  background-color: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.button-tertiary:hover:not(.button-disabled) {
+  background-color: var(--surface-hover);
+  border-color: var(--text-primary);
+}
+
+.button-danger {
+  background-color: var(--error-color);
+  color: var(--text-on-error);
+}
+
+.button-danger:hover:not(.button-disabled) {
+  background-color: var(--error-hover);
+  transform: translateY(-1px);
+}
+
+.button-danger:active:not(.button-disabled) {
+  transform: translateY(0);
+}
+
+/* Sizes */
+.button-small {
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: var(--font-size-sm);
+}
+
+.button-medium {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-size: var(--font-size-md);
+}
+
+.button-large {
+  padding: var(--spacing-md) var(--spacing-xl);
+  font-size: var(--font-size-lg);
+}
+
+/* States */
+.button:hover:not(.button-disabled) {
+  transform: translateY(-1px);
+}
+
+.button:active:not(.button-disabled) {
+  transform: translateY(0);
+}
+
+.button-full-width {
+  width: 100%;
+}
+
+.button-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Loading state */
+.button-loading {
+  color: transparent;
+}
+
+.button-loading .button-text {
+  visibility: visible;
+  opacity: 0.5;
+}
+
+.button-loading .spinner {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Focus states */
+.button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--primary-color);
+}
+
+.button:focus:not(:focus-visible) {
+  box-shadow: none;
+}
+
+.button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--primary-color);
+}

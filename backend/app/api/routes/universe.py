@@ -41,7 +41,8 @@ def create_universe():
                 name=data['name'],
                 description=data.get('description', ''),
                 user_id=current_user_id,
-                settings=data.get('settings', {})
+                is_public=data.get('is_public', False),
+                version=1
             )
             db.add(universe)
             db.commit()
@@ -50,7 +51,7 @@ def create_universe():
             db.rollback()
             raise ValidationError(f"Error creating universe: {str(e)}")
 
-@universe_bp.route('/<uuid:universe_id>', methods=['GET'])
+@universe_bp.route('/<uuid:universe_id>/', methods=['GET'])
 @jwt_required()
 def get_universe(universe_id):
     """Get a specific universe."""
@@ -58,8 +59,8 @@ def get_universe(universe_id):
 
     with get_db() as db:
         try:
-            # Get the universe and user in a single query
-            universe = db.query(Universe).filter_by(id=universe_id).first()
+            # Get the universe using get_by_id
+            universe = Universe.get_by_id(db, universe_id)
 
             if not universe:
                 raise ValidationError('Universe not found')
@@ -87,7 +88,7 @@ def get_universe(universe_id):
             db.rollback()
             raise ValidationError(f"Error fetching universe: {str(e)}")
 
-@universe_bp.route('/<uuid:universe_id>', methods=['PUT'])
+@universe_bp.route('/<uuid:universe_id>/', methods=['PUT'])
 @jwt_required()
 def update_universe(universe_id):
     """Update a universe."""
@@ -102,7 +103,7 @@ def update_universe(universe_id):
             if universe.user_id != current_user_id:
                 raise AuthorizationError('Not authorized to modify this universe')
 
-            allowed_fields = {'name', 'description', 'settings'}
+            allowed_fields = {'name', 'description', 'is_public'}
             update_data = {k: v for k, v in data.items() if k in allowed_fields}
 
             for key, value in update_data.items():
@@ -118,27 +119,32 @@ def update_universe(universe_id):
             db.rollback()
             raise ValidationError(f"Error updating universe: {str(e)}")
 
-@universe_bp.route('/<int:id>', methods=['DELETE'])
+@universe_bp.route('/<uuid:universe_id>/', methods=['DELETE'])
 @jwt_required()
-def delete_universe(id):
+def delete_universe(universe_id):
+    """Delete a universe."""
+    current_user_id = get_jwt_identity()
     with get_db() as db:
         try:
-            universe = Universe.get_by_id(db, id)
+            universe = Universe.get_by_id(db, universe_id)
             if not universe:
                 raise ValidationError('Universe not found')
+            if universe.user_id != current_user_id:
+                raise AuthorizationError('Not authorized to delete this universe')
             db.delete(universe)
             db.commit()
             return '', 204
-        except ValidationError as e:
+        except (ValidationError, AuthorizationError) as e:
             db.rollback()
             raise
         except Exception as e:
             db.rollback()
             raise ValidationError(f"Error deleting universe: {str(e)}")
 
-@universe_bp.route('/<int:universe_id>/physics', methods=['PUT'])
+@universe_bp.route('/<uuid:universe_id>/physics/', methods=['PUT'])
 @jwt_required()
 def update_physics(universe_id):
+    """Update universe physics parameters."""
     current_user_id = get_jwt_identity()
 
     with get_db() as db:
@@ -157,7 +163,7 @@ def update_physics(universe_id):
 
             # Notify connected clients about the physics update
             socketio.emit('physics_changed', {
-                'universe_id': universe_id,
+                'universe_id': str(universe_id),
                 'parameters': universe.physics_params
             }, room=f'universe_{universe_id}')
 
@@ -169,9 +175,10 @@ def update_physics(universe_id):
             db.rollback()
             raise ValidationError(f"Error updating physics: {str(e)}")
 
-@universe_bp.route('/<int:universe_id>/harmony', methods=['PUT'])
+@universe_bp.route('/<uuid:universe_id>/harmony/', methods=['PUT'])
 @jwt_required()
 def update_harmony(universe_id):
+    """Update universe harmony parameters."""
     current_user_id = get_jwt_identity()
 
     with get_db() as db:
@@ -190,7 +197,7 @@ def update_harmony(universe_id):
 
             # Notify connected clients about the harmony update
             socketio.emit('harmony_changed', {
-                'universe_id': universe_id,
+                'universe_id': str(universe_id),
                 'parameters': universe.harmony_params
             }, room=f'universe_{universe_id}')
 
@@ -202,9 +209,10 @@ def update_harmony(universe_id):
             db.rollback()
             raise ValidationError(f"Error updating harmony: {str(e)}")
 
-@universe_bp.route('/<int:universe_id>/story-points', methods=['POST'])
+@universe_bp.route('/<uuid:universe_id>/story-points/', methods=['POST'])
 @jwt_required()
 def add_story_point(universe_id):
+    """Add a story point to a universe."""
     current_user_id = get_jwt_identity()
 
     with get_db() as db:
@@ -226,7 +234,7 @@ def add_story_point(universe_id):
 
             # Notify connected clients about the new story point
             socketio.emit('story_changed', {
-                'universe_id': universe_id,
+                'universe_id': str(universe_id),
                 'story_points': universe.story_points
             }, room=f'universe_{universe_id}')
 
@@ -238,9 +246,10 @@ def add_story_point(universe_id):
             db.rollback()
             raise ValidationError(f"Error adding story point: {str(e)}")
 
-@universe_bp.route('/<int:universe_id>/story-points/<int:point_id>', methods=['DELETE'])
+@universe_bp.route('/<uuid:universe_id>/story-points/<int:point_id>/', methods=['DELETE'])
 @jwt_required()
 def remove_story_point(universe_id, point_id):
+    """Remove a story point from a universe."""
     current_user_id = get_jwt_identity()
 
     with get_db() as db:
@@ -258,7 +267,7 @@ def remove_story_point(universe_id, point_id):
 
             # Notify connected clients about the story point removal
             socketio.emit('story_changed', {
-                'universe_id': universe_id,
+                'universe_id': str(universe_id),
                 'story_points': universe.story_points
             }, room=f'universe_{universe_id}')
 

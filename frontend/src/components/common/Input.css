@@ -24,6 +24,13 @@
   color: var(--text-color);
   font-size: var(--font-size-md);
   transition: all var(--transition-normal);
+  font-family: inherit;
+}
+
+.input-textarea {
+  resize: vertical;
+  min-height: 100px;
+  line-height: 1.5;
 }
 
 .input-field::placeholder {
@@ -33,6 +40,7 @@
 .input-field:focus {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+  outline: none;
 }
 
 .input-field:disabled {
