@@ -154,8 +154,22 @@ class Universe(BaseModel):
         """Get universe by ID."""
         return db.query(cls).filter(cls.id == universe_id).first()
 
-    def to_dict(self):
-        """Convert universe to dictionary with all parameters."""
+    def to_dict(self, current_user_id: Optional[str] = None) -> Dict:
+        """
+        Convert universe to dictionary with all parameters.
+
+        Args:
+            current_user_id: Optional UUID string of the current user. If not provided,
+                           user will be considered a viewer.
+        """
+        # Try to get current user from JWT if not provided and in request context
+        if current_user_id is None:
+            try:
+                current_user_id = get_jwt_identity()
+            except RuntimeError:
+                # Outside request context, default to viewer
+                current_user_id = None
+
         return {
             'id': self.id,
             'name': self.name,
@@ -168,7 +182,7 @@ class Universe(BaseModel):
             'visualization_params': self.visualization_params,
             'ai_params': self.ai_params,
             'user_id': self.user_id,
-            'user_role': 'owner' if self.user_id == get_jwt_identity() else 'viewer',
+            'user_role': 'owner' if str(self.user_id) == str(current_user_id) else 'viewer',
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }

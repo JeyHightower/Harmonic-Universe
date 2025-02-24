@@ -62,15 +62,26 @@ function PhysicsPanel({
   const [physicsParams, setPhysicsParams] = useState(null);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [lastSubmittedValues, setLastSubmittedValues] = useState(null);
 
-  // Check if user has permission to edit
-  const canEdit = currentUniverse?.user_role === 'owner';
+  // Check if user has permission to edit - handle loading state properly
+  const canEdit =
+    !readOnly &&
+    // If we're still loading universe data, respect the readOnly prop
+    (currentUniverse === null
+      ? !readOnly
+      : // Once loaded, check actual permissions
+        currentUniverse?.user_role === 'owner');
 
   // Initialize and sync with props/store
   useEffect(() => {
-    if (!universeId) return;
+    if (!universeId) {
+      setIsLoading(false);
+      return;
+    }
 
+    setIsLoading(true);
     // Always prioritize Redux store data if available
     if (currentUniverse?.id === universeId && currentUniverse?.physics_params) {
       const storeParams = JSON.parse(
@@ -88,23 +99,23 @@ function PhysicsPanel({
       );
       setPhysicsParams(updatedParams);
       setLastSubmittedValues(updatedParams);
-      return;
+    } else {
+      // Fall back to initialPhysicsParams or defaults
+      const sourceParams = initialPhysicsParams || DEFAULT_PHYSICS_PARAMS;
+      const updatedParams = Object.entries(sourceParams).reduce(
+        (acc, [key, param]) => ({
+          ...acc,
+          [key]: {
+            ...DEFAULT_PHYSICS_PARAMS[key], // Keep metadata
+            ...param, // Override with provided values
+          },
+        }),
+        {}
+      );
+      setPhysicsParams(updatedParams);
+      setLastSubmittedValues(updatedParams);
     }
-
-    // Fall back to initialPhysicsParams or defaults
-    const sourceParams = initialPhysicsParams || DEFAULT_PHYSICS_PARAMS;
-    const updatedParams = Object.entries(sourceParams).reduce(
-      (acc, [key, param]) => ({
-        ...acc,
-        [key]: {
-          ...DEFAULT_PHYSICS_PARAMS[key], // Keep metadata
-          ...param, // Override with provided values
-        },
-      }),
-      {}
-    );
-    setPhysicsParams(updatedParams);
-    setLastSubmittedValues(updatedParams);
+    setIsLoading(false);
   }, [currentUniverse?.id, universeId, currentUniverse?.physics_params]);
 
   // Sync with Redux store updates
@@ -114,6 +125,7 @@ function PhysicsPanel({
       currentUniverse?.physics_params &&
       physicsParams
     ) {
+      setIsLoading(true);
       const storeParams = JSON.parse(
         JSON.stringify(currentUniverse.physics_params)
       );
@@ -131,6 +143,7 @@ function PhysicsPanel({
         setPhysicsParams(updatedParams);
         setLastSubmittedValues(updatedParams);
       }
+      setIsLoading(false);
     }
   }, [currentUniverse?.physics_params]);
 
@@ -345,38 +358,45 @@ function PhysicsPanel({
     <div className="physics-panel">
       <h2>Physics Parameters</h2>
       {errors.submit && <div className="error-message">{errors.submit}</div>}
-      <div className="physics-parameters">
-        {physicsParams &&
-          Object.entries(physicsParams).map(([name, param]) => (
-            <div key={name} className="parameter-group">
-              <Input
-                type="number"
-                name={name}
-                label={name.replace(/_/g, ' ').toUpperCase()}
-                value={isNaN(param.value) ? '' : param.value.toString()}
-                onChange={e => handleParameterChange(name, e.target.value)}
-                error={errors[name]}
-                disabled={readOnly || !canEdit}
-                step="any"
-                min={param.min}
-                max={param.max}
-                suffix={param.unit}
-              />
+      {isLoading ? (
+        <div className="physics-loading">Loading physics parameters...</div>
+      ) : (
+        <>
+          <div className="physics-parameters">
+            {physicsParams &&
+              Object.entries(physicsParams).map(([name]) => (
+                <div key={name} className="parameter-group">
+                  <Input
+                    type="number"
+                    name={name}
+                    label={name.replace(/_/g, ' ').toUpperCase()}
+                    value={isNaN(param.value) ? '' : param.value.toString()}
+                    onChange={e => handleParameterChange(name, e.target.value)}
+                    error={errors[name]}
+                    disabled={readOnly || !canEdit}
+                    step="any"
+                    min={param.min}
+                    max={param.max}
+                    suffix={param.unit}
+                  />
+                </div>
+              ))}
+          </div>
+          {!readOnly && canEdit && (
+            <div className="physics-actions">
+              <Button
+                onClick={handleSubmit}
+                disabled={
+                  isSubmitting ||
+                  (Object.keys(errors).length > 0 && !errors.submit)
+                }
+                loading={isSubmitting}
+              >
+                Update Physics Parameters
+              </Button>
             </div>
-          ))}
-      </div>
-      {!readOnly && canEdit && (
-        <div className="physics-actions">
-          <Button
-            onClick={handleSubmit}
-            disabled={
-              isSubmitting || (Object.keys(errors).length > 0 && !errors.submit)
-            }
-            loading={isSubmitting}
-          >
-            Update Physics Parameters
-          </Button>
-        </div>
+          )}
+        </>
       )}
     </div>
   );

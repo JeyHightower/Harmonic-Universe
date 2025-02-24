@@ -48,13 +48,16 @@ export const updateUniverse = createAsyncThunk(
   'universe/updateUniverse',
   async ({ universeId, universeData }, { rejectWithValue }) => {
     try {
+      console.debug('Updating universe:', { universeId, universeData });
       const response = await api.put(
-        endpoints.universes.detail(universeId),
+        endpoints.universes.update(universeId),
         universeData
       );
+      console.debug('Universe updated:', response);
       return response;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      console.error('Failed to update universe:', error);
+      return rejectWithValue(handleError(error));
     }
   }
 );
