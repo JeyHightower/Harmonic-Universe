@@ -8,7 +8,7 @@ import {
   loginSuccess,
 } from '../../../store/slices/authSlice';
 import { openModal } from '../../../store/slices/modalSlice';
-import { api } from '../../../utils/api';
+import { api, endpoints } from '../../../utils/api';
 import Button from '../../common/Button';
 import './Home.css';
 

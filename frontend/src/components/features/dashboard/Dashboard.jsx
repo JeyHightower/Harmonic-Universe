@@ -25,7 +25,6 @@ function Dashboard() {
     loading: authLoading,
   } = useSelector(state => state.auth);
 
-  console.log('user', user);
 
   useEffect(() => {
     console.debug('Dashboard mounted, checking auth state');

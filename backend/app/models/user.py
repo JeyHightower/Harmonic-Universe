@@ -36,6 +36,11 @@ class User(BaseModel):
     physics_objects = relationship('PhysicsObject', back_populates='user', cascade='all, delete-orphan')
     ai_models = relationship('AIModel', back_populates='user', cascade='all, delete-orphan')
 
+    @classmethod
+    def get_by_id(cls, db, user_id):
+        """Get user by ID."""
+        return db.query(cls).filter(cls.id == user_id).first()
+
     def set_password(self, password):
         """Set password hash."""
         self.password_hash = get_password_hash(password)
@@ -75,6 +80,7 @@ class User(BaseModel):
         """Convert user instance to dictionary."""
         base_dict = super().to_dict()
         user_dict = {
+            'username': self.username,
             'email': self.email,
             'is_active': self.is_active,
             'is_verified': self.is_verified,

@@ -147,18 +147,22 @@ def refresh():
 @jwt_required()
 def get_me():
     """Get current user info."""
-    current_user_id = get_jwt_identity()
-    token = get_jwt()
+    try:
+        current_user_id = get_jwt_identity()
+        token = get_jwt()
 
-    # Verify token type
-    if token.get('type') != 'access':
-        raise AuthenticationError('Invalid token type')
+        # Verify token type
+        if token.get('type') != 'access':
+            raise AuthenticationError('Invalid token type')
 
-    with get_db() as db:
-        user = User.get_by_id(db, current_user_id)
-        if not user:
-            raise AuthenticationError('User not found')
-        return jsonify(user.to_dict())
+        with get_db() as db:
+            user = db.query(User).filter(User.id == current_user_id).first()
+            if not user:
+                raise AuthenticationError('User not found')
+            return jsonify(user.to_dict())
+    except Exception as e:
+        logger.error(f"Error fetching user info: {str(e)}", exc_info=True)
+        raise AuthenticationError(f'Failed to fetch user info: {str(e)}')
 
 @auth_bp.route('/me', methods=['PUT'])
 @jwt_required()

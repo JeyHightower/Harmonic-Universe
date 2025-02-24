@@ -7,7 +7,7 @@ import {
   loginSuccess,
 } from '../../../store/slices/authSlice';
 import { openModal } from '../../../store/slices/modalSlice';
-import { api } from '../../../utils/api';
+import { api, endpoints } from '../../../utils/api';
 import { validateEmail, validatePassword } from '../../../utils/validation';
 import Button from '../../common/Button';
 import Input from '../../common/Input';
