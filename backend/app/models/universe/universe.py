@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship
 from ..base import BaseModel
 from typing import Dict, List, Optional
 import json
+from flask_jwt_extended import get_jwt_identity
 
 class Universe(BaseModel):
     """Universe model for managing audio-visual experiences."""
@@ -167,6 +168,7 @@ class Universe(BaseModel):
             'visualization_params': self.visualization_params,
             'ai_params': self.ai_params,
             'user_id': self.user_id,
+            'user_role': 'owner' if self.user_id == get_jwt_identity() else 'viewer',
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }

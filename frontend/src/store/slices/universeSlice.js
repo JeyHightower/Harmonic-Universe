@@ -3,6 +3,7 @@ import {
   createUniverse,
   deleteUniverse,
   fetchUniverses,
+  updatePhysicsParams,
   updateUniverse,
 } from '../thunks/universeThunks';
 
@@ -23,6 +24,14 @@ const universeSlice = createSlice({
   reducers: {
     setCurrentUniverse: (state, action) => {
       state.currentUniverse = action.payload;
+      if (state.universes.length > 0) {
+        const index = state.universes.findIndex(
+          u => u.id === action.payload.id
+        );
+        if (index !== -1) {
+          state.universes[index] = action.payload;
+        }
+      }
     },
     clearError: state => {
       state.error = null;
@@ -128,7 +137,12 @@ const universeSlice = createSlice({
         state.universes = state.universes.map(universe =>
           universe.id === action.payload.id ? action.payload : universe
         );
-        state.currentUniverse = action.payload;
+        if (state.currentUniverse?.id === action.payload.id) {
+          state.currentUniverse = {
+            ...state.currentUniverse,
+            ...action.payload,
+          };
+        }
         state.error = null;
         state.authError = false;
       })
@@ -164,6 +178,50 @@ const universeSlice = createSlice({
         state.error = action.payload;
         state.authError =
           action.payload?.status === 401 || action.payload?.status === 403;
+      })
+
+      // Handle physics params update
+      .addCase(updatePhysicsParams.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updatePhysicsParams.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+
+        // Deep clone the received physics parameters
+        const newPhysicsParams = JSON.parse(
+          JSON.stringify(action.payload.physics_params)
+        );
+
+        // Update current universe if it matches
+        if (state.currentUniverse?.id === action.payload.id) {
+          state.currentUniverse = {
+            ...state.currentUniverse,
+            ...action.payload,
+            physics_params: newPhysicsParams,
+            updated_at: new Date().toISOString(), // Ensure timestamp is updated
+          };
+        }
+
+        // Update in universes list if present
+        state.universes = state.universes.map(universe =>
+          universe.id === action.payload.id
+            ? {
+                ...universe,
+                ...action.payload,
+                physics_params: newPhysicsParams,
+                updated_at: new Date().toISOString(), // Ensure timestamp is updated
+              }
+            : universe
+        );
+      })
+      .addCase(updatePhysicsParams.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to update physics parameters';
+
+        // Log the error for debugging
+        console.error('Physics update failed:', action.payload);
       });
   },
 });

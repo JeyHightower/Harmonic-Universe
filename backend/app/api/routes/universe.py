@@ -182,25 +182,41 @@ def update_physics(universe_id):
 
     with get_db() as db:
         try:
-            universe = Universe.get_by_id(db, universe_id)
+            # Start transaction and get universe with row lock
+            universe = db.query(Universe).with_for_update().filter_by(id=universe_id).first()
             if not universe:
                 raise ValidationError('Universe not found')
 
-            if universe.user_id != current_user_id:
+            # Use string comparison for UUIDs
+            if str(universe.user_id) != str(current_user_id):
                 raise AuthorizationError('Not authorized to update this universe')
 
             data = request.get_json()
-            universe.update_physics(data)
-            db.add(universe)
+            if not data or 'physics_params' not in data:
+                raise ValidationError('Invalid physics parameters')
+
+            # Update physics parameters
+            universe.update_physics(data['physics_params'])
+
+            # Explicitly flush changes
+            db.flush()
+
+            # Refresh the universe object to ensure we have latest state
+            db.refresh(universe)
+
+            # Commit transaction
             db.commit()
 
-            # Notify connected clients about the physics update
-            socketio.emit('physics_changed', {
-                'universe_id': str(universe_id),
-                'parameters': universe.physics_params
-            }, room=f'universe_{universe_id}')
+            # Verify the update
+            updated_universe = db.query(Universe).filter_by(id=universe_id).first()
+            if not updated_universe or not updated_universe.physics_params:
+                raise ValidationError('Failed to verify physics parameters update')
 
-            return jsonify(universe.to_dict())
+            # Return complete universe data with user role
+            response_data = updated_universe.to_dict()
+            response_data['user_role'] = 'owner'
+            return jsonify(response_data)
+
         except (ValidationError, AuthorizationError) as e:
             db.rollback()
             raise
@@ -220,7 +236,8 @@ def update_harmony(universe_id):
             if not universe:
                 raise ValidationError('Universe not found')
 
-            if universe.user_id != current_user_id:
+            # Use string comparison for UUIDs
+            if str(universe.user_id) != str(current_user_id):
                 raise AuthorizationError('Not authorized to update this universe')
 
             data = request.get_json()
@@ -234,7 +251,10 @@ def update_harmony(universe_id):
                 'parameters': universe.harmony_params
             }, room=f'universe_{universe_id}')
 
-            return jsonify(universe.to_dict())
+            # Return complete universe data with user role
+            response_data = universe.to_dict()
+            response_data['user_role'] = 'owner'
+            return jsonify(response_data)
         except (ValidationError, AuthorizationError) as e:
             db.rollback()
             raise

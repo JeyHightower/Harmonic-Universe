@@ -48,16 +48,63 @@ export const updateUniverse = createAsyncThunk(
   'universe/updateUniverse',
   async ({ universeId, universeData }, { rejectWithValue }) => {
     try {
-      console.debug('Updating universe:', { universeId, universeData });
       const response = await api.put(
-        endpoints.universes.update(universeId),
+        endpoints.universes.detail(universeId),
         universeData
       );
-      console.debug('Universe updated:', response);
       return response;
     } catch (error) {
-      console.error('Failed to update universe:', error);
-      return rejectWithValue(handleError(error));
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const updatePhysicsParams = createAsyncThunk(
+  'universe/updatePhysics',
+  async ({ universeId, physicsParams }, { rejectWithValue }) => {
+    try {
+      // Update physics parameters using the correct endpoint
+      const response = await api.put(endpoints.universes.physics(universeId), {
+        physics_params: physicsParams,
+      });
+
+      if (!response) {
+        throw new Error('Failed to update physics parameters');
+      }
+
+      // Verify the update was successful
+      const verifiedUniverse = await api.get(
+        endpoints.universes.detail(universeId)
+      );
+
+      if (!verifiedUniverse) {
+        throw new Error('Failed to verify physics parameters update');
+      }
+
+      // Check if the physics parameters match
+      const updatedParams = JSON.stringify(response.physics_params);
+      const verifiedParams = JSON.stringify(verifiedUniverse.physics_params);
+
+      if (updatedParams !== verifiedParams) {
+        throw new Error('Physics parameters verification failed');
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Physics update failed:', error);
+      if (error.response) {
+        return rejectWithValue({
+          status: error.response.status,
+          message:
+            error.response.data?.message ||
+            'Failed to update physics parameters',
+          error_code: error.response.data?.error_code,
+          details: error.response.data?.details,
+        });
+      }
+      return rejectWithValue({
+        message: error.message || 'Failed to update physics parameters',
+      });
     }
   }
 );

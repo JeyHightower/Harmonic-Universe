@@ -13,6 +13,7 @@ import {
 import Button from '../../common/Button';
 import Input from '../../common/Input';
 import Spinner from '../../common/Spinner';
+import PhysicsPanel from './PhysicsPanel';
 import './Universe.css';
 
 function UniverseEdit() {
@@ -27,11 +28,35 @@ function UniverseEdit() {
     name: '',
     description: '',
     is_public: false,
+    physics_params: null,
   });
   const [formErrors, setFormErrors] = useState({
     name: '',
     description: '',
   });
+  const [canEdit, setCanEdit] = useState(false);
+  const [lastFetchTime, setLastFetchTime] = useState(0);
+
+  const fetchUniverseData = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get(endpoints.universes.detail(id));
+      setFormData({
+        name: response.name,
+        description: response.description || '',
+        is_public: response.is_public || false,
+        physics_params: response.physics_params || null,
+      });
+      // Check if user has edit permissions
+      setCanEdit(response.user_role === 'owner');
+      setLastFetchTime(Date.now());
+    } catch (error) {
+      console.error('Failed to fetch universe:', error);
+      setError(error.response?.data?.message || 'Failed to load universe');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     // Fetch universes list if not loaded
@@ -41,25 +66,21 @@ function UniverseEdit() {
   }, [dispatch, universes]);
 
   useEffect(() => {
-    const fetchUniverse = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get(endpoints.universes.detail(id));
-        setFormData({
-          name: response.name,
-          description: response.description || '',
-          is_public: response.is_public || false,
-        });
-      } catch (error) {
-        console.error('Failed to fetch universe:', error);
-        setError(error.response?.data?.message || 'Failed to load universe');
-      } finally {
-        setLoading(false);
+    fetchUniverseData();
+  }, [id]);
+
+  // Add effect to refresh data when component gains focus
+  useEffect(() => {
+    const handleFocus = () => {
+      // Only refetch if it's been more than 5 seconds since last fetch
+      if (Date.now() - lastFetchTime > 5000) {
+        fetchUniverseData();
       }
     };
 
-    fetchUniverse();
-  }, [id]);
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [lastFetchTime]);
 
   const handleChange = e => {
     const { name, value, type, checked } = e.target;
@@ -114,6 +135,16 @@ function UniverseEdit() {
 
   const handleCancel = () => {
     navigate(`/universes/${id}`);
+  };
+
+  const handlePhysicsParamsChange = updatedParams => {
+    console.log('Physics params updated:', updatedParams);
+    setFormData(prev => ({
+      ...prev,
+      physics_params: updatedParams,
+    }));
+    // Reset last fetch time to prevent immediate refetch on focus
+    setLastFetchTime(Date.now());
   };
 
   if (loading) {
@@ -172,6 +203,14 @@ function UniverseEdit() {
             Make Universe Public
           </label>
         </div>
+
+        <PhysicsPanel
+          universeId={id}
+          initialPhysicsParams={formData.physics_params}
+          readOnly={!canEdit}
+          onPhysicsParamsChange={handlePhysicsParamsChange}
+        />
+
         <div className="form-actions">
           <Button type="submit" disabled={isSubmitting} loading={isSubmitting}>
             Save Changes

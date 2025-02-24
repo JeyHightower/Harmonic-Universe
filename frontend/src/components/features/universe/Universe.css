@@ -226,3 +226,95 @@
   border-radius: var(--border-radius);
   margin-bottom: var(--spacing-lg);
 }
+
+/* Physics Panel Styles */
+.physics-panel {
+  background-color: var(--background-secondary);
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.physics-panel h2 {
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+}
+
+.physics-parameters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.parameter-group {
+  background-color: var(--background-tertiary);
+  border-radius: 6px;
+  padding: 15px;
+}
+
+.parameter-group label {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.physics-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Parameter Input Styles */
+.parameter-group input[type='number'] {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--background-primary);
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.parameter-group input[type='number']:focus {
+  border-color: var(--primary-color);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--primary-color-alpha);
+}
+
+.parameter-group .unit {
+  color: var(--text-secondary);
+  margin-left: 8px;
+  font-size: 0.9rem;
+}
+
+.parameter-group .error {
+  color: var(--error-color);
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+/* Disabled State */
+.parameter-group input[type='number']:disabled {
+  background-color: var(--background-disabled);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Loading State */
+.physics-panel.loading {
+  position: relative;
+}
+
+.physics-panel.loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(var(--background-primary-rgb), 0.7);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

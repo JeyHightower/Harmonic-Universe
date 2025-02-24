@@ -1,18 +1,20 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
+import { setCurrentUniverse } from '../../../store/slices/universeSlice';
 import { deleteUniverse } from '../../../store/thunks/universeThunks';
 import { api, endpoints } from '../../../utils/api';
 import Button from '../../common/Button';
 import Modal from '../../common/Modal';
 import Spinner from '../../common/Spinner';
+import PhysicsPanel from './PhysicsPanel';
 import './Universe.css';
 
 const UniverseDetail = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { id } = useParams();
-  const [universe, setUniverse] = useState(null);
+  const { currentUniverse } = useSelector(state => state.universe);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -23,7 +25,18 @@ const UniverseDetail = () => {
       try {
         setLoading(true);
         const response = await api.get(endpoints.universes.detail(id));
-        setUniverse(response);
+
+        // Only update if we have meaningful changes
+        const hasChanges =
+          !currentUniverse ||
+          currentUniverse.id !== response.id ||
+          JSON.stringify(currentUniverse.physics_params) !==
+            JSON.stringify(response.physics_params);
+
+        if (hasChanges) {
+          dispatch(setCurrentUniverse(response));
+        }
+
         setError(null);
       } catch (error) {
         console.error('Failed to fetch universe:', error);
@@ -33,11 +46,14 @@ const UniverseDetail = () => {
       }
     };
 
-    fetchUniverse();
-  }, [id]);
+    // Only fetch if ID changes
+    if (id) {
+      fetchUniverse();
+    }
+  }, [id]); // Remove dispatch from dependencies since it's stable
 
   // Check if user has permission to modify this universe
-  const canModifyUniverse = universe?.user_role === 'owner';
+  const canModifyUniverse = currentUniverse?.user_role === 'owner';
 
   const handleEdit = () => {
     if (!canModifyUniverse) {
@@ -65,7 +81,6 @@ const UniverseDetail = () => {
       setShowDeleteModal(false);
       navigate('/dashboard');
     } catch (error) {
-      // Don't log here since it's already logged in thunk/api
       const errorMessage = error.message || 'Failed to delete universe';
 
       if (
@@ -74,12 +89,12 @@ const UniverseDetail = () => {
       ) {
         setError('You do not have permission to delete this universe');
         setShowDeleteModal(false);
-        // Update UI to reflect lack of permissions
-        setUniverse(prev => ({
-          ...prev,
-          user_role: null, // Remove edit/delete permissions
-        }));
-        // Show a more prominent error message
+        dispatch(
+          setCurrentUniverse({
+            ...currentUniverse,
+            user_role: null,
+          })
+        );
         setTimeout(() => {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }, 100);
@@ -152,7 +167,7 @@ const UniverseDetail = () => {
     );
   }
 
-  if (!universe) {
+  if (!currentUniverse) {
     return (
       <div className="universe-container">
         <div className="universe-error">
@@ -169,7 +184,7 @@ const UniverseDetail = () => {
     <div className="universe-container">
       <div className="universe-detail">
         <header className="universe-detail-header">
-          <h1>{universe.name}</h1>
+          <h1>{currentUniverse.name}</h1>
           {canModifyUniverse && (
             <div className="universe-detail-actions">
               <Button variant="secondary" onClick={handleEdit}>
@@ -185,24 +200,32 @@ const UniverseDetail = () => {
         <section className="universe-detail-info">
           <div className="universe-detail-field">
             <h2>Description</h2>
-            <p>{universe.description}</p>
+            <p>{currentUniverse.description}</p>
           </div>
 
           <div className="universe-detail-field">
             <h2>Created</h2>
-            <p>{new Date(universe.created_at).toLocaleDateString()}</p>
+            <p>{new Date(currentUniverse.created_at).toLocaleDateString()}</p>
           </div>
 
           <div className="universe-detail-field">
             <h2>Last Updated</h2>
-            <p>{new Date(universe.updated_at).toLocaleDateString()}</p>
+            <p>{new Date(currentUniverse.updated_at).toLocaleDateString()}</p>
           </div>
 
           <div className="universe-detail-field">
             <h2>Visibility</h2>
-            <p>{universe.is_public ? 'Public' : 'Private'}</p>
+            <p>{currentUniverse.is_public ? 'Public' : 'Private'}</p>
           </div>
         </section>
+
+        <div className="universe-section">
+          <PhysicsPanel
+            universeId={id}
+            initialPhysicsParams={currentUniverse.physics_params}
+            readOnly={!canModifyUniverse}
+          />
+        </div>
       </div>
 
       <Modal
@@ -210,18 +233,14 @@ const UniverseDetail = () => {
         onClose={handleCloseModal}
         title="Delete Universe"
       >
-        <div className="delete-modal-content">
-          <p>
-            Are you sure you want to delete this universe? This action cannot be
-            undone.
-          </p>
-          {error && <div className="error-message">{error}</div>}
+        <div>
+          <p>Are you sure you want to delete this universe?</p>
+          <p>This action cannot be undone.</p>
           <div className="modal-actions">
             <Button
               variant="danger"
               onClick={handleDeleteConfirm}
               disabled={isDeleting}
-              loading={isDeleting}
             >
               {isDeleting ? 'Deleting...' : 'Delete'}
             </Button>

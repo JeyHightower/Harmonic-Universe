@@ -1,27 +1,27 @@
+import { API_BASE_URL, DEFAULT_HEADERS } from './config';
+
 // API configuration
 export const endpoints = {
   auth: {
-    login: '/api/auth/login',
-    register: '/api/auth/register',
-    logout: '/api/auth/logout',
-    me: '/api/auth/me',
-    demoLogin: '/api/auth/demo-login',
-    refresh: '/api/auth/refresh',
+    login: `${API_BASE_URL}/api/auth/login`,
+    register: `${API_BASE_URL}/api/auth/register`,
+    logout: `${API_BASE_URL}/api/auth/logout`,
+    me: `${API_BASE_URL}/api/auth/me`,
+    demoLogin: `${API_BASE_URL}/api/auth/demo-login`,
+    refresh: `${API_BASE_URL}/api/auth/refresh`,
   },
   universes: {
-    list: '/api/universes/',
-    detail: id => `/api/universes/${id}/`,
-    create: '/api/universes/',
-    update: id => `/api/universes/${id}/`,
-    delete: id => `/api/universes/${id}/`,
+    list: `${API_BASE_URL}/api/universes/`,
+    detail: id => `${API_BASE_URL}/api/universes/${id}/`,
+    create: `${API_BASE_URL}/api/universes/`,
+    update: id => `${API_BASE_URL}/api/universes/${id}/`,
+    delete: id => `${API_BASE_URL}/api/universes/${id}/`,
+    physics: id => `${API_BASE_URL}/api/universes/${id}/physics/`,
   },
 };
 
 // API client configuration
-const defaultHeaders = {
-  'Content-Type': 'application/json',
-  Accept: 'application/json',
-};
+const defaultHeaders = DEFAULT_HEADERS;
 
 // Helper function to check if token is valid
 const isTokenValid = token => {
@@ -126,7 +126,13 @@ export const api = {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
 
-    console.debug('GET Request:', { endpoint, headers });
+    console.debug('GET Request:', {
+      endpoint,
+      headers: {
+        ...headers,
+        Authorization: token ? 'Bearer [REDACTED]' : 'None',
+      },
+    });
     const response = await fetch(endpoint, { headers });
     return handleResponse(response);
   },
@@ -138,7 +144,14 @@ export const api = {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
 
-    console.debug('POST Request:', { endpoint, headers, data });
+    console.debug('POST Request:', {
+      endpoint,
+      headers: {
+        ...headers,
+        Authorization: token ? 'Bearer [REDACTED]' : 'None',
+      },
+      data,
+    });
     const response = await fetch(endpoint, {
       method: 'POST',
       headers,
@@ -150,19 +163,39 @@ export const api = {
 
   async put(endpoint, data) {
     const token = await getAuthToken();
+    console.debug('Token for PUT request:', token ? 'Present' : 'Missing');
+
+    if (!token) {
+      console.error('No valid token available for PUT request');
+      throw new Error('Authentication required');
+    }
+
     const headers = {
       ...defaultHeaders,
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      Authorization: `Bearer ${token}`,
     };
 
-    console.debug('PUT Request:', { endpoint, headers, data });
-    const response = await fetch(endpoint, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify(data),
+    console.debug('PUT Request:', {
+      endpoint,
+      headers: {
+        ...headers,
+        Authorization: 'Bearer [REDACTED]',
+      },
+      data,
     });
 
-    return handleResponse(response);
+    try {
+      const response = await fetch(endpoint, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(data),
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('PUT request failed:', error);
+      throw error;
+    }
   },
 
   async delete(endpoint) {
@@ -172,93 +205,18 @@ export const api = {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
 
-    console.debug('DELETE Request:', { endpoint, headers });
+    console.debug('DELETE Request:', {
+      endpoint,
+      headers: {
+        ...headers,
+        Authorization: token ? 'Bearer [REDACTED]' : 'None',
+      },
+    });
     const response = await fetch(endpoint, {
       method: 'DELETE',
       headers,
     });
 
-    if (!response.ok) {
-      console.error('DELETE request failed:', {
-        status: response.status,
-        statusText: response.statusText,
-        url: response.url,
-      });
-
-      let errorData;
-      try {
-        errorData = await response.json();
-      } catch {
-        errorData = { message: response.statusText };
-      }
-
-      // Create detailed error object
-      const error = new Error(errorData.message || 'API request failed');
-      error.response = {
-        status: response.status,
-        data: errorData,
-        headers: Object.fromEntries(response.headers.entries()),
-      };
-
-      // Handle token refresh only for authentication errors
-      if (
-        response.status === 401 ||
-        (response.status === 403 && errorData.error_code === 'TOKEN_EXPIRED')
-      ) {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (refreshToken) {
-          try {
-            const refreshResponse = await fetch(endpoints.auth.refresh, {
-              method: 'POST',
-              headers: {
-                ...defaultHeaders,
-                Authorization: `Bearer ${refreshToken}`,
-              },
-            });
-
-            if (!refreshResponse.ok) {
-              throw new Error(
-                `Token refresh failed: ${refreshResponse.status}`
-              );
-            }
-
-            const refreshData = await refreshResponse.json();
-            if (refreshData.access_token) {
-              localStorage.setItem('accessToken', refreshData.access_token);
-              return this.delete(endpoint);
-            }
-          } catch (refreshError) {
-            console.error('Token refresh failed:', refreshError);
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            throw error;
-          }
-        }
-      }
-
-      // For authorization errors, enhance the error message
-      if (response.status === 403) {
-        if (errorData.error_code === 'AUTHORIZATION_ERROR') {
-          error.isAuthorizationError = true;
-          error.error_code = 'AUTHORIZATION_ERROR';
-          error.response.data.userMessage =
-            errorData.message ||
-            'You do not have permission to perform this action';
-          throw error;
-        } else if (errorData.error_code === 'TOKEN_EXPIRED') {
-          // Token expired error is handled above
-          throw error;
-        } else {
-          // Unknown 403 error
-          error.response.data.userMessage =
-            errorData.message || 'Access forbidden';
-          throw error;
-        }
-      }
-
-      throw error;
-    }
-
-    return response.status === 204 ? null : response.json();
+    return handleResponse(response);
   },
 };
