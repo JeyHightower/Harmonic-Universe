@@ -185,54 +185,80 @@ export const api = {
         url: response.url,
       });
 
-      const error = new Error('API request failed');
+      let errorData;
       try {
-        const data = await response.json();
-        error.response = { data, status: response.status };
-        console.error('Error response data:', data);
+        errorData = await response.json();
+      } catch {
+        errorData = { message: response.statusText };
+      }
 
-        // Check if this is an auth error
-        if (response.status === 403) {
-          // Try to refresh the token and retry the request
-          const refreshToken = localStorage.getItem('refreshToken');
-          if (refreshToken) {
-            try {
-              const refreshResponse = await fetch(endpoints.auth.refresh, {
-                method: 'POST',
-                headers: {
-                  ...defaultHeaders,
-                  Authorization: `Bearer ${refreshToken}`,
-                },
-              });
+      // Create detailed error object
+      const error = new Error(errorData.message || 'API request failed');
+      error.response = {
+        status: response.status,
+        data: errorData,
+        headers: Object.fromEntries(response.headers.entries()),
+      };
 
-              if (!refreshResponse.ok) {
-                throw new Error(
-                  `Token refresh failed: ${refreshResponse.status}`
-                );
-              }
+      // Handle token refresh only for authentication errors
+      if (
+        response.status === 401 ||
+        (response.status === 403 && errorData.error_code === 'TOKEN_EXPIRED')
+      ) {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (refreshToken) {
+          try {
+            const refreshResponse = await fetch(endpoints.auth.refresh, {
+              method: 'POST',
+              headers: {
+                ...defaultHeaders,
+                Authorization: `Bearer ${refreshToken}`,
+              },
+            });
 
-              const refreshData = await refreshResponse.json();
-              if (refreshData.access_token) {
-                localStorage.setItem('accessToken', refreshData.access_token);
-                // Retry the original request
-                return this.delete(endpoint);
-              }
-            } catch (refreshError) {
-              console.error('Token refresh failed:', refreshError);
-              // Clear tokens on refresh failure
-              localStorage.removeItem('accessToken');
-              localStorage.removeItem('refreshToken');
+            if (!refreshResponse.ok) {
+              throw new Error(
+                `Token refresh failed: ${refreshResponse.status}`
+              );
             }
+
+            const refreshData = await refreshResponse.json();
+            if (refreshData.access_token) {
+              localStorage.setItem('accessToken', refreshData.access_token);
+              return this.delete(endpoint);
+            }
+          } catch (refreshError) {
+            console.error('Token refresh failed:', refreshError);
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            throw error;
           }
         }
-      } catch {
-        error.response = {
-          data: { message: response.statusText },
-          status: response.status,
-        };
       }
+
+      // For authorization errors, enhance the error message
+      if (response.status === 403) {
+        if (errorData.error_code === 'AUTHORIZATION_ERROR') {
+          error.isAuthorizationError = true;
+          error.error_code = 'AUTHORIZATION_ERROR';
+          error.response.data.userMessage =
+            errorData.message ||
+            'You do not have permission to perform this action';
+          throw error;
+        } else if (errorData.error_code === 'TOKEN_EXPIRED') {
+          // Token expired error is handled above
+          throw error;
+        } else {
+          // Unknown 403 error
+          error.response.data.userMessage =
+            errorData.message || 'Access forbidden';
+          throw error;
+        }
+      }
+
       throw error;
     }
-    return response.json();
+
+    return response.status === 204 ? null : response.json();
   },
 };

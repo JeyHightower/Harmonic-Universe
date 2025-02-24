@@ -65,22 +65,37 @@ const UniverseDetail = () => {
       setShowDeleteModal(false);
       navigate('/dashboard');
     } catch (error) {
-      console.error('Delete failed:', error);
-      if (error.response?.data?.message) {
-        setError(error.response.data.message);
-        // If it's an auth error, redirect to login
-        if (error.response.status === 403 || error.response.status === 401) {
-          setTimeout(() => {
-            navigate('/login', {
-              state: {
-                from: `/universes/${id}`,
-                message: 'Please log in again to continue.',
-              },
-            });
-          }, 2000);
-        }
+      // Don't log here since it's already logged in thunk/api
+      const errorMessage = error.message || 'Failed to delete universe';
+
+      if (
+        error.isAuthorizationError ||
+        error.error_code === 'AUTHORIZATION_ERROR'
+      ) {
+        setError('You do not have permission to delete this universe');
+        setShowDeleteModal(false);
+        // Update UI to reflect lack of permissions
+        setUniverse(prev => ({
+          ...prev,
+          user_role: null, // Remove edit/delete permissions
+        }));
+        // Show a more prominent error message
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 100);
+      } else if (error.status === 401) {
+        setError('Your session has expired. Redirecting to login...');
+        setShowDeleteModal(false);
+        setTimeout(() => {
+          navigate('/login', {
+            state: {
+              from: `/universes/${id}`,
+              message: 'Please log in again to continue.',
+            },
+          });
+        }, 2000);
       } else {
-        setError('Failed to delete universe. Please try again.');
+        setError(errorMessage);
       }
     } finally {
       setIsDeleting(false);
@@ -101,6 +116,23 @@ const UniverseDetail = () => {
     [isDeleting]
   );
 
+  // Update error display component
+  const ErrorDisplay = ({ message }) => (
+    <div className="universe-error" role="alert">
+      <p>{message}</p>
+      <div className="error-actions">
+        <Button onClick={() => navigate('/dashboard')}>
+          Back to Dashboard
+        </Button>
+        {message.includes('permission') && (
+          <Button variant="secondary" onClick={() => window.location.reload()}>
+            Refresh Page
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="universe-container">
@@ -115,10 +147,7 @@ const UniverseDetail = () => {
   if (error) {
     return (
       <div className="universe-container">
-        <div className="universe-error">
-          <p>{error}</p>
-          <Button onClick={() => window.location.reload()}>Retry</Button>
-        </div>
+        <ErrorDisplay message={error} />
       </div>
     );
   }

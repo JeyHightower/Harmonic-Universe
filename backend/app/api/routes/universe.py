@@ -8,6 +8,7 @@ from app.db.session import get_db
 from app import socketio
 from app.core.auth import require_auth
 from datetime import datetime
+from uuid import UUID
 
 universe_bp = Blueprint('universe', __name__)
 
@@ -151,8 +152,18 @@ def delete_universe(universe_id):
             universe = Universe.get_by_id(db, universe_id)
             if not universe:
                 raise ValidationError('Universe not found')
-            if universe.user_id != current_user_id:
+
+            # Convert current_user_id to UUID for comparison
+            from uuid import UUID
+            try:
+                current_user_uuid = UUID(current_user_id)
+            except ValueError:
+                raise AuthorizationError('Invalid user ID format')
+
+            # Compare UUIDs as strings to ensure consistent comparison
+            if str(universe.user_id) != str(current_user_uuid):
                 raise AuthorizationError('Not authorized to delete this universe')
+
             db.delete(universe)
             db.commit()
             return '', 204

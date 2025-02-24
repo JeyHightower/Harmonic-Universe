@@ -67,13 +67,17 @@ export const deleteUniverse = createAsyncThunk(
   'universe/deleteUniverse',
   async (universeId, { rejectWithValue }) => {
     try {
-      console.debug('Deleting universe:', universeId);
       await api.delete(endpoints.universes.delete(universeId));
-      console.debug('Universe deleted:', universeId);
       return universeId;
     } catch (error) {
-      console.error('Failed to delete universe:', error);
-      return rejectWithValue(handleError(error));
+      // Don't log here since api.js already logs errors
+      return rejectWithValue({
+        status: error.response?.status,
+        message:
+          error.response?.data?.userMessage || error.response?.data?.message,
+        error_code: error.response?.data?.error_code,
+        isAuthorizationError: error.isAuthorizationError,
+      });
     }
   }
 );

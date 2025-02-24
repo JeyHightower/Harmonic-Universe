@@ -6,6 +6,7 @@ const initialState = {
   content: null,
   actionType: null,
   showCancel: true,
+  isClosing: false,
 };
 
 const modalSlice = createSlice({
@@ -14,20 +15,20 @@ const modalSlice = createSlice({
   reducers: {
     openModal: (state, action) => {
       state.isOpen = true;
+      state.isClosing = false;
       state.title = action.payload.title;
       state.content = action.payload.content;
       state.actionType = action.payload.actionType;
       state.showCancel = action.payload.showCancel ?? true;
     },
+    startClosing: state => {
+      state.isClosing = true;
+    },
     closeModal: state => {
-      state.isOpen = false;
-      state.title = '';
-      state.content = null;
-      state.actionType = null;
-      state.showCancel = true;
+      return initialState;
     },
   },
 });
 
-export const { openModal, closeModal } = modalSlice.actions;
+export const { openModal, startClosing, closeModal } = modalSlice.actions;
 export default modalSlice.reducer;

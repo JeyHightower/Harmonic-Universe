@@ -9,9 +9,10 @@
   justify-content: center;
   align-items: center;
   z-index: 9999;
-  backdrop-filter: blur(2px);
-  animation: fadeIn 0.2s ease-out;
+  opacity: 1;
+  transition: opacity 0.2s ease-in-out;
   padding: var(--spacing-md);
+  backdrop-filter: blur(2px);
 }
 
 .modal {
@@ -24,21 +25,23 @@
   overflow-y: auto;
   position: relative;
   z-index: 10000;
-  animation: slideIn 0.3s ease-out;
-  transform-origin: center center;
+  opacity: 1;
+  transform: scale(1);
+  transition: all 0.2s ease-out;
   margin: auto;
+}
+
+.modal-closing {
+  opacity: 0;
+  transform: scale(0.95);
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md);
   border-bottom: 1px solid var(--border-color);
-  position: sticky;
-  top: 0;
-  background: var(--surface-color);
-  z-index: 1;
 }
 
 .modal-header h2 {
@@ -52,68 +55,66 @@
   background: none;
   border: none;
   font-size: 1.5rem;
-  color: var(--text-secondary);
   cursor: pointer;
-  padding: var(--spacing-sm);
-  border-radius: 50%;
+  padding: 0.5rem;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  border-radius: 50%;
   width: 32px;
   height: 32px;
-  margin: calc(var(--spacing-sm) * -1);
-  position: relative;
-  z-index: 2;
 }
 
 .modal-close:hover {
   background-color: var(--surface-hover);
-  color: var(--text-primary);
+  color: var(--error-color);
 }
 
 .modal-close:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--primary-color);
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
 }
 
 .modal-content {
-  padding: var(--spacing-lg);
-  position: relative;
-  z-index: 0;
+  padding: var(--spacing-md);
+  color: var(--text-primary);
 }
 
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: var(--spacing-md);
-  margin-top: var(--spacing-lg);
-  padding-top: var(--spacing-md);
+  padding: var(--spacing-md);
   border-top: 1px solid var(--border-color);
-  position: sticky;
-  bottom: 0;
   background: var(--surface-color);
-  z-index: 1;
 }
 
-.modal-actions button {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  transition: background-color var(--transition-speed);
+/* Prevent body scroll when modal is open */
+body.modal-open {
+  overflow: hidden;
+  padding-right: var(--scrollbar-width, 0);
+  position: fixed;
+  width: 100%;
 }
 
-.modal-actions .btn-primary {
-  background-color: var(--primary-color);
-  color: white;
+/* Ensure proper stacking context */
+#portal-root {
+  position: fixed;
+  z-index: 9999;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
 }
 
-.modal-actions .btn-secondary {
-  background-color: var(--secondary-color);
-  color: white;
+#portal-root > * {
+  pointer-events: auto;
 }
 
+/* Animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -126,16 +127,50 @@
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: scale(0.95) translateY(-10px);
+    transform: scale(0.95);
   }
   to {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: scale(1);
   }
 }
 
-/* Prevent body scroll when modal is open */
-body.modal-open {
-  overflow: hidden;
-  padding-right: var(--scrollbar-width, 0);
+/* Apply animations */
+.modal-overlay {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal {
+  animation: slideIn 0.2s ease-out;
+}
+
+/* Modal Content Types */
+.delete-modal-content {
+  padding: var(--spacing-md);
+}
+
+.delete-modal-content p {
+  margin-bottom: var(--spacing-md);
+  color: var(--text-primary);
+  font-size: var(--font-size-md);
+  line-height: 1.5;
+}
+
+.delete-modal-content .error-message {
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-sm);
+  background-color: var(--error-bg);
+  color: var(--error-color);
+  border-radius: var(--border-radius);
+}
+
+.logout-modal-content {
+  padding: var(--spacing-md);
+}
+
+.logout-modal-content p {
+  margin-bottom: var(--spacing-md);
+  color: var(--text-primary);
+  font-size: var(--font-size-md);
+  line-height: 1.5;
 }

@@ -17,11 +17,10 @@ function Layout() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleLogoutClick = e => {
+  const handleLogoutClick = useCallback(e => {
     e.preventDefault();
-    e.stopPropagation();
     setShowLogoutModal(true);
-  };
+  }, []);
 
   const handleLogoutConfirm = async () => {
     try {
@@ -46,19 +45,16 @@ function Layout() {
     }
   };
 
-  const handleCloseModal = useCallback(
-    e => {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      if (!isLoggingOut) {
-        setShowLogoutModal(false);
-        setError(null);
-      }
-    },
-    [isLoggingOut]
-  );
+  const handleCloseModal = useCallback(() => {
+    if (!isLoggingOut) {
+      setShowLogoutModal(false);
+      setError(null);
+    }
+  }, [isLoggingOut]);
+
+  const handleModalContentClick = useCallback(e => {
+    e.stopPropagation();
+  }, []);
 
   return (
     <div className="app">
@@ -101,10 +97,10 @@ function Layout() {
         onClose={handleCloseModal}
         title="Confirm Logout"
       >
-        <div className="modal-content">
+        <div className="logout-modal-content" onClick={handleModalContentClick}>
           <p>Are you sure you want to logout?</p>
           {error && <div className="error-message">{error}</div>}
-          <div className="modal-actions">
+          <div className="logout-modal-actions">
             <Button
               variant="primary"
               onClick={handleLogoutConfirm}
