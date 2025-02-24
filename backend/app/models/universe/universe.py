@@ -150,9 +150,18 @@ class Universe(BaseModel):
     visualizations = relationship('Visualization', back_populates='universe', cascade='all, delete-orphan')
 
     @classmethod
-    def get_by_id(cls, db, universe_id):
-        """Get universe by ID."""
-        return db.query(cls).filter(cls.id == universe_id).first()
+    def get_by_id(cls, session, universe_id, for_update=False):
+        """Get universe by ID.
+
+        Args:
+            session: SQLAlchemy session
+            universe_id: UUID of universe to fetch
+            for_update: If True, locks the row for update
+        """
+        query = session.query(cls).filter(cls.id == universe_id)
+        if for_update:
+            query = query.with_for_update()
+        return query.first()
 
     def to_dict(self, current_user_id: Optional[str] = None) -> Dict:
         """
@@ -189,13 +198,52 @@ class Universe(BaseModel):
 
     def update_physics(self, params: Dict) -> 'Universe':
         """Update physics parameters with validation."""
-        for key, value in params.items():
-            if key in self.physics_params:
-                if isinstance(value, dict):
-                    self.physics_params[key].update(value)
-                else:
-                    self.physics_params[key]['value'] = value
-        return self
+        try:
+            # Create a copy of current parameters to work with
+            updated_params = dict(self.physics_params)
+
+            for key, value in params.items():
+                if key in updated_params:
+                    if isinstance(value, dict):
+                        # Get current parameter settings
+                        current_param = updated_params[key]
+
+                        # Validate the new value
+                        new_value = float(value.get('value', current_param.get('value')))
+                        min_val = float(current_param.get('min', 0))
+                        max_val = float(current_param.get('max', float('inf')))
+
+                        if not (min_val <= new_value <= max_val):
+                            raise ValueError(f"{key} value must be between {min_val} and {max_val}")
+
+                        # Update the parameter while preserving metadata
+                        updated_params[key] = {
+                            **current_param,  # Keep existing metadata
+                            'value': new_value,  # Update value
+                            'unit': value.get('unit', current_param.get('unit')),  # Update unit if provided
+                            'min': min_val,  # Preserve min
+                            'max': max_val,  # Preserve max
+                        }
+                    else:
+                        # Handle direct value update
+                        current_param = updated_params[key]
+                        new_value = float(value)
+                        min_val = float(current_param.get('min', 0))
+                        max_val = float(current_param.get('max', float('inf')))
+
+                        if not (min_val <= new_value <= max_val):
+                            raise ValueError(f"{key} value must be between {min_val} and {max_val}")
+
+                        updated_params[key]['value'] = new_value
+
+            # Update the physics_params with validated values
+            self.physics_params = updated_params
+            return self
+
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Invalid physics parameter: {str(e)}")
+        except Exception as e:
+            raise ValueError(f"Failed to update physics parameters: {str(e)}")
 
     def update_harmony(self, params: Dict) -> 'Universe':
         """Update harmony parameters with validation."""

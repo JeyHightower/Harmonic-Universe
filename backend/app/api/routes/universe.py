@@ -76,10 +76,10 @@ def get_universe(universe_id):
     """Get a specific universe."""
     current_user_id = get_jwt_identity()
 
-    with get_db() as db:
+    with get_db() as session:
         try:
             # Get the universe using get_by_id
-            universe = Universe.get_by_id(db, universe_id)
+            universe = Universe.get_by_id(session, universe_id)
 
             if not universe:
                 raise ValidationError('Universe not found')
@@ -88,23 +88,17 @@ def get_universe(universe_id):
             if not (universe.is_public or str(universe.user_id) == str(current_user_id)):
                 raise AuthorizationError('Not authorized to access this universe')
 
-            # Get user's role and permissions if they exist
-            user_role = None
-            if str(universe.user_id) == str(current_user_id):
-                user_role = 'owner'
-
             # Add role to response
             response_data = universe.to_dict()
-            response_data['user_role'] = user_role
+            response_data['user_role'] = 'owner' if str(universe.user_id) == str(current_user_id) else 'viewer'
 
-            db.commit()
             return jsonify(response_data)
 
         except (ValidationError, AuthorizationError) as e:
-            db.rollback()
+            session.rollback()
             raise
         except Exception as e:
-            db.rollback()
+            session.rollback()
             raise ValidationError(f"Error fetching universe: {str(e)}")
 
 @universe_bp.route('/<uuid:universe_id>/', methods=['PUT'])
@@ -182,8 +176,8 @@ def update_physics(universe_id):
 
     with get_db() as db:
         try:
-            # Start transaction and get universe with row lock
-            universe = db.query(Universe).with_for_update().filter_by(id=universe_id).first()
+            # Get universe using get_by_id with row lock
+            universe = db.query(Universe).filter(Universe.id == universe_id).with_for_update().first()
             if not universe:
                 raise ValidationError('Universe not found')
 
@@ -198,22 +192,12 @@ def update_physics(universe_id):
             # Update physics parameters
             universe.update_physics(data['physics_params'])
 
-            # Explicitly flush changes
-            db.flush()
-
-            # Refresh the universe object to ensure we have latest state
-            db.refresh(universe)
-
-            # Commit transaction
+            # Add universe to session and commit
+            db.add(universe)
             db.commit()
 
-            # Verify the update
-            updated_universe = db.query(Universe).filter_by(id=universe_id).first()
-            if not updated_universe or not updated_universe.physics_params:
-                raise ValidationError('Failed to verify physics parameters update')
-
             # Return complete universe data with user role
-            response_data = updated_universe.to_dict()
+            response_data = universe.to_dict()
             response_data['user_role'] = 'owner'
             return jsonify(response_data)
 
@@ -222,6 +206,7 @@ def update_physics(universe_id):
             raise
         except Exception as e:
             db.rollback()
+            logger.error(f"Error updating physics: {str(e)}", exc_info=True)
             raise ValidationError(f"Error updating physics: {str(e)}")
 
 @universe_bp.route('/<uuid:universe_id>/harmony/', methods=['PUT'])

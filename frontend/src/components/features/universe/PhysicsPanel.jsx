@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setCurrentUniverse } from '../../../store/slices/universeSlice';
 import { updatePhysicsParams } from '../../../store/thunks/universeThunks';
 import Button from '../../common/Button';
 import Input from '../../common/Input';
@@ -99,10 +98,9 @@ function PhysicsPanel({
       );
       setPhysicsParams(updatedParams);
       setLastSubmittedValues(updatedParams);
-    } else {
-      // Fall back to initialPhysicsParams or defaults
-      const sourceParams = initialPhysicsParams || DEFAULT_PHYSICS_PARAMS;
-      const updatedParams = Object.entries(sourceParams).reduce(
+    } else if (initialPhysicsParams) {
+      // Use initial params if provided
+      const updatedParams = Object.entries(initialPhysicsParams).reduce(
         (acc, [key, param]) => ({
           ...acc,
           [key]: {
@@ -114,9 +112,18 @@ function PhysicsPanel({
       );
       setPhysicsParams(updatedParams);
       setLastSubmittedValues(updatedParams);
+    } else {
+      // Fall back to defaults
+      setPhysicsParams(DEFAULT_PHYSICS_PARAMS);
+      setLastSubmittedValues(DEFAULT_PHYSICS_PARAMS);
     }
     setIsLoading(false);
-  }, [currentUniverse?.id, universeId, currentUniverse?.physics_params]);
+  }, [
+    currentUniverse?.id,
+    universeId,
+    currentUniverse?.physics_params,
+    initialPhysicsParams,
+  ]);
 
   // Sync with Redux store updates
   useEffect(() => {
@@ -125,10 +132,11 @@ function PhysicsPanel({
       currentUniverse?.physics_params &&
       physicsParams
     ) {
-      setIsLoading(true);
       const storeParams = JSON.parse(
         JSON.stringify(currentUniverse.physics_params)
       );
+
+      // Only update if values have actually changed
       if (!arePhysicsParamsEqual(storeParams, physicsParams)) {
         const updatedParams = Object.entries(storeParams).reduce(
           (acc, [key, param]) => ({
@@ -143,9 +151,8 @@ function PhysicsPanel({
         setPhysicsParams(updatedParams);
         setLastSubmittedValues(updatedParams);
       }
-      setIsLoading(false);
     }
-  }, [currentUniverse?.physics_params]);
+  }, [currentUniverse?.physics_params, universeId]);
 
   const validateParameter = (name, value) => {
     const param = physicsParams[name];
@@ -221,6 +228,7 @@ function PhysicsPanel({
       // Check if values have actually changed
       if (arePhysicsParamsEqual(physicsParams, lastSubmittedValues)) {
         console.log('No changes to submit');
+        setIsSubmitting(false);
         return;
       }
 
@@ -228,8 +236,7 @@ function PhysicsPanel({
 
       console.debug('Submitting physics update:', {
         universeId,
-        currentRole: currentUniverse?.user_role,
-        hasChanges: true,
+        physicsParams: cleanPhysicsParams,
       });
 
       // Attempt to update physics parameters
@@ -240,24 +247,19 @@ function PhysicsPanel({
         })
       ).unwrap();
 
-      if (result) {
+      if (result && result.physics_params) {
         console.debug('Physics update successful:', {
           universeId,
-          newRole: result.user_role,
-          hasPhysicsParams: !!result.physics_params,
+          physics_params: result.physics_params,
         });
 
-        // Update local state with the server response
-        const serverPhysicsParams = result.physics_params;
-
-        // Preserve metadata while using server values
-        const updatedParams = Object.entries(serverPhysicsParams).reduce(
+        // Update local state with the server response while preserving metadata
+        const updatedParams = Object.entries(result.physics_params).reduce(
           (acc, [key, param]) => ({
             ...acc,
             [key]: {
-              ...physicsParams[key], // Keep metadata (min, max, etc.)
-              value: param.value,
-              unit: param.unit,
+              ...DEFAULT_PHYSICS_PARAMS[key], // Keep default metadata
+              ...param, // Update with server values
             },
           }),
           {}
@@ -267,56 +269,17 @@ function PhysicsPanel({
         setLastSubmittedValues(updatedParams);
         setErrors({});
 
-        // Update parent component with cleaned server response
+        // Update parent component
         if (onPhysicsParamsChange) {
-          onPhysicsParamsChange(serverPhysicsParams);
+          onPhysicsParamsChange(result.physics_params);
         }
-
-        // Update universe data in Redux store
-        if (currentUniverse && result.id === currentUniverse.id) {
-          dispatch(setCurrentUniverse(result));
-        }
+      } else {
+        throw new Error('Invalid response from server');
       }
     } catch (error) {
       console.error('Physics update error:', error);
-
-      // Handle authentication errors
-      if (error.status === 401 || error.message === 'Authentication required') {
-        setErrors({
-          submit: 'Your session has expired. Please log in again.',
-        });
-        setTimeout(() => {
-          window.location.href = '/login';
-        }, 2000);
-        return;
-      }
-
-      // Handle authorization errors
-      if (error.status === 403 || error.error_code === 'AUTHORIZATION_ERROR') {
-        const errorDetails = error.details || {};
-        const errorMessage =
-          errorDetails.user_role === null
-            ? 'You do not have permission to update this universe.'
-            : `Insufficient permissions: ${errorDetails.user_role} role cannot update physics parameters.`;
-
-        setErrors({
-          submit: errorMessage,
-        });
-
-        // Update local permission state
-        if (currentUniverse) {
-          dispatch(
-            setCurrentUniverse({
-              ...currentUniverse,
-              user_role: errorDetails.user_role || null,
-            })
-          );
-        }
-        return;
-      }
-
       setErrors({
-        submit: error.message || 'Failed to update physics parameters.',
+        submit: error.message || 'Failed to update physics parameters',
       });
     } finally {
       setIsSubmitting(false);
@@ -346,8 +309,14 @@ function PhysicsPanel({
       (acc, [key, param]) => ({
         ...acc,
         [key]: {
-          value: param.value,
+          value: parseFloat(param.value),
           unit: param.unit,
+          min: param.min,
+          max: param.max,
+          // Only include warning_threshold if it exists
+          ...(param.warning_threshold && {
+            warning_threshold: param.warning_threshold,
+          }),
         },
       }),
       {}
@@ -364,7 +333,7 @@ function PhysicsPanel({
         <>
           <div className="physics-parameters">
             {physicsParams &&
-              Object.entries(physicsParams).map(([name]) => (
+              Object.entries(physicsParams).map(([name, param]) => (
                 <div key={name} className="parameter-group">
                   <Input
                     type="number"

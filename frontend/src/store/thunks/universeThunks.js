@@ -75,21 +75,9 @@ export const updatePhysicsParams = createAsyncThunk(
         throw new Error('Failed to update physics parameters');
       }
 
-      // Verify the update was successful
-      const verifiedUniverse = await api.get(
-        endpoints.universes.detail(universeId)
-      );
-
-      if (!verifiedUniverse) {
-        throw new Error('Failed to verify physics parameters update');
-      }
-
-      // Check if the physics parameters match
-      const updatedParams = JSON.stringify(response.physics_params);
-      const verifiedParams = JSON.stringify(verifiedUniverse.physics_params);
-
-      if (updatedParams !== verifiedParams) {
-        throw new Error('Physics parameters verification failed');
+      // Verify the update was successful by checking if we got a response with physics_params
+      if (!response.physics_params) {
+        throw new Error('Invalid response format');
       }
 
       return response;

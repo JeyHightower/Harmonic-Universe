@@ -189,38 +189,35 @@ const universeSlice = createSlice({
         state.loading = false;
         state.error = null;
 
-        // Deep clone the received physics parameters
-        const newPhysicsParams = JSON.parse(
-          JSON.stringify(action.payload.physics_params)
-        );
+        if (!action.payload || !action.payload.physics_params) {
+          console.error('Invalid payload received:', action.payload);
+          return;
+        }
+
+        const updatedUniverse = {
+          ...action.payload,
+          updated_at: new Date().toISOString(),
+        };
 
         // Update current universe if it matches
         if (state.currentUniverse?.id === action.payload.id) {
-          state.currentUniverse = {
-            ...state.currentUniverse,
-            ...action.payload,
-            physics_params: newPhysicsParams,
-            updated_at: new Date().toISOString(), // Ensure timestamp is updated
-          };
+          state.currentUniverse = updatedUniverse;
         }
 
         // Update in universes list if present
         state.universes = state.universes.map(universe =>
-          universe.id === action.payload.id
-            ? {
-                ...universe,
-                ...action.payload,
-                physics_params: newPhysicsParams,
-                updated_at: new Date().toISOString(), // Ensure timestamp is updated
-              }
-            : universe
+          universe.id === action.payload.id ? updatedUniverse : universe
         );
+
+        // Log the update for debugging
+        console.debug('Physics params updated in store:', {
+          id: action.payload.id,
+          params: action.payload.physics_params,
+        });
       })
       .addCase(updatePhysicsParams.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to update physics parameters';
-
-        // Log the error for debugging
         console.error('Physics update failed:', action.payload);
       });
   },
