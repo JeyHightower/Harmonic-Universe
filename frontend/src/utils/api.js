@@ -114,12 +114,18 @@ const handleResponse = async response => {
     }
     throw error;
   }
+
+  // Return null for 204 No Content responses
+  if (response.status === 204) {
+    return null;
+  }
+
   return response.json();
 };
 
 // API methods
 export const api = {
-  async get(endpoint) {
+  async get(endpoint, options = {}) {
     const token = await getAuthToken();
     const headers = {
       ...defaultHeaders,
@@ -133,11 +139,14 @@ export const api = {
         Authorization: token ? 'Bearer [REDACTED]' : 'None',
       },
     });
-    const response = await fetch(endpoint, { headers });
+    const response = await fetch(endpoint, {
+      headers,
+      signal: options.signal,
+    });
     return handleResponse(response);
   },
 
-  async post(endpoint, data) {
+  async post(endpoint, data, options = {}) {
     const token = await getAuthToken();
     const headers = {
       ...defaultHeaders,
@@ -156,12 +165,13 @@ export const api = {
       method: 'POST',
       headers,
       body: JSON.stringify(data),
+      signal: options.signal,
     });
 
     return handleResponse(response);
   },
 
-  async put(endpoint, data) {
+  async put(endpoint, data, options = {}) {
     const token = await getAuthToken();
     console.debug('Token for PUT request:', token ? 'Present' : 'Missing');
 
@@ -189,6 +199,7 @@ export const api = {
         method: 'PUT',
         headers,
         body: JSON.stringify(data),
+        signal: options.signal,
       });
 
       return handleResponse(response);
@@ -198,7 +209,7 @@ export const api = {
     }
   },
 
-  async delete(endpoint) {
+  async delete(endpoint, options = {}) {
     const token = await getAuthToken();
     const headers = {
       ...defaultHeaders,
@@ -215,6 +226,7 @@ export const api = {
     const response = await fetch(endpoint, {
       method: 'DELETE',
       headers,
+      signal: options.signal,
     });
 
     return handleResponse(response);

@@ -14,13 +14,18 @@ const handleError = error => {
 // Fetch all universes
 export const fetchUniverses = createAsyncThunk(
   'universe/fetchUniverses',
-  async (_, { rejectWithValue }) => {
+  async (_, { signal, rejectWithValue }) => {
     try {
       console.debug('Fetching universes from API...');
-      const response = await api.get(endpoints.universes.list);
+      const response = await api.get(endpoints.universes.list, { signal });
       console.debug('Universes fetched:', response);
       return response || [];
     } catch (error) {
+      // Don't report cancellation errors
+      if (error.name === 'AbortError') {
+        console.debug('Universe fetch cancelled');
+        return [];
+      }
       console.error('Failed to fetch universes:', error);
       return rejectWithValue(handleError(error));
     }
@@ -106,15 +111,13 @@ export const deleteUniverse = createAsyncThunk(
   async (universeId, { rejectWithValue }) => {
     try {
       await api.delete(endpoints.universes.delete(universeId));
+      // Always return the universeId on successful deletion
       return universeId;
     } catch (error) {
-      // Don't log here since api.js already logs errors
+      console.error('Delete universe error:', error);
       return rejectWithValue({
         status: error.response?.status,
-        message:
-          error.response?.data?.userMessage || error.response?.data?.message,
-        error_code: error.response?.data?.error_code,
-        isAuthorizationError: error.isAuthorizationError,
+        message: error.response?.data?.message || 'Failed to delete universe',
       });
     }
   }

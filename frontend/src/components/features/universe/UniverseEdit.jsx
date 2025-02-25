@@ -115,10 +115,17 @@ function UniverseEdit() {
     setError(null);
 
     try {
+      // Only send allowed fields for universe update
+      const updateData = {
+        name: formData.name,
+        description: formData.description,
+        is_public: formData.is_public,
+      };
+
       await dispatch(
         updateUniverse({
           universeId: id,
-          universeData: formData,
+          universeData: updateData,
         })
       ).unwrap();
       navigate(`/universes/${id}`);

@@ -82,7 +82,7 @@ def get_universe(universe_id):
             universe = Universe.get_by_id(session, universe_id)
 
             if not universe:
-                raise ValidationError('Universe not found')
+                raise NotFoundError('Universe not found')
 
             # Check if user has access (owner or public universe)
             if not (universe.is_public or str(universe.user_id) == str(current_user_id)):
@@ -94,7 +94,7 @@ def get_universe(universe_id):
 
             return jsonify(response_data)
 
-        except (ValidationError, AuthorizationError) as e:
+        except (ValidationError, AuthorizationError, NotFoundError) as e:
             session.rollback()
             raise
         except Exception as e:
@@ -110,6 +110,15 @@ def update_universe(universe_id):
         if not data:
             raise ValidationError('No input data provided')
 
+        # Check for invalid fields
+        allowed_fields = {'name', 'description', 'is_public'}
+        invalid_fields = set(data.keys()) - allowed_fields
+        if invalid_fields:
+            return jsonify({
+                'error_code': 'ValidationError',
+                'message': f'Invalid fields: {", ".join(invalid_fields)}'
+            }), 400
+
         with get_db() as db:
             universe = Universe.get_by_id(db, universe_id)
             if not universe:
@@ -121,7 +130,6 @@ def update_universe(universe_id):
                 raise AuthorizationError('Not authorized to modify this universe')
 
             # Update allowed fields
-            allowed_fields = {'name', 'description', 'is_public'}
             update_data = {k: v for k, v in data.items() if k in allowed_fields}
 
             for key, value in update_data.items():
@@ -187,27 +195,50 @@ def update_physics(universe_id):
 
             data = request.get_json()
             if not data or 'physics_params' not in data:
-                raise ValidationError('Invalid physics parameters')
+                return jsonify({
+                    'error_code': 'ValidationError',
+                    'message': 'Invalid physics parameters'
+                }), 400
 
-            # Update physics parameters
-            universe.update_physics(data['physics_params'])
+            try:
+                # Update physics parameters
+                universe.update_physics(data['physics_params'])
 
-            # Add universe to session and commit
-            db.add(universe)
-            db.commit()
+                # Add universe to session and commit
+                db.add(universe)
+                db.commit()
 
-            # Return complete universe data with user role
-            response_data = universe.to_dict()
-            response_data['user_role'] = 'owner'
-            return jsonify(response_data)
+                # Return complete universe data with user role
+                response_data = universe.to_dict()
+                response_data['user_role'] = 'owner'
+                return jsonify(response_data)
 
-        except (ValidationError, AuthorizationError) as e:
+            except ValueError as e:
+                db.rollback()
+                return jsonify({
+                    'error_code': 'ValidationError',
+                    'message': str(e)
+                }), 400
+
+        except ValidationError as e:
             db.rollback()
-            raise
+            return jsonify({
+                'error_code': 'ValidationError',
+                'message': str(e)
+            }), 400
+        except AuthorizationError as e:
+            db.rollback()
+            return jsonify({
+                'error_code': 'AuthorizationError',
+                'message': str(e)
+            }), 403
         except Exception as e:
             db.rollback()
             logger.error(f"Error updating physics: {str(e)}", exc_info=True)
-            raise ValidationError(f"Error updating physics: {str(e)}")
+            return jsonify({
+                'error_code': 'InternalError',
+                'message': 'An internal error occurred'
+            }), 500
 
 @universe_bp.route('/<uuid:universe_id>/harmony/', methods=['PUT'])
 @jwt_required()

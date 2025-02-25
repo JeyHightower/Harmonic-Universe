@@ -161,7 +161,7 @@ const universeSlice = createSlice({
         state.authError = false;
       })
       .addCase(deleteUniverse.fulfilled, (state, action) => {
-        console.debug('Universe deleted:', action.payload);
+        console.debug('Universe deleted successfully:', action.payload);
         state.loading = false;
         state.universes = state.universes.filter(
           universe => universe.id !== action.payload
@@ -175,9 +175,12 @@ const universeSlice = createSlice({
       .addCase(deleteUniverse.rejected, (state, action) => {
         console.error('Failed to delete universe:', action.payload);
         state.loading = false;
-        state.error = action.payload;
-        state.authError =
-          action.payload?.status === 401 || action.payload?.status === 403;
+        // Only set error if we have a payload
+        if (action.payload) {
+          state.error = action.payload;
+          state.authError =
+            action.payload.status === 401 || action.payload.status === 403;
+        }
       })
 
       // Handle physics params update

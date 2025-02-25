@@ -57,19 +57,18 @@ function Dashboard() {
 
   // Handle authentication and data fetching
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      console.debug('Not authenticated, redirecting to login');
-      dispatch(resetState());
-      navigate('/login');
-      return;
-    }
+    const controller = new AbortController();
 
-    if (isAuthenticated && !authLoading && !user) {
-      console.debug('Authenticated but no user info, fetching...');
-      const fetchUserInfo = async () => {
+    const fetchData = async () => {
+      if (!isAuthenticated || authLoading) {
+        return;
+      }
+
+      // Fetch user info if needed
+      if (!user) {
         try {
+          console.debug('Fetching user info...');
           const response = await api.get(endpoints.auth.me);
-          console.debug('User info fetched:', response);
           dispatch(loginSuccess(response));
         } catch (error) {
           console.error('Failed to fetch user info:', error);
@@ -81,27 +80,18 @@ function Dashboard() {
             dispatch(resetState());
             navigate('/login');
           }
+          return;
         }
-      };
-      fetchUserInfo();
-    }
+      }
 
-    if (
-      isAuthenticated &&
-      !authLoading &&
-      user &&
-      !universesLoading &&
-      !universes?.length &&
-      retryCount < 3
-    ) {
-      console.debug('Fetching universes...', { retryCount });
-      dispatch(fetchUniverses())
-        .unwrap()
-        .then(response => {
-          console.debug('Universes fetched successfully:', response);
+      // Only fetch universes if we haven't tried too many times
+      if (!universesLoading && retryCount < 3) {
+        try {
+          console.debug('Fetching universes...', { retryCount });
+          await dispatch(fetchUniverses()).unwrap();
+          console.debug('Universes fetched successfully');
           setRetryCount(0);
-        })
-        .catch(error => {
+        } catch (error) {
           console.error('Failed to fetch universes:', error);
           setRetryCount(prev => prev + 1);
           if (
@@ -112,18 +102,23 @@ function Dashboard() {
             dispatch(resetState());
             navigate('/login');
           }
-        });
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      controller.abort();
+    };
+  }, [isAuthenticated, authLoading]); // Only depend on auth state
+
+  // Reset retry count when auth state changes
+  useEffect(() => {
+    if (isAuthenticated) {
+      setRetryCount(0);
     }
-  }, [
-    dispatch,
-    isAuthenticated,
-    authLoading,
-    universesLoading,
-    universes,
-    navigate,
-    user,
-    retryCount,
-  ]);
+  }, [isAuthenticated]);
 
   const handleCreateClick = useCallback(() => {
     setModalOpen(true);
@@ -232,21 +227,23 @@ function Dashboard() {
           )}
         </h1>
         <div className="dashboard-actions">
-          <select
-            className="sort-select"
-            value={`${sortBy}-${sortOrder}`}
-            onChange={handleSortChange}
-            aria-label="Sort universes"
-          >
-            <option value="updated_at-desc">Recently Updated</option>
-            <option value="updated_at-asc">Oldest Updated</option>
-            <option value="created_at-desc">Recently Created</option>
-            <option value="created_at-asc">Oldest Created</option>
-            <option value="name-asc">Name (A-Z)</option>
-            <option value="name-desc">Name (Z-A)</option>
-            <option value="is_public-desc">Public First</option>
-            <option value="is_public-asc">Private First</option>
-          </select>
+          {universes && universes.length > 0 && (
+            <select
+              className="sort-select"
+              value={`${sortBy}-${sortOrder}`}
+              onChange={handleSortChange}
+              aria-label="Sort universes"
+            >
+              <option value="updated_at-desc">Recently Updated</option>
+              <option value="updated_at-asc">Oldest Updated</option>
+              <option value="created_at-desc">Recently Created</option>
+              <option value="created_at-asc">Oldest Created</option>
+              <option value="name-asc">Name (A-Z)</option>
+              <option value="name-desc">Name (Z-A)</option>
+              <option value="is_public-desc">Public First</option>
+              <option value="is_public-asc">Private First</option>
+            </select>
+          )}
           <Button onClick={handleCreateClick} disabled={isCreating || !user}>
             Create Universe
           </Button>
@@ -254,43 +251,50 @@ function Dashboard() {
       </header>
 
       <section className="dashboard-section">
-        <h2>Your Universes</h2>
         {!universes || universes.length === 0 ? (
           <div className="dashboard-empty" role="status">
-            <p>You haven't created any universes yet.</p>
+            <h2>Welcome to Your Universe Dashboard</h2>
+            <p>
+              You haven't created any universes yet. Start your journey by
+              creating your first universe!
+            </p>
             <Button
               onClick={handleCreateClick}
               disabled={isCreating}
               loading={isCreating}
+              variant="primary"
             >
               Create Your First Universe
             </Button>
           </div>
         ) : (
-          <div className="universe-grid" role="grid">
-            {universes.map(universe => (
-              <Link
-                key={universe.id}
-                to={`/universes/${universe.id}`}
-                className="universe-card"
-                role="gridcell"
-                tabIndex="0"
-                onKeyDown={e => handleKeyDown(e, universe.id)}
-                aria-label={`Universe: ${universe.name}`}
-              >
-                <h3>{universe.name}</h3>
-                <p>{universe.description}</p>
-                <div className="universe-card-footer">
-                  <span>
-                    Created:{' '}
-                    {new Date(
-                      universe.created_at || Date.now()
-                    ).toLocaleDateString()}
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <>
+            <h2>Your Universes</h2>
+            <div className="universe-grid" role="grid">
+              {universes.map(universe => (
+                <Link
+                  key={universe.id}
+                  to={`/universes/${universe.id}`}
+                  className="universe-card"
+                  role="gridcell"
+                  tabIndex="0"
+                  onKeyDown={e => handleKeyDown(e, universe.id)}
+                  aria-label={`Universe: ${universe.name}`}
+                >
+                  <h3>{universe.name}</h3>
+                  <p>{universe.description}</p>
+                  <div className="universe-card-footer">
+                    <span>
+                      Created:{' '}
+                      {new Date(
+                        universe.created_at || Date.now()
+                      ).toLocaleDateString()}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </>
         )}
       </section>
 
