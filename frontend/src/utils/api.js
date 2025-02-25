@@ -18,6 +18,19 @@ export const endpoints = {
     delete: id => `${API_BASE_URL}/api/universes/${id}/`,
     physics: id => `${API_BASE_URL}/api/universes/${id}/physics/`,
   },
+  physicsObjects: {
+    list: `${API_BASE_URL}/api/physics-objects/`,
+    detail: id => `${API_BASE_URL}/api/physics-objects/${id}/`,
+    create: `${API_BASE_URL}/api/physics-objects/`,
+    update: id => `${API_BASE_URL}/api/physics-objects/${id}/`,
+    delete: id => `${API_BASE_URL}/api/physics-objects/${id}/`,
+    forScene: sceneId =>
+      `${API_BASE_URL}/api/physics-objects/?scene_id=${sceneId}`,
+  },
+  music: {
+    generate: universeId => `${API_BASE_URL}/api/music/${universeId}/generate`,
+    download: universeId => `${API_BASE_URL}/api/music/${universeId}/download`,
+  },
 };
 
 // API client configuration

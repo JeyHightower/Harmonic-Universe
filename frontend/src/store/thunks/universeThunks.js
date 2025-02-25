@@ -105,6 +105,23 @@ export const updatePhysicsParams = createAsyncThunk(
   }
 );
 
+export const updateHarmonyParams = createAsyncThunk(
+  'universes/updateHarmonyParams',
+  async ({ universeId, harmonyParams }, { rejectWithValue }) => {
+    try {
+      const response = await api.put(
+        `/universes/${universeId}/harmony/`,
+        harmonyParams
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update harmony parameters'
+      );
+    }
+  }
+);
+
 // Delete a universe
 export const deleteUniverse = createAsyncThunk(
   'universe/deleteUniverse',

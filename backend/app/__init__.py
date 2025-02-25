@@ -63,8 +63,10 @@ def create_app(config_class=Config):
         audio_bp,
         visualization_bp,
         physics_bp,
-        ai_bp
+        ai_bp,
+        physics_objects_bp
     )
+    from app.api.routes.music_flask import music_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(universe_bp, url_prefix='/api/universes')
@@ -72,6 +74,8 @@ def create_app(config_class=Config):
     app.register_blueprint(visualization_bp, url_prefix='/api/visualizations')
     app.register_blueprint(physics_bp, url_prefix='/api/physics')
     app.register_blueprint(ai_bp, url_prefix='/api/ai')
+    app.register_blueprint(physics_objects_bp, url_prefix='/api/physics-objects')
+    app.register_blueprint(music_bp, url_prefix='/api/music')
 
     # Register error handlers
     from app.core.error_handlers import register_error_handlers

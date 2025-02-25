@@ -7,6 +7,8 @@ import { api, endpoints } from '../../../utils/api';
 import Button from '../../common/Button';
 import Modal from '../../common/Modal';
 import Spinner from '../../common/Spinner';
+import MusicPlayer from '../music/MusicPlayer';
+import SceneManager from '../scenes/SceneManager';
 import PhysicsPanel from './PhysicsPanel';
 import './Universe.css';
 
@@ -225,6 +227,15 @@ const UniverseDetail = () => {
             initialPhysicsParams={currentUniverse.physics_params}
             readOnly={!canModifyUniverse}
           />
+        </div>
+
+        <div className="universe-section">
+          <SceneManager />
+        </div>
+
+        <div className="universe-section">
+          <h2 className="section-title">Universal Harmony</h2>
+          <MusicPlayer universeId={id} />
         </div>
       </div>
 

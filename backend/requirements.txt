@@ -11,6 +11,14 @@ Flask-SocketIO==5.3.6
 python-dotenv==1.0.0
 alembic==1.13.1
 
+# FastAPI and ASGI
+fastapi==0.109.2
+uvicorn==0.27.0
+nest-asyncio==1.6.0
+asgiref==3.7.2
+httpx==0.26.0
+pydantic==2.5.2
+
 # Database
 psycopg2-binary==2.9.9
 redis==5.0.1

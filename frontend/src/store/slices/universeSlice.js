@@ -3,6 +3,7 @@ import {
   createUniverse,
   deleteUniverse,
   fetchUniverses,
+  updateHarmonyParams,
   updatePhysicsParams,
   updateUniverse,
 } from '../thunks/universeThunks';
@@ -222,6 +223,47 @@ const universeSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Failed to update physics parameters';
         console.error('Physics update failed:', action.payload);
+      })
+
+      // Handle harmony params update
+      .addCase(updateHarmonyParams.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateHarmonyParams.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+
+        if (!action.payload || !action.payload.harmony_params) {
+          console.error('Invalid payload received:', action.payload);
+          return;
+        }
+
+        const updatedUniverse = {
+          ...action.payload,
+          updated_at: new Date().toISOString(),
+        };
+
+        // Update current universe if it matches
+        if (state.currentUniverse?.id === action.payload.id) {
+          state.currentUniverse = updatedUniverse;
+        }
+
+        // Update in universes list if present
+        state.universes = state.universes.map(universe =>
+          universe.id === action.payload.id ? updatedUniverse : universe
+        );
+
+        // Log the update for debugging
+        console.debug('Harmony params updated in store:', {
+          id: action.payload.id,
+          params: action.payload.harmony_params,
+        });
+      })
+      .addCase(updateHarmonyParams.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to update harmony parameters';
+        console.error('Harmony update failed:', action.payload);
       });
   },
 });

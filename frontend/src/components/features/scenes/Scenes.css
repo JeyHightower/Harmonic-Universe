@@ -1,0 +1,55 @@
+/* Scene Manager Styles */
+.scene-manager {
+  margin-top: 20px;
+}
+
+.scene-tab-actions {
+  display: inline-flex;
+  margin-left: 8px;
+}
+
+.scene-details {
+  margin-bottom: 20px;
+}
+
+.error-message {
+  color: #ff4d4f;
+  margin: 20px 0;
+}
+
+/* Physics Objects Styles */
+.physics-objects-manager {
+  margin-top: 16px;
+}
+
+/* Tab styles */
+.ant-tabs-tab {
+  padding: 8px 16px;
+  transition: background-color 0.3s;
+}
+
+.ant-tabs-tab:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab-active {
+  background-color: #fff;
+  border-bottom-color: #fff;
+}
+
+/* Scene actions and header */
+.scene-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.scene-header h3 {
+  margin: 0;
+}
+
+/* Object List */
+.physics-object-item:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
