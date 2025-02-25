@@ -24,6 +24,11 @@ music_bp = Blueprint('music', __name__)
 def generate_music(universe_id):
     """
     Generate music based on the harmony and physics parameters of a universe.
+    Optionally accepts custom parameters to override universe settings.
+
+    Query Parameters:
+        custom_params: JSON object containing custom music parameters
+
     Returns notes, tempo, and other musical elements.
     """
     try:
@@ -45,10 +50,37 @@ def generate_music(universe_id):
             if universe.user_id != current_user_id and not universe.is_public:
                 raise AuthorizationError("You don't have access to this universe")
 
+            # Get the base harmony and physics parameters from the universe
+            harmony_params = universe.harmony_params
+            physics_params = universe.physics_params
+
+            # Check for custom parameters in the request
+            custom_params = request.args.get('custom_params')
+            if custom_params:
+                try:
+                    import json
+                    custom_params = json.loads(custom_params)
+                    logger.info(f"Using custom parameters: {custom_params}")
+
+                    # Override harmony parameters with custom values
+                    if 'tempo' in custom_params:
+                        harmony_params['tempo'] = {"value": custom_params['tempo']}
+                    if 'scale_type' in custom_params:
+                        harmony_params['scale_type'] = {"value": custom_params['scale_type']}
+                    if 'root_note' in custom_params:
+                        harmony_params['root_note'] = {"value": custom_params['root_note']}
+
+                    # Add melody complexity parameter if provided
+                    if 'melody_complexity' in custom_params:
+                        harmony_params['melody_complexity'] = {"value": custom_params['melody_complexity']}
+                except Exception as e:
+                    logger.error(f"Error parsing custom parameters: {str(e)}")
+                    # Continue with default parameters on error
+
             # Generate music using the harmony and physics parameters
             music_data = generate_music_from_params(
-                harmony_params=universe.harmony_params,
-                physics_params=universe.physics_params
+                harmony_params=harmony_params,
+                physics_params=physics_params
             )
 
             # Return the generated music data

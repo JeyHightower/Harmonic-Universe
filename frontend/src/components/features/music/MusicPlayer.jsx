@@ -2,9 +2,22 @@ import {
   CaretRightOutlined,
   DownloadOutlined,
   PauseOutlined,
+  SettingOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
-import { Button, Card, Slider, Space, Typography, message } from 'antd';
+import {
+  Button,
+  Card,
+  Collapse,
+  Divider,
+  Form,
+  Select,
+  Slider,
+  Space,
+  Switch,
+  Typography,
+  message,
+} from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import * as Tone from 'tone';
 import { api, endpoints } from '../../../utils/api';
@@ -19,6 +32,13 @@ const MusicPlayer = ({ universeId }) => {
   const [volume, setVolume] = useState(75);
   const [error, setError] = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [customizationEnabled, setCustomizationEnabled] = useState(false);
+  const [customParams, setCustomParams] = useState({
+    tempo: 120,
+    scale_type: 'major',
+    root_note: 60,
+    melody_complexity: 0.5,
+  });
 
   // References for Tone.js instruments and sequences
   const synthRef = useRef(null);
@@ -77,7 +97,7 @@ const MusicPlayer = ({ universeId }) => {
       primary: '#1890ff',
       secondary: '#722ed1',
       accent: '#13c2c2',
-      highlight: '#eb2f96'
+      highlight: '#eb2f96',
     };
 
     // Animation variables
@@ -177,22 +197,29 @@ const MusicPlayer = ({ universeId }) => {
       // Draw frequency bars and particles if we have music data
       if (musicData) {
         // Add new particles based on audio data
-        const intensity = dataArray.reduce((sum, value) => sum + Math.abs(value), 0) / dataArray.length;
+        const intensity =
+          dataArray.reduce((sum, value) => sum + Math.abs(value), 0) /
+          dataArray.length;
 
         if (Math.random() < intensity * 0.8 && particleArray.length < 100) {
           const x = Math.random() * canvas.width;
           const y = canvas.height / 2;
           const size = 3 + Math.random() * 5;
-          const color = [colors.primary, colors.secondary, colors.accent, colors.highlight][
-            Math.floor(Math.random() * 4)
-          ];
+          const color = [
+            colors.primary,
+            colors.secondary,
+            colors.accent,
+            colors.highlight,
+          ][Math.floor(Math.random() * 4)];
           const speed = 0.5 + Math.random() * 2;
 
           particleArray.push(new Particle(x, y, size, color, speed));
         }
 
         // Update and draw particles
-        particleArray = particleArray.filter(particle => particle.alpha > 0 && particle.size > 0);
+        particleArray = particleArray.filter(
+          particle => particle.alpha > 0 && particle.size > 0
+        );
         particleArray.forEach(particle => {
           particle.update();
           particle.draw();
@@ -206,7 +233,9 @@ const MusicPlayer = ({ universeId }) => {
           const notePosition = (note.note - 60) / 36;
 
           // Get height from note position and current audio data
-          const intensityIndex = Math.floor((index / musicData.melody.length) * dataArray.length);
+          const intensityIndex = Math.floor(
+            (index / musicData.melody.length) * dataArray.length
+          );
           const currentIntensity = Math.abs(dataArray[intensityIndex] || 0);
           const barHeight = 20 + notePosition * 60 + currentIntensity * 40;
 
@@ -257,7 +286,11 @@ const MusicPlayer = ({ universeId }) => {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
       ctx.font = '16px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText('Click play to start visualization', canvas.width / 2, canvas.height / 2);
+      ctx.fillText(
+        'Click play to start visualization',
+        canvas.width / 2,
+        canvas.height / 2
+      );
     }
 
     return () => {
@@ -279,8 +312,18 @@ const MusicPlayer = ({ universeId }) => {
         setIsPlaying(false);
       }
 
-      // Get music data from API
-      const response = await api.get(endpoints.music.generate(universeId));
+      // Prepare request parameters
+      const params = {};
+
+      // Add custom parameters if customization is enabled
+      if (customizationEnabled) {
+        params.custom_params = customParams;
+      }
+
+      // Get music data from API with optional custom parameters
+      const response = await api.get(endpoints.music.generate(universeId), {
+        params,
+      });
 
       // The API returns { universe_id, music_data }, so we need to extract music_data
       const musicData = response.music_data;
@@ -399,6 +442,14 @@ const MusicPlayer = ({ universeId }) => {
     setIsPlaying(!isPlaying);
   };
 
+  // Handle parameter changes
+  const handleParamChange = (param, value) => {
+    setCustomParams(prev => ({
+      ...prev,
+      [param]: value,
+    }));
+  };
+
   return (
     <Card className="music-player">
       <Title level={4}>Universal Harmony</Title>
@@ -450,6 +501,100 @@ const MusicPlayer = ({ universeId }) => {
             <Text>Volume</Text>
             <Slider value={volume} onChange={setVolume} disabled={isLoading} />
           </div>
+
+          <Collapse ghost className="customization-panel">
+            <Collapse.Panel
+              header={<Text strong>Music Customization</Text>}
+              key="1"
+              extra={<SettingOutlined />}
+            >
+              <div className="customization-controls">
+                <Form layout="vertical">
+                  <Form.Item label={<Text>Use Custom Parameters</Text>}>
+                    <Switch
+                      checked={customizationEnabled}
+                      onChange={setCustomizationEnabled}
+                      disabled={isLoading}
+                    />
+                  </Form.Item>
+
+                  <Divider style={{ margin: '8px 0' }} />
+
+                  <div
+                    className={customizationEnabled ? '' : 'disabled-controls'}
+                  >
+                    <Form.Item label={<Text>Tempo (BPM)</Text>}>
+                      <Slider
+                        value={customParams.tempo}
+                        min={60}
+                        max={180}
+                        onChange={value => handleParamChange('tempo', value)}
+                        disabled={!customizationEnabled || isLoading}
+                      />
+                    </Form.Item>
+
+                    <Form.Item label={<Text>Scale Type</Text>}>
+                      <Select
+                        value={customParams.scale_type}
+                        onChange={value =>
+                          handleParamChange('scale_type', value)
+                        }
+                        disabled={!customizationEnabled || isLoading}
+                        style={{ width: '100%' }}
+                      >
+                        <Select.Option value="major">Major</Select.Option>
+                        <Select.Option value="minor">Minor</Select.Option>
+                        <Select.Option value="pentatonic">
+                          Pentatonic
+                        </Select.Option>
+                        <Select.Option value="blues">Blues</Select.Option>
+                        <Select.Option value="chromatic">
+                          Chromatic
+                        </Select.Option>
+                      </Select>
+                    </Form.Item>
+
+                    <Form.Item label={<Text>Root Note</Text>}>
+                      <Select
+                        value={customParams.root_note}
+                        onChange={value =>
+                          handleParamChange('root_note', value)
+                        }
+                        disabled={!customizationEnabled || isLoading}
+                        style={{ width: '100%' }}
+                      >
+                        <Select.Option value={60}>C (Middle C)</Select.Option>
+                        <Select.Option value={62}>D</Select.Option>
+                        <Select.Option value={64}>E</Select.Option>
+                        <Select.Option value={65}>F</Select.Option>
+                        <Select.Option value={67}>G</Select.Option>
+                        <Select.Option value={69}>A</Select.Option>
+                        <Select.Option value={71}>B</Select.Option>
+                      </Select>
+                    </Form.Item>
+
+                    <Form.Item label={<Text>Melody Complexity</Text>}>
+                      <Slider
+                        value={customParams.melody_complexity}
+                        min={0.1}
+                        max={1.0}
+                        step={0.1}
+                        onChange={value =>
+                          handleParamChange('melody_complexity', value)
+                        }
+                        disabled={!customizationEnabled || isLoading}
+                        marks={{
+                          0.1: 'Simple',
+                          0.5: 'Medium',
+                          1.0: 'Complex',
+                        }}
+                      />
+                    </Form.Item>
+                  </div>
+                </Form>
+              </div>
+            </Collapse.Panel>
+          </Collapse>
 
           {musicData && (
             <div className="music-info">
