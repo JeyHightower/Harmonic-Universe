@@ -5,13 +5,12 @@ import {
   PlusOutlined,
 } from '@ant-design/icons';
 import {
-  Button,
+  Button as AntButton,
+  Modal as AntModal,
   Card,
   Empty,
   Form,
-  Input,
   message,
-  Modal,
   Spin,
   Tabs,
   Typography,
@@ -19,12 +18,14 @@ import {
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api, endpoints } from '../../../utils/api';
+import Button from '../../common/Button';
+import Modal from '../../common/Modal';
 import PhysicsObjectsManager from '../physicsObjects/PhysicsObjectsManager';
 import './Scenes.css';
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
-const { confirm } = Modal;
+const { confirm } = AntModal;
 
 const SceneManager = () => {
   const { id: universeId } = useParams();
@@ -36,6 +37,14 @@ const SceneManager = () => {
   const [form] = Form.useForm();
   const [isEditing, setIsEditing] = useState(false);
   const [currentScene, setCurrentScene] = useState(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+  });
+  const [formErrors, setFormErrors] = useState({
+    name: '',
+    description: '',
+  });
 
   // Fetch scenes when component mounts or universeId changes
   useEffect(() => {
@@ -74,7 +83,14 @@ const SceneManager = () => {
   const handleAddScene = () => {
     setIsEditing(false);
     setCurrentScene(null);
-    form.resetFields();
+    setFormData({
+      name: '',
+      description: '',
+    });
+    setFormErrors({
+      name: '',
+      description: '',
+    });
     setIsModalVisible(true);
   };
 
@@ -82,9 +98,13 @@ const SceneManager = () => {
   const handleEditScene = scene => {
     setIsEditing(true);
     setCurrentScene(scene);
-    form.setFieldsValue({
+    setFormData({
       name: scene.name,
       description: scene.description || '',
+    });
+    setFormErrors({
+      name: '',
+      description: '',
     });
     setIsModalVisible(true);
   };
@@ -125,29 +145,66 @@ const SceneManager = () => {
     });
   };
 
+  const handleInputChange = e => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    // Clear error when user starts typing
+    if (formErrors[name]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [name]: '',
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+
+    if (!formData.name.trim()) {
+      errors.name = 'Scene name is required';
+    } else if (formData.name.length > 100) {
+      errors.name = 'Scene name must be less than 100 characters';
+    }
+
+    if (formData.description && formData.description.length > 500) {
+      errors.description = 'Description must be less than 500 characters';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   // Handle form submission (create/edit scene)
   const handleFormSubmit = async () => {
-    try {
-      const values = await form.validateFields();
+    if (!validateForm()) {
+      return;
+    }
 
+    try {
       if (isEditing && currentScene) {
         // Update existing scene
         await api.put(
           `${endpoints.universes.detail(universeId)}/scenes/${currentScene.id}`,
-          values
+          formData
         );
         message.success('Scene updated successfully');
 
         // Update scenes list
         setScenes(
-          scenes.map(s => (s.id === currentScene.id ? { ...s, ...values } : s))
+          scenes.map(s =>
+            s.id === currentScene.id ? { ...s, ...formData } : s
+          )
         );
       } else {
         // Create new scene
         const newScene = await api.post(
           `${endpoints.universes.detail(universeId)}/scenes`,
           {
-            ...values,
+            ...formData,
             universe_id: universeId,
           }
         );
@@ -161,7 +218,8 @@ const SceneManager = () => {
 
       setIsModalVisible(false);
     } catch (err) {
-      console.error('Form validation failed:', err);
+      console.error('Failed to save scene:', err);
+      message.error('Failed to save scene. Please try again later.');
     }
   };
 
@@ -181,13 +239,7 @@ const SceneManager = () => {
           description="No scenes found"
           image={Empty.PRESENTED_IMAGE_SIMPLE}
         >
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleAddScene}
-          >
-            Create Scene
-          </Button>
+          <Button onClick={handleAddScene}>Create Scene</Button>
         </Empty>
       );
     }
@@ -198,13 +250,13 @@ const SceneManager = () => {
         onChange={handleTabChange}
         type="card"
         tabBarExtraContent={
-          <Button
+          <AntButton
             type="primary"
             icon={<PlusOutlined />}
             onClick={handleAddScene}
           >
             Add Scene
-          </Button>
+          </AntButton>
         }
       >
         {scenes.map(scene => (
@@ -213,7 +265,7 @@ const SceneManager = () => {
               <span>
                 {scene.name}
                 <div className="scene-tab-actions">
-                  <Button
+                  <AntButton
                     type="text"
                     size="small"
                     icon={<EditOutlined />}
@@ -222,7 +274,7 @@ const SceneManager = () => {
                       handleEditScene(scene);
                     }}
                   />
-                  <Button
+                  <AntButton
                     type="text"
                     danger
                     size="small"
@@ -256,35 +308,66 @@ const SceneManager = () => {
 
   return (
     <div className="scene-manager">
-      <Title level={3}>Scenes</Title>
+      <div className="scene-manager-header">
+        <h2 className="section-title">Scenes</h2>
+        {scenes.length > 0 && (
+          <Button onClick={handleAddScene}>Add Scene</Button>
+        )}
+      </div>
 
       {renderSceneTabs()}
 
       {/* Create/Edit Scene Modal */}
       <Modal
-        title={isEditing ? 'Edit Scene' : 'Create Scene'}
-        open={isModalVisible}
-        onOk={handleFormSubmit}
-        onCancel={() => setIsModalVisible(false)}
+        isOpen={isModalVisible}
+        onClose={() => setIsModalVisible(false)}
+        title={isEditing ? 'Edit Scene' : 'Create New Scene'}
       >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="name"
-            label="Scene Name"
-            rules={[{ required: true, message: 'Please enter a scene name' }]}
-          >
-            <Input placeholder="Enter scene name" />
-          </Form.Item>
-          <Form.Item
-            name="description"
-            label="Description"
-          >
-            <Input.TextArea
-              placeholder="Enter scene description"
-              autoSize={{ minRows: 3, maxRows: 5 }}
+        <div className="scene-form">
+          <div className="form-group">
+            <label htmlFor="name">Scene Name</label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              placeholder="Enter a name for your scene"
+              className={formErrors.name ? 'input-error' : ''}
             />
-          </Form.Item>
-        </Form>
+            {formErrors.name && (
+              <div className="error-text">{formErrors.name}</div>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="description">Description</label>
+            <textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              placeholder="Describe what happens in this scene"
+              rows="4"
+              className={formErrors.description ? 'input-error' : ''}
+            />
+            {formErrors.description && (
+              <div className="error-text">{formErrors.description}</div>
+            )}
+          </div>
+
+          <div className="modal-actions">
+            <Button onClick={handleFormSubmit}>
+              {isEditing ? 'Save Changes' : 'Create Scene'}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setIsModalVisible(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

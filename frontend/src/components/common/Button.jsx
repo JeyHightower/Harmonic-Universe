@@ -6,7 +6,7 @@ import Spinner from './Spinner';
 /**
  * Button component that supports various styles and states
  * @param {Object} props
- * @param {('primary'|'secondary'|'tertiary'|'danger')} [props.variant='primary'] - Button variant
+ * @param {('primary'|'secondary'|'tertiary'|'danger'|'icon'|'icon-danger')} [props.variant='primary'] - Button variant
  * @param {('small'|'medium'|'large')} [props.size='medium'] - Button size
  * @param {boolean} [props.fullWidth=false] - Whether button should take full width
  * @param {boolean} [props.disabled=false] - Whether button is disabled
@@ -31,6 +31,8 @@ function Button({
     ${fullWidth ? 'button-full-width' : ''}
     ${disabled || loading ? 'button-disabled' : ''}
     ${loading ? 'button-loading' : ''}
+    ${variant === 'icon' ? 'button-icon' : ''}
+    ${variant === 'icon-danger' ? 'button-icon button-icon-danger' : ''}
     ${className}
   `
     .trim()
@@ -79,7 +81,14 @@ function Button({
 
 Button.propTypes = {
   children: PropTypes.node.isRequired,
-  variant: PropTypes.oneOf(['primary', 'secondary', 'tertiary', 'danger']),
+  variant: PropTypes.oneOf([
+    'primary',
+    'secondary',
+    'tertiary',
+    'danger',
+    'icon',
+    'icon-danger',
+  ]),
   size: PropTypes.oneOf(['small', 'medium', 'large']),
   fullWidth: PropTypes.bool,
   disabled: PropTypes.bool,

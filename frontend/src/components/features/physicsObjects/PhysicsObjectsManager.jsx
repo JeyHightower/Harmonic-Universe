@@ -1,94 +1,153 @@
-import { ExclamationCircleOutlined } from '@ant-design/icons';
-import { message, Modal } from 'antd';
-import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { clearCurrentPhysicsObject } from '../../../store/slices/physicsObjectsSlice';
-import { deletePhysicsObject } from '../../../store/thunks/physicsObjectsThunks';
-import '../scenes/Scenes.css';
-import PhysicsObjectForm from './PhysicsObjectForm';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useModal } from '../../../contexts/ModalContext';
+import { fetchPhysicsObjects } from '../../../store/thunks/physicsObjectsThunks';
+import Button from '../../common/Button';
+import Icon from '../../common/Icon';
+import PhysicsObjectModal from './PhysicsObjectModal';
+import './PhysicsObjects.css';
 import PhysicsObjectsList from './PhysicsObjectsList';
-
-const { confirm } = Modal;
 
 const PhysicsObjectsManager = ({ sceneId }) => {
   const dispatch = useDispatch();
-  const [isFormVisible, setIsFormVisible] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const { openModal } = useModal();
+  const { physicsObjects, loading, error } = useSelector(
+    state => state.physicsObjects
+  );
 
-  // Handle create button click
-  const handleCreateClick = () => {
-    dispatch(clearCurrentPhysicsObject());
-    setIsEditing(false);
-    setIsFormVisible(true);
-  };
+  useEffect(() => {
+    if (sceneId) {
+      dispatch(fetchPhysicsObjects(sceneId));
+    }
+  }, [dispatch, sceneId]);
 
-  // Handle edit button click
-  const handleEditClick = physicsObject => {
-    setIsEditing(true);
-    setIsFormVisible(true);
-  };
-
-  // Handle delete button click
-  const handleDeleteClick = physicsObject => {
-    confirm({
-      title: 'Delete Physics Object',
-      icon: <ExclamationCircleOutlined />,
-      content: `Are you sure you want to delete "${physicsObject.name}"? This action cannot be undone.`,
-      okText: 'Delete',
-      okType: 'danger',
-      cancelText: 'Cancel',
-      onOk: async () => {
-        const result = await dispatch(deletePhysicsObject(physicsObject.id));
-        if (!result.error) {
-          message.success('Physics object deleted successfully');
-        } else {
-          message.error(
-            `Failed to delete physics object: ${result.error.message}`
-          );
-        }
+  const handleAddObject = () => {
+    openModal({
+      component: PhysicsObjectModal,
+      props: {
+        sceneId,
+        mode: 'create',
+        onSuccess: () => {
+          dispatch(fetchPhysicsObjects(sceneId));
+        },
+      },
+      modalProps: {
+        title: 'Create Physics Object',
+        size: 'large',
+        animation: 'slide',
+        position: 'center',
       },
     });
   };
 
-  // Handle form success
-  const handleFormSuccess = () => {
-    setIsFormVisible(false);
-    message.success(
-      isEditing ? 'Physics object updated' : 'Physics object created'
-    );
+  const handleEditObject = objectId => {
+    const objectToEdit = physicsObjects.find(obj => obj.id === objectId);
+
+    openModal({
+      component: PhysicsObjectModal,
+      props: {
+        sceneId,
+        objectId,
+        initialData: objectToEdit,
+        mode: 'edit',
+        onSuccess: () => {
+          dispatch(fetchPhysicsObjects(sceneId));
+        },
+      },
+      modalProps: {
+        title: 'Edit Physics Object',
+        size: 'large',
+        animation: 'slide',
+        position: 'center',
+      },
+    });
   };
 
-  // Handle form cancel
-  const handleFormCancel = () => {
-    setIsFormVisible(false);
+  const handleViewObject = objectId => {
+    const objectToView = physicsObjects.find(obj => obj.id === objectId);
+
+    openModal({
+      component: PhysicsObjectModal,
+      props: {
+        sceneId,
+        objectId,
+        initialData: objectToView,
+        mode: 'view',
+      },
+      modalProps: {
+        title: 'View Physics Object',
+        size: 'large',
+        animation: 'fade',
+        position: 'center',
+      },
+    });
+  };
+
+  const handleDeleteObject = objectId => {
+    const objectToDelete = physicsObjects.find(obj => obj.id === objectId);
+
+    if (!objectToDelete) {
+      console.error(`Physics object with ID ${objectId} not found`);
+      return;
+    }
+
+    openModal({
+      component: PhysicsObjectModal,
+      props: {
+        sceneId,
+        objectId,
+        initialData: objectToDelete,
+        mode: 'delete',
+        onSuccess: () => {
+          dispatch(fetchPhysicsObjects(sceneId));
+        },
+      },
+      modalProps: {
+        title: 'Delete Physics Object',
+        size: 'medium',
+        animation: 'zoom',
+        position: 'center',
+        preventBackdropClick: true,
+      },
+    });
+  };
+
+  const refreshPhysicsObjects = () => {
+    dispatch(fetchPhysicsObjects(sceneId));
   };
 
   return (
     <div className="physics-objects-manager">
-      {/* Physics Objects List */}
+      <div className="physics-objects-header">
+        <h2 className="physics-objects-title">
+          <Icon name="physics" size="medium" className="title-icon" />
+          Physics Objects
+        </h2>
+        <div className="physics-objects-actions">
+          <Button
+            onClick={refreshPhysicsObjects}
+            variant="icon"
+            title="Refresh physics objects list"
+          >
+            <Icon name="refresh" size="medium" />
+          </Button>
+          <Button onClick={handleAddObject} variant="primary">
+            <Icon name="add" size="small" />
+            Add Object
+          </Button>
+        </div>
+      </div>
+
       <PhysicsObjectsList
         sceneId={sceneId}
-        onCreateClick={handleCreateClick}
-        onEditClick={handleEditClick}
-        onDeleteClick={handleDeleteClick}
+        objects={physicsObjects}
+        loading={loading}
+        error={error}
+        onViewClick={handleViewObject}
+        onEditClick={handleEditObject}
+        onDeleteClick={handleDeleteObject}
+        onCreateClick={handleAddObject}
       />
-
-      {/* Form Modal */}
-      <Modal
-        open={isFormVisible}
-        onCancel={handleFormCancel}
-        footer={null}
-        width={800}
-        destroyOnClose
-        title={isEditing ? 'Edit Physics Object' : 'Create Physics Object'}
-      >
-        <PhysicsObjectForm
-          sceneId={sceneId}
-          isEdit={isEditing}
-          onSuccess={handleFormSuccess}
-          onCancel={handleFormCancel}
-        />
-      </Modal>
     </div>
   );
 };

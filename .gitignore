@@ -90,3 +90,86 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+.coverage
+.coverage.*
+.cache
+coverage.xml
+*.cover
+.pytest_cache/
+htmlcov/
+
+# Virtual Environments
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.env
+.venv
+backend/venv/
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.pnp/
+.pnp.js
+.eslintcache
+package-lock.json
+yarn.lock
+
+# Build & distribution
+/dist
+/build
+/out
+/public/build
+/frontend/dist
+/frontend/build
+*.tsbuildinfo
+
+# System files
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+Thumbs.db
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Frontend cache
+.eslintcache
+frontend/.eslintcache
+.sass-cache/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Project specific
+*.wav
+*.mp3
+*.ogg
+uploads/
+backend/uploads/
+reports/
+backend/reports/
+backups/
+backend/backups/
+.env.example
+.env.development
+.env.production
+.env.testing
+
+# Alembic
+alembic/versions/__pycache__/
+alembic/__pycache__/
+alembic.ini

@@ -1,192 +1,263 @@
 # Harmonic Universe
 
-Harmonic Universe is an innovative web application that creates immersive audio-visual experiences by combining physics simulations, real-time music generation, and dynamic visualizations. The application allows users to create and explore unique "universes" where physical parameters directly influence musical harmony and visual effects.
+![Harmonic Universe Logo](frontend/public/logo.png)
+
+## Overview
+
+Harmonic Universe is an interactive web application that allows users to create and explore musical universes based on physics principles. This project combines music theory, physics simulation, and interactive visualization to create a unique creative tool for musicians, composers, and audio enthusiasts.
+
+Users can:
+
+- Create custom universes with custom physics parameters
+- Add and manage physics objects with unique properties
+- Generate music based on the interaction of physics objects
+- Visualize the movement and interaction of objects in real-time
+- Create and manage scenes for different musical compositions
+- Export and share musical compositions
+
+## Table of Contents
+
+- [Features](#features)
+- [Technology Stack](#technology-stack)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Running the Application](#running-the-application)
+- [Usage](#usage)
+- [API Documentation](#api-documentation)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Features
 
-### Universe Creation and Management
+### Universe Management
 
-- Create personalized universes with custom physics and harmony parameters
-- Real-time parameter adjustment
-- Public/private universe sharing
-- Story point system for creating narrative experiences
+- Create, view, edit, and delete musical universes
+- Configure physics parameters: gravity strength, damping factors, particle behaviors
+- Control visibility and sharing settings
 
-### Physics Engine
+### Physics Object Management
 
-- Real-time particle physics simulation
-- Customizable parameters:
-  - Gravity
-  - Air resistance
-  - Elasticity
-  - Friction
-- Force field system
-- Collision detection and response
+- Add various types of physics objects to your universe
+- Configure mass, position, velocity, and other properties
+- Each object contributes unique musical elements to the composition
+
+### Scene Management
+
+- Create scenes to capture specific configurations of physics objects
+- Quickly switch between different scenes to explore variations
+- Save favorite arrangements for later use
 
 ### Music Generation
 
-- AI-powered real-time music generation
-- Multiple musical styles:
-  - Ambient
-  - Electronic
-  - Classical
-  - Jazz
-  - Cinematic
-  - Experimental
-- Mood-based generation:
-  - Calm
-  - Energetic
-  - Melancholic
-  - Uplifting
-  - Mysterious
-  - Intense
-- Parameter control:
-  - Tempo
-  - Complexity
-  - Harmony
-  - Rhythm
+- Algorithmic music generation based on physics interactions
+- Real-time audio synthesis
+- Export compositions as audio files
+- Adjust musical parameters like scale, tempo, and instrumentation
 
-### Visualization System
+### Visualizations
 
-- Real-time WebGL rendering
-- Multiple visualization types:
-  - Spectrum analysis
-  - Waveform display
-  - Particle effects
-  - Kaleidoscope patterns
-- Post-processing effects:
-  - Bloom
-  - Custom shaders
-  - Anti-aliasing
+- Real-time physics simulation
+- Interactive 2D visualization
+- Physics-driven animations
 
-### Audio Analysis
+### User System
 
-- Real-time frequency analysis
-- Waveform visualization
-- Multi-band audio processing
-- Dynamic parameter mapping
+- User accounts with personalized dashboards
+- Sharing and collaboration features
+- Save and load projects
 
-### AI Integration
-
-- Intelligent parameter suggestions
-- Style transfer between universes
-- Advanced music generation algorithms
-
-## Tech Stack
-
-### Backend
-
-- Python with Flask
-- SQLAlchemy ORM
-- PostgreSQL Database
-- Redis for caching
-- WebSocket support via Flask-SocketIO
+## Technology Stack
 
 ### Frontend
 
-- React for UI components
+- React.js
 - Redux for state management
 - React Router for navigation
-- Socket.IO for real-time features
+- CSS Modules and custom styling
+- Web Audio API for sound generation
+- Canvas/WebGL for visualizations
 
-### Infrastructure
+### Backend
 
-- Docker containerization
-- Nginx for reverse proxy
+- Python with FastAPI
+- SQLAlchemy ORM
+- Alembic for database migrations
+- PostgreSQL database
 - JWT authentication
-- WebSocket protocol
+- Celery for background tasks
+- Redis for caching
+
+### DevOps
+
+- Docker and Docker Compose support
+- Testing frameworks (Pytest, Jest)
+- Continuous Integration setup
+
+## Project Structure
+
+```
+harmonic-universe/
+├── backend/                # Python FastAPI backend
+│   ├── app/                # Main application
+│   │   ├── api/            # API routes
+│   │   ├── core/           # Core functionality
+│   │   ├── db/             # Database models and session
+│   │   ├── models/         # Pydantic models
+│   │   ├── services/       # Business logic
+│   │   ├── scripts/        # Utility scripts
+│   │   └── utils/          # Helper functions
+│   ├── alembic/            # Database migrations
+│   ├── tests/              # Backend tests
+│   └── requirements.txt    # Python dependencies
+│
+├── frontend/               # React frontend
+│   ├── public/             # Static assets
+│   ├── src/                # Source code
+│   │   ├── components/     # React components
+│   │   ├── contexts/       # React contexts
+│   │   ├── hooks/          # Custom hooks
+│   │   ├── redux/          # Redux store, reducers, etc.
+│   │   ├── routes/         # Route definitions
+│   │   ├── services/       # API service functions
+│   │   ├── styles/         # Global styles
+│   │   ├── utils/          # Utility functions
+│   │   └── App.jsx         # Main App component
+│   ├── package.json        # NPM dependencies
+│   └── vite.config.js      # Vite configuration
+│
+├── docker/                 # Docker configuration
+├── run.sh                  # Main control script
+├── docs/                   # Documentation
+└── README.md               # This file
+```
 
 ## Getting Started
 
 ### Prerequisites
 
-- Docker and Docker Compose
-- Node.js 20.x or higher
-- Python 3.9 or higher
-- PostgreSQL 13 or higher
-- Redis 7 or higher
+- Python 3.8 or higher
+- Node.js 14 or higher
+- PostgreSQL database (or Docker for containerized setup)
+- Redis (optional, for caching and background tasks)
 
 ### Installation
 
+The project includes a convenient control script (`run.sh`) that handles most operations. To set up the project:
+
 1. Clone the repository:
 
-```bash
-git clone https://github.com/yourusername/harmonic-universe.git
-cd harmonic-universe
-```
+   ```bash
+   git clone https://github.com/yourusername/harmonic-universe.git
+   cd harmonic-universe
+   ```
 
-2. Create and configure environment files:
+2. Set up environment files:
 
-```bash
-cp .env.example .env
-cp frontend/.env.example frontend/.env
-cp backend/.env.example backend/.env
-```
+   - Copy `.env.example` to `.env` in both frontend and backend directories
+   - Update the environment variables with your specific configuration
 
-3. Build and start the containers:
+3. Run the setup script:
+   ```bash
+   ./run.sh setup
+   ```
 
-```bash
-docker-compose up --build
-```
+This will:
 
-4. Access the application:
+- Create a Python virtual environment
+- Install backend dependencies
+- Set up the database
+- Install frontend dependencies
 
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:5000
-- API Documentation: http://localhost:5000/docs
-- Flower (Celery monitoring): http://localhost:5555
+### Running the Application
 
-## Development
-
-### Backend Setup
-
-1. Install Python dependencies:
+To start the development servers:
 
 ```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # or `venv\Scripts\activate` on Windows
-pip install -r requirements.txt
+./run.sh dev
 ```
 
-2. Set up environment variables:
+This will start both the backend and frontend servers. Alternatively, you can start them individually:
 
 ```bash
-cp .env.example .env
+# Backend only
+./run.sh dev backend
+
+# Frontend only
+./run.sh dev frontend
 ```
 
-3. Initialize the database:
+## Usage
+
+Once the application is running, navigate to `http://localhost:3000` in your web browser. If you're a new user, you'll need to create an account. The demo setup also creates a demo user you can use to explore the application.
+
+### Creating Your First Universe
+
+1. Log in to your account
+2. Navigate to the Dashboard
+3. Click "Create Universe"
+4. Name your universe and configure the basic physics parameters
+5. Start adding physics objects to your universe
+6. Play the simulation to hear the generated music
+
+### Running Tests
+
+The project includes comprehensive tests for both frontend and backend:
 
 ```bash
-flask db upgrade
-python scripts/init_db.py
+# Run all tests
+./run.sh test all
+
+# Run specific test suites
+./run.sh test backend
+./run.sh test frontend
+./run.sh test api
 ```
 
-### Frontend Setup
+### Database Operations
 
-1. Install Node.js dependencies:
+The control script also provides commands for database operations:
 
 ```bash
-cd frontend
-npm install
+# Run migrations
+./run.sh db migrate
+
+# Reset database to initial state
+./run.sh db reset
+
+# Backup database
+./run.sh db backup
+
+# Restore from backup
+./run.sh db restore
 ```
 
-2. Start development server:
+## API Documentation
 
-```bash
-npm run dev
-```
+When the backend server is running, you can access the API documentation at:
+
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+
+The API is organized around RESTful principles with the following main endpoints:
+
+- `/api/auth`: Authentication endpoints
+- `/api/users`: User management
+- `/api/universe`: Universe operations
+- `/api/physics_objects`: Physics object management
+- `/api/scenes`: Scene management
+- `/api/music`: Music generation and export
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+We welcome contributions to Harmonic Universe! Please see our [Contributing Guide](CONTRIBUTING.md) for more information on how to get involved.
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+## Acknowledgements
 
-- React and Redux communities for frontend framework
-- Flask community for backend framework
-- SQLAlchemy community for ORM
-- All other open source contributors
+- Special thanks to the physics and music theory communities for inspiration
+- All our open-source dependencies that made this project possible

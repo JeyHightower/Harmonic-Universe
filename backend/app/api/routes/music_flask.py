@@ -6,6 +6,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.db.repositories.universe import UniverseRepository
 from app.db.session import get_db
 from app.services.music_generator import generate_music_from_params
+from app.services.ai_music_generator import generate_ai_music
 from app.core.errors import NotFoundError, AuthorizationError
 import logging
 import io
@@ -204,3 +205,94 @@ def create_audio_from_music_data(music_data):
         audio += note_audio
 
     return audio
+
+@music_bp.route('/<universe_id>/generate-ai', methods=['GET'])
+@jwt_required()
+def generate_ai_music_endpoint(universe_id):
+    """
+    Generate music with AI assistance based on the harmony and physics parameters of a universe.
+
+    Query Parameters:
+        ai_style: The style of music to generate (default, ambient, classical, electronic, jazz)
+        custom_params: JSON object containing custom music parameters
+
+    Returns notes, tempo, and other musical elements with AI enhancements.
+    """
+    try:
+        # Get current user from JWT
+        current_user_id = get_jwt_identity()
+
+        # Get AI style from query params (default if not specified)
+        ai_style = request.args.get('ai_style', 'default')
+
+        # Validate AI style
+        valid_styles = ['default', 'ambient', 'classical', 'electronic', 'jazz']
+        if ai_style not in valid_styles:
+            logger.warning(f"Invalid AI style requested: {ai_style}. Using default.")
+            ai_style = 'default'
+
+        # Use the get_db context manager to get a session
+        with get_db() as db_session:
+            # Get universe repository
+            universe_repo = UniverseRepository(db_session)
+
+            # Get universe to access harmony parameters
+            universe = universe_repo.get_universe_by_id(universe_id)
+
+            if not universe:
+                raise NotFoundError(f"Universe with id {universe_id} not found")
+
+            # Check if user has access to this universe
+            if universe.user_id != current_user_id and not universe.is_public:
+                raise AuthorizationError("You don't have access to this universe")
+
+            # Get the base harmony and physics parameters from the universe
+            harmony_params = universe.harmony_params
+            physics_params = universe.physics_params
+
+            # Check for custom parameters in the request
+            custom_params = request.args.get('custom_params')
+            if custom_params:
+                try:
+                    import json
+                    custom_params = json.loads(custom_params)
+                    logger.info(f"Using custom parameters with AI style {ai_style}: {custom_params}")
+
+                    # Override harmony parameters with custom values
+                    if 'tempo' in custom_params:
+                        harmony_params['tempo'] = {"value": custom_params['tempo']}
+                    if 'scale_type' in custom_params:
+                        harmony_params['scale_type'] = {"value": custom_params['scale_type']}
+                    if 'root_note' in custom_params:
+                        harmony_params['root_note'] = {"value": custom_params['root_note']}
+
+                    # Add melody complexity parameter if provided
+                    if 'melody_complexity' in custom_params:
+                        harmony_params['melody_complexity'] = {"value": custom_params['melody_complexity']}
+                except Exception as e:
+                    logger.error(f"Error parsing custom parameters: {str(e)}")
+                    # Continue with default parameters on error
+
+            # Generate music using the AI music generator
+            music_data = generate_ai_music(
+                harmony_params=harmony_params,
+                physics_params=physics_params,
+                ai_style=ai_style
+            )
+
+            # Return the generated music data
+            return jsonify({
+                "universe_id": str(universe.id),
+                "music_data": music_data,
+                "ai_style": ai_style
+            })
+
+    except NotFoundError as e:
+        logger.error(f"Not found error: {str(e)}")
+        return jsonify({"error": str(e)}), 404
+    except AuthorizationError as e:
+        logger.error(f"Authorization error: {str(e)}")
+        return jsonify({"error": str(e)}), 403
+    except Exception as e:
+        logger.error(f"Unexpected error in AI music generation: {str(e)}")
+        return jsonify({"error": "An unexpected error occurred"}), 500

@@ -1,0 +1,86 @@
+/* Styles for Modal Content Types */
+
+/* Alert Modal */
+.alert-modal-content {
+  padding: var(--spacing-lg);
+}
+
+.alert-modal-content p {
+  margin-bottom: var(--spacing-xl);
+  color: var(--text-primary);
+  font-size: var(--font-size-md);
+  line-height: 1.6;
+  text-align: center;
+}
+
+.alert-modal-content .modal-actions {
+  display: flex;
+  justify-content: center;
+}
+
+/* Confirm Modal */
+.confirm-modal-content {
+  padding: var(--spacing-lg);
+}
+
+.confirm-modal-content p {
+  margin-bottom: var(--spacing-xl);
+  color: var(--text-primary);
+  font-size: var(--font-size-md);
+  line-height: 1.6;
+}
+
+.confirm-modal-content .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+}
+
+/* Form Modal */
+.form-modal-content {
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.form-modal-content .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.form-modal-content .form-group {
+  margin-bottom: var(--spacing-md);
+}
+
+.form-modal-content .error-message {
+  margin-top: var(--spacing-sm);
+  color: var(--error-color);
+  font-size: var(--font-size-sm);
+}
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+  .alert-modal-content,
+  .confirm-modal-content,
+  .form-modal-content {
+    padding: var(--spacing-md);
+  }
+
+  .alert-modal-content p,
+  .confirm-modal-content p {
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .confirm-modal-content .modal-actions,
+  .form-modal-content .modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .confirm-modal-content .modal-actions button,
+  .form-modal-content .modal-actions button {
+    width: 100%;
+  }
+}

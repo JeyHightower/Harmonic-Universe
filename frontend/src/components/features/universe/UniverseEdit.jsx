@@ -12,6 +12,7 @@ import {
 } from '../../../utils/validation';
 import Button from '../../common/Button';
 import Input from '../../common/Input';
+import Modal from '../../common/Modal';
 import Spinner from '../../common/Spinner';
 import PhysicsPanel from './PhysicsPanel';
 import './Universe.css';
@@ -30,23 +31,27 @@ function UniverseEdit() {
     is_public: false,
     physics_params: null,
   });
+  const [originalFormData, setOriginalFormData] = useState(null);
   const [formErrors, setFormErrors] = useState({
     name: '',
     description: '',
   });
   const [canEdit, setCanEdit] = useState(false);
   const [lastFetchTime, setLastFetchTime] = useState(0);
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   const fetchUniverseData = async () => {
     try {
       setLoading(true);
       const response = await api.get(endpoints.universes.detail(id));
-      setFormData({
+      const newFormData = {
         name: response.name,
         description: response.description || '',
         is_public: response.is_public || false,
         physics_params: response.physics_params || null,
-      });
+      };
+      setFormData(newFormData);
+      setOriginalFormData(JSON.stringify(newFormData));
       // Check if user has edit permissions
       setCanEdit(response.user_role === 'owner');
       setLastFetchTime(Date.now());
@@ -140,12 +145,41 @@ function UniverseEdit() {
     }
   };
 
-  const handleCancel = () => {
+  const hasUnsavedChanges = () => {
+    if (!originalFormData) return false;
+
+    const currentFormDataString = JSON.stringify({
+      name: formData.name,
+      description: formData.description,
+      is_public: formData.is_public,
+      // Exclude physics_params as they're saved separately
+    });
+
+    const originalDataWithoutPhysics = JSON.parse(originalFormData);
+    delete originalDataWithoutPhysics.physics_params;
+    const originalFormDataString = JSON.stringify(originalDataWithoutPhysics);
+
+    return currentFormDataString !== originalFormDataString;
+  };
+
+  const handleCancelClick = () => {
+    if (hasUnsavedChanges()) {
+      setShowCancelModal(true);
+    } else {
+      navigate(`/universes/${id}`);
+    }
+  };
+
+  const handleCancelConfirm = () => {
+    setShowCancelModal(false);
     navigate(`/universes/${id}`);
   };
 
+  const handleCancelModalClose = () => {
+    setShowCancelModal(false);
+  };
+
   const handlePhysicsParamsChange = updatedParams => {
-    console.log('Physics params updated:', updatedParams);
     setFormData(prev => ({
       ...prev,
       physics_params: updatedParams,
@@ -225,13 +259,35 @@ function UniverseEdit() {
           <Button
             type="button"
             variant="secondary"
-            onClick={handleCancel}
+            onClick={handleCancelClick}
             disabled={isSubmitting}
           >
             Cancel
           </Button>
         </div>
       </form>
+
+      {/* Cancel Confirmation Modal */}
+      <Modal
+        isOpen={showCancelModal}
+        onClose={handleCancelModalClose}
+        title="Unsaved Changes"
+      >
+        <div>
+          <p>
+            You have unsaved changes. Are you sure you want to leave without
+            saving?
+          </p>
+          <div className="modal-actions">
+            <Button variant="danger" onClick={handleCancelConfirm}>
+              Discard Changes
+            </Button>
+            <Button variant="secondary" onClick={handleCancelModalClose}>
+              Continue Editing
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

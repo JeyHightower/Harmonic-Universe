@@ -1,7 +1,10 @@
 import {
   CaretRightOutlined,
   DownloadOutlined,
+  EyeOutlined,
+  InfoCircleOutlined,
   PauseOutlined,
+  RobotOutlined,
   SettingOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
@@ -20,12 +23,18 @@ import {
 } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import * as Tone from 'tone';
+import { useModal } from '../../../contexts/ModalContext';
 import { api, endpoints } from '../../../utils/api';
+import Modal from '../../common/Modal';
+import './Music.css';
+import MusicGenerationModal from './MusicGenerationModal';
 import './MusicPlayer.css';
+import MusicVisualizer3D from './MusicVisualizer3D';
 
 const { Title, Text } = Typography;
 
 const MusicPlayer = ({ universeId }) => {
+  const { openModal } = useModal();
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [musicData, setMusicData] = useState(null);
@@ -33,12 +42,16 @@ const MusicPlayer = ({ universeId }) => {
   const [error, setError] = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [customizationEnabled, setCustomizationEnabled] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiStyle, setAiStyle] = useState('default');
   const [customParams, setCustomParams] = useState({
     tempo: 120,
     scale_type: 'major',
-    root_note: 60,
+    root_note: 'C',
     melody_complexity: 0.5,
   });
+  const [visualizationType, setVisualizationType] = useState('2D'); // '2D' or '3D'
+  const [showMusicInfoModal, setShowMusicInfoModal] = useState(false);
 
   // References for Tone.js instruments and sequences
   const synthRef = useRef(null);
@@ -300,42 +313,53 @@ const MusicPlayer = ({ universeId }) => {
     };
   }, [isPlaying, musicData]);
 
-  // Generate music based on universe parameters
-  const generateMusic = async () => {
+  const generateMusic = async (params = null) => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // Stop any currently playing music
+      // Stop any existing playback
       if (isPlaying) {
-        Tone.Transport.stop();
-        setIsPlaying(false);
+        await togglePlayback();
       }
 
-      // Prepare request parameters
-      const params = {};
+      // Use provided params or the current customParams
+      const musicParams =
+        params || (customizationEnabled ? customParams : null);
 
-      // Add custom parameters if customization is enabled
-      if (customizationEnabled) {
-        params.custom_params = customParams;
+      // Build query parameters
+      let queryParams = '';
+      if (musicParams && customizationEnabled) {
+        queryParams = `?custom_params=${encodeURIComponent(
+          JSON.stringify(musicParams)
+        )}`;
       }
 
-      // Get music data from API with optional custom parameters
-      const response = await api.get(endpoints.music.generate(universeId), {
-        params,
-      });
+      // Add AI parameters if enabled
+      if (aiEnabled) {
+        const aiParams = queryParams ? '&' : '?';
+        queryParams += `${aiParams}ai_style=${aiStyle}`;
+      }
 
-      // The API returns { universe_id, music_data }, so we need to extract music_data
-      const musicData = response.music_data;
-      setMusicData(musicData);
+      // Make API request to generate music
+      const response = await api.get(
+        endpoints.universes.generateMusic(universeId) + queryParams
+      );
 
-      // Create a new sequence
-      createMusicSequence(musicData);
+      if (response.music_data) {
+        setMusicData(response.music_data);
+        message.success('Music generated successfully');
 
-      message.success('Music generated successfully');
+        // Auto-play the generated music
+        setTimeout(() => {
+          togglePlayback();
+        }, 500);
+      } else {
+        throw new Error('No music data received from the server');
+      }
     } catch (err) {
       console.error('Failed to generate music:', err);
-      setError('Failed to generate music. Please try again.');
+      setError(err.message || 'Failed to generate music');
       message.error('Failed to generate music');
     } finally {
       setIsLoading(false);
@@ -450,17 +474,144 @@ const MusicPlayer = ({ universeId }) => {
     }));
   };
 
-  return (
-    <Card className="music-player">
-      <Title level={4}>Universal Harmony</Title>
+  // Toggle visualization type between 2D and 3D
+  const toggleVisualizationType = () => {
+    setVisualizationType(prev => (prev === '2D' ? '3D' : '2D'));
+  };
 
-      <div className="visualization-container">
-        <canvas
-          ref={canvasRef}
-          width="500"
-          height="120"
-          className="audio-visualizer"
-        />
+  // Show music info modal
+  const handleShowMusicInfo = () => {
+    setShowMusicInfoModal(true);
+  };
+
+  // Get note name from MIDI note number
+  const getNoteNameFromMidi = midiNote => {
+    const noteNames = [
+      'C',
+      'C#',
+      'D',
+      'D#',
+      'E',
+      'F',
+      'F#',
+      'G',
+      'G#',
+      'A',
+      'A#',
+      'B',
+    ];
+    const octave = Math.floor(midiNote / 12) - 1;
+    const noteName = noteNames[midiNote % 12];
+    return `${noteName}${octave}`;
+  };
+
+  // New function to open the music generation modal
+  const openMusicGenerationModal = () => {
+    openModal({
+      component: MusicGenerationModal,
+      props: {
+        initialParams: customParams,
+        onSubmit: params => {
+          setCustomParams(params);
+          setCustomizationEnabled(true);
+          generateMusic(params);
+        },
+      },
+      modalProps: {
+        title: 'Music Generation Settings',
+        size: 'medium',
+        animation: 'slide',
+        position: 'center',
+      },
+    });
+  };
+
+  return (
+    <Card
+      className="music-player"
+      title={<Title level={4}>Universe Harmony</Title>}
+      extra={
+        <Space>
+          <Button
+            type="primary"
+            icon={<SettingOutlined />}
+            onClick={openMusicGenerationModal}
+            title="Customize music generation parameters"
+          >
+            Customize
+          </Button>
+          <Button
+            type="default"
+            icon={isPlaying ? <PauseOutlined /> : <CaretRightOutlined />}
+            onClick={togglePlayback}
+            loading={isLoading}
+            disabled={!musicData && !isLoading}
+          >
+            {isPlaying ? 'Pause' : 'Play'}
+          </Button>
+          <Button
+            type="default"
+            icon={<SyncOutlined />}
+            onClick={() => generateMusic()}
+            loading={isLoading}
+          >
+            Generate
+          </Button>
+          <Button
+            type="default"
+            icon={<DownloadOutlined />}
+            onClick={downloadMusic}
+            disabled={!musicData || isDownloading}
+            loading={isDownloading}
+          >
+            Download
+          </Button>
+          <Button
+            type="text"
+            icon={<InfoCircleOutlined />}
+            onClick={handleShowMusicInfo}
+          />
+          <Button
+            type="text"
+            icon={<EyeOutlined />}
+            onClick={toggleVisualizationType}
+            title={`Switch to ${
+              visualizationType === '2D' ? '3D' : '2D'
+            } visualization`}
+          />
+        </Space>
+      }
+    >
+      <div
+        className={`visualization-container ${
+          visualizationType === '3D' ? 'visualization-3d' : ''
+        }`}
+      >
+        {visualizationType === '2D' ? (
+          <canvas
+            ref={canvasRef}
+            width="500"
+            height="120"
+            className="audio-visualizer"
+          />
+        ) : (
+          <div className="visualization-3d-container">
+            <MusicVisualizer3D
+              isPlaying={isPlaying}
+              musicData={musicData}
+              analyzerData={
+                analyzerRef.current ? analyzerRef.current.getValue() : null
+              }
+            />
+            <canvas
+              ref={canvasRef}
+              width="500"
+              height="120"
+              className="audio-visualizer audio-visualizer-backup"
+              style={{ opacity: 0 }} // We still need this for analyzer data, but hide it
+            />
+          </div>
+        )}
       </div>
 
       <div className="music-controls">
@@ -494,6 +645,19 @@ const MusicPlayer = ({ universeId }) => {
               onClick={downloadMusic}
               loading={isDownloading}
               disabled={!musicData}
+            />
+
+            <Button
+              type={aiEnabled ? 'primary' : 'default'}
+              shape="circle"
+              icon={<RobotOutlined />}
+              size="large"
+              onClick={() => setAiEnabled(!aiEnabled)}
+              title={
+                aiEnabled
+                  ? 'AI-assisted mode enabled'
+                  : 'Enable AI-assisted mode'
+              }
             />
           </div>
 
@@ -591,13 +755,50 @@ const MusicPlayer = ({ universeId }) => {
                       />
                     </Form.Item>
                   </div>
+
+                  <Divider style={{ margin: '16px 0 8px 0' }} />
+
+                  <Form.Item label={<Text>Use AI-Assisted Generation</Text>}>
+                    <Switch
+                      checked={aiEnabled}
+                      onChange={setAiEnabled}
+                      disabled={isLoading}
+                    />
+                  </Form.Item>
+
+                  <div className={aiEnabled ? '' : 'disabled-controls'}>
+                    <Form.Item label={<Text>AI Music Style</Text>}>
+                      <Select
+                        value={aiStyle}
+                        onChange={setAiStyle}
+                        disabled={!aiEnabled || isLoading}
+                        style={{ width: '100%' }}
+                      >
+                        <Select.Option value="default">
+                          Default Enhancements
+                        </Select.Option>
+                        <Select.Option value="ambient">Ambient</Select.Option>
+                        <Select.Option value="classical">
+                          Classical
+                        </Select.Option>
+                        <Select.Option value="electronic">
+                          Electronic
+                        </Select.Option>
+                        <Select.Option value="jazz">Jazz</Select.Option>
+                      </Select>
+                    </Form.Item>
+                  </div>
                 </Form>
               </div>
             </Collapse.Panel>
           </Collapse>
 
           {musicData && (
-            <div className="music-info">
+            <div className="music-info" onClick={handleShowMusicInfo}>
+              <div className="music-info-header">
+                <Text type="secondary">Music Information</Text>
+                <InfoCircleOutlined className="info-icon" />
+              </div>
               <Text type="secondary">Tempo: {musicData.tempo} BPM</Text>
               <Text type="secondary">Scale: {musicData.scale_type}</Text>
               <Text type="secondary">
@@ -605,10 +806,165 @@ const MusicPlayer = ({ universeId }) => {
                 {musicData.physics_influence.gravity.toFixed(2)}, Temperature{' '}
                 {musicData.physics_influence.temperature.toFixed(2)}
               </Text>
+              {musicData.ai_metadata && (
+                <>
+                  <Divider
+                    style={{
+                      margin: '8px 0',
+                      borderColor: 'rgba(255, 255, 255, 0.1)',
+                    }}
+                  />
+                  <Text type="secondary">
+                    AI Style: {musicData.ai_metadata.style}
+                  </Text>
+                  <Text type="secondary">
+                    Mood: {musicData.ai_metadata.mood}
+                  </Text>
+                  <Text type="secondary">
+                    Complexity:{' '}
+                    {(musicData.ai_metadata.complexity * 100).toFixed(0)}%
+                  </Text>
+                </>
+              )}
             </div>
           )}
         </Space>
       </div>
+
+      {/* Music Info Modal */}
+      <Modal
+        isOpen={showMusicInfoModal}
+        onClose={() => setShowMusicInfoModal(false)}
+        title="Music Information Details"
+      >
+        {musicData && (
+          <div className="music-info-modal">
+            <div className="music-info-section">
+              <h3>Basic Information</h3>
+              <div className="music-info-grid">
+                <div className="info-row">
+                  <span className="info-label">Tempo:</span>
+                  <span className="info-value">{musicData.tempo} BPM</span>
+                </div>
+                <div className="info-row">
+                  <span className="info-label">Scale Type:</span>
+                  <span className="info-value">{musicData.scale_type}</span>
+                </div>
+                <div className="info-row">
+                  <span className="info-label">Root Note:</span>
+                  <span className="info-value">
+                    {getNoteNameFromMidi(musicData.root_note)}
+                  </span>
+                </div>
+                <div className="info-row">
+                  <span className="info-label">Duration:</span>
+                  <span className="info-value">
+                    {((musicData.melody.length * 60) / musicData.tempo).toFixed(
+                      1
+                    )}{' '}
+                    seconds
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="music-info-section">
+              <h3>Physics Influence</h3>
+              <div className="music-info-grid">
+                <div className="info-row">
+                  <span className="info-label">Gravity:</span>
+                  <span className="info-value">
+                    {musicData.physics_influence.gravity.toFixed(2)}
+                  </span>
+                </div>
+                <div className="info-row">
+                  <span className="info-label">Temperature:</span>
+                  <span className="info-value">
+                    {musicData.physics_influence.temperature.toFixed(2)}
+                  </span>
+                </div>
+                {musicData.physics_influence.pressure && (
+                  <div className="info-row">
+                    <span className="info-label">Pressure:</span>
+                    <span className="info-value">
+                      {musicData.physics_influence.pressure.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+                {musicData.physics_influence.elasticity && (
+                  <div className="info-row">
+                    <span className="info-label">Elasticity:</span>
+                    <span className="info-value">
+                      {musicData.physics_influence.elasticity.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {musicData.ai_metadata && (
+              <div className="music-info-section">
+                <h3>AI Enhancement Details</h3>
+                <div className="music-info-grid">
+                  <div className="info-row">
+                    <span className="info-label">AI Style:</span>
+                    <span className="info-value">
+                      {musicData.ai_metadata.style}
+                    </span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Mood:</span>
+                    <span className="info-value">
+                      {musicData.ai_metadata.mood}
+                    </span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Complexity:</span>
+                    <span className="info-value">
+                      {(musicData.ai_metadata.complexity * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                  {musicData.ai_metadata.harmony_level && (
+                    <div className="info-row">
+                      <span className="info-label">Harmony Level:</span>
+                      <span className="info-value">
+                        {musicData.ai_metadata.harmony_level}
+                      </span>
+                    </div>
+                  )}
+                  {musicData.ai_metadata.description && (
+                    <div className="info-row description">
+                      <span className="info-label">AI Description:</span>
+                      <span className="info-value">
+                        {musicData.ai_metadata.description}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="music-info-section">
+              <h3>Melody Structure</h3>
+              <div className="melody-preview">
+                {musicData.melody.slice(0, 10).map((note, index) => (
+                  <div key={index} className="note-preview">
+                    <span className="note-name">
+                      {getNoteNameFromMidi(note.note)}
+                    </span>
+                    <span className="note-duration">{note.duration}</span>
+                  </div>
+                ))}
+                {musicData.melody.length > 10 && (
+                  <div className="more-notes">
+                    ... and {musicData.melody.length - 10} more notes
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
     </Card>
   );
 };

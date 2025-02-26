@@ -1,11 +1,13 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useModal } from '../../../contexts/ModalContext';
 import { setCurrentUniverse } from '../../../store/slices/universeSlice';
 import { deleteUniverse } from '../../../store/thunks/universeThunks';
 import { api, endpoints } from '../../../utils/api';
+import { createConfirmModal } from '../../../utils/modalHelpers';
 import Button from '../../common/Button';
-import Modal from '../../common/Modal';
+import Icon from '../../common/Icon';
 import Spinner from '../../common/Spinner';
 import MusicPlayer from '../music/MusicPlayer';
 import SceneManager from '../scenes/SceneManager';
@@ -21,6 +23,7 @@ const UniverseDetail = () => {
   const [error, setError] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { openModal } = useModal();
 
   useEffect(() => {
     const fetchUniverse = async () => {
@@ -52,7 +55,7 @@ const UniverseDetail = () => {
     if (id) {
       fetchUniverse();
     }
-  }, [id]); // Remove dispatch from dependencies since it's stable
+  }, [id, dispatch]);
 
   // Check if user has permission to modify this universe
   const canModifyUniverse = currentUniverse?.user_role === 'owner';
@@ -72,7 +75,103 @@ const UniverseDetail = () => {
       setError('You do not have permission to delete this universe');
       return;
     }
-    setShowDeleteModal(true);
+
+    // Use the modern modal system with createConfirmModal
+    openModal(
+      createConfirmModal(
+        `Are you sure you want to delete "${currentUniverse?.name}"? This action cannot be undone and will delete all associated data including scenes, physics objects, and generated music.`,
+        handleDeleteConfirm,
+        {
+          title: 'Delete Universe',
+          confirmText: 'Delete Universe',
+          cancelText: 'Cancel',
+          isDestructive: true,
+          animation: 'zoom',
+          size: 'medium',
+        }
+      )
+    );
+  };
+
+  const handleUniverseInfo = () => {
+    // Open a modal with universe details information
+    openModal({
+      component: UniverseInfoModal,
+      props: {
+        universe: currentUniverse,
+      },
+      modalProps: {
+        title: 'Universe Details',
+        size: 'medium',
+        animation: 'fade',
+      },
+    });
+  };
+
+  const UniverseInfoModal = ({ universe, onClose }) => {
+    if (!universe) return null;
+
+    return (
+      <div className="universe-info-modal">
+        <div className="universe-info-section">
+          <h3>Basic Information</h3>
+          <div className="info-row">
+            <span className="info-label">Name:</span>
+            <span className="info-value">{universe.name}</span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">Description:</span>
+            <span className="info-value">{universe.description}</span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">Visibility:</span>
+            <span className="info-value">
+              {universe.is_public ? 'Public' : 'Private'}
+            </span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">Created:</span>
+            <span className="info-value">
+              {new Date(universe.created_at).toLocaleString()}
+            </span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">Last Updated:</span>
+            <span className="info-value">
+              {new Date(universe.updated_at).toLocaleString()}
+            </span>
+          </div>
+        </div>
+
+        <div className="universe-info-section">
+          <h3>Statistics</h3>
+          <div className="info-row">
+            <span className="info-label">Physics Objects:</span>
+            <span className="info-value">
+              {universe.physics_objects_count || 'N/A'}
+            </span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">Scenes:</span>
+            <span className="info-value">{universe.scenes_count || 'N/A'}</span>
+          </div>
+        </div>
+
+        <div className="modal-footer">
+          <Button onClick={onClose}>Close</Button>
+          {canModifyUniverse && (
+            <Button
+              onClick={() => {
+                onClose();
+                handleEdit();
+              }}
+            >
+              Edit Universe
+            </Button>
+          )}
+        </div>
+      </div>
+    );
   };
 
   const handleDeleteConfirm = async () => {
@@ -80,7 +179,6 @@ const UniverseDetail = () => {
       setIsDeleting(true);
       setError(null);
       await dispatch(deleteUniverse(id)).unwrap();
-      setShowDeleteModal(false);
       navigate('/dashboard');
     } catch (error) {
       const errorMessage = error.message || 'Failed to delete universe';
@@ -90,7 +188,6 @@ const UniverseDetail = () => {
         error.error_code === 'AUTHORIZATION_ERROR'
       ) {
         setError('You do not have permission to delete this universe');
-        setShowDeleteModal(false);
         dispatch(
           setCurrentUniverse({
             ...currentUniverse,
@@ -98,19 +195,8 @@ const UniverseDetail = () => {
           })
         );
         setTimeout(() => {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }, 100);
-      } else if (error.status === 401) {
-        setError('Your session has expired. Redirecting to login...');
-        setShowDeleteModal(false);
-        setTimeout(() => {
-          navigate('/login', {
-            state: {
-              from: `/universes/${id}`,
-              message: 'Please log in again to continue.',
-            },
-          });
-        }, 2000);
+          navigate('/dashboard');
+        }, 3000);
       } else {
         setError(errorMessage);
       }
@@ -118,20 +204,6 @@ const UniverseDetail = () => {
       setIsDeleting(false);
     }
   };
-
-  const handleCloseModal = useCallback(
-    e => {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      if (!isDeleting) {
-        setShowDeleteModal(false);
-        setError(null);
-      }
-    },
-    [isDeleting]
-  );
 
   // Update error display component
   const ErrorDisplay = ({ message }) => (
@@ -183,88 +255,36 @@ const UniverseDetail = () => {
   }
 
   return (
-    <div className="universe-container">
-      <div className="universe-detail">
-        <header className="universe-detail-header">
+    <div className="universe-container universe-detail-container">
+      <div className="universe-header">
+        <div className="universe-title-section">
           <h1>{currentUniverse.name}</h1>
-          {canModifyUniverse && (
-            <div className="universe-detail-actions">
-              <Button variant="secondary" onClick={handleEdit}>
-                Edit
-              </Button>
-              <Button variant="danger" onClick={handleDeleteClick}>
-                Delete
-              </Button>
-            </div>
-          )}
-        </header>
-
-        <section className="universe-detail-info">
-          <div className="universe-detail-field">
-            <h2>Description</h2>
-            <p>{currentUniverse.description}</p>
+          <div className="universe-actions">
+            <Button onClick={handleUniverseInfo} variant="icon">
+              <Icon name="info" />
+            </Button>
+            {canModifyUniverse && (
+              <>
+                <Button onClick={handleEdit}>Edit</Button>
+                <Button onClick={handleDeleteClick} variant="danger">
+                  Delete
+                </Button>
+              </>
+            )}
           </div>
-
-          <div className="universe-detail-field">
-            <h2>Created</h2>
-            <p>{new Date(currentUniverse.created_at).toLocaleDateString()}</p>
-          </div>
-
-          <div className="universe-detail-field">
-            <h2>Last Updated</h2>
-            <p>{new Date(currentUniverse.updated_at).toLocaleDateString()}</p>
-          </div>
-
-          <div className="universe-detail-field">
-            <h2>Visibility</h2>
-            <p>{currentUniverse.is_public ? 'Public' : 'Private'}</p>
-          </div>
-        </section>
-
-        <div className="universe-section">
-          <PhysicsPanel
-            universeId={id}
-            initialPhysicsParams={currentUniverse.physics_params}
-            readOnly={!canModifyUniverse}
-          />
         </div>
-
-        <div className="universe-section">
-          <SceneManager />
-        </div>
-
-        <div className="universe-section">
-          <h2 className="section-title">Universal Harmony</h2>
-          <MusicPlayer universeId={id} />
-        </div>
+        <p className="universe-description">{currentUniverse.description}</p>
       </div>
 
-      <Modal
-        isOpen={showDeleteModal}
-        onClose={handleCloseModal}
-        title="Delete Universe"
-      >
-        <div>
-          <p>Are you sure you want to delete this universe?</p>
-          <p>This action cannot be undone.</p>
-          <div className="modal-actions">
-            <Button
-              variant="danger"
-              onClick={handleDeleteConfirm}
-              disabled={isDeleting}
-            >
-              {isDeleting ? 'Deleting...' : 'Delete'}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={handleCloseModal}
-              disabled={isDeleting}
-            >
-              Cancel
-            </Button>
+      <div className="universe-content">
+        <div className="universe-panels">
+          <PhysicsPanel />
+          <div className="music-visualization-section">
+            <MusicPlayer universeId={id} />
           </div>
         </div>
-      </Modal>
+        <SceneManager universeId={id} />
+      </div>
     </div>
   );
 };

@@ -30,6 +30,8 @@ export const endpoints = {
   music: {
     generate: universeId => `${API_BASE_URL}/api/music/${universeId}/generate`,
     download: universeId => `${API_BASE_URL}/api/music/${universeId}/download`,
+    generateAI: universeId =>
+      `${API_BASE_URL}/api/music/${universeId}/generate-ai`,
   },
 };
 

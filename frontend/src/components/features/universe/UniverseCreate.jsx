@@ -10,7 +10,7 @@ import Button from '../../common/Button';
 import Input from '../../common/Input';
 import './Universe.css';
 
-function UniverseCreate() {
+function UniverseCreate({ isModal = false, onSuccess, onCancel }) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,7 +59,12 @@ function UniverseCreate() {
 
     try {
       const result = await dispatch(createUniverse(formData)).unwrap();
-      navigate(`/universes/${result.id}`);
+
+      if (isModal && onSuccess) {
+        onSuccess(result.id);
+      } else {
+        navigate(`/universes/${result.id}`);
+      }
     } catch (error) {
       console.error('Failed to create universe:', error);
       setError(error.response?.data?.message || 'Failed to create universe');
@@ -68,10 +73,10 @@ function UniverseCreate() {
   };
 
   return (
-    <div className="universe-create">
-      <h1>Create New Universe</h1>
+    <div className={`universe-create ${isModal ? 'in-modal' : ''}`}>
+      {!isModal && <h1>Create New Universe</h1>}
       {error && <div className="error-message">{error}</div>}
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="universe-form">
         <Input
           type="text"
           label="Universe Name"
@@ -79,6 +84,7 @@ function UniverseCreate() {
           value={formData.name}
           onChange={handleChange}
           error={formErrors.name}
+          placeholder="Enter a unique name for your universe"
           required
         />
         <Input
@@ -88,22 +94,40 @@ function UniverseCreate() {
           value={formData.description}
           onChange={handleChange}
           error={formErrors.description}
+          placeholder="Describe your universe and its unique properties"
           required
         />
-        <div className="form-group">
-          <label>
+        <div className="form-group checkbox-group">
+          <label className="checkbox-label">
             <input
               type="checkbox"
               name="is_public"
               checked={formData.is_public}
               onChange={handleChange}
+              className="checkbox-input"
             />
-            Make Universe Public
+            <span className="checkbox-text">Make Universe Public</span>
           </label>
+          <p className="help-text">
+            Public universes can be viewed by other users
+          </p>
         </div>
-        <Button type="submit" disabled={isSubmitting} loading={isSubmitting}>
-          Create Universe
-        </Button>
+
+        <div className={`form-actions ${isModal ? 'modal-actions' : ''}`}>
+          {isModal && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={onCancel}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+          )}
+          <Button type="submit" disabled={isSubmitting} loading={isSubmitting}>
+            Create Universe
+          </Button>
+        </div>
       </form>
     </div>
   );

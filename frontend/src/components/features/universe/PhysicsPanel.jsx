@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useModal } from '../../../contexts/ModalContext';
 import { updatePhysicsParams } from '../../../store/thunks/universeThunks';
 import Button from '../../common/Button';
-import Input from '../../common/Input';
+import PhysicsSettingsModal from './PhysicsSettingsModal';
 import './Universe.css';
 
 const DEFAULT_PHYSICS_PARAMS = {
@@ -57,6 +58,7 @@ function PhysicsPanel({
   onPhysicsParamsChange,
 }) {
   const dispatch = useDispatch();
+  const { openModal } = useModal();
   const currentUniverse = useSelector(state => state.universe.currentUniverse);
   const [physicsParams, setPhysicsParams] = useState(null);
   const [errors, setErrors] = useState({});
@@ -97,276 +99,154 @@ function PhysicsPanel({
         {}
       );
       setPhysicsParams(updatedParams);
-      setLastSubmittedValues(updatedParams);
-    } else if (initialPhysicsParams) {
-      // Use initial params if provided
-      const updatedParams = Object.entries(initialPhysicsParams).reduce(
-        (acc, [key, param]) => ({
-          ...acc,
-          [key]: {
-            ...DEFAULT_PHYSICS_PARAMS[key], // Keep metadata
-            ...param, // Override with provided values
-          },
-        }),
-        {}
-      );
-      setPhysicsParams(updatedParams);
-      setLastSubmittedValues(updatedParams);
-    } else {
-      // Fall back to defaults
+      setLastSubmittedValues(extractValues(updatedParams));
+      setIsLoading(false);
+    }
+    // Fallback to prop data if available
+    else if (initialPhysicsParams) {
+      setPhysicsParams(initialPhysicsParams);
+      setLastSubmittedValues(extractValues(initialPhysicsParams));
+      setIsLoading(false);
+    }
+    // Fallback to defaults if no data
+    else {
       setPhysicsParams(DEFAULT_PHYSICS_PARAMS);
-      setLastSubmittedValues(DEFAULT_PHYSICS_PARAMS);
+      setLastSubmittedValues(extractValues(DEFAULT_PHYSICS_PARAMS));
+      setIsLoading(false);
     }
-    setIsLoading(false);
-  }, [
-    currentUniverse?.id,
-    universeId,
-    currentUniverse?.physics_params,
-    initialPhysicsParams,
-  ]);
+  }, [universeId, currentUniverse, initialPhysicsParams]);
 
-  // Sync with Redux store updates
-  useEffect(() => {
-    if (
-      currentUniverse?.id === universeId &&
-      currentUniverse?.physics_params &&
-      physicsParams
-    ) {
-      const storeParams = JSON.parse(
-        JSON.stringify(currentUniverse.physics_params)
-      );
-
-      // Only update if values have actually changed
-      if (!arePhysicsParamsEqual(storeParams, physicsParams)) {
-        const updatedParams = Object.entries(storeParams).reduce(
-          (acc, [key, param]) => ({
-            ...acc,
-            [key]: {
-              ...DEFAULT_PHYSICS_PARAMS[key], // Keep metadata
-              ...param, // Override with store values
-            },
-          }),
-          {}
-        );
-        setPhysicsParams(updatedParams);
-        setLastSubmittedValues(updatedParams);
-      }
-    }
-  }, [currentUniverse?.physics_params, universeId]);
-
-  const validateParameter = (name, value) => {
-    const param = physicsParams[name];
-    if (value < param.min || value > param.max) {
-      return `Value must be between ${param.min} and ${param.max} ${param.unit}`;
-    }
-
-    // Add warnings for extreme values
-    if (value < param.warning_threshold) {
-      return `Warning: ${name.replace(/_/g, ' ')} is very low. Are you sure?`;
-    }
-
-    return '';
-  };
-
-  const handleParameterChange = (name, value) => {
-    console.log('Parameter change:', { name, value });
-
-    // Clear all errors when user starts editing
-    setErrors({});
-
-    // Handle empty input case
-    if (value === '') {
-      setErrors(prev => ({
-        ...prev,
-        [name]: `Value is required`,
-      }));
-      return;
-    }
-
-    const numValue = parseFloat(value);
-
-    // Handle NaN case
-    if (isNaN(numValue)) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: `Please enter a valid number`,
-      }));
-      return;
-    }
-
-    const error = validateParameter(name, numValue);
-    console.log('Validation error:', error);
-
-    // Update errors - remove error if value is valid
-    if (error) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: error,
-      }));
-    }
-
-    setPhysicsParams(prev => {
-      const newParams = {
-        ...prev,
-        [name]: {
-          ...prev[name],
-          value: numValue,
-        },
-      };
-      console.log('New physics params:', newParams);
-      return newParams;
-    });
-  };
-
-  const handleSubmit = async () => {
-    if (isSubmitting || Object.keys(errors).length > 0) return;
-
-    try {
-      setIsSubmitting(true);
-      setErrors({});
-
-      // Check if values have actually changed
-      if (arePhysicsParamsEqual(physicsParams, lastSubmittedValues)) {
-        console.log('No changes to submit');
-        setIsSubmitting(false);
-        return;
-      }
-
-      const cleanPhysicsParams = cleanupPhysicsParams(physicsParams);
-
-      console.debug('Submitting physics update:', {
-        universeId,
-        physicsParams: cleanPhysicsParams,
-      });
-
-      // Attempt to update physics parameters
-      const result = await dispatch(
-        updatePhysicsParams({
-          universeId,
-          physicsParams: cleanPhysicsParams,
-        })
-      ).unwrap();
-
-      if (result && result.physics_params) {
-        console.debug('Physics update successful:', {
-          universeId,
-          physics_params: result.physics_params,
-        });
-
-        // Update local state with the server response while preserving metadata
-        const updatedParams = Object.entries(result.physics_params).reduce(
-          (acc, [key, param]) => ({
-            ...acc,
-            [key]: {
-              ...DEFAULT_PHYSICS_PARAMS[key], // Keep default metadata
-              ...param, // Update with server values
-            },
-          }),
-          {}
-        );
-
-        setPhysicsParams(updatedParams);
-        setLastSubmittedValues(updatedParams);
-        setErrors({});
-
-        // Update parent component
-        if (onPhysicsParamsChange) {
-          onPhysicsParamsChange(result.physics_params);
-        }
-      } else {
-        throw new Error('Invalid response from server');
-      }
-    } catch (error) {
-      console.error('Physics update error:', error);
-      setErrors({
-        submit: error.message || 'Failed to update physics parameters',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Helper function to compare physics parameters
-  const arePhysicsParamsEqual = (params1, params2) => {
-    if (!params1 || !params2) return false;
-
-    return Object.entries(params1).every(([key, param1]) => {
-      const param2 = params2[key];
-      if (!param2) return false;
-
-      const value1 = parseFloat(param1.value);
-      const value2 = parseFloat(param2.value);
-
-      return (
-        !isNaN(value1) && !isNaN(value2) && Math.abs(value1 - value2) < 0.0001
-      );
-    });
-  };
-
-  // Helper function to clean physics parameters for submission
-  const cleanupPhysicsParams = params => {
+  // Extract just the values (without metadata) for comparisons
+  const extractValues = params => {
+    if (!params) return {};
     return Object.entries(params).reduce(
       (acc, [key, param]) => ({
         ...acc,
-        [key]: {
-          value: parseFloat(param.value),
-          unit: param.unit,
-          min: param.min,
-          max: param.max,
-          // Only include warning_threshold if it exists
-          ...(param.warning_threshold && {
-            warning_threshold: param.warning_threshold,
-          }),
-        },
+        [key]: param.value,
       }),
       {}
     );
   };
 
+  // Handle edit button click to open the physics settings modal
+  const handleOpenPhysicsModal = () => {
+    openModal({
+      component: PhysicsSettingsModal,
+      props: {
+        initialPhysicsParams: physicsParams,
+        onSave: handleSavePhysicsParams,
+      },
+      modalProps: {
+        title: 'Physics Settings',
+        size: 'medium',
+        animation: 'slide',
+        position: 'center',
+      },
+    });
+  };
+
+  // Handle saving physics parameters from the modal
+  const handleSavePhysicsParams = async updatedParams => {
+    setIsSubmitting(true);
+
+    try {
+      // Update local state
+      setPhysicsParams(updatedParams);
+
+      // Extract values for API submission
+      const physicsValues = extractValues(updatedParams);
+      setLastSubmittedValues(physicsValues);
+
+      // Dispatch Redux action to update backend
+      if (universeId) {
+        await dispatch(
+          updatePhysicsParams({
+            universeId,
+            physicsParams: physicsValues,
+          })
+        ).unwrap();
+      }
+
+      // Notify parent component if callback provided
+      if (onPhysicsParamsChange) {
+        onPhysicsParamsChange(updatedParams);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Failed to update physics parameters:', error);
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Format values for display
+  const formatPhysicsValue = (value, unit) => {
+    if (typeof value !== 'number') return 'N/A';
+
+    // Handle decimal precision based on the range
+    let formattedValue;
+    if (value < 0.01) {
+      formattedValue = value.toExponential(2);
+    } else if (value < 1) {
+      formattedValue = value.toFixed(3);
+    } else if (value < 10) {
+      formattedValue = value.toFixed(2);
+    } else if (value < 100) {
+      formattedValue = value.toFixed(1);
+    } else {
+      formattedValue = value.toFixed(0);
+    }
+
+    return `${formattedValue} ${unit}`;
+  };
+
+  // Render loading state
+  if (isLoading) {
+    return (
+      <div className="physics-panel physics-panel-loading">
+        <div className="physics-panel-header">
+          <h2>Physics Properties</h2>
+        </div>
+        <div className="physics-panel-content">
+          <div className="physics-loading-placeholder"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!physicsParams) return null;
+
   return (
     <div className="physics-panel">
-      <h2>Physics Parameters</h2>
-      {errors.submit && <div className="error-message">{errors.submit}</div>}
-      {isLoading ? (
-        <div className="physics-loading">Loading physics parameters...</div>
-      ) : (
-        <>
-          <div className="physics-parameters">
-            {physicsParams &&
-              Object.entries(physicsParams).map(([name, param]) => (
-                <div key={name} className="parameter-group">
-                  <Input
-                    type="number"
-                    name={name}
-                    label={name.replace(/_/g, ' ').toUpperCase()}
-                    value={isNaN(param.value) ? '' : param.value.toString()}
-                    onChange={e => handleParameterChange(name, e.target.value)}
-                    error={errors[name]}
-                    disabled={readOnly || !canEdit}
-                    step="any"
-                    min={param.min}
-                    max={param.max}
-                    suffix={param.unit}
-                  />
-                </div>
-              ))}
-          </div>
-          {!readOnly && canEdit && (
-            <div className="physics-actions">
-              <Button
-                onClick={handleSubmit}
-                disabled={
-                  isSubmitting ||
-                  (Object.keys(errors).length > 0 && !errors.submit)
-                }
-                loading={isSubmitting}
-              >
-                Update Physics Parameters
-              </Button>
+      <div className="physics-panel-header">
+        <h2>Physics Properties</h2>
+        {canEdit && (
+          <Button
+            variant="primary"
+            onClick={handleOpenPhysicsModal}
+            disabled={isSubmitting}
+          >
+            Edit Physics
+          </Button>
+        )}
+      </div>
+
+      <div className="physics-panel-content">
+        <div className="physics-grid">
+          {Object.entries(physicsParams).map(([key, param]) => (
+            <div key={key} className="physics-property">
+              <div className="physics-property-label">
+                {key.charAt(0).toUpperCase() + key.slice(1).replace('_', ' ')}
+              </div>
+              <div className="physics-property-value">
+                {formatPhysicsValue(param.value, param.unit)}
+              </div>
             </div>
-          )}
-        </>
-      )}
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

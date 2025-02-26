@@ -1,0 +1,45 @@
+.icon {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Sizes */
+.icon-small {
+  width: 16px;
+  height: 16px;
+}
+
+.icon-medium {
+  width: 20px;
+  height: 20px;
+}
+
+.icon-large {
+  width: 24px;
+  height: 24px;
+}
+
+/* Animation on hover */
+.icon-animate-hover:hover {
+  transform: scale(1.1);
+  transition: transform 0.2s ease-in-out;
+}
+
+/* Fallback icon */
+.icon-fallback {
+  background-color: var(--text-tertiary, #888);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.icon-fallback::before {
+  content: '?';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--surface-color, #fff);
+  font-size: 12px;
+  font-weight: bold;
+}

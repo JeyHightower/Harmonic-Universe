@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { ROUTES } from '../../routes';
 import { logout } from '../../store/slices/authSlice';
 import { api, endpoints } from '../../utils/api';
 import Button from '../common/Button';
@@ -70,6 +71,10 @@ function Layout() {
             {isAuthenticated ? (
               <>
                 <Link to="/dashboard">Dashboard</Link>
+                <Link to={ROUTES.SETTINGS}>Settings</Link>
+                <Link to="/examples/modals" className="examples-link">
+                  Modal Examples
+                </Link>
                 <ThemeToggle />
                 <Button onClick={handleLogoutClick} variant="secondary">
                   Logout
@@ -79,6 +84,10 @@ function Layout() {
               <>
                 <Link to="/login">Login</Link>
                 <Link to="/register">Register</Link>
+                <Link to={ROUTES.SETTINGS}>Settings</Link>
+                <Link to="/examples/modals" className="examples-link">
+                  Modal Examples
+                </Link>
                 <ThemeToggle />
               </>
             )}

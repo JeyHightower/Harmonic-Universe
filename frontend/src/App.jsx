@@ -1,6 +1,8 @@
 import { Suspense } from 'react';
 import { Provider } from 'react-redux';
 import { RouterProvider } from 'react-router-dom';
+import GlobalModal from './components/common/GlobalModal';
+import { ModalProvider } from './contexts/ModalContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { router } from './routes';
 import store from './store';
@@ -10,9 +12,14 @@ function App() {
   return (
     <Provider store={store}>
       <ThemeProvider>
-        <Suspense fallback={<div>Loading...</div>}>
-          <RouterProvider router={router} />
-        </Suspense>
+        <ModalProvider>
+          <Suspense fallback={<div>Loading...</div>}>
+            <RouterProvider router={router} />
+            <GlobalModal />
+            {/* Create a portal root for modals if it doesn't exist */}
+            <div id="portal-root" />
+          </Suspense>
+        </ModalProvider>
       </ThemeProvider>
     </Provider>
   );

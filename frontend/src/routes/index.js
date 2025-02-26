@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
+import IconTest from '../components/test/IconTest';
 import ProtectedRoute from './ProtectedRoute';
 
 // Lazy-loaded components
@@ -16,11 +17,12 @@ const UniverseList = lazy(() =>
 const UniverseDetail = lazy(() =>
   import('../components/features/universe/UniverseDetail')
 );
-const UniverseCreate = lazy(() =>
-  import('../components/features/universe/UniverseCreate')
-);
 const UniverseEdit = lazy(() =>
   import('../components/features/universe/UniverseEdit')
+);
+const ModalExample = lazy(() => import('../components/examples/ModalExample'));
+const SettingsPage = lazy(() =>
+  import('../components/features/settings/SettingsPage')
 );
 
 export const ROUTES = {
@@ -29,9 +31,11 @@ export const ROUTES = {
   REGISTER: '/register',
   DASHBOARD: '/dashboard',
   UNIVERSES: '/universes',
-  UNIVERSE_CREATE: '/universes/create',
   UNIVERSE_DETAIL: '/universes/:id',
   UNIVERSE_EDIT: '/universes/:id/edit',
+  MODAL_EXAMPLES: '/examples/modals',
+  SETTINGS: '/settings',
+  ICON_TEST: '/test/icons',
 };
 
 export const router = createBrowserRouter([
@@ -68,14 +72,6 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: ROUTES.UNIVERSE_CREATE,
-        element: (
-          <ProtectedRoute>
-            <UniverseCreate />
-          </ProtectedRoute>
-        ),
-      },
-      {
         path: ROUTES.UNIVERSE_DETAIL,
         element: (
           <ProtectedRoute>
@@ -90,6 +86,18 @@ export const router = createBrowserRouter([
             <UniverseEdit />
           </ProtectedRoute>
         ),
+      },
+      {
+        path: ROUTES.MODAL_EXAMPLES,
+        element: <ModalExample />,
+      },
+      {
+        path: ROUTES.SETTINGS,
+        element: <SettingsPage />,
+      },
+      {
+        path: ROUTES.ICON_TEST,
+        element: <IconTest />,
       },
     ],
   },

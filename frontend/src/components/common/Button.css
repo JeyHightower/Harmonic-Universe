@@ -220,3 +220,59 @@
   outline: none;
   box-shadow: 0 0 0 2px var(--primary-color);
 }
+
+/* Icon button variants */
+.button-icon {
+  background-color: transparent;
+  color: var(--text-primary);
+  width: 36px;
+  height: 36px;
+  padding: var(--spacing-xs);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.button-icon:hover:not(.button-disabled) {
+  background-color: var(--surface-hover);
+  transform: translateY(0);
+}
+
+.button-icon-danger {
+  background-color: transparent;
+  color: var(--error-color);
+  width: 36px;
+  height: 36px;
+  padding: var(--spacing-xs);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.button-icon-danger:hover:not(.button-disabled) {
+  background-color: rgba(var(--error-color-rgb), 0.1);
+  transform: translateY(0);
+}
+
+/* Sizes for icon buttons */
+.button-icon.button-small,
+.button-icon-danger.button-small {
+  width: 28px;
+  height: 28px;
+  padding: var(--spacing-xxs);
+}
+
+.button-icon.button-large,
+.button-icon-danger.button-large {
+  width: 44px;
+  height: 44px;
+  padding: var(--spacing-sm);
+}
+
+/* Focus states for icon buttons */
+.button-icon:focus,
+.button-icon-danger:focus {
+  box-shadow: 0 0 0 2px var(--primary-color-light);
+}

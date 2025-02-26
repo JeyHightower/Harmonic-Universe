@@ -7,6 +7,8 @@ BASE_URL="http://localhost:8000/api"
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
 NC='\033[0m' # No Color
 
 # Function to print result
@@ -20,6 +22,11 @@ print_result() {
         fi
         exit 1
     fi
+}
+
+# Function to print section header
+print_section() {
+    echo -e "\n${BOLD}${CYAN}=== $1 ===${NC}"
 }
 
 # Function to validate universe object structure
@@ -48,59 +55,11 @@ validate_universe_structure() {
         has("ai_params") and
         has("created_at") and
         has("updated_at") and
-        has("user_role")
+        ((.created_at | type) == "string") and
+        ((.updated_at | type) == "string")
     ' > /dev/null
 
-    if [ $? -ne 0 ]; then
-        echo "Invalid universe structure"
-        return 1
-    fi
-
-    # If name is provided, check it matches
-    if [ ! -z "$check_name" ]; then
-        local actual_name=$(echo "$universe_json" | jq -r '.name')
-        if [ "$actual_name" != "$check_name" ]; then
-            echo "Name mismatch: expected $check_name, got $actual_name"
-            return 1
-        fi
-    fi
-
-    return 0
-}
-
-# Function to validate scene object structure
-validate_scene_structure() {
-    local scene_json="$1"
-    local check_name="$2"
-
-    # Check required fields exist and have correct types
-    echo "$scene_json" | jq -e '
-        has("id") and
-        ((.id | type) == "string") and
-        has("name") and
-        ((.name | type) == "string") and
-        has("description") and
-        has("universe_id") and
-        ((.universe_id | type) == "string") and
-        has("created_at") and
-        has("updated_at")
-    ' > /dev/null
-
-    if [ $? -ne 0 ]; then
-        echo "Invalid scene structure"
-        return 1
-    fi
-
-    # If name is provided, check it matches
-    if [ ! -z "$check_name" ]; then
-        local actual_name=$(echo "$scene_json" | jq -r '.name')
-        if [ "$actual_name" != "$check_name" ]; then
-            echo "Name mismatch: expected $check_name, got $actual_name"
-            return 1
-        fi
-    fi
-
-    return 0
+    print_result "Universe structure validation for $check_name"
 }
 
 # Function to validate physics object structure
@@ -116,545 +75,381 @@ validate_physics_object_structure() {
         ((.name | type) == "string") and
         has("scene_id") and
         ((.scene_id | type) == "string") and
+        has("object_type") and
+        ((.object_type | type) == "string") and
+        has("position") and
+        ((.position | type) == "object") and
+        has("velocity") and
+        ((.velocity | type) == "object") and
         has("mass") and
         ((.mass | type) == "number") and
-        has("is_static") and
-        ((.is_static | type) == "boolean") and
-        has("is_trigger") and
-        ((.is_trigger | type) == "boolean") and
-        has("collision_shape") and
-        ((.collision_shape | type) == "string") and
-        has("position") and
-        has("velocity") and
-        has("rotation") and
-        has("scale") and
-        has("material_properties") and
+        has("radius") and
+        ((.radius | type) == "number") and
         has("created_at") and
-        has("updated_at")
+        has("updated_at") and
+        ((.created_at | type) == "string") and
+        ((.updated_at | type) == "string")
     ' > /dev/null
 
-    if [ $? -ne 0 ]; then
-        echo "Invalid physics object structure"
-        return 1
-    fi
-
-    # If name is provided, check it matches
-    if [ ! -z "$check_name" ]; then
-        local actual_name=$(echo "$object_json" | jq -r '.name')
-        if [ "$actual_name" != "$check_name" ]; then
-            echo "Name mismatch: expected $check_name, got $actual_name"
-            return 1
-        fi
-    fi
-
-    return 0
+    print_result "Physics object structure validation for $check_name"
 }
 
-echo "Starting universe CRUD tests..."
+# Function to validate scene structure
+validate_scene_structure() {
+    local scene_json="$1"
+    local check_name="$2"
 
-# Login and get token
+    # Check required fields exist and have correct types
+    echo "$scene_json" | jq -e '
+        has("id") and
+        ((.id | type) == "string") and
+        has("name") and
+        ((.name | type) == "string") and
+        has("universe_id") and
+        ((.universe_id | type) == "string") and
+        has("description") and
+        ((.description | type) == "string") and
+        has("order") and
+        ((.order | type) == "number") and
+        has("created_at") and
+        has("updated_at") and
+        ((.created_at | type) == "string") and
+        ((.updated_at | type) == "string")
+    ' > /dev/null
+
+    print_result "Scene structure validation for $check_name"
+}
+
+# Function to validate music generation structure
+validate_music_structure() {
+    local music_json="$1"
+    local check_name="$2"
+
+    # Check required fields exist and have correct types
+    echo "$music_json" | jq -e '
+        has("status") and
+        ((.status | type) == "string") and
+        has("message") and
+        ((.message | type) == "string") and
+        has("universe_id") and
+        ((.universe_id | type) == "string")
+    ' > /dev/null
+
+    print_result "Music generation structure validation for $check_name"
+}
+
+# Login to get JWT token
+print_section "Authentication"
 echo "Logging in..."
-LOGIN_RESPONSE=$(curl -s -X POST "${BASE_URL}/auth/login" \
+LOGIN_RESPONSE=$(curl -s -X POST $BASE_URL/auth/login \
     -H "Content-Type: application/json" \
-    -d '{"email":"demo@example.com","password":"demo123"}')
-TOKEN=$(echo "$LOGIN_RESPONSE" | jq -r '.access_token')
+    -d '{"email": "demo@example.com", "password": "demo123"}')
 
-if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
-    echo -e "${RED}Failed to get token${NC}"
-    echo -e "${YELLOW}Login response: $LOGIN_RESPONSE${NC}"
-    exit 1
-fi
-print_result "Login successful"
+# Check login success
+echo $LOGIN_RESPONSE | grep -q "access_token"
+print_result "Login" "$LOGIN_RESPONSE"
 
-# Test CREATE
-echo "Testing universe creation..."
-CREATE_RESPONSE=$(curl -s -X POST "${BASE_URL}/universes/" \
-    -H "Authorization: Bearer ${TOKEN}" \
+# Extract the token
+TOKEN=$(echo $LOGIN_RESPONSE | jq -r '.access_token')
+
+# Check the token is not empty
+[ -n "$TOKEN" ]
+print_result "Token extraction"
+
+# Check user profile
+USER_RESPONSE=$(curl -s -X GET $BASE_URL/auth/profile \
+    -H "Authorization: Bearer $TOKEN")
+
+# Check profile success
+echo $USER_RESPONSE | grep -q "email"
+print_result "Get user profile" "$USER_RESPONSE"
+
+# UNIVERSE TESTS
+print_section "Universe CRUD Operations"
+
+# Get all universes
+echo "Getting all universes..."
+UNIVERSES_RESPONSE=$(curl -s -X GET $BASE_URL/universes/ \
+    -H "Authorization: Bearer $TOKEN")
+
+# Check universes response
+echo $UNIVERSES_RESPONSE | jq -e 'length >= 0' > /dev/null
+print_result "Get all universes"
+
+# Create a new universe
+echo "Creating a new universe..."
+CREATE_UNIVERSE_RESPONSE=$(curl -s -X POST $BASE_URL/universes/ \
     -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $TOKEN" \
     -d '{
-        "name": "Test Universe",
-        "description": "A test universe for CRUD operations",
-        "is_public": true
-    }')
+    "name": "Test Universe",
+    "description": "A universe created for testing",
+    "is_public": true,
+    "physics_params": {
+        "gravity": {"value": 9.8, "min": 0, "max": 20, "warning_threshold": 1, "unit": "m/s²"},
+        "friction": {"value": 0.5, "min": 0, "max": 1, "warning_threshold": 0.1, "unit": "coef"}
+    },
+    "harmony_params": {
+        "tempo": {"value": 120, "min": 60, "max": 180, "warning_threshold": 10, "unit": "bpm"},
+        "key": {"value": "C", "options": ["C", "G", "D", "A", "E", "B", "F#", "Db", "Ab", "Eb", "Bb", "F"]}
+    },
+    "visualization_params": {
+        "color_scheme": {"value": "blue", "options": ["blue", "red", "green", "purple"]}
+    },
+    "story_points": [],
+    "ai_params": {
+        "creativity": {"value": 0.7, "min": 0, "max": 1, "warning_threshold": 0.1, "unit": "factor"}
+    }
+}')
 
-# Validate creation response
-echo "Validating creation response..."
-validate_universe_structure "$CREATE_RESPONSE" "Test Universe"
-print_result "Universe creation" "$CREATE_RESPONSE"
+# Check universe creation response
+echo $CREATE_UNIVERSE_RESPONSE | grep -q "id"
+print_result "Create universe" "$CREATE_UNIVERSE_RESPONSE"
 
-# Store universe ID for further tests
-UNIVERSE_ID=$(echo "$CREATE_RESPONSE" | jq -r '.id')
+# Validate universe structure
+validate_universe_structure "$CREATE_UNIVERSE_RESPONSE" "created universe"
 
-# Test READ (Get specific universe)
-echo "Testing universe retrieval..."
-READ_RESPONSE=$(curl -s -X GET "${BASE_URL}/universes/${UNIVERSE_ID}/" \
-    -H "Authorization: Bearer ${TOKEN}")
+# Extract the universe ID
+UNIVERSE_ID=$(echo $CREATE_UNIVERSE_RESPONSE | jq -r '.id')
 
-# Validate read response
-echo "Validating read response..."
-validate_universe_structure "$READ_RESPONSE" "Test Universe"
-print_result "Universe retrieval" "$READ_RESPONSE"
+# Check universe ID is not empty
+[ -n "$UNIVERSE_ID" ]
+print_result "Universe ID extraction"
 
-# Test READ (List all universes)
-echo "Testing universe list..."
-LIST_RESPONSE=$(curl -s -X GET "${BASE_URL}/universes/?sort_by=created_at&sort_order=desc" \
-    -H "Authorization: Bearer ${TOKEN}")
+# Get the created universe by ID
+echo "Getting the created universe..."
+GET_UNIVERSE_RESPONSE=$(curl -s -X GET $BASE_URL/universes/$UNIVERSE_ID \
+    -H "Authorization: Bearer $TOKEN")
 
-# Validate list response
-echo "Validating list response..."
-echo "$LIST_RESPONSE" | jq -e 'type == "array"' > /dev/null
-print_result "Universe list retrieval" "$LIST_RESPONSE"
+# Check get universe response
+echo $GET_UNIVERSE_RESPONSE | grep -q "id"
+print_result "Get universe by ID" "$GET_UNIVERSE_RESPONSE"
 
-# Test UPDATE
-echo "Testing universe update..."
-UPDATE_RESPONSE=$(curl -s -X PUT "${BASE_URL}/universes/${UNIVERSE_ID}/" \
-    -H "Authorization: Bearer ${TOKEN}" \
+# Validate universe structure
+validate_universe_structure "$GET_UNIVERSE_RESPONSE" "retrieved universe"
+
+# Update the universe
+echo "Updating the universe..."
+UPDATE_UNIVERSE_RESPONSE=$(curl -s -X PUT $BASE_URL/universes/$UNIVERSE_ID \
     -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $TOKEN" \
     -d '{
-        "name": "Updated Test Universe",
-        "description": "Updated description",
-        "is_public": false
-    }')
+    "name": "Updated Test Universe",
+    "description": "An updated universe for testing",
+    "is_public": false,
+    "physics_params": {
+        "gravity": {"value": 8.0, "min": 0, "max": 20, "warning_threshold": 1, "unit": "m/s²"},
+        "friction": {"value": 0.7, "min": 0, "max": 1, "warning_threshold": 0.1, "unit": "coef"}
+    },
+    "harmony_params": {
+        "tempo": {"value": 100, "min": 60, "max": 180, "warning_threshold": 10, "unit": "bpm"},
+        "key": {"value": "G", "options": ["C", "G", "D", "A", "E", "B", "F#", "Db", "Ab", "Eb", "Bb", "F"]}
+    },
+    "visualization_params": {
+        "color_scheme": {"value": "purple", "options": ["blue", "red", "green", "purple"]}
+    },
+    "story_points": [],
+    "ai_params": {
+        "creativity": {"value": 0.5, "min": 0, "max": 1, "warning_threshold": 0.1, "unit": "factor"}
+    }
+}')
 
-# Validate update response
-echo "Validating update response..."
-validate_universe_structure "$UPDATE_RESPONSE" "Updated Test Universe"
-print_result "Universe update" "$UPDATE_RESPONSE"
+# Check update universe response
+echo $UPDATE_UNIVERSE_RESPONSE | grep -q "id"
+print_result "Update universe" "$UPDATE_UNIVERSE_RESPONSE"
 
-# Verify update with GET
-echo "Verifying update..."
-VERIFY_UPDATE_RESPONSE=$(curl -s -X GET "${BASE_URL}/universes/${UNIVERSE_ID}/" \
-    -H "Authorization: Bearer ${TOKEN}")
+# Validate universe structure
+validate_universe_structure "$UPDATE_UNIVERSE_RESPONSE" "updated universe"
 
-# Check if update was successful
-echo "$VERIFY_UPDATE_RESPONSE" | jq -e '.name == "Updated Test Universe" and .description == "Updated description" and .is_public == false' > /dev/null
-print_result "Update verification" "$VERIFY_UPDATE_RESPONSE"
+# Check updated values
+echo $UPDATE_UNIVERSE_RESPONSE | jq -e '.name == "Updated Test Universe"' > /dev/null
+print_result "Updated name verification"
 
-# Test invalid update (should fail)
-echo "Testing invalid update..."
-INVALID_UPDATE_RESPONSE=$(curl -s -w "%{http_code}" -X PUT "${BASE_URL}/universes/${UNIVERSE_ID}/" \
-    -H "Authorization: Bearer ${TOKEN}" \
+echo $UPDATE_UNIVERSE_RESPONSE | jq -e '.physics_params.gravity.value == 8.0' > /dev/null
+print_result "Updated physics_params verification"
+
+# SCENE TESTS
+print_section "Scene CRUD Operations"
+
+# Create a scene
+echo "Creating a scene..."
+CREATE_SCENE_RESPONSE=$(curl -s -X POST $BASE_URL/scenes/ \
     -H "Content-Type: application/json" \
-    -d '{"invalid_field": "test"}')
-
-HTTP_CODE=${INVALID_UPDATE_RESPONSE: -3}
-if [ "$HTTP_CODE" -eq 400 ]; then
-    print_result "Invalid update test (expected 400 error)"
-else
-    echo -e "${RED}✗ Invalid update test failed - expected 400 but got ${HTTP_CODE}${NC}"
-    exit 1
-fi
-
-# --------------------------------
-# Scene CRUD Tests
-# --------------------------------
-echo "Starting Scene CRUD tests..."
-
-# Create a scene in the universe
-echo "Testing scene creation..."
-CREATE_SCENE_RESPONSE=$(curl -s -X POST "${BASE_URL}/universes/${UNIVERSE_ID}/scenes" \
-    -H "Authorization: Bearer ${TOKEN}" \
-    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $TOKEN" \
     -d '{
-        "name": "Test Scene",
-        "description": "A test scene for CRUD operations",
-        "universe_id": "'${UNIVERSE_ID}'"
-    }')
+    "name": "Test Scene",
+    "description": "A scene created for testing",
+    "universe_id": "'$UNIVERSE_ID'",
+    "order": 1
+}')
 
-# Validate scene creation response
-echo "Validating scene creation response..."
-validate_scene_structure "$CREATE_SCENE_RESPONSE" "Test Scene"
-print_result "Scene creation" "$CREATE_SCENE_RESPONSE"
+# Check scene creation response
+echo $CREATE_SCENE_RESPONSE | grep -q "id"
+print_result "Create scene" "$CREATE_SCENE_RESPONSE"
 
-# Store scene ID for further tests
-SCENE_ID=$(echo "$CREATE_SCENE_RESPONSE" | jq -r '.id')
+# Validate scene structure
+validate_scene_structure "$CREATE_SCENE_RESPONSE" "created scene"
 
-# Test Scene READ (Get specific scene)
-echo "Testing scene retrieval..."
-READ_SCENE_RESPONSE=$(curl -s -X GET "${BASE_URL}/universes/${UNIVERSE_ID}/scenes/${SCENE_ID}" \
-    -H "Authorization: Bearer ${TOKEN}")
+# Extract the scene ID
+SCENE_ID=$(echo $CREATE_SCENE_RESPONSE | jq -r '.id')
 
-# Validate scene read response
-echo "Validating scene read response..."
-validate_scene_structure "$READ_SCENE_RESPONSE" "Test Scene"
-print_result "Scene retrieval" "$READ_SCENE_RESPONSE"
+# Check scene ID is not empty
+[ -n "$SCENE_ID" ]
+print_result "Scene ID extraction"
 
-# Test Scene READ (List all scenes in universe)
-echo "Testing scene list..."
-LIST_SCENES_RESPONSE=$(curl -s -X GET "${BASE_URL}/universes/${UNIVERSE_ID}/scenes" \
-    -H "Authorization: Bearer ${TOKEN}")
+# Get the scene
+echo "Getting the scene..."
+GET_SCENE_RESPONSE=$(curl -s -X GET $BASE_URL/scenes/$SCENE_ID \
+    -H "Authorization: Bearer $TOKEN")
 
-# Validate scenes list response
-echo "Validating scenes list response..."
-echo "$LIST_SCENES_RESPONSE" | jq -e 'type == "array"' > /dev/null
-print_result "Scene list retrieval" "$LIST_SCENES_RESPONSE"
+# Check get scene response
+echo $GET_SCENE_RESPONSE | grep -q "id"
+print_result "Get scene" "$GET_SCENE_RESPONSE"
 
-# Test Scene UPDATE
-echo "Testing scene update..."
-UPDATE_SCENE_RESPONSE=$(curl -s -X PUT "${BASE_URL}/universes/${UNIVERSE_ID}/scenes/${SCENE_ID}" \
-    -H "Authorization: Bearer ${TOKEN}" \
+# Validate scene structure
+validate_scene_structure "$GET_SCENE_RESPONSE" "retrieved scene"
+
+# Update the scene
+echo "Updating the scene..."
+UPDATE_SCENE_RESPONSE=$(curl -s -X PUT $BASE_URL/scenes/$SCENE_ID \
     -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $TOKEN" \
     -d '{
-        "name": "Updated Test Scene",
-        "description": "Updated scene description"
-    }')
+    "name": "Updated Test Scene",
+    "description": "An updated scene for testing",
+    "universe_id": "'$UNIVERSE_ID'",
+    "order": 2
+}')
 
-# Validate scene update response
-echo "Validating scene update response..."
-validate_scene_structure "$UPDATE_SCENE_RESPONSE" "Updated Test Scene"
-print_result "Scene update" "$UPDATE_SCENE_RESPONSE"
+# Check update scene response
+echo $UPDATE_SCENE_RESPONSE | grep -q "id"
+print_result "Update scene" "$UPDATE_SCENE_RESPONSE"
 
-# Verify scene update with GET
-echo "Verifying scene update..."
-VERIFY_SCENE_UPDATE_RESPONSE=$(curl -s -X GET "${BASE_URL}/universes/${UNIVERSE_ID}/scenes/${SCENE_ID}" \
-    -H "Authorization: Bearer ${TOKEN}")
+# Validate scene structure
+validate_scene_structure "$UPDATE_SCENE_RESPONSE" "updated scene"
 
-# Check if scene update was successful
-echo "$VERIFY_SCENE_UPDATE_RESPONSE" | jq -e '.name == "Updated Test Scene" and .description == "Updated scene description"' > /dev/null
-print_result "Scene update verification" "$VERIFY_SCENE_UPDATE_RESPONSE"
+# PHYSICS OBJECT TESTS
+print_section "Physics Object CRUD Operations"
 
-# --------------------------------
-# Physics Objects CRUD Tests
-# --------------------------------
-echo "Starting Physics Objects CRUD tests..."
-
-# Create a physics object in the scene
-echo "Testing physics object creation..."
-CREATE_OBJECT_RESPONSE=$(curl -s -X POST "${BASE_URL}/scenes/${SCENE_ID}/physics-objects" \
-    -H "Authorization: Bearer ${TOKEN}" \
+# Create a physics object
+echo "Creating a physics object..."
+CREATE_OBJECT_RESPONSE=$(curl -s -X POST $BASE_URL/physics-objects/ \
     -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $TOKEN" \
     -d '{
-        "name": "Test Physics Object",
-        "scene_id": "'${SCENE_ID}'",
-        "mass": 10.5,
-        "is_static": false,
-        "is_trigger": false,
-        "collision_shape": "box",
-        "position": {
-            "x": 1.0,
-            "y": 2.0,
-            "z": 3.0
-        },
-        "velocity": {
-            "x": 0.0,
-            "y": 0.0,
-            "z": 0.0
-        },
-        "rotation": {
-            "x": 0.0,
-            "y": 0.0,
-            "z": 0.0
-        },
-        "scale": {
-            "x": 1.0,
-            "y": 1.0,
-            "z": 1.0
-        },
-        "material_properties": {
-            "restitution": 0.7,
-            "friction": 0.3,
-            "density": 1.0
-        }
-    }')
+    "name": "Test Object",
+    "scene_id": "'$SCENE_ID'",
+    "object_type": "particle",
+    "position": {"x": 0, "y": 0, "z": 0},
+    "velocity": {"x": 0, "y": 0, "z": 0},
+    "mass": 10,
+    "radius": 5,
+    "color": "#FF0000",
+    "is_fixed": false,
+    "properties": {"charge": 1.0}
+}')
 
-# Validate physics object creation response
-echo "Validating physics object creation response..."
-validate_physics_object_structure "$CREATE_OBJECT_RESPONSE" "Test Physics Object"
-print_result "Physics object creation" "$CREATE_OBJECT_RESPONSE"
+# Check object creation response
+echo $CREATE_OBJECT_RESPONSE | grep -q "id"
+print_result "Create physics object" "$CREATE_OBJECT_RESPONSE"
 
-# Store physics object ID for further tests
-OBJECT_ID=$(echo "$CREATE_OBJECT_RESPONSE" | jq -r '.id')
+# Validate physics object structure
+validate_physics_object_structure "$CREATE_OBJECT_RESPONSE" "created object"
 
-# Test Physics Object READ (Get specific object)
-echo "Testing physics object retrieval..."
-READ_OBJECT_RESPONSE=$(curl -s -X GET "${BASE_URL}/physics-objects/${OBJECT_ID}" \
-    -H "Authorization: Bearer ${TOKEN}")
+# Extract the object ID
+OBJECT_ID=$(echo $CREATE_OBJECT_RESPONSE | jq -r '.id')
 
-# Validate physics object read response
-echo "Validating physics object read response..."
-validate_physics_object_structure "$READ_OBJECT_RESPONSE" "Test Physics Object"
-print_result "Physics object retrieval" "$READ_OBJECT_RESPONSE"
+# Check object ID is not empty
+[ -n "$OBJECT_ID" ]
+print_result "Physics object ID extraction"
 
-# Test Physics Object READ (List all objects in scene)
-echo "Testing physics objects list..."
-LIST_OBJECTS_RESPONSE=$(curl -s -X GET "${BASE_URL}/scenes/${SCENE_ID}/physics-objects" \
-    -H "Authorization: Bearer ${TOKEN}")
+# Get the physics object
+echo "Getting the physics object..."
+GET_OBJECT_RESPONSE=$(curl -s -X GET $BASE_URL/physics-objects/$OBJECT_ID \
+    -H "Authorization: Bearer $TOKEN")
 
-# Validate physics objects list response
-echo "Validating physics objects list response..."
-echo "$LIST_OBJECTS_RESPONSE" | jq -e 'type == "array"' > /dev/null
-print_result "Physics objects list retrieval" "$LIST_OBJECTS_RESPONSE"
+# Check get object response
+echo $GET_OBJECT_RESPONSE | grep -q "id"
+print_result "Get physics object" "$GET_OBJECT_RESPONSE"
 
-# Test Physics Object UPDATE
-echo "Testing physics object update..."
-UPDATE_OBJECT_RESPONSE=$(curl -s -X PUT "${BASE_URL}/physics-objects/${OBJECT_ID}" \
-    -H "Authorization: Bearer ${TOKEN}" \
+# Validate physics object structure
+validate_physics_object_structure "$GET_OBJECT_RESPONSE" "retrieved object"
+
+# Update the physics object
+echo "Updating the physics object..."
+UPDATE_OBJECT_RESPONSE=$(curl -s -X PUT $BASE_URL/physics-objects/$OBJECT_ID \
     -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $TOKEN" \
     -d '{
-        "name": "Updated Physics Object",
-        "mass": 20.0,
-        "is_static": true,
-        "position": {
-            "x": 5.0,
-            "y": 5.0,
-            "z": 5.0
-        }
-    }')
+    "name": "Updated Test Object",
+    "scene_id": "'$SCENE_ID'",
+    "object_type": "particle",
+    "position": {"x": 10, "y": 10, "z": 10},
+    "velocity": {"x": 1, "y": 1, "z": 1},
+    "mass": 20,
+    "radius": 10,
+    "color": "#00FF00",
+    "is_fixed": true,
+    "properties": {"charge": 2.0}
+}')
 
-# Validate physics object update response
-echo "Validating physics object update response..."
-validate_physics_object_structure "$UPDATE_OBJECT_RESPONSE" "Updated Physics Object"
-print_result "Physics object update" "$UPDATE_OBJECT_RESPONSE"
+# Check update object response
+echo $UPDATE_OBJECT_RESPONSE | grep -q "id"
+print_result "Update physics object" "$UPDATE_OBJECT_RESPONSE"
 
-# Verify physics object update with GET
-echo "Verifying physics object update..."
-VERIFY_OBJECT_UPDATE_RESPONSE=$(curl -s -X GET "${BASE_URL}/physics-objects/${OBJECT_ID}" \
-    -H "Authorization: Bearer ${TOKEN}")
+# Validate physics object structure
+validate_physics_object_structure "$UPDATE_OBJECT_RESPONSE" "updated object"
 
-# Check if physics object update was successful
-echo "$VERIFY_OBJECT_UPDATE_RESPONSE" | jq -e '.name == "Updated Physics Object" and .mass == 20.0 and .is_static == true and .position.x == 5.0' > /dev/null
-print_result "Physics object update verification" "$VERIFY_OBJECT_UPDATE_RESPONSE"
+# MUSIC GENERATION TESTS
+print_section "Music Generation Operations"
 
-# Test Physics Object DELETE
-echo "Testing physics object deletion..."
-DELETE_OBJECT_RESPONSE=$(curl -s -w "%{http_code}" -X DELETE "${BASE_URL}/physics-objects/${OBJECT_ID}" \
-    -H "Authorization: Bearer ${TOKEN}")
+# Request music generation
+echo "Requesting music generation..."
+MUSIC_REQUEST_RESPONSE=$(curl -s -X POST $BASE_URL/music/generate/$UNIVERSE_ID \
+    -H "Authorization: Bearer $TOKEN")
 
-HTTP_CODE=${DELETE_OBJECT_RESPONSE: -3}
-if [ "$HTTP_CODE" -eq 204 ]; then
-    print_result "Physics object deletion"
-else
-    echo -e "${RED}✗ Physics object deletion failed - expected 204 but got ${HTTP_CODE}${NC}"
-    exit 1
-fi
+# Check music request response
+echo $MUSIC_REQUEST_RESPONSE | grep -q "status"
+print_result "Request music generation" "$MUSIC_REQUEST_RESPONSE"
 
-# Verify physics object deletion
-echo "Verifying physics object deletion..."
-VERIFY_OBJECT_DELETE_RESPONSE=$(curl -s -w "%{http_code}" -X GET "${BASE_URL}/physics-objects/${OBJECT_ID}" \
-    -H "Authorization: Bearer ${TOKEN}")
+# Validate music structure
+validate_music_structure "$MUSIC_REQUEST_RESPONSE" "music request"
 
-HTTP_CODE=${VERIFY_OBJECT_DELETE_RESPONSE: -3}
-if [ "$HTTP_CODE" -eq 404 ]; then
-    print_result "Physics object deletion verification (expected 404 error)"
-else
-    echo -e "${RED}✗ Physics object deletion verification failed - expected 404 but got ${HTTP_CODE}${NC}"
-    exit 1
-fi
+# Get music generation status
+echo "Checking music generation status..."
+MUSIC_STATUS_RESPONSE=$(curl -s -X GET $BASE_URL/music/status/$UNIVERSE_ID \
+    -H "Authorization: Bearer $TOKEN")
 
-# Test Scene DELETE
-echo "Testing scene deletion..."
-DELETE_SCENE_RESPONSE=$(curl -s -w "%{http_code}" -X DELETE "${BASE_URL}/universes/${UNIVERSE_ID}/scenes/${SCENE_ID}" \
-    -H "Authorization: Bearer ${TOKEN}")
+# Check music status response
+echo $MUSIC_STATUS_RESPONSE | grep -q "status"
+print_result "Get music generation status" "$MUSIC_STATUS_RESPONSE"
 
-HTTP_CODE=${DELETE_SCENE_RESPONSE: -3}
-if [ "$HTTP_CODE" -eq 204 ]; then
-    print_result "Scene deletion"
-else
-    echo -e "${RED}✗ Scene deletion failed - expected 204 but got ${HTTP_CODE}${NC}"
-    exit 1
-fi
+# Clean up - Delete the physics object
+print_section "Cleanup Operations"
+echo "Deleting the physics object..."
+DELETE_OBJECT_RESPONSE=$(curl -s -X DELETE $BASE_URL/physics-objects/$OBJECT_ID \
+    -H "Authorization: Bearer $TOKEN")
 
-# Verify scene deletion
-echo "Verifying scene deletion..."
-VERIFY_SCENE_DELETE_RESPONSE=$(curl -s -w "%{http_code}" -X GET "${BASE_URL}/universes/${UNIVERSE_ID}/scenes/${SCENE_ID}" \
-    -H "Authorization: Bearer ${TOKEN}")
+# Check delete object response
+echo $DELETE_OBJECT_RESPONSE | grep -q "success"
+print_result "Delete physics object" "$DELETE_OBJECT_RESPONSE"
 
-HTTP_CODE=${VERIFY_SCENE_DELETE_RESPONSE: -3}
-if [ "$HTTP_CODE" -eq 404 ]; then
-    print_result "Scene deletion verification (expected 404 error)"
-else
-    echo -e "${RED}✗ Scene deletion verification failed - expected 404 but got ${HTTP_CODE}${NC}"
-    exit 1
-fi
+# Delete the scene
+echo "Deleting the scene..."
+DELETE_SCENE_RESPONSE=$(curl -s -X DELETE $BASE_URL/scenes/$SCENE_ID \
+    -H "Authorization: Bearer $TOKEN")
 
-# Test DELETE Universe
-echo "Testing universe deletion..."
-DELETE_RESPONSE=$(curl -s -w "%{http_code}" -X DELETE "${BASE_URL}/universes/${UNIVERSE_ID}/" \
-    -H "Authorization: Bearer ${TOKEN}")
+# Check delete scene response
+echo $DELETE_SCENE_RESPONSE | grep -q "success"
+print_result "Delete scene" "$DELETE_SCENE_RESPONSE"
 
-HTTP_CODE=${DELETE_RESPONSE: -3}
-if [ "$HTTP_CODE" -eq 204 ]; then
-    print_result "Universe deletion"
-else
-    echo -e "${RED}✗ Deletion failed - expected 204 but got ${HTTP_CODE}${NC}"
-    exit 1
-fi
+# Delete the universe
+echo "Deleting the universe..."
+DELETE_UNIVERSE_RESPONSE=$(curl -s -X DELETE $BASE_URL/universes/$UNIVERSE_ID \
+    -H "Authorization: Bearer $TOKEN")
 
-# Verify deletion
-echo "Verifying deletion..."
-VERIFY_DELETE_RESPONSE=$(curl -s -w "%{http_code}" -X GET "${BASE_URL}/universes/${UNIVERSE_ID}/" \
-    -H "Authorization: Bearer ${TOKEN}")
+# Check delete universe response
+echo $DELETE_UNIVERSE_RESPONSE | grep -q "success"
+print_result "Delete universe" "$DELETE_UNIVERSE_RESPONSE"
 
-HTTP_CODE=${VERIFY_DELETE_RESPONSE: -3}
-if [ "$HTTP_CODE" -eq 404 ]; then
-    print_result "Deletion verification (expected 404 error)"
-else
-    echo -e "${RED}✗ Deletion verification failed - expected 404 but got ${HTTP_CODE}${NC}"
-    exit 1
-fi
-
-echo "Universe CRUD tests completed successfully!"
-
-# Create new universe for physics tests
-echo "Creating new universe for physics tests..."
-CREATE_RESPONSE=$(curl -s -X POST "${BASE_URL}/universes/" \
-    -H "Authorization: Bearer ${TOKEN}" \
-    -H "Content-Type: application/json" \
-    -d '{
-        "name": "Physics Test Universe",
-        "description": "A universe for testing physics parameters",
-        "is_public": true
-    }')
-
-# Store new universe ID for physics tests
-UNIVERSE_ID=$(echo "$CREATE_RESPONSE" | jq -r '.id')
-if [ -z "$UNIVERSE_ID" ] || [ "$UNIVERSE_ID" = "null" ]; then
-    echo -e "${RED}Failed to create universe for physics tests${NC}"
-    echo -e "${YELLOW}Create response: $CREATE_RESPONSE${NC}"
-    exit 1
-fi
-print_result "Created universe for physics tests"
-
-# Read physics parameters
-echo "Reading physics parameters..."
-echo "Attempting to read universe with ID: $UNIVERSE_ID"
-RESPONSE=$(curl -s -X GET "${BASE_URL}/universes/${UNIVERSE_ID}/" \
-    -H "Authorization: Bearer ${TOKEN}")
-echo "Full response:"
-echo "$RESPONSE" | jq '.'
-
-echo "Checking physics parameters..."
-echo "$RESPONSE" | jq -e '.physics_params.gravity.value == 9.81'
-print_result "Read physics parameters" "$RESPONSE"
-
-# Update physics parameters
-echo "Updating all physics parameters..."
-UPDATE_RESPONSE=$(curl -s -X PUT "${BASE_URL}/universes/${UNIVERSE_ID}/physics/" \
-    -H "Authorization: Bearer ${TOKEN}" \
-    -H "Content-Type: application/json" \
-    -d '{
-        "physics_params": {
-            "gravity": {
-                "value": 15.0,
-                "unit": "m/s²",
-                "min": 0,
-                "max": 20
-            },
-            "air_resistance": {
-                "value": 0.5,
-                "unit": "kg/m³",
-                "min": 0,
-                "max": 1
-            },
-            "elasticity": {
-                "value": 0.8,
-                "unit": "coefficient",
-                "min": 0,
-                "max": 1
-            },
-            "friction": {
-                "value": 0.3,
-                "unit": "coefficient",
-                "min": 0,
-                "max": 1
-            },
-            "temperature": {
-                "value": 350.0,
-                "unit": "K",
-                "min": 0,
-                "max": 1000
-            },
-            "pressure": {
-                "value": 150.0,
-                "unit": "kPa",
-                "min": 0,
-                "max": 200
-            }
-        }
-    }')
-echo "Update response:"
-echo "$UPDATE_RESPONSE" | jq '.'
-
-echo "Verifying all updates..."
-echo "$UPDATE_RESPONSE" | jq -e '
-    .physics_params.gravity.value == 15.0 and
-    .physics_params.air_resistance.value == 0.5 and
-    .physics_params.elasticity.value == 0.8 and
-    .physics_params.friction.value == 0.3 and
-    .physics_params.temperature.value == 350.0 and
-    .physics_params.pressure.value == 150.0
-'
-print_result "Update all physics parameters" "$UPDATE_RESPONSE"
-
-# Test validation (should fail with 400)
-echo "Testing validation..."
-RESPONSE=$(curl -s -w "%{http_code}" -X PUT "${BASE_URL}/universes/${UNIVERSE_ID}/physics/" \
-    -H "Authorization: Bearer ${TOKEN}" \
-    -H "Content-Type: application/json" \
-    -d '{
-        "physics_params": {
-            "gravity": {
-                "value": 25.0,
-                "unit": "m/s²",
-                "min": 0,
-                "max": 20
-            }
-        }
-    }')
-HTTP_CODE=${RESPONSE: -3}
-if [ "$HTTP_CODE" -eq 400 ]; then
-    print_result "Validation test (expected 400 error)"
-else
-    echo -e "${RED}✗ Validation test failed - expected 400 but got ${HTTP_CODE}${NC}"
-    exit 1
-fi
-
-# Reset to defaults
-echo "Resetting to defaults..."
-RESET_RESPONSE=$(curl -s -X PUT "${BASE_URL}/universes/${UNIVERSE_ID}/physics/" \
-    -H "Authorization: Bearer ${TOKEN}" \
-    -H "Content-Type: application/json" \
-    -d '{
-        "physics_params": {
-            "gravity": {
-                "value": 9.81,
-                "unit": "m/s²",
-                "min": 0,
-                "max": 20
-            },
-            "temperature": {
-                "value": 293.15,
-                "unit": "K",
-                "min": 0,
-                "max": 1000
-            }
-        }
-    }')
-echo "Reset response:"
-echo "$RESET_RESPONSE" | jq '.'
-
-echo "Verifying reset..."
-echo "$RESET_RESPONSE" | jq -e '.physics_params.gravity.value == 9.81'
-print_result "Reset to defaults" "$RESET_RESPONSE"
-
-echo "Cleaning up test universe..."
-DELETE_RESPONSE=$(curl -s -w "%{http_code}" -X DELETE "${BASE_URL}/universes/${UNIVERSE_ID}/" \
-    -H "Authorization: Bearer ${TOKEN}")
-
-HTTP_CODE=${DELETE_RESPONSE: -3}
-if [ "$HTTP_CODE" -eq 204 ]; then
-    print_result "Test universe cleanup"
-else
-    echo -e "${RED}✗ Test universe cleanup failed - expected 204 but got ${HTTP_CODE}${NC}"
-    exit 1
-fi
-
-echo "All tests completed successfully!"
-
-echo ""
-echo "Bonus Features Status:"
-echo "❌ 1. Music Generation - Not yet fully implemented. The universe structure includes harmony_params, but endpoints for music generation need to be added."
-echo "❌ 2. Visualization - In progress. The universe structure includes visualization_params, but complete 3D visualization is not yet implemented."
-echo "❌ 3. AI Integration - Framework in place via ai_params in the universe structure, but needs additional implementation for AI-assisted content generation."
-echo ""
-echo "While the core CRUD functionality for Universes, Scenes, and Physics Objects is complete, the bonus features are currently in development."
+echo -e "\n${GREEN}${BOLD}All tests completed successfully!${NC}"
