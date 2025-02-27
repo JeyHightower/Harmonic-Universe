@@ -8,6 +8,8 @@ from app.crud import crud_scene
 from app.models.universe.scene import Scene
 from app.core.errors import ValidationError, NotFoundError
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.services.physics import physics_parameter
+from app.models.physics.physics_parameter import PhysicsParameterCreate, PhysicsParameterUpdate
 
 scenes_bp = Blueprint('scenes', __name__)
 
@@ -124,3 +126,109 @@ def reorder_scenes():
     )
 
     return jsonify([scene.to_dict() for scene in scenes])
+
+# Physics Parameters routes
+@scenes_bp.route("/<scene_id>/physics_parameters", methods=['GET'])
+def get_physics_parameters(scene_id):
+    """
+    Get physics parameters for a scene.
+    """
+    db = deps.get_db()
+    scene = crud_scene.get(db, id=scene_id)
+    if not scene:
+        raise NotFoundError(f"Scene {scene_id} not found")
+
+    params = physics_parameter.get_by_scene(db, scene_id=scene_id)
+    if not params:
+        return jsonify([])
+
+    return jsonify([param.to_dict() for param in params])
+
+@scenes_bp.route("/<scene_id>/physics_parameters/<params_id>", methods=['GET'])
+def get_physics_parameter(scene_id, params_id):
+    """
+    Get a specific physics parameter by ID.
+    """
+    db = deps.get_db()
+    scene = crud_scene.get(db, id=scene_id)
+    if not scene:
+        raise NotFoundError(f"Scene {scene_id} not found")
+
+    param = physics_parameter.get(db, id=params_id)
+    if not param or param.scene_id != scene_id:
+        raise NotFoundError(f"Physics parameter {params_id} not found for scene {scene_id}")
+
+    return jsonify(param.to_dict())
+
+@scenes_bp.route("/<scene_id>/physics_parameters", methods=['POST'])
+@jwt_required()
+def create_physics_parameter(scene_id):
+    """
+    Create a new physics parameter for a scene.
+    """
+    db = deps.get_db()
+    current_user = deps.get_current_user()
+    data = request.get_json()
+
+    scene = crud_scene.get(db, id=scene_id)
+    if not scene:
+        raise NotFoundError(f"Scene {scene_id} not found")
+
+    if scene.creator_id != current_user.id:
+        raise ValidationError("Not enough permissions")
+
+    data["scene_id"] = scene_id
+    param_in = PhysicsParameterCreate(**data)
+    param = physics_parameter.create_with_scene(db, obj_in=param_in)
+
+    return jsonify(param.to_dict())
+
+@scenes_bp.route("/<scene_id>/physics_parameters/<params_id>", methods=['PUT'])
+@jwt_required()
+def update_physics_parameter(scene_id, params_id):
+    """
+    Update a physics parameter.
+    """
+    db = deps.get_db()
+    current_user = deps.get_current_user()
+    data = request.get_json()
+
+    scene = crud_scene.get(db, id=scene_id)
+    if not scene:
+        raise NotFoundError(f"Scene {scene_id} not found")
+
+    if scene.creator_id != current_user.id:
+        raise ValidationError("Not enough permissions")
+
+    param = physics_parameter.get(db, id=params_id)
+    if not param or param.scene_id != scene_id:
+        raise NotFoundError(f"Physics parameter {params_id} not found for scene {scene_id}")
+
+    param_in = PhysicsParameterUpdate(**data)
+    param = physics_parameter.update(db, db_obj=param, obj_in=param_in)
+
+    return jsonify(param.to_dict())
+
+@scenes_bp.route("/<scene_id>/physics_parameters/<params_id>", methods=['DELETE'])
+@jwt_required()
+def delete_physics_parameter(scene_id, params_id):
+    """
+    Delete a physics parameter.
+    """
+    db = deps.get_db()
+    current_user = deps.get_current_user()
+
+    scene = crud_scene.get(db, id=scene_id)
+    if not scene:
+        raise NotFoundError(f"Scene {scene_id} not found")
+
+    if scene.creator_id != current_user.id:
+        raise ValidationError("Not enough permissions")
+
+    param = physics_parameter.get(db, id=params_id)
+    if not param or param.scene_id != scene_id:
+        raise NotFoundError(f"Physics parameter {params_id} not found for scene {scene_id}")
+
+    physics_parameter.remove(db, id=params_id)
+
+    return jsonify({"status": "success"})

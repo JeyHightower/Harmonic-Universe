@@ -12,7 +12,7 @@ from uuid import UUID
 
 universe_bp = Blueprint('universe', __name__)
 
-@universe_bp.route('/', methods=['GET'])
+@universe_bp.route('/', methods=['GET'], strict_slashes=False)
 @jwt_required()
 def get_universes():
     """Get all universes for the current user."""
@@ -44,7 +44,7 @@ def get_universes():
             db.rollback()
             raise ValidationError(f"Error fetching universes: {str(e)}")
 
-@universe_bp.route('/', methods=['POST'])
+@universe_bp.route('/', methods=['POST'], strict_slashes=False)
 @jwt_required()
 def create_universe():
     """Create a new universe."""
@@ -70,7 +70,8 @@ def create_universe():
             db.rollback()
             raise ValidationError(f"Error creating universe: {str(e)}")
 
-@universe_bp.route('/<uuid:universe_id>/', methods=['GET'])
+@universe_bp.route('/<uuid:universe_id>', methods=['GET'], strict_slashes=False)
+@universe_bp.route('/<uuid:universe_id>/', methods=['GET'], strict_slashes=False)
 @jwt_required()
 def get_universe(universe_id):
     """Get a specific universe."""

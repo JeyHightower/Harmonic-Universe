@@ -34,7 +34,7 @@ Users can:
 ### Universe Management
 
 - Create, view, edit, and delete musical universes
-- Configure physics parameters: gravity strength, damping factors, particle behaviors
+- Configure global physics parameters: gravity strength, damping factors, particle behaviors
 - Control visibility and sharing settings
 
 ### Physics Object Management
@@ -42,6 +42,13 @@ Users can:
 - Add various types of physics objects to your universe
 - Configure mass, position, velocity, and other properties
 - Each object contributes unique musical elements to the composition
+
+### Physics Parameters Management
+
+- Create and manage multiple physics parameter sets for each scene
+- Configure detailed physics properties including gravity (X, Y, Z axes), time scale, air resistance
+- Adjust material properties like friction and bounce factors
+- Apply different parameter sets to scenes to create varied physics environments
 
 ### Scene Management
 
@@ -247,6 +254,7 @@ The API is organized around RESTful principles with the following main endpoints
 - `/api/universe`: Universe operations
 - `/api/physics_objects`: Physics object management
 - `/api/scenes`: Scene management
+- `/api/scenes/{scene_id}/physics_parameters`: Physics parameters management
 - `/api/music`: Music generation and export
 
 ## Contributing

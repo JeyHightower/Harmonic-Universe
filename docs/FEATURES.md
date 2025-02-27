@@ -55,6 +55,22 @@ This document provides a comprehensive overview of all implemented features in H
 - Parameter validation
 - Visual feedback
 
+### Physics Parameters Management
+
+- Create multiple parameter sets for each scene
+- Organize parameters with names and descriptions
+- Switch between parameter sets to experiment with different physics environments
+- Apply parameters to scenes in real-time
+- Detailed property controls:
+  - 3D gravity components (X, Y, Z axes)
+  - Time scale factor
+  - Air resistance
+  - Friction coefficient
+  - Bounce factor
+  - Solver iterations for simulation accuracy
+- Save and reuse parameter sets across scenes
+- Compare effects of different parameters on physics simulations
+
 ## 🎵 Music Parameters
 
 ### Base Parameters

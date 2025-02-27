@@ -18,6 +18,26 @@ export const endpoints = {
     delete: id => `${API_BASE_URL}/api/universes/${id}/`,
     physics: id => `${API_BASE_URL}/api/universes/${id}/physics/`,
   },
+  scenes: {
+    list: `${API_BASE_URL}/api/scenes/`,
+    detail: id => `${API_BASE_URL}/api/scenes/${id}/`,
+    create: `${API_BASE_URL}/api/scenes/`,
+    update: id => `${API_BASE_URL}/api/scenes/${id}/`,
+    delete: id => `${API_BASE_URL}/api/scenes/${id}/`,
+    reorder: `${API_BASE_URL}/api/scenes/reorder`,
+    physicsParameters: {
+      list: sceneId =>
+        `${API_BASE_URL}/api/scenes/${sceneId}/physics_parameters`,
+      detail: (sceneId, paramsId) =>
+        `${API_BASE_URL}/api/scenes/${sceneId}/physics_parameters/${paramsId}`,
+      create: sceneId =>
+        `${API_BASE_URL}/api/scenes/${sceneId}/physics_parameters`,
+      update: (sceneId, paramsId) =>
+        `${API_BASE_URL}/api/scenes/${sceneId}/physics_parameters/${paramsId}`,
+      delete: (sceneId, paramsId) =>
+        `${API_BASE_URL}/api/scenes/${sceneId}/physics_parameters/${paramsId}`,
+    },
+  },
   physicsObjects: {
     list: `${API_BASE_URL}/api/physics-objects/`,
     detail: id => `${API_BASE_URL}/api/physics-objects/${id}/`,

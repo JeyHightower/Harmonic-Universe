@@ -1,10 +1,24 @@
 /* Scene Manager Styles */
+:root {
+  --scene-primary: var(--primary-color);
+  --scene-secondary: var(--accent-color);
+  --scene-tertiary: var(--secondary-color);
+  --scene-bg-gradient: linear-gradient(
+    135deg,
+    rgba(var(--primary-color-rgb), 0.1),
+    rgba(var(--accent-color-rgb), 0.1)
+  );
+}
+
 .scene-manager {
   margin-top: var(--spacing-lg);
   background-color: var(--surface-color);
   border-radius: var(--border-radius-lg);
   padding: var(--spacing-lg);
   box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
 }
 
 .scene-manager-header {
@@ -171,4 +185,140 @@
   .ant-tabs-nav {
     margin-bottom: var(--spacing-md);
   }
+}
+
+/* Scene Modal Styles */
+.scene-modal {
+  width: 100%;
+  max-width: 600px;
+  background-color: var(--surface-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.scene-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--scene-bg-gradient);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.scene-modal-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.scene-modal-title svg {
+  color: var(--scene-primary);
+}
+
+.scene-modal-content {
+  padding: var(--spacing-lg);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.scene-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-top: 1px solid var(--border-color);
+}
+
+.scene-modal-actions button {
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+/* Delete confirmation styles */
+.delete-confirmation {
+  text-align: center;
+  padding: var(--spacing-md) 0;
+}
+
+.delete-confirmation h3 {
+  color: var(--error-color);
+  margin-bottom: var(--spacing-md);
+}
+
+.delete-confirmation p {
+  margin-bottom: var(--spacing-lg);
+  color: var(--text-secondary);
+}
+
+/* Responsive adjustments for modal */
+@media (max-width: 768px) {
+  .scene-modal {
+    max-width: 100%;
+    border-radius: 0;
+  }
+
+  .scene-modal-content {
+    max-height: 60vh;
+  }
+
+  .scene-modal-actions {
+    flex-direction: column;
+  }
+
+  .scene-modal-actions button {
+    width: 100%;
+  }
+}
+
+/* Scene Tabs */
+.scene-tabs {
+  margin-top: var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+}
+
+.scene-tabs-header {
+  display: flex;
+  background-color: var(--background-light);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.scene-tabs-header button {
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: none;
+  border: none;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.scene-tabs-header button:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.05);
+}
+
+.scene-tabs-header button.active {
+  color: var(--primary-color);
+  border-bottom: 2px solid var(--primary-color);
+  background-color: var(--surface-color);
+}
+
+.scene-tabs-content {
+  position: relative;
+}
+
+.tab-panel {
+  display: none;
+  padding: var(--spacing-md);
+}
+
+.tab-panel.active {
+  display: block;
 }
