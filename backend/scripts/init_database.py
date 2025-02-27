@@ -1,4 +1,11 @@
 """Initialize database script."""
+import os
+import sys
+
+# Add backend directory to Python path
+backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(backend_dir)
+
 from app.db.session import get_db
 from app.db.init_db import init_db
 

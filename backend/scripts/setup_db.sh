@@ -1,41 +1,31 @@
 #!/bin/bash
-set -e
 
-# Default to development environment
-ENV=${1:-development}
-
-echo "Setting up database for $ENV environment..."
-
-# Ensure we're in the backend directory
-cd "$(dirname "$0")/.."
-
-# Create necessary directories
-mkdir -p uploads/{audio,exports,temp}
-mkdir -p logs/{errors,metrics}
-
-# Create virtual environment if it doesn't exist
-if [ ! -d "venv" ]; then
-    echo "Creating virtual environment..."
-    python3 -m venv venv
-fi
-
-# Activate virtual environment
-source venv/bin/activate
-
-# Install requirements
-echo "Installing requirements..."
-pip install -r requirements.txt
+# PostgreSQL connection details
+DB_USER="postgres"
+DB_PASSWORD="postgres"
+DB_NAME="harmonic_universe_dev"
 
 # Create database
-echo "Creating database..."
-python scripts/create_db.py --env $ENV
+PGPASSWORD=$DB_PASSWORD psql -U $DB_USER -h localhost -p 5432 postgres << EOF
+DROP DATABASE IF EXISTS $DB_NAME;
+CREATE DATABASE $DB_NAME;
+EOF
 
-# Initialize database
-echo "Initializing database..."
-python scripts/db_ops.py init
+echo "Database $DB_NAME created successfully"
 
-# Verify database
-echo "Verifying database..."
-python scripts/db_ops.py verify
+# Set up environment variables
+export DATABASE_URL="postgresql://$DB_USER:$DB_PASSWORD@localhost:5432/$DB_NAME"
+export PYTHONPATH="/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend:$PYTHONPATH"
 
-echo "Database setup completed successfully!"
+# Initialize database schema
+cd /Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend
+python -c "
+import os
+os.environ['DATABASE_URL'] = '$DATABASE_URL'
+from app.db.session import get_db
+from app.db.init_db import init_db
+with get_db() as db:
+    init_db(db)
+"
+
+echo "Database initialization completed"
