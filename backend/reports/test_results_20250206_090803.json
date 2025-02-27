@@ -1,0 +1,72 @@
+{
+  "timestamp": "2025-02-06T09:08:03.911895",
+  "total_duration": 7.314706999999999,
+  "failed_categories": [
+    "core",
+    "models",
+    "api",
+    "integration"
+  ],
+  "category_reports": [
+    {
+      "category": "core",
+      "timestamp": "2025-02-06T09:07:58.837691",
+      "duration": 2.241538,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "DEBUG:passlib.utils.compat:loaded lazy attr 'SafeConfigParser': <class 'configparser.ConfigParser'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'NativeStringIO': <class '_io.StringIO'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'BytesIO': <class '_io.BytesIO'>\nDEBUG:passlib.registry:registered 'bcrypt' handler: <class 'passlib.handlers.bcrypt.bcrypt'>\nImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:14: in <module>\n    from app.api.v1.api import api_router\napp/api/v1/api.py:7: in <module>\n    from app.api.v1.endpoints import physics\napp/api/v1/endpoints/physics/__init__.py:4: in <module>\n    from app.api.v1.endpoints.physics.physics import router as physics_router\napp/api/v1/endpoints/physics/physics.py:11: in <module>\n    from app.models.core.scene import Scene\nE   ModuleNotFoundError: No module named 'app.models.core.scene'\n"
+    },
+    {
+      "category": "models",
+      "timestamp": "2025-02-06T09:08:00.539703",
+      "duration": 1.701597,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "DEBUG:passlib.utils.compat:loaded lazy attr 'SafeConfigParser': <class 'configparser.ConfigParser'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'NativeStringIO': <class '_io.StringIO'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'BytesIO': <class '_io.BytesIO'>\nDEBUG:passlib.registry:registered 'bcrypt' handler: <class 'passlib.handlers.bcrypt.bcrypt'>\nImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:14: in <module>\n    from app.api.v1.api import api_router\napp/api/v1/api.py:7: in <module>\n    from app.api.v1.endpoints import physics\napp/api/v1/endpoints/physics/__init__.py:4: in <module>\n    from app.api.v1.endpoints.physics.physics import router as physics_router\napp/api/v1/endpoints/physics/physics.py:11: in <module>\n    from app.models.core.scene import Scene\nE   ModuleNotFoundError: No module named 'app.models.core.scene'\n"
+    },
+    {
+      "category": "api",
+      "timestamp": "2025-02-06T09:08:02.250447",
+      "duration": 1.710398,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "DEBUG:passlib.utils.compat:loaded lazy attr 'SafeConfigParser': <class 'configparser.ConfigParser'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'NativeStringIO': <class '_io.StringIO'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'BytesIO': <class '_io.BytesIO'>\nDEBUG:passlib.registry:registered 'bcrypt' handler: <class 'passlib.handlers.bcrypt.bcrypt'>\nImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:14: in <module>\n    from app.api.v1.api import api_router\napp/api/v1/api.py:7: in <module>\n    from app.api.v1.endpoints import physics\napp/api/v1/endpoints/physics/__init__.py:4: in <module>\n    from app.api.v1.endpoints.physics.physics import router as physics_router\napp/api/v1/endpoints/physics/physics.py:11: in <module>\n    from app.models.core.scene import Scene\nE   ModuleNotFoundError: No module named 'app.models.core.scene'\n"
+    },
+    {
+      "category": "integration",
+      "timestamp": "2025-02-06T09:08:03.911879",
+      "duration": 1.661174,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "DEBUG:passlib.utils.compat:loaded lazy attr 'SafeConfigParser': <class 'configparser.ConfigParser'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'NativeStringIO': <class '_io.StringIO'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'BytesIO': <class '_io.BytesIO'>\nDEBUG:passlib.registry:registered 'bcrypt' handler: <class 'passlib.handlers.bcrypt.bcrypt'>\nImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:14: in <module>\n    from app.api.v1.api import api_router\napp/api/v1/api.py:7: in <module>\n    from app.api.v1.endpoints import physics\napp/api/v1/endpoints/physics/__init__.py:4: in <module>\n    from app.api.v1.endpoints.physics.physics import router as physics_router\napp/api/v1/endpoints/physics/physics.py:11: in <module>\n    from app.models.core.scene import Scene\nE   ModuleNotFoundError: No module named 'app.models.core.scene'\n"
+    }
+  ]
+}

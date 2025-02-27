@@ -1,0 +1,72 @@
+{
+  "timestamp": "2025-02-06T11:37:45.378457",
+  "total_duration": 8.652446,
+  "failed_categories": [
+    "core",
+    "models",
+    "api",
+    "integration"
+  ],
+  "category_reports": [
+    {
+      "category": "core",
+      "timestamp": "2025-02-06T11:37:39.327984",
+      "duration": 2.602821,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "DEBUG:passlib.utils.compat:loaded lazy attr 'SafeConfigParser': <class 'configparser.ConfigParser'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'NativeStringIO': <class '_io.StringIO'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'BytesIO': <class '_io.BytesIO'>\nDEBUG:passlib.registry:registered 'bcrypt' handler: <class 'passlib.handlers.bcrypt.bcrypt'>\nImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:14: in <module>\n    from app.api.v1.api import api_router\napp/api/v1/api.py:7: in <module>\n    from app.api.v1.endpoints import physics\napp/api/v1/endpoints/physics/__init__.py:5: in <module>\n    from app.api.v1.endpoints.physics.physics_parameters import router as physics_parameters_router\napp/api/v1/endpoints/physics/physics_parameters.py:13: in <module>\n    from app.schemas.physics_parameter import PhysicsParameterCreate, PhysicsParameterUpdate, PhysicsParameterResponse\nE   ModuleNotFoundError: No module named 'app.schemas.physics_parameter'\n"
+    },
+    {
+      "category": "models",
+      "timestamp": "2025-02-06T11:37:41.418777",
+      "duration": 2.090469,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "DEBUG:passlib.utils.compat:loaded lazy attr 'SafeConfigParser': <class 'configparser.ConfigParser'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'NativeStringIO': <class '_io.StringIO'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'BytesIO': <class '_io.BytesIO'>\nDEBUG:passlib.registry:registered 'bcrypt' handler: <class 'passlib.handlers.bcrypt.bcrypt'>\nImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:14: in <module>\n    from app.api.v1.api import api_router\napp/api/v1/api.py:7: in <module>\n    from app.api.v1.endpoints import physics\napp/api/v1/endpoints/physics/__init__.py:5: in <module>\n    from app.api.v1.endpoints.physics.physics_parameters import router as physics_parameters_router\napp/api/v1/endpoints/physics/physics_parameters.py:13: in <module>\n    from app.schemas.physics_parameter import PhysicsParameterCreate, PhysicsParameterUpdate, PhysicsParameterResponse\nE   ModuleNotFoundError: No module named 'app.schemas.physics_parameter'\n"
+    },
+    {
+      "category": "api",
+      "timestamp": "2025-02-06T11:37:43.415774",
+      "duration": 1.99675,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "DEBUG:passlib.utils.compat:loaded lazy attr 'SafeConfigParser': <class 'configparser.ConfigParser'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'NativeStringIO': <class '_io.StringIO'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'BytesIO': <class '_io.BytesIO'>\nDEBUG:passlib.registry:registered 'bcrypt' handler: <class 'passlib.handlers.bcrypt.bcrypt'>\nImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:14: in <module>\n    from app.api.v1.api import api_router\napp/api/v1/api.py:7: in <module>\n    from app.api.v1.endpoints import physics\napp/api/v1/endpoints/physics/__init__.py:5: in <module>\n    from app.api.v1.endpoints.physics.physics_parameters import router as physics_parameters_router\napp/api/v1/endpoints/physics/physics_parameters.py:13: in <module>\n    from app.schemas.physics_parameter import PhysicsParameterCreate, PhysicsParameterUpdate, PhysicsParameterResponse\nE   ModuleNotFoundError: No module named 'app.schemas.physics_parameter'\n"
+    },
+    {
+      "category": "integration",
+      "timestamp": "2025-02-06T11:37:45.378441",
+      "duration": 1.962406,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "DEBUG:passlib.utils.compat:loaded lazy attr 'SafeConfigParser': <class 'configparser.ConfigParser'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'NativeStringIO': <class '_io.StringIO'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'BytesIO': <class '_io.BytesIO'>\nDEBUG:passlib.registry:registered 'bcrypt' handler: <class 'passlib.handlers.bcrypt.bcrypt'>\nImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:14: in <module>\n    from app.api.v1.api import api_router\napp/api/v1/api.py:7: in <module>\n    from app.api.v1.endpoints import physics\napp/api/v1/endpoints/physics/__init__.py:5: in <module>\n    from app.api.v1.endpoints.physics.physics_parameters import router as physics_parameters_router\napp/api/v1/endpoints/physics/physics_parameters.py:13: in <module>\n    from app.schemas.physics_parameter import PhysicsParameterCreate, PhysicsParameterUpdate, PhysicsParameterResponse\nE   ModuleNotFoundError: No module named 'app.schemas.physics_parameter'\n"
+    }
+  ]
+}

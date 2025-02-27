@@ -1,0 +1,72 @@
+{
+  "timestamp": "2025-02-06T10:58:10.032598",
+  "total_duration": 9.138276,
+  "failed_categories": [
+    "core",
+    "models",
+    "api",
+    "integration"
+  ],
+  "category_reports": [
+    {
+      "category": "core",
+      "timestamp": "2025-02-06T10:58:03.931410",
+      "duration": 3.038316,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "DEBUG:passlib.utils.compat:loaded lazy attr 'SafeConfigParser': <class 'configparser.ConfigParser'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'NativeStringIO': <class '_io.StringIO'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'BytesIO': <class '_io.BytesIO'>\nDEBUG:passlib.registry:registered 'bcrypt' handler: <class 'passlib.handlers.bcrypt.bcrypt'>\nImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:14: in <module>\n    from app.api.v1.api import api_router\napp/api/v1/api.py:7: in <module>\n    from app.api.v1.endpoints import physics\napp/api/v1/endpoints/physics/__init__.py:4: in <module>\n    from app.api.v1.endpoints.physics.physics import router as physics_router\napp/api/v1/endpoints/physics/physics.py:28: in <module>\n    async def get_scene_physics_parameters(\n../../../../../../.pyenv/versions/3.9.18/lib/python3.9/site-packages/fastapi/routing.py:956: in decorator\n    self.add_api_route(\n../../../../../../.pyenv/versions/3.9.18/lib/python3.9/site-packages/fastapi/routing.py:895: in add_api_route\n    route = route_class(\n../../../../../../.pyenv/versions/3.9.18/lib/python3.9/site-packages/fastapi/routing.py:484: in __init__\n    self.response_field = create_response_field(\n../../../../../../.pyenv/versions/3.9.18/lib/python3.9/site-packages/fastapi/utils.py:101: in create_response_field\n    raise fastapi.exceptions.FastAPIError(\nE   fastapi.exceptions.FastAPIError: Invalid args for response field! Hint: check that <class 'app.models.physics.physics_parameter.PhysicsParameter'> is a valid Pydantic field type. If you are using a return type annotation that is not a valid Pydantic field (e.g. Union[Response, dict, None]) you can disable generating the response model from the type annotation with the path operation decorator parameter response_model=None. Read more: https://fastapi.tiangolo.com/tutorial/response-model/\n"
+    },
+    {
+      "category": "models",
+      "timestamp": "2025-02-06T10:58:05.974805",
+      "duration": 2.042933,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "DEBUG:passlib.utils.compat:loaded lazy attr 'SafeConfigParser': <class 'configparser.ConfigParser'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'NativeStringIO': <class '_io.StringIO'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'BytesIO': <class '_io.BytesIO'>\nDEBUG:passlib.registry:registered 'bcrypt' handler: <class 'passlib.handlers.bcrypt.bcrypt'>\nImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:14: in <module>\n    from app.api.v1.api import api_router\napp/api/v1/api.py:7: in <module>\n    from app.api.v1.endpoints import physics\napp/api/v1/endpoints/physics/__init__.py:4: in <module>\n    from app.api.v1.endpoints.physics.physics import router as physics_router\napp/api/v1/endpoints/physics/physics.py:28: in <module>\n    async def get_scene_physics_parameters(\n../../../../../../.pyenv/versions/3.9.18/lib/python3.9/site-packages/fastapi/routing.py:956: in decorator\n    self.add_api_route(\n../../../../../../.pyenv/versions/3.9.18/lib/python3.9/site-packages/fastapi/routing.py:895: in add_api_route\n    route = route_class(\n../../../../../../.pyenv/versions/3.9.18/lib/python3.9/site-packages/fastapi/routing.py:484: in __init__\n    self.response_field = create_response_field(\n../../../../../../.pyenv/versions/3.9.18/lib/python3.9/site-packages/fastapi/utils.py:101: in create_response_field\n    raise fastapi.exceptions.FastAPIError(\nE   fastapi.exceptions.FastAPIError: Invalid args for response field! Hint: check that <class 'app.models.physics.physics_parameter.PhysicsParameter'> is a valid Pydantic field type. If you are using a return type annotation that is not a valid Pydantic field (e.g. Union[Response, dict, None]) you can disable generating the response model from the type annotation with the path operation decorator parameter response_model=None. Read more: https://fastapi.tiangolo.com/tutorial/response-model/\n"
+    },
+    {
+      "category": "api",
+      "timestamp": "2025-02-06T10:58:07.961654",
+      "duration": 1.986471,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "DEBUG:passlib.utils.compat:loaded lazy attr 'SafeConfigParser': <class 'configparser.ConfigParser'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'NativeStringIO': <class '_io.StringIO'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'BytesIO': <class '_io.BytesIO'>\nDEBUG:passlib.registry:registered 'bcrypt' handler: <class 'passlib.handlers.bcrypt.bcrypt'>\nImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:14: in <module>\n    from app.api.v1.api import api_router\napp/api/v1/api.py:7: in <module>\n    from app.api.v1.endpoints import physics\napp/api/v1/endpoints/physics/__init__.py:4: in <module>\n    from app.api.v1.endpoints.physics.physics import router as physics_router\napp/api/v1/endpoints/physics/physics.py:28: in <module>\n    async def get_scene_physics_parameters(\n../../../../../../.pyenv/versions/3.9.18/lib/python3.9/site-packages/fastapi/routing.py:956: in decorator\n    self.add_api_route(\n../../../../../../.pyenv/versions/3.9.18/lib/python3.9/site-packages/fastapi/routing.py:895: in add_api_route\n    route = route_class(\n../../../../../../.pyenv/versions/3.9.18/lib/python3.9/site-packages/fastapi/routing.py:484: in __init__\n    self.response_field = create_response_field(\n../../../../../../.pyenv/versions/3.9.18/lib/python3.9/site-packages/fastapi/utils.py:101: in create_response_field\n    raise fastapi.exceptions.FastAPIError(\nE   fastapi.exceptions.FastAPIError: Invalid args for response field! Hint: check that <class 'app.models.physics.physics_parameter.PhysicsParameter'> is a valid Pydantic field type. If you are using a return type annotation that is not a valid Pydantic field (e.g. Union[Response, dict, None]) you can disable generating the response model from the type annotation with the path operation decorator parameter response_model=None. Read more: https://fastapi.tiangolo.com/tutorial/response-model/\n"
+    },
+    {
+      "category": "integration",
+      "timestamp": "2025-02-06T10:58:10.032583",
+      "duration": 2.070556,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "DEBUG:passlib.utils.compat:loaded lazy attr 'SafeConfigParser': <class 'configparser.ConfigParser'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'NativeStringIO': <class '_io.StringIO'>\nDEBUG:passlib.utils.compat:loaded lazy attr 'BytesIO': <class '_io.BytesIO'>\nDEBUG:passlib.registry:registered 'bcrypt' handler: <class 'passlib.handlers.bcrypt.bcrypt'>\nImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:14: in <module>\n    from app.api.v1.api import api_router\napp/api/v1/api.py:7: in <module>\n    from app.api.v1.endpoints import physics\napp/api/v1/endpoints/physics/__init__.py:4: in <module>\n    from app.api.v1.endpoints.physics.physics import router as physics_router\napp/api/v1/endpoints/physics/physics.py:28: in <module>\n    async def get_scene_physics_parameters(\n../../../../../../.pyenv/versions/3.9.18/lib/python3.9/site-packages/fastapi/routing.py:956: in decorator\n    self.add_api_route(\n../../../../../../.pyenv/versions/3.9.18/lib/python3.9/site-packages/fastapi/routing.py:895: in add_api_route\n    route = route_class(\n../../../../../../.pyenv/versions/3.9.18/lib/python3.9/site-packages/fastapi/routing.py:484: in __init__\n    self.response_field = create_response_field(\n../../../../../../.pyenv/versions/3.9.18/lib/python3.9/site-packages/fastapi/utils.py:101: in create_response_field\n    raise fastapi.exceptions.FastAPIError(\nE   fastapi.exceptions.FastAPIError: Invalid args for response field! Hint: check that <class 'app.models.physics.physics_parameter.PhysicsParameter'> is a valid Pydantic field type. If you are using a return type annotation that is not a valid Pydantic field (e.g. Union[Response, dict, None]) you can disable generating the response model from the type annotation with the path operation decorator parameter response_model=None. Read more: https://fastapi.tiangolo.com/tutorial/response-model/\n"
+    }
+  ]
+}

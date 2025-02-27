@@ -1,7 +1,4 @@
-"""
-Physics parameter model.
-"""
-
+"""Physics parameter model."""
 from sqlalchemy import Column, Float, ForeignKey, Boolean, String, Integer
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
@@ -105,9 +102,6 @@ class PhysicsParameter(BaseModel):
 
     # Relationships
     scene = relationship("Scene", back_populates="physics_parameters")
-
-    # Ensure scenes table is created first
-    __table_args__ = {'extend_existing': True}
 
     def update_parameter(self, param_name: str, value: float, enabled: Optional[bool] = None) -> 'PhysicsParameter':
         """Update a physics parameter with validation."""

@@ -1,28 +1,59 @@
-import { Suspense } from 'react';
+import React from 'react';
+import { BrowserRouter as Router } from 'react-router-dom';
 import { Provider } from 'react-redux';
-import { RouterProvider } from 'react-router-dom';
-import GlobalModal from './components/common/GlobalModal';
-import { ModalProvider } from './contexts/ModalContext';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { router } from './routes';
+import { ConfigProvider, theme } from 'antd';
 import store from './store';
+import ModalProvider from './providers/ModalProvider';
+import AppRoutes from './routes';
+import Layout from './components/layout/Layout';
 import './styles/global.css';
 
-function App() {
+const App = () => {
+  // Get system color scheme preference
+  const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+  // Ant Design theme configuration
+  const themeConfig = {
+    algorithm: prefersDarkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
+    token: {
+      colorPrimary: '#1890ff',
+      borderRadius: 4,
+      fontFamily: `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                  'Helvetica Neue', Arial, 'Noto Sans', sans-serif`,
+    },
+    components: {
+      Modal: {
+        borderRadiusLG: 8,
+        paddingContentHorizontalLG: 24,
+      },
+      Table: {
+        borderRadiusLG: 8,
+        padding: 16,
+      },
+      Card: {
+        borderRadiusLG: 8,
+        paddingLG: 24,
+      },
+      Button: {
+        borderRadius: 4,
+        paddingInline: 16,
+      },
+    },
+  };
+
   return (
     <Provider store={store}>
-      <ThemeProvider>
-        <ModalProvider>
-          <Suspense fallback={<div>Loading...</div>}>
-            <RouterProvider router={router} />
-            <GlobalModal />
-            {/* Create a portal root for modals if it doesn't exist */}
-            <div id="portal-root" />
-          </Suspense>
-        </ModalProvider>
-      </ThemeProvider>
+      <ConfigProvider theme={themeConfig}>
+        <Router>
+          <ModalProvider>
+            <Layout>
+              <AppRoutes />
+            </Layout>
+          </ModalProvider>
+        </Router>
+      </ConfigProvider>
     </Provider>
   );
-}
+};
 
 export default App;

@@ -1,0 +1,72 @@
+{
+  "timestamp": "2025-02-06T09:03:13.447636",
+  "total_duration": 6.720557,
+  "failed_categories": [
+    "core",
+    "models",
+    "api",
+    "integration"
+  ],
+  "category_reports": [
+    {
+      "category": "core",
+      "timestamp": "2025-02-06T09:03:08.603286",
+      "duration": 1.876806,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "ImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:13: in <module>\n    from app.db.session import SessionLocal\napp/db/__init__.py:3: in <module>\n    from .session import Base, SessionLocal, get_db\napp/db/session.py:13: in <module>\n    echo=settings.SQL_ECHO\n../../../../../../.pyenv/versions/3.9.18/lib/python3.9/site-packages/pydantic/main.py:761: in __getattr__\n    raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')\nE   AttributeError: 'Settings' object has no attribute 'SQL_ECHO'\n"
+    },
+    {
+      "category": "models",
+      "timestamp": "2025-02-06T09:03:10.246544",
+      "duration": 1.643048,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "ImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:13: in <module>\n    from app.db.session import SessionLocal\napp/db/__init__.py:3: in <module>\n    from .session import Base, SessionLocal, get_db\napp/db/session.py:13: in <module>\n    echo=settings.SQL_ECHO\n../../../../../../.pyenv/versions/3.9.18/lib/python3.9/site-packages/pydantic/main.py:761: in __getattr__\n    raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')\nE   AttributeError: 'Settings' object has no attribute 'SQL_ECHO'\n"
+    },
+    {
+      "category": "api",
+      "timestamp": "2025-02-06T09:03:11.862680",
+      "duration": 1.615945,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "ImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:13: in <module>\n    from app.db.session import SessionLocal\napp/db/__init__.py:3: in <module>\n    from .session import Base, SessionLocal, get_db\napp/db/session.py:13: in <module>\n    echo=settings.SQL_ECHO\n../../../../../../.pyenv/versions/3.9.18/lib/python3.9/site-packages/pydantic/main.py:761: in __getattr__\n    raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')\nE   AttributeError: 'Settings' object has no attribute 'SQL_ECHO'\n"
+    },
+    {
+      "category": "integration",
+      "timestamp": "2025-02-06T09:03:13.447622",
+      "duration": 1.584758,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "ImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:13: in <module>\n    from app.db.session import SessionLocal\napp/db/__init__.py:3: in <module>\n    from .session import Base, SessionLocal, get_db\napp/db/session.py:13: in <module>\n    echo=settings.SQL_ECHO\n../../../../../../.pyenv/versions/3.9.18/lib/python3.9/site-packages/pydantic/main.py:761: in __getattr__\n    raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')\nE   AttributeError: 'Settings' object has no attribute 'SQL_ECHO'\n"
+    }
+  ]
+}

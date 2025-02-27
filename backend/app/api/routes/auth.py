@@ -1,3 +1,22 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 """Authentication routes."""
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import (
@@ -86,7 +105,7 @@ def login():
 
         with get_db() as db:
             user = db.query(User).filter_by(email=data['email']).first()
-            if not user or not user.check_password(data['password']):
+            if not user or not user.verify_password(data['password']):
                 raise InvalidCredentialsError('Invalid email or password')
 
             if not user.is_active:

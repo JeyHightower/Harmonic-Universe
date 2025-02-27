@@ -1,0 +1,72 @@
+{
+  "timestamp": "2025-02-06T09:04:19.721031",
+  "total_duration": 6.747512,
+  "failed_categories": [
+    "core",
+    "models",
+    "api",
+    "integration"
+  ],
+  "category_reports": [
+    {
+      "category": "core",
+      "timestamp": "2025-02-06T09:04:14.829337",
+      "duration": 1.85655,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "ImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:14: in <module>\n    from app.api.v1.api import api_router\napp/api/v1/api.py:7: in <module>\n    from app.api.v1.endpoints import physics\napp/api/v1/endpoints/physics/__init__.py:4: in <module>\n    from app.api.v1.endpoints.physics.physics import router as physics_router\napp/api/v1/endpoints/physics/physics.py:9: in <module>\n    from app.api.deps import get_current_user, get_async_db\nE   ModuleNotFoundError: No module named 'app.api.deps'\n"
+    },
+    {
+      "category": "models",
+      "timestamp": "2025-02-06T09:04:16.476729",
+      "duration": 1.647162,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "ImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:14: in <module>\n    from app.api.v1.api import api_router\napp/api/v1/api.py:7: in <module>\n    from app.api.v1.endpoints import physics\napp/api/v1/endpoints/physics/__init__.py:4: in <module>\n    from app.api.v1.endpoints.physics.physics import router as physics_router\napp/api/v1/endpoints/physics/physics.py:9: in <module>\n    from app.api.deps import get_current_user, get_async_db\nE   ModuleNotFoundError: No module named 'app.api.deps'\n"
+    },
+    {
+      "category": "api",
+      "timestamp": "2025-02-06T09:04:18.113052",
+      "duration": 1.63611,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "ImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:14: in <module>\n    from app.api.v1.api import api_router\napp/api/v1/api.py:7: in <module>\n    from app.api.v1.endpoints import physics\napp/api/v1/endpoints/physics/__init__.py:4: in <module>\n    from app.api.v1.endpoints.physics.physics import router as physics_router\napp/api/v1/endpoints/physics/physics.py:9: in <module>\n    from app.api.deps import get_current_user, get_async_db\nE   ModuleNotFoundError: No module named 'app.api.deps'\n"
+    },
+    {
+      "category": "integration",
+      "timestamp": "2025-02-06T09:04:19.720952",
+      "duration": 1.60769,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "ImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:14: in <module>\n    from app.api.v1.api import api_router\napp/api/v1/api.py:7: in <module>\n    from app.api.v1.endpoints import physics\napp/api/v1/endpoints/physics/__init__.py:4: in <module>\n    from app.api.v1.endpoints.physics.physics import router as physics_router\napp/api/v1/endpoints/physics/physics.py:9: in <module>\n    from app.api.deps import get_current_user, get_async_db\nE   ModuleNotFoundError: No module named 'app.api.deps'\n"
+    }
+  ]
+}

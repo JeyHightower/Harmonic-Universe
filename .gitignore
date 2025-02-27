@@ -1,83 +1,71 @@
 # Dependencies
 node_modules/
-.pnp/
-.pnp.js
-
-# Testing
-coverage/
-.nyc_output/
-
-# Production
-build/
-dist/
-out/
-
-# Environment Variables
+venv/
+venv311/
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*.local
 
-# Debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Build outputs
+dist/
+build/
+*.pyc
+__pycache__/
+.pytest_cache/
+.coverage
+coverage/
+.nyc_output/
+*.log
 
-# IDE
+# IDE and Editor files
 .idea/
 .vscode/
 *.swp
 *.swo
-
-# OS
 .DS_Store
 Thumbs.db
 
-# Project specific
-backend/data/
-backend/uploads/
-backend/logs/
-backend/reports/
-backend/__pycache__/
-backend/*.pyc
-backend/*.pyo
-backend/*.pyd
-backend/.pytest_cache/
-backend/.coverage
-backend/htmlcov/
-backend/*.egg-info/
-
-# Frontend specific
-frontend/.env
-frontend/dist/
-frontend/coverage/
-frontend/.next/
-frontend/out/
-frontend/.nuxt/
-frontend/.cache/
-frontend/.temp/
-
-# Docker
-.docker/
-docker-compose.override.yml
+# Database
+*.sqlite
+*.sqlite3
+*.db
 
 # Temporary files
+tmp/
+temp/
+.tmp/
 *.tmp
-*.temp
 *.bak
-*.swp
-*.swo
 
-# Python
-__pycache__/
+# Compiled files
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+
+# Package files
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Python specific
 *.py[cod]
 *$py.class
 *.so
 .Python
-build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
@@ -90,86 +78,57 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
+
+# JavaScript/Node specific
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+.cache/
+.parcel-cache/
+
+# Testing
+/coverage
 .coverage
 .coverage.*
-.cache
 coverage.xml
 *.cover
+.hypothesis/
 .pytest_cache/
-htmlcov/
+nosetests.xml
+coverage.xml
 
-# Virtual Environments
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-.env
-.venv
-backend/venv/
-
-# Node.js
-node_modules/
-npm-debug.log
-yarn-debug.log
-yarn-error.log
-.pnp/
-.pnp.js
-.eslintcache
-package-lock.json
-yarn.lock
-
-# Build & distribution
-/dist
+# Production
 /build
+/dist
 /out
-/public/build
-/frontend/dist
-/frontend/build
-*.tsbuildinfo
 
-# System files
+# Misc
 .DS_Store
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
-Thumbs.db
-.idea/
-.vscode/
-*.sublime-project
-*.sublime-workspace
-
-# Frontend cache
-.eslintcache
-frontend/.eslintcache
-.sass-cache/
-
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+.vercel
+.netlify
 
 # Project specific
-*.wav
-*.mp3
-*.ogg
-uploads/
-backend/uploads/
-reports/
-backend/reports/
-backups/
-backend/backups/
-.env.example
-.env.development
-.env.production
-.env.testing
+/uploads
+/media
+/static
+.env
+.env.*
+!.env.example
 
-# Alembic
-alembic/versions/__pycache__/
-alembic/__pycache__/
-alembic.ini
+# Editor directories and files
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

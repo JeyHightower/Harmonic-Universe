@@ -1,28 +1,17 @@
 """Scene model."""
-
-from typing import TYPE_CHECKING, Dict, Optional
 from sqlalchemy import Column, String, Text, ForeignKey, Boolean, Integer
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from ..base import BaseModel
-
-if TYPE_CHECKING:
-    from .user import User  # noqa: F401
-    from .universe import Universe  # noqa: F401
-    from ..physics.physics_parameter import PhysicsParameter  # noqa: F401
-    from ..physics.physics_object import PhysicsObject  # noqa: F401
-    from ..physics.physics_constraint import PhysicsConstraint  # noqa: F401
-    from ..audio.audio_track import AudioTrack  # noqa: F401
-    from ..audio.midi_sequence import MIDISequence  # noqa: F401
 
 class Scene(BaseModel):
     """Scene model for managing individual scenes within a universe."""
 
     __tablename__ = "scenes"
 
-    name = Column(String, nullable=False)
+    name = Column(String(255), nullable=False)
     description = Column(Text)
-    order = Column(Integer, default=0)  # For scene ordering
+    scene_order = Column(Integer, default=0)  # For scene ordering
     is_active = Column(Boolean, default=True)
     version = Column(Integer, default=1)
 
@@ -92,13 +81,9 @@ class Scene(BaseModel):
     universe = relationship("Universe", back_populates="scenes")
     creator = relationship("User", back_populates="scenes")
     physics_objects = relationship("PhysicsObject", back_populates="scene", cascade="all, delete-orphan")
-    physics_constraints = relationship("PhysicsConstraint", back_populates="scene", cascade="all, delete-orphan")
     physics_parameters = relationship("PhysicsParameter", back_populates="scene", uselist=False, cascade="all, delete-orphan")
+    physics_constraints = relationship("PhysicsConstraint", back_populates="scene", cascade="all, delete-orphan")
     audio_tracks = relationship("AudioTrack", back_populates="scene", cascade="all, delete-orphan")
-    midi_sequences = relationship("MIDISequence", back_populates="scene", cascade="all, delete-orphan")
-
-    # Ensure proper table creation order
-    __table_args__ = {'extend_existing': True}
 
     def to_dict(self):
         """Convert to dictionary with all parameters."""
@@ -106,7 +91,7 @@ class Scene(BaseModel):
             "id": self.id,
             "name": self.name,
             "description": self.description,
-            "order": self.order,
+            "scene_order": self.scene_order,
             "is_active": self.is_active,
             "version": self.version,
             "universe_id": self.universe_id,
@@ -119,66 +104,3 @@ class Scene(BaseModel):
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat()
         }
-
-    def update_physics_overrides(self, params: Dict) -> 'Scene':
-        """Update physics parameter overrides."""
-        if params.get('enabled') is not None:
-            self.physics_overrides['enabled'] = params['enabled']
-        if params.get('parameters'):
-            self.physics_overrides['parameters'].update(params['parameters'])
-        return self
-
-    def update_harmony_overrides(self, params: Dict) -> 'Scene':
-        """Update harmony parameter overrides."""
-        if params.get('enabled') is not None:
-            self.harmony_overrides['enabled'] = params['enabled']
-        if params.get('parameters'):
-            self.harmony_overrides['parameters'].update(params['parameters'])
-        return self
-
-    def update_visualization(self, params: Dict) -> 'Scene':
-        """Update visualization settings."""
-        for key, value in params.items():
-            if key in self.visualization_settings:
-                if isinstance(value, dict):
-                    self.visualization_settings[key].update(value)
-                else:
-                    self.visualization_settings[key] = value
-        return self
-
-    def update_ai_settings(self, params: Dict) -> 'Scene':
-        """Update AI settings."""
-        for key, value in params.items():
-            if key in self.ai_settings:
-                if isinstance(value, dict):
-                    self.ai_settings[key].update(value)
-                else:
-                    self.ai_settings[key] = value
-        return self
-
-    def update_timeline(self, params: Dict) -> 'Scene':
-        """Update timeline settings."""
-        self.timeline_settings.update(params)
-        return self
-
-    def get_effective_physics_params(self, universe_params: Dict) -> Dict:
-        """Get effective physics parameters considering overrides."""
-        if not self.physics_overrides['enabled']:
-            return universe_params
-
-        result = universe_params.copy()
-        result.update(self.physics_overrides['parameters'])
-        return result
-
-    def get_effective_harmony_params(self, universe_params: Dict) -> Dict:
-        """Get effective harmony parameters considering overrides."""
-        if not self.harmony_overrides['enabled']:
-            return universe_params
-
-        result = universe_params.copy()
-        result.update(self.harmony_overrides['parameters'])
-        return result
-
-    def __repr__(self) -> str:
-        """String representation of Scene."""
-        return f"<Scene {self.name} (v{self.version})>"

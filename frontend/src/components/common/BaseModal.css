@@ -1,0 +1,149 @@
+/* Base Modal Styles */
+.base-modal {
+  --modal-border-radius: 8px;
+  --modal-box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --modal-header-padding: 16px 24px;
+  --modal-content-padding: 24px;
+  --modal-footer-padding: 16px 24px;
+  --modal-title-font-size: 16px;
+  --modal-title-font-weight: 500;
+}
+
+/* Modal Container */
+.base-modal .ant-modal-content {
+  border-radius: var(--modal-border-radius);
+  box-shadow: var(--modal-box-shadow);
+}
+
+/* Modal Header */
+.base-modal .ant-modal-header {
+  padding: var(--modal-header-padding);
+  border-radius: var(--modal-border-radius) var(--modal-border-radius) 0 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.base-modal .ant-modal-title {
+  font-size: var(--modal-title-font-size);
+  font-weight: var(--modal-title-font-weight);
+  color: var(--heading-color);
+}
+
+/* Modal Content */
+.base-modal .ant-modal-body {
+  padding: var(--modal-content-padding);
+}
+
+.base-modal-content {
+  max-height: calc(80vh - 180px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* Modal Footer */
+.base-modal .ant-modal-footer {
+  padding: var(--modal-footer-padding);
+  border-top: 1px solid var(--border-color);
+  border-radius: 0 0 var(--modal-border-radius) var(--modal-border-radius);
+}
+
+/* Modal Types */
+.form-modal .ant-modal-body {
+  padding: var(--modal-content-padding) var(--modal-content-padding) 0;
+}
+
+.confirm-modal .ant-modal-confirm-btns {
+  margin-top: 24px;
+}
+
+/* Modal Sizes */
+.base-modal.small-modal {
+  max-width: 400px;
+}
+
+.base-modal.large-modal {
+  min-width: 800px;
+}
+
+/* Dark Mode Support */
+[data-theme='dark'] .base-modal {
+  --border-color: #434343;
+  --heading-color: rgba(255, 255, 255, 0.85);
+}
+
+.base-modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.base-modal-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.base-modal-content::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 3px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .base-modal {
+    --modal-content-padding: 16px;
+    --modal-header-padding: 12px 16px;
+    --modal-footer-padding: 12px 16px;
+  }
+
+  .base-modal-content {
+    max-height: calc(100vh - 160px);
+  }
+
+  .base-modal.large-modal {
+    min-width: unset;
+    width: 90vw !important;
+  }
+}
+
+/* Animation Enhancements */
+.base-modal.ant-modal {
+  transform-origin: center;
+  animation-duration: 0.3s;
+}
+
+.base-modal.ant-modal-enter,
+.base-modal.ant-modal-appear {
+  transform: scale(0.95);
+  opacity: 0;
+}
+
+.base-modal.ant-modal-enter-active,
+.base-modal.ant-modal-appear-active {
+  transform: scale(1);
+  opacity: 1;
+  transition: all 0.3s cubic-bezier(0.08, 0.82, 0.17, 1);
+}
+
+.base-modal.ant-modal-leave {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.base-modal.ant-modal-leave-active {
+  transform: scale(0.95);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.78, 0.14, 0.15, 0.86);
+}
+
+/* Modal Type-specific Styles */
+.success-modal .ant-modal-confirm-body > .anticon {
+  color: var(--success-color);
+}
+
+.warning-modal .ant-modal-confirm-body > .anticon {
+  color: var(--warning-color);
+}
+
+.error-modal .ant-modal-confirm-body > .anticon {
+  color: var(--error-color);
+}
+
+.info-modal .ant-modal-confirm-body > .anticon {
+  color: var(--info-color);
+}

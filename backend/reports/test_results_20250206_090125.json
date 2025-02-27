@@ -1,0 +1,72 @@
+{
+  "timestamp": "2025-02-06T09:01:25.771853",
+  "total_duration": 6.605453,
+  "failed_categories": [
+    "core",
+    "models",
+    "api",
+    "integration"
+  ],
+  "category_reports": [
+    {
+      "category": "core",
+      "timestamp": "2025-02-06T09:01:20.991006",
+      "duration": 1.825331,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "ImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:12: in <module>\n    from app.core.errors import AppError, ErrorResponse\nE   ModuleNotFoundError: No module named 'app.core.errors'\n"
+    },
+    {
+      "category": "models",
+      "timestamp": "2025-02-06T09:01:22.615080",
+      "duration": 1.623871,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "ImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:12: in <module>\n    from app.core.errors import AppError, ErrorResponse\nE   ModuleNotFoundError: No module named 'app.core.errors'\n"
+    },
+    {
+      "category": "api",
+      "timestamp": "2025-02-06T09:01:24.184712",
+      "duration": 1.569372,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "ImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:12: in <module>\n    from app.core.errors import AppError, ErrorResponse\nE   ModuleNotFoundError: No module named 'app.core.errors'\n"
+    },
+    {
+      "category": "integration",
+      "timestamp": "2025-02-06T09:01:25.771839",
+      "duration": 1.586879,
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+      },
+      "coverage": "No coverage data",
+      "returncode": 4,
+      "output": "ImportError while loading conftest '/Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/backend/tests/conftest.py'.\ntests/conftest.py:22: in <module>\n    from app.main import app\napp/main.py:12: in <module>\n    from app.core.errors import AppError, ErrorResponse\nE   ModuleNotFoundError: No module named 'app.core.errors'\n"
+    }
+  ]
+}
