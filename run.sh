@@ -423,3 +423,7 @@ case $1 in
     exit 1
     ;;
 esac
+
+# Add execution of essential scripts
+bash setup_database.sh
+bash test_all_feats_cruds_complete.sh
