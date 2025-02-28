@@ -114,28 +114,7 @@ echo "List Universes Response: $LIST_UNIVERSES_RESPONSE"
 FILTER_UNIVERSES_RESPONSE=$(make_request "GET" "/universes?sort=created_at&order=desc&public=true" "" "$ACCESS_TOKEN")
 echo "Filter Universes Response: $FILTER_UNIVERSES_RESPONSE"
 
-# 4. Physics Objects Tests
-echo -e "\n${GREEN}Testing Physics Objects...${NC}"
-
-# Create Physics Object
-PHYSICS_OBJECT_DATA="{\"name\":\"Test Object\",\"type\":\"sphere\",\"position\":{\"x\":0,\"y\":0,\"z\":0}}"
-PHYSICS_OBJECT_RESPONSE=$(make_request "POST" "/universes/$UNIVERSE_ID/physics" "$PHYSICS_OBJECT_DATA" "$ACCESS_TOKEN")
-PHYSICS_OBJECT_ID=$(echo $PHYSICS_OBJECT_RESPONSE | jq -r '.id')
-echo "Create Physics Object Response: $PHYSICS_OBJECT_RESPONSE"
-
-# Get Physics Object
-GET_PHYSICS_OBJECT_RESPONSE=$(make_request "GET" "/universes/$UNIVERSE_ID/physics/$PHYSICS_OBJECT_ID" "" "$ACCESS_TOKEN")
-echo "Get Physics Object Response: $GET_PHYSICS_OBJECT_RESPONSE"
-
-# Update Physics Object
-UPDATE_PHYSICS_OBJECT_RESPONSE=$(make_request "PUT" "/universes/$UNIVERSE_ID/physics/$PHYSICS_OBJECT_ID" "{\"position\":{\"x\":1,\"y\":1,\"z\":1}}" "$ACCESS_TOKEN")
-echo "Update Physics Object Response: $UPDATE_PHYSICS_OBJECT_RESPONSE"
-
-# Delete Physics Object
-DELETE_PHYSICS_OBJECT_RESPONSE=$(make_request "DELETE" "/universes/$UNIVERSE_ID/physics/$PHYSICS_OBJECT_ID" "" "$ACCESS_TOKEN")
-echo "Delete Physics Object Response: $DELETE_PHYSICS_OBJECT_RESPONSE"
-
-# 5. Scene Management Tests
+# 4. Scene Management Tests
 echo -e "\n${GREEN}Testing Scene Management...${NC}"
 
 # Create Scene
@@ -156,7 +135,7 @@ echo "Update Scene Response: $UPDATE_SCENE_RESPONSE"
 DELETE_SCENE_RESPONSE=$(make_request "DELETE" "/universes/$UNIVERSE_ID/storyboards/$SCENE_ID" "" "$ACCESS_TOKEN")
 echo "Delete Scene Response: $DELETE_SCENE_RESPONSE"
 
-# 6. Music Generation Tests
+# 5. Music Generation Tests
 echo -e "\n${GREEN}Testing Music Generation...${NC}"
 
 # Generate Music
@@ -176,6 +155,116 @@ echo "Get Music Response: $GET_MUSIC_RESPONSE"
 # Update Music Parameters
 UPDATE_MUSIC_RESPONSE=$(make_request "PUT" "/universes/$UNIVERSE_ID/music/$MUSIC_ID" "{\"tempo\":140}" "$ACCESS_TOKEN")
 echo "Update Music Response: $UPDATE_MUSIC_RESPONSE"
+
+# 7. Physics Parameters Tests
+
+echo -e "\n${GREEN}Testing Physics Parameters...${NC}"
+
+# Create Physics Parameters
+PHYSICS_PARAMS_DATA="{\"scene_id\":\"$SCENE_ID\",\"gravity\":{\"x\":0,\"y\":-9.81,\"z\":0},\"air_resistance\":0.1}"
+PHYSICS_PARAMS_RESPONSE=$(make_request "POST" "/scenes/$SCENE_ID/physics_parameters" "$PHYSICS_PARAMS_DATA" "$ACCESS_TOKEN")
+PHYSICS_PARAMS_ID=$(echo $PHYSICS_PARAMS_RESPONSE | jq -r '.id')
+echo "Create Physics Parameters Response: $PHYSICS_PARAMS_RESPONSE"
+
+# Get Physics Parameters
+GET_PHYSICS_PARAMS_RESPONSE=$(make_request "GET" "/scenes/$SCENE_ID/physics_parameters/$PHYSICS_PARAMS_ID" "" "$ACCESS_TOKEN")
+echo "Get Physics Parameters Response: $GET_PHYSICS_PARAMS_RESPONSE"
+
+# Update Physics Parameters
+UPDATE_PHYSICS_PARAMS_RESPONSE=$(make_request "PUT" "/scenes/$SCENE_ID/physics_parameters/$PHYSICS_PARAMS_ID" "{\"gravity\":{\"x\":0,\"y\":-10,\"z\":0}}" "$ACCESS_TOKEN")
+echo "Update Physics Parameters Response: $UPDATE_PHYSICS_PARAMS_RESPONSE"
+
+# Delete Physics Parameters
+DELETE_PHYSICS_PARAMS_RESPONSE=$(make_request "DELETE" "/scenes/$SCENE_ID/physics_parameters/$PHYSICS_PARAMS_ID" "" "$ACCESS_TOKEN")
+echo "Delete Physics Parameters Response: $DELETE_PHYSICS_PARAMS_RESPONSE"
+
+# 8. Physics Objects Tests
+
+echo -e "\n${GREEN}Testing Physics Objects...${NC}"
+
+# Create Physics Object
+PHYSICS_OBJECT_DATA="{\"name\":\"Test Object\",\"scene_id\":\"$SCENE_ID\",\"type\":\"sphere\",\"position\":{\"x\":0,\"y\":0,\"z\":0}}"
+PHYSICS_OBJECT_RESPONSE=$(make_request "POST" "/physics-objects" "$PHYSICS_OBJECT_DATA" "$ACCESS_TOKEN")
+PHYSICS_OBJECT_ID=$(echo $PHYSICS_OBJECT_RESPONSE | jq -r '.id')
+echo "Create Physics Object Response: $PHYSICS_OBJECT_RESPONSE"
+
+# Get Physics Object
+GET_PHYSICS_OBJECT_RESPONSE=$(make_request "GET" "/physics-objects/$PHYSICS_OBJECT_ID" "" "$ACCESS_TOKEN")
+echo "Get Physics Object Response: $GET_PHYSICS_OBJECT_RESPONSE"
+
+# Update Physics Object
+UPDATE_PHYSICS_OBJECT_RESPONSE=$(make_request "PUT" "/physics-objects/$PHYSICS_OBJECT_ID" "{\"position\":{\"x\":1,\"y\":1,\"z\":1}}" "$ACCESS_TOKEN")
+echo "Update Physics Object Response: $UPDATE_PHYSICS_OBJECT_RESPONSE"
+
+# Delete Physics Object
+DELETE_PHYSICS_OBJECT_RESPONSE=$(make_request "DELETE" "/physics-objects/$PHYSICS_OBJECT_ID" "" "$ACCESS_TOKEN")
+echo "Delete Physics Object Response: $DELETE_PHYSICS_OBJECT_RESPONSE"
+
+# 9. Physics Constraints Tests
+
+echo -e "\n${GREEN}Testing Physics Constraints...${NC}"
+
+# Create Physics Constraint
+PHYSICS_CONSTRAINT_DATA="{\"scene_id\":\"$SCENE_ID\",\"object_a_id\":\"$PHYSICS_OBJECT_ID\",\"object_b_id\":\"$PHYSICS_OBJECT_ID\",\"constraint_type\":\"fixed\"}"
+PHYSICS_CONSTRAINT_RESPONSE=$(make_request "POST" "/physics-constraints" "$PHYSICS_CONSTRAINT_DATA" "$ACCESS_TOKEN")
+PHYSICS_CONSTRAINT_ID=$(echo $PHYSICS_CONSTRAINT_RESPONSE | jq -r '.id')
+echo "Create Physics Constraint Response: $PHYSICS_CONSTRAINT_RESPONSE"
+
+# Get Physics Constraint
+GET_PHYSICS_CONSTRAINT_RESPONSE=$(make_request "GET" "/physics-constraints/$PHYSICS_CONSTRAINT_ID" "" "$ACCESS_TOKEN")
+echo "Get Physics Constraint Response: $GET_PHYSICS_CONSTRAINT_RESPONSE"
+
+# Update Physics Constraint
+UPDATE_PHYSICS_CONSTRAINT_RESPONSE=$(make_request "PUT" "/physics-constraints/$PHYSICS_CONSTRAINT_ID" "{\"limits\":{\"min\":-10,\"max\":10}}" "$ACCESS_TOKEN")
+echo "Update Physics Constraint Response: $UPDATE_PHYSICS_CONSTRAINT_RESPONSE"
+
+# Delete Physics Constraint
+DELETE_PHYSICS_CONSTRAINT_RESPONSE=$(make_request "DELETE" "/physics-constraints/$PHYSICS_CONSTRAINT_ID" "" "$ACCESS_TOKEN")
+echo "Delete Physics Constraint Response: $DELETE_PHYSICS_CONSTRAINT_RESPONSE"
+
+# 10. Audio System Tests
+
+echo -e "\n${GREEN}Testing Audio System...${NC}"
+
+# Create Audio Track
+AUDIO_TRACK_DATA="{\"scene_id\":\"$SCENE_ID\",\"name\":\"Test Track\",\"file_type\":\"wav\"}"
+AUDIO_TRACK_RESPONSE=$(make_request "POST" "/audio/tracks" "$AUDIO_TRACK_DATA" "$ACCESS_TOKEN")
+AUDIO_TRACK_ID=$(echo $AUDIO_TRACK_RESPONSE | jq -r '.id')
+echo "Create Audio Track Response: $AUDIO_TRACK_RESPONSE"
+
+# Get Audio Track
+GET_AUDIO_TRACK_RESPONSE=$(make_request "GET" "/audio/tracks/$AUDIO_TRACK_ID" "" "$ACCESS_TOKEN")
+echo "Get Audio Track Response: $GET_AUDIO_TRACK_RESPONSE"
+
+# Update Audio Track
+UPDATE_AUDIO_TRACK_RESPONSE=$(make_request "PUT" "/audio/tracks/$AUDIO_TRACK_ID" "{\"name\":\"Updated Track\"}" "$ACCESS_TOKEN")
+echo "Update Audio Track Response: $UPDATE_AUDIO_TRACK_RESPONSE"
+
+# Delete Audio Track
+DELETE_AUDIO_TRACK_RESPONSE=$(make_request "DELETE" "/audio/tracks/$AUDIO_TRACK_ID" "" "$ACCESS_TOKEN")
+echo "Delete Audio Track Response: $DELETE_AUDIO_TRACK_RESPONSE"
+
+# 11. MIDI Sequence Tests
+
+echo -e "\n${GREEN}Testing MIDI Sequences...${NC}"
+
+# Create MIDI Sequence
+MIDI_SEQUENCE_DATA="{\"scene_id\":\"$SCENE_ID\",\"name\":\"Test Sequence\",\"tempo\":120}"
+MIDI_SEQUENCE_RESPONSE=$(make_request "POST" "/music/sequences" "$MIDI_SEQUENCE_DATA" "$ACCESS_TOKEN")
+MIDI_SEQUENCE_ID=$(echo $MIDI_SEQUENCE_RESPONSE | jq -r '.id')
+echo "Create MIDI Sequence Response: $MIDI_SEQUENCE_RESPONSE"
+
+# Get MIDI Sequence
+GET_MIDI_SEQUENCE_RESPONSE=$(make_request "GET" "/music/sequences/$MIDI_SEQUENCE_ID" "" "$ACCESS_TOKEN")
+echo "Get MIDI Sequence Response: $GET_MIDI_SEQUENCE_RESPONSE"
+
+# Update MIDI Sequence
+UPDATE_MIDI_SEQUENCE_RESPONSE=$(make_request "PUT" "/music/sequences/$MIDI_SEQUENCE_ID" "{\"tempo\":140}" "$ACCESS_TOKEN")
+echo "Update MIDI Sequence Response: $UPDATE_MIDI_SEQUENCE_RESPONSE"
+
+# Delete MIDI Sequence
+DELETE_MIDI_SEQUENCE_RESPONSE=$(make_request "DELETE" "/music/sequences/$MIDI_SEQUENCE_ID" "" "$ACCESS_TOKEN")
+echo "Delete MIDI Sequence Response: $DELETE_MIDI_SEQUENCE_RESPONSE"
 
 # Cleanup Tests
 echo -e "\n${GREEN}Running Cleanup Tests...${NC}"

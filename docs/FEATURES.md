@@ -73,6 +73,7 @@ This document provides a comprehensive overview of all implemented features in H
 The application uses a consistent modal system across all features:
 
 - **Base Components**:
+
   - `BaseModal`: Core modal component with standardized styling and behavior
   - `ModalProvider`: Context provider for modal state management
   - `useModalManager`: Custom hook for modal operations
@@ -83,11 +84,7 @@ The application uses a consistent modal system across all features:
   const MyComponent = () => {
     const { openModal, closeModal } = useModalManager('my-modal');
     return (
-      <BaseModal
-        title="My Modal"
-        visible={isVisible}
-        onClose={closeModal}
-      >
+      <BaseModal title="My Modal" visible={isVisible} onClose={closeModal}>
         {/* Modal content */}
       </BaseModal>
     );
@@ -99,6 +96,7 @@ The application uses a consistent modal system across all features:
 The application implements a comprehensive styling system:
 
 - **Theme Variables**:
+
   - Global CSS variables for consistent styling
   - Dark/Light mode support
   - Responsive design breakpoints
@@ -115,22 +113,21 @@ The application implements a comprehensive styling system:
 
 All features are covered by automated tests:
 
-- **Test Script**: `backend/scripts/test_all_features.sh`
+- **Test Script**: `backend/scripts/test_all_feats_cruds_complete.sh`
 - **Coverage**:
   - Authentication flows
   - CRUD operations
   - API endpoints
   - Data validation
   - Error handling
+  - Audio system
+  - MIDI sequences
 
 ### Running Tests
 
 ```bash
 # Run all tests
-./backend/scripts/test_all_features.sh
-
-# Run specific feature tests
-./backend/scripts/test_physics_parameters.sh
+./backend/scripts/test_all_feats_cruds_complete.sh
 ```
 
 ## Development Guidelines
