@@ -2,7 +2,7 @@
 
 from flask import jsonify, current_app
 from werkzeug.exceptions import HTTPException
-from .errors import AppError, ValidationError, AuthenticationError, AuthorizationError
+from .errors import AppError, ValidationError, AuthenticationError, AuthorizationError, NotFoundError, UserAlreadyExistsError
 import logging
 
 logger = logging.getLogger(__name__)
@@ -59,6 +59,36 @@ def register_error_handlers(app):
     @app.errorhandler(AuthorizationError)
     def handle_authorization_error(error):
         """Handle authorization errors."""
+        response = jsonify({
+            'error': error.error_code,
+            'error_code': error.error_code,
+            'message': str(error),
+            'status_code': error.status_code,
+            'details': error.details,
+            'severity': error.severity.value,
+            'category': error.category.value
+        })
+        response.status_code = error.status_code
+        return response
+
+    @app.errorhandler(NotFoundError)
+    def handle_not_found_error(error):
+        """Handle not found errors."""
+        response = jsonify({
+            'error': error.error_code,
+            'error_code': error.error_code,
+            'message': str(error),
+            'status_code': error.status_code,
+            'details': error.details,
+            'severity': error.severity.value,
+            'category': error.category.value
+        })
+        response.status_code = error.status_code
+        return response
+
+    @app.errorhandler(UserAlreadyExistsError)
+    def handle_user_already_exists_error(error):
+        """Handle user already exists errors."""
         response = jsonify({
             'error': error.error_code,
             'error_code': error.error_code,

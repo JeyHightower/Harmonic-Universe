@@ -598,3 +598,8 @@ def test_generate_visualization():
 
     response = requests.post(f"{BASE_URL}/visualizations/{viz_id}/generate", json=invalid_generate_data, headers=headers)
     assert response.status_code in [400, 422], f"Expected 400 or 422 for invalid audio data, got {response.status_code}"
+
+    # Test with non-existent visualization ID
+    non_existent_viz_id = str(uuid4())
+    response = requests.post(f"{BASE_URL}/visualizations/{non_existent_viz_id}/generate", json=generate_data, headers=headers)
+    assert response.status_code == 404, f"Expected 404 for non-existent visualization, got {response.status_code}"

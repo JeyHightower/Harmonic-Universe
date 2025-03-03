@@ -1,20 +1,24 @@
-import React, { useEffect } from 'react';
+import { Button, Popconfirm, Space, Table, message } from 'antd';
 import PropTypes from 'prop-types';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Table, Button, Space, Popconfirm, message } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  PlusOutlined,
+} from '../../components/common/Icons';
 import useModalManager from '../../hooks/useModalManager';
 import {
-  fetchPhysicsParameters,
   deletePhysicsParameters,
+  fetchPhysicsParameters,
 } from '../../store/slices/physicsParametersSlice';
-import PhysicsParametersModal from './PhysicsParametersModal';
 import './PhysicsParameters.css';
+import PhysicsParametersModal from './PhysicsParametersModal';
 
 const PhysicsParametersManager = ({ universeId }) => {
   const dispatch = useDispatch();
-  const parameters = useSelector((state) => state.physicsParameters.parameters);
-  const loading = useSelector((state) => state.physicsParameters.loading);
+  const parameters = useSelector(state => state.physicsParameters.parameters);
+  const loading = useSelector(state => state.physicsParameters.loading);
 
   const createModal = useModalManager('create-physics-parameters');
   const editModal = useModalManager('edit-physics-parameters');
@@ -31,7 +35,7 @@ const PhysicsParametersManager = ({ universeId }) => {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async id => {
     try {
       await dispatch(deletePhysicsParameters(id)).unwrap();
       message.success('Physics parameters deleted successfully');
@@ -52,7 +56,7 @@ const PhysicsParametersManager = ({ universeId }) => {
       title: 'Gravity',
       dataIndex: 'gravity',
       key: 'gravity',
-      render: (value) => `${value} m/s²`,
+      render: value => `${value} m/s²`,
       sorter: (a, b) => a.gravity - b.gravity,
     },
     {
@@ -65,7 +69,7 @@ const PhysicsParametersManager = ({ universeId }) => {
       title: 'Air Resistance',
       dataIndex: 'air_resistance',
       key: 'air_resistance',
-      render: (value) => value.toFixed(2),
+      render: value => value.toFixed(2),
       sorter: (a, b) => a.air_resistance - b.air_resistance,
     },
     {
@@ -83,7 +87,7 @@ const PhysicsParametersManager = ({ universeId }) => {
       title: 'Created At',
       dataIndex: 'created_at',
       key: 'created_at',
-      render: (date) => new Date(date).toLocaleDateString(),
+      render: date => new Date(date).toLocaleDateString(),
       sorter: (a, b) => new Date(a.created_at) - new Date(b.created_at),
     },
     {
@@ -134,13 +138,17 @@ const PhysicsParametersManager = ({ universeId }) => {
         pagination={{
           defaultPageSize: 10,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} parameter sets`,
+          showTotal: total => `Total ${total} parameter sets`,
         }}
       />
 
       <PhysicsParametersModal
         universeId={universeId}
-        initialData={editModal.isActive ? parameters.find(p => p.id === editModal.modalId) : null}
+        initialData={
+          editModal.isActive
+            ? parameters.find(p => p.id === editModal.modalId)
+            : null
+        }
       />
     </div>
   );

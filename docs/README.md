@@ -26,6 +26,7 @@ Users can:
   - [Running the Application](#running-the-application)
 - [Usage](#usage)
 - [API Documentation](#api-documentation)
+- [Modal System](#modal-system)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -88,7 +89,7 @@ Users can:
 
 ### Backend
 
-- Python with FastAPI
+- Python with Flask
 - SQLAlchemy ORM
 - Alembic for database migrations
 - PostgreSQL database
@@ -106,12 +107,14 @@ Users can:
 
 ```
 harmonic-universe/
-├── backend/                # Python FastAPI backend
+├── backend/                # Python Flask backend
 │   ├── app/                # Main application
 │   │   ├── api/            # API routes
+│   │   │   └── routes/     # Route definitions
 │   │   ├── core/           # Core functionality
 │   │   ├── db/             # Database models and session
-│   │   ├── models/         # Pydantic models
+│   │   ├── models/         # SQLAlchemy models
+│   │   ├── schemas/        # Pydantic schemas
 │   │   ├── services/       # Business logic
 │   │   ├── scripts/        # Utility scripts
 │   │   └── utils/          # Helper functions
@@ -123,11 +126,14 @@ harmonic-universe/
 │   ├── public/             # Static assets
 │   ├── src/                # Source code
 │   │   ├── components/     # React components
+│   │   │   ├── common/     # Common components
+│   │   │   ├── features/   # Feature-specific components
+│   │   │   └── layout/     # Layout components
 │   │   ├── contexts/       # React contexts
+│   │   ├── features/       # Feature modules
 │   │   ├── hooks/          # Custom hooks
-│   │   ├── redux/          # Redux store, reducers, etc.
+│   │   ├── store/          # Redux store, reducers, etc.
 │   │   ├── routes/         # Route definitions
-│   │   ├── services/       # API service functions
 │   │   ├── styles/         # Global styles
 │   │   ├── utils/          # Utility functions
 │   │   └── App.jsx         # Main App component
@@ -249,21 +255,49 @@ When the backend server is running, you can access the API documentation at:
 
 The API is organized around RESTful principles with the following main endpoints:
 
-- `/api/auth`: Authentication endpoints
-- `/api/users`: User management
-- `/api/universe`: Universe operations
-- `/api/physics_objects`: Physics object management
-- `/api/scenes`: Scene management
-- `/api/scenes/{scene_id}/physics_parameters`: Physics parameters management
-- `/api/music`: Music generation and export
+- `/api/v1/auth` - Authentication endpoints
+- `/api/v1/users` - User management
+- `/api/v1/universes` - Universe CRUD operations
+- `/api/v1/scenes` - Scene management
+- `/api/v1/physics-objects` - Physics object management
+- `/api/v1/physics-parameters` - Physics parameters management
+- `/api/v1/audio` - Audio generation and management
+- `/api/v1/visualizations` - Visualization management
+
+## Modal System
+
+Harmonic Universe uses a standardized modal system for all user interactions that require forms or confirmations. The modal system supports:
+
+### Modal Types
+
+- **Form Modals**: For creating and editing entities (universes, scenes, physics objects, etc.)
+- **Confirmation Modals**: For confirming destructive actions like deletion
+- **Information Modals**: For displaying detailed information about entities
+
+### Deep Linking
+
+The modal system supports deep linking, allowing users to share links that open specific modals. For example:
+
+- `/api/universes/create` - Opens the universe creation modal
+- `/api/scenes/:id/edit` - Opens the scene edit modal for a specific scene
+- `/api/physics-objects/:id/delete` - Opens a confirmation modal for deleting a physics object
+
+### Modal Registry
+
+All modals are registered in a central registry, making it easy to manage and update them. The registry handles:
+
+- Modal component mapping
+- Props transformation
+- Modal configuration
+- Deep linking support
 
 ## Contributing
 
-We welcome contributions to Harmonic Universe! Please see our [Contributing Guide](CONTRIBUTING.md) for more information on how to get involved.
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute to this project.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Acknowledgements
 

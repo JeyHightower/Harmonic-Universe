@@ -17,6 +17,7 @@
     "clean": "rm -rf frontend/build backend/dist frontend/node_modules node_modules"
   },
   "devDependencies": {
+    "cliui": "^8.0.1",
     "concurrently": "^8.2.2"
   }
 }

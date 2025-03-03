@@ -145,6 +145,108 @@ export const getModalDataFromRoute = (path) => {
                 data: { userId: params.id }
             };
 
+        case MODAL_TYPES.AUDIO_GENERATE:
+            return {
+                modalType,
+                data: {
+                    universeId: params.universeId,
+                    sceneId: params.sceneId
+                }
+            };
+
+        case MODAL_TYPES.AUDIO_DETAILS:
+            return {
+                modalType,
+                data: { audioId: params.id }
+            };
+
+        case MODAL_TYPES.VISUALIZATION_CREATE:
+            return {
+                modalType,
+                data: {
+                    universeId: params.universeId,
+                    sceneId: params.sceneId
+                }
+            };
+
+        case MODAL_TYPES.VISUALIZATION_EDIT:
+            return {
+                modalType,
+                data: {
+                    visualizationId: params.id
+                }
+            };
+
+        case MODAL_TYPES.PHYSICS_CONSTRAINT:
+            return {
+                modalType,
+                data: {
+                    sceneId: params.sceneId,
+                    ...(params.id ? { initialData: { id: params.id } } : {})
+                }
+            };
+
+        case 'confirm-delete':
+            // Handle all delete confirmations
+            if (path.includes('/universes/')) {
+                return {
+                    modalType,
+                    data: {
+                        entityType: 'universe',
+                        entityId: params.id
+                    }
+                };
+            } else if (path.includes('/scenes/')) {
+                return {
+                    modalType,
+                    data: {
+                        entityType: 'scene',
+                        entityId: params.id
+                    }
+                };
+            } else if (path.includes('/physics-objects/')) {
+                return {
+                    modalType,
+                    data: {
+                        entityType: 'physics object',
+                        entityId: params.id
+                    }
+                };
+            } else if (path.includes('/physics-parameters/')) {
+                return {
+                    modalType,
+                    data: {
+                        entityType: 'physics parameters',
+                        entityId: params.id
+                    }
+                };
+            } else if (path.includes('/audio/')) {
+                return {
+                    modalType,
+                    data: {
+                        entityType: 'audio track',
+                        entityId: params.id
+                    }
+                };
+            } else if (path.includes('/visualizations/')) {
+                return {
+                    modalType,
+                    data: {
+                        entityType: 'visualization',
+                        entityId: params.id
+                    }
+                };
+            } else if (path.includes('/physics-constraints/')) {
+                return {
+                    modalType,
+                    data: {
+                        entityType: 'physics constraint',
+                        entityId: params.id
+                    }
+                };
+            }
+            return null;
+
         default:
             return null;
     }

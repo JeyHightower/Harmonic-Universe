@@ -7,5 +7,5 @@ app = create_app(config['development'])
 app = setup_middleware(app)
 
 if __name__ == '__main__':
-    port = int(os.environ.get('BACKEND_PORT', 8000))
+    port = 8000  # Force port 8000 regardless of environment variable
     socketio.run(app, debug=app.config['DEBUG'], host='0.0.0.0', port=port)

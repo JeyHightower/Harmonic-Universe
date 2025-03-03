@@ -1,3 +1,4 @@
+import { SettingOutlined, UserOutlined } from '@ant-design/icons';
 import { ConfigProvider, theme } from 'antd';
 import React, { lazy, Suspense, useEffect } from 'react';
 import { Provider } from 'react-redux';
@@ -9,9 +10,9 @@ import {
   useNavigate,
 } from 'react-router-dom';
 import Layout from './components/layout/Layout';
+import { ROUTES } from './constants/routes';
 import { useModal } from './contexts/ModalContext';
 import ModalProvider from './providers/ModalProvider';
-import { ROUTES } from './routes';
 import ProtectedRoute from './routes/ProtectedRoute';
 import store from './store';
 import './styles/global.css';
@@ -40,7 +41,7 @@ const ModalExample = lazy(() => import('./components/examples/ModalExample'));
 const SettingsPage = lazy(() =>
   import('./components/features/settings/SettingsPage')
 );
-const IconTest = lazy(() => import('./components/test/IconTest'));
+const IconTest = lazy(() => import('./components/IconTest'));
 const PhysicsParametersModalTest = lazy(() =>
   import('./components/test/PhysicsParametersModalTest')
 );
@@ -49,6 +50,9 @@ const StandaloneTest = lazy(() => import('./components/test/StandaloneTest'));
 const ModalAccessibilityTest = lazy(() =>
   import('./components/test/ModalAccessibilityTest')
 );
+const ModalRouteTest = lazy(() => import('./components/test/ModalRouteTest'));
+const Profile = lazy(() => import('./components/features/auth/ProfilePage'));
+const NotFound = lazy(() => import('./components/features/errors/NotFound'));
 
 // Modal Route Handler Component
 const ModalRouteHandler = () => {
@@ -73,6 +77,22 @@ const ModalRouteHandler = () => {
   }, [location, navigate, openModalByType]);
 
   return null;
+};
+
+// Test component to verify our icon solution
+const IconTestComponent = () => {
+  console.log('IconTest component rendering');
+  return (
+    <div style={{ padding: '20px', border: '1px solid #ccc', margin: '20px' }}>
+      <h2>Icon Test</h2>
+      <p>
+        UserOutlined: <UserOutlined />
+      </p>
+      <p>
+        SettingOutlined: <SettingOutlined />
+      </p>
+    </div>
+  );
 };
 
 const App = () => {
@@ -163,6 +183,14 @@ const App = () => {
                     path={ROUTES.MODAL_EXAMPLES}
                     element={<ModalExample />}
                   />
+                  <Route
+                    path={ROUTES.PROFILE}
+                    element={
+                      <ProtectedRoute>
+                        <Profile />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
                   <Route path={ROUTES.ICON_TEST} element={<IconTest />} />
                   <Route
@@ -181,6 +209,11 @@ const App = () => {
                     path={ROUTES.MODAL_ACCESSIBILITY_TEST}
                     element={<ModalAccessibilityTest />}
                   />
+                  <Route
+                    path="/test/modal-routes"
+                    element={<ModalRouteTest />}
+                  />
+                  <Route path={ROUTES.NOT_FOUND} element={<NotFound />} />
                 </Route>
               </Routes>
             </Suspense>

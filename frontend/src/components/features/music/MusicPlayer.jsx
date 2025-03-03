@@ -1,14 +1,4 @@
 import {
-  CaretRightOutlined,
-  DownloadOutlined,
-  EyeOutlined,
-  InfoCircleOutlined,
-  PauseOutlined,
-  RobotOutlined,
-  SettingOutlined,
-  SyncOutlined,
-} from '@ant-design/icons';
-import {
   Button,
   Card,
   Collapse,
@@ -23,6 +13,16 @@ import {
 } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import * as Tone from 'tone';
+import {
+  CaretRightOutlined,
+  DownloadOutlined,
+  EyeOutlined,
+  InfoCircleOutlined,
+  PauseOutlined,
+  RobotOutlined,
+  SettingOutlined,
+  SyncOutlined,
+} from '../../../components/common/Icons';
 import { useModal } from '../../../contexts/ModalContext';
 import { api, endpoints } from '../../../utils/api';
 import Modal from '../../common/Modal';

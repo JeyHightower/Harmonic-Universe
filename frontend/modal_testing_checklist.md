@@ -41,6 +41,50 @@
 - [ ] Focus returns to the trigger element when closed
 - [ ] Screen readers can access modal content
 
+## API Route Modal Testing
+
+### Universe Modals
+
+- [ ] `/api/universes/create` opens the universe creation modal
+- [ ] `/api/universes/:id/edit` opens the universe edit modal with correct data
+- [ ] `/api/universes/:id/delete` opens the delete confirmation modal
+
+### Scene Modals
+
+- [ ] `/api/scenes/create` opens the scene creation modal
+- [ ] `/api/scenes/:id/edit` opens the scene edit modal with correct data
+- [ ] `/api/scenes/:id/delete` opens the delete confirmation modal
+
+### Physics Object Modals
+
+- [ ] `/api/physics-objects/create` opens the physics object creation modal
+- [ ] `/api/physics-objects/:id/edit` opens the physics object edit modal with correct data
+- [ ] `/api/physics-objects/:id/delete` opens the delete confirmation modal
+
+### Physics Parameters Modals
+
+- [ ] `/api/physics-parameters/create` opens the physics parameters creation modal
+- [ ] `/api/physics-parameters/:id/edit` opens the physics parameters edit modal with correct data
+- [ ] `/api/physics-parameters/:id/delete` opens the delete confirmation modal
+
+### Audio Modals
+
+- [ ] `/api/audio/generate` opens the audio generation modal
+- [ ] `/api/audio/:id/details` opens the audio details modal with correct data
+- [ ] `/api/audio/:id/delete` opens the delete confirmation modal
+
+### Visualization Modals
+
+- [ ] `/api/visualizations/create` opens the visualization creation modal
+- [ ] `/api/visualizations/:id/edit` opens the visualization edit modal with correct data
+- [ ] `/api/visualizations/:id/delete` opens the delete confirmation modal
+
+### Physics Constraint Modals
+
+- [ ] `/api/physics-constraints/create` opens the physics constraint creation modal
+- [ ] `/api/physics-constraints/:id/edit` opens the physics constraint edit modal with correct data
+- [ ] `/api/physics-constraints/:id/delete` opens the delete confirmation modal
+
 ## Testing Tips
 
 1. To test the standard modal at `/test/modal`:
@@ -55,7 +99,13 @@
    - Click on the different modal buttons (Alert, Confirmation, etc.)
    - Each should trigger a different type of modal
 
-3. Testing issues checklist:
+3. To test API route modals:
+
+   - Navigate directly to the API route URL (e.g., http://localhost:5173/api/universes/create)
+   - The appropriate modal should open automatically
+   - After closing the modal, you should be redirected to the previous page
+
+4. Testing issues checklist:
    - If modals don't open, check the browser console for errors
    - If styling is incorrect, check that theme variables are applied
    - If animations don't work, check that transition classes are applied
