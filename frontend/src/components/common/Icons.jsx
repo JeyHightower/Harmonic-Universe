@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import React from 'react';
 import IconContext from './es/components/Context';
 
@@ -14,12 +15,26 @@ Icon.getTwoToneColor = () => '#1890ff';
 Icon.setTwoToneColor = () => {};
 Icon.Context = IconContext;
 
+// Add PropTypes validation to fix the warning
+Icon.propTypes = {
+  className: PropTypes.string,
+  style: PropTypes.object,
+  children: PropTypes.node,
+};
+
 // Create a function to generate icon components
 function createIconComponent(displayName) {
   const IconComponent = React.forwardRef((props, ref) => {
     return <Icon {...props} ref={ref} data-icon-name={displayName} />;
   });
   IconComponent.displayName = displayName;
+
+  // Add PropTypes to each icon component
+  IconComponent.propTypes = {
+    className: PropTypes.string,
+    style: PropTypes.object,
+  };
+
   return IconComponent;
 }
 

@@ -5,53 +5,28 @@ import { defineConfig } from 'vite';
 // Create a custom plugin that provides empty implementations for all Ant Design icon imports
 const antDesignIconsPlugin = () => {
   return {
-    name: 'vite:ant-design-icons-resolver',
+    name: 'vite:ant-design-icons-plugin',
 
     resolveId(id, importer) {
-      // Handle direct imports from the main icons package
-      if (id === '@ant-design/icons') {
+      // Handle direct imports from @ant-design/icons
+      if (id === '@ant-design/icons' || id === '@ant-design/icons/es/icons') {
         return path.resolve(__dirname, 'src/components/common/Icons.jsx');
       }
 
-      // Handle specific icon imports from the main package
-      if (id.startsWith('@ant-design/icons/es/icons/')) {
-        return path.resolve(__dirname, 'src/components/common/Icons.jsx');
-      }
-
-      // Handle Context import
-      if (id === '@ant-design/icons/es/components/Context') {
+      // Handle the Context import from Icons.jsx directory access
+      if (id.includes('/Icons.jsx/') && id.endsWith('/es/components/Context')) {
         return path.resolve(__dirname, 'src/components/common/es/components/Context.js');
       }
 
-      // Handle all icon SVG imports that are causing errors
-      if (id.startsWith('@ant-design/icons-svg/es/asn/')) {
-        // Mark all these imports as external to prevent bundling errors
-        return { id, external: true };
-      }
-
-      // Handle other @ant-design/icons-svg imports
-      if (id.startsWith('@ant-design/icons-svg')) {
-        return { id, external: true };
-      }
-
-      // Handle relative imports within the @ant-design/icons/es/icons directory
-      if (importer && importer.includes('@ant-design/icons/es/icons') &&
-        (id.startsWith('./') || id.startsWith('../'))) {
-        // This handles imports like './AccountBookFilled' in the index.js file
+      // Handle individual icon imports - for paths like Icons.jsx/IconName
+      if (id.includes('/Icons.jsx/')) {
+        // Direct all individual icon imports to the main Icons.jsx file
         return path.resolve(__dirname, 'src/components/common/Icons.jsx');
       }
 
-      // Handle cases where something is trying to import from Icons.jsx as if it were a directory
-      if (importer && importer.includes('@ant-design/icons') &&
-        (id.includes('Icons.jsx/') || id.endsWith('Icons.jsx'))) {
-        return path.resolve(__dirname, 'src/components/common/Icons.jsx');
-      }
-
-      // Also handle direct access to specific icon components
-      if (id.includes('/src/components/common/Icons.jsx/')) {
-        // Extract the icon name from the path
-        const iconName = id.split('/Icons.jsx/').pop();
-        return path.resolve(__dirname, 'src/components/common/Icons.jsx');
+      // Handle direct import of Context
+      if (id === '@ant-design/icons/es/components/Context') {
+        return path.resolve(__dirname, 'src/components/common/es/components/Context.js');
       }
 
       return null;
@@ -72,8 +47,7 @@ const antDesignIconsPlugin = () => {
 
     load(id) {
       // For imports to our custom icon component, return the component implementation
-      if (id === path.resolve(__dirname, 'src/components/common/Icons.jsx') ||
-        id.includes('/Icons.jsx/')) {
+      if (id === path.resolve(__dirname, 'src/components/common/Icons.jsx')) {
         return `
           import React from 'react';
           import IconContext from './es/components/Context';
@@ -86,148 +60,112 @@ const antDesignIconsPlugin = () => {
             return <span className="anticon" {...props} />;
           };
 
-          // Export components namespaces
+          // Set two tone color methods that Ant Design expects
+          Icon.getTwoToneColor = () => '#1890ff';
+          Icon.setTwoToneColor = () => {};
+
+          // Set Context properly
           Icon.Context = IconContext;
 
+          // Create a generic function for creating icon components
+          const createIconComponent = (displayName) => {
+            const IconComponent = (props) => <Icon {...props} data-icon-name={displayName} />;
+            IconComponent.displayName = displayName;
+            return IconComponent;
+          };
+
           // Create a generic function for any other icon and iconFont
-          const createFromIconfontCN = () => {
-            return function IconFont(props) {
+          function createFromIconfontCN(options = {}) {
+            const IconFont = (props) => {
               return <span className="anticon" {...props} />;
             };
-          };
+            IconFont.displayName = 'IconFont';
+            return IconFont;
+          }
 
           // Assign the function to Icon
           Icon.createFromIconfontCN = createFromIconfontCN;
 
-          // Create icon components
-          export const PlusOutlined = props => <Icon {...props} />
-          export const EditOutlined = props => <Icon {...props} />
-          export const DeleteOutlined = props => <Icon {...props} />
-          export const CaretRightOutlined = props => <Icon {...props} />
-          export const DownloadOutlined = props => <Icon {...props} />
-          export const EyeOutlined = props => <Icon {...props} />
-          export const InfoCircleOutlined = props => <Icon {...props} />
-          export const PauseOutlined = props => <Icon {...props} />
-          export const RobotOutlined = props => <Icon {...props} />
-          export const SettingOutlined = props => <Icon {...props} />
-          export const SyncOutlined = props => <Icon {...props} />
-          export const EyeInvisibleOutlined = props => <Icon {...props} />
-          export const EnterOutlined = props => <Icon {...props} />
-
-          // Add all the icons from the error list
-          export const AccountBookFilled = props => <Icon {...props} />
-          export const AccountBookOutlined = props => <Icon {...props} />
-          export const AccountBookTwoTone = props => <Icon {...props} />
-          export const AlertFilled = props => <Icon {...props} />
-          export const AlertOutlined = props => <Icon {...props} />
-          export const AlertTwoTone = props => <Icon {...props} />
-          export const AlibabaOutlined = props => <Icon {...props} />
-          export const AlignCenterOutlined = props => <Icon {...props} />
-          export const AlignLeftOutlined = props => <Icon {...props} />
-          export const AlignRightOutlined = props => <Icon {...props} />
-          export const AliwangwangFilled = props => <Icon {...props} />
-          export const AliwangwangOutlined = props => <Icon {...props} />
-          export const AmazonOutlined = props => <Icon {...props} />
-          export const AndroidFilled = props => <Icon {...props} />
-          export const AndroidOutlined = props => <Icon {...props} />
-          export const AntCloudOutlined = props => <Icon {...props} />
-          export const AntDesignOutlined = props => <Icon {...props} />
-          export const ApartmentOutlined = props => <Icon {...props} />
-          export const ApiFilled = props => <Icon {...props} />
-          export const ApiOutlined = props => <Icon {...props} />
-          export const ApiTwoTone = props => <Icon {...props} />
-          export const AppleFilled = props => <Icon {...props} />
-          export const AppleOutlined = props => <Icon {...props} />
-          export const AppstoreAddOutlined = props => <Icon {...props} />
-          export const AppstoreFilled = props => <Icon {...props} />
-          export const AppstoreOutlined = props => <Icon {...props} />
-          export const AppstoreTwoTone = props => <Icon {...props} />
-          export const AreaChartOutlined = props => <Icon {...props} />
-          export const ArrowDownOutlined = props => <Icon {...props} />
-          export const ArrowLeftOutlined = props => <Icon {...props} />
-          export const ArrowRightOutlined = props => <Icon {...props} />
-          export const ArrowUpOutlined = props => <Icon {...props} />
-          export const AuditOutlined = props => <Icon {...props} />
-          export const AudioFilled = props => <Icon {...props} />
-          export const AudioMutedOutlined = props => <Icon {...props} />
-          export const AudioOutlined = props => <Icon {...props} />
-          export const AudioTwoTone = props => <Icon {...props} />
-          export const BarcodeOutlined = props => <Icon {...props} />
-          export const BugFilled = props => <Icon {...props} />
-          export const CarryOutTwoTone = props => <Icon {...props} />
-          export const ClockCircleTwoTone = props => <Icon {...props} />
-          export const CloseCircleOutlined = props => <Icon {...props} />
-          export const CloseCircleTwoTone = props => <Icon {...props} />
-          export const CloseSquareTwoTone = props => <Icon {...props} />
-          export const CloudDownloadOutlined = props => <Icon {...props} />
-          export const CloudUploadOutlined = props => <Icon {...props} />
-          export const ClusterOutlined = props => <Icon {...props} />
-          export const DeleteRowOutlined = props => <Icon {...props} />
-          export const DiffOutlined = props => <Icon {...props} />
-          export const DislikeOutlined = props => <Icon {...props} />
-          export const DollarCircleOutlined = props => <Icon {...props} />
-          export const DribbbleOutlined = props => <Icon {...props} />
-          export const FileDoneOutlined = props => <Icon {...props} />
-          export const FileExclamationTwoTone = props => <Icon {...props} />
-          export const FileJpgOutlined = props => <Icon {...props} />
-          export const FileProtectOutlined = props => <Icon {...props} />
-          export const FileSearchOutlined = props => <Icon {...props} />
-          export const FileZipTwoTone = props => <Icon {...props} />
-          export const FrownTwoTone = props => <Icon {...props} />
-          export const FullscreenExitOutlined = props => <Icon {...props} />
-          export const GitlabOutlined = props => <Icon {...props} />
-          export const GooglePlusCircleFilled = props => <Icon {...props} />
-          export const GroupOutlined = props => <Icon {...props} />
-          export const HistoryOutlined = props => <Icon {...props} />
-          export const HourglassTwoTone = props => <Icon {...props} />
-          export const IeCircleFilled = props => <Icon {...props} />
-          export const MacCommandOutlined = props => <Icon {...props} />
-          export const MehTwoTone = props => <Icon {...props} />
-          export const MergeCellsOutlined = props => <Icon {...props} />
-          export const MessageOutlined = props => <Icon {...props} />
-          export const PaperClipOutlined = props => <Icon {...props} />
-          export const PinterestFilled = props => <Icon {...props} />
-          export const PushpinTwoTone = props => <Icon {...props} />
-          export const ReloadOutlined = props => <Icon {...props} />
-          export const SafetyCertificateTwoTone = props => <Icon {...props} />
-          export const ShopFilled = props => <Icon {...props} />
-          export const ShoppingCartOutlined = props => <Icon {...props} />
-          export const SmileTwoTone = props => <Icon {...props} />
-          export const SolutionOutlined = props => <Icon {...props} />
-          export const TikTokFilled = props => <Icon {...props} />
-          export const TikTokOutlined = props => <Icon {...props} />
-          export const ToolTwoTone = props => <Icon {...props} />
-          export const TruckOutlined = props => <Icon {...props} />
-          export const TwitchFilled = props => <Icon {...props} />
-          export const UngroupOutlined = props => <Icon {...props} />
-          export const UserAddOutlined = props => <Icon {...props} />
-          export const UserOutlined = props => <Icon {...props} />
-          export const WalletFilled = props => <Icon {...props} />
-          export const WalletOutlined = props => <Icon {...props} />
-          export const WalletTwoTone = props => <Icon {...props} />
-          export const WarningFilled = props => <Icon {...props} />
-          export const WarningOutlined = props => <Icon {...props} />
-          export const WarningTwoTone = props => <Icon {...props} />
-          export const WechatFilled = props => <Icon {...props} />
-          export const WechatOutlined = props => <Icon {...props} />
-          export const WeiboCircleFilled = props => <Icon {...props} />
-          export const WeiboCircleOutlined = props => <Icon {...props} />
-          export const WeiboOutlined = props => <Icon {...props} />
-          export const WeiboSquareFilled = props => <Icon {...props} />
-          export const WeiboSquareOutlined = props => <Icon {...props} />
-          export const WhatsAppOutlined = props => <Icon {...props} />
-          export const WifiOutlined = props => <Icon {...props} />
-          export const WindowsFilled = props => <Icon {...props} />
-          export const WindowsOutlined = props => <Icon {...props} />
-          export const WomanOutlined = props => <Icon {...props} />
-          export const XFilled = props => <Icon {...props} />
-          export const YahooFilled = props => <Icon {...props} />
-          export const YahooOutlined = props => <Icon {...props} />
-          export const UserSwitchOutlined = props => <Icon {...props} />
-          export const UnlockTwoTone = props => <Icon {...props} />
-          export const TrademarkOutlined = props => <Icon {...props} />
-          export const YuqueOutlined = props => <Icon {...props} />
-          export const ZhihuOutlined = props => <Icon {...props} />
+          // Create ALL commonly used Ant Design icons to ensure they're available
+          // This expanded list covers the most frequently used icons
+          export const AccountBookFilled = createIconComponent('AccountBookFilled');
+          export const AccountBookOutlined = createIconComponent('AccountBookOutlined');
+          export const AlertFilled = createIconComponent('AlertFilled');
+          export const AlertOutlined = createIconComponent('AlertOutlined');
+          export const AliwangwangOutlined = createIconComponent('AliwangwangOutlined');
+          export const AndroidOutlined = createIconComponent('AndroidOutlined');
+          export const AppleOutlined = createIconComponent('AppleOutlined');
+          export const ArrowDownOutlined = createIconComponent('ArrowDownOutlined');
+          export const ArrowLeftOutlined = createIconComponent('ArrowLeftOutlined');
+          export const ArrowRightOutlined = createIconComponent('ArrowRightOutlined');
+          export const ArrowUpOutlined = createIconComponent('ArrowUpOutlined');
+          export const BarsOutlined = createIconComponent('BarsOutlined');
+          export const CalendarOutlined = createIconComponent('CalendarOutlined');
+          export const CaretDownFilled = createIconComponent('CaretDownFilled');
+          export const CaretDownOutlined = createIconComponent('CaretDownOutlined');
+          export const CaretRightOutlined = createIconComponent('CaretRightOutlined');
+          export const CaretUpOutlined = createIconComponent('CaretUpOutlined');
+          export const CheckCircleFilled = createIconComponent('CheckCircleFilled');
+          export const CheckCircleOutlined = createIconComponent('CheckCircleOutlined');
+          export const CheckOutlined = createIconComponent('CheckOutlined');
+          export const ClockCircleOutlined = createIconComponent('ClockCircleOutlined');
+          export const CloseCircleFilled = createIconComponent('CloseCircleFilled');
+          export const CloseCircleOutlined = createIconComponent('CloseCircleOutlined');
+          export const CloseOutlined = createIconComponent('CloseOutlined');
+          export const CloudDownloadOutlined = createIconComponent('CloudDownloadOutlined');
+          export const CopyOutlined = createIconComponent('CopyOutlined');
+          export const DeleteOutlined = createIconComponent('DeleteOutlined');
+          export const DoubleLeftOutlined = createIconComponent('DoubleLeftOutlined');
+          export const DoubleRightOutlined = createIconComponent('DoubleRightOutlined');
+          export const DownOutlined = createIconComponent('DownOutlined');
+          export const DownloadOutlined = createIconComponent('DownloadOutlined');
+          export const EditOutlined = createIconComponent('EditOutlined');
+          export const EllipsisOutlined = createIconComponent('EllipsisOutlined');
+          export const EnterOutlined = createIconComponent('EnterOutlined');
+          export const ExclamationCircleFilled = createIconComponent('ExclamationCircleFilled');
+          export const ExclamationCircleOutlined = createIconComponent('ExclamationCircleOutlined');
+          export const EyeInvisibleOutlined = createIconComponent('EyeInvisibleOutlined');
+          export const EyeOutlined = createIconComponent('EyeOutlined');
+          export const FileOutlined = createIconComponent('FileOutlined');
+          export const FileTextOutlined = createIconComponent('FileTextOutlined');
+          export const FileTwoTone = createIconComponent('FileTwoTone');
+          export const FilterFilled = createIconComponent('FilterFilled');
+          export const FolderOpenOutlined = createIconComponent('FolderOpenOutlined');
+          export const FolderOutlined = createIconComponent('FolderOutlined');
+          export const HolderOutlined = createIconComponent('HolderOutlined');
+          export const InfoCircleFilled = createIconComponent('InfoCircleFilled');
+          export const InfoCircleOutlined = createIconComponent('InfoCircleOutlined');
+          export const LeftOutlined = createIconComponent('LeftOutlined');
+          export const LoadingOutlined = createIconComponent('LoadingOutlined');
+          export const MinusCircleOutlined = createIconComponent('MinusCircleOutlined');
+          export const MinusOutlined = createIconComponent('MinusOutlined');
+          export const MinusSquareOutlined = createIconComponent('MinusSquareOutlined');
+          export const PaperClipOutlined = createIconComponent('PaperClipOutlined');
+          export const PauseOutlined = createIconComponent('PauseOutlined');
+          export const PictureTwoTone = createIconComponent('PictureTwoTone');
+          export const PlusCircleOutlined = createIconComponent('PlusCircleOutlined');
+          export const PlusOutlined = createIconComponent('PlusOutlined');
+          export const PlusSquareOutlined = createIconComponent('PlusSquareOutlined');
+          export const QuestionCircleOutlined = createIconComponent('QuestionCircleOutlined');
+          export const ReloadOutlined = createIconComponent('ReloadOutlined');
+          export const RightOutlined = createIconComponent('RightOutlined');
+          export const RobotOutlined = createIconComponent('RobotOutlined');
+          export const RotateLeftOutlined = createIconComponent('RotateLeftOutlined');
+          export const RotateRightOutlined = createIconComponent('RotateRightOutlined');
+          export const SearchOutlined = createIconComponent('SearchOutlined');
+          export const SettingOutlined = createIconComponent('SettingOutlined');
+          export const StarFilled = createIconComponent('StarFilled');
+          export const SwapOutlined = createIconComponent('SwapOutlined');
+          export const SwapRightOutlined = createIconComponent('SwapRightOutlined');
+          export const SyncOutlined = createIconComponent('SyncOutlined');
+          export const UpOutlined = createIconComponent('UpOutlined');
+          export const UserAddOutlined = createIconComponent('UserAddOutlined');
+          export const UserOutlined = createIconComponent('UserOutlined');
+          export const VerticalAlignTopOutlined = createIconComponent('VerticalAlignTopOutlined');
+          export const WarningFilled = createIconComponent('WarningFilled');
+          export const WarningOutlined = createIconComponent('WarningOutlined');
+          export const ZoomInOutlined = createIconComponent('ZoomInOutlined');
+          export const ZoomOutOutlined = createIconComponent('ZoomOutOutlined');
 
           // Create a proxy to handle any requested icon
           const handler = {
@@ -237,18 +175,54 @@ const antDesignIconsPlugin = () => {
                 return target[prop];
               }
 
-              // Otherwise return a default empty component
-              return function DefaultIcon(props) {
-                return <span className="anticon" {...props} />;
-              };
+              // For any other icon name that follows the naming convention, create it on demand
+              if (typeof prop === 'string' && /^[A-Z]/.test(prop)) {
+                return createIconComponent(prop);
+              }
+
+              // Return undefined for everything else
+              return undefined;
             }
           };
+
+          // Export the Context
+          export const Context = IconContext;
 
           // Export the createFromIconfontCN function
           export { createFromIconfontCN };
 
+          // Create a proxied version of Icon that dynamically creates icon components on demand
+          const ProxiedIcon = new Proxy(Icon, handler);
+
           // Export default with proxy
-          export default Icon;
+          export default ProxiedIcon;
+        `;
+      }
+
+      // Handle the Context.js file
+      if (id === path.resolve(__dirname, 'src/components/common/es/components/Context.js')) {
+        return `
+          import React from 'react';
+
+          // Add debug log with a unique identifier
+          console.log('==== CONTEXT.JS IS BEING LOADED ====');
+
+          // Create a Context for icon configuration
+          const IconContext = React.createContext({
+            // Default values for the context
+            prefixCls: 'anticon',
+            rootClassName: '',
+            rtl: false
+          });
+
+          // Set displayName directly on the context as recommended by React
+          IconContext.displayName = 'IconContext';
+
+          // Export the default context
+          export default IconContext;
+
+          // Also provide a named export for flexibility
+          export { IconContext };
         `;
       }
 

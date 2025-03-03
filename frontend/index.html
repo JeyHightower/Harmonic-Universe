@@ -11,32 +11,10 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <style>
-      #emergency-button {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background-color: red;
-        color: white;
-        font-size: 16px;
-        padding: 10px 20px;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        z-index: 99999;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-      }
-      #emergency-button:hover {
-        background-color: darkred;
-      }
-    </style>
   </head>
   <body>
     <div id="root"></div>
     <div id="portal-root"></div>
-    <button id="emergency-button" onclick="alert('Emergency button clicked!')">
-      EMERGENCY BUTTON
-    </button>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

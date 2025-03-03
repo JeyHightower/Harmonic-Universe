@@ -1,6 +1,9 @@
+import { DownOutlined } from '@ant-design/icons';
+import { Dropdown, Menu, Space } from 'antd';
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../../../constants/routes';
 import {
   checkAuthState,
   loginFailure,
@@ -83,6 +86,42 @@ function Home() {
 
   console.debug('Rendering Home component:', { isAuthenticated, loading });
 
+  // Test menu items for the dropdown
+  const testMenuItems = [
+    {
+      key: ROUTES.ICON_TEST,
+      label: 'Icon Test',
+    },
+    {
+      key: ROUTES.MODAL_TEST,
+      label: 'Physics Parameters Modal Test',
+    },
+    {
+      key: ROUTES.SIMPLE_MODAL_TEST,
+      label: 'Simple Modal Test',
+    },
+    {
+      key: ROUTES.STANDALONE_TEST,
+      label: 'Standalone Test',
+    },
+    {
+      key: ROUTES.MODAL_ACCESSIBILITY_TEST,
+      label: 'Modal Accessibility Test',
+    },
+    {
+      key: '/test/modal-routes',
+      label: 'Modal Routes Test',
+    },
+    {
+      key: '/modal-examples',
+      label: 'Modal Examples',
+    },
+  ];
+
+  const testMenu = (
+    <Menu items={testMenuItems} onClick={({ key }) => navigate(key)} />
+  );
+
   if (loading) {
     return (
       <div className="home-container">
@@ -115,6 +154,18 @@ function Home() {
           <Button onClick={handleDemoLogin} variant="primary">
             Try Demo
           </Button>
+
+          <Dropdown
+            menu={{ items: testMenuItems, onClick: ({ key }) => navigate(key) }}
+            trigger={['click']}
+          >
+            <Button variant="secondary" style={{ marginLeft: '10px' }}>
+              <Space>
+                Tests
+                <DownOutlined />
+              </Space>
+            </Button>
+          </Dropdown>
         </div>
       </div>
     </div>

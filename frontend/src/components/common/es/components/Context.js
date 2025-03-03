@@ -11,8 +11,8 @@ const IconContext = React.createContext({
     rtl: false
 });
 
-IconContext.Provider.displayName = 'IconContextProvider';
-IconContext.Consumer.displayName = 'IconContextConsumer';
+// Set displayName directly on the context as recommended by React
+IconContext.displayName = 'IconContext';
 
 // Export the default context
 export default IconContext;
