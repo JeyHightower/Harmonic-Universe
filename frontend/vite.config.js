@@ -90,11 +90,14 @@ const antDesignIconsPlugin = () => {
           Icon.Context = IconContext;
 
           // Create a generic function for any other icon and iconFont
-          Icon.createFromIconfontCN = () => {
+          const createFromIconfontCN = () => {
             return function IconFont(props) {
               return <span className="anticon" {...props} />;
             };
           };
+
+          // Assign the function to Icon
+          Icon.createFromIconfontCN = createFromIconfontCN;
 
           // Create icon components
           export const PlusOutlined = props => <Icon {...props} />
@@ -241,6 +244,9 @@ const antDesignIconsPlugin = () => {
             }
           };
 
+          // Export the createFromIconfontCN function
+          export { createFromIconfontCN };
+
           // Export default with proxy
           export default Icon;
         `;
@@ -307,6 +313,59 @@ export default defineConfig({
   build: {
     commonjsOptions: {
       transformMixedEsModules: true,
+    },
+    // Configure a higher chunk size warning limit
+    chunkSizeWarningLimit: 800,
+    // Configure code splitting via Rollup options
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          // Handle React and related packages
+          if (id.includes('node_modules/react/') ||
+            id.includes('node_modules/react-dom/') ||
+            id.includes('node_modules/react-router/') ||
+            id.includes('node_modules/react-router-dom/')) {
+            return 'vendor-react';
+          }
+
+          // Handle Ant Design
+          if (id.includes('node_modules/antd/') ||
+            id.includes('node_modules/@ant-design/')) {
+            return 'vendor-antd';
+          }
+
+          // Handle Redux
+          if (id.includes('node_modules/react-redux/') ||
+            id.includes('node_modules/redux/') ||
+            id.includes('node_modules/@reduxjs/toolkit/') ||
+            id.includes('node_modules/redux-thunk/')) {
+            return 'vendor-redux';
+          }
+
+          // Handle Three.js and 3D libraries
+          if (id.includes('node_modules/three/') ||
+            id.includes('node_modules/@react-three/')) {
+            return 'vendor-three';
+          }
+
+          // Handle other common libraries
+          if (id.includes('node_modules/')) {
+            // Split all other libraries into a separate chunk
+            return 'vendor-misc';
+          }
+
+          // Split the UniverseDetail component's chunks
+          if (id.includes('/UniverseDetail') ||
+            id.includes('/components/features/universe/')) {
+            return 'universe';
+          }
+
+          // Split other large components
+          if (id.includes('/components/features/')) {
+            return 'features';
+          }
+        }
+      }
     },
   },
   optimizeDeps: {
