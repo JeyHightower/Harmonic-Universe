@@ -16,6 +16,11 @@ class Universe(BaseModel):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"))
     version = Column(Integer, default=1)
 
+    # Relationships
+    user = relationship("User", back_populates="universes")
+    scenes = relationship("Scene", back_populates="universe", cascade="all, delete-orphan")
+    physics_parameters = relationship("PhysicsParameters", back_populates="universe", cascade="all, delete-orphan")
+
     # Universe-wide parameters
     physics_params = Column(JSONB, default=lambda: {
         'gravity': {'value': 9.81, 'unit': 'm/s²', 'min': 0, 'max': 20},
@@ -79,10 +84,21 @@ class Universe(BaseModel):
     })
 
     # Relationships
-    user = relationship("User", back_populates="universes")
-    scenes = relationship("Scene", back_populates="universe", cascade="all, delete-orphan")
     physics_objects = relationship("PhysicsObject", back_populates="universe", cascade="all, delete-orphan")
     audio_tracks = relationship("AudioTrack", back_populates="universe", cascade="all, delete-orphan")
+
+    @classmethod
+    def get_by_id(cls, db, universe_id):
+        """Get a universe by ID.
+
+        Args:
+            db: Database session
+            universe_id: Universe ID
+
+        Returns:
+            Universe object or None if not found
+        """
+        return db.query(cls).filter(cls.id == universe_id).first()
 
     def to_dict(self):
         """Convert to dictionary."""

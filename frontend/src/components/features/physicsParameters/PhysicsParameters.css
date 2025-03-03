@@ -9,22 +9,26 @@
   height: 100%;
   background-color: var(--universe-bg);
   border-radius: 0.5rem;
-  padding: 20px;
+  padding: 1.5rem;
   box-shadow: var(--universe-shadow);
   overflow: hidden;
 }
 
-.physics-parameters-manager .header {
+.physics-parameters-manager-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  border-bottom: 1px solid var(--universe-border);
+  padding-bottom: 1rem;
 }
 
-.physics-parameters-manager .header h2 {
+.physics-parameters-manager-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin: 0;
+  color: var(--universe-primary);
   font-size: 1.5rem;
-  color: var(--text-primary);
 }
 
 .physics-parameters-manager-content {
@@ -49,8 +53,9 @@
 
 /* Physics Parameters Item */
 .physics-parameters-list {
-  display: grid;
-  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .physics-parameters-item {
@@ -208,15 +213,7 @@
 
 /* Physics Parameters Modal */
 .physics-parameters-modal {
-  padding: 20px;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.physics-parameters-modal h2 {
-  margin: 0 0 20px 0;
-  color: var(--text-primary);
-  text-align: center;
+  width: 100%;
 }
 
 .physics-parameters-form {
@@ -257,9 +254,10 @@
 
 .modal-actions {
   display: flex;
+  gap: 0.75rem;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
+  padding-top: 1rem;
+  border-top: 1px solid var(--universe-border);
 }
 
 .delete-confirmation {
@@ -307,11 +305,14 @@
 }
 
 .error-message {
-  color: var(--error);
-  background: var(--error-bg);
-  padding: 10px;
-  border-radius: 4px;
-  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--universe-danger);
+  padding: 0.75rem;
+  background-color: rgba(255, 0, 0, 0.1);
+  border-radius: 0.5rem;
+  margin-top: 1rem;
 }
 
 .success-message {
@@ -345,20 +346,6 @@
   }
 
   .form-row {
-    grid-template-columns: 1fr;
-  }
-
-  .parameter-item {
-    flex-direction: column;
-    gap: 15px;
-  }
-
-  .parameter-actions {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  .parameter-controls {
     grid-template-columns: 1fr;
   }
 }

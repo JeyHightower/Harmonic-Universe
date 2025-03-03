@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.db.session import get_db
 from app.models.physics.parameters import PhysicsParameters
-from app.models.universe import Universe
+from app.models.universe.universe import Universe
 from app.core.errors import ValidationError, NotFoundError, AuthorizationError
 import logging
 
@@ -29,7 +29,8 @@ def create_physics_parameters():
             if not universe:
                 raise NotFoundError('Universe not found')
 
-            if universe.user_id != get_jwt_identity():
+            current_user_id = get_jwt_identity()
+            if str(universe.user_id) != str(current_user_id):
                 raise AuthorizationError('Not authorized to modify this universe')
 
             physics_params = PhysicsParameters.from_dict(data)
@@ -55,7 +56,8 @@ def get_physics_parameters(params_id):
 
             # Verify user has access to the universe
             universe = db.query(Universe).filter_by(id=params.universe_id).first()
-            if universe.user_id != get_jwt_identity():
+            current_user_id = get_jwt_identity()
+            if str(universe.user_id) != str(current_user_id):
                 raise AuthorizationError('Not authorized to access these parameters')
 
             return jsonify(params.to_dict())
@@ -75,7 +77,8 @@ def list_universe_parameters(universe_id):
             if not universe:
                 raise NotFoundError('Universe not found')
 
-            if universe.user_id != get_jwt_identity():
+            current_user_id = get_jwt_identity()
+            if str(universe.user_id) != str(current_user_id):
                 raise AuthorizationError('Not authorized to access this universe')
 
             params = db.query(PhysicsParameters).filter_by(universe_id=universe_id).all()
@@ -101,7 +104,8 @@ def update_physics_parameters(params_id):
 
             # Verify user has access to the universe
             universe = db.query(Universe).filter_by(id=params.universe_id).first()
-            if universe.user_id != get_jwt_identity():
+            current_user_id = get_jwt_identity()
+            if str(universe.user_id) != str(current_user_id):
                 raise AuthorizationError('Not authorized to modify these parameters')
 
             # Update fields
@@ -129,7 +133,8 @@ def delete_physics_parameters(params_id):
 
             # Verify user has access to the universe
             universe = db.query(Universe).filter_by(id=params.universe_id).first()
-            if universe.user_id != get_jwt_identity():
+            current_user_id = get_jwt_identity()
+            if str(universe.user_id) != str(current_user_id):
                 raise AuthorizationError('Not authorized to delete these parameters')
 
             db.delete(params)
@@ -168,4 +173,41 @@ def validate_parameters():
 
     except Exception as e:
         logger.error(f"Error validating physics parameters: {str(e)}", exc_info=True)
+        raise
+
+@physics_parameters_bp.route('/validate-parameters', methods=['POST'])
+@jwt_required()
+def validate_physics_parameters():
+    """Validate physics parameters without saving - alias for validate endpoint."""
+    return validate_parameters()
+
+@physics_parameters_bp.route('/', methods=['GET'])
+@jwt_required()
+def list_parameters():
+    """List all physics parameters, with optional filtering by universe."""
+    try:
+        universe_id = request.args.get('universe_id')
+        current_user_id = get_jwt_identity()
+
+        with get_db() as db:
+            if universe_id:
+                # Verify universe exists and user has access
+                universe = db.query(Universe).filter_by(id=universe_id).first()
+                if not universe:
+                    raise NotFoundError('Universe not found')
+
+                if str(universe.user_id) != str(current_user_id):
+                    raise AuthorizationError('Not authorized to access this universe')
+
+                params = db.query(PhysicsParameters).filter_by(universe_id=universe_id).all()
+            else:
+                # Return all parameters the user has access to
+                universes = db.query(Universe).filter_by(user_id=current_user_id).all()
+                universe_ids = [u.id for u in universes]
+                params = db.query(PhysicsParameters).filter(PhysicsParameters.universe_id.in_(universe_ids)).all()
+
+            return jsonify([p.to_dict() for p in params])
+
+    except Exception as e:
+        logger.error(f"Error listing physics parameters: {str(e)}", exc_info=True)
         raise

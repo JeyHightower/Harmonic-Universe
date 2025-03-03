@@ -62,7 +62,9 @@ def generate_audio_track(universe_id: int, parameters: Dict[str, Any]) -> Dict[s
     """Generate an audio track based on universe parameters."""
     try:
         with get_db() as db:
-            universe = Universe.get_by_id(db, universe_id)
+            from app.db.repositories.universe import UniverseRepository
+            universe_repo = UniverseRepository(db)
+            universe = universe_repo.get_universe_by_id(str(universe_id))
             if not universe:
                 raise ValueError(f"Universe {universe_id} not found")
 

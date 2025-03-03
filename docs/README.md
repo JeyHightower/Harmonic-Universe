@@ -4,42 +4,16 @@
 
 ## Overview
 
-Harmonic Universe is a comprehensive platform for universe management, music generation, and real-time collaboration. It features a robust physics engine, audio processing capabilities, and extensive security features.
+Harmonic Universe is an interactive web application that allows users to create and explore musical universes based on physics principles. This project combines music theory, physics simulation, and interactive visualization to create a unique creative tool for musicians, composers, and audio enthusiasts.
 
-## Essential Scripts
+Users can:
 
-- **setup_database.sh**: Sets up the database tables and initializes the database.
-- **test_all_feats_cruds_complete.sh**: Runs comprehensive tests for all features and CRUD operations.
-- **run.sh**: Executes essential scripts and starts the application.
-
-## Features
-
-- User Authentication
-- Universe Management
-- Music Generation
-- Physics Parameters
-- Scene Management
-- Real-time Collaboration
-- Audio Processing
-- Physics Engine
-- Security Features
-- Deployment and Monitoring
-
-## Getting Started
-
-1. Clone the repository.
-2. Run `bash setup_database.sh` to set up the database.
-3. Run `bash test_all_feats_cruds_complete.sh` to verify all features and CRUD operations.
-4. Use `bash run.sh` to start the application.
-
-## Documentation
-
-- See `docs/FEATURES.md` for a detailed overview of all features.
-- See `docs/FEATURES_CHECKLIST.md` for a checklist of implemented features and CRUD operations.
-
-## Contributing
-
-Please refer to `CONTRIBUTING.md` for guidelines on contributing to the project.
+- Create custom universes with custom physics parameters
+- Add and manage physics objects with unique properties
+- Generate music based on the interaction of physics objects
+- Visualize the movement and interaction of objects in real-time
+- Create and manage scenes for different musical compositions
+- Export and share musical compositions
 
 ## Table of Contents
 
@@ -52,6 +26,7 @@ Please refer to `CONTRIBUTING.md` for guidelines on contributing to the project.
   - [Running the Application](#running-the-application)
 - [Usage](#usage)
 - [API Documentation](#api-documentation)
+- [Contributing](#contributing)
 - [License](#license)
 
 ## Features
@@ -281,6 +256,10 @@ The API is organized around RESTful principles with the following main endpoints
 - `/api/scenes`: Scene management
 - `/api/scenes/{scene_id}/physics_parameters`: Physics parameters management
 - `/api/music`: Music generation and export
+
+## Contributing
+
+We welcome contributions to Harmonic Universe! Please see our [Contributing Guide](CONTRIBUTING.md) for more information on how to get involved.
 
 ## License
 

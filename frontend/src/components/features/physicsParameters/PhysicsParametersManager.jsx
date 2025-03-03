@@ -26,7 +26,7 @@ const PhysicsParametersManager = ({ sceneId }) => {
         setError(null);
 
         const response = await api.get(
-          endpoints.scenes.physicsParameters.list(sceneId)
+          `${endpoints.scenes.detail(sceneId)}/physics_parameters`
         );
         setPhysicsParameters(response.data || []);
 
@@ -46,36 +46,10 @@ const PhysicsParametersManager = ({ sceneId }) => {
   }, [sceneId, selectedParamsId]);
 
   // Handle adding new physics parameters
-  const handleAddParameters = async () => {
-    try {
-      const response = await api.post(
-        endpoints.scenes.physicsParameters.create(sceneId),
-        {
-          scene_id: sceneId,
-          // Add default values here
-          gravity: {
-            value: 9.81,
-            unit: 'm/s²',
-            min: 0,
-            max: 20,
-            enabled: true,
-          },
-          air_resistance: {
-            value: 0.1,
-            unit: 'kg/m³',
-            min: 0,
-            max: 1,
-            enabled: true,
-          },
-          // Add other default parameters as needed
-        }
-      );
-      setPhysicsParameters(prev => [...prev, response.data]);
-      setSelectedParamsId(response.data.id);
-    } catch (error) {
-      console.error('Error creating physics parameters:', error);
-      setError('Failed to create physics parameters. Please try again.');
-    }
+  const handleAddParameters = () => {
+    setSelectedParams(null);
+    setModalMode('create');
+    setIsModalVisible(true);
   };
 
   // Handle viewing physics parameters
@@ -86,50 +60,17 @@ const PhysicsParametersManager = ({ sceneId }) => {
   };
 
   // Handle editing physics parameters
-  const handleEditParameters = async (params, updatedData) => {
-    try {
-      if (!params || !params.id) {
-        console.error('Cannot edit physics parameters: Invalid parameter ID');
-        setError('Cannot edit physics parameters: Invalid parameter ID');
-        return;
-      }
-
-      const response = await api.put(
-        endpoints.scenes.physicsParameters.detail(sceneId, params.id),
-        updatedData || params
-      );
-
-      setPhysicsParameters(prev =>
-        prev.map(item => (item.id === response.data.id ? response.data : item))
-      );
-    } catch (error) {
-      console.error('Error updating physics parameters:', error);
-      setError('Failed to update physics parameters. Please try again.');
-    }
+  const handleEditParameters = params => {
+    setSelectedParams(params);
+    setModalMode('edit');
+    setIsModalVisible(true);
   };
 
   // Handle deleting physics parameters
-  const handleDeleteParameters = async params => {
-    try {
-      if (!params || !params.id) {
-        console.error('Cannot delete physics parameters: Invalid parameter ID');
-        setError('Cannot delete physics parameters: Invalid parameter ID');
-        return;
-      }
-
-      await api.delete(
-        endpoints.scenes.physicsParameters.detail(sceneId, params.id)
-      );
-
-      setPhysicsParameters(prev => prev.filter(item => item.id !== params.id));
-      if (selectedParamsId === params.id) {
-        const newList = physicsParameters.filter(item => item.id !== params.id);
-        setSelectedParamsId(newList.length > 0 ? newList[0].id : null);
-      }
-    } catch (error) {
-      console.error('Error deleting physics parameters:', error);
-      setError('Failed to delete physics parameters. Please try again.');
-    }
+  const handleDeleteParameters = params => {
+    setSelectedParams(params);
+    setModalMode('delete');
+    setIsModalVisible(true);
   };
 
   // Handle modal close
@@ -164,16 +105,11 @@ const PhysicsParametersManager = ({ sceneId }) => {
   // Apply physics parameters
   const handleApplyParameters = async params => {
     try {
-      if (!params || !params.id) {
-        console.error('Cannot apply physics parameters: Invalid parameter ID');
-        setError('Cannot apply physics parameters: Invalid parameter ID');
-        return;
-      }
-
       await api.post(
-        endpoints.scenes.physicsParameters.detail(sceneId, params.id) + '/apply'
+        `${endpoints.scenes.detail(sceneId)}/physics_parameters/${
+          params.id
+        }/apply`
       );
-
       // Update UI to indicate parameters are applied
       setPhysicsParameters(prev =>
         prev.map(item => ({
@@ -183,7 +119,6 @@ const PhysicsParametersManager = ({ sceneId }) => {
       );
     } catch (error) {
       console.error('Error applying physics parameters:', error);
-      setError('Failed to apply physics parameters. Please try again.');
     }
   };
 

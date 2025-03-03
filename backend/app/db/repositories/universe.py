@@ -61,12 +61,23 @@ class UniverseRepository:
         self.session.commit()
         return universe
 
-    def delete_universe(self, universe_id: UUID) -> bool:
+    def delete_universe(self, universe_id: str) -> bool:
         """Delete a universe by its ID."""
-        universe = self.get_universe_by_id(universe_id)
-        if not universe:
-            return False
+        try:
+            # Convert string ID to UUID if needed
+            if isinstance(universe_id, str):
+                universe_id = UUID(universe_id)
 
-        self.session.delete(universe)
-        self.session.commit()
-        return True
+            # Get the universe using the get_universe_by_id method instead of get_by_id
+            universe = self.get_universe_by_id(universe_id)
+            if not universe:
+                return False
+
+            self.session.delete(universe)
+            self.session.commit()
+            return True
+        except Exception as e:
+            # Log the error and return False
+            import logging
+            logging.error(f"Error deleting universe: {e}")
+            return False

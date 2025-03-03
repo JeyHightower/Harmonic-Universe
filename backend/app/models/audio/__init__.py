@@ -1,4 +1,9 @@
-"""Audio models package."""
-from .audio_track import AudioTrack
+"""Audio and music-related models module."""
 
-__all__ = ["AudioTrack"]
+from app.models.audio.audio_track import AudioTrack
+from app.models.audio.harmony_parameter import HarmonyParameter
+
+__all__ = [
+    "AudioTrack",
+    "HarmonyParameter"
+]

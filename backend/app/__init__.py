@@ -1,4 +1,3 @@
-"""Flask application factory."""
 from flask import Flask
 from flask_migrate import Migrate
 from flask_cors import CORS
@@ -58,8 +57,31 @@ def create_app(config_class=Config):
     socketio.init_app(app, cors_allowed_origins="*")
 
     # Register blueprints
-    from .api.routes.register_routes import register_routes
-    register_routes(app)
+    from app.api.routes import (
+        auth_bp,
+        universe_bp,
+        audio_bp,
+        visualization_bp,
+        physics_bp,
+        ai_bp,
+        physics_objects_bp,
+        scenes_bp,
+        users_bp,
+        physics_parameters_bp
+    )
+    from app.api.routes.music_flask import music_bp
+
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(universe_bp, url_prefix='/api/universes')
+    app.register_blueprint(audio_bp, url_prefix='/api/audio')
+    app.register_blueprint(visualization_bp, url_prefix='/api/visualizations')
+    app.register_blueprint(physics_bp, url_prefix='/api/physics')
+    app.register_blueprint(ai_bp, url_prefix='/api/ai')
+    app.register_blueprint(physics_objects_bp, url_prefix='/api/physics-objects')
+    app.register_blueprint(music_bp, url_prefix='/api/music')
+    app.register_blueprint(scenes_bp, url_prefix='/api/scenes')
+    app.register_blueprint(users_bp, url_prefix='/api/users')
+    app.register_blueprint(physics_parameters_bp, url_prefix='/api/physics-parameters')
 
     # Register error handlers
     from app.core.error_handlers import register_error_handlers

@@ -79,7 +79,7 @@ class SceneRepository:
         for i, scene_id in enumerate(scene_ids):
             if scene_id in scene_map:
                 scene = scene_map[scene_id]
-                scene.order = i
+                scene.scene_order = i
 
         self.session.commit()
 

@@ -28,6 +28,19 @@ class User(BaseModel):
     scenes = relationship("Scene", back_populates="creator", cascade="all, delete-orphan")
     audio_tracks = relationship("AudioTrack", back_populates="user", cascade="all, delete-orphan")
 
+    @classmethod
+    def get_by_id(cls, db, user_id):
+        """Get a user by ID.
+
+        Args:
+            db: Database session
+            user_id: User ID
+
+        Returns:
+            User object or None if not found
+        """
+        return db.query(cls).filter(cls.id == user_id).first()
+
     def set_password(self, password: str) -> None:
         """Set password hash."""
         self.password_hash = get_password_hash(password)
@@ -44,6 +57,6 @@ class User(BaseModel):
             "email": self.email,
             "is_active": self.is_active,
             "is_verified": self.is_verified,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat()
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
         }

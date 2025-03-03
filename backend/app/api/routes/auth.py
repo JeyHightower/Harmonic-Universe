@@ -1,22 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 """Authentication routes."""
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import (
@@ -31,7 +12,8 @@ from app.core.errors import (
     ValidationError,
     AuthenticationError,
     UserAlreadyExistsError,
-    InvalidCredentialsError
+    InvalidCredentialsError,
+    DatabaseError
 )
 from app.core.security import (
     verify_password,
@@ -48,37 +30,95 @@ logger = logging.getLogger(__name__)
 def register():
     """Register a new user."""
     try:
+        print("DEBUG - Starting registration process")
         data = request.get_json()
+        logger.info(f"Registration attempt with data: {data}")
+        print(f"DEBUG - Registration attempt with data: {data}")
+
+        # Debug request data and headers
+        print(f"DEBUG - Request content type: {request.content_type}")
+        print(f"DEBUG - Request headers: {dict(request.headers)}")
+        print(f"DEBUG - Raw request data: {request.data}")
+
         if not data:
+            logger.warning("Registration failed: No input data provided")
+            print("DEBUG - Registration failed: No input data provided")
             raise ValidationError('No input data provided')
 
         if not all(k in data for k in ('email', 'password', 'username')):
-            raise ValidationError('Missing required fields: email, password, username')
+            missing = [k for k in ('email', 'password', 'username') if k not in data]
+            logger.warning(f"Registration failed: Missing required fields: {missing}")
+            print(f"DEBUG - Registration failed: Missing required fields: {missing}")
+            raise ValidationError(f'Missing required fields: {", ".join(missing)}')
+
+        # Validate data formats
+        if not isinstance(data['email'], str) or '@' not in data['email']:
+            print(f"DEBUG - Invalid email format: {data['email']}")
+            raise ValidationError('Invalid email format')
+
+        if not isinstance(data['username'], str) or len(data['username']) < 3:
+            print(f"DEBUG - Invalid username: {data['username']}")
+            raise ValidationError('Username must be at least 3 characters')
+
+        if not isinstance(data['password'], str) or len(data['password']) < 6:
+            print(f"DEBUG - Invalid password length")
+            raise ValidationError('Password must be at least 6 characters')
 
         with get_db() as db:
+            # Check if email already exists
             if db.query(User).filter_by(email=data['email']).first():
+                logger.warning(f"Registration failed: Email already registered: {data['email']}")
+                print(f"DEBUG - Registration failed: Email already registered: {data['email']}")
                 raise UserAlreadyExistsError('Email already registered')
+
+            # Check if username already exists
             if db.query(User).filter_by(username=data['username']).first():
+                logger.warning(f"Registration failed: Username already taken: {data['username']}")
+                print(f"DEBUG - Registration failed: Username already taken: {data['username']}")
                 raise UserAlreadyExistsError('Username already taken')
 
-            user = User(
-                email=data['email'],
-                username=data['username'],
-                is_active=True
-            )
-            user.set_password(data['password'])
-            db.add(user)
-            db.commit()
+            # Create new user
+            try:
+                print(f"DEBUG - Creating user with email: {data['email']}, username: {data['username']}")
+                user = User(
+                    email=data['email'],
+                    username=data['username'],
+                    is_active=True
+                )
+                print(f"DEBUG - Setting password hash")
+                user.set_password(data['password'])
 
-            access_token = create_access_token(
-                subject=str(user.id),
-                expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-            )
-            refresh_token = create_refresh_token(
-                subject=str(user.id),
-                expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-            )
+                print(f"DEBUG - Adding user to database")
+                db.add(user)
+                print(f"DEBUG - Committing to database")
+                db.commit()
+                print(f"DEBUG - User registered successfully with ID: {user.id}")
+                logger.info(f"User registered successfully: {user.id}")
+            except Exception as e:
+                db.rollback()
+                print(f"DEBUG - Database error during user registration: {str(e)}")
+                logger.error(f"Database error during user registration: {str(e)}", exc_info=True)
+                raise DatabaseError(f"Failed to create user: {str(e)}")
 
+            # Create tokens
+            try:
+                print(f"DEBUG - Creating access token")
+                access_token = create_access_token(
+                    subject=str(user.id),
+                    expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+                )
+                print(f"DEBUG - Creating refresh token")
+                refresh_token = create_refresh_token(
+                    subject=str(user.id),
+                    expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+                )
+            except Exception as e:
+                print(f"DEBUG - Token generation error: {str(e)}")
+                logger.error(f"Token generation error: {str(e)}", exc_info=True)
+                raise AuthenticationError(f"Failed to generate authentication tokens: {str(e)}")
+
+            # Return response
+            print(f"DEBUG - Returning successful response")
             return jsonify({
                 'user': user.to_dict(),
                 'access_token': access_token,
@@ -86,11 +126,17 @@ def register():
                 'token_type': 'bearer'
             }), 201
 
-    except Exception as e:
-        logger.error(f"Registration error: {str(e)}", exc_info=True)
-        if not isinstance(e, (ValidationError, UserAlreadyExistsError)):
-            raise ValidationError('Registration failed. Please try again.')
+    except (ValidationError, UserAlreadyExistsError, AuthenticationError, DatabaseError) as e:
+        # These are expected errors, so we just raise them
+        print(f"DEBUG - Expected error: {type(e).__name__}: {str(e)}")
         raise
+    except Exception as e:
+        # Unexpected errors
+        print(f"DEBUG - Unexpected registration error: {type(e).__name__}: {str(e)}")
+        import traceback
+        print(f"DEBUG - Traceback: {traceback.format_exc()}")
+        logger.error(f"Unexpected registration error: {str(e)}", exc_info=True)
+        raise ValidationError('Registration failed. Please try again.')
 
 @auth_bp.route('/login', methods=['POST'])
 def login():

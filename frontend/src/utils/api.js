@@ -17,6 +17,7 @@ export const endpoints = {
     update: id => `${API_BASE_URL}/api/universes/${id}/`,
     delete: id => `${API_BASE_URL}/api/universes/${id}/`,
     physics: id => `${API_BASE_URL}/api/universes/${id}/physics/`,
+    harmony: id => `${API_BASE_URL}/api/universes/${id}/harmony/`,
   },
   scenes: {
     list: `${API_BASE_URL}/api/scenes/`,
@@ -36,6 +37,18 @@ export const endpoints = {
         `${API_BASE_URL}/api/scenes/${sceneId}/physics_parameters/${paramsId}`,
       delete: (sceneId, paramsId) =>
         `${API_BASE_URL}/api/scenes/${sceneId}/physics_parameters/${paramsId}`,
+    },
+    harmonyParameters: {
+      list: sceneId =>
+        `${API_BASE_URL}/api/scenes/${sceneId}/harmony_parameters`,
+      detail: (sceneId, paramsId) =>
+        `${API_BASE_URL}/api/scenes/${sceneId}/harmony_parameters/${paramsId}`,
+      create: sceneId =>
+        `${API_BASE_URL}/api/scenes/${sceneId}/harmony_parameters`,
+      update: (sceneId, paramsId) =>
+        `${API_BASE_URL}/api/scenes/${sceneId}/harmony_parameters/${paramsId}`,
+      delete: (sceneId, paramsId) =>
+        `${API_BASE_URL}/api/scenes/${sceneId}/harmony_parameters/${paramsId}`,
     },
   },
   physicsObjects: {

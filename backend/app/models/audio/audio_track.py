@@ -33,6 +33,6 @@ class AudioTrack(BaseModel):
             "file_path": self.file_path,
             "duration": self.duration,
             "parameters": self.parameters,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat()
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
         }

@@ -30,6 +30,8 @@ class PhysicsParameterRepository:
                 id = UUID(id)
             return self.session.query(PhysicsParameter).filter_by(id=id).first()
         except ValueError:
+            import logging
+            logging.error(f"Invalid physics parameter ID format: {id}")
             return None
 
     def create_with_scene(self, obj_in: dict) -> PhysicsParameter:
@@ -44,14 +46,20 @@ class PhysicsParameterRepository:
 
     def update(self, db_obj: PhysicsParameter, obj_in: dict) -> PhysicsParameter:
         """Update physics parameters."""
-        # Update fields
-        for field, value in obj_in.items():
-            if hasattr(db_obj, field):
-                setattr(db_obj, field, value)
+        try:
+            # Update fields
+            for field, value in obj_in.items():
+                if hasattr(db_obj, field):
+                    setattr(db_obj, field, value)
 
-        self.session.commit()
-        self.session.refresh(db_obj)
-        return db_obj
+            self.session.commit()
+            self.session.refresh(db_obj)
+            return db_obj
+        except Exception as e:
+            self.session.rollback()
+            import logging
+            logging.error(f"Error updating physics parameter: {e}")
+            raise
 
     def remove(self, id: str) -> bool:
         """Remove physics parameters."""
@@ -67,3 +75,8 @@ class PhysicsParameterRepository:
             return True
         except ValueError:
             raise NotFoundError(f"Invalid physics parameter ID format: {id}")
+        except Exception as e:
+            self.session.rollback()
+            import logging
+            logging.error(f"Error removing physics parameter: {e}")
+            raise

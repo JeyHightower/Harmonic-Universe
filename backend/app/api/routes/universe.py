@@ -9,8 +9,11 @@ from app import socketio
 from app.core.auth import require_auth
 from datetime import datetime
 from uuid import UUID
+from app.db.repositories.universe import UniverseRepository
+import logging
 
 universe_bp = Blueprint('universe', __name__)
+logger = logging.getLogger(__name__)
 
 @universe_bp.route('/', methods=['GET'], strict_slashes=False)
 @jwt_required()
@@ -79,8 +82,9 @@ def get_universe(universe_id):
 
     with get_db() as session:
         try:
-            # Get the universe using get_by_id
-            universe = Universe.get_by_id(session, universe_id)
+            # Use the repository pattern to get the universe
+            universe_repo = UniverseRepository(session)
+            universe = universe_repo.get_universe_by_id(str(universe_id))
 
             if not universe:
                 raise NotFoundError('Universe not found')
@@ -106,6 +110,8 @@ def get_universe(universe_id):
 @jwt_required()
 def update_universe(universe_id):
     """Update a universe."""
+    from flask import current_app
+
     try:
         data = request.get_json()
         if not data:
@@ -115,19 +121,22 @@ def update_universe(universe_id):
         allowed_fields = {'name', 'description', 'is_public'}
         invalid_fields = set(data.keys()) - allowed_fields
         if invalid_fields:
-            return jsonify({
-                'error_code': 'ValidationError',
-                'message': f'Invalid fields: {", ".join(invalid_fields)}'
-            }), 400
+            raise ValidationError(f'Invalid fields: {", ".join(invalid_fields)}')
 
         with get_db() as db:
-            universe = Universe.get_by_id(db, universe_id)
+            universe_repo = UniverseRepository(db)
+            universe = universe_repo.get_universe_by_id(str(universe_id))
             if not universe:
                 raise NotFoundError('Universe not found')
 
             # Check if the current user is the owner
             current_user_id = get_jwt_identity()
-            if str(universe.user_id) != current_user_id:
+            try:
+                current_user_uuid = UUID(current_user_id)
+            except ValueError:
+                raise AuthorizationError('Invalid user ID format')
+
+            if str(universe.user_id) != str(current_user_uuid):
                 raise AuthorizationError('Not authorized to modify this universe')
 
             # Update allowed fields
@@ -139,25 +148,38 @@ def update_universe(universe_id):
             universe.save(db)
             return jsonify(universe.to_dict())
 
-    except Exception as e:
-        logger.error(f"Update universe error: {str(e)}", exc_info=True)
-        if not isinstance(e, (ValidationError, NotFoundError, AuthorizationError)):
-            raise ValidationError('Failed to update universe')
+    except ValidationError as e:
+        current_app.logger.warning(f"Validation error in update_universe: {str(e)}")
         raise
+    except NotFoundError as e:
+        current_app.logger.warning(f"Not found error in update_universe: {str(e)}")
+        raise
+    except AuthorizationError as e:
+        current_app.logger.warning(f"Authorization error in update_universe: {str(e)}")
+        raise
+    except Exception as e:
+        # Use app.logger instead of undefined logger
+        current_app.logger.error(f"Update universe error: {str(e)}", exc_info=True)
+        raise ValidationError('Failed to update universe')
 
 @universe_bp.route('/<uuid:universe_id>/', methods=['DELETE'])
 @jwt_required()
 def delete_universe(universe_id):
     """Delete a universe."""
-    current_user_id = get_jwt_identity()
-    with get_db() as db:
-        try:
-            universe = Universe.get_by_id(db, universe_id)
+    from flask import current_app
+
+    try:
+        current_user_id = get_jwt_identity()
+
+        with get_db() as db:
+            # Use the repository pattern to get the universe
+            universe_repo = UniverseRepository(db)
+            universe = universe_repo.get_universe_by_id(str(universe_id))
+
             if not universe:
-                raise ValidationError('Universe not found')
+                raise NotFoundError('Universe not found')
 
             # Convert current_user_id to UUID for comparison
-            from uuid import UUID
             try:
                 current_user_uuid = UUID(current_user_id)
             except ValueError:
@@ -167,17 +189,28 @@ def delete_universe(universe_id):
             if str(universe.user_id) != str(current_user_uuid):
                 raise AuthorizationError('Not authorized to delete this universe')
 
-            db.delete(universe)
-            db.commit()
-            return '', 204
-        except (ValidationError, AuthorizationError) as e:
-            db.rollback()
-            raise
-        except Exception as e:
-            db.rollback()
-            raise ValidationError(f"Error deleting universe: {str(e)}")
+            # Use the repository to delete the universe - pass string representation
+            success = universe_repo.delete_universe(str(universe_id))
+            if not success:
+                raise ValidationError('Failed to delete universe')
 
-@universe_bp.route('/<uuid:universe_id>/physics/', methods=['PUT'])
+            return '', 204
+
+    except ValidationError as e:
+        current_app.logger.warning(f"Validation error in delete_universe: {str(e)}")
+        raise
+    except NotFoundError as e:
+        current_app.logger.warning(f"Not found error in delete_universe: {str(e)}")
+        raise
+    except AuthorizationError as e:
+        current_app.logger.warning(f"Authorization error in delete_universe: {str(e)}")
+        raise
+    except Exception as e:
+        # Use app.logger instead of undefined logger
+        current_app.logger.error(f"Delete universe error: {str(e)}", exc_info=True)
+        raise ValidationError(f'Error deleting universe: {str(e)}')
+
+@universe_bp.route('/<uuid:universe_id>/physics', methods=['PUT'])
 @jwt_required()
 def update_physics(universe_id):
     """Update universe physics parameters."""
@@ -195,7 +228,14 @@ def update_physics(universe_id):
                 raise AuthorizationError('Not authorized to update this universe')
 
             data = request.get_json()
-            if not data or 'physics_params' not in data:
+            if not data:
+                return jsonify({
+                    'error_code': 'ValidationError',
+                    'message': 'Invalid physics parameters'
+                }), 400
+
+            physics_params = data.get('physics_params')
+            if not physics_params:
                 return jsonify({
                     'error_code': 'ValidationError',
                     'message': 'Invalid physics parameters'
@@ -203,7 +243,7 @@ def update_physics(universe_id):
 
             try:
                 # Update physics parameters
-                universe.update_physics(data['physics_params'])
+                universe.physics_params = physics_params
 
                 # Add universe to session and commit
                 db.add(universe)
@@ -249,7 +289,8 @@ def update_harmony(universe_id):
 
     with get_db() as db:
         try:
-            universe = Universe.get_by_id(db, universe_id)
+            universe_repo = UniverseRepository(db)
+            universe = universe_repo.get_universe_by_id(str(universe_id))
             if not universe:
                 raise ValidationError('Universe not found')
 
@@ -287,7 +328,8 @@ def add_story_point(universe_id):
 
     with get_db() as db:
         try:
-            universe = Universe.get_by_id(db, universe_id)
+            universe_repo = UniverseRepository(db)
+            universe = universe_repo.get_universe_by_id(str(universe_id))
             if not universe:
                 raise ValidationError('Universe not found')
 
@@ -324,7 +366,8 @@ def remove_story_point(universe_id, point_id):
 
     with get_db() as db:
         try:
-            universe = Universe.get_by_id(db, universe_id)
+            universe_repo = UniverseRepository(db)
+            universe = universe_repo.get_universe_by_id(str(universe_id))
             if not universe:
                 raise ValidationError('Universe not found')
 

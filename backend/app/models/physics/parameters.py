@@ -8,6 +8,7 @@ from uuid import uuid4
 class PhysicsParameters(Base, TimestampMixin):
     """Physics parameters model."""
     __tablename__ = "physics_parameters"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(String, primary_key=True, default=lambda: str(uuid4()))
     name = Column(String, nullable=False)

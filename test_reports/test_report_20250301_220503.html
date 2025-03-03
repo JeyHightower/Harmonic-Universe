@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harmonic Universe - Feature Verification Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .summary {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .summary-box {
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+            flex: 1;
+            margin: 0 5px;
+        }
+        .pass-box {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .fail-box {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .skip-box {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .total-box {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+        .feature-section {
+            margin-bottom: 30px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .feature-header {
+            background-color: #e9ecef;
+            padding: 10px 15px;
+            font-weight: bold;
+            border-bottom: 1px solid #dee2e6;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        th {
+            background-color: #f8f9fa;
+        }
+        .result-pass {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .result-fail {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .result-skip {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        .timestamp {
+            color: #6c757d;
+            font-size: 0.85em;
+        }
+        .meta-info {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        .expandable {
+            cursor: pointer;
+        }
+        .details-row {
+            display: none;
+            background-color: #f8f9fa;
+        }
+        .details-cell {
+            padding: 15px;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .mock-mode-banner {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #ffeeba;
+        }
+    </style>
+    <script>
+        function toggleDetails(rowId) {
+            const detailsRow = document.getElementById(rowId);
+            if (detailsRow.style.display === 'table-row') {
+                detailsRow.style.display = 'none';
+            } else {
+                detailsRow.style.display = 'table-row';
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Harmonic Universe - Feature Verification Report</h1>
+
+        <div class="meta-info">
+            <strong>Generated:</strong> 2025-03-01 22:05:03
+            <br>
+            <strong>Execution Time:</strong> 0.31 seconds
+        </div>
+
+        
+
+        <div class="summary">
+            <div class="summary-box total-box">
+                <h2>1</h2>
+                <div>Total Tests</div>
+            </div>
+            <div class="summary-box pass-box">
+                <h2>1</h2>
+                <div>Passed</div>
+            </div>
+            <div class="summary-box fail-box">
+                <h2>0</h2>
+                <div>Failed</div>
+            </div>
+            <div class="summary-box skip-box">
+                <h2>0</h2>
+                <div>Skipped</div>
+            </div>
+        </div>
+
+        <h2>Test Results</h2>
+
+        <div class="feature-section">
+            <div class="feature-header">
+                User Authentication (1/1 passed)
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Test</th>
+                        <th>Result</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    <tr class="expandable" onclick="toggleDetails('details-User-Authentication-0')">
+                        <td>User registration</td>
+                        <td class="result-pass">PASS</td>
+                        <td class="timestamp">22:05:03</td>
+                    </tr>
+
+                    <tr id="details-User-Authentication-0" class="details-row">
+                        <td colspan="3" class="details-cell">
+
+                            <strong>Details:</strong>
+                            <pre>{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc0MDg4ODMwMywianRpIjoiY2ZhZDJmMDUtZTg4MS00ZjQ1LTgwMGItNzFmZTZmM2JhMzg0IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjVkYTEwODFhLTU2MGItNDkyOC05NzQwLWVmYzZhNTI0MjlkMyIsIm5iZiI6MTc0MDg4ODMwMywiY3NyZiI6IjMxMDFmY2VlLTM1NGEtNDFhZi1iMTM5LWUyZGI2ZjE3YjJlNCIsImV4cCI6MTc0MDg5MTkwM30.pH_dmM6uNc7hoy7VRB8bajueM3IcNQM8yXTvwldYVJg",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc0MDg4ODMwMywianRpIjoiYWUxNTMyMDEtZTM5YS00YjM0LTk0ZTMtMzFlOWEwMGZiNjMwIiwidHlwZSI6InJlZnJlc2giLCJzdWIiOiI1ZGExMDgxYS01NjBiLTQ5MjgtOTc0MC1lZmM2YTUyNDI5ZDMiLCJuYmYiOjE3NDA4ODgzMDMsImNzcmYiOiJlMTE0MDM2Ni05ODBjLTQzOWQtODBmMS1iOTgxOTJlZWQ2MDUiLCJleHAiOjE3NDM0ODAzMDN9.pmQ9cXbSnYGC5NlB8Lai0mk7ISE6OeZ5wShhtW7HQHY",
+  "token_type": "bearer",
+  "user": {
+    "created_at": "2025-03-02T04:05:03.895944",
+    "email": "test-9229d3c6-af32-4ab5-82eb-0781781a1a1e@example.com",
+    "id": "5da1081a-560b-4928-9740-efc6a52429d3",
+    "is_active": true,
+    "is_verified": false,
+    "updated_at": "2025-03-02T04:05:03.895950",
+    "username": "testuser-f7595591"
+  }
+}</pre>
+
+                        </td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</body>
+</html>

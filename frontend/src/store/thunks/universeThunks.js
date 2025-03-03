@@ -110,7 +110,7 @@ export const updateHarmonyParams = createAsyncThunk(
   async ({ universeId, harmonyParams }, { rejectWithValue }) => {
     try {
       const response = await api.put(
-        `/universes/${universeId}/harmony/`,
+        endpoints.universes.harmony(universeId),
         harmonyParams
       );
       return response.data;
