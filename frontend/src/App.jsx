@@ -1,14 +1,23 @@
 import { ConfigProvider, theme } from 'antd';
 import React, { lazy, Suspense, useEffect } from 'react';
 import { Provider } from 'react-redux';
-import { Route, HashRouter as Router, Routes } from 'react-router-dom';
+import {
+  Route,
+  HashRouter as Router,
+  Routes,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
 import Layout from './components/layout/Layout';
+import { useModal } from './contexts/ModalContext';
 import ModalProvider from './providers/ModalProvider';
 import { ROUTES } from './routes';
 import ProtectedRoute from './routes/ProtectedRoute';
 import store from './store';
 import './styles/global.css';
 import './styles/theme.css';
+import { ModalRegistry } from './utils/modalRegistry';
+import { handleModalRoute } from './utils/modalRouteHandler';
 import { initializeTheme } from './utils/themeUtils';
 
 // Lazy-loaded components
@@ -37,6 +46,34 @@ const PhysicsParametersModalTest = lazy(() =>
 );
 const ModalTest = lazy(() => import('./components/test/ModalTest'));
 const StandaloneTest = lazy(() => import('./components/test/StandaloneTest'));
+const ModalAccessibilityTest = lazy(() =>
+  import('./components/test/ModalAccessibilityTest')
+);
+
+// Modal Route Handler Component
+const ModalRouteHandler = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { openModalByType } = useModal();
+
+  useEffect(() => {
+    // Check if the current path is an API modal route
+    const path = location.pathname;
+
+    if (path.startsWith('/api/')) {
+      // Try to handle the route as a modal
+      const handled = handleModalRoute(path, openModalByType);
+
+      if (handled) {
+        // If we successfully opened a modal, navigate back to the previous page
+        // or to the home page if there's no history
+        navigate(-1, { replace: true });
+      }
+    }
+  }, [location, navigate, openModalByType]);
+
+  return null;
+};
 
 const App = () => {
   // Initialize theme on app load
@@ -82,6 +119,8 @@ const App = () => {
       <ConfigProvider theme={themeConfig}>
         <Router>
           <ModalProvider>
+            <ModalRegistry />
+            <ModalRouteHandler />
             <Suspense fallback={<div>Loading...</div>}>
               <Routes>
                 <Route element={<Layout />}>
@@ -134,10 +173,15 @@ const App = () => {
                     path={ROUTES.SIMPLE_MODAL_TEST}
                     element={<ModalTest />}
                   />
+                  <Route
+                    path={ROUTES.STANDALONE_TEST}
+                    element={<StandaloneTest />}
+                  />
+                  <Route
+                    path={ROUTES.MODAL_ACCESSIBILITY_TEST}
+                    element={<ModalAccessibilityTest />}
+                  />
                 </Route>
-
-                {/* Standalone route outside of Layout */}
-                <Route path="/standalone-test" element={<StandaloneTest />} />
               </Routes>
             </Suspense>
           </ModalProvider>

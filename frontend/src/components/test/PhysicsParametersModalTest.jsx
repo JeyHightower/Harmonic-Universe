@@ -11,7 +11,7 @@ import { createPhysicsParametersModal } from '../../utils/modalHelpers';
 /**
  * Test component for PhysicsParametersModal
  * This component allows manual testing of the PhysicsParametersModal
- * after it was updated to use Modal.jsx instead of BaseModal.jsx
+ * functionality with the standardized Modal component
  */
 const PhysicsParametersModalTest = () => {
   const [isOpen, setIsOpen] = useState(false);

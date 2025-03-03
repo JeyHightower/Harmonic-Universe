@@ -5,6 +5,7 @@
 import React from 'react';
 
 // Import the PhysicsParametersModal component
+import UniverseCreate from '../components/features/universe/UniverseCreate';
 import PhysicsParametersModal from '../features/physicsParameters/PhysicsParametersModal';
 
 // Alert Modal Component
@@ -164,3 +165,26 @@ export const createPhysicsParametersModal = (universeId, initialData = null, opt
     preventBackdropClick: options.preventBackdropClick || false,
   },
 });
+
+/**
+ * Creates a universe creation modal configuration
+ * @param {function} onSuccess - Function to call when universe is created
+ * @param {Object} options - Additional modal options
+ * @returns {Object} Modal configuration
+ */
+export const createUniverseModal = (onSuccess, options = {}) => {
+  return {
+    component: UniverseCreate,
+    props: {
+      onSuccess
+    },
+    modalProps: {
+      title: options.title || 'Create New Universe',
+      size: options.size || 'medium',
+      type: 'form',
+      animation: options.animation || 'slide',
+      position: options.position || 'center',
+      preventBackdropClick: options.preventBackdropClick || true
+    }
+  };
+};

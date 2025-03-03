@@ -27,15 +27,21 @@ const Modal = forwardRef(
       preventBackdropClick = false,
       contentClassName = '',
       footerContent = null,
+      ariaDescribedBy = '', // New prop for additional accessibility
+      initialFocusRef = null, // New prop to specify which element gets initial focus
     },
     ref
   ) => {
     const modalRef = useRef(null);
+    const contentRef = useRef(null);
     const previousFocus = useRef(null);
     const [isClosing, setIsClosing] = useState(false);
     const [scrollY, setScrollY] = useState(0);
     const [stackLevel, setStackLevel] = useState(0);
     const portalRoot = document.getElementById('portal-root') || document.body;
+    const modalId = useRef(`modal-${Math.random().toString(36).substr(2, 9)}`);
+    const titleId = `${modalId.current}-title`;
+    const contentId = `${modalId.current}-content`;
 
     // Use the forwarded ref if provided, otherwise use our internal ref
     const combinedRef = ref || modalRef;
@@ -48,6 +54,46 @@ const Modal = forwardRef(
         onClose();
       }, 200); // Match the CSS transition duration
     }, [onClose, isClosing]);
+
+    // Focus trap implementation
+    useEffect(() => {
+      if (!isOpen || !modalRef.current) return;
+
+      const modalElement = modalRef.current;
+
+      // Get all focusable elements within the modal
+      const focusableElements = modalElement.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      const handleTabKey = e => {
+        // If not Tab key, do nothing
+        if (e.key !== 'Tab') return;
+
+        // If Shift+Tab on first element, move to last element
+        if (e.shiftKey && document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement.focus();
+        }
+        // If Tab on last element, move to first element
+        else if (!e.shiftKey && document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement.focus();
+        }
+      };
+
+      const handleKeyDown = e => {
+        handleTabKey(e);
+      };
+
+      document.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }, [isOpen]);
 
     // Handle body class and focus management
     useEffect(() => {
@@ -81,10 +127,21 @@ const Modal = forwardRef(
           document.body.style.overflow = 'hidden';
         }
 
-        // Focus the modal
+        // Focus the specified element or default to modal
         requestAnimationFrame(() => {
-          if (modalRef.current) {
-            modalRef.current.focus();
+          if (initialFocusRef && initialFocusRef.current) {
+            initialFocusRef.current.focus();
+          } else if (modalRef.current) {
+            // Find the first focusable element in the modal
+            const firstFocusable = modalRef.current.querySelector(
+              'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            );
+
+            if (firstFocusable) {
+              firstFocusable.focus();
+            } else {
+              modalRef.current.focus();
+            }
           }
         });
       }
@@ -111,7 +168,7 @@ const Modal = forwardRef(
           }
         }
       };
-    }, [isOpen]);
+    }, [isOpen, initialFocusRef]);
 
     // Handle ESC key press
     useEffect(() => {
@@ -168,24 +225,31 @@ const Modal = forwardRef(
       .filter(Boolean)
       .join(' ');
 
+    // Determine aria attributes
+    const ariaAttributes = {
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-labelledby': titleId,
+    };
+
+    // Only add aria-describedby if we have a description
+    if (ariaDescribedBy) {
+      ariaAttributes['aria-describedby'] = ariaDescribedBy;
+    } else if (contentId) {
+      ariaAttributes['aria-describedby'] = contentId;
+    }
+
     const modalContent = (
       <div
         className={overlayClasses}
         onClick={handleOverlayClick}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="modal-title"
         style={{ zIndex: 9999 + stackLevel }} // Increase z-index based on stack level
         ref={combinedRef}
+        {...ariaAttributes}
       >
-        <div
-          ref={modalRef}
-          className={modalClasses}
-          tabIndex={-1}
-          aria-labelledby="modal-title"
-        >
+        <div ref={modalRef} className={modalClasses} tabIndex={-1}>
           <div className="modal-header">
-            <h2 id="modal-title">{title}</h2>
+            <h2 id={titleId}>{title}</h2>
             {showCloseButton && (
               <button
                 type="button"
@@ -197,7 +261,13 @@ const Modal = forwardRef(
               </button>
             )}
           </div>
-          <div className={`modal-content ${contentClassName}`}>{children}</div>
+          <div
+            id={contentId}
+            ref={contentRef}
+            className={`modal-content ${contentClassName}`}
+          >
+            {children}
+          </div>
           {footerContent && <div className="modal-footer">{footerContent}</div>}
         </div>
       </div>
@@ -222,6 +292,8 @@ Modal.propTypes = {
   preventBackdropClick: PropTypes.bool,
   contentClassName: PropTypes.string,
   footerContent: PropTypes.node,
+  ariaDescribedBy: PropTypes.string,
+  initialFocusRef: PropTypes.shape({ current: PropTypes.any }),
 };
 
 Modal.defaultProps = {
@@ -237,6 +309,8 @@ Modal.defaultProps = {
   preventBackdropClick: false,
   contentClassName: '',
   footerContent: null,
+  ariaDescribedBy: '',
+  initialFocusRef: null,
 };
 
 export default Modal;

@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useReducer,
+  useState,
 } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
@@ -12,6 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 // Initial state
 const initialState = {
   modals: [], // Array of modal objects
+  modalRegistry: {}, // Registry of modal types to component mappings
 };
 
 // Action types
@@ -20,6 +22,7 @@ const ACTIONS = {
   CLOSE_MODAL: 'CLOSE_MODAL',
   CLOSE_ALL_MODALS: 'CLOSE_ALL_MODALS',
   UPDATE_MODAL: 'UPDATE_MODAL',
+  REGISTER_MODAL: 'REGISTER_MODAL',
 };
 
 // Reducer function
@@ -49,6 +52,14 @@ const modalReducer = (state, action) => {
             : modal
         ),
       };
+    case ACTIONS.REGISTER_MODAL:
+      return {
+        ...state,
+        modalRegistry: {
+          ...state.modalRegistry,
+          [action.payload.type]: action.payload.config,
+        },
+      };
     default:
       return state;
   }
@@ -59,21 +70,71 @@ export const ModalContext = createContext(initialState);
 
 export const ModalProvider = ({ children }) => {
   const [state, dispatch] = useReducer(modalReducer, initialState);
+  const [isInitialized, setIsInitialized] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Initialize from URL if needed
+  useEffect(() => {
+    if (isInitialized) return;
+
+    const searchParams = new URLSearchParams(location.search);
+    const modalType = searchParams.get('modal');
+    const modalId = searchParams.get('modalId');
+    const modalData = searchParams.get('modalData');
+
+    // If URL has modal info but no matching modal is open, try to open it
+    if (modalType && !state.modals.some(m => m.id === modalId)) {
+      const registeredModal = state.modalRegistry[modalType];
+
+      if (registeredModal) {
+        // Parse modalData if it exists
+        let parsedData = {};
+        if (modalData) {
+          try {
+            parsedData = JSON.parse(atob(modalData));
+          } catch (error) {
+            console.error('Failed to parse modal data:', error);
+          }
+        }
+
+        // Open the registered modal with the provided data
+        const { component, getProps, getModalProps } = registeredModal;
+
+        const id = modalId || uuidv4();
+        const modalConfig = {
+          id,
+          component,
+          props: getProps ? getProps(parsedData) : parsedData,
+          modalProps: {
+            isOpen: true,
+            size: 'medium',
+            type: 'default',
+            animation: 'fade',
+            position: 'center',
+            ...(getModalProps ? getModalProps(parsedData) : {}),
+          },
+          modalType,
+        };
+
+        dispatch({
+          type: ACTIONS.OPEN_MODAL,
+          payload: modalConfig,
+        });
+      }
+    }
+
+    setIsInitialized(true);
+  }, [location, state.modalRegistry, state.modals, isInitialized]);
+
   // Handle URL changes to sync with modal state
   useEffect(() => {
+    if (!isInitialized) return;
+
     // Check if there's a modal parameter in the URL
     const searchParams = new URLSearchParams(location.search);
     const modalType = searchParams.get('modal');
     const modalId = searchParams.get('modalId');
-
-    // If URL has modal info but no matching modal is open, try to open it
-    if (modalType && !state.modals.some(m => m.id === modalId)) {
-      // This would require additional handling based on your app's needs
-      // For example, you might have a mapping of modal types to components
-    }
 
     // If modals close, update URL (only if URL has modal params)
     if (state.modals.length === 0 && (modalType || modalId)) {
@@ -81,13 +142,32 @@ export const ModalProvider = ({ children }) => {
       const newSearchParams = new URLSearchParams(location.search);
       newSearchParams.delete('modal');
       newSearchParams.delete('modalId');
+      newSearchParams.delete('modalData');
 
       const newSearch = newSearchParams.toString();
       const newPath = `${location.pathname}${newSearch ? `?${newSearch}` : ''}`;
 
       navigate(newPath, { replace: true });
     }
-  }, [location, navigate, state.modals]);
+  }, [location, navigate, state.modals, isInitialized]);
+
+  // Register a modal type with its component and config
+  const registerModal = useCallback(
+    (type, component, { getProps, getModalProps } = {}) => {
+      dispatch({
+        type: ACTIONS.REGISTER_MODAL,
+        payload: {
+          type,
+          config: {
+            component,
+            getProps,
+            getModalProps,
+          },
+        },
+      });
+    },
+    []
+  );
 
   // Open a new modal
   const openModal = useCallback(
@@ -97,6 +177,7 @@ export const ModalProvider = ({ children }) => {
       modalProps = {},
       updateUrl = false,
       modalType = '',
+      preserveState = false,
     }) => {
       const id = uuidv4();
       const modalConfig = {
@@ -125,8 +206,15 @@ export const ModalProvider = ({ children }) => {
         searchParams.set('modal', modalType);
         searchParams.set('modalId', id);
 
+        // Store modal state in URL if preserveState is true
+        if (preserveState && Object.keys(props).length > 0) {
+          // Base64 encode the props to keep URL clean
+          const encodedData = btoa(JSON.stringify(props));
+          searchParams.set('modalData', encodedData);
+        }
+
         navigate(`${location.pathname}?${searchParams.toString()}`, {
-          replace: true, // Replace current history entry to avoid navigation issues
+          replace: !preserveState, // Only replace if we're not preserving state
         });
       }
 
@@ -135,9 +223,34 @@ export const ModalProvider = ({ children }) => {
     [navigate, location]
   );
 
+  // Open a registered modal by type
+  const openModalByType = useCallback(
+    (modalType, data = {}, options = {}) => {
+      const registeredModal = state.modalRegistry[modalType];
+
+      if (!registeredModal) {
+        console.error(`Modal type '${modalType}' is not registered`);
+        return null;
+      }
+
+      const { component, getProps, getModalProps } = registeredModal;
+
+      return openModal({
+        component,
+        props: getProps ? getProps(data) : data,
+        modalProps: getModalProps ? getModalProps(data) : {},
+        updateUrl: options.updateUrl !== undefined ? options.updateUrl : true,
+        modalType,
+        preserveState:
+          options.preserveState !== undefined ? options.preserveState : true,
+      });
+    },
+    [state.modalRegistry, openModal]
+  );
+
   // Close a specific modal by ID
   const closeModal = useCallback(
-    id => {
+    (id, options = {}) => {
       const modalToClose = state.modals.find(modal => modal.id === id);
 
       dispatch({
@@ -154,13 +267,17 @@ export const ModalProvider = ({ children }) => {
         if (urlModalId === id) {
           searchParams.delete('modal');
           searchParams.delete('modalId');
+          searchParams.delete('modalData');
 
           const newSearch = searchParams.toString();
           const newPath = `${location.pathname}${
             newSearch ? `?${newSearch}` : ''
           }`;
 
-          navigate(newPath, { replace: true });
+          // Determine whether to replace the history entry
+          const shouldReplace =
+            options.replace !== undefined ? options.replace : true;
+          navigate(newPath, { replace: shouldReplace });
         }
       }
     },
@@ -168,23 +285,36 @@ export const ModalProvider = ({ children }) => {
   );
 
   // Close all modals
-  const closeAllModals = useCallback(() => {
-    dispatch({
-      type: ACTIONS.CLOSE_ALL_MODALS,
-    });
+  const closeAllModals = useCallback(
+    (options = {}) => {
+      dispatch({
+        type: ACTIONS.CLOSE_ALL_MODALS,
+      });
 
-    // Clean up URL if it has modal params
-    const searchParams = new URLSearchParams(window.location.search);
-    if (searchParams.has('modal') || searchParams.has('modalId')) {
-      searchParams.delete('modal');
-      searchParams.delete('modalId');
+      // Clean up URL if it has modal params
+      const searchParams = new URLSearchParams(window.location.search);
+      if (
+        searchParams.has('modal') ||
+        searchParams.has('modalId') ||
+        searchParams.has('modalData')
+      ) {
+        searchParams.delete('modal');
+        searchParams.delete('modalId');
+        searchParams.delete('modalData');
 
-      const newSearch = searchParams.toString();
-      const newPath = `${location.pathname}${newSearch ? `?${newSearch}` : ''}`;
+        const newSearch = searchParams.toString();
+        const newPath = `${location.pathname}${
+          newSearch ? `?${newSearch}` : ''
+        }`;
 
-      navigate(newPath, { replace: true });
-    }
-  }, [navigate, location]);
+        // Determine whether to replace the history entry
+        const shouldReplace =
+          options.replace !== undefined ? options.replace : true;
+        navigate(newPath, { replace: shouldReplace });
+      }
+    },
+    [navigate, location]
+  );
 
   // Update an existing modal
   const updateModal = useCallback((id, data) => {
@@ -194,13 +324,35 @@ export const ModalProvider = ({ children }) => {
     });
   }, []);
 
+  // Get URL for a modal (for deep linking)
+  const getModalUrl = useCallback(
+    (modalType, data = {}, basePath = location.pathname) => {
+      const id = uuidv4();
+      const searchParams = new URLSearchParams();
+      searchParams.set('modal', modalType);
+      searchParams.set('modalId', id);
+
+      if (Object.keys(data).length > 0) {
+        const encodedData = btoa(JSON.stringify(data));
+        searchParams.set('modalData', encodedData);
+      }
+
+      return `${basePath}?${searchParams.toString()}`;
+    },
+    [location]
+  );
+
   // Context value
   const value = {
     modals: state.modals,
+    modalRegistry: state.modalRegistry,
     openModal,
+    openModalByType,
     closeModal,
     closeAllModals,
     updateModal,
+    registerModal,
+    getModalUrl,
   };
 
   return (

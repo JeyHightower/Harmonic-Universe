@@ -10,7 +10,7 @@ import Button from '../../common/Button';
 import Input from '../../common/Input';
 import './Universe.css';
 
-function UniverseCreate({ isModal = false, onSuccess, onCancel }) {
+function UniverseCreate({ onClose, onSuccess }) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,10 +60,14 @@ function UniverseCreate({ isModal = false, onSuccess, onCancel }) {
     try {
       const result = await dispatch(createUniverse(formData)).unwrap();
 
-      if (isModal && onSuccess) {
+      if (onSuccess) {
         onSuccess(result.id);
       } else {
         navigate(`/universes/${result.id}`);
+      }
+
+      if (onClose) {
+        onClose();
       }
     } catch (error) {
       console.error('Failed to create universe:', error);
@@ -73,8 +77,7 @@ function UniverseCreate({ isModal = false, onSuccess, onCancel }) {
   };
 
   return (
-    <div className={`universe-create ${isModal ? 'in-modal' : ''}`}>
-      {!isModal && <h1>Create New Universe</h1>}
+    <div className="universe-create">
       {error && <div className="error-message">{error}</div>}
       <form onSubmit={handleSubmit} className="universe-form">
         <Input
@@ -113,17 +116,7 @@ function UniverseCreate({ isModal = false, onSuccess, onCancel }) {
           </p>
         </div>
 
-        <div className={`form-actions ${isModal ? 'modal-actions' : ''}`}>
-          {isModal && (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onCancel}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-          )}
+        <div className="form-actions">
           <Button type="submit" disabled={isSubmitting} loading={isSubmitting}>
             Create Universe
           </Button>

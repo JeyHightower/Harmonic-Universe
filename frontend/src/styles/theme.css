@@ -1,81 +1,148 @@
+/* Base color palette - Sophisticated, Clean, Professional */
 :root {
-  /* Color System */
-  --primary-color: #1890ff;
-  --primary-color-hover: #40a9ff;
-  --primary-color-active: #096dd9;
-  --primary-color-outline: rgba(24, 144, 255, 0.2);
+  /* Primary colors */
+  --primary-50: #e0f2fe;
+  --primary-100: #b9e6fe;
+  --primary-200: #90d4fd;
+  --primary-300: #60c1fc;
+  --primary-400: #38acfa;
+  --primary-500: #1d8fef;
+  --primary-600: #0d72e0;
+  --primary-700: #1058c5;
+  --primary-800: #0d4899;
+  --primary-900: #0b3470;
 
-  --success-color: #52c41a;
-  --warning-color: #faad14;
-  --error-color: #ff4d4f;
-  --info-color: #1890ff;
+  /* Secondary teal/green */
+  --secondary-50: #e6f9f8;
+  --secondary-100: #c2f0ec;
+  --secondary-200: #99e6de;
+  --secondary-300: #6ad9cd;
+  --secondary-400: #34c6b7;
+  --secondary-500: #189e90;
+  --secondary-600: #0d8276;
+  --secondary-700: #0d6a61;
+  --secondary-800: #0e534c;
+  --secondary-900: #0d403c;
 
-  /* Typography */
-  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji',
-    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-  --heading-color: rgba(0, 0, 0, 0.85);
-  --text-color: rgba(0, 0, 0, 0.65);
-  --text-color-secondary: rgba(0, 0, 0, 0.45);
+  /* Neutral grays */
+  --neutral-50: #f9fafb;
+  --neutral-100: #f2f4f7;
+  --neutral-200: #e4e7ec;
+  --neutral-300: #d0d5dd;
+  --neutral-400: #98a2b3;
+  --neutral-500: #667085;
+  --neutral-600: #475467;
+  --neutral-700: #344054;
+  --neutral-800: #1d2939;
+  --neutral-900: #101828;
 
-  /* Layout */
-  --border-radius-base: 4px;
-  --border-radius-sm: 2px;
-  --border-radius-lg: 8px;
+  /* Accent purple */
+  --accent-50: #f4ebff;
+  --accent-100: #e5d4ff;
+  --accent-200: #d1b2ff;
+  --accent-300: #b580ff;
+  --accent-400: #9555fc;
+  --accent-500: #7939e5;
+  --accent-600: #6324d0;
+  --accent-700: #4c1aa8;
+  --accent-800: #3a1683;
+  --accent-900: #2c1066;
 
-  --padding-sm: 12px;
-  --padding-md: 16px;
-  --padding-lg: 24px;
+  /* Success/error/warning */
+  --success-50: #ecfdf5;
+  --success-500: #10b981;
+  --success-700: #047857;
 
-  --margin-sm: 12px;
-  --margin-md: 16px;
-  --margin-lg: 24px;
+  --error-50: #fef2f2;
+  --error-500: #ef4444;
+  --error-700: #b91c1c;
 
-  /* Shadows */
-  --shadow-1: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
-  --shadow-2: 0 3px 6px -4px rgba(0, 0, 0, 0.12),
-    0 6px 16px 0 rgba(0, 0, 0, 0.08);
-  --shadow-3: 0 6px 16px -8px rgba(0, 0, 0, 0.08),
-    0 9px 28px 0 rgba(0, 0, 0, 0.05);
+  --warning-50: #fffbeb;
+  --warning-500: #f59e0b;
+  --warning-700: #b45309;
 
-  /* Light Theme Variables */
-  --light-background: #ffffff;
-  --light-component-background: #ffffff;
-  --light-border-color: #d9d9d9;
-  --light-table-header-bg: #fafafa;
-  --light-table-row-hover-bg: #f5f5f5;
-  --light-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  /* Light/Dark mode variables */
+  --light-background: var(--neutral-50);
+  --light-surface: #ffffff;
+  --light-surface-hover: var(--neutral-100);
+  --light-surface-active: var(--primary-50);
+  --light-border: var(--neutral-300);
+  --light-text: var(--neutral-900);
+  --light-text-secondary: var(--neutral-700);
+  --light-text-tertiary: var(--neutral-500);
 
-  /* Animation */
-  --animation-duration-base: 0.2s;
-  --animation-duration-slow: 0.3s;
-  --animation-timing-base: cubic-bezier(0.645, 0.045, 0.355, 1);
-  --animation-timing-sharp: cubic-bezier(0.4, 0, 0.6, 1);
+  --dark-background: #121826;
+  --dark-surface: #1c2536;
+  --dark-surface-hover: #283041;
+  --dark-surface-active: #323b4e;
+  --dark-border: #2f3747;
+  --dark-text: #f8fafc;
+  --dark-text-secondary: #cbd5e1;
+  --dark-text-tertiary: #94a3b8;
+
+  /* App specific theming */
+  --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --heading-font: 'Inter', system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --monospace-font: 'SF Mono', 'Roboto Mono', 'Courier New', monospace;
+
+  /* Default spacing */
+  --padding-xs: 0.25rem;
+  --padding-sm: 0.5rem;
+  --padding-md: 1rem;
+  --padding-lg: 1.5rem;
+  --padding-xl: 2rem;
+  --padding-xxl: 3rem;
+
+  --margin-xs: 0.25rem;
+  --margin-sm: 0.5rem;
+  --margin-md: 1rem;
+  --margin-lg: 1.5rem;
+  --margin-xl: 2rem;
+  --margin-xxl: 3rem;
+
+  /* Border radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-full: 9999px;
+
+  /* Box shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05),
+    0 4px 6px -2px rgba(0, 0, 0, 0.03);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.05),
+    0 10px 10px -5px rgba(0, 0, 0, 0.02);
 }
 
-/* Dark Theme */
+/* Default theme (light) */
+:root {
+  --background: var(--light-background);
+  --surface: var(--light-surface);
+  --surface-hover: var(--light-surface-hover);
+  --surface-active: var(--light-surface-active);
+  --border-color: var(--light-border);
+  --text-color: var(--light-text);
+  --text-secondary: var(--light-text-secondary);
+  --text-tertiary: var(--light-text-tertiary);
+  --heading-color: var(--neutral-900);
+}
+
+/* Dark theme */
 [data-theme='dark'] {
-  --primary-color: #177ddc;
-  --primary-color-hover: #3c9ae8;
-  --primary-color-active: #0958d9;
-
-  --heading-color: rgba(255, 255, 255, 0.85);
-  --text-color: rgba(255, 255, 255, 0.65);
-  --text-color-secondary: rgba(255, 255, 255, 0.45);
-
-  --dark-background: #141414;
-  --dark-component-background: #1f1f1f;
-  --dark-border-color: #434343;
-  --dark-table-header-bg: #1d1d1d;
-  --dark-table-row-hover-bg: #262626;
-  --dark-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.32);
-
-  /* Override shadow colors for dark theme */
-  --shadow-1: 0 1px 2px 0 rgba(0, 0, 0, 0.32);
-  --shadow-2: 0 3px 6px -4px rgba(0, 0, 0, 0.48),
-    0 6px 16px 0 rgba(0, 0, 0, 0.32);
-  --shadow-3: 0 6px 16px -8px rgba(0, 0, 0, 0.32),
-    0 9px 28px 0 rgba(0, 0, 0, 0.2);
+  --background: var(--dark-background);
+  --surface: var(--dark-surface);
+  --surface-hover: var(--dark-surface-hover);
+  --surface-active: var(--dark-surface-active);
+  --border-color: var(--dark-border);
+  --text-color: var(--dark-text);
+  --text-secondary: var(--dark-text-secondary);
+  --text-tertiary: var(--dark-text-tertiary);
+  --heading-color: var(--dark-text);
 }
 
 /* Responsive Breakpoints */
