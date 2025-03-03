@@ -67,6 +67,21 @@ export const endpoints = {
     generateAI: universeId =>
       `${API_BASE_URL}/api/v1/music/${universeId}/generate-ai`,
   },
+  storyboards: {
+    list: (universeId) => `/api/universes/${universeId}/storyboards`,
+    get: (universeId, storyboardId) => `/api/universes/${universeId}/storyboards/${storyboardId}`,
+    create: (universeId) => `/api/universes/${universeId}/storyboards`,
+    update: (universeId, storyboardId) => `/api/universes/${universeId}/storyboards/${storyboardId}`,
+    delete: (universeId, storyboardId) => `/api/universes/${universeId}/storyboards/${storyboardId}`,
+
+    points: {
+      list: (universeId, storyboardId) => `/api/universes/${universeId}/storyboards/${storyboardId}/points`,
+      get: (universeId, storyboardId, pointId) => `/api/universes/${universeId}/storyboards/${storyboardId}/points/${pointId}`,
+      create: (universeId, storyboardId) => `/api/universes/${universeId}/storyboards/${storyboardId}/points`,
+      update: (universeId, storyboardId, pointId) => `/api/universes/${universeId}/storyboards/${storyboardId}/points/${pointId}`,
+      delete: (universeId, storyboardId, pointId) => `/api/universes/${universeId}/storyboards/${storyboardId}/points/${pointId}`
+    }
+  }
 };
 
 // API client configuration

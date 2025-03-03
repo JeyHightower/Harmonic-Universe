@@ -93,115 +93,87 @@
 }
 
 .universe-card {
-  position: relative;
-  overflow: hidden;
-  background: var(--surface-color);
-  border-radius: var(--border-radius-lg);
-  padding: var(--spacing-lg);
-  box-shadow: var(--shadow-sm);
-  text-decoration: none;
-  transition: all 0.3s ease;
-  animation: cardEnter 0.5s ease backwards;
-}
-
-.universe-card:nth-child(1) {
-  animation-delay: 0.1s;
-}
-.universe-card:nth-child(2) {
-  animation-delay: 0.2s;
-}
-.universe-card:nth-child(3) {
-  animation-delay: 0.3s;
-}
-.universe-card:nth-child(4) {
-  animation-delay: 0.4s;
-}
-.universe-card:nth-child(5) {
-  animation-delay: 0.5s;
-}
-.universe-card:nth-child(6) {
-  animation-delay: 0.6s;
-}
-.universe-card:nth-child(7) {
-  animation-delay: 0.7s;
-}
-.universe-card:nth-child(8) {
-  animation-delay: 0.8s;
-}
-.universe-card:nth-child(n + 9) {
-  animation-delay: 0.9s;
-}
-
-.universe-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(
-    to right,
-    var(--primary-color),
-    var(--secondary-color)
-  );
-  transform: translateY(-100%);
-  transition: transform 0.3s ease;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
 }
 
 .universe-card:hover {
   transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
-}
-
-.universe-card:hover::before {
-  transform: translateY(0);
-}
-
-.universe-card:focus {
-  outline: none;
-  box-shadow: var(--shadow-md), 0 0 0 2px var(--primary-color);
-  transform: translateY(-4px);
-}
-
-.universe-card:focus::before {
-  transform: translateY(0);
-}
-
-.universe-card:focus h3 {
-  color: var(--primary-color);
-}
-
-.universe-card:focus p {
-  color: var(--text-primary);
-}
-
-.universe-card:focus .universe-card-footer {
-  color: var(--text-secondary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .universe-card h3 {
-  font-size: var(--font-size-lg);
-  color: var(--text-primary);
-  margin-bottom: var(--spacing-sm);
-  transition: color 0.3s ease;
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #333;
+  font-size: 1.2rem;
 }
 
-.universe-card:hover h3 {
-  color: var(--primary-color);
+.universe-card p {
+  color: #666;
+  margin-bottom: 15px;
+  flex-grow: 1;
 }
 
-.universe-card:hover p {
-  color: var(--text-primary);
+.universe-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
 }
 
-.universe-card-footer {
-  color: var(--text-tertiary);
-  font-size: var(--font-size-sm);
-  transition: color 0.3s ease;
+.universe-theme,
+.universe-visibility {
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: #f0f0f0;
+  color: #555;
 }
 
-.universe-card:hover .universe-card-footer {
-  color: var(--text-secondary);
+.universe-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 15px;
+  border-top: 1px solid #eee;
+  padding-top: 15px;
+}
+
+.universe-params-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.universe-params-buttons button {
+  flex: 1;
+  font-size: 0.8rem;
+  padding: 4px 8px;
+}
+
+/* Button variants */
+button.tertiary {
+  background-color: #f0f0f0;
+  color: #555;
+  border: 1px solid #ddd;
+}
+
+button.tertiary:hover {
+  background-color: #e0e0e0;
+}
+
+button.small {
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  height: auto;
 }
 
 @media (max-width: 768px) {

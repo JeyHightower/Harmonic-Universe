@@ -25,16 +25,16 @@ import {
 } from '../../../components/common/Icons';
 import { useModal } from '../../../contexts/ModalContext';
 import { api, endpoints } from '../../../utils/api';
+import { MODAL_TYPES } from '../../../utils/modalRegistry';
 import Modal from '../../common/Modal';
 import './Music.css';
-import MusicGenerationModal from './MusicGenerationModal';
 import './MusicPlayer.css';
 import MusicVisualizer3D from './MusicVisualizer3D';
 
 const { Title, Text } = Typography;
 
 const MusicPlayer = ({ universeId }) => {
-  const { openModal } = useModal();
+  const { openModal, openModalByType } = useModal();
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [musicData, setMusicData] = useState(null);
@@ -522,23 +522,15 @@ const MusicPlayer = ({ universeId }) => {
     return `${noteName}${octave}`;
   };
 
-  // New function to open the music generation modal
+  // New function to open the music generation modal using the new modal system
   const openMusicGenerationModal = () => {
-    openModal({
-      component: MusicGenerationModal,
-      props: {
-        initialParams: customParams,
-        onSubmit: params => {
-          setCustomParams(params);
-          setCustomizationEnabled(true);
-          generateMusic(params);
-        },
-      },
-      modalProps: {
-        title: 'Music Generation Settings',
-        size: 'medium',
-        animation: 'slide',
-        position: 'center',
+    openModalByType(MODAL_TYPES.AUDIO_GENERATE, {
+      universeId,
+      initialParams: customParams,
+      onSubmit: params => {
+        setCustomParams(params);
+        setCustomizationEnabled(true);
+        generateMusic(params);
       },
     });
   };

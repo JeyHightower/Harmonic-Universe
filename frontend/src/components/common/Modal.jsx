@@ -11,7 +11,7 @@ import { createPortal } from 'react-dom';
 import '../../styles/modal.css';
 
 // Animation duration in ms
-const ANIMATION_DURATION = 200;
+const ANIMATION_DURATION = 300;
 
 // Shared modal stack counter to handle multiple modals
 let modalStackCount = 0;
@@ -495,25 +495,22 @@ const Modal = forwardRef(
     }
     console.log('Modal rendering with isOpen:', isOpen);
 
-    // Determine modal classes based on props
+    // Determine modal classes
     const modalClasses = [
       'modal',
-      `modal-size-${size}`,
-      `modal-type-${type}`,
-      `modal-animation-${animation}`,
-      `modal-position-${position}`,
-      isClosing ? 'modal-closing' : '',
-      'force-visible', // Always add this class for CSS protection
+      size, // Updated to use new class names
+      type !== 'default' ? `modal-${type}` : '',
+      isClosing ? 'closing' : 'open',
+      contentClassName,
     ]
       .filter(Boolean)
       .join(' ');
 
-    // Determine overlay classes
-    const overlayClasses = [
-      'modal-overlay',
-      `modal-overlay-animation-${animation}`,
-      isClosing ? 'modal-overlay-closing' : '',
-      'force-visible', // Always add this class for CSS protection
+    // Determine container classes
+    const containerClasses = [
+      'modal-container',
+      position !== 'center' ? position : '',
+      isOpen && !isClosing ? 'open' : '',
     ]
       .filter(Boolean)
       .join(' ');
@@ -546,13 +543,10 @@ const Modal = forwardRef(
 
     const modalContent = (
       <div
-        className={overlayClasses}
+        className={containerClasses}
         onClick={handleOverlayClick}
         style={{
           zIndex: 9999 + stackLevel,
-          display: 'block !important',
-          visibility: 'visible !important',
-          opacity: '1 !important',
         }}
         ref={node => {
           portalElementRef.current = node;
@@ -567,18 +561,12 @@ const Modal = forwardRef(
         {...ariaAttributes}
         {...dataAttributes}
       >
-        <div
-          ref={modalRef}
-          className={modalClasses}
-          tabIndex={-1}
-          style={{
-            display: 'block !important',
-            visibility: 'visible !important',
-            opacity: '1 !important',
-          }}
-        >
+        <div className="modal-backdrop" onClick={handleOverlayClick}></div>
+        <div ref={modalRef} className={modalClasses} tabIndex={-1}>
           <div className="modal-header">
-            <h2 id={titleId}>{title}</h2>
+            <h2 id={titleId} className="modal-title">
+              {title}
+            </h2>
             {showCloseButton && (
               <button
                 type="button"
@@ -599,11 +587,7 @@ const Modal = forwardRef(
               </button>
             )}
           </div>
-          <div
-            id={contentId}
-            ref={contentRef}
-            className={`modal-content ${contentClassName}`}
-          >
+          <div id={contentId} className="modal-content" ref={contentRef}>
             {children}
           </div>
           {footerContent && <div className="modal-footer">{footerContent}</div>}

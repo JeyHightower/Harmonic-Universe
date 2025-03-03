@@ -7,7 +7,7 @@ import Spinner from './Spinner';
 /**
  * Button component that supports various styles and states
  * @param {Object} props
- * @param {('primary'|'secondary'|'tertiary'|'danger'|'icon'|'icon-danger')} [props.variant='primary'] - Button variant
+ * @param {('primary'|'secondary'|'tertiary'|'danger'|'icon'|'icon-danger'|'accent'|'coral'|'mint'|'gold')} [props.variant='primary'] - Button variant
  * @param {('small'|'medium'|'large')} [props.size='medium'] - Button size
  * @param {boolean} [props.fullWidth=false] - Whether button should take full width
  * @param {boolean} [props.disabled=false] - Whether button is disabled
@@ -98,6 +98,10 @@ Button.propTypes = {
     'danger',
     'icon',
     'icon-danger',
+    'accent',
+    'coral',
+    'mint',
+    'gold',
   ]),
   size: PropTypes.oneOf(['small', 'medium', 'large']),
   fullWidth: PropTypes.bool,

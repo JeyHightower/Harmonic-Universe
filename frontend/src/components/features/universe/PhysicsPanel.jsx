@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useModal } from '../../../contexts/ModalContext';
 import { updatePhysicsParams } from '../../../store/thunks/universeThunks';
+import { MODAL_TYPES } from '../../../utils/modalRegistry';
 import Button from '../../common/Button';
-import PhysicsSettingsModal from './PhysicsSettingsModal';
 import './Universe.css';
 
 const DEFAULT_PHYSICS_PARAMS = {
@@ -58,7 +58,7 @@ function PhysicsPanel({
   onPhysicsParamsChange,
 }) {
   const dispatch = useDispatch();
-  const { openModal } = useModal();
+  const { openModalByType } = useModal();
   const currentUniverse = useSelector(state => state.universe.currentUniverse);
   const [physicsParams, setPhysicsParams] = useState(null);
   const [errors, setErrors] = useState({});
@@ -130,18 +130,10 @@ function PhysicsPanel({
 
   // Handle edit button click to open the physics settings modal
   const handleOpenPhysicsModal = () => {
-    openModal({
-      component: PhysicsSettingsModal,
-      props: {
-        initialPhysicsParams: physicsParams,
-        onSave: handleSavePhysicsParams,
-      },
-      modalProps: {
-        title: 'Physics Settings',
-        size: 'medium',
-        animation: 'slide',
-        position: 'center',
-      },
+    openModalByType(MODAL_TYPES.PHYSICS_PARAMETERS, {
+      universeId,
+      initialData: physicsParams,
+      onSave: handleSavePhysicsParams,
     });
   };
 

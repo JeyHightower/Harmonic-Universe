@@ -16,6 +16,7 @@ import PhysicsObjectFormModal from '../features/physicsObjects/PhysicsObjectForm
 import PhysicsParametersModal from '../features/physicsParameters/PhysicsParametersModal';
 import SceneFormModal from '../features/scenes/SceneFormModal';
 import UniverseFormModal from '../features/universe/UniverseFormModal';
+import UniverseInfoModal from '../features/universe/UniverseInfoModal';
 
 // Import new modal components
 import AudioDetailsModal from '../features/audio/AudioDetailsModal';
@@ -37,6 +38,7 @@ export const MODAL_TYPES = {
     UNIVERSE_CREATE: 'universe-create',
     UNIVERSE_EDIT: 'universe-edit',
     UNIVERSE_DELETE: 'universe-delete',
+    UNIVERSE_INFO: 'universe-info',
 
     // Scene related modals
     SCENE_CREATE: 'scene-create',
@@ -135,6 +137,24 @@ export const ModalRegistry = () => {
                     title: 'Edit Universe',
                     size: 'medium',
                     type: 'form',
+                }),
+            }
+        );
+
+        // Register Universe Info Modal
+        registerModal(
+            MODAL_TYPES.UNIVERSE_INFO,
+            UniverseInfoModal,
+            {
+                getProps: (data) => ({
+                    universe: data.universe,
+                    isGlobalModal: true,
+                }),
+                getModalProps: (data) => ({
+                    title: `${data.universe?.name || 'Universe'} Information`,
+                    size: 'medium',
+                    type: 'info',
+                    animation: 'fade',
                 }),
             }
         );

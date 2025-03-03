@@ -1,0 +1,53 @@
+.universe-info-modal {
+  padding: 1rem;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.universe-info-section {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
+}
+
+.universe-info-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.universe-info-section h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  color: var(--heading-color, #333);
+}
+
+.info-row {
+  display: flex;
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+.info-label {
+  flex: 0 0 150px;
+  font-weight: 600;
+  color: var(--label-color, #555);
+}
+
+.info-value {
+  flex: 1;
+  word-break: break-word;
+}
+
+/* The modal-footer class is now defined in modal.css */
+
+@media (max-width: 768px) {
+  .info-row {
+    flex-direction: column;
+  }
+
+  .info-label {
+    margin-bottom: 0.25rem;
+  }
+}

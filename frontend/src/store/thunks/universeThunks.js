@@ -18,15 +18,30 @@ export const fetchUniverses = createAsyncThunk(
     try {
       console.debug('Fetching universes from API...');
       const response = await api.get(endpoints.universes.list, { signal });
-      console.debug('Universes fetched:', response);
-      return response || [];
+      return response;
     } catch (error) {
-      // Don't report cancellation errors
       if (error.name === 'AbortError') {
-        console.debug('Universe fetch cancelled');
-        return [];
+        console.log('Fetch universes request was aborted');
+        return rejectWithValue({ message: 'Request aborted' });
       }
-      console.error('Failed to fetch universes:', error);
+      return rejectWithValue(handleError(error));
+    }
+  }
+);
+
+// Fetch a single universe by ID
+export const fetchUniverseById = createAsyncThunk(
+  'universe/fetchUniverseById',
+  async (id, { signal, rejectWithValue }) => {
+    try {
+      console.debug(`Fetching universe ${id} from API...`);
+      const response = await api.get(endpoints.universes.detail(id), { signal });
+      return response;
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.log('Fetch universe request was aborted');
+        return rejectWithValue({ message: 'Request aborted' });
+      }
       return rejectWithValue(handleError(error));
     }
   }

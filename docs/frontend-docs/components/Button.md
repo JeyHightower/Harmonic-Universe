@@ -19,8 +19,29 @@ function Example() {
 // Secondary button
 <Button variant="secondary">Secondary</Button>
 
-// Outline button
-<Button variant="outline">Outline</Button>
+// Tertiary button
+<Button variant="tertiary">Tertiary</Button>
+
+// Danger button
+<Button variant="danger">Danger</Button>
+
+// Accent button
+<Button variant="accent">Accent</Button>
+
+// Coral button
+<Button variant="coral">Coral</Button>
+
+// Mint button
+<Button variant="mint">Mint</Button>
+
+// Gold button
+<Button variant="gold">Gold</Button>
+
+// Icon button
+<Button variant="icon"><Icon name="edit" /></Button>
+
+// Icon danger button
+<Button variant="icon-danger"><Icon name="trash" /></Button>
 ```
 
 ### Sizes
@@ -36,14 +57,6 @@ function Example() {
 ```jsx
 <Button disabled>Disabled</Button>
 <Button loading>Loading</Button>
-<Button active>Active</Button>
-```
-
-### Icons
-
-```jsx
-<Button icon={<Icon name="plus" />}>Add Item</Button>
-<Button icon={<Icon name="trash" />} variant="danger">Delete</Button>
 ```
 
 ### Full Width
@@ -95,21 +108,34 @@ function Example() {
 }
 ```
 
+### As Link
+
+```jsx
+import { Link } from 'react-router-dom';
+
+function Example() {
+  return (
+    <Button as={Link} to="/dashboard">
+      Go to Dashboard
+    </Button>
+  );
+}
+```
+
 ## Props
 
 The Button component accepts the following props:
 
-- `variant`: 'primary' | 'secondary' | 'outline' | 'danger'
+- `variant`: 'primary' | 'secondary' | 'tertiary' | 'danger' | 'icon' | 'icon-danger' | 'accent' | 'coral' | 'mint' | 'gold'
 - `size`: 'small' | 'medium' | 'large'
 - `disabled`: boolean
 - `loading`: boolean
-- `active`: boolean
 - `fullWidth`: boolean
-- `icon`: React.ReactNode
+- `as`: React.ElementType - Allows rendering as different element types (e.g., Link)
 - `className`: string
-- `style`: React.CSSProperties
 - `onClick`: (event: React.MouseEvent) => void
 - `children`: React.ReactNode
+- ...other props are passed to the underlying element
 
 ## Best Practices
 
@@ -117,8 +143,9 @@ The Button component accepts the following props:
 
    - Primary for main actions
    - Secondary for alternative actions
-   - Outline for less prominent actions
+   - Tertiary for less prominent actions
    - Danger for destructive actions
+   - Accent, Coral, Mint, and Gold for specific UI themes or to highlight different action types
 
 2. Maintain consistent sizing:
 
@@ -129,7 +156,6 @@ The Button component accepts the following props:
 
    - Show loading states during async operations
    - Disable buttons when actions are unavailable
-   - Use hover and active states for interaction
 
 4. Accessibility:
    - Include descriptive text
@@ -166,7 +192,7 @@ function SubmitButton({ onSubmit }) {
   );
 }
 
-SubmitButton.PropTypes = {
+SubmitButton.propTypes = {
   onSubmit: PropTypes.func.isRequired,
 };
 ```
@@ -177,8 +203,23 @@ SubmitButton.PropTypes = {
 function ButtonGroup() {
   return (
     <div className="button-group">
-      <Button variant="outline">Cancel</Button>
+      <Button variant="tertiary">Cancel</Button>
       <Button variant="primary">Save</Button>
+    </div>
+  );
+}
+```
+
+### Themed Action Buttons
+
+```jsx
+function ThemedActionButtons() {
+  return (
+    <div className="action-buttons">
+      <Button variant="accent">Create Universe</Button>
+      <Button variant="coral">Generate Music</Button>
+      <Button variant="mint">Add Physics</Button>
+      <Button variant="gold">Explore</Button>
     </div>
   );
 }
@@ -188,9 +229,9 @@ function ButtonGroup() {
 
 - Consistent styling across variants
 - Loading state management
-- Icon support
 - Responsive sizing
 - Keyboard navigation
 - ARIA attributes
 - Custom styling support
 - Event handling
+- Component polymorphism (using the `as` prop)

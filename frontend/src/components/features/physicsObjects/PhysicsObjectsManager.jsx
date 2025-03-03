@@ -2,15 +2,15 @@ import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useModal } from '../../../contexts/ModalContext';
 import { fetchPhysicsObjects } from '../../../store/thunks/physicsObjectsThunks';
+import { MODAL_TYPES } from '../../../utils/modalRegistry';
 import Button from '../../common/Button';
 import Icon from '../../common/Icon';
-import PhysicsObjectModal from './PhysicsObjectModal';
 import './PhysicsObjects.css';
 import PhysicsObjectsList from './PhysicsObjectsList';
 
 const PhysicsObjectsManager = ({ sceneId }) => {
   const dispatch = useDispatch();
-  const { openModal } = useModal();
+  const { openModalByType } = useModal();
   const { physicsObjects, loading, error } = useSelector(
     state => state.physicsObjects
   );
@@ -22,20 +22,10 @@ const PhysicsObjectsManager = ({ sceneId }) => {
   }, [dispatch, sceneId]);
 
   const handleAddObject = () => {
-    openModal({
-      component: PhysicsObjectModal,
-      props: {
-        sceneId,
-        mode: 'create',
-        onSuccess: () => {
-          dispatch(fetchPhysicsObjects(sceneId));
-        },
-      },
-      modalProps: {
-        title: 'Create Physics Object',
-        size: 'large',
-        animation: 'slide',
-        position: 'center',
+    openModalByType(MODAL_TYPES.PHYSICS_OBJECT, {
+      sceneId,
+      onSuccess: () => {
+        dispatch(fetchPhysicsObjects(sceneId));
       },
     });
   };
@@ -43,22 +33,12 @@ const PhysicsObjectsManager = ({ sceneId }) => {
   const handleEditObject = objectId => {
     const objectToEdit = physicsObjects.find(obj => obj.id === objectId);
 
-    openModal({
-      component: PhysicsObjectModal,
-      props: {
-        sceneId,
-        objectId,
-        initialData: objectToEdit,
-        mode: 'edit',
-        onSuccess: () => {
-          dispatch(fetchPhysicsObjects(sceneId));
-        },
-      },
-      modalProps: {
-        title: 'Edit Physics Object',
-        size: 'large',
-        animation: 'slide',
-        position: 'center',
+    openModalByType(MODAL_TYPES.PHYSICS_OBJECT, {
+      sceneId,
+      objectId,
+      initialData: objectToEdit,
+      onSuccess: () => {
+        dispatch(fetchPhysicsObjects(sceneId));
       },
     });
   };
@@ -66,20 +46,11 @@ const PhysicsObjectsManager = ({ sceneId }) => {
   const handleViewObject = objectId => {
     const objectToView = physicsObjects.find(obj => obj.id === objectId);
 
-    openModal({
-      component: PhysicsObjectModal,
-      props: {
-        sceneId,
-        objectId,
-        initialData: objectToView,
-        mode: 'view',
-      },
-      modalProps: {
-        title: 'View Physics Object',
-        size: 'large',
-        animation: 'fade',
-        position: 'center',
-      },
+    openModalByType(MODAL_TYPES.PHYSICS_OBJECT, {
+      sceneId,
+      objectId,
+      initialData: objectToView,
+      readOnly: true,
     });
   };
 
@@ -91,23 +62,12 @@ const PhysicsObjectsManager = ({ sceneId }) => {
       return;
     }
 
-    openModal({
-      component: PhysicsObjectModal,
-      props: {
-        sceneId,
-        objectId,
-        initialData: objectToDelete,
-        mode: 'delete',
-        onSuccess: () => {
-          dispatch(fetchPhysicsObjects(sceneId));
-        },
-      },
-      modalProps: {
-        title: 'Delete Physics Object',
-        size: 'medium',
-        animation: 'zoom',
-        position: 'center',
-        preventBackdropClick: true,
+    openModalByType(MODAL_TYPES.CONFIRM_DELETE, {
+      entityType: 'physics object',
+      entityId: objectId,
+      entityName: objectToDelete.name,
+      onConfirm: () => {
+        dispatch(fetchPhysicsObjects(sceneId));
       },
     });
   };

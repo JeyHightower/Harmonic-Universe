@@ -6,6 +6,7 @@ import { setCurrentUniverse } from '../../../store/slices/universeSlice';
 import { deleteUniverse } from '../../../store/thunks/universeThunks';
 import { api, endpoints } from '../../../utils/api';
 import { createConfirmModal } from '../../../utils/modalHelpers';
+import { MODAL_TYPES } from '../../../utils/modalRegistry';
 import Button from '../../common/Button';
 import Icon from '../../common/Icon';
 import Spinner from '../../common/Spinner';
@@ -23,7 +24,7 @@ const UniverseDetail = () => {
   const [error, setError] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const { openModal } = useModal();
+  const { openModal, openModalByType } = useModal();
 
   useEffect(() => {
     const fetchUniverse = async () => {
@@ -65,7 +66,16 @@ const UniverseDetail = () => {
       setError('You do not have permission to edit this universe');
       return;
     }
-    navigate(`/universes/${id}/edit`);
+
+    // Use the new modal system instead of navigating to a separate page
+    openModalByType(MODAL_TYPES.UNIVERSE_EDIT, {
+      universeId: id,
+      initialData: currentUniverse,
+      onSuccess: updatedUniverse => {
+        // Update the current universe in the store
+        dispatch(setCurrentUniverse(updatedUniverse));
+      },
+    });
   };
 
   const handleDeleteClick = e => {
@@ -94,84 +104,10 @@ const UniverseDetail = () => {
   };
 
   const handleUniverseInfo = () => {
-    // Open a modal with universe details information
-    openModal({
-      component: UniverseInfoModal,
-      props: {
-        universe: currentUniverse,
-      },
-      modalProps: {
-        title: `${currentUniverse?.name} Information`,
-        size: 'medium',
-        animation: 'fade',
-      },
+    // Use the new modal system instead of the inline component
+    openModalByType(MODAL_TYPES.UNIVERSE_INFO, {
+      universe: currentUniverse,
     });
-  };
-
-  const UniverseInfoModal = ({ universe, onClose }) => {
-    if (!universe) return null;
-
-    return (
-      <div className="universe-info-modal">
-        <div className="universe-info-section">
-          <h3>Basic Information</h3>
-          <div className="info-row">
-            <span className="info-label">Name:</span>
-            <span className="info-value">{universe.name}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Description:</span>
-            <span className="info-value">{universe.description}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Visibility:</span>
-            <span className="info-value">
-              {universe.is_public ? 'Public' : 'Private'}
-            </span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Created:</span>
-            <span className="info-value">
-              {new Date(universe.created_at).toLocaleString()}
-            </span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Last Updated:</span>
-            <span className="info-value">
-              {new Date(universe.updated_at).toLocaleString()}
-            </span>
-          </div>
-        </div>
-
-        <div className="universe-info-section">
-          <h3>Statistics</h3>
-          <div className="info-row">
-            <span className="info-label">Physics Objects:</span>
-            <span className="info-value">
-              {universe.physics_objects_count || 'N/A'}
-            </span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Scenes:</span>
-            <span className="info-value">{universe.scenes_count || 'N/A'}</span>
-          </div>
-        </div>
-
-        <div className="modal-footer">
-          <Button onClick={onClose}>Close</Button>
-          {canModifyUniverse && (
-            <Button
-              onClick={() => {
-                onClose();
-                handleEdit();
-              }}
-            >
-              Edit Universe
-            </Button>
-          )}
-        </div>
-      </div>
-    );
   };
 
   const handleDeleteConfirm = async () => {

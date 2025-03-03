@@ -336,52 +336,12 @@ const StableModalWrapper = memo(
       </Modal>
     );
 
-    // Create a portal container if it doesn't exist
-    let portalContainer = document.getElementById(`modal-portal-${id}`);
-    if (!portalContainer) {
-      portalContainer = document.createElement('div');
-      portalContainer.id = `modal-portal-${id}`;
-      portalContainer.setAttribute('data-modal-type', modalTypeRef.current);
-      portalContainer.setAttribute('data-modal-id', id);
-      portalContainer.setAttribute(
-        'data-mounted-at',
-        mountTimeRef.current.toString()
-      );
-      portalContainer.style.position = 'fixed';
-      portalContainer.style.zIndex = '9999';
-      portalContainer.style.top = '0';
-      portalContainer.style.left = '0';
-      document.body.appendChild(portalContainer);
-
-      // Use a MutationObserver to detect if the portal container is removed from the DOM
-      const observer = new MutationObserver(mutations => {
-        for (const mutation of mutations) {
-          if (
-            mutation.type === 'childList' &&
-            mutation.removedNodes.length > 0
-          ) {
-            for (const node of mutation.removedNodes) {
-              if (node.contains(portalContainer) || node === portalContainer) {
-                console.error(
-                  `Portal container for modal ${id} was removed from DOM! Attempting to restore...`
-                );
-                document.body.appendChild(portalContainer);
-              }
-            }
-          }
-        }
-      });
-
-      observer.observe(document.body, { childList: true, subtree: true });
-
-      // Clean up the observer when the window is unloaded
-      window.addEventListener('beforeunload', () => {
-        observer.disconnect();
-      });
-    }
+    // Get the portal root element instead of creating individual containers
+    const portalRoot = document.getElementById('portal-root') || document.body;
 
     // Use createPortal to render the modal outside the normal component hierarchy
-    return createPortal(modalContent, portalContainer);
+    // This ensures all modals render to the same container with consistent z-index and styling
+    return createPortal(modalContent, portalRoot);
   }),
   (prevProps, nextProps) => {
     // Custom comparison to prevent unnecessary re-renders

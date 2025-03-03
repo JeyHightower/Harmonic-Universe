@@ -1,25 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useModal } from '../../../contexts/ModalContext';
 import { api } from '../../../utils/api';
 import { API_BASE_URL } from '../../../utils/config';
+import { MODAL_TYPES } from '../../../utils/modalRegistry';
 import Button from '../../common/Button';
 import Icon from '../../common/Icon';
-import Modal from '../../common/Modal';
 import Spinner from '../../common/Spinner';
 import PhysicsObjectsManager from '../physicsObjects/PhysicsObjectsManager';
 import PhysicsParametersManager from '../physicsParameters/PhysicsParametersManager';
-import SceneModal from './SceneModal';
 import './Scenes.css';
 
 const SceneManager = () => {
   const { id: universeId } = useParams();
+  const { openModalByType } = useModal();
   const [scenes, setScenes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeSceneId, setActiveSceneId] = useState(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [modalMode, setModalMode] = useState('create');
-  const [selectedScene, setSelectedScene] = useState(null);
   const [activeTab, setActiveTab] = useState('objects');
 
   // Fetch scenes when component mounts or universeId changes
@@ -57,62 +55,60 @@ const SceneManager = () => {
 
   // Open modal for creating a new scene
   const handleAddScene = () => {
-    setSelectedScene(null);
-    setModalMode('create');
-    setIsModalVisible(true);
+    openModalByType(MODAL_TYPES.SCENE_CREATE, {
+      universeId,
+      onSuccess: data => {
+        // Add the new scene to the list
+        setScenes([...scenes, data]);
+        setActiveSceneId(data.id);
+      },
+    });
   };
 
   // Open modal for viewing a scene
   const handleViewScene = scene => {
-    setSelectedScene(scene);
-    setModalMode('view');
-    setIsModalVisible(true);
+    openModalByType(MODAL_TYPES.SCENE_EDIT, {
+      universeId,
+      sceneId: scene.id,
+      initialData: scene,
+      readOnly: true,
+    });
   };
 
   // Open modal for editing a scene
   const handleEditScene = scene => {
-    setSelectedScene(scene);
-    setModalMode('edit');
-    setIsModalVisible(true);
+    openModalByType(MODAL_TYPES.SCENE_EDIT, {
+      universeId,
+      sceneId: scene.id,
+      initialData: scene,
+      onSuccess: data => {
+        // Update the scene in the list
+        setScenes(scenes.map(s => (s.id === data.id ? { ...s, ...data } : s)));
+      },
+    });
   };
 
   // Open modal for deleting a scene
   const handleDeleteScene = scene => {
-    setSelectedScene(scene);
-    setModalMode('delete');
-    setIsModalVisible(true);
-  };
+    openModalByType(MODAL_TYPES.CONFIRM_DELETE, {
+      entityType: 'scene',
+      entityId: scene.id,
+      entityName: scene.name,
+      onConfirm: () => {
+        // Remove the deleted scene from the list
+        setScenes(scenes.filter(s => s.id !== scene.id));
 
-  const handleModalClose = () => {
-    setIsModalVisible(false);
-  };
-
-  const handleModalSuccess = (action, data) => {
-    if (action === 'delete') {
-      // Remove the deleted scene from the list
-      setScenes(scenes.filter(scene => scene.id !== data.id));
-
-      // If the active scene was deleted, set the first available scene as active
-      if (activeSceneId === data.id) {
-        const remainingScenes = scenes.filter(s => s.id !== data.id);
-        if (remainingScenes.length > 0) {
-          setActiveSceneId(remainingScenes[0].id);
-        } else {
-          setActiveSceneId(null);
+        // If the active scene was deleted, set the first available scene as active
+        if (activeSceneId === scene.id) {
+          const remainingScenes = scenes.filter(s => s.id !== scene.id);
+          if (remainingScenes.length > 0) {
+            setActiveSceneId(remainingScenes[0].id);
+          } else {
+            setActiveSceneId(null);
+          }
         }
-      }
-    } else if (action === 'create') {
-      // Add the new scene to the list
-      setScenes([...scenes, data]);
-      setActiveSceneId(data.id);
-    } else if (action === 'update') {
-      // Update the scene in the list
-      setScenes(
-        scenes.map(scene =>
-          scene.id === data.id ? { ...scene, ...data } : scene
-        )
-      );
-    }
+      },
+    });
   };
 
   // Render scenes as tabs
@@ -274,23 +270,6 @@ const SceneManager = () => {
       </div>
 
       <div className="scene-manager-content">{renderSceneTabs()}</div>
-
-      <Modal
-        isVisible={isModalVisible}
-        onClose={handleModalClose}
-        width="600px"
-      >
-        {isModalVisible && (
-          <SceneModal
-            universeId={universeId}
-            sceneId={selectedScene?.id}
-            initialData={selectedScene}
-            mode={modalMode}
-            onClose={handleModalClose}
-            onSuccess={handleModalSuccess}
-          />
-        )}
-      </Modal>
     </div>
   );
 };

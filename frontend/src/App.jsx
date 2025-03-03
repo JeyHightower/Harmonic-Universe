@@ -12,9 +12,13 @@ import { SettingOutlined, UserOutlined } from './components/common/Icons';
 import Layout from './components/layout/Layout';
 import { ROUTES } from './constants/routes';
 import { useModal } from './contexts/ModalContext';
+import StoryboardDetail from './features/storyboard/StoryboardDetail';
+import StoryboardEditor from './features/storyboard/StoryboardEditor';
+import StoryboardList from './features/storyboard/StoryboardList';
 import ModalProvider from './providers/ModalProvider';
 import ProtectedRoute from './routes/ProtectedRoute';
 import store from './store';
+import './styles/components.css';
 import './styles/global.css';
 import './styles/theme.css';
 import { handleModalRoute } from './utils/modalRouteHandler';
@@ -212,6 +216,30 @@ const App = () => {
                     element={<ModalRouteTest />}
                   />
                   <Route path={ROUTES.NOT_FOUND} element={<NotFound />} />
+                  <Route
+                    path="/universes/:universeId/storyboards"
+                    element={
+                      <ProtectedRoute>
+                        <StoryboardList />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/universes/:universeId/storyboards/:storyboardId"
+                    element={
+                      <ProtectedRoute>
+                        <StoryboardDetail />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/universes/:universeId/storyboards/:storyboardId/edit"
+                    element={
+                      <ProtectedRoute>
+                        <StoryboardEditor />
+                      </ProtectedRoute>
+                    }
+                  />
                 </Route>
               </Routes>
             </Suspense>

@@ -1,0 +1,109 @@
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import Button from '../../common/Button';
+
+const UniverseCard = ({ universe, onEdit, onDelete }) => {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    navigate(`/universes/${universe.id}`);
+  };
+
+  const handleNavigateToPhysics = e => {
+    e.stopPropagation();
+    navigate(`/universes/${universe.id}/physics`);
+  };
+
+  const handleNavigateToHarmony = e => {
+    e.stopPropagation();
+    navigate(`/universes/${universe.id}/harmony`);
+  };
+
+  const handleNavigateToVisualization = e => {
+    e.stopPropagation();
+    navigate(`/universes/${universe.id}/visualization`);
+  };
+
+  return (
+    <div className="universe-card">
+      <div className="universe-card-content" onClick={handleClick}>
+        <h3>{universe.name}</h3>
+        <p>{universe.description || 'No description'}</p>
+      </div>
+      <div className="universe-card-footer">
+        <div className="universe-card-meta">
+          <span>
+            Created: {new Date(universe.created_at).toLocaleDateString()}
+          </span>
+          {universe.theme && (
+            <span className="universe-theme">{universe.theme}</span>
+          )}
+          {universe.visibility && (
+            <span className="universe-visibility">{universe.visibility}</span>
+          )}
+        </div>
+        <div className="universe-card-actions">
+          <Button
+            onClick={e => {
+              e.stopPropagation();
+              navigate(`/universes/${universe.id}/storyboards`);
+            }}
+            variant="secondary"
+            size="small"
+          >
+            Storyboards
+          </Button>
+          <Button
+            onClick={e => {
+              e.stopPropagation();
+              onEdit(universe);
+            }}
+            variant="secondary"
+            size="small"
+          >
+            Edit
+          </Button>
+          <Button
+            onClick={e => {
+              e.stopPropagation();
+              onDelete(universe.id);
+            }}
+            variant="danger"
+            size="small"
+          >
+            Delete
+          </Button>
+        </div>
+
+        <div className="universe-params-buttons">
+          <Button
+            variant="tertiary"
+            size="small"
+            onClick={handleNavigateToPhysics}
+            title="Physics Parameters"
+          >
+            Physics
+          </Button>
+          <Button
+            variant="tertiary"
+            size="small"
+            onClick={handleNavigateToHarmony}
+            title="Harmony Parameters"
+          >
+            Harmony
+          </Button>
+          <Button
+            variant="tertiary"
+            size="small"
+            onClick={handleNavigateToVisualization}
+            title="Visualization Parameters"
+          >
+            Visual
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default UniverseCard;
