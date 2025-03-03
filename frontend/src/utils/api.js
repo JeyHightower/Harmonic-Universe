@@ -3,12 +3,12 @@ import { API_BASE_URL, DEFAULT_HEADERS } from './config';
 // API configuration
 export const endpoints = {
   auth: {
-    login: `${API_BASE_URL}/api/auth/login`,
-    register: `${API_BASE_URL}/api/auth/register`,
-    logout: `${API_BASE_URL}/api/auth/logout`,
-    me: `${API_BASE_URL}/api/auth/me`,
-    demoLogin: `${API_BASE_URL}/api/auth/demo-login`,
-    refresh: `${API_BASE_URL}/api/auth/refresh`,
+    login: `${API_BASE_URL}/api/v1/auth/login`,
+    register: `${API_BASE_URL}/api/v1/auth/register`,
+    logout: `${API_BASE_URL}/api/v1/auth/logout`,
+    me: `${API_BASE_URL}/api/v1/auth/me`,
+    demoLogin: `${API_BASE_URL}/api/v1/auth/demo-login`,
+    refresh: `${API_BASE_URL}/api/v1/auth/refresh`,
   },
   universes: {
     list: `${API_BASE_URL}/api/universes/`,
