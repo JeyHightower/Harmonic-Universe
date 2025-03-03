@@ -1,4 +1,3 @@
-import { SettingOutlined, UserOutlined } from '@ant-design/icons';
 import { ConfigProvider, theme } from 'antd';
 import React, { lazy, Suspense, useEffect } from 'react';
 import { Provider } from 'react-redux';
@@ -9,6 +8,7 @@ import {
   useLocation,
   useNavigate,
 } from 'react-router-dom';
+import { SettingOutlined, UserOutlined } from './components/common/Icons';
 import Layout from './components/layout/Layout';
 import { ROUTES } from './constants/routes';
 import { useModal } from './contexts/ModalContext';

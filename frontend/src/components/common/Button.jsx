@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import './Button.css';
 import Spinner from './Spinner';
@@ -12,19 +13,23 @@ import Spinner from './Spinner';
  * @param {boolean} [props.disabled=false] - Whether button is disabled
  * @param {boolean} [props.loading=false] - Whether button is in loading state
  */
-function Button({
-  children,
-  variant = 'primary',
-  size = 'medium',
-  fullWidth = false,
-  disabled = false,
-  loading = false,
-  as: Component = 'button',
-  className = '',
-  onClick,
-  ...props
-}) {
-  const buttonClass = `
+const Button = React.forwardRef(
+  (
+    {
+      children,
+      variant = 'primary',
+      size = 'medium',
+      fullWidth = false,
+      disabled = false,
+      loading = false,
+      as: Component = 'button',
+      className = '',
+      onClick,
+      ...props
+    },
+    ref
+  ) => {
+    const buttonClass = `
     button
     button-${variant}
     button-${size}
@@ -35,17 +40,38 @@ function Button({
     ${variant === 'icon-danger' ? 'button-icon button-icon-danger' : ''}
     ${className}
   `
-    .trim()
-    .replace(/\s+/g, ' ');
+      .trim()
+      .replace(/\s+/g, ' ');
 
-  // If it's a Link and disabled/loading, render a button instead
-  if (Component === Link && (disabled || loading)) {
+    // If it's a Link and disabled/loading, render a button instead
+    if (Component === Link && (disabled || loading)) {
+      return (
+        <button
+          className={buttonClass}
+          disabled
+          onClick={e => e.preventDefault()}
+          type="button"
+          ref={ref}
+          {...props}
+        >
+          {loading ? (
+            <>
+              <Spinner size="small" />
+              <span className="button-text">{children}</span>
+            </>
+          ) : (
+            children
+          )}
+        </button>
+      );
+    }
+
     return (
-      <button
+      <Component
         className={buttonClass}
-        disabled
-        onClick={e => e.preventDefault()}
-        type="button"
+        disabled={disabled || loading}
+        onClick={onClick}
+        ref={ref}
         {...props}
       >
         {loading ? (
@@ -56,28 +82,12 @@ function Button({
         ) : (
           children
         )}
-      </button>
+      </Component>
     );
   }
+);
 
-  return (
-    <Component
-      className={buttonClass}
-      disabled={disabled || loading}
-      onClick={onClick}
-      {...props}
-    >
-      {loading ? (
-        <>
-          <Spinner size="small" />
-          <span className="button-text">{children}</span>
-        </>
-      ) : (
-        children
-      )}
-    </Component>
-  );
-}
+Button.displayName = 'Button';
 
 Button.propTypes = {
   children: PropTypes.node.isRequired,

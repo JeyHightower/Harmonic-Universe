@@ -29,7 +29,8 @@ function createIconComponent(displayName) {
   });
   IconComponent.displayName = displayName;
 
-  // Add PropTypes to each icon component
+  // IMPORTANT: Always use lowercase 'propTypes' (not 'PropTypes') for React component prop validation
+  // This is a React standard and using uppercase 'PropTypes' will trigger warnings
   IconComponent.propTypes = {
     className: PropTypes.string,
     style: PropTypes.object,

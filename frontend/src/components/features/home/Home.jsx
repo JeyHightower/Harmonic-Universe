@@ -1,8 +1,8 @@
-import { DownOutlined } from '@ant-design/icons';
 import { Dropdown, Menu, Space } from 'antd';
 import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { DownOutlined } from '../../../components/common/Icons';
 import { ROUTES } from '../../../constants/routes';
 import {
   checkAuthState,
@@ -160,11 +160,7 @@ function Home() {
             menu={{ items: testMenuItems, onClick: ({ key }) => navigate(key) }}
             trigger={['click']}
           >
-            <Button
-              variant="secondary"
-              style={{ marginLeft: '10px' }}
-              ref={buttonRef}
-            >
+            <Button variant="secondary" style={{ marginLeft: '10px' }}>
               <Space>
                 Tests
                 <DownOutlined />

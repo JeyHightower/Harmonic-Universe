@@ -1,5 +1,5 @@
-import * as Icons from '@ant-design/icons';
 import React, { useEffect, useState } from 'react';
+import IconDefault, * as Icons from './common/Icons';
 
 const IconTest = () => {
   const [testResults, setTestResults] = useState([]);
@@ -7,7 +7,10 @@ const IconTest = () => {
 
   useEffect(() => {
     const results = [];
-    results.push({ type: 'info', message: 'IconTest component mounted' });
+    results.push({
+      type: 'info',
+      message: 'IconTest component mounted - Using custom Icons implementation',
+    });
 
     // Log all available icons
     const keys = Object.keys(Icons);
@@ -38,11 +41,11 @@ const IconTest = () => {
     });
 
     // Test createFromIconfontCN
-    if (
+    const createFromIconfontCNAvailable =
       typeof Icons.createFromIconfontCN === 'function' ||
-      (Icons.default &&
-        typeof Icons.default.createFromIconfontCN === 'function')
-    ) {
+      (IconDefault && typeof IconDefault.createFromIconfontCN === 'function');
+
+    if (createFromIconfontCNAvailable) {
       results.push({
         type: 'success',
         message: 'createFromIconfontCN is available',
@@ -55,7 +58,7 @@ const IconTest = () => {
     }
 
     // Test Context
-    if (Icons.default && Icons.default.Context) {
+    if ((IconDefault && IconDefault.Context) || Icons.Context) {
       results.push({ type: 'success', message: 'Icon.Context is available' });
     } else {
       results.push({ type: 'error', message: 'Icon.Context is NOT available' });
