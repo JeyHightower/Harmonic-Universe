@@ -296,3 +296,314 @@ def generate_ai_music_endpoint(universe_id):
     except Exception as e:
         logger.error(f"Unexpected error in AI music generation: {str(e)}")
         return jsonify({"error": "An unexpected error occurred"}), 500
+
+@music_bp.route('/tracks', methods=['GET'])
+@jwt_required()
+def get_audio_tracks():
+    """Get audio tracks with optional filtering by universe or scene."""
+    try:
+        # Get current user from JWT
+        current_user_id = get_jwt_identity()
+
+        # Get optional query parameters
+        universe_id = request.args.get('universe_id')
+        scene_id = request.args.get('scene_id')
+
+        with get_db() as db:
+            # Start with a base query
+            from app.models.audio.audio_track import AudioTrack
+            query = db.query(AudioTrack)
+
+            # Add filters based on provided parameters
+            query = query.filter(AudioTrack.user_id == current_user_id)
+
+            if universe_id:
+                query = query.filter(AudioTrack.universe_id == universe_id)
+
+            if scene_id:
+                query = query.filter(AudioTrack.scene_id == scene_id)
+
+            # Execute query and return results
+            tracks = query.all()
+            return jsonify([track.to_dict() for track in tracks])
+
+    except Exception as e:
+        logger.error(f"Error getting audio tracks: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@music_bp.route('/tracks', methods=['POST'])
+@jwt_required()
+def create_audio_track():
+    """Create a new audio track."""
+    try:
+        # Get current user from JWT
+        current_user_id = get_jwt_identity()
+
+        # Get request data
+        data = request.json
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        # Validate required fields
+        required_fields = ['name', 'scene_id']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"error": f"Missing required field: {field}"}), 400
+
+        scene_id = data['scene_id']
+
+        with get_db() as db:
+            # Verify scene exists
+            from app.models.universe.scene import Scene
+            scene = db.query(Scene).filter_by(id=scene_id).first()
+            if not scene:
+                return jsonify({"error": "Scene not found"}), 404
+
+            # Create new audio track
+            from app.models.audio.audio_track import AudioTrack
+            new_track = AudioTrack(
+                name=data['name'],
+                scene_id=scene_id,
+                universe_id=scene.universe_id,
+                user_id=current_user_id,
+                parameters=data.get('parameters', {}),
+                duration=data.get('duration', 0.0)
+            )
+
+            db.add(new_track)
+            db.commit()
+            db.refresh(new_track)
+
+            return jsonify(new_track.to_dict()), 201
+
+    except Exception as e:
+        logger.error(f"Error creating audio track: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@music_bp.route('/tracks/<track_id>', methods=['GET'])
+@jwt_required()
+def get_single_audio_track(track_id):
+    """Get a single audio track by ID."""
+    try:
+        # Get current user from JWT
+        current_user_id = get_jwt_identity()
+
+        with get_db() as db:
+            # Get the track
+            from app.models.audio.audio_track import AudioTrack
+            track = db.query(AudioTrack).filter_by(id=track_id).first()
+
+            if not track:
+                return jsonify({"error": "Audio track not found"}), 404
+
+            # Check permissions
+            if str(track.user_id) != current_user_id:
+                return jsonify({"error": "You don't have permission to access this track"}), 403
+
+            return jsonify(track.to_dict())
+
+    except Exception as e:
+        logger.error(f"Error getting audio track: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@music_bp.route('/tracks/<track_id>', methods=['PUT'])
+@jwt_required()
+def update_audio_track(track_id):
+    """Update an existing audio track."""
+    try:
+        # Get current user from JWT
+        current_user_id = get_jwt_identity()
+
+        # Get request data
+        data = request.json
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        with get_db() as db:
+            # Get the track
+            from app.models.audio.audio_track import AudioTrack
+            track = db.query(AudioTrack).filter_by(id=track_id).first()
+
+            if not track:
+                return jsonify({"error": "Audio track not found"}), 404
+
+            # Check permissions
+            if str(track.user_id) != current_user_id:
+                return jsonify({"error": "You don't have permission to update this track"}), 403
+
+            # Update allowed fields
+            if 'name' in data:
+                track.name = data['name']
+
+            if 'parameters' in data:
+                track.parameters = data['parameters']
+
+            if 'duration' in data:
+                track.duration = data['duration']
+
+            db.commit()
+            db.refresh(track)
+
+            return jsonify(track.to_dict())
+
+    except Exception as e:
+        logger.error(f"Error updating audio track: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@music_bp.route('/tracks/<track_id>', methods=['DELETE'])
+@jwt_required()
+def delete_audio_track(track_id):
+    """Delete an audio track."""
+    try:
+        # Get current user from JWT
+        current_user_id = get_jwt_identity()
+
+        with get_db() as db:
+            # Get the track
+            from app.models.audio.audio_track import AudioTrack
+            track = db.query(AudioTrack).filter_by(id=track_id).first()
+
+            if not track:
+                return jsonify({"error": "Audio track not found"}), 404
+
+            # Check permissions
+            if str(track.user_id) != current_user_id:
+                return jsonify({"error": "You don't have permission to delete this track"}), 403
+
+            # Delete the track
+            db.delete(track)
+            db.commit()
+
+            return jsonify({"message": "Audio track deleted successfully"})
+
+    except Exception as e:
+        logger.error(f"Error deleting audio track: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@music_bp.route('/generate', methods=['POST'])
+@jwt_required()
+def generate_audio_from_parameters():
+    """Generate audio based on provided parameters."""
+    try:
+        # Get current user from JWT
+        current_user_id = get_jwt_identity()
+
+        # Get request data
+        data = request.json
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        # Validate required fields
+        required_fields = ['scene_id', 'parameters']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"error": f"Missing required field: {field}"}), 400
+
+        scene_id = data['scene_id']
+
+        with get_db() as db:
+            # Verify scene exists
+            from app.models.universe.scene import Scene
+            scene = db.query(Scene).filter_by(id=scene_id).first()
+            if not scene:
+                return jsonify({"error": "Scene not found"}), 404
+
+            # Generate music using the provided parameters
+            generated_music = generate_music_from_params(
+                harmony_params=data['parameters'],
+                physics_params=scene.physics_overrides or {}
+            )
+
+            # Create a new audio track with the generated music
+            from app.models.audio.audio_track import AudioTrack
+            duration = data.get('duration', 30.0)  # Default 30 seconds
+
+            new_track = AudioTrack(
+                name=data.get('name', 'Generated Track'),
+                scene_id=scene_id,
+                universe_id=scene.universe_id,
+                user_id=current_user_id,
+                parameters=data['parameters'],
+                duration=duration
+            )
+
+            db.add(new_track)
+            db.commit()
+            db.refresh(new_track)
+
+            # Return the track information along with the generated music data
+            response = new_track.to_dict()
+            response["music_data"] = generated_music
+
+            return jsonify(response), 201
+
+    except Exception as e:
+        logger.error(f"Error generating audio: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@music_bp.route('/physics-to-audio', methods=['POST'])
+@jwt_required()
+def process_physics_to_audio():
+    """Process physics parameters to generate audio."""
+    try:
+        # Get current user from JWT
+        current_user_id = get_jwt_identity()
+
+        # Get request data
+        data = request.json
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        # Validate required fields
+        required_fields = ['scene_id', 'physics_parameters']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"error": f"Missing required field: {field}"}), 400
+
+        scene_id = data['scene_id']
+        physics_parameters = data['physics_parameters']
+        harmony_parameters = data.get('harmony_parameters', {})
+
+        with get_db() as db:
+            # Verify scene exists
+            from app.models.universe.scene import Scene
+            scene = db.query(Scene).filter_by(id=scene_id).first()
+            if not scene:
+                return jsonify({"error": "Scene not found"}), 404
+
+            # Generate music using physics and harmony parameters
+            generated_music = generate_music_from_params(
+                harmony_params=harmony_parameters,
+                physics_params=physics_parameters
+            )
+
+            # Create a new audio track with the generated music
+            from app.models.audio.audio_track import AudioTrack
+            duration = data.get('duration', 30.0)  # Default 30 seconds
+
+            new_track = AudioTrack(
+                name=data.get('name', 'Physics-Generated Track'),
+                scene_id=scene_id,
+                universe_id=scene.universe_id,
+                user_id=current_user_id,
+                parameters={
+                    "harmony_parameters": harmony_parameters,
+                    "physics_parameters": physics_parameters
+                },
+                duration=duration
+            )
+
+            db.add(new_track)
+            db.commit()
+            db.refresh(new_track)
+
+            # Return the track information along with the generated music data
+            response = new_track.to_dict()
+            response["music_data"] = generated_music
+
+            return jsonify(response), 201
+
+    except Exception as e:
+        logger.error(f"Error processing physics to audio: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+

@@ -57,6 +57,11 @@ run_backend_tests() {
     pip install pytest pytest-cov
   fi
 
+  # Reset test database before running tests
+  echo "Resetting test database..."
+  python scripts/reset_test_db.py
+  print_result "Test database reset" "Failed to reset test database, tests may fail due to existing data."
+
   # Run tests with coverage
   echo "Running backend tests with coverage..."
   python -m pytest -v --cov=app tests/
@@ -129,9 +134,17 @@ run_e2e_tests() {
     print_result "Cypress installation" "Failed to install Cypress."
   fi
 
+  # Reset test database before running tests
+  echo "Resetting test database..."
+  cd backend
+  python scripts/reset_test_db.py
+  print_result "Test database reset" "Failed to reset test database, tests may fail due to existing data."
+  cd ..
+
   # Start backend server in background
   echo "Starting backend server..."
   cd backend
+  export FLASK_ENV=testing
   python -m app.main &
   BACKEND_PID=$!
   cd ..
@@ -185,8 +198,14 @@ run_api_tests() {
     pip install pytest requests
   fi
 
+  # Reset test database before running tests
+  echo "Resetting test database..."
+  python scripts/reset_test_db.py
+  print_result "Test database reset" "Failed to reset test database, tests may fail due to existing data."
+
   # Start backend server in background
   echo "Starting backend server for API tests..."
+  export FLASK_ENV=testing
   python -m app.main &
   API_PID=$!
 
@@ -224,6 +243,11 @@ run_integration_tests() {
     echo "Installing pytest..."
     pip install pytest
   fi
+
+  # Reset test database before running tests
+  echo "Resetting test database..."
+  python scripts/reset_test_db.py
+  print_result "Test database reset" "Failed to reset test database, tests may fail due to existing data."
 
   # Run integration tests
   echo "Running integration tests..."

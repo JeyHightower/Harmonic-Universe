@@ -175,9 +175,18 @@ def login():
 
     except Exception as e:
         logger.error(f"Login error: {str(e)}", exc_info=True)
-        if not isinstance(e, (ValidationError, InvalidCredentialsError, AuthenticationError)):
+        if isinstance(e, InvalidCredentialsError):
+            # Re-raise the original error to preserve the 401 status code
+            raise
+        elif isinstance(e, ValidationError):
+            # Re-raise validation errors
+            raise
+        elif isinstance(e, AuthenticationError):
+            # Re-raise authentication errors
+            raise
+        else:
+            # For unexpected errors, wrap in a generic authentication error
             raise AuthenticationError('Login failed. Please try again.')
-        raise
 
 @auth_bp.route('/refresh', methods=['POST'])
 @jwt_required(refresh=True)
@@ -266,6 +275,52 @@ def update_me():
         user.save(db)
 
         return jsonify(user.to_dict())
+
+@auth_bp.route('/update-password', methods=['POST'])
+@jwt_required()
+def update_password():
+    """Update user password."""
+    try:
+        current_user_id = get_jwt_identity()
+        token = get_jwt()
+
+        # Verify token type
+        if token.get('type') != 'access':
+            raise AuthenticationError('Invalid token type')
+
+        data = request.get_json()
+        if not data:
+            raise ValidationError('No input data provided')
+
+        if not all(k in data for k in ('current_password', 'new_password')):
+            raise ValidationError('Missing required fields: current_password, new_password')
+
+        # Validate new password
+        if not isinstance(data['new_password'], str) or len(data['new_password']) < 6:
+            raise ValidationError('New password must be at least 6 characters')
+
+        with get_db() as db:
+            user = User.get_by_id(db, current_user_id)
+            if not user:
+                raise AuthenticationError('User not found')
+
+            # Verify current password
+            if not user.verify_password(data['current_password']):
+                raise InvalidCredentialsError('Current password is incorrect')
+
+            # Update password
+            user.set_password(data['new_password'])
+            user.save(db)
+
+            return jsonify({
+                'message': 'Password updated successfully',
+                'status': 'success'
+            })
+    except Exception as e:
+        logger.error(f"Password update error: {str(e)}", exc_info=True)
+        if not isinstance(e, (ValidationError, InvalidCredentialsError, AuthenticationError)):
+            raise ValidationError(f'Password update failed: {str(e)}')
+        raise
 
 @auth_bp.route('/logout', methods=['POST'])
 @jwt_required(optional=True)  # Make token optional

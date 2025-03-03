@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Button from '../../components/common/Button';
-import { updateUserProfile } from '../../store/slices/authSlice';
+import { updateUserProfile } from '../../store/thunks/authThunks';
 
 const { TextArea } = Input;
 const { Option } = Select;

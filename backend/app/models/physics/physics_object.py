@@ -11,17 +11,17 @@ class PhysicsObject(BaseModel):
 
     name = Column(String(255), nullable=False)
     type = Column(String(50), nullable=False)
-    universe_id = Column(UUID(as_uuid=True), ForeignKey("universes.id", ondelete="CASCADE"))
-    scene_id = Column(UUID(as_uuid=True), ForeignKey("scenes.id", ondelete="CASCADE"))
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"))
+    universe_id = Column(UUID(as_uuid=True), ForeignKey("universes.id", ondelete="CASCADE"), nullable=False)
+    scene_id = Column(UUID(as_uuid=True), ForeignKey("scenes.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
     # Physics properties
-    position = Column(JSONB)  # {x: float, y: float, z: float}
-    rotation = Column(JSONB)  # {x: float, y: float, z: float}
-    scale = Column(JSONB)    # {x: float, y: float, z: float}
-    mass = Column(Float)
-    velocity = Column(JSONB)  # {x: float, y: float, z: float}
-    parameters = Column(JSONB)
+    position = Column(JSONB, nullable=False, default=lambda: {"x": 0.0, "y": 0.0, "z": 0.0})
+    rotation = Column(JSONB, nullable=False, default=lambda: {"x": 0.0, "y": 0.0, "z": 0.0})
+    scale = Column(JSONB, nullable=False, default=lambda: {"x": 1.0, "y": 1.0, "z": 1.0})
+    mass = Column(Float, nullable=False, default=1.0)
+    velocity = Column(JSONB, nullable=False, default=lambda: {"x": 0.0, "y": 0.0, "z": 0.0})
+    parameters = Column(JSONB, nullable=False, default=lambda: {})
 
     # Relationships
     universe = relationship("Universe", back_populates="physics_objects")
@@ -31,12 +31,12 @@ class PhysicsObject(BaseModel):
     def to_dict(self):
         """Convert to dictionary."""
         return {
-            "id": self.id,
+            "id": str(self.id),
             "name": self.name,
             "type": self.type,
-            "universe_id": self.universe_id,
-            "scene_id": self.scene_id,
-            "user_id": self.user_id,
+            "universe_id": str(self.universe_id),
+            "scene_id": str(self.scene_id),
+            "user_id": str(self.user_id),
             "position": self.position,
             "rotation": self.rotation,
             "scale": self.scale,

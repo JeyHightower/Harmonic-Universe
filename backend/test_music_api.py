@@ -19,10 +19,9 @@ def login():
     """Login and get access token."""
     print("Logging in...")
     try:
-        print(f"Attempting to connect to {API_URL}/api/auth/login")
+        print(f"Attempting to connect to {API_URL}/api/v1/auth/demo-login")
         response = requests.post(
-            f"{API_URL}/api/auth/login",
-            json={"email": EMAIL, "password": PASSWORD},
+            f"{API_URL}/api/v1/auth/demo-login",
             timeout=10  # Set a timeout of 10 seconds
         )
 
@@ -47,7 +46,7 @@ def get_universes(token):
     print("Getting universes...")
     try:
         response = requests.get(
-            f"{API_URL}/api/universes/",
+            f"{API_URL}/api/v1/universes/",
             headers={"Authorization": f"Bearer {token}"},
             timeout=10
         )
@@ -69,7 +68,7 @@ def generate_music(token, universe_id):
     print(f"Generating music for universe {universe_id}...")
     try:
         response = requests.get(
-            f"{API_URL}/api/music/{universe_id}/generate",
+            f"{API_URL}/api/v1/music/{universe_id}/generate",
             headers={"Authorization": f"Bearer {token}"},
             timeout=30  # Longer timeout for music generation
         )
@@ -91,7 +90,7 @@ def download_music(token, universe_id):
     print(f"Downloading music for universe {universe_id}...")
     try:
         response = requests.get(
-            f"{API_URL}/api/music/{universe_id}/download",
+            f"{API_URL}/api/v1/music/{universe_id}/download",
             headers={"Authorization": f"Bearer {token}"},
             timeout=30,  # Longer timeout for music download
             stream=True  # Stream the response to handle large files

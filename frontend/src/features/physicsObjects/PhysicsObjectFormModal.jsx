@@ -6,7 +6,7 @@ import Button from '../../components/common/Button';
 import {
   createPhysicsObject,
   updatePhysicsObject,
-} from '../../store/slices/physicsObjectSlice';
+} from '../../store/thunks/physicsObjectsThunks';
 
 const { TextArea } = Input;
 const { Option } = Select;

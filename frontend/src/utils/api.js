@@ -26,6 +26,7 @@ export const endpoints = {
     update: id => `${API_BASE_URL}/api/scenes/${id}/`,
     delete: id => `${API_BASE_URL}/api/scenes/${id}/`,
     reorder: `${API_BASE_URL}/api/scenes/reorder`,
+    forUniverse: universeId => `${API_BASE_URL}/api/scenes/?universe_id=${universeId}`,
     physicsParameters: {
       list: sceneId =>
         `${API_BASE_URL}/api/scenes/${sceneId}/physics_parameters`,

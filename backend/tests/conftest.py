@@ -7,23 +7,23 @@ eventlet.monkey_patch()
 # Add the project root directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from backend.app import create_app, db
-from backend.app.models import (
-    User, Universe, Storyboard, Scene,
-    VisualEffect, AudioTrack, PhysicsParameters,
-    Profile, PhysicsObject, PhysicsConstraint,
-    Activity, Collaborator
+from app import create_app, socketio
+from app.db.session import db_session, Base, engine
+from app.models import (
+    User, Universe, Scene,
+    PhysicsObject, PhysicsParameters, PhysicsConstraint,
+    AudioTrack
 )
+from app.models.visualization.visualization import Visualization
 import jwt
 from datetime import datetime, timedelta
 from flask_socketio import SocketIO, SocketIOTestClient
 from flask_jwt_extended import create_access_token
-from backend.app.extensions import socketio
 import threading
 from collections import deque
 import traceback
 from sqlalchemy.orm import scoped_session, sessionmaker
-from app.config import Config
+from app.core.config import Config
 
 class TestConfig(Config):
     TESTING = True
@@ -37,24 +37,24 @@ def app():
 
     # Create tables
     with app.app_context():
-        db.create_all()
+        Base.metadata.create_all(bind=engine)
 
     yield app
 
     # Clean up
     with app.app_context():
-        db.session.remove()
-        db.drop_all()
+        db_session.remove()
+        Base.metadata.drop_all(bind=engine)
 
 @pytest.fixture(scope='session')
 def db(app):
     """Create database for the tests."""
-    db.app = app
-    db.create_all()
+    db_session.app = app
+    db_session.create_all()
 
-    yield db
+    yield db_session
 
-    db.drop_all()
+    db_session.drop_all()
 
 @pytest.fixture(scope='function')
 def session(db):
@@ -65,7 +65,7 @@ def session(db):
     options = dict(bind=connection, binds={})
     session = db.create_scoped_session(options=options)
 
-    db.session = session
+    db_session.session = session
 
     yield session
 
@@ -88,13 +88,20 @@ def runner(app):
 def test_user(app):
     """Create a test user."""
     with app.app_context():
+        # Check if user already exists and delete it
+        existing_user = db_session.query(User).filter_by(email='test@example.com').first()
+        if existing_user:
+            db_session.delete(existing_user)
+            db_session.commit()
+
+        # Create new test user
         user = User(
             username='test_user',
             email='test@example.com'
         )
         user.set_password('password123')
-        db.session.add(user)
-        db.session.commit()
+        db_session.add(user)
+        db_session.commit()
         return user
 
 @pytest.fixture

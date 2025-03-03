@@ -1,5 +1,5 @@
 from factory import Factory, Faker, LazyAttribute, SubFactory
-from app.models import User, Universe, Scene, Storyboard
+from app.models import User, Universe, Scene
 from .utils import random_string
 
 class UserFactory(Factory):
@@ -21,15 +21,6 @@ class UniverseFactory(Factory):
 class SceneFactory(Factory):
     class Meta:
         model = Scene
-
-    name = Faker('sentence', nb_words=3)
-    description = Faker('text', max_nb_chars=200)
-    universe = SubFactory(UniverseFactory)
-    creator = SubFactory(UserFactory)
-
-class StoryboardFactory(Factory):
-    class Meta:
-        model = Storyboard
 
     name = Faker('sentence', nb_words=3)
     description = Faker('text', max_nb_chars=200)

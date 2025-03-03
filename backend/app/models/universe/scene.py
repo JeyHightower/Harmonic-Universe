@@ -85,19 +85,19 @@ class Scene(BaseModel):
     harmony_parameters = relationship("HarmonyParameter", back_populates="scene", cascade="all, delete-orphan")
     physics_constraints = relationship("PhysicsConstraint", back_populates="scene", cascade="all, delete-orphan")
     audio_tracks = relationship("AudioTrack", back_populates="scene", cascade="all, delete-orphan")
+    visualizations = relationship("Visualization", back_populates="scene", cascade="all, delete-orphan")
 
     def to_dict(self):
-        """Convert to dictionary with all parameters."""
+        """Return a dictionary representation of the scene."""
         return {
-            "id": self.id,
+            "id": str(self.id),
             "name": self.name,
             "description": self.description,
             "scene_order": self.scene_order,
-            "order": self.scene_order,  # Adding order field as an alias for scene_order
             "is_active": self.is_active,
             "version": self.version,
-            "universe_id": self.universe_id,
-            "creator_id": self.creator_id,
+            "universe_id": str(self.universe_id),
+            "creator_id": str(self.creator_id),
             "physics_overrides": self.physics_overrides,
             "harmony_overrides": self.harmony_overrides,
             "visualization_settings": self.visualization_settings,

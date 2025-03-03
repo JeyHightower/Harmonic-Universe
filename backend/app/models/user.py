@@ -27,6 +27,7 @@ class User(BaseModel):
     universes = relationship("Universe", back_populates="user", cascade="all, delete-orphan")
     scenes = relationship("Scene", back_populates="creator", cascade="all, delete-orphan")
     audio_tracks = relationship("AudioTrack", back_populates="user", cascade="all, delete-orphan")
+    visualizations = relationship("Visualization", back_populates="user", cascade="all, delete-orphan")
 
     @classmethod
     def get_by_id(cls, db, user_id):

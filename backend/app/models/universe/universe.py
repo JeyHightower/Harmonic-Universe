@@ -20,6 +20,7 @@ class Universe(BaseModel):
     user = relationship("User", back_populates="universes")
     scenes = relationship("Scene", back_populates="universe", cascade="all, delete-orphan")
     physics_parameters = relationship("PhysicsParameters", back_populates="universe", cascade="all, delete-orphan")
+    visualizations = relationship("Visualization", back_populates="universe", cascade="all, delete-orphan")
 
     # Universe-wide parameters
     physics_params = Column(JSONB, default=lambda: {

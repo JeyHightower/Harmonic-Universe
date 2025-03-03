@@ -1,18 +1,19 @@
 """Test factories for models."""
 import factory
 from factory.alchemy import SQLAlchemyModelFactory
-from backend.app.models import (
-    Scene, Storyboard, User, Universe, Collaborator,
-    PhysicsParameters, VisualEffect, AudioTrack, Profile,
-    PhysicsObject, PhysicsConstraint, Activity
+from app.models import (
+    Scene, User, Universe,
+    PhysicsParameters, AudioTrack,
+    PhysicsObject, PhysicsConstraint
 )
-from backend.app.extensions import db
+from app.models.visualization.visualization import Visualization
+from app.db.session import db_session as db
 
 class BaseFactory(SQLAlchemyModelFactory):
     """Base factory class."""
     class Meta:
         abstract = True
-        sqlalchemy_session = db.session
+        sqlalchemy_session = db
 
 class UserFactory(BaseFactory):
     """Factory for User model."""
@@ -46,24 +47,6 @@ class PhysicsParametersFactory(BaseFactory):
     position_iterations = 3
     universe = factory.SubFactory(UniverseFactory)
 
-class CollaboratorFactory(BaseFactory):
-    """Factory for Collaborator model."""
-    class Meta:
-        model = Collaborator
-
-    universe = factory.SubFactory(UniverseFactory)
-    user = factory.SubFactory(UserFactory)
-    role = 'viewer'
-
-class StoryboardFactory(BaseFactory):
-    """Factory for Storyboard model."""
-    class Meta:
-        model = Storyboard
-
-    name = factory.Sequence(lambda n: f'Storyboard {n}')
-    description = factory.Sequence(lambda n: f'Description for Storyboard {n}')
-    universe = factory.SubFactory(UniverseFactory)
-
 class SceneFactory(BaseFactory):
     """Factory for Scene model."""
     class Meta:
@@ -73,21 +56,20 @@ class SceneFactory(BaseFactory):
     description = factory.Sequence(lambda n: f'Description for Scene {n}')
     sequence = factory.Sequence(lambda n: n)
     content = factory.Dict({'layout': 'grid', 'elements': []})
-    storyboard = factory.SubFactory(StoryboardFactory)
+    universe = factory.SubFactory(UniverseFactory)
 
-class VisualEffectFactory(BaseFactory):
-    """Factory for VisualEffect model."""
+class VisualizationFactory(BaseFactory):
+    """Factory for Visualization model."""
     class Meta:
-        model = VisualEffect
+        model = Visualization
 
-    name = factory.Sequence(lambda n: f'Visual Effect {n}')
-    effect_type = 'particle'
-    parameters = factory.Dict({
-        'particle_count': 100,
-        'particle_size': 5,
-        'particle_color': '#FFFFFF'
+    title = factory.Sequence(lambda n: f'Visualization {n}')
+    type = 'waveform'
+    settings = factory.Dict({
+        'color': '#FFFFFF',
+        'amplitude': 1.0
     })
-    scene = factory.SubFactory(SceneFactory)
+    universe = factory.SubFactory(UniverseFactory)
 
 class AudioTrackFactory(BaseFactory):
     """Factory for AudioTrack model."""
@@ -103,16 +85,6 @@ class AudioTrackFactory(BaseFactory):
         'fade_in': 2.0
     })
     scene = factory.SubFactory(SceneFactory)
-
-class ProfileFactory(BaseFactory):
-    """Factory for Profile model."""
-    class Meta:
-        model = Profile
-
-    user = factory.SubFactory(UserFactory)
-    display_name = factory.Sequence(lambda n: f'Display Name {n}')
-    bio = factory.Sequence(lambda n: f'Bio for user {n}')
-    avatar_url = factory.Sequence(lambda n: f'https://example.com/avatars/{n}.jpg')
 
 class PhysicsObjectFactory(BaseFactory):
     """Factory for PhysicsObject model."""
@@ -148,17 +120,3 @@ class PhysicsConstraintFactory(BaseFactory):
     object_a = factory.SubFactory(PhysicsObjectFactory)
     object_b = factory.SubFactory(PhysicsObjectFactory)
     scene = factory.SubFactory(SceneFactory)
-
-class ActivityFactory(BaseFactory):
-    """Factory for Activity model."""
-    class Meta:
-        model = Activity
-
-    universe = factory.SubFactory(UniverseFactory)
-    user = factory.SubFactory(UserFactory)
-    action = 'create'
-    target = 'scene'
-    details = factory.Dict({
-        'scene_id': 1,
-        'scene_name': 'Test Scene'
-    })

@@ -51,12 +51,12 @@ export const createUniverse = createAsyncThunk(
 // Update an existing universe
 export const updateUniverse = createAsyncThunk(
   'universe/updateUniverse',
-  async ({ universeId, universeData }, { rejectWithValue }) => {
+  async ({ id, ...data }, { rejectWithValue }) => {
     try {
-      console.debug('Updating universe:', { universeId, universeData });
+      console.debug('Updating universe:', { id, data });
       const response = await api.put(
-        endpoints.universes.update(universeId),
-        universeData
+        endpoints.universes.update(id),
+        data
       );
       console.debug('Universe updated:', response);
       return response;

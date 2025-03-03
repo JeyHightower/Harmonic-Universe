@@ -10,7 +10,6 @@ from uuid import UUID
 import os
 
 audio_bp = Blueprint('audio', __name__)
-visualization_bp = Blueprint('visualization', __name__)
 physics_bp = Blueprint('physics', __name__)
 ai_bp = Blueprint('ai', __name__)
 
@@ -49,7 +48,6 @@ def list_audio_tracks():
         if universe_id:
             query = query.filter(AudioTrack.universe_id == universe_id)
 
-        # Get results
         audio_tracks = query.all()
         return jsonify([track.to_dict() for track in audio_tracks])
 
@@ -205,17 +203,9 @@ def delete_audio(audio_id):
 
         return jsonify({"message": "Audio track deleted successfully"})
 
-@audio_bp.route('/tracks/<audio_id>', methods=['DELETE'])
-@jwt_required()
 def delete_audio_track_compat(audio_id):
     """Compatibility route for deleting audio tracks."""
     return delete_audio(audio_id)
-
-@visualization_bp.route('/generate', methods=['POST'])
-@jwt_required()
-def generate_visualization():
-    """Generate visualization based on parameters."""
-    return jsonify({"message": "Not implemented yet"}), 501
 
 @physics_bp.route('/simulate', methods=['POST'])
 @jwt_required()

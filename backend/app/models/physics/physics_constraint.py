@@ -11,19 +11,25 @@ class PhysicsConstraint(BaseModel):
 
     name = Column(String(255), nullable=False)
     type = Column(String(50), nullable=False)  # e.g., "distance", "angle", "spring"
-    scene_id = Column(UUID(as_uuid=True), ForeignKey("scenes.id", ondelete="CASCADE"))
-    parameters = Column(JSONB)  # Constraint-specific parameters
+    scene_id = Column(UUID(as_uuid=True), ForeignKey("scenes.id", ondelete="CASCADE"), nullable=False)
+    object1_id = Column(UUID(as_uuid=True), ForeignKey("physics_objects.id", ondelete="CASCADE"), nullable=False)
+    object2_id = Column(UUID(as_uuid=True), ForeignKey("physics_objects.id", ondelete="CASCADE"), nullable=False)
+    parameters = Column(JSONB, nullable=False, default=lambda: {})
 
     # Relationships
     scene = relationship("Scene", back_populates="physics_constraints")
+    object1 = relationship("PhysicsObject", foreign_keys=[object1_id])
+    object2 = relationship("PhysicsObject", foreign_keys=[object2_id])
 
     def to_dict(self):
         """Convert to dictionary."""
         return {
-            "id": self.id,
+            "id": str(self.id),
             "name": self.name,
             "type": self.type,
-            "scene_id": self.scene_id,
+            "scene_id": str(self.scene_id),
+            "object1_id": str(self.object1_id),
+            "object2_id": str(self.object2_id),
             "parameters": self.parameters,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat()

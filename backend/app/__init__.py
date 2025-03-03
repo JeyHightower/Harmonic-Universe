@@ -56,6 +56,10 @@ def create_app(config_class=Config):
     })
     socketio.init_app(app, cors_allowed_origins="*")
 
+    # Register JWT token blocklist checker
+    from app.core.jwt import is_token_in_blocklist
+    jwt.token_in_blocklist_loader(is_token_in_blocklist)
+
     # Register blueprints
     from app.api.routes import (
         auth_bp,
@@ -67,21 +71,14 @@ def create_app(config_class=Config):
         physics_objects_bp,
         scenes_bp,
         users_bp,
-        physics_parameters_bp
+        physics_parameters_bp,
+        health_bp
     )
     from app.api.routes.music_flask import music_bp
+    from app.api.routes.register_routes import register_routes
 
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(universe_bp, url_prefix='/api/universes')
-    app.register_blueprint(audio_bp, url_prefix='/api/audio')
-    app.register_blueprint(visualization_bp, url_prefix='/api/visualizations')
-    app.register_blueprint(physics_bp, url_prefix='/api/physics')
-    app.register_blueprint(ai_bp, url_prefix='/api/ai')
-    app.register_blueprint(physics_objects_bp, url_prefix='/api/physics-objects')
-    app.register_blueprint(music_bp, url_prefix='/api/music')
-    app.register_blueprint(scenes_bp, url_prefix='/api/scenes')
-    app.register_blueprint(users_bp, url_prefix='/api/users')
-    app.register_blueprint(physics_parameters_bp, url_prefix='/api/physics-parameters')
+    # Register all routes through the central registration function
+    register_routes(app)
 
     # Register error handlers
     from app.core.error_handlers import register_error_handlers
@@ -99,5 +96,33 @@ def create_app(config_class=Config):
                 create_demo_user()
             except Exception as e:
                 logger.warning(f"Failed to create demo user: {e}")
+
+    # JWT error handlers
+    @jwt.unauthorized_loader
+    def handle_unauthorized_loader(msg):
+        return {
+            'error': 'UNAUTHORIZED',
+            'msg': msg,
+            'message': 'Missing or invalid authentication token',
+            'status_code': 401
+        }, 401
+
+    @jwt.invalid_token_loader
+    def handle_invalid_token(msg):
+        return {
+            'error': 'UNAUTHORIZED',
+            'msg': msg,
+            'message': 'Invalid authentication token',
+            'status_code': 401
+        }, 401
+
+    @jwt.expired_token_loader
+    def handle_expired_token(jwt_header, jwt_payload):
+        return {
+            'error': 'UNAUTHORIZED',
+            'msg': 'Token has expired',
+            'message': 'Authentication token has expired',
+            'status_code': 401
+        }, 401
 
     return app

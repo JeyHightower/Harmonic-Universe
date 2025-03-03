@@ -1,7 +1,8 @@
 """API package."""
 
 from .routes.auth import auth_bp
-from .routes.music_generation import audio_bp, visualization_bp, physics_bp, ai_bp
+from .routes.music_generation import audio_bp, physics_bp, ai_bp
+from .routes.visualization import visualization_bp
 from .routes.universe import universe_bp
 from .routes.physics_objects import physics_objects_bp
 

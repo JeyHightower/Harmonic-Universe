@@ -13,14 +13,8 @@ def register_error_handlers(app):
     @app.errorhandler(AppError)
     def handle_app_error(error):
         """Handle application-specific errors."""
-        response = jsonify(error.to_dict())
-        response.status_code = error.status_code
-        return response
-
-    @app.errorhandler(ValidationError)
-    def handle_validation_error(error):
-        """Handle validation errors."""
         response = jsonify({
+            'error': error.error_code,
             'error_code': error.error_code,
             'message': str(error),
             'status_code': error.status_code,
@@ -31,10 +25,27 @@ def register_error_handlers(app):
         response.status_code = error.status_code
         return response
 
+    @app.errorhandler(ValidationError)
+    def handle_validation_error(error):
+        """Handle validation errors."""
+        response = jsonify({
+            'error': error.error_code,
+            'error_code': error.error_code,
+            'message': str(error),
+            'status_code': error.status_code,
+            'details': error.details,
+            'severity': error.severity.value,
+            'category': error.category.value,
+            'validation_errors': error.validation_errors if hasattr(error, 'validation_errors') else None
+        })
+        response.status_code = error.status_code
+        return response
+
     @app.errorhandler(AuthenticationError)
     def handle_authentication_error(error):
         """Handle authentication errors."""
         response = jsonify({
+            'error': error.error_code,
             'error_code': error.error_code,
             'message': str(error),
             'status_code': error.status_code,
@@ -49,6 +60,7 @@ def register_error_handlers(app):
     def handle_authorization_error(error):
         """Handle authorization errors."""
         response = jsonify({
+            'error': error.error_code,
             'error_code': error.error_code,
             'message': str(error),
             'status_code': error.status_code,
@@ -63,6 +75,7 @@ def register_error_handlers(app):
     def handle_http_error(error):
         """Handle HTTP exceptions."""
         response = jsonify({
+            'error': error.__class__.__name__,
             'error_code': error.__class__.__name__,
             'message': error.description,
             'status_code': error.code,
@@ -78,6 +91,7 @@ def register_error_handlers(app):
         """Handle unexpected errors."""
         logger.error(f"Unexpected error: {str(error)}", exc_info=True)
         response = jsonify({
+            'error': 'INTERNAL_SERVER_ERROR',
             'error_code': 'INTERNAL_SERVER_ERROR',
             'message': 'An unexpected error occurred',
             'status_code': 500,

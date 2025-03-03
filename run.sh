@@ -188,7 +188,7 @@ start_dev() {
   print_section "Starting Development Servers"
 
   # Check if ports are available
-  backend_port=${BACKEND_PORT:-5000}
+  backend_port=${BACKEND_PORT:-8000}
   frontend_port=${FRONTEND_PORT:-3000}
 
   if command_exists lsof; then
@@ -206,6 +206,8 @@ start_dev() {
   # Start backend server
   echo "Starting backend server..."
   cd backend
+  export FLASK_APP=run.py
+  export FLASK_ENV=development
   python run.py &
   backend_pid=$!
   cd ..

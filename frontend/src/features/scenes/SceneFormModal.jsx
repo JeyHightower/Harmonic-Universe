@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import Button from '../../components/common/Button';
-import { createScene, updateScene } from '../../store/slices/sceneSlice';
+import { createScene, updateScene } from '../../store/thunks/scenesThunks';
 
 const { TextArea } = Input;
 const { Option } = Select;

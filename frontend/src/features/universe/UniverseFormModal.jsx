@@ -6,7 +6,7 @@ import Button from '../../components/common/Button';
 import {
   createUniverse,
   updateUniverse,
-} from '../../store/slices/universeSlice';
+} from '../../store/thunks/universeThunks';
 
 const { TextArea } = Input;
 const { Option } = Select;
