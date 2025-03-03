@@ -14,12 +14,14 @@ const antDesignIconsPlugin = () => {
       }
 
       // Handle the Context import from Icons.jsx directory access
-      if (id.includes('/Icons.jsx/') && id.endsWith('/es/components/Context')) {
+      if (id.includes('/Icons.jsx/') && id.endsWith('Context')) {
+        console.log('Resolving Context for icon import:', id);
         return path.resolve(__dirname, 'src/components/common/es/components/Context.js');
       }
 
       // Handle individual icon imports - for paths like Icons.jsx/IconName
       if (id.includes('/Icons.jsx/')) {
+        console.log('Resolving individual icon import:', id);
         // Direct all individual icon imports to the main Icons.jsx file
         return path.resolve(__dirname, 'src/components/common/Icons.jsx');
       }

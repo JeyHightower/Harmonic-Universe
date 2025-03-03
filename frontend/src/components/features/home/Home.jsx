@@ -1,6 +1,6 @@
 import { DownOutlined } from '@ant-design/icons';
 import { Dropdown, Menu, Space } from 'antd';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../../constants/routes';
@@ -19,6 +19,7 @@ function Home() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { isAuthenticated, loading } = useSelector(state => state.auth);
+  const buttonRef = useRef(null); // Add ref for the button to avoid findDOMNode
 
   useEffect(() => {
     console.debug('Home component mounted');
@@ -151,7 +152,7 @@ function Home() {
         <h1>Welcome to Harmonic Universe</h1>
         <p>Experience the harmony of sound and physics in a unique way.</p>
         <div className="home-actions">
-          <Button onClick={handleDemoLogin} variant="primary">
+          <Button onClick={handleDemoLogin} variant="primary" ref={buttonRef}>
             Try Demo
           </Button>
 
@@ -159,7 +160,11 @@ function Home() {
             menu={{ items: testMenuItems, onClick: ({ key }) => navigate(key) }}
             trigger={['click']}
           >
-            <Button variant="secondary" style={{ marginLeft: '10px' }}>
+            <Button
+              variant="secondary"
+              style={{ marginLeft: '10px' }}
+              ref={buttonRef}
+            >
               <Space>
                 Tests
                 <DownOutlined />
