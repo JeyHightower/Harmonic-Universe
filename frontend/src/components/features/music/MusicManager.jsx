@@ -1,3 +1,11 @@
+/**
+ * DEPRECATED: This component is currently not imported or used anywhere in the application.
+ * It is being kept for reference or potential future use.
+ *
+ * If you need to use this component, please review and update it according to current application standards.
+ * Consider using the Modal.jsx component for any modal functionality.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { api, endpoints } from '../../../utils/api';

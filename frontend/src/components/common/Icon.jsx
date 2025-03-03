@@ -10,11 +10,14 @@ import DeleteIconSvg from '../../assets/icons/delete.svg';
 import EditIconSvg from '../../assets/icons/edit.svg';
 import EmptyIconSvg from '../../assets/icons/empty.svg';
 import ErrorIconSvg from '../../assets/icons/error.svg';
+import InfoIconSvg from '../../assets/icons/info.svg';
 import MaterialIconSvg from '../../assets/icons/material.svg';
 import PhysicsIconSvg from '../../assets/icons/physics.svg';
 import PlaneIconSvg from '../../assets/icons/plane.svg';
+import PlusIconSvg from '../../assets/icons/plus.svg';
 import PositionIconSvg from '../../assets/icons/position.svg';
 import RefreshIconSvg from '../../assets/icons/refresh.svg';
+import SceneIconSvg from '../../assets/icons/scene.svg';
 import SphereIconSvg from '../../assets/icons/sphere.svg';
 import ViewIconSvg from '../../assets/icons/view.svg';
 import WarningIconSvg from '../../assets/icons/warning.svg';
@@ -46,6 +49,12 @@ function Icon({ name, size = 'medium', className = '' }) {
         return <img src={PhysicsIconSvg} className={iconClass} alt="Physics" />;
       case 'add':
         return <img src={AddIconSvg} className={iconClass} alt="Add" />;
+      case 'plus':
+        return <img src={PlusIconSvg} className={iconClass} alt="Plus" />;
+      case 'info':
+        return <img src={InfoIconSvg} className={iconClass} alt="Info" />;
+      case 'scene':
+        return <img src={SceneIconSvg} className={iconClass} alt="Scene" />;
       case 'error':
         return <img src={ErrorIconSvg} className={iconClass} alt="Error" />;
       case 'refresh':
@@ -83,7 +92,24 @@ function Icon({ name, size = 'medium', className = '' }) {
       case 'plane':
         return <img src={PlaneIconSvg} className={iconClass} alt="Plane" />;
       default:
-        console.warn(`Icon "${name}" not found, using fallback`);
+        if (name === 'info') {
+          console.debug(`Using text fallback for "info" icon`);
+          return <div className={`${iconClass} icon-text-fallback`}>ℹ️</div>;
+        } else if (name === 'scene') {
+          console.debug(`Using text fallback for "scene" icon`);
+          return <div className={`${iconClass} icon-text-fallback`}>🎬</div>;
+        } else if (name === 'plus') {
+          console.debug(`Using text fallback for "plus" icon`);
+          return <div className={`${iconClass} icon-text-fallback`}>➕</div>;
+        } else if (name === 'eye') {
+          console.debug(`Using text fallback for "eye" icon`);
+          return <div className={`${iconClass} icon-text-fallback`}>👁️</div>;
+        } else if (name === 'objects') {
+          console.debug(`Using text fallback for "objects" icon`);
+          return <div className={`${iconClass} icon-text-fallback`}>🧱</div>;
+        }
+
+        console.debug(`Icon "${name}" not found, using fallback`);
         return (
           <div
             className={`${iconClass} icon-fallback`}

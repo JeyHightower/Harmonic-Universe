@@ -10,15 +10,6 @@ from app.core.errors import AppError
 # Create Flask app
 app = create_app()
 
-@app.route("/health")
-def health_check():
-    """Health check endpoint."""
-    return jsonify({
-        "status": "healthy",
-        "version": settings.VERSION,
-        "environment": settings.ENVIRONMENT
-    })
-
 @app.errorhandler(AppError)
 def handle_app_error(error: AppError):
     """Handle application-specific errors."""

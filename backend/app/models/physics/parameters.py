@@ -1,5 +1,6 @@
 """Physics parameters model."""
 from sqlalchemy import Column, Integer, Float, ForeignKey, String, JSON
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.db.base_class import Base
 from app.models.mixins import TimestampMixin
@@ -29,8 +30,10 @@ class PhysicsParameters(Base, TimestampMixin):
     custom_parameters = Column(JSON, nullable=True)
 
     # Relationships
-    universe_id = Column(String, ForeignKey("universes.id"), nullable=False)
+    universe_id = Column(UUID(as_uuid=True), ForeignKey("universes.id"), nullable=False)
+    scene_id = Column(UUID(as_uuid=True), ForeignKey("scenes.id"), nullable=True)
     universe = relationship("Universe", back_populates="physics_parameters")
+    scene = relationship("Scene", back_populates="physics_parameters")
 
     def to_dict(self):
         """Convert model to dictionary."""
@@ -47,6 +50,7 @@ class PhysicsParameters(Base, TimestampMixin):
             "constraint_iterations": self.constraint_iterations,
             "custom_parameters": self.custom_parameters,
             "universe_id": self.universe_id,
+            "scene_id": self.scene_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None
         }
@@ -65,5 +69,6 @@ class PhysicsParameters(Base, TimestampMixin):
             integration_method=data.get("integration_method", "verlet"),
             constraint_iterations=data.get("constraint_iterations", 10),
             custom_parameters=data.get("custom_parameters"),
-            universe_id=data.get("universe_id")
+            universe_id=data.get("universe_id"),
+            scene_id=data.get("scene_id")
         )

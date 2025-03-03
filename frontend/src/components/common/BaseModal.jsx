@@ -1,6 +1,14 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+/**
+ * DEPRECATED: This component has been replaced by Modal.jsx
+ * and will be removed in a future release.
+ * Use Modal.jsx for all new modal components.
+ *
+ * See ModalUsageGuide.md for guidance on using the new Modal component.
+ */
+
 import { Modal } from 'antd';
+import PropTypes from 'prop-types';
+import React from 'react';
 import { useModal } from '../../contexts/ModalContext';
 import './BaseModal.css';
 
@@ -66,7 +74,15 @@ BaseModal.propTypes = {
   destroyOnClose: PropTypes.bool,
   maskClosable: PropTypes.bool,
   className: PropTypes.string,
-  modalType: PropTypes.oneOf(['default', 'form', 'confirm', 'info', 'success', 'warning', 'error']),
+  modalType: PropTypes.oneOf([
+    'default',
+    'form',
+    'confirm',
+    'info',
+    'success',
+    'warning',
+    'error',
+  ]),
   onOk: PropTypes.func,
   onCancel: PropTypes.func,
   confirmLoading: PropTypes.bool,

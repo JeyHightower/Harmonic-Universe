@@ -20,6 +20,13 @@ const GlobalModal = () => {
     <>
       {sortedModals.map(modal => {
         const { id, component: Component, props, modalProps } = modal;
+
+        // Check if Component is undefined or not a valid component
+        if (!Component) {
+          console.error('Modal component is undefined for modal:', modal);
+          return null;
+        }
+
         return (
           <Modal key={id} {...modalProps} onClose={() => closeModal(id)}>
             <Component {...props} onClose={() => closeModal(id)} />

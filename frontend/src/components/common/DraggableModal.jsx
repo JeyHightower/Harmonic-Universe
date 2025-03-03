@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 import React, { useCallback, useEffect, useState } from 'react';
-import './DraggableModal.css';
+// Import consolidated CSS file instead of component-specific CSS
+// Styles for draggable modal are now included in ../../styles/modal.css
 import Modal from './Modal';
 
 const DraggableModal = ({ children, ...modalProps }) => {

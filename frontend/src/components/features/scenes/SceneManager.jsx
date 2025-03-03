@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { api, endpoints } from '../../../utils/api';
+import { api } from '../../../utils/api';
+import { API_BASE_URL } from '../../../utils/config';
 import Button from '../../common/Button';
 import Icon from '../../common/Icon';
 import Modal from '../../common/Modal';
@@ -31,7 +32,7 @@ const SceneManager = () => {
     try {
       setLoading(true);
       const response = await api.get(
-        `${endpoints.universes.detail(universeId)}/scenes`
+        `${API_BASE_URL}/api/scenes/?universe_id=${universeId}`
       );
       setScenes(response || []);
 

@@ -26,7 +26,7 @@ const PhysicsParametersManager = ({ sceneId }) => {
         setError(null);
 
         const response = await api.get(
-          `${endpoints.scenes.detail(sceneId)}/physics_parameters`
+          endpoints.scenes.physicsParameters.list(sceneId)
         );
         setPhysicsParameters(response.data || []);
 

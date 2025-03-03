@@ -55,7 +55,7 @@ const modalReducer = (state, action) => {
 };
 
 // Create context
-const ModalContext = createContext();
+export const ModalContext = createContext(initialState);
 
 export const ModalProvider = ({ children }) => {
   const [state, dispatch] = useReducer(modalReducer, initialState);

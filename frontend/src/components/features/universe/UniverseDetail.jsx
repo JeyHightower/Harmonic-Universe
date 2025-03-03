@@ -101,7 +101,7 @@ const UniverseDetail = () => {
         universe: currentUniverse,
       },
       modalProps: {
-        title: 'Universe Details',
+        title: `${currentUniverse?.name} Information`,
         size: 'medium',
         animation: 'fade',
       },

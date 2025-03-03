@@ -30,10 +30,16 @@
    - Fixed by updating all references to use the correct plural form
 
 6. **Missing Audio API Endpoints**
+
    - The `/tracks` endpoint for listing audio tracks was missing
    - Routes handling UUID validation in audio endpoints were not storing the converted UUIDs properly
    - The test script was trying to access `/tracks/<audio_id>` but the API only supported `/<audio_id>` for deletion
    - Audio file endpoint was returning 404 because generated audio tracks didn't have actual files
+
+7. **Duplicate Physics Parameter Models**
+   - Found two different model classes (`PhysicsParameter` and `PhysicsParameters`) both using the same database table
+   - This caused conflicts in SQLAlchemy's mapper configuration
+   - Fixed by standardizing on the `PhysicsParameters` model and updating all imports
 
 ## Implemented Solutions
 
@@ -84,22 +90,32 @@
    - Updated all references from `PhysicsParameter` to `PhysicsParameters` in the routes file
 
 6. **Audio API Fixes**
+
    - Added a new `/tracks` endpoint for listing audio tracks with optional `scene_id` and `universe_id` filters
    - Fixed UUID handling in all audio routes by properly storing the converted UUID:
+
    ```python
    try:
        audio_id = UUID(audio_id)
    except ValueError:
        raise ValidationError("Invalid audio_id format")
    ```
+
    - Added a compatibility route for `/tracks/<audio_id>` that redirects to the main audio deletion endpoint
    - Updated the audio file endpoint to create a mock audio file for testing purposes when a track doesn't have an actual file:
+
    ```python
    if not audio_track.file_path:
        # Create and return a mock audio file
        # ...
    ```
+
    - Fixed timestamp handling in the AudioTrack model's `to_dict()` method
+
+7. **Model Duplication Fix**
+   - Removed the duplicate `PhysicsParameter` model and standardized on `PhysicsParameters`
+   - Updated all imports in the codebase to reference the correct model
+   - This resolved conflicts in SQLAlchemy's mapper configuration
 
 ## Current Status
 

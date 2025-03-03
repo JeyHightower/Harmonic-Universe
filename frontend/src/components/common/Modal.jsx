@@ -7,7 +7,7 @@ import React, {
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
-import './Modal.css';
+import '../../styles/modal.css';
 
 // Global counter for tracking modal stack depth
 let modalStackCount = 0;
@@ -17,7 +17,7 @@ const Modal = forwardRef(
     {
       isOpen,
       onClose,
-      title,
+      title = 'Modal',
       children,
       size = 'medium', // 'small', 'medium', 'large', 'full'
       type = 'default', // 'default', 'alert', 'confirm', 'form'
@@ -111,7 +111,7 @@ const Modal = forwardRef(
           }
         }
       };
-    }, [isOpen, scrollY]);
+    }, [isOpen]);
 
     // Handle ESC key press
     useEffect(() => {
@@ -210,10 +210,10 @@ const Modal = forwardRef(
 Modal.displayName = 'Modal';
 
 Modal.propTypes = {
-  isOpen: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-  title: PropTypes.string.isRequired,
-  children: PropTypes.node.isRequired,
+  isOpen: PropTypes.bool,
+  onClose: PropTypes.func,
+  title: PropTypes.string,
+  children: PropTypes.node,
   size: PropTypes.oneOf(['small', 'medium', 'large', 'full']),
   type: PropTypes.oneOf(['default', 'alert', 'confirm', 'form']),
   animation: PropTypes.oneOf(['fade', 'slide', 'zoom', 'none']),
@@ -222,6 +222,21 @@ Modal.propTypes = {
   preventBackdropClick: PropTypes.bool,
   contentClassName: PropTypes.string,
   footerContent: PropTypes.node,
+};
+
+Modal.defaultProps = {
+  isOpen: false,
+  onClose: () => {},
+  title: 'Modal',
+  children: null,
+  size: 'medium',
+  type: 'default',
+  animation: 'fade',
+  position: 'center',
+  showCloseButton: true,
+  preventBackdropClick: false,
+  contentClassName: '',
+  footerContent: null,
 };
 
 export default Modal;

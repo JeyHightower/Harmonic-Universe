@@ -1,0 +1,359 @@
+/**
+ * Consolidated Modal CSS
+ * This file combines styles from:
+ * - Modal.css
+ * - BaseModal.css
+ * - DraggableModal.css
+ * - ModalContent.css
+ */
+
+/* CSS Variables for modal theming */
+:root {
+  --modal-background: rgba(0, 0, 0, 0.5);
+  --modal-content-bg: #ffffff;
+  --modal-content-bg-dark: #1f1f1f;
+  --modal-border-radius: 8px;
+  --modal-box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  --modal-header-border: 1px solid #e8e8e8;
+  --modal-header-border-dark: 1px solid #333;
+  --modal-footer-border: 1px solid #e8e8e8;
+  --modal-footer-border-dark: 1px solid #333;
+  --modal-z-index: 100000;
+  --modal-transition-duration: 200ms;
+}
+
+/* Dark mode variables */
+[data-theme='dark'] {
+  --modal-content-bg: #1f1f1f;
+  --modal-header-border: 1px solid #333;
+  --modal-footer-border: 1px solid #333;
+}
+
+/* ======== MAIN MODAL STYLES ======== */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--modal-background);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--modal-z-index);
+  overflow: auto;
+  padding: 1rem;
+}
+
+.modal {
+  background-color: var(--modal-content-bg);
+  border-radius: var(--modal-border-radius);
+  box-shadow: var(--modal-box-shadow);
+  width: 100%;
+  max-width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Modal sizes */
+.modal.small {
+  max-width: 400px;
+}
+
+.modal.medium {
+  max-width: 600px;
+}
+
+.modal.large {
+  max-width: 800px;
+}
+
+.modal.full {
+  max-width: 95vw;
+  height: 90vh;
+}
+
+/* Modal positions */
+.modal-overlay.center {
+  align-items: center;
+}
+
+.modal-overlay.top {
+  align-items: flex-start;
+  padding-top: 50px;
+}
+
+.modal-overlay.bottom {
+  align-items: flex-end;
+  padding-bottom: 50px;
+}
+
+/* Modal header */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: var(--modal-header-border);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.modal-close-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.modal-close-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Modal content */
+.modal-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+/* Modal footer */
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 24px;
+  border-top: var(--modal-footer-border);
+}
+
+.modal-footer-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.modal-footer button {
+  min-width: 80px;
+}
+
+/* ======== ANIMATIONS ======== */
+
+/* Fade animation */
+.modal-overlay.fade-enter {
+  opacity: 0;
+}
+
+.modal-overlay.fade-enter-active {
+  opacity: 1;
+  transition: opacity var(--modal-transition-duration) ease-in-out;
+}
+
+.modal-overlay.fade-exit {
+  opacity: 1;
+}
+
+.modal-overlay.fade-exit-active {
+  opacity: 0;
+  transition: opacity var(--modal-transition-duration) ease-in-out;
+}
+
+/* Slide animation */
+.modal.slide-enter {
+  transform: translateY(-50px);
+  opacity: 0;
+}
+
+.modal.slide-enter-active {
+  transform: translateY(0);
+  opacity: 1;
+  transition: all var(--modal-transition-duration) ease-out;
+}
+
+.modal.slide-exit {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.modal.slide-exit-active {
+  transform: translateY(-50px);
+  opacity: 0;
+  transition: all var(--modal-transition-duration) ease-in;
+}
+
+/* Zoom animation */
+.modal.zoom-enter {
+  transform: scale(0.8);
+  opacity: 0;
+}
+
+.modal.zoom-enter-active {
+  transform: scale(1);
+  opacity: 1;
+  transition: all var(--modal-transition-duration) ease-out;
+}
+
+.modal.zoom-exit {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.modal.zoom-exit-active {
+  transform: scale(0.8);
+  opacity: 0;
+  transition: all var(--modal-transition-duration) ease-in;
+}
+
+/* ======== MODAL TYPES ======== */
+
+/* Default modal */
+.modal.default-modal .modal-content {
+  padding: 24px;
+}
+
+/* Form modal */
+.modal.form-modal .modal-content {
+  padding: 16px 24px;
+}
+
+.modal.form-modal .form-row {
+  margin-bottom: 16px;
+}
+
+/* Alert modal */
+.modal.alert-modal .modal-content {
+  padding: 24px;
+  text-align: center;
+}
+
+.modal.alert-modal .modal-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+/* Confirm modal */
+.modal.confirm-modal .modal-content {
+  padding: 24px;
+}
+
+.modal.confirm-modal .confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* ======== DRAGGABLE MODAL ======== */
+
+.draggable-modal .modal-header {
+  cursor: move;
+  user-select: none;
+}
+
+.draggable-container {
+  transition: none;
+}
+
+.draggable-modal.dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.draggable-modal.dragging * {
+  cursor: grabbing;
+  user-select: none;
+}
+
+/* ======== MODAL CONTENT TYPES ======== */
+
+/* Success content */
+.modal-content.modal-success {
+  color: #52c41a;
+}
+
+.modal-content.modal-success .modal-icon {
+  color: #52c41a;
+}
+
+/* Error content */
+.modal-content.modal-error {
+  color: #f5222d;
+}
+
+.modal-content.modal-error .modal-icon {
+  color: #f5222d;
+}
+
+/* Warning content */
+.modal-content.modal-warning {
+  color: #faad14;
+}
+
+.modal-content.modal-warning .modal-icon {
+  color: #faad14;
+}
+
+/* Info content */
+.modal-content.modal-info {
+  color: #1890ff;
+}
+
+.modal-content.modal-info .modal-icon {
+  color: #1890ff;
+}
+
+/* ======== CUSTOM MODAL TYPES ======== */
+
+/* Physics Parameters Modal */
+.physics-parameters-modal .form-row {
+  margin-bottom: 16px;
+}
+
+.physics-parameters-modal .ant-form-item {
+  margin-bottom: 16px;
+}
+
+/* ======== RESPONSIVE BEHAVIOR ======== */
+
+@media (max-width: 768px) {
+  .modal.small,
+  .modal.medium,
+  .modal.large {
+    max-width: 95%;
+  }
+
+  .modal-content {
+    padding: 16px;
+  }
+
+  .modal-header,
+  .modal-footer {
+    padding: 12px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 0.5rem;
+  }
+
+  .modal {
+    max-height: 95vh;
+  }
+
+  .modal.full {
+    max-width: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
+}

@@ -1,3 +1,11 @@
+/**
+ * DEPRECATED: This component is currently not imported or used anywhere in the application.
+ * It is being kept for reference or potential future use.
+ *
+ * If you need to use this component, please review and update it according to current application standards.
+ * Consider using standard form patterns from the application.
+ */
+
 import {
   Button,
   Card,

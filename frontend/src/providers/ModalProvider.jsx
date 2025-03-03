@@ -1,47 +1,15 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ModalContext } from '../contexts/ModalContext';
 import GlobalModal from '../components/common/GlobalModal';
+import { ModalProvider as ContextModalProvider } from '../contexts/ModalContext';
 
 const ModalProvider = ({ children }) => {
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  // Handle modal state in URL
-  const handleModalOpen = (modalType, modalId) => {
-    const searchParams = new URLSearchParams(location.search);
-    searchParams.set('modal', modalType);
-    if (modalId) searchParams.set('modalId', modalId);
-
-    navigate(`${location.pathname}?${searchParams.toString()}`, {
-      replace: true,
-    });
-  };
-
-  const handleModalClose = () => {
-    const searchParams = new URLSearchParams(location.search);
-    searchParams.delete('modal');
-    searchParams.delete('modalId');
-
-    navigate(`${location.pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`, {
-      replace: true,
-    });
-  };
-
-  // Provide modal context value
-  const modalContextValue = {
-    handleModalOpen,
-    handleModalClose,
-    currentModal: new URLSearchParams(location.search).get('modal'),
-    currentModalId: new URLSearchParams(location.search).get('modalId'),
-  };
-
   return (
-    <ModalContext.Provider value={modalContextValue}>
+    <ContextModalProvider>
       {children}
       <GlobalModal />
-    </ModalContext.Provider>
+    </ContextModalProvider>
   );
 };
 
@@ -49,7 +17,7 @@ ModalProvider.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
-// Custom hook for using modals with routing
+// Custom hook for using modals with routing (for backward compatibility)
 export const useModalRoute = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -75,7 +43,11 @@ export const useModalRoute = () => {
     if (!preserveQueryParams) {
       navigate(location.pathname);
     } else {
-      navigate(`${location.pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`);
+      navigate(
+        `${location.pathname}${
+          searchParams.toString() ? `?${searchParams.toString()}` : ''
+        }`
+      );
     }
   };
 

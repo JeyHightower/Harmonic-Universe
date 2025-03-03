@@ -2,23 +2,34 @@
 
 ## Overview
 
-The backend service is built with Flask and SQLAlchemy, providing a robust API for the Harmonic Universe application.
+The backend service is built with Flask and SQLAlchemy, providing a robust API for the Harmonic Universe application. It manages user authentication, universe creation, physics simulations, and audio generation.
 
 ## Directory Structure
 
 ```
 backend/
 ├── app/                  # Application package
-│   ├── api/             # API routes and controllers
-│   ├── core/            # Core functionality
-│   ├── db/              # Database models and migrations
-│   ├── models/          # SQLAlchemy models
-│   ├── schemas/         # Pydantic schemas
-│   ├── services/        # Business logic
-│   └── utils/           # Utility functions
-├── migrations/          # Alembic migrations
-├── tests/              # Test suite
-└── scripts/            # Utility scripts
+│   ├── api/              # API routes and controllers
+│   │   └── routes/       # Route definitions
+│   ├── core/             # Core functionality
+│   │   ├── config/       # Configuration settings
+│   │   ├── security.py   # Authentication and security
+│   │   └── errors.py     # Error handling
+│   ├── db/               # Database connections
+│   │   ├── repositories/ # Data access layer
+│   │   └── session.py    # Database session management
+│   ├── models/           # SQLAlchemy models
+│   │   ├── audio/        # Audio-related models
+│   │   ├── physics/      # Physics simulation models
+│   │   └── universe/     # Universe and scene models
+│   ├── schemas/          # Data validation schemas
+│   ├── services/         # Business logic services
+│   │   └── physics/      # Physics simulation services
+│   ├── seeds/            # Database seed data
+│   └── static/           # Static files
+├── migrations/           # Alembic migrations
+├── tests/                # Test suite
+└── scripts/              # Utility scripts
 ```
 
 ## Key Components
@@ -28,7 +39,7 @@ backend/
 - Flask-Migrate for database migrations
 - Flask-JWT-Extended for authentication
 - Flask-SocketIO for WebSocket support
-- Redis for caching and session management
+- PostgreSQL database
 
 ## Setup
 
@@ -55,7 +66,7 @@ cp .env.example .env
 
 ```bash
 flask db upgrade
-python scripts/init_db.py
+python create_demo_user.py
 ```
 
 ## Development
@@ -63,32 +74,38 @@ python scripts/init_db.py
 1. Start development server:
 
 ```bash
-flask run
+python run.py
 ```
 
-2. Run tests:
+2. Verify API functionality:
 
 ```bash
-pytest
+python feature_verification.py
 ```
 
-## API Documentation
+## API Endpoints
 
-API documentation is available at `/docs` when running in development mode.
+The API provides the following main endpoints:
 
-## Best Practices
+- `/api/auth/*` - Authentication endpoints (register, login, refresh)
+- `/api/users/*` - User profile management
+- `/api/universes/*` - Universe CRUD operations
+- `/api/scenes/*` - Scene management within universes
+- `/api/physics-parameters/*` - Physics simulation parameters
+- `/api/audio/*` - Audio generation and management
 
-1. Follow PEP 8 style guide
-2. Write tests for new features
-3. Update migrations for model changes
-4. Use type hints
-5. Document new endpoints
+## Recent Fixes
+
+- Fixed SQLAlchemy relationship between Universe and PhysicsParameters models
+- Resolved UUID comparison issues in authorization checks
+- Added proper timestamp handling in model serialization
+- Implemented audio file generation for testing purposes
+- Consolidated duplicate model definitions
 
 ## Testing
 
-- Unit tests: `pytest tests/unit`
-- Integration tests: `pytest tests/integration`
-- Coverage report: `pytest --cov=app tests/`
+- Feature verification: `python feature_verification.py`
+- Music API testing: `python test_music_api.py`
 
 ## Deployment
 
@@ -101,5 +118,5 @@ docker build -t harmonic-universe-backend .
 2. Run container:
 
 ```bash
-docker run -p 5000:5000 harmonic-universe-backend
+docker run -p 8000:8000 harmonic-universe-backend
 ```

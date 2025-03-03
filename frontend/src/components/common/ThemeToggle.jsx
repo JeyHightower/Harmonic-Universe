@@ -1,29 +1,85 @@
-import React from 'react';
-import { useTheme } from '../../contexts/ThemeContext';
+import React, { useEffect, useState } from 'react';
+import {
+  THEMES,
+  getCurrentTheme,
+  setTheme,
+  toggleTheme,
+} from '../../utils/themeUtils';
 import './ThemeToggle.css';
 
+/**
+ * ThemeToggle component allows users to switch between light, dark, and system themes
+ */
 const ThemeToggle = () => {
-  const { currentTheme, toggleTheme, themes } = useTheme();
+  const [currentTheme, setCurrentTheme] = useState(getCurrentTheme());
 
-  // Find the current theme object
-  const activeTheme = themes.find(theme => theme.id === currentTheme);
+  // Update theme state when changed elsewhere
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setCurrentTheme(getCurrentTheme());
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Handle theme toggle
+  const handleToggle = () => {
+    const newTheme = toggleTheme();
+    setCurrentTheme(newTheme);
+  };
+
+  // Handle theme selection
+  const selectTheme = theme => {
+    setTheme(theme);
+    setCurrentTheme(theme);
+  };
+
+  // Determine which icon to show based on current theme
+  const getThemeIcon = () => {
+    if (currentTheme === THEMES.SYSTEM) {
+      const systemIsDark = window.matchMedia(
+        '(prefers-color-scheme: dark)'
+      ).matches;
+      return systemIsDark ? '🌙' : '☀️';
+    }
+    return currentTheme === THEMES.DARK ? '🌙' : '☀️';
+  };
 
   return (
-    <div className="theme-toggle">
-      <button
-        className="theme-toggle-button"
-        onClick={toggleTheme}
-        aria-label={`Switch theme. Current theme: ${activeTheme.name}`}
-        title={`Current theme: ${activeTheme.name}`}
-      >
-        <div className="theme-icon">
-          {currentTheme === 'light' && <span>☀️</span>}
-          {currentTheme === 'dark' && <span>🌙</span>}
-          {currentTheme === 'cosmic' && <span>✨</span>}
-          {currentTheme === 'harmony' && <span>🎵</span>}
-        </div>
-        <span className="theme-name">{activeTheme.name}</span>
+    <div className="theme-toggle-container">
+      <button onClick={handleToggle} className="theme-toggle-button">
+        {getThemeIcon()}
       </button>
+
+      <div className="theme-select-dropdown">
+        <button
+          onClick={() => selectTheme(THEMES.LIGHT)}
+          className={`theme-option ${
+            currentTheme === THEMES.LIGHT ? 'active' : ''
+          }`}
+        >
+          ☀️ Light
+        </button>
+
+        <button
+          onClick={() => selectTheme(THEMES.DARK)}
+          className={`theme-option ${
+            currentTheme === THEMES.DARK ? 'active' : ''
+          }`}
+        >
+          🌙 Dark
+        </button>
+
+        <button
+          onClick={() => selectTheme(THEMES.SYSTEM)}
+          className={`theme-option ${
+            currentTheme === THEMES.SYSTEM ? 'active' : ''
+          }`}
+        >
+          💻 System
+        </button>
+      </div>
     </div>
   );
 };

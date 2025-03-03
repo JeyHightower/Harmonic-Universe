@@ -2,12 +2,12 @@
 Physics models package.
 """
 
-from .physics_parameter import PhysicsParameter
+from .parameters import PhysicsParameters
 from .physics_object import PhysicsObject
 from .physics_constraint import PhysicsConstraint
 
 __all__ = [
-    "PhysicsParameter",
+    "PhysicsParameters",
     "PhysicsObject",
     "PhysicsConstraint"
 ]

@@ -1,8 +1,9 @@
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './slices/authSlice';
 import modalReducer from './slices/modalSlice';
-import universeReducer from './slices/universeSlice';
+import physicsObjectsReducer from './slices/physicsObjectsSlice';
 import physicsParametersReducer from './slices/physicsParametersSlice';
+import universeReducer from './slices/universeSlice';
 
 const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ const store = configureStore({
     modal: modalReducer,
     universe: universeReducer,
     physicsParameters: physicsParametersReducer,
+    physicsObjects: physicsObjectsReducer,
   },
 });
 

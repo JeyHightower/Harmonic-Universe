@@ -81,7 +81,7 @@ class Scene(BaseModel):
     universe = relationship("Universe", back_populates="scenes")
     creator = relationship("User", back_populates="scenes")
     physics_objects = relationship("PhysicsObject", back_populates="scene", cascade="all, delete-orphan")
-    physics_parameters = relationship("PhysicsParameter", back_populates="scene", cascade="all, delete-orphan")
+    physics_parameters = relationship("PhysicsParameters", back_populates="scene", cascade="all, delete-orphan")
     harmony_parameters = relationship("HarmonyParameter", back_populates="scene", cascade="all, delete-orphan")
     physics_constraints = relationship("PhysicsConstraint", back_populates="scene", cascade="all, delete-orphan")
     audio_tracks = relationship("AudioTrack", back_populates="scene", cascade="all, delete-orphan")

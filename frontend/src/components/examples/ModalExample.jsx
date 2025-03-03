@@ -68,6 +68,7 @@ const ModalExample = () => {
 
   // Alert modal example
   const handleOpenAlertModal = () => {
+    console.log('Opening alert modal');
     openModal(
       createAlertModal(
         'This is an alert message to inform the user about something important.',

@@ -54,7 +54,10 @@ function Layout() {
   }, [isLoggingOut]);
 
   const handleModalContentClick = useCallback(e => {
-    e.stopPropagation();
+    // Only stop propagation for the logout modal content
+    if (e.currentTarget.classList.contains('logout-modal-content')) {
+      e.stopPropagation();
+    }
   }, []);
 
   return (
@@ -72,8 +75,30 @@ function Layout() {
               <>
                 <Link to="/dashboard">Dashboard</Link>
                 <Link to={ROUTES.SETTINGS}>Settings</Link>
-                <Link to="/examples/modals" className="examples-link">
+                <Link to={ROUTES.MODAL_EXAMPLES} className="examples-link">
                   Modal Examples
+                </Link>
+                <Link to={ROUTES.MODAL_TEST} className="examples-link">
+                  Test Modal
+                </Link>
+                <Link
+                  to={ROUTES.SIMPLE_MODAL_TEST}
+                  className="examples-link"
+                  style={{ color: 'red', fontWeight: 'bold' }}
+                >
+                  SIMPLE MODAL TEST
+                </Link>
+                <Link
+                  to={ROUTES.STANDALONE_TEST}
+                  className="examples-link"
+                  style={{
+                    color: 'yellow',
+                    backgroundColor: 'black',
+                    padding: '5px 10px',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  STANDALONE TEST
                 </Link>
                 <ThemeToggle />
                 <Button onClick={handleLogoutClick} variant="secondary">
@@ -85,8 +110,30 @@ function Layout() {
                 <Link to="/login">Login</Link>
                 <Link to="/register">Register</Link>
                 <Link to={ROUTES.SETTINGS}>Settings</Link>
-                <Link to="/examples/modals" className="examples-link">
+                <Link to={ROUTES.MODAL_EXAMPLES} className="examples-link">
                   Modal Examples
+                </Link>
+                <Link to={ROUTES.MODAL_TEST} className="examples-link">
+                  Test Modal
+                </Link>
+                <Link
+                  to={ROUTES.SIMPLE_MODAL_TEST}
+                  className="examples-link"
+                  style={{ color: 'red', fontWeight: 'bold' }}
+                >
+                  SIMPLE MODAL TEST
+                </Link>
+                <Link
+                  to={ROUTES.STANDALONE_TEST}
+                  className="examples-link"
+                  style={{
+                    color: 'yellow',
+                    backgroundColor: 'black',
+                    padding: '5px 10px',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  STANDALONE TEST
                 </Link>
                 <ThemeToggle />
               </>

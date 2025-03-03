@@ -278,10 +278,11 @@ const PhysicsObjectModal = ({
               label="X"
               type="number"
               name={`${baseName}.x`}
-              value={vector.x.toString()}
-              onChange={e =>
-                handleChange(`${baseName}.x`, parseFloat(e.target.value))
-              }
+              value={(vector.x || 0).toString()}
+              onChange={e => {
+                const val = parseFloat(e.target.value);
+                handleChange(`${baseName}.x`, isNaN(val) ? 0 : val);
+              }}
               error={errors[`${baseName}.x`]}
               readOnly={readOnly}
             />
@@ -291,10 +292,11 @@ const PhysicsObjectModal = ({
               label="Y"
               type="number"
               name={`${baseName}.y`}
-              value={vector.y.toString()}
-              onChange={e =>
-                handleChange(`${baseName}.y`, parseFloat(e.target.value))
-              }
+              value={(vector.y || 0).toString()}
+              onChange={e => {
+                const val = parseFloat(e.target.value);
+                handleChange(`${baseName}.y`, isNaN(val) ? 0 : val);
+              }}
               error={errors[`${baseName}.y`]}
               readOnly={readOnly}
             />
@@ -304,10 +306,11 @@ const PhysicsObjectModal = ({
               label="Z"
               type="number"
               name={`${baseName}.z`}
-              value={vector.z.toString()}
-              onChange={e =>
-                handleChange(`${baseName}.z`, parseFloat(e.target.value))
-              }
+              value={(vector.z || 0).toString()}
+              onChange={e => {
+                const val = parseFloat(e.target.value);
+                handleChange(`${baseName}.z`, isNaN(val) ? 0 : val);
+              }}
               error={errors[`${baseName}.z`]}
               readOnly={readOnly}
             />

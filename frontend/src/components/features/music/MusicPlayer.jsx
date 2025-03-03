@@ -44,6 +44,7 @@ const MusicPlayer = ({ universeId }) => {
   const [customizationEnabled, setCustomizationEnabled] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(false);
   const [aiStyle, setAiStyle] = useState('default');
+  const [audioContextInitialized, setAudioContextInitialized] = useState(false);
   const [customParams, setCustomParams] = useState({
     tempo: 120,
     scale_type: 'major',
@@ -60,6 +61,19 @@ const MusicPlayer = ({ universeId }) => {
   const canvasRef = useRef(null);
   const analyzerRef = useRef(null);
   const animationRef = useRef(null);
+
+  // Initialize Tone.js on user interaction
+  const initializeAudioContext = async () => {
+    if (!audioContextInitialized) {
+      try {
+        await Tone.start();
+        setAudioContextInitialized(true);
+        console.log('AudioContext started successfully');
+      } catch (error) {
+        console.error('Failed to start AudioContext:', error);
+      }
+    }
+  };
 
   // Initialize Tone.js
   useEffect(() => {
@@ -314,6 +328,8 @@ const MusicPlayer = ({ universeId }) => {
   }, [isPlaying, musicData]);
 
   const generateMusic = async (params = null) => {
+    await initializeAudioContext();
+
     try {
       setIsLoading(true);
       setError(null);
@@ -368,6 +384,8 @@ const MusicPlayer = ({ universeId }) => {
 
   // Download the generated music
   const downloadMusic = async () => {
+    await initializeAudioContext();
+
     if (!musicData) {
       message.warning('Please generate music first');
       return;
@@ -447,6 +465,9 @@ const MusicPlayer = ({ universeId }) => {
 
   // Toggle play/pause
   const togglePlayback = async () => {
+    // Initialize audio context first
+    await initializeAudioContext();
+
     // If no music data, generate it first
     if (!musicData) {
       await generateMusic();
@@ -456,10 +477,6 @@ const MusicPlayer = ({ universeId }) => {
     if (isPlaying) {
       Tone.Transport.pause();
     } else {
-      // Start audio context if it's not running
-      if (Tone.context.state !== 'running') {
-        await Tone.start();
-      }
       Tone.Transport.start();
     }
 
@@ -666,132 +683,147 @@ const MusicPlayer = ({ universeId }) => {
             <Slider value={volume} onChange={setVolume} disabled={isLoading} />
           </div>
 
-          <Collapse ghost className="customization-panel">
-            <Collapse.Panel
-              header={<Text strong>Music Customization</Text>}
-              key="1"
-              extra={<SettingOutlined />}
-            >
-              <div className="customization-controls">
-                <Form layout="vertical">
-                  <Form.Item label={<Text>Use Custom Parameters</Text>}>
-                    <Switch
-                      checked={customizationEnabled}
-                      onChange={setCustomizationEnabled}
-                      disabled={isLoading}
-                    />
-                  </Form.Item>
+          <Collapse
+            ghost
+            className="customization-panel"
+            items={[
+              {
+                key: '1',
+                label: <Text strong>Music Customization</Text>,
+                extra: <SettingOutlined />,
+                children: (
+                  <div className="customization-controls">
+                    <Form layout="vertical">
+                      <Form.Item label={<Text>Use Custom Parameters</Text>}>
+                        <Switch
+                          checked={customizationEnabled}
+                          onChange={setCustomizationEnabled}
+                          disabled={isLoading}
+                        />
+                      </Form.Item>
 
-                  <Divider style={{ margin: '8px 0' }} />
+                      <Divider style={{ margin: '8px 0' }} />
 
-                  <div
-                    className={customizationEnabled ? '' : 'disabled-controls'}
-                  >
-                    <Form.Item label={<Text>Tempo (BPM)</Text>}>
-                      <Slider
-                        value={customParams.tempo}
-                        min={60}
-                        max={180}
-                        onChange={value => handleParamChange('tempo', value)}
-                        disabled={!customizationEnabled || isLoading}
-                      />
-                    </Form.Item>
-
-                    <Form.Item label={<Text>Scale Type</Text>}>
-                      <Select
-                        value={customParams.scale_type}
-                        onChange={value =>
-                          handleParamChange('scale_type', value)
+                      <div
+                        className={
+                          customizationEnabled ? '' : 'disabled-controls'
                         }
-                        disabled={!customizationEnabled || isLoading}
-                        style={{ width: '100%' }}
                       >
-                        <Select.Option value="major">Major</Select.Option>
-                        <Select.Option value="minor">Minor</Select.Option>
-                        <Select.Option value="pentatonic">
-                          Pentatonic
-                        </Select.Option>
-                        <Select.Option value="blues">Blues</Select.Option>
-                        <Select.Option value="chromatic">
-                          Chromatic
-                        </Select.Option>
-                      </Select>
-                    </Form.Item>
+                        <Form.Item label={<Text>Tempo (BPM)</Text>}>
+                          <Slider
+                            value={customParams.tempo}
+                            min={60}
+                            max={180}
+                            onChange={value =>
+                              handleParamChange('tempo', value)
+                            }
+                            disabled={!customizationEnabled || isLoading}
+                          />
+                        </Form.Item>
 
-                    <Form.Item label={<Text>Root Note</Text>}>
-                      <Select
-                        value={customParams.root_note}
-                        onChange={value =>
-                          handleParamChange('root_note', value)
-                        }
-                        disabled={!customizationEnabled || isLoading}
-                        style={{ width: '100%' }}
+                        <Form.Item label={<Text>Scale Type</Text>}>
+                          <Select
+                            value={customParams.scale_type}
+                            onChange={value =>
+                              handleParamChange('scale_type', value)
+                            }
+                            disabled={!customizationEnabled || isLoading}
+                            style={{ width: '100%' }}
+                          >
+                            <Select.Option value="major">Major</Select.Option>
+                            <Select.Option value="minor">Minor</Select.Option>
+                            <Select.Option value="pentatonic">
+                              Pentatonic
+                            </Select.Option>
+                            <Select.Option value="blues">Blues</Select.Option>
+                            <Select.Option value="chromatic">
+                              Chromatic
+                            </Select.Option>
+                          </Select>
+                        </Form.Item>
+
+                        <Form.Item label={<Text>Root Note</Text>}>
+                          <Select
+                            value={customParams.root_note}
+                            onChange={value =>
+                              handleParamChange('root_note', value)
+                            }
+                            disabled={!customizationEnabled || isLoading}
+                            style={{ width: '100%' }}
+                          >
+                            <Select.Option value={60}>
+                              C (Middle C)
+                            </Select.Option>
+                            <Select.Option value={62}>D</Select.Option>
+                            <Select.Option value={64}>E</Select.Option>
+                            <Select.Option value={65}>F</Select.Option>
+                            <Select.Option value={67}>G</Select.Option>
+                            <Select.Option value={69}>A</Select.Option>
+                            <Select.Option value={71}>B</Select.Option>
+                          </Select>
+                        </Form.Item>
+
+                        <Form.Item label={<Text>Melody Complexity</Text>}>
+                          <Slider
+                            value={customParams.melody_complexity}
+                            min={0.1}
+                            max={1.0}
+                            step={0.1}
+                            onChange={value =>
+                              handleParamChange('melody_complexity', value)
+                            }
+                            disabled={!customizationEnabled || isLoading}
+                            marks={{
+                              0.1: 'Simple',
+                              0.5: 'Medium',
+                              1.0: 'Complex',
+                            }}
+                          />
+                        </Form.Item>
+                      </div>
+
+                      <Divider style={{ margin: '16px 0 8px 0' }} />
+
+                      <Form.Item
+                        label={<Text>Use AI-Assisted Generation</Text>}
                       >
-                        <Select.Option value={60}>C (Middle C)</Select.Option>
-                        <Select.Option value={62}>D</Select.Option>
-                        <Select.Option value={64}>E</Select.Option>
-                        <Select.Option value={65}>F</Select.Option>
-                        <Select.Option value={67}>G</Select.Option>
-                        <Select.Option value={69}>A</Select.Option>
-                        <Select.Option value={71}>B</Select.Option>
-                      </Select>
-                    </Form.Item>
+                        <Switch
+                          checked={aiEnabled}
+                          onChange={setAiEnabled}
+                          disabled={isLoading}
+                        />
+                      </Form.Item>
 
-                    <Form.Item label={<Text>Melody Complexity</Text>}>
-                      <Slider
-                        value={customParams.melody_complexity}
-                        min={0.1}
-                        max={1.0}
-                        step={0.1}
-                        onChange={value =>
-                          handleParamChange('melody_complexity', value)
-                        }
-                        disabled={!customizationEnabled || isLoading}
-                        marks={{
-                          0.1: 'Simple',
-                          0.5: 'Medium',
-                          1.0: 'Complex',
-                        }}
-                      />
-                    </Form.Item>
+                      <div className={aiEnabled ? '' : 'disabled-controls'}>
+                        <Form.Item label={<Text>AI Music Style</Text>}>
+                          <Select
+                            value={aiStyle}
+                            onChange={setAiStyle}
+                            disabled={!aiEnabled || isLoading}
+                            style={{ width: '100%' }}
+                          >
+                            <Select.Option value="default">
+                              Default Enhancements
+                            </Select.Option>
+                            <Select.Option value="ambient">
+                              Ambient
+                            </Select.Option>
+                            <Select.Option value="classical">
+                              Classical
+                            </Select.Option>
+                            <Select.Option value="electronic">
+                              Electronic
+                            </Select.Option>
+                            <Select.Option value="jazz">Jazz</Select.Option>
+                          </Select>
+                        </Form.Item>
+                      </div>
+                    </Form>
                   </div>
-
-                  <Divider style={{ margin: '16px 0 8px 0' }} />
-
-                  <Form.Item label={<Text>Use AI-Assisted Generation</Text>}>
-                    <Switch
-                      checked={aiEnabled}
-                      onChange={setAiEnabled}
-                      disabled={isLoading}
-                    />
-                  </Form.Item>
-
-                  <div className={aiEnabled ? '' : 'disabled-controls'}>
-                    <Form.Item label={<Text>AI Music Style</Text>}>
-                      <Select
-                        value={aiStyle}
-                        onChange={setAiStyle}
-                        disabled={!aiEnabled || isLoading}
-                        style={{ width: '100%' }}
-                      >
-                        <Select.Option value="default">
-                          Default Enhancements
-                        </Select.Option>
-                        <Select.Option value="ambient">Ambient</Select.Option>
-                        <Select.Option value="classical">
-                          Classical
-                        </Select.Option>
-                        <Select.Option value="electronic">
-                          Electronic
-                        </Select.Option>
-                        <Select.Option value="jazz">Jazz</Select.Option>
-                      </Select>
-                    </Form.Item>
-                  </div>
-                </Form>
-              </div>
-            </Collapse.Panel>
-          </Collapse>
+                ),
+              },
+            ]}
+          />
 
           {musicData && (
             <div className="music-info" onClick={handleShowMusicInfo}>

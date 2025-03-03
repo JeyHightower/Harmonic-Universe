@@ -6,10 +6,10 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.crud.base import CRUDBase
-from app.models.physics.physics_parameter import PhysicsParameter
+from app.models.physics.parameters import PhysicsParameters
 from app.schemas.physics.physics_parameter import PhysicsParameterCreate, PhysicsParameterUpdate
 
-class CRUDPhysicsParameter(CRUDBase[PhysicsParameter, PhysicsParameterCreate, PhysicsParameterUpdate]):
+class CRUDPhysicsParameter(CRUDBase[PhysicsParameters, PhysicsParameterCreate, PhysicsParameterUpdate]):
     """CRUD operations for physics parameters."""
 
     async def get_by_scene(
@@ -17,10 +17,10 @@ class CRUDPhysicsParameter(CRUDBase[PhysicsParameter, PhysicsParameterCreate, Ph
         db: AsyncSession,
         *,
         scene_id: str
-    ) -> Optional[PhysicsParameter]:
+    ) -> Optional[PhysicsParameters]:
         """Get physics parameters for a scene."""
         result = await db.execute(
-            select(PhysicsParameter).where(PhysicsParameter.scene_id == scene_id)
+            select(PhysicsParameters).where(PhysicsParameters.scene_id == scene_id)
         )
         return result.scalar_one_or_none()
 
@@ -29,9 +29,9 @@ class CRUDPhysicsParameter(CRUDBase[PhysicsParameter, PhysicsParameterCreate, Ph
         db: AsyncSession,
         *,
         obj_in: PhysicsParameterCreate
-    ) -> PhysicsParameter:
+    ) -> PhysicsParameters:
         """Create new physics parameters for a scene."""
-        db_obj = PhysicsParameter(
+        db_obj = PhysicsParameters(
             scene_id=obj_in.scene_id,
             version=obj_in.version,
             is_active=obj_in.is_active,
@@ -58,7 +58,7 @@ class CRUDPhysicsParameter(CRUDBase[PhysicsParameter, PhysicsParameterCreate, Ph
         *,
         scene_id: str,
         obj_in: PhysicsParameterUpdate
-    ) -> Optional[PhysicsParameter]:
+    ) -> Optional[PhysicsParameters]:
         """Update physics parameters for a scene."""
         db_obj = await self.get_by_scene(db, scene_id=scene_id)
         if not db_obj:
@@ -154,4 +154,4 @@ class CRUDPhysicsParameter(CRUDBase[PhysicsParameter, PhysicsParameterCreate, Ph
 
         return result
 
-physics_parameter = CRUDPhysicsParameter(PhysicsParameter)
+physics_parameter = CRUDPhysicsParameter(PhysicsParameters)

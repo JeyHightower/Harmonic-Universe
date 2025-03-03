@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { api, endpoints } from '../../../utils/api';
+import { api } from '../../../utils/api';
 import Button from '../../common/Button';
 import Icon from '../../common/Icon';
 import Input from '../../common/Input';
@@ -60,7 +60,7 @@ const SceneModal = ({
       setIsLoading(true);
       try {
         const sceneData = await api.get(
-          `${endpoints.universes.detail(universeId)}/scenes/${sceneId}`
+          `${API_BASE_URL}/api/scenes/${sceneId}`
         );
         setFormData({
           ...formData,
@@ -140,9 +140,7 @@ const SceneModal = ({
     if (isDeleteMode) {
       setIsSubmitting(true);
       try {
-        await api.delete(
-          `${endpoints.universes.detail(universeId)}/scenes/${sceneId}`
-        );
+        await api.delete(`${API_BASE_URL}/api/scenes/${sceneId}`);
         setShowSuccessMessage(true);
         setTimeout(() => {
           onSuccess?.('delete', { id: sceneId });
@@ -175,21 +173,19 @@ const SceneModal = ({
 
       if (isCreateMode) {
         // Create new scene
-        result = await api.post(
-          `${endpoints.universes.detail(universeId)}/scenes`,
-          {
-            ...formData,
-            universe_id: universeId,
-          }
-        );
+        result = await api.post(`${API_BASE_URL}/api/scenes/`, {
+          ...formData,
+          universe_id: universeId,
+        });
       } else if (isEditMode) {
         // Update existing scene
-        result = await api.put(
-          `${endpoints.universes.detail(universeId)}/scenes/${sceneId}`,
-          formData
-        );
+        result = await api.put(`${API_BASE_URL}/api/scenes/${sceneId}`, {
+          ...formData,
+          universe_id: universeId,
+        });
       }
 
+      // Show success message and close modal after a short delay
       setShowSuccessMessage(true);
       setTimeout(() => {
         onSuccess?.(isCreateMode ? 'create' : 'update', result);
