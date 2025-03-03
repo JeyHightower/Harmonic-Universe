@@ -35,7 +35,8 @@ function Register() {
     if (!validateForm()) return;
 
     try {
-      const response = await api.post('/api/auth/register', values);
+      const response = await api.post('/api/v1/auth/register', values);
+      console.debug('Register response:', response);
 
       if (response.access_token) {
         localStorage.setItem('accessToken', response.access_token);

@@ -11,61 +11,61 @@ export const endpoints = {
     refresh: `${API_BASE_URL}/api/v1/auth/refresh`,
   },
   universes: {
-    list: `${API_BASE_URL}/api/universes/`,
-    detail: id => `${API_BASE_URL}/api/universes/${id}/`,
-    create: `${API_BASE_URL}/api/universes/`,
-    update: id => `${API_BASE_URL}/api/universes/${id}/`,
-    delete: id => `${API_BASE_URL}/api/universes/${id}/`,
-    physics: id => `${API_BASE_URL}/api/universes/${id}/physics/`,
-    harmony: id => `${API_BASE_URL}/api/universes/${id}/harmony/`,
+    list: `${API_BASE_URL}/api/v1/universes/`,
+    detail: id => `${API_BASE_URL}/api/v1/universes/${id}/`,
+    create: `${API_BASE_URL}/api/v1/universes/`,
+    update: id => `${API_BASE_URL}/api/v1/universes/${id}/`,
+    delete: id => `${API_BASE_URL}/api/v1/universes/${id}/`,
+    physics: id => `${API_BASE_URL}/api/v1/universes/${id}/physics/`,
+    harmony: id => `${API_BASE_URL}/api/v1/universes/${id}/harmony/`,
   },
   scenes: {
-    list: `${API_BASE_URL}/api/scenes/`,
-    detail: id => `${API_BASE_URL}/api/scenes/${id}/`,
-    create: `${API_BASE_URL}/api/scenes/`,
-    update: id => `${API_BASE_URL}/api/scenes/${id}/`,
-    delete: id => `${API_BASE_URL}/api/scenes/${id}/`,
-    reorder: `${API_BASE_URL}/api/scenes/reorder`,
-    forUniverse: universeId => `${API_BASE_URL}/api/scenes/?universe_id=${universeId}`,
+    list: `${API_BASE_URL}/api/v1/scenes/`,
+    detail: id => `${API_BASE_URL}/api/v1/scenes/${id}/`,
+    create: `${API_BASE_URL}/api/v1/scenes/`,
+    update: id => `${API_BASE_URL}/api/v1/scenes/${id}/`,
+    delete: id => `${API_BASE_URL}/api/v1/scenes/${id}/`,
+    reorder: `${API_BASE_URL}/api/v1/scenes/reorder`,
+    forUniverse: universeId => `${API_BASE_URL}/api/v1/scenes/?universe_id=${universeId}`,
     physicsParameters: {
       list: sceneId =>
-        `${API_BASE_URL}/api/scenes/${sceneId}/physics_parameters`,
+        `${API_BASE_URL}/api/v1/scenes/${sceneId}/physics_parameters`,
       detail: (sceneId, paramsId) =>
-        `${API_BASE_URL}/api/scenes/${sceneId}/physics_parameters/${paramsId}`,
+        `${API_BASE_URL}/api/v1/scenes/${sceneId}/physics_parameters/${paramsId}`,
       create: sceneId =>
-        `${API_BASE_URL}/api/scenes/${sceneId}/physics_parameters`,
+        `${API_BASE_URL}/api/v1/scenes/${sceneId}/physics_parameters`,
       update: (sceneId, paramsId) =>
-        `${API_BASE_URL}/api/scenes/${sceneId}/physics_parameters/${paramsId}`,
+        `${API_BASE_URL}/api/v1/scenes/${sceneId}/physics_parameters/${paramsId}`,
       delete: (sceneId, paramsId) =>
-        `${API_BASE_URL}/api/scenes/${sceneId}/physics_parameters/${paramsId}`,
+        `${API_BASE_URL}/api/v1/scenes/${sceneId}/physics_parameters/${paramsId}`,
     },
     harmonyParameters: {
       list: sceneId =>
-        `${API_BASE_URL}/api/scenes/${sceneId}/harmony_parameters`,
+        `${API_BASE_URL}/api/v1/scenes/${sceneId}/harmony_parameters`,
       detail: (sceneId, paramsId) =>
-        `${API_BASE_URL}/api/scenes/${sceneId}/harmony_parameters/${paramsId}`,
+        `${API_BASE_URL}/api/v1/scenes/${sceneId}/harmony_parameters/${paramsId}`,
       create: sceneId =>
-        `${API_BASE_URL}/api/scenes/${sceneId}/harmony_parameters`,
+        `${API_BASE_URL}/api/v1/scenes/${sceneId}/harmony_parameters`,
       update: (sceneId, paramsId) =>
-        `${API_BASE_URL}/api/scenes/${sceneId}/harmony_parameters/${paramsId}`,
+        `${API_BASE_URL}/api/v1/scenes/${sceneId}/harmony_parameters/${paramsId}`,
       delete: (sceneId, paramsId) =>
-        `${API_BASE_URL}/api/scenes/${sceneId}/harmony_parameters/${paramsId}`,
+        `${API_BASE_URL}/api/v1/scenes/${sceneId}/harmony_parameters/${paramsId}`,
     },
   },
   physicsObjects: {
-    list: `${API_BASE_URL}/api/physics-objects/`,
-    detail: id => `${API_BASE_URL}/api/physics-objects/${id}/`,
-    create: `${API_BASE_URL}/api/physics-objects/`,
-    update: id => `${API_BASE_URL}/api/physics-objects/${id}/`,
-    delete: id => `${API_BASE_URL}/api/physics-objects/${id}/`,
+    list: `${API_BASE_URL}/api/v1/physics-objects/`,
+    detail: id => `${API_BASE_URL}/api/v1/physics-objects/${id}/`,
+    create: `${API_BASE_URL}/api/v1/physics-objects/`,
+    update: id => `${API_BASE_URL}/api/v1/physics-objects/${id}/`,
+    delete: id => `${API_BASE_URL}/api/v1/physics-objects/${id}/`,
     forScene: sceneId =>
-      `${API_BASE_URL}/api/physics-objects/?scene_id=${sceneId}`,
+      `${API_BASE_URL}/api/v1/physics-objects/?scene_id=${sceneId}`,
   },
   music: {
-    generate: universeId => `${API_BASE_URL}/api/music/${universeId}/generate`,
-    download: universeId => `${API_BASE_URL}/api/music/${universeId}/download`,
+    generate: universeId => `${API_BASE_URL}/api/v1/music/${universeId}/generate`,
+    download: universeId => `${API_BASE_URL}/api/v1/music/${universeId}/download`,
     generateAI: universeId =>
-      `${API_BASE_URL}/api/music/${universeId}/generate-ai`,
+      `${API_BASE_URL}/api/v1/music/${universeId}/generate-ai`,
   },
 };
 
@@ -142,6 +142,13 @@ const getAuthToken = async () => {
 
 // Error handler
 const handleResponse = async response => {
+  console.debug('Processing response:', {
+    url: response.url,
+    status: response.status,
+    statusText: response.statusText,
+    ok: response.ok
+  });
+
   if (!response.ok) {
     console.error('API request failed:', {
       status: response.status,
@@ -154,22 +161,31 @@ const handleResponse = async response => {
       const data = await response.json();
       error.response = { data, status: response.status };
       console.error('Error response data:', data);
-    } catch {
+    } catch (parseError) {
+      console.error('Could not parse error response:', parseError);
       error.response = {
         data: { message: response.statusText },
         status: response.status,
       };
-      console.error('Could not parse error response');
     }
     throw error;
   }
 
   // Return null for 204 No Content responses
   if (response.status === 204) {
+    console.debug('Received 204 No Content response');
     return null;
   }
 
-  return response.json();
+  try {
+    console.debug('Parsing JSON response');
+    const data = await response.json();
+    console.debug('Successfully parsed JSON response:', data);
+    return data;
+  } catch (error) {
+    console.error('Failed to parse JSON response:', error);
+    throw new Error('Invalid JSON response from server');
+  }
 };
 
 // API methods
@@ -210,14 +226,27 @@ export const api = {
       },
       data,
     });
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(data),
-      signal: options.signal,
-    });
 
-    return handleResponse(response);
+    try {
+      console.debug('Sending POST fetch request to:', endpoint);
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(data),
+        signal: options.signal,
+      });
+
+      console.debug('POST response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('POST request failed:', error);
+      throw error;
+    }
   },
 
   async put(endpoint, data, options = {}) {

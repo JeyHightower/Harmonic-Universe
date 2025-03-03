@@ -1,13 +1,22 @@
 import PropTypes from 'prop-types';
-import React from 'react';
+import React, { useEffect } from 'react';
 import IconContext from './es/components/Context';
 
 // Add debug log with a unique identifier
 console.log('==== ICONS.JSX IS BEING LOADED ====');
 
-// Basic Icon component
+// Basic Icon component with enhanced debugging
 const Icon = props => {
-  return <span className="anticon" {...props} />;
+  const { 'data-icon-name': iconName, ...restProps } = props;
+
+  // Add logging for successful icon creation
+  useEffect(() => {
+    if (iconName) {
+      console.log(`Successfully imported ${iconName} icon:`, Icon);
+    }
+  }, [iconName]);
+
+  return <span className="anticon" {...restProps} />;
 };
 
 // Add methods expected by Ant Design
@@ -15,11 +24,13 @@ Icon.getTwoToneColor = () => '#1890ff';
 Icon.setTwoToneColor = () => {};
 Icon.Context = IconContext;
 
-// Add PropTypes validation to fix the warning
+// IMPORTANT: Use lowercase 'propTypes' (not 'PropTypes') for React component prop validation
+// This is a React standard and using uppercase 'PropTypes' will trigger warnings
 Icon.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   children: PropTypes.node,
+  'data-icon-name': PropTypes.string,
 };
 
 // Create a function to generate icon components
@@ -30,7 +41,6 @@ function createIconComponent(displayName) {
   IconComponent.displayName = displayName;
 
   // IMPORTANT: Always use lowercase 'propTypes' (not 'PropTypes') for React component prop validation
-  // This is a React standard and using uppercase 'PropTypes' will trigger warnings
   IconComponent.propTypes = {
     className: PropTypes.string,
     style: PropTypes.object,
@@ -39,185 +49,194 @@ function createIconComponent(displayName) {
   return IconComponent;
 }
 
+// Create a cache to avoid recreating the same icon components
+const iconCache = new Map();
+
+// Function to get or create an icon component
+function getIconComponent(displayName) {
+  if (!iconCache.has(displayName)) {
+    iconCache.set(displayName, createIconComponent(displayName));
+  }
+  return iconCache.get(displayName);
+}
+
 // Create icon components with display names
-export const AccountBookFilled = createIconComponent('AccountBookFilled');
-export const AccountBookOutlined = createIconComponent('AccountBookOutlined');
-export const AccountBookTwoTone = createIconComponent('AccountBookTwoTone');
-export const AlertFilled = createIconComponent('AlertFilled');
-export const AlertOutlined = createIconComponent('AlertOutlined');
-export const AlertTwoTone = createIconComponent('AlertTwoTone');
-export const AlibabaOutlined = createIconComponent('AlibabaOutlined');
-export const AlignCenterOutlined = createIconComponent('AlignCenterOutlined');
-export const AlignLeftOutlined = createIconComponent('AlignLeftOutlined');
-export const AlignRightOutlined = createIconComponent('AlignRightOutlined');
-export const AliwangwangFilled = createIconComponent('AliwangwangFilled');
-export const AliwangwangOutlined = createIconComponent('AliwangwangOutlined');
-export const AmazonOutlined = createIconComponent('AmazonOutlined');
-export const AndroidFilled = createIconComponent('AndroidFilled');
-export const AndroidOutlined = createIconComponent('AndroidOutlined');
-export const AntCloudOutlined = createIconComponent('AntCloudOutlined');
-export const AntDesignOutlined = createIconComponent('AntDesignOutlined');
-export const ApartmentOutlined = createIconComponent('ApartmentOutlined');
-export const ApiFilled = createIconComponent('ApiFilled');
-export const ApiOutlined = createIconComponent('ApiOutlined');
-export const ApiTwoTone = createIconComponent('ApiTwoTone');
-export const AppleFilled = createIconComponent('AppleFilled');
-export const AppleOutlined = createIconComponent('AppleOutlined');
-export const AppstoreAddOutlined = createIconComponent('AppstoreAddOutlined');
-export const AppstoreFilled = createIconComponent('AppstoreFilled');
-export const AppstoreOutlined = createIconComponent('AppstoreOutlined');
-export const AppstoreTwoTone = createIconComponent('AppstoreTwoTone');
-export const AreaChartOutlined = createIconComponent('AreaChartOutlined');
-export const ArrowDownOutlined = createIconComponent('ArrowDownOutlined');
-export const ArrowLeftOutlined = createIconComponent('ArrowLeftOutlined');
-export const ArrowRightOutlined = createIconComponent('ArrowRightOutlined');
-export const ArrowUpOutlined = createIconComponent('ArrowUpOutlined');
-export const AuditOutlined = createIconComponent('AuditOutlined');
-export const AudioFilled = createIconComponent('AudioFilled');
-export const AudioMutedOutlined = createIconComponent('AudioMutedOutlined');
-export const AudioOutlined = createIconComponent('AudioOutlined');
-export const AudioTwoTone = createIconComponent('AudioTwoTone');
-export const BarcodeOutlined = createIconComponent('BarcodeOutlined');
-export const BugFilled = createIconComponent('BugFilled');
-export const CalendarOutlined = createIconComponent('CalendarOutlined');
-export const CaretDownFilled = createIconComponent('CaretDownFilled');
-export const CaretDownOutlined = createIconComponent('CaretDownOutlined');
-export const CaretRightOutlined = createIconComponent('CaretRightOutlined');
-export const CaretUpOutlined = createIconComponent('CaretUpOutlined');
-export const CarryOutTwoTone = createIconComponent('CarryOutTwoTone');
-export const CheckCircleFilled = createIconComponent('CheckCircleFilled');
-export const CheckCircleOutlined = createIconComponent('CheckCircleOutlined');
-export const CheckCircleTwoTone = createIconComponent('CheckCircleTwoTone');
-export const CheckOutlined = createIconComponent('CheckOutlined');
-export const CheckSquareFilled = createIconComponent('CheckSquareFilled');
-export const CheckSquareOutlined = createIconComponent('CheckSquareOutlined');
-export const CheckSquareTwoTone = createIconComponent('CheckSquareTwoTone');
-export const ClockCircleOutlined = createIconComponent('ClockCircleOutlined');
-export const ClockCircleTwoTone = createIconComponent('ClockCircleTwoTone');
-export const CloseCircleFilled = createIconComponent('CloseCircleFilled');
-export const CloseCircleOutlined = createIconComponent('CloseCircleOutlined');
-export const CloseCircleTwoTone = createIconComponent('CloseCircleTwoTone');
-export const CloseOutlined = createIconComponent('CloseOutlined');
-export const CloseSquareFilled = createIconComponent('CloseSquareFilled');
-export const CloseSquareOutlined = createIconComponent('CloseSquareOutlined');
-export const CloseSquareTwoTone = createIconComponent('CloseSquareTwoTone');
-export const CloudDownloadOutlined = createIconComponent(
-  'CloudDownloadOutlined'
-);
-export const CloudUploadOutlined = createIconComponent('CloudUploadOutlined');
-export const ClusterOutlined = createIconComponent('ClusterOutlined');
-export const CopyOutlined = createIconComponent('CopyOutlined');
-export const DeleteOutlined = createIconComponent('DeleteOutlined');
-export const DeleteRowOutlined = createIconComponent('DeleteRowOutlined');
-export const DiffOutlined = createIconComponent('DiffOutlined');
-export const DislikeOutlined = createIconComponent('DislikeOutlined');
-export const DollarCircleOutlined = createIconComponent('DollarCircleOutlined');
-export const DoubleLeftOutlined = createIconComponent('DoubleLeftOutlined');
-export const DoubleRightOutlined = createIconComponent('DoubleRightOutlined');
-export const DownloadOutlined = createIconComponent('DownloadOutlined');
-export const DribbbleOutlined = createIconComponent('DribbbleOutlined');
-export const EditOutlined = createIconComponent('EditOutlined');
-export const EllipsisOutlined = createIconComponent('EllipsisOutlined');
-export const EnterOutlined = createIconComponent('EnterOutlined');
-export const EyeInvisibleOutlined = createIconComponent('EyeInvisibleOutlined');
-export const EyeOutlined = createIconComponent('EyeOutlined');
-export const FileDoneOutlined = createIconComponent('FileDoneOutlined');
-export const FileExclamationTwoTone = createIconComponent(
+export const AccountBookFilled = getIconComponent('AccountBookFilled');
+export const AccountBookOutlined = getIconComponent('AccountBookOutlined');
+export const AccountBookTwoTone = getIconComponent('AccountBookTwoTone');
+export const AlertFilled = getIconComponent('AlertFilled');
+export const AlertOutlined = getIconComponent('AlertOutlined');
+export const AlertTwoTone = getIconComponent('AlertTwoTone');
+export const AlibabaOutlined = getIconComponent('AlibabaOutlined');
+export const AlignCenterOutlined = getIconComponent('AlignCenterOutlined');
+export const AlignLeftOutlined = getIconComponent('AlignLeftOutlined');
+export const AlignRightOutlined = getIconComponent('AlignRightOutlined');
+export const AliwangwangFilled = getIconComponent('AliwangwangFilled');
+export const AliwangwangOutlined = getIconComponent('AliwangwangOutlined');
+export const AmazonOutlined = getIconComponent('AmazonOutlined');
+export const AndroidFilled = getIconComponent('AndroidFilled');
+export const AndroidOutlined = getIconComponent('AndroidOutlined');
+export const AntCloudOutlined = getIconComponent('AntCloudOutlined');
+export const AntDesignOutlined = getIconComponent('AntDesignOutlined');
+export const ApartmentOutlined = getIconComponent('ApartmentOutlined');
+export const ApiFilled = getIconComponent('ApiFilled');
+export const ApiOutlined = getIconComponent('ApiOutlined');
+export const ApiTwoTone = getIconComponent('ApiTwoTone');
+export const AppleFilled = getIconComponent('AppleFilled');
+export const AppleOutlined = getIconComponent('AppleOutlined');
+export const AppstoreAddOutlined = getIconComponent('AppstoreAddOutlined');
+export const AppstoreFilled = getIconComponent('AppstoreFilled');
+export const AppstoreOutlined = getIconComponent('AppstoreOutlined');
+export const AppstoreTwoTone = getIconComponent('AppstoreTwoTone');
+export const AreaChartOutlined = getIconComponent('AreaChartOutlined');
+export const ArrowDownOutlined = getIconComponent('ArrowDownOutlined');
+export const ArrowLeftOutlined = getIconComponent('ArrowLeftOutlined');
+export const ArrowRightOutlined = getIconComponent('ArrowRightOutlined');
+export const ArrowUpOutlined = getIconComponent('ArrowUpOutlined');
+export const AuditOutlined = getIconComponent('AuditOutlined');
+export const AudioFilled = getIconComponent('AudioFilled');
+export const AudioMutedOutlined = getIconComponent('AudioMutedOutlined');
+export const AudioOutlined = getIconComponent('AudioOutlined');
+export const AudioTwoTone = getIconComponent('AudioTwoTone');
+export const BarcodeOutlined = getIconComponent('BarcodeOutlined');
+export const BugFilled = getIconComponent('BugFilled');
+export const CalendarOutlined = getIconComponent('CalendarOutlined');
+export const CaretDownFilled = getIconComponent('CaretDownFilled');
+export const CaretDownOutlined = getIconComponent('CaretDownOutlined');
+export const CaretRightOutlined = getIconComponent('CaretRightOutlined');
+export const CaretUpOutlined = getIconComponent('CaretUpOutlined');
+export const CarryOutTwoTone = getIconComponent('CarryOutTwoTone');
+export const CheckCircleFilled = getIconComponent('CheckCircleFilled');
+export const CheckCircleOutlined = getIconComponent('CheckCircleOutlined');
+export const CheckCircleTwoTone = getIconComponent('CheckCircleTwoTone');
+export const CheckOutlined = getIconComponent('CheckOutlined');
+export const CheckSquareFilled = getIconComponent('CheckSquareFilled');
+export const CheckSquareOutlined = getIconComponent('CheckSquareOutlined');
+export const CheckSquareTwoTone = getIconComponent('CheckSquareTwoTone');
+export const ClockCircleOutlined = getIconComponent('ClockCircleOutlined');
+export const ClockCircleTwoTone = getIconComponent('ClockCircleTwoTone');
+export const CloseCircleFilled = getIconComponent('CloseCircleFilled');
+export const CloseCircleOutlined = getIconComponent('CloseCircleOutlined');
+export const CloseCircleTwoTone = getIconComponent('CloseCircleTwoTone');
+export const CloseOutlined = getIconComponent('CloseOutlined');
+export const CloseSquareFilled = getIconComponent('CloseSquareFilled');
+export const CloseSquareOutlined = getIconComponent('CloseSquareOutlined');
+export const CloseSquareTwoTone = getIconComponent('CloseSquareTwoTone');
+export const CloudDownloadOutlined = getIconComponent('CloudDownloadOutlined');
+export const CloudUploadOutlined = getIconComponent('CloudUploadOutlined');
+export const ClusterOutlined = getIconComponent('ClusterOutlined');
+export const CopyOutlined = getIconComponent('CopyOutlined');
+export const DeleteOutlined = getIconComponent('DeleteOutlined');
+export const DeleteRowOutlined = getIconComponent('DeleteRowOutlined');
+export const DiffOutlined = getIconComponent('DiffOutlined');
+export const DislikeOutlined = getIconComponent('DislikeOutlined');
+export const DollarCircleOutlined = getIconComponent('DollarCircleOutlined');
+export const DoubleLeftOutlined = getIconComponent('DoubleLeftOutlined');
+export const DoubleRightOutlined = getIconComponent('DoubleRightOutlined');
+export const DownloadOutlined = getIconComponent('DownloadOutlined');
+export const DribbbleOutlined = getIconComponent('DribbbleOutlined');
+export const EditOutlined = getIconComponent('EditOutlined');
+export const EllipsisOutlined = getIconComponent('EllipsisOutlined');
+export const EnterOutlined = getIconComponent('EnterOutlined');
+export const EyeInvisibleOutlined = getIconComponent('EyeInvisibleOutlined');
+export const EyeOutlined = getIconComponent('EyeOutlined');
+export const FileDoneOutlined = getIconComponent('FileDoneOutlined');
+export const FileExclamationTwoTone = getIconComponent(
   'FileExclamationTwoTone'
 );
-export const FileJpgOutlined = createIconComponent('FileJpgOutlined');
-export const FileOutlined = createIconComponent('FileOutlined');
-export const FileProtectOutlined = createIconComponent('FileProtectOutlined');
-export const FileSearchOutlined = createIconComponent('FileSearchOutlined');
-export const FileTextOutlined = createIconComponent('FileTextOutlined');
-export const FileTwoTone = createIconComponent('FileTwoTone');
-export const FileZipTwoTone = createIconComponent('FileZipTwoTone');
-export const FilterFilled = createIconComponent('FilterFilled');
-export const FolderOpenOutlined = createIconComponent('FolderOpenOutlined');
-export const FolderOutlined = createIconComponent('FolderOutlined');
-export const FrownTwoTone = createIconComponent('FrownTwoTone');
-export const FullscreenExitOutlined = createIconComponent(
+export const FileJpgOutlined = getIconComponent('FileJpgOutlined');
+export const FileOutlined = getIconComponent('FileOutlined');
+export const FileProtectOutlined = getIconComponent('FileProtectOutlined');
+export const FileSearchOutlined = getIconComponent('FileSearchOutlined');
+export const FileTextOutlined = getIconComponent('FileTextOutlined');
+export const FileTwoTone = getIconComponent('FileTwoTone');
+export const FileZipTwoTone = getIconComponent('FileZipTwoTone');
+export const FilterFilled = getIconComponent('FilterFilled');
+export const FolderOpenOutlined = getIconComponent('FolderOpenOutlined');
+export const FolderOutlined = getIconComponent('FolderOutlined');
+export const FrownTwoTone = getIconComponent('FrownTwoTone');
+export const FullscreenExitOutlined = getIconComponent(
   'FullscreenExitOutlined'
 );
-export const GitlabOutlined = createIconComponent('GitlabOutlined');
-export const GooglePlusCircleFilled = createIconComponent(
+export const GitlabOutlined = getIconComponent('GitlabOutlined');
+export const GooglePlusCircleFilled = getIconComponent(
   'GooglePlusCircleFilled'
 );
-export const GroupOutlined = createIconComponent('GroupOutlined');
-export const HistoryOutlined = createIconComponent('HistoryOutlined');
-export const HolderOutlined = createIconComponent('HolderOutlined');
-export const HourglassTwoTone = createIconComponent('HourglassTwoTone');
-export const IeCircleFilled = createIconComponent('IeCircleFilled');
-export const InfoCircleOutlined = createIconComponent('InfoCircleOutlined');
-export const LoadingOutlined = createIconComponent('LoadingOutlined');
-export const MacCommandOutlined = createIconComponent('MacCommandOutlined');
-export const MehTwoTone = createIconComponent('MehTwoTone');
-export const MergeCellsOutlined = createIconComponent('MergeCellsOutlined');
-export const MessageOutlined = createIconComponent('MessageOutlined');
-export const MinusSquareOutlined = createIconComponent('MinusSquareOutlined');
-export const PaperClipOutlined = createIconComponent('PaperClipOutlined');
-export const PauseOutlined = createIconComponent('PauseOutlined');
-export const PictureTwoTone = createIconComponent('PictureTwoTone');
-export const PinterestFilled = createIconComponent('PinterestFilled');
-export const PlusOutlined = createIconComponent('PlusOutlined');
-export const PlusSquareOutlined = createIconComponent('PlusSquareOutlined');
-export const PushpinTwoTone = createIconComponent('PushpinTwoTone');
-export const QuestionCircleOutlined = createIconComponent(
+export const GroupOutlined = getIconComponent('GroupOutlined');
+export const HistoryOutlined = getIconComponent('HistoryOutlined');
+export const HolderOutlined = getIconComponent('HolderOutlined');
+export const HourglassTwoTone = getIconComponent('HourglassTwoTone');
+export const IeCircleFilled = getIconComponent('IeCircleFilled');
+export const InfoCircleOutlined = getIconComponent('InfoCircleOutlined');
+export const LoadingOutlined = getIconComponent('LoadingOutlined');
+export const MacCommandOutlined = getIconComponent('MacCommandOutlined');
+export const MehTwoTone = getIconComponent('MehTwoTone');
+export const MergeCellsOutlined = getIconComponent('MergeCellsOutlined');
+export const MessageOutlined = getIconComponent('MessageOutlined');
+export const MinusSquareOutlined = getIconComponent('MinusSquareOutlined');
+export const PaperClipOutlined = getIconComponent('PaperClipOutlined');
+export const PauseOutlined = getIconComponent('PauseOutlined');
+export const PictureTwoTone = getIconComponent('PictureTwoTone');
+export const PinterestFilled = getIconComponent('PinterestFilled');
+export const PlusOutlined = getIconComponent('PlusOutlined');
+export const PlusSquareOutlined = getIconComponent('PlusSquareOutlined');
+export const PushpinTwoTone = getIconComponent('PushpinTwoTone');
+export const QuestionCircleOutlined = getIconComponent(
   'QuestionCircleOutlined'
 );
-export const ReloadOutlined = createIconComponent('ReloadOutlined');
-export const RobotOutlined = createIconComponent('RobotOutlined');
-export const RotateLeftOutlined = createIconComponent('RotateLeftOutlined');
-export const RotateRightOutlined = createIconComponent('RotateRightOutlined');
-export const SafetyCertificateTwoTone = createIconComponent(
+export const ReloadOutlined = getIconComponent('ReloadOutlined');
+export const RobotOutlined = getIconComponent('RobotOutlined');
+export const RotateLeftOutlined = getIconComponent('RotateLeftOutlined');
+export const RotateRightOutlined = getIconComponent('RotateRightOutlined');
+export const SafetyCertificateTwoTone = getIconComponent(
   'SafetyCertificateTwoTone'
 );
-export const SettingOutlined = createIconComponent('SettingOutlined');
-export const ShopFilled = createIconComponent('ShopFilled');
-export const ShoppingCartOutlined = createIconComponent('ShoppingCartOutlined');
-export const SmileTwoTone = createIconComponent('SmileTwoTone');
-export const SolutionOutlined = createIconComponent('SolutionOutlined');
-export const StarFilled = createIconComponent('StarFilled');
-export const SwapOutlined = createIconComponent('SwapOutlined');
-export const SwapRightOutlined = createIconComponent('SwapRightOutlined');
-export const SyncOutlined = createIconComponent('SyncOutlined');
-export const TikTokFilled = createIconComponent('TikTokFilled');
-export const TikTokOutlined = createIconComponent('TikTokOutlined');
-export const ToolTwoTone = createIconComponent('ToolTwoTone');
-export const TrademarkOutlined = createIconComponent('TrademarkOutlined');
-export const TruckOutlined = createIconComponent('TruckOutlined');
-export const TwitchFilled = createIconComponent('TwitchFilled');
-export const UngroupOutlined = createIconComponent('UngroupOutlined');
-export const UnlockTwoTone = createIconComponent('UnlockTwoTone');
-export const UpOutlined = createIconComponent('UpOutlined');
-export const UserAddOutlined = createIconComponent('UserAddOutlined');
-export const UserOutlined = createIconComponent('UserOutlined');
-export const UserSwitchOutlined = createIconComponent('UserSwitchOutlined');
-export const WalletFilled = createIconComponent('WalletFilled');
-export const WalletOutlined = createIconComponent('WalletOutlined');
-export const WalletTwoTone = createIconComponent('WalletTwoTone');
-export const WarningFilled = createIconComponent('WarningFilled');
-export const WarningOutlined = createIconComponent('WarningOutlined');
-export const WarningTwoTone = createIconComponent('WarningTwoTone');
-export const WechatFilled = createIconComponent('WechatFilled');
-export const WechatOutlined = createIconComponent('WechatOutlined');
-export const WeiboCircleFilled = createIconComponent('WeiboCircleFilled');
-export const WeiboCircleOutlined = createIconComponent('WeiboCircleOutlined');
-export const WeiboOutlined = createIconComponent('WeiboOutlined');
-export const WeiboSquareFilled = createIconComponent('WeiboSquareFilled');
-export const WeiboSquareOutlined = createIconComponent('WeiboSquareOutlined');
-export const WhatsAppOutlined = createIconComponent('WhatsAppOutlined');
-export const WifiOutlined = createIconComponent('WifiOutlined');
-export const WindowsFilled = createIconComponent('WindowsFilled');
-export const WindowsOutlined = createIconComponent('WindowsOutlined');
-export const WomanOutlined = createIconComponent('WomanOutlined');
-export const XFilled = createIconComponent('XFilled');
-export const YahooFilled = createIconComponent('YahooFilled');
-export const YahooOutlined = createIconComponent('YahooOutlined');
-export const YuqueOutlined = createIconComponent('YuqueOutlined');
-export const ZhihuOutlined = createIconComponent('ZhihuOutlined');
-export const ZoomInOutlined = createIconComponent('ZoomInOutlined');
-export const ZoomOutOutlined = createIconComponent('ZoomOutOutlined');
+export const SettingOutlined = getIconComponent('SettingOutlined');
+export const ShopFilled = getIconComponent('ShopFilled');
+export const ShoppingCartOutlined = getIconComponent('ShoppingCartOutlined');
+export const SmileTwoTone = getIconComponent('SmileTwoTone');
+export const SolutionOutlined = getIconComponent('SolutionOutlined');
+export const StarFilled = getIconComponent('StarFilled');
+export const SwapOutlined = getIconComponent('SwapOutlined');
+export const SwapRightOutlined = getIconComponent('SwapRightOutlined');
+export const SyncOutlined = getIconComponent('SyncOutlined');
+export const TikTokFilled = getIconComponent('TikTokFilled');
+export const TikTokOutlined = getIconComponent('TikTokOutlined');
+export const ToolTwoTone = getIconComponent('ToolTwoTone');
+export const TrademarkOutlined = getIconComponent('TrademarkOutlined');
+export const TruckOutlined = getIconComponent('TruckOutlined');
+export const TwitchFilled = getIconComponent('TwitchFilled');
+export const UngroupOutlined = getIconComponent('UngroupOutlined');
+export const UnlockTwoTone = getIconComponent('UnlockTwoTone');
+export const UpOutlined = getIconComponent('UpOutlined');
+export const UserAddOutlined = getIconComponent('UserAddOutlined');
+export const UserOutlined = getIconComponent('UserOutlined');
+export const UserSwitchOutlined = getIconComponent('UserSwitchOutlined');
+export const WalletFilled = getIconComponent('WalletFilled');
+export const WalletOutlined = getIconComponent('WalletOutlined');
+export const WalletTwoTone = getIconComponent('WalletTwoTone');
+export const WarningFilled = getIconComponent('WarningFilled');
+export const WarningOutlined = getIconComponent('WarningOutlined');
+export const WarningTwoTone = getIconComponent('WarningTwoTone');
+export const WechatFilled = getIconComponent('WechatFilled');
+export const WechatOutlined = getIconComponent('WechatOutlined');
+export const WeiboCircleFilled = getIconComponent('WeiboCircleFilled');
+export const WeiboCircleOutlined = getIconComponent('WeiboCircleOutlined');
+export const WeiboOutlined = getIconComponent('WeiboOutlined');
+export const WeiboSquareFilled = getIconComponent('WeiboSquareFilled');
+export const WeiboSquareOutlined = getIconComponent('WeiboSquareOutlined');
+export const WhatsAppOutlined = getIconComponent('WhatsAppOutlined');
+export const WifiOutlined = getIconComponent('WifiOutlined');
+export const WindowsFilled = getIconComponent('WindowsFilled');
+export const WindowsOutlined = getIconComponent('WindowsOutlined');
+export const WomanOutlined = getIconComponent('WomanOutlined');
+export const XFilled = getIconComponent('XFilled');
+export const YahooFilled = getIconComponent('YahooFilled');
+export const YahooOutlined = getIconComponent('YahooOutlined');
+export const YuqueOutlined = getIconComponent('YuqueOutlined');
+export const ZhihuOutlined = getIconComponent('ZhihuOutlined');
+export const ZoomInOutlined = getIconComponent('ZoomInOutlined');
+export const ZoomOutOutlined = getIconComponent('ZoomOutOutlined');
 
 // Create icon font generator
 function createFromIconfontCN(options = {}) {
@@ -229,31 +248,32 @@ function createFromIconfontCN(options = {}) {
   return IconFont;
 }
 
-// Add all necessary properties to the Icon object for export
-Icon.createFromIconfontCN = createFromIconfontCN;
-
-// Create a proxy to handle any requested icon dynamically
+// Create a proxy to handle any requested icon
 const handler = {
   get(target, prop) {
-    // Return existing properties as-is
+    // If we have the component, return it
     if (prop in target) {
       return target[prop];
     }
 
-    // For any requested icon, create it on demand
-    if (typeof prop === 'string' && /[A-Z]/.test(prop[0])) {
-      return createIconComponent(prop);
+    // For any other icon name that follows the naming convention, create it on demand
+    if (typeof prop === 'string' && /^[A-Z]/.test(prop)) {
+      return getIconComponent(prop);
     }
 
+    // Return undefined for everything else
     return undefined;
   },
 };
 
-// Export the Icon with the proxy to handle dynamic icon requests
+// Create a proxied version of Icon that dynamically creates icon components
 const ProxiedIcon = new Proxy(Icon, handler);
 
-// Export Context for use in other components
-export { IconContext as Context };
+// Export the Context
+export const Context = IconContext;
 
-// Export the default with all properties needed by Ant Design
+// Export the createFromIconfontCN function
+export { createFromIconfontCN };
+
+// Export default with proxy
 export default ProxiedIcon;

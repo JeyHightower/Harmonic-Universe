@@ -17,7 +17,6 @@ import ProtectedRoute from './routes/ProtectedRoute';
 import store from './store';
 import './styles/global.css';
 import './styles/theme.css';
-import { ModalRegistry } from './utils/modalRegistry';
 import { handleModalRoute } from './utils/modalRouteHandler';
 import { initializeTheme } from './utils/themeUtils';
 
@@ -139,7 +138,6 @@ const App = () => {
       <ConfigProvider theme={themeConfig}>
         <Router>
           <ModalProvider>
-            <ModalRegistry />
             <ModalRouteHandler />
             <Suspense fallback={<div>Loading...</div>}>
               <Routes>

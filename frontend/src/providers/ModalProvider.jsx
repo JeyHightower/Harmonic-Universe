@@ -3,10 +3,12 @@ import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import GlobalModal from '../components/common/GlobalModal';
 import { ModalProvider as ContextModalProvider } from '../contexts/ModalContext';
+import { ModalRegistry } from '../utils/modalRegistry';
 
 const ModalProvider = ({ children }) => {
   return (
     <ContextModalProvider>
+      <ModalRegistry />
       {children}
       <GlobalModal />
     </ContextModalProvider>

@@ -67,7 +67,12 @@ export const MODAL_TYPES = {
 export const ModalRegistry = () => {
     const { registerModal } = useModal();
 
+    console.log('ModalRegistry component mounted');
+    console.log('registerModal function available:', !!registerModal);
+
     useEffect(() => {
+        console.log('ModalRegistry useEffect running');
+
         // Register PhysicsParametersModal
         registerModal(
             MODAL_TYPES.PHYSICS_PARAMETERS,
@@ -90,6 +95,10 @@ export const ModalRegistry = () => {
         );
 
         // Register Universe Create/Edit Modal
+        console.log('Registering universe-create modal');
+        console.log('MODAL_TYPES.UNIVERSE_CREATE:', MODAL_TYPES.UNIVERSE_CREATE);
+        console.log('UniverseFormModal available:', !!UniverseFormModal);
+
         registerModal(
             MODAL_TYPES.UNIVERSE_CREATE,
             UniverseFormModal,
@@ -97,14 +106,21 @@ export const ModalRegistry = () => {
                 getProps: (data) => ({
                     initialData: null,
                     isGlobalModal: true,
+                    preventStateReset: true,
+                    _mountTime: Date.now(),
                 }),
                 getModalProps: () => ({
                     title: 'Create New Universe',
                     size: 'medium',
                     type: 'form',
+                    preventStateReset: true,
+                    preventAutoClose: true,
+                    preventBackdropClick: true,
+                    'data-modal-type': 'universe-create',
                 }),
             }
         );
+        console.log('universe-create modal registered');
 
         registerModal(
             MODAL_TYPES.UNIVERSE_EDIT,
@@ -332,6 +348,7 @@ export const ModalRegistry = () => {
             }
         );
 
+        console.log('All modals registered');
     }, [registerModal]);
 
     // This component doesn't render anything

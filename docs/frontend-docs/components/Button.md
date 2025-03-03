@@ -166,7 +166,7 @@ function SubmitButton({ onSubmit }) {
   );
 }
 
-SubmitButton.propTypes = {
+SubmitButton.PropTypes = {
   onSubmit: PropTypes.func.isRequired,
 };
 ```

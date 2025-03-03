@@ -526,3 +526,44 @@
     opacity: 0;
   }
 }
+
+/* Force modal visibility */
+.modal.force-visible {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  z-index: 9999 !important;
+}
+
+.modal-overlay.force-visible {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  z-index: 9998 !important;
+}
+
+/* Ensure modal content is visible */
+.modal.force-visible .modal-content {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+}
+
+/* Add animation to draw attention to modals that were restored */
+@keyframes pulse-border {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 0, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
+  }
+}
+
+.modal.force-visible {
+  animation: pulse-border 2s infinite;
+}

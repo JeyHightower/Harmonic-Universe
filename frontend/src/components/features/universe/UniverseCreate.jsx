@@ -52,25 +52,42 @@ function UniverseCreate({ onClose, onSuccess }) {
 
   const handleSubmit = async e => {
     e.preventDefault();
-    if (!validateForm()) return;
+    console.log('Universe create form submitted');
 
+    if (!validateForm()) {
+      console.log('Form validation failed');
+      return;
+    }
+
+    console.log('Form validation passed, submitting universe data:', formData);
     setIsSubmitting(true);
     setError(null);
 
     try {
+      console.log('Dispatching createUniverse action with data:', formData);
       const result = await dispatch(createUniverse(formData)).unwrap();
+      console.log('Universe created successfully:', result);
 
       if (onSuccess) {
+        console.log('Calling onSuccess callback with id:', result.id);
         onSuccess(result.id);
       } else {
+        console.log('Navigating to universe detail page:', result.id);
         navigate(`/universes/${result.id}`);
       }
 
       if (onClose) {
+        console.log('Calling onClose callback');
         onClose();
       }
     } catch (error) {
       console.error('Failed to create universe:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
       setError(error.response?.data?.message || 'Failed to create universe');
       setIsSubmitting(false);
     }

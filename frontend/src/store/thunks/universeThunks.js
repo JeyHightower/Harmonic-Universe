@@ -37,12 +37,28 @@ export const createUniverse = createAsyncThunk(
   'universe/createUniverse',
   async (universeData, { rejectWithValue }) => {
     try {
-      console.debug('Creating universe:', universeData);
+      console.debug('Creating universe with data:', universeData);
+      console.debug('Using endpoint:', endpoints.universes.create);
+
+      // Log the auth token availability
+      const token = localStorage.getItem('accessToken');
+      console.debug('Access token available:', !!token);
+
       const response = await api.post(endpoints.universes.create, universeData);
-      console.debug('Universe created:', response);
+      console.debug('Universe created successfully:', response);
       return response;
     } catch (error) {
       console.error('Failed to create universe:', error);
+      console.error('Error details:', {
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+        response: error.response ? {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data
+        } : 'No response object'
+      });
       return rejectWithValue(handleError(error));
     }
   }

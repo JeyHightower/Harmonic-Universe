@@ -19,11 +19,16 @@ const antDesignIconsPlugin = () => {
         return path.resolve(__dirname, 'src/components/common/es/components/Context.js');
       }
 
-      // Handle individual icon imports - for paths like Icons.jsx/IconName
+      // NEW APPROACH: Handle ALL individual icon imports more explicitly with log
       if (id.includes('/Icons.jsx/')) {
-        console.log('Resolving individual icon import:', id);
-        // Direct all individual icon imports to the main Icons.jsx file
-        return path.resolve(__dirname, 'src/components/common/Icons.jsx');
+        const iconName = id.split('/Icons.jsx/').pop();
+        console.log(`Resolving icon '${iconName}' to main icons file`);
+        // Return the main Icons.jsx file for all icon imports
+        return {
+          id: path.resolve(__dirname, 'src/components/common/Icons.jsx'),
+          // Pass the icon name as a custom attribute for potential use
+          meta: { iconName }
+        };
       }
 
       // Handle direct import of Context
@@ -39,6 +44,10 @@ const antDesignIconsPlugin = () => {
       server.middlewares.use((req, res, next) => {
         // Check if the URL contains Icons.jsx/ (which would indicate treating a file as a directory)
         if (req.url && req.url.includes('/Icons.jsx/')) {
+          // Extract the icon name for better debugging
+          const iconName = req.url.split('/Icons.jsx/').pop().split('?')[0];
+          console.log(`Intercepted URL for icon: ${iconName}`);
+
           // Redirect to Icons.jsx instead
           req.url = '/src/components/common/Icons.jsx';
           console.log('Redirected URL:', req.url);
@@ -48,8 +57,27 @@ const antDesignIconsPlugin = () => {
     },
 
     load(id) {
+      // Get the icon name from the id's metadata (if it exists)
+      const iconName = id.meta?.iconName;
+
+      // For individual icon imports
+      if (iconName) {
+        console.log(`Loading individual icon: ${iconName}`);
+        return `
+          import React from 'react';
+          import Icon from '${path.resolve(__dirname, 'src/components/common/Icons.jsx')}';
+
+          // Create and export the specific icon
+          const ${iconName} = props => <Icon {...props} data-icon-name="${iconName}" />;
+          ${iconName}.displayName = '${iconName}';
+
+          export default ${iconName};
+        `;
+      }
+
       // For imports to our custom icon component, return the component implementation
       if (id === path.resolve(__dirname, 'src/components/common/Icons.jsx')) {
+        console.log('Loading the main Icons.jsx file');
         return `
           import React from 'react';
           import IconContext from './es/components/Context';
@@ -203,6 +231,7 @@ const antDesignIconsPlugin = () => {
 
       // Handle the Context.js file
       if (id === path.resolve(__dirname, 'src/components/common/es/components/Context.js')) {
+        console.log('Loading the Context.js file');
         return `
           import React from 'react';
 

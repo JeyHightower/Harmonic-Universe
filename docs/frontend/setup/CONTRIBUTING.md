@@ -100,7 +100,7 @@ function PhysicsControls({ universeId, onUpdate }) {
   return <div className="physics-controls">{/* Component JSX */}</div>;
 }
 
-PhysicsControls.propTypes = {
+PhysicsControls.PropTypes = {
   universeId: PropTypes.string.isRequired,
   onUpdate: PropTypes.func.isRequired,
 };

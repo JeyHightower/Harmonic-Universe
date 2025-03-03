@@ -34,7 +34,7 @@ function Login() {
 
     try {
       dispatch(loginStart());
-      const response = await api.post('/api/auth/login', values);
+      const response = await api.post('/api/v1/auth/login', values);
       console.debug('Login response:', response);
 
       if (response.access_token) {

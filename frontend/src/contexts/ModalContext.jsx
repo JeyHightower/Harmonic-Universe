@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useReducer,
+  useRef,
   useState,
 } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -27,12 +28,73 @@ const ACTIONS = {
 
 // Reducer function
 const modalReducer = (state, action) => {
+  console.log('Modal reducer action:', action.type, action.payload);
+  console.log('Current state:', state);
+
   switch (action.type) {
-    case ACTIONS.OPEN_MODAL:
-      return {
+    case ACTIONS.OPEN_MODAL: {
+      console.log('Opening modal with payload:', action.payload);
+
+      // Check if component is a React.memo component or a regular function component
+      const component = action.payload.component;
+      const isValidComponent =
+        typeof component === 'function' ||
+        (component &&
+          typeof component === 'object' &&
+          component.$$typeof === Symbol.for('react.memo') &&
+          typeof component.type === 'function');
+
+      console.log('Modal component present:', !!component);
+      console.log('Is valid component:', isValidComponent);
+      console.log('Modal type:', action.payload.modalType);
+
+      // Check if a modal of the same type already exists
+      const existingModalOfSameType = state.modals.find(
+        modal => modal.modalType === action.payload.modalType
+      );
+
+      if (existingModalOfSameType) {
+        console.warn(
+          `A modal of type ${action.payload.modalType} already exists (ID: ${existingModalOfSameType.id}). Updating it instead of creating a duplicate.`
+        );
+
+        // Instead of ignoring, update the existing modal with new props
+        return {
+          ...state,
+          modals: state.modals.map(modal =>
+            modal.modalType === action.payload.modalType
+              ? { ...modal, ...action.payload, id: modal.id } // Keep the same ID but update other props
+              : modal
+          ),
+        };
+      }
+
+      // Limit the total number of modals to 5
+      if (state.modals.length >= 5) {
+        console.warn(
+          `Maximum number of modals (5) reached. Closing oldest modal to make room for new modal of type ${action.payload.modalType}.`
+        );
+
+        // Remove the oldest modal instead of blocking the new one
+        const oldestModals = [...state.modals];
+        oldestModals.shift(); // Remove the oldest modal
+
+        return {
+          ...state,
+          modals: [...oldestModals, action.payload],
+        };
+      }
+
+      const newState = {
         ...state,
         modals: [...state.modals, action.payload],
       };
+      console.log('New state after OPEN_MODAL:', {
+        modalCount: newState.modals.length,
+        modalIds: newState.modals.map(m => m.id),
+      });
+      return newState;
+    }
     case ACTIONS.CLOSE_MODAL:
       return {
         ...state,
@@ -53,6 +115,7 @@ const modalReducer = (state, action) => {
         ),
       };
     case ACTIONS.REGISTER_MODAL:
+      console.log('REGISTER_MODAL action received:', action.payload);
       return {
         ...state,
         modalRegistry: {
@@ -73,6 +136,14 @@ export const ModalProvider = ({ children }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Add a debounce mechanism to prevent rapid reopening
+  const reopenTimeoutsRef = useRef({});
+  const reopenAttemptsRef = useRef({});
+  const maxReopenAttempts = 3;
+
+  // Add a ref to store functions to avoid circular dependencies
+  const functionsRef = useRef({});
 
   // Initialize from URL if needed
   useEffect(() => {
@@ -127,6 +198,267 @@ export const ModalProvider = ({ children }) => {
     setIsInitialized(true);
   }, [location, state.modalRegistry, state.modals, isInitialized]);
 
+  // Enhanced handler for modal:reopen event
+  const handleReopenModal = useCallback(
+    event => {
+      const { modalType, modalId, timestamp, isRetry, forceReopen, emergency } =
+        event.detail || {};
+      console.log(`Received modal:reopen event for ${modalType}`, event.detail);
+
+      if (!modalType) {
+        console.error('No modalType provided in modal:reopen event');
+        return;
+      }
+
+      // Special handling for universe-create modals
+      const isUniverseCreate =
+        modalType === 'universe-create' ||
+        (modalId && modalId.includes('universe-create'));
+
+      // For emergency reopens, always force a new instance
+      if (emergency) {
+        console.warn(`Emergency reopen requested for ${modalType}. Forcing new instance.`);
+
+        // Close any existing modals of this type first
+        const existingModals = state.modals.filter(m => m.modalType === modalType);
+        if (existingModals.length > 0) {
+          console.log(`Closing ${existingModals.length} existing modals of type ${modalType} before emergency reopen`);
+          existingModals.forEach(modal => {
+            dispatch({
+              type: ACTIONS.CLOSE_MODAL,
+              payload: { id: modal.id },
+            });
+          });
+        }
+
+        // Open a new modal with emergency settings
+        setTimeout(() => {
+          openModalByType(
+            modalType,
+            {
+              initialData: null,
+              preventAutoClose: true,
+              preventStateReset: true,
+              forceMount: true,
+              _mountTime: Date.now(),
+              _emergency: true,
+            },
+            {
+              keepInHistory: true,
+              updateUrl: true,
+              preventAutoClose: true,
+              preventBackdropClick: true,
+              preventStateReset: true,
+              forceRender: true,
+              forceNew: true,
+            }
+          );
+        }, 200);
+
+        return;
+      }
+
+      // Check if a modal of this type already exists in the DOM
+      const modalElement = document.querySelector(
+        `[data-modal-type="${modalType}"]`
+      );
+
+      if (modalElement) {
+        console.log(
+          `Modal of type ${modalType} already exists (ID: ${modalElement.getAttribute(
+            'data-modal-id'
+          )}). Checking if it's visible...`
+        );
+
+        // Check if the modal is visible
+        const isVisible =
+          modalElement.style.display !== 'none' &&
+          modalElement.style.visibility !== 'hidden' &&
+          modalElement.style.opacity !== '0';
+
+        if (isVisible && !forceReopen) {
+          console.log(
+            'Modal element found in DOM and is visible. No need to reopen.'
+          );
+
+          // Make sure it's fully visible
+          modalElement.style.display = 'block';
+          modalElement.style.visibility = 'visible';
+          modalElement.style.opacity = '1';
+          modalElement.classList.add('force-visible');
+
+          return;
+        }
+
+        console.log(
+          'Modal element found in DOM but not visible or force reopen requested. Making it visible.'
+        );
+
+        // Make it visible
+        modalElement.style.display = 'block';
+        modalElement.style.visibility = 'visible';
+        modalElement.style.opacity = '1';
+        modalElement.classList.add('force-visible');
+
+        // For universe-create modals or if forceReopen is true, we might need to recreate the modal
+        // to ensure it's properly mounted
+        if ((isUniverseCreate || forceReopen) && isRetry) {
+          console.log('Force reopening the modal by recreating it');
+
+          // Close the existing modal first
+          const existingModal = state.modals.find(
+            modal => modal.modalType === modalType
+          );
+
+          if (existingModal) {
+            // Remove the existing modal from state
+            dispatch({
+              type: ACTIONS.CLOSE_MODAL,
+              payload: existingModal.id,
+            });
+
+            // Wait a short time before creating a new one
+            setTimeout(() => {
+              // Use the function from the ref to avoid circular dependency
+              if (functionsRef.current.openModalByType) {
+                functionsRef.current.openModalByType(
+                  modalType,
+                  {},
+                  { forceNew: true }
+                );
+              }
+            }, 100);
+          }
+
+          return;
+        }
+
+        return;
+      }
+
+      // If we get here, the modal doesn't exist in the DOM, so we need to reopen it
+      console.log(`No modal of type ${modalType} found in DOM. Reopening...`);
+
+      // Check if we already have this modal type in our state
+      const existingModal = state.modals.find(
+        modal => modal.modalType === modalType
+      );
+
+      if (existingModal) {
+        console.log(
+          `Modal of type ${modalType} exists in state (ID: ${existingModal.id}). Updating it to ensure it's visible.`
+        );
+
+        // For universe-create modals or if forceReopen is true, we might need to recreate the modal
+        if (isUniverseCreate || forceReopen) {
+          console.log('Force reopening the modal by recreating it');
+
+          // Close the existing modal first
+          dispatch({
+            type: ACTIONS.CLOSE_MODAL,
+            payload: existingModal.id,
+          });
+
+          // Wait a short time before creating a new one
+          setTimeout(() => {
+            // Use the function from the ref to avoid circular dependency
+            if (functionsRef.current.openModalByType) {
+              functionsRef.current.openModalByType(
+                modalType,
+                {},
+                { forceNew: true }
+              );
+            }
+          }, 100);
+
+          return;
+        }
+
+        // Update the modal to ensure it's visible
+        dispatch({
+          type: ACTIONS.UPDATE_MODAL,
+          payload: {
+            id: existingModal.id,
+            data: {
+              ...existingModal,
+              isOpen: true,
+              preventAutoClose: true,
+              preventBackdropClick: true,
+            },
+          },
+        });
+
+        return;
+      }
+
+      // If we get here, we need to create a new modal
+      console.log(
+        `No modal of type ${modalType} found in state. Creating a new one.`
+      );
+
+      // Get the modal config from the registry
+      const modalConfig = state.modalRegistry[modalType];
+      if (!modalConfig) {
+        console.error(`No modal registered for type ${modalType}`);
+        return;
+      }
+
+      // Add validation for the component
+      if (
+        !modalConfig.component ||
+        typeof modalConfig.component !== 'function'
+      ) {
+        console.error(
+          `Invalid component for modal type ${modalType}:`,
+          modalConfig.component
+        );
+        return null;
+      }
+
+      // Create a new modal with a unique ID
+      const newModalId = `modal-${Date.now()}-${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
+
+      // Open the modal with the registered config
+      dispatch({
+        type: ACTIONS.OPEN_MODAL,
+        payload: {
+          id: newModalId,
+          component: modalConfig.component,
+          props: modalConfig.props || {},
+          modalProps: modalConfig.modalProps || {},
+          modalType,
+          updateUrl: modalConfig.updateUrl !== false,
+          preserveState: true,
+          preventAutoClose: true,
+          preventBackdropClick: true,
+          forceMount: true,
+        },
+      });
+
+      console.log(
+        `Created new modal of type ${modalType} with ID ${newModalId}`
+      );
+    },
+    [state.modals, state.modalRegistry, dispatch]
+  );
+
+  // Add listener for modal:reopen custom event
+  useEffect(() => {
+    window.addEventListener('modal:reopen', handleReopenModal);
+
+    return () => {
+      window.removeEventListener('modal:reopen', handleReopenModal);
+
+      // Clear any pending timeouts
+      Object.values(reopenTimeoutsRef.current).forEach(timeout => {
+        clearTimeout(timeout);
+      });
+      reopenTimeoutsRef.current = {};
+    };
+  }, [handleReopenModal]);
+
   // Handle URL changes to sync with modal state
   useEffect(() => {
     if (!isInitialized) return;
@@ -154,6 +486,29 @@ export const ModalProvider = ({ children }) => {
   // Register a modal type with its component and config
   const registerModal = useCallback(
     (type, component, { getProps, getModalProps } = {}) => {
+      // Add validation for the component
+      // Check if it's a function component, class component, or a React.memo component
+      const isValidComponent =
+        typeof component === 'function' ||
+        (component &&
+          typeof component === 'object' &&
+          component.$$typeof === Symbol.for('react.memo') &&
+          typeof component.type === 'function');
+
+      if (!component || !isValidComponent) {
+        console.error(
+          `Cannot register invalid component for modal type ${type}:`,
+          component
+        );
+        return;
+      }
+
+      console.log(`Registering modal type: ${type}`, {
+        componentType: typeof component,
+        isMemo: component && component.$$typeof === Symbol.for('react.memo'),
+        component,
+      });
+
       dispatch({
         type: ACTIONS.REGISTER_MODAL,
         payload: {
@@ -165,88 +520,270 @@ export const ModalProvider = ({ children }) => {
           },
         },
       });
+
+      console.log(`Modal type ${type} registered successfully`);
     },
     []
   );
 
-  // Open a new modal
+  /**
+   * Open a modal with the given component, props, and modal properties
+   */
   const openModal = useCallback(
-    ({
+    (
       component,
       props = {},
-      modalProps = {},
-      updateUrl = false,
-      modalType = '',
-      preserveState = false,
-    }) => {
-      const id = uuidv4();
+      {
+        updateUrl = false,
+        modalType = null,
+        preserveState = false,
+        preventAutoClose = false,
+        preventBackdropClick = false,
+        ...modalProps
+      } = {}
+    ) => {
+      console.log('openModal called with:', {
+        component: component?.name || 'Unknown',
+        props,
+        modalProps,
+        modalType,
+        updateUrl,
+      });
+
+      // Check if component is a React.memo component or a regular function component
+      const isValidComponent =
+        typeof component === 'function' ||
+        (component &&
+          typeof component === 'object' &&
+          component.$$typeof === Symbol.for('react.memo') &&
+          typeof component.type === 'function');
+
+      if (!component || !isValidComponent) {
+        console.error('Cannot open modal with invalid component:', component);
+        return null;
+      }
+
+      // Generate a unique ID for this modal instance
+      const id = `modal-${Date.now()}-${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
+
+      // Check if a modal of the same type already exists
+      if (modalType) {
+        const existingModal = state.modals.find(m => m.modalType === modalType);
+        if (existingModal) {
+          console.log(
+            `Modal of type ${modalType} already exists (ID: ${existingModal.id}). Updating instead of creating new.`
+          );
+
+          // Update the existing modal instead of creating a new one
+          dispatch({
+            type: ACTIONS.UPDATE_MODAL,
+            payload: {
+              id: existingModal.id,
+              data: {
+                props: { ...props, key: existingModal.id },
+                modalProps: {
+                  ...modalProps,
+                  preventAutoClose:
+                    modalProps.preventAutoClose ||
+                    existingModal.modalProps?.preventAutoClose,
+                  preventBackdropClick:
+                    modalProps.preventBackdropClick ||
+                    existingModal.modalProps?.preventBackdropClick,
+                  'data-modal-type': modalType,
+                  'data-updated-at': Date.now(),
+                },
+              },
+            },
+          });
+
+          return existingModal.id;
+        }
+      }
+
+      // Prepare the modal configuration
       const modalConfig = {
         id,
         component,
-        props,
+        props: { ...props, key: id },
         modalProps: {
-          isOpen: true,
-          size: 'medium',
-          type: 'default',
-          animation: 'fade',
-          position: 'center',
           ...modalProps,
+          preventAutoClose: preventAutoClose || false,
+          preventBackdropClick: preventBackdropClick || false,
+          'data-modal-id': id,
+          'data-modal-type': modalType,
+          'data-created-at': Date.now(),
         },
         modalType,
       };
 
+      console.log('Opening modal with config:', modalConfig);
+
+      // Dispatch the action to open the modal
       dispatch({
         type: ACTIONS.OPEN_MODAL,
         payload: modalConfig,
       });
 
-      // Update URL if specified
-      if (updateUrl && modalType) {
-        const searchParams = new URLSearchParams(window.location.search);
+      // Update the URL if requested
+      if (modalType && updateUrl !== false) {
+        const searchParams = new URLSearchParams(location.search);
         searchParams.set('modal', modalType);
         searchParams.set('modalId', id);
 
-        // Store modal state in URL if preserveState is true
-        if (preserveState && Object.keys(props).length > 0) {
-          // Base64 encode the props to keep URL clean
-          const encodedData = btoa(JSON.stringify(props));
-          searchParams.set('modalData', encodedData);
+        // Add any additional parameters from props
+        if (props) {
+          Object.entries(props).forEach(([key, value]) => {
+            if (
+              value !== null &&
+              value !== undefined &&
+              typeof value !== 'function' &&
+              typeof value !== 'object'
+            ) {
+              searchParams.set(`modal_${key}`, value);
+            }
+          });
         }
 
         navigate(`${location.pathname}?${searchParams.toString()}`, {
-          replace: !preserveState, // Only replace if we're not preserving state
+          replace: true,
         });
       }
 
-      return id; // Return ID so caller can close this specific modal later
+      return id;
     },
-    [navigate, location]
+    [state.modals, dispatch, location, navigate]
   );
 
-  // Open a registered modal by type
+  /**
+   * Open a modal by its registered type
+   */
   const openModalByType = useCallback(
     (modalType, data = {}, options = {}) => {
-      const registeredModal = state.modalRegistry[modalType];
+      console.log(`openModalByType called for ${modalType}`, { data, options });
+      console.log('Modal registry state:', state.modalRegistry);
+      console.log('Available modal types:', Object.keys(state.modalRegistry));
 
-      if (!registeredModal) {
-        console.error(`Modal type '${modalType}' is not registered`);
+      // Check if this modal type is registered
+      if (!state.modalRegistry[modalType]) {
+        console.error(`Modal type ${modalType} is not registered`);
         return null;
       }
 
-      const { component, getProps, getModalProps } = registeredModal;
+      // Special handling for universe-create modal
+      if (modalType === 'universe-create') {
+        console.log('Special handling for universe-create modal');
 
-      return openModal({
+        // Force a new instance for universe-create modals
+        options.forceNew = true;
+
+        // Add extra protection for universe-create modals
+        options.preventAutoClose = true;
+        options.preventBackdropClick = true;
+      }
+
+      // Check if a modal of this type is already open
+      const existingModal = state.modals.find(m => m.modalType === modalType);
+      if (existingModal && !options.forceNew) {
+        console.log(
+          `Modal of type ${modalType} already exists (ID: ${existingModal.id}). Updating instead of creating new.`
+        );
+
+        // Update the existing modal
+        dispatch({
+          type: ACTIONS.UPDATE_MODAL,
+          payload: {
+            id: existingModal.id,
+            data: {
+              props: {
+                ...(state.modalRegistry[modalType].getProps?.(data) || {}),
+                ...data,
+              },
+              modalProps: {
+                ...(state.modalRegistry[modalType].getModalProps?.(data) || {}),
+                ...options,
+                'data-modal-type': modalType,
+                'data-updated-at': Date.now(),
+              },
+            },
+          },
+        });
+
+        return existingModal.id;
+      }
+
+      // Get the registered modal configuration
+      const { component, getProps, getModalProps } =
+        state.modalRegistry[modalType];
+
+      // Add validation for the component
+      if (!component || typeof component !== 'function') {
+        // Check if it's a React.memo component
+        const isMemoComponent =
+          component &&
+          typeof component === 'object' &&
+          component.$$typeof === Symbol.for('react.memo') &&
+          typeof component.type === 'function';
+
+        if (!isMemoComponent) {
+          console.error(
+            `Invalid component for modal type ${modalType}:`,
+            component
+          );
+          return null;
+        }
+      }
+
+      // Construct the modal configuration
+      const modalConfig = {
         component,
-        props: getProps ? getProps(data) : data,
-        modalProps: getModalProps ? getModalProps(data) : {},
+        props: {
+          ...(getProps ? getProps(data) : {}),
+          ...data,
+          // Add a key to force re-render when needed
+          key: `${modalType}-${Date.now()}`,
+          // Add a ref to track mounting time
+          _mountTime: Date.now(),
+        },
         updateUrl: options.updateUrl !== undefined ? options.updateUrl : true,
         modalType,
         preserveState:
           options.preserveState !== undefined ? options.preserveState : true,
+        preventAutoClose:
+          options.preventAutoClose !== undefined
+            ? options.preventAutoClose
+            : true,
+        preventBackdropClick:
+          options.preventBackdropClick !== undefined
+            ? options.preventBackdropClick
+            : true,
+        ...(getModalProps ? getModalProps(data) : {}),
+        ...options,
+      };
+
+      console.log(
+        `Opening modal of type ${modalType} with config:`,
+        modalConfig
+      );
+
+      // Open the modal
+      return openModal(component, modalConfig.props, {
+        updateUrl: modalConfig.updateUrl,
+        modalType,
+        preserveState: modalConfig.preserveState,
+        preventAutoClose: modalConfig.preventAutoClose,
+        preventBackdropClick: modalConfig.preventBackdropClick,
+        ...modalConfig,
       });
     },
-    [state.modalRegistry, openModal]
+    [state.modalRegistry, state.modals, dispatch, openModal]
   );
+
+  // Store the function in the ref to avoid circular dependencies
+  useEffect(() => {
+    functionsRef.current.openModalByType = openModalByType;
+  }, [openModalByType]);
 
   // Close a specific modal by ID
   const closeModal = useCallback(
