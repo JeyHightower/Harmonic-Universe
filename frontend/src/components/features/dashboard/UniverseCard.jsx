@@ -24,6 +24,11 @@ const UniverseCard = ({ universe, onEdit, onDelete }) => {
     navigate(`/universes/${universe.id}/visual`);
   };
 
+  const handleNavigateToScenes = e => {
+    e.stopPropagation();
+    navigate(`/universes/${universe.id}/scenes`);
+  };
+
   const formatDate = dateString => {
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
@@ -57,6 +62,13 @@ const UniverseCard = ({ universe, onEdit, onDelete }) => {
             size="small"
           >
             Storyboards
+          </Button>
+          <Button
+            onClick={handleNavigateToScenes}
+            variant="secondary"
+            size="small"
+          >
+            Scenes
           </Button>
           <Button
             onClick={e => {

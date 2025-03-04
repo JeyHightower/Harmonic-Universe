@@ -1,9 +1,11 @@
 import { createSlice } from '@reduxjs/toolkit';
 import {
-    createScene,
-    deleteScene,
     fetchScenes,
+    fetchSceneById,
+    createScene,
     updateScene,
+    deleteScene,
+    reorderScenes
 } from '../thunks/scenesThunks';
 
 const initialState = {
@@ -17,100 +19,124 @@ const scenesSlice = createSlice({
     name: 'scenes',
     initialState,
     reducers: {
-        setCurrentScene: (state, action) => {
-            state.currentScene = action.payload;
-        },
-        clearCurrentScene: state => {
+        clearScenes: (state) => {
+            state.scenes = [];
             state.currentScene = null;
         },
-        clearError: state => {
+        clearCurrentScene: (state) => {
+            state.currentScene = null;
+        },
+        clearError: (state) => {
             state.error = null;
         },
-        resetState: () => initialState,
     },
-    extraReducers: builder => {
-        // Fetch scenes
+    extraReducers: (builder) => {
         builder
-            .addCase(fetchScenes.pending, state => {
+            // fetchScenes
+            .addCase(fetchScenes.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
             .addCase(fetchScenes.fulfilled, (state, action) => {
-                state.loading = false;
                 state.scenes = action.payload;
-                state.error = null;
+                state.loading = false;
             })
             .addCase(fetchScenes.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.payload;
+                state.error = action.payload || action.error.message;
             })
 
-            // Create scene
-            .addCase(createScene.pending, state => {
+            // fetchSceneById
+            .addCase(fetchSceneById.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchSceneById.fulfilled, (state, action) => {
+                state.currentScene = action.payload;
+                state.loading = false;
+            })
+            .addCase(fetchSceneById.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || action.error.message;
+            })
+
+            // createScene
+            .addCase(createScene.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
             .addCase(createScene.fulfilled, (state, action) => {
-                state.loading = false;
                 state.scenes.push(action.payload);
-                state.currentScene = action.payload;
-                state.error = null;
+                state.loading = false;
             })
             .addCase(createScene.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.payload;
+                state.error = action.payload || action.error.message;
             })
 
-            // Update scene
-            .addCase(updateScene.pending, state => {
+            // updateScene
+            .addCase(updateScene.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
             .addCase(updateScene.fulfilled, (state, action) => {
-                state.loading = false;
-                const index = state.scenes.findIndex(
-                    scene => scene.id === action.payload.id
-                );
+                const updatedScene = action.payload;
+
+                // Update in scenes array
+                const index = state.scenes.findIndex((scene) => scene.id === updatedScene.id);
                 if (index !== -1) {
-                    state.scenes[index] = action.payload;
+                    state.scenes[index] = updatedScene;
                 }
-                if (state.currentScene?.id === action.payload.id) {
-                    state.currentScene = action.payload;
+
+                // Update currentScene if it's the same scene
+                if (state.currentScene && state.currentScene.id === updatedScene.id) {
+                    state.currentScene = updatedScene;
                 }
-                state.error = null;
+
+                state.loading = false;
             })
             .addCase(updateScene.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.payload;
+                state.error = action.payload || action.error.message;
             })
 
-            // Delete scene
-            .addCase(deleteScene.pending, state => {
+            // deleteScene
+            .addCase(deleteScene.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
             .addCase(deleteScene.fulfilled, (state, action) => {
-                state.loading = false;
-                state.scenes = state.scenes.filter(
-                    scene => scene.id !== action.payload
-                );
-                if (state.currentScene?.id === action.payload) {
+                const deletedSceneId = action.payload;
+                state.scenes = state.scenes.filter((scene) => scene.id !== deletedSceneId);
+
+                if (state.currentScene && state.currentScene.id === deletedSceneId) {
                     state.currentScene = null;
                 }
-                state.error = null;
+
+                state.loading = false;
             })
             .addCase(deleteScene.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.payload;
+                state.error = action.payload || action.error.message;
+            })
+
+            // reorderScenes
+            .addCase(reorderScenes.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(reorderScenes.fulfilled, (state, action) => {
+                // Replace the scenes with the reordered scenes
+                state.scenes = action.payload;
+                state.loading = false;
+            })
+            .addCase(reorderScenes.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || action.error.message;
             });
     },
 });
 
-export const {
-    setCurrentScene,
-    clearCurrentScene,
-    clearError,
-    resetState,
-} = scenesSlice.actions;
+export const { clearScenes, clearCurrentScene, clearError } = scenesSlice.actions;
 
 export default scenesSlice.reducer;

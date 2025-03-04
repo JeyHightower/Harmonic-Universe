@@ -14,5 +14,9 @@ export const ROUTES = {
     UNIVERSES: '/universes',
     UNIVERSE_DETAIL: '/universes/:id',
     UNIVERSE_EDIT: '/universes/:id/edit',
+    // Scene routes
+    SCENES_LIST: '/universes/:universeId/scenes',
+    SCENE_DETAIL: '/universes/:universeId/scenes/:sceneId',
+    SCENE_PHYSICS: '/universes/:universeId/scenes/:sceneId/physics',
     NOT_FOUND: '*',
 };

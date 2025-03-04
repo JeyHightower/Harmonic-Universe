@@ -11,70 +11,121 @@ const handleError = error => {
     };
 };
 
-// Fetch scenes for a universe
+/**
+ * Fetch all scenes for a universe
+ */
 export const fetchScenes = createAsyncThunk(
     'scenes/fetchScenes',
     async (universeId, { rejectWithValue }) => {
         try {
-            console.debug(`Fetching scenes for universe ${universeId}`);
-            const response = await api.get(
-                endpoints.scenes.forUniverse(universeId)
-            );
-            console.debug('Scenes fetched:', response);
-            return response || [];
+            console.log(`Fetching scenes for universe ${universeId}`);
+            const response = await api.scenes.list(universeId);
+            return response.data;
         } catch (error) {
-            console.error('Failed to fetch scenes:', error);
-            return rejectWithValue(handleError(error));
+            console.error('Error fetching scenes:', error);
+            return rejectWithValue(
+                error.response?.data || { message: 'Failed to fetch scenes' }
+            );
         }
     }
 );
 
-// Create a new scene
+/**
+ * Fetch a single scene by ID
+ */
+export const fetchSceneById = createAsyncThunk(
+    'scenes/fetchSceneById',
+    async (sceneId, { rejectWithValue }) => {
+        try {
+            console.log(`Fetching scene with ID ${sceneId}`);
+            const response = await api.scenes.detail(sceneId);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching scene:', error);
+            return rejectWithValue(
+                error.response?.data || { message: 'Failed to fetch scene details' }
+            );
+        }
+    }
+);
+
+/**
+ * Create a new scene
+ */
 export const createScene = createAsyncThunk(
     'scenes/createScene',
-    async (sceneData, { rejectWithValue }) => {
+    async ({ universeId, ...sceneData }, { rejectWithValue }) => {
         try {
-            console.debug('Creating scene:', sceneData);
-            const response = await api.post(
-                endpoints.scenes.create,
-                sceneData
-            );
-            console.debug('Scene created:', response);
-            return response;
+            console.log('Creating new scene:', sceneData);
+            console.log('For universe:', universeId);
+
+            const response = await api.scenes.create(universeId, sceneData);
+            return response.data;
         } catch (error) {
-            console.error('Failed to create scene:', error);
-            return rejectWithValue(handleError(error));
+            console.error('Error creating scene:', error);
+            return rejectWithValue(
+                error.response?.data || { message: 'Failed to create scene' }
+            );
         }
     }
 );
 
-// Update a scene
+/**
+ * Update an existing scene
+ */
 export const updateScene = createAsyncThunk(
     'scenes/updateScene',
-    async ({ id, ...data }, { rejectWithValue }) => {
+    async ({ sceneId, data }, { rejectWithValue }) => {
         try {
-            console.debug(`Updating scene ${id}:`, data);
-            const response = await api.put(endpoints.scenes.update(id), data);
-            console.debug('Scene updated:', response);
-            return response;
+            console.log(`Updating scene ${sceneId} with data:`, data);
+
+            const response = await api.scenes.update(sceneId, data);
+            return response.data;
         } catch (error) {
-            console.error('Failed to update scene:', error);
-            return rejectWithValue(handleError(error));
+            console.error('Error updating scene:', error);
+            return rejectWithValue(
+                error.response?.data || { message: 'Failed to update scene' }
+            );
         }
     }
 );
 
-// Delete a scene
+/**
+ * Delete a scene
+ */
 export const deleteScene = createAsyncThunk(
     'scenes/deleteScene',
-    async (id, { rejectWithValue }) => {
+    async (sceneId, { rejectWithValue }) => {
         try {
-            console.debug(`Deleting scene ${id}`);
-            await api.delete(endpoints.scenes.delete(id));
-            return id; // Return the ID for state updates
+            console.log(`Deleting scene ${sceneId}`);
+
+            await api.scenes.delete(sceneId);
+            return sceneId; // Return the ID for the reducer to filter it out
         } catch (error) {
-            console.error('Failed to delete scene:', error);
-            return rejectWithValue(handleError(error));
+            console.error('Error deleting scene:', error);
+            return rejectWithValue(
+                error.response?.data || { message: 'Failed to delete scene' }
+            );
+        }
+    }
+);
+
+/**
+ * Reorder scenes within a universe
+ */
+export const reorderScenes = createAsyncThunk(
+    'scenes/reorderScenes',
+    async ({ universeId, sceneOrders }, { rejectWithValue }) => {
+        try {
+            console.log(`Reordering scenes for universe ${universeId}:`, sceneOrders);
+
+            const response = await api.scenes.reorder(universeId, sceneOrders);
+            return response.data;
+        } catch (error) {
+            console.error('Error reordering scenes:', error);
+            return rejectWithValue(
+                error.response?.data || { message: 'Failed to reorder scenes' }
+            );
         }
     }
 );

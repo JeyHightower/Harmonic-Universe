@@ -1,163 +1,168 @@
-import { Form, Input, InputNumber, Select, Slider } from 'antd';
-import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
-import Button from '../../components/common/Button';
+import React, { useState, useCallback, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { Modal, Form, Input, InputNumber } from 'antd';
 import { createScene, updateScene } from '../../store/thunks/scenesThunks';
+import Spinner from '../../components/common/Spinner';
+import './SceneFormModal.css';
 
-const { TextArea } = Input;
-const { Option } = Select;
-
-/**
- * Modal form for creating and editing scenes
- */
-const SceneFormModal = ({
-  universeId,
-  sceneId,
-  initialData = null,
-  onClose,
-  isGlobalModal = false,
-}) => {
-  const [form] = Form.useForm();
+const SceneFormModal = ({ universeId, sceneId, initialData, onClose, isCreating }) => {
   const dispatch = useDispatch();
-  const [loading, setLoading] = useState(false);
-  const isEditing = !!sceneId;
+  const { loading, error } = useSelector(state => state.scenes);
+  const [form] = Form.useForm();
+  const [formErrors, setFormErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
-  // Set form values when initialData changes
+  // Initialize form with initialData
   useEffect(() => {
     if (initialData) {
       form.setFieldsValue({
         name: initialData.name,
         description: initialData.description,
-        type: initialData.type || 'standard',
-        duration: initialData.duration || 60,
-        complexity: initialData.complexity || 5,
-        order: initialData.order || 1,
+        scene_order: initialData.scene_order || 0
       });
+    } else {
+      form.resetFields();
     }
   }, [initialData, form]);
 
-  const handleSubmit = async () => {
-    try {
-      setLoading(true);
-      const values = await form.validateFields();
+  // Map API errors to form fields
+  useEffect(() => {
+    if (error && typeof error === 'object') {
+      const newErrors = {};
 
-      const sceneData = {
-        name: values.name,
-        description: values.description,
-        type: values.type,
-        duration: values.duration,
-        complexity: values.complexity,
-        order: values.order,
-        universe_id: universeId,
-      };
-
-      if (isEditing) {
-        await dispatch(updateScene({ id: sceneId, ...sceneData }));
-      } else {
-        await dispatch(createScene(sceneData));
+      // Process validation errors
+      if (error.errors && typeof error.errors === 'object') {
+        Object.entries(error.errors).forEach(([field, messages]) => {
+          newErrors[field] = Array.isArray(messages) ? messages[0] : messages;
+        });
       }
 
-      onClose();
-    } catch (error) {
-      console.error('Form submission error:', error);
-    } finally {
-      setLoading(false);
+      // Process general error
+      if (error.message) {
+        newErrors.general = error.message;
+      }
+
+      setFormErrors(newErrors);
+      setSubmitting(false);
+    } else if (error && typeof error === 'string') {
+      setFormErrors({ general: error });
+      setSubmitting(false);
     }
-  };
+  }, [error]);
+
+  const handleSubmit = useCallback(async (values) => {
+    setSubmitting(true);
+    setFormErrors({});
+
+    try {
+      if (isCreating) {
+        await dispatch(createScene({ universeId, ...values })).unwrap();
+      } else {
+        await dispatch(updateScene({
+          sceneId,
+          data: values
+        })).unwrap();
+      }
+      onClose();
+    } catch (err) {
+      // Error handling is done in the useEffect above
+      console.error('Form submission error:', err);
+    }
+  }, [dispatch, universeId, sceneId, isCreating, onClose]);
+
+  const handleCancel = useCallback(() => {
+    form.resetFields();
+    onClose();
+  }, [form, onClose]);
 
   return (
-    <div className="scene-form-modal">
-      <Form
-        form={form}
-        layout="vertical"
-        initialValues={{
-          name: '',
-          description: '',
-          type: 'standard',
-          duration: 60,
-          complexity: 5,
-          order: 1,
-        }}
-      >
-        <Form.Item
-          name="name"
-          label="Scene Name"
-          rules={[
-            { required: true, message: 'Please enter a name for your scene' },
-          ]}
-        >
-          <Input placeholder="Enter scene name" />
-        </Form.Item>
+    <Modal
+      title={isCreating ? 'Create New Scene' : 'Edit Scene'}
+      open={true}
+      onCancel={handleCancel}
+      footer={null}
+      width={600}
+      maskClosable={false}
+      className="scene-form-modal"
+    >
+      <div className="scene-form-container">
+        {formErrors.general && (
+          <div className="form-error-message">{formErrors.general}</div>
+        )}
 
-        <Form.Item
-          name="description"
-          label="Description"
-          rules={[{ required: true, message: 'Please enter a description' }]}
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          requiredMark={false}
+          className="scene-form"
         >
-          <TextArea
-            placeholder="Describe your scene"
-            autoSize={{ minRows: 3, maxRows: 6 }}
-          />
-        </Form.Item>
+          <Form.Item
+            name="name"
+            label="Scene Name"
+            rules={[{ required: true, message: 'Please enter a name for the scene' }]}
+            validateStatus={formErrors.name ? 'error' : ''}
+            help={formErrors.name}
+          >
+            <Input placeholder="Enter scene name" maxLength={100} />
+          </Form.Item>
 
-        <Form.Item
-          name="type"
-          label="Scene Type"
-          rules={[{ required: true, message: 'Please select a scene type' }]}
-        >
-          <Select placeholder="Select a scene type">
-            <Option value="standard">Standard</Option>
-            <Option value="intro">Introduction</Option>
-            <Option value="climax">Climax</Option>
-            <Option value="transition">Transition</Option>
-            <Option value="finale">Finale</Option>
-          </Select>
-        </Form.Item>
+          <Form.Item
+            name="description"
+            label="Description"
+            validateStatus={formErrors.description ? 'error' : ''}
+            help={formErrors.description}
+          >
+            <Input.TextArea
+              placeholder="Enter scene description"
+              rows={4}
+              maxLength={500}
+              showCount
+            />
+          </Form.Item>
 
-        <Form.Item
-          name="duration"
-          label="Duration (seconds)"
-          rules={[{ required: true, message: 'Please specify a duration' }]}
-        >
-          <InputNumber min={10} max={300} step={5} style={{ width: '100%' }} />
-        </Form.Item>
+          <Form.Item
+            name="scene_order"
+            label="Scene Order"
+            validateStatus={formErrors.scene_order ? 'error' : ''}
+            help={formErrors.scene_order}
+          >
+            <InputNumber
+              placeholder="Order position"
+              min={0}
+              step={1}
+              className="scene-order-input"
+            />
+          </Form.Item>
 
-        <Form.Item
-          name="complexity"
-          label="Complexity"
-          rules={[{ required: true, message: 'Please specify complexity' }]}
-        >
-          <Slider min={1} max={10} marks={{ 1: '1', 5: '5', 10: '10' }} />
-        </Form.Item>
-
-        <Form.Item
-          name="order"
-          label="Order"
-          rules={[{ required: true, message: 'Please specify the order' }]}
-        >
-          <InputNumber min={1} max={100} style={{ width: '100%' }} />
-        </Form.Item>
-
-        <div className="form-actions">
-          <Button type="secondary" onClick={onClose} disabled={loading}>
-            Cancel
-          </Button>
-          <Button type="primary" onClick={handleSubmit} loading={loading}>
-            {isEditing ? 'Update Scene' : 'Create Scene'}
-          </Button>
-        </div>
-      </Form>
-    </div>
+          <div className="form-actions">
+            <button
+              type="button"
+              className="cancel-button"
+              onClick={handleCancel}
+              disabled={submitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="submit-button"
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <Spinner size="small" />
+                  <span>{isCreating ? 'Creating...' : 'Saving...'}</span>
+                </>
+              ) : (
+                isCreating ? 'Create Scene' : 'Save Changes'
+              )}
+            </button>
+          </div>
+        </Form>
+      </div>
+    </Modal>
   );
-};
-
-SceneFormModal.propTypes = {
-  universeId: PropTypes.string.isRequired,
-  sceneId: PropTypes.string,
-  initialData: PropTypes.object,
-  onClose: PropTypes.func.isRequired,
-  isGlobalModal: PropTypes.bool,
 };
 
 export default SceneFormModal;

@@ -1,0 +1,151 @@
+.scene-detail-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.scene-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.back-button {
+  margin-right: auto;
+}
+
+.scene-detail-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.scene-detail-content {
+  background-color: var(--bg-color-light);
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.scene-title {
+  font-size: 32px;
+  margin-bottom: 24px;
+  color: var(--text-color);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 16px;
+}
+
+.scene-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 32px;
+  background-color: var(--bg-color);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.metadata-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metadata-label {
+  font-size: 14px;
+  color: var(--text-color-secondary);
+  font-weight: 500;
+}
+
+.metadata-value {
+  font-size: 16px;
+  color: var(--text-color);
+}
+
+.scene-section {
+  margin-bottom: 32px;
+}
+
+.scene-section h2 {
+  font-size: 22px;
+  margin-bottom: 16px;
+  color: var(--text-color);
+}
+
+.scene-description {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-color);
+  white-space: pre-wrap;
+}
+
+.scene-detail-loading,
+.scene-detail-error,
+.scene-detail-not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 400px;
+  padding: 24px;
+}
+
+.scene-detail-loading p,
+.scene-detail-error p,
+.scene-detail-not-found p {
+  margin: 16px 0 24px;
+  color: var(--text-color-secondary);
+  max-width: 600px;
+}
+
+.scene-detail-error h2,
+.scene-detail-not-found h2 {
+  color: var(--text-color);
+  margin-bottom: 16px;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .scene-detail-content {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .scene-detail-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .scene-detail-actions {
+    width: 100%;
+  }
+
+  .back-button {
+    margin-bottom: 16px;
+  }
+
+  .scene-detail-content {
+    padding: 24px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .scene-detail-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .scene-detail-actions button {
+    width: 100%;
+  }
+
+  .scene-metadata {
+    flex-direction: column;
+    gap: 16px;
+  }
+}

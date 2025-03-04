@@ -40,6 +40,10 @@ const UniverseDetail = lazy(() =>
 const UniverseEdit = lazy(() =>
   import('./components/features/universe/UniverseEdit')
 );
+// Scene components
+const ScenesList = lazy(() => import('./features/scenes/ScenesList'));
+const SceneDetail = lazy(() => import('./features/scenes/SceneDetail'));
+
 const ModalExample = lazy(() => import('./components/examples/ModalExample'));
 const SettingsPage = lazy(() =>
   import('./components/features/settings/SettingsPage')
@@ -212,6 +216,26 @@ const App = () => {
                     element={<ModalAccessibilityTest />}
                   />
                   <Route path={ROUTES.NOT_FOUND} element={<NotFound />} />
+
+                  {/* Scene Routes */}
+                  <Route
+                    path={ROUTES.SCENES_LIST}
+                    element={
+                      <ProtectedRoute>
+                        <ScenesList />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path={ROUTES.SCENE_DETAIL}
+                    element={
+                      <ProtectedRoute>
+                        <SceneDetail />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Storyboard Routes */}
                   <Route
                     path="/universes/:universeId/storyboards"
                     element={
