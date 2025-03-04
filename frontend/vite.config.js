@@ -31,10 +31,10 @@ const handleMissingModulesPlugin = () => {
         }
 
         // Create a virtual module ID that our load hook will recognize
-        // Use null for id to let other plugins resolve it
         return {
           id: `\0virtual:ant-icon:${iconName}`,
-          moduleSideEffects: false
+          moduleSideEffects: false,
+          external: false  // Ensure it's not treated as external
         };
       }
 
@@ -136,31 +136,32 @@ export default defineConfig({
       // Ensure all CommonJS modules are correctly transformed
       include: [/node_modules/],
     },
-    // Configure a higher chunk size warning limit
-    chunkSizeWarningLimit: 800,
+    // Increase chunk size warning limit
+    chunkSizeWarningLimit: 2000,
     // Configure code splitting via Rollup options
     rollupOptions: {
-      // Don't mark ant-design paths as external to prevent build errors
-      // since we're handling them with our virtual modules
       output: {
-        // Try an alternative bundling strategy
-        // Instead of preserveModules, use manualChunks for better control
-        manualChunks: {
-          'vendor': [
-            'react',
-            'react-dom',
-            'react-router-dom',
-            'antd',
-          ],
-          'ant-design-icons': [
-            '@ant-design/icons',
-          ],
+        // Improve chunking strategy
+        manualChunks: (id) => {
+          // Group Ant Design icons into a single chunk
+          if (id.includes('@ant-design/icons')) {
+            return 'icons';
+          }
+
+          // Group major libraries
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('redux')) {
+              return 'vendor-react-redux';
+            }
+            if (id.includes('antd')) {
+              return 'vendor-antd';
+            }
+            // All other node_modules
+            return 'vendor';
+          }
         },
-        // Add globals for external imports
-        globals: {
-          react: 'React',
-          'react-dom': 'ReactDOM',
-        }
+        // Reduce the number of chunks by increasing the size threshold
+        minChunkSize: 10000,
       }
     },
   },

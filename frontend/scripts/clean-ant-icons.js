@@ -39,10 +39,14 @@ for (const filePath of iconFiles) {
         // Read the file content
         const content = fs.readFileSync(filePath, 'utf8');
 
-        // Remove any existing SVG declarations with a more comprehensive regex
+        // First remove the import statement for the SVG
+        const importRegex = /import\s+\w+Svg\s+from\s+["']@ant-design\/icons-svg\/es\/asn\/[^"']+["'];?\n?/g;
+        let cleanedContent = content.replace(importRegex, '// Removed SVG import\n');
+
+        // Then remove any existing SVG declarations with a comprehensive regex
         // This will catch declarations with different comment styles and variable names
         const svgRegex = /(\/\*.*?\*\/\s*|\/\/.*?\n\s*)?var\s+\w+Svg\s*=\s*{[\s\S]*?};|\/\/\s*Added by fix-ant-icons\.js[\s\S]*?};|const\s+\w+Svg\s*=\s*{[\s\S]*?};/g;
-        const cleanedContent = content.replace(svgRegex, '// Removed SVG declaration\n');
+        cleanedContent = cleanedContent.replace(svgRegex, '// Removed SVG declaration\n');
 
         // Write the cleaned content back to the file
         fs.writeFileSync(filePath, cleanedContent);
