@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useModal } from '../../../contexts/ModalContext';
 import { api } from '../../../utils/api';
-import { API_BASE_URL } from '../../../utils/config';
+import { API_CONFIG } from '../../../utils/config';
 import { MODAL_TYPES } from '../../../utils/modalRegistry';
 import Button from '../../common/Button';
 import Icon from '../../common/Icon';
@@ -30,7 +30,7 @@ const SceneManager = () => {
     try {
       setLoading(true);
       const response = await api.get(
-        `${API_BASE_URL}/api/scenes/?universe_id=${universeId}`
+        `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/?universe_id=${universeId}`
       );
       setScenes(response || []);
 

@@ -7,22 +7,15 @@
 
 // Import common modal types
 import { useEffect } from 'react';
-import { useModal } from '../contexts/ModalContext';
+import useModal from '../hooks/useModal';
 
 // Import modal components
-import ConfirmDeleteModal from '../components/common/ConfirmDeleteModal';
-import UserProfileModal from '../features/auth/UserProfileModal';
-import PhysicsObjectFormModal from '../features/physicsObjects/PhysicsObjectFormModal';
 import PhysicsParametersModal from '../features/physicsParameters/PhysicsParametersModal';
-import SceneFormModal from '../features/scenes/SceneFormModal';
 import UniverseFormModal from '../features/universe/UniverseFormModal';
 import UniverseInfoModal from '../features/universe/UniverseInfoModal';
 
 // Import new modal components
-import AudioDetailsModal from '../features/audio/AudioDetailsModal';
-import AudioGenerationModal from '../features/audio/AudioGenerationModal';
-import PhysicsConstraintModal from '../features/physicsConstraints/PhysicsConstraintModal';
-import VisualizationFormModal from '../features/visualization/VisualizationFormModal';
+import { API_CONFIG } from './config';
 
 /**
  * Modal Types Constants
@@ -59,6 +52,9 @@ export const MODAL_TYPES = {
 
     // Confirmation modals
     CONFIRM_DELETE: 'confirm-delete',
+
+    // Harmony related modals
+    HARMONY_PARAMETERS: 'harmony-parameters',
 };
 
 /**
@@ -67,309 +63,134 @@ export const MODAL_TYPES = {
  * It registers all modals with the modal context
  */
 export const ModalRegistry = () => {
-    const { registerModal } = useModal();
+    const { registerModal, modalRegistry } = useModal();
 
     console.log('ModalRegistry component mounted');
     console.log('registerModal function available:', !!registerModal);
+    console.log('Current modalRegistry:', modalRegistry);
 
     useEffect(() => {
         console.log('ModalRegistry useEffect running');
 
-        // Register PhysicsParametersModal
-        registerModal(
-            MODAL_TYPES.PHYSICS_PARAMETERS,
-            PhysicsParametersModal,
-            {
-                // getProps transforms URL data into component props
-                getProps: (data) => ({
-                    universeId: data.universeId,
-                    initialData: data.initialData || null,
-                    testMode: false,
-                    isGlobalModal: true,
-                }),
-                // getModalProps transforms URL data into modal configuration
-                getModalProps: (data) => ({
-                    title: data.initialData ? 'Edit Physics Parameters' : 'Create Physics Parameters',
-                    size: 'medium',
-                    type: 'form',
-                }),
+        if (!registerModal) {
+            console.error('registerModal function is not available in ModalRegistry');
+            return;
+        }
+
+        try {
+            // Register PhysicsParametersModal
+            console.log('Registering PhysicsParametersModal');
+            if (!PhysicsParametersModal) {
+                console.error('PhysicsParametersModal component is not available');
+            } else {
+                registerModal(
+                    MODAL_TYPES.PHYSICS_PARAMETERS,
+                    PhysicsParametersModal,
+                    {
+                        // getProps transforms URL data into component props
+                        getProps: (data = {}) => ({
+                            universeId: data.universeId,
+                            initialData: data.initialData || null,
+                            testMode: false,
+                            isGlobalModal: true,
+                            onClose: () => { }, // Will be overridden by GlobalModal
+                        }),
+                        // getModalProps transforms URL data into modal configuration
+                        getModalProps: (data = {}) => ({
+                            title: data.initialData ? 'Edit Physics Parameters' : 'Create Physics Parameters',
+                            size: 'medium',
+                            type: 'form',
+                        }),
+                    }
+                );
+                console.log('PhysicsParametersModal registered successfully');
             }
-        );
 
-        // Register Universe Create/Edit Modal
-        console.log('Registering universe-create modal');
-        console.log('MODAL_TYPES.UNIVERSE_CREATE:', MODAL_TYPES.UNIVERSE_CREATE);
-        console.log('UniverseFormModal available:', !!UniverseFormModal);
-
-        registerModal(
-            MODAL_TYPES.UNIVERSE_CREATE,
-            UniverseFormModal,
-            {
-                getProps: (data) => ({
-                    initialData: null,
-                    isGlobalModal: true,
-                    preventStateReset: true,
-                    _mountTime: Date.now(),
-                }),
-                getModalProps: () => ({
-                    title: 'Create New Universe',
-                    size: 'medium',
-                    type: 'form',
-                    preventStateReset: true,
-                    preventAutoClose: true,
-                    preventBackdropClick: true,
-                    'data-modal-type': 'universe-create',
-                }),
+            // Register Universe Create/Edit Modal
+            console.log('Registering universe-create modal');
+            if (!UniverseFormModal) {
+                console.error('UniverseFormModal component is not available');
+            } else {
+                registerModal(
+                    MODAL_TYPES.UNIVERSE_CREATE,
+                    UniverseFormModal,
+                    {
+                        getProps: (data = {}) => ({
+                            initialData: null,
+                            isGlobalModal: true,
+                            preventStateReset: true,
+                            _mountTime: Date.now(),
+                            onClose: () => { }, // Will be overridden by GlobalModal
+                        }),
+                        getModalProps: () => ({
+                            title: 'Create New Universe',
+                            size: 'medium',
+                            type: 'form',
+                            preventStateReset: true,
+                            preventAutoClose: true,
+                            preventBackdropClick: true,
+                            'data-modal-type': 'universe-create',
+                        }),
+                    }
+                );
+                console.log('universe-create modal registered successfully');
             }
-        );
-        console.log('universe-create modal registered');
 
-        registerModal(
-            MODAL_TYPES.UNIVERSE_EDIT,
-            UniverseFormModal,
-            {
-                getProps: (data) => ({
-                    universeId: data.universeId,
-                    initialData: data.initialData || null,
-                    isGlobalModal: true,
-                }),
-                getModalProps: () => ({
-                    title: 'Edit Universe',
-                    size: 'medium',
-                    type: 'form',
-                }),
+            // Register Universe Edit Modal
+            console.log('Registering universe-edit modal');
+            if (!UniverseFormModal) {
+                console.error('UniverseFormModal component is not available');
+            } else {
+                registerModal(
+                    MODAL_TYPES.UNIVERSE_EDIT,
+                    UniverseFormModal,
+                    {
+                        getProps: (data = {}) => ({
+                            universeId: data.universeId,
+                            initialData: data.initialData || null,
+                            isGlobalModal: true,
+                            onClose: () => { }, // Will be overridden by GlobalModal
+                        }),
+                        getModalProps: () => ({
+                            title: 'Edit Universe',
+                            size: 'medium',
+                            type: 'form',
+                        }),
+                    }
+                );
+                console.log('universe-edit modal registered successfully');
             }
-        );
 
-        // Register Universe Info Modal
-        registerModal(
-            MODAL_TYPES.UNIVERSE_INFO,
-            UniverseInfoModal,
-            {
-                getProps: (data) => ({
-                    universe: data.universe,
-                    isGlobalModal: true,
-                }),
-                getModalProps: (data) => ({
-                    title: `${data.universe?.name || 'Universe'} Information`,
-                    size: 'medium',
-                    type: 'info',
-                    animation: 'fade',
-                }),
+            // Register Universe Info Modal
+            console.log('Registering universe-info modal');
+            if (!UniverseInfoModal) {
+                console.error('UniverseInfoModal component is not available');
+            } else {
+                registerModal(
+                    MODAL_TYPES.UNIVERSE_INFO,
+                    UniverseInfoModal,
+                    {
+                        getProps: (data = {}) => ({
+                            universe: data.universe,
+                            isGlobalModal: true,
+                            onClose: () => { }, // Will be overridden by GlobalModal
+                        }),
+                        getModalProps: (data = {}) => ({
+                            title: `${data.universe?.name || 'Universe'} Information`,
+                            size: 'medium',
+                            type: 'info',
+                            animation: 'fade',
+                        }),
+                    }
+                );
+                console.log('universe-info modal registered successfully');
             }
-        );
 
-        // Register Scene Create/Edit Modal
-        registerModal(
-            MODAL_TYPES.SCENE_CREATE,
-            SceneFormModal,
-            {
-                getProps: (data) => ({
-                    universeId: data.universeId,
-                    initialData: null,
-                    isGlobalModal: true,
-                }),
-                getModalProps: () => ({
-                    title: 'Create New Scene',
-                    size: 'medium',
-                    type: 'form',
-                }),
-            }
-        );
-
-        registerModal(
-            MODAL_TYPES.SCENE_EDIT,
-            SceneFormModal,
-            {
-                getProps: (data) => ({
-                    universeId: data.universeId,
-                    sceneId: data.sceneId,
-                    initialData: data.initialData || null,
-                    isGlobalModal: true,
-                }),
-                getModalProps: () => ({
-                    title: 'Edit Scene',
-                    size: 'medium',
-                    type: 'form',
-                }),
-            }
-        );
-
-        // Register Physics Object Modal
-        registerModal(
-            MODAL_TYPES.PHYSICS_OBJECT,
-            PhysicsObjectFormModal,
-            {
-                getProps: (data) => ({
-                    sceneId: data.sceneId,
-                    initialData: data.initialData || null,
-                    isGlobalModal: true,
-                }),
-                getModalProps: (data) => ({
-                    title: data.initialData ? 'Edit Physics Object' : 'Create Physics Object',
-                    size: 'medium',
-                    type: 'form',
-                }),
-            }
-        );
-
-        // Register Physics Constraint Modal
-        registerModal(
-            MODAL_TYPES.PHYSICS_CONSTRAINT,
-            PhysicsConstraintModal,
-            {
-                getProps: (data) => ({
-                    universeId: data.universeId,
-                    sceneId: data.sceneId,
-                    constraintId: data.constraintId,
-                    initialData: data.initialData || null,
-                    isGlobalModal: true,
-                }),
-                getModalProps: (data) => ({
-                    title: data.constraintId ? 'Edit Physics Constraint' : 'Create Physics Constraint',
-                    size: 'medium',
-                    type: 'form',
-                }),
-            }
-        );
-
-        // Register User Profile Modal
-        registerModal(
-            MODAL_TYPES.USER_PROFILE,
-            UserProfileModal,
-            {
-                getProps: (data) => ({
-                    userId: data.userId,
-                    isGlobalModal: true,
-                }),
-                getModalProps: () => ({
-                    title: 'User Profile',
-                    size: 'medium',
-                    type: 'form',
-                }),
-            }
-        );
-
-        // Register Confirm Delete Modal
-        registerModal(
-            MODAL_TYPES.CONFIRM_DELETE,
-            ConfirmDeleteModal,
-            {
-                getProps: (data) => ({
-                    entityType: data.entityType,
-                    entityId: data.entityId,
-                    entityName: data.entityName,
-                    onConfirm: data.onConfirm,
-                    isGlobalModal: true,
-                }),
-                getModalProps: (data) => ({
-                    title: `Delete ${data.entityType}`,
-                    size: 'small',
-                    type: 'confirm',
-                    preventBackdropClick: true,
-                }),
-            }
-        );
-
-        // Register Audio Generation Modal
-        registerModal(
-            MODAL_TYPES.AUDIO_GENERATE,
-            AudioGenerationModal,
-            {
-                getProps: (data) => ({
-                    universeId: data.universeId,
-                    sceneId: data.sceneId,
-                    initialData: null,
-                    isGlobalModal: true,
-                }),
-                getModalProps: () => ({
-                    title: 'Generate Audio',
-                    size: 'large',
-                    type: 'form',
-                }),
-            }
-        );
-
-        // Register Audio Edit Modal
-        registerModal(
-            MODAL_TYPES.AUDIO_EDIT,
-            AudioGenerationModal,
-            {
-                getProps: (data) => ({
-                    universeId: data.universeId,
-                    sceneId: data.sceneId,
-                    audioId: data.audioId,
-                    initialData: data.initialData || null,
-                    isGlobalModal: true,
-                }),
-                getModalProps: () => ({
-                    title: 'Edit Audio',
-                    size: 'large',
-                    type: 'form',
-                }),
-            }
-        );
-
-        // Register Audio Details Modal
-        registerModal(
-            MODAL_TYPES.AUDIO_DETAILS,
-            AudioDetailsModal,
-            {
-                getProps: (data) => ({
-                    universeId: data.universeId,
-                    sceneId: data.sceneId,
-                    audioId: data.audioId,
-                    isGlobalModal: true,
-                }),
-                getModalProps: () => ({
-                    title: 'Audio Details',
-                    size: 'medium',
-                    type: 'info',
-                }),
-            }
-        );
-
-        // Register Visualization Create Modal
-        registerModal(
-            MODAL_TYPES.VISUALIZATION_CREATE,
-            VisualizationFormModal,
-            {
-                getProps: (data) => ({
-                    universeId: data.universeId,
-                    sceneId: data.sceneId,
-                    initialData: null,
-                    isGlobalModal: true,
-                }),
-                getModalProps: () => ({
-                    title: 'Create Visualization',
-                    size: 'large',
-                    type: 'form',
-                }),
-            }
-        );
-
-        // Register Visualization Edit Modal
-        registerModal(
-            MODAL_TYPES.VISUALIZATION_EDIT,
-            VisualizationFormModal,
-            {
-                getProps: (data) => ({
-                    universeId: data.universeId,
-                    sceneId: data.sceneId,
-                    visualizationId: data.visualizationId,
-                    initialData: data.initialData || null,
-                    isGlobalModal: true,
-                }),
-                getModalProps: () => ({
-                    title: 'Edit Visualization',
-                    size: 'large',
-                    type: 'form',
-                }),
-            }
-        );
-
-        console.log('All modals registered');
-    }, [registerModal]);
+            console.log('All modals registered successfully');
+        } catch (error) {
+            console.error('Error registering modals:', error);
+        }
+    }, [registerModal, modalRegistry]);
 
     // This component doesn't render anything
     return null;
@@ -381,32 +202,32 @@ export const ModalRegistry = () => {
  */
 export const API_ROUTE_MODALS = {
     // Universe routes
-    '/api/v1/universes': MODAL_TYPES.UNIVERSE_CREATE,
-    '/api/v1/universes/:universeId': MODAL_TYPES.UNIVERSE_EDIT,
+    [`${API_CONFIG.API_PREFIX}/universes`]: MODAL_TYPES.UNIVERSE_CREATE,
+    [`${API_CONFIG.API_PREFIX}/universes/:universeId`]: MODAL_TYPES.UNIVERSE_EDIT,
 
     // Scene routes
-    '/api/v1/universes/:universeId/scenes': MODAL_TYPES.SCENE_CREATE,
-    '/api/v1/universes/:universeId/scenes/:sceneId': MODAL_TYPES.SCENE_EDIT,
+    [`${API_CONFIG.API_PREFIX}/universes/:universeId/scenes`]: MODAL_TYPES.SCENE_CREATE,
+    [`${API_CONFIG.API_PREFIX}/universes/:universeId/scenes/:sceneId`]: MODAL_TYPES.SCENE_EDIT,
 
     // Physics Object routes
-    '/api/v1/universes/:universeId/scenes/:sceneId/physics-objects': MODAL_TYPES.PHYSICS_OBJECT,
-    '/api/v1/universes/:universeId/scenes/:sceneId/physics-objects/:objectId': MODAL_TYPES.PHYSICS_OBJECT,
+    [`${API_CONFIG.API_PREFIX}/universes/:universeId/scenes/:sceneId/physics-objects`]: MODAL_TYPES.PHYSICS_OBJECT,
+    [`${API_CONFIG.API_PREFIX}/universes/:universeId/scenes/:sceneId/physics-objects/:objectId`]: MODAL_TYPES.PHYSICS_OBJECT,
 
     // Physics Parameters route
-    '/api/v1/universes/:universeId/scenes/:sceneId/physics-parameters': MODAL_TYPES.PHYSICS_PARAMETERS,
+    [`${API_CONFIG.API_PREFIX}/universes/:universeId/scenes/:sceneId/physics-parameters`]: MODAL_TYPES.PHYSICS_PARAMETERS,
 
     // Physics Constraint routes
-    '/api/v1/universes/:universeId/scenes/:sceneId/physics-constraints': MODAL_TYPES.PHYSICS_CONSTRAINT,
-    '/api/v1/universes/:universeId/scenes/:sceneId/physics-constraints/:constraintId': MODAL_TYPES.PHYSICS_CONSTRAINT,
+    [`${API_CONFIG.API_PREFIX}/universes/:universeId/scenes/:sceneId/physics-constraints`]: MODAL_TYPES.PHYSICS_CONSTRAINT,
+    [`${API_CONFIG.API_PREFIX}/universes/:universeId/scenes/:sceneId/physics-constraints/:constraintId`]: MODAL_TYPES.PHYSICS_CONSTRAINT,
 
     // Audio routes
-    '/api/v1/universes/:universeId/scenes/:sceneId/audio': MODAL_TYPES.AUDIO_GENERATE,
-    '/api/v1/universes/:universeId/scenes/:sceneId/audio/:audioId': MODAL_TYPES.AUDIO_DETAILS,
-    '/api/v1/universes/:universeId/scenes/:sceneId/audio/:audioId/edit': MODAL_TYPES.AUDIO_EDIT,
+    [`${API_CONFIG.API_PREFIX}/universes/:universeId/scenes/:sceneId/audio`]: MODAL_TYPES.AUDIO_GENERATE,
+    [`${API_CONFIG.API_PREFIX}/universes/:universeId/scenes/:sceneId/audio/:audioId`]: MODAL_TYPES.AUDIO_DETAILS,
+    [`${API_CONFIG.API_PREFIX}/universes/:universeId/scenes/:sceneId/audio/:audioId/edit`]: MODAL_TYPES.AUDIO_EDIT,
 
     // Visualization routes
-    '/api/v1/universes/:universeId/scenes/:sceneId/visualizations': MODAL_TYPES.VISUALIZATION_CREATE,
-    '/api/v1/universes/:universeId/scenes/:sceneId/visualizations/:visualizationId': MODAL_TYPES.VISUALIZATION_EDIT,
+    [`${API_CONFIG.API_PREFIX}/universes/:universeId/scenes/:sceneId/visualizations`]: MODAL_TYPES.VISUALIZATION_CREATE,
+    [`${API_CONFIG.API_PREFIX}/universes/:universeId/scenes/:sceneId/visualizations/:visualizationId`]: MODAL_TYPES.VISUALIZATION_EDIT,
 };
 
 export default ModalRegistry;

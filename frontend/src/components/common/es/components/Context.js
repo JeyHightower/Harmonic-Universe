@@ -3,9 +3,13 @@ import React from 'react';
 // Add debug log with a unique identifier
 console.log('==== CONTEXT.JS IS BEING LOADED ====');
 
+// Create default context
+let IconContext;
+let FallbackIconContext;
+
 try {
     // Create a Context for icon configuration
-    const IconContext = React.createContext({
+    IconContext = React.createContext({
         // Default values for the context
         prefixCls: 'anticon',
         rootClassName: '',
@@ -17,26 +21,23 @@ try {
 
     // Success log
     console.log('Icon context created successfully:', IconContext);
-
-    // Export the default context
-    export default IconContext;
-
-    // Also provide a named export for flexibility
-    export { IconContext };
 } catch (error) {
     console.error('Error creating IconContext:', error);
 
     // Create a fallback context to prevent crashes
-    const FallbackIconContext = React.createContext({
+    FallbackIconContext = React.createContext({
         prefixCls: 'anticon',
         rootClassName: '',
         rtl: false
     });
 
     FallbackIconContext.displayName = 'FallbackIconContext';
-
     console.log('Using fallback icon context');
 
-    export default FallbackIconContext;
-    export { FallbackIconContext as IconContext };
+    // Use the fallback as the main context
+    IconContext = FallbackIconContext;
 }
+
+// Export the context
+export default IconContext;
+export { IconContext };

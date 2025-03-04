@@ -63,15 +63,29 @@ const MusicPlayer = ({ universeId }) => {
   const animationRef = useRef(null);
 
   // Initialize Tone.js on user interaction
-  const initializeAudioContext = async () => {
-    if (!audioContextInitialized) {
-      try {
+  const initializeTone = async () => {
+    try {
+      console.log('Initializing Tone.js...');
+      // Only start AudioContext after user interaction
+      if (Tone.context.state !== 'running') {
         await Tone.start();
-        setAudioContextInitialized(true);
-        console.log('AudioContext started successfully');
-      } catch (error) {
-        console.error('Failed to start AudioContext:', error);
+        console.log('Tone.js AudioContext started successfully');
       }
+
+      // Initialize instruments
+      synthRef.current = new Tone.PolySynth(Tone.Synth).toDestination();
+
+      // Set initial volume
+      synthRef.current.volume.value = Tone.gainToDb(volume / 100);
+
+      // Set up analyzer for visualizations
+      analyzerRef.current = new Tone.Analyser('waveform', 128);
+      synthRef.current.connect(analyzerRef.current);
+
+      return true;
+    } catch (error) {
+      console.error('Error initializing Tone.js:', error);
+      return false;
     }
   };
 
@@ -328,7 +342,7 @@ const MusicPlayer = ({ universeId }) => {
   }, [isPlaying, musicData]);
 
   const generateMusic = async (params = null) => {
-    await initializeAudioContext();
+    await initializeTone();
 
     try {
       setIsLoading(true);
@@ -384,7 +398,7 @@ const MusicPlayer = ({ universeId }) => {
 
   // Download the generated music
   const downloadMusic = async () => {
-    await initializeAudioContext();
+    await initializeTone();
 
     if (!musicData) {
       message.warning('Please generate music first');
@@ -466,7 +480,7 @@ const MusicPlayer = ({ universeId }) => {
   // Toggle play/pause
   const togglePlayback = async () => {
     // Initialize audio context first
-    await initializeAudioContext();
+    await initializeTone();
 
     // If no music data, generate it first
     if (!musicData) {

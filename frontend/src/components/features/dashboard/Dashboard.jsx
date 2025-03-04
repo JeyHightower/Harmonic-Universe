@@ -10,7 +10,10 @@ import {
   setSortOrder,
   sortUniverses,
 } from '../../../store/slices/universeSlice';
-import { fetchUniverses } from '../../../store/thunks/universeThunks';
+import {
+  deleteUniverse,
+  fetchUniverses,
+} from '../../../store/thunks/universeThunks';
 import Button from '../../common/Button';
 import Spinner from '../../common/Spinner';
 import './Dashboard.css';
@@ -142,7 +145,7 @@ function Dashboard() {
         })
         .catch(err => {
           console.error('Failed to delete universe:', err);
-          setError('Failed to delete universe. Please try again.');
+          console.error('Failed to delete universe. Please try again.');
         });
     }
   };

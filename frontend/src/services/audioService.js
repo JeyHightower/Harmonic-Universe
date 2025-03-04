@@ -1,3 +1,4 @@
+import { API_CONFIG } from '../utils/config';
 import { handleApiError } from '../utils/errorHandling';
 
 /**
@@ -9,7 +10,7 @@ import { handleApiError } from '../utils/errorHandling';
  */
 export const fetchAudioDetails = async (audioId, universeId, sceneId) => {
     try {
-        const response = await fetch(`/api/v1/universes/${universeId}/scenes/${sceneId}/audio/${audioId}`);
+        const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/${universeId}/scenes/${sceneId}/audio/${audioId}`);
 
         if (!response.ok) {
             throw new Error(`Failed to fetch audio details: ${response.statusText}`);
@@ -29,7 +30,7 @@ export const fetchAudioDetails = async (audioId, universeId, sceneId) => {
  */
 export const fetchSceneAudio = async (universeId, sceneId) => {
     try {
-        const response = await fetch(`/api/v1/universes/${universeId}/scenes/${sceneId}/audio`);
+        const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/${universeId}/scenes/${sceneId}/audio`);
 
         if (!response.ok) {
             throw new Error(`Failed to fetch scene audio: ${response.statusText}`);
@@ -52,8 +53,8 @@ export const fetchAudioByParams = async (params) => {
         const isUpdate = !!id;
 
         const url = isUpdate
-            ? `/api/v1/universes/${universe_id}/scenes/${scene_id}/audio/${id}`
-            : `/api/v1/universes/${universe_id}/scenes/${scene_id}/audio`;
+            ? `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/${universe_id}/scenes/${scene_id}/audio/${id}`
+            : `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/${universe_id}/scenes/${scene_id}/audio`;
 
         const response = await fetch(url, {
             method: isUpdate ? 'PUT' : 'POST',
@@ -82,7 +83,7 @@ export const fetchAudioByParams = async (params) => {
  */
 export const deleteAudio = async (audioId, universeId, sceneId) => {
     try {
-        const response = await fetch(`/api/v1/universes/${universeId}/scenes/${sceneId}/audio/${audioId}`, {
+        const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/${universeId}/scenes/${sceneId}/audio/${audioId}`, {
             method: 'DELETE',
         });
 
@@ -106,7 +107,7 @@ export const deleteAudio = async (audioId, universeId, sceneId) => {
  */
 export const downloadAudio = async (audioId, universeId, sceneId, filename) => {
     try {
-        const response = await fetch(`/api/v1/universes/${universeId}/scenes/${sceneId}/audio/${audioId}/download`);
+        const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/${universeId}/scenes/${sceneId}/audio/${audioId}/download`);
 
         if (!response.ok) {
             throw new Error(`Failed to download audio: ${response.statusText}`);

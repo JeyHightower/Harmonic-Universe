@@ -1,91 +1,94 @@
-import { API_BASE_URL, DEFAULT_HEADERS } from './config';
+import { API_CONFIG } from './config';
 
 // API configuration
 export const endpoints = {
   auth: {
-    login: `${API_BASE_URL}/api/v1/auth/login`,
-    register: `${API_BASE_URL}/api/v1/auth/register`,
-    logout: `${API_BASE_URL}/api/v1/auth/logout`,
-    me: `${API_BASE_URL}/api/v1/auth/me`,
-    demoLogin: `${API_BASE_URL}/api/v1/auth/demo-login`,
-    refresh: `${API_BASE_URL}/api/v1/auth/refresh`,
+    login: `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/auth/login`,
+    register: `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/auth/register`,
+    logout: `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/auth/logout`,
+    me: `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/auth/me`,
+    demoLogin: `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/auth/demo-login`,
+    refresh: `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/auth/refresh`,
   },
   universes: {
-    list: `${API_BASE_URL}/api/v1/universes/`,
-    detail: id => `${API_BASE_URL}/api/v1/universes/${id}/`,
-    create: `${API_BASE_URL}/api/v1/universes/`,
-    update: id => `${API_BASE_URL}/api/v1/universes/${id}/`,
-    delete: id => `${API_BASE_URL}/api/v1/universes/${id}/`,
-    physics: id => `${API_BASE_URL}/api/v1/universes/${id}/physics/`,
-    harmony: id => `${API_BASE_URL}/api/v1/universes/${id}/harmony/`,
+    list: `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/`,
+    detail: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/${id}/`,
+    create: `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/`,
+    update: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/${id}/`,
+    delete: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/${id}/`,
+    physics: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/${id}/physics/`,
+    harmony: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/${id}/harmony/`,
   },
   scenes: {
-    list: `${API_BASE_URL}/api/v1/scenes/`,
-    detail: id => `${API_BASE_URL}/api/v1/scenes/${id}/`,
-    create: `${API_BASE_URL}/api/v1/scenes/`,
-    update: id => `${API_BASE_URL}/api/v1/scenes/${id}/`,
-    delete: id => `${API_BASE_URL}/api/v1/scenes/${id}/`,
-    reorder: `${API_BASE_URL}/api/v1/scenes/reorder`,
-    forUniverse: universeId => `${API_BASE_URL}/api/v1/scenes/?universe_id=${universeId}`,
+    list: `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/`,
+    detail: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/${id}/`,
+    create: `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/`,
+    update: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/${id}/`,
+    delete: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/${id}/`,
+    reorder: `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/reorder`,
+    forUniverse: universeId => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/?universe_id=${universeId}`,
     physicsParameters: {
       list: sceneId =>
-        `${API_BASE_URL}/api/v1/scenes/${sceneId}/physics_parameters`,
+        `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/${sceneId}/physics_parameters`,
       detail: (sceneId, paramsId) =>
-        `${API_BASE_URL}/api/v1/scenes/${sceneId}/physics_parameters/${paramsId}`,
+        `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/${sceneId}/physics_parameters/${paramsId}`,
       create: sceneId =>
-        `${API_BASE_URL}/api/v1/scenes/${sceneId}/physics_parameters`,
+        `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/${sceneId}/physics_parameters`,
       update: (sceneId, paramsId) =>
-        `${API_BASE_URL}/api/v1/scenes/${sceneId}/physics_parameters/${paramsId}`,
+        `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/${sceneId}/physics_parameters/${paramsId}`,
       delete: (sceneId, paramsId) =>
-        `${API_BASE_URL}/api/v1/scenes/${sceneId}/physics_parameters/${paramsId}`,
+        `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/${sceneId}/physics_parameters/${paramsId}`,
     },
     harmonyParameters: {
       list: sceneId =>
-        `${API_BASE_URL}/api/v1/scenes/${sceneId}/harmony_parameters`,
+        `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/${sceneId}/harmony_parameters`,
       detail: (sceneId, paramsId) =>
-        `${API_BASE_URL}/api/v1/scenes/${sceneId}/harmony_parameters/${paramsId}`,
+        `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/${sceneId}/harmony_parameters/${paramsId}`,
       create: sceneId =>
-        `${API_BASE_URL}/api/v1/scenes/${sceneId}/harmony_parameters`,
+        `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/${sceneId}/harmony_parameters`,
       update: (sceneId, paramsId) =>
-        `${API_BASE_URL}/api/v1/scenes/${sceneId}/harmony_parameters/${paramsId}`,
+        `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/${sceneId}/harmony_parameters/${paramsId}`,
       delete: (sceneId, paramsId) =>
-        `${API_BASE_URL}/api/v1/scenes/${sceneId}/harmony_parameters/${paramsId}`,
+        `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/${sceneId}/harmony_parameters/${paramsId}`,
     },
   },
   physicsObjects: {
-    list: `${API_BASE_URL}/api/v1/physics-objects/`,
-    detail: id => `${API_BASE_URL}/api/v1/physics-objects/${id}/`,
-    create: `${API_BASE_URL}/api/v1/physics-objects/`,
-    update: id => `${API_BASE_URL}/api/v1/physics-objects/${id}/`,
-    delete: id => `${API_BASE_URL}/api/v1/physics-objects/${id}/`,
+    list: `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-objects/`,
+    detail: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-objects/${id}/`,
+    create: `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-objects/`,
+    update: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-objects/${id}/`,
+    delete: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-objects/${id}/`,
     forScene: sceneId =>
-      `${API_BASE_URL}/api/v1/physics-objects/?scene_id=${sceneId}`,
+      `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-objects/?scene_id=${sceneId}`,
   },
   music: {
-    generate: universeId => `${API_BASE_URL}/api/v1/music/${universeId}/generate`,
-    download: universeId => `${API_BASE_URL}/api/v1/music/${universeId}/download`,
+    generate: universeId => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/music/${universeId}/generate`,
+    download: universeId => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/music/${universeId}/download`,
     generateAI: universeId =>
-      `${API_BASE_URL}/api/v1/music/${universeId}/generate-ai`,
+      `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/music/${universeId}/generate-ai`,
   },
   storyboards: {
-    list: (universeId) => `/api/universes/${universeId}/storyboards`,
-    get: (universeId, storyboardId) => `/api/universes/${universeId}/storyboards/${storyboardId}`,
-    create: (universeId) => `/api/universes/${universeId}/storyboards`,
-    update: (universeId, storyboardId) => `/api/universes/${universeId}/storyboards/${storyboardId}`,
-    delete: (universeId, storyboardId) => `/api/universes/${universeId}/storyboards/${storyboardId}`,
+    list: (universeId) => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/${universeId}/storyboards`,
+    get: (universeId, storyboardId) => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/${universeId}/storyboards/${storyboardId}`,
+    create: (universeId) => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/${universeId}/storyboards`,
+    update: (universeId, storyboardId) => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/${universeId}/storyboards/${storyboardId}`,
+    delete: (universeId, storyboardId) => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/${universeId}/storyboards/${storyboardId}`,
 
     points: {
-      list: (universeId, storyboardId) => `/api/universes/${universeId}/storyboards/${storyboardId}/points`,
-      get: (universeId, storyboardId, pointId) => `/api/universes/${universeId}/storyboards/${storyboardId}/points/${pointId}`,
-      create: (universeId, storyboardId) => `/api/universes/${universeId}/storyboards/${storyboardId}/points`,
-      update: (universeId, storyboardId, pointId) => `/api/universes/${universeId}/storyboards/${storyboardId}/points/${pointId}`,
-      delete: (universeId, storyboardId, pointId) => `/api/universes/${universeId}/storyboards/${storyboardId}/points/${pointId}`
+      list: (universeId, storyboardId) => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/${universeId}/storyboards/${storyboardId}/points`,
+      get: (universeId, storyboardId, pointId) => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/${universeId}/storyboards/${storyboardId}/points/${pointId}`,
+      create: (universeId, storyboardId) => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/${universeId}/storyboards/${storyboardId}/points`,
+      update: (universeId, storyboardId, pointId) => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/${universeId}/storyboards/${storyboardId}/points/${pointId}`,
+      delete: (universeId, storyboardId, pointId) => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/universes/${universeId}/storyboards/${storyboardId}/points/${pointId}`
     }
   }
 };
 
 // API client configuration
-const defaultHeaders = DEFAULT_HEADERS;
+const defaultHeaders = {
+  'Content-Type': 'application/json',
+  'Accept': 'application/json'
+};
 
 // Helper function to check if token is valid
 const isTokenValid = token => {

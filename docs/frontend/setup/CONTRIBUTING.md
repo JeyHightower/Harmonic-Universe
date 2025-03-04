@@ -95,14 +95,31 @@ def calculate_physics(
 import React from 'react';
 import PropTypes from 'prop-types';
 
-function PhysicsControls({ universeId, onUpdate }) {
-  // Component logic here
-  return <div className="physics-controls">{/* Component JSX */}</div>;
+function PhysicsControls({
+  gravity,
+  friction,
+  onGravityChange,
+  onFrictionChange,
+}) {
+  return (
+    <div className="physics-controls">
+      <label>
+        Gravity:
+        <input type="range" value={gravity} onChange={onGravityChange} />
+      </label>
+      <label>
+        Friction:
+        <input type="range" value={friction} onChange={onFrictionChange} />
+      </label>
+    </div>
+  );
 }
 
-PhysicsControls.PropTypes = {
-  universeId: PropTypes.string.isRequired,
-  onUpdate: PropTypes.func.isRequired,
+PhysicsControls.propTypes = {
+  gravity: PropTypes.number.isRequired,
+  friction: PropTypes.number.isRequired,
+  onGravityChange: PropTypes.func.isRequired,
+  onFrictionChange: PropTypes.func.isRequired,
 };
 
 export default PhysicsControls;

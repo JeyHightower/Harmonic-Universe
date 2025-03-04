@@ -1,4 +1,5 @@
 // This file now only exports route constants to avoid circular dependencies
+import { API_CONFIG } from '../utils/config';
 
 export const ROUTES = {
   HOME: '/',
@@ -21,42 +22,42 @@ export const ROUTES = {
 // API routes that can be accessed via modals
 export const API_MODAL_ROUTES = {
   // Universe routes
-  CREATE_UNIVERSE: '/api/universes/create',
-  EDIT_UNIVERSE: '/api/universes/:id/edit',
-  DELETE_UNIVERSE: '/api/universes/:id/delete',
+  CREATE_UNIVERSE: `${API_CONFIG.API_PREFIX}/universes/create`,
+  EDIT_UNIVERSE: `${API_CONFIG.API_PREFIX}/universes/:id/edit`,
+  DELETE_UNIVERSE: `${API_CONFIG.API_PREFIX}/universes/:id/delete`,
 
   // Scene routes
-  CREATE_SCENE: '/api/scenes/create',
-  EDIT_SCENE: '/api/scenes/:id/edit',
-  DELETE_SCENE: '/api/scenes/:id/delete',
+  CREATE_SCENE: `${API_CONFIG.API_PREFIX}/scenes/create`,
+  EDIT_SCENE: `${API_CONFIG.API_PREFIX}/scenes/:id/edit`,
+  DELETE_SCENE: `${API_CONFIG.API_PREFIX}/scenes/:id/delete`,
 
   // Physics objects routes
-  CREATE_PHYSICS_OBJECT: '/api/physics-objects/create',
-  EDIT_PHYSICS_OBJECT: '/api/physics-objects/:id/edit',
-  DELETE_PHYSICS_OBJECT: '/api/physics-objects/:id/delete',
+  CREATE_PHYSICS_OBJECT: `${API_CONFIG.API_PREFIX}/physics-objects/create`,
+  EDIT_PHYSICS_OBJECT: `${API_CONFIG.API_PREFIX}/physics-objects/:id/edit`,
+  DELETE_PHYSICS_OBJECT: `${API_CONFIG.API_PREFIX}/physics-objects/:id/delete`,
 
   // Physics parameters routes
-  CREATE_PHYSICS_PARAMETERS: '/api/physics-parameters/create',
-  EDIT_PHYSICS_PARAMETERS: '/api/physics-parameters/:id/edit',
-  DELETE_PHYSICS_PARAMETERS: '/api/physics-parameters/:id/delete',
+  CREATE_PHYSICS_PARAMETERS: `${API_CONFIG.API_PREFIX}/physics-parameters/create`,
+  EDIT_PHYSICS_PARAMETERS: `${API_CONFIG.API_PREFIX}/physics-parameters/:id/edit`,
+  DELETE_PHYSICS_PARAMETERS: `${API_CONFIG.API_PREFIX}/physics-parameters/:id/delete`,
 
   // User routes
-  USER_PROFILE: '/api/users/:id/profile',
+  USER_PROFILE: `${API_CONFIG.API_PREFIX}/users/:id/profile`,
 
   // Audio routes
-  GENERATE_AUDIO: '/api/audio/generate',
-  AUDIO_DETAILS: '/api/audio/:id/details',
-  DELETE_AUDIO: '/api/audio/:id/delete',
+  GENERATE_AUDIO: `${API_CONFIG.API_PREFIX}/audio/generate`,
+  AUDIO_DETAILS: `${API_CONFIG.API_PREFIX}/audio/:id/details`,
+  DELETE_AUDIO: `${API_CONFIG.API_PREFIX}/audio/:id/delete`,
 
   // Visualization routes
-  CREATE_VISUALIZATION: '/api/visualizations/create',
-  EDIT_VISUALIZATION: '/api/visualizations/:id/edit',
-  DELETE_VISUALIZATION: '/api/visualizations/:id/delete',
+  CREATE_VISUALIZATION: `${API_CONFIG.API_PREFIX}/visualizations/create`,
+  EDIT_VISUALIZATION: `${API_CONFIG.API_PREFIX}/visualizations/:id/edit`,
+  DELETE_VISUALIZATION: `${API_CONFIG.API_PREFIX}/visualizations/:id/delete`,
 
   // Physics constraints routes
-  CREATE_PHYSICS_CONSTRAINT: '/api/physics-constraints/create',
-  EDIT_PHYSICS_CONSTRAINT: '/api/physics-constraints/:id/edit',
-  DELETE_PHYSICS_CONSTRAINT: '/api/physics-constraints/:id/delete',
+  CREATE_PHYSICS_CONSTRAINT: `${API_CONFIG.API_PREFIX}/physics-constraints/create`,
+  EDIT_PHYSICS_CONSTRAINT: `${API_CONFIG.API_PREFIX}/physics-constraints/:id/edit`,
+  DELETE_PHYSICS_CONSTRAINT: `${API_CONFIG.API_PREFIX}/physics-constraints/:id/delete`,
 };
 
 // Map API routes to modal types

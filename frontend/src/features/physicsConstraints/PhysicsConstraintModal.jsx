@@ -6,6 +6,7 @@ import Input from '../../components/common/Input';
 import Modal from '../../components/common/Modal';
 import Spinner from '../../components/common/Spinner';
 import '../../styles/modal.css';
+import { API_CONFIG } from '../../utils/config';
 
 /**
  * Modal for creating and editing physics constraints between objects.
@@ -54,7 +55,7 @@ const PhysicsConstraintModal = ({
     const fetchPhysicsObjects = async () => {
       try {
         const response = await fetch(
-          `/api/v1/physics-objects?scene_id=${sceneId}`
+          `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-objects?scene_id=${sceneId}`
         );
 
         if (!response.ok) {
@@ -78,7 +79,7 @@ const PhysicsConstraintModal = ({
 
       try {
         const response = await fetch(
-          `/api/v1/physics-constraints/${initialData.id}`
+          `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-constraints/${initialData.id}`
         );
 
         if (!response.ok) {
@@ -109,7 +110,7 @@ const PhysicsConstraintModal = ({
 
     fetchPhysicsObjects();
     fetchConstraintData();
-  }, [sceneId, initialData]);
+  }, [initialData, sceneId]);
 
   const handleInputChange = e => {
     const { name, value } = e.target;
@@ -145,8 +146,8 @@ const PhysicsConstraintModal = ({
       }
 
       const url = initialData?.id
-        ? `/api/v1/physics-constraints/${initialData.id}`
-        : '/api/v1/physics-constraints';
+        ? `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-constraints/${initialData.id}`
+        : `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-constraints`;
 
       const method = initialData?.id ? 'PUT' : 'POST';
 

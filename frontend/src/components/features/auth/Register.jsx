@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useForm from '../../../hooks/useForm';
 import { loginSuccess } from '../../../store/slices/authSlice';
 import { openModal } from '../../../store/slices/modalSlice';
-import { api } from '../../../utils/api';
+import { api, endpoints } from '../../../utils/api';
 import {
   validateEmail,
   validatePassword,
@@ -30,12 +30,10 @@ function Register() {
     }
   );
 
-  const handleSubmit = async e => {
-    e.preventDefault();
-    if (!validateForm()) return;
-
+  const handleSubmit = async (values, { setSubmitting, setErrors }) => {
     try {
-      const response = await api.post('/api/v1/auth/register', values);
+      setLoading(true);
+      const response = await api.post(endpoints.auth.register, values);
       console.debug('Register response:', response);
 
       if (response.access_token) {

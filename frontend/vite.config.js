@@ -129,6 +129,7 @@ const antDesignIconsPlugin = () => {
           export const ArrowLeftOutlined = createIconComponent('ArrowLeftOutlined');
           export const ArrowRightOutlined = createIconComponent('ArrowRightOutlined');
           export const ArrowUpOutlined = createIconComponent('ArrowUpOutlined');
+          export const AudioOutlined = createIconComponent('AudioOutlined');
           export const BarsOutlined = createIconComponent('BarsOutlined');
           export const CalendarOutlined = createIconComponent('CalendarOutlined');
           export const CaretDownFilled = createIconComponent('CaretDownFilled');
@@ -173,6 +174,8 @@ const antDesignIconsPlugin = () => {
           export const PaperClipOutlined = createIconComponent('PaperClipOutlined');
           export const PauseOutlined = createIconComponent('PauseOutlined');
           export const PictureTwoTone = createIconComponent('PictureTwoTone');
+          export const PinterestFilled = createIconComponent('PinterestFilled');
+          export const PlayCircleOutlined = createIconComponent('PlayCircleOutlined');
           export const PlusCircleOutlined = createIconComponent('PlusCircleOutlined');
           export const PlusOutlined = createIconComponent('PlusOutlined');
           export const PlusSquareOutlined = createIconComponent('PlusSquareOutlined');
@@ -184,6 +187,7 @@ const antDesignIconsPlugin = () => {
           export const RotateRightOutlined = createIconComponent('RotateRightOutlined');
           export const SearchOutlined = createIconComponent('SearchOutlined');
           export const SettingOutlined = createIconComponent('SettingOutlined');
+          export const SoundOutlined = createIconComponent('SoundOutlined');
           export const StarFilled = createIconComponent('StarFilled');
           export const SwapOutlined = createIconComponent('SwapOutlined');
           export const SwapRightOutlined = createIconComponent('SwapRightOutlined');
@@ -196,6 +200,8 @@ const antDesignIconsPlugin = () => {
           export const WarningOutlined = createIconComponent('WarningOutlined');
           export const ZoomInOutlined = createIconComponent('ZoomInOutlined');
           export const ZoomOutOutlined = createIconComponent('ZoomOutOutlined');
+          export const PictureOutlined = createIconComponent('PictureOutlined');
+          export const AppstoreOutlined = createIconComponent('AppstoreOutlined');
 
           // Create a proxy to handle any requested icon
           const handler = {

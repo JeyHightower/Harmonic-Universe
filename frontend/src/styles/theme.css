@@ -418,6 +418,27 @@
   --transition-timing-ease-in: ease-in;
   --transition-timing-ease-out: ease-out;
   --transition-timing-ease-in-out: ease-in-out;
+
+  /* Universe Card Variables */
+  --surface-color: var(--light-surface);
+  --surface-color-secondary: #f8fafc;
+  --surface-color-rgb: 255, 255, 255;
+  --border-color-light: var(--light-border);
+  --primary-color: var(--primary-500);
+  --primary-color-light: var(--primary-300);
+  --primary-color-rgb: var(--color-primary-rgb);
+  --text-primary: var(--light-text);
+  --text-secondary: var(--light-text-secondary);
+  --text-tertiary: var(--light-text-tertiary);
+  --tag-background: var(--primary-50);
+  --tag-text: var(--primary-700);
+
+  /* Button Variants */
+  --button-tertiary-bg: var(--neutral-100);
+  --button-tertiary-text: var(--neutral-700);
+  --button-tertiary-border: var(--neutral-200);
+  --button-tertiary-hover-bg: var(--neutral-200);
+  --button-tertiary-hover-border: var(--neutral-300);
 }
 
 /* Default theme (light) */
@@ -570,6 +591,24 @@
   --slider-disabled-fill-bg: var(--neutral-600);
   --slider-disabled-thumb-bg: var(--neutral-700);
   --slider-disabled-thumb-border-color: var(--neutral-600);
+
+  /* Universe Card Dark Mode Variables */
+  --surface-color: var(--dark-surface);
+  --surface-color-secondary: #1a1d2d;
+  --surface-color-rgb: 30, 41, 59;
+  --border-color-light: var(--dark-border);
+  --text-primary: var(--dark-text);
+  --text-secondary: var(--dark-text-secondary);
+  --text-tertiary: var(--dark-text-tertiary);
+  --tag-background: rgba(var(--primary-color-rgb), 0.15);
+  --tag-text: var(--primary-300);
+
+  /* Button Variants Dark Mode */
+  --button-tertiary-bg: rgba(255, 255, 255, 0.05);
+  --button-tertiary-text: var(--dark-text-secondary);
+  --button-tertiary-border: rgba(255, 255, 255, 0.1);
+  --button-tertiary-hover-bg: rgba(255, 255, 255, 0.1);
+  --button-tertiary-hover-border: rgba(255, 255, 255, 0.2);
 }
 
 /* Responsive Breakpoints */

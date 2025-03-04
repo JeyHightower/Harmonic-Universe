@@ -34,7 +34,7 @@ function Login() {
 
     try {
       dispatch(loginStart());
-      const response = await api.post('/api/v1/auth/login', values);
+      const response = await api.post(endpoints.auth.login, values);
       console.debug('Login response:', response);
 
       if (response.access_token) {
@@ -44,16 +44,34 @@ function Login() {
         localStorage.setItem('refreshToken', response.refresh_token);
       }
 
+      // Force navigation to dashboard immediately after setting tokens
+      console.debug('Forcing navigation to dashboard');
+
       // Fetch user info after successful login
       try {
         const userResponse = await api.get(endpoints.auth.me);
         console.debug('User info response:', userResponse);
         dispatch(loginSuccess(userResponse));
-        navigate('/dashboard');
       } catch (error) {
         console.error('Failed to fetch user info:', error);
-        throw error;
+        // Continue with navigation even if user info fetch fails
       }
+
+      // Try multiple navigation methods to ensure we get to the dashboard
+
+      // Method 1: Use React Router navigate with explicit path
+      console.debug('Attempting navigation with React Router');
+      navigate('/dashboard', { replace: true });
+
+      // Method 2: Use direct navigation after a short delay with full URL
+      setTimeout(() => {
+        console.debug('Attempting direct navigation to dashboard');
+        // Ensure we're using the correct origin without appending /api
+        const origin = window.location.origin;
+        const dashboardUrl = `${origin}/dashboard`;
+        console.debug('Dashboard URL:', dashboardUrl);
+        window.location.href = dashboardUrl;
+      }, 500);
     } catch (error) {
       console.error('Login error:', error);
       let errorMessage = 'An error occurred during login. Please try again.';

@@ -165,6 +165,6 @@ registerModal(MODAL_TYPES.MY_NEW_MODAL, MyNewModalComponent, {
 // 3. Add API route mapping if needed
 export const API_ROUTE_MODALS = {
   // ...existing mappings
-  '/api/v1/my-new-resource': MODAL_TYPES.MY_NEW_MODAL,
+  [`${API_CONFIG.API_PREFIX}/my-new-resource`]: MODAL_TYPES.MY_NEW_MODAL,
 };
 ```

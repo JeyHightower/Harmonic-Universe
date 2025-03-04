@@ -128,7 +128,8 @@ const ModalRouteTest = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>
+        {`
         .modal-route-test {
           padding: 2rem;
         }
@@ -163,7 +164,8 @@ const ModalRouteTest = () => {
           border-radius: 4px;
           background: #ffffc0;
         }
-      `}</style>
+        `}
+      </style>
     </div>
   );
 };

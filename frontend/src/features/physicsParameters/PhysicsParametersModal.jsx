@@ -1,7 +1,8 @@
-import { App, Form, Input, InputNumber } from 'antd';
+import { Form, Input, InputNumber, message } from 'antd';
 import PropTypes from 'prop-types';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
+import { SoundOutlined } from '../../components/common/Icons';
 import Modal from '../../components/common/Modal';
 import useModalManager from '../../hooks/useModalManager';
 import {
@@ -30,181 +31,144 @@ const mockDispatch = async (action, testMode = false) => {
   };
 };
 
+/**
+ * PhysicsParametersModal Component
+ * Modal for creating or editing physics parameters
+ */
 const PhysicsParametersModal = ({
   universeId,
   initialData = null,
   testMode = false,
-  onClose,
   isGlobalModal = false,
+  onClose = () => {},
+  modalProps = {},
 }) => {
+  console.log('PhysicsParametersModal rendering with props:', {
+    universeId,
+    initialData,
+    testMode,
+    isGlobalModal,
+    modalProps,
+  });
+
   const [form] = Form.useForm();
   const dispatch = useDispatch();
-  const modalType = initialData
-    ? 'edit-physics-parameters'
-    : 'create-physics-parameters';
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const { closeModal } = useModalManager();
 
-  // Prevent real API calls in test mode
+  // Set initial form values when initialData changes
   useEffect(() => {
-    if (testMode) {
-      console.log('PhysicsParametersModal is running in TEST MODE');
-      console.log(
-        'API calls will be mocked and no actual requests will be made'
-      );
+    if (initialData) {
+      form.setFieldsValue({
+        ...initialData,
+      });
     }
-  }, [testMode]);
+  }, [form, initialData]);
 
-  // Only use the modal manager if not in test mode and not in global modal
-  const modalManager =
-    testMode || isGlobalModal
-      ? {
-          loading: false,
-          error: null,
-          handleSubmit: async fn => {
-            try {
-              if (testMode) {
-                // In test mode, don't actually dispatch actions to the API
-                console.log('Test mode: Not sending actual API request');
-                // Simulate successful validation but don't call API
-                await form.validateFields();
-
-                // Use App component to properly wrap message for theme context
-                // or just use alert in test mode for simplicity
-                alert(
-                  `Physics parameters ${
-                    initialData ? 'updated' : 'created'
-                  } successfully (Test Mode)`
-                );
-
-                // Close the modal
-                if (onClose) onClose();
-              } else {
-                // Normal operation for global modal mode
-                await fn();
-              }
-            } catch (err) {
-              console.error('Form submission error:', err);
-              if (testMode) {
-                alert(
-                  `Error: ${
-                    err.message || 'Failed to save physics parameters'
-                  } (Test Mode)`
-                );
-              }
-            }
-          },
-          isActive: true,
-        }
-      : useModalManager(modalType, {
-          onSuccess: () => {
-            // Use App component to properly wrap message for theme context
-            const { message } = App.useApp();
-            message.success(
-              `Physics parameters ${
-                initialData ? 'updated' : 'created'
-              } successfully`
-            );
-          },
-          onError: err => {
-            // Use App component to properly wrap message for theme context
-            const { message } = App.useApp();
-            message.error(err.message || 'Failed to save physics parameters');
-          },
-        });
-
-  const { loading, error, handleSubmit, isActive } = modalManager;
-
-  const handleFormSubmit = async () => {
+  const handleSubmit = async values => {
     try {
-      const values = await form.validateFields();
-
-      // In test mode, just log the values that would be sent and return a mock response
-      if (testMode) {
-        console.log('Test mode: Would send these values to API:', {
-          ...values,
-          universe_id: universeId,
-        });
-
-        // Mock a successful API response
-        return await mockApiResponse({
-          id: initialData?.id || 'mock-id-' + Date.now(),
-          ...values,
-          universe_id: universeId,
-        });
-      }
+      setLoading(true);
+      setError(null);
 
       const actionPayload = {
         ...values,
-        universe_id: universeId,
+        universeId,
       };
 
-      const action = initialData
-        ? updatePhysicsParameters({ id: initialData.id, ...actionPayload })
-        : createPhysicsParameters(actionPayload);
-
-      // Use the mock dispatch in test mode, otherwise use the real dispatch
-      if (testMode) {
-        return await mockDispatch(action, testMode);
-      } else {
-        return await dispatch(action).unwrap();
+      if (initialData?.id) {
+        actionPayload.id = initialData.id;
       }
-    } catch (error) {
-      console.error('Form submission error:', error);
-      throw error;
+
+      let result;
+      if (testMode) {
+        // Use mock implementation for test mode
+        result = await mockDispatch(
+          updatePhysicsParameters(actionPayload),
+          true
+        );
+        await mockApiResponse(200);
+      } else {
+        // Use real Redux dispatch for production
+        const action = initialData?.id
+          ? updatePhysicsParameters(actionPayload)
+          : createPhysicsParameters(actionPayload);
+        result = await dispatch(action);
+      }
+
+      if (result.type.endsWith('/fulfilled')) {
+        message.success(
+          `Physics parameters ${
+            initialData?.id ? 'updated' : 'created'
+          } successfully!`
+        );
+        if (isGlobalModal) {
+          closeModal();
+        } else {
+          onClose();
+        }
+      } else {
+        throw new Error(
+          result.error?.message || 'Failed to save physics parameters'
+        );
+      }
+    } catch (err) {
+      console.error('Error saving physics parameters:', err);
+      setError(
+        err.message || 'An error occurred while saving physics parameters'
+      );
+      message.error(err.message || 'Failed to save physics parameters');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Create a footer with save and cancel buttons
-  const footerContent = (
-    <div className="modal-footer-buttons">
-      <button
-        className="button button-primary"
-        onClick={() => handleSubmit(handleFormSubmit)}
-        disabled={loading}
-      >
-        {loading ? 'Saving...' : 'Save'}
-      </button>
-      <button className="button button-secondary" onClick={onClose}>
-        Cancel
-      </button>
-    </div>
-  );
+  const handleCancel = () => {
+    if (isGlobalModal) {
+      closeModal();
+    } else {
+      onClose();
+    }
+  };
 
-  // Render modal content without the Modal wrapper when in test mode or global modal
-  const modalContent = (
-    <>
-      {error && (
-        <div
-          className="error-message"
-          style={{ marginBottom: 16, color: '#ff4d4f' }}
-        >
-          {error}
-        </div>
-      )}
+  return (
+    <Modal
+      title={
+        initialData ? 'Edit Physics Parameters' : 'Create Physics Parameters'
+      }
+      open={true}
+      onCancel={handleCancel}
+      confirmLoading={loading}
+      onOk={() => form.submit()}
+      width={600}
+      {...modalProps}
+    >
       <Form
         form={form}
         layout="vertical"
-        onFinish={handleFormSubmit}
+        onFinish={handleSubmit}
         initialValues={{
-          gravity: 9.81,
-          time_scale: 1.0,
-          air_resistance: 0.0,
-          collision_elasticity: 1.0,
-          friction_coefficient: 0.5,
-          integration_method: 'verlet',
-          constraint_iterations: 10,
+          gravity: 9.8,
+          airResistance: 0.1,
+          friction: 0.5,
           ...initialData,
         }}
       >
+        {error && (
+          <div
+            className="error-message"
+            style={{ color: 'red', marginBottom: 16 }}
+          >
+            {error}
+          </div>
+        )}
+
         <Form.Item
           name="name"
           label="Name"
           rules={[{ required: true, message: 'Please enter a name' }]}
         >
-          <Input placeholder="Enter parameter set name" />
-        </Form.Item>
-
-        <Form.Item name="description" label="Description">
-          <Input.TextArea placeholder="Enter description" />
+          <Input placeholder="Enter a name for these physics parameters" />
         </Form.Item>
 
         <Form.Item
@@ -212,141 +176,51 @@ const PhysicsParametersModal = ({
           label="Gravity (m/s²)"
           rules={[{ required: true, message: 'Please enter gravity value' }]}
         >
-          <InputNumber min={0} max={100} step={0.1} style={{ width: '100%' }} />
-        </Form.Item>
-
-        <Form.Item
-          name="time_scale"
-          label="Time Scale"
-          rules={[{ required: true, message: 'Please enter time scale' }]}
-        >
           <InputNumber
-            min={0.1}
-            max={10}
+            min={0}
+            max={100}
             step={0.1}
             style={{ width: '100%' }}
+            addonAfter={<SoundOutlined />}
           />
         </Form.Item>
 
         <Form.Item
-          name="air_resistance"
+          name="airResistance"
           label="Air Resistance"
-          rules={[{ required: true, message: 'Please enter air resistance' }]}
+          rules={[
+            { required: true, message: 'Please enter air resistance value' },
+          ]}
         >
           <InputNumber min={0} max={1} step={0.01} style={{ width: '100%' }} />
         </Form.Item>
 
         <Form.Item
-          name="collision_elasticity"
-          label="Collision Elasticity"
-          rules={[
-            { required: true, message: 'Please enter collision elasticity' },
-          ]}
+          name="friction"
+          label="Friction"
+          rules={[{ required: true, message: 'Please enter friction value' }]}
         >
-          <InputNumber min={0} max={1} step={0.1} style={{ width: '100%' }} />
+          <InputNumber min={0} max={1} step={0.01} style={{ width: '100%' }} />
         </Form.Item>
 
-        <Form.Item
-          name="friction_coefficient"
-          label="Friction Coefficient"
-          rules={[
-            { required: true, message: 'Please enter friction coefficient' },
-          ]}
-        >
-          <InputNumber min={0} max={1} step={0.1} style={{ width: '100%' }} />
+        <Form.Item name="description" label="Description">
+          <Input.TextArea
+            rows={4}
+            placeholder="Enter a description for these physics parameters"
+          />
         </Form.Item>
-
-        <Form.Item
-          name="integration_method"
-          label="Integration Method"
-          rules={[
-            { required: true, message: 'Please select integration method' },
-          ]}
-        >
-          <Input placeholder="Enter integration method" />
-        </Form.Item>
-
-        <Form.Item
-          name="constraint_iterations"
-          label="Constraint Iterations"
-          rules={[
-            { required: true, message: 'Please enter constraint iterations' },
-          ]}
-        >
-          <InputNumber min={1} max={50} style={{ width: '100%' }} />
-        </Form.Item>
-
-        {/* Add form buttons directly in the form when in test mode */}
-        {(testMode || isGlobalModal) && (
-          <div className="modal-footer-buttons" style={{ marginTop: '20px' }}>
-            <button
-              type="button"
-              className="button button-primary"
-              onClick={() => handleSubmit(handleFormSubmit)}
-              disabled={loading}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#1890ff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                marginRight: '8px',
-              }}
-            >
-              {loading ? 'Saving...' : 'Save'}
-            </button>
-            <button
-              type="button"
-              className="button button-secondary"
-              onClick={onClose}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#f0f0f0',
-                border: '1px solid #d9d9d9',
-                borderRadius: '4px',
-                cursor: 'pointer',
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        )}
       </Form>
-    </>
-  );
-
-  // In test mode or when used in global modal, just return the content without the Modal wrapper
-  if (testMode || isGlobalModal) {
-    return modalContent;
-  }
-
-  // For normal usage, wrap in Modal
-  return (
-    <Modal
-      isOpen={isActive}
-      onClose={onClose}
-      title={
-        initialData ? 'Edit Physics Parameters' : 'Create Physics Parameters'
-      }
-      size="medium"
-      type="form"
-      animation="fade"
-      position="center"
-      footerContent={footerContent}
-      contentClassName="physics-parameters-modal"
-    >
-      {modalContent}
     </Modal>
   );
 };
 
 PhysicsParametersModal.propTypes = {
-  universeId: PropTypes.string.isRequired,
+  universeId: PropTypes.string,
   initialData: PropTypes.object,
   testMode: PropTypes.bool,
-  onClose: PropTypes.func.isRequired,
   isGlobalModal: PropTypes.bool,
+  onClose: PropTypes.func,
+  modalProps: PropTypes.object,
 };
 
 export default PhysicsParametersModal;

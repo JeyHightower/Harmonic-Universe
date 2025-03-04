@@ -1,7 +1,8 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { API_CONFIG } from '../../utils/config';
 
-const API_URL = '/api/physics-parameters';
+const API_URL = `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-parameters`;
 
 // Async thunks
 export const fetchPhysicsParameters = createAsyncThunk(

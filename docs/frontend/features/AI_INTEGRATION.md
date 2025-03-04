@@ -365,7 +365,7 @@ function AISuggestion({ parameters, onApply }) {
   );
 }
 
-AISuggestion.PropTypes = {
+AISuggestion.propTypes = {
   parameters: PropTypes.object.isRequired,
   onApply: PropTypes.func.isRequired,
 };

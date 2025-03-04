@@ -1,6 +1,6 @@
 import { ConfigProvider, theme } from 'antd';
 import React, { lazy, Suspense, useEffect } from 'react';
-import { Provider } from 'react-redux';
+import { Provider, useDispatch, useSelector } from 'react-redux';
 import {
   Route,
   HashRouter as Router,
@@ -9,41 +9,42 @@ import {
   useNavigate,
 } from 'react-router-dom';
 import { SettingOutlined, UserOutlined } from './components/common/Icons';
+import Login from './components/features/auth/Login';
+import ProfilePage from './components/features/auth/ProfilePage';
+import Register from './components/features/auth/Register';
+import Dashboard from './components/features/dashboard/Dashboard';
+import NotFound from './components/features/errors/NotFound';
+import HarmonyPage from './components/features/harmony/HarmonyPage';
+import Home from './components/features/home/Home';
+import PhysicsPage from './components/features/physics/PhysicsPage';
+import SettingsPage from './components/features/settings/SettingsPage';
+import UniverseDetail from './components/features/universe/UniverseDetail';
+import UniverseEdit from './components/features/universe/UniverseEdit';
+import VisualPage from './components/features/visual/VisualPage';
 import Layout from './components/layout/Layout';
 import { ROUTES } from './constants/routes';
-import { useModal } from './contexts/ModalContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import StoryboardDetail from './features/storyboard/StoryboardDetail';
 import StoryboardEditor from './features/storyboard/StoryboardEditor';
 import StoryboardList from './features/storyboard/StoryboardList';
+import useModal from './hooks/useModal';
 import ModalProvider from './providers/ModalProvider';
 import ProtectedRoute from './routes/ProtectedRoute';
 import store from './store';
+import { checkAuthState } from './store/slices/authSlice';
 import './styles/components.css';
 import './styles/global.css';
 import './styles/theme.css';
+import { ModalRegistry } from './utils/modalRegistry';
 import { handleModalRoute } from './utils/modalRouteHandler';
 import { initializeTheme } from './utils/themeUtils';
+import { API_CONFIG } from './utils/config';
 
 // Lazy-loaded components
-const Home = lazy(() => import('./components/features/home/Home'));
-const Login = lazy(() => import('./components/features/auth/Login'));
-const Register = lazy(() => import('./components/features/auth/Register'));
-const Dashboard = lazy(() =>
-  import('./components/features/dashboard/Dashboard')
-);
 const UniverseList = lazy(() =>
   import('./components/features/universe/UniverseList')
 );
-const UniverseDetail = lazy(() =>
-  import('./components/features/universe/UniverseDetail')
-);
-const UniverseEdit = lazy(() =>
-  import('./components/features/universe/UniverseEdit')
-);
 const ModalExample = lazy(() => import('./components/examples/ModalExample'));
-const SettingsPage = lazy(() =>
-  import('./components/features/settings/SettingsPage')
-);
 const IconTest = lazy(() => import('./components/IconTest'));
 const PhysicsParametersModalTest = lazy(() =>
   import('./components/test/PhysicsParametersModalTest')
@@ -54,22 +55,20 @@ const ModalAccessibilityTest = lazy(() =>
   import('./components/test/ModalAccessibilityTest')
 );
 const ModalRouteTest = lazy(() => import('./components/test/ModalRouteTest'));
-const Profile = lazy(() => import('./components/features/auth/ProfilePage'));
-const NotFound = lazy(() => import('./components/features/errors/NotFound'));
 
 // Modal Route Handler Component
 const ModalRouteHandler = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { openModalByType } = useModal();
+  const { openModal } = useModal();
 
   useEffect(() => {
     // Check if the current path is an API modal route
     const path = location.pathname;
 
-    if (path.startsWith('/api/')) {
+    if (path.startsWith(API_CONFIG.API_PREFIX)) {
       // Try to handle the route as a modal
-      const handled = handleModalRoute(path, openModalByType);
+      const handled = handleModalRoute(path, openModal);
 
       if (handled) {
         // If we successfully opened a modal, navigate back to the previous page
@@ -77,7 +76,7 @@ const ModalRouteHandler = () => {
         navigate(-1, { replace: true });
       }
     }
-  }, [location, navigate, openModalByType]);
+  }, [location, navigate, openModal]);
 
   return null;
 };
@@ -99,10 +98,17 @@ const IconTestComponent = () => {
 };
 
 const App = () => {
-  // Initialize theme on app load
+  const dispatch = useDispatch();
+  const { isAuthenticated, loading } = useSelector(state => state.auth);
+
   useEffect(() => {
+    // Check authentication status when app loads
+    console.log('App mounted, checking auth status');
+    dispatch(checkAuthState());
+
+    // Initialize theme
     initializeTheme();
-  }, []);
+  }, [dispatch]);
 
   // Get current theme from HTML attribute
   const isDarkMode =
@@ -137,113 +143,162 @@ const App = () => {
     },
   };
 
+  // Handle API routes that should open in modals
+  const handleApiRoutes = (location) => {
+    const path = location.pathname;
+    if (path.startsWith(API_CONFIG.API_PREFIX + '/')) {
+      // Extract parameters from the path
+      const pathParts = path.split('/');
+      // ... existing code ...
+    }
+  };
+
+  // Render loading state if authentication check is in progress
+  if (loading) {
+    return (
+      <div className="app-loading">
+        <div className="loading-spinner"></div>
+        <p>Loading application...</p>
+      </div>
+    );
+  }
+
   return (
     <Provider store={store}>
       <ConfigProvider theme={themeConfig}>
         <Router>
-          <ModalProvider>
-            <ModalRouteHandler />
-            <Suspense fallback={<div>Loading...</div>}>
-              <Routes>
-                <Route element={<Layout />}>
-                  <Route path={ROUTES.HOME} element={<Home />} />
-                  <Route path={ROUTES.LOGIN} element={<Login />} />
-                  <Route path={ROUTES.REGISTER} element={<Register />} />
-                  <Route
-                    path={ROUTES.DASHBOARD}
-                    element={
-                      <ProtectedRoute>
-                        <Dashboard />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path={ROUTES.UNIVERSES}
-                    element={
-                      <ProtectedRoute>
-                        <UniverseList />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path={ROUTES.UNIVERSE_DETAIL}
-                    element={
-                      <ProtectedRoute>
-                        <UniverseDetail />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path={ROUTES.UNIVERSE_EDIT}
-                    element={
-                      <ProtectedRoute>
-                        <UniverseEdit />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path={ROUTES.MODAL_EXAMPLES}
-                    element={<ModalExample />}
-                  />
-                  <Route
-                    path={ROUTES.PROFILE}
-                    element={
-                      <ProtectedRoute>
-                        <Profile />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
-                  <Route path={ROUTES.ICON_TEST} element={<IconTest />} />
-                  <Route
-                    path={ROUTES.MODAL_TEST}
-                    element={<PhysicsParametersModalTest />}
-                  />
-                  <Route
-                    path={ROUTES.SIMPLE_MODAL_TEST}
-                    element={<ModalTest />}
-                  />
-                  <Route
-                    path={ROUTES.STANDALONE_TEST}
-                    element={<StandaloneTest />}
-                  />
-                  <Route
-                    path={ROUTES.MODAL_ACCESSIBILITY_TEST}
-                    element={<ModalAccessibilityTest />}
-                  />
-                  <Route
-                    path="/test/modal-routes"
-                    element={<ModalRouteTest />}
-                  />
-                  <Route path={ROUTES.NOT_FOUND} element={<NotFound />} />
-                  <Route
-                    path="/universes/:universeId/storyboards"
-                    element={
-                      <ProtectedRoute>
-                        <StoryboardList />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/universes/:universeId/storyboards/:storyboardId"
-                    element={
-                      <ProtectedRoute>
-                        <StoryboardDetail />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/universes/:universeId/storyboards/:storyboardId/edit"
-                    element={
-                      <ProtectedRoute>
-                        <StoryboardEditor />
-                      </ProtectedRoute>
-                    }
-                  />
-                </Route>
-              </Routes>
-            </Suspense>
-          </ModalProvider>
+          <ThemeProvider>
+            <ModalProvider>
+              <ModalRegistry />
+              <ModalRouteHandler />
+              <Suspense fallback={<div>Loading...</div>}>
+                <Routes>
+                  <Route path={ROUTES.HOME} element={<Layout />}>
+                    <Route index element={<Home />} />
+                    <Route path={ROUTES.LOGIN} element={<Login />} />
+                    <Route path={ROUTES.REGISTER} element={<Register />} />
+                    <Route
+                      path={ROUTES.DASHBOARD}
+                      element={
+                        <ProtectedRoute>
+                          <Dashboard />
+                        </ProtectedRoute>
+                      }
+                    />
+                    {/* Direct dashboard route for testing */}
+                    <Route path="/direct-dashboard" element={<Dashboard />} />
+                    <Route
+                      path={ROUTES.UNIVERSES}
+                      element={
+                        <ProtectedRoute>
+                          <UniverseList />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path={ROUTES.UNIVERSE_DETAIL}
+                      element={
+                        <ProtectedRoute>
+                          <UniverseDetail />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path={ROUTES.UNIVERSE_EDIT}
+                      element={
+                        <ProtectedRoute>
+                          <UniverseEdit />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path={ROUTES.MODAL_EXAMPLES}
+                      element={<ModalExample />}
+                    />
+                    <Route
+                      path={ROUTES.PROFILE}
+                      element={
+                        <ProtectedRoute>
+                          <ProfilePage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
+                    <Route path={ROUTES.ICON_TEST} element={<IconTest />} />
+                    <Route
+                      path={ROUTES.MODAL_TEST}
+                      element={<PhysicsParametersModalTest />}
+                    />
+                    <Route
+                      path={ROUTES.SIMPLE_MODAL_TEST}
+                      element={<ModalTest />}
+                    />
+                    <Route
+                      path={ROUTES.STANDALONE_TEST}
+                      element={<StandaloneTest />}
+                    />
+                    <Route
+                      path={ROUTES.MODAL_ACCESSIBILITY_TEST}
+                      element={<ModalAccessibilityTest />}
+                    />
+                    <Route
+                      path="/test/modal-routes"
+                      element={<ModalRouteTest />}
+                    />
+                    <Route path={ROUTES.NOT_FOUND} element={<NotFound />} />
+                    <Route
+                      path="/universes/:universeId/storyboards"
+                      element={
+                        <ProtectedRoute>
+                          <StoryboardList />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/universes/:universeId/storyboards/:storyboardId"
+                      element={
+                        <ProtectedRoute>
+                          <StoryboardDetail />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/universes/:universeId/storyboards/:storyboardId/edit"
+                      element={
+                        <ProtectedRoute>
+                          <StoryboardEditor />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/universes/:universeId/physics"
+                      element={
+                        <ProtectedRoute>
+                          <PhysicsPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/universes/:universeId/harmony"
+                      element={
+                        <ProtectedRoute>
+                          <HarmonyPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/universes/:universeId/visual"
+                      element={
+                        <ProtectedRoute>
+                          <VisualPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                  </Route>
+                </Routes>
+              </Suspense>
+            </ModalProvider>
+          </ThemeProvider>
         </Router>
       </ConfigProvider>
     </Provider>
