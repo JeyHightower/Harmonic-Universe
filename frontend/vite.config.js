@@ -5,29 +5,34 @@ import patchAntDesignPlugin from './src/utils/patchAntdIcons';
 
 // Create a custom plugin that handles missing Ant Design icon SVG modules
 const handleMissingModulesPlugin = () => {
-  // Track processed icon paths to avoid duplicates
-  const processedIcons = new Set();
-  // Store build mode
+  // Track which icon paths we've already processed
+  const processedPaths = new Set();
   let isBuild = false;
 
   return {
-    name: 'handle-missing-modules',
+    name: 'handle-missing-antd-icons-plugin',
+    // Make this plugin run before other plugins
+    enforce: 'pre',
 
     configResolved(config) {
-      // Store whether we're in build mode
       isBuild = config.command === 'build';
-      console.log(`[AntDesignPlugin] Running in ${isBuild ? 'build' : 'development'} mode`);
+      console.log(`[AntDesignPlugin] Running in ${isBuild ? 'build' : 'dev'} mode`);
     },
 
-    // Specifically target all ant-design icon SVG paths
     resolveId(id, importer) {
-      if (id.includes('@ant-design/icons-svg/es/asn/')) {
-        const iconName = id.split('/').pop().replace(/\.\w+$/, '');
+      // Handle ALL possible path formats for Ant Design SVG icons
+      if (
+        id.includes('@ant-design/icons-svg') &&
+        (id.includes('/asn/') || id.includes('/lib/') || id.includes('/es/'))
+      ) {
+        // Extract the icon name from the path - it's the last segment
+        const iconNameWithExt = id.split('/').pop();
+        const iconName = iconNameWithExt.replace(/\.\w+$/, '');
 
-        // Avoid logging duplicates
-        if (!processedIcons.has(iconName)) {
-          processedIcons.add(iconName);
-          console.log(`[AntDesignPlugin] Resolving: ${iconName} from ${importer}`);
+        // Avoid excessive logging in development
+        if (!processedPaths.has(id)) {
+          processedPaths.add(id);
+          console.log(`[AntDesignPlugin] Resolving icon: ${iconName} from ${importer || 'unknown'}`);
         }
 
         // Create a virtual module ID that our load hook will recognize
@@ -41,31 +46,22 @@ const handleMissingModulesPlugin = () => {
       return null;
     },
 
-    // Add a load hook to provide empty implementations if needed
     load(id) {
       // Handle our virtual module IDs from resolveId
       if (id.startsWith('\0virtual:ant-icon:')) {
         const iconName = id.slice('\0virtual:ant-icon:'.length);
 
-        // Determine icon theme based on name
-        let theme = 'outlined'; // default
-        if (iconName.includes('Filled')) {
-          theme = 'filled';
-        } else if (iconName.includes('TwoTone')) {
-          theme = 'twotone';
+        // For build mode we only log once per icon
+        if (isBuild && !processedPaths.has(`load:${iconName}`)) {
+          processedPaths.add(`load:${iconName}`);
+          console.log(`[AntDesignPlugin] Providing virtual module for: ${iconName}`);
         }
 
-        // Return a minimal SVG icon implementation
+        // Generate a module that imports our shim and forwards the request
         return `
-          export default {
-            name: '${iconName}',
-            theme: '${theme}',
-            icon: {
-              tag: 'svg',
-              attrs: { viewBox: '64 64 896 896' },
-              children: [{ tag: 'path', attrs: { d: 'M64 64h896v896H64z' } }]
-            }
-          };
+          import { getIcon } from '@/utils/ant-icons-shim';
+          export default getIcon('${iconName}').default;
+          export const __esModule = true;
         `;
       }
 
@@ -122,12 +118,19 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
-      'components': path.resolve(__dirname, 'src/components'),
-      // Add an alias for classnames to handle it properly
-      'classnames': path.resolve(__dirname, 'node_modules/classnames/index.js'),
-      // Add an alias for the problematic paths to our shim
-      '@ant-design/icons-svg/es/asn': path.resolve(__dirname, 'src/utils/ant-icons-shim.js')
+      // React-is shim for compatibility
+      'react-is': path.resolve(__dirname, 'src/utils/react-is-shim.js'),
+
+      // Alias for any ant-design icon path pattern
+      '@ant-design/icons-svg/es/asn': path.resolve(__dirname, 'src/utils/ant-icons-shim.js'),
+      '@ant-design/icons-svg/lib/asn': path.resolve(__dirname, 'src/utils/ant-icons-shim.js'),
+      '@ant-design/icons-svg/es': path.resolve(__dirname, 'src/utils/ant-icons-shim.js'),
+      '@ant-design/icons-svg/lib': path.resolve(__dirname, 'src/utils/ant-icons-shim.js'),
+      '@ant-design/icons-svg': path.resolve(__dirname, 'src/utils/ant-icons-shim.js'),
+
+      // Continue with other aliases
+      'classnames': path.resolve(__dirname, 'node_modules/classnames'),
+      '@': path.resolve(__dirname, 'src')
     },
   },
   build: {
