@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import { Modal } from 'antd';
+import { Modal, App } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import Button from '../../components/common/Button';
 import Spinner from '../../components/common/Spinner';
 import { clearError } from '../../store/slices/scenesSlice';
 import { createScene, deleteScene, fetchScenes } from '../../store/thunks/scenesThunks';
+import { fetchUniverseById } from '../../store/thunks/universeThunks';
 import SceneCard from './SceneCard';
 import SceneFormModal from './SceneFormModal';
 import './ScenesList.css';
@@ -15,17 +16,19 @@ const ScenesList = () => {
     const dispatch = useDispatch();
     const { universeId } = useParams();
     const { scenes, loading, error } = useSelector(state => state.scenes);
-    const { confirm } = Modal;
+    const { currentUniverse, loading: universeLoading } = useSelector(state => state.universe);
+    const { message, modal } = App.useApp(); // Get both message and modal from App context
 
     const [showSceneModal, setShowSceneModal] = useState(false);
     const [sceneToEdit, setSceneToEdit] = useState(null);
     const [isCreating, setIsCreating] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
-    // Fetch scenes when component mounts
+    // Fetch scenes and universe when component mounts
     useEffect(() => {
         if (universeId) {
             dispatch(fetchScenes(universeId));
+            dispatch(fetchUniverseById(universeId));
         }
 
         return () => {
@@ -56,7 +59,8 @@ const ScenesList = () => {
 
     const handleDeleteClick = useCallback(
         sceneId => {
-            confirm({
+            // Use modal.confirm from App context instead of static Modal.confirm
+            modal.confirm({
                 title: 'Are you sure you want to delete this scene?',
                 content: 'This action cannot be undone.',
                 okText: 'Yes, Delete',
@@ -67,7 +71,7 @@ const ScenesList = () => {
                 },
             });
         },
-        [dispatch, confirm]
+        [dispatch, modal]
     );
 
     const handleModalClose = useCallback(() => {
@@ -82,7 +86,7 @@ const ScenesList = () => {
     return (
         <div className="scenes-list-container">
             <div className="scenes-list-header">
-                <h1>Scenes</h1>
+                <h1>{currentUniverse?.name ? `${currentUniverse.name} - Scenes` : 'Scenes'}</h1>
                 <div className="scenes-list-controls">
                     <div className="search-container">
                         <input
@@ -109,7 +113,7 @@ const ScenesList = () => {
                 </div>
             )}
 
-            {loading ? (
+            {loading || universeLoading ? (
                 <div className="scenes-loading">
                     <Spinner size="large" />
                     <p>Loading scenes...</p>
@@ -119,7 +123,7 @@ const ScenesList = () => {
                     <p>
                         {searchTerm
                             ? 'No scenes match your search.'
-                            : 'No scenes found for this universe. Create your first scene!'}
+                            : `No scenes found for ${currentUniverse?.name || 'this universe'}. Create your first scene!`}
                     </p>
                     {!searchTerm && (
                         <Button type="primary" onClick={handleCreateClick}>

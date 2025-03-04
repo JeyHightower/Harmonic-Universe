@@ -21,10 +21,10 @@ export const endpoints = {
   },
   scenes: {
     list: `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/`,
-    detail: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/${id}/`,
+    detail: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/${id}`,
     create: `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/`,
-    update: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/${id}/`,
-    delete: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/${id}/`,
+    update: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/${id}`,
+    delete: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/${id}`,
     reorder: `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/reorder`,
     forUniverse: universeId => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/scenes/?universe_id=${universeId}`,
     physicsParameters: {
@@ -54,10 +54,10 @@ export const endpoints = {
   },
   physicsObjects: {
     list: `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-objects/`,
-    detail: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-objects/${id}/`,
+    detail: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-objects/${id}`,
     create: `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-objects/`,
-    update: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-objects/${id}/`,
-    delete: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-objects/${id}/`,
+    update: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-objects/${id}`,
+    delete: id => `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-objects/${id}`,
     forScene: sceneId =>
       `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-objects/?scene_id=${sceneId}`,
   },

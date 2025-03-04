@@ -19,8 +19,8 @@ export const fetchScenes = createAsyncThunk(
     async (universeId, { rejectWithValue }) => {
         try {
             console.log(`Fetching scenes for universe ${universeId}`);
-            const response = await api.scenes.list(universeId);
-            return response.data;
+            const response = await api.get(endpoints.scenes.forUniverse(universeId));
+            return response;
         } catch (error) {
             console.error('Error fetching scenes:', error);
             return rejectWithValue(
@@ -38,8 +38,8 @@ export const fetchSceneById = createAsyncThunk(
     async (sceneId, { rejectWithValue }) => {
         try {
             console.log(`Fetching scene with ID ${sceneId}`);
-            const response = await api.scenes.detail(sceneId);
-            return response.data;
+            const response = await api.get(endpoints.scenes.detail(sceneId));
+            return response;
         } catch (error) {
             console.error('Error fetching scene:', error);
             return rejectWithValue(
@@ -59,8 +59,9 @@ export const createScene = createAsyncThunk(
             console.log('Creating new scene:', sceneData);
             console.log('For universe:', universeId);
 
-            const response = await api.scenes.create(universeId, sceneData);
-            return response.data;
+            const sceneDataWithUniverse = { ...sceneData, universe_id: universeId };
+            const response = await api.post(endpoints.scenes.create, sceneDataWithUniverse);
+            return response;
         } catch (error) {
             console.error('Error creating scene:', error);
             return rejectWithValue(
@@ -79,8 +80,8 @@ export const updateScene = createAsyncThunk(
         try {
             console.log(`Updating scene ${sceneId} with data:`, data);
 
-            const response = await api.scenes.update(sceneId, data);
-            return response.data;
+            const response = await api.put(endpoints.scenes.update(sceneId), data);
+            return response;
         } catch (error) {
             console.error('Error updating scene:', error);
             return rejectWithValue(
@@ -99,7 +100,7 @@ export const deleteScene = createAsyncThunk(
         try {
             console.log(`Deleting scene ${sceneId}`);
 
-            await api.scenes.delete(sceneId);
+            await api.delete(endpoints.scenes.delete(sceneId));
             return sceneId; // Return the ID for the reducer to filter it out
         } catch (error) {
             console.error('Error deleting scene:', error);
@@ -119,8 +120,11 @@ export const reorderScenes = createAsyncThunk(
         try {
             console.log(`Reordering scenes for universe ${universeId}:`, sceneOrders);
 
-            const response = await api.scenes.reorder(universeId, sceneOrders);
-            return response.data;
+            const response = await api.post(endpoints.scenes.reorder, {
+                universe_id: universeId,
+                scene_orders: sceneOrders
+            });
+            return response;
         } catch (error) {
             console.error('Error reordering scenes:', error);
             return rejectWithValue(
