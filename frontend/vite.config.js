@@ -5,255 +5,71 @@ import { defineConfig } from 'vite';
 // Create a custom plugin that provides empty implementations for all Ant Design icon imports
 const antDesignIconsPlugin = () => {
   return {
-    name: 'vite:ant-design-icons-plugin',
+    name: 'vite:ant-design-icons-resolver',
 
     resolveId(id, importer) {
-      // Handle direct imports from @ant-design/icons
-      if (id === '@ant-design/icons' || id === '@ant-design/icons/es/icons') {
+      // Handle main @ant-design/icons module
+      if (id === '@ant-design/icons') {
         return path.resolve(__dirname, 'src/components/common/Icons.jsx');
       }
 
-      // Handle the Context import from Icons.jsx directory access
-      if (id.includes('/Icons.jsx/') && id.endsWith('Context')) {
-        console.log('Resolving Context for icon import:', id);
-        return path.resolve(__dirname, 'src/components/common/es/components/Context.js');
+      // Handle specific icon imports from the main package
+      if (id.startsWith('@ant-design/icons/')) {
+        return path.resolve(__dirname, 'src/components/common/Icons.jsx');
       }
 
-      // NEW APPROACH: Handle ALL individual icon imports more explicitly with log
-      if (id.includes('/Icons.jsx/')) {
-        const iconName = id.split('/Icons.jsx/').pop();
-        console.log(`Resolving icon '${iconName}' to main icons file`);
-        // Return the main Icons.jsx file for all icon imports
-        return {
-          id: path.resolve(__dirname, 'src/components/common/Icons.jsx'),
-          // Pass the icon name as a custom attribute for potential use
-          meta: { iconName }
-        };
+      // Handle @ant-design/icons-svg paths, specifically targeting the es/asn/ pattern
+      if (id.startsWith('@ant-design/icons-svg/es/asn/') || id.startsWith('@ant-design/icons-svg')) {
+        // Extract the icon name from the path for better virtual module naming
+        const iconName = id.split('/').pop().replace(/\.\w+$/, '');
+        return `\0virtual:ant-icons-svg/${iconName}`;
       }
 
-      // Handle direct import of Context
-      if (id === '@ant-design/icons/es/components/Context') {
-        return path.resolve(__dirname, 'src/components/common/es/components/Context.js');
+      // Handle internal, relative imports within the ant-design/icons package
+      if (importer &&
+        (importer.includes('@ant-design/icons') ||
+          importer.includes('node_modules/antd')) &&
+        (id.startsWith('./') || id.startsWith('../'))) {
+
+        // Mark this as a virtual module
+        return `\0virtual:ant-icons/${id.replace(/\.js$/, '')}`;
       }
 
       return null;
     },
 
-    // Add a middleware to intercept requests that try to access Icons.jsx as a directory
-    configureServer(server) {
-      server.middlewares.use((req, res, next) => {
-        // Check if the URL contains Icons.jsx/ (which would indicate treating a file as a directory)
-        if (req.url && req.url.includes('/Icons.jsx/')) {
-          // Extract the icon name for better debugging
-          const iconName = req.url.split('/Icons.jsx/').pop().split('?')[0];
-          console.log(`Intercepted URL for icon: ${iconName}`);
-
-          // Redirect to Icons.jsx instead
-          req.url = '/src/components/common/Icons.jsx';
-          console.log('Redirected URL:', req.url);
-        }
-        next();
-      });
-    },
-
     load(id) {
-      // Get the icon name from the id's metadata (if it exists)
-      const iconName = id.meta?.iconName;
-
-      // For individual icon imports
-      if (iconName) {
-        console.log(`Loading individual icon: ${iconName}`);
+      // Handle virtual modules for ant-design icons
+      if (id.startsWith('\0virtual:ant-icons/')) {
+        // Generate a minimal React component that renders an empty span
         return `
           import React from 'react';
-          import Icon from '${path.resolve(__dirname, 'src/components/common/Icons.jsx')}';
-
-          // Create and export the specific icon
-          const ${iconName} = props => <Icon {...props} data-icon-name="${iconName}" />;
-          ${iconName}.displayName = '${iconName}';
-
-          export default ${iconName};
+          export default function IconComponent(props) {
+            return React.createElement('span', {
+              ...props,
+              className: 'anticon' + (props.className ? ' ' + props.className : ''),
+              style: { ...props.style, display: 'inline-flex' }
+            });
+          }
         `;
       }
 
-      // For imports to our custom icon component, return the component implementation
-      if (id === path.resolve(__dirname, 'src/components/common/Icons.jsx')) {
-        console.log('Loading the main Icons.jsx file');
+      // Handle virtual modules for ant-design-svg icons
+      if (id.startsWith('\0virtual:ant-icons-svg/')) {
+        // Extract the icon name from the virtual module ID
+        const iconName = id.substring('\0virtual:ant-icons-svg/'.length);
+
+        // Generate proper SVG data structure for the icon
         return `
-          import React from 'react';
-          import IconContext from './es/components/Context';
-
-          // Add debug log with a unique identifier
-          console.log('==== ICONS.JSX IS BEING LOADED ====');
-
-          // Basic Icon component
-          const Icon = (props) => {
-            return <span className="anticon" {...props} />;
-          };
-
-          // Set two tone color methods that Ant Design expects
-          Icon.getTwoToneColor = () => '#1890ff';
-          Icon.setTwoToneColor = () => {};
-
-          // Set Context properly
-          Icon.Context = IconContext;
-
-          // Create a generic function for creating icon components
-          const createIconComponent = (displayName) => {
-            const IconComponent = (props) => <Icon {...props} data-icon-name={displayName} />;
-            IconComponent.displayName = displayName;
-            return IconComponent;
-          };
-
-          // Create a generic function for any other icon and iconFont
-          function createFromIconfontCN(options = {}) {
-            const IconFont = (props) => {
-              return <span className="anticon" {...props} />;
-            };
-            IconFont.displayName = 'IconFont';
-            return IconFont;
-          }
-
-          // Assign the function to Icon
-          Icon.createFromIconfontCN = createFromIconfontCN;
-
-          // Create ALL commonly used Ant Design icons to ensure they're available
-          // This expanded list covers the most frequently used icons
-          export const AccountBookFilled = createIconComponent('AccountBookFilled');
-          export const AccountBookOutlined = createIconComponent('AccountBookOutlined');
-          export const AlertFilled = createIconComponent('AlertFilled');
-          export const AlertOutlined = createIconComponent('AlertOutlined');
-          export const AliwangwangOutlined = createIconComponent('AliwangwangOutlined');
-          export const AndroidOutlined = createIconComponent('AndroidOutlined');
-          export const AppleOutlined = createIconComponent('AppleOutlined');
-          export const ArrowDownOutlined = createIconComponent('ArrowDownOutlined');
-          export const ArrowLeftOutlined = createIconComponent('ArrowLeftOutlined');
-          export const ArrowRightOutlined = createIconComponent('ArrowRightOutlined');
-          export const ArrowUpOutlined = createIconComponent('ArrowUpOutlined');
-          export const BarsOutlined = createIconComponent('BarsOutlined');
-          export const CalendarOutlined = createIconComponent('CalendarOutlined');
-          export const CaretDownFilled = createIconComponent('CaretDownFilled');
-          export const CaretDownOutlined = createIconComponent('CaretDownOutlined');
-          export const CaretRightOutlined = createIconComponent('CaretRightOutlined');
-          export const CaretUpOutlined = createIconComponent('CaretUpOutlined');
-          export const CheckCircleFilled = createIconComponent('CheckCircleFilled');
-          export const CheckCircleOutlined = createIconComponent('CheckCircleOutlined');
-          export const CheckOutlined = createIconComponent('CheckOutlined');
-          export const ClockCircleOutlined = createIconComponent('ClockCircleOutlined');
-          export const CloseCircleFilled = createIconComponent('CloseCircleFilled');
-          export const CloseCircleOutlined = createIconComponent('CloseCircleOutlined');
-          export const CloseOutlined = createIconComponent('CloseOutlined');
-          export const CloudDownloadOutlined = createIconComponent('CloudDownloadOutlined');
-          export const CopyOutlined = createIconComponent('CopyOutlined');
-          export const DeleteOutlined = createIconComponent('DeleteOutlined');
-          export const DoubleLeftOutlined = createIconComponent('DoubleLeftOutlined');
-          export const DoubleRightOutlined = createIconComponent('DoubleRightOutlined');
-          export const DownOutlined = createIconComponent('DownOutlined');
-          export const DownloadOutlined = createIconComponent('DownloadOutlined');
-          export const EditOutlined = createIconComponent('EditOutlined');
-          export const EllipsisOutlined = createIconComponent('EllipsisOutlined');
-          export const EnterOutlined = createIconComponent('EnterOutlined');
-          export const ExclamationCircleFilled = createIconComponent('ExclamationCircleFilled');
-          export const ExclamationCircleOutlined = createIconComponent('ExclamationCircleOutlined');
-          export const EyeInvisibleOutlined = createIconComponent('EyeInvisibleOutlined');
-          export const EyeOutlined = createIconComponent('EyeOutlined');
-          export const FileOutlined = createIconComponent('FileOutlined');
-          export const FileTextOutlined = createIconComponent('FileTextOutlined');
-          export const FileTwoTone = createIconComponent('FileTwoTone');
-          export const FilterFilled = createIconComponent('FilterFilled');
-          export const FolderOpenOutlined = createIconComponent('FolderOpenOutlined');
-          export const FolderOutlined = createIconComponent('FolderOutlined');
-          export const HolderOutlined = createIconComponent('HolderOutlined');
-          export const InfoCircleFilled = createIconComponent('InfoCircleFilled');
-          export const InfoCircleOutlined = createIconComponent('InfoCircleOutlined');
-          export const LeftOutlined = createIconComponent('LeftOutlined');
-          export const LoadingOutlined = createIconComponent('LoadingOutlined');
-          export const MinusCircleOutlined = createIconComponent('MinusCircleOutlined');
-          export const MinusOutlined = createIconComponent('MinusOutlined');
-          export const MinusSquareOutlined = createIconComponent('MinusSquareOutlined');
-          export const PaperClipOutlined = createIconComponent('PaperClipOutlined');
-          export const PauseOutlined = createIconComponent('PauseOutlined');
-          export const PictureTwoTone = createIconComponent('PictureTwoTone');
-          export const PlusCircleOutlined = createIconComponent('PlusCircleOutlined');
-          export const PlusOutlined = createIconComponent('PlusOutlined');
-          export const PlusSquareOutlined = createIconComponent('PlusSquareOutlined');
-          export const QuestionCircleOutlined = createIconComponent('QuestionCircleOutlined');
-          export const ReloadOutlined = createIconComponent('ReloadOutlined');
-          export const RightOutlined = createIconComponent('RightOutlined');
-          export const RobotOutlined = createIconComponent('RobotOutlined');
-          export const RotateLeftOutlined = createIconComponent('RotateLeftOutlined');
-          export const RotateRightOutlined = createIconComponent('RotateRightOutlined');
-          export const SearchOutlined = createIconComponent('SearchOutlined');
-          export const SettingOutlined = createIconComponent('SettingOutlined');
-          export const StarFilled = createIconComponent('StarFilled');
-          export const SwapOutlined = createIconComponent('SwapOutlined');
-          export const SwapRightOutlined = createIconComponent('SwapRightOutlined');
-          export const SyncOutlined = createIconComponent('SyncOutlined');
-          export const UpOutlined = createIconComponent('UpOutlined');
-          export const UserAddOutlined = createIconComponent('UserAddOutlined');
-          export const UserOutlined = createIconComponent('UserOutlined');
-          export const VerticalAlignTopOutlined = createIconComponent('VerticalAlignTopOutlined');
-          export const WarningFilled = createIconComponent('WarningFilled');
-          export const WarningOutlined = createIconComponent('WarningOutlined');
-          export const ZoomInOutlined = createIconComponent('ZoomInOutlined');
-          export const ZoomOutOutlined = createIconComponent('ZoomOutOutlined');
-
-          // Create a proxy to handle any requested icon
-          const handler = {
-            get(target, prop) {
-              // If we have the component, return it
-              if (prop in target) {
-                return target[prop];
-              }
-
-              // For any other icon name that follows the naming convention, create it on demand
-              if (typeof prop === 'string' && /^[A-Z]/.test(prop)) {
-                return createIconComponent(prop);
-              }
-
-              // Return undefined for everything else
-              return undefined;
+          export default {
+            name: '${iconName}',
+            theme: 'outlined',
+            icon: {
+              tag: 'svg',
+              attrs: { viewBox: '64 64 896 896' },
+              children: [{ tag: 'path', attrs: { d: 'M64 64h896v896H64z' } }]
             }
           };
-
-          // Export the Context
-          export const Context = IconContext;
-
-          // Export the createFromIconfontCN function
-          export { createFromIconfontCN };
-
-          // Create a proxied version of Icon that dynamically creates icon components on demand
-          const ProxiedIcon = new Proxy(Icon, handler);
-
-          // Export default with proxy
-          export default ProxiedIcon;
-        `;
-      }
-
-      // Handle the Context.js file
-      if (id === path.resolve(__dirname, 'src/components/common/es/components/Context.js')) {
-        console.log('Loading the Context.js file');
-        return `
-          import React from 'react';
-
-          // Add debug log with a unique identifier
-          console.log('==== CONTEXT.JS IS BEING LOADED ====');
-
-          // Create a Context for icon configuration
-          const IconContext = React.createContext({
-            // Default values for the context
-            prefixCls: 'anticon',
-            rootClassName: '',
-            rtl: false
-          });
-
-          // Set displayName directly on the context as recommended by React
-          IconContext.displayName = 'IconContext';
-
-          // Export the default context
-          export default IconContext;
-
-          // Also provide a named export for flexibility
-          export { IconContext };
         `;
       }
 
@@ -310,9 +126,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
-      '@ant-design/icons/es/icons': path.resolve(__dirname, 'src/components/common/Icons.jsx'),
-      '@ant-design/icons': path.resolve(__dirname, 'src/components/common/Icons.jsx'),
-      '@ant-design/icons/es/components/Context': path.resolve(__dirname, 'src/components/common/es/components/Context.js'),
+      'components': path.resolve(__dirname, 'src/components')
     },
   },
   build: {

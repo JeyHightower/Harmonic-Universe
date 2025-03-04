@@ -2,7 +2,7 @@ import { Dropdown, Menu, Space } from 'antd';
 import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { DownOutlined } from '../../../components/common/Icons';
+import { DownOutlined } from '@ant-design/icons';
 import { ROUTES } from '../../../constants/routes';
 import {
   checkAuthState,

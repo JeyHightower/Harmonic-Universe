@@ -21,7 +21,7 @@ const Icon = props => {
 
 // Add methods expected by Ant Design
 Icon.getTwoToneColor = () => '#1890ff';
-Icon.setTwoToneColor = () => {};
+Icon.setTwoToneColor = () => { };
 Icon.Context = IconContext;
 
 // IMPORTANT: Use lowercase 'propTypes' (not 'PropTypes') for React component prop validation

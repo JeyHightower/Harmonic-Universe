@@ -8,7 +8,7 @@ import {
   useLocation,
   useNavigate,
 } from 'react-router-dom';
-import { SettingOutlined, UserOutlined } from './components/common/Icons';
+import { SettingOutlined, UserOutlined } from '@ant-design/icons';
 import Layout from './components/layout/Layout';
 import { ROUTES } from './constants/routes';
 import { useModal } from './contexts/ModalContext';
