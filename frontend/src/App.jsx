@@ -211,10 +211,6 @@ const App = () => {
                     path={ROUTES.MODAL_ACCESSIBILITY_TEST}
                     element={<ModalAccessibilityTest />}
                   />
-                  <Route
-                    path="/test/modal-routes"
-                    element={<ModalRouteTest />}
-                  />
                   <Route path={ROUTES.NOT_FOUND} element={<NotFound />} />
                   <Route
                     path="/universes/:universeId/storyboards"
