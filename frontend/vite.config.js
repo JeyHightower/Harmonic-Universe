@@ -7,15 +7,23 @@ import patchAntDesignPlugin from './src/utils/patchAntdIcons';
 const handleMissingModulesPlugin = () => {
   // Track processed icon paths to avoid duplicates
   const processedIcons = new Set();
+  // Store build mode
+  let isBuild = false;
 
   return {
     name: 'handle-missing-modules',
 
+    configResolved(config) {
+      // Store whether we're in build mode
+      isBuild = config.command === 'build';
+      console.log(`[AntDesignPlugin] Running in ${isBuild ? 'build' : 'development'} mode`);
+    },
+
+    // Specifically target all ant-design icon SVG paths
     resolveId(id) {
-      // Specifically target all ant-design icon SVG paths
       if (id.includes('@ant-design/icons-svg/es/asn/')) {
         console.log(`[AntDesignPlugin] Marking as external: ${id}`);
-        // Mark as external with absolute path
+        // Mark as external with absolute path - more important for build
         return { id, external: 'absolute' };
       }
 
@@ -111,7 +119,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src'),
       'components': path.resolve(__dirname, 'src/components'),
       // Add an alias for classnames to handle it properly
-      'classnames': path.resolve(__dirname, 'node_modules/classnames/index.js')
+      'classnames': path.resolve(__dirname, 'node_modules/classnames/index.js'),
+      // Add an alias for the problematic paths to our shim
+      '@ant-design/icons-svg/es/asn': path.resolve(__dirname, 'src/utils/ant-icons-shim.js')
     },
   },
   build: {
@@ -124,61 +134,35 @@ export default defineConfig({
     chunkSizeWarningLimit: 800,
     // Configure code splitting via Rollup options
     rollupOptions: {
+      // Make sure ALL @ant-design/icons-svg paths are marked as external
+      external: [
+        /.*@ant-design\/icons-svg\/es\/asn\/.*/,
+      ],
       output: {
-        manualChunks: (id) => {
-          // Handle React and related packages
-          if (id.includes('node_modules/react/') ||
-            id.includes('node_modules/react-dom/') ||
-            id.includes('node_modules/react-router/') ||
-            id.includes('node_modules/react-router-dom/')) {
-            return 'vendor-react';
-          }
-
-          // Handle Ant Design
-          if (id.includes('node_modules/antd/') ||
-            id.includes('node_modules/@ant-design/')) {
-            return 'vendor-antd';
-          }
-
-          // Handle Redux
-          if (id.includes('node_modules/react-redux/') ||
-            id.includes('node_modules/redux/') ||
-            id.includes('node_modules/@reduxjs/toolkit/') ||
-            id.includes('node_modules/redux-thunk/')) {
-            return 'vendor-redux';
-          }
-
-          // Handle Three.js and 3D libraries
-          if (id.includes('node_modules/three/') ||
-            id.includes('node_modules/@react-three/')) {
-            return 'vendor-three';
-          }
-
-          // Handle other common libraries
-          if (id.includes('node_modules/')) {
-            // Split all other libraries into a separate chunk
-            return 'vendor-misc';
-          }
-
-          // Split the UniverseDetail component's chunks
-          if (id.includes('/UniverseDetail') ||
-            id.includes('/components/features/universe/')) {
-            return 'universe';
-          }
-
-          // Split other large components
-          if (id.includes('/components/features/')) {
-            return 'features';
-          }
+        // Try an alternative bundling strategy
+        // Instead of preserveModules, use manualChunks for better control
+        manualChunks: {
+          'vendor': [
+            'react',
+            'react-dom',
+            'react-router-dom',
+            'antd',
+          ],
+          'ant-design-icons': [
+            '@ant-design/icons',
+          ],
+        },
+        // Add globals for external imports
+        globals: {
+          react: 'React',
+          'react-dom': 'ReactDOM',
         }
-      },
-      // Mark all @ant-design/icons-svg paths as external
-      external: [/.*@ant-design\/icons-svg\/es\/asn\/.*/]
+      }
     },
   },
   optimizeDeps: {
-    // Tell Vite to not try to bundle these
-    exclude: ['@ant-design/icons-svg'],
+    // Exclude the problematic packages from optimization
+    exclude: ['@ant-design/icons-svg', '@ant-design/icons'],
     include: ['classnames'],
     esbuildOptions: {
       loader: {

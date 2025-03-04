@@ -4,12 +4,26 @@
  * but without requiring the actual SVG paths/data
  */
 
-// Create a default SVG icon
-export default function createIconSvg(iconName) {
+// Shim for @ant-design/icons-svg/es/asn/* imports
+// This provides fallback icon implementations to avoid build errors
+
+// Cache for icons we've already created
+const iconsCache = new Map();
+
+// SVG icon creation function
+export function createIconSvg(iconName) {
+    let theme = 'outlined'; // default
+
+    // Determine theme based on name
+    if (iconName.includes('Filled')) {
+        theme = 'filled';
+    } else if (iconName.includes('TwoTone')) {
+        theme = 'twotone';
+    }
+
     return {
         name: iconName,
-        theme: iconName.endsWith('Filled') ? 'filled' :
-            iconName.endsWith('TwoTone') ? 'twotone' : 'outlined',
+        theme,
         icon: {
             tag: 'svg',
             attrs: { viewBox: '64 64 896 896' },
@@ -18,22 +32,23 @@ export default function createIconSvg(iconName) {
     };
 }
 
-// Pre-create all the problematic icons that are causing errors
-const iconsCache = {};
-
+// Get an icon from cache or create it
 function getIconSvg(iconName) {
-    if (!iconsCache[iconName]) {
-        iconsCache[iconName] = createIconSvg(iconName);
+    if (!iconsCache.has(iconName)) {
+        iconsCache.set(iconName, createIconSvg(iconName));
     }
-    return iconsCache[iconName];
+    return iconsCache.get(iconName);
 }
 
-// Export a function to dynamically generate any requested icon
+// Export a function to dynamically get any icon
 export function getIcon(iconName) {
     return getIconSvg(iconName);
 }
 
-// List of additional icons from the errors
+// Export ES module flag for better compatibility
+export const __esModule = true;
+
+// List of icons that were causing errors - include all of them here
 const additionalIcons = [
     'UsbFilled',
     'WalletTwoTone',
@@ -53,7 +68,22 @@ const additionalIcons = [
     'LaptopOutlined',
     'LayoutOutlined',
     'KeyOutlined',
-    'ZhihuOutlined'
+    'ZhihuOutlined',
+    'LoadingOutlined',
+    'CheckOutlined',
+    'CloseOutlined',
+    'HolderOutlined',
+    'SearchOutlined',
+    'PlusOutlined',
+    'EditOutlined',
+    'DeleteOutlined',
+    'InfoCircleOutlined',
+    'ExclamationCircleOutlined',
+    'DownOutlined',
+    'RightOutlined',
+    'LeftOutlined',
+    'UpOutlined',
+    'UserOutlined'
 ];
 
 // Generate exports for all additional icons
@@ -61,71 +91,18 @@ additionalIcons.forEach(iconName => {
     exports[iconName] = getIcon(iconName);
 });
 
-// Export all the specific icons that are causing errors
-export const LoadingOutlined = getIconSvg('LoadingOutlined');
-export const HolderOutlined = getIconSvg('HolderOutlined');
-export const CheckOutlined = getIconSvg('CheckOutlined');
-export const ExclamationCircleFilled = getIconSvg('ExclamationCircleFilled');
-export const CheckCircleFilled = getIconSvg('CheckCircleFilled');
-export const AlertFilled = getIconSvg('AlertFilled');
-export const AccountBookTwoTone = getIconSvg('AccountBookTwoTone');
-export const AliyunOutlined = getIconSvg('AliyunOutlined');
-export const AlertOutlined = getIconSvg('AlertOutlined');
-export const AlipayCircleFilled = getIconSvg('AlipayCircleFilled');
-export const AimOutlined = getIconSvg('AimOutlined');
-export const AccountBookOutlined = getIconSvg('AccountBookOutlined');
-export const AlertTwoTone = getIconSvg('AlertTwoTone');
-export const AlibabaOutlined = getIconSvg('AlibabaOutlined');
-export const ArrowsAltOutlined = getIconSvg('ArrowsAltOutlined');
-export const AlignRightOutlined = getIconSvg('AlignRightOutlined');
-export const AppleFilled = getIconSvg('AppleFilled');
-export const AudioMutedOutlined = getIconSvg('AudioMutedOutlined');
-export const AreaChartOutlined = getIconSvg('AreaChartOutlined');
-export const ArrowLeftOutlined = getIconSvg('ArrowLeftOutlined');
-export const CreditCardTwoTone = getIconSvg('CreditCardTwoTone');
-export const BulbOutlined = getIconSvg('BulbOutlined');
-export const ArrowUpOutlined = getIconSvg('ArrowUpOutlined');
-export const AndroidOutlined = getIconSvg('AndroidOutlined');
-export const EuroTwoTone = getIconSvg('EuroTwoTone');
-export const AudioTwoTone = getIconSvg('AudioTwoTone');
-export const CalculatorFilled = getIconSvg('CalculatorFilled');
-export const BulbTwoTone = getIconSvg('BulbTwoTone');
-export const BankFilled = getIconSvg('BankFilled');
-export const CalendarTwoTone = getIconSvg('CalendarTwoTone');
-export const AuditOutlined = getIconSvg('AuditOutlined');
-export const CloudFilled = getIconSvg('CloudFilled');
-export const CopyrightTwoTone = getIconSvg('CopyrightTwoTone');
-export const ExperimentFilled = getIconSvg('ExperimentFilled');
-export const CalculatorOutlined = getIconSvg('CalculatorOutlined');
-export const CopyrightCircleFilled = getIconSvg('CopyrightCircleFilled');
-export const CloudServerOutlined = getIconSvg('CloudServerOutlined');
-export const CameraFilled = getIconSvg('CameraFilled');
-export const StarOutlined = getIconSvg('StarOutlined');
-export const BankTwoTone = getIconSvg('BankTwoTone');
-export const DingdingOutlined = getIconSvg('DingdingOutlined');
-export const CalendarFilled = getIconSvg('CalendarFilled');
-export const DingtalkOutlined = getIconSvg('DingtalkOutlined');
-export const FileUnknownTwoTone = getIconSvg('FileUnknownTwoTone');
-export const FireTwoTone = getIconSvg('FireTwoTone');
-export const FileZipTwoTone = getIconSvg('FileZipTwoTone');
-export const FileWordTwoTone = getIconSvg('FileWordTwoTone');
-export const FolderAddTwoTone = getIconSvg('FolderAddTwoTone');
-export const FileZipOutlined = getIconSvg('FileZipOutlined');
-export const FileUnknownOutlined = getIconSvg('FileUnknownOutlined');
-export const FolderOutlined = getIconSvg('FolderOutlined');
-export const FormatPainterFilled = getIconSvg('FormatPainterFilled');
-export const FolderOpenOutlined = getIconSvg('FolderOpenOutlined');
-export const FontSizeOutlined = getIconSvg('FontSizeOutlined');
-export const FormOutlined = getIconSvg('FormOutlined');
-export const FlagFilled = getIconSvg('FlagFilled');
-export const FullscreenOutlined = getIconSvg('FullscreenOutlined');
-export const FilterFilled = getIconSvg('FilterFilled');
-export const FolderFilled = getIconSvg('FolderFilled');
-export const FrownOutlined = getIconSvg('FrownOutlined');
-export const FileZipFilled = getIconSvg('FileZipFilled');
-export const FolderAddFilled = getIconSvg('FolderAddFilled');
-export const FolderTwoTone = getIconSvg('FolderTwoTone');
-export const FolderOpenTwoTone = getIconSvg('FolderOpenTwoTone');
+// Special handler for module exports
+// This allows directly importing from the shim as a directory
+// E.g., import IconName from '@ant-design/icons-svg/es/asn/IconName'
+export const handler = {
+    get: function (target, prop) {
+        if (prop in target) {
+            return target[prop];
+        }
+        // For any unknown icon, create it on demand
+        return getIcon(prop);
+    }
+};
 
-// Create a special handler for ES module namespace
-export const __esModule = true;
+// Use a Proxy to handle any dynamic icon requests
+export default new Proxy({}, handler);

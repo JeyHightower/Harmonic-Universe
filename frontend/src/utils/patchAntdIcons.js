@@ -12,10 +12,11 @@ export default function patchAntDesignPlugin() {
 
         configResolved(config) {
             isBuild = config.command === 'build';
-            console.log('[patchAntDesignPlugin] Plugin initialized');
+            console.log(`[patchAntDesignPlugin] Initialized in ${isBuild ? 'build' : 'development'} mode`);
         },
 
         config(config) {
+            // Only modify these settings if they don't already exist
             if (!config.build) {
                 config.build = {};
             }
@@ -24,17 +25,18 @@ export default function patchAntDesignPlugin() {
                 config.build.rollupOptions = {};
             }
 
-            if (!config.build.rollupOptions.external) {
-                config.build.rollupOptions.external = [];
+            // Ensure rollupOptions.output exists and has preserveEntrySignatures set to 'strict'
+            if (!config.build.rollupOptions.output) {
+                config.build.rollupOptions.output = {};
             }
 
-            // Add icon SVG paths to external with a more aggressive pattern
-            const external = config.build.rollupOptions.external;
-            if (Array.isArray(external)) {
-                external.push(/.*@ant-design\/icons-svg\/es\/asn\/.*/);
-            } else if (typeof external === 'string' || external instanceof RegExp) {
-                config.build.rollupOptions.external = [external, /.*@ant-design\/icons-svg\/es\/asn\/.*/];
-            } else {
+            // Make sure preserveEntrySignatures is 'strict' when preserveModules is true
+            if (config.build.rollupOptions.output.preserveModules) {
+                config.build.rollupOptions.output.preserveEntrySignatures = 'strict';
+            }
+
+            if (!config.build.rollupOptions.external) {
+                // This is a regex pattern that matches all problematic icon paths
                 config.build.rollupOptions.external = [/.*@ant-design\/icons-svg\/es\/asn\/.*/];
             }
 
@@ -51,73 +53,48 @@ export default function patchAntDesignPlugin() {
                 config.optimizeDeps.exclude.push('@ant-design/icons-svg');
             }
 
-            // Ensure all ant-design icon SVG paths are marked as external
-            if (config.build && !config.build.rollupOptions) {
-                config.build.rollupOptions = {};
+            // Add more specific path handling for build mode
+            if (config.resolve && !config.resolve.alias) {
+                config.resolve.alias = {};
             }
 
-            if (config.build && !config.build.rollupOptions.external) {
-                config.build.rollupOptions.external = [];
-            }
-
-            // Use a regex pattern to match all @ant-design/icons-svg paths
-            const iconPathsPattern = /.*@ant-design\/icons-svg\/es\/asn\/.*/;
-
-            if (config.build && Array.isArray(config.build.rollupOptions.external)) {
-                if (!config.build.rollupOptions.external.some(ext =>
-                    ext instanceof RegExp && ext.toString() === iconPathsPattern.toString())) {
-                    config.build.rollupOptions.external.push(iconPathsPattern);
-                }
+            if (config.resolve && !config.resolve.alias['@ant-design/icons-svg/es/asn']) {
+                config.resolve.alias['@ant-design/icons-svg/es/asn'] = path.resolve(process.cwd(), 'src/utils/ant-icons-shim.js');
             }
 
             return config;
         },
 
         transform(code, id) {
-            // Only patch during build
-            if (!isBuild) return null;
-
-            // Check if this is the problematic AntdIcon.js file
-            if (id.includes('node_modules/@ant-design/icons') && id.endsWith('AntdIcon.js')) {
-                console.log(`Patching Ant Design icon file: ${id}`);
-
-                // Use our patched version instead of the original
-                const patchedPath = path.resolve(process.cwd(), 'src/patches/AntdIcon.js');
-
-                if (fs.existsSync(patchedPath)) {
-                    const patchedContent = fs.readFileSync(patchedPath, 'utf-8');
-                    return {
-                        code: patchedContent,
-                        map: null
-                    };
-                } else {
-                    console.warn(`Patched file not found: ${patchedPath}`);
-                }
+            // Skip transformation if id doesn't include '@ant-design/icons'
+            if (!id.includes('@ant-design/icons')) {
+                return null;
             }
 
-            // Handle any imports of @ant-design/icons-svg directly in code
-            if (code.includes('@ant-design/icons-svg/es/asn/')) {
-                console.log(`Patching code with Ant Design icon imports: ${id}`);
+            // Only apply transformation in build mode for certain files
+            if (isBuild) {
+                // Handle specific icon import transformations during build
+                if (id.includes('node_modules/@ant-design/icons/') && code.includes('@ant-design/icons-svg/es/asn/')) {
+                    console.log(`[patchAntDesignPlugin] Transforming imports in: ${id}`);
 
-                // Replace imports with empty objects
-                const patchedCode = code.replace(
-                    /import\s+([^"']+)\s+from\s+["']@ant-design\/icons-svg\/es\/asn\/([^"']+)["'];?/g,
-                    (match, importName, iconName) => {
-                        return `const ${importName} = {
-                            name: '${iconName}',
-                            theme: 'outlined',
-                            icon: {
-                                tag: 'svg',
-                                attrs: { viewBox: '64 64 896 896' },
-                                children: [{ tag: 'path', attrs: { d: 'M64 64h896v896H64z' } }]
-                            }
-                        };`;
-                    }
-                );
+                    // Replace problematic imports with shim imports
+                    const transformedCode = code.replace(
+                        /import\s+(\w+)\s+from\s+["']@ant-design\/icons-svg\/es\/asn\/([^"']+)["'];/g,
+                        (match, importName, iconName) => {
+                            return `/* Replaced import */\nconst ${importName} = {
+                                name: '${iconName}',
+                                theme: '${iconName.includes('Filled') ? 'filled' : iconName.includes('TwoTone') ? 'twotone' : 'outlined'}',
+                                icon: {
+                                    tag: 'svg',
+                                    attrs: { viewBox: '64 64 896 896' },
+                                    children: [{ tag: 'path', attrs: { d: 'M64 64h896v896H64z' } }]
+                                }
+                            };`;
+                        }
+                    );
 
-                if (patchedCode !== code) {
                     return {
-                        code: patchedCode,
+                        code: transformedCode,
                         map: null
                     };
                 }
