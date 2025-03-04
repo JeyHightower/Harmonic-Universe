@@ -1,69 +1,51 @@
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
+import patchAntDesignPlugin from './src/utils/patchAntdIcons';
 
-// Create a custom plugin that provides empty implementations for all Ant Design icon imports
-const antDesignIconsPlugin = () => {
+// Create a custom plugin that handles missing Ant Design icon SVG modules
+const handleMissingModulesPlugin = () => {
+  // Track processed icon paths to avoid duplicates
+  const processedIcons = new Set();
+
   return {
-    name: 'vite:ant-design-icons-resolver',
+    name: 'handle-missing-modules',
 
-    resolveId(id, importer) {
-      // Handle main @ant-design/icons module
-      if (id === '@ant-design/icons') {
-        return path.resolve(__dirname, 'src/components/common/Icons.jsx');
-      }
-
-      // Handle specific icon imports from the main package
-      if (id.startsWith('@ant-design/icons/')) {
-        return path.resolve(__dirname, 'src/components/common/Icons.jsx');
-      }
-
-      // Handle @ant-design/icons-svg paths, specifically targeting the es/asn/ pattern
-      if (id.startsWith('@ant-design/icons-svg/es/asn/') || id.startsWith('@ant-design/icons-svg')) {
-        // Extract the icon name from the path for better virtual module naming
-        const iconName = id.split('/').pop().replace(/\.\w+$/, '');
-        return `\0virtual:ant-icons-svg/${iconName}`;
-      }
-
-      // Handle internal, relative imports within the ant-design/icons package
-      if (importer &&
-        (importer.includes('@ant-design/icons') ||
-          importer.includes('node_modules/antd')) &&
-        (id.startsWith('./') || id.startsWith('../'))) {
-
-        // Mark this as a virtual module
-        return `\0virtual:ant-icons/${id.replace(/\.js$/, '')}`;
+    resolveId(id) {
+      // Specifically target all ant-design icon SVG paths
+      if (id.includes('@ant-design/icons-svg/es/asn/')) {
+        console.log(`[AntDesignPlugin] Marking as external: ${id}`);
+        // Mark as external with absolute path
+        return { id, external: 'absolute' };
       }
 
       return null;
     },
 
+    // Add a load hook to provide empty implementations if needed
     load(id) {
-      // Handle virtual modules for ant-design icons
-      if (id.startsWith('\0virtual:ant-icons/')) {
-        // Generate a minimal React component that renders an empty span
-        return `
-          import React from 'react';
-          export default function IconComponent(props) {
-            return React.createElement('span', {
-              ...props,
-              className: 'anticon' + (props.className ? ' ' + props.className : ''),
-              style: { ...props.style, display: 'inline-flex' }
-            });
-          }
-        `;
-      }
+      if (id.includes('@ant-design/icons-svg/es/asn/')) {
+        const iconName = id.split('/').pop().replace(/\.\w+$/, '');
 
-      // Handle virtual modules for ant-design-svg icons
-      if (id.startsWith('\0virtual:ant-icons-svg/')) {
-        // Extract the icon name from the virtual module ID
-        const iconName = id.substring('\0virtual:ant-icons-svg/'.length);
+        // Avoid logging duplicates
+        if (!processedIcons.has(iconName)) {
+          processedIcons.add(iconName);
+          console.log(`[AntDesignPlugin] Creating virtual module for: ${iconName}`);
+        }
 
-        // Generate proper SVG data structure for the icon
+        // Determine icon theme based on name
+        let theme = 'outlined'; // default
+        if (iconName.includes('Filled')) {
+          theme = 'filled';
+        } else if (iconName.includes('TwoTone')) {
+          theme = 'twotone';
+        }
+
+        // Return a minimal SVG icon implementation
         return `
           export default {
             name: '${iconName}',
-            theme: 'outlined',
+            theme: '${theme}',
             icon: {
               tag: 'svg',
               attrs: { viewBox: '64 64 896 896' },
@@ -82,7 +64,8 @@ const antDesignIconsPlugin = () => {
 export default defineConfig({
   plugins: [
     react(),
-    antDesignIconsPlugin()
+    handleMissingModulesPlugin(),
+    patchAntDesignPlugin()
   ],
   server: {
     proxy: {
@@ -126,12 +109,16 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
-      'components': path.resolve(__dirname, 'src/components')
+      'components': path.resolve(__dirname, 'src/components'),
+      // Add an alias for classnames to handle it properly
+      'classnames': path.resolve(__dirname, 'node_modules/classnames/index.js')
     },
   },
   build: {
     commonjsOptions: {
       transformMixedEsModules: true,
+      // Ensure all CommonJS modules are correctly transformed
+      include: [/node_modules/],
     },
     // Configure a higher chunk size warning limit
     chunkSizeWarningLimit: 800,
@@ -184,17 +171,22 @@ export default defineConfig({
             return 'features';
           }
         }
-      }
+      },
+      // Mark all @ant-design/icons-svg paths as external
+      external: [/.*@ant-design\/icons-svg\/es\/asn\/.*/]
     },
   },
   optimizeDeps: {
+    // Tell Vite to not try to bundle these
+    exclude: ['@ant-design/icons-svg'],
+    include: ['classnames'],
     esbuildOptions: {
       loader: {
         '.js': 'jsx',
       },
+      // Enable proper CommonJS to ESM conversion
+      format: 'esm',
     },
-    // Mark all Ant Design icons as external to prevent build errors
-    exclude: ['@ant-design/icons-svg', '@ant-design/icons']
   },
   esbuild: {
     loader: 'jsx',
