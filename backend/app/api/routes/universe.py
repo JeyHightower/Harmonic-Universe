@@ -118,7 +118,7 @@ def update_universe(universe_id):
             raise ValidationError('No input data provided')
 
         # Check for invalid fields
-        allowed_fields = {'name', 'description', 'is_public'}
+        allowed_fields = {'name', 'description', 'is_public', 'theme'}
         invalid_fields = set(data.keys()) - allowed_fields
         if invalid_fields:
             raise ValidationError(f'Invalid fields: {", ".join(invalid_fields)}')

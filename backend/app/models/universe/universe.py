@@ -13,6 +13,7 @@ class Universe(BaseModel):
     name = Column(String(255), nullable=False)
     description = Column(String(1000))
     is_public = Column(Boolean, default=False)
+    theme = Column(String(50), default="fantasy")
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"))
     version = Column(Integer, default=1)
 
@@ -108,6 +109,7 @@ class Universe(BaseModel):
             "name": self.name,
             "description": self.description,
             "is_public": self.is_public,
+            "theme": self.theme,
             "user_id": self.user_id,
             "version": self.version,
             "physics_params": self.physics_params,

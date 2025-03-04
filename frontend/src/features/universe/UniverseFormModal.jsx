@@ -16,7 +16,7 @@ import './UniverseFormModal.css';
 
 // Create a stable component with React.memo to prevent unnecessary re-renders
 const UniverseFormModal = React.memo(
-  ({ onClose, initialData = null, isGlobalModal = true, modalId = null }) => {
+  ({ onClose, initialData = null, isGlobalModal = true, modalId = null, isEditing = false }) => {
     const dispatch = useDispatch();
     const { loading, error } = useSelector(state => state.universe);
 
@@ -31,7 +31,7 @@ const UniverseFormModal = React.memo(
       name: initialData?.name || '',
       description: initialData?.description || '',
       theme: initialData?.theme || 'fantasy',
-      visibility: initialData?.visibility || 'private',
+      visibility: initialData?.is_public ? 'public' : 'private',
     });
 
     const [formErrors, setFormErrors] = useState({});
@@ -59,6 +59,32 @@ const UniverseFormModal = React.memo(
       };
     }, []);
 
+    // Update form data when initialData changes (for editing)
+    useEffect(() => {
+      if (initialData) {
+        console.log('Prepopulating form with universe data:', initialData);
+
+        // Get valid theme and visibility values or use defaults
+        const validThemes = ['fantasy', 'sci-fi', 'historical', 'modern', 'post-apocalyptic', 'superhero', 'horror', 'mystery', 'western', 'other'];
+        const validVisibilities = ['private', 'public'];
+
+        const theme = initialData.theme && validThemes.includes(initialData.theme)
+          ? initialData.theme
+          : 'fantasy';
+
+        const visibility = initialData.visibility && validVisibilities.includes(initialData.visibility)
+          ? initialData.visibility
+          : 'private';
+
+        setFormData({
+          name: initialData.name || '',
+          description: initialData.description || '',
+          theme,
+          visibility,
+        });
+      }
+    }, [initialData]);
+
     // Handle input changes
     const handleChange = useCallback(
       e => {
@@ -83,6 +109,10 @@ const UniverseFormModal = React.memo(
     const validateForm = useCallback(() => {
       const errors = {};
 
+      // Valid values for select fields
+      const validThemes = ['fantasy', 'sci-fi', 'historical', 'modern', 'post-apocalyptic', 'superhero', 'horror', 'mystery', 'western', 'other'];
+      const validVisibilities = ['private', 'public'];
+
       if (!formData.name.trim()) {
         errors.name = 'Name is required';
       } else if (formData.name.length > 50) {
@@ -91,6 +121,14 @@ const UniverseFormModal = React.memo(
 
       if (formData.description.length > 500) {
         errors.description = 'Description must be less than 500 characters';
+      }
+
+      if (!validThemes.includes(formData.theme)) {
+        errors.theme = 'Please select a valid theme';
+      }
+
+      if (!validVisibilities.includes(formData.visibility)) {
+        errors.visibility = 'Please select a valid visibility option';
       }
 
       setFormErrors(errors);
@@ -113,12 +151,16 @@ const UniverseFormModal = React.memo(
 
           console.log('Submitting universe form:', formData);
 
-          const action = initialData
-            ? updateUniverse({ id: initialData.id, ...formData })
-            : createUniverse(formData);
-
-          const result = await dispatch(action).unwrap();
-          console.log('Universe saved successfully:', result);
+          let result;
+          if (initialData) {
+            // Use updateUniverse thunk for editing
+            result = await dispatch(updateUniverse({ id: initialData.id, ...formData })).unwrap();
+            console.log('Universe updated successfully:', result);
+          } else {
+            // Use createUniverse thunk for creating new universe
+            result = await dispatch(createUniverse(formData)).unwrap();
+            console.log('Universe created successfully:', result);
+          }
 
           setSubmitSuccess(true);
 
@@ -128,10 +170,38 @@ const UniverseFormModal = React.memo(
           }, 1000);
         } catch (err) {
           console.error('Error saving universe:', err);
-          setFormErrors(prev => ({
-            ...prev,
-            submit: err.message || 'Failed to save universe. Please try again.',
-          }));
+
+          // Handle API validation errors with improved details
+          if (err.data && err.data.details) {
+            const validationErrors = {};
+
+            // Map API validation errors to form fields
+            Object.entries(err.data.details).forEach(([field, message]) => {
+              validationErrors[field] = Array.isArray(message) ? message[0] : message;
+            });
+
+            // Add general error message about invalid fields
+            if (err.message.includes('Invalid fields:')) {
+              let invalidFields = err.message.replace('Invalid fields:', '').trim();
+              setFormErrors(prev => ({
+                ...prev,
+                ...validationErrors,
+                submit: `The following fields have invalid values: ${invalidFields}. Please check your input.`
+              }));
+            } else {
+              setFormErrors(prev => ({
+                ...prev,
+                ...validationErrors,
+                submit: err.message || 'Failed to save universe. Please check the form for errors.'
+              }));
+            }
+          } else {
+            // Generic error handling
+            setFormErrors(prev => ({
+              ...prev,
+              submit: err.message || 'Failed to save universe. Please try again.'
+            }));
+          }
         } finally {
           setIsSubmitting(false);
           isSubmittingRef.current = false;

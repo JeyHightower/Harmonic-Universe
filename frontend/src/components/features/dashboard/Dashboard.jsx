@@ -96,7 +96,8 @@ function Dashboard() {
 
   const handleCreateClick = useCallback(() => {
     console.log('Create Universe button clicked');
-    setSelectedUniverse(null);
+    setUniverseToEdit(null);
+    setIsCreating(true);
     setShowUniverseModal(true);
   }, []);
 
@@ -104,6 +105,7 @@ function Dashboard() {
     console.log('Edit Universe button clicked', universe);
     // Set the universe to edit and open the modal
     setUniverseToEdit(universe);
+    setIsCreating(false);
     setShowUniverseModal(true);
   };
 
@@ -231,7 +233,7 @@ function Dashboard() {
         </div>
       ) : error ? (
         <div className="error-container">
-          <p>{error}</p>
+          <p>{typeof error === 'object' ? error.message || 'An error occurred' : error}</p>
           <Button onClick={handleRetry} variant="primary">
             Retry
           </Button>
@@ -266,7 +268,8 @@ function Dashboard() {
         <UniverseFormModal
           onClose={handleModalClose}
           isGlobalModal={false}
-          initialData={selectedUniverse}
+          initialData={universeToEdit}
+          isEditing={!isCreating}
         />
       )}
     </div>

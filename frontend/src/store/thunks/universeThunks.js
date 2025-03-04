@@ -85,14 +85,31 @@ export const updateUniverse = createAsyncThunk(
   async ({ id, ...data }, { rejectWithValue }) => {
     try {
       console.debug('Updating universe:', { id, data });
+      console.debug('Original update data:', data);
+
+      // Include name, description, theme, and map visibility to is_public
+      const requestData = {
+        name: data.name,
+        description: data.description,
+        theme: data.theme || "fantasy", // Include theme field with default
+        is_public: data.visibility === 'public' // Map visibility to is_public
+      };
+
+      console.debug('Formatted update data:', requestData);
+      console.debug('Sending to endpoint:', endpoints.universes.update(id));
+
       const response = await api.put(
         endpoints.universes.update(id),
-        data
+        requestData
       );
       console.debug('Universe updated:', response);
       return response;
     } catch (error) {
       console.error('Failed to update universe:', error);
+      if (error.response) {
+        console.error('Error response:', error.response);
+        console.error('Error details:', error.response.data);
+      }
       return rejectWithValue(handleError(error));
     }
   }

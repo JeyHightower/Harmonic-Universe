@@ -103,6 +103,10 @@ class UniverseBase(NameDescriptionModel, MetadataModel):
         default=False,
         description="Whether the universe is publicly accessible"
     )
+    theme: str = Field(
+        default="fantasy",
+        description="The theme of the universe"
+    )
     physics_params: PhysicsParams = Field(
         default_factory=PhysicsParams,
         description="Physics parameters for the universe"
@@ -125,6 +129,7 @@ class UniverseUpdate(UniverseBase):
     name: Optional[str] = None
     description: Optional[str] = None
     is_public: Optional[bool] = None
+    theme: Optional[str] = None
     physics_params: Optional[PhysicsParams] = None
     harmony_params: Optional[HarmonyParams] = None
 
