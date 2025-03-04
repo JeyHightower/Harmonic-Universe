@@ -1,10 +1,15 @@
+import { Select } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { api } from '../../../utils/api';
 import Button from '../../common/Button';
 import Icon from '../../common/Icon';
 import Input from '../../common/Input';
 import Spinner from '../../common/Spinner';
+import { API_CONFIG } from '../../utils/config';
 import './Scenes.css';
+
+const { Option } = Select;
+const { TextArea } = Input;
 
 const DEFAULT_SCENE = {
   name: '',
@@ -60,7 +65,7 @@ const SceneModal = ({
       setIsLoading(true);
       try {
         const sceneData = await api.get(
-          `${API_BASE_URL}/api/scenes/${sceneId}`
+          `${API_CONFIG.API_BASE_URL}/api/scenes/${sceneId}`
         );
         setFormData({
           ...formData,
@@ -140,7 +145,7 @@ const SceneModal = ({
     if (isDeleteMode) {
       setIsSubmitting(true);
       try {
-        await api.delete(`${API_BASE_URL}/api/scenes/${sceneId}`);
+        await api.delete(`${API_CONFIG.API_BASE_URL}/api/scenes/${sceneId}`);
         setShowSuccessMessage(true);
         setTimeout(() => {
           onSuccess?.('delete', { id: sceneId });
@@ -173,16 +178,19 @@ const SceneModal = ({
 
       if (isCreateMode) {
         // Create new scene
-        result = await api.post(`${API_BASE_URL}/api/scenes/`, {
+        result = await api.post(`${API_CONFIG.API_BASE_URL}/api/scenes/`, {
           ...formData,
           universe_id: universeId,
         });
       } else if (isEditMode) {
         // Update existing scene
-        result = await api.put(`${API_BASE_URL}/api/scenes/${sceneId}`, {
-          ...formData,
-          universe_id: universeId,
-        });
+        result = await api.put(
+          `${API_CONFIG.API_BASE_URL}/api/scenes/${sceneId}`,
+          {
+            ...formData,
+            universe_id: universeId,
+          }
+        );
       }
 
       // Show success message and close modal after a short delay

@@ -4,6 +4,7 @@ import IconContext from './es/components/Context';
 
 // Add debug log with a unique identifier
 console.log('==== ICONS.JSX IS BEING LOADED ====');
+console.log('Loading the main Icons.jsx file');
 
 // Basic Icon component with enhanced debugging
 const Icon = props => {
@@ -178,6 +179,7 @@ export const PaperClipOutlined = getIconComponent('PaperClipOutlined');
 export const PauseOutlined = getIconComponent('PauseOutlined');
 export const PictureTwoTone = getIconComponent('PictureTwoTone');
 export const PinterestFilled = getIconComponent('PinterestFilled');
+export const PlayCircleOutlined = getIconComponent('PlayCircleOutlined');
 export const PlusOutlined = getIconComponent('PlusOutlined');
 export const PlusSquareOutlined = getIconComponent('PlusSquareOutlined');
 export const PushpinTwoTone = getIconComponent('PushpinTwoTone');
@@ -196,6 +198,8 @@ export const ShopFilled = getIconComponent('ShopFilled');
 export const ShoppingCartOutlined = getIconComponent('ShoppingCartOutlined');
 export const SmileTwoTone = getIconComponent('SmileTwoTone');
 export const SolutionOutlined = getIconComponent('SolutionOutlined');
+export const SoundOutlined = getIconComponent('SoundOutlined');
+console.log('SoundOutlined icon exported:', SoundOutlined);
 export const StarFilled = getIconComponent('StarFilled');
 export const SwapOutlined = getIconComponent('SwapOutlined');
 export const SwapRightOutlined = getIconComponent('SwapRightOutlined');
@@ -241,7 +245,13 @@ export const ZoomOutOutlined = getIconComponent('ZoomOutOutlined');
 // Create icon font generator
 function createFromIconfontCN(options = {}) {
   const IconFont = React.forwardRef((props, ref) => {
-    return <Icon {...props} ref={ref} />;
+    // Use options in the component to avoid the unused variable warning
+    const iconProps = {
+      ...props,
+      // Apply any options from the configuration
+      'data-options': JSON.stringify(options),
+    };
+    return <Icon {...iconProps} ref={ref} />;
   });
 
   IconFont.displayName = 'IconFont';

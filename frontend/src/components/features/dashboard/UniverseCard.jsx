@@ -19,22 +19,27 @@ const UniverseCard = ({ universe, onEdit, onDelete }) => {
     navigate(`/universes/${universe.id}/harmony`);
   };
 
-  const handleNavigateToVisualization = e => {
+  const handleNavigateToVisual = e => {
     e.stopPropagation();
-    navigate(`/universes/${universe.id}/visualization`);
+    navigate(`/universes/${universe.id}/visual`);
+  };
+
+  const formatDate = dateString => {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
   return (
     <div className="universe-card">
       <div className="universe-card-content" onClick={handleClick}>
         <h3>{universe.name}</h3>
-        <p>{universe.description || 'No description'}</p>
+        <p>
+          {universe.description || 'No description provided for this universe.'}
+        </p>
       </div>
       <div className="universe-card-footer">
         <div className="universe-card-meta">
-          <span>
-            Created: {new Date(universe.created_at).toLocaleDateString()}
-          </span>
+          <span>Created: {formatDate(universe.created_at)}</span>
           {universe.theme && (
             <span className="universe-theme">{universe.theme}</span>
           )}
@@ -95,7 +100,7 @@ const UniverseCard = ({ universe, onEdit, onDelete }) => {
           <Button
             variant="tertiary"
             size="small"
-            onClick={handleNavigateToVisualization}
+            onClick={handleNavigateToVisual}
             title="Visualization Parameters"
           >
             Visual

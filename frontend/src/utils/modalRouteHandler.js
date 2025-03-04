@@ -255,16 +255,16 @@ export const getModalDataFromRoute = (path) => {
 /**
  * Handle an API route by opening the appropriate modal
  * @param {string} path - The API route path
- * @param {Function} openModalByType - The openModalByType function from useModal
+ * @param {Function} openModal - The openModal function from useModal
  * @returns {boolean} True if a modal was opened, false otherwise
  */
-export const handleModalRoute = (path, openModalByType) => {
+export const handleModalRoute = (path, openModal) => {
     const modalData = getModalDataFromRoute(path);
 
     if (!modalData) return false;
 
     const { modalType, data = {} } = modalData;
-    openModalByType(modalType, data);
+    openModal(modalType, data);
 
     return true;
 };

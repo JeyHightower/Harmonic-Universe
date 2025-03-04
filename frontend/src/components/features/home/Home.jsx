@@ -38,7 +38,7 @@ function Home() {
     try {
       console.debug('Starting demo login');
       dispatch(loginStart());
-      const response = await api.post('/api/v1/auth/demo-login');
+      const response = await api.post(endpoints.auth.demoLogin);
       console.debug('Demo login response:', response);
 
       if (response.access_token) {
@@ -48,16 +48,39 @@ function Home() {
         localStorage.setItem('refreshToken', response.refresh_token);
       }
 
-      // Fetch user info after successful demo login
-      try {
-        const userResponse = await api.get(endpoints.auth.me);
-        console.debug('User info response:', userResponse);
-        dispatch(loginSuccess(userResponse));
-        navigate('/dashboard', { replace: true });
-      } catch (error) {
-        console.error('Failed to fetch user info:', error);
-        throw error;
+      // Force navigation to dashboard immediately after setting tokens
+      console.debug('Forcing navigation to dashboard');
+
+      // Dispatch login success with the user data from the response
+      if (response.user) {
+        dispatch(loginSuccess(response.user));
+      } else {
+        // If no user data in response, fetch it separately
+        try {
+          const userResponse = await api.get(endpoints.auth.me);
+          console.debug('User info response:', userResponse);
+          dispatch(loginSuccess(userResponse));
+        } catch (error) {
+          console.error('Failed to fetch user info:', error);
+          // Continue with navigation even if user info fetch fails
+        }
       }
+
+      // Try multiple navigation methods to ensure we get to the dashboard
+
+      // Method 1: Use React Router navigate with explicit path
+      console.debug('Attempting navigation with React Router');
+      navigate('/dashboard', { replace: true });
+
+      // Method 2: Use direct navigation after a short delay with full URL
+      setTimeout(() => {
+        console.debug('Attempting direct navigation to dashboard');
+        // Ensure we're using the correct origin without appending /api
+        const origin = window.location.origin;
+        const dashboardUrl = `${origin}/dashboard`;
+        console.debug('Dashboard URL:', dashboardUrl);
+        window.location.href = dashboardUrl;
+      }, 500);
     } catch (error) {
       console.error('Demo login error:', error);
       let errorMessage =

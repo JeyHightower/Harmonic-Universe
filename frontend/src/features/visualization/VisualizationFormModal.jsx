@@ -6,6 +6,7 @@ import Input from '../../components/common/Input';
 import Modal from '../../components/common/Modal';
 import Spinner from '../../components/common/Spinner';
 import '../../styles/modal.css';
+import { API_CONFIG } from '../../utils/config';
 
 /**
  * Modal for creating and editing visualizations.
@@ -58,7 +59,7 @@ const VisualizationFormModal = ({
 
       try {
         const response = await fetch(
-          `/api/v1/visualizations/${visualizationId}`
+          `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/visualizations/${visualizationId}`
         );
 
         if (!response.ok) {
@@ -122,8 +123,8 @@ const VisualizationFormModal = ({
 
     try {
       const url = visualizationId
-        ? `/api/v1/visualizations/${visualizationId}`
-        : '/api/v1/visualizations';
+        ? `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/visualizations/${visualizationId}`
+        : `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/visualizations`;
 
       const method = visualizationId ? 'PUT' : 'POST';
 
