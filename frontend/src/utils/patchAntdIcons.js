@@ -6,6 +6,8 @@ import path from 'path';
  */
 export default function patchAntDesignPlugin() {
     let isBuild = false;
+    // Track processed files to avoid redundant work
+    const processedFiles = new Set();
 
     return {
         name: 'patch-antd-icons',
@@ -25,7 +27,7 @@ export default function patchAntDesignPlugin() {
                 config.build.rollupOptions = {};
             }
 
-            // Ensure rollupOptions.output exists and has preserveEntrySignatures set to 'strict'
+            // Ensure rollupOptions.output exists
             if (!config.build.rollupOptions.output) {
                 config.build.rollupOptions.output = {};
             }
@@ -33,11 +35,6 @@ export default function patchAntDesignPlugin() {
             // Make sure preserveEntrySignatures is 'strict' when preserveModules is true
             if (config.build.rollupOptions.output.preserveModules) {
                 config.build.rollupOptions.output.preserveEntrySignatures = 'strict';
-            }
-
-            if (!config.build.rollupOptions.external) {
-                // This is a regex pattern that matches all problematic icon paths
-                config.build.rollupOptions.external = [/.*@ant-design\/icons-svg\/es\/asn\/.*/];
             }
 
             // Make sure to exclude @ant-design/icons-svg from optimization
@@ -54,50 +51,82 @@ export default function patchAntDesignPlugin() {
             }
 
             // Add more specific path handling for build mode
-            if (config.resolve && !config.resolve.alias) {
+            if (!config.resolve) {
+                config.resolve = {};
+            }
+
+            if (!config.resolve.alias) {
                 config.resolve.alias = {};
             }
 
-            if (config.resolve && !config.resolve.alias['@ant-design/icons-svg/es/asn']) {
-                config.resolve.alias['@ant-design/icons-svg/es/asn'] = path.resolve(process.cwd(), 'src/utils/ant-icons-shim.js');
-            }
+            // Set up alias for icon paths
+            config.resolve.alias['@ant-design/icons-svg/es/asn'] = path.resolve(process.cwd(), 'src/utils/ant-icons-shim.js');
 
             return config;
         },
 
         transform(code, id) {
-            // Skip transformation if id doesn't include '@ant-design/icons'
-            if (!id.includes('@ant-design/icons')) {
+            // Only consider files that include '@ant-design/icons' and contain problematic imports
+            if (!id.includes('@ant-design/icons') || !code.includes('@ant-design/icons-svg/es/asn/')) {
                 return null;
             }
 
-            // Only apply transformation in build mode for certain files
-            if (isBuild) {
-                // Handle specific icon import transformations during build
-                if (id.includes('node_modules/@ant-design/icons/') && code.includes('@ant-design/icons-svg/es/asn/')) {
-                    console.log(`[patchAntDesignPlugin] Transforming imports in: ${id}`);
+            // Only process each file once
+            if (processedFiles.has(id)) {
+                return null;
+            }
 
-                    // Replace problematic imports with shim imports
-                    const transformedCode = code.replace(
-                        /import\s+(\w+)\s+from\s+["']@ant-design\/icons-svg\/es\/asn\/([^"']+)["'];/g,
-                        (match, importName, iconName) => {
-                            return `/* Replaced import */\nconst ${importName} = {
-                                name: '${iconName}',
-                                theme: '${iconName.includes('Filled') ? 'filled' : iconName.includes('TwoTone') ? 'twotone' : 'outlined'}',
-                                icon: {
-                                    tag: 'svg',
-                                    attrs: { viewBox: '64 64 896 896' },
-                                    children: [{ tag: 'path', attrs: { d: 'M64 64h896v896H64z' } }]
-                                }
-                            };`;
-                        }
-                    );
+            // Mark file as processed
+            processedFiles.add(id);
 
-                    return {
-                        code: transformedCode,
-                        map: null
-                    };
-                }
+            console.log(`[patchAntDesignPlugin] Transforming imports in: ${id}`);
+
+            // Extract the icon name from the file path
+            const fileName = path.basename(id, '.js');
+
+            // First, completely remove the problematic import lines
+            let transformedCode = code.replace(
+                /import\s+(\w+)\s+from\s+["']@ant-design\/icons-svg\/es\/asn\/([^"']+)["'];/g,
+                '// Removed problematic import'
+            );
+
+            // Determine icon theme based on name
+            let theme = 'outlined'; // default
+            if (fileName.includes('Filled')) {
+                theme = 'filled';
+            } else if (fileName.includes('TwoTone')) {
+                theme = 'twotone';
+            }
+
+            // Find a good position to insert our replacement - before any function/class/variable definition
+            const insertPos = transformedCode.search(/var\s|function\s|class\s|const\s|let\s|import\s/);
+
+            if (insertPos !== -1) {
+                // Create a replacement for the SVG variable
+                const svgVarName = fileName + 'Svg';
+                const replacementCode = `
+/* Added by patchAntDesignPlugin */
+const ${svgVarName} = {
+  name: '${fileName}',
+  theme: '${theme}',
+  icon: {
+    tag: 'svg',
+    attrs: { viewBox: '64 64 896 896' },
+    children: [{ tag: 'path', attrs: { d: 'M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z' } }]
+  }
+};
+
+`;
+                // Insert our replacement at the beginning of the file
+                transformedCode = replacementCode + transformedCode;
+            }
+
+            // If code was changed, return the transformed version
+            if (transformedCode !== code) {
+                return {
+                    code: transformedCode,
+                    map: null
+                };
             }
 
             return null;

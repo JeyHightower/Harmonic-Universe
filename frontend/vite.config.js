@@ -20,11 +20,22 @@ const handleMissingModulesPlugin = () => {
     },
 
     // Specifically target all ant-design icon SVG paths
-    resolveId(id) {
+    resolveId(id, importer) {
       if (id.includes('@ant-design/icons-svg/es/asn/')) {
-        console.log(`[AntDesignPlugin] Marking as external: ${id}`);
-        // Mark as external with absolute path - more important for build
-        return { id, external: 'absolute' };
+        const iconName = id.split('/').pop().replace(/\.\w+$/, '');
+
+        // Avoid logging duplicates
+        if (!processedIcons.has(iconName)) {
+          processedIcons.add(iconName);
+          console.log(`[AntDesignPlugin] Resolving: ${iconName} from ${importer}`);
+        }
+
+        // Create a virtual module ID that our load hook will recognize
+        // Use null for id to let other plugins resolve it
+        return {
+          id: `\0virtual:ant-icon:${iconName}`,
+          moduleSideEffects: false
+        };
       }
 
       return null;
@@ -32,14 +43,9 @@ const handleMissingModulesPlugin = () => {
 
     // Add a load hook to provide empty implementations if needed
     load(id) {
-      if (id.includes('@ant-design/icons-svg/es/asn/')) {
-        const iconName = id.split('/').pop().replace(/\.\w+$/, '');
-
-        // Avoid logging duplicates
-        if (!processedIcons.has(iconName)) {
-          processedIcons.add(iconName);
-          console.log(`[AntDesignPlugin] Creating virtual module for: ${iconName}`);
-        }
+      // Handle our virtual module IDs from resolveId
+      if (id.startsWith('\0virtual:ant-icon:')) {
+        const iconName = id.slice('\0virtual:ant-icon:'.length);
 
         // Determine icon theme based on name
         let theme = 'outlined'; // default
@@ -134,10 +140,8 @@ export default defineConfig({
     chunkSizeWarningLimit: 800,
     // Configure code splitting via Rollup options
     rollupOptions: {
-      // Make sure ALL @ant-design/icons-svg paths are marked as external
-      external: [
-        /.*@ant-design\/icons-svg\/es\/asn\/.*/,
-      ],
+      // Don't mark ant-design paths as external to prevent build errors
+      // since we're handling them with our virtual modules
       output: {
         // Try an alternative bundling strategy
         // Instead of preserveModules, use manualChunks for better control

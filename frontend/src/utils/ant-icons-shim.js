@@ -106,3 +106,25 @@ export const handler = {
 
 // Use a Proxy to handle any dynamic icon requests
 export default new Proxy({}, handler);
+
+// Add named exports for each problematic icon - this helps with ESM named imports
+// These specific exports match the error messages shown in the bundler
+export const UsbFilled = getIcon('UsbFilled');
+export const WalletTwoTone = getIcon('WalletTwoTone');
+export const WeiboSquareFilled = getIcon('WeiboSquareFilled');
+export const FileExcelFilled = getIcon('FileExcelFilled');
+export const XFilled = getIcon('XFilled');
+export const WalletFilled = getIcon('WalletFilled');
+export const YahooOutlined = getIcon('YahooOutlined');
+export const LayoutTwoTone = getIcon('LayoutTwoTone');
+export const UploadOutlined = getIcon('UploadOutlined');
+export const HarmonyOSOutlined = getIcon('HarmonyOSOutlined');
+export const WifiOutlined = getIcon('WifiOutlined');
+export const LayoutFilled = getIcon('LayoutFilled');
+export const JavaOutlined = getIcon('JavaOutlined');
+export const JavaScriptOutlined = getIcon('JavaScriptOutlined');
+export const VideoCameraFilled = getIcon('VideoCameraFilled');
+export const LaptopOutlined = getIcon('LaptopOutlined');
+export const LayoutOutlined = getIcon('LayoutOutlined');
+export const KeyOutlined = getIcon('KeyOutlined');
+export const ZhihuOutlined = getIcon('ZhihuOutlined');
