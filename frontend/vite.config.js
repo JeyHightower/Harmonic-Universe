@@ -95,10 +95,9 @@ const handleMissingModulesPlugin = () => {
           console.log(`[AntDesignPlugin] Providing virtual module for: ${iconName}`);
         }
 
-        // Generate a generic mock SVG icon module for any requested icon
-        // Make sure to include the version property
+        // Improved mock SVG icon module with more robust version definition
         return `
-          // Mock SVG icon module for ${iconName} with version property
+          // Mock SVG icon module for ${iconName}
           export const version = "4.2.1";
 
           const ${iconName}Icon = {
@@ -120,11 +119,21 @@ const handleMissingModulesPlugin = () => {
                   attrs: { d: 'M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z' }
                 }
               ]
-            }
+            },
+            // Add version to the icon object itself
+            version: "4.2.1"
           };
+
+          // Make sure version is available in various ways
+          ${iconName}Icon.version = "4.2.1";
 
           export default ${iconName}Icon;
           export const __esModule = true;
+
+          // Special fallback for any code that tries to access version
+          if (typeof window !== 'undefined') {
+            window.__ANT_ICONS_VERSION__ = "4.2.1";
+          }
         `;
       }
 
