@@ -18,11 +18,24 @@ def create_app():
         from backend.app import create_app as backend_create_app
         # Import the appropriate config from backend
         from backend.app.core.config import config
+        from flask import send_from_directory
 
         # Create the application using the backend factory function
         app = backend_create_app(config['production'])
 
-        # No need to apply middleware here as it's already applied in backend create_app
+        # Special route to handle all static files including the Ant Design icons
+        @app.route('/assets/<path:filename>')
+        def serve_assets(filename):
+            return send_from_directory(os.path.join(app.static_folder, 'assets'), filename)
+
+        # Make sure all routes are handled, even if not explicitly defined
+        @app.route('/', defaults={'path': ''})
+        @app.route('/<path:path>')
+        def catch_all(path):
+            if path and os.path.exists(os.path.join(app.static_folder, path)):
+                return send_from_directory(app.static_folder, path)
+            return send_from_directory(app.static_folder, 'index.html')
+
         return app
     except Exception as e:
         import traceback

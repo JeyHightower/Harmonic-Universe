@@ -10,14 +10,18 @@ services:
       pip install gunicorn
       # Build the React frontend
       cd frontend && npm install && npm run render-build
+      # Run the asset preparation script
+      cd frontend && node scripts/prepare-assets.js
       # Copy built frontend to Flask static directory
       cd ..
       mkdir -p static
       cp -r frontend/dist/* static/
+      # Make the static directory writable by the app
+      chmod -R 755 static/
       # Make sure the polyfill script is copied
       cp frontend/public/react-polyfill.js static/ 2>/dev/null || true
       cp frontend/public/react-context-provider.js static/ 2>/dev/null || true
-    startCommand: PYTHONPATH=. gunicorn 'app:create_app()'
+    startCommand: PYTHONPATH=. gunicorn 'wsgi:application'
     envVars:
       - key: NODE_VERSION
         value: 18.17.0

@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_migrate import Migrate
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
@@ -22,7 +22,7 @@ socketio = SocketIO()
 bcrypt = Bcrypt()
 
 def create_app(config_class=Config):
-    app = Flask(__name__, static_folder='../../frontend/dist', static_url_path='/')
+    app = Flask(__name__, static_folder='../../static', static_url_path='')
     app.config.from_object(config_class)
 
     # Load the .env file
@@ -78,6 +78,11 @@ def create_app(config_class=Config):
             'message': 'Harmonic Universe API is running'
         }
 
+    # Special route to handle all static files including the Ant Design icons
+    @app.route('/assets/<path:filename>')
+    def serve_assets(filename):
+        return send_from_directory(os.path.join(app.static_folder, 'assets'), filename)
+
     # JWT error handlers
     @jwt.unauthorized_loader
     def handle_unauthorized_loader(msg):
@@ -104,6 +109,10 @@ def create_app(config_class=Config):
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
     def react_root(path):
+        if path and path.startswith('assets/'):
+            # Extract the file name from the path
+            file_name = path.replace('assets/', '')
+            return send_from_directory(os.path.join(app.static_folder, 'assets'), file_name)
         if path == 'favicon.ico':
             return app.send_from_directory('public', 'favicon.ico')
         return app.send_static_file('index.html')
