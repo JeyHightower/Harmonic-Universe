@@ -20,9 +20,11 @@ services:
       cp frontend/public/react-context-provider.js static/ 2>/dev/null || true
       # Run our script to copy polyfill to Flask static directory
       cd backend && python -m scripts.copy_react_polyfill
+      # Run the verify imports script to debug any potential issues
+      cd /opt/render/project/src && python -c "import sys; sys.path.append('/opt/render/project/src'); sys.path.append('/opt/render/project/src/backend'); from backend.scripts.verify_imports import *"
       # Verify app can be imported (for debugging)
       cd /opt/render/project/src && python -m backend.scripts.verify_app
-    startCommand: cd /opt/render/project/src/backend && gunicorn --chdir /opt/render/project/src/backend wsgi:app
+    startCommand: cd /opt/render/project/src/backend && PYTHONPATH=/opt/render/project/src:/opt/render/project/src/backend gunicorn --chdir /opt/render/project/src/backend wsgi:app
     envVars:
       - key: NODE_VERSION
         value: 18.17.0
