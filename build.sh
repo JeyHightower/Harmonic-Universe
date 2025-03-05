@@ -11,6 +11,10 @@ echo "=== Installing Python dependencies ==="
 pip install -r backend/requirements.txt
 pip install gunicorn
 
+# Create necessary directories
+echo "=== Creating necessary directories ==="
+mkdir -p frontend/src/utils
+
 # Build the React frontend
 echo "=== Building React frontend ==="
 cd frontend
@@ -22,7 +26,10 @@ rm -rf node_modules package-lock.json || true
 
 # Install dependencies with force flag
 echo "=== Installing frontend dependencies ==="
-npm install --legacy-peer-deps
+npm install --legacy-peer-deps || {
+  echo "WARNING: npm install failed with --legacy-peer-deps, trying without it"
+  npm install --force
+}
 
 # Add debug information
 echo "=== Node and npm versions ==="
@@ -41,59 +48,54 @@ export { version };
 export default { version };
 EOL
 
-# Run the postinstall script for direct patching
+# Run the postinstall script for direct patching with better error handling
 echo "=== Running postinstall script ==="
 node postinstall.js || {
   echo "Postinstall script failed, creating manual patches"
   mkdir -p node_modules/@ant-design/icons/lib || true
-  echo '"use strict";Object.defineProperty(exports,"__esModule",{value:!0});exports.version="4.2.1";' > node_modules/@ant-design/icons/lib/version.js
+  mkdir -p node_modules/@ant-design/icons/es || true
+  echo '"use strict";Object.defineProperty(exports,"__esModule",{value:!0});exports.version="4.2.1";exports.default={version:"4.2.1"};' > node_modules/@ant-design/icons/lib/version.js
+  echo 'export const version="4.2.1";export default{version:"4.2.1"};' > node_modules/@ant-design/icons/es/version.js
+
+  # Create important utility files
+  mkdir -p src/utils
+  echo 'export const version="4.2.1";export default{version:"4.2.1"};' > src/utils/ant-icons-shim.js
 }
+
+# Verify that our patch files exist
+echo "=== Verifying patch files ==="
+if [ -f "node_modules/@ant-design/icons/lib/version.js" ]; then
+  echo "✅ version.js exists in lib directory"
+else
+  echo "❌ version.js missing in lib directory, creating it"
+  mkdir -p node_modules/@ant-design/icons/lib
+  echo '"use strict";Object.defineProperty(exports,"__esModule",{value:!0});exports.version="4.2.1";exports.default={version:"4.2.1"};' > node_modules/@ant-design/icons/lib/version.js
+fi
+
+if [ -f "node_modules/@ant-design/icons/es/version.js" ]; then
+  echo "✅ version.js exists in es directory"
+else
+  echo "❌ version.js missing in es directory, creating it"
+  mkdir -p node_modules/@ant-design/icons/es
+  echo 'export const version="4.2.1";export default{version:"4.2.1"};' > node_modules/@ant-design/icons/es/version.js
+fi
 
 # Set environment for build
 export NODE_OPTIONS="--max-old-space-size=3072"  # Increase memory limit
 export GENERATE_SOURCEMAP=false  # Disable source maps to reduce size
 export CI=false  # Prevent treating warnings as errors
 
-echo "=== Running Vite build with simplified command ==="
-npm run simplified-build || {
-  echo "Simplified build failed, trying render-build command"
-  npm run render-build || {
-    echo "Render build failed, trying direct vite build"
+echo "=== Running Vite build with direct command ==="
+NODE_ENV=production vite build || {
+  echo "Direct build failed, trying simplified-build command"
+  npm run simplified-build || {
+    echo "Simplified build failed, trying render-build command"
+    npm run render-build || {
+      echo "All build commands failed, creating a minimal build"
 
-    echo "=== Creating minimal vite.config.js ==="
-    cat > vite.config.js.minimal << 'EOL'
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import path from 'path';
-
-export default defineConfig({
-  plugins: [react()],
-  build: {
-    outDir: 'dist',
-    minify: 'terser',
-    terserOptions: { compress: { drop_console: false } },
-    rollupOptions: {
-      external: [],
-      output: { manualChunks: { 'vendor': ['react', 'react-dom'] } }
-    },
-    chunkSizeWarningLimit: 2000
-  },
-  define: {
-    '__ANT_ICONS_VERSION__': JSON.stringify('4.2.1'),
-    'process.env.NODE_ENV': JSON.stringify('production')
-  }
-});
-EOL
-
-  # Try building with minimal config
-  mv vite.config.js.minimal vite.config.js
-  echo "=== Retrying build with minimal config ==="
-  vite build || {
-    echo "Minimal build failed, creating emergency bundle"
-
-    # Create minimal dist output if everything else fails
-    mkdir -p dist
-    cat > dist/index.html << 'EOL'
+      # Create minimal dist output
+      mkdir -p dist
+      cat > dist/index.html << 'EOL'
 <!DOCTYPE html>
 <html>
 <head>
@@ -130,9 +132,11 @@ EOL
 </body>
 </html>
 EOL
+    }
   }
 }
 
+# Continue with the rest of the build script
 echo "=== Frontend build process completed, back to project root ==="
 cd ..
 
