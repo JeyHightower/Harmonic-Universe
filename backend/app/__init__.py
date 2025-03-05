@@ -63,7 +63,8 @@ def create_app(config_class=Config):
     socketio.init_app(app, cors_allowed_origins="*")
 
     # Import socket events handlers
-    from .websocket import socket_handlers
+    from .websocket import init_socketio
+    init_socketio(socketio)
 
     # Register health check route
     @app.route('/api/v1/health')
