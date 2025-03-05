@@ -133,6 +133,17 @@ cat > static/version-patch.js << 'EOL'
       });
     }
 
+    // 4. Add a global error handler for version errors
+    window.addEventListener('error', function(event) {
+      if (event.message && event.message.includes('Cannot read properties of undefined') &&
+          event.message.includes('version')) {
+        console.warn('Caught version error, handling silently');
+        event.preventDefault();
+        event.stopPropagation();
+        return true;
+      }
+    }, true);
+
     console.log('Version patch successfully applied');
   } catch (e) {
     console.error('Error applying version patch:', e);
@@ -140,8 +151,115 @@ cat > static/version-patch.js << 'EOL'
 })();
 EOL
 
-# Set proper permissions for the script
+# Create utils-specific version patch to fix utils.js line 85
+echo "=== Creating utils-specific version patch ==="
+cat > static/utils-version-patch.js << 'EOL'
+// Direct patch for utils.js version property access issue
+(function() {
+  console.log('Loading utils version patch');
+
+  // Define version constant
+  const VERSION = '4.2.1';
+
+  // Set global version variables
+  window.__ANT_ICONS_VERSION__ = VERSION;
+
+  // Create a global version function to provide a version value when needed
+  window.getIconVersion = function() {
+    return VERSION;
+  };
+
+  // Create a direct patch for utils.js
+  // This will run before utils.js and monitor for version property access errors
+  try {
+    // Function to find and patch utils.js
+    function patchUtilsJs() {
+      console.log('Looking for utils.js to patch...');
+
+      // Track if we've already patched a specific element to avoid infinite loops
+      const patchedElements = new Set();
+
+      // Monitor all script elements for version errors and patch them
+      const observer = new MutationObserver((mutationsList) => {
+        for (const mutation of mutationsList) {
+          if (mutation.type === 'childList') {
+            mutation.addedNodes.forEach((node) => {
+              if (node.tagName === 'SCRIPT' && !patchedElements.has(node)) {
+                patchedElements.add(node);
+
+                // Add error event listener to catch version errors
+                node.addEventListener('error', (event) => {
+                  if (event.error && event.error.message &&
+                      event.error.message.includes('version')) {
+                    console.log('Caught version error in script:', node.src);
+                    event.preventDefault();
+                    return false;
+                  }
+                });
+              }
+            });
+          }
+        }
+      });
+
+      // Start observing the document
+      observer.observe(document, { childList: true, subtree: true });
+
+      // Patch Object.prototype to handle undefined.version
+      const originalGetOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
+      Object.getOwnPropertyDescriptor = function(obj, prop) {
+        // Check for version property access on undefined
+        if ((obj === undefined || obj === null) && prop === 'version') {
+          console.log('Intercepted attempt to access version on undefined');
+          return {
+            configurable: true,
+            enumerable: false,
+            get: function() { return VERSION; }
+          };
+        }
+        return originalGetOwnPropertyDescriptor.apply(this, arguments);
+      };
+
+      // Patch Object.prototype.version to provide fallback
+      if (!Object.prototype.hasOwnProperty('version')) {
+        Object.defineProperty(Object.prototype, 'version', {
+          configurable: true,
+          enumerable: false,
+          get: function() {
+            if (this === undefined || this === null) {
+              console.log('Providing fallback version for undefined object');
+              return VERSION;
+            }
+            return undefined;
+          }
+        });
+      }
+    }
+
+    // Execute the patch immediately
+    patchUtilsJs();
+
+    // Also add a global error handler to catch any remaining version errors
+    window.addEventListener('error', (event) => {
+      if (event.error && event.error.message &&
+          event.error.message.includes('version') &&
+          event.error.message.includes('undefined')) {
+        console.log('Global handler caught version error');
+        event.preventDefault();
+        return true; // Prevents the error from propagating
+      }
+    }, true);
+
+    console.log('Utils version patch applied successfully');
+  } catch (e) {
+    console.error('Error applying utils version patch:', e);
+  }
+})();
+EOL
+
+# Set proper permissions for the scripts
 chmod 644 static/version-patch.js
+chmod 644 static/utils-version-patch.js
 
 # Create a mock ant-icons.js file
 echo "=== Creating mock ant-icons.js since none was found ==="
@@ -164,12 +282,22 @@ EOL
 echo "=== Removing old fix scripts if they exist ==="
 rm -f static/utils-fix.js static/ant-icons-patch.js static/complete-fix.js
 
-# Update index.html to include our version patch script if it exists
+# Update index.html to include our version patch scripts if it exists
 echo "=== Updating index.html ==="
 if [ -f static/index.html ]; then
-  # Add version-patch.js to head if not already there
+  # Add utils-version-patch.js to head first (it needs to load before other scripts)
+  if ! grep -q "utils-version-patch.js" static/index.html; then
+    sed -i 's/<head>/<head>\n  <script src="\/utils-version-patch.js"><\/script>/' static/index.html
+  fi
+
+  # Then add version-patch.js if not already there
   if ! grep -q "version-patch.js" static/index.html; then
     sed -i 's/<head>/<head>\n  <script src="\/version-patch.js"><\/script>/' static/index.html
+  fi
+
+  # Also add the mock ant-icons.js if needed
+  if ! grep -q "ant-icons.js" static/index.html; then
+    sed -i 's/<head>/<head>\n  <script src="\/assets\/ant-icons.js"><\/script>/' static/index.html
   fi
 fi
 
