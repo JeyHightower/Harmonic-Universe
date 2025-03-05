@@ -3,33 +3,36 @@ services:
   - type: web
     name: harmonic-universe
     runtime: python
-    buildCommand: bash ./build.sh
-    startCommand: PYTHONPATH=. gunicorn 'app:create_app()'
+    buildCommand: ./build.sh
+    startCommand: gunicorn wsgi:app --log-level debug
+    healthCheckPath: /api/health
     envVars:
-      - key: NODE_VERSION
-        value: 18.17.0
       - key: PYTHON_VERSION
-        value: 3.9.6
+        value: 3.11.0
+      - key: NODE_VERSION
+        value: 16.13.0
+      - key: WEB_CONCURRENCY
+        value: 1
+      - key: WSGI_WORKERS
+        value: 1
       - key: CI
         value: 'false'
       - key: FLASK_ENV
         value: production
       - key: FLASK_APP
-        value: app
-      - key: SECRET_KEY
-        generateValue: true
-      - key: SCHEMA
-        value: harmonic_universe_schema
-      - key: PYTHONUNBUFFERED
-        value: 'true'
+        value: app.py
+      - key: FLASK_DEBUG
+        value: '0'
       - key: PYTHONPATH
         value: '.'
+      - key: PYTHONUNBUFFERED
+        value: '1'
+      - key: STATIC_DIR
+        value: static
+      - key: VITE_API_URL
+        value: 'https://harmonic-universe.onrender.com'
       - key: REACT_APP_BASE_URL
         value: 'https://harmonic-universe.onrender.com'
-      - key: DATABASE_URL
-        fromDatabase:
-          name: harmonic-universe-db
-          property: connectionString
 databases:
   - name: harmonic-universe-db
     plan: starter
