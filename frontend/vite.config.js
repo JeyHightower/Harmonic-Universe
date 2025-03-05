@@ -3,6 +3,7 @@ import path from 'path';
 // Use the standard react plugin import
 import react from '@vitejs/plugin-react';
 import patchAntDesignPlugin from './src/utils/patchAntdIcons';
+import directPatchPlugin from './src/utils/directPatchPlugin';
 
 // Create a plugin that injects version information into all Ant Design icons files
 const injectVersionPlugin = () => {
@@ -152,7 +153,8 @@ export default defineConfig({
     react(),
     patchAntDesignPlugin(),
     // Use our version injection plugin
-    injectVersionPlugin()
+    injectVersionPlugin(),
+    directPatchPlugin()
   ],
   server: {
     proxy: {

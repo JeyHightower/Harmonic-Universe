@@ -1,3 +1,6 @@
+// Import safety patch at the very top
+import './utils/react-safety-patch';
+
 // Import at the very top to ensure React is available globally
 import './utils/ensure-react';
 
