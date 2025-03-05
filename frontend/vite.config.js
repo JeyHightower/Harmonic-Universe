@@ -160,7 +160,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 2000,
     // Configure code splitting via Rollup options
     rollupOptions: {
-      external: ['antd', '@ant-design/icons', 'three'],
+      external: ['@ant-design/icons', 'three'],
       output: {
         manualChunks: (id) => {
           // Create a chunk for Ant Design icons
@@ -174,6 +174,10 @@ export default defineConfig({
               id.includes('axios') ||
               id.includes('firebase'))) {
             return 'vendor';
+          }
+          // Add a specific chunk for antd
+          if (id.includes('node_modules/antd')) {
+            return 'antd';
           }
         },
       }
