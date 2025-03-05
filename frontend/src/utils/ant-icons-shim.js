@@ -1,36 +1,34 @@
 /**
- * This file provides a complete shim for Ant Design icons SVG modules
- * It ensures all necessary properties are available for the icons library
+ * This file provides a minimal shim for Ant Design icons SVG modules
+ * It ensures all version properties are available for the icons library
  */
 
 // Create a version property that ant-design/icons expects
-export const version = '4.2.1'; // Match a compatible version
+export const version = '4.2.1';
 
-// Create a simple object for a generic icon
-const createGenericIcon = (iconName) => {
-    const theme = iconName.includes('Filled') ? 'filled' :
-        iconName.includes('Outlined') ? 'outlined' : 'outlined';
+// Define all namespaces that might be accessed
+export const asn = { version };
+export const lib = { version, asn: { version } };
+export const es = { version, asn: { version } };
 
-    const formattedName = iconName.toLowerCase().replace(/([A-Z])/g, '-$1').toLowerCase();
-
+// Basic icon generator
+const createGenericIcon = (iconName = 'default-icon') => {
     return {
-        name: formattedName,
-        theme: theme,
+        name: iconName,
+        theme: 'outlined',
         icon: {
             tag: 'svg',
             attrs: {
                 viewBox: '64 64 896 896',
                 focusable: 'false',
-                'data-icon': formattedName,
+                'data-icon': iconName,
                 width: '1em',
                 height: '1em',
                 fill: 'currentColor'
             },
             children: [{
                 tag: 'path',
-                attrs: {
-                    d: 'M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z'
-                }
+                attrs: { d: 'M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z' }
             }]
         }
     };
@@ -38,26 +36,14 @@ const createGenericIcon = (iconName) => {
 
 // Export a function to get any icon
 export function getIcon(iconName) {
-    const icon = createGenericIcon(iconName);
-    // Make sure it has all properties needed by @ant-design/icons
-    return {
-        ...icon,
-        default: icon, // Some imports expect a default property
-        __esModule: true
-    };
+    return createGenericIcon(iconName);
 }
 
-// Add asn namespace for compatibility
-export const asn = {
-    version: version
-};
-
-// Add all required exports for compatibility
+// Default export that provides everything needed
 export default {
-    version: version,
-    getIcon: getIcon,
-    asn: asn
+    version,
+    asn,
+    lib,
+    es,
+    getIcon
 };
-
-// Mark as ES module
-export const __esModule = true;

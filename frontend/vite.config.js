@@ -4,6 +4,39 @@ import path from 'path';
 import react from '@vitejs/plugin-react';
 import patchAntDesignPlugin from './src/utils/patchAntdIcons';
 
+// Create a plugin that injects version information into all Ant Design icons files
+const injectVersionPlugin = () => {
+  return {
+    name: 'inject-antd-icons-version',
+    // Run after other plugins have processed the files
+    enforce: 'post',
+
+    transform(code, id) {
+      // Only transform the ant-icons chunk file during build
+      if (id.includes('ant-icons') && code.includes('@ant-design/icons-svg') && !code.includes('version = ')) {
+        console.log('[InjectVersion] Adding version to:', id);
+
+        // Inject the version property directly at the top of the file
+        const injection = `
+// Injected version property for Ant Design Icons
+const version = "4.2.1";
+export { version };
+if (typeof window !== 'undefined') {
+  window.__ANT_ICONS_VERSION__ = version;
+}
+        `;
+
+        return {
+          code: injection + code,
+          map: null
+        };
+      }
+
+      return null;
+    }
+  };
+};
+
 // Create a custom plugin that handles missing Ant Design icon SVG modules
 const handleMissingModulesPlugin = () => {
   // Track which icon paths we've already processed
@@ -57,8 +90,11 @@ const handleMissingModulesPlugin = () => {
         }
 
         // Generate a generic mock SVG icon module for any requested icon
+        // Make sure to include the version property
         return `
-          // Mock SVG icon module for ${iconName}
+          // Mock SVG icon module for ${iconName} with version property
+          export const version = "4.2.1";
+
           const ${iconName}Icon = {
             name: "${iconName.toLowerCase().replace(/([A-Z])/g, '-$1').toLowerCase()}",
             theme: "${iconName.includes('Filled') ? 'filled' : iconName.includes('Outlined') ? 'outlined' : 'outlined'}",
@@ -99,7 +135,9 @@ export default defineConfig({
     handleMissingModulesPlugin(),
     // Use the react plugin with standard configuration
     react(),
-    patchAntDesignPlugin()
+    patchAntDesignPlugin(),
+    // Use our version injection plugin
+    injectVersionPlugin()
   ],
   server: {
     proxy: {
@@ -151,10 +189,18 @@ export default defineConfig({
       // Add alias for ant-design icons-svg to our local implementation
       '@ant-design/icons-svg': path.resolve(__dirname, 'src/utils/ant-icons-shim.js'),
 
+      // Make sure the asn directory is also aliased
+      '@ant-design/icons-svg/es/asn': path.resolve(__dirname, 'src/utils/ant-icons-shim.js'),
+      '@ant-design/icons-svg/lib/asn': path.resolve(__dirname, 'src/utils/ant-icons-shim.js'),
+
       // Continue with other aliases
       'classnames': path.resolve(__dirname, 'node_modules/classnames'),
       '@': path.resolve(__dirname, 'src')
     },
+  },
+  define: {
+    // Define global variables to ensure the version is always available
+    '__ANT_ICONS_VERSION__': JSON.stringify('4.2.1')
   },
   build: {
     commonjsOptions: {
@@ -172,8 +218,8 @@ export default defineConfig({
         compact: false,
         inlineDynamicImports: false,
         manualChunks: (id) => {
-          // Ant Design icons need special handling
-          if (id.includes('@ant-design/icons') && !id.includes('@ant-design/icons-svg')) {
+          // Bundle all Ant Design icons into a single chunk
+          if (id.includes('@ant-design/icons')) {
             return 'ant-icons';
           }
           // Create a chunk for major libraries
@@ -204,16 +250,11 @@ export default defineConfig({
       '@reduxjs/toolkit',
       'three'
     ],
-    // Exclude ALL icon SVG paths to prevent direct optimization
-    exclude: [
-      '@ant-design/icons-svg'
-    ],
-    // Disable optimization caching
-    force: false, // Changed from true to false
-    // Use a more stable dependency optimization approach
-    entries: [
-      'src/main.jsx'
-    ],
+    // No need to exclude icon SVGs since we're handling them with plugins
+    // Force re-optimization on server restart
+    force: true,
+    // Disable optimization caching to ensure clean builds
+    cacheDir: null,
     esbuildOptions: {
       loader: {
         '.js': 'jsx',
