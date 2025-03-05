@@ -58,7 +58,8 @@ const handleMissingModulesPlugin = () => {
 
         // Generate a generic mock SVG icon module for any requested icon
         return `
-          export default {
+          // Mock SVG icon module for ${iconName}
+          const ${iconName}Icon = {
             name: "${iconName.toLowerCase().replace(/([A-Z])/g, '-$1').toLowerCase()}",
             theme: "${iconName.includes('Filled') ? 'filled' : iconName.includes('Outlined') ? 'outlined' : 'outlined'}",
             icon: {
@@ -79,6 +80,8 @@ const handleMissingModulesPlugin = () => {
               ]
             }
           };
+
+          export default ${iconName}Icon;
           export const __esModule = true;
         `;
       }
@@ -145,6 +148,9 @@ export default defineConfig({
       // React-is shim for compatibility
       'react-is': path.resolve(__dirname, 'src/utils/react-is-shim.js'),
 
+      // Add alias for ant-design icons-svg to our local implementation
+      '@ant-design/icons-svg': path.resolve(__dirname, 'src/utils/ant-icons-shim.js'),
+
       // Continue with other aliases
       'classnames': path.resolve(__dirname, 'node_modules/classnames'),
       '@': path.resolve(__dirname, 'src')
@@ -160,11 +166,14 @@ export default defineConfig({
     chunkSizeWarningLimit: 2000,
     // Configure code splitting via Rollup options
     rollupOptions: {
-      external: ['three'],
+      external: ['three'], // Removed '@ant-design/icons' from external
       output: {
+        // Add proper function names to modules
+        compact: false,
+        inlineDynamicImports: false,
         manualChunks: (id) => {
-          // Create a chunk for Ant Design icons
-          if (id.includes('@ant-design/icons')) {
+          // Ant Design icons need special handling
+          if (id.includes('@ant-design/icons') && !id.includes('@ant-design/icons-svg')) {
             return 'ant-icons';
           }
           // Create a chunk for major libraries
@@ -199,10 +208,12 @@ export default defineConfig({
     exclude: [
       '@ant-design/icons-svg'
     ],
-    // Force re-optimization on server restart
-    force: true,
     // Disable optimization caching
-    cacheDir: null,
+    force: false, // Changed from true to false
+    // Use a more stable dependency optimization approach
+    entries: [
+      'src/main.jsx'
+    ],
     esbuildOptions: {
       loader: {
         '.js': 'jsx',
