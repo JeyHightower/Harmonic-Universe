@@ -6,7 +6,7 @@ import os
 import sys
 import glob
 import logging
-from flask import Flask, send_from_directory, current_app
+from flask import Flask, send_from_directory, current_app, make_response
 
 # Add the current directory to Python path to ensure imports work correctly
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -41,6 +41,25 @@ def create_app():
 
         # Register the error logging middleware correctly
         app.wsgi_app = log_request_errors(app.wsgi_app)
+
+        # Serve the patch scripts with proper caching headers
+        @app.route('/ant-icons-patch.js')
+        def serve_patch():
+            response = make_response(send_from_directory(app.static_folder, 'ant-icons-patch.js'))
+            # Ensure the patch is not cached
+            response.headers['Cache-Control'] = 'no-store, must-revalidate'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+            return response
+
+        @app.route('/utils-fix.js')
+        def serve_utils_fix():
+            response = make_response(send_from_directory(app.static_folder, 'utils-fix.js'))
+            # Ensure the patch is not cached
+            response.headers['Cache-Control'] = 'no-store, must-revalidate'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+            return response
 
         # Special route for ant-icons files with error handling
         @app.route('/assets/ant-icons<path:filename>')
@@ -96,6 +115,29 @@ def create_app():
             try:
                 assets_dir = os.path.join(app.static_folder, 'assets')
                 logger.info(f"Serving asset: {filename} from {assets_dir}")
+
+                # Special handling for utils.js to inject our safety code
+                if 'utils' in filename and filename.endswith('.js'):
+                    logger.info(f"Special handling for utils.js: {filename}")
+                    file_path = os.path.join(assets_dir, filename)
+
+                    # If the file exists, potentially modify it
+                    if os.path.exists(file_path):
+                        with open(file_path, 'r') as f:
+                            content = f.read()
+
+                        # Apply runtime patch if it seems like the problematic file
+                        if 'version' in content and '.version' in content:
+                            logger.info(f"Applying version access patch to {filename}")
+                            # Add safety wrapper to version access
+                            patched = content.replace(
+                                '.version', ' && window.__ANT_ICONS_VERSION__ ? window.__ANT_ICONS_VERSION__ : obj.version')
+
+                            response = make_response(patched)
+                            response.headers['Content-Type'] = 'application/javascript'
+                            return response
+
+                # Normal handling for other files
                 return send_from_directory(assets_dir, filename)
             except Exception as e:
                 logger.error(f"Error serving asset {filename}: {str(e)}")
