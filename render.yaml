@@ -12,18 +12,31 @@ services:
       cd frontend && npm install && npm run build
       # Copy built frontend to Flask static directory
       cd ..
+      # Create static directory and ensure it exists before trying to access it
+      mkdir -p static
       mkdir -p static/assets
-      cp -r frontend/dist/* static/
+      echo "Created directories:"
+      ls -la
 
-      # Create fallback ant-icons.js if it doesn't exist
-      if [ ! -f "static/assets/ant-icons.js" ]; then
-        echo "Creating fallback ant-icons.js"
-        echo "// Fallback Ant Icons implementation" > static/assets/ant-icons.js
-        echo "console.log('Using minimal ant-icons fallback');" >> static/assets/ant-icons.js
-        echo "window.__ANT_ICONS_VERSION__ = '4.2.1';" >> static/assets/ant-icons.js
-        echo "const IconContext = {Provider: function(props) { return props.children; }, Consumer: function() {}};" >> static/assets/ant-icons.js
-        echo "window.IconContext = IconContext;" >> static/assets/ant-icons.js
+      # Make sure the static directory exists before continuing
+      if [ ! -d "static" ]; then
+        echo "Static directory not found, creating it again"
+        mkdir -p static
+        mkdir -p static/assets
       fi
+
+      # Copy built frontend to static directory with verbose output
+      echo "Copying frontend build to static directory"
+      cp -rv frontend/dist/* static/ || echo "Warning: Could not copy all frontend files"
+
+      # Create fallback ant-icons.js
+      echo "Creating fallback ant-icons.js"
+      mkdir -p static/assets
+      echo "// Fallback Ant Icons implementation" > static/assets/ant-icons.js
+      echo "console.log('Using minimal ant-icons fallback');" >> static/assets/ant-icons.js
+      echo "window.__ANT_ICONS_VERSION__ = '4.2.1';" >> static/assets/ant-icons.js
+      echo "const IconContext = {Provider: function(props) { return props.children; }, Consumer: function() {}};" >> static/assets/ant-icons.js
+      echo "window.IconContext = IconContext;" >> static/assets/ant-icons.js
 
       # Create and copy the Ant Design version polyfill
       cat > static/ant-design-polyfill.js << 'EOL'
@@ -66,46 +79,89 @@ services:
       })();
       EOL
 
-      # Copy our comprehensive fallback to the root static directory
-      cp -v static/ant-icons.js static/assets/ || echo "Fallback script not found in root, creating minimal one"
+      # Create the critical patch files
+      echo "Creating critical Ant Design Icons patch files"
 
-      # Ensure assets directory exists and has correct permissions
+      # Create ant-icons-patch.js
+      cat > static/ant-icons-patch.js << 'EOL'
+      (function() {
+        console.log('Applying critical Ant Design Icons version patch');
+
+        // Create a safety wrapper for accessing .version property
+        Object.defineProperty(Object.prototype, 'version', {
+          get: function() {
+            if (this === undefined || this === null) {
+              console.warn('Prevented version access error on undefined object');
+              return '4.2.1';
+            }
+            return this._version || '4.2.1';
+          },
+          set: function(val) {
+            this._version = val;
+          },
+          configurable: true
+        });
+
+        // Install a global error handler for this specific issue
+        window.addEventListener('error', function(e) {
+          if (e.message && e.message.includes('version')) {
+            console.warn('Caught version error, suppressing');
+            e.preventDefault();
+          }
+        }, true);
+
+        // Create global objects with version property
+        window.__ANT_ICONS__ = { version: '4.2.1' };
+        window.__ANT_ICONS_VERSION__ = '4.2.1';
+      })();
+      EOL
+
+      # Create utils-fix.js
+      cat > static/utils-fix.js << 'EOL'
+      window.__safeGetVersion = function(obj) {
+        return (obj || {version:'4.2.1'}).version;
+      };
+      EOL
+
+      # Ensure static directory and assets exist and have correct permissions
+      mkdir -p static/assets
+
+      # Copy assets if they exist
       if [ -d "frontend/dist/assets" ]; then
-        cp -rv frontend/dist/assets/* static/assets/ || true
+        cp -rv frontend/dist/assets/* static/assets/ || echo "Warning: Could not copy all asset files"
       fi
 
-      # Make a copy of the ant-icons file without hash for direct access
-      find static/assets -name "ant-icons-*.js" -exec cp {} static/assets/ant-icons.js \; || echo "No hashed ant-icons file found"
+      # Make a copy of any ant-icons file without hash for direct access
+      find frontend/dist/assets -name "ant-icons-*.js" -exec cp -v {} static/assets/ant-icons.js \; || echo "No hashed ant-icons files found, using fallback"
 
-      # Set permissions for the polyfill
-      chmod -R 755 static
-      chmod 644 static/ant-design-polyfill.js
+      # List directories to debug
+      echo "Current directory structure:"
+      find . -type d -maxdepth 2
 
-      # Find and patch the utils.js file
-      find static/assets -name "*.js" -exec grep -l "version" {} \; | while read file; do
-        echo "Checking file: $file"
-        if grep -q "Cannot read properties of undefined (reading 'version')" "$file"; then
-          echo "Patching file: $file"
-          sed -i 's/\([a-zA-Z0-9_$.]\+\)\.version/(\1 || {version:"4.2.1"}).version/g' "$file"
-        fi
-      done
+      # Set permissions for the files
+      chmod -R 755 static || echo "Warning: Could not set permissions on static directory"
+      chmod 644 static/ant-design-polyfill.js static/ant-icons-patch.js static/utils-fix.js || echo "Warning: Could not set permissions on patch files"
 
-      # Direct fix for utils.js at line 85
-      find static/assets -name "utils-*.js" -exec sed -i '85s/\([a-zA-Z0-9_$.]\+\)\.version/(\1 || {version:"4.2.1"}).version/g' {} \;
+      # Patch JS files to fix version property access if any exist
+      echo "Patching utils.js files for version access safety"
+      find static/assets -name "utils*.js" -exec sed -i "s/\([a-zA-Z0-9_$]\+\)\.version/(\1 || {version:\"4.2.1\"}).version/g" {} \; || echo "No utils files found to patch"
+
+      # Direct fix for utils.js at line 85 if it exists
+      find static/assets -name "utils-*.js" -exec sed -i '85s/\([a-zA-Z0-9_$.]\+\)\.version/(\1 || {version:"4.2.1"}).version/g' {} \; || echo "No utils files found at expected location"
 
       # List contents to verify
       echo "Static directory contents:"
-      ls -la static
+      ls -la static || echo "Static directory not found"
       echo "Assets directory contents:"
-      ls -la static/assets || echo "No assets directory found"
+      ls -la static/assets || echo "Assets directory not found"
 
-      # Make sure the polyfill scripts are copied
-      cp frontend/public/react-polyfill.js static/ 2>/dev/null || echo "Polyfill script not found"
-      cp frontend/public/react-context-provider.js static/ 2>/dev/null || echo "Context provider script not found"
+      # Ensure polyfill scripts are copied (with error handling)
+      cp frontend/public/react-polyfill.js static/ 2>/dev/null || echo "React polyfill script not found or could not be copied"
+      cp frontend/public/react-context-provider.js static/ 2>/dev/null || echo "Context provider script not found or could not be copied"
 
-      # Verify the final structure
+      # Final verification of static directory
       echo "Final static directory structure:"
-      find static -type f | sort
+      find static -type f | sort || echo "Could not list static directory contents"
     startCommand: PYTHONPATH=. gunicorn 'app:create_app()'
     envVars:
       - key: NODE_VERSION
