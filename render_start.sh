@@ -29,12 +29,43 @@ python -m pip show gunicorn
 
 echo "Starting application server..."
 
-# Determine the correct path to the app depending on directory structure
+# List files in key directories to help debugging
+echo "Files in current directory:"
+ls -la
+
+# First try to locate the Flask application to determine the right app path
+APP_MODULE="app.main:app"
+
+# Try to determine the correct app path
 if [ -d "backend" ]; then
-  echo "Backend directory found, using backend.app.main:app"
-  cd backend
-  exec gunicorn app.main:app --log-level debug
-else
-  echo "Using root directory, assuming app.main:app"
-  exec gunicorn app.main:app --log-level debug
+  echo "Backend directory found"
+  if [ -f "backend/app/__init__.py" ]; then
+    echo "App module found at backend/app/__init__.py"
+    cd backend
+    APP_MODULE="app.main:app"
+  elif [ -f "backend/main.py" ]; then
+    echo "Main module found at backend/main.py"
+    cd backend
+    APP_MODULE="main:app"
+  else
+    echo "Looking for app.py or similar in backend directory..."
+    cd backend
+    ls -la
+    # Try to find any Python file that might be the main app file
+    if [ -f "app.py" ]; then
+      APP_MODULE="app:app"
+    fi
+  fi
+elif [ -f "app/main.py" ]; then
+  echo "App module found at app/main.py"
+  APP_MODULE="app.main:app"
+elif [ -f "main.py" ]; then
+  echo "Main module found at main.py"
+  APP_MODULE="main:app"
 fi
+
+echo "Using app module: $APP_MODULE"
+echo "Starting from directory: $(pwd)"
+
+# Start the application
+exec gunicorn $APP_MODULE --log-level debug

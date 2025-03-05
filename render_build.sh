@@ -46,6 +46,21 @@ echo "PYTHONPATH set to: $PYTHONPATH"
 
 # Run Flask commands if the Flask application is found
 if python -c "import flask" 2>/dev/null; then
+  # Check if we need to initialize migrations
+  if [ ! -d "migrations" ] && [ ! -d "backend/migrations" ]; then
+    echo "Migrations directory not found. Initializing migrations..."
+
+    if [ -d "backend" ]; then
+      echo "Initializing migrations in backend directory..."
+      cd backend
+      python -m flask db init
+      cd ..
+    else
+      echo "Initializing migrations in root directory..."
+      python -m flask db init
+    fi
+  fi
+
   echo "Running database migrations..."
   python -m flask db upgrade
 
