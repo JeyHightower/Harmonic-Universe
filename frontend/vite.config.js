@@ -160,7 +160,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 2000,
     // Configure code splitting via Rollup options
     rollupOptions: {
-      external: ['@ant-design/icons', 'three'],
+      external: ['three'],
       output: {
         manualChunks: (id) => {
           // Create a chunk for Ant Design icons
