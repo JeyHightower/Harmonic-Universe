@@ -220,6 +220,8 @@ export default defineConfig({
     'window.__ANT_DESIGN_ICONS_VERSION__': JSON.stringify('4.2.1')
   },
   build: {
+    outDir: 'dist',
+    sourcemap: true,
     commonjsOptions: {
       transformMixedEsModules: true,
       // Ensure all CommonJS modules are correctly transformed
@@ -254,6 +256,10 @@ export default defineConfig({
         },
       }
     },
+    // Ensure the React Context Provider script is copied to the dist directory
+    // by setting it in the assets configuration
+    assetsInlineLimit: 4096,
+    copyPublicDir: true, // Make sure public files are copied
   },
   optimizeDeps: {
     // Include antd to ensure it's pre-bundled

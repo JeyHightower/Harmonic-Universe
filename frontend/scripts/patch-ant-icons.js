@@ -66,35 +66,63 @@ function patchAntIcons() {
       // Create a safer version that doesn't use imports to avoid syntax errors
       // Instead load the fallback via script tag and define version directly
       const versionPatch = `
-// ==== BEGIN ANT DESIGN ICONS PATCH ====
+// ==== BEGIN DIRECT ANT DESIGN ICONS PATCH ====
+// This patch directly injects all necessary functionality into the file
+
+// Define React and createContext directly in the file
+var React = React || window.React || {};
+React.createContext = React.createContext || function(defaultValue) {
+  return {
+    Provider: function(props) { return props.children; },
+    Consumer: function(props) { return props.children ? props.children(defaultValue) : null; },
+    _currentValue: defaultValue,
+    _currentValue2: defaultValue,
+    displayName: "IconContext"
+  };
+};
+
+// Make sure React is available globally too
+if (typeof window !== 'undefined') {
+  window.React = React;
+}
+
 // Define version to avoid undefined.version errors
 var version = "4.2.1";
-
-// Initialize version variables
 window.__ANT_ICONS_VERSION__ = "4.2.1";
 
-// Add global version fallbacks
+// Define IconContext directly if not available
+var IconContext = IconContext || React.createContext ? React.createContext({
+  prefixCls: 'anticon',
+  rtl: false,
+  version: "4.2.1"
+}) : {
+  Provider: function() {},
+  Consumer: function() {}
+};
+
+// Make sure IconContext has a version
+if (IconContext) {
+  IconContext.version = "4.2.1";
+  IconContext.displayName = "IconContext";
+}
+
+// Ensure IconProvider exists and has version
+var IconProvider = IconProvider || {
+  version: "4.2.1",
+  Provider: IconContext ? IconContext.Provider : function() {},
+  Consumer: IconContext ? IconContext.Consumer : function() {}
+};
+
+// Create safe property accessors
 window.__getVersionSafe = function(obj) {
   if (!obj) return "4.2.1";
   return obj.version || "4.2.1";
 };
 
-// Protect against undefined objects
 window.__safeProp = function(obj, prop) {
   if (!obj) return "4.2.1";
   return obj[prop] || "4.2.1";
 };
-
-// Create version proxy
-var versionProxy = {
-  get: function(target, prop) {
-    if (prop === 'version') return "4.2.1";
-    return target[prop];
-  }
-};
-
-// Ensure IconProvider exists and has version
-var IconProvider = IconProvider || { version: "4.2.1" };
 
 // Override problematic property accesses
 (function() {
@@ -114,13 +142,19 @@ var IconProvider = IconProvider || { version: "4.2.1" };
 // ==== END PATCH ====
 `;
 
-      // Add our patches to the content - remove any import statements to avoid syntax errors
+      // Add our patches to the content - directly at the beginning
       content = versionPatch + content;
 
       // Replace any attempts to access .version with safe accessors
       content = content.replace(
         /(\w+)\.version/g,
         'window.__safeProp($1, "version")'
+      );
+
+      // Find and replace React.createContext patterns
+      content = content.replace(
+        /React\.createContext/g,
+        '(React && React.createContext ? React.createContext : function(val) { return { Provider: function(){}, Consumer: function(){}, _currentValue: val, version: "4.2.1" }; })'
       );
 
       // Write the patched file
@@ -146,15 +180,15 @@ var IconProvider = IconProvider || { version: "4.2.1" };
       let indexHtml = fs.readFileSync(indexHtmlPath, 'utf8');
 
       // Only add if not already present - add it before any other scripts
-      if (!indexHtml.includes('react-fallback.js')) {
+      if (!indexHtml.includes('react-context-provider.js')) {
         indexHtml = indexHtml.replace(
           '<head>',
-          '<head>\n  <script src="/assets/react-fallback.js"></script>'
+          '<head>\n  <script src="/react-context-provider.js"></script>'
         );
         fs.writeFileSync(indexHtmlPath, indexHtml);
-        console.log('✅ Added React fallback to index.html');
+        console.log('✅ Added React Context Provider to index.html');
       } else {
-        console.log('Fallback already in index.html');
+        console.log('React Context Provider already in index.html');
       }
     } else {
       console.warn(`Could not find index.html at ${indexHtmlPath}`);

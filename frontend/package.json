@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/patch-vite-chunks.js && vite",
-    "build": "CI=false && node scripts/clean-index.js && node scripts/clean-ant-icons.js && node scripts/fix-ant-icons.js && vite build && node scripts/ensure-react-deps.js && node scripts/patch-ant-icons.js && node scripts/check-ant-icons-files.js",
+    "build": "CI=false && node scripts/clean-index.js && node scripts/clean-ant-icons.js && node scripts/fix-ant-icons.js && vite build && node scripts/ensure-react-deps.js && node scripts/patch-ant-icons.js && node scripts/patch-ant-icons-inline.js && node scripts/check-ant-icons-files.js",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest",
