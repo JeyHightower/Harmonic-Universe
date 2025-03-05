@@ -4,6 +4,7 @@ import path from 'path';
 import react from '@vitejs/plugin-react';
 import patchAntDesignPlugin from './src/utils/patchAntdIcons';
 import directPatchPlugin from './src/utils/directPatchPlugin';
+import antIconsFix from './vite-plugins/ant-icons-fix';
 
 // Create a plugin that injects version information into all Ant Design icons files
 const injectVersionPlugin = () => {
@@ -137,32 +138,18 @@ export default defineConfig({
     patchAntDesignPlugin(),
     // Use our version injection plugin
     injectVersionPlugin(),
-    directPatchPlugin()
+    directPatchPlugin(),
+    antIconsFix()
   ],
   server: {
+    port: 3000,
+    open: true,
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
-        secure: false,
-        ws: true,
-        rewrite: path => path.replace(/^\/api/, '/api'),
-        configure: (proxy, _options) => {
-          proxy.on('error', (err, _req, _res) => {
-            console.log('proxy error', err);
-          });
-          proxy.on('proxyReq', (proxyReq, req, _res) => {
-            console.log('Sending Request to the Target:', req.method, req.url);
-          });
-          proxy.on('proxyRes', (proxyRes, req, _res) => {
-            console.log(
-              'Received Response from the Target:',
-              proxyRes.statusCode,
-              req.url
-            );
-          });
-        },
-      },
+        secure: false
+      }
     },
     cors: {
       origin: '*',
@@ -195,35 +182,26 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
-    // Ensure output is compatible with older browsers
-    target: 'es2015',
-    commonjsOptions: {
-      transformMixedEsModules: true,
-      include: [/node_modules/],
+    assetsDir: 'assets',
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: false,
+      },
     },
-    // Increased from 800KB to 1500KB to suppress warnings
     chunkSizeWarningLimit: 1500,
     rollupOptions: {
       external: ['three'], // Removed '@ant-design/icons' from external
       output: {
-        // Use more consistent file names
         entryFileNames: 'assets/[name].[hash].js',
         chunkFileNames: 'assets/[name].[hash].js',
         assetFileNames: 'assets/[name].[hash].[ext]',
-        manualChunks: (id) => {
-          // Create a dedicated chunk for Ant Icons that's easy to identify
-          if (id.includes('@ant-design/icons')) {
-            return 'ant-icons';
-          }
-          if (id.includes('react') || id.includes('react-dom')) {
-            return 'vendor';
-          }
-          if (id.includes('antd')) {
-            return 'antd';
-          }
-          // Return undefined for other modules
-          return undefined;
+        manualChunks: {
+          'vendor': ['react', 'react-dom'],
+          'ant-design': [
+            '@ant-design/icons',
+            'antd'
+          ]
         },
         globals: {
           react: 'React',

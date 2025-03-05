@@ -11,12 +11,21 @@ pip install gunicorn
 # Build the React frontend
 echo "=== Building React frontend ==="
 cd frontend
-npm install
+npm install --force  # Use force to ensure compatibility
 
-# Run the build
-echo "=== Running npm build ==="
-# Added CI=false to ignore warnings
-CI=false npm run render-build || {
+# Add debug information
+echo "=== Node and npm versions ==="
+node --version
+npm --version
+
+# Run the postinstall script again for safety
+echo "=== Running postinstall script ==="
+node postinstall.js
+
+# Run the build with extended timeout and verbose logging
+echo "=== Running npm build with debugging ==="
+export NODE_OPTIONS="--max-old-space-size=2048"  # Increase memory limit
+CI=false npm run render-build --verbose || {
   echo "Frontend build failed. Creating minimal fallback."
   mkdir -p dist
   cat > dist/index.html << 'EOL'
