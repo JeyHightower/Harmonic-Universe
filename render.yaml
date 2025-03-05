@@ -2,13 +2,14 @@
 services:
   - type: web
     name: harmonic-universe
-    env: python
+    runtime: python
     buildCommand: |
       # Build frontend
       cd frontend && npm install && npm run build && cd ..
       # Build backend
       pip install -r backend/requirements.txt
       pip install psycopg2
+      pip install gunicorn
       flask db upgrade
       flask seed all
     startCommand: cd backend && gunicorn app.main:app
