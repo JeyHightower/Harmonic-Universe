@@ -8,6 +8,7 @@
     "build": "CI=false && node scripts/clean-index.js && node scripts/clean-ant-icons.js && node scripts/fix-ant-icons.js && node scripts/fix-ant-icons-jsx.js && vite build && node scripts/ensure-react-deps.js && node scripts/patch-ant-icons.js && node scripts/patch-ant-icons-inline.js && node scripts/check-ant-icons-files.js && node scripts/render-post-build.js",
     "render-build": "NODE_OPTIONS=--max-old-space-size=3072 GENERATE_SOURCEMAP=false CI=false vite build --mode production",
     "simplified-build": "node postinstall.js && vite build --mode production",
+    "debug-build": "node debug-build.js",
     "start": "node server.js",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",

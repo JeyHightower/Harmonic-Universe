@@ -36,6 +36,10 @@ echo "=== Node and npm versions ==="
 node --version
 npm --version
 
+# Run the debug script to diagnose potential issues
+echo "=== Running debug diagnostics ==="
+node debug-build.js || true
+
 # Set up patch files before build
 echo "=== Setting up patch files ==="
 mkdir -p src/utils || true
