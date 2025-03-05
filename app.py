@@ -23,15 +23,12 @@ def create_app():
         # Create the application using the backend factory function
         app = backend_create_app(config['production'])
 
-        # Special route to handle all static files including the Ant Design icons
-        @app.route('/assets/<path:filename>')
-        def serve_assets(filename):
-            return send_from_directory(os.path.join(app.static_folder, 'assets'), filename)
+        # We don't need to add serve_assets route here since it's already defined in backend/app/__init__.py
 
         # Make sure all routes are handled, even if not explicitly defined
         @app.route('/', defaults={'path': ''})
         @app.route('/<path:path>')
-        def catch_all(path):
+        def root_catch_all(path):
             if path and os.path.exists(os.path.join(app.static_folder, path)):
                 return send_from_directory(app.static_folder, path)
             return send_from_directory(app.static_folder, 'index.html')
