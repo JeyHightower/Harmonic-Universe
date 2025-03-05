@@ -4,19 +4,27 @@ services:
     name: harmonic-universe
     runtime: python
     buildCommand: |
-      # Build frontend
-      cd frontend && npm install && npm run build && cd ..
-      # Build backend
-      python -m pip install --upgrade pip
-      python -m pip install -r backend/requirements.txt
-      python -m pip install psycopg2
-      python -m pip install gunicorn==21.2.0
-      echo "Installed packages:"
-      python -m pip list
-      cd backend && python -m flask db upgrade
-      cd backend && python -m flask seed all
-    startCommand: 'cd /opt/render/project/src && python -m gunicorn --chdir backend app.main:app --log-level debug'
+      # Install Python dependencies
+      pip install -r requirements.txt
+      # Build the React frontend
+      cd frontend && npm install && npm run render-build
+      # Copy built frontend to Flask static directory (adjust paths as needed)
+      mkdir -p static
+      cp -r frontend/dist/* static/
+      # Make sure the polyfill script is copied
+      cp frontend/public/react-polyfill.js static/
+      # Also copy any other important scripts
+      cp frontend/public/react-context-provider.js static/ 2>/dev/null || true
+      # Run our script to copy polyfill to Flask static directory
+      cd backend && python -m scripts.copy_react_polyfill
+    startCommand: gunicorn app:app
     envVars:
+      - key: NODE_VERSION
+        value: 18.17.0
+      - key: PYTHON_VERSION
+        value: 3.9.6
+      - key: CI
+        value: 'false'
       - key: FLASK_ENV
         value: production
       - key: FLASK_APP

@@ -1,17 +1,27 @@
-# This file provides configuration for Render.com
+# Render.com configuration
 services:
+  # For a static site (no server needed)
   - type: web
-    name: harmonic-universe-frontend
-    env: static
-    buildCommand: npm install && npm run render-build
-    staticPublishPath: ./dist
+    name: harmonic-universe-static
+    runtime: static
+    buildCommand: cd frontend && npm install && npm run render-build
+    staticPublishPath: ./frontend/dist
     envVars:
       - key: NODE_VERSION
-        value: 18.17.0 # Using a stable Node.js version
+        value: 18.17.0
       - key: CI
-        value: 'false' # Prevents CI mode from treating warnings as errors
-    headers:
-      # Add any required headers for your project
-      - path: /*
-        name: X-Frame-Options
-        value: SAMEORIGIN
+        value: 'false'
+
+  # For a Node.js service (with server)
+  - type: web
+    name: harmonic-universe-web
+    runtime: node
+    buildCommand: cd frontend && npm install && npm run render-build
+    startCommand: cd frontend && npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 18.17.0
+      - key: CI
+        value: 'false'
+      - key: PORT
+        value: 10000

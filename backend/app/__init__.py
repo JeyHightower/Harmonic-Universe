@@ -9,6 +9,7 @@ from .core.config import Config
 import os
 import logging
 from .db.session import init_engine, Base, db_session
+from .middleware.react_patch import init_app as init_react_patch
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -65,6 +66,9 @@ def create_app(config_class=Config):
     # Import socket events handlers
     from .websocket import init_socketio
     init_socketio(socketio)
+
+    # Initialize React patch middleware for Ant Icons fix
+    init_react_patch(app)
 
     # Register health check route
     @app.route('/api/v1/health')
