@@ -1,6 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { api, endpoints } from '../../utils/api';
-import { updateUser } from '../slices/authSlice';
+import { updateUser, loginSuccess, loginFailure, loginStart } from '../slices/authSlice';
 
 const handleError = error => {
     console.error('API Error:', error);
@@ -11,6 +11,41 @@ const handleError = error => {
         data: error.response?.data,
     };
 };
+
+// Register a new user
+export const registerUser = createAsyncThunk(
+    'auth/registerUser',
+    async (userData, { dispatch, rejectWithValue }) => {
+        try {
+            dispatch(loginStart());
+            console.debug('Registering user:', userData);
+
+            const response = await api.post(
+                endpoints.auth.register,
+                userData
+            );
+            console.debug('Registration successful:', response);
+
+            // Store tokens
+            if (response.access_token) {
+                localStorage.setItem('accessToken', response.access_token);
+            }
+            if (response.refresh_token) {
+                localStorage.setItem('refreshToken', response.refresh_token);
+            }
+
+            // Dispatch login success with user data
+            dispatch(loginSuccess(response.user));
+
+            return response;
+        } catch (error) {
+            console.error('Registration failed:', error);
+            const errorData = handleError(error);
+            dispatch(loginFailure(errorData.message));
+            return rejectWithValue(errorData);
+        }
+    }
+);
 
 // Update user profile
 export const updateUserProfile = createAsyncThunk(

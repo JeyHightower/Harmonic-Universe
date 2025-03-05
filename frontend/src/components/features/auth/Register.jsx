@@ -1,9 +1,9 @@
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import useForm from '../../../hooks/useForm';
-import { loginSuccess } from '../../../store/slices/authSlice';
 import { openModal } from '../../../store/slices/modalSlice';
-import { api, endpoints } from '../../../utils/api';
+import { registerUser } from '../../../store/thunks/authThunks';
 import {
   validateEmail,
   validatePassword,
@@ -16,6 +16,7 @@ import './Auth.css';
 function Register() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { loading, error } = useSelector(state => state.auth);
 
   const { values, errors, handleChange, handleBlur, validateForm } = useForm(
     {
@@ -30,38 +31,45 @@ function Register() {
     }
   );
 
-  const handleSubmit = async (values, { setSubmitting, setErrors }) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      dispatch(
+        openModal({
+          title: 'Validation Error',
+          content: 'Please fix the errors in the form before submitting.',
+          severity: 'error',
+        })
+      );
+      return;
+    }
+
     try {
-      setLoading(true);
-      const response = await api.post(endpoints.auth.register, values);
-      console.debug('Register response:', response);
+      const resultAction = await dispatch(registerUser(values));
 
-      if (response.access_token) {
-        localStorage.setItem('accessToken', response.access_token);
+      if (registerUser.fulfilled.match(resultAction)) {
+        // Registration successful, navigate to dashboard
+        navigate('/dashboard');
+      } else {
+        // Registration failed, show error in modal
+        const errorMessage = resultAction.payload?.message ||
+          'An error occurred during registration. Please try again.';
+
+        dispatch(
+          openModal({
+            title: 'Registration Error',
+            content: errorMessage,
+            severity: 'error',
+          })
+        );
       }
-      if (response.refresh_token) {
-        localStorage.setItem('refreshToken', response.refresh_token);
-      }
-
-      dispatch(loginSuccess(response.user));
-      navigate('/dashboard');
-    } catch (error) {
-      let errorMessage =
-        'An error occurred during registration. Please try again.';
-
-      if (error.response) {
-        const { data } = error.response;
-        if (data.message) {
-          errorMessage = data.message;
-        } else if (data.error) {
-          errorMessage = data.error;
-        }
-      }
-
+    } catch (err) {
+      console.error('Unexpected error during registration:', err);
       dispatch(
         openModal({
           title: 'Registration Error',
-          content: errorMessage,
+          content: 'An unexpected error occurred. Please try again.',
           severity: 'error',
         })
       );
@@ -102,8 +110,8 @@ function Register() {
           error={errors.password}
           required
         />
-        <Button type="submit" fullWidth>
-          Register
+        <Button type="submit" fullWidth disabled={loading}>
+          {loading ? 'Registering...' : 'Register'}
         </Button>
       </form>
     </div>
