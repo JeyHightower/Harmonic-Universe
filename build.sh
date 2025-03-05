@@ -54,12 +54,14 @@ export NODE_OPTIONS="--max-old-space-size=3072"  # Increase memory limit
 export GENERATE_SOURCEMAP=false  # Disable source maps to reduce size
 export CI=false  # Prevent treating warnings as errors
 
-echo "=== Running Vite build with fallback strategies ==="
-npm run render-build || {
-  echo "Standard build failed, trying alternative build approach"
+echo "=== Running Vite build with simplified command ==="
+npm run simplified-build || {
+  echo "Simplified build failed, trying render-build command"
+  npm run render-build || {
+    echo "Render build failed, trying direct vite build"
 
-  echo "=== Creating minimal vite.config.js ==="
-  cat > vite.config.js.minimal << 'EOL'
+    echo "=== Creating minimal vite.config.js ==="
+    cat > vite.config.js.minimal << 'EOL'
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';

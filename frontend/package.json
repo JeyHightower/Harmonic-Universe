@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node scripts/patch-vite-chunks.js && vite",
     "build": "CI=false && node scripts/clean-index.js && node scripts/clean-ant-icons.js && node scripts/fix-ant-icons.js && node scripts/fix-ant-icons-jsx.js && vite build && node scripts/ensure-react-deps.js && node scripts/patch-ant-icons.js && node scripts/patch-ant-icons-inline.js && node scripts/check-ant-icons-files.js && node scripts/render-post-build.js",
-    "render-build": "npm run build && node scripts/prepare-assets.js && node scripts/render-post-build.js",
+    "render-build": "NODE_OPTIONS=--max-old-space-size=3072 GENERATE_SOURCEMAP=false CI=false vite build --mode production",
+    "simplified-build": "node postinstall.js && vite build --mode production",
     "start": "node server.js",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
@@ -18,7 +19,8 @@
     "merge-nested": "node scripts/merge-nested.js",
     "check-ant-build": "node scripts/check-ant-icons-files.js",
     "analyze-chunks": "node scripts/check-chunk-size.js",
-    "prepare": "node -e \"try { if (!process.env.CI && !process.env.RENDER) { require('child_process').execSync('cd .. && husky install frontend/.husky', {stdio: 'inherit'}) } } catch (e) { console.log('Husky install failed, but this is ok in production environments'); }\""
+    "prepare": "node -e \"try { if (!process.env.CI && !process.env.RENDER) { require('child_process').execSync('cd .. && husky install frontend/.husky', {stdio: 'inherit'}) } } catch (e) { console.log('Husky install failed, but this is ok in production environments'); }\"",
+    "postinstall": "node postinstall.js"
   },
   "dependencies": {
     "@ant-design/icons": "^5.6.1",
