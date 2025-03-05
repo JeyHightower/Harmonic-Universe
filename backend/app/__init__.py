@@ -57,7 +57,7 @@ def create_app(config_class=Config):
     app.register_blueprint(api_bp, url_prefix='/api/v1')
 
     # Import and register models to ensure they are known to SQLAlchemy
-    from .models import user, sound, universe, story, message, composition, chapter, track
+    from .models import User, Universe, PhysicsObject, PhysicsParameters, PhysicsConstraint, AudioTrack, Visualization, Scene
 
     # Initialize WebSocket
     socketio.init_app(app, cors_allowed_origins="*")
