@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import './utils/ensure-antd-version'; // Import the version utility first
 import App from './App';
 import { UserOutlined } from '@ant-design/icons';
 import './styles/global.css';

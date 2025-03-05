@@ -12,17 +12,23 @@ const injectVersionPlugin = () => {
     enforce: 'post',
 
     transform(code, id) {
-      // Only transform the ant-icons chunk file during build
-      if (id.includes('ant-icons') && code.includes('@ant-design/icons-svg') && !code.includes('version = ')) {
+      // Make the condition more inclusive to catch the chunk in both dev and build
+      if ((id.includes('ant-icons') || id.includes('@ant-design/icons')) &&
+        !code.includes('export { version }')) {
         console.log('[InjectVersion] Adding version to:', id);
 
-        // Inject the version property directly at the top of the file
+        // More robust version injection that doesn't rely on existing structure
         const injection = `
 // Injected version property for Ant Design Icons
 const version = "4.2.1";
 export { version };
 if (typeof window !== 'undefined') {
   window.__ANT_ICONS_VERSION__ = version;
+}
+
+// Ensure IconProvider has access to version
+if (typeof IconProvider !== 'undefined' && !IconProvider.version) {
+  IconProvider.version = version;
 }
         `;
 
@@ -200,7 +206,9 @@ export default defineConfig({
   },
   define: {
     // Define global variables to ensure the version is always available
-    '__ANT_ICONS_VERSION__': JSON.stringify('4.2.1')
+    '__ANT_ICONS_VERSION__': JSON.stringify('4.2.1'),
+    // Add a global fallback for IconProvider.version
+    'window.__ANT_DESIGN_ICONS_VERSION__': JSON.stringify('4.2.1')
   },
   build: {
     commonjsOptions: {
