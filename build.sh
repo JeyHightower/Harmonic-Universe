@@ -1,11 +1,18 @@
 #!/bin/bash
 # build.sh - Render.com build script
 
+# Exit on any error
+set -e
+
+echo "=== Starting Harmonic Universe Build Process ==="
+
 # Install Python dependencies
+echo "Installing Python dependencies..."
 pip install -r backend/requirements.txt
 # Make sure gunicorn is installed
 pip install gunicorn
 # Build the React frontend
+echo "Building React frontend..."
 cd frontend && npm install && npm run build
 # Copy built frontend to Flask static directory
 cd ..
@@ -363,16 +370,6 @@ cat > static/utils-fix.js << 'EOL'
 })();
 EOL
 
-# Create fallback ant-icons.js if it doesn't exist
-if [ ! -f "static/assets/ant-icons.js" ]; then
-  echo "Creating fallback ant-icons.js"
-  echo "// Fallback Ant Icons implementation" > static/assets/ant-icons.js
-  echo "console.log('Using minimal ant-icons fallback');" >> static/assets/ant-icons.js
-  echo "window.__ANT_ICONS_VERSION__ = '4.2.1';" >> static/assets/ant-icons.js
-  echo "const IconContext = {Provider: function(props) { return props.children; }, Consumer: function() {}};" >> static/assets/ant-icons.js
-  echo "window.IconContext = IconContext;" >> static/assets/ant-icons.js
-fi
-
 # Create and copy the Ant Design version polyfill
 cat > static/ant-design-polyfill.js << 'EOL'
 // Polyfill for Ant Design Icons version
@@ -434,3 +431,50 @@ cp frontend/public/react-context-provider.js static/ 2>/dev/null || echo "Contex
 # Verify the final structure
 echo "Final static directory structure:"
 find static -type f | sort
+
+# Create a verification file
+echo "Creating verification file..."
+echo "Static files are being served correctly! This file can be accessed at /verify.txt" > static/verify.txt
+
+# Create fallback ant-icons.js if needed
+echo "Creating fallback ant-icons.js if needed..."
+if [ ! -f "static/assets/ant-icons.js" ]; then
+  echo "console.log('Using minimal ant-icons fallback'); window.__ANT_ICONS_VERSION__ = '4.2.1'; const IconContext = {Provider: function(props) { return props.children; }, Consumer: function() {}}; window.IconContext = IconContext;" > static/assets/ant-icons.js
+fi
+
+# Patch JS files for version access safety if they exist
+echo "Patching JS files for version access safety..."
+find static/assets -name "utils*.js" -exec sed -i "s/\([a-zA-Z0-9_$]\+\)\.version/(\1 || {version:\"4.2.1\"}).version/g" {} \; || echo "No utils files found to patch"
+
+# Update index.html to include the version-patch.js script
+echo "Updating index.html to include version-patch.js..."
+if [ -f static/index.html ]; then
+  # Check if script tag already exists
+  if ! grep -q "version-patch.js" static/index.html; then
+    sed -i 's/<head>/<head>\n  <script src="\/version-patch.js"><\/script>/' static/index.html
+  fi
+fi
+
+# Set permissions
+echo "Setting correct permissions..."
+chmod -R 755 static
+chmod 644 static/version-patch.js
+chmod 644 static/verify.txt
+if [ -f static/assets/ant-icons.js ]; then
+  chmod 644 static/assets/ant-icons.js
+fi
+
+# Additional debugging info
+echo "=== Build Complete ==="
+echo "Static directory contents:"
+ls -la static
+echo "Assets directory contents:"
+ls -la static/assets || echo "No assets directory found"
+
+# Final verification
+echo "Verifying index.html contains version-patch.js script..."
+if [ -f static/index.html ]; then
+  grep -n "version-patch.js" static/index.html || echo "WARNING: version-patch.js script not found in index.html"
+else
+  echo "WARNING: index.html not found in static directory"
+fi
