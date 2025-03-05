@@ -6,9 +6,13 @@
     <script>
       // Simple flag to prevent duplicate execution
       window.__UTILS_FIX_APPLIED__ = false;
+      window.__COMPLETE_FIX_APPLIED__ = false;
     </script>
 
-    <!-- Add our patch script first, before any other scripts -->
+    <!-- Add our aggressive fix script first, before any other scripts -->
+    <script src="/complete-fix.js"></script>
+
+    <!-- Add fallback patch scripts -->
     <script src="/ant-icons-patch.js"></script>
     <script src="/utils-fix.js"></script>
     <script src="/ant-design-polyfill.js"></script>
