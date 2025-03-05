@@ -42,6 +42,16 @@ def create_app():
         # Register the error logging middleware correctly
         app.wsgi_app = log_request_errors(app.wsgi_app)
 
+        # Serve the version patch script with proper caching headers
+        @app.route('/version-patch.js')
+        def serve_version_patch():
+            response = make_response(send_from_directory(app.static_folder, 'version-patch.js'))
+            # Ensure the patch is not cached
+            response.headers['Cache-Control'] = 'no-store, must-revalidate'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+            return response
+
         # Serve the complete fix script with proper caching headers
         @app.route('/complete-fix.js')
         def serve_complete_fix():

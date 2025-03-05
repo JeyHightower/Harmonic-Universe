@@ -9,15 +9,16 @@
       window.__COMPLETE_FIX_APPLIED__ = false;
     </script>
 
-    <!-- Add our aggressive fix script first, before any other scripts -->
-    <script src="/complete-fix.js"></script>
+    <!-- Simple version patch with no recursion risk -->
+    <script src="/version-patch.js"></script>
 
-    <!-- Add fallback patch scripts -->
-    <script src="/ant-icons-patch.js"></script>
-    <script src="/utils-fix.js"></script>
-    <script src="/ant-design-polyfill.js"></script>
-    <script src="/react-polyfill.js"></script>
-    <script src="/react-context-provider.js"></script>
+    <!-- IMPORTANT: Remove or comment out previous fix scripts -->
+    <!-- <script src="/complete-fix.js"></script> -->
+    <!-- <script src="/ant-icons-patch.js"></script> -->
+    <!-- <script src="/utils-fix.js"></script> -->
+    <!-- <script src="/ant-design-polyfill.js"></script> -->
+    <!-- <script src="/react-polyfill.js"></script> -->
+    <!-- <script src="/react-context-provider.js"></script> -->
 
     <!-- Add global error handler for script loading -->
     <script>
