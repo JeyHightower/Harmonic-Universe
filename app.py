@@ -79,7 +79,14 @@ def create_app():
             # Handle root path
             if not path:
                 logger.info("Serving index.html for root path")
-                return send_from_directory(static_folder, 'index.html')
+                index_path = os.path.join(static_folder, 'index.html')
+                if os.path.exists(index_path):
+                    return send_from_directory(static_folder, 'index.html')
+                else:
+                    logger.warning("index.html not found, serving fallback.html")
+                    fallback_path = os.path.join(static_folder, 'fallback.html')
+                    if os.path.exists(fallback_path):
+                        return send_from_directory(static_folder, 'fallback.html')
 
             # Check if the file exists in the static folder
             static_file_path = os.path.join(static_folder, path)
@@ -90,10 +97,17 @@ def create_app():
             # For all other paths, serve index.html for SPA routing
             try:
                 logger.info(f"Serving index.html for SPA route: {path}")
-                return send_from_directory(static_folder, 'index.html')
+                index_path = os.path.join(static_folder, 'index.html')
+                if os.path.exists(index_path):
+                    return send_from_directory(static_folder, 'index.html')
+                else:
+                    logger.warning("index.html not found for SPA route, serving fallback.html")
+                    fallback_path = os.path.join(static_folder, 'fallback.html')
+                    if os.path.exists(fallback_path):
+                        return send_from_directory(static_folder, 'fallback.html')
             except Exception as e:
-                logger.error(f"Error serving index.html: {str(e)}")
-                # Fallback if index.html doesn't exist
+                logger.error(f"Error serving for path {path}: {str(e)}")
+                # Fallback if both index.html and fallback.html don't exist
                 return f"""
                 <!DOCTYPE html>
                 <html>
