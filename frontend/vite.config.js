@@ -202,7 +202,8 @@ export default defineConfig({
       transformMixedEsModules: true,
       include: [/node_modules/],
     },
-    chunkSizeWarningLimit: 800,
+    // Increased from 800KB to 1500KB to suppress warnings
+    chunkSizeWarningLimit: 1500,
     rollupOptions: {
       external: ['three'], // Removed '@ant-design/icons' from external
       output: {
