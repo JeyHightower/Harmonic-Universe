@@ -17,7 +17,7 @@ services:
       # Make sure the polyfill script is copied
       cp frontend/public/react-polyfill.js static/ 2>/dev/null || true
       cp frontend/public/react-context-provider.js static/ 2>/dev/null || true
-    startCommand: PYTHONPATH=. gunicorn app:create_app()
+    startCommand: PYTHONPATH=. gunicorn 'app:create_app()'
     envVars:
       - key: NODE_VERSION
         value: 18.17.0
@@ -43,7 +43,6 @@ services:
         fromDatabase:
           name: harmonic-universe-db
           property: connectionString
-
 databases:
   - name: harmonic-universe-db
     plan: starter
