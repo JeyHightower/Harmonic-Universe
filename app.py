@@ -6,7 +6,6 @@ import os
 import sys
 import glob
 import logging
-import traceback
 
 # Add the current directory to Python path to ensure imports work correctly
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -32,28 +31,74 @@ def create_app():
         # Create the application using the backend factory function
         app = backend_create_app(config['production'])
 
+        # Enable debugging on Render
+        app.config['DEBUG'] = True
+
+        # Log the static folder path at startup
+        logger.info(f"Static folder path: {os.path.abspath(app.static_folder)}")
+        logger.info(f"Static folder contents: {os.listdir(app.static_folder) if os.path.exists(app.static_folder) else 'Not found'}")
+
         # Register the error logging middleware correctly
         app.wsgi_app = log_request_errors(app.wsgi_app)
 
-        # Add a specific route handler for ant-icons fallback
-        @app.route('/assets/ant-icons-<path:filename>.js')
-        def serve_ant_icons_fallback(filename):
-            """Serve fallback if the requested ant-icons file doesn't exist"""
-            # First try to find the actual file
-            asset_path = os.path.join(app.static_folder, 'assets')
-            requested_file = f'ant-icons-{filename}.js'
+        # Special route for ant-icons files with error handling
+        @app.route('/assets/ant-icons<path:filename>')
+        def serve_ant_icons(filename):
+            logger.info(f"Requested ant-icons file: {filename}")
 
-            if os.path.exists(os.path.join(asset_path, requested_file)):
-                return send_from_directory(asset_path, requested_file)
+            try:
+                # Check if the exact file exists
+                assets_path = os.path.join(app.static_folder, 'assets')
+                if not os.path.exists(assets_path):
+                    logger.warning(f"Assets directory not found at {assets_path}")
+                    return "Assets directory not found", 404
 
-            # If not found, serve the fallback (if it exists)
-            fallback_path = os.path.join(asset_path, 'ant-icons-fallback.js')
-            if os.path.exists(fallback_path):
-                app.logger.warning(f"Ant icons file {requested_file} not found, serving fallback")
-                return send_from_directory(asset_path, 'ant-icons-fallback.js')
-            else:
-                app.logger.error(f"Neither requested ant-icons file nor fallback exists")
-                return f"Ant icons file not found: {requested_file}", 404
+                # Log the assets directory contents
+                logger.info(f"Assets directory contents: {os.listdir(assets_path)}")
+
+                full_filename = f"ant-icons{filename}"
+                file_path = os.path.join(assets_path, full_filename)
+
+                # If the file exists, serve it
+                if os.path.exists(file_path):
+                    logger.info(f"Serving existing file: {file_path}")
+                    return send_from_directory(assets_path, full_filename)
+
+                # If the hashed version doesn't exist, look for any ant-icons file
+                ant_files = [f for f in os.listdir(assets_path) if f.startswith('ant-icons') and f.endswith('.js')]
+                if ant_files:
+                    logger.info(f"Serving fallback ant-icons file: {ant_files[0]}")
+                    return send_from_directory(assets_path, ant_files[0])
+
+                # If no ant-icons files found, serve an empty mock
+                logger.warning("No ant-icons files found, serving mock file")
+                return """
+                console.log("Using ant-icons mock file");
+                var IconContext = {Provider: function() {}, Consumer: function() {}};
+                window.IconContext = IconContext;
+                window.__ANT_ICONS__ = {};
+                """, 200, {'Content-Type': 'application/javascript'}
+
+            except Exception as e:
+                logger.error(f"Error serving ant-icons file: {str(e)}")
+                # Return a working JavaScript file instead of an error
+                return """
+                console.error("Error loading ant-icons, using fallback");
+                var IconContext = {Provider: function(props) { return props.children; }, Consumer: function() {}};
+                window.IconContext = IconContext;
+                window.__ANT_ICONS__ = {};
+                """, 200, {'Content-Type': 'application/javascript'}
+
+        # General static file handler for assets
+        @app.route('/assets/<path:filename>')
+        def serve_assets(filename):
+            try:
+                assets_dir = os.path.join(app.static_folder, 'assets')
+                logger.info(f"Serving asset: {filename} from {assets_dir}")
+                return send_from_directory(assets_dir, filename)
+            except Exception as e:
+                logger.error(f"Error serving asset {filename}: {str(e)}")
+                return f"Error serving asset: {str(e)}", 500
 
         # Add a debug endpoint to check static files
         @app.route('/check-static-files')

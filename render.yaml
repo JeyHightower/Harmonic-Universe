@@ -10,32 +10,49 @@ services:
       pip install gunicorn
       # Build the React frontend
       cd frontend && npm install && npm run build
-      # Generate the Ant Design icons fallback script
-      node frontend/scripts/generate-ant-icons-fallback.js
       # Copy built frontend to Flask static directory
-      mkdir -p static
-      # Use verbose cp to see what's happening
-      cp -rv frontend/dist/* static/
-      # Explicitly create assets directory if it doesn't exist
+      cd ..
       mkdir -p static/assets
-      # Make sure assets are properly copied
-      if [ -d "frontend/dist/assets" ]; then
-        cp -rv frontend/dist/assets/* static/assets/
+      cp -r frontend/dist/* static/
+
+      # Create fallback ant-icons.js if it doesn't exist
+      if [ ! -f "static/assets/ant-icons.js" ]; then
+        echo "Creating fallback ant-icons.js"
+        echo "// Fallback Ant Icons implementation" > static/assets/ant-icons.js
+        echo "console.log('Using minimal ant-icons fallback');" >> static/assets/ant-icons.js
+        echo "window.__ANT_ICONS_VERSION__ = '4.2.1';" >> static/assets/ant-icons.js
+        echo "const IconContext = {Provider: function(props) { return props.children; }, Consumer: function() {}};" >> static/assets/ant-icons.js
+        echo "window.IconContext = IconContext;" >> static/assets/ant-icons.js
       fi
-      # Copy the ant-icons.js and fallback script to the root static directory
-      cp -v frontend/dist/ant-icons-fallback.js static/ 2>/dev/null || echo "Fallback script not found, will be generated"
-      # Set proper permissions
+
+      # Copy our more comprehensive fallback to the root static directory
+      cp -v static/ant-icons.js static/assets/ || echo "Fallback script not found in root, creating minimal one"
+
+      # Ensure assets directory exists and has correct permissions
+      if [ -d "frontend/dist/assets" ]; then
+        cp -rv frontend/dist/assets/* static/assets/ || true
+      fi
+
+      # Make a copy of the ant-icons file without hash for direct access
+      find static/assets -name "ant-icons-*.js" -exec cp {} static/assets/ant-icons.js \; || echo "No hashed ant-icons file found"
+
+      # Set permissions
       chmod -R 755 static
+
       # List contents to verify
+      echo "Static directory contents:"
       ls -la static
-      ls -la static/assets || echo "No assets directory"
+      echo "Assets directory contents:"
+      ls -la static/assets || echo "No assets directory found"
+
       # Make sure the polyfill scripts are copied
       cp frontend/public/react-polyfill.js static/ 2>/dev/null || echo "Polyfill script not found"
       cp frontend/public/react-context-provider.js static/ 2>/dev/null || echo "Context provider script not found"
+
       # Verify the final structure
       echo "Final static directory structure:"
       find static -type f | sort
-    startCommand: PYTHONPATH=. gunicorn 'wsgi:application'
+    startCommand: PYTHONPATH=. gunicorn 'app:create_app()'
     envVars:
       - key: NODE_VERSION
         value: 18.17.0

@@ -196,6 +196,8 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    // Ensure output is compatible with older browsers
+    target: 'es2015',
     commonjsOptions: {
       transformMixedEsModules: true,
       include: [/node_modules/],
@@ -204,10 +206,12 @@ export default defineConfig({
     rollupOptions: {
       external: ['three'], // Removed '@ant-design/icons' from external
       output: {
-        entryFileNames: 'assets/[name]-[hash].js',
-        chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]',
+        // Use more consistent file names
+        entryFileNames: 'assets/[name].[hash].js',
+        chunkFileNames: 'assets/[name].[hash].js',
+        assetFileNames: 'assets/[name].[hash].[ext]',
         manualChunks: (id) => {
+          // Create a dedicated chunk for Ant Icons that's easy to identify
           if (id.includes('@ant-design/icons')) {
             return 'ant-icons';
           }

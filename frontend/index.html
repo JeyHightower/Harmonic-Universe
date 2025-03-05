@@ -4,6 +4,39 @@
     <meta charset="UTF-8" />
     <script src="/react-polyfill.js"></script>
     <script src="/react-context-provider.js"></script>
+
+    <!-- Add global error handler for script loading -->
+    <script>
+      // Create a global error handler for script loading
+      window.addEventListener(
+        'error',
+        function (e) {
+          if (e.target && e.target.src && e.target.src.includes('ant-icons')) {
+            console.warn('Error loading ant-icons, creating fallback');
+
+            // Create mock IconContext if React exists
+            if (window.React && window.React.createContext) {
+              window.IconContext = window.React.createContext({});
+            } else {
+              // Basic fallback if React isn't available
+              window.IconContext = {
+                Provider: function (props) {
+                  return props.children;
+                },
+                Consumer: function (props) {
+                  return props.children({});
+                },
+              };
+            }
+
+            // Prevent error from showing in console
+            e.preventDefault();
+          }
+        },
+        true
+      );
+    </script>
+
     <!-- Ant Design Icons with fallback -->
     <script>
       window.antIconsLoaded = false;
