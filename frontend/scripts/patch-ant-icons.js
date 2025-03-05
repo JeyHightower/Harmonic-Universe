@@ -2,84 +2,85 @@ import fs from 'fs';
 import path from 'path';
 import { globSync } from 'glob';
 
+// Ensure the React fallback exists
+console.log('Creating React fallback module...');
+import './ensure-react-deps.js';
+
 // Find all ant-icons chunk files in the dist directory
 console.log('Searching for Ant Design icon chunks...');
 const antIconsFiles = globSync('dist/assets/ant-icons-*.js');
 
 if (antIconsFiles.length === 0) {
-    console.error('No Ant Design icon chunks found!');
-    process.exit(1);
+  console.error('No Ant Design icon chunks found!');
+  process.exit(1);
 }
 
 antIconsFiles.forEach(file => {
-    console.log(`Patching ${file}...`);
+  console.log(`Patching ${file}...`);
 
-    let content = fs.readFileSync(file, 'utf8');
+  let content = fs.readFileSync(file, 'utf8');
+  let originalContent = content; // Keep original for comparison
 
-    // Find and fix any undefined.version references
-    if (content.includes('.version')) {
-        // Add a global version declaration at the top of the file
-        const versionDeclaration = `
-// Global version declaration for Ant Design Icons
+  // Add import for our React fallback at the beginning of the file
+  const importFallback = `
+// Import React fallback module to ensure dependencies exist
+import '/assets/react-fallback.js';
+`;
+
+  // Create a more comprehensive patch to handle multiple potential issues
+  const headerPatch = `
+// ==== BEGIN PATCH FOR ANT DESIGN ICONS ====
+// This patch ensures version is available and creates mock implementations for missing functionalities
+
+// Mock version access
+var version = "4.2.1";
 window.__ANT_ICONS_VERSION__ = "4.2.1";
-var IconProvider = IconProvider || { version: "4.2.1" };
+// ==== END PATCH ====
 `;
 
-        // Instead of using regex replacements that might break syntax,
-        // we'll add a self-invoking function that adds version property
-        // to all objects to prevent undefined.version errors
-        const versionPatch = `
-// Self-invoking function to patch all potential version references
-(function patchVersions() {
-  // Define the default version
-  var DEFAULT_VERSION = "4.2.1";
+  // Add our patches to the content
+  content = importFallback + headerPatch + content;
 
-  // Add version to IconProvider
-  if (typeof IconProvider !== 'undefined') {
-    IconProvider.version = IconProvider.version || DEFAULT_VERSION;
+  // Write the patched file
+  fs.writeFileSync(file, content);
+
+  // Log success
+  if (content !== originalContent) {
+    console.log(`✅ Patched ${file}`);
+  } else {
+    console.log(`⚠️ No changes made to ${file}`);
   }
-
-  // Add version to the window object in case any code looks for it there
-  window.version = window.version || DEFAULT_VERSION;
-
-  // Create a proxy object for accessing undefined objects
-  window.__safeGet = function(obj, prop) {
-    return (obj && typeof obj !== 'undefined') ? obj[prop] : DEFAULT_VERSION;
-  };
-})();
-`;
-
-        // Prepend our patches to the beginning of the file
-        content = versionDeclaration + versionPatch + content;
-
-        // Add safe fallbacks for all direct .version access
-        // This is more targeted than regex replacements
-        if (content.includes('.version')) {
-            // Instead of directly replacing .version, we'll add a version fallback utility
-            const versionAccessPatch = `
-// Version fallback utility
-function getVersion(obj) {
-  return (obj && typeof obj !== 'undefined' && obj.version) ? obj.version : "4.2.1";
-}
-`;
-            // Add the version access patch after our other patches
-            content = versionDeclaration + versionPatch + versionAccessPatch + content;
-        }
-
-        fs.writeFileSync(file, content);
-        console.log(`✅ Patched ${file}`);
-    } else {
-        console.log(`⚠️ No version references found in ${file}`);
-    }
 });
+
+// Copy the fallback to the correct location for deployment
+const distReactFallback = path.join(process.cwd(), 'dist/assets/react-fallback.js');
+const indexHtmlPath = path.join(process.cwd(), 'dist/index.html');
+
+// Add the React fallback script to index.html
+if (fs.existsSync(indexHtmlPath)) {
+  console.log('Adding React fallback to index.html...');
+  let indexHtml = fs.readFileSync(indexHtmlPath, 'utf8');
+
+  // Only add if not already present
+  if (!indexHtml.includes('react-fallback.js')) {
+    indexHtml = indexHtml.replace(
+      '</head>',
+      '  <script src="/assets/react-fallback.js"></script>\n  </head>'
+    );
+    fs.writeFileSync(indexHtmlPath, indexHtml);
+    console.log('✅ Added React fallback to index.html');
+  }
+}
+
+console.log('Patching complete!');
 
 // Run a check on the patched files
 console.log('Patching complete! Running syntax check...');
 const checkScript = path.join(process.cwd(), 'frontend/scripts/check-ant-icons-files.js');
 if (fs.existsSync(checkScript)) {
-    console.log('Running check script...');
-    // We're not using import() directly here to avoid potential issues
-    // Instead, we rely on the separate check script to validate
+  console.log('Running check script...');
+  // We're not using import() directly here to avoid potential issues
+  // Instead, we rely on the separate check script to validate
 } else {
-    console.log('Check script not found. Skipping validation.');
+  console.log('Check script not found. Skipping validation.');
 }
