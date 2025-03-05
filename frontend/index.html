@@ -4,6 +4,14 @@
     <meta charset="UTF-8" />
     <script src="/react-polyfill.js"></script>
     <script src="/react-context-provider.js"></script>
+    <!-- Ant Design Icons with fallback -->
+    <script>
+      window.antIconsLoaded = false;
+    </script>
+    <script
+      src="/ant-icons.js"
+      onerror="console.error('Failed to load Ant Icons, using fallback'); document.write('<script src=\'/ant-icons-fallback.js\'><\/script>')"
+    ></script>
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Harmonic Universe</title>

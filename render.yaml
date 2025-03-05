@@ -9,18 +9,32 @@ services:
       # Make sure gunicorn is installed
       pip install gunicorn
       # Build the React frontend
-      cd frontend && npm install && npm run render-build
-      # Run the asset preparation script
-      cd frontend && node scripts/prepare-assets.js
+      cd frontend && npm install && npm run build
+      # Generate the Ant Design icons fallback script
+      node frontend/scripts/generate-ant-icons-fallback.js
       # Copy built frontend to Flask static directory
-      cd ..
       mkdir -p static
-      cp -r frontend/dist/* static/
-      # Make the static directory writable by the app
-      chmod -R 755 static/
-      # Make sure the polyfill script is copied
-      cp frontend/public/react-polyfill.js static/ 2>/dev/null || true
-      cp frontend/public/react-context-provider.js static/ 2>/dev/null || true
+      # Use verbose cp to see what's happening
+      cp -rv frontend/dist/* static/
+      # Explicitly create assets directory if it doesn't exist
+      mkdir -p static/assets
+      # Make sure assets are properly copied
+      if [ -d "frontend/dist/assets" ]; then
+        cp -rv frontend/dist/assets/* static/assets/
+      fi
+      # Copy the ant-icons.js and fallback script to the root static directory
+      cp -v frontend/dist/ant-icons-fallback.js static/ 2>/dev/null || echo "Fallback script not found, will be generated"
+      # Set proper permissions
+      chmod -R 755 static
+      # List contents to verify
+      ls -la static
+      ls -la static/assets || echo "No assets directory"
+      # Make sure the polyfill scripts are copied
+      cp frontend/public/react-polyfill.js static/ 2>/dev/null || echo "Polyfill script not found"
+      cp frontend/public/react-context-provider.js static/ 2>/dev/null || echo "Context provider script not found"
+      # Verify the final structure
+      echo "Final static directory structure:"
+      find static -type f | sort
     startCommand: PYTHONPATH=. gunicorn 'wsgi:application'
     envVars:
       - key: NODE_VERSION
