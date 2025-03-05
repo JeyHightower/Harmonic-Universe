@@ -7,12 +7,23 @@ services:
       # Build frontend
       cd frontend && npm install && npm run build && cd ..
       # Build backend
-      pip install -r backend/requirements.txt
-      pip install psycopg2
-      pip install gunicorn
-      flask db upgrade
-      flask seed all
-    startCommand: cd backend && gunicorn app.main:app
+      python -m pip install --upgrade pip
+      python -m pip install -r backend/requirements.txt
+      python -m pip install psycopg2
+      python -m pip install gunicorn==21.2.0
+      echo "Installed packages:"
+      python -m pip list
+      cd backend && python -m flask db upgrade
+      cd backend && python -m flask seed all
+    startCommand: |
+      echo "Starting server..."
+      cd backend
+      export PYTHONPATH=$PYTHONPATH:$(pwd)
+      echo "Python path: $PYTHONPATH"
+      which gunicorn || echo "gunicorn not found in PATH"
+      python -m pip show gunicorn
+      python -c "import sys; print(sys.path)"
+      exec gunicorn --log-level debug app.main:app
     envVars:
       - key: FLASK_ENV
         value: production
@@ -22,6 +33,10 @@ services:
         generateValue: true
       - key: SCHEMA
         value: harmonic_universe_schema
+      - key: PYTHONUNBUFFERED
+        value: 'true'
+      - key: PYTHONPATH
+        value: '/opt/render/project/src:/opt/render/project/src/backend'
       - key: REACT_APP_BASE_URL
         fromService:
           name: harmonic-universe
