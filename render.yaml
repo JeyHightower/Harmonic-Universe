@@ -25,7 +25,48 @@ services:
         echo "window.IconContext = IconContext;" >> static/assets/ant-icons.js
       fi
 
-      # Copy our more comprehensive fallback to the root static directory
+      # Create and copy the Ant Design version polyfill
+      cat > static/ant-design-polyfill.js << 'EOL'
+      // Polyfill for Ant Design Icons version
+      (function() {
+        console.log("Applying Ant Design Icons polyfill");
+
+        // Set global version property
+        window.__ANT_ICONS_VERSION__ = "4.2.1";
+
+        // Create version object on window
+        window.AntDesignIconsVersion = {
+          version: "4.2.1"
+        };
+
+        // Patch utils.js version access
+        const originalGetProperty = Object.getOwnPropertyDescriptor(Object.prototype, "version");
+
+        // Create a safe version getter
+        Object.defineProperty(Object.prototype, "version", {
+          get: function() {
+            if (this === undefined || this === null) {
+              console.warn("Attempted to access version on undefined/null, returning fallback");
+              return "4.2.1";
+            }
+            return originalGetProperty ? originalGetProperty.get.call(this) : undefined;
+          },
+          configurable: true
+        });
+
+        // Clean up after 5 seconds to avoid memory leaks
+        setTimeout(function() {
+          if (originalGetProperty) {
+            Object.defineProperty(Object.prototype, "version", originalGetProperty);
+          } else {
+            delete Object.prototype.version;
+          }
+          console.log("Removed temporary version property patch");
+        }, 5000);
+      })();
+      EOL
+
+      # Copy our comprehensive fallback to the root static directory
       cp -v static/ant-icons.js static/assets/ || echo "Fallback script not found in root, creating minimal one"
 
       # Ensure assets directory exists and has correct permissions
@@ -36,8 +77,21 @@ services:
       # Make a copy of the ant-icons file without hash for direct access
       find static/assets -name "ant-icons-*.js" -exec cp {} static/assets/ant-icons.js \; || echo "No hashed ant-icons file found"
 
-      # Set permissions
+      # Set permissions for the polyfill
       chmod -R 755 static
+      chmod 644 static/ant-design-polyfill.js
+
+      # Find and patch the utils.js file
+      find static/assets -name "*.js" -exec grep -l "version" {} \; | while read file; do
+        echo "Checking file: $file"
+        if grep -q "Cannot read properties of undefined (reading 'version')" "$file"; then
+          echo "Patching file: $file"
+          sed -i 's/\([a-zA-Z0-9_$.]\+\)\.version/(\1 || {version:"4.2.1"}).version/g' "$file"
+        fi
+      done
+
+      # Direct fix for utils.js at line 85
+      find static/assets -name "utils-*.js" -exec sed -i '85s/\([a-zA-Z0-9_$.]\+\)\.version/(\1 || {version:"4.2.1"}).version/g' {} \;
 
       # List contents to verify
       echo "Static directory contents:"

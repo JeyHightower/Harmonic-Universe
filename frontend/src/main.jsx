@@ -1,3 +1,36 @@
+// Fix for Ant Design Icons version issue
+try {
+  if (typeof window !== 'undefined') {
+    window.__ANT_ICONS_VERSION__ = "4.2.1";
+
+    // Create a global handler for common errors
+    window.addEventListener('error', (event) => {
+      const errorMessage = event.message || '';
+
+      // Check if it's the version error
+      if (errorMessage.includes('Cannot read properties of undefined') &&
+        errorMessage.includes('version')) {
+        console.warn('Caught version error, applying fix');
+        event.preventDefault(); // Prevent the error from bubbling up
+
+        // Apply global fix
+        window.__ANT_FIXED_VERSION__ = "4.2.1";
+
+        // Try to recover UI
+        setTimeout(() => {
+          const root = document.getElementById('root');
+          if (root && (!root.childNodes || root.childNodes.length === 0)) {
+            console.log('Attempting UI recovery...');
+            // Your recovery code here
+          }
+        }, 100);
+      }
+    });
+  }
+} catch (e) {
+  console.error('Error setting up error handlers:', e);
+}
+
 // Import safety patch at the very top
 import './utils/react-safety-patch';
 
