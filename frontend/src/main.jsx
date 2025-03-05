@@ -1,3 +1,6 @@
+// Import at the very top to ensure React is available globally
+import './utils/ensure-react';
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './utils/ensure-antd-version'; // Import the version utility first
