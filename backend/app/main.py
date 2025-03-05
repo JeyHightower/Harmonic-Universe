@@ -2,6 +2,7 @@
 Main application module.
 """
 
+import os
 from flask import Flask, jsonify
 from app import create_app
 from app.core.config import settings
@@ -22,4 +23,10 @@ def handle_app_error(error: AppError):
     return response
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)
+    # Check if running on Render.com
+    if os.environ.get("RENDER"):
+        from app.core.render_config import configure_for_render
+        render_config = configure_for_render(app)
+        app.run(**render_config)
+    else:
+        app.run(host="0.0.0.0", port=8000)

@@ -17,7 +17,7 @@
     "clean-index": "node scripts/clean-index.js",
     "merge-nested": "node scripts/merge-nested.js",
     "check-ant-build": "node scripts/check-ant-icons-files.js",
-    "prepare": "cd .. && husky install frontend/.husky"
+    "prepare": "node -e \"try { if (!process.env.CI && !process.env.RENDER) { require('child_process').execSync('cd .. && husky install frontend/.husky', {stdio: 'inherit'}) } } catch (e) { console.log('Husky install failed, but this is ok in production environments'); }\""
   },
   "dependencies": {
     "@ant-design/icons": "^5.6.1",

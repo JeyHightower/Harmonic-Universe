@@ -11,24 +11,28 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+console.log(`[Server] Starting Express server on port ${PORT}`);
+console.log(`[Server] Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`[Server] RENDER environment variable: ${process.env.RENDER || 'not set'}`);
+
 // Serve static files from the dist directory
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // Apply React context fix at runtime for any dynamic loading
 app.use((req, res, next) => {
-    // Only intercept JavaScript files
-    if (req.path.endsWith('.js') && req.path.includes('ant-icons')) {
-        const filePath = path.join(__dirname, 'dist', req.path);
+  // Only intercept JavaScript files
+  if (req.path.endsWith('.js') && req.path.includes('ant-icons')) {
+    const filePath = path.join(__dirname, 'dist', req.path);
 
-        if (fs.existsSync(filePath)) {
-            let fileContent = fs.readFileSync(filePath, 'utf8');
+    if (fs.existsSync(filePath)) {
+      let fileContent = fs.readFileSync(filePath, 'utf8');
 
-            // Only modify if not already patched
-            if (!fileContent.includes('// Direct patch for React.createContext')) {
-                console.log(`[Runtime Patch] Patching ${req.path}`);
+      // Only modify if not already patched
+      if (!fileContent.includes('// Direct patch for React.createContext')) {
+        console.log(`[Runtime Patch] Patching ${req.path}`);
 
-                // Apply the patch
-                const patchedContent = `
+        // Apply the patch
+        const patchedContent = `
 // Direct patch for React.createContext
 if (typeof React === 'undefined' || !React.createContext) {
   var React = React || {};
@@ -58,23 +62,24 @@ var IconContext = ensureIconContext();
 
 ${fileContent}`;
 
-                // Serve the patched content
-                res.set('Content-Type', 'application/javascript');
-                return res.send(patchedContent);
-            }
-        }
+        // Serve the patched content
+        res.set('Content-Type', 'application/javascript');
+        return res.send(patchedContent);
+      }
     }
+  }
 
-    next();
+  next();
 });
 
 // For any other requests, send the index.html file
 // This enables client-side routing
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 // Start the server
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`[Server] Express server running at http://0.0.0.0:${PORT}`);
+  console.log(`[Server] Serving static files from: ${path.join(__dirname, 'dist')}`);
 });
