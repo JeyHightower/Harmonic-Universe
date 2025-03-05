@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: harmonic-universe
+    runtime: python
+    buildCommand: cd /opt/render/project/src && pip install -r requirements.txt && cd frontend && npm install && npm run build
+    startCommand: cd /opt/render/project/src && PYTHONPATH=/opt/render/project/src gunicorn backend.app.main:app --log-level info --workers 2 --timeout 120 --access-logfile - --error-logfile -
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.6
+      - key: NODE_VERSION
+        value: 18.17.0

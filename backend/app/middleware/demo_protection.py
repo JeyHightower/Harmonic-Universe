@@ -3,7 +3,7 @@ from functools import wraps
 from flask import jsonify
 from flask_jwt_extended import get_jwt_identity
 from app.db.session import get_db
-from app.models.core.user import User
+from app.models.user import User
 from app.core.errors import AuthorizationError
 
 def protect_demo_user(f):
