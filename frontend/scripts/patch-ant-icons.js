@@ -1,10 +1,10 @@
-const fs = require('fs');
-const path = require('path');
-const glob = require('glob');
+import fs from 'fs';
+import path from 'path';
+import { globSync } from 'glob';
 
 // Find all ant-icons chunk files in the dist directory
 console.log('Searching for Ant Design icon chunks...');
-const antIconsFiles = glob.sync('dist/assets/ant-icons-*.js');
+const antIconsFiles = globSync('dist/assets/ant-icons-*.js');
 
 if (antIconsFiles.length === 0) {
     console.error('No Ant Design icon chunks found!');
