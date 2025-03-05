@@ -9,8 +9,8 @@ from flask_socketio import emit, join_room, leave_room
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import json
 import logging
-from ..models.core.user import User
-from ..models.core.universe import Universe
+from ..models.user import User
+from ..models.universe.universe import Universe
 from ..core.errors import NotFoundError, AuthorizationError, WebSocketError
 from app import socketio
 
