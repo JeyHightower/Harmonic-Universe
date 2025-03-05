@@ -53,17 +53,22 @@ export default { version };
 EOL
 
 # Run the postinstall script for direct patching with better error handling
-echo "=== Running postinstall script ==="
+echo "=== Running postinstall script (ES Module version) ==="
 node postinstall.js || {
-  echo "Postinstall script failed, creating manual patches"
-  mkdir -p node_modules/@ant-design/icons/lib || true
-  mkdir -p node_modules/@ant-design/icons/es || true
-  echo '"use strict";Object.defineProperty(exports,"__esModule",{value:!0});exports.version="4.2.1";exports.default={version:"4.2.1"};' > node_modules/@ant-design/icons/lib/version.js
-  echo 'export const version="4.2.1";export default{version:"4.2.1"};' > node_modules/@ant-design/icons/es/version.js
+  echo "ES Module postinstall failed, trying CommonJS version..."
 
-  # Create important utility files
-  mkdir -p src/utils
-  echo 'export const version="4.2.1";export default{version:"4.2.1"};' > src/utils/ant-icons-shim.js
+  # Try the CommonJS version as a fallback
+  node postinstall.cjs || {
+    echo "Both postinstall scripts failed, creating manual patches"
+    mkdir -p node_modules/@ant-design/icons/lib || true
+    mkdir -p node_modules/@ant-design/icons/es || true
+    echo '"use strict";Object.defineProperty(exports,"__esModule",{value:!0});exports.version="4.2.1";exports.default={version:"4.2.1"};' > node_modules/@ant-design/icons/lib/version.js
+    echo 'export const version="4.2.1";export default{version:"4.2.1"};' > node_modules/@ant-design/icons/es/version.js
+
+    # Create important utility files
+    mkdir -p src/utils
+    echo 'export const version="4.2.1";export default{version:"4.2.1"};' > src/utils/ant-icons-shim.js
+  }
 }
 
 # Verify that our patch files exist
