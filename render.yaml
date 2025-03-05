@@ -15,40 +15,7 @@ services:
       python -m pip list
       cd backend && python -m flask db upgrade
       cd backend && python -m flask seed all
-    startCommand: |
-      echo "Starting server..."
-      echo "Current directory: $(pwd)"
-      ls -la
-      # Check if backend directory exists and navigate to it
-      if [ -d "backend" ]; then
-        cd backend
-        echo "Changed to backend directory"
-      else
-        echo "backend directory not found, staying in current directory"
-        # Check if we're already in the backend directory
-        if [ -f "app/main.py" ]; then
-          echo "app/main.py found in current directory"
-        else
-          echo "ERROR: Cannot find Flask application entry point"
-          exit 1
-        fi
-      fi
-
-      export PYTHONPATH=$PYTHONPATH:$(pwd)
-      echo "Python path: $PYTHONPATH"
-      which gunicorn || echo "gunicorn not found in PATH"
-      python -m pip show gunicorn
-      python -c "import sys; print(sys.path)"
-
-      # Determine correct path to the Flask app
-      if [ -f "app/main.py" ]; then
-        echo "Starting gunicorn with app.main:app"
-        exec gunicorn --log-level debug app.main:app
-      else
-        echo "ERROR: app/main.py not found"
-        ls -la
-        exit 1
-      fi
+    startCommand: 'cd /opt/render/project/src && python -m gunicorn --chdir backend app.main:app --log-level debug'
     envVars:
       - key: FLASK_ENV
         value: production
