@@ -1,20 +1,14 @@
 #!/bin/bash
-# build.sh - Render.com build script
-
-# Exit on any error
-set -e
-
-# Print commands for debugging
-set -x
+set -e  # Exit immediately if a command exits with a non-zero status
 
 echo "=== Starting build process ==="
 
 # Install Python dependencies
 echo "=== Installing Python dependencies ==="
 pip install -r backend/requirements.txt
-# Make sure gunicorn is installed
 pip install gunicorn
-# Build the React frontend with extra debugging
+
+# Build the React frontend
 echo "=== Building React frontend ==="
 cd frontend
 npm install
@@ -22,7 +16,8 @@ npm install
 # Modify Vite config to ensure ant-icons chunk is generated correctly
 echo "=== Modifying Vite config to ensure ant-icons chunk is generated ==="
 # Create a small script to verify/modify vite.config.js if needed
-cat > check-vite-config.js << 'EOL'
+# Use .cjs extension to force CommonJS mode regardless of project settings
+cat > check-vite-config.cjs << 'EOL'
 const fs = require('fs');
 const path = require('path');
 
@@ -59,12 +54,13 @@ if (fs.existsSync(configPath)) {
 }
 EOL
 
-# Run the check script
-node check-vite-config.js
+# Run the check script with explicit node command using CommonJS
+node check-vite-config.cjs
 
-# Add more verbose logging to npm build
-echo "=== Running npm build with more verbose output ==="
-npm run render-build --verbose || {
+# Run the build
+echo "=== Running npm build with verbose output ==="
+# Added CI=false to ignore warnings
+CI=false npm run render-build || {
   echo "Frontend build failed. Check the logs above for details."
   echo "=== Continuing with static file creation despite build failure ==="
   # Create a dist directory in case it wasn't created
@@ -90,19 +86,9 @@ else
 <head>
   <title>Harmonic Universe</title>
   <script src="/version-patch.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
-    .container { max-width: 800px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
-    h1 { color: #333; }
-    .error { color: #cc0000; background: #ffeeee; padding: 10px; border-radius: 5px; }
-  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Harmonic Universe</h1>
-    <p>The application is loading with minimal functionality due to build issues. Please check the application logs for details.</p>
-    <div id="root"></div>
-  </div>
+  <div id="root"></div>
 </body>
 </html>
 EOL
@@ -147,17 +133,6 @@ cat > static/version-patch.js << 'EOL'
       });
     }
 
-    // 4. Add a global error handler for version errors
-    window.addEventListener('error', function(event) {
-      if (event.message && event.message.includes('Cannot read properties of undefined') &&
-          event.message.includes('version')) {
-        console.warn('Caught version error, handling silently');
-        event.preventDefault();
-        event.stopPropagation();
-        return true;
-      }
-    }, true);
-
     console.log('Version patch successfully applied');
   } catch (e) {
     console.error('Error applying version patch:', e);
@@ -176,15 +151,12 @@ cat > static/assets/ant-icons.js << 'EOL'
 window.__ANT_ICONS_VERSION__ = "4.2.1";
 
 // Create a simple mock for icons
-var AntDesignIcons = {
-  version: "4.2.1",
-  createFromIconfontCN: function() {
-    return function() { return null; };
-  }
+const AntDesignIcons = {
+  version: "4.2.1"
 };
 
-// Export for modules
-export var version = "4.2.1";
+// Export for ES modules
+export const version = "4.2.1";
 export default AntDesignIcons;
 EOL
 
@@ -199,18 +171,12 @@ if [ -f static/index.html ]; then
   if ! grep -q "version-patch.js" static/index.html; then
     sed -i 's/<head>/<head>\n  <script src="\/version-patch.js"><\/script>/' static/index.html
   fi
-
-  # Also add the mock ant-icons.js if needed
-  if ! grep -q "ant-icons.js" static/index.html; then
-    sed -i 's/<\/head>/<script src="\/assets\/ant-icons.js"><\/script>\n<\/head>/' static/index.html
-  fi
 fi
 
 # Copy any additional required files
 echo "=== Copying additional files ==="
-mkdir -p static/public
-cp frontend/public/react-polyfill.js static/public/ 2>/dev/null || echo "Warning: react-polyfill.js not found"
-cp frontend/public/react-context-provider.js static/public/ 2>/dev/null || echo "Warning: react-context-provider.js not found"
+cp frontend/public/react-polyfill.js static/ 2>/dev/null || echo "Warning: react-polyfill.js not found"
+cp frontend/public/react-context-provider.js static/ 2>/dev/null || echo "Warning: react-context-provider.js not found"
 
 # Create a debug text file to verify static files are being served
 echo "Static files successfully deployed" > static/verify.txt
@@ -236,11 +202,6 @@ def create_app():
             return send_from_directory(app.static_folder, path)
         return send_from_directory(app.static_folder, 'index.html')
 
-    # Health check endpoint
-    @app.route('/api/health')
-    def health_check():
-        return {"status": "ok"}
-
     return app
 
 if __name__ == '__main__':
@@ -252,7 +213,5 @@ fi
 # Debug: List files in static directory
 echo "=== Contents of static directory ==="
 ls -la static/
-echo "=== Contents of static/assets directory ==="
-ls -la static/assets/ || echo "No assets directory found"
 
 echo "=== Build process completed successfully ==="
