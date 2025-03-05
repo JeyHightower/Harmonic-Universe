@@ -21,7 +21,7 @@ socketio = SocketIO()
 bcrypt = Bcrypt()
 
 def create_app(config_class=Config):
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder='../../frontend/dist', static_url_path='/')
     app.config.from_object(config_class)
 
     # Load the .env file
@@ -48,81 +48,59 @@ def create_app(config_class=Config):
         r"/*": {
             "origins": "*",
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-            "allow_headers": ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
-            "expose_headers": ["Content-Range", "X-Content-Range"],
-            "supports_credentials": True,
-            "max_age": 600
+            "allow_headers": ["Content-Type", "Authorization"]
         }
     })
+
+    # Import and register blueprints/routes
+    from .api import api_bp
+    app.register_blueprint(api_bp, url_prefix='/api/v1')
+
+    # Import and register models to ensure they are known to SQLAlchemy
+    from .models import user, sound, universe, story, message, composition, chapter, track
+
+    # Initialize WebSocket
     socketio.init_app(app, cors_allowed_origins="*")
 
-    # Register JWT token blocklist checker
-    from app.core.jwt import is_token_in_blocklist
-    jwt.token_in_blocklist_loader(is_token_in_blocklist)
+    # Import socket events handlers
+    from .websocket import socket_handlers
 
-    # Register blueprints
-    from app.api.routes import (
-        auth_bp,
-        universe_bp,
-        audio_bp,
-        visualization_bp,
-        physics_bp,
-        ai_bp,
-        physics_objects_bp,
-        scenes_bp,
-        users_bp,
-        physics_parameters_bp,
-        health_bp
-    )
-    from app.api.routes.music_flask import music_bp
-    from app.api.routes.register_routes import register_routes
-
-    # Register all routes through the central registration function
-    register_routes(app)
-
-    # Register error handlers
-    from app.core.error_handlers import register_error_handlers
-    register_error_handlers(app)
-
+    # Register health check route
     @app.route('/api/v1/health')
     def health_check():
-        return {'status': 'healthy'}
-
-    # Create demo user on app startup only if SKIP_DEMO_USER is not set
-    if not os.getenv('SKIP_DEMO_USER'):
-        with app.app_context():
-            from .seeds.demo_user import create_demo_user
-            try:
-                create_demo_user()
-            except Exception as e:
-                logger.warning(f"Failed to create demo user: {e}")
+        return {
+            'status': 'healthy',
+            'message': 'Harmonic Universe API is running'
+        }
 
     # JWT error handlers
     @jwt.unauthorized_loader
     def handle_unauthorized_loader(msg):
         return {
-            'error': 'UNAUTHORIZED',
-            'msg': msg,
-            'message': 'Missing or invalid authentication token',
-            'status_code': 401
+            'message': 'Missing Authorization header',
+            'error': msg
         }, 401
 
     @jwt.invalid_token_loader
     def handle_invalid_token(msg):
         return {
-            'error': 'UNAUTHORIZED',
-            'msg': msg,
-            'message': 'Invalid authentication token',
-            'status_code': 401
+            'message': 'Invalid token',
+            'error': msg
         }, 401
 
     @jwt.expired_token_loader
     def handle_expired_token(jwt_header, jwt_payload):
         return {
-            'error': 'UNAUTHORIZED',
-            'msg': 'Token has expired',
-            'message': 'Authentication token has expired',
-            'status_code': 401
+            'message': 'Token has expired',
+            'error': 'Token expired'
         }, 401
+
+    # Route to serve React App
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def react_root(path):
+        if path == 'favicon.ico':
+            return app.send_from_directory('public', 'favicon.ico')
+        return app.send_static_file('index.html')
 
     return app

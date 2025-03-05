@@ -1,0 +1,36 @@
+# render.yaml
+services:
+  - type: web
+    name: harmonic-universe
+    env: python
+    buildCommand: |
+      # Build frontend
+      cd frontend && npm install && npm run build && cd ..
+      # Build backend
+      pip install -r backend/requirements.txt
+      pip install psycopg2
+      flask db upgrade
+      flask seed all
+    startCommand: cd backend && gunicorn app.main:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_APP
+        value: backend/app
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SCHEMA
+        value: harmonic_universe_schema
+      - key: REACT_APP_BASE_URL
+        fromService:
+          name: harmonic-universe
+          type: web
+          property: origin
+      - key: DATABASE_URL
+        fromDatabase:
+          name: harmonic-universe-db
+          property: connectionString
+
+databases:
+  - name: harmonic-universe-db
+    plan: starter
