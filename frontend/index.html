@@ -2,6 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Initialize flags to prevent multiple script execution -->
+    <script>
+      // Simple flag to prevent duplicate execution
+      window.__UTILS_FIX_APPLIED__ = false;
+    </script>
+
     <!-- Add our patch script first, before any other scripts -->
     <script src="/ant-icons-patch.js"></script>
     <script src="/utils-fix.js"></script>
