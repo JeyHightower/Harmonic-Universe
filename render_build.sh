@@ -40,34 +40,82 @@ python -m pip install flask flask_sqlalchemy flask_migrate gunicorn==21.2.0 psyc
 echo "Installed packages:"
 python -m pip list
 
-# Set PYTHONPATH and run Flask commands
-export PYTHONPATH=$PYTHONPATH:$(pwd)
-echo "PYTHONPATH set to: $PYTHONPATH"
+# Handle database operations with better Flask app configuration
+echo "Setting up database..."
 
-# Run Flask commands if the Flask application is found
-if python -c "import flask" 2>/dev/null; then
-  # Check if we need to initialize migrations
-  if [ ! -d "migrations" ] && [ ! -d "backend/migrations" ]; then
-    echo "Migrations directory not found. Initializing migrations..."
+# First determine where our Flask app is located
+FLASK_APP=""
+FLASK_APP_DIR=""
 
-    if [ -d "backend" ]; then
-      echo "Initializing migrations in backend directory..."
-      cd backend
-      python -m flask db init
-      cd ..
-    else
-      echo "Initializing migrations in root directory..."
-      python -m flask db init
-    fi
-  fi
-
-  echo "Running database migrations..."
-  python -m flask db upgrade
-
-  echo "Running database seed..."
-  python -m flask seed all
+if [ -d "backend" ] && [ -f "backend/app/__init__.py" ]; then
+  echo "Found Flask app in backend/app"
+  FLASK_APP="app.main:app"
+  FLASK_APP_DIR="backend"
+elif [ -d "backend" ] && [ -f "backend/main.py" ]; then
+  echo "Found Flask app in backend/main.py"
+  FLASK_APP="main:app"
+  FLASK_APP_DIR="backend"
+elif [ -d "app" ] && [ -f "app/__init__.py" ]; then
+  echo "Found Flask app in app"
+  FLASK_APP="app.main:app"
+  FLASK_APP_DIR="."
+elif [ -f "app.py" ]; then
+  echo "Found Flask app in app.py"
+  FLASK_APP="app:app"
+  FLASK_APP_DIR="."
 else
-  echo "WARNING: Flask not found, skipping database operations"
+  echo "WARNING: Could not locate Flask app - skipping database operations"
+  echo "Tried looking in: backend/app, backend/main.py, app/, and app.py"
+  exit 0
+fi
+
+echo "Using Flask app: $FLASK_APP in directory: $FLASK_APP_DIR"
+
+# Navigate to the Flask app directory
+cd $FLASK_APP_DIR
+echo "Working directory: $(pwd)"
+
+# Set environment variables for Flask
+export FLASK_APP=$FLASK_APP
+export PYTHONPATH=$PYTHONPATH:$(pwd)
+
+echo "PYTHONPATH: $PYTHONPATH"
+echo "FLASK_APP: $FLASK_APP"
+
+# List files to diagnose issues
+echo "Files in current directory:"
+ls -la
+
+# Check for migrations directory
+if [ ! -d "migrations" ]; then
+  echo "Migrations directory not found. Initializing migrations..."
+  # Create an explicit migrations directory
+  mkdir -p migrations
+  echo "Created migrations directory: $(pwd)/migrations"
+
+  # Initialize migrations
+  echo "Running: flask db init"
+  flask db init
+
+  echo "Migrations directory after init:"
+  ls -la migrations/
+fi
+
+# Run database migrations
+echo "Running database migrations..."
+flask db upgrade
+
+# Run database seed if the command exists
+if flask seed --help > /dev/null 2>&1; then
+  echo "Running database seed..."
+  flask seed all
+else
+  echo "Seed command not available - skipping"
+fi
+
+# Return to root directory
+if [ "$FLASK_APP_DIR" != "." ]; then
+  cd ..
 fi
 
 echo "==================================================="
