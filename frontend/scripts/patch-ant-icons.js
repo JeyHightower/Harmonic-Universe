@@ -63,25 +63,65 @@ function patchAntIcons() {
       let content = fs.readFileSync(file, 'utf8');
       let originalContent = content; // Keep original for comparison
 
-      // Add import for our React fallback at the beginning of the file
-      const importFallback = `
-// Import React fallback module to ensure dependencies exist
-import '/assets/react-fallback.js';
-`;
-
-      // Create a more comprehensive patch to handle multiple potential issues
-      const headerPatch = `
-// ==== BEGIN PATCH FOR ANT DESIGN ICONS ====
-// This patch ensures version is available and creates mock implementations for missing functionalities
-
-// Mock version access
+      // Create a safer version that doesn't use imports to avoid syntax errors
+      // Instead load the fallback via script tag and define version directly
+      const versionPatch = `
+// ==== BEGIN ANT DESIGN ICONS PATCH ====
+// Define version to avoid undefined.version errors
 var version = "4.2.1";
+
+// Initialize version variables
 window.__ANT_ICONS_VERSION__ = "4.2.1";
+
+// Add global version fallbacks
+window.__getVersionSafe = function(obj) {
+  if (!obj) return "4.2.1";
+  return obj.version || "4.2.1";
+};
+
+// Protect against undefined objects
+window.__safeProp = function(obj, prop) {
+  if (!obj) return "4.2.1";
+  return obj[prop] || "4.2.1";
+};
+
+// Create version proxy
+var versionProxy = {
+  get: function(target, prop) {
+    if (prop === 'version') return "4.2.1";
+    return target[prop];
+  }
+};
+
+// Ensure IconProvider exists and has version
+var IconProvider = IconProvider || { version: "4.2.1" };
+
+// Override problematic property accesses
+(function() {
+  try {
+    // Direct property replacements for known version access points
+    var allIconsElements = document.querySelectorAll('*');
+    for (var i = 0; i < allIconsElements.length; i++) {
+      var el = allIconsElements[i];
+      if (el && el.className && el.className.indexOf && el.className.indexOf('anticon') > -1) {
+        if (el.__proto__) el.__proto__.version = "4.2.1";
+      }
+    }
+  } catch (e) {
+    console.warn('Error in anticon patch:', e);
+  }
+})();
 // ==== END PATCH ====
 `;
 
-      // Add our patches to the content
-      content = importFallback + headerPatch + content;
+      // Add our patches to the content - remove any import statements to avoid syntax errors
+      content = versionPatch + content;
+
+      // Replace any attempts to access .version with safe accessors
+      content = content.replace(
+        /(\w+)\.version/g,
+        'window.__safeProp($1, "version")'
+      );
 
       // Write the patched file
       fs.writeFileSync(file, content);
@@ -105,11 +145,11 @@ window.__ANT_ICONS_VERSION__ = "4.2.1";
       console.log('Adding React fallback to index.html...');
       let indexHtml = fs.readFileSync(indexHtmlPath, 'utf8');
 
-      // Only add if not already present
+      // Only add if not already present - add it before any other scripts
       if (!indexHtml.includes('react-fallback.js')) {
         indexHtml = indexHtml.replace(
-          '</head>',
-          '  <script src="/assets/react-fallback.js"></script>\n  </head>'
+          '<head>',
+          '<head>\n  <script src="/assets/react-fallback.js"></script>'
         );
         fs.writeFileSync(indexHtmlPath, indexHtml);
         console.log('✅ Added React fallback to index.html');

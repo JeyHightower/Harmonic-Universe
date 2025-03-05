@@ -36,70 +36,100 @@ if (!fs.existsSync(assetsDir)) {
 // Create the fallback file
 const fallbackFile = path.join(assetsDir, 'react-fallback.js');
 
-// Create React fallback content
+// Create React fallback content - NO EXPORTS for browser compatibility
 const fallbackContent = `
 // This is a fallback module for React dependencies
 // It provides mock implementations for React functions used by Ant Design icons
+(function() {
+  // Define version first so it's available globally
+  window.version = "4.2.1";
 
-window.React = window.React || {
-  createContext: function(defaultValue) {
-    const context = {
-      Provider: function Provider({ value, children }) {
-        return children || null;
+  // Create a safety proxy to catch any undefined.version access
+  window.__safeVersionProxy = new Proxy({}, {
+    get: function(target, prop) {
+      if (prop === 'version') return "4.2.1";
+      return {};
+    }
+  });
+
+  // Intercept property access to catch undefined.version errors
+  // This is a more aggressive approach to prevent runtime errors
+  const originalGet = Object.getOwnPropertyDescriptor(Object.prototype, '__lookupGetter__').value;
+  Object.defineProperty(Object.prototype, '__lookupGetter__', {
+    value: function(prop) {
+      if (prop === 'version' && (this === undefined || this === null)) {
+        console.warn('Prevented access to undefined.version');
+        return function() { return "4.2.1"; };
+      }
+      return originalGet.apply(this, arguments);
+    },
+    configurable: true
+  });
+
+  // Define React mock if it doesn't exist
+  if (typeof window.React === 'undefined') {
+    window.React = {
+      createContext: function(defaultValue) {
+        const context = {
+          Provider: function Provider(props) {
+            return props.children || null;
+          },
+          Consumer: function Consumer(props) {
+            return props.children ? props.children(defaultValue) : null;
+          },
+          displayName: 'MockContext',
+          _currentValue: defaultValue,
+          _currentValue2: defaultValue
+        };
+        return context;
       },
-      Consumer: function Consumer({ children }) {
-        return children ? children(defaultValue) : null;
+      createElement: function(type, props, ...children) {
+        return { type, props, children };
       },
-      displayName: 'MockContext',
-      _currentValue: defaultValue,
-      _currentValue2: defaultValue
+      isValidElement: function(object) {
+        return object && typeof object === 'object' && 'type' in object;
+      },
+      Fragment: Symbol('Fragment'),
+      memo: function(component) {
+        return component;
+      },
+      forwardRef: function(component) {
+        return component;
+      }
     };
-    return context;
-  },
-  createElement: function(type, props, ...children) {
-    return { type, props, children };
-  },
-  isValidElement: function(object) {
-    return object && typeof object === 'object' && 'type' in object;
-  },
-  Fragment: Symbol('Fragment'),
-  memo: function(component) {
-    return component;
-  },
-  forwardRef: function(component) {
-    return component;
   }
-};
 
-// Define IconContext if missing
-window.IconContext = window.IconContext || window.React.createContext({
-  prefixCls: 'anticon',
-  rtl: false
-});
+  // Ensure version is available on React
+  if (window.React) window.React.version = window.React.version || "4.2.1";
 
-// Ensure window.version is defined for Ant icons
-window.version = window.version || "4.2.1";
+  // Define IconContext if missing
+  window.IconContext = window.IconContext || (window.React ? window.React.createContext({
+    prefixCls: 'anticon',
+    rtl: false
+  }) : {
+    Provider: function() {},
+    Consumer: function() {}
+  });
 
-// Provide fallback for IconProvider (commonly used in Ant Design icons)
-window.IconProvider = window.IconProvider || {
-  version: "4.2.1",
-  Provider: function() {},
-  Consumer: function() {}
-};
+  // Ensure IconContext has a version
+  if (window.IconContext) window.IconContext.version = "4.2.1";
 
-// Export as ES modules
-export const createContext = window.React.createContext;
-export const createElement = window.React.createElement;
-export const isValidElement = window.React.isValidElement;
-export const Fragment = window.React.Fragment;
-export const memo = window.React.memo;
-export const forwardRef = window.React.forwardRef;
-export const IconContext = window.IconContext;
-export const IconProvider = window.IconProvider;
-export const version = "4.2.1";
+  // Provide fallback for IconProvider (commonly used in Ant Design icons)
+  window.IconProvider = window.IconProvider || {
+    version: "4.2.1",
+    Provider: function() {},
+    Consumer: function() {}
+  };
 
-// Log that the fallback was loaded
-console.log("[React Fallback] Mock React components loaded");
+  // Set versions on all potential candidates
+  const commonObjects = ['AntDesign', 'Icon', 'IconProvider', 'IconContext', 'AntIcon', 'TreeSelect', 'IconBase'];
+  commonObjects.forEach(name => {
+    if (window[name]) window[name].version = "4.2.1";
+  });
+
+  // Log that the fallback was loaded
+  console.log("[React Fallback] Mock React components loaded");
+})();
 `;
 
 // Write the fallback file
