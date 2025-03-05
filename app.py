@@ -223,13 +223,6 @@ def create_app():
 
 # Optional: Allow direct execution of this file
 if __name__ == "__main__":
-    app = create_app()
-    try:
-        # Get port from environment
-        port = int(os.environ.get("PORT", 10000))
-        logger.info(f"Starting app on port {port}")
-        app.run(host="0.0.0.0", port=port, debug=False)
-    except Exception as e:
-        logger.error(f"Failed to start app: {str(e)}")
-        logger.error(traceback.format_exc())
-        sys.exit(1)
+    port = int(os.environ.get("PORT", 10000))
+    print(f"Starting app on port {port}")
+    app.run(host="0.0.0.0", port=port, debug=False)
