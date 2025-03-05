@@ -6,16 +6,31 @@
 import fs from 'fs';
 import path from 'path';
 
+// Get the current working directory and determine if we're already in frontend
+const cwd = process.cwd();
+const isInFrontend = cwd.endsWith('/frontend') || cwd.endsWith('\\frontend');
+
+// Helper to resolve paths correctly whether we're in /frontend or project root
+function resolvePath(relativePath) {
+  // If we're already in frontend directory, don't add frontend/ prefix
+  if (isInFrontend && relativePath.startsWith('frontend/')) {
+    return path.join(cwd, relativePath.substring(9));
+  }
+  return path.join(cwd, relativePath);
+}
+
 // Create the dist directory if it doesn't exist
-const distDir = path.join(process.cwd(), 'dist');
+const distDir = path.join(cwd, 'dist');
 if (!fs.existsSync(distDir)) {
-    fs.mkdirSync(distDir, { recursive: true });
+  fs.mkdirSync(distDir, { recursive: true });
+  console.log(`Created dist directory at: ${distDir}`);
 }
 
 // Create the assets directory if it doesn't exist
 const assetsDir = path.join(distDir, 'assets');
 if (!fs.existsSync(assetsDir)) {
-    fs.mkdirSync(assetsDir, { recursive: true });
+  fs.mkdirSync(assetsDir, { recursive: true });
+  console.log(`Created assets directory at: ${assetsDir}`);
 }
 
 // Create the fallback file
@@ -98,9 +113,31 @@ const htmlSnippet = `
 <script src="/assets/react-fallback.js"></script>
 `;
 
-// Write the HTML snippet to a file for reference
-const snippetFile = path.join(process.cwd(), 'frontend/scripts/react-fallback-snippet.html');
-fs.writeFileSync(snippetFile, htmlSnippet);
+// Log path info for debugging
+console.log(`Current working directory: ${cwd}`);
+console.log(`Is in frontend directory: ${isInFrontend}`);
 
-console.log(`✅ Created HTML snippet at: ${snippetFile}`);
+// Determine the correct path for the snippet file
+let scriptsDir;
+if (isInFrontend) {
+  scriptsDir = path.join(cwd, 'scripts');
+} else {
+  scriptsDir = path.join(cwd, 'frontend', 'scripts');
+}
+
+// Make sure the scripts directory exists
+try {
+  if (!fs.existsSync(scriptsDir)) {
+    fs.mkdirSync(scriptsDir, { recursive: true });
+    console.log(`Created scripts directory at: ${scriptsDir}`);
+  }
+
+  const snippetFile = path.join(scriptsDir, 'react-fallback-snippet.html');
+  fs.writeFileSync(snippetFile, htmlSnippet);
+  console.log(`✅ Created HTML snippet at: ${snippetFile}`);
+} catch (error) {
+  console.error(`Warning: Could not create snippet file: ${error.message}`);
+  console.log('This is non-critical, continuing...');
+}
+
 console.log('React fallback setup complete.');
