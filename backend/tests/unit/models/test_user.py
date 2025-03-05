@@ -1,6 +1,6 @@
 import pytest
-from app.models import User
-from app.db import SessionLocal
+from backend.app.models import User
+from backend.app.db import SessionLocal
 
 def test_user_creation():
     """Test basic user creation"""

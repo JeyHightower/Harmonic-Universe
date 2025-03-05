@@ -1,8 +1,8 @@
 """Test suite for WebSocket functionality."""
 import pytest
 import json
-from app.models import Scene, PhysicsObject
-from app.websockets import socketio
+from backend.app.models import Scene, PhysicsObject
+from backend.app.websockets import socketio
 from .factories import (
     UserFactory, UniverseFactory, StoryboardFactory,
     SceneFactory, PhysicsObjectFactory

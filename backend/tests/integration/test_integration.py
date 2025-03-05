@@ -1,6 +1,6 @@
 """Test suite for integration testing."""
 import pytest
-from app.models import User, Universe, Storyboard, Scene, PhysicsObject
+from backend.app.models import User, Universe, Storyboard, Scene, PhysicsObject
 from .factories import (
     UserFactory, UniverseFactory, StoryboardFactory,
     SceneFactory, PhysicsObjectFactory

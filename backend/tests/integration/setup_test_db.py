@@ -7,8 +7,8 @@ from pathlib import Path
 backend_dir = Path(__file__).parent.parent
 sys.path.append(str(backend_dir))
 
-from app import create_app, db
-from app.models import (
+from backend.app import create_app, db
+from backend.app.models import (
     User, Profile, Universe, UniverseAccess,
     Collaborator, Storyboard, Scene,
     VisualEffect, AudioTrack,

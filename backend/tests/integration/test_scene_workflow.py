@@ -1,5 +1,5 @@
 import pytest
-from app.models import Scene, Universe
+from backend.app.models import Scene, Universe
 from ..factories import UniverseFactory, SceneFactory
 
 def test_scene_management_workflow(client, auth_headers, test_user):

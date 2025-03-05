@@ -1,6 +1,6 @@
 import pytest
 from flask_socketio import SocketIO
-from app.models import Universe, Scene, User
+from backend.app.models import Universe, Scene, User
 from ..factories import UniverseFactory, UserFactory
 
 def test_scene_collaboration(app, socketio_client, test_user, test_scene):

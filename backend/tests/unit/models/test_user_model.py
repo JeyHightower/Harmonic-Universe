@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
-from app.models.user import User
-from app.models.universe import Universe
+from backend.app.models.user import User
+from backend.app.models.universe import Universe
 from sqlalchemy.exc import IntegrityError
 
 def test_new_user(session):

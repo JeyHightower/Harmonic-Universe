@@ -1,13 +1,13 @@
 """Test factories for creating test objects."""
 import factory
 from factory.alchemy import SQLAlchemyModelFactory
-from app.models import (
+from backend.app.models import (
     User, Profile, Universe, UniverseAccess,
     Collaborator, Storyboard, Scene,
     VisualEffect, AudioTrack,
     PhysicsObject, PhysicsConstraint
 )
-from app import db
+from backend.app import db
 
 class BaseFactory(SQLAlchemyModelFactory):
     """Base factory class."""

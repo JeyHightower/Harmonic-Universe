@@ -4,8 +4,8 @@ Repository for PhysicsParameters-related database operations.
 from typing import List, Optional
 from uuid import UUID
 from sqlalchemy.orm import Session
-from app.models.physics.parameters import PhysicsParameters
-from app.core.errors import NotFoundError
+from backend.app.models.physics.parameters import PhysicsParameters
+from backend.app.core.errors import NotFoundError
 
 class PhysicsParameterRepository:
     """Repository for PhysicsParameters-related database operations."""

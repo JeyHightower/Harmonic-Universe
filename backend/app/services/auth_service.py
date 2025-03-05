@@ -1,10 +1,10 @@
 from datetime import datetime
 from typing import Optional
 from sqlalchemy.orm import Session
-from app.core.security import create_access_token
-from app.models.user import User
-from app.core.config import settings
-from app.utils.email import send_verification_email, send_password_reset_email
+from backend.app.core.security import create_access_token
+from backend.app.models.user import User
+from backend.app.core.config import settings
+from backend.app.utils.email import send_verification_email, send_password_reset_email
 
 class AuthService:
     def __init__(self, db: Session):

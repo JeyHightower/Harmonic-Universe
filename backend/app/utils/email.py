@@ -1,6 +1,6 @@
 from flask_mail import Message
-from app.core.config import settings
-from app.extensions import mail
+from backend.app.core.config import settings
+from backend.app.extensions import mail
 
 def send_email(to: str, subject: str, template: str):
     msg = Message(

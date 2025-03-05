@@ -1,8 +1,8 @@
 import pytest
 from flask_socketio import SocketIOTestClient
-from app import create_app, socketio, db
-from app.models.user import User
-from app.models.universe import Universe
+from backend.app import create_app, socketio, db
+from backend.app.models.user import User
+from backend.app.models.universe import Universe
 
 class TestWebSocket:
     def test_connection(self, socketio_client):

@@ -1,6 +1,6 @@
-from app import create_app, socketio
-from app.core.middleware import setup_middleware
-from app.core.config import config
+from backend.app import create_app, socketio
+from backend.app.core.middleware import setup_middleware
+from backend.app.core.config import config
 import os
 
 app = create_app(config['development'])

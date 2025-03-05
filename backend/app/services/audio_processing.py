@@ -3,7 +3,7 @@ from scipy import signal
 from typing import Tuple, Optional
 import librosa
 import soundfile as sf
-from app.core.config import settings
+from backend.app.core.config import settings
 
 class AudioProcessor:
     def __init__(

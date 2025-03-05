@@ -4,8 +4,8 @@ Repository for Scene-related database operations.
 from typing import List, Optional
 from uuid import UUID
 from sqlalchemy.orm import Session
-from app.models.universe.scene import Scene
-from app.core.errors import NotFoundError
+from backend.app.models.universe.scene import Scene
+from backend.app.core.errors import NotFoundError
 
 class SceneRepository:
     """Repository for Scene-related database operations."""

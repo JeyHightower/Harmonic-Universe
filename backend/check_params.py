@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import json
-from app.db.session import get_db
-from app.models.universe import Universe
+from backend.app.db.session import get_db
+from backend.app.models.universe import Universe
 
 def main():
     with get_db() as db:

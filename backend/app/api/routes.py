@@ -14,7 +14,7 @@ physics_bp = Blueprint('physics', __name__, url_prefix='/api/physics')
 ai_bp = Blueprint('ai', __name__, url_prefix='/api/ai')
 
 # Import routes to register them with blueprints
-from app.api.endpoints import (
+from backend.app.api.endpoints import (
     auth,
     users,
     audio,

@@ -10,7 +10,7 @@ from datetime import datetime
 backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(backend_dir)
 
-from app.db.session import engine
+from backend.app.db.session import engine
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()

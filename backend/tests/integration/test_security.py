@@ -2,8 +2,8 @@
 import pytest
 import jwt
 from datetime import datetime, timedelta
-from app.models import User, Universe, UniverseAccess
-from app.security import generate_token, verify_token
+from backend.app.models import User, Universe, UniverseAccess
+from backend.app.security import generate_token, verify_token
 from .factories import UserFactory, UniverseFactory
 
 def test_user_authentication(client):

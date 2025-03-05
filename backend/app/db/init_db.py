@@ -6,11 +6,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError, OperationalError
 
-from app.core.config import settings
-from app.db.session import engine as default_engine, init_engine, Base
-from app.models.core.user import User
-from app.models.organization.organization import Organization, Role, Workspace, Permission
-from app.seeds.demo_user import create_demo_user
+from backend.app.core.config import settings
+from backend.app.db.session import engine as default_engine, init_engine, Base
+from backend.app.models.core.user import User
+from backend.app.models.organization.organization import Organization, Role, Workspace, Permission
+from backend.app.seeds.demo_user import create_demo_user
 
 logger = logging.getLogger(__name__)
 

@@ -1,11 +1,11 @@
 """Physics Object routes."""
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.models.physics.physics_object import PhysicsObject
-from app.models.universe.scene import Scene
-from app.models.universe.universe import Universe
-from app.db.session import get_db
-from app.core.errors import ValidationError, NotFoundError, AuthorizationError
+from backend.app.models.physics.physics_object import PhysicsObject
+from backend.app.models.universe.scene import Scene
+from backend.app.models.universe.universe import Universe
+from backend.app.db.session import get_db
+from backend.app.core.errors import ValidationError, NotFoundError, AuthorizationError
 from uuid import UUID
 import logging
 import traceback

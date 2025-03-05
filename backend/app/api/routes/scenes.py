@@ -3,14 +3,14 @@ from flask import Blueprint, request, jsonify
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
-from app.db.session import get_db
-from app.db.repositories.scene import SceneRepository
-from app.db.repositories.physics_parameter import PhysicsParameterRepository
-from app.db.repositories.harmony_parameter import HarmonyParameterRepository
-from app.db.repositories.universe import UniverseRepository
-from app.models.universe.scene import Scene
-from app.core.errors import ValidationError, NotFoundError
-from app.core.auth import get_current_user
+from backend.app.db.session import get_db
+from backend.app.db.repositories.scene import SceneRepository
+from backend.app.db.repositories.physics_parameter import PhysicsParameterRepository
+from backend.app.db.repositories.harmony_parameter import HarmonyParameterRepository
+from backend.app.db.repositories.universe import UniverseRepository
+from backend.app.models.universe.scene import Scene
+from backend.app.core.errors import ValidationError, NotFoundError
+from backend.app.core.auth import get_current_user
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 scenes_bp = Blueprint('scenes', __name__)

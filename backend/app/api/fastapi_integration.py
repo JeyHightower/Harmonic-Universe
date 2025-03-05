@@ -36,7 +36,7 @@ def mount_fastapi_app(flask_app: Flask) -> Flask:
     """
     try:
         # Import the routers
-        from app.api.routes.music import router as music_router
+        from backend.app.api.routes.music import router as music_router
 
         # Add routers to the FastAPI app
         fastapi_app.include_router(music_router, prefix="/api")

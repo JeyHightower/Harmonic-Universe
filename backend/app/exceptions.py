@@ -1,6 +1,6 @@
 """Application exceptions module."""
 
-from app.core.errors import AppError
+from backend.app.core.errors import AppError
 
 class UniverseNotFoundError(AppError):
     """Raised when a universe is not found."""

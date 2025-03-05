@@ -4,8 +4,8 @@ Repository for HarmonyParameter-related database operations.
 from typing import List, Optional
 from uuid import UUID
 from sqlalchemy.orm import Session
-from app.models.audio.harmony_parameter import HarmonyParameter
-from app.core.errors import NotFoundError
+from backend.app.models.audio.harmony_parameter import HarmonyParameter
+from backend.app.core.errors import NotFoundError
 
 class HarmonyParameterRepository:
     """Repository for HarmonyParameter-related database operations."""

@@ -4,8 +4,8 @@ import pytest
 from flask import Flask
 from flask.testing import FlaskClient
 from flask_jwt_extended import create_access_token
-from app import create_app, db
-from app.models import User
+from backend.app import create_app, db
+from backend.app.models import User
 from .factories import (
     UserFactory, ProfileFactory, UniverseFactory,
     StoryboardFactory, SceneFactory, PhysicsObjectFactory,
@@ -117,14 +117,14 @@ def audio_track(session, scene):
 def websocket_client(app):
     """Create a test WebSocket client."""
     from flask_socketio import SocketIOTestClient
-    from app.websockets import socketio
+    from backend.app.websockets import socketio
     return SocketIOTestClient(app, socketio)
 
 @pytest.fixture
 def authenticated_websocket_client(app, user):
     """Create an authenticated test WebSocket client."""
     from flask_socketio import SocketIOTestClient
-    from app.websockets import socketio
+    from backend.app.websockets import socketio
     access_token = create_access_token(identity=user.id)
     return SocketIOTestClient(
         app,

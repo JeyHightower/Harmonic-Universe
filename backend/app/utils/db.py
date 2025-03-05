@@ -6,7 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import text
 from datetime import datetime
 
-from app.db.base import Base
+from backend.app.db.base import Base
 
 ModelType = TypeVar("ModelType", bound=Base)
 

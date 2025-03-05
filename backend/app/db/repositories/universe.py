@@ -3,8 +3,8 @@ Repository for Universe-related database operations.
 """
 from typing import List, Optional
 from uuid import UUID
-from app.models.universe.universe import Universe
-from app.core.errors import NotFoundError
+from backend.app.models.universe.universe import Universe
+from backend.app.core.errors import NotFoundError
 
 class UniverseRepository:
     """Repository for Universe-related database operations."""

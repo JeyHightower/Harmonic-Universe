@@ -1,7 +1,7 @@
 import pytest
-from app.services.audio_service import AudioService
-from app.models import AudioTrack, Scene
-from app.exceptions import AudioTrackNotFoundError
+from backend.app.services.audio_service import AudioService
+from backend.app.models import AudioTrack, Scene
+from backend.app.exceptions import AudioTrackNotFoundError
 
 def test_create_audio_track(app, test_scene):
     """Test creating an audio track"""

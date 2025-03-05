@@ -2,9 +2,9 @@ import pytest
 import time
 import threading
 from flask_socketio import SocketIOTestClient
-from app.models.user import User
-from app.models.universe import Universe
-from app import create_app, socketio, db
+from backend.app.models.user import User
+from backend.app.models.universe import Universe
+from backend.app import create_app, socketio, db
 from flask_jwt_extended import create_access_token
 
 def create_test_client(app, user):

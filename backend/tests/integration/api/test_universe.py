@@ -1,9 +1,9 @@
 """Tests for universe routes."""
 import pytest
 from flask import url_for
-from app.models import Universe, User
+from backend.app.models import Universe, User
 from sqlalchemy import select
-from app.extensions import db
+from backend.app.extensions import db
 
 def test_create_universe(client, auth_headers):
     """Test creating a new universe."""

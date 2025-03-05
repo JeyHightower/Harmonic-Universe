@@ -6,8 +6,8 @@ import numpy as np
 from PIL import Image
 import ffmpeg
 
-from app.core.visualization.export import ExportManager
-from app.models.visualization import RenderingMode, SceneObjectType
+from backend.app.core.visualization.export import ExportManager
+from backend.app.models.visualization import RenderingMode, SceneObjectType
 
 @pytest.fixture
 def scene_data():

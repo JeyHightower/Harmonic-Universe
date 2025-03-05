@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine, inspect
-from app.core.config import settings
+from backend.app.core.config import settings
 
 def check_tables():
     engine = create_engine(settings.SQLALCHEMY_DATABASE_URI)

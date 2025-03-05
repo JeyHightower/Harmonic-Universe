@@ -1,6 +1,89 @@
-# Deploying Harmonic Universe to Render.com
+# Harmonic Universe Deployment Guide
 
-This guide provides step-by-step instructions for deploying the Harmonic Universe application (Flask backend + React frontend) to Render.com.
+This guide explains how to deploy the Harmonic Universe application on Render.com.
+
+## What We Fixed
+
+We fixed several issues that were preventing the application from deploying correctly:
+
+1. **Import Paths**: Updated all imports in the backend code to use the proper `backend.app` path structure
+   instead of just `app`, which was causing import errors.
+
+2. **Entry Point Structure**: Created proper entry points at the root level:
+
+   - `app.py`: The main entry point that imports and instantiates the application
+   - `wsgi.py`: A WSGI-compatible entry point for Gunicorn
+
+3. **Python Path Configuration**: Ensured PYTHONPATH includes the current directory in
+   both Render.yaml configuration and start commands.
+
+4. **Verification Script**: Enhanced the verification script to provide detailed diagnostic information.
+
+## Deployment on Render.com
+
+### Option 1: Using the render.yaml file
+
+1. Make sure the `render.yaml` file is in the root of your repository
+2. Connect your repository to Render.com
+3. Render.com will automatically detect and use the configuration in render.yaml
+
+### Option 2: Manual Configuration in Render Dashboard
+
+1. Create a new Web Service in the Render.com dashboard
+2. Connect your repository
+3. Configure the following settings:
+
+   **Build Command:**
+
+   ```
+   pip install -r backend/requirements.txt && pip install gunicorn && cd frontend && npm install && npm run render-build && cd .. && mkdir -p static && cp -r frontend/dist/* static/ && cp frontend/public/react-polyfill.js static/ 2>/dev/null || true && cp frontend/public/react-context-provider.js static/ 2>/dev/null || true
+   ```
+
+   **Start Command:**
+
+   ```
+   PYTHONPATH=. gunicorn app:create_app()
+   ```
+
+   **Environment Variables:**
+
+   - PYTHONPATH: `.`
+   - FLASK_APP: `app`
+   - FLASK_ENV: `production`
+   - REACT_APP_BASE_URL: `https://harmonic-universe.onrender.com` (adjust as needed)
+
+## Verification
+
+Before deploying, run the verification script locally to ensure everything works:
+
+```bash
+python verify_render_setup.py
+```
+
+All checks should pass before deploying.
+
+## Troubleshooting
+
+If you encounter issues:
+
+1. Check the Render.com logs for error messages
+2. Verify that all the environment variables are set correctly
+3. Make sure your database connection string is properly configured
+4. Run the verification script locally to diagnose issues
+
+## Directory Structure
+
+```
+harmonic-universe/
+├── app.py                 # Main entry point that imports from backend
+├── wsgi.py                # WSGI entry point for Gunicorn
+├── render.yaml            # Render.com configuration
+├── verify_render_setup.py # Verification script
+├── backend/               # Backend Flask application
+│   └── app/               # Main application package
+├── frontend/              # Frontend React application
+└── static/                # Built frontend files (created during build)
+```
 
 ## Prerequisites
 

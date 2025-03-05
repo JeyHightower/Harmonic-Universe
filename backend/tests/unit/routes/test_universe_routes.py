@@ -1,5 +1,5 @@
 import pytest
-from app.models import Universe
+from backend.app.models import Universe
 from ..factories import UniverseFactory, UserFactory
 
 def test_get_universes(client, auth_headers, test_user):

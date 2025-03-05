@@ -1,7 +1,7 @@
 """Test suite for media effects functionality."""
 import pytest
-from app.models import VisualEffect, AudioTrack
-from app.media import EffectProcessor, AudioProcessor
+from backend.app.models import VisualEffect, AudioTrack
+from backend.app.media import EffectProcessor, AudioProcessor
 from .factories import SceneFactory, VisualEffectFactory, AudioTrackFactory
 
 def test_visual_effect_creation(client, scene, auth_headers):

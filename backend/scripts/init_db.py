@@ -1,6 +1,6 @@
 """Initialize database script."""
-from app.db.session import get_db
-from app.db.init_db import init_db
+from backend.app.db.session import get_db
+from backend.app.db.init_db import init_db
 
 def main():
     """Initialize database."""

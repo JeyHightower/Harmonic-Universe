@@ -6,21 +6,21 @@ from flask_jwt_extended import (
     get_jwt
 )
 from datetime import timedelta
-from app.db.session import get_db
-from app.models.user import User
-from app.core.errors import (
+from backend.app.db.session import get_db
+from backend.app.models.user import User
+from backend.app.core.errors import (
     ValidationError,
     AuthenticationError,
     UserAlreadyExistsError,
     InvalidCredentialsError,
     DatabaseError
 )
-from app.core.security import (
+from backend.app.core.security import (
     verify_password,
     create_access_token,
     create_refresh_token
 )
-from app.core.config import settings
+from backend.app.core.config import settings
 import logging
 
 auth_bp = Blueprint('auth', __name__)

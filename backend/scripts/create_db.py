@@ -5,7 +5,7 @@ import sys
 import logging
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
-from app.core.config import config
+from backend.app.core.config import config
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

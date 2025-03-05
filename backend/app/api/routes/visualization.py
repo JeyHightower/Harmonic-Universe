@@ -1,10 +1,10 @@
 """Visualization routes."""
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.core.errors import ValidationError, NotFoundError, AuthorizationError
-from app.models.visualization.visualization import Visualization
-from app.models.universe.scene import Scene
-from app.db.session import get_db
+from backend.app.core.errors import ValidationError, NotFoundError, AuthorizationError
+from backend.app.models.visualization.visualization import Visualization
+from backend.app.models.universe.scene import Scene
+from backend.app.db.session import get_db
 from uuid import UUID
 import json
 

@@ -5,8 +5,8 @@ Middleware for global error handling and request processing.
 from functools import wraps
 from flask import request, g, current_app
 from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
-from app.models.user import User
-from app.core.errors import AuthenticationError
+from backend.app.models.user import User
+from backend.app.core.errors import AuthenticationError
 import time
 import uuid
 

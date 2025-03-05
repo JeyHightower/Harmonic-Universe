@@ -3,7 +3,7 @@ from sqlalchemy import Column, String, Boolean, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from .base import BaseModel
-from app.core.pwd_context import get_password_hash, verify_password
+from backend.app.core.pwd_context import get_password_hash, verify_password
 
 class User(BaseModel):
     """User model."""

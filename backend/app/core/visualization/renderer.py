@@ -4,7 +4,7 @@ from pathlib import Path
 import json
 import asyncio
 from flask_socketio import emit
-from app.models.visualization import RenderingMode, SceneObjectType
+from backend.app.models.visualization import RenderingMode, SceneObjectType
 
 class Renderer:
     def __init__(self, scene_data: Dict[str, Any]):

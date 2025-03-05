@@ -1,9 +1,9 @@
 """Audio processing tasks."""
 
-from app.celery import celery
-from app.models.core.universe import Universe
-from app.models.audio import AudioFile, AudioTrack
-from app.db.session import get_db
+from backend.app.celery import celery
+from backend.app.models.core.universe import Universe
+from backend.app.models.audio import AudioFile, AudioTrack
+from backend.app.db.session import get_db
 import librosa
 import numpy as np
 import soundfile as sf
@@ -62,7 +62,7 @@ def generate_audio_track(universe_id: int, parameters: Dict[str, Any]) -> Dict[s
     """Generate an audio track based on universe parameters."""
     try:
         with get_db() as db:
-            from app.db.repositories.universe import UniverseRepository
+            from backend.app.db.repositories.universe import UniverseRepository
             universe_repo = UniverseRepository(db)
             universe = universe_repo.get_universe_by_id(str(universe_id))
             if not universe:

@@ -1,7 +1,7 @@
 """Test suite for user management functionality."""
 import pytest
 from flask import url_for
-from app.models import User, Profile
+from backend.app.models import User, Profile
 from .factories import UserFactory, ProfileFactory
 
 def test_user_registration(client, session):

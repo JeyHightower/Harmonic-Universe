@@ -1,7 +1,7 @@
 import random
 import string
 from datetime import datetime, timedelta
-from app.models import db
+from backend.app.models import db
 
 def random_string(length=10):
     """Generate a random string of fixed length"""

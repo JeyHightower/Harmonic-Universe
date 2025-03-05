@@ -2,9 +2,9 @@ import pytest
 import json
 import time
 from flask_socketio import SocketIOTestClient
-from app.models.user import User
-from app.models.universe import Universe
-from app import create_app, socketio, db
+from backend.app.models.user import User
+from backend.app.models.universe import Universe
+from backend.app import create_app, socketio, db
 
 @pytest.fixture
 def auth_headers(app, test_user):

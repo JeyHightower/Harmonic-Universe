@@ -1,7 +1,7 @@
 import pytest
-from app.services.universe_service import UniverseService
-from app.models import Universe, User
-from app.exceptions import UniverseNotFoundError, UnauthorizedError
+from backend.app.services.universe_service import UniverseService
+from backend.app.models import Universe, User
+from backend.app.exceptions import UniverseNotFoundError, UnauthorizedError
 
 def test_create_universe(app, test_user):
     """Test universe creation through service layer"""

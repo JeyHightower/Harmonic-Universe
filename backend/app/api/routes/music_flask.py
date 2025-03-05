@@ -3,11 +3,11 @@ Flask-based implementation of the music generation API.
 """
 from flask import Blueprint, jsonify, request, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.db.repositories.universe import UniverseRepository
-from app.db.session import get_db
-from app.services.music_generator import generate_music_from_params
-from app.services.ai_music_generator import generate_ai_music
-from app.core.errors import NotFoundError, AuthorizationError
+from backend.app.db.repositories.universe import UniverseRepository
+from backend.app.db.session import get_db
+from backend.app.services.music_generator import generate_music_from_params
+from backend.app.services.ai_music_generator import generate_ai_music
+from backend.app.core.errors import NotFoundError, AuthorizationError
 import logging
 import io
 import numpy as np
@@ -311,7 +311,7 @@ def get_audio_tracks():
 
         with get_db() as db:
             # Start with a base query
-            from app.models.audio.audio_track import AudioTrack
+            from backend.app.models.audio.audio_track import AudioTrack
             query = db.query(AudioTrack)
 
             # Add filters based on provided parameters
@@ -354,13 +354,13 @@ def create_audio_track():
 
         with get_db() as db:
             # Verify scene exists
-            from app.models.universe.scene import Scene
+            from backend.app.models.universe.scene import Scene
             scene = db.query(Scene).filter_by(id=scene_id).first()
             if not scene:
                 return jsonify({"error": "Scene not found"}), 404
 
             # Create new audio track
-            from app.models.audio.audio_track import AudioTrack
+            from backend.app.models.audio.audio_track import AudioTrack
             new_track = AudioTrack(
                 name=data['name'],
                 scene_id=scene_id,
@@ -390,7 +390,7 @@ def get_single_audio_track(track_id):
 
         with get_db() as db:
             # Get the track
-            from app.models.audio.audio_track import AudioTrack
+            from backend.app.models.audio.audio_track import AudioTrack
             track = db.query(AudioTrack).filter_by(id=track_id).first()
 
             if not track:
@@ -421,7 +421,7 @@ def update_audio_track(track_id):
 
         with get_db() as db:
             # Get the track
-            from app.models.audio.audio_track import AudioTrack
+            from backend.app.models.audio.audio_track import AudioTrack
             track = db.query(AudioTrack).filter_by(id=track_id).first()
 
             if not track:
@@ -460,7 +460,7 @@ def delete_audio_track(track_id):
 
         with get_db() as db:
             # Get the track
-            from app.models.audio.audio_track import AudioTrack
+            from backend.app.models.audio.audio_track import AudioTrack
             track = db.query(AudioTrack).filter_by(id=track_id).first()
 
             if not track:
@@ -503,7 +503,7 @@ def generate_audio_from_parameters():
 
         with get_db() as db:
             # Verify scene exists
-            from app.models.universe.scene import Scene
+            from backend.app.models.universe.scene import Scene
             scene = db.query(Scene).filter_by(id=scene_id).first()
             if not scene:
                 return jsonify({"error": "Scene not found"}), 404
@@ -515,7 +515,7 @@ def generate_audio_from_parameters():
             )
 
             # Create a new audio track with the generated music
-            from app.models.audio.audio_track import AudioTrack
+            from backend.app.models.audio.audio_track import AudioTrack
             duration = data.get('duration', 30.0)  # Default 30 seconds
 
             new_track = AudioTrack(
@@ -566,7 +566,7 @@ def process_physics_to_audio():
 
         with get_db() as db:
             # Verify scene exists
-            from app.models.universe.scene import Scene
+            from backend.app.models.universe.scene import Scene
             scene = db.query(Scene).filter_by(id=scene_id).first()
             if not scene:
                 return jsonify({"error": "Scene not found"}), 404
@@ -578,7 +578,7 @@ def process_physics_to_audio():
             )
 
             # Create a new audio track with the generated music
-            from app.models.audio.audio_track import AudioTrack
+            from backend.app.models.audio.audio_track import AudioTrack
             duration = data.get('duration', 30.0)  # Default 30 seconds
 
             new_track = AudioTrack(

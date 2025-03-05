@@ -1,6 +1,6 @@
 import pytest
-from app.models.profile import Profile
-from app.models.user import User
+from backend.app.models.profile import Profile
+from backend.app.models.user import User
 from datetime import datetime
 
 def test_profile_creation(app, test_user):

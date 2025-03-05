@@ -8,10 +8,10 @@ from pathlib import Path
 from datetime import datetime, timedelta
 import json
 
-# Add parent directory to path to import app modules
+# Add parent directory to path to import backend.app modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.utils import (
+from backend.app.utils import (
     # Security utilities
     generate_token, generate_api_key, create_jwt_token, verify_jwt_token,
     encrypt_data, decrypt_data, generate_encryption_key,

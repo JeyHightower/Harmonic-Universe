@@ -1,8 +1,8 @@
 import pytest
 import json
-from app.models.user import User
-from app.models.universe import Universe
-from app import db
+from backend.app.models.user import User
+from backend.app.models.universe import Universe
+from backend.app import db
 
 class TestUniverseFlow:
     def test_complete_universe_flow(self, client, auth_headers, test_user, socketio_client):

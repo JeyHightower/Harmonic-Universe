@@ -5,9 +5,9 @@ CRUD operations for physics objects.
 from typing import List, Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from app.crud.base import CRUDBase
-from app.models.physics.physics_object import PhysicsObject
-from app.schemas.physics_object import PhysicsObjectCreate, PhysicsObjectUpdate
+from backend.app.crud.base import CRUDBase
+from backend.app.models.physics.physics_object import PhysicsObject
+from backend.app.schemas.physics_object import PhysicsObjectCreate, PhysicsObjectUpdate
 
 class CRUDPhysicsObject(CRUDBase[PhysicsObject, PhysicsObjectCreate, PhysicsObjectUpdate]):
     """CRUD operations for physics objects."""

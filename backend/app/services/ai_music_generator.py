@@ -2,7 +2,7 @@ from typing import Dict, Any, List
 import random
 import math
 import logging
-from app.services.music_generator import generate_music_from_params
+from backend.app.services.music_generator import generate_music_from_params
 
 # Initialize logger
 logger = logging.getLogger(__name__)

@@ -14,8 +14,8 @@ import contextlib
 import logging
 from unittest.mock import MagicMock, patch
 
-from app.db.base import Base
-from app.core.config import get_settings
+from backend.app.db.base import Base
+from backend.app.core.config import get_settings
 
 def random_string(length: int = 10) -> str:
     """Generate a random string."""

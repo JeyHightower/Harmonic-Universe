@@ -1,8 +1,8 @@
 """Demo user creation and management."""
-from app.db.session import get_db
-from app.models.user import User
-from app.models.universe import Universe
-from app.models.universe.scene import Scene
+from backend.app.db.session import get_db
+from backend.app.models.user import User
+from backend.app.models.universe import Universe
+from backend.app.models.universe.scene import Scene
 from sqlalchemy.exc import IntegrityError
 import logging
 

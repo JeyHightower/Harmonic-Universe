@@ -1,6 +1,6 @@
 """Test suite for scene management functionality."""
 import pytest
-from app.models import Scene, PhysicsObject, VisualEffect, AudioTrack
+from backend.app.models import Scene, PhysicsObject, VisualEffect, AudioTrack
 from .factories import (
     StoryboardFactory, SceneFactory,
     PhysicsObjectFactory, VisualEffectFactory, AudioTrackFactory

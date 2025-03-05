@@ -1,6 +1,6 @@
 """Test suite for collaboration features."""
 import pytest
-from app.models import Universe, UniverseAccess, Collaborator, Activity
+from backend.app.models import Universe, UniverseAccess, Collaborator, Activity
 from .factories import UserFactory, UniverseFactory, StoryboardFactory
 
 def test_collaborator_invite(client, universe, auth_headers):

@@ -4,8 +4,8 @@ from pathlib import Path
 import soundfile as sf
 import json
 
-from app.core.audio.processor import AudioProcessor
-from app.models.audio_file import AudioFormat
+from backend.app.core.audio.processor import AudioProcessor
+from backend.app.models.audio_file import AudioFormat
 
 @pytest.fixture
 def test_wav_file(tmp_path):

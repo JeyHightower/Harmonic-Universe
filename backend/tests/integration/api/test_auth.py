@@ -2,8 +2,8 @@
 import pytest
 from flask import url_for
 from sqlalchemy import select
-from app.models import User, Profile
-from app import db
+from backend.app.models import User, Profile
+from backend.app import db
 
 def test_register(client):
     """Test user registration."""

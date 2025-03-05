@@ -1,6 +1,6 @@
 import pytest
-from app.models import Universe, User
-from app.models.db import db
+from backend.app.models import Universe, User
+from backend.app.models.db import db
 
 def test_universe_creation():
     """Test basic universe creation"""

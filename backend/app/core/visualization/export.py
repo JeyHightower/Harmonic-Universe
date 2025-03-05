@@ -9,9 +9,9 @@ import io
 import base64
 from datetime import datetime
 
-from app.models.visualization import Export
-from app.core.visualization.renderer import Renderer
-from app.core.visualization.timeline import TimelineManager
+from backend.app.models.visualization import Export
+from backend.app.core.visualization.renderer import Renderer
+from backend.app.core.visualization.timeline import TimelineManager
 
 class ExportManager:
     def __init__(

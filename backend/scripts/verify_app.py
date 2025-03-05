@@ -12,10 +12,10 @@ def verify_app():
     print(f"Python path: {sys.path}")
 
     try:
-        from app import create_app
+        from backend.app import create_app
         print("✅ Successfully imported create_app function")
 
-        from app.core.config import config
+        from backend.app.core.config import config
         print("✅ Successfully imported config")
 
         app = create_app(config['production'])

@@ -1,8 +1,8 @@
 """Tests for Universe model."""
 import pytest
 from datetime import datetime, timezone
-from app.models import Universe, User
-from app.extensions import db
+from backend.app.models import Universe, User
+from backend.app.extensions import db
 from tests.factories import UniverseFactory, UserFactory
 
 def test_new_universe(session):

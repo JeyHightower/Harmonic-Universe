@@ -4,8 +4,8 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock, AsyncMock
 import json
 
-from app.core.visualization.timeline import TimelineManager
-from app.models.visualization import Timeline, Keyframe, Animation
+from backend.app.core.visualization.timeline import TimelineManager
+from backend.app.models.visualization import Timeline, Keyframe, Animation
 
 @pytest.fixture
 def timeline_data():

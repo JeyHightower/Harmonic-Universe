@@ -10,9 +10,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 # Now import the app module
 try:
-    from app import create_app
-    from app.core.middleware import setup_middleware
-    from app.core.config import config
+    from backend.app import create_app
+    from backend.app.core.middleware import setup_middleware
+    from backend.app.core.config import config
     print("Successfully imported app modules")
 except ImportError as e:
     print(f"Import error: {e}")

@@ -4,8 +4,8 @@ from flask_socketio import SocketIO
 from unittest.mock import Mock, AsyncMock
 import json
 
-from app.core.visualization.renderer import Renderer
-from app.models.visualization import RenderingMode, SceneObjectType
+from backend.app.core.visualization.renderer import Renderer
+from backend.app.models.visualization import RenderingMode, SceneObjectType
 
 @pytest.fixture
 def scene_data():

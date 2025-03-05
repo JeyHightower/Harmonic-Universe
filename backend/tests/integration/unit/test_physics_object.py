@@ -1,7 +1,7 @@
 """Tests for PhysicsObject model."""
 import pytest
 from datetime import datetime
-from app.models import PhysicsObject, Scene, Storyboard, Universe
+from backend.app.models import PhysicsObject, Scene, Storyboard, Universe
 from sqlalchemy.exc import IntegrityError
 
 def test_create_physics_object(session, test_scene):

@@ -1,5 +1,5 @@
-from app.db.session import get_db
-from app.models.user import User
+from backend.app.db.session import get_db
+from backend.app.models.user import User
 
 def create_demo_user():
     with get_db() as db:

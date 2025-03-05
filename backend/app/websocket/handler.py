@@ -12,7 +12,7 @@ import logging
 from ..models.user import User
 from ..models.universe.universe import Universe
 from ..core.errors import NotFoundError, AuthorizationError, WebSocketError
-from app import socketio
+from backend.app import socketio
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
 import pytest
 from flask import url_for
-from app.models import User
+from backend.app.models import User
 
 def test_signup_route(client):
     """Test user signup route"""

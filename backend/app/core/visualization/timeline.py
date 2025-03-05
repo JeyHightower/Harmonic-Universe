@@ -2,8 +2,8 @@ from typing import Dict, Any, List, Optional, Callable
 import asyncio
 from datetime import datetime
 import bisect
-from app.models.visualization import Timeline, Keyframe, Animation
-from app.core.audio.processor import AudioProcessor
+from backend.app.models.visualization import Timeline, Keyframe, Animation
+from backend.app.core.audio.processor import AudioProcessor
 
 class TimelineManager:
     def __init__(self, timeline_data: Dict[str, Any]):

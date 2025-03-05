@@ -7,13 +7,13 @@ import os
 import sys
 import logging
 
-# Add parent directory to path to import app modules
+# Add parent directory to path to import backend.app modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.db.base_class import Base
-from app.db.session import engine, SessionLocal
-from app.core.config import config
-from app.models.user import User
+from backend.app.db.base_class import Base
+from backend.app.db.session import engine, SessionLocal
+from backend.app.core.config import config
+from backend.app.models.user import User
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

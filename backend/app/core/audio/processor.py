@@ -1,6 +1,6 @@
 """Audio processing utilities."""
-from app.models.audio.audio_format import AudioFormat
-from app.core.config import settings
+from backend.app.models.audio.audio_format import AudioFormat
+from backend.app.core.config import settings
 import os
 
 class AudioProcessor:

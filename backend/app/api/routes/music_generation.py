@@ -1,11 +1,11 @@
 """Music generation routes."""
 from flask import Blueprint, request, jsonify, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.core.errors import ValidationError, NotFoundError, AuthorizationError
-from app.models.universe.universe import Universe
-from app.models.universe.scene import Scene
-from app.models.audio.audio_track import AudioTrack
-from app.db.session import get_db
+from backend.app.core.errors import ValidationError, NotFoundError, AuthorizationError
+from backend.app.models.universe.universe import Universe
+from backend.app.models.universe.scene import Scene
+from backend.app.models.audio.audio_track import AudioTrack
+from backend.app.db.session import get_db
 from uuid import UUID
 import os
 

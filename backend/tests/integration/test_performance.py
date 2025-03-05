@@ -2,7 +2,7 @@
 import pytest
 import time
 import concurrent.futures
-from app.models import Universe, Storyboard, Scene, PhysicsObject
+from backend.app.models import Universe, Storyboard, Scene, PhysicsObject
 from .factories import (
     UserFactory, UniverseFactory, StoryboardFactory,
     SceneFactory, PhysicsObjectFactory
@@ -164,7 +164,7 @@ def test_memory_usage(client, auth_headers):
 def test_database_connection_pool(client, auth_headers):
     """Test database connection pool performance."""
     from sqlalchemy import create_engine
-    from app import db
+    from backend.app import db
 
     # Get initial pool statistics
     engine = db.engine

@@ -14,9 +14,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from sqlalchemy import create_engine, text, inspect
 from sqlalchemy.orm import sessionmaker
-from app.core.config import settings
-from app.db.init_db import init_db
-from app.db.session import init_engine
+from backend.app.core.config import settings
+from backend.app.db.init_db import init_db
+from backend.app.db.session import init_engine
 from alembic.config import Config
 from alembic import command
 
@@ -106,7 +106,7 @@ def verify(fix):
         inspector = inspect(engine)
 
         # Check if all tables exist
-        from app.db.base import Base
+        from backend.app.db.base import Base
         missing_tables = []
         for table in Base.metadata.sorted_tables:
             try:

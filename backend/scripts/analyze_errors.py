@@ -109,9 +109,9 @@ class ErrorAnalyzer:
                 'file': 'app/models/__init__.py',
                 'description': "Update model imports to use fully qualified paths",
                 'code': """
-from app.db.base import db
-from app.models.user import User  # Import each model directly
-from app.models.audio_file import AudioFile
+from backend.app.db.base import db
+from backend.app.models.user import User  # Import each model directly
+from backend.app.models.audio_file import AudioFile
 # ... other model imports
 
 __all__ = ['db', 'User', 'AudioFile']  # List all models
@@ -181,7 +181,7 @@ users_bp = Blueprint('users', __name__)
 audio_bp = Blueprint('audio', __name__)
 
 # Register routes with blueprints
-from app.api.endpoints import auth, users, audio
+from backend.app.api.endpoints import auth, users, audio
 """
             })
 

@@ -1,15 +1,15 @@
 """Universe routes."""
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.models.universe.universe import Universe
-from app.models.user import User
-from app.core.errors import ValidationError, AuthenticationError, AuthorizationError, NotFoundError
-from app.db.session import get_db
-from app import socketio
-from app.core.auth import require_auth
+from backend.app.models.universe.universe import Universe
+from backend.app.models.user import User
+from backend.app.core.errors import ValidationError, AuthenticationError, AuthorizationError, NotFoundError
+from backend.app.db.session import get_db
+from backend.app import socketio
+from backend.app.core.auth import require_auth
 from datetime import datetime
 from uuid import UUID
-from app.db.repositories.universe import UniverseRepository
+from backend.app.db.repositories.universe import UniverseRepository
 import logging
 
 universe_bp = Blueprint('universe', __name__)

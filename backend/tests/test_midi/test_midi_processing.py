@@ -4,8 +4,8 @@ from pathlib import Path
 import pretty_midi
 import json
 
-from app.core.audio.midi_processor import MIDIProcessor
-from app.models.midi_event import MIDIEventType
+from backend.app.core.audio.midi_processor import MIDIProcessor
+from backend.app.models.midi_event import MIDIEventType
 
 @pytest.fixture
 def test_midi_file(tmp_path):

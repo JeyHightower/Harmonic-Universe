@@ -1,6 +1,6 @@
 from sqlalchemy import inspect
-from app import create_app
-from app.db.session import init_engine
+from backend.app import create_app
+from backend.app.db.session import init_engine
 
 app = create_app()
 with app.app_context():

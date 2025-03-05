@@ -1,8 +1,8 @@
 """Test suite for physics engine functionality."""
 import pytest
 import math
-from app.models import PhysicsObject, PhysicsConstraint
-from app.physics import PhysicsEngine, CollisionDetector, ForceGenerator
+from backend.app.models import PhysicsObject, PhysicsConstraint
+from backend.app.physics import PhysicsEngine, CollisionDetector, ForceGenerator
 from .factories import SceneFactory, PhysicsObjectFactory, PhysicsConstraintFactory
 
 def test_physics_object_creation(client, scene, auth_headers):

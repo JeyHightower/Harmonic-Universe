@@ -4,8 +4,8 @@ import midiutil
 import numpy as np
 from pathlib import Path
 
-from app.models.midi_event import MIDIEventType, MIDIEvent
-from app.schemas.midi_event import MIDIEventCreate
+from backend.app.models.midi_event import MIDIEventType, MIDIEvent
+from backend.app.schemas.midi_event import MIDIEventCreate
 
 class MIDIProcessor:
     def __init__(self, file_path: Optional[str] = None):

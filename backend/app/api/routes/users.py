@@ -1,10 +1,10 @@
 """User management routes."""
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
-from app.db.session import get_db
-from app.models.user import User
-from app.core.errors import ValidationError, NotFoundError
-from app.core.jwt import add_token_to_blocklist
+from backend.app.db.session import get_db
+from backend.app.models.user import User
+from backend.app.core.errors import ValidationError, NotFoundError
+from backend.app.core.jwt import add_token_to_blocklist
 
 users_bp = Blueprint('users', __name__)
 

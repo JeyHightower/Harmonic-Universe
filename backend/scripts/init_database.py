@@ -6,8 +6,8 @@ import sys
 backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(backend_dir)
 
-from app.db.session import get_db
-from app.db.init_db import init_db
+from backend.app.db.session import get_db
+from backend.app.db.init_db import init_db
 
 def main():
     """Initialize database."""

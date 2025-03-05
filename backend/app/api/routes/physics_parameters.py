@@ -1,10 +1,10 @@
 """Physics parameters routes."""
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.db.session import get_db
-from app.models.physics.parameters import PhysicsParameters
-from app.models.universe.universe import Universe
-from app.core.errors import ValidationError, NotFoundError, AuthorizationError
+from backend.app.db.session import get_db
+from backend.app.models.physics.parameters import PhysicsParameters
+from backend.app.models.universe.universe import Universe
+from backend.app.core.errors import ValidationError, NotFoundError, AuthorizationError
 import logging
 
 physics_parameters_bp = Blueprint('physics_parameters', __name__)

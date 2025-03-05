@@ -1,5 +1,5 @@
 from factory import Factory, Faker, LazyAttribute, SubFactory
-from app.models import User, Universe, Scene
+from backend.app.models import User, Universe, Scene
 from .utils import random_string
 
 class UserFactory(Factory):

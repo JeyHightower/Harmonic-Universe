@@ -1,7 +1,7 @@
 """User management script."""
 import click
-from app import create_app
-from app.seeds.demo_user import create_demo_user, verify_demo_user, get_demo_user
+from backend.app import create_app
+from backend.app.seeds.demo_user import create_demo_user, verify_demo_user, get_demo_user
 import logging
 
 logging.basicConfig(level=logging.INFO)

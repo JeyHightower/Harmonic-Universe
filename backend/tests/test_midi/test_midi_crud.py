@@ -4,15 +4,15 @@ from sqlalchemy.orm import Session
 import os
 from pathlib import Path
 
-from app import crud, create_app
-from app.core.config import settings
-from app.models.midi_event import MIDIEventType
-from app.models.audio_file import AudioFormat, AudioType
-from app.schemas.midi_event import MIDIEventCreate, MIDIEventBatch
-from app.schemas.audio_file import AudioFileCreate
-from app.tests.utils.utils import random_lower_string
-from app.tests.utils.user import create_random_user
-from app.tests.utils.universe import create_random_universe
+from backend.app import crud, create_app
+from backend.app.core.config import settings
+from backend.app.models.midi_event import MIDIEventType
+from backend.app.models.audio_file import AudioFormat, AudioType
+from backend.app.schemas.midi_event import MIDIEventCreate, MIDIEventBatch
+from backend.app.schemas.audio_file import AudioFileCreate
+from backend.app.tests.utils.utils import random_lower_string
+from backend.app.tests.utils.user import create_random_user
+from backend.app.tests.utils.universe import create_random_universe
 
 @pytest.fixture
 def app():

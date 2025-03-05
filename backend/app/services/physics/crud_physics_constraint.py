@@ -5,9 +5,9 @@ CRUD operations for physics constraints.
 from typing import List, Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from app.crud.base import CRUDBase
-from app.models.physics.physics_constraint import PhysicsConstraint
-from app.schemas.physics_constraint import PhysicsConstraintCreate, PhysicsConstraintUpdate
+from backend.app.crud.base import CRUDBase
+from backend.app.models.physics.physics_constraint import PhysicsConstraint
+from backend.app.schemas.physics_constraint import PhysicsConstraintCreate, PhysicsConstraintUpdate
 
 class CRUDPhysicsConstraint(CRUDBase[PhysicsConstraint, PhysicsConstraintCreate, PhysicsConstraintUpdate]):
     """CRUD operations for physics constraints."""

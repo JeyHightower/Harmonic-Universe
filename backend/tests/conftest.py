@@ -7,14 +7,14 @@ eventlet.monkey_patch()
 # Add the project root directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from app import create_app, socketio
-from app.db.session import db_session, Base, engine
-from app.models import (
+from backend.app import create_app, socketio
+from backend.app.db.session import db_session, Base, engine
+from backend.app.models import (
     User, Universe, Scene,
     PhysicsObject, PhysicsParameters, PhysicsConstraint,
     AudioTrack
 )
-from app.models.visualization.visualization import Visualization
+from backend.app.models.visualization.visualization import Visualization
 import jwt
 from datetime import datetime, timedelta
 from flask_socketio import SocketIO, SocketIOTestClient
@@ -23,7 +23,7 @@ import threading
 from collections import deque
 import traceback
 from sqlalchemy.orm import scoped_session, sessionmaker
-from app.core.config import Config
+from backend.app.core.config import Config
 
 class TestConfig(Config):
     TESTING = True

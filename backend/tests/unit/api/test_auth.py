@@ -1,7 +1,7 @@
 import pytest
-from app.models.user import User
-from app.models.profile import Profile
-from app import db
+from backend.app.models.user import User
+from backend.app.models.profile import Profile
+from backend.app import db
 from flask_jwt_extended import decode_token
 import json
 

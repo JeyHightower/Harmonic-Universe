@@ -1,6 +1,6 @@
 """Test suite for universe management functionality."""
 import pytest
-from app.models import Universe, UniverseAccess, Collaborator
+from backend.app.models import Universe, UniverseAccess, Collaborator
 from .factories import UserFactory, UniverseFactory
 
 def test_universe_creation(client, auth_headers):

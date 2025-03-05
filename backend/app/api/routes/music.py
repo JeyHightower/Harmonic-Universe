@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Dict, Any
-from app.services.music_generator import generate_music_from_params
-from app.api.dependencies.auth import get_current_user
-from app.db.repositories.universe import UniverseRepository
-from app.api.dependencies.database import get_repository
+from backend.app.services.music_generator import generate_music_from_params
+from backend.app.api.dependencies.auth import get_current_user
+from backend.app.db.repositories.universe import UniverseRepository
+from backend.app.api.dependencies.database import get_repository
 
 router = APIRouter(prefix="/music", tags=["music"])
 

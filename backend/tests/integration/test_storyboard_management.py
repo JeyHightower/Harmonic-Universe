@@ -1,6 +1,6 @@
 """Test suite for storyboard management functionality."""
 import pytest
-from app.models import Storyboard, Scene
+from backend.app.models import Storyboard, Scene
 from .factories import UniverseFactory, StoryboardFactory, SceneFactory
 
 def test_storyboard_creation(client, universe, auth_headers):

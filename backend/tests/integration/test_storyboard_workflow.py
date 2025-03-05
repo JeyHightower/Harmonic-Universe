@@ -1,5 +1,5 @@
 import pytest
-from app.models import Storyboard, Universe
+from backend.app.models import Storyboard, Universe
 from ..factories import UniverseFactory, StoryboardFactory
 
 def test_storyboard_management_workflow(client, auth_headers, test_user):

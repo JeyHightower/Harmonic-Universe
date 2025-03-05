@@ -3,10 +3,10 @@ import json
 import logging
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import get_jwt_identity, jwt_required
-from app.models.physics.physics_constraint import PhysicsConstraint
-from app.models.physics.physics_object import PhysicsObject
-from app.models.universe.scene import Scene
-from app.db.session import db_session
+from backend.app.models.physics.physics_constraint import PhysicsConstraint
+from backend.app.models.physics.physics_object import PhysicsObject
+from backend.app.models.universe.scene import Scene
+from backend.app.db.session import db_session
 from uuid import UUID
 from sqlalchemy.exc import SQLAlchemyError
 

@@ -1,8 +1,8 @@
 """Script to verify demo user, universe, and scene."""
-from app.db.session import get_db
-from app.models.core.user import User
-from app.models.core.universe import Universe
-from app.models.core.scene import Scene
+from backend.app.db.session import get_db
+from backend.app.models.core.user import User
+from backend.app.models.core.universe import Universe
+from backend.app.models.core.scene import Scene
 
 def verify_demo_data():
     """Verify demo user, universe, and scene exist in the database."""

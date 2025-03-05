@@ -1,9 +1,9 @@
 """Tests for Collaborator model."""
 import pytest
 from datetime import datetime
-from app.models.collaborator import Collaborator
-from app.models.universe import Universe
-from app.models.user import User
+from backend.app.models.collaborator import Collaborator
+from backend.app.models.universe import Universe
+from backend.app.models.user import User
 
 def test_new_collaborator():
     """Test creating a new collaborator."""

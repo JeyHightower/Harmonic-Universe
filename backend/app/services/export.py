@@ -5,7 +5,7 @@ from typing import Dict, Any
 
 import numpy as np
 from scipy.io import wavfile
-from app.models.universe import Universe
+from backend.app.models.universe import Universe
 
 class ExportService:
     @staticmethod

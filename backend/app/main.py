@@ -4,9 +4,9 @@ Main application module.
 
 import os
 from flask import Flask, jsonify
-from app import create_app
-from app.core.config import settings
-from app.core.errors import AppError
+from backend.app import create_app
+from backend.app.core.config import settings
+from backend.app.core.errors import AppError
 
 # Create Flask app
 app = create_app()
@@ -25,7 +25,7 @@ def handle_app_error(error: AppError):
 if __name__ == "__main__":
     # Check if running on Render.com
     if os.environ.get("RENDER"):
-        from app.core.render_config import configure_for_render
+        from backend.app.core.render_config import configure_for_render
         render_config = configure_for_render(app)
         app.run(**render_config)
     else:

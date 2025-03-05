@@ -2,9 +2,9 @@ from typing import Optional
 from uuid import UUID
 from sqlalchemy.orm import Session
 
-from app import crud, schemas
-from app.models.ai_model import AIModelType
-from app.models.ai_generation import GenerationStatus
+from backend.app import crud, schemas
+from backend.app.models.ai_model import AIModelType
+from backend.app.models.ai_generation import GenerationStatus
 from .parameter_generation import generate_parameters
 from .music_generation import generate_music
 from .visualization_generation import generate_visualization

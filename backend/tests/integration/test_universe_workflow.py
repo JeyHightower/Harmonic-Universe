@@ -1,5 +1,5 @@
 import pytest
-from app.models import Universe, Scene, Storyboard
+from backend.app.models import Universe, Scene, Storyboard
 
 def test_universe_creation_workflow(client, auth_headers):
     """Test the complete workflow of creating and managing a universe"""

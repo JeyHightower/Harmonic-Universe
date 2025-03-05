@@ -5,9 +5,9 @@ import sys
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from config import Config
-from app.extensions import db
-from app.models.scene import Scene, RenderingMode
-from app import create_app
+from backend.app.extensions import db
+from backend.app.models.scene import Scene, RenderingMode
+from backend.app import create_app
 
 def verify_database():
     """Verify database connection and models."""

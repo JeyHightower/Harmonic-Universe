@@ -2,8 +2,8 @@
 from sqlalchemy import Column, Integer, Float, ForeignKey, String, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from app.db.base_class import Base
-from app.models.mixins import TimestampMixin
+from backend.app.db.base_class import Base
+from backend.app.models.mixins import TimestampMixin
 from uuid import uuid4
 
 class PhysicsParameters(Base, TimestampMixin):

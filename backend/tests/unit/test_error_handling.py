@@ -1,11 +1,11 @@
 import pytest
-from app.exceptions import (
+from backend.app.exceptions import (
     UniverseNotFoundError,
     UnauthorizedError,
     ValidationError,
     ResourceConflictError
 )
-from app.models import Universe, Scene, User
+from backend.app.models import Universe, Scene, User
 from ..factories import UniverseFactory, UserFactory
 
 def test_404_handler(client):

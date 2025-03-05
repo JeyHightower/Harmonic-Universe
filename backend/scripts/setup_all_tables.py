@@ -8,20 +8,20 @@ from sqlalchemy.dialects.postgresql import UUID
 backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(backend_dir)
 
-from app.db.session import Base, engine
-from app.models.base import BaseModel
-from app.models.user import User
-from app.models.universe.universe import Universe
-from app.models.universe.scene import Scene
-from app.models.physics.physics_object import PhysicsObject
-from app.models.physics.physics_constraint import PhysicsConstraint
-from app.models.physics.physics_parameter import PhysicsParameter
-from app.models.audio.audio_track import AudioTrack
-from app.models.audio.midi_sequence import MIDISequence
-from app.models.audio.audio_file import AudioFile
-from app.models.visualization import Visualization
-from app.models.ai.ai_model import AIModel
-from app.models.organization.organization import Organization, Project, Activity
+from backend.app.db.session import Base, engine
+from backend.app.models.base import BaseModel
+from backend.app.models.user import User
+from backend.app.models.universe.universe import Universe
+from backend.app.models.universe.scene import Scene
+from backend.app.models.physics.physics_object import PhysicsObject
+from backend.app.models.physics.physics_constraint import PhysicsConstraint
+from backend.app.models.physics.physics_parameter import PhysicsParameter
+from backend.app.models.audio.audio_track import AudioTrack
+from backend.app.models.audio.midi_sequence import MIDISequence
+from backend.app.models.audio.audio_file import AudioFile
+from backend.app.models.visualization import Visualization
+from backend.app.models.ai.ai_model import AIModel
+from backend.app.models.organization.organization import Organization, Project, Activity
 
 # Create project_users association table
 project_users = Table(

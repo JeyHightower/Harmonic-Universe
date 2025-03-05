@@ -1,9 +1,9 @@
 import pytest
 import json
 from flask_socketio import SocketIOTestClient
-from app.models.user import User
-from app.models.universe import Universe
-from app import create_app, socketio, db
+from backend.app.models.user import User
+from backend.app.models.universe import Universe
+from backend.app import create_app, socketio, db
 import time
 from tests.conftest import socketio_client  # Use absolute import
 

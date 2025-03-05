@@ -5,9 +5,9 @@ CRUD operations for physics parameters.
 from typing import List, Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from app.crud.base import CRUDBase
-from app.models.physics.parameters import PhysicsParameters
-from app.schemas.physics.physics_parameter import PhysicsParameterCreate, PhysicsParameterUpdate
+from backend.app.crud.base import CRUDBase
+from backend.app.models.physics.parameters import PhysicsParameters
+from backend.app.schemas.physics.physics_parameter import PhysicsParameterCreate, PhysicsParameterUpdate
 
 class CRUDPhysicsParameter(CRUDBase[PhysicsParameters, PhysicsParameterCreate, PhysicsParameterUpdate]):
     """CRUD operations for physics parameters."""

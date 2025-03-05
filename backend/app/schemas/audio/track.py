@@ -5,7 +5,7 @@ Audio track schemas for request/response validation.
 from typing import Dict, List, Optional, Union
 from pydantic import BaseModel, Field
 from .midi import MIDISequence
-from app.models.audio.audio_control import AutomationType
+from backend.app.models.audio.audio_control import AutomationType
 
 class AudioMarkerBase(BaseModel):
     """Shared properties for audio markers."""

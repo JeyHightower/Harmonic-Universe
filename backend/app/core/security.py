@@ -6,7 +6,7 @@ from flask_jwt_extended import create_access_token as jwt_create_access_token
 from flask_jwt_extended import create_refresh_token as jwt_create_refresh_token
 from flask_jwt_extended import decode_token
 
-from app.core.pwd_context import verify_password, get_password_hash
+from backend.app.core.pwd_context import verify_password, get_password_hash
 
 def create_access_token(subject: Union[str, int], expires_delta: Optional[timedelta] = None) -> str:
     """Create access token."""

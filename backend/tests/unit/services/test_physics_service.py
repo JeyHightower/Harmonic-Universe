@@ -1,7 +1,7 @@
 import pytest
-from app.services.physics_service import PhysicsService
-from app.models import PhysicsObject, PhysicsConstraint
-from app.exceptions import PhysicsObjectNotFoundError
+from backend.app.services.physics_service import PhysicsService
+from backend.app.models import PhysicsObject, PhysicsConstraint
+from backend.app.exceptions import PhysicsObjectNotFoundError
 
 def test_create_physics_object(app, test_scene):
     """Test creating a physics object"""

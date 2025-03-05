@@ -1,9 +1,9 @@
 """Background tasks for periodic operations."""
 
-from app.celery import celery
-from app.models.core.universe import Universe
-from app.models.audio import AudioFile
-from app.db.session import get_db
+from backend.app.celery import celery
+from backend.app.models.core.universe import Universe
+from backend.app.models.audio import AudioFile
+from backend.app.db.session import get_db
 import os
 from datetime import datetime, timedelta
 import logging
