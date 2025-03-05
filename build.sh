@@ -315,12 +315,17 @@ if [ ! -f "app.py" ]; then
   echo "Creating basic app.py with correct routes"
   cat > app.py << 'EOL'
 import os
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, jsonify
 
 def create_app():
     app = Flask(__name__,
                 static_folder='static',
                 static_url_path='')
+
+    # Health check endpoint
+    @app.route('/api/health')
+    def health_check():
+        return jsonify({"status": "ok", "message": "API is working"})
 
     # Serve static files
     @app.route('/', defaults={'path': ''})
@@ -337,6 +342,147 @@ if __name__ == '__main__':
     app.run(debug=True)
 EOL
 fi
+
+# Add diagnostic and fallback components
+echo "=== Creating diagnostic and fallback components ==="
+
+# Create a test HTML file
+cat > static/test.html << 'EOL'
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Page</title>
+  <style>
+    body { font-family: sans-serif; margin: 40px; line-height: 1.6; }
+    .container { max-width: 800px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Static File Test</h1>
+    <p>If you can see this page, static file serving is working correctly.</p>
+    <p>Try accessing <a href="/">/</a> again after seeing this page.</p>
+  </div>
+</body>
+</html>
+EOL
+
+# Create a minimal React app for testing
+cat > static/main.js << 'EOL'
+console.log('Loading minimal React app');
+
+// Check if React and ReactDOM are available
+if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+  console.error('React or ReactDOM not found, creating mock implementation');
+  // Create minimal mock implementations
+  window.React = {
+    createElement: function() { return { type: 'div', props: {} }; },
+    Component: function() {}
+  };
+  window.ReactDOM = {
+    render: function(element, container) {
+      console.log('Mock ReactDOM.render called');
+      if (container) {
+        container.innerHTML = '<div style="padding: 20px; border: 1px solid #ddd; margin: 20px; border-radius: 5px;">' +
+          '<h1>Harmonic Universe</h1>' +
+          '<p>React failed to load properly. Using fallback rendering.</p>' +
+          '<p>Please check the console for errors.</p>' +
+          '</div>';
+      }
+    }
+  };
+}
+
+// Simple app component
+function App() {
+  return React.createElement('div', {
+    style: {
+      padding: '20px',
+      maxWidth: '800px',
+      margin: '40px auto',
+      border: '1px solid #ddd',
+      borderRadius: '5px'
+    }
+  }, [
+    React.createElement('h1', { key: 'title' }, 'Harmonic Universe'),
+    React.createElement('p', { key: 'description' }, 'Welcome to Harmonic Universe. The application is running in minimal mode.'),
+    React.createElement('p', { key: 'status' }, 'Status: React is rendering correctly!')
+  ]);
+}
+
+// Render the app
+console.log('Attempting to render React app');
+try {
+  const rootElement = document.getElementById('root');
+  if (rootElement) {
+    ReactDOM.render(React.createElement(App), rootElement);
+    console.log('React rendering completed');
+  } else {
+    console.error('Root element not found');
+  }
+} catch (e) {
+  console.error('Error rendering React app:', e);
+  // Try to show something even if React fails
+  const rootElement = document.getElementById('root');
+  if (rootElement) {
+    rootElement.innerHTML = '<div style="padding: 20px; border: 1px solid #ddd; margin: 20px; border-radius: 5px;">' +
+      '<h1>Harmonic Universe</h1>' +
+      '<p>Error rendering the application:</p>' +
+      '<pre style="background: #f8f8f8; padding: 10px; border-radius: 5px; overflow: auto;">' +
+      e.toString() + '</pre>' +
+      '</div>';
+  }
+}
+EOL
+
+# Create/update the index.html with better error handling
+cat > static/index.html << 'EOL'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harmonic Universe</title>
+  <script src="/utils-version-patch.js"></script>
+  <script src="/version-patch.js"></script>
+  <script src="/assets/ant-icons.js"></script>
+  <style>
+    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; }
+    #root { min-height: 100vh; display: flex; }
+    .fallback { padding: 20px; max-width: 800px; margin: 40px auto; border: 1px solid #ddd; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <!-- Fallback content in case React doesn't load -->
+    <div class="fallback">
+      <h1>Harmonic Universe</h1>
+      <p>Loading application... If you continue to see this message, there might be an issue with the application.</p>
+    </div>
+  </div>
+  <script>
+    // Simple diagnostics
+    console.log('DOM loaded, checking for React...');
+    window.addEventListener('load', function() {
+      console.log('Window loaded');
+      // Check if React rendered anything after a delay
+      setTimeout(function() {
+        const root = document.getElementById('root');
+        if (root && root.children.length <= 1 && root.innerHTML.includes('Loading application')) {
+          console.error('React did not render any content, loading fallback');
+          // Load our minimal React implementation
+          const script = document.createElement('script');
+          script.src = '/main.js';
+          document.body.appendChild(script);
+        }
+      }, 2000);
+    });
+  </script>
+</body>
+</html>
+EOL
+
+echo "=== Static diagnostic files created successfully ==="
 
 # Debug: List files in static directory
 echo "=== Contents of static directory ==="
