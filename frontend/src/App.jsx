@@ -1,4 +1,5 @@
-import { ConfigProvider, theme } from 'antd';
+import antd from './utils/antd-bundle';
+const { ConfigProvider, theme } = antd;
 import React, { lazy, Suspense, useEffect } from 'react';
 import { Provider } from 'react-redux';
 import {
@@ -23,6 +24,15 @@ import './styles/global.css';
 import './styles/theme.css';
 import { handleModalRoute } from './utils/modalRouteHandler';
 import { initializeTheme } from './utils/themeUtils';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { ModalRegistry } from './utils/modalRegistry';
+
+// Create a memoized version of ModalRegistry to prevent unnecessary re-renders
+const MemoizedModalRegistry = React.memo(() => {
+  console.log('MemoizedModalRegistry rendering');
+  return <ModalRegistry />;
+});
+MemoizedModalRegistry.displayName = 'MemoizedModalRegistry';
 
 // Lazy-loaded components
 const Home = lazy(() => import('./components/features/home/Home'));
@@ -145,125 +155,128 @@ const App = () => {
     <Provider store={store}>
       <ConfigProvider theme={themeConfig}>
         <Router>
-          <ModalProvider>
-            <ModalRouteHandler />
-            <Suspense fallback={<div>Loading...</div>}>
-              <Routes>
-                <Route element={<Layout />}>
-                  <Route path={ROUTES.HOME} element={<Home />} />
-                  <Route path={ROUTES.LOGIN} element={<Login />} />
-                  <Route path={ROUTES.REGISTER} element={<Register />} />
-                  <Route
-                    path={ROUTES.DASHBOARD}
-                    element={
-                      <ProtectedRoute>
-                        <Dashboard />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path={ROUTES.UNIVERSES}
-                    element={
-                      <ProtectedRoute>
-                        <UniverseList />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path={ROUTES.UNIVERSE_DETAIL}
-                    element={
-                      <ProtectedRoute>
-                        <UniverseDetail />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path={ROUTES.UNIVERSE_EDIT}
-                    element={
-                      <ProtectedRoute>
-                        <UniverseEdit />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path={ROUTES.MODAL_EXAMPLES}
-                    element={<ModalExample />}
-                  />
-                  <Route
-                    path={ROUTES.PROFILE}
-                    element={
-                      <ProtectedRoute>
-                        <Profile />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
-                  <Route path={ROUTES.ICON_TEST} element={<IconTest />} />
-                  <Route
-                    path={ROUTES.MODAL_TEST}
-                    element={<PhysicsParametersModalTest />}
-                  />
-                  <Route
-                    path={ROUTES.SIMPLE_MODAL_TEST}
-                    element={<ModalTest />}
-                  />
-                  <Route
-                    path={ROUTES.STANDALONE_TEST}
-                    element={<StandaloneTest />}
-                  />
-                  <Route
-                    path={ROUTES.MODAL_ACCESSIBILITY_TEST}
-                    element={<ModalAccessibilityTest />}
-                  />
-                  <Route path={ROUTES.NOT_FOUND} element={<NotFound />} />
+          <ThemeProvider>
+            <ModalProvider>
+              <ModalRouteHandler />
+              <MemoizedModalRegistry />
+              <Suspense fallback={<div>Loading...</div>}>
+                <Routes>
+                  <Route element={<Layout />}>
+                    <Route path={ROUTES.HOME} element={<Home />} />
+                    <Route path={ROUTES.LOGIN} element={<Login />} />
+                    <Route path={ROUTES.REGISTER} element={<Register />} />
+                    <Route
+                      path={ROUTES.DASHBOARD}
+                      element={
+                        <ProtectedRoute>
+                          <Dashboard />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path={ROUTES.UNIVERSES}
+                      element={
+                        <ProtectedRoute>
+                          <UniverseList />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path={ROUTES.UNIVERSE_DETAIL}
+                      element={
+                        <ProtectedRoute>
+                          <UniverseDetail />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path={ROUTES.UNIVERSE_EDIT}
+                      element={
+                        <ProtectedRoute>
+                          <UniverseEdit />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path={ROUTES.MODAL_EXAMPLES}
+                      element={<ModalExample />}
+                    />
+                    <Route
+                      path={ROUTES.PROFILE}
+                      element={
+                        <ProtectedRoute>
+                          <Profile />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
+                    <Route path={ROUTES.ICON_TEST} element={<IconTest />} />
+                    <Route
+                      path={ROUTES.MODAL_TEST}
+                      element={<PhysicsParametersModalTest />}
+                    />
+                    <Route
+                      path={ROUTES.SIMPLE_MODAL_TEST}
+                      element={<ModalTest />}
+                    />
+                    <Route
+                      path={ROUTES.STANDALONE_TEST}
+                      element={<StandaloneTest />}
+                    />
+                    <Route
+                      path={ROUTES.MODAL_ACCESSIBILITY_TEST}
+                      element={<ModalAccessibilityTest />}
+                    />
+                    <Route path={ROUTES.NOT_FOUND} element={<NotFound />} />
 
-                  {/* Scene Routes */}
-                  <Route
-                    path={ROUTES.SCENES_LIST}
-                    element={
-                      <ProtectedRoute>
-                        <ScenesList />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path={ROUTES.SCENE_DETAIL}
-                    element={
-                      <ProtectedRoute>
-                        <SceneDetail />
-                      </ProtectedRoute>
-                    }
-                  />
+                    {/* Scene Routes */}
+                    <Route
+                      path={ROUTES.SCENES_LIST}
+                      element={
+                        <ProtectedRoute>
+                          <ScenesList />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path={ROUTES.SCENE_DETAIL}
+                      element={
+                        <ProtectedRoute>
+                          <SceneDetail />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                  {/* Storyboard Routes */}
-                  <Route
-                    path="/universes/:universeId/storyboards"
-                    element={
-                      <ProtectedRoute>
-                        <StoryboardList />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/universes/:universeId/storyboards/:storyboardId"
-                    element={
-                      <ProtectedRoute>
-                        <StoryboardDetail />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/universes/:universeId/storyboards/:storyboardId/edit"
-                    element={
-                      <ProtectedRoute>
-                        <StoryboardEditor />
-                      </ProtectedRoute>
-                    }
-                  />
-                </Route>
-              </Routes>
-            </Suspense>
-          </ModalProvider>
+                    {/* Storyboard Routes */}
+                    <Route
+                      path="/universes/:universeId/storyboards"
+                      element={
+                        <ProtectedRoute>
+                          <StoryboardList />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/universes/:universeId/storyboards/:storyboardId"
+                      element={
+                        <ProtectedRoute>
+                          <StoryboardDetail />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/universes/:universeId/storyboards/:storyboardId/edit"
+                      element={
+                        <ProtectedRoute>
+                          <StoryboardEditor />
+                        </ProtectedRoute>
+                      }
+                    />
+                  </Route>
+                </Routes>
+              </Suspense>
+            </ModalProvider>
+          </ThemeProvider>
         </Router>
       </ConfigProvider>
     </Provider>

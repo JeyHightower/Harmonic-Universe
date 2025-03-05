@@ -37,7 +37,7 @@ const UniverseDetail = () => {
           !currentUniverse ||
           currentUniverse.id !== response.id ||
           JSON.stringify(currentUniverse.physics_params) !==
-            JSON.stringify(response.physics_params);
+          JSON.stringify(response.physics_params);
 
         if (hasChanges) {
           dispatch(setCurrentUniverse(response));
@@ -86,25 +86,19 @@ const UniverseDetail = () => {
       return;
     }
 
-    // Use the modern modal system with createConfirmModal
-    openModal(
-      createConfirmModal(
-        `Are you sure you want to delete "${currentUniverse?.name}"? This action cannot be undone and will delete all associated data including scenes, physics objects, and generated music.`,
-        handleDeleteConfirm,
-        {
-          title: 'Delete Universe',
-          confirmText: 'Delete Universe',
-          cancelText: 'Cancel',
-          isDestructive: true,
-          animation: 'zoom',
-          size: 'medium',
-        }
-      )
-    );
+    // Use the universe delete modal directly
+    openModalByType(MODAL_TYPES.UNIVERSE_DELETE, {
+      universeId: id,
+      universeName: currentUniverse?.name,
+      onSuccess: () => {
+        // Navigate to dashboard after successful deletion
+        navigate('/dashboard');
+      },
+    });
   };
 
   const handleUniverseInfo = () => {
-    // Use the new modal system instead of the inline component
+    // Use the modal system with explicit data
     openModalByType(MODAL_TYPES.UNIVERSE_INFO, {
       universe: currentUniverse,
     });

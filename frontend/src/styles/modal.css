@@ -11,7 +11,7 @@
   --modal-header-bg: var(--surface);
   --modal-footer-bg: var(--surface);
   --modal-border: var(--border-color);
-  --modal-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1),
+  --modal-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08),
     0 8px 10px -6px rgba(0, 0, 0, 0.05);
   --modal-title-color: var(--heading-color);
   --modal-text-color: var(--text-color);
@@ -41,9 +41,9 @@
   --modal-background: rgba(3, 7, 18, 0.7);
   --modal-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3),
     0 8px 10px -6px rgba(0, 0, 0, 0.2);
-  --modal-content-bg: #1f1f1f;
-  --modal-header-border: 1px solid #333;
-  --modal-footer-border: 1px solid #333;
+  --modal-content-bg: var(--dark-surface);
+  --modal-header-border: 1px solid var(--dark-border);
+  --modal-footer-border: 1px solid var(--dark-border);
   --surface: #1f1f1f;
   --surface-hover: #333333;
   --text-secondary: #999999;

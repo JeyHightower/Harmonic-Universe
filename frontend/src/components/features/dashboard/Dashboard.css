@@ -190,6 +190,9 @@
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 16px;
+  flex-wrap: wrap;
+  height: auto;
+  position: relative;
 }
 
 .universe-card-actions button {
@@ -198,12 +201,17 @@
   padding: 8px 12px;
   font-size: 0.9rem;
   border-radius: 6px;
+  height: 36px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .universe-params-buttons {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
+  height: auto;
 }
 
 .universe-params-buttons button {
@@ -214,6 +222,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 36px;
 }
 
 /* Button variants */

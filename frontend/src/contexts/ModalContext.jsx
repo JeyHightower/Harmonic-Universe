@@ -631,7 +631,21 @@ export const ModalProvider = ({ children }) => {
 
       // Check if this modal type is registered
       if (!state.modalRegistry[modalType]) {
-        console.error(`Modal type ${modalType} is not registered`);
+        console.error(`Modal type ${modalType} is not registered. Available types: ${Object.keys(state.modalRegistry).join(', ')}`);
+
+        // If this is a custom modal that should be handled differently
+        if (modalType === 'custom' && options.component) {
+          console.log('Handling custom modal with provided component');
+          // Directly use the provided component
+          openModal({
+            id: options.id || uuidv4(),
+            component: options.component,
+            props: data,
+            modalType: 'custom',
+            ...options
+          });
+          return;
+        }
         return null;
       }
 
@@ -771,9 +785,8 @@ export const ModalProvider = ({ children }) => {
           searchParams.delete('modalData');
 
           const newSearch = searchParams.toString();
-          const newPath = `${location.pathname}${
-            newSearch ? `?${newSearch}` : ''
-          }`;
+          const newPath = `${location.pathname}${newSearch ? `?${newSearch}` : ''
+            }`;
 
           // Determine whether to replace the history entry
           const shouldReplace =
@@ -804,9 +817,8 @@ export const ModalProvider = ({ children }) => {
         searchParams.delete('modalData');
 
         const newSearch = searchParams.toString();
-        const newPath = `${location.pathname}${
-          newSearch ? `?${newSearch}` : ''
-        }`;
+        const newPath = `${location.pathname}${newSearch ? `?${newSearch}` : ''
+          }`;
 
         // Determine whether to replace the history entry
         const shouldReplace =

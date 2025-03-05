@@ -4,6 +4,7 @@ import App from './App';
 import { UserOutlined } from '@ant-design/icons';
 import './styles/global.css';
 import './styles/variables.css';
+import './styles/modal-fix.css';
 
 // Add debug log
 console.log('main.jsx is being loaded');

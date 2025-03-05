@@ -6,13 +6,17 @@
  */
 
 // Import common modal types
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import useModal from '../hooks/useModal';
 
 // Import modal components
 import PhysicsParametersModal from '../features/physicsParameters/PhysicsParametersModal';
 import UniverseFormModal from '../features/universe/UniverseFormModal';
 import UniverseInfoModal from '../features/universe/UniverseInfoModal';
+import UniverseDeleteModal from '../features/universe/UniverseDeleteModal';
+import SceneCreateModal from '../features/scenes/SceneCreateModal';
+import SceneEditModal from '../features/scenes/SceneEditModal';
+import ConfirmDeleteWrapper from '../features/common/ConfirmDeleteWrapper';
 
 // Import new modal components
 import { API_CONFIG } from './config';
@@ -64,6 +68,7 @@ export const MODAL_TYPES = {
  */
 export const ModalRegistry = () => {
     const { registerModal, modalRegistry } = useModal();
+    const hasRegisteredRef = useRef(false);
 
     console.log('ModalRegistry component mounted');
     console.log('registerModal function available:', !!registerModal);
@@ -74,6 +79,12 @@ export const ModalRegistry = () => {
 
         if (!registerModal) {
             console.error('registerModal function is not available in ModalRegistry');
+            return;
+        }
+
+        // Skip registration if we've already done it
+        if (hasRegisteredRef.current) {
+            console.log('Modals already registered, skipping registration');
             return;
         }
 
@@ -186,11 +197,129 @@ export const ModalRegistry = () => {
                 console.log('universe-info modal registered successfully');
             }
 
+            // Register Universe Delete Modal
+            console.log('Registering universe-delete modal');
+            if (!UniverseDeleteModal) {
+                console.error('UniverseDeleteModal component is not available');
+            } else {
+                registerModal(
+                    MODAL_TYPES.UNIVERSE_DELETE,
+                    UniverseDeleteModal,
+                    {
+                        getProps: (data = {}) => ({
+                            universeId: data.universeId,
+                            universeName: data.universeName || 'this universe',
+                            onSuccess: data.onSuccess,
+                            isGlobalModal: true,
+                            onClose: () => { }, // Will be overridden by GlobalModal
+                        }),
+                        getModalProps: () => ({
+                            title: 'Delete Universe',
+                            size: 'small',
+                            type: 'confirm',
+                            preventAutoClose: true,
+                            preventBackdropClick: true,
+                        }),
+                    }
+                );
+                console.log('universe-delete modal registered successfully');
+            }
+
+            // Register Scene Create Modal
+            console.log('Registering scene-create modal');
+            if (!SceneCreateModal) {
+                console.error('SceneCreateModal component is not available');
+            } else {
+                registerModal(
+                    MODAL_TYPES.SCENE_CREATE,
+                    SceneCreateModal,
+                    {
+                        getProps: (data = {}) => ({
+                            universeId: data.universeId,
+                            initialData: data.initialData || null,
+                            onSuccess: data.onSuccess,
+                            isGlobalModal: true,
+                            onClose: () => { }, // Will be overridden by GlobalModal
+                        }),
+                        getModalProps: () => ({
+                            title: 'Create New Scene',
+                            size: 'medium',
+                            type: 'form',
+                            preventAutoClose: true,
+                            preventBackdropClick: true,
+                        }),
+                    }
+                );
+                console.log('scene-create modal registered successfully');
+            }
+
+            // Register Scene Edit Modal
+            console.log('Registering scene-edit modal');
+            if (!SceneEditModal) {
+                console.error('SceneEditModal component is not available');
+            } else {
+                registerModal(
+                    MODAL_TYPES.SCENE_EDIT,
+                    SceneEditModal,
+                    {
+                        getProps: (data = {}) => ({
+                            universeId: data.universeId,
+                            sceneId: data.sceneId,
+                            initialData: data.initialData || null,
+                            readOnly: data.readOnly || false,
+                            onSuccess: data.onSuccess,
+                            isGlobalModal: true,
+                            onClose: () => { }, // Will be overridden by GlobalModal
+                        }),
+                        getModalProps: (data = {}) => ({
+                            title: data.readOnly ? 'Scene Details' : 'Edit Scene',
+                            size: 'medium',
+                            type: 'form',
+                            preventAutoClose: true,
+                            preventBackdropClick: true,
+                        }),
+                    }
+                );
+                console.log('scene-edit modal registered successfully');
+            }
+
+            // Register Confirm Delete Modal
+            console.log('Registering confirm-delete modal');
+            if (!ConfirmDeleteWrapper) {
+                console.error('ConfirmDeleteWrapper component is not available');
+            } else {
+                registerModal(
+                    MODAL_TYPES.CONFIRM_DELETE,
+                    ConfirmDeleteWrapper,
+                    {
+                        getProps: (data = {}) => ({
+                            entityType: data.entityType || 'item',
+                            entityId: data.entityId,
+                            entityName: data.entityName || '',
+                            onConfirm: data.onConfirm,
+                            isGlobalModal: true,
+                            onClose: () => { }, // Will be overridden by GlobalModal
+                        }),
+                        getModalProps: (data = {}) => ({
+                            title: `Delete ${data.entityName || data.entityType || 'Item'}`,
+                            size: 'small',
+                            type: 'confirm',
+                            preventAutoClose: true,
+                            preventBackdropClick: true,
+                        }),
+                    }
+                );
+                console.log('confirm-delete modal registered successfully');
+            }
+
             console.log('All modals registered successfully');
+
+            // Mark that we've completed registration
+            hasRegisteredRef.current = true;
         } catch (error) {
             console.error('Error registering modals:', error);
         }
-    }, [registerModal, modalRegistry]);
+    }, [registerModal]); // Only depend on registerModal
 
     // This component doesn't render anything
     return null;

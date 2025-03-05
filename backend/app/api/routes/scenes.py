@@ -152,7 +152,7 @@ def delete_scene(scene_id: str):
             raise ValidationError("Not enough permissions")
 
         scene_repo.delete_scene(scene_id)
-        return jsonify({"status": "success"})
+        return "", 204
 
 @scenes_bp.route("/reorder", methods=['POST'])
 @jwt_required()

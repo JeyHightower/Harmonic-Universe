@@ -1,90 +1,90 @@
 /* Base color palette - Sophisticated, Clean, Professional */
 :root {
-  /* Primary colors - Refined blue */
-  --primary-50: #e6f1ff;
-  --primary-100: #c2dfff;
-  --primary-200: #99c9ff;
-  --primary-300: #66adff;
-  --primary-400: #3390ff;
-  --primary-500: #1a73e8;
-  --primary-600: #0b5cca;
-  --primary-700: #0848a6;
-  --primary-800: #063578;
-  --primary-900: #042454;
+  /* Primary colors - Vibrant Modern Blue */
+  --primary-50: #eff6ff;
+  --primary-100: #dbeafe;
+  --primary-200: #bfdbfe;
+  --primary-300: #93c5fd;
+  --primary-400: #60a5fa;
+  --primary-500: #3b82f6;
+  --primary-600: #2563eb;
+  --primary-700: #1d4ed8;
+  --primary-800: #1e40af;
+  --primary-900: #1e3a8a;
 
-  /* Secondary teal/green - Softer, more elegant */
-  --secondary-50: #e7f9f7;
-  --secondary-100: #c5f1ea;
-  --secondary-200: #9de6db;
-  --secondary-300: #6dd9c8;
-  --secondary-400: #34c6b1;
-  --secondary-500: #0ca894;
-  --secondary-600: #0a8a7a;
-  --secondary-700: #0a7062;
-  --secondary-800: #0a574c;
-  --secondary-900: #09433a;
+  /* Secondary slate - Professional & Neutral */
+  --secondary-50: #f8fafc;
+  --secondary-100: #f1f5f9;
+  --secondary-200: #e2e8f0;
+  --secondary-300: #cbd5e1;
+  --secondary-400: #94a3b8;
+  --secondary-500: #64748b;
+  --secondary-600: #475569;
+  --secondary-700: #334155;
+  --secondary-800: #1e293b;
+  --secondary-900: #0f172a;
 
-  /* Neutral grays - Warmer, less harsh */
+  /* Neutral grays - Refined */
   --neutral-50: #f9fafb;
   --neutral-100: #f3f4f6;
   --neutral-200: #e5e7eb;
-  --neutral-300: #d2d6dc;
-  --neutral-400: #9fa6b2;
+  --neutral-300: #d1d5db;
+  --neutral-400: #9ca3af;
   --neutral-500: #6b7280;
   --neutral-600: #4b5563;
   --neutral-700: #374151;
-  --neutral-800: #252f3f;
-  --neutral-900: #161e2e;
+  --neutral-800: #1f2937;
+  --neutral-900: #111827;
 
-  /* Accent purple - More vibrant */
-  --accent-50: #f5f0ff;
-  --accent-100: #ead5ff;
-  --accent-200: #d8b4fe;
-  --accent-300: #c084fc;
-  --accent-400: #a855f7;
-  --accent-500: #8b5cf6;
-  --accent-600: #7c3aed;
-  --accent-700: #6d28d9;
-  --accent-800: #5b21b6;
-  --accent-900: #4c1d95;
+  /* Accent indigo - Striking & Modern */
+  --accent-50: #eef2ff;
+  --accent-100: #e0e7ff;
+  --accent-200: #c7d2fe;
+  --accent-300: #a5b4fc;
+  --accent-400: #818cf8;
+  --accent-500: #6366f1;
+  --accent-600: #4f46e5;
+  --accent-700: #4338ca;
+  --accent-800: #3730a3;
+  --accent-900: #312e81;
 
-  /* New Accent - Coral/Orange */
-  --coral-50: #fff5f2;
-  --coral-100: #ffe6df;
-  --coral-200: #ffc8b8;
-  --coral-300: #ffa391;
-  --coral-400: #ff7a61;
-  --coral-500: #ff5c3a;
-  --coral-600: #e83a1f;
-  --coral-700: #c42e18;
-  --coral-800: #a12415;
-  --coral-900: #841d12;
+  /* Coral Accent - Vibrant & Energetic */
+  --coral-50: #fff1f2;
+  --coral-100: #ffe4e6;
+  --coral-200: #fecdd3;
+  --coral-300: #fda4af;
+  --coral-400: #fb7185;
+  --coral-500: #f43f5e;
+  --coral-600: #e11d48;
+  --coral-700: #be123c;
+  --coral-800: #9f1239;
+  --coral-900: #881337;
 
-  /* New Accent - Mint/Turquoise */
-  --mint-50: #edfcf6;
-  --mint-100: #d3f8e9;
-  --mint-200: #a8f0d8;
-  --mint-300: #6de4c2;
-  --mint-400: #36d4a8;
-  --mint-500: #12b890;
-  --mint-600: #0e9678;
-  --mint-700: #0d7563;
-  --mint-800: #0c5e50;
-  --mint-900: #0a4d42;
+  /* Mint Accent - Fresh & Calming */
+  --mint-50: #ecfdf5;
+  --mint-100: #d1fae5;
+  --mint-200: #a7f3d0;
+  --mint-300: #6ee7b7;
+  --mint-400: #34d399;
+  --mint-500: #10b981;
+  --mint-600: #059669;
+  --mint-700: #047857;
+  --mint-800: #065f46;
+  --mint-900: #064e3b;
 
-  /* New Accent - Gold/Amber */
-  --gold-50: #fffaeb;
-  --gold-100: #fef0c7;
-  --gold-200: #fee18a;
-  --gold-300: #fdc94d;
-  --gold-400: #fcb423;
-  --gold-500: #f59f0b;
-  --gold-600: #d97706;
-  --gold-700: #b45309;
-  --gold-800: #92400e;
-  --gold-900: #78350f;
+  /* Amber Accent - Warm & Inviting */
+  --amber-50: #fffbeb;
+  --amber-100: #fef3c7;
+  --amber-200: #fde68a;
+  --amber-300: #fcd34d;
+  --amber-400: #fbbf24;
+  --amber-500: #f59e0b;
+  --amber-600: #d97706;
+  --amber-700: #b45309;
+  --amber-800: #92400e;
+  --amber-900: #78350f;
 
-  /* Success/error/warning - More saturated for better visibility */
+  /* Success/error/warning - Clear & Distinctive */
   --success-50: #ecfdf5;
   --success-500: #10b981;
   --success-700: #047857;
@@ -97,25 +97,25 @@
   --warning-500: #f59e0b;
   --warning-700: #b45309;
 
-  /* Light mode variables - Improved contrast and readability */
-  --light-background: #f8fafc;
+  /* Light mode variables - Clean & Refreshing */
+  --light-background: #f9fafb;
   --light-surface: #ffffff;
-  --light-surface-hover: #f1f5f9;
+  --light-surface-hover: #f3f4f6;
   --light-surface-active: #e0f2fe;
-  --light-border: #cbd5e1;
-  --light-text: #1e293b;
-  --light-text-secondary: #334155;
-  --light-text-tertiary: #64748b;
+  --light-border: #e5e7eb;
+  --light-text: #111827;
+  --light-text-secondary: #374151;
+  --light-text-tertiary: #6b7280;
 
-  /* Dark mode variables - Softer, less harsh on the eyes */
+  /* Dark mode variables - Rich & Sophisticated */
   --dark-background: #0f172a;
   --dark-surface: #1e293b;
-  --dark-surface-hover: #293548;
-  --dark-surface-active: #334155;
-  --dark-border: #334155;
-  --dark-text: #f1f5f9;
-  --dark-text-secondary: #cbd5e1;
-  --dark-text-tertiary: #94a3b8;
+  --dark-surface-hover: #334155;
+  --dark-surface-active: #475569;
+  --dark-border: #475569;
+  --dark-text: #f9fafb;
+  --dark-text-secondary: #e5e7eb;
+  --dark-text-tertiary: #cbd5e1;
 
   /* App specific theming */
   --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont,
@@ -146,19 +146,19 @@
   --radius-xl: 0.75rem;
   --radius-full: 9999px;
 
-  /* Box shadows - Softer, more elegant */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.04),
-    0 2px 4px -1px rgba(0, 0, 0, 0.02);
+  /* Box shadows - Refined & Subtle */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.06),
+    0 2px 4px -1px rgba(0, 0, 0, 0.03);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.04),
     0 4px 6px -2px rgba(0, 0, 0, 0.02);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.04),
-    0 10px 10px -5px rgba(0, 0, 0, 0.01);
+    0 10px 10px -5px rgba(0, 0, 0, 0.02);
 
   /* Button specific shadows */
-  --button-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
-  --button-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.12);
-  --button-shadow-active: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --button-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+  --button-shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --button-shadow-active: 0 1px 2px rgba(0, 0, 0, 0.08);
 
   /* Gradient backgrounds */
   --gradient-primary: linear-gradient(
@@ -178,13 +178,13 @@
   );
   --gradient-coral: linear-gradient(135deg, var(--coral-500), var(--coral-700));
   --gradient-mint: linear-gradient(135deg, var(--mint-500), var(--mint-700));
-  --gradient-gold: linear-gradient(135deg, var(--gold-500), var(--gold-700));
+  --gradient-amber: linear-gradient(135deg, var(--amber-500), var(--amber-700));
 
   /* Slider specific variables */
   --slider-track-height: 6px;
   --slider-thumb-size: 18px;
   --slider-thumb-border: 3px;
-  --slider-focus-ring: 0 0 0 3px rgba(26, 115, 232, 0.25);
+  --slider-focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.25);
   --slider-track-radius: 3px;
 
   /* Base Colors */
@@ -483,10 +483,10 @@
   --button-mint-hover: var(--mint-600);
   --button-mint-active: var(--mint-700);
 
-  --button-gold-bg: var(--gold-500);
-  --button-gold-text: white;
-  --button-gold-hover: var(--gold-600);
-  --button-gold-active: var(--gold-700);
+  --button-amber-bg: var(--amber-500);
+  --button-amber-text: white;
+  --button-amber-hover: var(--amber-600);
+  --button-amber-active: var(--amber-700);
 
   --button-danger-bg: var(--error-500);
   --button-danger-text: white;
@@ -500,7 +500,7 @@
   /* Form colors */
   --input-border: var(--neutral-300);
   --input-focus-border: var(--primary-400);
-  --input-focus-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
+  --input-focus-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 
   /* Slider colors */
   --slider-track-bg: var(--neutral-200);
@@ -559,10 +559,10 @@
   --button-mint-hover: var(--mint-500);
   --button-mint-active: var(--mint-400);
 
-  --button-gold-bg: var(--gold-600);
-  --button-gold-text: white;
-  --button-gold-hover: var(--gold-500);
-  --button-gold-active: var(--gold-400);
+  --button-amber-bg: var(--amber-600);
+  --button-amber-text: white;
+  --button-amber-hover: var(--amber-500);
+  --button-amber-active: var(--amber-400);
 
   --button-danger-bg: var(--error-500);
   --button-danger-text: white;
@@ -576,7 +576,7 @@
   /* Form colors */
   --input-border: var(--neutral-600);
   --input-focus-border: var(--primary-500);
-  --input-focus-shadow: 0 0 0 3px rgba(51, 144, 255, 0.2);
+  --input-focus-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
 
   /* Slider colors */
   --slider-track-bg: var(--neutral-700);
@@ -600,7 +600,7 @@
   --text-primary: var(--dark-text);
   --text-secondary: var(--dark-text-secondary);
   --text-tertiary: var(--dark-text-tertiary);
-  --tag-background: rgba(var(--primary-color-rgb), 0.15);
+  --tag-background: rgba(59, 130, 246, 0.15);
   --tag-text: var(--primary-300);
 
   /* Button Variants Dark Mode */
@@ -609,6 +609,20 @@
   --button-tertiary-border: rgba(255, 255, 255, 0.1);
   --button-tertiary-hover-bg: rgba(255, 255, 255, 0.1);
   --button-tertiary-hover-border: rgba(255, 255, 255, 0.2);
+
+  /* Dark mode shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3),
+    0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3),
+    0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.3),
+    0 10px 10px -5px rgba(0, 0, 0, 0.2);
+
+  /* Dark mode button shadows */
+  --button-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  --button-shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.35);
+  --button-shadow-active: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* Responsive Breakpoints */

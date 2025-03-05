@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useModal } from '../../../contexts/ModalContext';
@@ -18,6 +18,7 @@ import Button from '../../common/Button';
 import Spinner from '../../common/Spinner';
 import './Dashboard.css';
 import UniverseCard from './UniverseCard';
+import { MODAL_TYPES } from '../../../utils/modalRegistry';
 
 function Dashboard() {
   const dispatch = useDispatch();
@@ -138,18 +139,23 @@ function Dashboard() {
 
   const handleDeleteClick = universeId => {
     console.log('Delete Universe button clicked', universeId);
-    if (window.confirm('Are you sure you want to delete this universe?')) {
-      dispatch(deleteUniverse(universeId))
-        .unwrap()
-        .then(() => {
-          // Refresh the list after deletion
-          dispatch(fetchUniverses());
-        })
-        .catch(err => {
-          console.error('Failed to delete universe:', err);
-          console.error('Failed to delete universe. Please try again.');
-        });
+
+    // Get the universe object for the name
+    const universeToDelete = universes.find(u => u.id === universeId);
+    if (!universeToDelete) {
+      console.error('Could not find universe with ID:', universeId);
+      return;
     }
+
+    // Open the delete confirmation modal
+    openModalByType(MODAL_TYPES.UNIVERSE_DELETE, {
+      universeId,
+      universeName: universeToDelete.name,
+      onSuccess: () => {
+        // Refresh the list after deletion
+        dispatch(fetchUniverses());
+      }
+    });
   };
 
   // Filter universes based on search term

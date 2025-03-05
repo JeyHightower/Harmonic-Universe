@@ -1,6 +1,7 @@
-import react from '@vitejs/plugin-react';
-import path from 'path';
 import { defineConfig } from 'vite';
+import path from 'path';
+// Use the standard react plugin import
+import react from '@vitejs/plugin-react';
 import patchAntDesignPlugin from './src/utils/patchAntdIcons';
 
 // Create a custom plugin that handles missing Ant Design icon SVG modules
@@ -11,7 +12,7 @@ const handleMissingModulesPlugin = () => {
 
   return {
     name: 'handle-missing-antd-icons-plugin',
-    // Make this plugin run before other plugins
+    // Ensure this runs before other plugins including vite's internal plugins
     enforce: 'pre',
 
     configResolved(config) {
@@ -21,10 +22,8 @@ const handleMissingModulesPlugin = () => {
 
     resolveId(id, importer) {
       // Handle ALL possible path formats for Ant Design SVG icons
-      if (
-        id.includes('@ant-design/icons-svg') &&
-        (id.includes('/asn/') || id.includes('/lib/') || id.includes('/es/'))
-      ) {
+      // Make the condition more inclusive to catch all possible import patterns
+      if (id.includes('@ant-design/icons-svg')) {
         // Extract the icon name from the path - it's the last segment
         const iconNameWithExt = id.split('/').pop();
         const iconName = iconNameWithExt.replace(/\.\w+$/, '');
@@ -57,10 +56,29 @@ const handleMissingModulesPlugin = () => {
           console.log(`[AntDesignPlugin] Providing virtual module for: ${iconName}`);
         }
 
-        // Generate a module that imports our shim and forwards the request
+        // Generate a generic mock SVG icon module for any requested icon
         return `
-          import { getIcon } from '@/utils/ant-icons-shim';
-          export default getIcon('${iconName}').default;
+          export default {
+            name: "${iconName.toLowerCase().replace(/([A-Z])/g, '-$1').toLowerCase()}",
+            theme: "${iconName.includes('Filled') ? 'filled' : iconName.includes('Outlined') ? 'outlined' : 'outlined'}",
+            icon: {
+              tag: 'svg',
+              attrs: {
+                viewBox: '64 64 896 896',
+                focusable: 'false',
+                'data-icon': "${iconName.toLowerCase().replace(/([A-Z])/g, '-$1').toLowerCase()}",
+                width: '1em',
+                height: '1em',
+                fill: 'currentColor'
+              },
+              children: [
+                {
+                  tag: 'path',
+                  attrs: { d: 'M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z' }
+                }
+              ]
+            }
+          };
           export const __esModule = true;
         `;
       }
@@ -72,9 +90,12 @@ const handleMissingModulesPlugin = () => {
 
 // https://vite.dev/config/
 export default defineConfig({
+  cacheDir: '.vite-cache', // Use a specific cache directory we can control
   plugins: [
-    react(),
+    // Use the handleMissingModulesPlugin first to ensure it catches all icon imports
     handleMissingModulesPlugin(),
+    // Use the react plugin with standard configuration
+    react(),
     patchAntDesignPlugin()
   ],
   server: {
@@ -118,15 +139,11 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      // Add alias for react-refresh/babel to our mock file
+      'react-refresh/babel': path.resolve(__dirname, 'src/utils/hacks/babel-mock.js'),
+
       // React-is shim for compatibility
       'react-is': path.resolve(__dirname, 'src/utils/react-is-shim.js'),
-
-      // Alias for any ant-design icon path pattern
-      '@ant-design/icons-svg/es/asn': path.resolve(__dirname, 'src/utils/ant-icons-shim.js'),
-      '@ant-design/icons-svg/lib/asn': path.resolve(__dirname, 'src/utils/ant-icons-shim.js'),
-      '@ant-design/icons-svg/es': path.resolve(__dirname, 'src/utils/ant-icons-shim.js'),
-      '@ant-design/icons-svg/lib': path.resolve(__dirname, 'src/utils/ant-icons-shim.js'),
-      '@ant-design/icons-svg': path.resolve(__dirname, 'src/utils/ant-icons-shim.js'),
 
       // Continue with other aliases
       'classnames': path.resolve(__dirname, 'node_modules/classnames'),
@@ -143,41 +160,54 @@ export default defineConfig({
     chunkSizeWarningLimit: 2000,
     // Configure code splitting via Rollup options
     rollupOptions: {
+      external: ['antd', '@ant-design/icons', 'three'],
       output: {
-        // Improve chunking strategy
         manualChunks: (id) => {
-          // Group Ant Design icons into a single chunk
+          // Create a chunk for Ant Design icons
           if (id.includes('@ant-design/icons')) {
-            return 'icons';
+            return 'ant-icons';
           }
-
-          // Group major libraries
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('redux')) {
-              return 'vendor-react-redux';
-            }
-            if (id.includes('antd')) {
-              return 'vendor-antd';
-            }
-            // All other node_modules
+          // Create a chunk for major libraries
+          if (id.includes('node_modules') &&
+            (id.includes('react') ||
+              id.includes('redux') ||
+              id.includes('axios') ||
+              id.includes('firebase'))) {
             return 'vendor';
           }
         },
-        // Reduce the number of chunks by increasing the size threshold
-        minChunkSize: 10000,
       }
     },
   },
   optimizeDeps: {
-    // Exclude the problematic packages from optimization
-    exclude: ['@ant-design/icons-svg', '@ant-design/icons'],
-    include: ['classnames'],
+    // Include antd to ensure it's pre-bundled
+    include: [
+      'antd',
+      'classnames',
+      '@ant-design/icons',
+      'react',
+      'react-dom',
+      'react-redux',
+      '@reduxjs/toolkit',
+      'three'
+    ],
+    // Exclude ALL icon SVG paths to prevent direct optimization
+    exclude: [
+      '@ant-design/icons-svg'
+    ],
+    // Force re-optimization on server restart
+    force: true,
+    // Disable optimization caching
+    cacheDir: null,
     esbuildOptions: {
       loader: {
         '.js': 'jsx',
       },
       // Enable proper CommonJS to ESM conversion
       format: 'esm',
+      supported: {
+        'top-level-await': true
+      },
     },
   },
   esbuild: {
