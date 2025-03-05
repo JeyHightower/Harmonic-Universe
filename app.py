@@ -6,6 +6,7 @@ import os
 import sys
 import glob
 import logging
+import traceback
 
 # Add the current directory to Python path to ensure imports work correctly
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -25,34 +26,14 @@ def create_app():
         # Import the appropriate config from backend
         from backend.app.core.config import config
         from flask import Flask, send_from_directory, current_app
+        # Import the middleware
+        from backend.middleware import log_request_errors
 
         # Create the application using the backend factory function
         app = backend_create_app(config['production'])
 
-        # Add error logging middleware
-        def log_request_errors():
-            """Middleware to log request details when errors occur"""
-            def middleware(environ, start_response):
-                path = environ.get('PATH_INFO', '')
-
-                # Define a custom start_response to catch errors
-                def custom_start_response(status, headers, exc_info=None):
-                    # Log error details for 500 responses
-                    if status.startswith('500'):
-                        logger.error(f"500 Error on path: {path}")
-                        logger.error(f"Request method: {environ.get('REQUEST_METHOD')}")
-                        if exc_info:
-                            logger.error(f"Exception: {exc_info[1]}")
-                            logger.error(''.join(traceback.format_exception(*exc_info)))
-                    return start_response(status, headers, exc_info)
-
-                # Return the WSGI app with our custom start_response
-                return app.wsgi_app(environ, custom_start_response)
-
-            return middleware
-
-        # Register the error logging middleware
-        app.wsgi_app = log_request_errors()(app.wsgi_app)
+        # Register the error logging middleware correctly
+        app.wsgi_app = log_request_errors(app.wsgi_app)
 
         # Add a specific route handler for ant-icons fallback
         @app.route('/assets/ant-icons-<path:filename>.js')
