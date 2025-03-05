@@ -6,6 +6,7 @@ import os
 import sys
 import glob
 import logging
+from flask import Flask, send_from_directory, current_app
 
 # Add the current directory to Python path to ensure imports work correctly
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -24,12 +25,12 @@ def create_app():
         from backend.app import create_app as backend_create_app
         # Import the appropriate config from backend
         from backend.app.core.config import config
-        from flask import Flask, send_from_directory, current_app
         # Import the middleware
         from backend.middleware import log_request_errors
 
-        # Create the application using the backend factory function
-        app = backend_create_app(config['production'])
+        app = Flask(__name__,
+                    static_folder='static',
+                    static_url_path='')
 
         # Enable debugging on Render
         app.config['DEBUG'] = True
@@ -89,9 +90,9 @@ def create_app():
                 window.__ANT_ICONS__ = {};
                 """, 200, {'Content-Type': 'application/javascript'}
 
-        # General static file handler for assets
-        @app.route('/assets/<path:filename>')
-        def serve_assets(filename):
+        # General static file handler - CHANGED ENDPOINT NAME TO AVOID CONFLICT
+        @app.route('/assets/<path:filename>', endpoint='serve_general_assets')
+        def serve_general_assets(filename):
             try:
                 assets_dir = os.path.join(app.static_folder, 'assets')
                 logger.info(f"Serving asset: {filename} from {assets_dir}")
@@ -127,10 +128,10 @@ def create_app():
 
             return result
 
-        # Make sure all routes are handled, even if not explicitly defined
+        # Catch-all route to return index.html for client-side routing
         @app.route('/', defaults={'path': ''})
         @app.route('/<path:path>')
-        def serve_react_app(path):
+        def catch_all(path):
             if path and os.path.exists(os.path.join(app.static_folder, path)):
                 return send_from_directory(app.static_folder, path)
             return send_from_directory(app.static_folder, 'index.html')
