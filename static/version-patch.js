@@ -1,64 +1,39 @@
-// Version patch with no script loading/detection logic
-(function () {
-    // Simple flag in localStorage to prevent multiple executions
-    if (localStorage.getItem('versionPatchApplied')) {
-        return;
-    }
-    localStorage.setItem('versionPatchApplied', 'true');
+// version-patch.js - Comprehensive fix for Ant Design Icons
+(function() {
+  // Only run once
+  if (window.__ANT_ICONS_VERSION_PATCH_APPLIED__) return;
+  window.__ANT_ICONS_VERSION_PATCH_APPLIED__ = true;
 
-    console.log('Applying simple version patch');
+  console.log('Applying Ant Design Icons version patch');
 
-    // 1. Define version constant
-    const VERSION = '4.2.1';
+  // Define the version
+  window.__ANT_ICONS_VERSION__ = '5.6.1';
 
-    // 2. Set global version variables
-    window.__ANT_ICONS_VERSION__ = VERSION;
-
-    // 3. Add direct fix for undefined.version access
-    try {
-        // Create a safe version property getter but ONLY for undefined
-        const versionDesc = Object.getOwnPropertyDescriptor(Object.prototype, 'version');
-
-        if (!versionDesc) {
-            Object.defineProperty(Object.prototype, 'version', {
-                get: function () {
-                    // Only return the fallback for undefined/null
-                    if (this === undefined || this === null) {
-                        return VERSION;
-                    }
-                    return undefined; // Regular property lookup for valid objects
-                },
-                // Make it non-enumerable to avoid affecting for...in loops
-                enumerable: false,
-                configurable: true
-            });
+  // Create a safe version getter for undefined objects
+  try {
+    Object.defineProperty(Object.prototype, 'version', {
+      get: function() {
+        if (this === undefined || this === null) {
+          return '5.6.1';
         }
+        return undefined;
+      },
+      configurable: true,
+      enumerable: false
+    });
 
-        // 4. Add a global error handler specifically for version errors
-        window.addEventListener('error', function (event) {
-            if (event.message && event.message.includes('Cannot read properties of undefined') &&
-                event.message.includes('version')) {
-                console.warn('Caught version error, handling silently');
-                event.preventDefault();
-                event.stopPropagation();
-                return true;
-            }
-        }, true);
+    // Add version to the window global
+    window.version = '5.6.1';
 
-        // 5. Patch console.error to hide specific errors
-        const originalConsoleError = console.error;
-        console.error = function (...args) {
-            if (args[0] && typeof args[0] === 'string' &&
-                args[0].includes('version') &&
-                args[0].includes('undefined')) {
-                // Silently ignore this error
-                return;
-            }
-            return originalConsoleError.apply(console, args);
-        };
+    // Create backup modules
+    window.__ant_icons_modules__ = window.__ant_icons_modules__ || {};
+    window.__ant_icons_modules__.version = {
+      version: '5.6.1',
+      default: { version: '5.6.1' }
+    };
 
-        console.log('Version patch successfully applied');
-    } catch (e) {
-        console.error('Error applying version patch:', e);
-    }
+    console.log('Ant Design Icons version patch applied successfully');
+  } catch (e) {
+    console.error('Error applying Ant Design Icons version patch:', e);
+  }
 })();

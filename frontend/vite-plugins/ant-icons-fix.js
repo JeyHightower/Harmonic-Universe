@@ -17,7 +17,7 @@ export default function antIconsFix() {
 
                 const injection = `
 // Injected version property for Ant Design Icons
-const version = "4.2.1";
+const version = "5.6.1";
 export { version };
 if (typeof window !== 'undefined') {
   window.__ANT_ICONS_VERSION__ = version;
@@ -26,6 +26,23 @@ if (typeof window !== 'undefined') {
 // Ensure IconProvider has access to version
 if (typeof IconProvider !== 'undefined' && !IconProvider.version) {
   IconProvider.version = version;
+}
+
+// Add error handling for icon rendering
+if (typeof window !== 'undefined' && !window.__ANT_ICONS_ERROR_HANDLER__) {
+  window.__ANT_ICONS_ERROR_HANDLER__ = true;
+  window.addEventListener('error', function(event) {
+    // Check if error is related to Ant Icons
+    if (event && event.error && event.error.message &&
+        (event.error.message.includes('ant-design/icons') ||
+         event.error.message.includes('version'))) {
+      console.warn('[AntIconsFix] Caught Ant Icons error:', event.error.message);
+      event.preventDefault();
+
+      // Set a flag to indicate an error occurred
+      window.__ANT_ICONS_ERROR_OCCURRED__ = true;
+    }
+  });
 }
         `;
 

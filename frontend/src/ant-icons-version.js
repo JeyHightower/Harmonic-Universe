@@ -5,7 +5,7 @@
  */
 
 // Version constant
-export const version = "4.2.1";
+export const version = "5.6.1"; // Updated to match the version in package.json
 
 // Default export for CommonJS compatibility
 export default { version };
@@ -13,6 +13,18 @@ export default { version };
 // Apply to window for global access
 if (typeof window !== 'undefined') {
     window.__ANT_ICONS_VERSION__ = version;
+
+    // Add fallback for error recovery
+    window.__ANT_ICONS_FALLBACK__ = true;
+
+    // Create minimal fallback handlers
+    if (!window.AntDesignIcons) {
+        window.AntDesignIcons = {
+            createFromIconfontCN: () => () => null,
+            getTwoToneColor: () => '#1890ff',
+            setTwoToneColor: () => { }
+        };
+    }
 }
 
 // Log that this file was loaded

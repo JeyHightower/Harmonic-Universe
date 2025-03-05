@@ -1,14 +1,47 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
+/**
+ * generate-ant-icons-fallback.js
+ *
+ * This script generates a fallback implementation of Ant Design icons
+ * to prevent the application from breaking if the icon loading fails.
+ */
 
-// Define the output directory and file paths
-const distDir = path.resolve(__dirname, '../../dist');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get the current file and directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+console.log('Generating Ant Design Icons fallback...');
+
+// Define paths
+const distDir = path.resolve(__dirname, '../dist');
 const fallbackPath = path.join(distDir, 'ant-icons-fallback.js');
+
+// Ensure the dist directory exists
+if (!fs.existsSync(distDir)) {
+  try {
+    fs.mkdirSync(distDir, { recursive: true });
+    console.log(`Created directory: ${distDir}`);
+  } catch (error) {
+    console.error(`Failed to create dist directory: ${error.message}`);
+    process.exit(1);
+  }
+}
 
 // Create the fallback script content
 const fallbackScript = `
+/**
+ * Ant Design Icons Fallback
+ *
+ * This script provides fallback icons when the original Ant Design
+ * icon chunks fail to load. It creates basic icon components that
+ * maintain the same interface as the original icons.
+ */
+
 console.log('[Ant Icons] Loading fallback icons...');
 
 // Create a minimal implementation of Ant Design icons
@@ -60,282 +93,168 @@ console.log('[Ant Icons] Loading fallback icons...');
     };
   }
 
-  // Create a safe context function
-  function createSafeContext() {
-    try {
+  // Define IconContext for compatibility
+  const IconContext = {
+    Provider: function Provider(props) {
+      return props.children;
+    },
+    Consumer: function Consumer(props) {
+      return props.children({});
+    }
+  };
+
+  // Mock createFromIconfontCN
+  const createFromIconfontCN = function(options) {
+    return function(props) {
       return {
-        Provider: function Provider(props) {
-          return props.children;
-        },
-        Consumer: function Consumer(props) {
-          return props.children({});
+        $$typeof: Symbol.for('react.element'),
+        type: 'span',
+        props: {
+          className: 'anticon ' + (props.className || ''),
+          style: props.style || {},
+          children: []
         }
       };
-    } catch (e) {
-      console.error('[Ant Icons] Error creating context:', e);
-      return {
-        Provider: function Provider(props) { return props.children; },
-        Consumer: function Consumer(props) { return null; }
-      };
-    }
+    };
+  };
+
+  // Mock getTwoToneColor and setTwoToneColor
+  function getTwoToneColor() {
+    return '#1890ff';
   }
 
-  // Define common icons
+  function setTwoToneColor() {
+    // Do nothing
+  }
+
+  // Define common icons that are frequently used
   const icons = {
-    CloseOutlined: createIcon('close'),
-    CheckOutlined: createIcon('check'),
-    LoadingOutlined: createIcon('loading'),
-    SearchOutlined: createIcon('search'),
-    DownOutlined: createIcon('down'),
+    // Direction Icons
     UpOutlined: createIcon('up'),
+    DownOutlined: createIcon('down'),
     LeftOutlined: createIcon('left'),
     RightOutlined: createIcon('right'),
-    PlusOutlined: createIcon('plus'),
-    MinusOutlined: createIcon('minus'),
-    QuestionOutlined: createIcon('question'),
-    ExclamationOutlined: createIcon('exclamation'),
-    InfoOutlined: createIcon('info'),
+
+    // Suggestion Icons
+    CheckOutlined: createIcon('check'),
+    CloseOutlined: createIcon('close'),
     CheckCircleOutlined: createIcon('check-circle'),
     CloseCircleOutlined: createIcon('close-circle'),
-    ExclamationCircleOutlined: createIcon('exclamation-circle'),
     InfoCircleOutlined: createIcon('info-circle'),
-    DeleteOutlined: createIcon('delete'),
+    ExclamationCircleOutlined: createIcon('exclamation-circle'),
+    QuestionCircleOutlined: createIcon('question-circle'),
+
+    // Form Icons
+    SearchOutlined: createIcon('search'),
     EditOutlined: createIcon('edit'),
+    DeleteOutlined: createIcon('delete'),
+    FormOutlined: createIcon('form'),
     CopyOutlined: createIcon('copy'),
-    EyeOutlined: createIcon('eye'),
-    EyeInvisibleOutlined: createIcon('eye-invisible'),
-    FileOutlined: createIcon('file'),
-    FolderOutlined: createIcon('folder'),
-    FolderOpenOutlined: createIcon('folder-open'),
-    SettingOutlined: createIcon('setting'),
-    UserOutlined: createIcon('user'),
-    TeamOutlined: createIcon('team'),
-    ArrowLeftOutlined: createIcon('arrow-left'),
-    ArrowRightOutlined: createIcon('arrow-right'),
-    ArrowUpOutlined: createIcon('arrow-up'),
-    ArrowDownOutlined: createIcon('arrow-down'),
-    UploadOutlined: createIcon('upload'),
-    DownloadOutlined: createIcon('download'),
+    ScissorOutlined: createIcon('scissor'),
+
+    // Navigation Icons
     MenuOutlined: createIcon('menu'),
-    AppstoreOutlined: createIcon('appstore'),
-    BarsOutlined: createIcon('bars'),
-    CalendarOutlined: createIcon('calendar'),
+    MoreOutlined: createIcon('more'),
     HomeOutlined: createIcon('home'),
-    StarOutlined: createIcon('star'),
-    StarFilled: createIcon('star', 'filled'),
-    HeartOutlined: createIcon('heart'),
-    HeartFilled: createIcon('heart', 'filled'),
-    LockOutlined: createIcon('lock'),
-    UnlockOutlined: createIcon('unlock'),
-    MailOutlined: createIcon('mail'),
-    PhoneOutlined: createIcon('phone'),
-    MobileOutlined: createIcon('mobile'),
-    ClockCircleOutlined: createIcon('clock-circle'),
-    DashboardOutlined: createIcon('dashboard'),
-    GlobalOutlined: createIcon('global'),
+    AppstoreOutlined: createIcon('appstore'),
+    SettingOutlined: createIcon('setting'),
+
+    // Media Icons
     PictureOutlined: createIcon('picture'),
     PlayCircleOutlined: createIcon('play-circle'),
-    PauseCircleOutlined: createIcon('pause-circle'),
-    StopOutlined: createIcon('stop'),
-    BellOutlined: createIcon('bell'),
-    NotificationOutlined: createIcon('notification'),
-    MessageOutlined: createIcon('message'),
-    CommentOutlined: createIcon('comment'),
-    TagOutlined: createIcon('tag'),
-    TagsFilled: createIcon('tags', 'filled'),
-    FilterOutlined: createIcon('filter'),
-    CaretUpOutlined: createIcon('caret-up'),
-    CaretDownOutlined: createIcon('caret-down'),
-    CaretLeftOutlined: createIcon('caret-left'),
-    CaretRightOutlined: createIcon('caret-right'),
-    MoreOutlined: createIcon('more'),
-    EllipsisOutlined: createIcon('ellipsis'),
-    LinkOutlined: createIcon('link'),
-    DisconnectOutlined: createIcon('disconnect'),
-    ApiOutlined: createIcon('api'),
-    ShoppingCartOutlined: createIcon('shopping-cart'),
-    ShoppingOutlined: createIcon('shopping'),
-    SaveOutlined: createIcon('save'),
-    PrinterOutlined: createIcon('printer'),
-    SoundOutlined: createIcon('sound'),
-    SoundFilled: createIcon('sound', 'filled'),
-    VideoCameraOutlined: createIcon('video-camera'),
-    CameraOutlined: createIcon('camera'),
-    DesktopOutlined: createIcon('desktop'),
-    LaptopOutlined: createIcon('laptop'),
-    TabletOutlined: createIcon('tablet'),
-    CloudOutlined: createIcon('cloud'),
-    CloudUploadOutlined: createIcon('cloud-upload'),
-    CloudDownloadOutlined: createIcon('cloud-download'),
-    CloudServerOutlined: createIcon('cloud-server'),
-    CodeOutlined: createIcon('code'),
-    FileTextOutlined: createIcon('file-text'),
-    FileImageOutlined: createIcon('file-image'),
-    FilePdfOutlined: createIcon('file-pdf'),
-    FileExcelOutlined: createIcon('file-excel'),
-    FileWordOutlined: createIcon('file-word'),
-    FilePptOutlined: createIcon('file-ppt'),
-    FileZipOutlined: createIcon('file-zip'),
-    FileUnknownOutlined: createIcon('file-unknown'),
-    FileAddOutlined: createIcon('file-add'),
-    FolderAddOutlined: createIcon('folder-add'),
-    HddOutlined: createIcon('hdd'),
-    IdcardOutlined: createIcon('idcard'),
-    CreditCardOutlined: createIcon('credit-card'),
-    BankOutlined: createIcon('bank'),
-    MoneyCollectOutlined: createIcon('money-collect'),
-    DollarOutlined: createIcon('dollar'),
-    EuroOutlined: createIcon('euro'),
-    PoundOutlined: createIcon('pound'),
-    SmileOutlined: createIcon('smile'),
-    FrownOutlined: createIcon('frown'),
-    MehOutlined: createIcon('meh'),
-    SmileFilled: createIcon('smile', 'filled'),
-    FrownFilled: createIcon('frown', 'filled'),
-    MehFilled: createIcon('meh', 'filled'),
-    TrophyOutlined: createIcon('trophy'),
-    GiftOutlined: createIcon('gift'),
-    ShakeOutlined: createIcon('shake'),
-    LikeOutlined: createIcon('like'),
-    DislikeOutlined: createIcon('dislike'),
-    LikeFilled: createIcon('like', 'filled'),
-    DislikeFilled: createIcon('dislike', 'filled'),
-    FireOutlined: createIcon('fire'),
-    ThunderboltOutlined: createIcon('thunderbolt'),
-    BugOutlined: createIcon('bug'),
-    BugFilled: createIcon('bug', 'filled'),
-    BulbOutlined: createIcon('bulb'),
-    ExperimentOutlined: createIcon('experiment'),
-    RocketOutlined: createIcon('rocket'),
-    ToolOutlined: createIcon('tool'),
-    ToolFilled: createIcon('tool', 'filled'),
-    AppstoreAddOutlined: createIcon('appstore-add'),
-    CarryOutOutlined: createIcon('carry-out'),
-    CarryOutFilled: createIcon('carry-out', 'filled'),
-    BoxPlotOutlined: createIcon('box-plot'),
-    BoxPlotFilled: createIcon('box-plot', 'filled'),
-    BuildOutlined: createIcon('build'),
-    BuildFilled: createIcon('build', 'filled'),
-    SlackOutlined: createIcon('slack'),
-    SlackSquareOutlined: createIcon('slack-square'),
-    BehanceOutlined: createIcon('behance'),
-    BehanceSquareOutlined: createIcon('behance-square'),
-    DribbbleOutlined: createIcon('dribbble'),
-    DribbbleSquareOutlined: createIcon('dribbble-square'),
-    InstagramOutlined: createIcon('instagram'),
-    InstagramFilled: createIcon('instagram', 'filled'),
-    YuqueOutlined: createIcon('yuque'),
-    YuqueFilled: createIcon('yuque', 'filled'),
-    AlibabaOutlined: createIcon('alibaba'),
-    GoogleOutlined: createIcon('google'),
-    GooglePlusOutlined: createIcon('google-plus'),
-    GooglePlusCircleFilled: createIcon('google-plus-circle', 'filled'),
-    MediumOutlined: createIcon('medium'),
-    MediumWorkmarkOutlined: createIcon('medium-workmark'),
-    QqOutlined: createIcon('qq'),
-    SkypeOutlined: createIcon('skype'),
-    TwitterOutlined: createIcon('twitter'),
-    TwitterCircleFilled: createIcon('twitter-circle', 'filled'),
-    WeiboOutlined: createIcon('weibo'),
-    WeiboCircleFilled: createIcon('weibo-circle', 'filled'),
-    YahooOutlined: createIcon('yahoo'),
-    YahooFilled: createIcon('yahoo', 'filled'),
-    YoutubeOutlined: createIcon('youtube'),
-    YoutubeFilled: createIcon('youtube', 'filled'),
-    GithubOutlined: createIcon('github'),
-    GithubFilled: createIcon('github', 'filled'),
-    FacebookOutlined: createIcon('facebook'),
-    FacebookFilled: createIcon('facebook', 'filled'),
-    LinkedinOutlined: createIcon('linkedin'),
-    LinkedinFilled: createIcon('linkedin', 'filled'),
-    ZhihuOutlined: createIcon('zhihu'),
-    ZhihuCircleFilled: createIcon('zhihu-circle', 'filled'),
-    TaobaoOutlined: createIcon('taobao'),
-    TaobaoCircleFilled: createIcon('taobao-circle', 'filled'),
-    Html5Outlined: createIcon('html5'),
-    Html5Filled: createIcon('html5', 'filled'),
-    AntDesignOutlined: createIcon('ant-design'),
-    AntCloudOutlined: createIcon('ant-cloud'),
-    AlipayOutlined: createIcon('alipay'),
-    AlipayCircleFilled: createIcon('alipay-circle', 'filled'),
-    AmazonOutlined: createIcon('amazon'),
-    AppleOutlined: createIcon('apple'),
-    AppleFilled: createIcon('apple', 'filled'),
-    CodepenOutlined: createIcon('codepen'),
-    CodepenCircleFilled: createIcon('codepen-circle', 'filled'),
-    CodeSandboxOutlined: createIcon('code-sandbox'),
-    CodeSandboxCircleFilled: createIcon('code-sandbox-circle', 'filled'),
-    ChromeOutlined: createIcon('chrome'),
-    ChromeFilled: createIcon('chrome', 'filled'),
-    CodepenSquareFilled: createIcon('codepen-square', 'filled'),
-    GitlabOutlined: createIcon('gitlab'),
-    GitlabFilled: createIcon('gitlab', 'filled'),
-    DingtalkOutlined: createIcon('dingtalk'),
-    DingtalkCircleFilled: createIcon('dingtalk-circle', 'filled'),
-    AndroidOutlined: createIcon('android'),
-    AndroidFilled: createIcon('android', 'filled'),
-    WindowsOutlined: createIcon('windows'),
-    WindowsFilled: createIcon('windows', 'filled'),
-    IeOutlined: createIcon('ie'),
-    IeCircleFilled: createIcon('ie-circle', 'filled'),
-    AmazonCircleFilled: createIcon('amazon-circle', 'filled'),
-    SlackCircleFilled: createIcon('slack-circle', 'filled'),
-    BehanceCircleFilled: createIcon('behance-circle', 'filled'),
-    DribbbleCircleFilled: createIcon('dribbble-circle', 'filled'),
-    DropboxCircleFilled: createIcon('dropbox-circle', 'filled'),
-    GithubCircleFilled: createIcon('github-circle', 'filled'),
-    GitlabCircleFilled: createIcon('gitlab-circle', 'filled'),
-    MediumCircleFilled: createIcon('medium-circle', 'filled'),
-    QqCircleFilled: createIcon('qq-circle', 'filled'),
-    RedditCircleFilled: createIcon('reddit-circle', 'filled'),
-    SkypeCircleFilled: createIcon('skype-circle', 'filled'),
-    SketchCircleFilled: createIcon('sketch-circle', 'filled'),
-    SlackSquareFilled: createIcon('slack-square', 'filled'),
-    BehanceSquareFilled: createIcon('behance-square', 'filled'),
-    DribbbleSquareFilled: createIcon('dribbble-square', 'filled'),
-    DropboxSquareFilled: createIcon('dropbox-square', 'filled'),
-    FacebookSquareFilled: createIcon('facebook-square', 'filled'),
-    GooglePlusSquareFilled: createIcon('google-plus-square', 'filled'),
-    GoogleSquareFilled: createIcon('google-square', 'filled'),
-    InstagramSquareFilled: createIcon('instagram-square', 'filled'),
-    LinkedinSquareFilled: createIcon('linkedin-square', 'filled'),
-    MediumSquareFilled: createIcon('medium-square', 'filled'),
-    QqSquareFilled: createIcon('qq-square', 'filled'),
-    RedditSquareFilled: createIcon('reddit-square', 'filled'),
-    TwitterSquareFilled: createIcon('twitter-square', 'filled'),
-    WeiboSquareFilled: createIcon('weibo-square', 'filled'),
-    YahooSquareFilled: createIcon('yahoo-square', 'filled'),
-    YoutubeSquareFilled: createIcon('youtube-square', 'filled'),
-    ZhihuSquareFilled: createIcon('zhihu-square', 'filled'),
+    FileOutlined: createIcon('file'),
+    FolderOutlined: createIcon('folder'),
+
+    // Utility Icons
+    LoadingOutlined: createIcon('loading'),
+    EyeOutlined: createIcon('eye'),
+    EyeInvisibleOutlined: createIcon('eye-invisible'),
+    PlusOutlined: createIcon('plus'),
+    MinusOutlined: createIcon('minus'),
+
+    // User Icons
+    UserOutlined: createIcon('user'),
+    TeamOutlined: createIcon('team'),
+
+    // Metadata Icons
+    StarOutlined: createIcon('star'),
+    HeartOutlined: createIcon('heart'),
+
+    // Add utilities to the exported object
+    createFromIconfontCN,
+    getTwoToneColor,
+    setTwoToneColor,
+    IconContext,
+    IconProvider: IconContext.Provider
   };
 
-  // Create a context for IconProvider
-  const IconContext = createSafeContext();
+  // Support filled versions of common icons
+  icons.StarFilled = createIcon('star', 'filled');
+  icons.HeartFilled = createIcon('heart', 'filled');
+  icons.CheckCircleFilled = createIcon('check-circle', 'filled');
+  icons.CloseCircleFilled = createIcon('close-circle', 'filled');
+  icons.InfoCircleFilled = createIcon('info-circle', 'filled');
+  icons.ExclamationCircleFilled = createIcon('exclamation-circle', 'filled');
 
-  // Export all icons and the context
-  window.AntDesignIcons = {
-    ...icons,
-    IconProvider: IconContext.Provider,
-    IconContext: IconContext,
-    createFromIconfontCN: function() {
-      return function() { return null; }
-    },
-    getTwoToneColor: function() { return '#1890ff'; },
-    setTwoToneColor: function() {},
-  };
+  // Export to global scope for browser usage
+  if (typeof window !== 'undefined') {
+    window.AntDesignIcons = icons;
 
-  // Set the loaded flag
-  window.antIconsLoaded = true;
-  console.log('[Ant Icons] Fallback icons loaded successfully');
+    // For backward compatibility
+    window.__ANT_ICONS_LOADED__ = true;
+    window.__ANT_ICONS_VERSION__ = '5.6.1';
+  }
+
+  // Support CommonJS if needed
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = icons;
+  }
+
+  // Support ES modules
+  if (typeof exports !== 'undefined') {
+    Object.keys(icons).forEach(key => {
+      exports[key] = icons[key];
+    });
+  }
 })();
 `;
 
-// Ensure the dist directory exists
-if (!fs.existsSync(distDir)) {
-    fs.mkdirSync(distDir, { recursive: true });
+// Write the fallback script to file
+try {
+  fs.writeFileSync(fallbackPath, fallbackScript);
+  console.log(`✅ Fallback script created at: ${fallbackPath}`);
+} catch (error) {
+  console.error(`Failed to write fallback script: ${error.message}`);
+  process.exit(1);
 }
 
-// Write the fallback script to the output file
-fs.writeFileSync(fallbackPath, fallbackScript);
+// Check for index.html to add reference to the fallback script
+const indexHtmlPath = path.join(distDir, 'index.html');
 
-console.log(`Ant Design icons fallback script generated at: ${fallbackPath}`);
+if (fs.existsSync(indexHtmlPath)) {
+  try {
+    let indexContent = fs.readFileSync(indexHtmlPath, 'utf8');
+
+    // Add the fallback script to the head if it's not already there
+    if (!indexContent.includes('ant-icons-fallback.js')) {
+      console.log('Adding fallback script reference to index.html');
+
+      // Insert before closing head tag
+      indexContent = indexContent.replace(
+        '</head>',
+        '  <script src="/ant-icons-fallback.js"></script>\n</head>'
+      );
+
+      fs.writeFileSync(indexHtmlPath, indexContent);
+      console.log('✅ Added fallback reference to index.html');
+    } else {
+      console.log('✅ Fallback script already referenced in index.html');
+    }
+  } catch (error) {
+    console.error(`Error updating index.html: ${error.message}`);
+  }
+} else {
+  console.warn(`⚠️ index.html not found at ${indexHtmlPath}`);
+}
+
+console.log('Ant Design Icons fallback generation complete!');

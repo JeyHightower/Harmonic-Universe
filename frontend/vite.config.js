@@ -26,16 +26,18 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src'),
       'components': path.resolve(__dirname, 'src/components')
     },
+    extensions: ['.mjs', '.js', '.jsx', '.ts', '.tsx', '.json']
   },
   define: {
     // Define global variables to ensure the version is always available
-    '__ANT_ICONS_VERSION__': JSON.stringify('4.2.1'),
+    '__ANT_ICONS_VERSION__': JSON.stringify('5.6.1'),
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production')
   },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
     minify: 'terser',
+    sourcemap: false,
     terserOptions: {
       compress: {
         drop_console: false,
@@ -45,8 +47,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor': ['react', 'react-dom'],
-          'ant-design': ['antd']
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          'ant-design': ['antd'],
+          'ant-icons': ['@ant-design/icons']
         }
       }
     },
@@ -54,6 +57,13 @@ export default defineConfig({
     copyPublicDir: true,
   },
   optimizeDeps: {
-    include: ['classnames', 'react', 'react-dom', 'antd']
-  }
+    include: ['classnames', 'react', 'react-dom', 'antd', '@ant-design/icons']
+  },
+  esbuild: {
+    loader: 'jsx',
+    include: /src\/.*\.jsx?$/,
+    exclude: [],
+    jsx: 'automatic'
+  },
+  base: './',
 });

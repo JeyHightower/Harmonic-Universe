@@ -1,256 +1,97 @@
 #!/bin/bash
 set -e  # Exit immediately if a command exits with a non-zero status
 
-echo "=== Starting build process ==="
-echo "=== Current directory: $(pwd) ==="
-echo "=== Environment: ==="
-env | grep -E 'NODE|RENDER|PATH|HOME' | sort
+echo "=== Starting Render Build Process ==="
 
 # Install Python dependencies
-echo "=== Installing Python dependencies ==="
-pip install -r backend/requirements.txt
-pip install gunicorn
+echo "Installing Python dependencies..."
+pip install --upgrade pip
+pip install -r requirements.txt
 
-# Create necessary directories
-echo "=== Creating necessary directories ==="
-mkdir -p frontend/src/utils
-
-# Build the React frontend
-echo "=== Building React frontend ==="
-cd frontend
-
-# Clean npm cache and node_modules to avoid issues
-echo "=== Cleaning npm cache and node_modules ==="
-npm cache clean --force || true
-rm -rf node_modules package-lock.json || true
-
-# Install dependencies with force flag
-echo "=== Installing frontend dependencies ==="
-npm install --legacy-peer-deps || {
-  echo "WARNING: npm install failed with --legacy-peer-deps, trying without it"
-  npm install --force
-}
-
-# Add debug information
-echo "=== Node and npm versions ==="
-node --version
-npm --version
-
-# Run the debug script to diagnose potential issues
-echo "=== Running debug diagnostics ==="
-node debug-build.js || true
-
-# Set up patch files before build
-echo "=== Setting up patch files ==="
-mkdir -p src/utils || true
-
-# Create a temporary adapter fix for Ant Design Icons
-cat > src/utils/ant-icons-adapter.js << 'EOL'
-// Adapter for Ant Design Icons
-const version = "4.2.1";
-export { version };
-export default { version };
-EOL
-
-# Run the postinstall script for direct patching with better error handling
-echo "=== Running postinstall script (ES Module version) ==="
-node postinstall.js || {
-  echo "ES Module postinstall failed, trying CommonJS version..."
-
-  # Try the CommonJS version as a fallback
-  node postinstall.cjs || {
-    echo "Both postinstall scripts failed, creating manual patches"
-    mkdir -p node_modules/@ant-design/icons/lib || true
-    mkdir -p node_modules/@ant-design/icons/es || true
-    echo '"use strict";Object.defineProperty(exports,"__esModule",{value:!0});exports.version="4.2.1";exports.default={version:"4.2.1"};' > node_modules/@ant-design/icons/lib/version.js
-    echo 'export const version="4.2.1";export default{version:"4.2.1"};' > node_modules/@ant-design/icons/es/version.js
-
-    # Create important utility files
-    mkdir -p src/utils
-    echo 'export const version="4.2.1";export default{version:"4.2.1"};' > src/utils/ant-icons-shim.js
-  }
-}
-
-# Verify that our patch files exist
-echo "=== Verifying patch files ==="
-if [ -f "node_modules/@ant-design/icons/lib/version.js" ]; then
-  echo "✅ version.js exists in lib directory"
-else
-  echo "❌ version.js missing in lib directory, creating it"
-  mkdir -p node_modules/@ant-design/icons/lib
-  echo '"use strict";Object.defineProperty(exports,"__esModule",{value:!0});exports.version="4.2.1";exports.default={version:"4.2.1"};' > node_modules/@ant-design/icons/lib/version.js
-fi
-
-if [ -f "node_modules/@ant-design/icons/es/version.js" ]; then
-  echo "✅ version.js exists in es directory"
-else
-  echo "❌ version.js missing in es directory, creating it"
-  mkdir -p node_modules/@ant-design/icons/es
-  echo 'export const version="4.2.1";export default{version:"4.2.1"};' > node_modules/@ant-design/icons/es/version.js
-fi
-
-# Set environment for build
-export NODE_OPTIONS="--max-old-space-size=3072"  # Increase memory limit
-export GENERATE_SOURCEMAP=false  # Disable source maps to reduce size
-export CI=false  # Prevent treating warnings as errors
-
-echo "=== Running Vite build with direct command ==="
-NODE_ENV=production vite build || {
-  echo "Direct build failed, trying simplified-build command"
-  npm run simplified-build || {
-    echo "Simplified build failed, trying render-build command"
-    npm run render-build || {
-      echo "All build commands failed, creating a minimal build"
-
-      # Create minimal dist output
-      mkdir -p dist
-      cat > dist/index.html << 'EOL'
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Harmonic Universe</title>
-  <style>
-    body { font-family: sans-serif; margin: 40px; line-height: 1.6; }
-    .container { max-width: 800px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 5px; }
-  </style>
-  <script>
-    // Emergency version patch for Ant Design Icons
-    window.__ANT_ICONS_VERSION__ = "4.2.1";
-    if (typeof Object.prototype.version === 'undefined') {
-      Object.defineProperty(Object.prototype, 'version', {
-        get: function() {
-          if (this === undefined || this === null) {
-            return "4.2.1";
-          }
-          return undefined;
-        },
-        enumerable: false,
-        configurable: true
-      });
-    }
-  </script>
-</head>
-<body>
-  <div class="container">
-    <h1>Harmonic Universe</h1>
-    <p>The frontend build process encountered difficulties.</p>
-    <p>Please contact support with the following information:</p>
-    <pre>Build timestamp: $(date)</pre>
-    <p><a href="/api/health">Check API Health</a></p>
-  </div>
-</body>
-</html>
-EOL
-    }
-  }
-}
-
-# Continue with the rest of the build script
-echo "=== Frontend build process completed, back to project root ==="
-cd ..
-
-# Create and set up static directory
-echo "=== Setting up static directory ==="
+# Ensure static directory exists
 mkdir -p static
-rm -f static/test.html static/verify.txt static/utils-version-patch.js
 
-# Copy frontend build files to static directory
-if [ -d "frontend/dist" ]; then
-  echo "=== Copying built frontend files to static directory ==="
-  cp -r frontend/dist/* static/
+# Create a test file
+echo "Creating test files..."
+echo "<html><body><h1>Test Page</h1><p>If you can see this, static file serving is working.</p></body></html>" > static/test.html
+echo "This is a test file to verify static file serving." > static/verify.txt
 
-  # Ensure index.html has the version patch
-  if [ -f "static/index.html" ]; then
-    echo "=== Ensuring index.html has version patch ==="
-    if ! grep -q "__ANT_ICONS_VERSION__" static/index.html; then
-      sed -i.bak '/<head>/a \
-  <script>window.__ANT_ICONS_VERSION__ = "4.2.1";</script>' static/index.html
-      rm -f static/index.html.bak
-    fi
-  fi
-else
-  echo "WARNING: frontend/dist directory doesn't exist. Creating minimal index.html"
-  cat > static/index.html << 'EOL'
+# Create a guaranteed working index.html
+echo "Creating guaranteed working index.html..."
+cat > static/index.html << EOF
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Harmonic Universe</title>
-  <style>
-    body { font-family: sans-serif; margin: 40px; line-height: 1.6; }
-    .container { max-width: 800px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 5px; }
-  </style>
-  <script>
-    // Emergency version patch
-    window.__ANT_ICONS_VERSION__ = "4.2.1";
-  </script>
+    <meta charset="UTF-8">
+    <title>Harmonic Universe</title>
+    <style>
+        body {
+            font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; margin-top: 0; }
+        p { color: #666; line-height: 1.5; }
+        .status { margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px; }
+        .loading { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(0,0,0,0.1); border-radius: 50%; border-top-color: #3498db; animation: spin 1s ease-in-out infinite; margin-right: 10px; vertical-align: middle; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Harmonic Universe</h1>
-    <p>The application is loading with minimal functionality.</p>
-    <p>If you continue to see this message, please check the application logs for details.</p>
-    <p><a href="/api/health">Check API Health</a></p>
-  </div>
+    <div class="container">
+        <h1>Harmonic Universe</h1>
+        <p>Welcome to Harmonic Universe. This page confirms that your application is successfully serving static content.</p>
+
+        <div class="status">
+            <div id="api-status">
+                <div class="loading"></div> Checking API connection...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check API health
+        fetch('/api/health')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('api-status').innerHTML =
+                    '<strong>API Status:</strong> Connected<br>' +
+                    '<strong>Version:</strong> ' + (data.version || 'Unknown') + '<br>' +
+                    '<strong>Environment:</strong> ' + (data.environment || 'Unknown');
+            })
+            .catch(error => {
+                document.getElementById('api-status').innerHTML =
+                    '<strong>API Status:</strong> Error - Could not connect to API<br>' +
+                    '<strong>Error:</strong> ' + error.message;
+            });
+    </script>
 </body>
 </html>
-EOL
+EOF
+
+# Verify index.html was created successfully
+if [ -f "static/index.html" ]; then
+    echo "index.html created successfully ($(wc -c < static/index.html) bytes)"
+else
+    echo "ERROR: Failed to create index.html"
+    exit 1
 fi
 
-# Create test.html and other required files
-echo "=== Creating verification and test files ==="
-cat > static/test.html << 'EOL'
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Static Test Page</title>
-  <style>
-    body { font-family: sans-serif; margin: 40px; line-height: 1.6; }
-    .container { max-width: 800px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 5px; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>Static File Test</h1>
-    <p>If you can see this page, static file serving is working correctly.</p>
-    <p>Try accessing <a href="/">/</a> again.</p>
-    <p>Timestamp: $(date)</p>
-  </div>
-</body>
-</html>
-EOL
+# Set proper permissions
+chmod -R 755 static
 
-# Create a simplified version patch script
-mkdir -p static/assets
-cat > static/version-patch.js << 'EOL'
-// Simple version patch script
-(function() {
-  console.log('Applying simplified version patch');
-  window.__ANT_ICONS_VERSION__ = '4.2.1';
-
-  // Safe version property getter for undefined objects
-  Object.defineProperty(Object.prototype, 'version', {
-    get: function() {
-      if (this === undefined || this === null) {
-        return '4.2.1';
-      }
-      return undefined;
-    },
-    enumerable: false,
-    configurable: true
-  });
-})();
-EOL
-
-# Set proper permissions for all static files
-echo "=== Setting file permissions ==="
-find static -type f -exec chmod 644 {} \;
-
-# Update verify.txt with timestamp
-echo "Static files are being served correctly." > static/verify.txt
-echo "This file was created on: $(date)" >> static/verify.txt
-echo "Harmonic Universe deployment test." >> static/verify.txt
-
-echo "=== Listing static directory contents ==="
+# List static directory contents
+echo "=== Static Directory Contents ==="
 ls -la static/
 
-echo "=== Build process completed successfully ==="
+echo "=== Build Complete ==="

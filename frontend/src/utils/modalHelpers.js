@@ -9,43 +9,38 @@ import UniverseCreate from '../components/features/universe/UniverseCreate';
 import PhysicsParametersModal from '../features/physicsParameters/PhysicsParametersModal';
 
 // Alert Modal Component
-const AlertModalContent = ({ message, onClose }) => (
-  <div className="alert-modal-content">
-    <p>{message}</p>
-    <div className="modal-actions">
-      <button className="btn btn-primary" onClick={onClose}>
-        OK
-      </button>
-    </div>
-  </div>
-);
+const AlertModalContent = ({ message, onClose }) =>
+  React.createElement('div', { className: 'alert-modal-content' },
+    React.createElement('p', null, message),
+    React.createElement('div', { className: 'modal-actions' },
+      React.createElement('button', {
+        className: 'btn btn-primary',
+        onClick: onClose
+      }, 'OK')
+    )
+  );
 
 // Confirm Modal Component
-const ConfirmModalContent = ({ message, onConfirm, onCancel, confirmText = 'Confirm', cancelText = 'Cancel', isDestructive, onClose }) => (
-  <div className="confirm-modal-content">
-    <p>{message}</p>
-    <div className="modal-actions">
-      <button
-        className={`btn ${isDestructive ? 'btn-danger' : 'btn-secondary'}`}
-        onClick={() => {
+const ConfirmModalContent = ({ message, onConfirm, onCancel, confirmText = 'Confirm', cancelText = 'Cancel', isDestructive, onClose }) =>
+  React.createElement('div', { className: 'confirm-modal-content' },
+    React.createElement('p', null, message),
+    React.createElement('div', { className: 'modal-actions' },
+      React.createElement('button', {
+        className: `btn ${isDestructive ? 'btn-danger' : 'btn-secondary'}`,
+        onClick: () => {
           if (onCancel) onCancel();
           onClose();
-        }}
-      >
-        {cancelText}
-      </button>
-      <button
-        className="btn btn-primary"
-        onClick={() => {
+        }
+      }, cancelText),
+      React.createElement('button', {
+        className: 'btn btn-primary',
+        onClick: () => {
           if (onConfirm) onConfirm();
           onClose();
-        }}
-      >
-        {confirmText}
-      </button>
-    </div>
-  </div>
-);
+        }
+      }, confirmText)
+    )
+  );
 
 /**
  * Creates an alert modal configuration
@@ -147,14 +142,13 @@ export const createCustomModal = (Component, options = {}) => {
 };
 
 export const createPhysicsParametersModal = (universeId, initialData = null, options = {}) => ({
-  component: props => (
-    <PhysicsParametersModal
-      universeId={universeId}
-      initialData={initialData}
-      isGlobalModal={true}
-      {...props}
-    />
-  ),
+  component: props =>
+    React.createElement(PhysicsParametersModal, {
+      universeId: universeId,
+      initialData: initialData,
+      isGlobalModal: true,
+      ...props
+    }),
   props: {},
   modalProps: {
     title: initialData ? 'Edit Physics Parameters' : 'Create Physics Parameters',

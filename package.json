@@ -8,7 +8,7 @@
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "install:all": "npm install && cd frontend && npm install && cd ../backend && pip install -r requirements.txt",
     "build": "cd frontend && npm run build",
-    "render-build": "cd frontend && npm run build && node scripts/generate-ant-icons-fallback.js",
+    "render-build": "cd frontend && npm run render-build && node scripts/generate-ant-icons-fallback.js",
     "generate-ant-fallback": "cd frontend && node scripts/generate-ant-icons-fallback.js",
     "test-ant-fallback": "cd frontend && node scripts/test-ant-icons-fallback.js",
     "test:frontend": "cd frontend && npm test",
@@ -17,7 +17,8 @@
     "lint:frontend": "cd frontend && npm run lint",
     "lint:backend": "cd backend && flake8",
     "lint": "npm run lint:frontend && npm run lint:backend",
-    "clean": "rm -rf frontend/build backend/dist frontend/node_modules node_modules"
+    "clean": "rm -rf frontend/build backend/dist frontend/node_modules node_modules",
+    "deploy": "./build.sh"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
