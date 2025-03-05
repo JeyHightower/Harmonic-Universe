@@ -190,12 +190,23 @@ def create_app():
 
             return result
 
-        # Catch-all route to return index.html for client-side routing
+        # Add a test API endpoint for debugging
+        @app.route('/api/test')
+        def test_api():
+            return {"status": "ok", "message": "API is working correctly", "env": os.environ.get("FLASK_ENV", "unknown")}
+
+        # Catch-all route to return index.html for client-side routing with improved file handling
         @app.route('/', defaults={'path': ''})
         @app.route('/<path:path>')
         def catch_all(path):
-            if path and os.path.exists(os.path.join(app.static_folder, path)):
+            # First, try to serve the requested path as a static file
+            static_path = os.path.join(app.static_folder, path)
+            if path and os.path.exists(static_path) and not os.path.isdir(static_path):
+                logger.info(f"Serving static file: {path}")
                 return send_from_directory(app.static_folder, path)
+
+            # If not found or is a directory, serve index.html
+            logger.info(f"Path not found or is directory, serving index.html: {path}")
             return send_from_directory(app.static_folder, 'index.html')
 
         return app
