@@ -1,13 +1,9 @@
 #!/usr/bin/env node
 
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { glob } from 'glob';
-
-// Get __dirname equivalent in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// CommonJS version of clean-ant-icons.js
+const fs = require('fs');
+const path = require('path');
+const glob = require('glob');
 
 // Define the root directory and node_modules directory
 const rootDir = path.resolve(__dirname, '..');
