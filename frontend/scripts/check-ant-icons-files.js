@@ -1,5 +1,6 @@
 import fs from 'fs';
-import { globSync } from 'glob';
+import pkg from 'glob';
+const glob = pkg;
 import { exec } from 'child_process';
 import path from 'path';
 
@@ -18,11 +19,11 @@ console.log(`Looking for files matching: ${pattern}`);
 
 let antIconsFiles;
 try {
-  antIconsFiles = globSync(pattern);
-  console.log(`Found ${antIconsFiles.length} icon files to check.`);
+  antIconsFiles = glob.sync(pattern);
+  console.log(`Found ${antIconsFiles.length} ant-icons files`);
 } catch (error) {
-  console.error(`Error searching for icon files: ${error.message}`);
-  antIconsFiles = [];
+  console.error(`Error finding ant-icons files: ${error.message}`);
+  process.exit(1);
 }
 
 if (antIconsFiles.length === 0) {

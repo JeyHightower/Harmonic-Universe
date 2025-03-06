@@ -1,6 +1,14 @@
+#!/usr/bin/env node
+
+/**
+ * This script patches Ant Design icons to ensure they work correctly
+ */
+
 import fs from 'fs';
 import path from 'path';
-import { globSync } from 'glob';
+import { fileURLToPath } from 'url';
+import pkg from 'glob';
+const glob = pkg;
 
 // Get the current working directory and determine if we're already in frontend
 const cwd = process.cwd();
@@ -44,7 +52,7 @@ function patchAntIcons() {
 
   let antIconsFiles;
   try {
-    antIconsFiles = globSync(pattern);
+    antIconsFiles = glob.sync(pattern);
     console.log(`Found ${antIconsFiles.length} icon files to patch.`);
   } catch (error) {
     console.error(`Error searching for icon files: ${error.message}`);

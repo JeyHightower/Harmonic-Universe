@@ -8,7 +8,8 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { glob } from 'glob';
+import pkg from 'glob';
+const { glob } = pkg;
 
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);

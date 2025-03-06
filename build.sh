@@ -69,7 +69,7 @@ if [ -d "frontend" ]; then
     # Move build files to static directory in the root for the API to serve
     echo "📦 Moving frontend build to static directory..."
     rm -rf ../static/*
-    cp -r build/* ../static/
+    cp -r dist/* ../static/
 
     cd ..
     echo "✅ Frontend setup completed"

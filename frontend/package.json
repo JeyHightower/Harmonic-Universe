@@ -34,7 +34,7 @@
     "axios": "1.7.9",
     "classnames": "^2.5.1",
     "express": "^4.18.2",
-    "glob": "^8.0.3",
+    "glob": "^8.1.0",
     "minipass": "^7.1.2",
     "notistack": "3.0.2",
     "react": "^18.2.0",

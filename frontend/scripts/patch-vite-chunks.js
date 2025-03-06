@@ -3,7 +3,10 @@
 // This script checks for Vite cache directories but doesn't need to patch anything anymore
 // since our handleMissingModulesPlugin in vite.config.js handles all icons dynamically
 
-import { glob } from 'glob';
+import fs from 'fs';
+import path from 'path';
+import pkg from 'glob';
+const glob = pkg;
 
 console.log('Checking Vite dependency chunks...');
 

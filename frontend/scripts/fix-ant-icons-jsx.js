@@ -7,7 +7,9 @@
 
 import fs from 'fs';
 import path from 'path';
-import { globSync } from 'glob';
+import { fileURLToPath } from 'url';
+import pkg from 'glob';
+const glob = pkg;
 
 console.log('Fixing JSX syntax in Ant Design icon files...');
 
@@ -22,7 +24,7 @@ console.log(`Looking for icon files: ${pattern}`);
 
 let iconFiles;
 try {
-    iconFiles = globSync(pattern);
+    iconFiles = glob.sync(pattern);
     console.log(`Found ${iconFiles.length} icon files to fix.`);
 } catch (error) {
     console.error(`Error finding icon files: ${error.message}`);

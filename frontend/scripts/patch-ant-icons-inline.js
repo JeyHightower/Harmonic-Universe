@@ -1,56 +1,57 @@
 #!/usr/bin/env node
 
-// This script directly inlines React.createContext into the ant-icons file
-// to ensure it's always available, regardless of global scope issues
+/**
+ * This script patches Ant Design icons to work with inline scripts
+ */
 
 import fs from 'fs';
 import path from 'path';
-import { globSync } from 'glob';
+import { fileURLToPath } from 'url';
+import pkg from 'glob';
+const glob = pkg;
 
 console.log('Direct inline patching of ant-icons file...');
 
+// Get the current working directory and determine if we're already in frontend
 const cwd = process.cwd();
+const isInFrontend = cwd.endsWith('/frontend') || cwd.endsWith('\\frontend');
 console.log(`Current working directory: ${cwd}`);
+console.log(`Is in frontend directory: ${isInFrontend}`);
 
-// Find ant-icons files
+// Find all ant-icons chunk files in the dist directory
 const distDir = path.join(cwd, 'dist');
-if (!fs.existsSync(distDir)) {
-    console.error(`Dist directory not found: ${distDir}`);
-    process.exit(1);
-}
-
 const pattern = path.join(distDir, 'assets/ant-icons-*.js');
-console.log(`Looking for ant-icons files: ${pattern}`);
+console.log(`Looking for files matching: ${pattern}`);
 
 let antIconsFiles;
 try {
-    antIconsFiles = globSync(pattern);
-    console.log(`Found ${antIconsFiles.length} ant-icons files`);
+  antIconsFiles = glob.sync(pattern);
+  console.log(`Found ${antIconsFiles.length} ant-icons files`);
 } catch (error) {
-    console.error(`Error finding ant-icons files: ${error.message}`);
-    process.exit(1);
+  console.error(`Error finding ant-icons files: ${error.message}`);
+  process.exit(1);
 }
 
 if (antIconsFiles.length === 0) {
-    console.error('No ant-icons files found');
-    process.exit(1);
+  console.error('No ant-icons files found');
+  process.exit(1);
 }
 
 // Process each ant-icons file
 for (const file of antIconsFiles) {
-    console.log(`Processing ${file}...`);
+  console.log(`Processing ${file}...`);
 
-    // Read file content
-    let content;
-    try {
-        content = fs.readFileSync(file, 'utf8');
-    } catch (error) {
-        console.error(`Error reading ${file}: ${error.message}`);
-        continue;
-    }
+  // Read file content
+  let content;
+  try {
+    content = fs.readFileSync(file, 'utf8');
+  } catch (error) {
+    console.error(`Error reading ${file}: ${error.message}`);
+    continue;
+  }
 
-    // Create inline patch with all needed functions
-    const inlineCode = `
+  // Create inline patch with all needed functions
+  const inlineCode = `
 // ====== BEGIN DIRECT INLINE PATCH ======
 // This ensures that all required functions are directly available in this file
 
@@ -103,22 +104,22 @@ function getVersion(obj) {
 
 `;
 
-    // Inject the inline code at the beginning of the file
-    const patchedContent = inlineCode + content;
+  // Inject the inline code at the beginning of the file
+  const patchedContent = inlineCode + content;
 
-    // Find and replace all React.createContext calls to use the inlined function
-    const replacedContent = patchedContent.replace(
-        /React\.createContext/g,
-        'createContext'
-    );
+  // Find and replace all React.createContext calls to use the inlined function
+  const replacedContent = patchedContent.replace(
+    /React\.createContext/g,
+    'createContext'
+  );
 
-    // Write the updated file
-    try {
-        fs.writeFileSync(file, replacedContent);
-        console.log(`✅ Successfully patched ${file}`);
-    } catch (error) {
-        console.error(`Error writing ${file}: ${error.message}`);
-    }
+  // Write the updated file
+  try {
+    fs.writeFileSync(file, replacedContent);
+    console.log(`✅ Successfully patched ${file}`);
+  } catch (error) {
+    console.error(`Error writing ${file}: ${error.message}`);
+  }
 }
 
 console.log('Direct inline patching complete');
