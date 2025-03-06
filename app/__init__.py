@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 import os
@@ -18,7 +18,7 @@ migrate = Migrate()
 
 def create_app():
     """Application factory function"""
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder='../static')
 
     # Set up logging
     app.logger.setLevel(logging.INFO)
@@ -44,35 +44,16 @@ def create_app():
     except OSError:
         pass
 
-    # Register routes
-    @app.route('/')
-    def index():
-        return jsonify({'message': 'Welcome to Harmonic Universe API'})
-
-    @app.route('/api/health')
-    def health():
-        # Check database connection
-        db_health = "healthy"
-        db_error = None
-        try:
-            with app.app_context():
-                db.engine.execute("SELECT 1")
-        except Exception as e:
-            db_health = "unhealthy"
-            db_error = str(e)
-
-        return jsonify({
-            'status': 'healthy',
-            'database': db_health,
-            'database_error': db_error
-        })
-
     # Register blueprints
     try:
         from app.auth import auth_bp
         app.register_blueprint(auth_bp)
         app.logger.info("Registered auth blueprint")
+
+        from app.routes import main_bp
+        app.register_blueprint(main_bp)
+        app.logger.info("Registered main routes blueprint")
     except Exception as e:
-        app.logger.error(f"Failed to register auth blueprint: {str(e)}")
+        app.logger.error(f"Failed to register blueprints: {str(e)}")
 
     return app
