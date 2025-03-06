@@ -71,12 +71,22 @@ If the frontend service fails:
 2. Make sure `glob` is correctly installed as a dependency in `package.json`
 3. Verify that all Node scripts can run without errors
 
+#### ES Module vs CommonJS Issues
+
+The project uses ES modules (`"type": "module"` in package.json) but some scripts require CommonJS:
+
+- We've converted `clean-ant-icons.js` to `clean-ant-icons.cjs` to explicitly mark it as a CommonJS script
+- Any script using `require()` instead of `import` should use the `.cjs` extension
+- If you see errors like `ReferenceError: require is not defined in ES module scope`, you need to:
+  1. Rename the file to use the `.cjs` extension
+  2. Update any references to the file in package.json and other scripts
+
 ### Scripts Issues
 
 The application includes several build scripts:
 
 - `build.sh`: Used by backend service to install dependencies
-- `clean-ant-icons.js`: Modified to use CommonJS instead of ES modules
+- `clean-ant-icons.cjs`: Modified to use CommonJS instead of ES modules
 
 If you encounter issues with these scripts:
 

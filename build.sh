@@ -25,18 +25,34 @@ if [ -d "frontend" ]; then
     # Fix potential ESM issues with glob in any scripts
     if [ -d "scripts" ]; then
         echo "🔧 Checking for problematic scripts..."
+        # Check for both JS and CJS versions of the file
         if [ -f "scripts/clean-ant-icons.js" ]; then
-            echo "🔧 Fixing clean-ant-icons.js..."
-            # Create a backup
-            cp scripts/clean-ant-icons.js scripts/clean-ant-icons.js.bak
+            echo "🔧 Renaming clean-ant-icons.js to clean-ant-icons.cjs..."
+            mv scripts/clean-ant-icons.js scripts/clean-ant-icons.cjs
 
-            # Check if it's using ES imports
-            if grep -q "import.*from.*glob" scripts/clean-ant-icons.js; then
-                echo "  Replacing ES modules import with CommonJS require"
-                # Add require at the top
-                sed -i '1i\const glob = require("glob");' scripts/clean-ant-icons.js
-                # Comment out the ES import
-                sed -i 's/import.*from.*glob.*/\/\/ ES import replaced with CommonJS require/' scripts/clean-ant-icons.js
+            # Fix any references in package.json
+            sed -i 's/clean-ant-icons\.js/clean-ant-icons.cjs/g' package.json
+        fi
+
+        # Now handle the .cjs file if it exists
+        if [ -f "scripts/clean-ant-icons.cjs" ]; then
+            echo "🔧 Ensuring clean-ant-icons.cjs uses CommonJS syntax..."
+
+            # Create a backup
+            cp scripts/clean-ant-icons.cjs scripts/clean-ant-icons.cjs.bak
+
+            # Check if it's not already using CommonJS
+            if grep -q "import.*from.*glob" scripts/clean-ant-icons.cjs; then
+                echo "  Converting ES modules to CommonJS in clean-ant-icons.cjs"
+                # First, replace imports with require statements
+                sed -i 's/import fs from .*/const fs = require("fs");/g' scripts/clean-ant-icons.cjs
+                sed -i 's/import path from .*/const path = require("path");/g' scripts/clean-ant-icons.cjs
+                sed -i 's/import { fileURLToPath } from .*/\/\/ fileURLToPath not needed in CommonJS/g' scripts/clean-ant-icons.cjs
+                sed -i 's/import { glob } from .*/const glob = require("glob");/g' scripts/clean-ant-icons.cjs
+
+                # Remove __filename and __dirname conversion (not needed in CommonJS)
+                sed -i 's/const __filename = fileURLToPath.*/\/\/ __filename and __dirname are available in CommonJS/g' scripts/clean-ant-icons.cjs
+                sed -i 's/const __dirname = path.dirname.*/\/\/ __dirname is already available/g' scripts/clean-ant-icons.cjs
             fi
         fi
     fi
