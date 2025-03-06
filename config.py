@@ -1,8 +1,12 @@
 import os
-from dotenv import load_dotenv
 
-# Load .env file if present
-load_dotenv()
+# Try to import dotenv, but provide fallback if it's not available
+try:
+    from dotenv import load_dotenv
+    load_dotenv()  # Load environment variables from .env file
+    print("Loaded environment variables from .env file")
+except ImportError:
+    print("python-dotenv not installed, using environment variables directly")
 
 class Config:
     """Base configuration for the application"""

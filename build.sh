@@ -8,6 +8,14 @@ echo "Installing Python dependencies..."
 pip install --upgrade pip
 pip install -r requirements.txt
 
+# Verify python-dotenv is installed
+if pip list | grep -q python-dotenv; then
+    echo "✅ python-dotenv is installed"
+else
+    echo "⚠️ Warning: python-dotenv is not installed. Installing now..."
+    pip install python-dotenv
+fi
+
 # Ensure static directory exists
 mkdir -p static
 
