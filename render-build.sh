@@ -3,15 +3,111 @@ set -e
 
 echo "=== Starting Render Build Process ==="
 
-# Install system dependencies - PostgreSQL client libraries
-echo "Installing system dependencies..."
-apt-get update -y
-apt-get install -y libpq-dev postgresql-client
+# Set environment variables for PostgreSQL
+export PGCONNECT_TIMEOUT=10
+export PGSSLMODE=require
 
-# Install Python dependencies
-echo "Installing Python dependencies..."
+# Install system dependencies - PostgreSQL client libraries
+# Using apt-get with proper options for non-interactive installation
+echo "Installing system dependencies..."
+apt-get update -qq
+DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    libpq-dev \
+    postgresql-client \
+    build-essential \
+    python3-dev \
+    netcat \
+    curl
+
+# Clean up apt cache to reduce image size
+apt-get clean
+rm -rf /var/lib/apt/lists/*
+
+# Install gunicorn first to ensure it's available
+echo "Installing gunicorn..."
 pip install --upgrade pip
-pip install -r requirements.txt
+pip install --no-cache-dir gunicorn==20.1.0
+
+# Verify gunicorn is installed and in PATH
+if which gunicorn > /dev/null; then
+    echo "Gunicorn is installed and in PATH: $(which gunicorn)"
+    gunicorn --version
+else
+    echo "WARNING: Gunicorn not found in PATH after installation"
+    echo "Attempting alternative installation..."
+    python -m pip install --no-cache-dir gunicorn==20.1.0
+    python -m gunicorn --version || echo "Failed to run gunicorn even after reinstall"
+fi
+
+# Install Python dependencies with specific options for psycopg2
+echo "Installing Python dependencies..."
+pip install --no-cache-dir psycopg2-binary==2.9.9
+pip install --no-cache-dir pg8000==1.30.1 psycopg==3.1.13
+pip install --no-cache-dir -r requirements.txt
+
+# List installed packages for debugging
+pip list | grep gunicorn
+
+# Make db_connect.sh executable if it exists
+if [ -f "db_connect.sh" ]; then
+    chmod +x db_connect.sh
+    echo "Testing database connection with db_connect.sh..."
+    # Run but don't fail the build if it fails
+    ./db_connect.sh || echo "Database connection test failed, but continuing build"
+else
+    echo "Creating emergency database connection test..."
+    cat > db_test.py << EOF
+#!/usr/bin/env python
+import os
+import sys
+import time
+
+def test_connection():
+    url = os.environ.get('DATABASE_URL')
+    if not url:
+        print("No DATABASE_URL environment variable found")
+        return False
+
+    for adapter in ['psycopg2', 'pg8000', 'psycopg']:
+        try:
+            print(f"Trying {adapter}...")
+            if adapter == 'psycopg2':
+                import psycopg2
+                conn = psycopg2.connect(url)
+            elif adapter == 'pg8000':
+                import pg8000.native
+                conn = pg8000.native.Connection(url)
+            elif adapter == 'psycopg':
+                import psycopg
+                conn = psycopg.connect(url)
+
+            cursor = conn.cursor()
+            cursor.execute('SELECT 1')
+            print(f"{adapter} connection successful!")
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"{adapter} connection error: {e}")
+
+    return False
+
+# Retry logic
+retries = 3
+for i in range(retries):
+    print(f"Connection attempt {i+1}/{retries}")
+    if test_connection():
+        sys.exit(0)
+    if i < retries - 1:
+        print(f"Retrying in 5 seconds...")
+        time.sleep(5)
+
+print("All connection attempts failed")
+# Don't fail the build
+sys.exit(0)
+EOF
+    chmod +x db_test.py
+    python db_test.py
+fi
 
 # Ensure static directory exists
 mkdir -p static

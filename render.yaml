@@ -4,8 +4,8 @@ services:
   - type: web
     name: harmonic-universe-api
     runtime: python
-    buildCommand: ./render-build.sh
-    startCommand: gunicorn wsgi_app:application --log-level info --workers 1
+    buildCommand: pip install gunicorn==20.1.0 && ./render-build.sh
+    startCommand: chmod +x ./start-gunicorn.sh && ./start-gunicorn.sh
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
@@ -16,7 +16,7 @@ services:
       - key: PYTHONPATH
         value: '.'
       - key: FLASK_APP
-        value: wsgi_app.py
+        value: wsgi.py
       - key: FLASK_DEBUG
         value: '0'
       - key: DATABASE_URL
@@ -25,6 +25,10 @@ services:
           property: connectionString
       - key: FRONTEND_URL
         value: https://harmonic-universe-frontend.onrender.com
+      - key: PGCONNECT_TIMEOUT
+        value: '10'
+      - key: DB_CONNECT_RETRY
+        value: '3'
     healthCheckPath: /api/health
 
   # Frontend service (React)

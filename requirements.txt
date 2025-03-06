@@ -7,7 +7,13 @@ PyJWT==2.1.0
 Werkzeug==2.0.1
 SQLAlchemy==1.4.25
 gunicorn==20.1.0
+
+# PostgreSQL adapters (multiple for fallback)
 psycopg2-binary==2.9.9
+pg8000==1.30.1
+psycopg==3.1.13
+
+# Testing
 pytest==6.2.5
 Flask-CORS==3.0.10
 
