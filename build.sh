@@ -3,20 +3,24 @@ set -e  # Exit on error
 
 echo "Starting build process..."
 
-# Clean pip cache
-echo "Cleaning pip cache..."
-pip cache purge
+# Run the reset script to forcibly handle SQLAlchemy
+echo "Running dependency reset script..."
+python reset.py
 
-# Install dependencies
-echo "Installing dependencies with clear cache..."
+# Install other dependencies
+echo "Installing remaining dependencies..."
 pip install --no-cache-dir -r requirements.txt
 
 # Setup python environment
 echo "Setting up Python environment..."
 export PYTHONPATH=$PYTHONPATH:$(pwd)
 
-# Create initial database tables if they don't exist
-echo "Setting up database..."
+# Ensure the app directory structure exists
+echo "Checking app directory structure..."
+mkdir -p app/core
+
+# Try to set up the database (continue on error)
+echo "Attempting to set up database..."
 python -c "try:
     from app.core.database import Base, engine
     Base.metadata.create_all(bind=engine)
@@ -26,9 +30,9 @@ except Exception as e:
     # Don't fail the build
 " || echo "Database setup warning - continuing build"
 
-# Run migrations if needed
+# Run migrations if alembic directory exists
 if [ -d "alembic" ]; then
-  echo "Running database migrations..."
+  echo "Attempting to run database migrations..."
   alembic upgrade head || echo "Migration warning - continuing build"
 fi
 
