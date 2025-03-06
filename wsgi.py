@@ -35,10 +35,20 @@ except ImportError:
     from flask_migrate import Migrate
     logger.info("Flask-Migrate installed and imported successfully")
 
-# Define the Flask application
-from app import create_app
-app = create_app()
+# Create the application
+try:
+    from app import create_app
+    app = create_app()
+    logger.info("Application created successfully")
+except Exception as e:
+    logger.error(f"Error creating application: {e}")
+    from flask import Flask, jsonify
+    app = Flask(__name__)
+
+    @app.route('/')
+    def error():
+        return jsonify({'status': 'error', 'message': 'Application failed to load correctly'})
 
 if __name__ == "__main__":
-    port = get_port()
-    app.run(debug=True, host="0.0.0.0", port=port)
+    port = int(os.environ.get("PORT", 8000))
+    app.run(host="0.0.0.0", port=port)

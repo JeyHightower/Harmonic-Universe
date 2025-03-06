@@ -1,58 +1,46 @@
+"""
+Configuration settings for the application.
+"""
 import os
+from dotenv import load_dotenv
 
-# Try to import dotenv, but provide fallback if it's not available
-try:
-    from dotenv import load_dotenv
-    load_dotenv()  # Load environment variables from .env file
-    print("Loaded environment variables from .env file")
-except ImportError:
-    print("python-dotenv not installed, using environment variables directly")
+# Load environment variables
+load_dotenv()
 
 class Config:
-    """Base configuration for the application"""
-    # App settings
-    DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
-    TESTING = os.environ.get('TESTING', 'False').lower() == 'true'
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-key-change-me-in-production')
+    """Base configuration."""
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-key-for-development')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///./instance/harmonic_universe.db')
 
-    # Database settings
-    DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///app.db')
-
-    # Static file settings
-    STATIC_FOLDER = os.environ.get('STATIC_FOLDER', 'static')
-
-    # Logging settings
-    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
-
-    # API settings
-    API_RATE_LIMIT = int(os.environ.get('API_RATE_LIMIT', '100'))
-
-    @classmethod
-    def get_config(cls):
-        """Returns configuration dictionary"""
-        return {key: getattr(cls, key) for key in dir(cls)
-                if not key.startswith('__') and key.isupper()}
+    # Fix for Postgres URLs from Heroku/Render
+    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith('postgres://'):
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('postgres://', 'postgresql://', 1)
 
 class DevelopmentConfig(Config):
-    """Development configuration"""
+    """Development configuration."""
     DEBUG = True
-
-class ProductionConfig(Config):
-    """Production configuration"""
-    DEBUG = False
+    TESTING = False
 
 class TestingConfig(Config):
-    """Testing configuration"""
+    """Testing configuration."""
+    DEBUG = True
     TESTING = True
-    DATABASE_URL = 'sqlite:///:memory:'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
 
-# Mapping environment name to config class
-config_by_name = {
+class ProductionConfig(Config):
+    """Production configuration."""
+    DEBUG = False
+    TESTING = False
+
+# Set the active configuration based on environment
+config_map = {
     'development': DevelopmentConfig,
+    'testing': TestingConfig,
     'production': ProductionConfig,
-    'testing': TestingConfig
+    'default': DevelopmentConfig
 }
 
-# Get current configuration based on environment
-FLASK_ENV = os.environ.get('FLASK_ENV', 'production')
-current_config = config_by_name.get(FLASK_ENV, ProductionConfig)
+# Get the current configuration
+env = os.environ.get('FLASK_ENV', 'default')
+current_config = config_map.get(env, config_map['default'])

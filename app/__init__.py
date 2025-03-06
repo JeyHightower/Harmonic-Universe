@@ -1,34 +1,56 @@
-# This file makes the app directory a Python package
-import sys
+from flask import Flask, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 import os
+from dotenv import load_dotenv
 import logging
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("app_init")
+# Load environment variables
+load_dotenv()
 
-# Add the parent directory to the path so we can import from the root
-parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, parent_dir)
-logger.info(f"Added {parent_dir} to Python path")
+# Initialize extensions
+db = SQLAlchemy()
+migrate = Migrate()
 
-# Import the app from the root app.py
-try:
-    logger.info("Attempting to import app from app.py")
-    from app import app
-    logger.info("Successfully imported app from app.py")
-except ImportError as e:
-    logger.error(f"Error importing app from app.py: {e}")
-    from flask import Flask, jsonify
+def create_app():
+    """Application factory function"""
     app = Flask(__name__)
-    app.config['DEBUG'] = False
 
+    # Set up logging
+    app.logger.setLevel(logging.INFO)
+
+    # Configure app
+    app.config.update(
+        SECRET_KEY=os.environ.get('SECRET_KEY', 'dev-key'),
+        SQLALCHEMY_DATABASE_URI=os.environ.get('DATABASE_URL', 'sqlite:///app.db'),
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    )
+
+    # Initialize extensions
+    db.init_app(app)
+    migrate.init_app(app, db)
+
+    # Ensure instance folder exists
+    try:
+        os.makedirs(app.instance_path, exist_ok=True)
+    except OSError:
+        pass
+
+    # Register routes
     @app.route('/')
     def index():
-        return jsonify({"message": "Fallback app is running. Main app failed to import."})
+        return jsonify({'message': 'Welcome to Harmonic Universe API'})
 
     @app.route('/api/health')
     def health():
-        return jsonify({"status": "unhealthy", "message": "Using fallback app"})
+        return jsonify({'status': 'healthy'})
 
-    logger.warning("Created fallback app due to import error")
+    # Register blueprints
+    try:
+        from app.auth import auth_bp
+        app.register_blueprint(auth_bp)
+        app.logger.info("Registered auth blueprint")
+    except Exception as e:
+        app.logger.error(f"Failed to register auth blueprint: {str(e)}")
+
+    return app

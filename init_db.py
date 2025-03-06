@@ -6,14 +6,15 @@ This script will check database connectivity and create tables if needed.
 import os
 import sys
 import logging
-from flask import Flask
-from contextlib import contextmanager
+from flask_migrate import Migrate
+from dotenv import load_dotenv
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("init_db")
 
 def init_db():
+    """Initialize the database by creating all tables."""
     logger.info("Initializing database...")
 
     # Add current directory to Python path
@@ -22,40 +23,39 @@ def init_db():
         sys.path.append(current_dir)
         logger.info(f"Added {current_dir} to Python path")
 
-    try:
-        from app import create_app
-        from models import db
+    # Load environment variables
+    load_dotenv()
+    logger.info("Loaded environment variables")
 
-        # Create app context
-        app = create_app()
-        with app.app_context():
-            # Check database connection
-            try:
-                logger.info("Checking database connection...")
-                db.session.execute('SELECT 1')
-                logger.info("Database connection successful")
+    # Import app after setting up environment
+    from app import create_app, db
 
-                # Check if tables exist
-                logger.info("Checking if tables need to be created...")
-                db.create_all()
-                logger.info("Tables created or already exist")
+    app = create_app()
 
-                return True
-            except Exception as e:
-                logger.error(f"Database initialization failed: {e}")
-                return False
-    except ImportError as e:
-        logger.error(f"Failed to import required modules: {e}")
-        return False
-    except Exception as e:
-        logger.error(f"Unexpected error during database initialization: {e}")
-        return False
+    # Initialize database connection
+    with app.app_context():
+        logger.info("Checking database connection...")
+        try:
+            db.engine.connect()
+            logger.info("Database connection successful")
+
+            # Drop all tables with CASCADE
+            logger.info("Dropping all existing tables...")
+            db.session.execute('DROP SCHEMA public CASCADE')
+            db.session.execute('CREATE SCHEMA public')
+            db.session.execute('GRANT ALL ON SCHEMA public TO postgres')
+            db.session.execute('GRANT ALL ON SCHEMA public TO public')
+            db.session.commit()
+            logger.info("Schema reset successfully")
+
+            logger.info("Creating database tables...")
+            db.create_all()
+            logger.info("Tables created successfully")
+
+            logger.info("Database initialization completed successfully")
+        except Exception as e:
+            logger.error(f"Database initialization failed: {e}")
+            raise
 
 if __name__ == "__main__":
-    success = init_db()
-    if success:
-        logger.info("Database initialization completed successfully")
-        sys.exit(0)
-    else:
-        logger.error("Database initialization failed")
-        sys.exit(1)
+    init_db()
