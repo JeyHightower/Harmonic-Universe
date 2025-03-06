@@ -21,7 +21,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
 logger.info(f"Added {current_dir} to Python path")
 
-x# Check for packages that are installed
+# Check for packages that are installed
 try:
     import flask
     logger.info(f"Found Flask: {flask.__version__}")
