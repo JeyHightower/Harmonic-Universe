@@ -73,46 +73,41 @@ If the frontend service fails:
 
 #### ES Module vs CommonJS Issues
 
-The project uses ES modules (`"type": "module"` in package.json), but some CommonJS modules like `glob` require special handling:
+The project uses ES modules (`"type": "module"` in package.json), which can cause issues when using CommonJS modules like `glob`. Our solution:
 
-##### Solution: Proper ES Module Import Pattern
+##### CommonJS Files (.cjs extension)
 
-For CommonJS modules like `glob` in an ES module context, use this import pattern:
+We use the `.cjs` extension for files that need to use CommonJS syntax:
+
+1. Files using `require()` are renamed with the `.cjs` extension
+2. References in package.json are updated to point to the `.cjs` files
+3. The build script automatically detects and converts CommonJS scripts
+
+Example:
 
 ```javascript
-// Import the CommonJS module correctly in ES module context
-import pkg from 'glob';
-const { glob } = pkg;
+// clean-ant-icons.cjs - CommonJS syntax
+const fs = require('fs');
+const path = require('path');
+const glob = require('glob');
 
-// Then use glob as normal
+// Use as normal
 const files = glob.sync('*.js');
 ```
 
-The above pattern allows you to:
+This approach:
 
-- Keep using `.js` file extensions
-- Maintain consistency with the ES modules approach
-- Properly import CommonJS modules
-
-If you see errors like `SyntaxError: Named export 'glob' not found. The requested module 'glob' is a CommonJS module...`:
-
-1. Use the import pattern above
-2. Don't use direct named imports like `import { glob } from 'glob'`
-
-##### Alternative: CommonJS Files
-
-You can also use `.cjs` extension for files that need to use CommonJS syntax:
-
-1. Rename your file to use `.cjs` extension
-2. Use `require()` syntax instead of `import`
-3. Update references in package.json
+- Clearly separates ES modules from CommonJS modules
+- Works reliably in all Node.js environments
+- Doesn't require complex import patterns
+- Follows Node.js best practices for mixed module systems
 
 ### Scripts Issues
 
 The application includes several build scripts:
 
-- `build.sh`: Used by backend service to install dependencies
-- `clean-ant-icons.js`: Updated to use correct ES module import pattern for CommonJS modules
+- `build.sh`: Used by backend service to install dependencies and automatically converts CommonJS scripts to .cjs
+- `clean-ant-icons.cjs`: Uses CommonJS require() syntax to avoid ES module compatibility issues
 
 If you encounter issues with these scripts:
 

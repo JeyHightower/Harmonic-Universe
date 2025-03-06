@@ -22,82 +22,40 @@ if [ -d "frontend" ]; then
     echo "📦 Installing glob dependency..."
     npm install glob --save
 
-    # Fix potential ESM issues with glob in any scripts
+    # Check for scripts using CommonJS require() syntax
     if [ -d "scripts" ]; then
-        echo "🔧 Checking for problematic scripts..."
+        echo "🔧 Checking for CommonJS scripts..."
 
-        # Look for potential ES module issues with the glob package
-        if [ -f "scripts/clean-ant-icons.js" ]; then
-            echo "🔧 Checking clean-ant-icons.js for proper ES module imports..."
+        # Find scripts using require()
+        COMMONJS_FILES=$(grep -l "require(" scripts/*.js | grep -v "node_modules")
 
-            # Create a backup
-            cp scripts/clean-ant-icons.js scripts/clean-ant-icons.js.bak
+        # Convert identified files to .cjs if needed
+        if [ ! -z "$COMMONJS_FILES" ]; then
+            echo "Found CommonJS scripts:"
+            for file in $COMMONJS_FILES; do
+                cjs_file="${file%.js}.cjs"
 
-            # Check if it's using problematic direct named imports from glob
-            if grep -q "import.*{.*glob.*}.*from.*'glob'" scripts/clean-ant-icons.js; then
-                echo "  Fixing named imports from CommonJS glob module"
-
-                # Add the correct ES module import pattern at the top
-                TMP_FILE=$(mktemp)
-                cat > "$TMP_FILE" << 'EOF'
-// Import the CommonJS module correctly in ES module context
-import pkg from 'glob';
-const { glob } = pkg;
-
-EOF
-
-                # Remove the problematic import line
-                grep -v "import.*{.*glob.*}.*from.*'glob'" scripts/clean-ant-icons.js >> "$TMP_FILE"
-
-                # Replace the file
-                mv "$TMP_FILE" scripts/clean-ant-icons.js
-                chmod +x scripts/clean-ant-icons.js
-
-                echo "✅ Fixed ES module import pattern for glob"
-            else
-                echo "  clean-ant-icons.js appears to have correct imports"
-            fi
-        fi
-
-        # Check for any .cjs files that should be converted back to .js with ES module syntax
-        for CJS_FILE in scripts/*.cjs; do
-            if [ -f "$CJS_FILE" ]; then
-                JS_FILE="${CJS_FILE%.cjs}.js"
-                echo "🔧 Converting $CJS_FILE to ES module syntax in $JS_FILE"
-
-                # Create ES module version
-                cat > "$JS_FILE" << 'EOF'
-#!/usr/bin/env node
-
-// Import the CommonJS module correctly in ES module context
-import pkg from 'glob';
-const { glob } = pkg;
-
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-// In ES modules, __dirname is not available directly
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Rest of the file logic goes here...
-// Customize this based on what the original file was doing
-EOF
-
-                # Append the rest of the logic, skipping the CommonJS imports
-                sed -n '/const.*require/,$ p' "$CJS_FILE" | grep -v "const.*require" >> "$JS_FILE"
-
-                # Make the new file executable
-                chmod +x "$JS_FILE"
+                # Check if the .cjs version doesn't exist yet
+                if [ ! -f "$cjs_file" ]; then
+                    echo "  Converting $file to $cjs_file"
+                    cp "$file" "$cjs_file"
+                    # Make the cjs file executable
+                    chmod +x "$cjs_file"
+                else
+                    echo "  $cjs_file already exists"
+                fi
 
                 # Update package.json references
-                BASE_NAME=$(basename "$CJS_FILE" .cjs)
-                sed -i "s/$BASE_NAME\.cjs/$BASE_NAME\.js/g" package.json
-
-                echo "✅ Converted $CJS_FILE to ES module syntax"
-            fi
-        done
+                js_name=$(basename "$file")
+                cjs_name=$(basename "$cjs_file")
+                if grep -q "$js_name" package.json; then
+                    echo "  Updating package.json references for $js_name"
+                    sed -i "s|$js_name|$cjs_name|g" package.json
+                fi
+            done
+        else
+            echo "No CommonJS scripts found needing conversion"
+        fi
     fi
 
     # Install all dependencies
