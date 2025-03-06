@@ -3,11 +3,12 @@ services:
   - type: web
     name: harmonic-universe
     env: python
-    buildCommand: chmod +x render-build.sh && ./render-build.sh
-    startCommand: gunicorn --bind "0.0.0.0:$PORT" wsgi:app
+    buildCommand: chmod +x build.sh && ./build.sh
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.18
+        value: 3.11.0
+    envVars:
       - key: FLASK_ENV
         value: production
       - key: SECRET_KEY

@@ -1,14 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import universe
+from app.api.api import api_router
+from app.core.config import settings
 
 # Create FastAPI app
-app = FastAPI(title="Harmonic Universe API")
+app = FastAPI(title=settings.PROJECT_NAME)
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Restrict in production
+    allow_origins=["*"],  # In production, replace with specific origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -16,10 +17,10 @@ app.add_middleware(
 
 # Root endpoint
 @app.get("/")
-async def root():
+def root():
     return {"message": "Welcome to Harmonic Universe API"}
 
 # Register routers
-app.include_router(universe.router, prefix="/api/universes", tags=["universes"])
+app.include_router(api_router)
 
 # Add more routers as needed for other resources
