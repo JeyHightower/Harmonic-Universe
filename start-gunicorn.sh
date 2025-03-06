@@ -24,6 +24,83 @@ fi
 echo "Directory contents:"
 ls -la
 
+# Ensure static directory exists and has content
+echo "=== Checking static directory ==="
+mkdir -p static
+mkdir -p static/assets
+
+# Verify if static files exist, create minimal versions if not
+if [ ! -f "static/index.html" ]; then
+    echo "Creating minimal index.html in static directory"
+    cat > static/index.html << EOF
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Harmonic Universe</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+        h1 { color: #333; }
+        .container { max-width: 800px; margin: 0 auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Harmonic Universe</h1>
+        <p>Application is running! This is a fallback page created by start-gunicorn.sh.</p>
+        <div id="api-status">Checking API status...</div>
+        <div id="debug-info">
+            <p>Generated at: $(date)</p>
+            <p>Server: $(hostname)</p>
+        </div>
+    </div>
+    <script>
+        fetch('/api/health')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('api-status').innerHTML =
+                    'API Status: <span style="color:' + (data.status === 'healthy' ? 'green' : 'red') + '">' + data.status + '</span>';
+            })
+            .catch(error => {
+                document.getElementById('api-status').innerHTML =
+                    'API Status: <span style="color:red">Connection Failed</span>';
+            });
+    </script>
+</body>
+</html>
+EOF
+fi
+
+# Create debug script if it doesn't exist
+if [ ! -f "static/debug.js" ]; then
+    echo "Creating debug.js in static directory"
+    cat > static/debug.js << EOF
+// Debug file to verify static asset serving
+console.log('Debug script loaded successfully!');
+
+// Create a visible indicator on the page
+document.addEventListener('DOMContentLoaded', function() {
+  const debugElement = document.createElement('div');
+  debugElement.style.position = 'fixed';
+  debugElement.style.bottom = '10px';
+  debugElement.style.right = '10px';
+  debugElement.style.padding = '10px';
+  debugElement.style.background = 'green';
+  debugElement.style.color = 'white';
+  debugElement.style.borderRadius = '5px';
+  debugElement.style.zIndex = '9999';
+  debugElement.textContent = 'Debug: Static files working!';
+  document.body.appendChild(debugElement);
+});
+EOF
+fi
+
+# Set permissions
+echo "Setting permissions for static directory"
+chmod -R 755 static
+
+echo "Static directory contents:"
+ls -la static
+
 # Force reinstall of critical dependencies
 echo "=== Installing critical dependencies ==="
 python -m pip install --upgrade pip
@@ -45,7 +122,7 @@ python -c "import sys; print('Python version:', sys.version); print('Python path
 python -c "import flask; print('Flask version:', flask.__version__)" || echo "Failed to import Flask"
 python -c "import psycopg2; print('Psycopg2 version:', psycopg2.__version__)" || echo "Failed to import psycopg2"
 
-# Create simplified wrapper to ensure it exists
+# Create simplified wsgi_wrapper.py that uses correct static path
 echo "Creating simplified wsgi_wrapper.py..."
 cat > wsgi_wrapper.py << 'EOF'
 #!/usr/bin/env python
@@ -75,14 +152,16 @@ try:
     logger.info(f"Found psycopg2: {psycopg2.__version__}")
 except ImportError as e:
     logger.error(f"Missing dependency: {e}")
-    from flask import Flask
-    app = Flask(__name__)
+    raise ImportError(f"Critical dependency missing: {e}")
 
-    @app.route('/')
-    def error():
-        return {"error": "Application failed to initialize properly"}
-
-    logger.info("Created error app")
+# Create debug static content as fallback
+static_dir = os.path.join(current_dir, 'static')
+logger.info(f"Checking static directory at {static_dir}")
+if os.path.exists(static_dir):
+    logger.info(f"Static directory exists at {static_dir}")
+    logger.info(f"Static directory contents: {os.listdir(static_dir)}")
+else:
+    logger.warning(f"Static directory does not exist at {static_dir}")
 
 # Try different import strategies
 try:
@@ -92,35 +171,42 @@ try:
     logger.info("Successfully created app from app.create_app()")
 except Exception as e:
     logger.error(f"Error importing from app: {e}")
+    # Create minimal app as last resort
     try:
-        # Try direct import from wsgi
-        from wsgi import app
-        logger.info("Successfully imported app from wsgi.py")
-    except Exception as e:
-        logger.error(f"Error importing from wsgi: {e}")
-        try:
-            # Try from wsgi_app
-            from wsgi_app import application as app
-            logger.info("Successfully imported application from wsgi_app")
-        except Exception as e:
-            logger.error(f"Error importing from wsgi_app: {e}")
-            # Create minimal app as last resort
+        from flask import Flask, send_from_directory
+
+        app = Flask(__name__, static_folder='static')
+        logger.info(f"Created fallback Flask app with static_folder: {app.static_folder}")
+
+        @app.route('/')
+        def home():
             try:
-                from flask import Flask
-                app = Flask(__name__)
-
-                @app.route('/')
-                def home():
-                    return {"status": "error", "message": "Application failed to initialize properly"}
-
-                @app.route('/api/health')
-                def health():
-                    return {"status": "unhealthy", "message": "Emergency fallback app"}
-
-                logger.info("Created fallback app")
+                logger.info("Serving fallback index.html")
+                static_path = app.static_folder
+                if os.path.exists(os.path.join(static_path, 'index.html')):
+                    logger.info(f"index.html exists at {os.path.join(static_path, 'index.html')}")
+                    return send_from_directory(static_path, 'index.html')
+                else:
+                    logger.error(f"index.html not found in {static_path}")
+                    return "Index.html not found", 404
             except Exception as e:
-                logger.error(f"Failed to create even a fallback app: {e}")
-                raise RuntimeError("Could not initialize any Flask application")
+                logger.error(f"Error serving index.html: {e}")
+                return f"Error: {str(e)}", 500
+
+        @app.route('/api/health')
+        def health():
+            from flask import jsonify
+            return jsonify({"status": "unhealthy", "message": "Emergency fallback app"})
+
+        @app.route('/<path:path>')
+        def static_files(path):
+            logger.info(f"Serving static file: {path}")
+            return send_from_directory(app.static_folder, path)
+
+        logger.info("Created fallback app")
+    except Exception as e:
+        logger.error(f"Failed to create even a fallback app: {e}")
+        raise RuntimeError("Could not initialize any Flask application")
 EOF
 
 chmod +x wsgi_wrapper.py
