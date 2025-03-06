@@ -1,32 +1,14 @@
-Flask==2.0.1
-Flask-SQLAlchemy==2.5.1
-Flask-Migrate==3.1.0
-python-dotenv==0.19.1
-PyJWT==2.1.0
-Werkzeug==2.0.1
-SQLAlchemy==1.4.25
-gunicorn==20.1.0
-psycopg2-binary==2.9.1
-pytest==6.2.5
-Flask-CORS==3.0.10
-Flask==2.0.1
-Flask-SQLAlchemy==2.5.1
-Flask-Migrate==3.1.0
-python-dotenv==0.19.1
-PyJWT==2.1.0
-Werkzeug==2.0.1
-SQLAlchemy==1.4.25
-gunicorn==20.1.0
-psycopg2-binary==2.9.1
-pytest==6.2.5
-Flask-CORS==3.0.10
+# Core dependencies - ONE SQLAlchemy version only
+sqlalchemy==1.4.41
 fastapi==0.95.0
 uvicorn==0.21.1
-sqlalchemy==1.4.41
 pydantic==1.10.7
 python-jose==3.3.0
 passlib==1.7.4
 python-multipart==0.0.6
+psycopg2-binary==2.9.1
 python-dotenv==0.21.1
 alembic==1.10.2
+Flask-CORS==3.0.10
+gunicorn==20.1.0
 

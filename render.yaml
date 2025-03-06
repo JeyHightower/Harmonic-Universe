@@ -8,13 +8,10 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
-    envVars:
       - key: FLASK_ENV
         value: production
       - key: SECRET_KEY
         fromGroup: harmonic-universe
-    healthCheckPath: /api/health
-    envVars:
       - key: NODE_VERSION
         value: 16.13.0
       - key: WEB_CONCURRENCY
@@ -49,6 +46,7 @@ services:
         fromDatabase:
           name: harmonic-universe-db
           property: connectionString
+    healthCheckPath: /api/health
 
 databases:
   - name: harmonic-universe-db
