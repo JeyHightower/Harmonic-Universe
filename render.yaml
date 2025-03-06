@@ -4,7 +4,7 @@ services:
   - type: web
     name: harmonic-universe-api
     runtime: python
-    buildCommand: pip install gunicorn==20.1.0 && ./render-build.sh
+    buildCommand: python -m pip install -U pip && python -m pip install gunicorn==20.1.0 Flask==2.0.1 psycopg2-binary==2.9.9 && chmod +x ./render-build.sh && ./render-build.sh
     startCommand: chmod +x ./start-gunicorn.sh && ./start-gunicorn.sh
     envVars:
       - key: PYTHON_VERSION
@@ -14,9 +14,9 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: PYTHONPATH
-        value: '.'
+        value: '.:/opt/render/project/src'
       - key: FLASK_APP
-        value: wsgi.py
+        value: wsgi_wrapper.py
       - key: FLASK_DEBUG
         value: '0'
       - key: DATABASE_URL
@@ -29,6 +29,14 @@ services:
         value: '10'
       - key: DB_CONNECT_RETRY
         value: '3'
+      - key: PYTHONUNBUFFERED
+        value: 'true'
+      - key: RENDER_DEPLOYMENT
+        value: 'true'
+      - key: PIP_NO_CACHE_DIR
+        value: 'true'
+      - key: PIP_PREFER_BINARY
+        value: 'true'
     healthCheckPath: /api/health
 
   # Frontend service (React)

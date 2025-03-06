@@ -2,13 +2,16 @@
 set -e
 
 echo "=== Starting Render Build Process ==="
+echo "Date: $(date)"
+echo "Python version: $(python --version)"
+echo "Current directory: $(pwd)"
+echo "Python executable: $(which python)"
 
 # Set environment variables for PostgreSQL
 export PGCONNECT_TIMEOUT=10
 export PGSSLMODE=require
 
 # Install system dependencies - PostgreSQL client libraries
-# Using apt-get with proper options for non-interactive installation
 echo "Installing system dependencies..."
 apt-get update -qq
 DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -17,16 +20,40 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     build-essential \
     python3-dev \
     netcat \
-    curl
+    curl \
+    python3-venv
 
 # Clean up apt cache to reduce image size
 apt-get clean
 rm -rf /var/lib/apt/lists/*
 
-# Install gunicorn first to ensure it's available
-echo "Installing gunicorn..."
-pip install --upgrade pip
-pip install --no-cache-dir gunicorn==20.1.0
+# Check for virtual environment and activate it if exists
+VENV_PATH="/opt/render/project/src/.venv"
+if [ -d "$VENV_PATH" ]; then
+    echo "Virtual environment detected at $VENV_PATH"
+    echo "Activating virtual environment..."
+    source "$VENV_PATH/bin/activate"
+    echo "Using Python: $(which python)"
+    echo "Using pip: $(which pip)"
+else
+    echo "No virtual environment found at $VENV_PATH - creating one"
+    python -m venv .venv
+    source .venv/bin/activate
+    echo "Created and activated new virtual environment"
+    echo "Using Python: $(which python)"
+    echo "Using pip: $(which pip)"
+fi
+
+# Ensure pip is up to date
+echo "Upgrading pip in virtual environment..."
+python -m pip install --upgrade pip
+
+# Install critical dependencies first
+echo "Installing critical dependencies..."
+python -m pip install --no-cache-dir Flask==2.0.1
+python -m pip install --no-cache-dir Werkzeug==2.0.1
+python -m pip install --no-cache-dir psycopg2-binary==2.9.9
+python -m pip install --no-cache-dir gunicorn==20.1.0
 
 # Verify gunicorn is installed and in PATH
 if which gunicorn > /dev/null; then
@@ -39,14 +66,23 @@ else
     python -m gunicorn --version || echo "Failed to run gunicorn even after reinstall"
 fi
 
-# Install Python dependencies with specific options for psycopg2
-echo "Installing Python dependencies..."
-pip install --no-cache-dir psycopg2-binary==2.9.9
-pip install --no-cache-dir pg8000==1.30.1 psycopg==3.1.13
-pip install --no-cache-dir -r requirements.txt
+# Install remaining Python dependencies
+echo "Installing remaining dependencies..."
+python -m pip install --no-cache-dir -r requirements.txt
+
+# Verify critical packages
+echo "Verifying critical packages..."
+python -c "import flask; print('Flask version:', flask.__version__)" || echo "Error: Flask import failed"
+python -c "import psycopg2; print('Psycopg2 version:', psycopg2.__version__)" || echo "Error: Psycopg2 import failed"
+python -c "import sys; print('Python path:', sys.path)" || echo "Error: Cannot print Python path"
 
 # List installed packages for debugging
-pip list | grep gunicorn
+echo "Installed packages:"
+python -m pip list
+
+# Create a marker file to indicate successful dependency installation
+echo "Creating dependency marker file..."
+echo "Dependencies installed on $(date)" > .deps_installed
 
 # Make db_connect.sh executable if it exists
 if [ -f "db_connect.sh" ]; then
