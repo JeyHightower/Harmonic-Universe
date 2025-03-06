@@ -36,17 +36,32 @@ def init_db():
     with app.app_context():
         logger.info("Checking database connection...")
         try:
+            # Try to import psycopg2 and log version info
+            try:
+                import psycopg2
+                logger.info(f"Using psycopg2 version: {psycopg2.__version__}")
+            except ImportError:
+                logger.error("Failed to import psycopg2. Check if it's installed correctly.")
+            except Exception as e:
+                logger.error(f"Error importing psycopg2: {str(e)}")
+
+            # Test database connection
             db.engine.connect()
             logger.info("Database connection successful")
 
             # Drop all tables with CASCADE
             logger.info("Dropping all existing tables...")
-            db.session.execute('DROP SCHEMA public CASCADE')
-            db.session.execute('CREATE SCHEMA public')
-            db.session.execute('GRANT ALL ON SCHEMA public TO postgres')
-            db.session.execute('GRANT ALL ON SCHEMA public TO public')
-            db.session.commit()
-            logger.info("Schema reset successfully")
+            try:
+                db.session.execute('DROP SCHEMA public CASCADE')
+                db.session.execute('CREATE SCHEMA public')
+                db.session.execute('GRANT ALL ON SCHEMA public TO postgres')
+                db.session.execute('GRANT ALL ON SCHEMA public TO public')
+                db.session.commit()
+                logger.info("Schema reset successfully")
+            except Exception as e:
+                logger.error(f"Error resetting schema: {str(e)}")
+                db.session.rollback()
+                # Continue with table creation even if schema reset fails
 
             logger.info("Creating database tables...")
             db.create_all()

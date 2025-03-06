@@ -4,8 +4,8 @@ services:
   - type: web
     name: harmonic-universe-api
     runtime: python
-    buildCommand: pip install -U pip && pip install -r requirements.txt
-    startCommand: gunicorn app:app --log-level info --workers 1
+    buildCommand: ./render-build.sh
+    startCommand: gunicorn wsgi_app:application --log-level info --workers 1
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0

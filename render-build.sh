@@ -3,6 +3,11 @@ set -e
 
 echo "=== Starting Render Build Process ==="
 
+# Install system dependencies - PostgreSQL client libraries
+echo "Installing system dependencies..."
+apt-get update -y
+apt-get install -y libpq-dev postgresql-client
+
 # Install Python dependencies
 echo "Installing Python dependencies..."
 pip install --upgrade pip
