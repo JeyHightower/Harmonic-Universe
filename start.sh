@@ -1,28 +1,17 @@
 #!/bin/bash
-set -e
+set -e  # Exit immediately if a command exits with a non-zero status
 
-echo "Starting Harmonic Universe application..."
+echo "Starting application..."
 
-# Make sure PORT is set
-if [ -z "$PORT" ]; then
-    export PORT=10000
-    echo "PORT not set, using default: $PORT"
-else
-    echo "Using PORT: $PORT"
-fi
+# Setup environment variables if not already set
+export FLASK_APP=${FLASK_APP:-app.py}
+export FLASK_ENV=${FLASK_ENV:-production}
+export PORT=${PORT:-5000}
 
-# Check if we're on Render.com
-if [ -n "$RENDER" ]; then
-    echo "Running on Render.com"
-    # Use gunicorn for production
-    exec gunicorn --bind "0.0.0.0:$PORT" wsgi:app
-else
-    echo "Running locally"
-    # For local development, we have two options:
+# Run database migrations
+echo "Running database migrations..."
+flask db upgrade
 
-    # Option 1: Use Flask's development server (better for debugging)
-    python app.py
-
-    # Option 2: Use gunicorn locally (uncomment to use)
-    # exec gunicorn --bind "0.0.0.0:$PORT" wsgi:app --reload
-fi
+# Start the application with gunicorn
+echo "Starting web server on port $PORT..."
+gunicorn --bind 0.0.0.0:$PORT wsgi:app
