@@ -12,28 +12,11 @@ logger = logging.getLogger("wsgi")
 logger.info("Loading application in wsgi.py")
 
 try:
-    # Try to import the app directly first
-    try:
-        from app import app
-        logger.info("Successfully imported app directly")
-    except ImportError:
-        # If that fails, try importing the create_app function
-        logger.info("Direct import failed, trying to import create_app")
-        from app import create_app
-        app = create_app()
-        logger.info("Created app using create_app()")
-
-    # Check if static folder exists
-    static_folder = 'static'
-    if os.path.exists(static_folder):
-        files = os.listdir(static_folder)
-        logger.info(f"Static folder exists with {len(files)} files")
-    else:
-        logger.warning(f"Static folder doesn't exist: {static_folder}")
-        os.makedirs(static_folder, exist_ok=True)
-        logger.info(f"Created static folder: {static_folder}")
+    # Import the app
+    from app import app
 
     logger.info("Application loaded successfully")
+    logger.info(f"PORT environment variable: {os.environ.get('PORT', 'not set')}")
 
 except Exception as e:
     logger.error(f"Error loading application: {str(e)}")
@@ -43,7 +26,7 @@ except Exception as e:
 
 if __name__ == "__main__":
     try:
-        port = get_port()
+        port = int(os.environ.get("PORT", 10000))
         logger.info(f"Starting application on port {port}")
         app.run(host='0.0.0.0', port=port)
     except Exception as e:

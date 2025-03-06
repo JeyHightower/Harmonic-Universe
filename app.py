@@ -77,17 +77,25 @@ def create_app():
 
         # Define a direct health check endpoint at the root level
         @app.route('/api/health')
-        def health_check():
-            logger.info("Health check endpoint accessed")
+        def health():
+            """Health check endpoint"""
             try:
                 # Get static file information
                 static_files = []
                 if os.path.exists(app.static_folder):
                     static_files = os.listdir(app.static_folder)
 
-                # Get basic system information
-                import psutil
-                memory_info = psutil.virtual_memory()
+                # Get system info if psutil is available
+                system_info = {}
+                try:
+                    import psutil
+                    memory = psutil.virtual_memory()
+                    system_info = {
+                        "memory_used_percent": memory.percent,
+                        "cpu_percent": psutil.cpu_percent(interval=0.1)
+                    }
+                except ImportError:
+                    system_info = {"status": "psutil not available"}
 
                 return jsonify({
                     "status": "ok",
@@ -96,10 +104,8 @@ def create_app():
                     "render_instance": os.environ.get("RENDER_INSTANCE_ID", "unknown"),
                     "static_folder": os.path.abspath(app.static_folder),
                     "static_files": static_files,
-                    "system": {
-                        "memory_used_percent": memory_info.percent,
-                        "cpu_percent": psutil.cpu_percent(interval=0.1)
-                    }
+                    "system": system_info,
+                    "port": os.environ.get("PORT", "10000")
                 })
             except Exception as e:
                 logger.error(f"Error in health check: {str(e)}")
@@ -235,9 +241,9 @@ if __name__ == "__main__":
     try:
         # Get port from environment with fallback
         port = int(os.environ.get("PORT", 10000))
-        print(f"Starting app on port {port}")
+        logger.info(f"Starting app on port {port}")
         app.run(host="0.0.0.0", port=port)
     except Exception as e:
-        print(f"Error starting application: {e}")
+        logger.error(f"Error starting application: {e}")
         traceback.print_exc()
         sys.exit(1)
