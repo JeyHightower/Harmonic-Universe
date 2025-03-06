@@ -3,6 +3,7 @@
 import os
 import sys
 import logging
+from port import get_port
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -11,7 +12,16 @@ logger = logging.getLogger("wsgi")
 logger.info("Loading application in wsgi.py")
 
 try:
-    from app import app
+    # Try to import the app directly first
+    try:
+        from app import app
+        logger.info("Successfully imported app directly")
+    except ImportError:
+        # If that fails, try importing the create_app function
+        logger.info("Direct import failed, trying to import create_app")
+        from app import create_app
+        app = create_app()
+        logger.info("Created app using create_app()")
 
     # Check if static folder exists
     static_folder = 'static'
@@ -33,7 +43,7 @@ except Exception as e:
 
 if __name__ == "__main__":
     try:
-        port = int(os.environ.get("PORT", 10000))
+        port = get_port()
         logger.info(f"Starting application on port {port}")
         app.run(host='0.0.0.0', port=port)
     except Exception as e:
