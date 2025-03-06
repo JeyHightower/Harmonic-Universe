@@ -29,4 +29,8 @@ if __name__ == "__main__":
         render_config = configure_for_render(app)
         app.run(**render_config)
     else:
-        app.run(host="0.0.0.0", port=8000)
+        import sys
+        sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+        from port import get_port
+        port = get_port()
+        app.run(host="0.0.0.0", port=port)

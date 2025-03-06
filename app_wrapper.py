@@ -47,9 +47,8 @@ def fallback_health():
 # Try to import the main app
 try:
     logger.info("Importing main app...")
-    from app import app
-    logger.info("Successfully imported app")
-    application = app
+    from wsgi_app import application
+    logger.info("Successfully imported application")
 except Exception as e:
     logger.error(f"Error importing app: {e}")
     logger.warning("Using fallback app")
