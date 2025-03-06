@@ -3,7 +3,7 @@ set -e
 
 echo "Starting Harmonic Universe application..."
 
-# Make sure PORT is set (Render sets this automatically)
+# Make sure PORT is set
 if [ -z "$PORT" ]; then
     export PORT=10000
     echo "WARNING: PORT not set, using default value of $PORT"
@@ -11,11 +11,8 @@ else
     echo "Using PORT: $PORT"
 fi
 
-# Start with gunicorn using the PORT env variable
-exec gunicorn --bind "0.0.0.0:$PORT" wsgi:app \
-    --workers 1 \
-    --threads 2 \
-    --timeout 60 \
-    --log-level info \
-    --access-logfile '-' \
-    --error-logfile '-'
+# Export PYTHONPATH to ensure modules can be found
+export PYTHONPATH="$PWD:$PYTHONPATH"
+
+# Start with gunicorn
+exec gunicorn --bind "0.0.0.0:$PORT" --workers 1 --threads 2 --log-level info wsgi:app

@@ -221,9 +221,23 @@ def create_app():
 
         return minimal_app
 
-# Optional: Allow direct execution of this file
+# Create a global app instance if not already defined
+if 'app' not in globals():
+    try:
+        from app import create_app  # Import your factory function
+        app = create_app()  # Create the app
+    except ImportError:
+        print("Error: Cannot find create_app function")
+        sys.exit(1)
+
+# Run the application when executed directly
 if __name__ == "__main__":
-    # Get port from environment with fallback
-    port = int(os.environ.get("PORT", 10000))
-    print(f"Starting app on port {port}")
-    app.run(host="0.0.0.0", port=port)
+    try:
+        # Get port from environment with fallback
+        port = int(os.environ.get("PORT", 10000))
+        print(f"Starting app on port {port}")
+        app.run(host="0.0.0.0", port=port)
+    except Exception as e:
+        print(f"Error starting application: {e}")
+        traceback.print_exc()
+        sys.exit(1)
