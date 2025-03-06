@@ -73,20 +73,46 @@ If the frontend service fails:
 
 #### ES Module vs CommonJS Issues
 
-The project uses ES modules (`"type": "module"` in package.json) but some scripts require CommonJS:
+The project uses ES modules (`"type": "module"` in package.json), but some CommonJS modules like `glob` require special handling:
 
-- We've converted `clean-ant-icons.js` to `clean-ant-icons.cjs` to explicitly mark it as a CommonJS script
-- Any script using `require()` instead of `import` should use the `.cjs` extension
-- If you see errors like `ReferenceError: require is not defined in ES module scope`, you need to:
-  1. Rename the file to use the `.cjs` extension
-  2. Update any references to the file in package.json and other scripts
+##### Solution: Proper ES Module Import Pattern
+
+For CommonJS modules like `glob` in an ES module context, use this import pattern:
+
+```javascript
+// Import the CommonJS module correctly in ES module context
+import pkg from 'glob';
+const { glob } = pkg;
+
+// Then use glob as normal
+const files = glob.sync('*.js');
+```
+
+The above pattern allows you to:
+
+- Keep using `.js` file extensions
+- Maintain consistency with the ES modules approach
+- Properly import CommonJS modules
+
+If you see errors like `SyntaxError: Named export 'glob' not found. The requested module 'glob' is a CommonJS module...`:
+
+1. Use the import pattern above
+2. Don't use direct named imports like `import { glob } from 'glob'`
+
+##### Alternative: CommonJS Files
+
+You can also use `.cjs` extension for files that need to use CommonJS syntax:
+
+1. Rename your file to use `.cjs` extension
+2. Use `require()` syntax instead of `import`
+3. Update references in package.json
 
 ### Scripts Issues
 
 The application includes several build scripts:
 
 - `build.sh`: Used by backend service to install dependencies
-- `clean-ant-icons.cjs`: Modified to use CommonJS instead of ES modules
+- `clean-ant-icons.js`: Updated to use correct ES module import pattern for CommonJS modules
 
 If you encounter issues with these scripts:
 

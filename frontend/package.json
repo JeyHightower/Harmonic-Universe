@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/patch-vite-chunks.js && vite",
-    "build": "CI=false && node scripts/clean-index.js && node scripts/clean-ant-icons.cjs && node scripts/fix-ant-icons.js && node scripts/fix-ant-icons-jsx.js && vite build && node scripts/ensure-react-deps.js && node scripts/patch-ant-icons.js && node scripts/patch-ant-icons-inline.js && node scripts/check-ant-icons-files.js && node scripts/ensure-ant-icons.js && node scripts/render-post-build.js",
+    "build": "CI=false && node scripts/clean-index.js && node scripts/clean-ant-icons.js && node scripts/fix-ant-icons.js && node scripts/fix-ant-icons-jsx.js && vite build && node scripts/ensure-react-deps.js && node scripts/patch-ant-icons.js && node scripts/patch-ant-icons-inline.js && node scripts/check-ant-icons-files.js && node scripts/ensure-ant-icons.js && node scripts/render-post-build.js",
     "render-build": "NODE_OPTIONS=--max-old-space-size=3072 GENERATE_SOURCEMAP=false CI=false vite build --mode production",
     "simplified-build": "node postinstall.js && vite build --mode production && node scripts/ensure-ant-icons.js",
     "debug-build": "node debug-build.js",
@@ -15,7 +15,7 @@
     "test": "vitest",
     "check-icons": "node scripts/check-icons.js",
     "fix-icons": "node scripts/fix-ant-icons.js",
-    "clean-icons": "node scripts/clean-ant-icons.cjs",
+    "clean-icons": "node scripts/clean-ant-icons.js",
     "clean-index": "node scripts/clean-index.js",
     "merge-nested": "node scripts/merge-nested.js",
     "check-ant-build": "node scripts/check-ant-icons-files.js",

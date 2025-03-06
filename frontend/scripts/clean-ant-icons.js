@@ -1,9 +1,17 @@
 #!/usr/bin/env node
 
-// CommonJS version of clean-ant-icons.js
-const fs = require('fs');
-const path = require('path');
-const glob = require('glob');
+// Import the CommonJS module correctly in ES module context
+import pkg from 'glob';
+const { glob } = pkg;
+
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+// In ES modules, __dirname is not available directly
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Define the root directory and node_modules directory
 const rootDir = path.resolve(__dirname, '..');
