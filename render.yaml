@@ -2,16 +2,16 @@
 services:
   - type: web
     name: harmonic-universe
-    env: python
+    runtime: python
     buildCommand: chmod +x build.sh && ./build.sh
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: FLASK_APP=app.py gunicorn app:app --workers $WSGI_WORKERS --log-level info
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: FLASK_ENV
         value: production
       - key: SECRET_KEY
-        fromGroup: harmonic-universe
+        generateValue: true
       - key: NODE_VERSION
         value: 16.13.0
       - key: WEB_CONCURRENCY
