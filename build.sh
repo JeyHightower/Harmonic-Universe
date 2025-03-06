@@ -2,14 +2,18 @@
 # exit on error
 set -o errexit
 
-# Install backend dependencies
-pip install -r requirements.txt
+# Run the setup script
+./setup.sh
 
-# Navigate to frontend directory
-cd frontend
+# Check for installed packages
+pip list
 
-# Create crypto polyfill file
-cat > crypto-polyfill.cjs << 'EOL'
+# Navigate to frontend directory if it exists
+if [ -d "frontend" ]; then
+  cd frontend
+
+  # Create crypto polyfill file for Node.js
+  cat > crypto-polyfill.cjs << 'EOF'
 const crypto = require('crypto');
 
 // Add missing getRandomValues function to crypto
@@ -25,21 +29,18 @@ if (!crypto.getRandomValues) {
 
 // Monkey patch the global crypto object
 global.crypto = crypto;
-EOL
+EOF
 
-# Install frontend dependencies
-npm install
+  # Install frontend dependencies
+  npm install
 
-# Modify the build command to use the polyfill
-echo "Original build script in package.json will be used with the polyfill"
+  # Build with the polyfill
+  NODE_OPTIONS="--require ./crypto-polyfill.cjs" npm run build || {
+    echo "Build failed with polyfill. Attempting alternative approach..."
+    npm install --save-dev crypto-browserify
+    NODE_OPTIONS="--no-experimental-fetch" npm run build
+  }
 
-# Execute the build with the polyfill injected
-NODE_OPTIONS="--require ./crypto-polyfill.cjs" npm run build || {
-  echo "Build failed with polyfill. Attempting alternative approach..."
-  # If the first approach fails, try an alternative
-  npm install --save-dev crypto-browserify
-  NODE_OPTIONS="--no-experimental-fetch" npm run build
-}
-
-# Return to the project root
-cd ..
+  # Return to the project root
+  cd ..
+fi
