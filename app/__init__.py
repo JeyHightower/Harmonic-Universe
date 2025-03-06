@@ -19,31 +19,32 @@ migrate = Migrate()
 
 def create_app():
     """Application factory function"""
-    # Determine the static folder path - look for it relative to the current directory
-    # and also as an absolute path
-    static_folder = 'static'
-    static_folder_abs = None
+    # Find the project root directory (where the app module is)
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-    # Check for static folder in current directory
-    if os.path.exists('static'):
-        static_folder_abs = os.path.abspath('static')
-        logger.info(f"Static folder found at current directory: {static_folder_abs}")
-    # Check for static folder relative to this file
-    elif os.path.exists(os.path.join(os.path.dirname(__file__), '../static')):
-        static_folder = '../static'
-        static_folder_abs = os.path.abspath(os.path.join(os.path.dirname(__file__), '../static'))
-        logger.info(f"Static folder found relative to app: {static_folder_abs}")
-    # Check for static in parent directory
-    elif os.path.exists(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static')):
-        static_folder = '../static'
-        static_folder_abs = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static'))
-        logger.info(f"Static folder found in parent directory: {static_folder_abs}")
-    else:
-        # Create static folder if it doesn't exist anywhere
-        static_folder = 'static'
-        os.makedirs(static_folder, exist_ok=True)
-        static_folder_abs = os.path.abspath(static_folder)
-        logger.warning(f"Static folder not found, created at: {static_folder_abs}")
+    # Define the absolute path to the static folder
+    static_folder = os.path.join(project_root, 'static')
+
+    # Ensure the static folder exists
+    if not os.path.exists(static_folder):
+        try:
+            os.makedirs(static_folder, exist_ok=True)
+            logger.info(f"Created static folder at {static_folder}")
+        except Exception as e:
+            logger.error(f"Failed to create static folder: {e}")
+
+    # Log what we found
+    logger.info(f"Project root directory: {project_root}")
+    logger.info(f"Static folder absolute path: {static_folder}")
+    logger.info(f"Static folder exists: {os.path.exists(static_folder)}")
+
+    # If static folder exists, log its contents
+    if os.path.exists(static_folder):
+        try:
+            files = os.listdir(static_folder)
+            logger.info(f"Static folder contents: {files}")
+        except Exception as e:
+            logger.error(f"Could not list static folder contents: {e}")
 
     # Create the Flask app with the correct static folder
     app = Flask(__name__, static_folder=static_folder)
@@ -51,7 +52,6 @@ def create_app():
     # Log critical paths
     logger.info(f"Current directory: {os.getcwd()}")
     logger.info(f"App static folder: {app.static_folder}")
-    logger.info(f"Absolute static path: {static_folder_abs}")
     logger.info(f"Python path: {sys.path}")
 
     # Set up logging
