@@ -43,8 +43,21 @@ except Exception as e:
     # Continue anyway
 "
 
-# Create necessary directories
+# Debugging: Print current directory and environment
+echo "Current directory: $(pwd)"
+echo "Environment: RENDER=${RENDER}"
+
+# Static file handling - creating directories with explicit permissions
+echo "Ensuring static directories exist with correct permissions..."
 mkdir -p static
+chmod 755 static
+
+# Make sure the Render absolute path also exists
+if [ "$RENDER" = "true" ]; then
+    echo "Creating Render-specific static directories..."
+    mkdir -p /opt/render/project/src/static
+    chmod 755 /opt/render/project/src/static
+fi
 
 # Check if we have a frontend to build
 if [ -d "frontend" ]; then
@@ -62,14 +75,35 @@ if [ -d "frontend" ]; then
 
     # If build directory exists, copy or link files to where Flask expects them
     if [ -d "frontend/build" ]; then
-        echo "Frontend build directory found, linking to static files..."
+        echo "Frontend build directory found, copying to static files..."
         cp -R frontend/build/* static/
+
+        # Also copy to Render-specific location if on Render
+        if [ "$RENDER" = "true" ]; then
+            echo "Copying to Render-specific static path..."
+            cp -R frontend/build/* /opt/render/project/src/static/
+        fi
     elif [ -d "frontend/public" ]; then
-        echo "Frontend public directory found, linking to static files..."
+        echo "Frontend public directory found, copying to static files..."
         cp -R frontend/public/* static/
+
+        # Also copy to Render-specific location if on Render
+        if [ "$RENDER" = "true" ]; then
+            echo "Copying to Render-specific static path..."
+            cp -R frontend/public/* /opt/render/project/src/static/
+        fi
+    elif [ -d "frontend/dist" ]; then
+        echo "Frontend dist directory found, copying to static files..."
+        cp -R frontend/dist/* static/
+
+        # Also copy to Render-specific location if on Render
+        if [ "$RENDER" = "true" ]; then
+            echo "Copying to Render-specific static path..."
+            cp -R frontend/dist/* /opt/render/project/src/static/
+        fi
     else
-        echo "No frontend build or public directory found. Creating a minimal index.html"
-        # Create a minimal index.html
+        echo "No frontend build directory found. Creating a minimal index.html"
+        # Create a minimal index.html with proper permissions
         cat > static/index.html << 'EOF'
 <!DOCTYPE html>
 <html>
@@ -87,10 +121,34 @@ if [ -d "frontend" ]; then
 </body>
 </html>
 EOF
+        chmod 644 static/index.html
+
+        # Also copy to Render-specific location if on Render
+        if [ "$RENDER" = "true" ]; then
+            echo "Creating minimal index.html in Render-specific static path..."
+            cat > /opt/render/project/src/static/index.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Harmonic Universe</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        h1 { color: #333; }
+    </style>
+</head>
+<body>
+    <h1>Harmonic Universe</h1>
+    <p>Welcome to the Harmonic Universe application!</p>
+    <p>Frontend files not found. Please check your deployment configuration.</p>
+</body>
+</html>
+EOF
+            chmod 644 /opt/render/project/src/static/index.html
+        fi
     fi
 else
     echo "No frontend directory found. Creating a minimal index.html"
-    # Create a minimal index.html
+    # Create a minimal index.html with proper permissions
     cat > static/index.html << 'EOF'
 <!DOCTYPE html>
 <html>
@@ -108,11 +166,49 @@ else
 </body>
 </html>
 EOF
+    chmod 644 static/index.html
+
+    # Also copy to Render-specific location if on Render
+    if [ "$RENDER" = "true" ]; then
+        echo "Creating minimal index.html in Render-specific static path..."
+        cat > /opt/render/project/src/static/index.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Harmonic Universe</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        h1 { color: #333; }
+    </style>
+</head>
+<body>
+    <h1>Harmonic Universe</h1>
+    <p>Welcome to the Harmonic Universe application!</p>
+    <p>Frontend files not found. Please check your deployment configuration.</p>
+</body>
+</html>
+EOF
+        chmod 644 /opt/render/project/src/static/index.html
+    fi
 fi
+
+# Run the diagnostic script to verify and fix any issues
+echo "Running diagnostic script..."
+python render_diagnose.py
+
+# Run the static symlink script to ensure static files are accessible from all locations
+echo "Running static symlink script..."
+python app_static_symlink.py
 
 # List static directory contents for verification
 echo "Static directory contents:"
 ls -la static/
+
+# If on Render, also check the Render-specific path
+if [ "$RENDER" = "true" ]; then
+    echo "Render-specific static directory contents:"
+    ls -la /opt/render/project/src/static/
+fi
 
 # Log the absolute path for debugging
 echo "Absolute path to static directory: $(pwd)/static"

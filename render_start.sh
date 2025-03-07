@@ -1,180 +1,95 @@
 #!/bin/bash
-set -e # Exit immediately if a command exits with a non-zero status
+# Post-start script for Render.com
+# This runs just before the application starts
 
-echo "=== HARMONIC UNIVERSE STARTUP SCRIPT ==="
+set -e  # Exit on error
 
-# Set up environment variables
-export PYTHONUNBUFFERED=true  # Prevent Python from buffering stdout and stderr
+echo "=============== RENDER START SCRIPT ==============="
+echo "Current directory: $(pwd)"
+echo "Environment: RENDER=${RENDER}"
 
-echo "Setting up environment..."
+# Ensure static directory exists with correct permissions
+echo "Ensuring static directory exists..."
+mkdir -p static
+chmod 755 static
 
-# Check if gunicorn is installed and available
-if ! python -m pip show gunicorn > /dev/null 2>&1; then
-  echo "ERROR: Gunicorn not found, installing..."
-  python -m pip install gunicorn==21.2.0
+# Also ensure the Render-specific directory exists
+mkdir -p /opt/render/project/src/static
+chmod 755 /opt/render/project/src/static
+
+# Check if index.html exists in the static directory
+if [ ! -f "static/index.html" ]; then
+    echo "Creating emergency fallback index.html in static directory..."
+    cat > static/index.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Harmonic Universe</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        h1 { color: #333; }
+    </style>
+</head>
+<body>
+    <h1>Harmonic Universe</h1>
+    <p>Welcome to the Harmonic Universe application!</p>
+    <p>This page was created by the render_start.sh script as a fallback.</p>
+</body>
+</html>
+EOF
+    chmod 644 static/index.html
 fi
 
-echo "Python path before modifications:"
-python -c "import sys; print(sys.path)"
-
-echo "Checking gunicorn location:"
-which gunicorn || echo "gunicorn not found in PATH"
-
-echo "Gunicorn package info:"
-python -m pip show gunicorn
-
-echo "Starting application server..."
-
-# List files in key directories to help debugging
-echo "Files in current directory:"
-ls -la
-
-# First determine where our Flask app is located
-FLASK_APP=""
-FLASK_APP_DIR=""
-GUNICORN_APP=""
-
-if [ -d "backend" ] && [ -f "backend/app/__init__.py" ]; then
-  echo "Found Flask app in backend/app"
-  FLASK_APP="app.main:app"
-  FLASK_APP_DIR="backend"
-  GUNICORN_APP="app.main:app"
-elif [ -d "backend" ] && [ -f "backend/main.py" ]; then
-  echo "Found Flask app in backend/main.py"
-  FLASK_APP="main:app"
-  FLASK_APP_DIR="backend"
-  GUNICORN_APP="main:app"
-elif [ -d "backend" ] && [ -f "backend/app.py" ]; then
-  echo "Found Flask app in backend/app.py"
-  FLASK_APP="app:app"
-  FLASK_APP_DIR="backend"
-  GUNICORN_APP="app:app"
-elif [ -d "app" ] && [ -f "app/__init__.py" ]; then
-  echo "Found Flask app in app"
-  FLASK_APP="app.main:app"
-  FLASK_APP_DIR="."
-  GUNICORN_APP="app.main:app"
-elif [ -f "app.py" ]; then
-  echo "Found Flask app in app.py"
-  FLASK_APP="app:app"
-  FLASK_APP_DIR="."
-  GUNICORN_APP="app:app"
-else
-  echo "WARNING: Could not locate Flask app"
-  echo "Tried looking in: backend/app, backend/main.py, backend/app.py, app/, and app.py"
-  echo "Will use default: app.main:app in backend/"
-  FLASK_APP="app.main:app"
-  FLASK_APP_DIR="backend"
-  GUNICORN_APP="app.main:app"
+# Check if index.html exists in the Render-specific static directory
+if [ ! -f "/opt/render/project/src/static/index.html" ]; then
+    echo "Creating emergency fallback index.html in Render-specific static directory..."
+    cat > /opt/render/project/src/static/index.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Harmonic Universe</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        h1 { color: #333; }
+    </style>
+</head>
+<body>
+    <h1>Harmonic Universe</h1>
+    <p>Welcome to the Harmonic Universe application!</p>
+    <p>This page was created by the render_start.sh script as a fallback.</p>
+</body>
+</html>
+EOF
+    chmod 644 /opt/render/project/src/static/index.html
 fi
 
-echo "Using Flask app: $FLASK_APP in directory: $FLASK_APP_DIR"
-
-# Navigate to the Flask app directory
-cd $FLASK_APP_DIR
-echo "Working directory: $(pwd)"
-
-# Set environment variables for Flask
-export FLASK_APP=$FLASK_APP
-export PYTHONPATH=$PYTHONPATH:$(pwd)
-
-echo "Final environment:"
-echo "PYTHONPATH: $PYTHONPATH"
-echo "FLASK_APP: $FLASK_APP"
-echo "Working directory: $(pwd)"
-
-# List files again after changing directory
-echo "Files in application directory:"
-ls -la
-
-# Check if our target app file exists
-python -c "import importlib.util; print('App module can be imported:' if importlib.util.find_spec('$GUNICORN_APP'.split(':')[0].replace('.', '/')) else 'App module NOT FOUND')" || echo "Error checking module"
-
-echo "Python path after modifications:"
-python -c "import sys; print(sys.path)"
-
-echo "Starting Gunicorn with app: $GUNICORN_APP"
-
-# Check if tables exist but alembic_version doesn't
-echo "Checking database state..."
-python -c "
-import os
-from sqlalchemy import create_engine, inspect, text
-import psycopg2
-
-# The specific problematic migration ID from the error message
-MIGRATION_ID = '60ebacf5d282'
-
-database_url = os.environ.get('DATABASE_URL')
-if not database_url:
-    print('DATABASE_URL not found')
-    exit(1)
-
-try:
-    engine = create_engine(database_url)
-    inspector = inspect(engine)
-    tables = inspector.get_table_names()
-
-    print(f'Existing tables: {tables}')
-
-    if 'users' in tables:
-        alembic_exists = 'alembic_version' in tables
-
-        if not alembic_exists:
-            print('Creating alembic_version table...')
-            with engine.connect() as conn:
-                conn.execute(text('CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) PRIMARY KEY)'))
-                conn.execute(text(f\"\"\"
-                INSERT INTO alembic_version (version_num)
-                VALUES ('{MIGRATION_ID}')
-                ON CONFLICT (version_num) DO NOTHING
-                \"\"\"))
-                conn.commit()
-                print(f'Database stamped with migration ID: {MIGRATION_ID}')
-        else:
-            # Check if a specific migration needs to be set
-            with engine.connect() as conn:
-                result = conn.execute(text('SELECT version_num FROM alembic_version'))
-                rows = result.fetchall()
-                if rows:
-                    print(f'Current migration version: {rows[0][0]}')
-                    if rows[0][0] != MIGRATION_ID:
-                        print(f'Updating migration version to {MIGRATION_ID}...')
-                        conn.execute(text('DELETE FROM alembic_version'))
-                        conn.execute(text(f\"\"\"
-                        INSERT INTO alembic_version (version_num)
-                        VALUES ('{MIGRATION_ID}')
-                        \"\"\"))
-                        conn.commit()
-                        print('Migration version updated')
-                else:
-                    print('No migration version found, setting one...')
-                    conn.execute(text(f\"\"\"
-                    INSERT INTO alembic_version (version_num)
-                    VALUES ('{MIGRATION_ID}')
-                    \"\"\"))
-                    conn.commit()
-                    print(f'Migration version set to {MIGRATION_ID}')
-except Exception as e:
-    print(f'Error checking database: {e}')
-    # Continue anyway - we don't want to fail the build
-"
-
-# Use right FLASK_APP based on location
-if [ -f "app/main.py" ]; then
-    export FLASK_APP=app.main:app
-elif [ -f "wsgi.py" ]; then
-    export FLASK_APP=wsgi:app
+# Copy static files from local directory to Render-specific path if they exist
+if [ -d "static" ] && [ "$(ls -A static 2>/dev/null)" ]; then
+    echo "Copying static files to Render-specific path..."
+    cp -R static/* /opt/render/project/src/static/
 fi
 
-echo "FLASK_APP set to: $FLASK_APP"
+# Run the static symlink script if available
+if [ -f "app_static_symlink.py" ]; then
+    echo "Running static symlink script..."
+    python app_static_symlink.py
+fi
 
-# Now proceed with normal startup
+# List static directory contents for verification
+echo "Local static directory contents:"
+ls -la static/
+
+echo "Render-specific static directory contents:"
+ls -la /opt/render/project/src/static/
+
+# Run the diagnostic Python script if available
+if [ -f "render_diagnose.py" ]; then
+    echo "Running diagnostic script..."
+    python render_diagnose.py
+fi
+
+echo "Start script completed successfully"
 echo "Starting application..."
-if [ -n "$PORT" ]; then
-    echo "Using PORT: $PORT"
-    gunicorn --bind 0.0.0.0:$PORT $FLASK_APP
-else
-    echo "No PORT specified, using default 8000"
-    gunicorn --bind 0.0.0.0:8000 $FLASK_APP
-fi
+
+# Pass control to gunicorn
+exec gunicorn wsgi:app
