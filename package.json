@@ -1,32 +1,35 @@
 {
   "name": "harmonic-universe",
   "version": "1.0.0",
-  "description": "Create and manage your universe and scenes",
+  "description": "Physics-based music generation application",
   "main": "index.js",
   "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "dev:frontend": "cd frontend && npm run dev",
     "dev:backend": "cd backend && python run.py",
-    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "start": "npm run start:backend",
+    "start:backend": "cd backend && python run.py",
+    "start:frontend": "cd frontend && npm run start",
+    "build": "cd frontend && npm run build",
+    "test": "concurrently \"npm run test:frontend\" \"npm run test:backend\"",
+    "test:frontend": "cd frontend && npm run test",
+    "test:backend": "cd backend && pytest",
+    "fix-frontend": "cd frontend && node scripts/fix-vite-deps.js",
     "install:all": "npm install && cd frontend && npm install && cd ../backend && pip install -r requirements.txt",
-    "build": "react-scripts build",
     "render-build": "cd frontend && npm run render-build && node scripts/generate-ant-icons-fallback.js",
     "generate-ant-fallback": "cd frontend && node scripts/generate-ant-icons-fallback.js",
     "test-ant-fallback": "cd frontend && node scripts/test-ant-icons-fallback.js",
-    "test:frontend": "cd frontend && npm test",
-    "test:backend": "cd backend && echo 'Skipping backend tests for now'",
-    "test": "react-scripts test",
     "lint:frontend": "cd frontend && npm run lint",
     "lint:backend": "cd backend && flake8",
     "lint": "npm run lint:frontend && npm run lint:backend",
     "clean": "rm -rf frontend/build backend/dist frontend/node_modules node_modules",
     "deploy": "./build.sh",
-    "start": "react-scripts start",
     "eject": "react-scripts eject"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
     "cliui": "^8.0.1",
-    "concurrently": "^8.2.2"
+    "concurrently": "^7.6.0"
   },
   "resolutions": {
     "react-is": "^18.2.0"
@@ -53,5 +56,15 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "engines": {
+    "node": ">=14",
+    "npm": ">=6"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/harmonic-universe.git"
+  },
+  "author": "",
+  "license": "MIT"
 }

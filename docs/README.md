@@ -27,6 +27,7 @@ Users can:
 - [Usage](#usage)
 - [API Documentation](#api-documentation)
 - [Modal System](#modal-system)
+- [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -290,6 +291,84 @@ All modals are registered in a central registry, making it easy to manage and up
 - Props transformation
 - Modal configuration
 - Deep linking support
+
+## Troubleshooting
+
+Harmonic Universe includes several built-in troubleshooting tools to help diagnose and resolve common issues.
+
+### Troubleshooting Tools
+
+1. **Web-based Troubleshooting Page**
+
+   - Access the troubleshooting dashboard at `/troubleshoot`
+   - Provides real-time information about application status, database connection, and static files
+   - Includes common solutions for typical issues
+
+2. **API Troubleshooting Endpoint**
+
+   - `GET /api/troubleshoot` returns detailed system information in JSON format
+   - Useful for programmatic monitoring and diagnostics
+
+3. **Command-line Diagnostic Tool**
+   - Run `python check_app.py` to get a comprehensive status report
+   - Shows database status, migration status, and application health
+   - Use `python check_app.py --verbose` for more detailed output
+
+### Common Issues and Solutions
+
+#### Database Migration Issues
+
+If you encounter database migration errors (e.g., `DuplicateTable` errors):
+
+1. Run the migration fix script:
+
+   ```bash
+   python fix_migrations.py
+   ```
+
+2. Check migration status:
+
+   ```bash
+   flask db current
+   ```
+
+3. If needed, mark migrations as applied without running them:
+   ```bash
+   flask db stamp head
+   ```
+
+#### Static File Serving Issues
+
+If static files aren't being served correctly:
+
+1. Verify the static directory exists and contains the required files
+2. Check file permissions
+3. Ensure the application is configured to serve static files correctly
+
+#### Application Not Starting
+
+If the application fails to start:
+
+1. Check environment variables (especially `DATABASE_URL`)
+2. Verify database connectivity
+3. Check for errors in the application logs
+4. Run the diagnostic tool: `python check_app.py`
+
+#### Deployment Issues
+
+For Render deployment issues:
+
+1. Check the Render logs for specific error messages
+2. Verify environment variables are set correctly in the Render dashboard
+3. Ensure the build and start commands are configured properly in `render.yaml`
+
+### Getting Help
+
+If you're still experiencing issues after using the troubleshooting tools:
+
+1. Check the GitHub Issues page for similar problems and solutions
+2. Join our Discord community for real-time help
+3. Submit a detailed bug report including the output from `python check_app.py --verbose`
 
 ## Contributing
 

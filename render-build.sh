@@ -11,6 +11,11 @@ echo "Python executable: $(which python)"
 export PGCONNECT_TIMEOUT=10
 export PGSSLMODE=require
 
+# Check if we should skip database upgrades
+if [ "$SKIP_DB_UPGRADE" = "true" ]; then
+    echo "SKIP_DB_UPGRADE is set, will not run database migrations"
+fi
+
 # Install system dependencies - PostgreSQL client libraries
 echo "Installing system dependencies..."
 apt-get update -qq
@@ -83,6 +88,46 @@ python -m pip list
 # Create a marker file to indicate successful dependency installation
 echo "Creating dependency marker file..."
 echo "Dependencies installed on $(date)" > .deps_installed
+
+# Check database connectivity and handle migrations
+if [ "$SKIP_DB_UPGRADE" != "true" ]; then
+    echo "Checking database connection and tables status..."
+    python -c "
+import os, sys, psycopg2
+try:
+    conn = psycopg2.connect(os.environ['DATABASE_URL'])
+    cursor = conn.cursor()
+    cursor.execute(\"\"\"
+        SELECT COUNT(*)
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+    \"\"\")
+    count = cursor.fetchone()[0]
+    print(f'Found {count} tables in database')
+
+    if count > 0:
+        print('Tables already exist, skipping migrations')
+        sys.exit(0)
+    else:
+        print('No tables found, migrations will be run')
+        sys.exit(1)
+except Exception as e:
+    print(f'Error checking database: {e}')
+    sys.exit(2)
+"
+    DB_STATUS=$?
+
+    if [ $DB_STATUS -eq 1 ]; then
+        echo "Running database migrations..."
+        python -m flask db upgrade
+    elif [ $DB_STATUS -eq 0 ]; then
+        echo "Database tables already exist, skipping migrations"
+    else
+        echo "WARNING: Error checking database connectivity, proceeding anyway"
+    fi
+else
+    echo "Skipping database migrations as SKIP_DB_UPGRADE is set"
+fi
 
 # Handle static files
 echo "=== Setting up static files ==="
@@ -259,59 +304,8 @@ if [ -f "db_connect.sh" ]; then
     echo "Testing database connection with db_connect.sh..."
     # Run but don't fail the build if it fails
     ./db_connect.sh || echo "Database connection test failed, but continuing build"
-else
-    echo "Creating emergency database connection test..."
-    cat > db_test.py << EOF
-#!/usr/bin/env python
-import os
-import sys
-import time
-
-def test_connection():
-    url = os.environ.get('DATABASE_URL')
-    if not url:
-        print("No DATABASE_URL environment variable found")
-        return False
-
-    for adapter in ['psycopg2', 'pg8000', 'psycopg']:
-        try:
-            print(f"Trying {adapter}...")
-            if adapter == 'psycopg2':
-                import psycopg2
-                conn = psycopg2.connect(url)
-            elif adapter == 'pg8000':
-                import pg8000.native
-                conn = pg8000.native.Connection(url)
-            elif adapter == 'psycopg':
-                import psycopg
-                conn = psycopg.connect(url)
-
-            cursor = conn.cursor()
-            cursor.execute('SELECT 1')
-            print(f"{adapter} connection successful!")
-            conn.close()
-            return True
-        except Exception as e:
-            print(f"{adapter} connection error: {e}")
-
-    return False
-
-# Retry logic
-retries = 3
-for i in range(retries):
-    print(f"Connection attempt {i+1}/{retries}")
-    if test_connection():
-        sys.exit(0)
-    if i < retries - 1:
-        print(f"Retrying in 5 seconds...")
-        time.sleep(5)
-
-print("All connection attempts failed")
-# Don't fail the build
-sys.exit(0)
-EOF
-    chmod +x db_test.py
-    python db_test.py
 fi
 
+# Create a marker file to indicate successful build
+echo "Build completed on $(date)" > .build_completed
 echo "=== Build Complete ==="

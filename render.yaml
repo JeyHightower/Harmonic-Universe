@@ -4,7 +4,16 @@ services:
   - type: web
     name: harmonic-universe-api
     runtime: python
-    buildCommand: python -m pip install -U pip && python -m pip install gunicorn==20.1.0 Flask==2.0.1 psycopg2-binary==2.9.9 && chmod +x ./render-build.sh && ./render-build.sh
+    buildCommand: >
+      # Initial setup
+      python -m pip install -U pip &&
+      python -m pip install gunicorn==20.1.0 Flask==2.0.1 psycopg2-binary==2.9.9 sqlalchemy &&
+      chmod +x ./render-build.sh &&
+      # Migration fix - run before the build script
+      chmod +x fix_migrations.py &&
+      python fix_migrations.py || echo "Migration fix completed or failed, continuing build" &&
+      # Run the main build script
+      ./render-build.sh
     startCommand: chmod +x render_deploy.sh && ./render_deploy.sh
     envVars:
       - key: PYTHON_VERSION
@@ -38,6 +47,8 @@ services:
       - key: PIP_PREFER_BINARY
         value: 'true'
       - key: DEBUG_STATIC_PATH
+        value: 'true'
+      - key: SKIP_DB_UPGRADE
         value: 'true'
     healthCheckPath: /api/health
 
