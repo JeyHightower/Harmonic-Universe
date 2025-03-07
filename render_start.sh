@@ -4,9 +4,56 @@
 
 set -e  # Exit on error
 
-echo "=============== RENDER START SCRIPT ==============="
+echo "=== Starting Harmonic Universe ==="
+echo "Date: $(date)"
+echo "Python version: $(python --version)"
 echo "Current directory: $(pwd)"
-echo "Environment: RENDER=${RENDER}"
+
+# Ensure static directory exists
+STATIC_DIR=${STATIC_DIR:-"/opt/render/project/src/static"}
+mkdir -p "$STATIC_DIR"
+chmod 755 "$STATIC_DIR"
+
+# Copy static files if they exist in the local static directory
+if [ -d "static" ] && [ "$(ls -A static 2>/dev/null)" ]; then
+    echo "Copying static files to $STATIC_DIR..."
+    cp -R static/* "$STATIC_DIR/"
+fi
+
+# Create minimal index.html if it doesn't exist
+if [ ! -f "$STATIC_DIR/index.html" ]; then
+    echo "Creating minimal index.html..."
+    cat > "$STATIC_DIR/index.html" << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Harmonic Universe</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        h1 { color: #333; }
+    </style>
+</head>
+<body>
+    <h1>Harmonic Universe</h1>
+    <p>Application is running! This is a test page.</p>
+    <div id="api-status">Checking API status...</div>
+    <script>
+        fetch('/api/health')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('api-status').innerHTML =
+                    'API Status: <span style="color:' + (data.status === 'healthy' ? 'green' : 'red') + '">' + data.status + '</span>';
+            })
+            .catch(error => {
+                document.getElementById('api-status').innerHTML =
+                    'API Status: <span style="color:red">Connection Failed</span>';
+            });
+    </script>
+</body>
+</html>
+EOF
+    chmod 644 "$STATIC_DIR/index.html"
+fi
 
 # Ensure virtual environment exists
 if [ ! -d ".venv" ]; then
@@ -35,32 +82,20 @@ print(f'Flask-SQLAlchemy version: {flask_sqlalchemy.__version__}')
 print('All required packages are available')
 "
 
-# Ensure static directory exists with correct permissions
-echo "Ensuring static directory exists..."
-mkdir -p /opt/render/project/src/static
-chmod -R 755 /opt/render/project/src/static
-
-# Verify static directory
-echo "Verifying static directory..."
-ls -la /opt/render/project/src/static/
-
-# Check for index.html
-if [ ! -f "/opt/render/project/src/static/index.html" ]; then
-    echo "WARNING: index.html not found in static directory!"
-    echo "Attempting to copy from local static directory..."
-    if [ -f "static/index.html" ]; then
-        cp static/index.html /opt/render/project/src/static/
-        chmod 644 /opt/render/project/src/static/index.html
-    fi
-fi
-
 # Export additional environment variables
 export PYTHONUNBUFFERED=1
 export FLASK_ENV=production
-export STATIC_DIR=/opt/render/project/src/static
+export STATIC_DIR="$STATIC_DIR"
 
 echo "Start script completed successfully"
 echo "Starting application with Gunicorn..."
 
 # Start Gunicorn with our configuration
-exec gunicorn -c gunicorn.conf.py wsgi:app
+exec gunicorn -c gunicorn.conf.py wsgi:app \
+    --bind 0.0.0.0:$PORT \
+    --workers 4 \
+    --threads 2 \
+    --timeout 120 \
+    --access-logfile - \
+    --error-logfile - \
+    --log-level debug

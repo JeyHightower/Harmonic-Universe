@@ -2,62 +2,24 @@
 services:
   # Backend API service (Flask)
   - type: web
-    name: harmonic-universe-api
+    name: harmonic-universe
     runtime: python
-    buildCommand: >
-      chmod +x render_build.sh render_start.sh &&
-      ./render_build.sh
+    buildCommand: ./render_build.sh
     startCommand: ./render_start.sh
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.0
+        value: 3.9.18
+      - key: STATIC_DIR
+        value: /opt/render/project/src/static
+      - key: FLASK_APP
+        value: wsgi.py
       - key: FLASK_ENV
         value: production
-      - key: SECRET_KEY
-        generateValue: true
-      - key: PYTHONPATH
-        value: /opt/render/project/src:/opt/render/project/src/.venv/lib/python3.11/site-packages
       - key: FLASK_DEBUG
         value: '0'
-      - key: DATABASE_URL
-        fromDatabase:
-          name: harmonic-universe-db
-          property: connectionString
-      - key: FRONTEND_URL
-        value: https://harmonic-universe-frontend.onrender.com
-      - key: PGCONNECT_TIMEOUT
-        value: '10'
-      - key: DB_CONNECT_RETRY
-        value: '3'
-      - key: PYTHONUNBUFFERED
-        value: 'true'
-      - key: RENDER_DEPLOYMENT
-        value: 'true'
-      - key: PIP_NO_CACHE_DIR
-        value: 'true'
-      - key: PIP_PREFER_BINARY
-        value: 'true'
-      - key: DEBUG_STATIC_PATH
-        value: 'true'
-      - key: SKIP_DB_UPGRADE
-        value: 'true'
-      - key: FLASK_NO_MIGRATE
-        value: 'true'
-      - key: RENDER
-        value: 'true'
-      - key: STATIC_DIR
-        value: '/opt/render/project/src/static'
-      - key: VIRTUAL_ENV
-        value: /opt/render/project/src/.venv
-      - key: PATH
-        value: /opt/render/project/src/.venv/bin:/usr/local/bin:/usr/bin:/bin
-      - key: PORT
-        value: '10000'
-      - key: GUNICORN_CMD_ARGS
-        value: '--log-level=debug --timeout=120 --workers=4 --threads=2'
       - key: STATIC_URL_PATH
         value: ''
-    healthCheckPath: /health
+    healthCheckPath: /api/health
 
   # Frontend service (React)
   - type: web
