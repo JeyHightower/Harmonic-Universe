@@ -58,6 +58,8 @@ def create_app(test_config=None):
     if test_config is None:
         try:
             app.config.from_object(current_config)
+            app.static_folder = current_config.STATIC_FOLDER
+            logger.info(f"Using static folder: {app.static_folder}")
             logger.info("Loaded configuration from current_config")
         except (NameError, ImportError) as e:
             logger.warning(f"Could not load current_config: {e}, using minimal config")
@@ -209,20 +211,14 @@ def create_app(test_config=None):
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
     def serve_app(path):
-        static_folder = app.static_folder
-        if path and os.path.exists(os.path.join(static_folder, path)):
-            return send_from_directory(static_folder, path)
-        else:
-            # Try to find index.html
-            index_file = os.path.join(static_folder, 'index.html')
-            if os.path.exists(index_file):
-                return send_from_directory(static_folder, 'index.html')
-            else:
-                # If no index.html, try to send a default page
-                return jsonify({
-                    "status": "Harmonic Universe API is running",
-                    "message": "Frontend not built or not found. Try running the build.sh script."
-                })
+        if not path:
+            path = 'index.html'
+
+        if os.path.exists(os.path.join(app.static_folder, path)):
+            return send_from_directory(app.static_folder, path)
+
+        # Default to index.html for client-side routing
+        return send_from_directory(app.static_folder, 'index.html')
 
     logger.info("App setup complete")
     return app

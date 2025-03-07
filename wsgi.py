@@ -4,6 +4,7 @@ import os
 import sys
 import logging
 from app import create_app
+from config import current_config
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -22,6 +23,6 @@ app = create_app()
 
 if __name__ == "__main__":
     # Run the application in development
-    port = int(os.environ.get('PORT', 5000))
+    port = current_config.PORT
     logger.info(f"Starting development server on port {port}")
     app.run(host="0.0.0.0", port=port, debug=True)

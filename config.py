@@ -33,6 +33,14 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
 
+class DeploymentConfig:
+    """Configuration for deployment environment"""
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-key-123')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///app.db')
+    PORT = int(os.environ.get('PORT', 10000))  # Default to port 10000 for deployment
+    STATIC_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+
 # Set the active configuration based on environment
 config_map = {
     'development': DevelopmentConfig,
@@ -44,3 +52,6 @@ config_map = {
 # Get the current configuration
 env = os.environ.get('FLASK_ENV', 'default')
 current_config = config_map.get(env, config_map['default'])
+
+# Update the current config to use deployment settings
+current_config = DeploymentConfig
