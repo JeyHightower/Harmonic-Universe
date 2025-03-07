@@ -2,6 +2,7 @@ import os
 import logging
 import multiprocessing
 import time
+import shutil
 
 # Basic configuration
 bind = "0.0.0.0:10000"
@@ -41,6 +42,7 @@ def verify_static_directory():
         # Ensure directory exists
         os.makedirs(static_dir, exist_ok=True)
         os.chmod(static_dir, 0o755)
+        logger.info(f"Static directory verified: {static_dir}")
 
         # Check contents
         contents = os.listdir(static_dir)
@@ -53,6 +55,19 @@ def verify_static_directory():
         else:
             logger.error(f"index.html not found at {index_path}")
             return False
+
+        # Copy frontend build files if they exist
+        frontend_build = os.path.join('frontend', 'dist')
+        if os.path.exists(frontend_build):
+            logger.info(f"Found frontend build directory: {frontend_build}")
+            for item in os.listdir(frontend_build):
+                src = os.path.join(frontend_build, item)
+                dst = os.path.join(static_dir, item)
+                if os.path.isfile(src):
+                    shutil.copy2(src, dst)
+                elif os.path.isdir(src):
+                    shutil.copytree(src, dst, dirs_exist_ok=True)
+            logger.info("Copied frontend build files to static directory")
 
         return True
     except Exception as e:
@@ -105,6 +120,10 @@ def when_ready(server):
             logger.info("Health check passed")
         else:
             logger.error(f"Health check failed with status: {response.getcode()}")
+
+        # Log response content for debugging
+        content = response.read().decode('utf-8')
+        logger.info(f"Health check response: {content}")
     except Exception as e:
         logger.error(f"Error checking health endpoint: {e}")
 

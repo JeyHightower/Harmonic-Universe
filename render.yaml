@@ -53,6 +53,10 @@ services:
         value: /opt/render/project/src/.venv/bin:/usr/local/bin:/usr/bin:/bin
       - key: PORT
         value: '10000'
+      - key: GUNICORN_CMD_ARGS
+        value: '--log-level=debug --timeout=120 --workers=4 --threads=2'
+      - key: STATIC_URL_PATH
+        value: ''
     healthCheckPath: /health
 
   # Frontend service (React)

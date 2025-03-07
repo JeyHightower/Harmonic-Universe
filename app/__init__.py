@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
 import os
+import shutil
 from dotenv import load_dotenv
 import logging
 import sys
@@ -22,6 +23,84 @@ logger = logging.getLogger("app_init")
 db = SQLAlchemy()
 migrate = Migrate()
 
+def ensure_static_directory(app):
+    """Ensure static directory exists and contains necessary files"""
+    static_dir = app.config['STATIC_FOLDER']
+    try:
+        # Create static directory if it doesn't exist
+        os.makedirs(static_dir, exist_ok=True)
+        os.chmod(static_dir, 0o755)
+        logger.info(f"Ensured static directory exists: {static_dir}")
+
+        # Create index.html if it doesn't exist
+        index_path = os.path.join(static_dir, 'index.html')
+        if not os.path.exists(index_path):
+            with open(index_path, 'w') as f:
+                f.write("""<!DOCTYPE html>
+<html>
+<head>
+    <title>Harmonic Universe</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+            background-color: #f5f5f5;
+        }
+        h1 { color: #333; }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Harmonic Universe</h1>
+        <p>Welcome to the Harmonic Universe application!</p>
+        <p id="status">Checking application status...</p>
+    </div>
+    <script>
+        fetch('/health')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('status').textContent =
+                    'Status: ' + (data.status || 'Unknown');
+            })
+            .catch(error => {
+                document.getElementById('status').textContent =
+                    'Status: Connection Error';
+            });
+    </script>
+</body>
+</html>""")
+            os.chmod(index_path, 0o644)
+            logger.info(f"Created index.html at {index_path}")
+
+        # Copy frontend build files if they exist
+        frontend_build = os.path.join('frontend', 'dist')
+        if os.path.exists(frontend_build):
+            for item in os.listdir(frontend_build):
+                src = os.path.join(frontend_build, item)
+                dst = os.path.join(static_dir, item)
+                if os.path.isfile(src):
+                    shutil.copy2(src, dst)
+                elif os.path.isdir(src):
+                    shutil.copytree(src, dst, dirs_exist_ok=True)
+            logger.info("Copied frontend build files to static directory")
+
+        return True
+    except Exception as e:
+        logger.error(f"Static directory setup failed: {e}")
+        logger.error(traceback.format_exc())
+        return False
+
 def create_app():
     """Application factory function"""
     # Get static folder from environment or use default
@@ -29,8 +108,7 @@ def create_app():
     logger.info(f"Using static folder: {static_folder}")
 
     # Create and configure the Flask app
-    app = Flask(__name__,
-                static_folder=None)  # Disable automatic static serving
+    app = Flask(__name__, static_folder=static_folder, static_url_path='')
 
     # Enable CORS
     CORS(app)
@@ -44,48 +122,10 @@ def create_app():
         STATIC_FOLDER=static_folder,
     )
 
-    # Ensure static directory exists
-    try:
-        os.makedirs(static_folder, exist_ok=True)
-        os.chmod(static_folder, 0o755)
-        logger.info(f"Static directory ready: {static_folder}")
-
-        # List contents of static directory
-        if os.path.exists(static_folder):
-            contents = os.listdir(static_folder)
-            logger.info(f"Static directory contents: {contents}")
-
-            # Check index.html
-            index_path = os.path.join(static_folder, 'index.html')
-            if os.path.exists(index_path):
-                logger.info(f"index.html found: {index_path}")
-                logger.info(f"index.html permissions: {oct(os.stat(index_path).st_mode)[-3:]}")
-            else:
-                logger.warning(f"index.html not found at {index_path}")
-                # Create a minimal index.html
-                with open(index_path, 'w') as f:
-                    f.write("""
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Harmonic Universe</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-        h1 { color: #333; }
-    </style>
-</head>
-<body>
-    <h1>Harmonic Universe</h1>
-    <p>Welcome to the Harmonic Universe application!</p>
-</body>
-</html>
-""")
-                os.chmod(index_path, 0o644)
-                logger.info("Created minimal index.html")
-    except Exception as e:
-        logger.error(f"Static directory setup failed: {e}")
-        logger.error(traceback.format_exc())
-        raise
+    # Ensure static directory is set up
+    if not ensure_static_directory(app):
+        logger.error("Failed to set up static directory")
+        raise RuntimeError("Static directory setup failed")
 
     # Initialize extensions
     db.init_app(app)
@@ -101,24 +141,34 @@ def create_app():
     @app.before_request
     def log_request_info():
         logger.info(f"Request: {request.method} {request.path}")
-        logger.info(f"Headers: {dict(request.headers)}")
 
     # Health check endpoint
     @app.route('/health')
     def health():
         try:
-            static_exists = os.path.exists(app.config['STATIC_FOLDER'])
-            index_exists = os.path.exists(os.path.join(app.config['STATIC_FOLDER'], 'index.html'))
-            static_contents = os.listdir(app.config['STATIC_FOLDER']) if static_exists else []
+            # Verify static directory
+            static_dir = app.config['STATIC_FOLDER']
+            static_exists = os.path.exists(static_dir)
+            index_exists = os.path.exists(os.path.join(static_dir, 'index.html'))
+            static_contents = os.listdir(static_dir) if static_exists else []
+
+            # Check database connection
+            db_healthy = True
+            try:
+                db.session.execute('SELECT 1')
+            except Exception as e:
+                db_healthy = False
+                logger.error(f"Database health check failed: {e}")
 
             response = {
-                "status": "healthy",
+                "status": "healthy" if (static_exists and index_exists and db_healthy) else "unhealthy",
                 "static": {
                     "exists": static_exists,
-                    "path": app.config['STATIC_FOLDER'],
+                    "path": static_dir,
                     "index": index_exists,
                     "contents": static_contents
                 },
+                "database": "connected" if db_healthy else "disconnected",
                 "environment": {
                     "python_path": sys.path,
                     "virtual_env": os.environ.get('VIRTUAL_ENV'),
@@ -127,7 +177,7 @@ def create_app():
                 }
             }
             logger.info(f"Health check response: {response}")
-            return jsonify(response), 200
+            return jsonify(response), 200 if response["status"] == "healthy" else 500
         except Exception as e:
             error_response = {
                 "status": "unhealthy",
@@ -146,19 +196,22 @@ def create_app():
             if path.startswith('api/'):
                 return jsonify({"error": "Not found"}), 404
 
-            static_folder = app.config['STATIC_FOLDER']
-            file_path = os.path.join(static_folder, path)
+            if path == 'health':
+                return health()
+
+            static_dir = app.config['STATIC_FOLDER']
+            file_path = os.path.join(static_dir, path)
 
             if os.path.exists(file_path) and os.path.isfile(file_path):
                 logger.info(f"Serving static file: {file_path}")
                 try:
-                    return send_from_directory(static_folder, path)
+                    return send_from_directory(static_dir, path)
                 except Exception as e:
                     logger.error(f"Error sending file {path}: {e}")
                     return jsonify({"error": "File serving error"}), 500
             else:
                 logger.info(f"File {path} not found, serving index.html")
-                return send_from_directory(static_folder, 'index.html')
+                return send_from_directory(static_dir, 'index.html')
         except Exception as e:
             logger.error(f"Error serving {path}: {e}")
             logger.error(traceback.format_exc())
