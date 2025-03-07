@@ -50,21 +50,80 @@ if not os.path.exists(render_index):
     try:
         with open(render_index, 'w') as f:
             f.write("""<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Harmonic Universe</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-        h1 { color: #333; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            color: #333;
+        }
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        main {
+            flex: 1;
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .status-box {
+            background-color: white;
+            border-radius: 8px;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { margin: 0; color: white; }
+        h2 { color: #2c3e50; }
     </style>
 </head>
 <body>
-    <h1>Harmonic Universe</h1>
-    <p>Welcome to the Harmonic Universe application!</p>
-    <p>Created by wsgi.py on startup.</p>
+    <header>
+        <h1>Harmonic Universe</h1>
+        <p>Interactive Music Experience</p>
+    </header>
+    <main>
+        <div class="status-box">
+            <h2>Application Status</h2>
+            <p id="status-message">Checking application status...</p>
+        </div>
+    </main>
+    <script>
+        // Function to check API health
+        async function checkHealth() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                document.getElementById('status-message').textContent =
+                    `Status: ${data.status} | Database: ${data.database}`;
+            } catch (error) {
+                document.getElementById('status-message').textContent =
+                    'Status: Error connecting to API';
+            }
+        }
+
+        // Check health immediately and every 30 seconds
+        checkHealth();
+        setInterval(checkHealth, 30000);
+    </script>
 </body>
 </html>""")
         logger.info(f"Created index.html at {render_index}")
+        # Ensure proper permissions
+        os.chmod(render_index, 0o644)
     except Exception as e:
         logger.error(f"Failed to create index.html: {e}")
 

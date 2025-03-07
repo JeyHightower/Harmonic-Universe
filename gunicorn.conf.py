@@ -10,8 +10,11 @@ capture_output = True
 
 # Worker configuration
 workers = multiprocessing.cpu_count() * 2 + 1
-worker_class = 'sync'
-timeout = 120
+worker_class = 'gevent'  # Changed from sync for better performance
+threads = 4
+worker_connections = 1000
+timeout = 30  # Reduced from 120
+keepalive = 2
 
 # Server socket
 bind = f"0.0.0.0:{os.environ.get('PORT', '8000')}"
@@ -26,6 +29,10 @@ umask = 0
 user = None
 group = None
 tmp_upload_dir = None
+
+# Reload settings
+reload = True
+reload_engine = 'auto'
 
 # Logging configuration
 logconfig_dict = {
@@ -48,6 +55,16 @@ logconfig_dict = {
             'handlers': ['console'],
             'level': 'INFO',
         },
+        'gunicorn.error': {
+            'level': 'INFO',
+            'handlers': ['console'],
+            'propagate': True,
+        },
+        'gunicorn.access': {
+            'level': 'INFO',
+            'handlers': ['console'],
+            'propagate': True,
+        },
     }
 }
 
@@ -60,3 +77,8 @@ def on_reload(server):
     """Log when the server reloads"""
     logger = logging.getLogger('gunicorn.error')
     logger.info('Reloading Harmonic Universe server')
+
+def when_ready(server):
+    """Log when server is ready"""
+    logger = logging.getLogger('gunicorn.error')
+    logger.info('Harmonic Universe server is ready to accept connections')
