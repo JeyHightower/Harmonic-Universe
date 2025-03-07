@@ -5,40 +5,13 @@ services:
     name: harmonic-universe-api
     runtime: python
     buildCommand: >
-      # Initial setup
+      # Initial setup - install minimal requirements
       python -m pip install -U pip &&
-      python -m pip install gunicorn==20.1.0 Flask==2.0.1 psycopg2-binary==2.9.9 sqlalchemy &&
-
-      # Move the migration fix script to backend directory
-      if [ -d "backend" ]; then
-        cp render_migration_fix.py backend/ &&
-        cd backend &&
-        pip install -r requirements.txt &&
-
-        # Run the direct fix script
-        python render_migration_fix.py || echo "Migration fix completed or failed, continuing build" &&
-
-        # Run migrations with continuation on error
-        if [ -n "$FLASK_APP" ]; then
-          flask db upgrade || echo "Migration errors occurred but continuing"
-        else
-          export FLASK_APP=app.main:app &&
-          flask db upgrade || echo "Migration errors occurred but continuing"
-        fi
-      else
-        # If no backend directory, run in current directory
-        pip install -r requirements.txt &&
-        python render_migration_fix.py || echo "Migration fix completed or failed, continuing build" &&
-
-        # Run migrations with continuation on error
-        if [ -n "$FLASK_APP" ]; then
-          flask db upgrade || echo "Migration errors occurred but continuing"
-        else
-          export FLASK_APP=wsgi.py &&
-          flask db upgrade || echo "Migration errors occurred but continuing"
-        fi
-      fi
-    startCommand: chmod +x render_deploy.sh && ./render_deploy.sh
+      # Make scripts executable
+      chmod +x render_build.sh render_start.sh &&
+      # Run our custom build script
+      ./render_build.sh
+    startCommand: ./render_start.sh
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0

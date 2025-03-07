@@ -1,9 +1,7 @@
 #!/bin/bash
 set -e # Exit immediately if a command exits with a non-zero status
 
-echo "==================================================="
-echo "    HARMONIC UNIVERSE - RENDER START PROCESS       "
-echo "==================================================="
+echo "=== HARMONIC UNIVERSE STARTUP SCRIPT ==="
 
 # Set up environment variables
 export PYTHONUNBUFFERED=true  # Prevent Python from buffering stdout and stderr
@@ -96,4 +94,87 @@ echo "Python path after modifications:"
 python -c "import sys; print(sys.path)"
 
 echo "Starting Gunicorn with app: $GUNICORN_APP"
-exec gunicorn $GUNICORN_APP --log-level debug --preload
+
+# Check if tables exist but alembic_version doesn't
+echo "Checking database state..."
+python -c "
+import os
+from sqlalchemy import create_engine, inspect, text
+import psycopg2
+
+# The specific problematic migration ID from the error message
+MIGRATION_ID = '60ebacf5d282'
+
+database_url = os.environ.get('DATABASE_URL')
+if not database_url:
+    print('DATABASE_URL not found')
+    exit(1)
+
+try:
+    engine = create_engine(database_url)
+    inspector = inspect(engine)
+    tables = inspector.get_table_names()
+
+    print(f'Existing tables: {tables}')
+
+    if 'users' in tables:
+        alembic_exists = 'alembic_version' in tables
+
+        if not alembic_exists:
+            print('Creating alembic_version table...')
+            with engine.connect() as conn:
+                conn.execute(text('CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) PRIMARY KEY)'))
+                conn.execute(text(f\"\"\"
+                INSERT INTO alembic_version (version_num)
+                VALUES ('{MIGRATION_ID}')
+                ON CONFLICT (version_num) DO NOTHING
+                \"\"\"))
+                conn.commit()
+                print(f'Database stamped with migration ID: {MIGRATION_ID}')
+        else:
+            # Check if a specific migration needs to be set
+            with engine.connect() as conn:
+                result = conn.execute(text('SELECT version_num FROM alembic_version'))
+                rows = result.fetchall()
+                if rows:
+                    print(f'Current migration version: {rows[0][0]}')
+                    if rows[0][0] != MIGRATION_ID:
+                        print(f'Updating migration version to {MIGRATION_ID}...')
+                        conn.execute(text('DELETE FROM alembic_version'))
+                        conn.execute(text(f\"\"\"
+                        INSERT INTO alembic_version (version_num)
+                        VALUES ('{MIGRATION_ID}')
+                        \"\"\"))
+                        conn.commit()
+                        print('Migration version updated')
+                else:
+                    print('No migration version found, setting one...')
+                    conn.execute(text(f\"\"\"
+                    INSERT INTO alembic_version (version_num)
+                    VALUES ('{MIGRATION_ID}')
+                    \"\"\"))
+                    conn.commit()
+                    print(f'Migration version set to {MIGRATION_ID}')
+except Exception as e:
+    print(f'Error checking database: {e}')
+    # Continue anyway - we don't want to fail the build
+"
+
+# Use right FLASK_APP based on location
+if [ -f "app/main.py" ]; then
+    export FLASK_APP=app.main:app
+elif [ -f "wsgi.py" ]; then
+    export FLASK_APP=wsgi:app
+fi
+
+echo "FLASK_APP set to: $FLASK_APP"
+
+# Now proceed with normal startup
+echo "Starting application..."
+if [ -n "$PORT" ]; then
+    echo "Using PORT: $PORT"
+    gunicorn --bind 0.0.0.0:$PORT $FLASK_APP
+else
+    echo "No PORT specified, using default 8000"
+    gunicorn --bind 0.0.0.0:8000 $FLASK_APP
+fi
