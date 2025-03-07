@@ -30,10 +30,33 @@ SELECT * FROM alembic_version;
 
 ## Option 4: Emergency Fix Script
 
-Run in your Render shell:
+1. Upload `render_emergency_fix.py` to your Render instance
+2. Make it executable: `chmod +x render_emergency_fix.py`
+3. Run: `./render_emergency_fix.py`
+4. Review the output for detailed information
+5. If you need to specify a custom migration ID: `./render_emergency_fix.py YOUR_MIGRATION_ID`
+
+The script will:
+
+- Check database connectivity
+- Create the alembic_version table if needed
+- Set the migration version to '60ebacf5d282'
+- Verify the fix was applied correctly
+- Provide a detailed report
+
+## Option 5: Migration State Checker
+
+Run this diagnostic and fix tool:
 
 ```bash
-python render_emergency_fix.py
+# Check and diagnose without making changes
+./check_migration_state.py
+
+# Automatically apply fixes
+./check_migration_state.py --auto-fix
+
+# Save detailed report
+./check_migration_state.py --output report.txt
 ```
 
 ## Explanation
