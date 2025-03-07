@@ -4,21 +4,11 @@ services:
   - type: web
     name: harmonic-universe
     runtime: python
-    buildCommand: ./render_build.sh
-    startCommand: ./render_start.sh
+    buildCommand: pip install -r requirements-minimal.txt
+    startCommand: ./start.sh
     envVars:
       - key: STATIC_DIR
         value: /opt/render/project/src/static
-      - key: FLASK_ENV
-        value: production
-      - key: PORT
-        value: '10000'
-      - key: PYTHON_VERSION
-        value: '3.11.0'
-      - key: PYTHONPATH
-        value: /opt/render/project/src
-      - key: GUNICORN_CMD_ARGS
-        value: '--timeout 120 --workers 2 --log-level info'
     healthCheckPath: /health
     autoDeploy: true
     disk:

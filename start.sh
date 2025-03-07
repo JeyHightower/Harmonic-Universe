@@ -15,4 +15,5 @@ flask db upgrade
 
 # Start the application with gunicorn
 echo "Starting web server on port $PORT..."
-gunicorn --bind 0.0.0.0:$PORT wsgi:app
+cd /opt/render/project/src
+python -m gunicorn app:app -c gunicorn.conf.py
