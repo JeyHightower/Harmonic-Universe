@@ -112,5 +112,5 @@ ls -la /opt/render/project/src/static/
 echo "Start script completed successfully"
 echo "Starting application..."
 
-# Pass control to gunicorn
-exec gunicorn wsgi:app
+# Start Gunicorn with our configuration
+exec gunicorn -c gunicorn.conf.py wsgi:app

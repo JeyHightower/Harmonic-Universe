@@ -7,7 +7,10 @@ import traceback
 from port import get_port
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger("wsgi")
 
 logger.info("Loading application in wsgi.py")
@@ -15,7 +18,7 @@ logger.info("Loading application in wsgi.py")
 # Add current directory to Python path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
-    sys.path.append(current_dir)
+    sys.path.insert(0, current_dir)
     logger.info(f"Added {current_dir} to Python path")
 
 # Log environment information
@@ -77,7 +80,7 @@ except Exception as e:
     logger.error(f"Error verifying dependencies: {e}")
 
 # Import the app from your app.py file
-from app import app
+from app import create_app
 
 # No need to create app again as it's imported
 
