@@ -16,7 +16,7 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: PYTHONPATH
-        value: '.:/opt/render/project/src'
+        value: /opt/render/project/src:/opt/render/project/src/.venv/lib/python3.11/site-packages
       - key: FLASK_DEBUG
         value: '0'
       - key: DATABASE_URL
@@ -50,7 +50,9 @@ services:
       - key: VIRTUAL_ENV
         value: /opt/render/project/src/.venv
       - key: PATH
-        value: /opt/render/project/src/.venv/bin:${PATH}
+        value: /opt/render/project/src/.venv/bin:/usr/local/bin:/usr/bin:/bin
+      - key: PORT
+        value: '10000'
     healthCheckPath: /health
 
   # Frontend service (React)
