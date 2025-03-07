@@ -7,10 +7,7 @@ import traceback
 from port import get_port
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("wsgi")
 
 logger.info("Loading application in wsgi.py")

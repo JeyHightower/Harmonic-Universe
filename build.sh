@@ -1,46 +1,84 @@
-#!/usr/bin/env bash
-# exit on error
-set -o errexit
+#!/bin/bash
+set -e  # Exit on error
 
-# Run the setup script
-./setup.sh
+echo "==== Starting Harmonic Universe Build Process ===="
 
-# Check for installed packages
-pip list
+# Install Python dependencies
+pip install -r requirements.txt
 
-# Navigate to frontend directory if it exists
-if [ -d "frontend" ]; then
-  cd frontend
+# Create static directory if it doesn't exist
+mkdir -p static
 
-  # Create crypto polyfill file for Node.js
-  cat > crypto-polyfill.cjs << 'EOF'
-const crypto = require('crypto');
+# Create a basic index.html if it doesn't exist yet
+if [ ! -f "static/index.html" ]; then
+    echo "Creating basic index.html in static folder"
+    cat > static/index.html << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harmonic Universe</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 { color: #336699; }
+        .logo { max-width: 300px; margin: 20px auto; }
+    </style>
+</head>
+<body>
+    <h1>Harmonic Universe</h1>
+    <p>Welcome to Harmonic Universe - an interactive web application for creating and exploring musical universes based on physics principles.</p>
+    <p>The application is currently loading...</p>
+</body>
+</html>
+EOF
+fi
 
-// Add missing getRandomValues function to crypto
-if (!crypto.getRandomValues) {
-  crypto.getRandomValues = function getRandomValues(array) {
-    const bytes = crypto.randomBytes(array.length);
-    for (let i = 0; i < bytes.length; i++) {
-      array[i] = bytes[i];
-    }
-    return array;
-  };
-}
-
-// Monkey patch the global crypto object
-global.crypto = crypto;
+# Create a CSS file to verify static serving
+echo "Creating test.css to verify static file serving"
+cat > static/test.css << 'EOF'
+body { background-color: #f8f8f8; }
 EOF
 
-  # Install frontend dependencies
-  npm install
+# If there's a frontend directory with build process
+if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then
+    echo "Building frontend..."
+    cd frontend
+    npm install
+    npm run build
+    cd ..
 
-  # Build with the polyfill
-  NODE_OPTIONS="--require ./crypto-polyfill.cjs" npm run build || {
-    echo "Build failed with polyfill. Attempting alternative approach..."
-    npm install --save-dev crypto-browserify
-    NODE_OPTIONS="--no-experimental-fetch" npm run build
-  }
-
-  # Return to the project root
-  cd ..
+    # Copy frontend build files to static directory
+    if [ -d "frontend/build" ]; then
+        echo "Copying frontend build files to static directory"
+        cp -r frontend/build/* static/
+    elif [ -d "frontend/dist" ]; then
+        echo "Copying frontend dist files to static directory"
+        cp -r frontend/dist/* static/
+    fi
 fi
+
+# Create a test json file for health checks
+echo "Creating health check test file"
+cat > static/health.json << 'EOF'
+{"status": "ok"}
+EOF
+
+# Set proper permissions
+chmod -R 755 static
+
+echo "==== Verifying Setup ===="
+echo "Static directory contents:"
+ls -la static/
+echo "Python modules installed:"
+pip list
+echo "Current directory structure:"
+find . -type f -name "*.py" | sort
+
+echo "==== Build Process Completed ===="
