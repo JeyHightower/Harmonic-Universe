@@ -15,7 +15,11 @@ services:
         value: '10000'
       - key: PYTHON_VERSION
         value: '3.11.0'
-    healthCheckPath: /api/health
+      - key: PYTHONPATH
+        value: /opt/render/project/src
+      - key: GUNICORN_CMD_ARGS
+        value: '--timeout 120 --workers 2 --log-level info'
+    healthCheckPath: /health
     autoDeploy: true
     disk:
       name: static-files
