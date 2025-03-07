@@ -19,20 +19,42 @@ def create_fallback_index():
 <head>
     <title>Harmonic Universe</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-        h1 { color: #333; }
+        body {{
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            line-height: 1.6;
+        }}
+        h1 {{ color: #333; }}
+        .container {{
+            max-width: 800px;
+            margin: 0 auto;
+        }}
     </style>
 </head>
 <body>
-    <h1>Harmonic Universe</h1>
-    <p>Welcome to the Harmonic Universe application!</p>
-    <p>This is an emergency fallback page created by render_diagnose.py.</p>
-    <div id="diagnostic-info">
-        <pre>Python version: {python_version}</pre>
-        <pre>Current directory: {cwd}</pre>
-        <pre>PYTHONPATH: {pythonpath}</pre>
-        <pre>Environment: {env}</pre>
+    <div class="container">
+        <h1>Harmonic Universe</h1>
+        <p>Application is running! This is a fallback page created by render_diagnose.py.</p>
+        <div id="api-status">Checking API status...</div>
+        <div id="diagnostic-info">
+            <pre>Python version: {python_version}</pre>
+            <pre>Current directory: {cwd}</pre>
+            <pre>PYTHONPATH: {pythonpath}</pre>
+            <pre>Environment: {env}</pre>
+        </div>
     </div>
+    <script>
+        fetch('/api/health')
+            .then(response => response.json())
+            .then(data => {{
+                document.getElementById('api-status').innerHTML =
+                    'API Status: <span style="color:' + (data.status === 'healthy' ? 'green' : 'red') + '">' + data.status + '</span>';
+            }})
+            .catch(error => {{
+                document.getElementById('api-status').innerHTML =
+                    'API Status: <span style="color:red">Connection Failed</span>';
+            }});
+    </script>
 </body>
 </html>""".format(
         python_version=sys.version,
