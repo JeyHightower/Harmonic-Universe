@@ -3,18 +3,16 @@ import multiprocessing
 import logging
 
 # Logging configuration
-loglevel = 'info'
-accesslog = '-'  # stdout
-errorlog = '-'   # stderr
+loglevel = 'debug'  # Changed to debug for more info
+accesslog = '-'
+errorlog = '-'
 capture_output = True
 
 # Worker configuration
-workers = multiprocessing.cpu_count() * 2 + 1
-worker_class = 'gevent'  # Changed from sync for better performance
-threads = 4
-worker_connections = 1000
-timeout = 30  # Reduced from 120
-keepalive = 2
+workers = 4  # Fixed number instead of dynamic
+worker_class = 'sync'  # Back to sync for reliability
+timeout = 120  # Back to longer timeout
+keepalive = 5
 
 # Server socket
 bind = f"0.0.0.0:{os.environ.get('PORT', '8000')}"
@@ -29,10 +27,6 @@ umask = 0
 user = None
 group = None
 tmp_upload_dir = None
-
-# Reload settings
-reload = True
-reload_engine = 'auto'
 
 # Logging configuration
 logconfig_dict = {
@@ -53,10 +47,10 @@ logconfig_dict = {
     'loggers': {
         '': {
             'handlers': ['console'],
-            'level': 'INFO',
+            'level': 'DEBUG',
         },
         'gunicorn.error': {
-            'level': 'INFO',
+            'level': 'DEBUG',
             'handlers': ['console'],
             'propagate': True,
         },
@@ -69,16 +63,18 @@ logconfig_dict = {
 }
 
 def on_starting(server):
-    """Log when the server starts"""
+    """Log when the server starts and ensure static directory exists"""
     logger = logging.getLogger('gunicorn.error')
     logger.info('Starting Harmonic Universe server')
 
-def on_reload(server):
-    """Log when the server reloads"""
-    logger = logging.getLogger('gunicorn.error')
-    logger.info('Reloading Harmonic Universe server')
+    # Ensure static directory exists
+    static_dir = '/opt/render/project/src/static'
+    if not os.path.exists(static_dir):
+        os.makedirs(static_dir, exist_ok=True)
+        os.chmod(static_dir, 0o755)
+        logger.info(f"Created static directory: {static_dir}")
 
-def when_ready(server):
-    """Log when server is ready"""
+def post_worker_init(worker):
+    """Log when a worker starts"""
     logger = logging.getLogger('gunicorn.error')
-    logger.info('Harmonic Universe server is ready to accept connections')
+    logger.info(f'Worker {worker.pid} initialized')

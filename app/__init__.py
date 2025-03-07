@@ -1,6 +1,7 @@
 from flask import Flask, send_from_directory, jsonify, current_app
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 import logging
@@ -26,7 +27,10 @@ def create_app():
     # Create and configure the Flask app first
     app = Flask(__name__,
                 static_folder=static_folder,
-                static_url_path='/static')  # Changed from empty string
+                static_url_path='')  # Serve static files from root
+
+    # Enable CORS
+    CORS(app)
 
     # Configure app
     app.config.update(
@@ -40,6 +44,7 @@ def create_app():
     if not os.path.exists(app.static_folder):
         try:
             os.makedirs(app.static_folder, exist_ok=True)
+            os.chmod(app.static_folder, 0o755)  # Ensure proper permissions
             logger.info(f"Created static folder at {app.static_folder}")
         except Exception as e:
             logger.error(f"Failed to create static folder: {e}")
@@ -72,26 +77,29 @@ def create_app():
             static_exists = os.path.exists(app.static_folder)
             index_exists = os.path.exists(os.path.join(app.static_folder, 'index.html'))
 
-            # Try database connection but don't fail if it doesn't work
+            # Simple database check
             db_status = "unknown"
             try:
-                db.session.execute('SELECT 1')
-                db.session.commit()
-                db_status = "connected"
+                with app.app_context():
+                    db.session.execute('SELECT 1').scalar()
+                    db_status = "connected"
             except Exception as db_err:
                 logger.warning(f"Database check failed: {db_err}")
                 db_status = "disconnected"
 
-            return jsonify({
+            response = jsonify({
                 'status': 'healthy',
                 'message': 'Application is running',
                 'database': db_status,
                 'static_folder': {
                     'path': app.static_folder,
                     'exists': static_exists,
-                    'index_exists': index_exists
+                    'index_exists': index_exists,
+                    'contents': os.listdir(app.static_folder) if static_exists else []
                 }
             })
+            response.headers['Cache-Control'] = 'no-cache'
+            return response
         except Exception as e:
             logger.error(f"Health check failed: {e}")
             logger.error(traceback.format_exc())
@@ -101,60 +109,34 @@ def create_app():
                 'error': traceback.format_exc()
             }), 500
 
-    # Add explicit root route
-    @app.route('/')
-    def serve_root():
-        try:
-            logger.info("Serving root path")
-            index_path = os.path.join(app.static_folder, 'index.html')
-            if os.path.exists(index_path):
-                logger.info("Serving index.html from root")
-                return send_from_directory(app.static_folder, 'index.html')
-            else:
-                logger.error(f"index.html not found at {index_path}")
-                return jsonify({
-                    'error': 'index.html not found',
-                    'static_folder': app.static_folder
-                }), 404
-        except Exception as e:
-            logger.error(f"Error serving root: {e}")
-            logger.error(traceback.format_exc())
-            return jsonify({
-                'error': str(e),
-                'traceback': traceback.format_exc()
-            }), 500
-
-    # Add catch-all route for SPA
+    # Serve static files
+    @app.route('/', defaults={'path': 'index.html'})
     @app.route('/<path:path>')
-    def catch_all(path):
+    def serve_static(path):
         try:
-            logger.info(f"Handling request for path: {path}")
+            logger.info(f"Attempting to serve: {path}")
+            if not path or path == '/':
+                path = 'index.html'
 
-            # First try to serve as a static file
-            static_file_path = os.path.join(app.static_folder, path)
-            if os.path.exists(static_file_path) and os.path.isfile(static_file_path):
-                logger.info(f"Serving static file: {path}")
-                return send_from_directory(app.static_folder, path)
+            file_path = os.path.join(app.static_folder, path)
+            if os.path.exists(file_path) and os.path.isfile(file_path):
+                logger.info(f"Serving file: {file_path}")
+                response = send_from_directory(app.static_folder, path)
+                response.headers['Cache-Control'] = 'no-cache'
+                return response
 
-            # If not a static file, serve index.html for SPA routing
-            index_path = os.path.join(app.static_folder, 'index.html')
-            if os.path.exists(index_path):
-                logger.info(f"Serving index.html for path: {path}")
-                return send_from_directory(app.static_folder, 'index.html')
-            else:
-                logger.error(f"index.html not found at {index_path}")
-                return jsonify({
-                    'error': 'index.html not found',
-                    'static_folder': app.static_folder,
-                    'requested_path': path
-                }), 404
+            # Default to index.html for SPA routing
+            logger.info(f"Path {path} not found, serving index.html")
+            response = send_from_directory(app.static_folder, 'index.html')
+            response.headers['Cache-Control'] = 'no-cache'
+            return response
         except Exception as e:
-            logger.error(f"Error serving path {path}: {e}")
+            logger.error(f"Error serving {path}: {e}")
             logger.error(traceback.format_exc())
             return jsonify({
                 'error': str(e),
-                'traceback': traceback.format_exc(),
-                'requested_path': path
+                'path': path,
+                'traceback': traceback.format_exc()
             }), 500
 
     # Log app configuration
