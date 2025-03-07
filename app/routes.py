@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, current_app, send_from_directory, abort
+from flask import Blueprint, jsonify, current_app, send_from_directory, abort, make_response
 import os
 import logging
 
@@ -44,6 +44,17 @@ def index():
     index_path = os.path.join(static_folder, 'index.html')
     if os.path.exists(index_path):
         current_app.logger.info(f"index.html found at {index_path}")
+
+        # Read the file content and return it directly
+        try:
+            with open(index_path, 'r') as f:
+                content = f.read()
+                response = make_response(content)
+                response.headers['Content-Type'] = 'text/html'
+                current_app.logger.info(f"Returning index.html with {len(content)} bytes")
+                return response
+        except Exception as e:
+            current_app.logger.error(f"Error reading index.html: {str(e)}")
     else:
         current_app.logger.warning(f"index.html NOT found at {index_path}")
         # List files in static folder for debugging
@@ -52,30 +63,44 @@ def index():
         else:
             current_app.logger.error(f"Static folder not found at: {static_folder}")
 
-    try:
-        return send_from_directory(static_folder, 'index.html')
-    except Exception as e:
-        current_app.logger.error(f"Error serving index.html: {str(e)}")
-        # Create and return a simple fallback response
-        return f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Harmonic Universe</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 40px; }}
-                .error {{ color: red; }}
-            </style>
-        </head>
-        <body>
-            <h1>Harmonic Universe</h1>
-            <p>The application is running, but there was an error serving the main page.</p>
-            <p class="error">Error: {str(e)}</p>
-            <p>Static folder: {static_folder}</p>
-            <p>Current directory: {os.getcwd()}</p>
-        </body>
-        </html>
-        """, 200
+    # Fallback - create a simple HTML page
+    html = """<!DOCTYPE html>
+<html>
+<head>
+    <title>Harmonic Universe</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+        h1 { color: #333; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Harmonic Universe</h1>
+        <p>Application is running, but there was an issue serving the index.html file.</p>
+        <p>This is a dynamically generated fallback page.</p>
+        <div id="api-status">Checking API status...</div>
+    </div>
+    <script>
+        fetch('/api/health')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('api-status').innerHTML =
+                    'API Status: <span style="color:' + (data.status === 'healthy' ? 'green' : 'red') + '">' + data.status + '</span>';
+            })
+            .catch(error => {
+                document.getElementById('api-status').innerHTML =
+                    'API Status: <span style="color:red">Connection Failed</span>';
+            });
+    </script>
+</body>
+</html>
+"""
+    response = make_response(html)
+    response.headers['Content-Type'] = 'text/html'
+    current_app.logger.info("Returning fallback HTML with 200 status")
+    return response
 
 @main_bp.route('/favicon.ico')
 def favicon():
@@ -110,6 +135,23 @@ def serve_static(path):
     file_path = os.path.join(static_folder, path)
     if os.path.exists(file_path):
         current_app.logger.info(f"Serving file from: {file_path}")
+
+        # For JavaScript and CSS files, read and return directly
+        if path.endswith('.js') or path.endswith('.css'):
+            try:
+                with open(file_path, 'r') as f:
+                    content = f.read()
+                    response = make_response(content)
+                    if path.endswith('.js'):
+                        response.headers['Content-Type'] = 'application/javascript'
+                    else:
+                        response.headers['Content-Type'] = 'text/css'
+                    current_app.logger.info(f"Returning {path} with {len(content)} bytes")
+                    return response
+            except Exception as e:
+                current_app.logger.error(f"Error reading {path}: {str(e)}")
+
+        # For other files, use send_from_directory
         return send_from_directory(static_folder, path)
     else:
         current_app.logger.warning(f"File not found: {file_path}")
