@@ -4,7 +4,9 @@ services:
   - type: web
     name: harmonic-universe-api
     runtime: python
-    buildCommand: chmod +x render_build.sh render_start.sh render_diagnose.py app_static_symlink.py test_static_dir.py && ./render_build.sh
+    buildCommand: >
+      chmod +x render_build.sh render_start.sh &&
+      ./render_build.sh
     startCommand: ./render_start.sh
     envVars:
       - key: PYTHON_VERSION

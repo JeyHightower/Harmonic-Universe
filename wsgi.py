@@ -31,6 +31,40 @@ except ImportError:
 except Exception as e:
     logger.error(f"Error importing psycopg2: {str(e)}")
 
+# Ensure static directory exists and has index.html before importing app
+# This helps avoid issues with Flask looking for static files on startup
+render_static = '/opt/render/project/src/static'
+if not os.path.exists(render_static):
+    try:
+        os.makedirs(render_static, exist_ok=True)
+        logger.info(f"Created Render static directory: {render_static}")
+    except Exception as e:
+        logger.error(f"Failed to create Render static directory: {e}")
+
+# Check for index.html and create it if needed
+render_index = os.path.join(render_static, 'index.html')
+if not os.path.exists(render_index):
+    try:
+        with open(render_index, 'w') as f:
+            f.write("""<!DOCTYPE html>
+<html>
+<head>
+    <title>Harmonic Universe</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        h1 { color: #333; }
+    </style>
+</head>
+<body>
+    <h1>Harmonic Universe</h1>
+    <p>Welcome to the Harmonic Universe application!</p>
+    <p>Created by wsgi.py on startup.</p>
+</body>
+</html>""")
+        logger.info(f"Created index.html at {render_index}")
+    except Exception as e:
+        logger.error(f"Failed to create index.html: {e}")
+
 # Import dependencies to verify they're installed
 try:
     logger.info(f"Found Flask: {__import__('flask').__version__}")

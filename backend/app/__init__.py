@@ -22,7 +22,18 @@ socketio = SocketIO()
 bcrypt = Bcrypt()
 
 def create_app(config_class=Config):
-    app = Flask(__name__, static_folder='../../static', static_url_path='')
+    # Use the absolute Render path instead of a relative path
+    static_folder = '/opt/render/project/src/static'
+
+    # Ensure static folder exists
+    if not os.path.exists(static_folder):
+        try:
+            os.makedirs(static_folder, exist_ok=True)
+            logger.info(f"Created static folder at {static_folder}")
+        except Exception as e:
+            logger.error(f"Failed to create static folder: {e}")
+
+    app = Flask(__name__, static_folder=static_folder, static_url_path='')
     app.config.from_object(config_class)
 
     # Load the .env file

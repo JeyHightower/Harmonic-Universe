@@ -24,8 +24,18 @@ try:
 except Exception as e:
     logger.error(f"Error creating application: {str(e)}")
     from flask import Flask, jsonify
-    # Create a fallback application
-    app = Flask(__name__)
+
+    # Ensure static folder exists even in fallback mode
+    static_folder = '/opt/render/project/src/static'
+    if not os.path.exists(static_folder):
+        try:
+            os.makedirs(static_folder, exist_ok=True)
+            logger.info(f"Created static folder at {static_folder}")
+        except Exception as ex:
+            logger.error(f"Failed to create static folder: {ex}")
+
+    # Create a fallback application with the correct static folder
+    app = Flask(__name__, static_folder=static_folder)
 
     @app.route('/')
     def fallback_index():
