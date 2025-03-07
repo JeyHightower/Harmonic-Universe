@@ -75,6 +75,48 @@ EOF
 export FLASK_NO_MIGRATE=1
 export SKIP_DB_UPGRADE=true
 
+# Find the correct application module and start pattern
+echo "Detecting Flask application structure..."
+
+# Try different ways to start the app, in order of likelihood
+if [ -f "wsgi.py" ]; then
+    echo "Found wsgi.py - using as entry point"
+    FLASK_APP_PATH="wsgi:app"
+elif [ -f "app.py" ]; then
+    echo "Found app.py - checking for create_app function"
+    if grep -q "create_app" app.py; then
+        echo "Found create_app function"
+        FLASK_APP_PATH="app:create_app()"
+    else
+        echo "Using standard app pattern"
+        FLASK_APP_PATH="app:app"
+    fi
+elif [ -f "application.py" ]; then
+    echo "Found application.py"
+    FLASK_APP_PATH="application:app"
+elif [ -d "backend" ] && [ -f "backend/app.py" ]; then
+    echo "Found backend/app.py"
+    export PYTHONPATH=$PYTHONPATH:backend
+    if grep -q "create_app" backend/app.py; then
+        FLASK_APP_PATH="app:create_app()"
+    else
+        FLASK_APP_PATH="app:app"
+    fi
+# Add additional directories if needed
+elif [ -d "src" ] && [ -f "src/app.py" ]; then
+    echo "Found src/app.py"
+    export PYTHONPATH=$PYTHONPATH:src
+    FLASK_APP_PATH="app:app"
+else
+    echo "WARNING: Could not detect Flask application structure"
+    echo "Falling back to default app:create_app()"
+    FLASK_APP_PATH="app:create_app()"
+fi
+
+# Print final configuration
+echo "Starting application with: $FLASK_APP_PATH"
+echo "PYTHONPATH: $PYTHONPATH"
+
 # Start the app with gunicorn
 echo "Starting application..."
-gunicorn "app:create_app()" --log-level debug
+gunicorn $FLASK_APP_PATH --log-level debug --timeout 120

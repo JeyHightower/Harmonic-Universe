@@ -1,0 +1,4 @@
+#!/bin/bash
+# This script runs before Render installs dependencies
+# Flag file to signal we should skip migrations
+touch .SKIP_MIGRATIONS

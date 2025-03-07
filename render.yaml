@@ -4,8 +4,8 @@ services:
   - type: web
     name: harmonic-universe-api
     runtime: python
-    buildCommand: ./build-nomigrations.sh
-    startCommand: gunicorn wsgi:app
+    buildCommand: chmod +x render_build.sh && ./render_build.sh
+    startCommand: gunicorn render_app:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
@@ -40,6 +40,8 @@ services:
       - key: SKIP_DB_UPGRADE
         value: 'true'
       - key: FLASK_NO_MIGRATE
+        value: 'true'
+      - key: RENDER
         value: 'true'
     healthCheckPath: /api/health
 
