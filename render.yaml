@@ -4,8 +4,8 @@ services:
   - type: web
     name: harmonic-universe
     runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --config gunicorn.conf.py
+    buildCommand: ./render_build.sh
+    startCommand: ./render_start.sh
     envVars:
       - key: STATIC_DIR
         value: /opt/render/project/src/static
@@ -13,6 +13,8 @@ services:
         value: production
       - key: PORT
         value: '10000'
+      - key: PYTHON_VERSION
+        value: '3.11.0'
     healthCheckPath: /api/health
     autoDeploy: true
     disk:

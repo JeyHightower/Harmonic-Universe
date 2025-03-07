@@ -207,6 +207,11 @@ def create_app(test_config=None):
                 'timestamp': datetime.now().isoformat()
             }), 500
 
+    # Additional health check endpoint at /health for compatibility
+    @app.route('/health')
+    def health_check_alt():
+        return health_check()
+
     # Serve static files and the React app
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
