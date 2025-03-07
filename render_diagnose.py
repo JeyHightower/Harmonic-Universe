@@ -4,6 +4,7 @@ import os
 import sys
 import shutil
 import logging
+import json
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -13,22 +14,36 @@ def create_fallback_index():
     """Create a fallback index.html in all possible locations"""
     logger.info("Creating fallback index.html files in critical locations")
 
+    # Prepare diagnostic data
+    diagnostic_data = {
+        "python_version": sys.version,
+        "cwd": os.getcwd(),
+        "pythonpath": str(sys.path),
+        "env": str({k: v for k, v in os.environ.items() if 'SECRET' not in k.upper()})
+    }
+
     # Template for the index.html file
     index_html_content = """<!DOCTYPE html>
 <html>
 <head>
     <title>Harmonic Universe</title>
     <style>
-        body {{
+        body {
             font-family: Arial, sans-serif;
             margin: 40px;
             line-height: 1.6;
-        }}
-        h1 {{ color: #333; }}
-        .container {{
+        }
+        h1 { color: #333; }
+        .container {
             max-width: 800px;
             margin: 0 auto;
-        }}
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
     </style>
 </head>
 <body>
@@ -36,32 +51,34 @@ def create_fallback_index():
         <h1>Harmonic Universe</h1>
         <p>Application is running! This is a fallback page created by render_diagnose.py.</p>
         <div id="api-status">Checking API status...</div>
-        <div id="diagnostic-info">
-            <pre>Python version: {python_version}</pre>
-            <pre>Current directory: {cwd}</pre>
-            <pre>PYTHONPATH: {pythonpath}</pre>
-            <pre>Environment: {env}</pre>
-        </div>
+        <div id="diagnostic-info"></div>
     </div>
     <script>
+        // Diagnostic data
+        const diagnosticData = %s;
+
+        // Update diagnostic info
+        const diagnosticInfo = document.getElementById('diagnostic-info');
+        Object.entries(diagnosticData).forEach(([key, value]) => {
+            const pre = document.createElement('pre');
+            pre.textContent = `${key}: ${value}`;
+            diagnosticInfo.appendChild(pre);
+        });
+
+        // Check API status
         fetch('/api/health')
             .then(response => response.json())
-            .then(data => {{
+            .then(data => {
                 document.getElementById('api-status').innerHTML =
                     'API Status: <span style="color:' + (data.status === 'healthy' ? 'green' : 'red') + '">' + data.status + '</span>';
-            }})
-            .catch(error => {{
+            })
+            .catch(error => {
                 document.getElementById('api-status').innerHTML =
                     'API Status: <span style="color:red">Connection Failed</span>';
-            }});
+            });
     </script>
 </body>
-</html>""".format(
-        python_version=sys.version,
-        cwd=os.getcwd(),
-        pythonpath=sys.path,
-        env=str({k: v for k, v in os.environ.items() if 'SECRET' not in k.upper()})
-    )
+</html>""" % json.dumps(diagnostic_data)
 
     # Critical paths to try
     paths_to_try = [
