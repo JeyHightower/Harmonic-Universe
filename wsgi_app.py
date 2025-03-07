@@ -19,19 +19,19 @@ except Exception as e:
 try:
     from app import create_app
     # Create the application
-    application = create_app()
+    app = create_app()
     logger.info("Application created successfully")
 except Exception as e:
     logger.error(f"Error creating application: {str(e)}")
     from flask import Flask, jsonify
     # Create a fallback application
-    application = Flask(__name__)
+    app = Flask(__name__)
 
-    @application.route('/')
+    @app.route('/')
     def fallback_index():
         return jsonify({"status": "error", "message": "Application failed to initialize properly"})
 
-    @application.route('/api/health')
+    @app.route('/api/health')
     def fallback_health():
         return jsonify({"status": "unhealthy", "reason": "Application initialization failed"})
 
@@ -40,4 +40,4 @@ except Exception as e:
 if __name__ == "__main__":
     # Run the application
     port = get_port()
-    application.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=True)

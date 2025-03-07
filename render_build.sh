@@ -43,6 +43,81 @@ except Exception as e:
     # Continue anyway
 "
 
+# Create necessary directories
+mkdir -p static
+
+# Check if we have a frontend to build
+if [ -d "frontend" ]; then
+    echo "Building frontend..."
+
+    # Install frontend dependencies
+    cd frontend
+    npm install
+
+    # Build frontend
+    npm run build
+
+    # Create a symbolic link to the build directory
+    cd ..
+
+    # If build directory exists, copy or link files to where Flask expects them
+    if [ -d "frontend/build" ]; then
+        echo "Frontend build directory found, linking to static files..."
+        cp -R frontend/build/* static/
+    elif [ -d "frontend/public" ]; then
+        echo "Frontend public directory found, linking to static files..."
+        cp -R frontend/public/* static/
+    else
+        echo "No frontend build or public directory found. Creating a minimal index.html"
+        # Create a minimal index.html
+        cat > static/index.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Harmonic Universe</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        h1 { color: #333; }
+    </style>
+</head>
+<body>
+    <h1>Harmonic Universe</h1>
+    <p>Welcome to the Harmonic Universe application!</p>
+    <p>Frontend files not found. Please check your deployment configuration.</p>
+</body>
+</html>
+EOF
+    fi
+else
+    echo "No frontend directory found. Creating a minimal index.html"
+    # Create a minimal index.html
+    cat > static/index.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Harmonic Universe</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        h1 { color: #333; }
+    </style>
+</head>
+<body>
+    <h1>Harmonic Universe</h1>
+    <p>Welcome to the Harmonic Universe application!</p>
+    <p>Frontend files not found. Please check your deployment configuration.</p>
+</body>
+</html>
+EOF
+fi
+
+# List static directory contents for verification
+echo "Static directory contents:"
+ls -la static/
+
+# Log the absolute path for debugging
+echo "Absolute path to static directory: $(pwd)/static"
+echo "This should match /opt/render/project/src/static on Render"
+
 # Set environment variables
 export FLASK_NO_MIGRATE=true
 export SKIP_DB_UPGRADE=true

@@ -25,6 +25,14 @@ def create_app():
     # Define the absolute path to the static folder
     static_folder = os.path.join(project_root, 'static')
 
+    # For Render deployment, make sure to use the correct path
+    if os.environ.get('RENDER') == 'true':
+        logger.info("Running in Render environment, checking for static files")
+        render_static = '/opt/render/project/src/static'
+        if os.path.exists(render_static):
+            static_folder = render_static
+            logger.info(f"Using Render static folder: {render_static}")
+
     # Ensure the static folder exists
     if not os.path.exists(static_folder):
         try:
@@ -143,5 +151,28 @@ def create_app():
 
             # Mark as checked so we don't repeat this check for every request
             check_static_files.already_checked = True
+
+    # Add a special route for Render health check
+    @app.route('/api/health')
+    def health_check():
+        from flask import jsonify
+        return jsonify({"status": "healthy", "message": "Application is running"})
+
+    # Add a catch-all route for the SPA
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def catch_all(path):
+        from flask import send_from_directory
+        if path and (path.startswith('api/') or path.startswith('api')):
+            # This should be handled by the API routes
+            from flask import abort
+            abort(404)
+        # Otherwise, serve the index.html for client-side routing
+        app.logger.debug(f"Serving index.html for path: {path}")
+        try:
+            return send_from_directory(app.static_folder, 'index.html')
+        except Exception as e:
+            app.logger.error(f"Error serving index.html: {str(e)}")
+            return "Error serving application. Please check server logs.", 500
 
     return app

@@ -3,6 +3,7 @@
 import os
 import sys
 import logging
+import traceback
 from port import get_port
 
 # Configure logging
@@ -41,36 +42,13 @@ except ImportError as e:
 except Exception as e:
     logger.error(f"Error verifying dependencies: {e}")
 
-# Create the application
-try:
-    # Import from wsgi_app instead of creating a new instance
-    from wsgi_app import application
-    logger.info("Application imported successfully from wsgi_app.py")
-except Exception as e:
-    logger.error(f"Error importing application from wsgi_app: {e}")
-    try:
-        # Try the direct approach if importing fails
-        from app import create_app
-        application = create_app()
-        logger.info("Application created directly from app package")
-    except Exception as e:
-        logger.error(f"Error creating application directly: {e}")
-        from flask import Flask, jsonify
-        application = Flask(__name__)
+# Import the app from your app.py file
+from app import app
 
-        @application.route('/')
-        def error():
-            return jsonify({'status': 'error', 'message': 'Application failed to load correctly'})
-
-        @application.route('/api/health')
-        def health():
-            return jsonify({'status': 'unhealthy', 'reason': 'Application failed to initialize'})
-
-        logger.warning("Using fallback Flask application due to initialization errors")
-
-# This is the WSGI entry point that gunicorn will use
-app = application
+# No need to create app again as it's imported
 
 if __name__ == "__main__":
+    # Run the application in development
     port = get_port()
-    application.run(host="0.0.0.0", port=port)
+    logger.info(f"Starting development server on port {port}")
+    app.run(host="0.0.0.0", port=port, debug=True)
