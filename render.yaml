@@ -5,13 +5,10 @@ services:
     name: harmonic-universe-api
     runtime: python
     buildCommand: >
-      # Initial setup - install minimal requirements
+      # Install basic requirements
       python -m pip install -U pip &&
-      # Make scripts executable
-      chmod +x render_build.sh render_start.sh &&
-      # Run our custom build script
-      ./render_build.sh
-    startCommand: ./render_start.sh
+      python -m pip install gunicorn Flask psycopg2-binary sqlalchemy
+    startCommand: gunicorn wsgi_wrapper:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
@@ -21,8 +18,6 @@ services:
         generateValue: true
       - key: PYTHONPATH
         value: '.:/opt/render/project/src'
-      - key: FLASK_APP
-        value: wsgi_wrapper.py
       - key: FLASK_DEBUG
         value: '0'
       - key: DATABASE_URL
