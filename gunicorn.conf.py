@@ -3,28 +3,36 @@ import logging
 import multiprocessing
 import time
 import shutil
+from verify_static_directory import verify_static_directory
 
-# Basic configuration
-bind = "0.0.0.0:10000"
+# Server socket configurations
+bind = "0.0.0.0:10000"  # Make sure to bind to the port that's being checked
 workers = multiprocessing.cpu_count() * 2 + 1
-worker_class = 'sync'
-threads = 2
-worker_connections = 1000
-timeout = 120
-keepalive = 5
-max_requests = 1000
-max_requests_jitter = 50
-graceful_timeout = 30
+worker_class = "sync"  # Using sync worker for Flask WSGI application
 
 # Logging
-loglevel = 'debug'  # Temporarily set to debug for more information
-accesslog = '-'
-errorlog = '-'
-access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" %(L)s'
-capture_output = True
+loglevel = "info"
+accesslog = "-"
+errorlog = "-"
+
+# Startup and shutdown
+on_starting = verify_static_directory
+
+# Timeout configurations
+timeout = 120
+keepalive = 5
+
+# SSL Configuration (if needed)
+keyfile = os.environ.get('SSL_KEYFILE', None)
+certfile = os.environ.get('SSL_CERTFILE', None)
+
+# Worker configurations
+worker_tmp_dir = "/dev/shm"  # Use shared memory for worker temp files
+max_requests = 1000
+max_requests_jitter = 50
 
 # Process naming
-proc_name = 'harmonic-universe'
+proc_name = "harmonic_universe"
 
 # Server mechanics
 daemon = False
@@ -32,6 +40,17 @@ pidfile = None
 umask = 0
 user = None
 group = None
+tmp_upload_dir = None
+
+# Logging
+accesslog = "-"
+errorlog = "-"
+loglevel = "info"
+access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"'
+
+# SSL
+ssl_version = os.environ.get('SSL_VERSION', 'TLS')
+cert_reqs = os.environ.get('SSL_CERT_REQS', 0)  # SSL_CERT_NONE
 
 def verify_static_directory():
     """Verify static directory exists and is properly configured"""

@@ -4,22 +4,21 @@ services:
   - type: web
     name: harmonic-universe
     runtime: python
-    buildCommand: ./render_build.sh
-    startCommand: ./render_start.sh
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --config gunicorn.conf.py
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.9.18
       - key: STATIC_DIR
         value: /opt/render/project/src/static
-      - key: FLASK_APP
-        value: wsgi.py
       - key: FLASK_ENV
         value: production
-      - key: FLASK_DEBUG
-        value: '0'
-      - key: STATIC_URL_PATH
-        value: ''
+      - key: PORT
+        value: '10000'
     healthCheckPath: /api/health
+    autoDeploy: true
+    disk:
+      name: static-files
+      mountPath: /opt/render/project/src/static
+      sizeGB: 1
 
   # Frontend service (React)
   - type: web
