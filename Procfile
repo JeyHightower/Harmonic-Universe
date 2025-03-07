@@ -1,1 +1,1 @@
-web: bash -c "[ -f ./static_solution.sh ] && chmod +x ./static_solution.sh && ./static_solution.sh || ([ -f ./pure_bash_server.sh ] && chmod +x ./pure_bash_server.sh && ./pure_bash_server.sh || echo 'Static mode active' && sleep infinity)"
+web: bash -c "chmod +x verify_start.sh && ./verify_start.sh"

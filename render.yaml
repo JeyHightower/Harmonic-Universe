@@ -1,28 +1,17 @@
-# render.yaml - Multi-service configuration
+# render.yaml - Verification configuration
 services:
-  # Static files service
+  # Verification service
   - type: web
     name: harmonic-universe-api
-    runtime: static
-    buildCommand: ./static_solution.sh
-    staticPublishPath: ./public
-    headers:
-      - path: /health
-        name: Content-Type
-        value: application/json
-      - path: /api/health
-        name: Content-Type
-        value: application/json
-    routes:
-      - type: rewrite
-        source: /health
-        destination: /health
-      - type: rewrite
-        source: /api/health
-        destination: /api/health
+    runtime: python
+    buildCommand: echo "No build needed for verification server"
+    startCommand: ./verify_start.sh
     envVars:
       - key: STATIC_DIR
-        value: ./public
+        value: /opt/render/project/src/static
+      - key: PORT
+        value: '10000'
+    healthCheckPath: /health
 
   # Frontend service (React)
   - type: web
