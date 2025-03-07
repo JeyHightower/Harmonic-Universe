@@ -34,18 +34,18 @@ except ImportError:
 except Exception as e:
     logger.error(f"Error importing psycopg2: {str(e)}")
 
-# Ensure static directory exists and has index.html before importing app
-# This helps avoid issues with Flask looking for static files on startup
-render_static = '/opt/render/project/src/static'
-if not os.path.exists(render_static):
-    try:
-        os.makedirs(render_static, exist_ok=True)
-        logger.info(f"Created Render static directory: {render_static}")
-    except Exception as e:
-        logger.error(f"Failed to create Render static directory: {e}")
+# Ensure static directory exists
+static_dir = '/opt/render/project/src/static'
+try:
+    os.makedirs(static_dir, exist_ok=True)
+    os.chmod(static_dir, 0o755)
+    logger.info(f"Ensured static directory exists: {static_dir}")
+except Exception as e:
+    logger.error(f"Error setting up static directory: {e}")
+    raise
 
 # Check for index.html and create it if needed
-render_index = os.path.join(render_static, 'index.html')
+render_index = os.path.join(static_dir, 'index.html')
 if not os.path.exists(render_index):
     try:
         with open(render_index, 'w') as f:
@@ -138,11 +138,11 @@ except ImportError as e:
 except Exception as e:
     logger.error(f"Error verifying dependencies: {e}")
 
-# Import the app factory
+# Import and create the Flask application
 try:
     from app import create_app
-    app = create_app()  # Create the app instance
-    logger.info("Successfully created Flask application instance")
+    app = create_app()
+    logger.info("Successfully created Flask application")
 except Exception as e:
     logger.error(f"Failed to create Flask application: {e}")
     logger.error(traceback.format_exc())
