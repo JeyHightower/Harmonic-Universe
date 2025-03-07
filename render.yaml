@@ -5,12 +5,7 @@ services:
     name: harmonic-universe-api
     runtime: python
     buildCommand: python -m pip install -U pip && python -m pip install gunicorn==20.1.0 Flask==2.0.1 psycopg2-binary==2.9.9 && chmod +x ./render-build.sh && ./render-build.sh
-    startCommand: >
-      mkdir -p static &&
-      chmod -R 755 static &&
-      chmod +x ./start-gunicorn.sh &&
-      ls -la static &&
-      ./start-gunicorn.sh
+    startCommand: chmod +x render_deploy.sh && ./render_deploy.sh
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
