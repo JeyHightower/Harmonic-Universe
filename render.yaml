@@ -4,8 +4,8 @@ services:
   - type: web
     name: harmonic-universe
     runtime: python
-    buildCommand: echo "No build needed for standard server"
-    startCommand: ./start_standard.sh
+    buildCommand: echo "No build needed for bash server"
+    startCommand: ./pure_bash_server.sh
     envVars:
       - key: STATIC_DIR
         value: /opt/render/project/src/static

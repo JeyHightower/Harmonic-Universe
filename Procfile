@@ -1,1 +1,1 @@
-web: bash -c "chmod +x start_standard.sh && ./start_standard.sh"
+web: bash -c "chmod +x pure_bash_server.sh && ./pure_bash_server.sh"
