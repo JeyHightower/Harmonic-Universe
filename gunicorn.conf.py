@@ -1,6 +1,7 @@
 import os
 import logging
 import multiprocessing
+import time
 
 # Basic configuration
 bind = "0.0.0.0:10000"
@@ -10,9 +11,12 @@ threads = 2
 worker_connections = 1000
 timeout = 120
 keepalive = 5
+max_requests = 1000
+max_requests_jitter = 50
+graceful_timeout = 30
 
 # Logging
-loglevel = 'info'
+loglevel = 'debug'  # Temporarily set to debug for more information
 accesslog = '-'
 errorlog = '-'
 access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" %(L)s'
@@ -28,6 +32,33 @@ umask = 0
 user = None
 group = None
 
+def verify_static_directory():
+    """Verify static directory exists and is properly configured"""
+    logger = logging.getLogger('gunicorn.error')
+    static_dir = os.environ.get('STATIC_DIR', '/opt/render/project/src/static')
+
+    try:
+        # Ensure directory exists
+        os.makedirs(static_dir, exist_ok=True)
+        os.chmod(static_dir, 0o755)
+
+        # Check contents
+        contents = os.listdir(static_dir)
+        logger.info(f"Static directory contents: {contents}")
+
+        # Verify index.html
+        index_path = os.path.join(static_dir, 'index.html')
+        if os.path.exists(index_path):
+            logger.info(f"index.html exists with permissions: {oct(os.stat(index_path).st_mode)[-3:]}")
+        else:
+            logger.error(f"index.html not found at {index_path}")
+            return False
+
+        return True
+    except Exception as e:
+        logger.error(f"Static directory verification failed: {e}")
+        return False
+
 def on_starting(server):
     """Prepare the application"""
     logger = logging.getLogger('gunicorn.error')
@@ -37,21 +68,18 @@ def on_starting(server):
     logger.info(f"PYTHONPATH: {os.environ.get('PYTHONPATH')}")
     logger.info(f"VIRTUAL_ENV: {os.environ.get('VIRTUAL_ENV')}")
     logger.info(f"Current directory: {os.getcwd()}")
+    logger.info(f"Static directory: {os.environ.get('STATIC_DIR')}")
 
-    # Ensure static directory exists
-    static_dir = os.environ.get('STATIC_DIR', '/opt/render/project/src/static')
-    try:
-        os.makedirs(static_dir, exist_ok=True)
-        os.chmod(static_dir, 0o755)
-        logger.info(f"Ensured static directory exists: {static_dir}")
+    # Verify static directory
+    if not verify_static_directory():
+        logger.error("Static directory verification failed")
+        raise RuntimeError("Static directory verification failed")
 
-        # List contents
-        if os.path.exists(static_dir):
-            contents = os.listdir(static_dir)
-            logger.info(f"Static directory contents: {contents}")
-    except Exception as e:
-        logger.error(f"Static directory setup failed: {e}")
-        raise
+def on_reload(server):
+    """Handle server reload"""
+    logger = logging.getLogger('gunicorn.error')
+    logger.info('Reloading Harmonic Universe server')
+    verify_static_directory()
 
 def when_ready(server):
     """Log when server is ready"""
@@ -59,12 +87,37 @@ def when_ready(server):
     logger.info('Harmonic Universe server is ready')
     logger.info(f"Listening on {bind}")
 
-    # Verify static files
-    static_dir = os.environ.get('STATIC_DIR', '/opt/render/project/src/static')
-    if os.path.exists(static_dir):
-        logger.info(f"Static directory contents at startup: {os.listdir(static_dir)}")
-    else:
-        logger.error(f"Static directory missing at startup: {static_dir}")
+    # Final verification of static files
+    if not verify_static_directory():
+        logger.error("Static directory verification failed after startup")
+
+    # Wait a moment for everything to initialize
+    time.sleep(2)
+
+    # Verify we can connect to our own health endpoint
+    try:
+        import urllib.request
+        health_url = f"http://localhost:10000/health"
+        logger.info(f"Checking health endpoint: {health_url}")
+
+        response = urllib.request.urlopen(health_url)
+        if response.getcode() == 200:
+            logger.info("Health check passed")
+        else:
+            logger.error(f"Health check failed with status: {response.getcode()}")
+    except Exception as e:
+        logger.error(f"Error checking health endpoint: {e}")
+
+def post_worker_init(worker):
+    """Initialize worker processes"""
+    logger = logging.getLogger('gunicorn.error')
+    logger.info(f"Worker {worker.pid} initialized")
+    verify_static_directory()
+
+def worker_abort(worker):
+    """Handle worker abort"""
+    logger = logging.getLogger('gunicorn.error')
+    logger.error(f"Worker {worker.pid} was aborted!")
 
 def on_exit(server):
     """Clean up on exit"""

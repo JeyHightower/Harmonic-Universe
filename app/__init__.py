@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory, jsonify, current_app
+from flask import Flask, send_from_directory, jsonify, current_app, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
@@ -30,8 +30,7 @@ def create_app():
 
     # Create and configure the Flask app
     app = Flask(__name__,
-                static_folder=static_folder,
-                static_url_path='/')  # Serve from root path
+                static_folder=None)  # Disable automatic static serving
 
     # Enable CORS
     CORS(app)
@@ -42,7 +41,7 @@ def create_app():
         SQLALCHEMY_DATABASE_URI=os.environ.get('DATABASE_URL', 'sqlite:///app.db'),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         SEND_FILE_MAX_AGE_DEFAULT=0,
-        STATIC_FOLDER=static_folder,  # Explicitly set in config
+        STATIC_FOLDER=static_folder,
     )
 
     # Ensure static directory exists
@@ -63,10 +62,30 @@ def create_app():
                 logger.info(f"index.html permissions: {oct(os.stat(index_path).st_mode)[-3:]}")
             else:
                 logger.warning(f"index.html not found at {index_path}")
+                # Create a minimal index.html
+                with open(index_path, 'w') as f:
+                    f.write("""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Harmonic Universe</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        h1 { color: #333; }
+    </style>
+</head>
+<body>
+    <h1>Harmonic Universe</h1>
+    <p>Welcome to the Harmonic Universe application!</p>
+</body>
+</html>
+""")
+                os.chmod(index_path, 0o644)
+                logger.info("Created minimal index.html")
     except Exception as e:
         logger.error(f"Static directory setup failed: {e}")
         logger.error(traceback.format_exc())
-        raise  # Fail fast if static directory setup fails
+        raise
 
     # Initialize extensions
     db.init_app(app)
@@ -74,96 +93,84 @@ def create_app():
 
     # Register blueprints
     from app.auth import auth_bp
-    app.register_blueprint(auth_bp)
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
 
     from app.routes import main_bp
-    app.register_blueprint(main_bp)
+    app.register_blueprint(main_bp, url_prefix='/api')
 
-    # Health check endpoint for Render
+    @app.before_request
+    def log_request_info():
+        logger.info(f"Request: {request.method} {request.path}")
+        logger.info(f"Headers: {dict(request.headers)}")
+
+    # Health check endpoint
     @app.route('/health')
     def health():
         try:
-            # Basic application check
-            static_exists = os.path.exists(app.static_folder)
-            index_exists = os.path.exists(os.path.join(app.static_folder, 'index.html'))
+            static_exists = os.path.exists(app.config['STATIC_FOLDER'])
+            index_exists = os.path.exists(os.path.join(app.config['STATIC_FOLDER'], 'index.html'))
+            static_contents = os.listdir(app.config['STATIC_FOLDER']) if static_exists else []
 
-            # Get static directory contents
-            static_contents = os.listdir(app.static_folder) if static_exists else []
-
-            return jsonify({
+            response = {
                 "status": "healthy",
                 "static": {
                     "exists": static_exists,
-                    "path": app.static_folder,
+                    "path": app.config['STATIC_FOLDER'],
                     "index": index_exists,
                     "contents": static_contents
                 },
                 "environment": {
                     "python_path": sys.path,
                     "virtual_env": os.environ.get('VIRTUAL_ENV'),
-                    "static_url_path": app.static_url_path,
-                    "render": os.environ.get('RENDER')
+                    "render": os.environ.get('RENDER'),
+                    "port": os.environ.get('PORT', '10000')
                 }
-            }), 200
+            }
+            logger.info(f"Health check response: {response}")
+            return jsonify(response), 200
         except Exception as e:
-            logger.error(f"Health check failed: {e}")
-            logger.error(traceback.format_exc())
-            return jsonify({
+            error_response = {
                 "status": "unhealthy",
                 "error": str(e),
                 "traceback": traceback.format_exc()
-            }), 500
+            }
+            logger.error(f"Health check failed: {error_response}")
+            return jsonify(error_response), 500
 
-    # Root route that serves index.html
-    @app.route('/')
-    def serve_root():
-        try:
-            logger.info(f"Serving root from {app.static_folder}")
-            if not os.path.exists(os.path.join(app.static_folder, 'index.html')):
-                logger.error(f"index.html not found in {app.static_folder}")
-                return jsonify({"error": "index.html not found"}), 404
-            return send_from_directory(app.static_folder, 'index.html')
-        except Exception as e:
-            logger.error(f"Error serving root: {e}")
-            logger.error(traceback.format_exc())
-            return jsonify({
-                "error": "Error serving index.html",
-                "details": str(e),
-                "path": os.path.join(app.static_folder, 'index.html')
-            }), 500
-
-    # Catch-all route for static files and SPA
+    # Static file serving
+    @app.route('/', defaults={'path': 'index.html'})
     @app.route('/<path:path>')
     def serve_static(path):
         try:
             logger.info(f"Attempting to serve: {path}")
-            file_path = os.path.join(app.static_folder, path)
+            if path.startswith('api/'):
+                return jsonify({"error": "Not found"}), 404
+
+            static_folder = app.config['STATIC_FOLDER']
+            file_path = os.path.join(static_folder, path)
 
             if os.path.exists(file_path) and os.path.isfile(file_path):
                 logger.info(f"Serving static file: {file_path}")
-                return send_from_directory(app.static_folder, path)
-
-            logger.info(f"File not found, serving index.html for SPA routing")
-            return send_from_directory(app.static_folder, 'index.html')
+                try:
+                    return send_from_directory(static_folder, path)
+                except Exception as e:
+                    logger.error(f"Error sending file {path}: {e}")
+                    return jsonify({"error": "File serving error"}), 500
+            else:
+                logger.info(f"File {path} not found, serving index.html")
+                return send_from_directory(static_folder, 'index.html')
         except Exception as e:
             logger.error(f"Error serving {path}: {e}")
             logger.error(traceback.format_exc())
             return jsonify({
                 "error": f"Error serving {path}",
-                "details": str(e),
-                "path": file_path
+                "details": str(e)
             }), 500
 
     # Log final configuration
     logger.info("=== Flask Application Configuration ===")
-    logger.info(f"Static folder: {app.static_folder}")
-    logger.info(f"Static URL path: {app.static_url_path}")
+    logger.info(f"Static folder: {app.config['STATIC_FOLDER']}")
     logger.info(f"Debug mode: {app.debug}")
     logger.info(f"Environment: {app.env}")
-
-    if os.path.exists(app.static_folder):
-        logger.info(f"Static folder contents: {os.listdir(app.static_folder)}")
-    else:
-        logger.error(f"Static folder does not exist: {app.static_folder}")
 
     return app
