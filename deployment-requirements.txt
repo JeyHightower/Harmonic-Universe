@@ -1,0 +1,4 @@
+# Minimum requirements for deployment
+psycopg2-binary>=2.9.3
+gunicorn>=20.1.0
+Flask>=2.0.0

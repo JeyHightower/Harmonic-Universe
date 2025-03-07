@@ -5,7 +5,7 @@ services:
     name: harmonic-universe-api
     runtime: python
     buildCommand: ./build-nomigrations.sh
-    startCommand: ./start-safe.sh
+    startCommand: gunicorn wsgi:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
