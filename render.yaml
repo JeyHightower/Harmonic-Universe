@@ -4,11 +4,13 @@ services:
   - type: web
     name: harmonic-universe
     runtime: python
-    buildCommand: pip install -r requirements-minimal.txt
+    buildCommand: pip install flask==2.0.1 gunicorn==20.1.0 --no-cache-dir
     startCommand: ./start.sh
     envVars:
       - key: STATIC_DIR
         value: /opt/render/project/src/static
+      - key: PORT
+        value: '10000'
     healthCheckPath: /health
     autoDeploy: true
     disk:
