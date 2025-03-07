@@ -16,10 +16,6 @@ timeout = 120
 # Server socket
 bind = f"0.0.0.0:{os.environ.get('PORT', '8000')}"
 
-# SSL configuration (if needed)
-keyfile = None
-certfile = None
-
 # Process naming
 proc_name = 'harmonic-universe'
 
@@ -59,12 +55,6 @@ def on_starting(server):
     """Log when the server starts"""
     logger = logging.getLogger('gunicorn.error')
     logger.info('Starting Harmonic Universe server')
-
-    # Ensure static directory exists
-    static_dir = '/opt/render/project/src/static'
-    if not os.path.exists(static_dir):
-        os.makedirs(static_dir, exist_ok=True)
-        logger.info(f"Created static directory: {static_dir}")
 
 def on_reload(server):
     """Log when the server reloads"""

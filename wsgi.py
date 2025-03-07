@@ -79,10 +79,20 @@ except ImportError as e:
 except Exception as e:
     logger.error(f"Error verifying dependencies: {e}")
 
-# Import the app from your app.py file
-from app import create_app
+# Import the app factory
+try:
+    from app import create_app
+    app = create_app()  # Create the app instance
+    logger.info("Successfully created Flask application instance")
+except Exception as e:
+    logger.error(f"Failed to create Flask application: {e}")
+    logger.error(traceback.format_exc())
+    raise
 
-# No need to create app again as it's imported
+# Log application configuration
+logger.info(f"App static folder: {app.static_folder}")
+logger.info(f"App static url path: {app.static_url_path}")
+logger.info(f"Static folder exists: {os.path.exists(app.static_folder)}")
 
 if __name__ == "__main__":
     # Run the application in development
