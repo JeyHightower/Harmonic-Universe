@@ -2,7 +2,7 @@ import os
 import logging
 
 # Basic configuration
-bind = f"0.0.0.0:{os.environ.get('PORT', '8000')}"
+bind = "0.0.0.0:10000"
 workers = 4
 worker_class = 'sync'
 preload_app = True

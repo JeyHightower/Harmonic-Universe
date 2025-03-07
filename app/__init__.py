@@ -21,13 +21,16 @@ migrate = Migrate()
 
 def create_app():
     """Application factory function"""
-    # Use local static directory
-    static_folder = os.path.join(os.getcwd(), 'static')
+    # Use Render's static directory in production, local in development
+    if os.environ.get('RENDER'):
+        static_folder = '/opt/render/project/src/static'
+    else:
+        static_folder = os.path.join(os.getcwd(), 'static')
 
     # Create and configure the Flask app
     app = Flask(__name__,
                 static_folder=static_folder,
-                static_url_path='/static')  # Explicit static URL path
+                static_url_path='')  # Serve from root path
 
     # Enable CORS
     CORS(app)
@@ -43,6 +46,7 @@ def create_app():
     # Ensure static directory exists
     try:
         os.makedirs(static_folder, exist_ok=True)
+        os.chmod(static_folder, 0o755)
         logger.info(f"Static directory ready: {static_folder}")
     except Exception as e:
         logger.error(f"Static directory setup failed: {e}")
@@ -63,18 +67,16 @@ def create_app():
     @app.route('/health')
     def health():
         try:
-            # Verify static directory and files
+            # Basic application check
             static_exists = os.path.exists(app.static_folder)
             index_exists = os.path.exists(os.path.join(app.static_folder, 'index.html'))
-            test_css_exists = os.path.exists(os.path.join(app.static_folder, 'test.css'))
 
             return jsonify({
                 "status": "healthy",
-                "static_folder": {
+                "static": {
                     "exists": static_exists,
                     "path": app.static_folder,
-                    "index_exists": index_exists,
-                    "test_css_exists": test_css_exists
+                    "index": index_exists
                 }
             }), 200
         except Exception as e:
@@ -86,27 +88,32 @@ def create_app():
 
     # Root route that serves index.html
     @app.route('/')
-    def index():
+    def serve_root():
         try:
             return send_from_directory(app.static_folder, 'index.html')
         except Exception as e:
-            logger.error(f"Error serving index: {e}")
-            return jsonify({"error": "Index file not found"}), 404
+            logger.error(f"Error serving root: {e}")
+            return jsonify({
+                "error": "Index file not found",
+                "path": os.path.join(app.static_folder, 'index.html')
+            }), 404
 
-    # Catch-all route for SPA frontend
+    # Catch-all route for static files and SPA
     @app.route('/<path:path>')
-    def catch_all(path):
+    def serve_static(path):
         try:
-            # First try to serve from static folder
-            if os.path.exists(os.path.join(app.static_folder, path)):
+            file_path = os.path.join(app.static_folder, path)
+            if os.path.exists(file_path) and os.path.isfile(file_path):
                 return send_from_directory(app.static_folder, path)
-            # If not found, return index.html for SPA routing
             return send_from_directory(app.static_folder, 'index.html')
         except Exception as e:
             logger.error(f"Error serving {path}: {e}")
-            return jsonify({"error": f"Error serving {path}"}), 500
+            return jsonify({
+                "error": f"Error serving {path}",
+                "path": file_path
+            }), 500
 
-    # Log app configuration
+    # Log configuration
     logger.info(f"Static folder: {app.static_folder}")
     logger.info(f"Static URL path: {app.static_url_path}")
     if os.path.exists(app.static_folder):

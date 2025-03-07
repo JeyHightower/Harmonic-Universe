@@ -6,13 +6,22 @@ echo "==== Starting Harmonic Universe Build Process ===="
 # Install Python dependencies
 pip install -r requirements.txt
 
-# Create static directory if it doesn't exist
-mkdir -p static
+# Determine static directory based on environment
+if [ "$RENDER" = "true" ]; then
+    STATIC_DIR="/opt/render/project/src/static"
+else
+    STATIC_DIR="static"
+fi
+
+# Create static directory
+echo "Creating static directory at $STATIC_DIR"
+mkdir -p "$STATIC_DIR"
+chmod 755 "$STATIC_DIR"
 
 # Create a basic index.html if it doesn't exist yet
-if [ ! -f "static/index.html" ]; then
-    echo "Creating basic index.html in static folder"
-    cat > static/index.html << 'EOF'
+if [ ! -f "$STATIC_DIR/index.html" ]; then
+    echo "Creating basic index.html"
+    cat > "$STATIC_DIR/index.html" << 'EOF'
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -28,54 +37,65 @@ if [ ! -f "static/index.html" ]; then
             text-align: center;
         }
         h1 { color: #336699; }
-        .logo { max-width: 300px; margin: 20px auto; }
+        .status {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
     <h1>Harmonic Universe</h1>
-    <p>Welcome to Harmonic Universe - an interactive web application for creating and exploring musical universes based on physics principles.</p>
-    <p>The application is currently loading...</p>
+    <div class="status">
+        <p>Welcome to Harmonic Universe - an interactive web application for creating and exploring musical universes based on physics principles.</p>
+        <p id="status">Checking application status...</p>
+    </div>
+    <script>
+        fetch('/health')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('status').textContent =
+                    `Status: ${data.status}`;
+            })
+            .catch(error => {
+                document.getElementById('status').textContent =
+                    'Status: Error connecting to server';
+            });
+    </script>
 </body>
 </html>
 EOF
+    chmod 644 "$STATIC_DIR/index.html"
 fi
 
-# Create a CSS file to verify static serving
-echo "Creating test.css to verify static file serving"
-cat > static/test.css << 'EOF'
-body { background-color: #f8f8f8; }
-EOF
-
-# If there's a frontend directory with build process
-if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then
+# Handle frontend build
+if [ -d "frontend" ]; then
     echo "Building frontend..."
     cd frontend
-    npm install
-    npm run build
-    cd ..
 
-    # Copy frontend build files to static directory
-    if [ -d "frontend/build" ]; then
-        echo "Copying frontend build files to static directory"
-        cp -r frontend/build/* static/
-    elif [ -d "frontend/dist" ]; then
-        echo "Copying frontend dist files to static directory"
-        cp -r frontend/dist/* static/
+    # Install dependencies
+    npm install
+
+    # Run build
+    npm run build
+
+    # Check if build was successful
+    if [ -d "dist" ]; then
+        echo "Copying frontend build files to $STATIC_DIR"
+        cp -r dist/* "../$STATIC_DIR/"
+        echo "Frontend build copied successfully"
+    else
+        echo "Warning: Frontend build directory not found"
     fi
+
+    cd ..
 fi
 
-# Create a test json file for health checks
-echo "Creating health check test file"
-cat > static/health.json << 'EOF'
-{"status": "ok"}
-EOF
-
-# Set proper permissions
-chmod -R 755 static
-
+# Verify setup
 echo "==== Verifying Setup ===="
 echo "Static directory contents:"
-ls -la static/
+ls -la "$STATIC_DIR"
 echo "Python modules installed:"
 pip list
 echo "Current directory structure:"

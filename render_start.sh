@@ -4,6 +4,24 @@
 
 set -e  # Exit on error
 
+echo "Starting Render deployment..."
+
+# Activate virtual environment
+source .venv/bin/activate
+
+# Verify Python environment
+echo "Python version: $(python --version)"
+echo "Pip version: $(pip --version)"
+echo "Virtual env: $VIRTUAL_ENV"
+
+# Verify dependencies
+python -c "
+import flask
+import sqlalchemy
+import flask_sqlalchemy
+print('All required packages are available')
+"
+
 echo "=============== RENDER START SCRIPT ==============="
 echo "Current directory: $(pwd)"
 echo "Environment: RENDER=${RENDER}"

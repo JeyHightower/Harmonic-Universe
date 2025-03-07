@@ -47,7 +47,11 @@ services:
         value: 'true'
       - key: STATIC_DIR
         value: '/opt/render/project/src/static'
-    healthCheckPath: /api/health
+      - key: VIRTUAL_ENV
+        value: /opt/render/project/src/.venv
+      - key: PATH
+        value: /opt/render/project/src/.venv/bin:${PATH}
+    healthCheckPath: /health
 
   # Frontend service (React)
   - type: web

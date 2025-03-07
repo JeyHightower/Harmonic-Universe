@@ -9,6 +9,9 @@ touch .SKIP_MIGRATIONS
 
 # Install Python dependencies
 echo "Installing Python dependencies..."
+python -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
 pip install -r requirements.txt
 
 # Fix database migration state directly to be absolutely sure
