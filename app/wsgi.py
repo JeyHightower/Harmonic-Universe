@@ -59,6 +59,10 @@ except Exception as e:
             'error': str(e)
         })
 
+# Create the 'application' alias that Gunicorn expects
+application = app
+logger.info("Created 'application' alias for Gunicorn compatibility")
+
 # For direct execution (development only)
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 8000))

@@ -86,7 +86,7 @@ When Render.com deploys the application:
 2. The start command runs `render_start.sh` which:
    - Creates necessary directories
    - Runs `setup_render.py` to ensure static files exist
-   - Starts Gunicorn with `render_wsgi.py` as the entry point
+   - Starts Gunicorn with `app.wsgi:application` as the entry point
 
 ## Troubleshooting
 
@@ -105,18 +105,6 @@ To update the deployment configuration:
 2. Commit and push changes to the repository
 3. Trigger a new deployment on Render.com
 
-## Testing Locally
-
-To test the deployment configuration locally:
-
-```bash
-# Run the setup script
-python setup_render.py
-
-# Run the application with Gunicorn
-gunicorn render_wsgi:app --bind=0.0.0.0:8000
-```
-
 ## Environment Variables
 
 The application uses the following environment variables:
@@ -133,11 +121,18 @@ This deployment configuration addresses several common issues:
 
 This error occurred because Gunicorn was trying to access a non-existent method on the Flask application object. We fixed this by:
 
-- Creating a proper WSGI entry point in `render_wsgi.py`
+- Creating a proper WSGI entry point in `app/wsgi.py`
 - Ensuring the Flask app is exposed correctly as `app`
 - Using a direct startup command that avoids confusion with app loading
 
-### 2. Static File Serving Issues
+### 2. AttributeError: module 'app.wsgi' has no attribute 'application'
+
+This error occurred because Gunicorn expects an attribute named 'application' in the WSGI module. We fixed this by:
+
+- Adding the line `application = app` in app/wsgi.py to create the alias Gunicorn expects
+- Updating render_start.sh to explicitly use `app.wsgi:application` in the Gunicorn command
+
+### 3. Static File Serving Issues
 
 Problems with static files not being found or served were addressed by:
 
@@ -146,7 +141,7 @@ Problems with static files not being found or served were addressed by:
 - Setting explicit static folder paths in the Flask app
 - Adding middleware to ensure Content-Length headers are set correctly
 
-### 3. Startup Sequencing
+### 4. Startup Sequencing
 
 Issues with the application not starting correctly were fixed by:
 
@@ -155,7 +150,7 @@ Issues with the application not starting correctly were fixed by:
 - Simplifying the Gunicorn configuration
 - Adding thorough logging throughout the startup process
 
-### 4. Node.js Version Warning
+### 5. Node.js Version Warning
 
 Updated the Node.js version to 18.18.0 to address the end-of-life warning for Node.js 16.13.0.
 
@@ -243,6 +238,26 @@ python setup_render.py
 python -m app.wsgi
 ```
 
+You can also test with Gunicorn directly:
+
+```bash
+# Start with Gunicorn
+gunicorn app.wsgi:application --bind=0.0.0.0:8000
+```
+
+## Important WSGI Configuration Details
+
+In our app/wsgi.py file, we've defined both `app` and `application` variables. This is because:
+
+1. `app` is the conventional name for Flask applications in code
+2. `application` is what WSGI servers like Gunicorn expect by default
+
+The line `application = app` creates an alias that ensures Gunicorn can properly import the Flask application. Without this alias, you would get the error:
+
+```
+AttributeError: module 'app.wsgi' has no attribute 'application'
+```
+
 ## Verifying Static File Handling
 
 To verify that static files are being handled correctly:
@@ -261,14 +276,15 @@ To verify that static files are being handled correctly:
 
 ```
 harmonic-universe/
-├── app.py                 # Main entry point that imports from backend
-├── wsgi.py                # WSGI entry point for Gunicorn
+├── app/                   # Main application package
+│   ├── __init__.py        # Contains create_app() factory
+│   ├── wsgi.py            # WSGI entry point for Gunicorn
+│   └── static/            # App-specific static files
+├── static/                # Main static directory (for frontend build)
 ├── render.yaml            # Render.com configuration
-├── verify_render_setup.py # Verification script
-├── backend/               # Backend Flask application
-│   └── app/               # Main application package
-├── frontend/              # Frontend React application
-└── static/                # Built frontend files (created during build)
+├── render_start.sh        # Startup script for Render
+├── setup_render.py        # Setup script for static directories
+└── frontend/              # Frontend React application
 ```
 
 ## Prerequisites

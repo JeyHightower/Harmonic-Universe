@@ -31,29 +31,6 @@ services:
     healthCheckPath: /api/health
     autoDeploy: true
 
-  # Frontend service (React)
-  - type: web
-    name: harmonic-universe-frontend
-    runtime: node
-    buildCommand: cd frontend && npm ci && npm run build
-    startCommand: cd frontend && npx serve -s build -l $PORT
-    envVars:
-      - key: NODE_VERSION
-        value: 18.18.0
-      - key: NODE_ENV
-        value: production
-      - key: VITE_API_URL
-        fromService:
-          name: harmonic-universe
-          type: web
-          property: url
-      - key: REACT_APP_API_URL
-        fromService:
-          name: harmonic-universe
-          type: web
-          property: url
-    autoDeploy: true
-
 databases:
   - name: harmonic-universe-db
     plan: starter

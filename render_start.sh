@@ -24,6 +24,6 @@ echo "Created symlinks from $STATIC_DIR to app/static/"
 echo "Running setup script..."
 python setup_render.py
 
-# Start the application with Gunicorn using app.wsgi:app
-echo "Starting Gunicorn with app.wsgi:app..."
-gunicorn app.wsgi:app --bind=0.0.0.0:${PORT:-8000} --workers=1 --timeout=120
+# Start the application with Gunicorn using app.wsgi:application
+echo "Starting Gunicorn with app.wsgi:application..."
+gunicorn app.wsgi:application --bind=0.0.0.0:${PORT:-8000} --workers=1 --timeout=120
