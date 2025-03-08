@@ -1,16 +1,18 @@
-# render.yaml - Verification configuration
+# render.yaml - Database-focused configuration
 services:
-  # Verification service
+  # Minimal application with database focus
   - type: web
     name: harmonic-universe-api
     runtime: python
-    buildCommand: echo "No build needed for verification server"
-    startCommand: ./verify_start.sh
+    buildCommand: echo "No build needed for minimal application"
+    startCommand: ./minimal_start.sh
     envVars:
       - key: STATIC_DIR
         value: /opt/render/project/src/static
       - key: PORT
         value: '10000'
+      - key: PYTHONPATH
+        value: /opt/render/project/src
     healthCheckPath: /health
 
   # Frontend service (React)

@@ -1,94 +1,161 @@
-from flask_sqlalchemy import SQLAlchemy
+#!/usr/bin/env python
+"""
+Models for Harmonic Universe
+This file defines the database models for the application
+"""
+import os
+import logging
 from datetime import datetime
-from werkzeug.security import generate_password_hash, check_password_hash
 
-db = SQLAlchemy()
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("models")
 
-class User(db.Model):
+# Dummy DB class
+class DummyDB:
+    """A dummy database implementation"""
+
+    def __init__(self):
+        self.tables = {
+            'users': [],
+            'universes': [],
+            'scenes': []
+        }
+        logger.info("Initialized dummy database")
+
+    def init_app(self, app):
+        """Initialize the database with the app"""
+        logger.info("Initializing database with app")
+        return self
+
+    def create_all(self):
+        """Create all tables"""
+        logger.info("Creating all tables")
+        return True
+
+    def drop_all(self):
+        """Drop all tables"""
+        logger.info("Dropping all tables")
+        self.tables = {
+            'users': [],
+            'universes': [],
+            'scenes': []
+        }
+        return True
+
+    def session(self):
+        """Get a session"""
+        logger.info("Getting session")
+        return self
+
+    def add(self, obj):
+        """Add an object to the database"""
+        logger.info(f"Adding object: {obj}")
+        table = self.tables.get(obj.__tablename__, [])
+        table.append(obj)
+        return self
+
+    def commit(self):
+        """Commit the transaction"""
+        logger.info("Committing transaction")
+        return True
+
+    def rollback(self):
+        """Rollback the transaction"""
+        logger.info("Rolling back transaction")
+        return True
+
+    def execute(self, *args, **kwargs):
+        """Execute a query"""
+        logger.info(f"Executing query: {args}, {kwargs}")
+        return self
+
+    def first(self):
+        """Get the first result"""
+        logger.info("Getting first result")
+        return None
+
+    def all(self):
+        """Get all results"""
+        logger.info("Getting all results")
+        return []
+
+# Create DB instance
+db = DummyDB()
+
+# Base model class
+class Base:
+    """Base model class"""
+    query = db
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__}>"
+
+# User model
+class User(Base):
+    """User model"""
     __tablename__ = 'users'
 
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = 'id'
+    username = 'username'
+    email = 'email'
+    password_hash = 'password_hash'
+    created_at = 'created_at'
+    updated_at = 'updated_at'
 
-    # Relationships
-    universes = db.relationship('Universe', backref='creator', lazy=True, cascade="all, delete-orphan")
+    def __init__(self, username=None, email=None, password=None):
+        self.username = username
+        self.email = email
+        self.password_hash = f"hash_of_{password}" if password else None
+        self.created_at = datetime.now()
+        self.updated_at = datetime.now()
+        logger.info(f"Created User: {username}, {email}")
 
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+    def __repr__(self):
+        return f"<User {self.username}>"
 
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'username': self.username,
-            'email': self.email,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
-        }
-
-class Universe(db.Model):
+# Universe model
+class Universe(Base):
+    """Universe model"""
     __tablename__ = 'universes'
 
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text, nullable=True)
-    rules = db.Column(db.Text, nullable=True)
-    image_url = db.Column(db.String(255), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = 'id'
+    name = 'name'
+    description = 'description'
+    user_id = 'user_id'
+    created_at = 'created_at'
+    updated_at = 'updated_at'
 
-    # Foreign Keys
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    def __init__(self, name=None, description=None, user_id=None):
+        self.name = name
+        self.description = description
+        self.user_id = user_id
+        self.created_at = datetime.now()
+        self.updated_at = datetime.now()
+        logger.info(f"Created Universe: {name}, {description}, {user_id}")
 
-    # Relationships
-    scenes = db.relationship('Scene', backref='universe', lazy=True, cascade="all, delete-orphan")
+    def __repr__(self):
+        return f"<Universe {self.name}>"
 
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'title': self.title,
-            'description': self.description,
-            'rules': self.rules,
-            'image_url': self.image_url,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
-            'user_id': self.user_id,
-            'creator': self.creator.username if self.creator else None,
-            'scene_count': len(self.scenes) if self.scenes else 0
-        }
-
-class Scene(db.Model):
+# Scene model
+class Scene(Base):
+    """Scene model"""
     __tablename__ = 'scenes'
 
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text, nullable=True)
-    content = db.Column(db.Text, nullable=True)
-    image_url = db.Column(db.String(255), nullable=True)
-    order = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = 'id'
+    name = 'name'
+    description = 'description'
+    universe_id = 'universe_id'
+    created_at = 'created_at'
+    updated_at = 'updated_at'
 
-    # Foreign Keys
-    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id'), nullable=False)
+    def __init__(self, name=None, description=None, universe_id=None):
+        self.name = name
+        self.description = description
+        self.universe_id = universe_id
+        self.created_at = datetime.now()
+        self.updated_at = datetime.now()
+        logger.info(f"Created Scene: {name}, {description}, {universe_id}")
 
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'title': self.title,
-            'description': self.description,
-            'content': self.content,
-            'image_url': self.image_url,
-            'order': self.order,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
-            'universe_id': self.universe_id,
-            'universe_title': self.universe.title if self.universe else None,
-            'creator': self.universe.creator.username if self.universe and self.universe.creator else None
-        }
+    def __repr__(self):
+        return f"<Scene {self.name}>"
