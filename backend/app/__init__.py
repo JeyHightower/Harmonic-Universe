@@ -21,9 +21,16 @@ jwt = JWTManager()
 socketio = SocketIO()
 bcrypt = Bcrypt()
 
-def create_app(config_class=Config):
-    # Use the absolute Render path instead of a relative path
-    static_folder = '/opt/render/project/src/static'
+def create_app(config_class=Config, test_config=None):
+    # Determine the appropriate static folder based on environment
+    if os.environ.get('RENDER') == 'true':
+        # Use the absolute Render path in production
+        static_folder = '/opt/render/project/src/static'
+    else:
+        # Use a local path in development/testing
+        static_folder = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'static')
+
+    logger.info(f"Using static folder: {static_folder}")
 
     # Ensure static folder exists
     if not os.path.exists(static_folder):
@@ -32,9 +39,20 @@ def create_app(config_class=Config):
             logger.info(f"Created static folder at {static_folder}")
         except Exception as e:
             logger.error(f"Failed to create static folder: {e}")
+            # Fall back to a local static folder if the Render path isn't accessible
+            static_folder = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'static')
+            os.makedirs(static_folder, exist_ok=True)
+            logger.info(f"Created fallback static folder at {static_folder}")
 
     app = Flask(__name__, static_folder=static_folder, static_url_path='')
+
+    # Apply base configuration
     app.config.from_object(config_class)
+
+    # Override with test config if provided
+    if test_config is not None:
+        app.config.update(test_config)
+        logger.info("Applied test configuration")
 
     # Load the .env file
     from dotenv import load_dotenv

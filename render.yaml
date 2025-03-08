@@ -1,16 +1,23 @@
-# render.yaml - Database-focused configuration
+# render.yaml - Optimized configuration for Harmonic Universe
 services:
-  # Minimal application with database focus
+  # Backend API service
   - type: web
-    name: flask-app
+    name: harmonic-universe-api
     plan: free
     runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: ./start.sh
+    buildCommand: ./render-build.sh
+    startCommand: gunicorn backend.wsgi:app
     envVars:
       - key: STATIC_DIR
         value: /opt/render/project/src/static
-    healthCheckPath: /health
+      - key: PYTHON_VERSION
+        value: 3.10.12
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+    healthCheckPath: /api/health
+    autoDeploy: true
 
   # Frontend service (React)
   - type: web
@@ -24,11 +31,19 @@ services:
       - key: NODE_ENV
         value: production
       - key: VITE_API_URL
-        value: https://harmonic-universe-api.onrender.com
+        fromService:
+          name: harmonic-universe-api
+          type: web
+          property: url
       - key: REACT_APP_API_URL
-        value: https://harmonic-universe-api.onrender.com
+        fromService:
+          name: harmonic-universe-api
+          type: web
+          property: url
+    autoDeploy: true
 
 databases:
   - name: harmonic-universe-db
     plan: starter
     postgresMajorVersion: '15'
+    ipAllowList: [] # Only allow internal connections
