@@ -4,13 +4,13 @@ services:
   - type: web
     name: harmonic-universe
     runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: >
-      python -c "import os; os.makedirs('/opt/render/project/src/static', exist_ok=True)" &&
-      gunicorn wsgi:app --workers=2 --timeout=60
+    buildCommand: pip install gunicorn flask flask-cors && pip install -r requirements.txt
+    startCommand: bash ./render_start.sh
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.0
+        value: 3.9.18
+      - key: NODE_VERSION
+        value: 18.18.0
       - key: PORT
         value: 8000
       - key: STATIC_DIR

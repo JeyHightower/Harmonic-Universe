@@ -1,7 +1,12 @@
+"""
+Direct Flask application entry point for Render.com.
+This is a special app.py file that will be used by Gunicorn as the entry point.
+"""
 from flask import Flask, send_from_directory, jsonify
 import os
 import logging
 import sys
+from app import create_app
 
 # Setup logging to stdout
 logging.basicConfig(level=logging.INFO, stream=sys.stdout,
@@ -66,10 +71,9 @@ def serve_static(path):
     logger.info(f"Serving {path} from {static_dir}")
     return send_from_directory(static_dir, path)
 
-# For legacy imports and integrations
-def create_app():
-    """Factory function for app creation (for legacy compatibility)"""
-    return app
+# Create and expose the Flask application
+application = create_app()
+app = application  # Alias for compatibility
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))

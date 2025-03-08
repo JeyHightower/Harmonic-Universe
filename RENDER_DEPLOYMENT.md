@@ -1,23 +1,169 @@
-# Harmonic Universe Deployment Guide
+# Harmonic Universe Deployment on Render.com
 
-This guide explains how to deploy the Harmonic Universe application on Render.com.
+This document outlines the deployment setup for Harmonic Universe on Render.com.
+
+## Deployment Architecture
+
+The Harmonic Universe application is deployed as a Web Service on Render.com using the following architecture:
+
+1. **Python Flask Backend**
+
+   - Python 3.9 runtime
+   - Gunicorn as the WSGI server
+   - Flask web framework
+
+2. **Static Asset Handling**
+   - Static files served from `/static` directory
+   - React frontend built files served via Flask
+
+## Configuration Files
+
+### 1. `render.yaml`
+
+The main configuration file that defines how Render.com deploys the application:
+
+```yaml
+services:
+  - type: web
+    name: harmonic-universe
+    runtime: python
+    buildCommand: pip install gunicorn flask flask-cors && pip install -r requirements.txt
+    startCommand: bash ./render_start.sh
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.18
+      - key: NODE_VERSION
+        value: 18.18.0
+```
+
+### 2. `render_start.sh`
+
+A bash script that runs at application startup to:
+
+- Create necessary static directories
+- Run the setup script
+- Start Gunicorn with the proper configuration
+
+### 3. `render_wsgi.py`
+
+The WSGI entry point for the application that:
+
+- Imports the Flask app using the create_app factory pattern
+- Adds middleware for ensuring proper Content-Length headers
+- Includes a test route for deployment verification
+
+### 4. `setup_render.py`
+
+Python script that runs at startup to:
+
+- Create all necessary static directories
+- Generate default index.html files if needed
+- Set required environment variables
+
+### 5. `gunicorn.conf.py`
+
+Configuration file for Gunicorn that:
+
+- Sets worker and timeout settings
+- Ensures static directories exist
+- Configures logging
+
+## Static File Handling
+
+The application handles static files in multiple locations for redundancy:
+
+1. `/opt/render/project/src/static/` - The primary Render.com static directory
+2. `app/static/` - The Flask app's static directory
+3. `static/` - Local static directory
+
+All three directories are created and populated with at least an `index.html` file at startup.
+
+## Deployment Process
+
+When Render.com deploys the application:
+
+1. The build command installs necessary dependencies
+2. The start command runs `render_start.sh` which:
+   - Creates necessary directories
+   - Runs `setup_render.py` to ensure static files exist
+   - Starts Gunicorn with `render_wsgi.py` as the entry point
+
+## Troubleshooting
+
+If you encounter issues with static file serving:
+
+1. Check the logs for errors in the setup scripts
+2. Verify the static directories exist and contain the required files
+3. Check permissions on the static directories and files
+4. Test the `/render-test` endpoint to verify the WSGI setup
+
+## Updating the Deployment
+
+To update the deployment configuration:
+
+1. Modify the appropriate configuration file(s)
+2. Commit and push changes to the repository
+3. Trigger a new deployment on Render.com
+
+## Testing Locally
+
+To test the deployment configuration locally:
+
+```bash
+# Run the setup script
+python setup_render.py
+
+# Run the application with Gunicorn
+gunicorn render_wsgi:app --bind=0.0.0.0:8000
+```
+
+## Environment Variables
+
+The application uses the following environment variables:
+
+- `RENDER` - Set to 'true' on Render.com
+- `STATIC_FOLDER` - Path to the static files directory
+- `PORT` - Port for the application to listen on
 
 ## What We Fixed
 
-We fixed several issues that were preventing the application from deploying correctly:
+This deployment configuration addresses several common issues:
 
-1. **Import Paths**: Updated all imports in the backend code to use the proper `backend.app` path structure
-   instead of just `app`, which was causing import errors.
+### 1. AttributeError: 'Flask' object has no attribute 'wsgi'
 
-2. **Entry Point Structure**: Created proper entry points at the root level:
+This error occurred because Gunicorn was trying to access a non-existent method on the Flask application object. We fixed this by:
 
-   - `app.py`: The main entry point that imports and instantiates the application
-   - `wsgi.py`: A WSGI-compatible entry point for Gunicorn
+- Creating a proper WSGI entry point in `render_wsgi.py`
+- Ensuring the Flask app is exposed correctly as `app`
+- Using a direct startup command that avoids confusion with app loading
 
-3. **Python Path Configuration**: Ensured PYTHONPATH includes the current directory in
-   both Render.yaml configuration and start commands.
+### 2. Static File Serving Issues
 
-4. **Verification Script**: Enhanced the verification script to provide detailed diagnostic information.
+Problems with static files not being found or served were addressed by:
+
+- Creating static directories in multiple locations for redundancy
+- Adding a default `index.html` file at startup
+- Setting explicit static folder paths in the Flask app
+- Adding middleware to ensure Content-Length headers are set correctly
+
+### 3. Startup Sequencing
+
+Issues with the application not starting correctly were fixed by:
+
+- Creating a dedicated `render_start.sh` script that handles startup in the correct order
+- Running setup scripts before starting Gunicorn
+- Simplifying the Gunicorn configuration
+- Adding thorough logging throughout the startup process
+
+### 4. Node.js Version Warning
+
+Updated the Node.js version to 18.18.0 to address the end-of-life warning for Node.js 16.13.0.
+
+## Next Steps
+
+1. Monitor the application logs after deployment to ensure everything is working correctly
+2. Consider implementing a health check endpoint that verifies database connectivity
+3. Update the Static Asset handling to support a full React frontend build process
 
 ## Deployment on Render.com
 
