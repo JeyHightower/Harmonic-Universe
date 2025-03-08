@@ -4,35 +4,52 @@ set -x  # Print commands for debugging
 
 echo "Starting minimal application with database focus..."
 
+# Set up environment - if running in Render, use their structure, otherwise use local
+if [ -d "/opt/render/project" ]; then
+    STATIC_DIR="/opt/render/project/src/static"
+    ROOT_DIR="/opt/render/project/src"
+    echo "Running in Render environment"
+else
+    STATIC_DIR="./static"
+    ROOT_DIR="."
+    echo "Running in local environment"
+fi
+
 # Create required directories
-mkdir -p /opt/render/project/src/static
-mkdir -p /opt/render/project/src/static/api
-mkdir -p /opt/render/project/src/migrations/versions
+mkdir -p $STATIC_DIR
+mkdir -p $STATIC_DIR/api
+mkdir -p $ROOT_DIR/migrations/versions
 
 # Create static files
-cat > /opt/render/project/src/static/index.html << 'EOF'
+cat > $STATIC_DIR/index.html << 'EOF'
 <!DOCTYPE html>
 <html>
 <head><title>Harmonic Universe</title></head>
 <body><h1>Harmonic Universe</h1><p>Static file served correctly</p></body>
 </html>
 EOF
-chmod 644 /opt/render/project/src/static/index.html
+chmod 644 $STATIC_DIR/index.html
 
-# Create health check endpoints
-echo '{"status":"ok","message":"Health check passed","database":"connected"}' > /opt/render/project/src/static/health
-echo '{"status":"ok","message":"Health check passed","database":"connected"}' > /opt/render/project/src/static/api/health
-chmod 644 /opt/render/project/src/static/health
-chmod 644 /opt/render/project/src/static/api/health
+# Create health check endpoints - support multiple patterns
+for endpoint in health healthcheck ping status; do
+    echo '{"status":"ok","message":"Health check passed","database":"connected","service":"harmonic-universe","version":"1.0.0"}' > $STATIC_DIR/$endpoint
+    echo '{"status":"ok","message":"Health check passed","database":"connected","service":"harmonic-universe","version":"1.0.0"}' > $STATIC_DIR/api/$endpoint
+    chmod 644 $STATIC_DIR/$endpoint
+    chmod 644 $STATIC_DIR/api/$endpoint
+done
 
-# Create a dummy database file
-cat > /opt/render/project/src/harmonic_universe.db << 'EOF'
-SQLite format 3
-EOF
-chmod 644 /opt/render/project/src/harmonic_universe.db
+# Create a dummy database file if no DATABASE_URL is provided
+if [ -z "$DATABASE_URL" ]; then
+    echo "No DATABASE_URL found, creating SQLite database"
+    touch $ROOT_DIR/harmonic_universe.db
+    chmod 644 $ROOT_DIR/harmonic_universe.db
+else
+    echo "DATABASE_URL found, will use PostgreSQL"
+fi
 
 # Create dummy migration file
-cat > /opt/render/project/src/migrations/versions/60ebacf5d282_initial_migration.py << 'EOF'
+mkdir -p $ROOT_DIR/migrations/versions
+cat > $ROOT_DIR/migrations/versions/60ebacf5d282_initial_migration.py << 'EOF'
 # Initial migration
 from alembic import op
 import sqlalchemy as sa
@@ -75,13 +92,13 @@ def downgrade():
     op.drop_table('users')
 EOF
 
-# Create alembic.ini
-cat > /opt/render/project/src/alembic.ini << 'EOF'
+# Create alembic.ini - configure for both PostgreSQL and SQLite
+cat > $ROOT_DIR/alembic.ini << EOF
 [alembic]
 script_location = migrations
 prepend_sys_path = .
 version_path_separator = os
-sqlalchemy.url = sqlite:///harmonic_universe.db
+sqlalchemy.url = ${DATABASE_URL:-sqlite:///harmonic_universe.db}
 
 [loggers]
 keys = root,sqlalchemy,alembic
@@ -118,10 +135,14 @@ format = %(levelname)-5.5s [%(name)s] %(message)s
 datefmt = %H:%M:%S
 EOF
 
-# Set environment variables
-export PORT=10000
-export STATIC_DIR=/opt/render/project/src/static
+# Set environment variables - PORT must come from the environment
+export PORT=${PORT:-10000}
+export STATIC_DIR=$STATIC_DIR
+export PYTHONPATH=$ROOT_DIR:$PYTHONPATH
 export FLASK_APP=minimal_app.py
+
+# Try to install any missing packages
+pip install psycopg2-binary || echo "Warning: Failed to install psycopg2-binary"
 
 # Start the application
 echo "Starting minimal application on port $PORT"

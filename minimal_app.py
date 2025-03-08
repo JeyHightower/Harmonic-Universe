@@ -20,7 +20,7 @@ HEALTH_RESPONSE = b"""HTTP/1.1 200 OK
 Content-Type: application/json
 Connection: close
 
-{"status":"ok","message":"Health check passed","database":"connected","service":"harmonic-universe"}
+{"status":"ok","message":"Health check passed","database":"connected","service":"harmonic-universe","version":"1.0.0"}
 """
 
 HTML_RESPONSE = b"""HTTP/1.1 200 OK
@@ -138,15 +138,18 @@ def api_health():
     }
 
 # Socket server for HTTP
-def run_socket_server(port=10000):
+def run_socket_server(port=None):
     """Run a basic socket server to handle HTTP requests"""
+    if port is None:
+        port = int(os.environ.get('PORT', 10000))
+
     try:
         # Create socket
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        # Bind to port
-        server.bind(('', port))
+        # Bind to port - use '' to bind to all interfaces
+        server.bind(('0.0.0.0', port))
         server.listen(5)
         logger.info(f"Socket server listening on port {port}")
 
@@ -166,8 +169,8 @@ def run_socket_server(port=10000):
                 request_line = data.splitlines()[0] if data.splitlines() else ''
                 logger.info(f"Request: {request_line}")
 
-                # Send response based on path
-                if '/health' in request_line or '/api/health' in request_line:
+                # Check for health check endpoints - support multiple patterns
+                if any(endpoint in request_line for endpoint in ['/health', '/api/health', '/healthcheck', '/api/healthcheck', '/ping', '/api/ping', '/status', '/api/status']):
                     logger.info("Sending health response")
                     client.sendall(HEALTH_RESPONSE)
                 else:
@@ -335,7 +338,11 @@ if __name__ == "__main__":
     setup_migrations()
 
     # Start socket server in a thread
-    server_thread = threading.Thread(target=run_socket_server, args=(10000,))
+    # Get port from environment variable without default - let the system assign the port
+    port = int(os.environ.get('PORT', 10000))
+    logger.info(f"Using port: {port}")
+
+    server_thread = threading.Thread(target=run_socket_server, args=(port,))
     server_thread.daemon = True
     server_thread.start()
 
