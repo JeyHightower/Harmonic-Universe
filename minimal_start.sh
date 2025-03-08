@@ -15,6 +15,10 @@ else
     echo "Running in local environment"
 fi
 
+# Install required dependencies
+echo "Installing required dependencies..."
+pip install -r requirements.txt || echo "Warning: Some packages may not have installed correctly"
+
 # Create required directories
 mkdir -p $STATIC_DIR
 mkdir -p $STATIC_DIR/api
@@ -142,6 +146,19 @@ if [ "$ENVIRONMENT" == "test" ] || [ -n "$TEST_MODE" ]; then
 else
     export PORT=${PORT:-10000}
     echo "Using port $PORT"
+fi
+
+# Create symlink from app/static to static directory if needed
+if [ -d "app" ] && [ ! -d "app/static" ]; then
+    echo "Creating symlink from app/static to $STATIC_DIR"
+    ln -sf $STATIC_DIR app/static
+fi
+
+# Create symlink from /app/static to static directory if needed
+if [ ! -d "/app/static" ]; then
+    echo "Creating symlink from /app/static to $STATIC_DIR"
+    mkdir -p /app || true
+    ln -sf $STATIC_DIR /app/static || echo "Could not create symlink to /app/static (permission denied?)"
 fi
 
 export STATIC_DIR=$STATIC_DIR

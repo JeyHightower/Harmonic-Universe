@@ -34,6 +34,13 @@ Connection: close
 <body><h1>Harmonic Universe</h1><p>Application is running</p></body></html>
 """
 
+HEALTH_RESPONSE = b"""HTTP/1.1 200 OK
+Content-Type: application/json
+Connection: close
+
+{"status":"ok","message":"Health check passed","database":"connected","service":"harmonic-universe","version":"1.0.0"}
+"""
+
 # Dummy DB implementation
 class DummyDB:
     """A fake database that just logs actions"""
@@ -219,7 +226,12 @@ class App:
             if path == route_path or (route_path.endswith('/') and path.startswith(route_path)):
                 try:
                     result = handler(method, path, headers, body)
-                    # If it's already a string, convert to json
+
+                    # If result is already bytes (pre-formatted HTTP response)
+                    if isinstance(result, bytes):
+                        return result
+
+                    # If it's a dict, convert to json
                     if isinstance(result, dict):
                         result = json.dumps(result)
 
@@ -241,26 +253,21 @@ app = App()
 @app.route('/health')
 def health_check(method, path, headers, body):
     """Health check endpoint"""
-    return {
-        'status': 'ok',
-        'message': 'Health check passed',
-        'database': 'connected',
-        'service': 'harmonic-universe',
-        'timestamp': datetime.now().isoformat(),
-        'version': '1.0.0'
-    }
+    logger.info("Health check endpoint hit")
+    return HEALTH_RESPONSE
 
 @app.route('/api/health')
 def api_health(method, path, headers, body):
     """API health check endpoint"""
-    return {
-        'status': 'ok',
-        'message': 'API health check passed',
-        'database': 'connected',
-        'service': 'harmonic-universe',
-        'timestamp': datetime.now().isoformat(),
-        'version': '1.0.0'
-    }
+    logger.info("API health check endpoint hit")
+    return HEALTH_RESPONSE
+
+# Root endpoint
+@app.route('/')
+def root(method, path, headers, body):
+    """Root endpoint"""
+    logger.info("Root endpoint hit")
+    return HTML_RESPONSE
 
 # Socket server for HTTP
 def run_socket_server(port=None):
@@ -273,7 +280,7 @@ def run_socket_server(port=None):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        # Bind to port - use '' to bind to all interfaces
+        # Bind to port - use '0.0.0.0' to bind to all interfaces
         server.bind(('0.0.0.0', port))
         server.listen(5)
         logger.info(f"Socket server listening on port {port}")
@@ -284,54 +291,69 @@ def run_socket_server(port=None):
                 client, addr = server.accept()
                 logger.info(f"Connection from {addr}")
 
-                # Get request
-                data = client.recv(4096).decode('utf-8', errors='ignore')
-                if not data:
-                    client.close()
-                    continue
-
-                # Parse request
-                lines = data.splitlines()
-                if not lines:
-                    client.close()
-                    continue
-
-                request_line = lines[0]
-                logger.info(f"Request: {request_line}")
-
-                # Parse method and path
-                match = re.match(r'^(\w+)\s+([^\s]+)', request_line)
-                if not match:
-                    client.close()
-                    continue
-
-                method, path = match.groups()
-                path = urllib.parse.unquote(path)
-
-                # Parse headers
-                headers = {}
-                i = 1
-                while i < len(lines) and lines[i]:
-                    parts = lines[i].split(':', 1)
-                    if len(parts) == 2:
-                        headers[parts[0].strip()] = parts[1].strip()
-                    i += 1
-
-                # Get body if present
-                body = '\n'.join(lines[i+1:]) if i < len(lines) else ''
-
-                # Use the App class to handle the request
-                response = app.handle_request(method, path, headers, body)
-                client.sendall(response)
-
-                # Close connection
-                client.close()
+                # Handle client in a new thread to avoid blocking
+                client_thread = threading.Thread(target=handle_client, args=(client, addr))
+                client_thread.daemon = True
+                client_thread.start()
             except Exception as e:
-                logger.error(f"Error handling request: {e}")
+                logger.error(f"Error accepting connection: {e}")
                 # Continue despite errors
                 time.sleep(0.5)
     except Exception as e:
         logger.error(f"Error running socket server: {e}")
+        sys.exit(1)  # Exit with error if we can't start the server
+
+def handle_client(client, addr):
+    """Handle a client connection"""
+    try:
+        # Get request
+        data = client.recv(4096).decode('utf-8', errors='ignore')
+        if not data:
+            client.close()
+            return
+
+        # Parse request
+        lines = data.splitlines()
+        if not lines:
+            client.close()
+            return
+
+        request_line = lines[0]
+        logger.info(f"Request: {request_line}")
+
+        # Parse method and path
+        match = re.match(r'^(\w+)\s+([^\s]+)', request_line)
+        if not match:
+            client.close()
+            return
+
+        method, path = match.groups()
+        path = urllib.parse.unquote(path)
+
+        # Parse headers
+        headers = {}
+        i = 1
+        while i < len(lines) and lines[i]:
+            parts = lines[i].split(':', 1)
+            if len(parts) == 2:
+                headers[parts[0].strip()] = parts[1].strip()
+            i += 1
+
+        # Get body if present
+        body = '\n'.join(lines[i+1:]) if i < len(lines) else ''
+
+        # Use the App class to handle the request
+        response = app.handle_request(method, path, headers, body)
+        client.sendall(response)
+
+        # Close connection
+        client.close()
+    except Exception as e:
+        logger.error(f"Error handling client {addr}: {e}")
+        try:
+            client.close()
+        except:
+            pass
 
 # Setup static files
 def setup_static_files():
@@ -340,7 +362,16 @@ def setup_static_files():
 
     try:
         # Create static directory if it doesn't exist
-        os.makedirs(static_dir, exist_ok=True)
+        try:
+            os.makedirs(static_dir, exist_ok=True)
+        except PermissionError:
+            logger.warning(f"Permission denied when creating static directory: {static_dir}")
+            # Try to use a fallback directory if we can't write to the configured one
+            if os.environ.get('RENDER', '') == 'true':
+                static_dir = '/tmp/static'
+                os.makedirs(static_dir, exist_ok=True)
+                app.static_folder = static_dir
+                logger.info(f"Using fallback static directory: {static_dir}")
 
         # Create index.html if it doesn't exist
         index_path = os.path.join(static_dir, 'index.html')
@@ -364,9 +395,10 @@ def setup_static_files():
         with open(api_health_path, 'w') as f:
             f.write('{"status":"ok","message":"Health check passed","database":"connected","service":"harmonic-universe"}')
 
-        logger.info("Static files setup complete")
+        logger.info(f"Static files setup complete in {static_dir}")
     except Exception as e:
         logger.error(f"Error setting up static files: {e}")
+        # Continue despite errors - we'll handle requests dynamically
 
 # Mock migration functions
 def setup_migrations():
@@ -484,20 +516,9 @@ if __name__ == "__main__":
     # Setup migrations
     setup_migrations()
 
-    # Start socket server in a thread
-    # Get port from environment variable without default - let the system assign the port
+    # Get port from environment variable
     port = int(os.environ.get('PORT', 10000))
     logger.info(f"Using port: {port}")
 
-    server_thread = threading.Thread(target=run_socket_server, args=(port,))
-    server_thread.daemon = True
-    server_thread.start()
-
-    # Keep main thread alive
-    try:
-        while True:
-            logger.info("Application is running")
-            time.sleep(60)
-    except KeyboardInterrupt:
-        logger.info("Application shutting down")
-        sys.exit(0)
+    # Run socket server in the main thread
+    run_socket_server(port)
