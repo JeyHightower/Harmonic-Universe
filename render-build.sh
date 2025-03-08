@@ -4,26 +4,27 @@ set -o errexit
 echo "=== Starting Harmonic Universe Build Process ==="
 echo "Python version: $(python --version)"
 
-# Install Python dependencies with Poetry
+# Create and activate virtual environment
+python -m venv .venv
+source .venv/bin/activate
+
+# Install dependencies
 echo "Installing Python dependencies..."
-poetry install
+pip install --upgrade pip
+pip install gunicorn
 
-# If you have a Django application
-if [ -f manage.py ]; then
-  echo "Running database migrations..."
-  python manage.py migrate
-
-  echo "Collecting static files..."
-  python manage.py collectstatic --noinput
+# Install requirements if requirements.txt exists
+if [ -f requirements.txt ]; then
+  pip install -r requirements.txt
 fi
 
-# If you have frontend build steps
-if [ -f package.json ]; then
-  echo "Installing frontend dependencies..."
-  npm install
+# Verify gunicorn installation
+which gunicorn || echo "WARNING: gunicorn not found in PATH"
+pip list | grep gunicorn
 
-  echo "Building frontend assets..."
-  npm run build
+# Setup static files if needed
+if [ -f app_static_symlink.py ]; then
+  python app_static_symlink.py
 fi
 
 echo "Build process completed successfully!"

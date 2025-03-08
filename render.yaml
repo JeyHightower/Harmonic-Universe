@@ -4,8 +4,8 @@ services:
   - type: web
     name: harmonic-universe
     runtime: python
-    buildCommand: poetry install
-    startCommand: gunicorn app.wsgi:application --bind 0.0.0.0:$PORT
+    buildCommand: chmod +x render-build.sh && ./render-build.sh
+    startCommand: chmod +x render-start.sh && ./render-start.sh
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
@@ -28,7 +28,7 @@ services:
     startCommand: cd frontend && npx serve -s build -l $PORT
     envVars:
       - key: NODE_VERSION
-        value: 16.13.0
+        value: 18.18.0
       - key: NODE_ENV
         value: production
       - key: VITE_API_URL
