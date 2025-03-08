@@ -6,6 +6,7 @@ This script is designed to run as part of the gunicorn startup process.
 import os
 import sys
 import logging
+import stat
 import shutil
 from pathlib import Path
 
@@ -18,29 +19,45 @@ logger = logging.getLogger("ensure_static_directory")
 
 def ensure_static_directory():
     """
-    Ensure the static directory exists and contains the required files.
-    This function will create the directory and files if they don't exist.
+    Ensure the static directory exists and contains the index.html file.
+    Also check permissions and file content to diagnose serving issues.
     """
-    # Define common static directories
-    static_dirs = [
-        "/opt/render/project/src/static",  # Render absolute path
-        os.path.join(os.getcwd(), "static"),  # Root static
-        os.path.join(os.getcwd(), "app/static"),  # App static
-    ]
+    # Get the current directory
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    logger.info(f"Current directory: {current_dir}")
 
-    logger.info(f"Current directory: {os.getcwd()}")
-    logger.info(f"Directory listing: {os.listdir('.')}")
+    # Define paths
+    static_dir = os.path.join(current_dir, 'static')
+    app_static_dir = os.path.join(current_dir, 'app', 'static')
+    index_path = os.path.join(static_dir, 'index.html')
 
-    # First, ensure all directories exist
-    for static_dir in static_dirs:
-        try:
-            Path(static_dir).mkdir(parents=True, exist_ok=True)
-            logger.info(f"Ensured static directory exists: {static_dir}")
-        except Exception as e:
-            logger.error(f"Failed to create static directory {static_dir}: {e}")
+    # Check if static directory exists
+    if not os.path.exists(static_dir):
+        logger.warning(f"Static directory does not exist at {static_dir}. Creating it now.")
+        os.makedirs(static_dir, exist_ok=True)
+    else:
+        logger.info(f"Static directory exists at {static_dir}")
+        # Check permissions
+        st = os.stat(static_dir)
+        permissions = stat.filemode(st.st_mode)
+        logger.info(f"Static directory permissions: {permissions}")
 
-    # Create the index.html content
-    index_html = """<!DOCTYPE html>
+    # Check if app/static directory exists
+    if not os.path.exists(app_static_dir):
+        logger.warning(f"App static directory does not exist at {app_static_dir}. Creating it now.")
+        os.makedirs(app_static_dir, exist_ok=True)
+    else:
+        logger.info(f"App static directory exists at {app_static_dir}")
+        # Check permissions
+        st = os.stat(app_static_dir)
+        permissions = stat.filemode(st.st_mode)
+        logger.info(f"App static directory permissions: {permissions}")
+
+    # Check if index.html exists in static directory
+    if not os.path.exists(index_path):
+        logger.warning(f"index.html does not exist at {index_path}. Creating a minimal version.")
+        with open(index_path, 'w') as f:
+            f.write("""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -48,129 +65,123 @@ def ensure_static_directory():
     <title>Harmonic Universe</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
             color: white;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             text-align: center;
         }
         .container {
             max-width: 800px;
-            padding: 2rem;
-            background-color: rgba(0, 0, 0, 0.2);
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
+            padding: 20px;
         }
         h1 {
-            font-size: 3rem;
+            font-size: 2.5rem;
             margin-bottom: 1rem;
-            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
         p {
             font-size: 1.2rem;
-            line-height: 1.6;
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
         }
         .button {
             display: inline-block;
-            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
-            color: white;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
             text-decoration: none;
-            padding: 0.8rem 1.8rem;
-            border-radius: 30px;
             font-weight: bold;
             transition: all 0.3s ease;
-            margin: 0.5rem;
+        }
+        .button-primary {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .button-secondary {
+            background-color: #2196F3;
+            color: white;
+        }
+        .button-tertiary {
+            background-color: #FFC107;
+            color: black;
         }
         .button:hover {
             transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Harmonic Universe</h1>
-        <p>Welcome to the Harmonic Universe platform. The application is running successfully!</p>
-        <p>This is a creative platform for music and physics visualization.</p>
-        <div>
-            <a href="/api/health" class="button">Health Check</a>
-            <a href="/debug" class="button">Debug Info</a>
+        <h1>Welcome to Harmonic Universe</h1>
+        <p>Explore the fascinating connection between music and physics.</p>
+        <div class="button-container">
+            <a href="/login" class="button button-primary">Login</a>
+            <a href="/register" class="button button-secondary">Sign Up</a>
+            <a href="/demo" class="button button-tertiary">Try Demo</a>
+            <a href="/api/health" class="button button-primary">Health Check</a>
         </div>
     </div>
 </body>
-</html>"""
+</html>""")
+    else:
+        logger.info(f"index.html exists at {index_path}")
+        # Check file size
+        file_size = os.path.getsize(index_path)
+        logger.info(f"index.html file size: {file_size} bytes")
 
-    # Force-create index.html in all static directories
-    for static_dir in static_dirs:
+        # Check permissions
+        st = os.stat(index_path)
+        permissions = stat.filemode(st.st_mode)
+        logger.info(f"index.html permissions: {permissions}")
+
+        # Check content (first few lines)
         try:
-            index_path = os.path.join(static_dir, "index.html")
-            with open(index_path, "w") as f:
-                f.write(index_html)
-
-            # Set permissions to be world-readable
-            os.chmod(index_path, 0o644)
-            logger.info(f"Created index.html at {index_path} with permissions 644")
-
-            # Verify the file exists and is readable
-            if os.path.exists(index_path) and os.access(index_path, os.R_OK):
-                with open(index_path, "r") as f:
-                    content = f.read(100)  # Just read the first 100 chars to verify
-                logger.info(f"Successfully read from {index_path}: {content[:50]}...")
-            else:
-                logger.error(f"File exists but cannot be read: {index_path}")
+            with open(index_path, 'r') as f:
+                first_lines = ''.join([next(f) for _ in range(5)])
+            logger.info(f"First few lines of index.html:\n{first_lines}...")
         except Exception as e:
-            logger.error(f"Failed to create or verify index.html at {index_path}: {e}")
+            logger.error(f"Error reading index.html: {e}")
 
-    # Create symbolic links between directories for redundancy
-    try:
-        # Use the Render path as the primary one if it exists
-        render_static = "/opt/render/project/src/static"
-        if os.path.exists(render_static):
-            for static_dir in static_dirs:
-                if static_dir != render_static and not os.path.exists(static_dir):
-                    try:
-                        # Create parent directory if needed
-                        os.makedirs(os.path.dirname(static_dir), exist_ok=True)
-                        os.symlink(render_static, static_dir)
-                        logger.info(f"Created symlink from {render_static} to {static_dir}")
-                    except Exception as e:
-                        logger.error(f"Failed to create symlink to {static_dir}: {e}")
-    except Exception as e:
-        logger.error(f"Error setting up symlinks: {e}")
+    # Create a symlink from app/static to static if it doesn't exist
+    app_static_index = os.path.join(app_static_dir, 'index.html')
+    if not os.path.exists(app_static_index):
+        try:
+            # Copy index.html to app/static directory
+            shutil.copy2(index_path, app_static_index)
+            logger.info(f"Copied index.html to {app_static_index}")
+        except Exception as e:
+            logger.error(f"Error copying index.html to app/static: {e}")
+    else:
+        logger.info(f"index.html exists in app/static directory at {app_static_index}")
+        # Check file size
+        file_size = os.path.getsize(app_static_index)
+        logger.info(f"app/static/index.html file size: {file_size} bytes")
 
-    # Final verification
-    logger.info("Final verification of static directories:")
-    for static_dir in static_dirs:
-        if os.path.exists(static_dir):
-            try:
-                files = os.listdir(static_dir)
-                logger.info(f"Directory {static_dir} exists with contents: {files}")
+    # List all files in static directory
+    logger.info("Files in static directory:")
+    for file in os.listdir(static_dir):
+        file_path = os.path.join(static_dir, file)
+        file_size = os.path.getsize(file_path)
+        logger.info(f"  - {file} ({file_size} bytes)")
 
-                # Check index.html specifically
-                index_path = os.path.join(static_dir, "index.html")
-                if os.path.exists(index_path):
-                    logger.info(f"  ✅ {index_path} exists")
+    # List all files in app/static directory
+    logger.info("Files in app/static directory:")
+    for file in os.listdir(app_static_dir):
+        file_path = os.path.join(app_static_dir, file)
+        file_size = os.path.getsize(file_path)
+        logger.info(f"  - {file} ({file_size} bytes)")
 
-                    # Check file size
-                    size = os.path.getsize(index_path)
-                    logger.info(f"  📄 File size: {size} bytes")
-
-                    # Check permissions
-                    mode = oct(os.stat(index_path).st_mode)[-3:]
-                    logger.info(f"  🔒 File permissions: {mode}")
-                else:
-                    logger.error(f"  ❌ {index_path} does not exist")
-            except Exception as e:
-                logger.error(f"Error checking directory {static_dir}: {e}")
-        else:
-            logger.error(f"Directory {static_dir} does not exist")
+    logger.info("Static directory check completed.")
 
 if __name__ == "__main__":
     logger.info("Starting static directory verification")

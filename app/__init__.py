@@ -290,25 +290,77 @@ def create_app():
     @app.route('/login')
     def login():
         """Handle login requests."""
-        # For now, just redirect to home page or return a placeholder
-        # In a real implementation, this would show a login form or handle login logic
-        return redirect('/')
+        # Serve the index.html file so React router can handle the login route
+        try:
+            index_path = os.path.join(app.static_folder, 'index.html')
+            logger.info(f"Serving index.html for login route from {index_path}")
+
+            # Read the file content directly
+            with open(index_path, 'r') as f:
+                content = f.read()
+
+            # Create a response with proper content length and type
+            response = app.response_class(
+                response=content,
+                status=200,
+                mimetype='text/html'
+            )
+            response.headers['Content-Length'] = str(len(content))
+            return response
+        except Exception as e:
+            logger.error(f"Error reading index.html for login route: {e}")
+            return f"Error: {str(e)}", 500
 
     # Signup route
     @app.route('/signup')
+    @app.route('/register')
     def signup():
         """Handle signup requests."""
-        # For now, just redirect to home page or return a placeholder
-        # In a real implementation, this would show a signup form or handle signup logic
-        return redirect('/')
+        # Serve the index.html file so React router can handle the signup route
+        try:
+            index_path = os.path.join(app.static_folder, 'index.html')
+            logger.info(f"Serving index.html for signup/register route from {index_path}")
+
+            # Read the file content directly
+            with open(index_path, 'r') as f:
+                content = f.read()
+
+            # Create a response with proper content length and type
+            response = app.response_class(
+                response=content,
+                status=200,
+                mimetype='text/html'
+            )
+            response.headers['Content-Length'] = str(len(content))
+            return response
+        except Exception as e:
+            logger.error(f"Error reading index.html for signup/register route: {e}")
+            return f"Error: {str(e)}", 500
 
     # Demo route
     @app.route('/demo')
     def demo():
         """Handle demo requests."""
-        # For now, just redirect to home page or return a placeholder
-        # In a real implementation, this would load the demo experience
-        return redirect('/')
+        # Serve the index.html file so React router can handle the demo route
+        try:
+            index_path = os.path.join(app.static_folder, 'index.html')
+            logger.info(f"Serving index.html for demo route from {index_path}")
+
+            # Read the file content directly
+            with open(index_path, 'r') as f:
+                content = f.read()
+
+            # Create a response with proper content length and type
+            response = app.response_class(
+                response=content,
+                status=200,
+                mimetype='text/html'
+            )
+            response.headers['Content-Length'] = str(len(content))
+            return response
+        except Exception as e:
+            logger.error(f"Error reading index.html for demo route: {e}")
+            return f"Error: {str(e)}", 500
 
     # Add more routes for your application as needed
     # For example: @app.route('/api/users'), etc.
