@@ -170,85 +170,66 @@ def create_app():
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
     def serve_static(path):
+        logger.info(f"Serving path: {path}")
+
+        # For API routes, let Flask handle them normally
         if path and path.startswith('api/'):
-            # Let Flask handle API routes
             return app.handle_request()
 
+        # Try to serve the specific file if it exists
+        if path and os.path.exists(os.path.join(app.static_folder, path)):
+            logger.info(f"Serving static file: {path}")
+            return send_from_directory(app.static_folder, path)
+
+        # Otherwise serve index.html for client-side routing
         try:
-            # Try to serve the requested path
-            if path and os.path.exists(os.path.join(app.static_folder, path)):
-                logger.info(f"Serving static file: {path}")
-                return send_from_directory(app.static_folder, path)
-
-            # Default to index.html (SPA approach)
-            logger.info(f"Serving index.html for path: {path}")
-
-            # Check if index.html exists
             index_path = os.path.join(app.static_folder, 'index.html')
-            if not os.path.exists(index_path):
-                # Create a minimal index.html if it doesn't exist
-                logger.warning(f"index.html not found at {index_path}, creating default")
-                with open(index_path, 'w') as f:
-                    f.write("""<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Harmonic Universe</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 0;
-        }
-        .container {
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-            max-width: 600px;
-            text-align: center;
-        }
-        h1 { color: #3f51b5; }
-        .btn {
-            display: inline-block;
-            background-color: #3f51b5;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            text-decoration: none;
-            margin-top: 20px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Welcome to Harmonic Universe</h1>
-        <p>The application is running successfully.</p>
-        <a href="/api/health" class="btn">API Health Check</a>
-    </div>
-</body>
-</html>""")
-                logger.info(f"Successfully created index.html at {index_path}")
-            else:
-                logger.info(f"Found existing index.html at {index_path}")
+            logger.info(f"Serving index.html from {index_path}")
 
-            return send_from_directory(app.static_folder, 'index.html')
+            # Read the file content directly
+            with open(index_path, 'r') as f:
+                content = f.read()
 
+            # Log content length for debugging
+            logger.info(f"index.html content length: {len(content)} bytes")
+
+            # Create a response with proper content length and type
+            response = app.response_class(
+                response=content,
+                status=200,
+                mimetype='text/html'
+            )
+
+            # Explicitly set Content-Length header
+            response.headers['Content-Length'] = str(len(content))
+
+            return response
         except Exception as e:
-            logger.error(f"Error serving static content for '{path}': {e}")
-            return f"""
-            <html><body>
-            <h1>Harmonic Universe</h1>
-            <p>Error serving content: {str(e)}</p>
-            <p>Path: {path}</p>
-            <p>Static folder: {app.static_folder}</p>
-            <p><a href="/api/health">API Health Check</a></p>
-            </body></html>
-            """, 500
+            logger.error(f"Error serving index.html: {e}")
+            return f"Error loading application: {str(e)}", 500
+
+    # Add a debugging route to directly check the index.html content
+    @app.route('/debug-index')
+    def debug_index():
+        index_path = os.path.join(app.static_folder, 'index.html')
+        try:
+            with open(index_path, 'r') as f:
+                content = f.read()
+
+            # Log the content length and a preview
+            logger.info(f"Debug - Index.html content length: {len(content)} bytes")
+            logger.info(f"Preview: {content[:200]}...")
+
+            # Return the full content with correct headers
+            response = app.response_class(
+                response=content,
+                status=200,
+                mimetype='text/html'
+            )
+            response.headers['Content-Length'] = str(len(content))
+            return response
+        except Exception as e:
+            logger.error(f"Error reading index.html: {e}")
+            return f"Error: {str(e)}", 500
 
     return app

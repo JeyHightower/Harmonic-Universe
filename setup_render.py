@@ -63,7 +63,8 @@ def setup_static_directories():
     <style>
         body {{
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             min-height: 100vh;
             margin: 0;
             display: flex;
@@ -74,42 +75,69 @@ def setup_static_directories():
             padding: 20px;
         }}
         .container {{
-            background-color: white;
+            background-color: rgba(0, 0, 0, 0.2);
             border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-            max-width: 600px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            max-width: 800px;
         }}
         h1 {{
-            color: #3f51b5;
+            font-size: 3rem;
             margin-bottom: 10px;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }}
         p {{
-            color: #555;
+            font-size: 1.2rem;
             margin-bottom: 20px;
             line-height: 1.5;
         }}
+        .button-container {{
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+        }}
         .btn {{
             display: inline-block;
-            background-color: #3f51b5;
+            background: rgba(255, 255, 255, 0.2);
             color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 12px 24px;
+            border-radius: 30px;
             text-decoration: none;
             font-weight: bold;
-            transition: background-color 0.3s;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
         }}
         .btn:hover {{
-            background-color: #303f9f;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }}
+        .btn-primary {{
+            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+        }}
+        .btn-secondary {{
+            background: linear-gradient(to right, #f093fb 0%, #f5576c 100%);
+        }}
+        .btn-tertiary {{
+            background: linear-gradient(to right, #43e97b 0%, #38f9d7 100%);
         }}
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Harmonic Universe</h1>
-        <p>Welcome to Harmonic Universe! The application is successfully running on {environment_text}.</p>
-        <p>If you're seeing this page, static files are being served correctly.</p>
-        <a href="/api/health" class="btn">Check API Health</a>
+        <p>Explore the fascinating connection between music and physics</p>
+        <p>Running on {environment_text}</p>
+        <div class="button-container">
+            <a href="/login" class="btn btn-primary">Login</a>
+            <a href="/signup" class="btn btn-secondary">Sign Up</a>
+            <a href="/demo" class="btn btn-tertiary">Try Demo</a>
+        </div>
     </div>
 </body>
 </html>

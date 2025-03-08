@@ -52,39 +52,78 @@ def ensure_static_files():
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             min-height: 100vh;
+            margin: 0;
+            padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 0;
+            height: 100vh;
         }
         .container {
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-            max-width: 600px;
+            max-width: 800px;
+            padding: 2rem;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
             text-align: center;
         }
-        h1 { color: #3f51b5; }
-        p { color: #555; }
-        .btn {
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        p {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .button {
             display: inline-block;
-            background-color: #3f51b5;
+            background: rgba(255, 255, 255, 0.2);
             color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
             text-decoration: none;
-            margin-top: 20px;
+            padding: 0.8rem 1.8rem;
+            border-radius: 30px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+        }
+        .button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .button-primary {
+            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+        }
+        .button-secondary {
+            background: linear-gradient(to right, #f093fb 0%, #f5576c 100%);
+        }
+        .button-tertiary {
+            background: linear-gradient(to right, #43e97b 0%, #38f9d7 100%);
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Welcome to Harmonic Universe</h1>
-        <p>Created by wsgi.py static file handler</p>
-        <a href="/api/health" class="btn">API Health Check</a>
+        <h1>Harmonic Universe</h1>
+        <p>Explore the fascinating connection between music and physics.</p>
+        <div class="button-container">
+            <a href="/login" class="button button-primary">Login</a>
+            <a href="/signup" class="button button-secondary">Sign Up</a>
+            <a href="/demo" class="button button-tertiary">Try Demo</a>
+        </div>
     </div>
 </body>
 </html>""")
