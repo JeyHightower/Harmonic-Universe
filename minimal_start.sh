@@ -135,8 +135,15 @@ format = %(levelname)-5.5s [%(name)s] %(message)s
 datefmt = %H:%M:%S
 EOF
 
-# Set environment variables - PORT must come from the environment
-export PORT=${PORT:-10000}
+# Set environment variables - PORT should be 8000 for testing and default to 10000 for production
+if [ "$ENVIRONMENT" == "test" ] || [ -n "$TEST_MODE" ]; then
+    export PORT=8000
+    echo "Test mode detected, using port 8000"
+else
+    export PORT=${PORT:-10000}
+    echo "Using port $PORT"
+fi
+
 export STATIC_DIR=$STATIC_DIR
 export PYTHONPATH=$ROOT_DIR:$PYTHONPATH
 export FLASK_APP=minimal_app.py
