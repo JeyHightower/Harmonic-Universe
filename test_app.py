@@ -14,14 +14,29 @@ logger = logging.getLogger(__name__)
 def test_endpoints():
     """Test that all required endpoints are working"""
     base_url = "http://localhost:10000"
-    endpoints = {
-        "/": {"content_type": "text/html", "expected": "Hello from Render"},
+
+    # Test regular endpoints
+    basic_endpoints = {
+        "/": {"content_type": "text/html", "expected": "Harmonic Universe"},
         "/health": {"content_type": "application/json", "expected_json": {"status": "healthy"}},
         "/api/health": {"content_type": "application/json", "expected_json": {"status": "healthy"}}
     }
 
+    # Test legacy endpoints
+    legacy_endpoints = {
+        "/ping": {"content_type": "application/json", "expected_json": {"status": "healthy"}},
+        "/status": {"content_type": "application/json", "expected_json": {"status": "healthy"}},
+        "/healthcheck": {"content_type": "application/json", "expected_json": {"status": "healthy"}},
+        "/api/ping": {"content_type": "application/json", "expected_json": {"status": "healthy"}},
+        "/api/status": {"content_type": "application/json", "expected_json": {"status": "healthy"}},
+        "/api/healthcheck": {"content_type": "application/json", "expected_json": {"status": "healthy"}}
+    }
+
+    # Combine both endpoint types
+    all_endpoints = {**basic_endpoints, **legacy_endpoints}
+
     success = True
-    for endpoint, expected in endpoints.items():
+    for endpoint, expected in all_endpoints.items():
         try:
             url = f"{base_url}{endpoint}"
             logger.info(f"Testing endpoint: {url}")
