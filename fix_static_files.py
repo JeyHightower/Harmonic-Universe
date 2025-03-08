@@ -1,83 +1,3 @@
-#!/usr/bin/env bash
-# Strict error handling
-set -eo pipefail
-
-echo "=== RUNNING RENDER BUILD SCRIPT ==="
-echo "Current directory: $(pwd)"
-echo "Files in current directory:"
-ls -la
-
-# Install dependencies
-echo "Installing Python dependencies..."
-pip install gunicorn==21.2.0 flask-migrate python-dotenv Flask
-pip install -r requirements.txt
-
-# Ensure the app directory exists
-echo "Setting up application structure..."
-mkdir -p app
-
-# List Python path
-echo "Python path:"
-python -c "import sys; print(sys.path)"
-
-# Verify app/__init__.py exists
-if [ ! -f "app/__init__.py" ]; then
-  echo "Creating app/__init__.py"
-  cat > app/__init__.py << 'EOF'
-# app/__init__.py
-"""
-Package initialization for the app module.
-This file ensures the app directory is treated as a proper Python package.
-"""
-import logging
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-logger.info("Initializing app package")
-EOF
-fi
-
-# Check if config.py exists and patch it if needed
-if [ -f "config.py" ]; then
-  echo "Checking config.py for load_dotenv import..."
-  if grep -q "load_dotenv()" config.py && ! grep -q "from dotenv import load_dotenv" config.py; then
-    echo "Patching config.py to include load_dotenv import"
-    sed -i '1s/^/from dotenv import load_dotenv\n/' config.py || \
-    echo 'from dotenv import load_dotenv' | cat - config.py > temp && mv temp config.py
-  fi
-fi
-
-# Create .env file with basic configuration if it doesn't exist
-if [ ! -f ".env" ]; then
-  echo "Creating minimal .env file for production"
-  cat > .env << 'EOF'
-# Production environment variables
-FLASK_ENV=production
-FLASK_APP=app
-DEBUG=False
-LOG_LEVEL=INFO
-SECRET_KEY=render-auto-generated-key-do-not-use-in-prod
-DATABASE_URL=${DATABASE_URL:-sqlite:///app.db}
-# Set RENDER flag for proper static folder detection
-RENDER=true
-EOF
-fi
-
-# Define the absolute static directory path
-RENDER_STATIC_DIR="/opt/render/project/src/static"
-echo "Using static directory: ${RENDER_STATIC_DIR}"
-
-# Create and set up static directory
-echo "Setting up static files directory..."
-mkdir -p "${RENDER_STATIC_DIR}"
-
-# Run the comprehensive static files fix script
-if [ -f "fix_static_files.py" ]; then
-  echo "Running fix_static_files.py to ensure static files exist in all locations..."
-  python fix_static_files.py
-else
-  echo "Creating fix_static_files.py..."
-  cat > fix_static_files.py << 'EOF'
 #!/usr/bin/env python
 """
 Script to fix static file issues by ensuring index.html exists in all possible static directories
@@ -221,6 +141,24 @@ def ensure_static_dirs():
         if primary_static_dir:
             for static_dir in static_dirs:
                 if static_dir != primary_static_dir:
+                    # Remove existing directory if it's not a symlink
+                    if os.path.exists(static_dir) and not os.path.islink(static_dir):
+                        # Backup any existing files
+                        backup_dir = f"{static_dir}_backup"
+                        if os.path.exists(static_dir):
+                            try:
+                                shutil.copytree(static_dir, backup_dir, dirs_exist_ok=True)
+                                logger.info(f"Backed up {static_dir} to {backup_dir}")
+                            except Exception as e:
+                                logger.error(f"Failed to backup {static_dir}: {e}")
+
+                        # Now remove the directory
+                        try:
+                            shutil.rmtree(static_dir)
+                            logger.info(f"Removed existing directory {static_dir}")
+                        except Exception as e:
+                            logger.error(f"Failed to remove directory {static_dir}: {e}")
+
                     # Create symlink if it doesn't exist
                     if not os.path.exists(static_dir):
                         os.symlink(primary_static_dir, static_dir)
@@ -243,21 +181,3 @@ if __name__ == "__main__":
     logger.info("Starting static files fix script")
     ensure_static_dirs()
     logger.info("Static files fix script completed")
-EOF
-  chmod +x fix_static_files.py
-  python fix_static_files.py
-fi
-
-# Ensure static directory has correct permissions
-echo "Setting proper permissions for static directory..."
-chmod -R 755 "${RENDER_STATIC_DIR}"
-
-# Verify static directory structure
-echo "Static directory structure:"
-find "${RENDER_STATIC_DIR}" -type f | sort || echo "Could not find any files in static directory"
-
-# Print directory structure for debugging
-echo "Directory structure:"
-find . -type f -name "*.py" | sort
-
-echo "=== BUILD COMPLETED SUCCESSFULLY ==="
