@@ -13,19 +13,32 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("app.wsgi")
 logger.info("Starting standalone app.wsgi module")
 
-# Create a basic Flask application
-application = Flask(__name__)
-
 # Add the current directory to the Python path
 current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
     logger.info(f"Added {current_dir} to sys.path")
 
-# Configure static folder
-static_folder = os.environ.get('STATIC_DIR', os.path.join(current_dir, 'static'))
-application.static_folder = static_folder
-logger.info(f"Using static folder: {static_folder}")
+# Create a basic Flask application with the correct static folder
+# First determine the appropriate static folder based on environment
+render_static_dir = "/opt/render/project/src/static"
+project_static_dir = os.path.join(current_dir, 'static')
+app_static_dir = os.path.join(current_dir, 'app', 'static')
+
+# Check which directory exists and use it, with a preference for the Render path
+for static_path in [render_static_dir, project_static_dir, app_static_dir]:
+    if os.path.exists(static_path):
+        static_folder = static_path
+        logger.info(f"Found existing static folder: {static_folder}")
+        break
+else:
+    # Default to the render path if none exist
+    static_folder = render_static_dir
+    logger.info(f"Using default static folder: {static_folder}")
+
+# Create the app with the correct static folder
+application = Flask(__name__, static_folder=static_folder, static_url_path='')
+logger.info(f"Created Flask app with static_folder: {static_folder}")
 
 # Print the Python path for debugging
 logger.info(f"Python path: {sys.path}")
@@ -34,9 +47,18 @@ logger.info(f"Directory contents: {os.listdir('.')}")
 if os.path.exists('app'):
     logger.info(f"App directory contents: {os.listdir('app')}")
 
-# Check if static directory exists and has content
-if os.path.exists(static_folder):
-    logger.info(f"Static directory contents: {os.listdir(static_folder)}")
+# Ensure static directory exists and has content
+if not os.path.exists(static_folder):
+    try:
+        os.makedirs(static_folder, exist_ok=True)
+        logger.info(f"Created static directory: {static_folder}")
+    except Exception as e:
+        logger.error(f"Failed to create static directory: {e}")
+
+# Check static directory contents
+try:
+    if os.path.exists(static_folder):
+        logger.info(f"Static directory contents: {os.listdir(static_folder)}")
 
     # Verify index.html exists
     index_path = os.path.join(static_folder, 'index.html')
@@ -45,7 +67,6 @@ if os.path.exists(static_folder):
 
         # Create a default index.html if it doesn't exist
         try:
-            os.makedirs(static_folder, exist_ok=True)
             with open(index_path, 'w') as f:
                 f.write("""<!DOCTYPE html>
 <html lang="en">
@@ -116,13 +137,8 @@ if os.path.exists(static_folder):
             logger.info("Created default index.html")
         except Exception as e:
             logger.error(f"Failed to create default index.html: {e}")
-else:
-    logger.warning(f"Static directory not found: {static_folder}")
-    try:
-        os.makedirs(static_folder, exist_ok=True)
-        logger.info(f"Created static directory: {static_folder}")
-    except Exception as e:
-        logger.error(f"Failed to create static directory: {e}")
+except Exception as e:
+    logger.error(f"Error checking static directory: {e}")
 
 # Basic routes for health check
 @application.route('/')
@@ -140,8 +156,16 @@ def home():
 
 @application.route('/static/<path:filename>')
 def serve_static(filename):
-    """Serve static files."""
+    """Serve static files directly from static folder."""
     return send_from_directory(static_folder, filename)
+
+@application.route('/assets/<path:filename>')
+def serve_assets(filename):
+    """Serve asset files from assets subdirectory."""
+    assets_path = os.path.join(static_folder, 'assets')
+    if not os.path.exists(assets_path):
+        os.makedirs(assets_path, exist_ok=True)
+    return send_from_directory(assets_path, filename)
 
 @application.route('/api/health')
 def health():
@@ -156,11 +180,16 @@ try:
     # First try importing directly from app module if it has create_app
     logger.info("Attempting to import create_app from app module")
     try:
+        # Set environment variable to help create_app find the right static folder
+        os.environ["RENDER"] = "true"
         from app import create_app
         logger.info("Found create_app in app module, initializing app")
         real_app = create_app()
+        # Use the real app but keep our static folder handling
+        real_app.static_folder = static_folder
         application = real_app
         logger.info("Successfully initialized app from create_app")
+        logger.info(f"Final static_folder: {application.static_folder}")
     except (ImportError, AttributeError) as e:
         logger.warning(f"Could not import create_app from app: {e}")
 
@@ -185,8 +214,10 @@ try:
 
             # Now try importing from wsgi
             from wsgi import application as real_app
+            real_app.static_folder = static_folder
             application = real_app
             logger.info("Successfully imported real application from wsgi.py")
+            logger.info(f"Final static_folder: {application.static_folder}")
         except Exception as wsgi_err:
             logger.warning(f"Could not import from wsgi.py: {wsgi_err}")
 
@@ -194,8 +225,10 @@ try:
             try:
                 logger.info("Attempting to import from app.py")
                 from app import app as real_app
+                real_app.static_folder = static_folder
                 application = real_app
                 logger.info("Successfully imported from app.py")
+                logger.info(f"Final static_folder: {application.static_folder}")
             except Exception as app_err:
                 logger.warning(f"Could not import from app.py: {app_err}")
                 logger.warning("Using standalone Flask application as fallback")
@@ -280,6 +313,7 @@ def debug_info():
                     <tr><th>Mode</th><td>{{ data.mode }}</td></tr>
                     <tr><th>Timestamp</th><td>{{ data.timestamp }}</td></tr>
                     <tr><th>Hostname</th><td>{{ data.hostname }}</td></tr>
+                    <tr><th>Static Folder</th><td>{{ data.static_folder }}</td></tr>
                 </table>
 
                 <h2>Environment</h2>
@@ -290,6 +324,13 @@ def debug_info():
 
                 <h2>Routes</h2>
                 <pre>{{ data.routes|join('\n') }}</pre>
+
+                <h2>Static Directory</h2>
+                <table>
+                    <tr><th>Static Path</th><td>{{ data.static_folder }}</td></tr>
+                    <tr><th>Exists</th><td>{{ data.static_exists }}</td></tr>
+                    <tr><th>Contents</th><td>{{ data.static_contents|join(', ') if data.static_contents else 'Empty' }}</td></tr>
+                </table>
 
                 <h2>Python Path</h2>
                 <pre>{{ data.paths|join('\n') }}</pre>
@@ -307,6 +348,14 @@ def debug_info():
         </html>
         """
 
+        # Get static directory contents
+        static_contents = []
+        if hasattr(app, 'static_folder') and app.static_folder and os.path.exists(app.static_folder):
+            try:
+                static_contents = os.listdir(app.static_folder)
+            except:
+                static_contents = ["Error reading directory"]
+
         debug_data = {
             "app_name": app.name,
             "python_version": platform.python_version(),
@@ -316,7 +365,10 @@ def debug_info():
             "env_vars": {k: v for k, v in os.environ.items() if not k.startswith("SECRET") and not "KEY" in k.upper()},
             "routes": [str(rule) for rule in app.url_map.iter_rules()],
             "mode": "standalone" if app.name == 'app.wsgi' else "integrated",
-            "hostname": socket.gethostname()
+            "hostname": socket.gethostname(),
+            "static_folder": getattr(app, 'static_folder', 'None'),
+            "static_exists": os.path.exists(getattr(app, 'static_folder', '')),
+            "static_contents": static_contents
         }
 
         return render_template_string(html_template, data=debug_data)

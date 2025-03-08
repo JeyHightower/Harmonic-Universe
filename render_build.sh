@@ -58,17 +58,23 @@ DEBUG=False
 LOG_LEVEL=INFO
 SECRET_KEY=render-auto-generated-key-do-not-use-in-prod
 DATABASE_URL=${DATABASE_URL:-sqlite:///app.db}
+# Set RENDER flag for proper static folder detection
+RENDER=true
 EOF
 fi
 
+# Define the absolute static directory path
+RENDER_STATIC_DIR="/opt/render/project/src/static"
+echo "Using static directory: ${RENDER_STATIC_DIR}"
+
 # Create and set up static directory
 echo "Setting up static files directory..."
-mkdir -p static
+mkdir -p "${RENDER_STATIC_DIR}"
 
 # Create default index.html if it doesn't exist
-if [ ! -f "static/index.html" ]; then
+if [ ! -f "${RENDER_STATIC_DIR}/index.html" ]; then
   echo "Creating default index.html..."
-  cat > static/index.html << 'EOF'
+  cat > "${RENDER_STATIC_DIR}/index.html" << 'EOF'
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -140,8 +146,8 @@ fi
 
 # Create a small CSS file for styling
 echo "Creating basic styles.css..."
-mkdir -p static/css
-cat > static/css/styles.css << 'EOF'
+mkdir -p "${RENDER_STATIC_DIR}/css"
+cat > "${RENDER_STATIC_DIR}/css/styles.css" << 'EOF'
 /* Basic styling */
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -171,13 +177,23 @@ a:hover {
 }
 EOF
 
+# Create assets directory
+mkdir -p "${RENDER_STATIC_DIR}/assets"
+
 # Ensure static directory has correct permissions
 echo "Setting proper permissions for static directory..."
-chmod -R 755 static
+chmod -R 755 "${RENDER_STATIC_DIR}"
 
 # Verify static directory structure
 echo "Static directory structure:"
-find static -type f | sort
+find "${RENDER_STATIC_DIR}" -type f | sort
+
+# Create additional symbolic links for flexibility
+echo "Creating symbolic links for static directory..."
+ln -sf "${RENDER_STATIC_DIR}" static
+if [ -d "app" ]; then
+  ln -sf "${RENDER_STATIC_DIR}" app/static
+fi
 
 # Print directory structure for debugging
 echo "Directory structure:"
