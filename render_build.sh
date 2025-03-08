@@ -1,65 +1,44 @@
-#!/bin/bash
-# render_build.sh - Comprehensive build script for Render deployment
+#!/usr/bin/env bash
+# Strict error handling
+set -eo pipefail
 
-set -e  # Exit immediately if any command fails
-set -x  # Print each command before execution
+echo "=== RUNNING RENDER BUILD SCRIPT ==="
+echo "Current directory: $(pwd)"
+echo "Files in current directory:"
+ls -la
 
-echo "Starting build process..."
+# Install dependencies
+echo "Installing Python dependencies..."
+pip install gunicorn==21.2.0 flask-migrate
+pip install -r requirements.txt
 
-# Python version check
-python --version
-which python
+# Ensure the app directory exists
+echo "Setting up application structure..."
+mkdir -p app
 
-# Set up Python environment
-python -m venv .venv
-source .venv/bin/activate
+# List Python path
+echo "Python path:"
+python -c "import sys; print(sys.path)"
 
-# Make sure pip is up to date
-pip install --upgrade pip
+# Verify app/__init__.py exists
+if [ ! -f "app/__init__.py" ]; then
+  echo "Creating app/__init__.py"
+  cat > app/__init__.py << 'EOF'
+# app/__init__.py
+"""
+Package initialization for the app module.
+This file ensures the app directory is treated as a proper Python package.
+"""
+import logging
 
-# Install all dependencies with explicit flags to ensure proper installation
-pip install -r requirements.txt --no-cache-dir --upgrade
-
-# Verify critical packages are installed
-echo "Verifying installed packages..."
-pip list | grep Flask
-pip list | grep SQLAlchemy
-pip list | grep gunicorn
-
-# Create necessary directories
-mkdir -p static
-echo "Static directory created"
-
-# Make sure static files exist
-if [ ! -f "static/index.html" ]; then
-  echo "Creating placeholder index.html in static directory"
-  cat > static/index.html << EOL
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Harmonic Universe</title>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-<body>
-  <div id="root">
-    <h1>Harmonic Universe is running</h1>
-    <p>If you see this message, static files are being served correctly.</p>
-  </div>
-</body>
-</html>
-EOL
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.info("Initializing app package")
+EOF
 fi
 
-# Set correct permissions
-chmod -R 755 static
-chmod 644 static/index.html
+# Print directory structure for debugging
+echo "Directory structure:"
+find . -type f -name "*.py" | sort
 
-echo "Build process completed successfully!"
-
-# Print environment information for debugging
-echo "Python packages installed:"
-pip freeze
-
-echo "Current directory structure:"
-find . -type d -maxdepth 2 | sort
+echo "=== BUILD COMPLETED SUCCESSFULLY ==="

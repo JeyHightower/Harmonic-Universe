@@ -1,1 +1,1 @@
-web: bash -c "chmod +x start.sh && ./start.sh"
+web: gunicorn wsgi:application --bind 0.0.0.0:$PORT --log-level info
