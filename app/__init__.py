@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory, jsonify, current_app
+from flask import Flask, send_from_directory, jsonify, current_app, redirect, url_for, request, Response
 from flask_migrate import Migrate
 from flask_cors import CORS
 import os
@@ -14,6 +14,11 @@ logger.info("Initializing app package")
 migrate = Migrate()
 
 def create_app():
+    """
+    Create and configure the Flask application.
+    All routes should be defined here to ensure consistency between
+    local development and Render.com production.
+    """
     # Determine static folder based on environment
     if os.environ.get('RENDER') == 'true':
         static_folder = '/opt/render/project/src/static'
@@ -49,39 +54,78 @@ def create_app():
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             min-height: 100vh;
+            margin: 0;
+            padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 0;
-            padding: 0;
+            height: 100vh;
         }
         .container {
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-            max-width: 600px;
+            max-width: 800px;
+            padding: 2rem;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
             text-align: center;
         }
-        h1 { color: #3f51b5; }
-        .btn {
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        p {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .button {
             display: inline-block;
-            background-color: #3f51b5;
+            background: rgba(255, 255, 255, 0.2);
             color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
             text-decoration: none;
-            margin-top: 20px;
+            padding: 0.8rem 1.8rem;
+            border-radius: 30px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+        }
+        .button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .button-primary {
+            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+        }
+        .button-secondary {
+            background: linear-gradient(to right, #f093fb 0%, #f5576c 100%);
+        }
+        .button-tertiary {
+            background: linear-gradient(to right, #43e97b 0%, #38f9d7 100%);
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Welcome to Harmonic Universe</h1>
-        <p>The application is running successfully.</p>
-        <a href="/api/health" class="btn">API Health Check</a>
+        <h1>Harmonic Universe</h1>
+        <p>Explore the fascinating connection between music and physics.</p>
+        <div class="button-container">
+            <a href="/login" class="button button-primary">Login</a>
+            <a href="/signup" class="button button-secondary">Sign Up</a>
+            <a href="/demo" class="button button-tertiary">Try Demo</a>
+        </div>
     </div>
 </body>
 </html>""")
@@ -112,6 +156,7 @@ def create_app():
     # Register health check route
     @app.route('/api/health')
     def health_check():
+        """Health check endpoint for monitoring."""
         return jsonify({
             'status': 'healthy',
             'message': 'Harmonic Universe API is running',
@@ -124,6 +169,7 @@ def create_app():
     # Special route to handle all static files including the Ant Design icons
     @app.route('/assets/<path:filename>')
     def serve_assets(filename):
+        """Serve asset files from the assets directory."""
         try:
             assets_path = os.path.join(app.static_folder, 'assets')
             if not os.path.exists(assets_path):
@@ -142,6 +188,7 @@ def create_app():
     # Debug route to view application information
     @app.route('/debug')
     def debug_info():
+        """Debug endpoint to display application information."""
         if os.environ.get('APP_ENV') == 'production' and not os.environ.get('RENDER'):
             return jsonify({"error": "Debug only available in development or on Render"}), 403
 
@@ -166,10 +213,16 @@ def create_app():
             logger.error(f"Error in debug route: {e}")
             return jsonify({"error": str(e)}), 500
 
-    # Route to serve React App
+    # Add all the application routes
+
+    # Landing page / React App route
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
     def serve_static(path):
+        """
+        Serve static files or the React app.
+        This route handles all paths not matching other routes.
+        """
         logger.info(f"Serving path: {path}")
 
         # For API routes, let Flask handle them normally
@@ -211,6 +264,7 @@ def create_app():
     # Add a debugging route to directly check the index.html content
     @app.route('/debug-index')
     def debug_index():
+        """Debug endpoint to display the index.html content."""
         index_path = os.path.join(app.static_folder, 'index.html')
         try:
             with open(index_path, 'r') as f:
@@ -231,5 +285,32 @@ def create_app():
         except Exception as e:
             logger.error(f"Error reading index.html: {e}")
             return f"Error: {str(e)}", 500
+
+    # Login route
+    @app.route('/login')
+    def login():
+        """Handle login requests."""
+        # For now, just redirect to home page or return a placeholder
+        # In a real implementation, this would show a login form or handle login logic
+        return redirect('/')
+
+    # Signup route
+    @app.route('/signup')
+    def signup():
+        """Handle signup requests."""
+        # For now, just redirect to home page or return a placeholder
+        # In a real implementation, this would show a signup form or handle signup logic
+        return redirect('/')
+
+    # Demo route
+    @app.route('/demo')
+    def demo():
+        """Handle demo requests."""
+        # For now, just redirect to home page or return a placeholder
+        # In a real implementation, this would load the demo experience
+        return redirect('/')
+
+    # Add more routes for your application as needed
+    # For example: @app.route('/api/users'), etc.
 
     return app

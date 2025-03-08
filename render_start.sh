@@ -1,13 +1,14 @@
 #!/bin/bash
-# Simple start script for Render.com
+# Startup script for Harmonic Universe on Render.com
 
 set -e  # Exit on any error
 
 echo "=== Starting Harmonic Universe on Render.com ==="
 echo "Current directory: $(pwd)"
 echo "Python version: $(python --version)"
+echo "Node version: $(node --version)"
 
-# Ensure static directories exist
+# Ensure main static directories exist
 export STATIC_DIR="/opt/render/project/src/static"
 mkdir -p $STATIC_DIR
 echo "Created static directory: $STATIC_DIR"
@@ -17,6 +18,12 @@ echo "Created local static directory: static"
 
 mkdir -p app/static
 echo "Created app/static directory"
+
+# Create assets directory in all static locations
+mkdir -p $STATIC_DIR/assets
+mkdir -p static/assets
+mkdir -p app/static/assets
+echo "Created assets directories"
 
 # Create default index.html if it doesn't exist
 echo "Checking for index.html..."
@@ -29,54 +36,79 @@ INDEX_HTML="<!DOCTYPE html>
     <title>Harmonic Universe</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             min-height: 100vh;
             margin: 0;
             padding: 0;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
-            text-align: center;
+            align-items: center;
+            height: 100vh;
         }
         .container {
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-            max-width: 600px;
+            max-width: 800px;
+            padding: 2rem;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            text-align: center;
         }
         h1 {
-            color: #3f51b5;
-            margin-bottom: 10px;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
         p {
-            color: #555;
-            margin-bottom: 20px;
-            line-height: 1.5;
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
         }
-        .btn {
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .button {
             display: inline-block;
-            background-color: #3f51b5;
+            background: rgba(255, 255, 255, 0.2);
             color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
             text-decoration: none;
+            padding: 0.8rem 1.8rem;
+            border-radius: 30px;
             font-weight: bold;
-            transition: background-color 0.3s;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
         }
-        .btn:hover {
-            background-color: #303f9f;
+        .button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .button-primary {
+            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+        }
+        .button-secondary {
+            background: linear-gradient(to right, #f093fb 0%, #f5576c 100%);
+        }
+        .button-tertiary {
+            background: linear-gradient(to right, #43e97b 0%, #38f9d7 100%);
         }
     </style>
 </head>
 <body>
     <div class=\"container\">
         <h1>Harmonic Universe</h1>
-        <p>Welcome to Harmonic Universe! The application is successfully running on Render.com.</p>
-        <p>If you're seeing this page, static files are being served correctly.</p>
-        <a href=\"/api/health\" class=\"btn\">Check API Health</a>
+        <p>Explore the fascinating connection between music and physics.</p>
+        <div class=\"button-container\">
+            <a href=\"/login\" class=\"button button-primary\">Login</a>
+            <a href=\"/signup\" class=\"button button-secondary\">Sign Up</a>
+            <a href=\"/demo\" class=\"button button-tertiary\">Try Demo</a>
+        </div>
     </div>
 </body>
 </html>"
@@ -107,8 +139,13 @@ done
 
 # Create symbolic links between static directories for redundancy
 echo "Creating symbolic links for redundancy..."
-ln -sf $STATIC_DIR/* app/static/ 2>/dev/null || echo "Warning: Could not create symlinks to app/static"
-ln -sf $STATIC_DIR/* static/ 2>/dev/null || echo "Warning: Could not create symlinks to static"
+cp -rf $STATIC_DIR/* app/static/ 2>/dev/null || echo "Warning: Could not copy files to app/static"
+cp -rf $STATIC_DIR/* static/ 2>/dev/null || echo "Warning: Could not copy files to static"
+
+# Setup environment variables
+export RENDER=true
+export FLASK_APP=app
+export FLASK_ENV=production
 
 # Debug: Display content of directories
 echo "=== Static directory contents ==="
@@ -120,7 +157,7 @@ ls -la static
 echo "=== Current directory structure ==="
 find . -maxdepth 2 -type d | sort
 
-# Run the setup script
+# Run the setup script to ensure all static files exist
 echo "Running setup script..."
 python setup_render.py
 

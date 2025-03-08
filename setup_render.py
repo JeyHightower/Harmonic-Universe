@@ -30,7 +30,7 @@ def setup_static_directories():
         render_static = Path('/opt/render/project/src/static')
     else:
         # Use a local path for development
-        render_static = Path(os.path.abspath('render_static'))
+        render_static = Path(os.path.abspath('static'))
 
     local_static = Path('static')
     app_static = Path('app/static')
@@ -47,6 +47,11 @@ def setup_static_directories():
         try:
             static_dir.mkdir(exist_ok=True)
             logger.info(f"Created static directory: {static_dir}")
+
+            # Also create assets subdirectory
+            assets_dir = static_dir / 'assets'
+            assets_dir.mkdir(exist_ok=True)
+            logger.info(f"Created assets directory: {assets_dir}")
         except Exception as e:
             logger.error(f"Failed to create {static_dir}: {e}")
 
@@ -67,63 +72,61 @@ def setup_static_directories():
             color: white;
             min-height: 100vh;
             margin: 0;
+            padding: 0;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
-            text-align: center;
-            padding: 20px;
+            align-items: center;
+            height: 100vh;
         }}
         .container {{
+            max-width: 800px;
+            padding: 2rem;
             background-color: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
+            border-radius: 12px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             backdrop-filter: blur(10px);
-            padding: 40px;
-            max-width: 800px;
+            text-align: center;
         }}
         h1 {{
             font-size: 3rem;
-            margin-bottom: 10px;
+            margin-bottom: 1rem;
             text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }}
         p {{
             font-size: 1.2rem;
-            margin-bottom: 20px;
-            line-height: 1.5;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
         }}
         .button-container {{
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 15px;
-            margin-top: 30px;
+            gap: 1rem;
+            margin-top: 2rem;
         }}
-        .btn {{
+        .button {{
             display: inline-block;
             background: rgba(255, 255, 255, 0.2);
             color: white;
-            padding: 12px 24px;
-            border-radius: 30px;
             text-decoration: none;
+            padding: 0.8rem 1.8rem;
+            border-radius: 30px;
             font-weight: bold;
             transition: all 0.3s ease;
-            border: none;
-            cursor: pointer;
-            font-size: 1rem;
+            margin: 0.5rem;
         }}
-        .btn:hover {{
-            background: rgba(255, 255, 255, 0.3);
+        .button:hover {{
             transform: translateY(-3px);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.3);
         }}
-        .btn-primary {{
+        .button-primary {{
             background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
         }}
-        .btn-secondary {{
+        .button-secondary {{
             background: linear-gradient(to right, #f093fb 0%, #f5576c 100%);
         }}
-        .btn-tertiary {{
+        .button-tertiary {{
             background: linear-gradient(to right, #43e97b 0%, #38f9d7 100%);
         }}
     </style>
@@ -131,12 +134,11 @@ def setup_static_directories():
 <body>
     <div class="container">
         <h1>Harmonic Universe</h1>
-        <p>Explore the fascinating connection between music and physics</p>
-        <p>Running on {environment_text}</p>
+        <p>Explore the fascinating connection between music and physics.</p>
         <div class="button-container">
-            <a href="/login" class="btn btn-primary">Login</a>
-            <a href="/signup" class="btn btn-secondary">Sign Up</a>
-            <a href="/demo" class="btn btn-tertiary">Try Demo</a>
+            <a href="/login" class="button button-primary">Login</a>
+            <a href="/signup" class="button button-secondary">Sign Up</a>
+            <a href="/demo" class="button button-tertiary">Try Demo</a>
         </div>
     </div>
 </body>
@@ -202,6 +204,20 @@ def setup_static_directories():
     os.environ['STATIC_DIR'] = str(render_static)
     if is_render:
         os.environ['RENDER'] = 'true'
+
+    # Create symbolic links for added robustness
+    try:
+        # Make sure app/static can access files in the main static directory
+        for src_file in render_static.glob('*'):
+            dest_file = app_static / src_file.name
+            if not dest_file.exists():
+                if src_file.is_file():
+                    shutil.copy2(src_file, dest_file)
+                elif src_file.is_dir():
+                    shutil.copytree(src_file, dest_file, dirs_exist_ok=True)
+        logger.info(f"Created symlinks/copies from {render_static} to {app_static}")
+    except Exception as e:
+        logger.error(f"Error creating symlinks: {e}")
 
     # Display info about static directories
     logger.info("Static directory setup complete")

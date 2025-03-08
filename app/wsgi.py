@@ -148,10 +148,12 @@ try:
     def add_content_length(response):
         """Ensure Content-Length header is set for all responses."""
         if 'Content-Length' not in response.headers and hasattr(response, 'data'):
-            response.headers['Content-Length'] = str(len(response.data))
+            content_length = len(response.data) if response.data else 0
+            response.headers['Content-Length'] = str(content_length)
+            logger.debug(f"Added Content-Length header: {content_length}")
         return response
 
-    # Add a test route
+    # Add a test route for Render.com verification
     @app.route('/render-test')
     def render_test():
         """Test route to verify WSGI setup."""
@@ -162,44 +164,9 @@ try:
             'routes': [str(rule) for rule in app.url_map.iter_rules()]
         }
 
-    # Add an explicit root route if not already present
-    if '/' not in [rule.rule for rule in app.url_map.iter_rules()]:
-        logger.info("Adding explicit root route handler")
-        from flask import send_from_directory
-
-        @app.route('/')
-        def serve_root():
-            """Serve the index.html file from static folder."""
-            logger.info(f"Serving root from static folder: {app.static_folder}")
-            try:
-                # Verify index.html exists before trying to serve it
-                index_path = os.path.join(app.static_folder, 'index.html')
-                if not os.path.exists(index_path):
-                    logger.error(f"index.html not found at {index_path}")
-                    # Create index.html as a last resort
-                    with open(index_path, 'w') as f:
-                        f.write("""<!DOCTYPE html>
-<html><head><title>Harmonic Universe</title></head>
-<body><h1>Harmonic Universe</h1><p>Emergency page created by root handler</p></body>
-</html>""")
-                    logger.info(f"Created emergency index.html at {index_path}")
-
-                return send_from_directory(app.static_folder, 'index.html')
-            except Exception as e:
-                logger.error(f"Error serving index.html: {e}")
-                return f"""
-                <html><body>
-                <h1>Harmonic Universe</h1>
-                <p>Error serving index.html: {str(e)}</p>
-                <p>Static folder: {app.static_folder}</p>
-                <p><a href="/api/health">API Health Check</a></p>
-                </body></html>
-                """
-
-    @app.route('/home')
-    def home():
-        """Alternative home route."""
-        return serve_root()
+    # Note: We're NOT defining duplicate routes here.
+    # All other routes (/login, /signup, /demo, etc.) should be defined
+    # in the app/__init__.py file using the create_app() function.
 
 except Exception as e:
     logger.error(f"Failed to create Flask app: {e}", exc_info=True)
@@ -213,7 +180,17 @@ except Exception as e:
         """Serve a minimal home page."""
         static_folder = os.environ.get('STATIC_DIR', os.path.join(os.getcwd(), 'static'))
         try:
-            return send_from_directory(static_folder, 'index.html')
+            # Return a proper response with content
+            with open(os.path.join(static_folder, 'index.html'), 'r') as f:
+                content = f.read()
+
+            response = app.response_class(
+                response=content,
+                status=200,
+                mimetype='text/html'
+            )
+            response.headers['Content-Length'] = str(len(content))
+            return response
         except Exception as e:
             return f"""
             <html><body>
