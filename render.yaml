@@ -2,17 +2,14 @@
 services:
   # Minimal application with database focus
   - type: web
-    name: harmonic-universe-api
+    name: flask-app
+    plan: free
     runtime: python
-    buildCommand: echo "No build needed for minimal application"
-    startCommand: ./minimal_start.sh
+    buildCommand: pip install -r requirements.txt
+    startCommand: ./start.sh
     envVars:
       - key: STATIC_DIR
         value: /opt/render/project/src/static
-      - key: PORT
-        value: '10000'
-      - key: PYTHONPATH
-        value: /opt/render/project/src
     healthCheckPath: /health
 
   # Frontend service (React)
