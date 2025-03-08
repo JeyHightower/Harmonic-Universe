@@ -9,7 +9,7 @@ ls -la
 
 # Install dependencies
 echo "Installing Python dependencies..."
-pip install gunicorn==21.2.0 flask-migrate
+pip install gunicorn==21.2.0 flask-migrate python-dotenv Flask
 pip install -r requirements.txt
 
 # Ensure the app directory exists
@@ -34,6 +34,30 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.info("Initializing app package")
+EOF
+fi
+
+# Check if config.py exists and patch it if needed
+if [ -f "config.py" ]; then
+  echo "Checking config.py for load_dotenv import..."
+  if grep -q "load_dotenv()" config.py && ! grep -q "from dotenv import load_dotenv" config.py; then
+    echo "Patching config.py to include load_dotenv import"
+    sed -i '1s/^/from dotenv import load_dotenv\n/' config.py || \
+    echo 'from dotenv import load_dotenv' | cat - config.py > temp && mv temp config.py
+  fi
+fi
+
+# Create .env file with basic configuration if it doesn't exist
+if [ ! -f ".env" ]; then
+  echo "Creating minimal .env file for production"
+  cat > .env << 'EOF'
+# Production environment variables
+FLASK_ENV=production
+FLASK_APP=app
+DEBUG=False
+LOG_LEVEL=INFO
+SECRET_KEY=render-auto-generated-key-do-not-use-in-prod
+DATABASE_URL=${DATABASE_URL:-sqlite:///app.db}
 EOF
 fi
 
