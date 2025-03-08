@@ -1,20 +1,44 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
-
-// Middleware to parse JSON bodies
 app.use(express.json());
 
-// Make sure you're using the correct port
-const PORT = process.env.PORT || 8000;
+// Determine the port - allow tests to override with TEST_PORT
+const PORT = process.env.TEST_PORT || process.env.PORT || 10000;
 
-// Make sure static files are served first
-app.use(express.static(path.join(__dirname, 'static')));
+// Ensure static directory exists
+const staticDir = path.join(__dirname, 'static');
+if (!fs.existsSync(staticDir)) {
+    console.warn('Static directory not found, creating it...');
+    fs.mkdirSync(staticDir, { recursive: true });
+
+    // Create a minimal index.html if it doesn't exist
+    const indexPath = path.join(staticDir, 'index.html');
+    if (!fs.existsSync(indexPath)) {
+        const minimalHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harmonic Universe</title>
+</head>
+<body>
+    <h1>Harmonic Universe</h1>
+    <p>Welcome to the Harmonic Universe application.</p>
+</body>
+</html>`;
+        fs.writeFileSync(indexPath, minimalHtml);
+    }
+}
+
+// Serve static files
+app.use(express.static(staticDir));
 
 // Health check endpoints
 const healthHandler = (req, res) => {
-    res.status(200).send('OK');
+    res.status(200).json({"status": "healthy"});
 };
 
 app.get('/health', healthHandler);
@@ -26,75 +50,9 @@ app.get('/api/ping', healthHandler);
 app.get('/status', healthHandler);
 app.get('/api/status', healthHandler);
 
-// Mock authentication endpoints
-app.post('/api/auth/register', (req, res) => {
-    res.status(201).json({
-        id: '123',
-        username: req.body.username || 'testuser',
-        email: req.body.email || 'test@example.com',
-        token: 'mock-jwt-token'
-    });
-});
-
-app.post('/api/auth/login', (req, res) => {
-    res.status(200).json({
-        token: 'mock-jwt-token',
-        refreshToken: 'mock-refresh-token',
-        user: {
-            id: '123',
-            username: req.body.username || 'testuser',
-            email: req.body.email || 'test@example.com'
-        }
-    });
-});
-
-app.post('/api/auth/refresh', (req, res) => {
-    res.status(200).json({
-        token: 'new-mock-jwt-token'
-    });
-});
-
-// Mock user endpoints
-app.get('/api/users/me', (req, res) => {
-    res.status(200).json({
-        id: '123',
-        username: 'testuser',
-        email: 'test@example.com',
-        profile: {
-            name: 'Test User',
-            bio: 'Test user bio'
-        }
-    });
-});
-
-app.put('/api/users/me', (req, res) => {
-    res.status(200).json({
-        id: '123',
-        username: 'testuser',
-        email: 'test@example.com',
-        profile: {
-            name: req.body.profile?.name || 'Updated Name',
-            bio: req.body.profile?.bio || 'Updated bio'
-        }
-    });
-});
-
-// Mock universe endpoints
-let universes = [];
-
-app.post('/api/universes/', (req, res) => {
-    const newUniverse = {
-        id: Date.now().toString(),
-        name: req.body.name || 'Test Universe',
-        description: req.body.description || 'Test description',
-        created_at: new Date().toISOString()
-    };
-    universes.push(newUniverse);
-    res.status(201).json(newUniverse);
-});
-
-app.get('/api/universes/', (req, res) => {
-    res.status(200).json(universes);
+// Serve index.html for any other routes (SPA support)
+app.get('*', (req, res) => {
+    res.sendFile(path.join(staticDir, 'index.html'));
 });
 
 // Start the server

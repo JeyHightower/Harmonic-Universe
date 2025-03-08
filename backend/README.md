@@ -41,47 +41,110 @@ backend/
 - Flask-SocketIO for WebSocket support
 - PostgreSQL database
 
-## Setup
+## Setup and Installation
 
-1. Create virtual environment:
+1. Create a virtual environment (recommended):
 
-```bash
-python -m venv venv
-source venv/bin/activate  # or `venv\Scripts\activate` on Windows
-```
+   ```
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
 
 2. Install dependencies:
 
-```bash
-pip install -r requirements.txt
+   ```
+   pip install -r requirements.txt
+   ```
+
+3. Set up the database:
+
+   ```
+   # Initialize migrations (first time only)
+   flask db init
+
+   # Create a migration after model changes
+   flask db migrate -m "Your migration message"
+
+   # Apply migrations
+   flask db upgrade
+   ```
+
+## Running the Application
+
+### Development Mode
+
 ```
-
-3. Set up environment variables:
-
-```bash
-cp .env.example .env
-```
-
-4. Initialize database:
-
-```bash
-flask db upgrade
-python create_demo_user.py
-```
-
-## Development
-
-1. Start development server:
-
-```bash
+cd backend
 python run.py
 ```
 
-2. Verify API functionality:
+The server will run on port 10000 by default (http://localhost:10000).
 
-```bash
-python feature_verification.py
+### Using WSGI Server (Production)
+
 ```
+cd backend
+gunicorn wsgi:app
+```
+
+## Testing
+
+1. Run the test setup script:
+
+   ```
+   ./test_setup.sh
+   ```
+
+   This script will:
+
+   - Set the TEST_PORT environment variable to 8000
+   - Install required dependencies
+   - Apply database migrations
+   - Start the Flask server
+   - Run the tests
+   - Clean up the test environment
+
+2. Alternatively, you can run tests manually:
+
+   ```
+   # Set testing port
+   export TEST_PORT=8000
+
+   # Start the server in test mode
+   cd backend
+   python run.py &
+
+   # Run the tests
+   cd ..
+   npm test
+   ```
+
+## Configuration
+
+- The application uses environment variables for configuration:
+  - `PORT`: The port to run the server on (default: 10000)
+  - `TEST_PORT`: Port for test environment (default: 8000)
+  - `DATABASE_URL`: Database connection string
+  - `SECRET_KEY`: Secret key for session management
+  - `FLASK_ENV`: Environment (development, testing, production)
+
+## Project Structure
+
+- `app.py`: Main application factory and routes
+- `wsgi.py`: WSGI entry point for production servers
+- `run.py`: Development server script
+- `migrations/`: Alembic database migrations
+- `static/`: Static files served by the application
+- `tests/`: Test files
+- `scripts/`: Utility scripts for project management
+
+## Troubleshooting
+
+If you encounter import errors or path issues:
+
+1. Make sure your Python path includes the backend directory
+2. Check that all required dependencies are installed
+3. Run `python backend/scripts/verify_migrations.py` to check database migration status
 
 ## API Endpoints
 
@@ -102,21 +165,10 @@ The API provides the following main endpoints:
 - Implemented audio file generation for testing purposes
 - Consolidated duplicate model definitions
 
-## Testing
-
-- Feature verification: `python feature_verification.py`
-- Music API testing: `python test_music_api.py`
-
 ## Deployment
 
 1. Build Docker image:
 
-```bash
-docker build -t harmonic-universe-backend .
 ```
 
-2. Run container:
-
-```bash
-docker run -p 8000:8000 harmonic-universe-backend
 ```

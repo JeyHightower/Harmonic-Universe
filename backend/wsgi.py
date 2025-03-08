@@ -11,26 +11,23 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 # Now import the app module
 try:
     from backend.app import create_app
-    from backend.app.core.middleware import setup_middleware
-    from backend.app.core.config import config
     print("Successfully imported app modules")
 except ImportError as e:
     print(f"Import error: {e}")
     print(f"Python path: {sys.path}")
     # Try alternative import paths
     try:
-        from backend.app import create_app
-        from backend.app.core.middleware import setup_middleware
-        from backend.app.core.config import config
-        print("Successfully imported from backend.app")
+        from app import create_app
+        print("Successfully imported from app")
     except ImportError as e2:
         print(f"Alternative import also failed: {e2}")
         raise
 
 # Create the Flask application
-app = create_app(config['production'])
-# Apply middleware
-app = setup_middleware(app)
+application = create_app()
+app = application  # For compatibility with different WSGI servers
 
-if __name__ == '__main__':
-    app.run()
+if __name__ == "__main__":
+    # For direct execution
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port)
