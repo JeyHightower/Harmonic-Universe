@@ -4,21 +4,19 @@ services:
     name: harmonic-universe
     runtime: python
     buildCommand: |
-      pip install gunicorn==21.2.0 flask-migrate flask-cors &&
+      pip install gunicorn==21.2.0 flask==2.3.3 flask-cors==4.0.0 requests &&
       pip install -r requirements.txt &&
-      mkdir -p static app/static
+      chmod +x render_start.sh ensure_static_directory.py verify_deployment.py html_fallback.py
     startCommand: bash ./render_start.sh
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.18
-      - key: NODE_VERSION
-        value: 18.18.0
       - key: PORT
         value: 10000
-      - key: STATIC_DIR
-        value: /opt/render/project/src/static
       - key: FLASK_APP
-        value: app
+        value: wsgi:app
+      - key: FLASK_ENV
+        value: production
       - key: RENDER
         value: 'true'
     healthCheckPath: /api/health

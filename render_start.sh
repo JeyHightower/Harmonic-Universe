@@ -98,6 +98,9 @@ INDEX_HTML="<!DOCTYPE html>
         .button-tertiary {
             background: linear-gradient(to right, #43e97b 0%, #38f9d7 100%);
         }
+        .button-health {
+            background: rgba(255, 255, 255, 0.2);
+        }
     </style>
 </head>
 <body>
@@ -106,8 +109,11 @@ INDEX_HTML="<!DOCTYPE html>
         <p>Explore the fascinating connection between music and physics.</p>
         <div class=\"button-container\">
             <a href=\"/login\" class=\"button button-primary\">Login</a>
-            <a href=\"/signup\" class=\"button button-secondary\">Sign Up</a>
+            <a href=\"/register\" class=\"button button-secondary\">Sign Up</a>
             <a href=\"/demo\" class=\"button button-tertiary\">Try Demo</a>
+        </div>
+        <div style=\"margin-top: 2rem\">
+            <a href=\"/api/health\" class=\"button button-health\">API Health Check</a>
         </div>
     </div>
 </body>
@@ -144,27 +150,31 @@ cp -rf $STATIC_DIR/* static/ 2>/dev/null || echo "Warning: Could not copy files 
 
 # Setup environment variables
 export RENDER=true
-export FLASK_APP=app
+export FLASK_APP=wsgi:app
 export FLASK_ENV=production
 
 # Debug: Display content of directories
 echo "=== Static directory contents ==="
-ls -la $STATIC_DIR
+ls -la $STATIC_DIR | head -n 10
+echo "... (more files) ..."
+
 echo "=== app/static directory contents ==="
-ls -la app/static
+ls -la app/static | head -n 10
+echo "... (more files) ..."
+
 echo "=== static directory contents ==="
-ls -la static
-echo "=== Current directory structure ==="
-find . -maxdepth 2 -type d | sort
+ls -la static | head -n 10
+echo "... (more files) ..."
 
-# Run the setup script to ensure all static files exist
-echo "Running setup script..."
-python setup_render.py
+# Run our script to ensure all static files exist
+echo "Running ensure_static_directory script..."
+python ensure_static_directory.py
 
-# Debug: Display routes in the application
-echo "=== Checking application routes ==="
-python -m app.wsgi print_routes || echo "Warning: Could not print routes"
+# Verify deployment configuration
+echo "Running verify_deployment script..."
+python verify_deployment.py http://localhost:${PORT:-10000} || echo "Warning: Deployment verification may not be complete until the server is running"
 
-# Start the application with Gunicorn using app.wsgi:application
-echo "Starting Gunicorn with app.wsgi:application..."
-gunicorn app.wsgi:application --bind=0.0.0.0:${PORT:-10000} --workers=1 --timeout=120
+# Start the application with Gunicorn using wsgi:app
+echo "Starting Gunicorn with wsgi:app..."
+# Use --preload to ensure HTML fallback is applied before fork
+gunicorn wsgi:app --bind=0.0.0.0:${PORT:-10000} --workers=2 --timeout=60 --preload

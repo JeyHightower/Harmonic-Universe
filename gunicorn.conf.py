@@ -59,12 +59,8 @@ def when_ready(server):
     """
     logger.info("Gunicorn ready")
 
-    # Load the HTML fallback script
-    try:
-        import html_fallback
-        logger.info("HTML fallback script loaded successfully")
-    except Exception as e:
-        logger.error(f"Failed to load HTML fallback script: {e}")
+    # Note: HTML fallback is now applied directly in wsgi.py
+    # No need to load it again here
 
 def post_fork(server, worker):
     """
@@ -72,16 +68,16 @@ def post_fork(server, worker):
     """
     logger.info(f"Worker forked (pid: {worker.pid})")
 
-    # Apply HTML fallback to the worker's application
+    # Note: We're no longer attempting to apply HTML fallback here
+    # since it's already applied in wsgi.py before Gunicorn starts.
+    # This avoids the "Worker WSGI application not found" warning.
+
+    # Initialize worker-specific resources if needed
     try:
-        from html_fallback import add_html_fallback_routes
-        if hasattr(worker, 'wsgi') and hasattr(worker.wsgi, 'application'):
-            logger.info("Applying HTML fallback to worker application")
-            add_html_fallback_routes(worker.wsgi.application)
-        else:
-            logger.warning("Worker WSGI application not found, cannot apply HTML fallback")
+        # Set up any worker-specific initialization here
+        pass
     except Exception as e:
-        logger.error(f"Failed to apply HTML fallback to worker: {e}")
+        logger.error(f"Error in worker initialization: {e}")
 
 def pre_fork(server, worker):
     """
