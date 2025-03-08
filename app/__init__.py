@@ -36,8 +36,58 @@ def create_app():
     if os.path.exists(index_html_path):
         logger.info(f"Found index.html at {index_html_path}")
     else:
-        logger.warning(f"index.html not found at {index_html_path}")
-        # We'll create it in the route handler if needed
+        logger.info(f"Creating index.html at {index_html_path}")
+        # Create default index.html file immediately
+        try:
+            with open(index_html_path, 'w') as f:
+                f.write("""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harmonic Universe</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            max-width: 600px;
+            text-align: center;
+        }
+        h1 { color: #3f51b5; }
+        .btn {
+            display: inline-block;
+            background-color: #3f51b5;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to Harmonic Universe</h1>
+        <p>The application is running successfully.</p>
+        <a href="/api/health" class="btn">API Health Check</a>
+    </div>
+</body>
+</html>""")
+            logger.info(f"Successfully created index.html at {index_html_path}")
+        except Exception as e:
+            logger.error(f"Failed to create index.html: {e}")
 
     # List static folder contents
     try:
@@ -137,7 +187,7 @@ def create_app():
             index_path = os.path.join(app.static_folder, 'index.html')
             if not os.path.exists(index_path):
                 # Create a minimal index.html if it doesn't exist
-                logger.warning(f"index.html not found, creating default")
+                logger.warning(f"index.html not found at {index_path}, creating default")
                 with open(index_path, 'w') as f:
                     f.write("""<!DOCTYPE html>
 <html lang="en">
@@ -183,6 +233,9 @@ def create_app():
     </div>
 </body>
 </html>""")
+                logger.info(f"Successfully created index.html at {index_path}")
+            else:
+                logger.info(f"Found existing index.html at {index_path}")
 
             return send_from_directory(app.static_folder, 'index.html')
 

@@ -115,13 +115,16 @@ def setup_static_directories():
 </html>
 """
 
-    # Write index.html to all static directories
+    # Always write index.html to all static directories to ensure it exists
     for static_dir in [render_static, local_static, app_static]:
         index_path = static_dir / 'index.html'
         try:
             with open(index_path, 'w') as f:
                 f.write(index_html_content)
             logger.info(f"Created/Updated index.html in {static_dir}")
+            # Set correct permissions
+            os.chmod(index_path, 0o644)
+            logger.info(f"Set permissions for {index_path}")
         except Exception as e:
             logger.error(f"Failed to create index.html in {static_dir}: {e}")
 
@@ -152,9 +155,19 @@ def setup_static_directories():
     for static_dir in [render_static, local_static, app_static]:
         index_path = static_dir / 'index.html'
         if index_path.exists():
-            logger.info(f"✅ {index_path} exists")
+            logger.info(f"✅ Verified index.html exists at {index_path}")
+            # Check permissions
+            perms = oct(os.stat(index_path).st_mode)[-3:]
+            logger.info(f"Permissions for {index_path}: {perms}")
         else:
-            logger.error(f"❌ {index_path} does not exist")
+            logger.error(f"❌ {index_path} does not exist - attempting to create it again")
+            try:
+                with open(index_path, 'w') as f:
+                    f.write(index_html_content)
+                os.chmod(index_path, 0o644)
+                logger.info(f"Re-created {index_path}")
+            except Exception as e:
+                logger.error(f"Failed to re-create {index_path}: {e}")
 
     # Set environment variables
     os.environ['STATIC_FOLDER'] = str(render_static)
