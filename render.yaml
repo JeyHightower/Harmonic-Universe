@@ -5,12 +5,15 @@ services:
     name: harmonic-universe
     runtime: python
     buildCommand: >
-      chmod +x render_build.sh prerun.sh patch_flask_app.py html_fallback.py start_flask.py gunicorn.conf.py &&
+      chmod +x render_build.sh prerun.sh patch_flask_app.py html_fallback.py start_flask.py gunicorn.conf.py wsgi_direct.py &&
       ./render_build.sh
     startCommand: >
       bash -c "
+      python -c \"import os; os.makedirs('/opt/render/project/src/static', exist_ok=True);
+      os.makedirs('/opt/render/project/src/app/static', exist_ok=True)\" &&
+      FLASK_APP=app &&
       ./prerun.sh &&
-      gunicorn 'app:create_app()' --bind 0.0.0.0:$PORT --log-level info --config=gunicorn.conf.py
+      gunicorn wsgi_direct:application --bind 0.0.0.0:$PORT --log-level info --worker-class=sync --workers=1
       "
     envVars:
       - key: PYTHON_VERSION

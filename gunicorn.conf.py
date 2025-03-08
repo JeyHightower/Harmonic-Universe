@@ -160,38 +160,63 @@ def post_fork(server, worker):
     logger.info(f"Worker {worker.pid} forked")
 
     try:
-        # Get the Flask app directly from worker application
-        if hasattr(worker, 'wsgi') and worker.wsgi:
-            logger.info("Worker has WSGI attribute")
+        # Get the Flask application through worker __dict__ which is more reliable
+        from flask import Flask, request
 
-            # Check if worker.wsgi is a Flask app already
-            from flask import Flask
-            if isinstance(worker.wsgi, Flask):
-                logger.info("WSGI attribute is a Flask app")
-                flask_app = worker.wsgi
-            else:
-                # Try to find the Flask app from start_flask module
-                logger.info("Attempting to load Flask app from start_flask module")
-                module, _ = import_flask_module("start_flask")
-                if module and hasattr(module, 'application'):
-                    flask_app = module.application
-                    logger.info("Found Flask app in start_flask.application")
+        # First try to import directly from app module
+        try:
+            logger.info("Importing app module directly")
+            from app import create_app
+            flask_app = create_app()
+            logger.info(f"Successfully created Flask app via app.create_app(): {flask_app.name}")
+
+            # Add response middleware directly to the Flask application
+            @flask_app.after_request
+            def ensure_content_length(response):
+                """Ensure Content-Length header is set for all responses."""
+                if hasattr(response, 'data') and response.data and 'Content-Length' not in response.headers:
+                    response.headers['Content-Length'] = str(len(response.data))
+                    logger.debug(f"Setting Content-Length: {len(response.data)} bytes")
+                return response
+
+            # Add request logging
+            @flask_app.before_request
+            def log_request():
+                """Log basic request information."""
+                logger.info(f"Request: {request.method} {request.path}")
+                return None
+
+            logger.info("Successfully patched Flask app with middleware")
+
+            # Try to associate this Flask app with the worker if possible
+            try:
+                if hasattr(worker, 'wsgi'):
+                    # Some workers have the wsgi attribute we can set
+                    logger.info("Setting worker.wsgi to our Flask app")
+                    worker.wsgi = flask_app
+                elif hasattr(worker, 'app'):
+                    # Some workers have an app attribute
+                    logger.info("Setting worker.app to our Flask app")
+                    worker.app = flask_app
                 else:
-                    # Try to extract Flask app from worker.wsgi
-                    flask_app = None
-                    for attr in ['app', 'application', 'flask_app']:
-                        if hasattr(worker.wsgi, attr):
-                            obj = getattr(worker.wsgi, attr)
-                            if isinstance(obj, Flask):
-                                flask_app = obj
-                                logger.info(f"Found Flask app as worker.wsgi.{attr}")
-                                break
+                    logger.info("Worker doesn't have standard attributes to set Flask app")
+            except Exception as e:
+                logger.warning(f"Could not associate Flask app with worker: {e}")
 
-            # Apply custom middleware if we found a Flask app
-            if flask_app and isinstance(flask_app, Flask):
-                logger.info(f"Found Flask application: {flask_app.name}")
+            return
 
-                # Add middleware to ensure content-length is set
+        except (ImportError, AttributeError) as e:
+            logger.warning(f"Could not import app.create_app: {e}")
+
+        # Try with the start_flask module as fallback
+        try:
+            logger.info("Trying start_flask.application")
+            import start_flask
+            if hasattr(start_flask, 'application'):
+                flask_app = start_flask.application
+                logger.info(f"Found Flask app in start_flask.application: {flask_app.name}")
+
+                # Add middleware directly to this application
                 @flask_app.after_request
                 def ensure_content_length(response):
                     """Ensure Content-Length header is set for all responses."""
@@ -200,11 +225,23 @@ def post_fork(server, worker):
                         logger.debug(f"Setting Content-Length: {len(response.data)} bytes")
                     return response
 
-                logger.info("Successfully applied middleware to Flask application")
-            else:
-                logger.warning("Could not find a Flask application in worker")
-        else:
-            logger.warning("Worker does not have a wsgi attribute")
+                logger.info("Successfully patched Flask app with middleware")
+                return
+        except (ImportError, AttributeError) as e:
+            logger.warning(f"Could not import start_flask.application: {e}")
+
+        # Try to patch the app via html_fallback script
+        try:
+            logger.info("Trying html_fallback.py as a last resort")
+            import html_fallback
+            from app.wsgi import application
+            if html_fallback.add_direct_html_routes(application):
+                logger.info("Successfully patched app through html_fallback")
+                return
+        except Exception as e:
+            logger.warning(f"Failed to patch app through html_fallback: {e}")
+
+        logger.warning("Could not find or patch any Flask application")
     except Exception as e:
         logger.exception(f"Error in post_fork hook: {e}")
 
