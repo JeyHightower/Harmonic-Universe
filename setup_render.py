@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Simple setup script for Render.com deployment
+# Setup script for Render.com deployment
 
 import os
 import sys
@@ -114,6 +114,29 @@ def setup_static_directories():
             except Exception as e:
                 logger.error(f"Failed to create index.html in {static_dir}: {e}")
 
+    # Try to copy any existing static files from frontend/build if it exists
+    frontend_build = Path('frontend/build')
+    if frontend_build.exists() and frontend_build.is_dir():
+        try:
+            # Copy frontend build files to all static directories
+            for static_dir in [render_static, local_static, app_static]:
+                logger.info(f"Copying frontend build files to {static_dir}")
+                for item in frontend_build.glob('*'):
+                    # Skip index.html if we already created it
+                    if item.name == 'index.html' and (static_dir / 'index.html').exists():
+                        continue
+
+                    if item.is_file():
+                        shutil.copy2(item, static_dir)
+                    elif item.is_dir():
+                        dest_dir = static_dir / item.name
+                        if dest_dir.exists():
+                            shutil.rmtree(dest_dir)
+                        shutil.copytree(item, dest_dir)
+                logger.info(f"Copied frontend build files to {static_dir}")
+        except Exception as e:
+            logger.error(f"Failed to copy frontend build files: {e}")
+
     # Verify files exist
     for static_dir in [render_static, local_static, app_static]:
         index_path = static_dir / 'index.html'
@@ -124,6 +147,7 @@ def setup_static_directories():
 
     # Set environment variables
     os.environ['STATIC_FOLDER'] = str(render_static)
+    os.environ['STATIC_DIR'] = str(render_static)
     if is_render:
         os.environ['RENDER'] = 'true'
 

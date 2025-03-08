@@ -167,11 +167,18 @@ Updated the Node.js version to 18.18.0 to address the end-of-life warning for No
 
 ## Deployment on Render.com
 
-### Option 1: Using the render.yaml file
+### Option 1: Using the render.yaml file (Recommended)
 
 1. Make sure the `render.yaml` file is in the root of your repository
 2. Connect your repository to Render.com
 3. Render.com will automatically detect and use the configuration in render.yaml
+
+The current render.yaml file is configured to:
+
+- Install required dependencies
+- Build the React frontend
+- Copy the frontend build files to the appropriate static directory
+- Start the application using the render_start.sh script
 
 ### Option 2: Manual Configuration in Render Dashboard
 
@@ -182,40 +189,73 @@ Updated the Node.js version to 18.18.0 to address the end-of-life warning for No
    **Build Command:**
 
    ```
-   pip install -r backend/requirements.txt && pip install gunicorn && cd frontend && npm install && npm run render-build && cd .. && mkdir -p static && cp -r frontend/dist/* static/ && cp frontend/public/react-polyfill.js static/ 2>/dev/null || true && cp frontend/public/react-context-provider.js static/ 2>/dev/null || true
+   pip install gunicorn==21.2.0 flask-migrate flask-cors && pip install -r requirements.txt && cd frontend && npm ci && npm run build && mkdir -p ../static && cp -r build/* ../static/
    ```
 
    **Start Command:**
 
    ```
-   PYTHONPATH=. gunicorn app:create_app()
+   bash ./render_start.sh
    ```
 
    **Environment Variables:**
 
-   - PYTHONPATH: `.`
+   - PYTHON_VERSION: `3.9.18`
+   - NODE_VERSION: `18.18.0`
+   - PORT: `8000`
+   - STATIC_DIR: `/opt/render/project/src/static`
    - FLASK_APP: `app`
-   - FLASK_ENV: `production`
-   - REACT_APP_BASE_URL: `https://harmonic-universe.onrender.com` (adjust as needed)
+   - RENDER: `true`
+   - APP_ENV: `production`
+   - LOG_LEVEL: `INFO`
 
-## Verification
+## Key Files for Deployment
 
-Before deploying, run the verification script locally to ensure everything works:
+### 1. `render.yaml`
+
+Defines the service configuration for Render.com.
+
+### 2. `render_start.sh`
+
+A bash script that sets up the environment and starts the application.
+
+### 3. `setup_render.py`
+
+A Python script that ensures static directories exist and contain required files.
+
+### 4. `app/wsgi.py`
+
+The WSGI entry point that creates and configures the Flask application.
+
+### 5. `app/__init__.py`
+
+Contains the `create_app()` factory function that initializes the Flask application.
+
+## Testing the Deployment Locally
+
+To test this configuration locally:
 
 ```bash
-python verify_render_setup.py
+# Run the setup script
+python setup_render.py
+
+# Start the application
+python -m app.wsgi
 ```
 
-All checks should pass before deploying.
+## Verifying Static File Handling
 
-## Troubleshooting
+To verify that static files are being handled correctly:
 
-If you encounter issues:
+1. Check that the static directories exist:
 
-1. Check the Render.com logs for error messages
-2. Verify that all the environment variables are set correctly
-3. Make sure your database connection string is properly configured
-4. Run the verification script locally to diagnose issues
+   - `/opt/render/project/src/static/` (on Render.com)
+   - `app/static/`
+   - `static/`
+
+2. Visit the home route to see if the index.html file is loaded correctly
+
+3. Visit `/render-test` to see details about the application configuration
 
 ## Directory Structure
 
