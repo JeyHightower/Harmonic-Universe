@@ -20,6 +20,7 @@ if current_dir not in sys.path:
 
 # Create the Flask application
 app = create_app()
+application = app  # For WSGI compatibility
 
 if __name__ == "__main__":
     # Run the application in development

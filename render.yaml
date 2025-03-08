@@ -4,8 +4,8 @@ services:
   - type: web
     name: harmonic-universe
     runtime: python
-    buildCommand: chmod +x render-build.sh && ./render-build.sh
-    startCommand: ./run_gunicorn.sh
+    buildCommand: "bash -c 'chmod +x render-build.sh && ./render-build.sh'"
+    startCommand: 'python -m gunicorn wsgi:app --bind 0.0.0.0:$PORT --log-level info'
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
