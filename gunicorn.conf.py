@@ -196,29 +196,46 @@ def on_starting(server):
     logger.info("gunicorn startup setup completed")
 
 def post_fork(server, worker):
-    """Run after a worker has been forked."""
+    """
+    Post-fork hook for Gunicorn workers.
+    This is called after the worker has been forked but before it processes any requests.
+    Use this to set up worker-specific features.
+    """
     logger.info(f"Worker {worker.pid} forked")
 
     # Apply HTML fallback to the worker's application
     try:
-        # First try to access the application
-        if hasattr(server, 'app') and hasattr(server.app, 'wsgi'):
-            logger.info("Attempting to apply HTML fallback to worker application")
+        logger.info("Attempting to apply HTML fallback to worker application")
 
-            # Try to load the HTML fallback module
-            html_fallback = load_script("html_fallback.py")
-            if html_fallback and hasattr(html_fallback, 'add_direct_html_routes'):
-                # Get the application
-                wsgi_app = server.app.wsgi()
+        # Load the HTML fallback script
+        fallback_module = load_script("html_fallback.py")
+        if fallback_module and hasattr(fallback_module, 'add_direct_html_routes'):
+            # Get the worker's application
+            from flask import Flask
+            app = worker.wsgi.application
 
-                # Apply the HTML fallback
-                html_fallback.add_direct_html_routes(wsgi_app)
+            # Check if this is a Flask app
+            if isinstance(app, Flask):
+                logger.info("Found Flask application in worker")
+
+                # Add the direct HTML routes
+                fallback_module.add_direct_html_routes(app)
+
+                # Add middleware to ensure content-length is set
+                @app.after_request
+                def ensure_content_length(response):
+                    """Ensure Content-Length header is set for all responses."""
+                    if 'Content-Length' not in response.headers and response.data:
+                        logger.info(f"Setting Content-Length: {len(response.data)} bytes")
+                        response.headers['Content-Length'] = str(len(response.data))
+                    return response
+
                 logger.info("Successfully applied HTML fallback to worker application")
             else:
-                logger.warning("HTML fallback module not found or invalid")
+                logger.warning(f"Worker application is not a Flask app: {type(app)}")
         else:
-            logger.warning("Could not access server application")
+            logger.warning("HTML fallback module not found or missing add_direct_html_routes function")
     except Exception as e:
-        logger.error(f"Error applying HTML fallback in worker: {e}")
+        logger.exception(f"Error applying HTML fallback to worker: {e}")
 
     logger.info(f"Worker {worker.pid} initialization completed")

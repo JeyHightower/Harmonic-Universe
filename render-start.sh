@@ -1,46 +1,81 @@
-#!/usr/bin/env bash
-set -o errexit
+#!/bin/bash
+# Helper script for starting the app on Render.com
 
-echo "=== Starting Harmonic Universe Application ==="
+set -o errexit
+set -o nounset
+set -o pipefail
+
+echo "=== Starting Render deployment script ==="
 echo "Current directory: $(pwd)"
 echo "Python version: $(python --version)"
 
-# Source the gunicorn path if available
-if [ -f gunicorn_path.sh ]; then
-  source gunicorn_path.sh
-  echo "Loaded gunicorn path: $GUNICORN_PATH"
+# Source gunicorn_path.sh if it exists (for OpenBSD's Python)
+if [ -f "gunicorn_path.sh" ]; then
+    echo "Sourcing gunicorn_path.sh"
+    source gunicorn_path.sh
+fi
+
+# Try to find gunicorn in various locations
+if command -v gunicorn &>/dev/null; then
+    GUNICORN_CMD="gunicorn"
+elif command -v python3 -m gunicorn &>/dev/null; then
+    GUNICORN_CMD="python3 -m gunicorn"
+elif command -v python -m gunicorn &>/dev/null; then
+    GUNICORN_CMD="python -m gunicorn"
 else
-  echo "WARNING: gunicorn_path.sh not found"
+    # Last resort, try to find it in a venv/bin directory or similar
+    for path in venv/bin/gunicorn .venv/bin/gunicorn env/bin/gunicorn; do
+        if [ -x "$path" ]; then
+            GUNICORN_CMD="$path"
+            break
+        fi
+    done
 fi
 
-# Try to find gunicorn through various methods
-if [ -z "$GUNICORN_PATH" ]; then
-  GUNICORN_PATH=$(which gunicorn 2>/dev/null || echo "")
-  if [ -z "$GUNICORN_PATH" ]; then
-    GUNICORN_PATH="/home/render/.local/bin/gunicorn"  # Common Render.com path
-  fi
+# Run pre-start verification script if it exists
+if [ -f "prerun.sh" ]; then
+    echo "Running pre-start verification script..."
+    bash prerun.sh
 fi
 
-echo "Using gunicorn at: $GUNICORN_PATH"
-
-# Check if we found gunicorn
-if [ ! -x "$GUNICORN_PATH" ]; then
-  echo "ERROR: Could not find executable gunicorn"
-  # Emergency install
-  pip install gunicorn
-  GUNICORN_PATH=$(which gunicorn)
-  echo "Emergency install - Gunicorn found at: $GUNICORN_PATH"
+# Final check for gunicorn
+if [ -z "${GUNICORN_CMD:-}" ]; then
+    echo "Error: gunicorn not found"
+    echo "Trying to install gunicorn..."
+    pip install gunicorn
+    GUNICORN_CMD="gunicorn"
 fi
 
-# Start the application
-echo "Starting application with Gunicorn on port $PORT..."
-if [ -f wsgi.py ]; then
-  echo "Using wsgi.py in root directory"
-  $GUNICORN_PATH wsgi:application --bind 0.0.0.0:$PORT --log-level info
-elif [ -f app/wsgi.py ]; then
-  echo "Using app/wsgi.py"
-  $GUNICORN_PATH app.wsgi:application --bind 0.0.0.0:$PORT --log-level info
-else
-  echo "Using app.py directly"
-  $GUNICORN_PATH app:app --bind 0.0.0.0:$PORT --log-level info
+echo "Using gunicorn command: $GUNICORN_CMD"
+
+# Check for wsgi modules
+for wsgi_module in "app.wsgi:application" "wsgi:application" "app:app" "app:application"; do
+    # Use python to check if the module exists
+    if python -c "import sys, importlib.util; module_name = '${wsgi_module%%:*}'; spec = importlib.util.find_spec(module_name); sys.exit(0 if spec else 1)" 2>/dev/null; then
+        echo "Found WSGI module: $wsgi_module"
+        MODULE_EXISTS=1
+        MODULE_NAME="$wsgi_module"
+        break
+    fi
+done
+
+if [ -z "${MODULE_EXISTS:-}" ]; then
+    echo "Error: Could not find a valid WSGI module"
+    echo "Falling back to app.wsgi:application"
+    MODULE_NAME="app.wsgi:application"
+fi
+
+# Set static folder environment variable for the app
+export STATIC_DIR="/opt/render/project/src/static"
+
+# Start the application with Gunicorn
+echo "Starting gunicorn with module: $MODULE_NAME"
+echo "Command: $GUNICORN_CMD --config=gunicorn.conf.py $MODULE_NAME"
+
+# Execute with proper error handling
+if ! $GUNICORN_CMD --config=gunicorn.conf.py $MODULE_NAME; then
+    echo "Error: Gunicorn failed to start"
+    # Try alternative module as a fallback
+    echo "Attempting fallback to app.wsgi:application..."
+    $GUNICORN_CMD --config=gunicorn.conf.py app.wsgi:application
 fi

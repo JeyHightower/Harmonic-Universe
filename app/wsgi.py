@@ -6,7 +6,7 @@ This file creates a basic Flask application that can run independently.
 import os
 import sys
 import logging
-from flask import Flask, jsonify, send_from_directory, render_template_string
+from flask import Flask, jsonify, send_from_directory, render_template_string, request
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -144,41 +144,159 @@ except Exception as e:
 @application.route('/')
 def home():
     """Serve the home page."""
+    logger.info("Home route called")
     try:
         index_path = os.path.join(static_folder, 'index.html')
+        logger.info(f"Looking for index.html at {index_path}")
         if os.path.exists(index_path):
-            with open(index_path, 'r') as f:
-                html_content = f.read()
-            # Explicitly set content type to HTML
-            response = application.response_class(
-                response=html_content,
-                status=200,
-                mimetype='text/html'
-            )
-            logger.info(f"Serving index.html ({len(html_content)} bytes)")
-            return response
+            logger.info(f"index.html found at {index_path}")
+            try:
+                with open(index_path, 'r') as f:
+                    html_content = f.read()
+                logger.info(f"Read {len(html_content)} bytes from index.html")
+
+                # Force response to be proper HTML with explicit headers
+                response = application.response_class(
+                    response=html_content,
+                    status=200,
+                    mimetype='text/html',
+                    headers={
+                        'Content-Type': 'text/html; charset=utf-8',
+                        'Content-Length': str(len(html_content))
+                    }
+                )
+                logger.info(f"Created response with content length: {len(html_content)}")
+                return response
+            except Exception as file_err:
+                logger.exception(f"Error reading index.html: {file_err}")
+                # Use the embedded HTML approach as fallback
+                return direct_html_response("Error reading index.html file")
         else:
             logger.error(f"index.html not found at {index_path}")
             # Return a fallback HTML response
-            fallback_html = """<!DOCTYPE html>
-<html>
-<head><title>Harmonic Universe</title></head>
-<body style="font-family: sans-serif; text-align: center; margin-top: 50px;">
-    <h1>Harmonic Universe</h1>
-    <p>The application is running, but index.html could not be found.</p>
-    <p><a href="/api/health">Health Check</a></p>
+            return direct_html_response("index.html file not found")
+    except Exception as e:
+        logger.exception(f"Error in home route: {e}")
+        # Last resort fallback
+        return direct_html_response(f"Error in home route: {str(e)}")
+
+def direct_html_response(message=""):
+    """Generate a direct HTML response without file reading."""
+    logger.info(f"Generating direct HTML response: {message}")
+    fallback_html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harmonic Universe</title>
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+        }}
+        .container {{
+            max-width: 800px;
+            padding: 2rem;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }}
+        h1 {{
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }}
+        p {{
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }}
+        .message {{
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }}
+        .button {{
+            display: inline-block;
+            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            text-decoration: none;
+            padding: 0.8rem 1.8rem;
+            border-radius: 30px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+        }}
+        .button:hover {{
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Harmonic Universe</h1>
+        <p>Direct HTML response from the server</p>
+        {f'<div class="message">{message}</div>' if message else ''}
+        <div>
+            <a href="/api/health" class="button">Health Check</a>
+            <a href="/debug" class="button">Debug Info</a>
+        </div>
+    </div>
 </body>
 </html>"""
-            response = application.response_class(
-                response=fallback_html,
-                status=200,
-                mimetype='text/html'
-            )
-            return response
-    except Exception as e:
-        logger.exception(f"Error serving home page: {e}")
-        # Last resort fallback
-        return "<html><body><h1>Harmonic Universe</h1><p>Error serving content</p></body></html>"
+
+    # Force response to be proper HTML with explicit headers
+    response = application.response_class(
+        response=fallback_html,
+        status=200,
+        mimetype='text/html',
+        headers={
+            'Content-Type': 'text/html; charset=utf-8',
+            'Content-Length': str(len(fallback_html))
+        }
+    )
+    logger.info(f"Created direct HTML response with content length: {len(fallback_html)}")
+    return response
+
+@application.route('/direct')
+def direct_route():
+    """Direct HTML route that doesn't rely on file reading."""
+    return direct_html_response("Accessed via /direct endpoint")
+
+@application.before_request
+def log_request_info():
+    """Log details before each request."""
+    logger.info(f"Request: {request.method} {request.path}")
+    logger.info(f"Headers: {dict(request.headers)}")
+
+@application.after_request
+def log_response_info(response):
+    """Log details after each request."""
+    logger.info(f"Response: {response.status_code}")
+    logger.info(f"Response headers: {dict(response.headers)}")
+    content_length = response.headers.get('Content-Length', 'unknown')
+    logger.info(f"Response content length: {content_length}")
+
+    # If content-length is 0 or missing, check if we can fix it
+    if not content_length or content_length == '0':
+        if response.data:
+            logger.info(f"Fixing missing content length: {len(response.data)}")
+            response.headers['Content-Length'] = str(len(response.data))
+        else:
+            logger.warning("Response has no data")
+
+    return response
 
 @application.route('/static/<path:filename>')
 def serve_static(filename):
@@ -300,63 +418,69 @@ app = application
 # Add a /debug route for troubleshooting
 @app.route('/debug')
 def debug_info():
-    """Debug info endpoint."""
-    import platform
-    import datetime
-    import socket
+    """Render debug information about the application."""
+    if app.config.get('ENV') == 'production' and not os.environ.get('RENDER'):
+        # Only allow debug in development or on Render
+        return jsonify({"error": "Debug only available in development or on Render"})
 
-    # Only add this route if it doesn't already exist
-    if app.name == 'app.wsgi' or '/debug' not in [rule.rule for rule in app.url_map.iter_rules()]:
-        # Convert to a pretty HTML response
-        html_template = """<!DOCTYPE html>
+    try:
+        logger.info("Debug route called")
+        # Debug template with detailed app info
+        html_template = """
+        <!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Harmonic Universe - Debug Info</title>
+            <title>Harmonic Universe - Debug</title>
             <style>
                 body {
-                    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
                     line-height: 1.6;
                     color: #333;
-                    max-width: 1000px;
+                    max-width: 1200px;
                     margin: 0 auto;
                     padding: 20px;
                 }
-                h1 { color: #4CAF50; }
-                h2 { color: #2196F3; margin-top: 30px; }
+                h1, h2 {
+                    color: #2c3e50;
+                }
                 pre {
-                    background-color: #f5f5f5;
+                    background-color: #f8f9fa;
                     padding: 15px;
                     border-radius: 5px;
                     overflow-x: auto;
                 }
+                table {
+                    border-collapse: collapse;
+                    width: 100%;
+                    margin-bottom: 20px;
+                }
+                th, td {
+                    text-align: left;
+                    padding: 8px;
+                    border-bottom: 1px solid #ddd;
+                }
+                th {
+                    background-color: #f2f2f2;
+                }
                 .container {
                     background-color: white;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
                     padding: 20px;
-                    border-radius: 10px;
-                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                }
-                table {
-                    width: 100%;
-                    border-collapse: collapse;
-                }
-                td, th {
-                    border: 1px solid #ddd;
-                    padding: 8px;
-                    text-align: left;
-                }
-                tr:nth-child(even) {
-                    background-color: #f2f2f2;
                 }
                 .back-btn {
                     display: inline-block;
-                    margin-top: 20px;
-                    padding: 10px 20px;
-                    background-color: #4CAF50;
+                    background-color: #3498db;
                     color: white;
+                    padding: 10px 15px;
                     text-decoration: none;
-                    border-radius: 5px;
+                    border-radius: 4px;
+                    margin-top: 20px;
+                }
+                .back-btn:hover {
+                    background-color: #2980b9;
                 }
             </style>
         </head>
@@ -405,13 +529,17 @@ def debug_info():
         </html>
         """
 
+        import datetime
+        import platform
+        import socket
+
         # Get static directory contents
         static_contents = []
         if hasattr(app, 'static_folder') and app.static_folder and os.path.exists(app.static_folder):
             try:
                 static_contents = os.listdir(app.static_folder)
-            except:
-                static_contents = ["Error reading directory"]
+            except Exception as e:
+                static_contents = [f"Error reading directory: {str(e)}"]
 
         debug_data = {
             "app_name": app.name,
@@ -430,18 +558,25 @@ def debug_info():
 
         try:
             from flask import render_template_string
-            # Explicitly set content type to HTML
+            # Render the template
+            rendered_html = render_template_string(html_template, data=debug_data)
+
+            # Explicitly set content type to HTML with content length
             response = app.response_class(
-                response=render_template_string(html_template, data=debug_data),
+                response=rendered_html,
                 status=200,
-                mimetype='text/html'
+                mimetype='text/html',
+                headers={
+                    'Content-Type': 'text/html; charset=utf-8',
+                    'Content-Length': str(len(rendered_html))
+                }
             )
-            logger.info("Serving debug page")
+            logger.info(f"Serving debug page with content length: {len(rendered_html)}")
             return response
         except Exception as e:
             logger.exception(f"Error rendering debug template: {e}")
             # Fallback to simple HTML
-            return f"""<!DOCTYPE html>
+            fallback_html = f"""<!DOCTYPE html>
             <html>
             <head><title>Debug Info</title></head>
             <body>
@@ -453,7 +588,32 @@ def debug_info():
             </body>
             </html>"""
 
-    return jsonify({"error": "Not available in integrated mode"})
+            # Explicitly set content type to HTML with content length
+            response = app.response_class(
+                response=fallback_html,
+                status=200,
+                mimetype='text/html',
+                headers={
+                    'Content-Type': 'text/html; charset=utf-8',
+                    'Content-Length': str(len(fallback_html))
+                }
+            )
+            logger.info(f"Serving fallback debug page with content length: {len(fallback_html)}")
+            return response
+    except Exception as e:
+        logger.exception(f"Unhandled error in debug route: {e}")
+        error_html = f"""
+        <html><body><h1>Error in Debug Route</h1><p>{str(e)}</p></body></html>
+        """
+        return app.response_class(
+            response=error_html,
+            status=500,
+            mimetype='text/html',
+            headers={
+                'Content-Type': 'text/html; charset=utf-8',
+                'Content-Length': str(len(error_html))
+            }
+        )
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
