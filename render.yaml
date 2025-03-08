@@ -4,7 +4,7 @@ services:
   - type: web
     name: harmonic-universe
     runtime: python
-    buildCommand: pip install gunicorn==21.2.0 && pip install -r requirements.txt
+    buildCommand: pip install gunicorn==21.2.0 flask-migrate && pip install -r requirements.txt
     startCommand: python -m gunicorn wsgi:app --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
