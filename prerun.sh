@@ -528,4 +528,10 @@ EOF
   chmod +x html_fallback.py
 fi
 
+# Run the Flask application patcher
+if [ -f "patch_flask_app.py" ]; then
+  echo "Running Flask application patcher..."
+  python patch_flask_app.py
+fi
+
 echo "=== PRE-START VERIFICATION COMPLETED ==="

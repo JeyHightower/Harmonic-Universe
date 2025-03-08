@@ -70,12 +70,41 @@ export STATIC_DIR="/opt/render/project/src/static"
 
 # Start the application with Gunicorn
 echo "Starting gunicorn with module: $MODULE_NAME"
-echo "Command: $GUNICORN_CMD --config=gunicorn.conf.py $MODULE_NAME"
 
-# Execute with proper error handling
-if ! $GUNICORN_CMD --config=gunicorn.conf.py $MODULE_NAME; then
-    echo "Error: Gunicorn failed to start"
-    # Try alternative module as a fallback
-    echo "Attempting fallback to app.wsgi:application..."
-    $GUNICORN_CMD --config=gunicorn.conf.py app.wsgi:application
+# Create a minimal gunicorn.conf.py if it doesn't exist
+if [ ! -f "gunicorn.conf.py" ]; then
+    echo "Creating minimal gunicorn.conf.py..."
+    cat > gunicorn.conf.py << 'EOF'
+#!/usr/bin/env python
+"""
+Minimal Gunicorn configuration to ensure the app starts even if the original config fails
+"""
+import os
+import logging
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("gunicorn.conf")
+
+bind = f"0.0.0.0:{os.environ.get('PORT', '10000')}"
+workers = 1
+timeout = 120
+EOF
+    chmod +x gunicorn.conf.py
 fi
+
+# Try to run gunicorn with our config
+echo "Command: $GUNICORN_CMD --config=gunicorn.conf.py $MODULE_NAME"
+$GUNICORN_CMD --config=gunicorn.conf.py $MODULE_NAME || {
+    echo "Error: Gunicorn failed to start with custom config"
+    echo "Attempting fallback with minimal config..."
+
+    # Try with minimal worker class settings
+    $GUNICORN_CMD --config=gunicorn.conf.py --worker-class=sync $MODULE_NAME || {
+        echo "Error: Fallback to sync worker class failed"
+        echo "Attempting direct run with minimal settings..."
+
+        # Final fallback - direct run with inline settings
+        $GUNICORN_CMD --workers=1 --timeout=120 --bind="0.0.0.0:${PORT:-10000}" app.wsgi:application
+    }
+}

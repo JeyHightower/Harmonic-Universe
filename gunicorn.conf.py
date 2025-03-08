@@ -210,13 +210,61 @@ def post_fork(server, worker):
         # Load the HTML fallback script
         fallback_module = load_script("html_fallback.py")
         if fallback_module and hasattr(fallback_module, 'add_direct_html_routes'):
-            # Get the worker's application
+            # In Gunicorn, the application is accessible differently depending on worker type
             from flask import Flask
-            app = worker.wsgi.application
 
-            # Check if this is a Flask app
-            if isinstance(app, Flask):
-                logger.info("Found Flask application in worker")
+            # The wsgi app is accessed through the worker.app attribute in Gunicorn
+            app = None
+
+            # Try different ways to get the Flask application
+            if hasattr(worker, 'app'):
+                logger.info("Found app attribute in worker")
+                app = worker.app
+            elif hasattr(worker, 'wsgi_app'):
+                logger.info("Found wsgi_app attribute in worker")
+                app = worker.wsgi_app
+            elif hasattr(server, 'app'):
+                logger.info("Using server app")
+                app = server.app
+
+            # If we found the app object, we might need to extract the actual Flask application
+            if app:
+                # Unpack the app if it's a WSGI application
+                if hasattr(app, 'application'):
+                    logger.info("Extracting application from app")
+                    app = app.application
+
+                # If app is callable but not a Flask app, it might be a WSGI wrapper
+                if callable(app) and not isinstance(app, Flask):
+                    logger.info("App is callable but not a Flask app, trying to find Flask app")
+                    # For some WSGI wrappers, we need to check their attributes
+                    for attr_name in ['app', 'application', 'wsgi_app', 'flask_app']:
+                        if hasattr(app, attr_name):
+                            potential_app = getattr(app, attr_name)
+                            if isinstance(potential_app, Flask):
+                                logger.info(f"Found Flask app in {attr_name} attribute")
+                                app = potential_app
+                                break
+
+            # Check if app is a Flask app or try to import it
+            if app is None:
+                logger.warning("Could not find app in worker, trying to import directly")
+                try:
+                    # Try to import the Flask app directly
+                    import importlib
+                    app_module = importlib.import_module('app.wsgi')
+                    if hasattr(app_module, 'application'):
+                        app = app_module.application
+                        logger.info("Imported application from app.wsgi")
+                    elif hasattr(app_module, 'app'):
+                        app = app_module.app
+                        logger.info("Imported app from app.wsgi")
+                except Exception as import_err:
+                    logger.warning(f"Failed to import app directly: {import_err}")
+
+            # Check if we have a Flask app and apply the fallback
+            if app and isinstance(app, Flask):
+                logger.info(f"Found Flask application: {app.name}")
 
                 # Add the direct HTML routes
                 fallback_module.add_direct_html_routes(app)
@@ -232,7 +280,7 @@ def post_fork(server, worker):
 
                 logger.info("Successfully applied HTML fallback to worker application")
             else:
-                logger.warning(f"Worker application is not a Flask app: {type(app)}")
+                logger.warning(f"Could not find Flask app or app is not a Flask instance: {type(app)}")
         else:
             logger.warning("HTML fallback module not found or missing add_direct_html_routes function")
     except Exception as e:
