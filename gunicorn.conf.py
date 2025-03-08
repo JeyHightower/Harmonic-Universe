@@ -1,135 +1,184 @@
 #!/usr/bin/env python
-# gunicorn.conf.py
+# gunicorn.conf.py - Configuration file for gunicorn
 import os
 import sys
 import logging
-import multiprocessing
+import subprocess
+import importlib.util
+from pathlib import Path
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("gunicorn.conf")
 
-# Get Render-specific paths
+# Render-specific paths
 RENDER_PROJECT_DIR = "/opt/render/project/src"
 RENDER_STATIC_DIR = os.path.join(RENDER_PROJECT_DIR, "static")
 
-# Server socket configurations
+# Gunicorn server configuration
 bind = "0.0.0.0:{}".format(os.environ.get("PORT", "8000"))
-workers = os.environ.get("WEB_CONCURRENCY", 2)
-worker_class = "sync"  # Using the simpler sync worker for reliability
-
-# Logging
-loglevel = os.environ.get("LOG_LEVEL", "info")
-accesslog = "-"
-errorlog = "-"
-
-# Timeout configurations
+workers = int(os.environ.get("WEB_CONCURRENCY", 2))
+worker_class = "sync"
 timeout = 120
 keepalive = 5
+accesslog = "-"
+errorlog = "-"
+loglevel = os.environ.get("LOG_LEVEL", "info")
 
-def verify_static_directory():
-    """Verify and if needed create the static directory and index.html"""
+def load_script(script_name):
+    """
+    Dynamically load a Python script file and return its module.
+    This allows us to load and run scripts that might not be importable as modules.
+    """
     try:
-        # Check for multiple possible static directories in order of preference
-        possible_static_dirs = [
-            RENDER_STATIC_DIR,                                 # Render absolute path
-            os.path.join(os.getcwd(), "static"),               # Project root static
-            os.path.join(os.path.dirname(__file__), "static"), # Relative to this file
-            os.path.join(os.getcwd(), "app", "static"),        # App module static
-        ]
+        # Try looking in the current directory first
+        script_path = os.path.join(os.getcwd(), script_name)
+        if not os.path.exists(script_path):
+            logger.warning(f"Script {script_name} not found at {script_path}")
 
-        # Find the first existing static directory or use the Render path
-        static_dir = None
-        for path in possible_static_dirs:
-            if os.path.exists(path):
-                static_dir = path
-                logger.info(f"Found static directory at: {static_dir}")
-                break
+            # Check if there's a script with a similar name
+            for filename in os.listdir(os.getcwd()):
+                if script_name.lower() in filename.lower() and filename.endswith('.py'):
+                    script_path = os.path.join(os.getcwd(), filename)
+                    logger.info(f"Found similar script: {script_path}")
+                    break
+            else:
+                logger.error(f"No similar script found for {script_name}")
+                return None
 
-        # If no static dir exists, create the Render one
-        if not static_dir:
-            static_dir = RENDER_STATIC_DIR
-            os.makedirs(static_dir, exist_ok=True)
-            logger.info(f"Created static directory at: {static_dir}")
+        # Load the script as a module
+        logger.info(f"Loading script from {script_path}")
+        spec = importlib.util.spec_from_file_location("script_module", script_path)
+        if spec is None:
+            logger.error(f"Failed to create spec for {script_path}")
+            return None
 
-        # Create symlinks for better compatibility
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        logger.info(f"Successfully loaded script as module: {script_path}")
+        return module
+    except Exception as e:
+        logger.error(f"Error loading script {script_name}: {e}")
+        return None
+
+def ensure_static_directory():
+    """
+    Run the ensure_static_directory script to guarantee static files exist.
+    This function tries multiple approaches to ensure the static directory
+    and its contents are properly set up.
+    """
+    logger.info("Starting static directory verification...")
+
+    # Approach 1: Try to import and run the ensure_static_directory.py script
+    try:
+        # First try to load the script as a module
+        ensure_module = load_script("ensure_static_directory.py")
+        if ensure_module and hasattr(ensure_module, 'ensure_static_directory'):
+            logger.info("Running ensure_static_directory.py via module import")
+            ensure_module.ensure_static_directory()
+            return
+
+        # If that fails, try running it as a subprocess
+        if os.path.exists("ensure_static_directory.py"):
+            logger.info("Running ensure_static_directory.py as subprocess")
+            subprocess.run([sys.executable, "ensure_static_directory.py"], check=True)
+            return
+    except Exception as e:
+        logger.error(f"Failed to run ensure_static_directory.py: {e}")
+
+    # Approach 2: Try to load and run fix_static_files.py
+    try:
+        fix_module = load_script("fix_static_files.py")
+        if fix_module and hasattr(fix_module, 'ensure_static_dirs'):
+            logger.info("Running fix_static_files.py via module import")
+            fix_module.ensure_static_dirs()
+            return
+
+        # If that fails, try running it as a subprocess
+        if os.path.exists("fix_static_files.py"):
+            logger.info("Running fix_static_files.py as subprocess")
+            subprocess.run([sys.executable, "fix_static_files.py"], check=True)
+            return
+    except Exception as e:
+        logger.error(f"Failed to run fix_static_files.py: {e}")
+
+    # Approach 3: Directly create files as a last resort
+    logger.info("Using built-in file creation as last resort")
+    static_dirs = [
+        RENDER_STATIC_DIR,
+        os.path.join(os.getcwd(), "static"),
+        os.path.join(os.getcwd(), "app/static")
+    ]
+
+    # Ensure all directories exist
+    for static_dir in static_dirs:
         try:
-            local_static = os.path.join(os.getcwd(), "static")
-            if not os.path.exists(local_static):
-                os.symlink(static_dir, local_static)
-                logger.info(f"Created symlink from {static_dir} to {local_static}")
-        except Exception as symlink_error:
-            logger.warning(f"Failed to create symlink: {symlink_error}")
+            Path(static_dir).mkdir(parents=True, exist_ok=True)
+            logger.info(f"Created directory: {static_dir}")
+        except Exception as e:
+            logger.error(f"Failed to create directory {static_dir}: {e}")
 
-        # Check contents of static directory
-        contents = os.listdir(static_dir)
-        logger.info(f"Static directory contents: {contents}")
-
-        # Verify index.html
-        index_path = os.path.join(static_dir, 'index.html')
-        if os.path.exists(index_path):
-            # Ensure file is readable by all
-            os.chmod(index_path, 0o666)
-            logger.info(f"index.html exists with permissions: {oct(os.stat(index_path).st_mode)[-3:]}")
-        else:
-            logger.error(f"index.html not found at {index_path}")
-            with open(index_path, 'w') as f:
-                f.write("""<!DOCTYPE html>
-<html lang="en">
+    # Create index.html in all directories
+    index_html = """<!DOCTYPE html>
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Harmonic Universe</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            margin: 0;
-            padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
+            margin: 0;
+        }
+        div {
             text-align: center;
+            padding: 2rem;
+            border-radius: 10px;
+            background: rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
         }
-        h1 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        }
-        p {
-            margin-bottom: 1.5rem;
-        }
+        a { color: white; }
     </style>
 </head>
 <body>
     <div>
         <h1>Harmonic Universe</h1>
-        <p>Welcome to the Harmonic Universe platform. The application is running successfully!</p>
-        <p><a href="/api/health" style="color: white;">Health Check</a> | <a href="/debug" style="color: white;">Debug Info</a></p>
+        <p>Application is running. Created by gunicorn.conf.py</p>
+        <p><a href="/api/health">Health Check</a></p>
     </div>
 </body>
-</html>""")
-            os.chmod(index_path, 0o666)
-            logger.info("Created default index.html")
+</html>"""
 
-        return True
-    except Exception as e:
-        logger.error(f"Static directory verification failed: {e}")
-        return False
+    for static_dir in static_dirs:
+        try:
+            if os.path.exists(static_dir):
+                index_path = os.path.join(static_dir, "index.html")
+                with open(index_path, "w") as f:
+                    f.write(index_html)
+                os.chmod(index_path, 0o644)
+                logger.info(f"Created index.html at {index_path}")
+
+                # Verify file exists and check contents
+                contents = os.listdir(static_dir)
+                logger.info(f"Directory contents of {static_dir}: {contents}")
+        except Exception as e:
+            logger.error(f"Error creating index.html in {static_dir}: {e}")
 
 def on_starting(server):
-    """Run when Gunicorn starts"""
-    logger.info("Starting Gunicorn with configuration:")
-    logger.info(f"Workers: {server.cfg.workers}")
-    logger.info(f"Bind: {server.cfg.bind}")
+    """Run when gunicorn starts"""
+    logger.info(f"Starting gunicorn with {server.cfg.workers} workers")
+    logger.info(f"Current directory: {os.getcwd()}")
+    logger.info(f"Directory contents: {os.listdir('.')}")
 
-    # Verify static directory setup
-    verify_static_directory()
+    # Run static directory setup
+    ensure_static_directory()
 
-    # Set environment variable for Render deployment
+    # Set environment variables
     os.environ["RENDER"] = "true"
-
-    # Set static directory environment variable
     os.environ["STATIC_DIR"] = RENDER_STATIC_DIR
+
+    logger.info("gunicorn startup setup completed")

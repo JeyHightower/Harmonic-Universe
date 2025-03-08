@@ -4,8 +4,8 @@ services:
   - type: web
     name: harmonic-universe
     runtime: python
-    buildCommand: chmod +x render_build.sh && ./render_build.sh
-    startCommand: gunicorn app.wsgi:application --bind 0.0.0.0:$PORT --log-level info
+    buildCommand: chmod +x render_build.sh prerun.sh && ./render_build.sh
+    startCommand: bash -c "./prerun.sh && gunicorn wsgi:application --bind 0.0.0.0:$PORT --log-level info --config=gunicorn.conf.py"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
@@ -19,6 +19,8 @@ services:
         value: production
       - key: LOG_LEVEL
         value: INFO
+      - key: RENDER
+        value: 'true'
     healthCheckPath: /api/health
     autoDeploy: true
 
