@@ -1,31 +1,47 @@
 #!/bin/bash
-# Verification-specific start script
-set -x  # Print commands for debugging
+# Script to verify the server is running correctly
 
-echo "Starting verification process..."
+# Get port from environment or use default
+PORT=${PORT:-10000}
+echo "Testing server on port $PORT..."
 
-# Create static directory and index.html if they don't exist
-mkdir -p /opt/render/project/src/static
-cat > /opt/render/project/src/static/index.html << 'EOF'
-<!DOCTYPE html>
-<html>
-<head><title>Harmonic Universe</title></head>
-<body><h1>Harmonic Universe</h1><p>Static file served correctly</p></body>
-</html>
-EOF
-chmod 644 /opt/render/project/src/static/index.html
+# Run basic health checks
+echo "Checking health endpoint..."
+HEALTH_CHECK=$(curl -s http://localhost:$PORT/health)
+API_HEALTH_CHECK=$(curl -s http://localhost:$PORT/api/health)
 
-# Create standard and api health endpoints
-mkdir -p /opt/render/project/src/static/api
-echo '{"status":"ok","message":"Health check passed"}' > /opt/render/project/src/static/health
-echo '{"status":"ok","message":"Health check passed"}' > /opt/render/project/src/static/api/health
-chmod 644 /opt/render/project/src/static/health
-chmod 644 /opt/render/project/src/static/api/health
+# Check if "healthy" is in the response
+if echo "$HEALTH_CHECK" | grep -q "healthy"; then
+    echo "✅ Health check passed"
+else
+    echo "❌ Health check failed"
+    echo "Health response: $HEALTH_CHECK"
+fi
 
-# Set environment variables
-export PORT=10000
-export STATIC_DIR=/opt/render/project/src/static
+if echo "$API_HEALTH_CHECK" | grep -q "healthy"; then
+    echo "✅ API Health check passed"
+else
+    echo "❌ API Health check failed"
+    echo "API Health response: $API_HEALTH_CHECK"
+fi
 
-# Start the verification server
-echo "Starting verification server on port $PORT"
-exec python verify_server.py
+# Check if we can access the root endpoint
+echo "Checking root endpoint..."
+ROOT_RESPONSE=$(curl -s http://localhost:$PORT/)
+if echo "$ROOT_RESPONSE" | grep -q "Harmonic Universe"; then
+    echo "✅ Root endpoint accessible"
+else
+    echo "❌ Root endpoint not accessible"
+    echo "Root response: $ROOT_RESPONSE"
+fi
+
+# Summary
+if echo "$HEALTH_CHECK" | grep -q "healthy" && \
+   echo "$API_HEALTH_CHECK" | grep -q "healthy" && \
+   echo "$ROOT_RESPONSE" | grep -q "Harmonic Universe"; then
+    echo "✅ All checks passed"
+    exit 0
+else
+    echo "❌ Some checks failed"
+    exit 1
+fi

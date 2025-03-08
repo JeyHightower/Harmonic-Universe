@@ -38,7 +38,7 @@ HEALTH_RESPONSE = b"""HTTP/1.1 200 OK
 Content-Type: application/json
 Connection: close
 
-{"status":"ok","message":"Health check passed","database":"connected","service":"harmonic-universe","version":"1.0.0"}
+{"status":"healthy","message":"Health check passed","database":"connected","service":"harmonic-universe","version":"1.0.0"}
 """
 
 # Dummy DB implementation
@@ -109,7 +109,22 @@ class App:
     """Minimal Flask-like application"""
 
     def __init__(self):
-        self.static_folder = os.environ.get('STATIC_DIR', '/opt/render/project/src/static')
+        # Try multiple paths for static folder, prioritize the one that exists
+        static_paths = [
+            os.environ.get('STATIC_DIR', 'static'),
+            '/opt/render/project/src/static',
+            '/app/static',
+            os.path.join(os.getcwd(), 'static')
+        ]
+
+        # Find first existing path or default to the first one
+        for path in static_paths:
+            if os.path.exists(path):
+                self.static_folder = path
+                break
+        else:
+            self.static_folder = static_paths[0]
+
         self.routes = {}
         # Add additional API routes for test compatibility
         self.add_default_routes()
@@ -275,33 +290,62 @@ def run_socket_server(port=None):
     if port is None:
         port = int(os.environ.get('PORT', 10000))
 
-    try:
-        # Create socket
-        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    max_retries = 5
+    retry_delay = 1
 
-        # Bind to port - use '0.0.0.0' to bind to all interfaces
-        server.bind(('0.0.0.0', port))
-        server.listen(5)
-        logger.info(f"Socket server listening on port {port}")
+    for attempt in range(max_retries):
+        try:
+            # Create socket
+            server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        # Main loop
-        while True:
+            # Bind to port - use '0.0.0.0' to bind to all interfaces
+            server.bind(('0.0.0.0', port))
+            server.listen(5)
+            logger.info(f"Socket server listening on port {port} (binding to all interfaces)")
+
+            # Report IP addresses we're listening on
             try:
-                client, addr = server.accept()
-                logger.info(f"Connection from {addr}")
-
-                # Handle client in a new thread to avoid blocking
-                client_thread = threading.Thread(target=handle_client, args=(client, addr))
-                client_thread.daemon = True
-                client_thread.start()
+                hostname = socket.gethostname()
+                ip_addresses = socket.gethostbyname_ex(hostname)[2]
+                logger.info(f"Server accessible at: {', '.join([f'http://{ip}:{port}' for ip in ip_addresses])}")
             except Exception as e:
-                logger.error(f"Error accepting connection: {e}")
-                # Continue despite errors
-                time.sleep(0.5)
-    except Exception as e:
-        logger.error(f"Error running socket server: {e}")
-        sys.exit(1)  # Exit with error if we can't start the server
+                logger.warning(f"Could not determine IP addresses: {e}")
+
+            # Main loop
+            while True:
+                try:
+                    client, addr = server.accept()
+                    logger.info(f"Connection from {addr}")
+
+                    # Handle client in a new thread to avoid blocking
+                    client_thread = threading.Thread(target=handle_client, args=(client, addr))
+                    client_thread.daemon = True
+                    client_thread.start()
+                except Exception as e:
+                    logger.error(f"Error accepting connection: {e}")
+                    # Continue despite errors
+                    time.sleep(0.5)
+        except socket.error as e:
+            if e.errno == 98:  # Address already in use
+                logger.warning(f"Port {port} is already in use, retrying in {retry_delay} seconds (attempt {attempt+1}/{max_retries})")
+                time.sleep(retry_delay)
+                continue
+            logger.error(f"Socket error: {e}")
+            if attempt < max_retries - 1:
+                logger.info(f"Retrying in {retry_delay} seconds (attempt {attempt+1}/{max_retries})")
+                time.sleep(retry_delay)
+            else:
+                logger.error(f"Failed to start server after {max_retries} attempts")
+                sys.exit(1)
+        except Exception as e:
+            logger.error(f"Error running socket server: {e}")
+            if attempt < max_retries - 1:
+                logger.info(f"Retrying in {retry_delay} seconds (attempt {attempt+1}/{max_retries})")
+                time.sleep(retry_delay)
+            else:
+                logger.error(f"Failed to start server after {max_retries} attempts")
+                sys.exit(1)
 
 def handle_client(client, addr):
     """Handle a client connection"""
@@ -386,14 +430,14 @@ def setup_static_files():
         # Create health endpoints as static files too
         health_path = os.path.join(static_dir, 'health')
         with open(health_path, 'w') as f:
-            f.write('{"status":"ok","message":"Health check passed","database":"connected","service":"harmonic-universe"}')
+            f.write('{"status":"healthy","message":"Health check passed","database":"connected","service":"harmonic-universe"}')
 
         api_dir = os.path.join(static_dir, 'api')
         os.makedirs(api_dir, exist_ok=True)
 
         api_health_path = os.path.join(api_dir, 'health')
         with open(api_health_path, 'w') as f:
-            f.write('{"status":"ok","message":"Health check passed","database":"connected","service":"harmonic-universe"}')
+            f.write('{"status":"healthy","message":"Health check passed","database":"connected","service":"harmonic-universe"}')
 
         logger.info(f"Static files setup complete in {static_dir}")
     except Exception as e:

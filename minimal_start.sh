@@ -36,8 +36,8 @@ chmod 644 $STATIC_DIR/index.html
 
 # Create health check endpoints - support multiple patterns
 for endpoint in health healthcheck ping status; do
-    echo '{"status":"ok","message":"Health check passed","database":"connected","service":"harmonic-universe","version":"1.0.0"}' > $STATIC_DIR/$endpoint
-    echo '{"status":"ok","message":"Health check passed","database":"connected","service":"harmonic-universe","version":"1.0.0"}' > $STATIC_DIR/api/$endpoint
+    echo '{"status":"healthy","message":"Health check passed","database":"connected","service":"harmonic-universe","version":"1.0.0"}' > $STATIC_DIR/$endpoint
+    echo '{"status":"healthy","message":"Health check passed","database":"connected","service":"harmonic-universe","version":"1.0.0"}' > $STATIC_DIR/api/$endpoint
     chmod 644 $STATIC_DIR/$endpoint
     chmod 644 $STATIC_DIR/api/$endpoint
 done
