@@ -2,16 +2,17 @@
 services:
   # Backend API service
   - type: web
-    name: harmonic-universe-api
-    plan: free
+    name: harmonic-universe
     runtime: python
     buildCommand: ./render-build.sh
     startCommand: gunicorn backend.wsgi:app
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: PORT
+        value: 8000
       - key: STATIC_DIR
         value: /opt/render/project/src/static
-      - key: PYTHON_VERSION
-        value: 3.10.12
       - key: APP_ENV
         value: production
       - key: LOG_LEVEL
@@ -32,12 +33,12 @@ services:
         value: production
       - key: VITE_API_URL
         fromService:
-          name: harmonic-universe-api
+          name: harmonic-universe
           type: web
           property: url
       - key: REACT_APP_API_URL
         fromService:
-          name: harmonic-universe-api
+          name: harmonic-universe
           type: web
           property: url
     autoDeploy: true
