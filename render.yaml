@@ -5,7 +5,7 @@ services:
     name: harmonic-universe
     runtime: python
     buildCommand: chmod +x render-build.sh && ./render-build.sh
-    startCommand: chmod +x render-start.sh && ./render-start.sh
+    startCommand: ./run_gunicorn.sh
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
