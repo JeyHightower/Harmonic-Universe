@@ -12,6 +12,44 @@ const handleError = error => {
     };
 };
 
+// Demo login
+export const demoLogin = createAsyncThunk(
+    'auth/demoLogin',
+    async (_, { dispatch, rejectWithValue }) => {
+        try {
+            dispatch(loginStart());
+            console.debug('Logging in as demo user');
+
+            const response = await api.post(
+                endpoints.auth.demoLogin,
+                {}
+            );
+            console.debug('Demo login successful:', response);
+
+            // Store tokens
+            if (response.token) {
+                localStorage.setItem('accessToken', response.token);
+            }
+            if (response.refresh_token) {
+                localStorage.setItem('refreshToken', response.refresh_token);
+            }
+
+            // Dispatch login success with user data
+            dispatch(loginSuccess(response.user));
+
+            // Navigate to dashboard
+            window.location.href = '/dashboard';
+
+            return response;
+        } catch (error) {
+            console.error('Demo login failed:', error);
+            const errorData = handleError(error);
+            dispatch(loginFailure(errorData.message));
+            return rejectWithValue(errorData);
+        }
+    }
+);
+
 // Register a new user
 export const registerUser = createAsyncThunk(
     'auth/registerUser',

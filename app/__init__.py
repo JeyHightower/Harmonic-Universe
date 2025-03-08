@@ -365,4 +365,48 @@ def create_app():
     # Add more routes for your application as needed
     # For example: @app.route('/api/users'), etc.
 
+    # Demo login API endpoint
+    @app.route('/api/auth/demo-login', methods=['POST'])
+    def demo_login_api():
+        """Create a demo user and return a token."""
+        try:
+            # Find or create demo user
+            from app.models import User
+            from werkzeug.security import generate_password_hash
+            import jwt
+            import datetime
+
+            demo_user = User.query.filter_by(username='demo_user').first()
+
+            if not demo_user:
+                demo_user = User(
+                    username='demo_user',
+                    email='demo@example.com',
+                    hashed_password=generate_password_hash('demo123')
+                )
+                db.session.add(demo_user)
+                db.session.commit()
+                logger.info("Created new demo user")
+            else:
+                logger.info("Using existing demo user")
+
+            # Generate token
+            token = jwt.encode({
+                'user_id': demo_user.id,
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+            }, app.config['SECRET_KEY'])
+
+            return jsonify({
+                'message': 'Demo login successful',
+                'token': token,
+                'user': {
+                    'id': demo_user.id,
+                    'username': demo_user.username,
+                    'email': demo_user.email
+                }
+            })
+        except Exception as e:
+            logger.error(f"Error in demo login: {e}")
+            return jsonify({'message': 'An error occurred during demo login'}), 500
+
     return app

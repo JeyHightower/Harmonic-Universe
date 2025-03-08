@@ -2,291 +2,165 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <!-- Initialize flags to prevent multiple script execution -->
-    <script>
-      // Simple flag to prevent duplicate execution
-      window.__UTILS_FIX_APPLIED__ = false;
-      window.__COMPLETE_FIX_APPLIED__ = false;
-    </script>
-
-    <!-- Add debug script -->
-    <script src="/debug.js"></script>
-
-    <!-- Simple version patch with no recursion risk -->
-    <script src="/version-patch.js"></script>
-
-    <!-- IMPORTANT: Remove or comment out previous fix scripts -->
-    <!-- <script src="/complete-fix.js"></script> -->
-    <!-- <script src="/ant-icons-patch.js"></script> -->
-    <!-- <script src="/utils-fix.js"></script> -->
-    <!-- <script src="/ant-design-polyfill.js"></script> -->
-    <!-- <script src="/react-polyfill.js"></script> -->
-    <!-- <script src="/react-context-provider.js"></script> -->
-
-    <!-- Add global error handler for script loading -->
-    <script>
-      // Create a global error handler for script loading
-      window.addEventListener(
-        'error',
-        function (e) {
-          if (e.target && e.target.src && e.target.src.includes('ant-icons')) {
-            console.warn('Error loading ant-icons, creating fallback');
-
-            // Create mock IconContext if React exists
-            if (window.React && window.React.createContext) {
-              window.IconContext = window.React.createContext({});
-            } else {
-              // Basic fallback if React isn't available
-              window.IconContext = {
-                Provider: function (props) {
-                  return props.children;
-                },
-                Consumer: function (props) {
-                  return props.children({});
-                },
-              };
-            }
-
-            // Prevent error from showing in console
-            e.preventDefault();
-          }
-        },
-        true
-      );
-    </script>
-
-    <!-- Ant Design Icons with fallback -->
-    <script>
-      window.antIconsLoaded = false;
-    </script>
-    <script
-      src="/ant-icons.js"
-      onerror="console.error('Failed to load Ant Icons, using fallback'); document.write('<script src=\'/ant-icons-fallback.js\'><\/script>')"
-    ></script>
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Harmonic Universe</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <script type="module" crossorigin src="./assets/index-Cqme2zdk.js"></script>
-    <link rel="modulepreload" crossorigin href="./assets/vendor-C7BCHqNS.js" />
-    <link
-      rel="modulepreload"
-      crossorigin
-      href="./assets/ant-design-BPZweP9f.js"
-    />
-    <link
-      rel="modulepreload"
-      crossorigin
-      href="./assets/ant-icons-BVj3fsgN.js"
-    />
-    <link rel="stylesheet" crossorigin href="./assets/index-YhiCDp85.css" />
-
-    <script>
-      // Ant Design Icons fallback handler
-      window.__ANT_ICONS_VERSION__ = '5.6.1';
-      window.__ANT_ICONS_FALLBACK_HANDLER__ = function () {
-        console.log('Running Ant Icons fallback handler');
-
-        // Create basic icon component factory
-        function createIconComponent(name) {
-          return function (props) {
-            return {
-              $typeof: Symbol.for('react.element'),
-              type: 'span',
-              props: {
-                className:
-                  'anticon anticon-' +
-                  name +
-                  (props && props.className ? ' ' + props.className : ''),
-                style: props && props.style ? props.style : {},
-                children: [],
-              },
-            };
-          };
-        }
-
-        // Create basic icons
-        window.AntDesignIcons = {
-          // Common icons
-          CloseOutlined: createIconComponent('close'),
-          CheckOutlined: createIconComponent('check'),
-          LoadingOutlined: createIconComponent('loading'),
-          DownOutlined: createIconComponent('down'),
-          UpOutlined: createIconComponent('up'),
-          LeftOutlined: createIconComponent('left'),
-          RightOutlined: createIconComponent('right'),
-
-          // API functions
-          createFromIconfontCN: function () {
-            return function () {
-              return null;
-            };
-          },
-          getTwoToneColor: function () {
-            return '#1890ff';
-          },
-          setTwoToneColor: function () {},
-        };
-      };
-
-      // Set timeout to check if icons loaded correctly
-      setTimeout(function () {
-        if (!window.AntDesignIcons) {
-          console.warn(
-            'Ant Design Icons not loaded correctly, applying fallback'
-          );
-          window.__ANT_ICONS_FALLBACK_HANDLER__();
-        }
-      }, 1000);
-    </script>
-
     <style>
       body {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-          Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+          sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
         margin: 0;
         padding: 0;
-        background-color: #f5f5f5;
-        color: #333;
         display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-      }
-      header {
-        background-color: #2c3e50;
-        color: white;
-        padding: 20px;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
         text-align: center;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       }
-      main {
-        flex: 1;
-        padding: 40px;
+      .container {
         max-width: 800px;
-        margin: 0 auto;
-        background-color: white;
-        box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
+        padding: 2rem;
+        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
       }
       h1 {
-        margin-top: 0;
-        margin-bottom: 10px;
-        font-size: 2.5em;
-      }
-      h2 {
-        font-size: 1.8em;
-        color: #2c3e50;
-        margin-top: 30px;
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
       }
       p {
+        font-size: 1.2rem;
         line-height: 1.6;
-        margin-bottom: 20px;
+        margin-bottom: 1.5rem;
       }
-      .status-box {
-        border: 1px solid #ddd;
-        padding: 20px;
-        border-radius: 8px;
-        margin-top: 30px;
-        background-color: #f9f9f9;
+      .button-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 2rem;
       }
-      .status-indicator {
+      .button {
         display: inline-block;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        margin-right: 8px;
-      }
-      .status-loading {
-        background-color: #f1c40f;
-      }
-      .status-success {
-        background-color: #2ecc71;
-      }
-      .status-error {
-        background-color: #e74c3c;
-      }
-      footer {
-        background-color: #34495e;
         color: white;
-        text-align: center;
-        padding: 15px;
-        font-size: 0.9em;
+        text-decoration: none;
+        padding: 0.8rem 1.8rem;
+        border-radius: 30px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        margin: 0.5rem;
+        cursor: pointer;
+      }
+      .button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      }
+      .button-primary {
+        background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+      }
+      .button-secondary {
+        background: linear-gradient(to right, #f093fb 0%, #f5576c 100%);
+      }
+      .button-tertiary {
+        background: linear-gradient(to right, #43e97b 0%, #38f9d7 100%);
+      }
+      .button-health {
+        background: rgba(255, 255, 255, 0.2);
+      }
+      .loading {
+        display: none;
+        margin-top: 1rem;
+      }
+      .loading.active {
+        display: block;
+      }
+      .spinner {
+        width: 40px;
+        height: 40px;
+        margin: 0 auto;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 1s ease-in-out infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
       }
     </style>
   </head>
   <body>
-    <header>
+    <div class="container">
       <h1>Harmonic Universe</h1>
-      <p>Interactive Music Experience</p>
-    </header>
-
-    <main>
-      <h2>Welcome!</h2>
-      <p>
-        The Harmonic Universe application is designed to provide a unique
-        interactive musical experience where you can create, share, and explore
-        music in new ways.
-      </p>
-
-      <p>
-        This is a static fallback page that indicates your application's backend
-        is running, but the full frontend experience may not be available at the
-        moment.
-      </p>
-
-      <div class="status-box">
-        <h3>Application Status</h3>
-        <p id="status-message">
-          <span class="status-indicator status-loading"></span>
-          Checking API connection...
-        </p>
-        <p id="environment-info">Environment: Production</p>
-        <p id="deployment-info">Created on: <span id="creation-date"></span></p>
+      <p>Explore the fascinating connection between music and physics.</p>
+      <div class="button-container">
+        <a href="/login" class="button button-primary">Login</a>
+        <a href="/register" class="button button-secondary">Sign Up</a>
+        <button id="demo-button" class="button button-tertiary">
+          Try Demo
+        </button>
       </div>
-    </main>
-
-    <footer>
-      <p>Harmonic Universe &copy; 2023 - A Musical Experience</p>
-    </footer>
+      <div style="margin-top: 2rem">
+        <a href="/api/health" class="button button-health">API Health Check</a>
+      </div>
+      <div id="loading" class="loading">
+        <p>Logging in as demo user...</p>
+        <div class="spinner"></div>
+      </div>
+    </div>
 
     <script>
-      // Set the creation date
-      document.getElementById('creation-date').textContent =
-        new Date().toLocaleString();
+      document.addEventListener('DOMContentLoaded', function () {
+        const demoButton = document.getElementById('demo-button');
+        const loadingElement = document.getElementById('loading');
 
-      // Check API status
-      fetch('/api/health')
-        .then(response => response.json())
-        .then(data => {
-          const statusElement = document.getElementById('status-message');
-          const statusIndicator =
-            statusElement.querySelector('.status-indicator');
+        demoButton.addEventListener('click', async function (e) {
+          e.preventDefault();
 
-          if (data.status === 'healthy') {
-            statusIndicator.className = 'status-indicator status-success';
-            statusElement.innerHTML = `
-              <span class="status-indicator status-success"></span>
-              API is running: ${data.status}
-            `;
-          } else {
-            statusIndicator.className = 'status-indicator status-error';
-            statusElement.innerHTML = `
-              <span class="status-indicator status-error"></span>
-              API status: ${data.status}
-            `;
+          // Show loading indicator
+          loadingElement.classList.add('active');
+          demoButton.disabled = true;
+
+          try {
+            // Make API request to demo login endpoint
+            const response = await fetch('/api/auth/demo-login', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+
+              // Store tokens in localStorage
+              if (data.token) {
+                localStorage.setItem('accessToken', data.token);
+              }
+              if (data.refresh_token) {
+                localStorage.setItem('refreshToken', data.refresh_token);
+              }
+
+              // Redirect to dashboard
+              window.location.href = '/dashboard';
+            } else {
+              console.error('Demo login failed:', response.statusText);
+              alert('Demo login failed. Please try again.');
+              loadingElement.classList.remove('active');
+              demoButton.disabled = false;
+            }
+          } catch (error) {
+            console.error('Error during demo login:', error);
+            alert('An error occurred during demo login. Please try again.');
+            loadingElement.classList.remove('active');
+            demoButton.disabled = false;
           }
-        })
-        .catch(error => {
-          const statusElement = document.getElementById('status-message');
-          statusElement.innerHTML = `
-            <span class="status-indicator status-error"></span>
-            API connection failed: ${error.message}
-          `;
         });
+      });
     </script>
   </body>
 </html>

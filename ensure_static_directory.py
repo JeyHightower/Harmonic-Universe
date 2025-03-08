@@ -78,6 +78,8 @@ def ensure_static_directory():
         .container {
             max-width: 800px;
             padding: 20px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
         }
         h1 {
             font-size: 2.5rem;
@@ -101,6 +103,7 @@ def ensure_static_directory():
             text-decoration: none;
             font-weight: bold;
             transition: all 0.3s ease;
+            cursor: pointer;
         }
         .button-primary {
             background-color: #4CAF50;
@@ -118,6 +121,25 @@ def ensure_static_directory():
             transform: translateY(-3px);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
+        .loading {
+            display: none;
+            margin-top: 1rem;
+        }
+        .loading.active {
+            display: block;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -127,10 +149,66 @@ def ensure_static_directory():
         <div class="button-container">
             <a href="/login" class="button button-primary">Login</a>
             <a href="/register" class="button button-secondary">Sign Up</a>
-            <a href="/demo" class="button button-tertiary">Try Demo</a>
+            <button id="demo-button" class="button button-tertiary">Try Demo</button>
+        </div>
+        <div style="margin-top: 2rem">
             <a href="/api/health" class="button button-primary">Health Check</a>
         </div>
+        <div id="loading" class="loading">
+            <p>Logging in as demo user...</p>
+            <div class="spinner"></div>
+        </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const demoButton = document.getElementById('demo-button');
+            const loadingElement = document.getElementById('loading');
+
+            demoButton.addEventListener('click', async function(e) {
+                e.preventDefault();
+
+                // Show loading indicator
+                loadingElement.classList.add('active');
+                demoButton.disabled = true;
+
+                try {
+                    // Make API request to demo login endpoint
+                    const response = await fetch('/api/auth/demo-login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+
+                        // Store tokens in localStorage
+                        if (data.token) {
+                            localStorage.setItem('accessToken', data.token);
+                        }
+                        if (data.refresh_token) {
+                            localStorage.setItem('refreshToken', data.refresh_token);
+                        }
+
+                        // Redirect to dashboard
+                        window.location.href = '/dashboard';
+                    } else {
+                        console.error('Demo login failed:', response.statusText);
+                        alert('Demo login failed. Please try again.');
+                        loadingElement.classList.remove('active');
+                        demoButton.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Error during demo login:', error);
+                    alert('An error occurred during demo login. Please try again.');
+                    loadingElement.classList.remove('active');
+                    demoButton.disabled = false;
+                }
+            });
+        });
+    </script>
 </body>
 </html>""")
     else:

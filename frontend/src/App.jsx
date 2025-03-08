@@ -38,6 +38,7 @@ MemoizedModalRegistry.displayName = 'MemoizedModalRegistry';
 const Home = lazy(() => import('./components/features/home/Home'));
 const Login = lazy(() => import('./components/features/auth/Login'));
 const Register = lazy(() => import('./components/features/auth/Register'));
+const DemoLogin = lazy(() => import('./features/auth/DemoLogin'));
 const Dashboard = lazy(() =>
   import('./components/features/dashboard/Dashboard')
 );
@@ -165,6 +166,7 @@ const App = () => {
                     <Route path={ROUTES.HOME} element={<Home />} />
                     <Route path={ROUTES.LOGIN} element={<Login />} />
                     <Route path={ROUTES.REGISTER} element={<Register />} />
+                    <Route path="/demo" element={<DemoLogin />} />
                     <Route
                       path={ROUTES.DASHBOARD}
                       element={
