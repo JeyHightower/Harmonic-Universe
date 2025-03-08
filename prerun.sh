@@ -528,10 +528,34 @@ EOF
   chmod +x html_fallback.py
 fi
 
+# Create necessary directories
+python -c "
+import os
+# Create static directories
+static_dirs = [
+    '/opt/render/project/src/static',
+    '/opt/render/project/src/app/static',
+    'static',
+    'app/static'
+]
+for d in static_dirs:
+    os.makedirs(d, exist_ok=True)
+    print(f'Created directory: {d}')
+"
+
 # Run the Flask application patcher
 if [ -f "patch_flask_app.py" ]; then
   echo "Running Flask application patcher..."
   python patch_flask_app.py
+fi
+
+# Run start_flask.py to pre-initialize Flask app
+if [ -f "start_flask.py" ]; then
+  echo "Pre-initializing Flask app..."
+  python -c "
+import start_flask
+print('Flask app initialized successfully!')
+"
 fi
 
 echo "=== PRE-START VERIFICATION COMPLETED ==="
