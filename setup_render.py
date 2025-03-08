@@ -5,6 +5,7 @@ import os
 import sys
 import logging
 import shutil
+import platform
 from pathlib import Path
 
 # Configure logging
@@ -18,6 +19,12 @@ def setup_static_directories():
     # Determine if we're on Render.com or local
     is_render = os.environ.get('RENDER', '').lower() == 'true'
 
+    # Log environment details
+    logger.info(f"Platform: {platform.platform()}")
+    logger.info(f"Python version: {platform.python_version()}")
+    logger.info(f"Current directory: {os.getcwd()}")
+    logger.info(f"Is Render environment: {is_render}")
+
     # Define static directories
     if is_render:
         render_static = Path('/opt/render/project/src/static')
@@ -27,6 +34,11 @@ def setup_static_directories():
 
     local_static = Path('static')
     app_static = Path('app/static')
+
+    # Set all paths absolute for logging clarity
+    logger.info(f"Render static path: {render_static.absolute()}")
+    logger.info(f"Local static path: {local_static.absolute()}")
+    logger.info(f"App static path: {app_static.absolute()}")
 
     logger.info(f"Setting up static directories for {'Render' if is_render else 'local'} environment")
 
@@ -106,13 +118,12 @@ def setup_static_directories():
     # Write index.html to all static directories
     for static_dir in [render_static, local_static, app_static]:
         index_path = static_dir / 'index.html'
-        if not index_path.exists():
-            try:
-                with open(index_path, 'w') as f:
-                    f.write(index_html_content)
-                logger.info(f"Created index.html in {static_dir}")
-            except Exception as e:
-                logger.error(f"Failed to create index.html in {static_dir}: {e}")
+        try:
+            with open(index_path, 'w') as f:
+                f.write(index_html_content)
+            logger.info(f"Created/Updated index.html in {static_dir}")
+        except Exception as e:
+            logger.error(f"Failed to create index.html in {static_dir}: {e}")
 
     # Try to copy any existing static files from frontend/build if it exists
     frontend_build = Path('frontend/build')
@@ -123,7 +134,7 @@ def setup_static_directories():
                 logger.info(f"Copying frontend build files to {static_dir}")
                 for item in frontend_build.glob('*'):
                     # Skip index.html if we already created it
-                    if item.name == 'index.html' and (static_dir / 'index.html').exists():
+                    if item.name == 'index.html':
                         continue
 
                     if item.is_file():
@@ -151,7 +162,16 @@ def setup_static_directories():
     if is_render:
         os.environ['RENDER'] = 'true'
 
+    # Display info about static directories
     logger.info("Static directory setup complete")
+    for static_dir in [render_static, local_static, app_static]:
+        if static_dir.exists():
+            try:
+                files = list(static_dir.iterdir())
+                logger.info(f"Directory {static_dir} contains {len(files)} files: {[f.name for f in files]}")
+            except Exception as e:
+                logger.error(f"Could not list directory {static_dir}: {e}")
+
     return True
 
 if __name__ == "__main__":

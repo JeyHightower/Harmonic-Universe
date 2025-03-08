@@ -1,15 +1,12 @@
-# render.yaml - Minimal configuration for Harmonic Universe
+# render.yaml - Configuration for Harmonic Universe
 services:
-  # Backend API service
   - type: web
     name: harmonic-universe
     runtime: python
     buildCommand: |
       pip install gunicorn==21.2.0 flask-migrate flask-cors &&
       pip install -r requirements.txt &&
-      cd frontend && npm ci && npm run build &&
-      mkdir -p ../static &&
-      cp -r build/* ../static/
+      mkdir -p static app/static
     startCommand: bash ./render_start.sh
     envVars:
       - key: PYTHON_VERSION
@@ -17,17 +14,13 @@ services:
       - key: NODE_VERSION
         value: 18.18.0
       - key: PORT
-        value: 8000
+        value: 10000
       - key: STATIC_DIR
         value: /opt/render/project/src/static
       - key: FLASK_APP
         value: app
       - key: RENDER
         value: 'true'
-      - key: APP_ENV
-        value: production
-      - key: LOG_LEVEL
-        value: INFO
     healthCheckPath: /api/health
     autoDeploy: true
 

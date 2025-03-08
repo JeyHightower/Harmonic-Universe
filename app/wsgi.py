@@ -42,14 +42,56 @@ try:
             'routes': [str(rule) for rule in app.url_map.iter_rules()]
         }
 
+    # Add an explicit root route if not already present
+    if '/' not in [rule.rule for rule in app.url_map.iter_rules()]:
+        logger.info("Adding explicit root route handler")
+        from flask import send_from_directory
+
+        @app.route('/')
+        def serve_root():
+            """Serve the index.html file from static folder."""
+            logger.info(f"Serving root from static folder: {app.static_folder}")
+            try:
+                return send_from_directory(app.static_folder, 'index.html')
+            except Exception as e:
+                logger.error(f"Error serving index.html: {e}")
+                return f"""
+                <html><body>
+                <h1>Harmonic Universe</h1>
+                <p>Error serving index.html: {str(e)}</p>
+                <p>Static folder: {app.static_folder}</p>
+                <p><a href="/api/health">API Health Check</a></p>
+                </body></html>
+                """
+
+    @app.route('/home')
+    def home():
+        """Alternative home route."""
+        return serve_root()
+
 except Exception as e:
     logger.error(f"Failed to create Flask app: {e}", exc_info=True)
 
     # If we can't import the app, create a minimal one for health checks
-    from flask import Flask, jsonify
+    from flask import Flask, jsonify, send_from_directory
     app = Flask(__name__)
 
     @app.route('/')
+    def serve_root():
+        """Serve a minimal home page."""
+        static_folder = os.environ.get('STATIC_DIR', os.path.join(os.getcwd(), 'static'))
+        try:
+            return send_from_directory(static_folder, 'index.html')
+        except Exception as e:
+            return f"""
+            <html><body>
+            <h1>Harmonic Universe</h1>
+            <p>Error serving index.html: {str(e)}</p>
+            <p>Static folder: {static_folder}</p>
+            <p><a href="/api/health">API Health Check</a></p>
+            </body></html>
+            """
+
     @app.route('/health')
     @app.route('/api/health')
     def health():
@@ -63,8 +105,20 @@ except Exception as e:
 application = app
 logger.info("Created 'application' alias for Gunicorn compatibility")
 
+# Print routes functionality for debugging
+def print_routes():
+    """Print all routes registered in the application."""
+    print("\n=== Application Routes ===")
+    for rule in sorted(app.url_map.iter_rules(), key=lambda x: str(x)):
+        print(f"Route: {rule.rule} => {rule.endpoint}")
+    print("=========================\n")
+    return 0
+
 # For direct execution (development only)
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == 'print_routes':
+        sys.exit(print_routes())
+
     port = int(os.environ.get('PORT', 8000))
     logger.info(f"Starting Flask app on port {port}")
     app.run(host='0.0.0.0', port=port)
