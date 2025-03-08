@@ -181,4 +181,44 @@ def on_starting(server):
     os.environ["RENDER"] = "true"
     os.environ["STATIC_DIR"] = RENDER_STATIC_DIR
 
+    # Load and run HTML fallback script
+    try:
+        # Try loading the HTML fallback script
+        html_fallback = load_script("html_fallback.py")
+        if html_fallback and hasattr(html_fallback, 'add_direct_html_routes'):
+            # We'll apply this later in the post_fork hook
+            logger.info("Successfully loaded HTML fallback script")
+        else:
+            logger.warning("Could not load HTML fallback script or it has no add_direct_html_routes function")
+    except Exception as e:
+        logger.error(f"Error loading HTML fallback script: {e}")
+
     logger.info("gunicorn startup setup completed")
+
+def post_fork(server, worker):
+    """Run after a worker has been forked."""
+    logger.info(f"Worker {worker.pid} forked")
+
+    # Apply HTML fallback to the worker's application
+    try:
+        # First try to access the application
+        if hasattr(server, 'app') and hasattr(server.app, 'wsgi'):
+            logger.info("Attempting to apply HTML fallback to worker application")
+
+            # Try to load the HTML fallback module
+            html_fallback = load_script("html_fallback.py")
+            if html_fallback and hasattr(html_fallback, 'add_direct_html_routes'):
+                # Get the application
+                wsgi_app = server.app.wsgi()
+
+                # Apply the HTML fallback
+                html_fallback.add_direct_html_routes(wsgi_app)
+                logger.info("Successfully applied HTML fallback to worker application")
+            else:
+                logger.warning("HTML fallback module not found or invalid")
+        else:
+            logger.warning("Could not access server application")
+    except Exception as e:
+        logger.error(f"Error applying HTML fallback in worker: {e}")
+
+    logger.info(f"Worker {worker.pid} initialization completed")

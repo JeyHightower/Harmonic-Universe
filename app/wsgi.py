@@ -144,28 +144,86 @@ except Exception as e:
 @application.route('/')
 def home():
     """Serve the home page."""
-    index_path = os.path.join(static_folder, 'index.html')
-    if os.path.exists(index_path):
-        with open(index_path, 'r') as f:
-            html_content = f.read()
-        return html_content
-    return jsonify({
-        "status": "ok",
-        "message": "Harmonic Universe application is running in standalone mode"
-    })
+    try:
+        index_path = os.path.join(static_folder, 'index.html')
+        if os.path.exists(index_path):
+            with open(index_path, 'r') as f:
+                html_content = f.read()
+            # Explicitly set content type to HTML
+            response = application.response_class(
+                response=html_content,
+                status=200,
+                mimetype='text/html'
+            )
+            logger.info(f"Serving index.html ({len(html_content)} bytes)")
+            return response
+        else:
+            logger.error(f"index.html not found at {index_path}")
+            # Return a fallback HTML response
+            fallback_html = """<!DOCTYPE html>
+<html>
+<head><title>Harmonic Universe</title></head>
+<body style="font-family: sans-serif; text-align: center; margin-top: 50px;">
+    <h1>Harmonic Universe</h1>
+    <p>The application is running, but index.html could not be found.</p>
+    <p><a href="/api/health">Health Check</a></p>
+</body>
+</html>"""
+            response = application.response_class(
+                response=fallback_html,
+                status=200,
+                mimetype='text/html'
+            )
+            return response
+    except Exception as e:
+        logger.exception(f"Error serving home page: {e}")
+        # Last resort fallback
+        return "<html><body><h1>Harmonic Universe</h1><p>Error serving content</p></body></html>"
 
 @application.route('/static/<path:filename>')
 def serve_static(filename):
     """Serve static files directly from static folder."""
-    return send_from_directory(static_folder, filename)
+    try:
+        if not os.path.exists(os.path.join(static_folder, filename)):
+            logger.warning(f"Static file not found: {filename}")
+            return application.response_class(
+                response="File not found",
+                status=404
+            )
+
+        logger.info(f"Serving static file: {filename}")
+        return send_from_directory(static_folder, filename)
+    except Exception as e:
+        logger.exception(f"Error serving static file {filename}: {e}")
+        return application.response_class(
+            response=f"Error serving file: {str(e)}",
+            status=500
+        )
 
 @application.route('/assets/<path:filename>')
 def serve_assets(filename):
     """Serve asset files from assets subdirectory."""
-    assets_path = os.path.join(static_folder, 'assets')
-    if not os.path.exists(assets_path):
-        os.makedirs(assets_path, exist_ok=True)
-    return send_from_directory(assets_path, filename)
+    try:
+        assets_path = os.path.join(static_folder, 'assets')
+        if not os.path.exists(assets_path):
+            os.makedirs(assets_path, exist_ok=True)
+            logger.info(f"Created assets directory: {assets_path}")
+
+        if not os.path.exists(os.path.join(assets_path, filename)):
+            logger.warning(f"Asset file not found: {filename}")
+            return application.response_class(
+                response="Asset not found",
+                status=404
+            )
+
+        logger.info(f"Serving asset file: {filename}")
+        return send_from_directory(assets_path, filename)
+    except Exception as e:
+        logger.exception(f"Error serving asset file {filename}: {e}")
+        return application.response_class(
+            response=f"Error serving asset: {str(e)}",
+            status=500
+        )
 
 @application.route('/api/health')
 def health():
@@ -250,8 +308,7 @@ def debug_info():
     # Only add this route if it doesn't already exist
     if app.name == 'app.wsgi' or '/debug' not in [rule.rule for rule in app.url_map.iter_rules()]:
         # Convert to a pretty HTML response
-        html_template = """
-        <!DOCTYPE html>
+        html_template = """<!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
@@ -371,7 +428,30 @@ def debug_info():
             "static_contents": static_contents
         }
 
-        return render_template_string(html_template, data=debug_data)
+        try:
+            from flask import render_template_string
+            # Explicitly set content type to HTML
+            response = app.response_class(
+                response=render_template_string(html_template, data=debug_data),
+                status=200,
+                mimetype='text/html'
+            )
+            logger.info("Serving debug page")
+            return response
+        except Exception as e:
+            logger.exception(f"Error rendering debug template: {e}")
+            # Fallback to simple HTML
+            return f"""<!DOCTYPE html>
+            <html>
+            <head><title>Debug Info</title></head>
+            <body>
+                <h1>Debug Info</h1>
+                <p>App: {app.name}</p>
+                <p>Static Folder: {getattr(app, 'static_folder', 'None')}</p>
+                <p>Error rendering full debug page: {str(e)}</p>
+                <p><a href="/">Back to Home</a></p>
+            </body>
+            </html>"""
 
     return jsonify({"error": "Not available in integrated mode"})
 
