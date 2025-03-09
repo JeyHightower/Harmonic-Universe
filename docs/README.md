@@ -547,3 +547,23 @@ If you encounter issues with the demo login:
 2. Check the browser console for error messages
 3. Try clearing localStorage and refreshing the page
 4. Ensure there are no CORS issues by checking the network tab in developer tools
+
+## Authentication Routes
+
+The application has several authentication routes:
+
+1. **API v1 Routes** (Blueprint routes):
+
+   - `/api/v1/auth/register` - Register a new user
+   - `/api/v1/auth/login` - Login with username/email and password
+   - `/api/v1/auth/refresh` - Refresh access token
+   - `/api/v1/auth/me` - Get current user information
+   - `/api/v1/auth/demo-login` - Login as demo user
+
+2. **Direct API Routes**:
+
+   - `/api/auth/demo-login` - Direct demo login endpoint
+
+3. **Demo Login Server**:
+   - `http://localhost:5001/api/auth/demo-login` - Standalone demo login server
+   - `http://localhost:5001/api/v1/auth/demo-login` - Alternative path for the same endpoint

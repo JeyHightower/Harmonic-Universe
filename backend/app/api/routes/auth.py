@@ -18,7 +18,8 @@ from backend.app.core.errors import (
 from backend.app.core.security import (
     verify_password,
     create_access_token,
-    create_refresh_token
+    create_refresh_token,
+    get_password_hash
 )
 from backend.app.core.config import settings
 import logging
@@ -350,17 +351,43 @@ def logout():
 def demo_login():
     """Login as demo user."""
     if request.method == 'OPTIONS':
-        return '', 204
+        response = jsonify({})
+        response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+        return response, 204
+
+    logger.info("API V1 demo login endpoint called")
 
     try:
         with get_db() as db:
+            # Look for demo user
             demo_user = db.query(User).filter_by(email='demo@example.com').first()
+
+            # If demo user doesn't exist, create one
             if not demo_user:
-                raise AuthenticationError('Demo user not found')
+                logger.info("Demo user not found, creating new demo user")
+
+                demo_user = User(
+                    email='demo@example.com',
+                    username='demo_user',
+                    is_active=True,
+                    is_superuser=False,
+                    hashed_password=get_password_hash('demo123')
+                )
+
+                db.add(demo_user)
+                db.commit()
+                db.refresh(demo_user)
+                logger.info(f"Created new demo user with id: {demo_user.id}")
+            else:
+                logger.info(f"Using existing demo user: {demo_user.id}")
 
             if not demo_user.is_active:
-                raise AuthenticationError('Demo user account is inactive')
+                logger.warning("Demo user account is inactive, activating")
+                demo_user.is_active = True
+                db.commit()
 
+            # Create tokens
             access_token = create_access_token(
                 subject=str(demo_user.id),
                 expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -370,12 +397,18 @@ def demo_login():
                 expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
             )
 
+            logger.info("Demo login successful, returning tokens")
             return jsonify({
+                'message': 'Demo login successful',
                 'user': demo_user.to_dict(),
+                'token': access_token,  # Added for consistency with other implementations
                 'access_token': access_token,
                 'refresh_token': refresh_token,
                 'token_type': 'bearer'
             })
     except Exception as e:
         logger.error(f"Demo login error: {str(e)}", exc_info=True)
-        raise
+        return jsonify({
+            'message': 'An error occurred during demo login',
+            'error': str(e)
+        }), 500

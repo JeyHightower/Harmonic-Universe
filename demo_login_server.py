@@ -29,7 +29,10 @@ def demo_login():
     """Demo login endpoint"""
     if request.method == 'OPTIONS':
         logger.info("OPTIONS request to demo login endpoint")
-        return '', 204
+        response = jsonify({})
+        response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+        return response, 204
 
     logger.info("Demo login endpoint called with POST")
 
@@ -76,6 +79,13 @@ def demo_login():
     except Exception as e:
         logger.error(f"Error in demo login: {str(e)}", exc_info=True)
         return jsonify({'message': 'An error occurred during demo login', 'error': str(e)}), 500
+
+# Add a route for the API v1 endpoint to support both paths
+@app.route('/api/v1/auth/demo-login', methods=['POST', 'OPTIONS'])
+def demo_login_v1():
+    """Demo login endpoint (API v1 path)"""
+    logger.info("API v1 demo login endpoint called, forwarding to main demo login handler")
+    return demo_login()
 
 @app.route('/health')
 def health():

@@ -366,9 +366,15 @@ def create_app():
     # For example: @app.route('/api/users'), etc.
 
     # Demo login API endpoint
-    @app.route('/api/auth/demo-login', methods=['POST'])
+    @app.route('/api/auth/demo-login', methods=['POST', 'OPTIONS'])
     def demo_login_api():
         """Create a demo user and return a token."""
+        if request.method == 'OPTIONS':
+            response = jsonify({})
+            response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
+            response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+            return response, 204
+
         try:
             # Find or create demo user
             from app.models import User
@@ -423,6 +429,6 @@ def create_app():
         except Exception as e:
             logger.error(f"Error in demo login: {e}")
             print(f"DEBUG - Error in demo login: {e}")
-            return jsonify({'message': 'An error occurred during demo login'}), 500
+            return jsonify({'message': 'An error occurred during demo login', 'error': str(e)}), 500
 
     return app
