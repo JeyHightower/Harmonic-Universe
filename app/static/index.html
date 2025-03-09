@@ -53,6 +53,7 @@
         transition: all 0.3s ease;
         margin: 0.5rem;
         cursor: pointer;
+        border: none;
       }
       .button:hover {
         transform: translateY(-3px);
@@ -94,6 +95,85 @@
       .hidden {
         display: none;
       }
+
+      /* Modal Styles */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.6);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        visibility: hidden;
+        opacity: 0;
+        transition: visibility 0s linear 0.25s, opacity 0.25s;
+      }
+      .modal-overlay.active {
+        visibility: visible;
+        opacity: 1;
+        transition-delay: 0s;
+      }
+      .modal {
+        background: linear-gradient(135deg, #2a2a72 0%, #009ffd 100%);
+        width: 90%;
+        max-width: 500px;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 5px 30px rgba(0, 0, 0, 0.3);
+        text-align: left;
+        position: relative;
+        transform: scale(0.8);
+        transition: transform 0.3s;
+      }
+      .modal-overlay.active .modal {
+        transform: scale(1);
+      }
+      .modal-close {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        font-size: 1.5rem;
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        color: white;
+      }
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+      .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: bold;
+      }
+      .form-input {
+        width: 100%;
+        padding: 0.8rem;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+        font-size: 1rem;
+        transition: all 0.3s;
+      }
+      .form-input:focus {
+        outline: none;
+        background-color: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.4);
+      }
+      .form-submit {
+        width: 100%;
+        margin-top: 1rem;
+      }
+      .error-message {
+        color: #ff6b6b;
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+      }
     </style>
   </head>
   <body>
@@ -131,13 +211,92 @@
         <a href="/api/health" class="button button-health">API Health Check</a>
       </div>
       <div id="loading" class="loading">
-        <p>Logging in as demo user...</p>
+        <p>Processing request...</p>
         <div class="spinner"></div>
+      </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal-overlay">
+      <div class="modal">
+        <button class="modal-close">&times;</button>
+        <h2>Login</h2>
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="loginEmail" class="form-label">Email</label>
+            <input
+              type="email"
+              id="loginEmail"
+              class="form-input"
+              placeholder="Enter your email"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="loginPassword" class="form-label">Password</label>
+            <input
+              type="password"
+              id="loginPassword"
+              class="form-input"
+              placeholder="Enter your password"
+              required
+            />
+          </div>
+          <button type="submit" class="button button-primary form-submit">
+            Login
+          </button>
+          <div id="loginError" class="error-message hidden"></div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Sign Up Modal -->
+    <div id="signupModal" class="modal-overlay">
+      <div class="modal">
+        <button class="modal-close">&times;</button>
+        <h2>Sign Up</h2>
+        <form id="signupForm">
+          <div class="form-group">
+            <label for="signupUsername" class="form-label">Username</label>
+            <input
+              type="text"
+              id="signupUsername"
+              class="form-input"
+              placeholder="Choose a username"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="signupEmail" class="form-label">Email</label>
+            <input
+              type="email"
+              id="signupEmail"
+              class="form-input"
+              placeholder="Enter your email"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="signupPassword" class="form-label">Password</label>
+            <input
+              type="password"
+              id="signupPassword"
+              class="form-input"
+              placeholder="Create a password"
+              required
+            />
+          </div>
+          <button type="submit" class="button button-secondary form-submit">
+            Sign Up
+          </button>
+          <div id="signupError" class="error-message hidden"></div>
+        </form>
       </div>
     </div>
 
     <script>
       document.addEventListener('DOMContentLoaded', function () {
+        // Get DOM elements
         const loginButton = document.getElementById('login-button');
         const registerButton = document.getElementById('register-button');
         const demoButton = document.getElementById('demo-button');
@@ -145,6 +304,23 @@
         const authSection = document.getElementById('auth-section');
         const userSection = document.getElementById('user-section');
         const dashboardButton = document.getElementById('dashboardButton');
+        const logoutButton = document.getElementById('logoutButton');
+
+        // Modal elements
+        const loginModal = document.getElementById('loginModal');
+        const signupModal = document.getElementById('signupModal');
+        const closeButtons = document.querySelectorAll('.modal-close');
+
+        // Form elements
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+        const loginEmailInput = document.getElementById('loginEmail');
+        const loginPasswordInput = document.getElementById('loginPassword');
+        const signupUsernameInput = document.getElementById('signupUsername');
+        const signupEmailInput = document.getElementById('signupEmail');
+        const signupPasswordInput = document.getElementById('signupPassword');
+        const loginError = document.getElementById('loginError');
+        const signupError = document.getElementById('signupError');
 
         // Check if user is logged in
         const accessToken = localStorage.getItem('accessToken');
@@ -160,6 +336,33 @@
           userSection.classList.add('hidden');
         }
 
+        // Modal open handlers
+        loginButton.addEventListener('click', function () {
+          loginModal.classList.add('active');
+        });
+
+        registerButton.addEventListener('click', function () {
+          signupModal.classList.add('active');
+        });
+
+        // Modal close handlers
+        closeButtons.forEach(button => {
+          button.addEventListener('click', function () {
+            loginModal.classList.remove('active');
+            signupModal.classList.remove('active');
+          });
+        });
+
+        // Close modal when clicking outside
+        window.addEventListener('click', function (event) {
+          if (event.target === loginModal) {
+            loginModal.classList.remove('active');
+          }
+          if (event.target === signupModal) {
+            signupModal.classList.remove('active');
+          }
+        });
+
         // Dashboard button click event
         if (dashboardButton) {
           dashboardButton.addEventListener('click', function () {
@@ -167,23 +370,12 @@
           });
         }
 
-        // Open login modal
-        loginButton.addEventListener('click', function () {
-          // Use modal parameter to trigger login modal
-          window.location.href = '/#/?modal=login';
-        });
-
-        // Open register modal
-        registerButton.addEventListener('click', function () {
-          // Use modal parameter to trigger register modal
-          window.location.href = '/#/?modal=register';
-        });
-
         // Demo Login
         demoButton.addEventListener('click', async function (e) {
           e.preventDefault();
 
           // Show loading indicator
+          loadingElement.textContent = 'Logging in as demo user...';
           loadingElement.classList.add('active');
           demoButton.disabled = true;
 
@@ -252,6 +444,10 @@
               localStorage.setItem('refreshToken', data.refresh_token);
             }
 
+            // Update UI before redirect
+            authSection.classList.add('hidden');
+            userSection.classList.remove('hidden');
+
             // Redirect to dashboard
             window.location.href = '/dashboard';
           } catch (error) {
@@ -267,14 +463,13 @@
           e.preventDefault();
 
           // Show loading indicator
+          loadingElement.textContent = 'Logging in...';
           loadingElement.classList.add('active');
-          loginButton.disabled = true;
+          loginError.classList.add('hidden');
 
-          // Gather form data
-          const formData = {
-            email: loginEmailInput.value,
-            password: loginPasswordInput.value,
-          };
+          // Get form inputs
+          const email = loginEmailInput.value;
+          const password = loginPasswordInput.value;
 
           try {
             // Try API endpoints in sequence until one works
@@ -298,7 +493,7 @@
                   headers: {
                     'Content-Type': 'application/json',
                   },
-                  body: JSON.stringify(formData),
+                  body: JSON.stringify({ email, password }),
                   credentials: 'include',
                   mode: 'cors',
                 });
@@ -338,13 +533,21 @@
               localStorage.setItem('refreshToken', data.refresh_token);
             }
 
+            // Close modal
+            loginModal.classList.remove('active');
+
+            // Update UI before redirect
+            authSection.classList.add('hidden');
+            userSection.classList.remove('hidden');
+
             // Redirect to dashboard
             window.location.href = '/dashboard';
           } catch (error) {
             console.error('Error during login:', error);
-            alert('Login failed. Please check your credentials and try again.');
+            loginError.textContent =
+              'Login failed. Please check your credentials and try again.';
+            loginError.classList.remove('hidden');
             loadingElement.classList.remove('active');
-            loginButton.disabled = false;
           }
         });
 
@@ -353,15 +556,14 @@
           e.preventDefault();
 
           // Show loading indicator
+          loadingElement.textContent = 'Creating account...';
           loadingElement.classList.add('active');
-          signupButton.disabled = true;
+          signupError.classList.add('hidden');
 
-          // Gather form data
-          const formData = {
-            username: signupUsernameInput.value,
-            email: signupEmailInput.value,
-            password: signupPasswordInput.value,
-          };
+          // Get form inputs
+          const username = signupUsernameInput.value;
+          const email = signupEmailInput.value;
+          const password = signupPasswordInput.value;
 
           try {
             // Try API endpoints in sequence until one works
@@ -372,6 +574,8 @@
             const endpoints = [
               '/api/auth/signup', // Core API endpoint
               '/api/v1/auth/signup', // Versioned API endpoint
+              '/api/auth/register', // Alternative endpoint name
+              '/api/v1/auth/register', // Alternative versioned endpoint
               'http://localhost:8000/api/auth/signup', // Direct backend endpoint
               'http://localhost:5001/api/auth/signup', // Demo server endpoint
             ];
@@ -385,7 +589,7 @@
                   headers: {
                     'Content-Type': 'application/json',
                   },
-                  body: JSON.stringify(formData),
+                  body: JSON.stringify({ username, email, password }),
                   credentials: 'include',
                   mode: 'cors',
                 });
@@ -425,20 +629,25 @@
               localStorage.setItem('refreshToken', data.refresh_token);
             }
 
+            // Close modal
+            signupModal.classList.remove('active');
+
+            // Update UI before redirect
+            authSection.classList.add('hidden');
+            userSection.classList.remove('hidden');
+
             // Redirect to dashboard
             window.location.href = '/dashboard';
           } catch (error) {
             console.error('Error during signup:', error);
-            alert(
-              'Signup failed. Please check your information and try again.'
-            );
+            signupError.textContent =
+              'Signup failed. Please check your information and try again.';
+            signupError.classList.remove('hidden');
             loadingElement.classList.remove('active');
-            signupButton.disabled = false;
           }
         });
 
-        // Add event listener for logout button
-        const logoutButton = document.getElementById('logoutButton');
+        // Logout button handler
         if (logoutButton) {
           logoutButton.addEventListener('click', function () {
             console.log('Logout button clicked');
@@ -450,11 +659,8 @@
             console.log('Tokens cleared from localStorage');
 
             // Update UI
-            const authSection = document.getElementById('auth-section');
-            const userSection = document.getElementById('user-section');
-
-            if (authSection) authSection.classList.remove('hidden');
-            if (userSection) userSection.classList.add('hidden');
+            authSection.classList.remove('hidden');
+            userSection.classList.add('hidden');
 
             // Redirect to homepage
             window.location.href = '/';
