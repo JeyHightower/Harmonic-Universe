@@ -5,7 +5,21 @@ import os
 def create_app(test_config=None):
     """Create and configure the Flask application"""
     app = Flask(__name__, static_folder='static')
-    CORS(app)
+
+    # Get CORS settings from environment variables
+    cors_origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
+
+    # Configure CORS with specific settings
+    CORS(app,
+         resources={r"/*": {
+             "origins": cors_origins,
+             "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+             "allow_headers": ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+             "expose_headers": ["Content-Length", "Content-Type"],
+             "supports_credentials": True,
+             "max_age": 600  # 10 minutes
+         }}
+    )
 
     # Configure app based on environment
     if test_config is None:

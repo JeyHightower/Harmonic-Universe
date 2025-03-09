@@ -76,9 +76,12 @@ def create_app(config_class=Config, test_config=None):
     bcrypt.init_app(app)
     CORS(app, resources={
         r"/*": {
-            "origins": "*",
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-            "allow_headers": ["Content-Type", "Authorization"]
+            "origins": app.config['CORS_ORIGINS'],
+            "methods": app.config['CORS_METHODS'],
+            "allow_headers": app.config['CORS_HEADERS'],
+            "expose_headers": app.config['CORS_EXPOSE_HEADERS'],
+            "supports_credentials": app.config['CORS_SUPPORTS_CREDENTIALS'],
+            "max_age": app.config['CORS_MAX_AGE']
         }
     })
 

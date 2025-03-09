@@ -25,7 +25,9 @@ export const demoLogin = createAsyncThunk(
 
             try {
                 console.debug('Trying demo login with API endpoint');
-                response = await api.post(endpoints.auth.demoLogin);
+                response = await api.post(endpoints.auth.demoLogin, {}, {
+                    credentials: 'include', // Include credentials for CORS
+                });
                 console.debug('Demo login successful with API endpoint:', response);
             } catch (err) {
                 console.debug('Demo login failed with API endpoint, trying fallback:', err);
@@ -33,7 +35,9 @@ export const demoLogin = createAsyncThunk(
                 // Try fallback endpoint
                 console.debug('Trying fallback demo login endpoint /api/auth/demo-login');
                 try {
-                    response = await api.post('/api/auth/demo-login');
+                    response = await api.post('/api/auth/demo-login', {}, {
+                        credentials: 'include', // Include credentials for CORS
+                    });
                     console.debug('Demo login successful with fallback endpoint:', response);
                 } catch (err2) {
                     console.error('All demo login endpoints failed:', err, err2);

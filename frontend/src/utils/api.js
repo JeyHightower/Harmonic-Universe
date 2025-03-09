@@ -90,6 +90,12 @@ const defaultHeaders = {
   'Accept': 'application/json'
 };
 
+// Default fetch options for CORS
+const defaultFetchOptions = {
+  credentials: 'include', // Include credentials (cookies) in cross-origin requests
+  mode: 'cors', // Enable CORS mode
+};
+
 // Helper function to check if token is valid
 const isTokenValid = token => {
   if (!token) return false;
@@ -223,6 +229,7 @@ export const api = {
       },
     });
     const response = await fetch(endpoint, {
+      ...defaultFetchOptions,
       headers,
       signal: options.signal,
     });
@@ -248,18 +255,11 @@ export const api = {
     try {
       console.debug('Sending POST fetch request to:', endpoint);
       const response = await fetch(endpoint, {
+        ...defaultFetchOptions,
         method: 'POST',
         headers,
         body: JSON.stringify(data),
-        signal: options.signal,
       });
-
-      console.debug('POST response received:', {
-        status: response.status,
-        statusText: response.statusText,
-        url: response.url
-      });
-
       return handleResponse(response);
     } catch (error) {
       console.error('POST request failed:', error);
@@ -269,35 +269,27 @@ export const api = {
 
   async put(endpoint, data, options = {}) {
     const token = await getAuthToken();
-    console.debug('Token for PUT request:', token ? 'Present' : 'Missing');
-
-    if (!token) {
-      console.error('No valid token available for PUT request');
-      throw new Error('Authentication required');
-    }
-
     const headers = {
       ...defaultHeaders,
-      Authorization: `Bearer ${token}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
 
     console.debug('PUT Request:', {
       endpoint,
       headers: {
         ...headers,
-        Authorization: 'Bearer [REDACTED]',
+        Authorization: token ? 'Bearer [REDACTED]' : 'None',
       },
       data,
     });
 
     try {
       const response = await fetch(endpoint, {
+        ...defaultFetchOptions,
         method: 'PUT',
         headers,
         body: JSON.stringify(data),
-        signal: options.signal,
       });
-
       return handleResponse(response);
     } catch (error) {
       console.error('PUT request failed:', error);
@@ -319,12 +311,47 @@ export const api = {
         Authorization: token ? 'Bearer [REDACTED]' : 'None',
       },
     });
-    const response = await fetch(endpoint, {
-      method: 'DELETE',
-      headers,
-      signal: options.signal,
+
+    try {
+      const response = await fetch(endpoint, {
+        ...defaultFetchOptions,
+        method: 'DELETE',
+        headers,
+      });
+      return handleResponse(response);
+    } catch (error) {
+      console.error('DELETE request failed:', error);
+      throw error;
+    }
+  },
+
+  async patch(endpoint, data, options = {}) {
+    const token = await getAuthToken();
+    const headers = {
+      ...defaultHeaders,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+
+    console.debug('PATCH Request:', {
+      endpoint,
+      headers: {
+        ...headers,
+        Authorization: token ? 'Bearer [REDACTED]' : 'None',
+      },
+      data,
     });
 
-    return handleResponse(response);
+    try {
+      const response = await fetch(endpoint, {
+        ...defaultFetchOptions,
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify(data),
+      });
+      return handleResponse(response);
+    } catch (error) {
+      console.error('PATCH request failed:', error);
+      throw error;
+    }
   },
 };

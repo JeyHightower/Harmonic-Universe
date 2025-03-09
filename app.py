@@ -17,12 +17,26 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# Enable CORS for all routes
+# Get CORS settings from environment variables
+cors_origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
+
+# Enable CORS for all routes with more secure configuration
 @app.after_request
 def add_cors_headers(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+    origin = request.headers.get('Origin')
+
+    # Check if the request origin is allowed
+    if origin and any(origin == allowed_origin for allowed_origin in cors_origins):
+        response.headers.add('Access-Control-Allow-Origin', origin)
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        response.headers.add('Access-Control-Allow-Headers',
+                             'Content-Type,Authorization,X-Requested-With,Accept')
+        response.headers.add('Access-Control-Allow-Methods',
+                             'GET,POST,PUT,DELETE,PATCH,OPTIONS')
+        response.headers.add('Access-Control-Expose-Headers',
+                             'Content-Length,Content-Type')
+        response.headers.add('Access-Control-Max-Age', '600')  # 10 minutes
+
     return response
 
 # Standard health response for all endpoints

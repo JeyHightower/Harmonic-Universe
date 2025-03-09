@@ -1,7 +1,7 @@
 """Configuration settings for the application."""
 from datetime import timedelta
 import os
-from typing import Optional
+from typing import Optional, List
 
 class Config:
     """Base configuration."""
@@ -33,6 +33,11 @@ class Config:
 
     # CORS
     CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
+    CORS_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+    CORS_HEADERS = ["Content-Type", "Authorization", "X-Requested-With", "Accept"]
+    CORS_EXPOSE_HEADERS = ["Content-Length", "Content-Type"]
+    CORS_SUPPORTS_CREDENTIALS = True
+    CORS_MAX_AGE = 600  # 10 minutes
 
     # Audio Processing
     UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../uploads')

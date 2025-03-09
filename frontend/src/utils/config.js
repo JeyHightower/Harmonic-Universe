@@ -11,6 +11,16 @@ const API_CONFIG = {
   BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
   API_PREFIX: '/api/v1',
   TIMEOUT: import.meta.env.VITE_API_TIMEOUT || 30000, // 30 seconds
+  // CORS configuration
+  CORS: {
+    CREDENTIALS: true, // Include credentials in cross-origin requests
+    ALLOWED_ORIGINS: [
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'http://localhost:8000',
+      import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+    ]
+  }
 };
 
 // Authentication configuration

@@ -35,6 +35,11 @@ class Settings(BaseSettings):
 
     # CORS
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
+    CORS_METHODS: List[str] = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+    CORS_HEADERS: List[str] = ["Content-Type", "Authorization", "X-Requested-With", "Accept"]
+    CORS_EXPOSE_HEADERS: List[str] = ["Content-Length", "Content-Type"]
+    CORS_SUPPORTS_CREDENTIALS: bool = True
+    CORS_MAX_AGE: int = 600  # 10 minutes
 
     @validator("BACKEND_CORS_ORIGINS", pre=True)
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
