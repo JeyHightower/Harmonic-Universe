@@ -1,5 +1,5 @@
 """Universe routes."""
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend.app.models.universe.universe import Universe
 from backend.app.models.user import User
@@ -10,205 +10,275 @@ from backend.app.core.auth import require_auth
 from datetime import datetime
 from uuid import UUID
 from backend.app.db.repositories.universe import UniverseRepository
+from sqlalchemy.exc import SQLAlchemyError
+from ...db.database import db_session
+from ...models.universe.scene import Scene
+from ...middlewares.auth import auth_required
 import logging
 
-universe_bp = Blueprint('universe', __name__)
+universe_bp = Blueprint('universe', __name__, url_prefix='/api/universes')
 logger = logging.getLogger(__name__)
 
-@universe_bp.route('/', methods=['GET'], strict_slashes=False)
-@jwt_required()
-def get_universes():
-    """Get all universes for the current user."""
-    current_user_id = get_jwt_identity()
-    sort_by = request.args.get('sort_by', 'updated_at')  # Default to updated_at
-    sort_order = request.args.get('sort_order', 'desc')  # Default to descending
+@universe_bp.route('/', methods=['GET'])
+@auth_required
+def get_all_universes():
+    """
+    Get all universes that belong to the current user.
+    Can filter by is_public parameter to get public universes.
+    """
+    try:
+        user_id = g.user.id
+        show_public = request.args.get('public', 'false').lower() == 'true'
 
-    valid_sort_fields = {'created_at', 'updated_at', 'name', 'is_public'}
-    valid_sort_orders = {'asc', 'desc'}
+        # Base query for user's universes
+        query = Universe.query.filter_by(user_id=user_id)
 
-    if sort_by not in valid_sort_fields:
-        raise ValidationError('Invalid sort field')
-    if sort_order not in valid_sort_orders:
-        raise ValidationError('Invalid sort order')
+        # If showing public universes, include those as well
+        if show_public:
+            public_query = Universe.query.filter_by(is_public=True)
+            query = query.union(public_query)
 
-    with get_db() as db:
-        try:
-            query = db.query(Universe).filter_by(user_id=current_user_id)
+        universes = query.all()
 
-            # Apply sorting
-            if sort_order == 'desc':
-                query = query.order_by(getattr(Universe, sort_by).desc())
-            else:
-                query = query.order_by(getattr(Universe, sort_by).asc())
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'universes': [universe.to_dict() for universe in universes]
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
-            universes = query.all()
-            return jsonify([universe.to_dict() for universe in universes])
-        except Exception as e:
-            db.rollback()
-            raise ValidationError(f"Error fetching universes: {str(e)}")
-
-@universe_bp.route('/', methods=['POST'], strict_slashes=False)
-@jwt_required()
-def create_universe():
-    """Create a new universe."""
-    current_user_id = get_jwt_identity()
-    data = request.get_json()
-
-    if not all(k in data for k in ('name',)):
-        raise ValidationError('Missing required fields')
-
-    with get_db() as db:
-        try:
-            universe = Universe(
-                name=data['name'],
-                description=data.get('description', ''),
-                user_id=current_user_id,
-                is_public=data.get('is_public', False),
-                version=1
-            )
-            db.add(universe)
-            db.commit()
-            return jsonify(universe.to_dict()), 201
-        except Exception as e:
-            db.rollback()
-            raise ValidationError(f"Error creating universe: {str(e)}")
-
-@universe_bp.route('/<uuid:universe_id>', methods=['GET'], strict_slashes=False)
-@universe_bp.route('/<uuid:universe_id>/', methods=['GET'], strict_slashes=False)
-@jwt_required()
+@universe_bp.route('/<int:universe_id>', methods=['GET'])
+@auth_required
 def get_universe(universe_id):
-    """Get a specific universe."""
-    current_user_id = get_jwt_identity()
-
-    with get_db() as session:
-        try:
-            # Use the repository pattern to get the universe
-            universe_repo = UniverseRepository(session)
-            universe = universe_repo.get_universe_by_id(str(universe_id))
-
-            if not universe:
-                raise NotFoundError('Universe not found')
-
-            # Check if user has access (owner or public universe)
-            if not (universe.is_public or str(universe.user_id) == str(current_user_id)):
-                raise AuthorizationError('Not authorized to access this universe')
-
-            # Add role to response
-            response_data = universe.to_dict()
-            response_data['user_role'] = 'owner' if str(universe.user_id) == str(current_user_id) else 'viewer'
-
-            return jsonify(response_data)
-
-        except (ValidationError, AuthorizationError, NotFoundError) as e:
-            session.rollback()
-            raise
-        except Exception as e:
-            session.rollback()
-            raise ValidationError(f"Error fetching universe: {str(e)}")
-
-@universe_bp.route('/<uuid:universe_id>/', methods=['PUT'])
-@jwt_required()
-def update_universe(universe_id):
-    """Update a universe."""
-    from flask import current_app
-
+    """Get a specific universe by ID if it belongs to the user or is public"""
     try:
+        user_id = g.user.id
+        universe = Universe.query.get(universe_id)
+
+        if not universe:
+            return jsonify({
+                'status': 'error',
+                'message': 'Universe not found'
+            }), 404
+
+        # Check if the user has access (owner or public universe)
+        if universe.user_id != user_id and not universe.is_public:
+            return jsonify({
+                'status': 'error',
+                'message': 'You do not have permission to access this universe'
+            }), 403
+
+        # Determine if we should include scenes
+        include_scenes = request.args.get('include_scenes', 'false').lower() == 'true'
+
+        if include_scenes:
+            return jsonify({
+                'status': 'success',
+                'data': {
+                    'universe': universe.to_dict_with_scenes()
+                }
+            }), 200
+        else:
+            return jsonify({
+                'status': 'success',
+                'data': {
+                    'universe': universe.to_dict()
+                }
+            }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@universe_bp.route('/', methods=['POST'])
+@auth_required
+def create_universe():
+    """Create a new universe"""
+    try:
+        user_id = g.user.id
         data = request.get_json()
-        if not data:
-            raise ValidationError('No input data provided')
 
-        # Check for invalid fields
-        allowed_fields = {'name', 'description', 'is_public', 'theme'}
-        invalid_fields = set(data.keys()) - allowed_fields
-        if invalid_fields:
-            raise ValidationError(f'Invalid fields: {", ".join(invalid_fields)}')
+        # Validate required fields
+        if not data.get('name'):
+            return jsonify({
+                'status': 'error',
+                'message': 'Name is required'
+            }), 400
 
-        with get_db() as db:
-            universe_repo = UniverseRepository(db)
-            universe = universe_repo.get_universe_by_id(str(universe_id))
-            if not universe:
-                raise NotFoundError('Universe not found')
+        # Create new universe
+        new_universe = Universe(
+            name=data.get('name'),
+            description=data.get('description'),
+            image_url=data.get('image_url'),
+            theme=data.get('theme'),
+            genre=data.get('genre'),
+            is_public=data.get('is_public', False),
+            user_id=user_id
+        )
 
-            # Check if the current user is the owner
-            current_user_id = get_jwt_identity()
-            try:
-                current_user_uuid = UUID(current_user_id)
-            except ValueError:
-                raise AuthorizationError('Invalid user ID format')
+        db_session.add(new_universe)
+        db_session.commit()
 
-            if str(universe.user_id) != str(current_user_uuid):
-                raise AuthorizationError('Not authorized to modify this universe')
-
-            # Update allowed fields
-            update_data = {k: v for k, v in data.items() if k in allowed_fields}
-
-            for key, value in update_data.items():
-                setattr(universe, key, value)
-
-            universe.save(db)
-            return jsonify(universe.to_dict())
-
-    except ValidationError as e:
-        current_app.logger.warning(f"Validation error in update_universe: {str(e)}")
-        raise
-    except NotFoundError as e:
-        current_app.logger.warning(f"Not found error in update_universe: {str(e)}")
-        raise
-    except AuthorizationError as e:
-        current_app.logger.warning(f"Authorization error in update_universe: {str(e)}")
-        raise
+        return jsonify({
+            'status': 'success',
+            'message': 'Universe created successfully',
+            'data': {
+                'universe': new_universe.to_dict()
+            }
+        }), 201
+    except SQLAlchemyError as e:
+        db_session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': f'Database error: {str(e)}'
+        }), 500
     except Exception as e:
-        # Use app.logger instead of undefined logger
-        current_app.logger.error(f"Update universe error: {str(e)}", exc_info=True)
-        raise ValidationError('Failed to update universe')
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
-@universe_bp.route('/<uuid:universe_id>/', methods=['DELETE'])
-@jwt_required()
-def delete_universe(universe_id):
-    """Delete a universe."""
-    from flask import current_app
-
+@universe_bp.route('/<int:universe_id>', methods=['PUT'])
+@auth_required
+def update_universe(universe_id):
+    """Update an existing universe if it belongs to the user"""
     try:
-        current_user_id = get_jwt_identity()
+        user_id = g.user.id
+        universe = Universe.query.get(universe_id)
 
-        with get_db() as db:
-            # Use the repository pattern to get the universe
-            universe_repo = UniverseRepository(db)
-            universe = universe_repo.get_universe_by_id(str(universe_id))
+        if not universe:
+            return jsonify({
+                'status': 'error',
+                'message': 'Universe not found'
+            }), 404
 
-            if not universe:
-                raise NotFoundError('Universe not found')
+        # Check if the user has permission to update
+        if universe.user_id != user_id:
+            return jsonify({
+                'status': 'error',
+                'message': 'You do not have permission to update this universe'
+            }), 403
 
-            # Convert current_user_id to UUID for comparison
-            try:
-                current_user_uuid = UUID(current_user_id)
-            except ValueError:
-                raise AuthorizationError('Invalid user ID format')
+        # Update fields
+        data = request.get_json()
 
-            # Compare UUIDs as strings to ensure consistent comparison
-            if str(universe.user_id) != str(current_user_uuid):
-                raise AuthorizationError('Not authorized to delete this universe')
+        if 'name' in data:
+            universe.name = data['name']
+        if 'description' in data:
+            universe.description = data['description']
+        if 'image_url' in data:
+            universe.image_url = data['image_url']
+        if 'theme' in data:
+            universe.theme = data['theme']
+        if 'genre' in data:
+            universe.genre = data['genre']
+        if 'is_public' in data:
+            universe.is_public = data['is_public']
 
-            # Use the repository to delete the universe - pass string representation
-            success = universe_repo.delete_universe(str(universe_id))
-            if not success:
-                raise ValidationError('Failed to delete universe')
+        db_session.commit()
 
-            return '', 204
-
-    except ValidationError as e:
-        current_app.logger.warning(f"Validation error in delete_universe: {str(e)}")
-        raise
-    except NotFoundError as e:
-        current_app.logger.warning(f"Not found error in delete_universe: {str(e)}")
-        raise
-    except AuthorizationError as e:
-        current_app.logger.warning(f"Authorization error in delete_universe: {str(e)}")
-        raise
+        return jsonify({
+            'status': 'success',
+            'message': 'Universe updated successfully',
+            'data': {
+                'universe': universe.to_dict()
+            }
+        }), 200
+    except SQLAlchemyError as e:
+        db_session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': f'Database error: {str(e)}'
+        }), 500
     except Exception as e:
-        # Use app.logger instead of undefined logger
-        current_app.logger.error(f"Delete universe error: {str(e)}", exc_info=True)
-        raise ValidationError(f'Error deleting universe: {str(e)}')
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@universe_bp.route('/<int:universe_id>', methods=['DELETE'])
+@auth_required
+def delete_universe(universe_id):
+    """Delete a universe if it belongs to the user"""
+    try:
+        user_id = g.user.id
+        universe = Universe.query.get(universe_id)
+
+        if not universe:
+            return jsonify({
+                'status': 'error',
+                'message': 'Universe not found'
+            }), 404
+
+        # Check if the user has permission to delete
+        if universe.user_id != user_id:
+            return jsonify({
+                'status': 'error',
+                'message': 'You do not have permission to delete this universe'
+            }), 403
+
+        # Delete the universe (cascades to scenes)
+        db_session.delete(universe)
+        db_session.commit()
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Universe deleted successfully'
+        }), 200
+    except SQLAlchemyError as e:
+        db_session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': f'Database error: {str(e)}'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+# Get all scenes for a specific universe
+@universe_bp.route('/<int:universe_id>/scenes', methods=['GET'])
+@auth_required
+def get_universe_scenes(universe_id):
+    """Get all scenes for a specific universe if it belongs to the user or is public"""
+    try:
+        user_id = g.user.id
+        universe = Universe.query.get(universe_id)
+
+        if not universe:
+            return jsonify({
+                'status': 'error',
+                'message': 'Universe not found'
+            }), 404
+
+        # Check if the user has access (owner or public universe)
+        if universe.user_id != user_id and not universe.is_public:
+            return jsonify({
+                'status': 'error',
+                'message': 'You do not have permission to access this universe'
+            }), 403
+
+        # Get scenes ordered by the 'order' field
+        scenes = Scene.query.filter_by(universe_id=universe_id).order_by(Scene.order).all()
+
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'scenes': [scene.to_dict() for scene in scenes]
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 @universe_bp.route('/<uuid:universe_id>/physics', methods=['PUT'])
 @jwt_required()

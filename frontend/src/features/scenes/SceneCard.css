@@ -1,98 +1,94 @@
 .scene-card {
-  display: flex;
-  flex-direction: column;
-  background-color: var(--card-bg);
+  display: block;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  transition: all 0.3s ease;
   overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  background-color: #fff;
+  text-decoration: none;
+  color: inherit;
   height: 100%;
-  cursor: pointer;
-  position: relative;
 }
 
 .scene-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.scene-card-image {
+  position: relative;
+  height: 160px;
+  overflow: hidden;
+}
+
+.scene-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s;
+}
+
+.scene-card:hover .scene-card-image img {
+  transform: scale(1.05);
+}
+
+.scene-type-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: rgba(155, 89, 182, 0.8);
+  color: white;
 }
 
 .scene-card-content {
-  padding: 20px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  height: calc(100% - 160px);
+}
+
+.scene-card-title {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.scene-card-description {
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  color: #666;
+  line-height: 1.5;
   flex-grow: 1;
 }
 
-.scene-card h3 {
-  margin-top: 0;
-  margin-bottom: 10px;
-  color: var(--text-color);
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.scene-card p {
-  color: var(--text-secondary);
-  font-size: 14px;
-  margin-bottom: 0;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-}
-
 .scene-card-footer {
-  padding: 12px 20px;
-  background-color: var(--card-footer-bg);
-  border-top: 1px solid var(--border-color);
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #888;
 }
 
-.scene-card-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  font-size: 12px;
-  color: var(--text-secondary);
+.scene-card-order {
+  background-color: rgba(52, 152, 219, 0.1);
+  color: #3498db;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
 }
 
-.scene-type {
-  background-color: var(--tag-bg);
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-weight: 500;
-  text-transform: capitalize;
-}
+/* Media Queries */
+@media (max-width: 480px) {
+  .scene-card-image {
+    height: 140px;
+  }
 
-.scene-order {
-  font-weight: 500;
-}
-
-.scene-card-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 5px;
-}
-
-/* For dark mode */
-[data-theme='dark'] .scene-card {
-  background-color: var(--card-bg-dark);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-}
-
-[data-theme='dark'] .scene-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-}
-
-[data-theme='dark'] .scene-card-footer {
-  background-color: var(--card-footer-bg-dark);
-  border-top: 1px solid var(--border-color-dark);
-}
-
-@media (max-width: 768px) {
-  .scene-card-actions {
-    flex-direction: column;
-    gap: 5px;
+  .scene-card-content {
+    padding: 1rem;
+    height: calc(100% - 140px);
   }
 }

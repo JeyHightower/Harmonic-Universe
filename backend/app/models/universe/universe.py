@@ -1,27 +1,34 @@
 """Universe model."""
 from typing import Dict, Optional
-from sqlalchemy import Column, String, Boolean, Integer, ForeignKey
+from sqlalchemy import Column, String, Integer, Text, ForeignKey, DateTime, Boolean
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 from ..base import BaseModel
+from ...db.database import Base
 
 class Universe(BaseModel):
-    """Universe model."""
-
+    """
+    Universe model - represents a creative universe that contains multiple scenes.
+    """
     __tablename__ = "universes"
 
-    name = Column(String(255), nullable=False)
-    description = Column(String(1000))
-    is_public = Column(Boolean, default=False)
-    theme = Column(String(50), default="fantasy")
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"))
-    version = Column(Integer, default=1)
+    # Basic information
+    name = Column(String(255), nullable=False, index=True)
+    description = Column(Text, nullable=True)
+    image_url = Column(String(1024), nullable=True)
 
-    # Relationships
+    # Additional metadata
+    theme = Column(String(100), nullable=True)
+    genre = Column(String(100), nullable=True)
+    is_public = Column(Boolean, default=False)
+
+    # User relationship (owner)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     user = relationship("User", back_populates="universes")
+
+    # Relationship to scenes
     scenes = relationship("Scene", back_populates="universe", cascade="all, delete-orphan")
-    physics_parameters = relationship("PhysicsParameters", back_populates="universe", cascade="all, delete-orphan")
-    visualizations = relationship("Visualization", back_populates="universe", cascade="all, delete-orphan")
 
     # Universe-wide parameters
     physics_params = Column(JSONB, default=lambda: {
@@ -103,20 +110,23 @@ class Universe(BaseModel):
         return db.query(cls).filter(cls.id == universe_id).first()
 
     def to_dict(self):
-        """Convert to dictionary."""
+        """Convert the universe object to a dictionary"""
         return {
             "id": self.id,
             "name": self.name,
             "description": self.description,
-            "is_public": self.is_public,
+            "image_url": self.image_url,
             "theme": self.theme,
+            "genre": self.genre,
+            "is_public": self.is_public,
             "user_id": self.user_id,
-            "version": self.version,
-            "physics_params": self.physics_params,
-            "harmony_params": self.harmony_params,
-            "story_points": self.story_points,
-            "visualization_params": self.visualization_params,
-            "ai_params": self.ai_params,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat()
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "scene_count": len(self.scenes) if self.scenes else 0
         }
+
+    def to_dict_with_scenes(self):
+        """Convert the universe object to a dictionary including scene information"""
+        universe_dict = self.to_dict()
+        universe_dict["scenes"] = [scene.to_dict() for scene in self.scenes]
+        return universe_dict

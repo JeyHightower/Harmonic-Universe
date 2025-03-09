@@ -1,5 +1,5 @@
 import { useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import useForm from '../../../hooks/useForm';
 import {
   loginFailure,
@@ -100,6 +100,7 @@ function Login() {
     <div className="auth-container">
       <form onSubmit={handleSubmit} className="auth-form">
         <h1>Login</h1>
+        <p className="auth-description">Welcome back! Sign in to continue your journey.</p>
         <Input
           type="email"
           label="Email"
@@ -123,6 +124,9 @@ function Login() {
         <Button type="submit" fullWidth>
           Login
         </Button>
+        <div className="auth-links">
+          <p>Don't have an account? <Link to="/register" className="auth-link">Register here</Link></p>
+        </div>
       </form>
     </div>
   );

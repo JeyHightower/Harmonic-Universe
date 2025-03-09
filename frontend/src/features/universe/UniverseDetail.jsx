@@ -1,220 +1,208 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useModal } from '../../../contexts/ModalContext';
-import { setCurrentUniverse } from '../../../store/slices/universeSlice';
-import { deleteUniverse } from '../../../store/thunks/universeThunks';
-import { api, endpoints } from '../../../utils/api';
-import { createConfirmModal } from '../../../utils/modalHelpers';
-import { MODAL_TYPES } from '../../../utils/modalRegistry';
-import Button from '../../common/Button';
-import Icon from '../../common/Icon';
-import Spinner from '../../common/Spinner';
-import MusicPlayer from '../music/MusicPlayer';
-import SceneManager from '../scenes/SceneManager';
-import PhysicsPanel from './PhysicsPanel';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { fetchUniverseById, deleteUniverse } from '../../store/thunks/universeThunks';
+import { fetchScenesForUniverse } from '../../store/thunks/universeThunks';
+import Button from '../../components/common/Button';
+import Modal from '../../components/common/Modal';
+import UniverseFormModal from './UniverseFormModal';
+import SceneCard from '../scenes/SceneCard';
 import './Universe.css';
 
 const UniverseDetail = () => {
+  const { id } = useParams();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { id } = useParams();
-  const { currentUniverse } = useSelector(state => state.universe);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const { openModal, openModalByType } = useModal();
+  const { currentUniverse, loading, error } = useSelector(state => state.universe);
+  const { universeScenes } = useSelector(state => state.scenes);
 
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [scenesLoading, setScenesLoading] = useState(false);
+
+  // Fetch universe data when component mounts
   useEffect(() => {
-    const fetchUniverse = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get(endpoints.universes.detail(id));
-
-        // Only update if we have meaningful changes
-        const hasChanges =
-          !currentUniverse ||
-          currentUniverse.id !== response.id ||
-          JSON.stringify(currentUniverse.physics_params) !==
-          JSON.stringify(response.physics_params);
-
-        if (hasChanges) {
-          dispatch(setCurrentUniverse(response));
-        }
-
-        setError(null);
-      } catch (error) {
-        console.error('Failed to fetch universe:', error);
-        setError(error.response?.data?.message || 'Failed to load universe');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // Only fetch if ID changes
     if (id) {
-      fetchUniverse();
+      dispatch(fetchUniverseById({
+        id,
+        includeScenes: true
+      }));
+
+      // Also fetch scenes separately to ensure we have the complete data
+      setScenesLoading(true);
+      dispatch(fetchScenesForUniverse(id))
+        .finally(() => setScenesLoading(false));
     }
-  }, [id, dispatch]);
+  }, [dispatch, id]);
 
-  // Check if user has permission to modify this universe
-  const canModifyUniverse = currentUniverse?.user_role === 'owner';
-
-  const handleEdit = () => {
-    if (!canModifyUniverse) {
-      setError('You do not have permission to edit this universe');
-      return;
-    }
-
-    // Use the new modal system instead of navigating to a separate page
-    openModalByType(MODAL_TYPES.UNIVERSE_EDIT, {
-      universeId: id,
-      initialData: currentUniverse,
-      onSuccess: updatedUniverse => {
-        // Update the current universe in the store
-        dispatch(setCurrentUniverse(updatedUniverse));
-      },
-    });
+  const handleEditClick = () => {
+    setIsEditModalOpen(true);
   };
 
-  const handleDeleteClick = e => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!canModifyUniverse) {
-      setError('You do not have permission to delete this universe');
-      return;
-    }
-
-    // Use the universe delete modal directly
-    openModalByType(MODAL_TYPES.UNIVERSE_DELETE, {
-      universeId: id,
-      universeName: currentUniverse?.name,
-      onSuccess: () => {
-        // Navigate to dashboard after successful deletion
-        navigate('/dashboard');
-      },
-    });
-  };
-
-  const handleUniverseInfo = () => {
-    // Use the modal system with explicit data
-    openModalByType(MODAL_TYPES.UNIVERSE_INFO, {
-      universe: currentUniverse,
-    });
+  const handleDeleteClick = () => {
+    setIsDeleteModalOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
     try {
-      setIsDeleting(true);
-      setError(null);
       await dispatch(deleteUniverse(id)).unwrap();
-      navigate('/dashboard');
-    } catch (error) {
-      const errorMessage = error.message || 'Failed to delete universe';
-
-      if (
-        error.isAuthorizationError ||
-        error.error_code === 'AUTHORIZATION_ERROR'
-      ) {
-        setError('You do not have permission to delete this universe');
-        dispatch(
-          setCurrentUniverse({
-            ...currentUniverse,
-            user_role: null,
-          })
-        );
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 3000);
-      } else {
-        setError(errorMessage);
-      }
-    } finally {
-      setIsDeleting(false);
+      // Navigate back to universes list after successful deletion
+      navigate('/universes');
+    } catch (err) {
+      console.error('Failed to delete universe:', err);
+      // Keep the modal open if there's an error
     }
   };
 
-  // Update error display component
-  const ErrorDisplay = ({ message }) => (
-    <div className="universe-error" role="alert">
-      <p>{message}</p>
-      <div className="error-actions">
-        <Button onClick={() => navigate('/dashboard')}>
-          Back to Dashboard
-        </Button>
-        {message.includes('permission') && (
-          <Button variant="secondary" onClick={() => window.location.reload()}>
-            Refresh Page
-          </Button>
-        )}
-      </div>
-    </div>
-  );
+  const handleEditSuccess = () => {
+    setIsEditModalOpen(false);
+    // Refresh universe data
+    dispatch(fetchUniverseById({
+      id,
+      includeScenes: true
+    }));
+  };
 
-  if (loading) {
+  // Get scenes for this universe
+  const scenes = universeScenes[id] || [];
+
+  if (loading && !currentUniverse) {
     return (
-      <div className="universe-container">
-        <div className="universe-loading">
-          <Spinner size="large" />
-          <p>Loading universe details...</p>
-        </div>
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Loading universe...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="universe-container">
-        <ErrorDisplay message={error} />
+      <div className="error-container">
+        <h2>Error</h2>
+        <p>{error}</p>
+        <Button onClick={() => navigate('/universes')}>
+          Back to Universes
+        </Button>
       </div>
     );
   }
 
   if (!currentUniverse) {
     return (
-      <div className="universe-container">
-        <div className="universe-error">
-          <p>Universe not found</p>
-          <Button onClick={() => navigate('/dashboard')}>
-            Back to Dashboard
-          </Button>
-        </div>
+      <div className="not-found-container">
+        <h2>Universe Not Found</h2>
+        <p>The universe you're looking for doesn't exist or you don't have permission to view it.</p>
+        <Button onClick={() => navigate('/universes')}>
+          Back to Universes
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="universe-container universe-detail-container">
-      <div className="universe-header">
-        <div className="universe-title-section">
+    <div className="universe-detail-container">
+      <div className="universe-detail-header">
+        <div className="universe-info">
           <h1>{currentUniverse.name}</h1>
-          <div className="universe-actions">
-            <Button onClick={handleUniverseInfo} variant="icon">
-              <Icon name="info" />
-            </Button>
-            {canModifyUniverse && (
-              <>
-                <Button onClick={handleEdit}>Edit</Button>
-                <Button onClick={handleDeleteClick} variant="danger">
-                  Delete
-                </Button>
-              </>
+          <div className="universe-meta">
+            <span className={`universe-visibility ${currentUniverse.is_public ? 'public' : 'private'}`}>
+              {currentUniverse.is_public ? 'Public' : 'Private'}
+            </span>
+            {currentUniverse.theme && (
+              <span className="universe-theme">{currentUniverse.theme}</span>
+            )}
+            {currentUniverse.genre && (
+              <span className="universe-genre">{currentUniverse.genre}</span>
             )}
           </div>
         </div>
-        <p className="universe-description">{currentUniverse.description}</p>
+        <div className="universe-actions">
+          <Button
+            onClick={handleEditClick}
+            variant="secondary"
+          >
+            Edit Universe
+          </Button>
+          <Button
+            onClick={handleDeleteClick}
+            variant="danger"
+          >
+            Delete Universe
+          </Button>
+        </div>
       </div>
 
+      {currentUniverse.description && (
+        <div className="universe-description">
+          <p>{currentUniverse.description}</p>
+        </div>
+      )}
+
       <div className="universe-content">
-        <div className="universe-panels">
-          <PhysicsPanel />
-          <div className="music-visualization-section">
-            <MusicPlayer universeId={id} />
+        <div className="universe-scenes-header">
+          <h2>Scenes</h2>
+          <Link to={`/universes/${id}/scenes/new`} className="button button-primary">
+            Create Scene
+          </Link>
+        </div>
+
+        {scenesLoading ? (
+          <div className="loading-container small">
+            <div className="spinner"></div>
+            <p>Loading scenes...</p>
+          </div>
+        ) : scenes.length > 0 ? (
+          <div className="scene-grid">
+            {scenes.map(scene => (
+              <SceneCard key={scene.id} scene={scene} />
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state">
+            <p>No scenes found in this universe</p>
+            <Link to={`/universes/${id}/scenes/new`} className="button button-primary">
+              Create Your First Scene
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {isEditModalOpen && (
+        <UniverseFormModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          onSuccess={handleEditSuccess}
+          initialData={currentUniverse}
+        />
+      )}
+
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Delete Universe"
+      >
+        <div className="delete-confirmation">
+          <p>
+            Are you sure you want to delete the universe "{currentUniverse.name}"?
+            This action cannot be undone and will delete all scenes and data associated with this universe.
+          </p>
+          <div className="modal-actions">
+            <Button
+              onClick={() => setIsDeleteModalOpen(false)}
+              variant="secondary"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDeleteConfirm}
+              variant="danger"
+              disabled={loading}
+            >
+              {loading ? 'Deleting...' : 'Delete Universe'}
+            </Button>
           </div>
         </div>
-        <SceneManager universeId={id} />
-      </div>
+      </Modal>
     </div>
   );
 };

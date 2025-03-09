@@ -1,6 +1,7 @@
 from typing import List, Optional
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from pydantic import BaseModel
 
 from backend.app.db.session import get_db
@@ -9,171 +10,360 @@ from backend.app.db.repositories.physics_parameter import PhysicsParameterReposi
 from backend.app.db.repositories.harmony_parameter import HarmonyParameterRepository
 from backend.app.db.repositories.universe import UniverseRepository
 from backend.app.models.universe.scene import Scene
+from backend.app.models.universe.universe import Universe
 from backend.app.core.errors import ValidationError, NotFoundError
 from backend.app.core.auth import get_current_user
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from backend.app.middlewares.auth import auth_required
 
-scenes_bp = Blueprint('scenes', __name__)
+scenes_bp = Blueprint('scenes', __name__, url_prefix='/api/scenes')
 
 class ReorderRequest(BaseModel):
     universe_id: str
     scene_ids: List[str]
 
-@scenes_bp.route("/", methods=['GET'])
-@jwt_required()
-def get_scenes():
+@scenes_bp.route('/', methods=['GET'])
+@auth_required
+def get_all_scenes():
     """
-    Retrieve scenes with optional filtering.
+    Get all scenes that belong to universes owned by the current user.
+    Can filter by universe_id query parameter.
     """
-    universe_id = request.args.get('universe_id')
-    creator_id = request.args.get('creator_id')
-    skip = request.args.get('skip', 0, type=int)
-    limit = request.args.get('limit', 100, type=int)
-    current_user_id = get_jwt_identity()
+    try:
+        user_id = g.user.id
+        universe_id = request.args.get('universe_id')
 
-    with get_db() as db:
-        scene_repo = SceneRepository(db)
+        # Base query
+        query = Scene.query.join(Universe).filter(Universe.user_id == user_id)
 
+        # Filter by universe_id if provided
         if universe_id:
-            scenes = scene_repo.get_scenes_by_universe(universe_id)
-            # Filter to only show scenes the user has access to
-            scenes = [s for s in scenes if str(s.creator_id) == current_user_id or
-                     (s.universe and s.universe.is_public)]
-        elif creator_id:
-            # Only allow viewing own scenes or public scenes
-            if str(creator_id) != current_user_id:
-                return jsonify([])
-            scenes = scene_repo.get_scenes_by_creator(creator_id)
-        else:
-            # Only show public scenes and own scenes
-            scenes = scene_repo.get_scenes_by_creator(current_user_id)
+            query = query.filter(Scene.universe_id == universe_id)
 
-        return jsonify([scene.to_dict() for scene in scenes])
+        # Order by universe_id and scene order
+        scenes = query.order_by(Scene.universe_id, Scene.order).all()
 
-@scenes_bp.route("/", methods=['POST'])
-@jwt_required()
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'scenes': [scene.to_dict() for scene in scenes]
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@scenes_bp.route('/<int:scene_id>', methods=['GET'])
+@auth_required
+def get_scene(scene_id):
+    """Get a specific scene by ID if it belongs to a universe owned by the user or is public"""
+    try:
+        user_id = g.user.id
+        scene = Scene.query.get(scene_id)
+
+        if not scene:
+            return jsonify({
+                'status': 'error',
+                'message': 'Scene not found'
+            }), 404
+
+        # Get the parent universe to check access
+        universe = Universe.query.get(scene.universe_id)
+
+        # Check if the user has access (owner or public universe)
+        if universe.user_id != user_id and not universe.is_public:
+            return jsonify({
+                'status': 'error',
+                'message': 'You do not have permission to access this scene'
+            }), 403
+
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'scene': scene.to_dict_with_relationships()
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@scenes_bp.route('/', methods=['POST'])
+@auth_required
 def create_scene():
-    """
-    Create a new scene.
-    """
-    current_user = get_current_user()
-    data = request.get_json()
+    """Create a new scene in a universe owned by the user"""
+    try:
+        user_id = g.user.id
+        data = request.get_json()
 
-    if not all(k in data for k in ('name', 'universe_id')):
-        raise ValidationError("Missing required fields")
+        # Validate required fields
+        if not data.get('title'):
+            return jsonify({
+                'status': 'error',
+                'message': 'Title is required'
+            }), 400
 
-    # Map 'order' to 'scene_order' if provided
-    if 'order' in data:
-        data['scene_order'] = data.pop('order')
+        if not data.get('universe_id'):
+            return jsonify({
+                'status': 'error',
+                'message': 'Universe ID is required'
+            }), 400
 
-    with get_db() as db:
-        universe_repo = UniverseRepository(db)
-        universe = universe_repo.get_universe_by_id(data['universe_id'])
+        # Verify the universe exists and belongs to the user
+        universe = Universe.query.get(data['universe_id'])
 
         if not universe:
-            raise NotFoundError(f"Universe {data['universe_id']} not found")
+            return jsonify({
+                'status': 'error',
+                'message': 'Universe not found'
+            }), 404
 
-        if not universe.is_public and universe.user_id != current_user.id:
-            raise ValidationError("Not enough permissions")
+        if universe.user_id != user_id:
+            return jsonify({
+                'status': 'error',
+                'message': 'You do not have permission to add scenes to this universe'
+            }), 403
 
-        scene_repo = SceneRepository(db)
-        scene = scene_repo.create_scene(data, current_user.id)
-        return jsonify(scene.to_dict()), 201
+        # Get the highest existing order value for scenes in this universe
+        highest_order = db_session.query(db_session.func.max(Scene.order)).filter_by(universe_id=data['universe_id']).scalar() or 0
 
-@scenes_bp.route("/<scene_id>", methods=['GET'])
-@jwt_required()
-def get_scene(scene_id: str):
-    """
-    Get scene by ID.
-    """
-    current_user_id = get_jwt_identity()
-
-    with get_db() as db:
-        scene_repo = SceneRepository(db)
-        scene = scene_repo.get_scene_by_id(scene_id)
-
-        if not scene:
-            raise NotFoundError(f"Scene {scene_id} not found")
-
-        # Check if user has access to this scene
-        # Allow access if:
-        # 1. User is the creator
-        # 2. Scene belongs to a public universe
-        if str(scene.creator_id) != current_user_id:
-            # Check if universe is public
-            universe = scene.universe
-            if not universe or not universe.is_public:
-                raise ValidationError("Not authorized to access this scene")
-
-        return jsonify(scene.to_dict())
-
-@scenes_bp.route("/<scene_id>", methods=['PUT'])
-@jwt_required()
-def update_scene(scene_id: str):
-    """
-    Update scene.
-    """
-    current_user = get_current_user()
-    data = request.get_json()
-
-    # Map 'order' to 'scene_order' if provided
-    if 'order' in data:
-        data['scene_order'] = data.pop('order')
-
-    with get_db() as db:
-        scene_repo = SceneRepository(db)
-        scene = scene_repo.get_scene_by_id(scene_id)
-
-        if not scene:
-            raise NotFoundError(f"Scene {scene_id} not found")
-
-        if scene.creator_id != current_user.id:
-            raise ValidationError("Not enough permissions")
-
-        scene = scene_repo.update_scene(scene_id, data)
-        return jsonify(scene.to_dict())
-
-@scenes_bp.route("/<scene_id>", methods=['DELETE'])
-@jwt_required()
-def delete_scene(scene_id: str):
-    """
-    Delete scene.
-    """
-    current_user = get_current_user()
-
-    with get_db() as db:
-        scene_repo = SceneRepository(db)
-        scene = scene_repo.get_scene_by_id(scene_id)
-
-        if not scene:
-            raise NotFoundError(f"Scene {scene_id} not found")
-
-        if scene.creator_id != current_user.id:
-            raise ValidationError("Not enough permissions")
-
-        scene_repo.delete_scene(scene_id)
-        return "", 204
-
-@scenes_bp.route("/reorder", methods=['POST'])
-@jwt_required()
-def reorder_scenes():
-    """
-    Reorder scenes in a universe.
-    """
-    current_user = get_current_user()
-    data = request.get_json()
-
-    if not all(k in data for k in ('universe_id', 'scene_ids')):
-        raise ValidationError("Missing required fields")
-
-    with get_db() as db:
-        scene_repo = SceneRepository(db)
-        scenes = scene_repo.reorder_scenes(
+        # Create new scene
+        new_scene = Scene(
+            title=data.get('title'),
+            description=data.get('description'),
+            image_url=data.get('image_url'),
             universe_id=data['universe_id'],
-            scene_ids=data['scene_ids'],
-            current_user_id=current_user.id
+            order=highest_order + 1,  # Set order to next value
+            scene_type=data.get('scene_type', 'standard'),
+            is_active=data.get('is_active', True),
+            duration=data.get('duration', 60.0),
+            tempo=data.get('tempo', 120.0)
         )
-        return jsonify([scene.to_dict() for scene in scenes])
+
+        # Add JSON parameters if provided
+        if data.get('physics_parameters'):
+            new_scene.physics_parameters = data['physics_parameters']
+
+        if data.get('harmony_parameters'):
+            new_scene.harmony_parameters = data['harmony_parameters']
+
+        if data.get('visualization_settings'):
+            new_scene.visualization_settings = data['visualization_settings']
+
+        db_session.add(new_scene)
+        db_session.commit()
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Scene created successfully',
+            'data': {
+                'scene': new_scene.to_dict()
+            }
+        }), 201
+    except SQLAlchemyError as e:
+        db_session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': f'Database error: {str(e)}'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@scenes_bp.route('/<int:scene_id>', methods=['PUT'])
+@auth_required
+def update_scene(scene_id):
+    """Update an existing scene if it belongs to a universe owned by the user"""
+    try:
+        user_id = g.user.id
+        scene = Scene.query.get(scene_id)
+
+        if not scene:
+            return jsonify({
+                'status': 'error',
+                'message': 'Scene not found'
+            }), 404
+
+        # Get the parent universe to check access
+        universe = Universe.query.get(scene.universe_id)
+
+        # Check if the user has permission to update
+        if universe.user_id != user_id:
+            return jsonify({
+                'status': 'error',
+                'message': 'You do not have permission to update this scene'
+            }), 403
+
+        # Update fields
+        data = request.get_json()
+
+        if 'title' in data:
+            scene.title = data['title']
+        if 'description' in data:
+            scene.description = data['description']
+        if 'image_url' in data:
+            scene.image_url = data['image_url']
+        if 'scene_type' in data:
+            scene.scene_type = data['scene_type']
+        if 'is_active' in data:
+            scene.is_active = data['is_active']
+        if 'is_complete' in data:
+            scene.is_complete = data['is_complete']
+        if 'duration' in data:
+            scene.duration = data['duration']
+        if 'tempo' in data:
+            scene.tempo = data['tempo']
+
+        # Update JSON parameters if provided
+        if 'physics_parameters' in data:
+            scene.physics_parameters = data['physics_parameters']
+        if 'harmony_parameters' in data:
+            scene.harmony_parameters = data['harmony_parameters']
+        if 'visualization_settings' in data:
+            scene.visualization_settings = data['visualization_settings']
+
+        db_session.commit()
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Scene updated successfully',
+            'data': {
+                'scene': scene.to_dict()
+            }
+        }), 200
+    except SQLAlchemyError as e:
+        db_session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': f'Database error: {str(e)}'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@scenes_bp.route('/<int:scene_id>', methods=['DELETE'])
+@auth_required
+def delete_scene(scene_id):
+    """Delete a scene if it belongs to a universe owned by the user"""
+    try:
+        user_id = g.user.id
+        scene = Scene.query.get(scene_id)
+
+        if not scene:
+            return jsonify({
+                'status': 'error',
+                'message': 'Scene not found'
+            }), 404
+
+        # Get the parent universe to check access
+        universe = Universe.query.get(scene.universe_id)
+
+        # Check if the user has permission to delete
+        if universe.user_id != user_id:
+            return jsonify({
+                'status': 'error',
+                'message': 'You do not have permission to delete this scene'
+            }), 403
+
+        # Delete the scene
+        db_session.delete(scene)
+        db_session.commit()
+
+        # Reorder remaining scenes
+        remaining_scenes = Scene.query.filter_by(universe_id=universe.id).order_by(Scene.order).all()
+        for index, remaining_scene in enumerate(remaining_scenes):
+            remaining_scene.order = index + 1
+
+        db_session.commit()
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Scene deleted successfully'
+        }), 200
+    except SQLAlchemyError as e:
+        db_session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': f'Database error: {str(e)}'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@scenes_bp.route('/reorder', methods=['POST'])
+@auth_required
+def reorder_scenes():
+    """Reorder scenes within a universe"""
+    try:
+        user_id = g.user.id
+        data = request.get_json()
+
+        # Validate required fields
+        if not data.get('universe_id'):
+            return jsonify({
+                'status': 'error',
+                'message': 'Universe ID is required'
+            }), 400
+
+        if not data.get('scene_order') or not isinstance(data['scene_order'], list):
+            return jsonify({
+                'status': 'error',
+                'message': 'Scene order array is required'
+            }), 400
+
+        # Verify the universe exists and belongs to the user
+        universe = Universe.query.get(data['universe_id'])
+
+        if not universe:
+            return jsonify({
+                'status': 'error',
+                'message': 'Universe not found'
+            }), 404
+
+        if universe.user_id != user_id:
+            return jsonify({
+                'status': 'error',
+                'message': 'You do not have permission to reorder scenes in this universe'
+            }), 403
+
+        # Update scene orders
+        for index, scene_id in enumerate(data['scene_order']):
+            scene = Scene.query.get(scene_id)
+            if scene and scene.universe_id == universe.id:
+                scene.order = index + 1
+
+        db_session.commit()
+
+        # Return the updated scenes
+        scenes = Scene.query.filter_by(universe_id=universe.id).order_by(Scene.order).all()
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Scenes reordered successfully',
+            'data': {
+                'scenes': [scene.to_dict() for scene in scenes]
+            }
+        }), 200
+    except SQLAlchemyError as e:
+        db_session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': f'Database error: {str(e)}'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 # Physics Parameters routes
 @scenes_bp.route("/<scene_id>/physics_parameters", methods=['GET'])

@@ -28,3 +28,17 @@ __all__ = [
     'music_bp',
     'health_bp',
 ]
+
+# Create API blueprint
+api_bp = Blueprint('api', __name__, url_prefix='/api')
+
+# Register all blueprints
+def register_routes(app):
+    """Register all API routes with the app"""
+
+    # Register the Universe and Scene blueprints
+    app.register_blueprint(universe_bp)
+    app.register_blueprint(scenes_bp)
+
+    # Register other blueprints...
+    # app.register_blueprint(other_bp)

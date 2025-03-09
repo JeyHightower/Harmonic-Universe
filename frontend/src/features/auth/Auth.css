@@ -18,8 +18,15 @@
 .auth-form h1 {
   font-size: var(--font-size-xl);
   color: var(--text-primary);
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-sm);
   text-align: center;
+}
+
+.auth-description {
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: var(--spacing-lg);
+  font-size: var(--font-size-sm);
 }
 
 .auth-form .input-group {
@@ -43,4 +50,75 @@
   min-height: 200px;
   color: var(--text-secondary);
   font-size: var(--font-size-lg);
+}
+
+.auth-links {
+  margin-top: var(--spacing-md);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.auth-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.auth-link:hover {
+  color: var(--primary-dark);
+  text-decoration: underline;
+}
+
+/* Password requirements styling */
+.password-requirements {
+  margin-top: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--background-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.password-requirements p {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-xs);
+  font-weight: 500;
+}
+
+.password-requirements ul {
+  list-style-type: none;
+  padding-left: var(--spacing-md);
+  margin: 0;
+}
+
+.password-requirements li {
+  position: relative;
+  padding-left: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
+  color: var(--text-secondary);
+}
+
+.password-requirements li:before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--text-secondary);
+}
+
+.password-requirements li.requirement-met {
+  color: var(--success-color);
+}
+
+.password-requirements li.requirement-met:before {
+  content: '✓';
+  color: var(--success-color);
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .auth-form {
+    padding: var(--spacing-lg);
+  }
 }

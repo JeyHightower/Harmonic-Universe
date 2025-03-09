@@ -1,168 +1,234 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Modal, Form, Input, InputNumber } from 'antd';
+import PropTypes from 'prop-types';
 import { createScene, updateScene } from '../../store/thunks/scenesThunks';
-import Spinner from '../../components/common/Spinner';
+import Modal from '../../components/common/Modal';
+import Button from '../../components/common/Button';
+import Input from '../../components/common/Input';
 import './SceneFormModal.css';
 
-const SceneFormModal = ({ universeId, sceneId, initialData, onClose, isCreating }) => {
+const SceneFormModal = ({ isOpen, onClose, onSuccess, initialData, universeId }) => {
   const dispatch = useDispatch();
   const { loading, error } = useSelector(state => state.scenes);
-  const [form] = Form.useForm();
-  const [formErrors, setFormErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
+  const isEditing = !!initialData;
 
-  // Initialize form with initialData
+  // Form state
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    image_url: '',
+    scene_type: 'standard',
+    is_active: true,
+    universe_id: universeId || (initialData ? initialData.universe_id : '')
+  });
+
+  // Form validation
+  const [errors, setErrors] = useState({});
+
+  // Scene types
+  const sceneTypes = [
+    { value: 'standard', label: 'Standard' },
+    { value: 'cinematic', label: 'Cinematic' },
+    { value: 'action', label: 'Action' },
+    { value: 'dialogue', label: 'Dialogue' },
+    { value: 'montage', label: 'Montage' }
+  ];
+
+  // Initialize form with data if editing
   useEffect(() => {
     if (initialData) {
-      form.setFieldsValue({
-        name: initialData.name,
-        description: initialData.description,
-        scene_order: initialData.scene_order || 0
+      setFormData({
+        title: initialData.title || '',
+        description: initialData.description || '',
+        image_url: initialData.image_url || '',
+        scene_type: initialData.scene_type || 'standard',
+        is_active: initialData.is_active !== false,
+        universe_id: initialData.universe_id
       });
-    } else {
-      form.resetFields();
+    } else if (universeId) {
+      setFormData(prev => ({
+        ...prev,
+        universe_id: universeId
+      }));
     }
-  }, [initialData, form]);
+  }, [initialData, universeId]);
 
-  // Map API errors to form fields
-  useEffect(() => {
-    if (error && typeof error === 'object') {
-      const newErrors = {};
+  const validateForm = () => {
+    const newErrors = {};
 
-      // Process validation errors
-      if (error.errors && typeof error.errors === 'object') {
-        Object.entries(error.errors).forEach(([field, messages]) => {
-          newErrors[field] = Array.isArray(messages) ? messages[0] : messages;
-        });
-      }
-
-      // Process general error
-      if (error.message) {
-        newErrors.general = error.message;
-      }
-
-      setFormErrors(newErrors);
-      setSubmitting(false);
-    } else if (error && typeof error === 'string') {
-      setFormErrors({ general: error });
-      setSubmitting(false);
+    if (!formData.title.trim()) {
+      newErrors.title = 'Title is required';
+    } else if (formData.title.length < 3) {
+      newErrors.title = 'Title must be at least 3 characters';
     }
-  }, [error]);
 
-  const handleSubmit = useCallback(async (values) => {
-    setSubmitting(true);
-    setFormErrors({});
+    if (formData.description && formData.description.length > 500) {
+      newErrors.description = 'Description must be less than 500 characters';
+    }
+
+    if (formData.image_url && !isValidUrl(formData.image_url)) {
+      newErrors.image_url = 'Please enter a valid URL';
+    }
+
+    if (!formData.universe_id) {
+      newErrors.universe_id = 'Universe ID is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const isValidUrl = (string) => {
+    try {
+      new URL(string);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+
+    // Clear field-specific error when user types
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: null }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
 
     try {
-      if (isCreating) {
-        await dispatch(createScene({ universeId, ...values })).unwrap();
-      } else {
-        await dispatch(updateScene({
-          sceneId,
-          data: values
-        })).unwrap();
-      }
-      onClose();
-    } catch (err) {
-      // Error handling is done in the useEffect above
-      console.error('Form submission error:', err);
-    }
-  }, [dispatch, universeId, sceneId, isCreating, onClose]);
+      let result;
 
-  const handleCancel = useCallback(() => {
-    form.resetFields();
-    onClose();
-  }, [form, onClose]);
+      if (isEditing) {
+        // Update existing scene
+        result = await dispatch(updateScene({
+          id: initialData.id,
+          ...formData
+        })).unwrap();
+      } else {
+        // Create new scene
+        result = await dispatch(createScene(formData)).unwrap();
+      }
+
+      if (onSuccess) {
+        onSuccess(result.data.scene);
+      }
+    } catch (err) {
+      console.error('Failed to save scene:', err);
+    }
+  };
 
   return (
     <Modal
-      title={isCreating ? 'Create New Scene' : 'Edit Scene'}
-      open={true}
-      onCancel={handleCancel}
-      footer={null}
-      width={600}
-      maskClosable={false}
-      className="scene-form-modal"
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEditing ? 'Edit Scene' : 'Create Scene'}
     >
-      <div className="scene-form-container">
-        {formErrors.general && (
-          <div className="form-error-message">{formErrors.general}</div>
-        )}
+      <form onSubmit={handleSubmit} className="scene-form">
+        <Input
+          label="Scene Title"
+          name="title"
+          type="text"
+          value={formData.title}
+          onChange={handleChange}
+          error={errors.title}
+          required
+        />
 
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          requiredMark={false}
-          className="scene-form"
-        >
-          <Form.Item
-            name="name"
-            label="Scene Name"
-            rules={[{ required: true, message: 'Please enter a name for the scene' }]}
-            validateStatus={formErrors.name ? 'error' : ''}
-            help={formErrors.name}
+        <Input
+          label="Description"
+          name="description"
+          type="textarea"
+          value={formData.description}
+          onChange={handleChange}
+          error={errors.description}
+          rows={3}
+        />
+
+        <Input
+          label="Image URL"
+          name="image_url"
+          type="url"
+          value={formData.image_url}
+          onChange={handleChange}
+          error={errors.image_url}
+        />
+
+        <div className="form-row select-field">
+          <label htmlFor="scene_type">Scene Type</label>
+          <select
+            id="scene_type"
+            name="scene_type"
+            value={formData.scene_type}
+            onChange={handleChange}
           >
-            <Input placeholder="Enter scene name" maxLength={100} />
-          </Form.Item>
+            {sceneTypes.map(type => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
-          <Form.Item
-            name="description"
-            label="Description"
-            validateStatus={formErrors.description ? 'error' : ''}
-            help={formErrors.description}
+        <div className="checkbox-field">
+          <input
+            id="is_active"
+            name="is_active"
+            type="checkbox"
+            checked={formData.is_active}
+            onChange={handleChange}
+          />
+          <label htmlFor="is_active">Active Scene</label>
+        </div>
+
+        {error && <div className="form-error">{error}</div>}
+
+        <div className="form-actions">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onClose}
           >
-            <Input.TextArea
-              placeholder="Enter scene description"
-              rows={4}
-              maxLength={500}
-              showCount
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="scene_order"
-            label="Scene Order"
-            validateStatus={formErrors.scene_order ? 'error' : ''}
-            help={formErrors.scene_order}
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={loading}
           >
-            <InputNumber
-              placeholder="Order position"
-              min={0}
-              step={1}
-              className="scene-order-input"
-            />
-          </Form.Item>
-
-          <div className="form-actions">
-            <button
-              type="button"
-              className="cancel-button"
-              onClick={handleCancel}
-              disabled={submitting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="submit-button"
-              disabled={submitting}
-            >
-              {submitting ? (
-                <>
-                  <Spinner size="small" />
-                  <span>{isCreating ? 'Creating...' : 'Saving...'}</span>
-                </>
-              ) : (
-                isCreating ? 'Create Scene' : 'Save Changes'
-              )}
-            </button>
-          </div>
-        </Form>
-      </div>
+            {loading ? 'Saving...' : isEditing ? 'Update' : 'Create'}
+          </Button>
+        </div>
+      </form>
     </Modal>
   );
+};
+
+SceneFormModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSuccess: PropTypes.func,
+  universeId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  initialData: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    title: PropTypes.string,
+    description: PropTypes.string,
+    image_url: PropTypes.string,
+    scene_type: PropTypes.string,
+    is_active: PropTypes.bool,
+    universe_id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired
+  })
 };
 
 export default SceneFormModal;

@@ -6,6 +6,7 @@ import {
   updateHarmonyParams,
   updatePhysicsParams,
   updateUniverse,
+  fetchUniverseById,
 } from '../thunks/universeThunks';
 
 const initialState = {
@@ -17,6 +18,7 @@ const initialState = {
   authError: false,
   sortBy: 'updated_at',
   sortOrder: 'desc',
+  success: false,
 };
 
 const universeSlice = createSlice({
@@ -75,6 +77,15 @@ const universeSlice = createSlice({
         return sortOrder === 'desc' ? -comparison : comparison;
       });
     },
+    clearUniverseError(state) {
+      state.error = null;
+    },
+    clearUniverseSuccess(state) {
+      state.success = false;
+    },
+    resetUniverseState(state) {
+      return initialState;
+    },
   },
   extraReducers: builder => {
     // Fetch universes
@@ -88,7 +99,7 @@ const universeSlice = createSlice({
       .addCase(fetchUniverses.fulfilled, (state, action) => {
         console.debug('Universes fetched successfully:', action.payload);
         state.loading = false;
-        state.universes = action.payload || [];
+        state.universes = action.payload.data.universes;
         state.lastFetched = Date.now();
         state.error = null;
         state.authError = false;
@@ -96,7 +107,7 @@ const universeSlice = createSlice({
       .addCase(fetchUniverses.rejected, (state, action) => {
         console.error('Failed to fetch universes:', action.payload);
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload || 'Failed to fetch universes';
         state.authError =
           action.payload?.status === 401 || action.payload?.status === 403;
         if (state.authError) {
@@ -104,45 +115,58 @@ const universeSlice = createSlice({
         }
       })
 
-      // Create universe
-      .addCase(createUniverse.pending, state => {
+      // Fetch universe by ID
+      .addCase(fetchUniverseById.pending, (state) => {
         state.loading = true;
         state.error = null;
-        state.authError = false;
+      })
+      .addCase(fetchUniverseById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentUniverse = action.payload.data.universe;
+      })
+      .addCase(fetchUniverseById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch universe';
+      })
+
+      // Create universe
+      .addCase(createUniverse.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.success = false;
       })
       .addCase(createUniverse.fulfilled, (state, action) => {
         console.debug('Universe created:', action.payload);
         state.loading = false;
-        state.universes = [...(state.universes || []), action.payload];
-        state.currentUniverse = action.payload;
+        state.success = true;
+        state.universes = [...(state.universes || []), action.payload.data.universe];
+        state.currentUniverse = action.payload.data.universe;
         state.error = null;
         state.authError = false;
       })
       .addCase(createUniverse.rejected, (state, action) => {
         console.error('Failed to create universe:', action.payload);
         state.loading = false;
-        state.error = action.payload;
-        state.authError =
-          action.payload?.status === 401 || action.payload?.status === 403;
+        state.error = action.payload || 'Failed to create universe';
+        state.success = false;
       })
 
       // Update universe
-      .addCase(updateUniverse.pending, state => {
+      .addCase(updateUniverse.pending, (state) => {
         state.loading = true;
         state.error = null;
-        state.authError = false;
+        state.success = false;
       })
       .addCase(updateUniverse.fulfilled, (state, action) => {
         console.debug('Universe updated:', action.payload);
         state.loading = false;
+        state.success = true;
+        const updatedUniverse = action.payload.data.universe;
         state.universes = state.universes.map(universe =>
-          universe.id === action.payload.id ? action.payload : universe
+          universe.id === updatedUniverse.id ? updatedUniverse : universe
         );
-        if (state.currentUniverse?.id === action.payload.id) {
-          state.currentUniverse = {
-            ...state.currentUniverse,
-            ...action.payload,
-          };
+        if (state.currentUniverse?.id === updatedUniverse.id) {
+          state.currentUniverse = updatedUniverse;
         }
         state.error = null;
         state.authError = false;
@@ -150,24 +174,23 @@ const universeSlice = createSlice({
       .addCase(updateUniverse.rejected, (state, action) => {
         console.error('Failed to update universe:', action.payload);
         state.loading = false;
-        state.error = action.payload;
-        state.authError =
-          action.payload?.status === 401 || action.payload?.status === 403;
+        state.error = action.payload || 'Failed to update universe';
+        state.success = false;
       })
 
       // Delete universe
-      .addCase(deleteUniverse.pending, state => {
+      .addCase(deleteUniverse.pending, (state) => {
         state.loading = true;
         state.error = null;
-        state.authError = false;
+        state.success = false;
       })
       .addCase(deleteUniverse.fulfilled, (state, action) => {
-        console.debug('Universe deleted successfully:', action.payload);
+        console.debug('Universe deleted successfully:', action.meta.arg);
         state.loading = false;
-        state.universes = state.universes.filter(
-          universe => universe.id !== action.payload
-        );
-        if (state.currentUniverse?.id === action.payload) {
+        state.success = true;
+        const deletedId = action.meta.arg;
+        state.universes = state.universes.filter((u) => u.id !== deletedId);
+        if (state.currentUniverse?.id === deletedId) {
           state.currentUniverse = null;
         }
         state.error = null;
@@ -176,12 +199,8 @@ const universeSlice = createSlice({
       .addCase(deleteUniverse.rejected, (state, action) => {
         console.error('Failed to delete universe:', action.payload);
         state.loading = false;
-        // Only set error if we have a payload
-        if (action.payload) {
-          state.error = action.payload;
-          state.authError =
-            action.payload.status === 401 || action.payload.status === 403;
-        }
+        state.error = action.payload || 'Failed to delete universe';
+        state.success = false;
       })
 
       // Handle physics params update
@@ -276,6 +295,9 @@ export const {
   setSortBy,
   setSortOrder,
   sortUniverses,
+  clearUniverseError,
+  clearUniverseSuccess,
+  resetUniverseState,
 } = universeSlice.actions;
 
 export default universeSlice.reducer;

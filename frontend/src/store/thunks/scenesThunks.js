@@ -1,5 +1,5 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { api, endpoints } from '../../utils/api';
+import { api } from '../../utils/api';
 
 const handleError = error => {
     console.error('API Error:', error);
@@ -16,16 +16,18 @@ const handleError = error => {
  */
 export const fetchScenes = createAsyncThunk(
     'scenes/fetchScenes',
-    async (universeId, { rejectWithValue }) => {
+    async (params = {}, { rejectWithValue }) => {
         try {
-            console.log(`Fetching scenes for universe ${universeId}`);
-            const response = await api.get(endpoints.scenes.forUniverse(universeId));
+            // Build query parameters
+            const queryParams = new URLSearchParams();
+            if (params.universeId) {
+                queryParams.append('universe_id', params.universeId);
+            }
+
+            const response = await api.get(`/api/scenes/?${queryParams.toString()}`);
             return response;
         } catch (error) {
-            console.error('Error fetching scenes:', error);
-            return rejectWithValue(
-                error.response?.data || { message: 'Failed to fetch scenes' }
-            );
+            return rejectWithValue(error.response?.data || error.message);
         }
     }
 );
@@ -37,14 +39,10 @@ export const fetchSceneById = createAsyncThunk(
     'scenes/fetchSceneById',
     async (sceneId, { rejectWithValue }) => {
         try {
-            console.log(`Fetching scene with ID ${sceneId}`);
-            const response = await api.get(endpoints.scenes.detail(sceneId));
+            const response = await api.get(`/api/scenes/${sceneId}`);
             return response;
         } catch (error) {
-            console.error('Error fetching scene:', error);
-            return rejectWithValue(
-                error.response?.data || { message: 'Failed to fetch scene details' }
-            );
+            return rejectWithValue(error.response?.data || error.message);
         }
     }
 );
@@ -54,19 +52,12 @@ export const fetchSceneById = createAsyncThunk(
  */
 export const createScene = createAsyncThunk(
     'scenes/createScene',
-    async ({ universeId, ...sceneData }, { rejectWithValue }) => {
+    async (sceneData, { rejectWithValue }) => {
         try {
-            console.log('Creating new scene:', sceneData);
-            console.log('For universe:', universeId);
-
-            const sceneDataWithUniverse = { ...sceneData, universe_id: universeId };
-            const response = await api.post(endpoints.scenes.create, sceneDataWithUniverse);
+            const response = await api.post('/api/scenes/', sceneData);
             return response;
         } catch (error) {
-            console.error('Error creating scene:', error);
-            return rejectWithValue(
-                error.response?.data || { message: 'Failed to create scene' }
-            );
+            return rejectWithValue(error.response?.data || error.message);
         }
     }
 );
@@ -76,17 +67,12 @@ export const createScene = createAsyncThunk(
  */
 export const updateScene = createAsyncThunk(
     'scenes/updateScene',
-    async ({ sceneId, data }, { rejectWithValue }) => {
+    async ({ id, ...updateData }, { rejectWithValue }) => {
         try {
-            console.log(`Updating scene ${sceneId} with data:`, data);
-
-            const response = await api.put(endpoints.scenes.update(sceneId), data);
+            const response = await api.put(`/api/scenes/${id}`, updateData);
             return response;
         } catch (error) {
-            console.error('Error updating scene:', error);
-            return rejectWithValue(
-                error.response?.data || { message: 'Failed to update scene' }
-            );
+            return rejectWithValue(error.response?.data || error.message);
         }
     }
 );
@@ -98,15 +84,10 @@ export const deleteScene = createAsyncThunk(
     'scenes/deleteScene',
     async (sceneId, { rejectWithValue }) => {
         try {
-            console.log(`Deleting scene ${sceneId}`);
-
-            await api.delete(endpoints.scenes.delete(sceneId));
-            return sceneId; // Return the ID for the reducer to filter it out
+            await api.delete(`/api/scenes/${sceneId}`);
+            return sceneId;
         } catch (error) {
-            console.error('Error deleting scene:', error);
-            return rejectWithValue(
-                error.response?.data || { message: 'Failed to delete scene' }
-            );
+            return rejectWithValue(error.response?.data || error.message);
         }
     }
 );
@@ -116,20 +97,45 @@ export const deleteScene = createAsyncThunk(
  */
 export const reorderScenes = createAsyncThunk(
     'scenes/reorderScenes',
-    async ({ universeId, sceneOrders }, { rejectWithValue }) => {
+    async ({ universeId, sceneOrder }, { rejectWithValue }) => {
         try {
-            console.log(`Reordering scenes for universe ${universeId}:`, sceneOrders);
-
-            const response = await api.post(endpoints.scenes.reorder, {
+            const response = await api.post('/api/scenes/reorder', {
                 universe_id: universeId,
-                scene_orders: sceneOrders
+                scene_order: sceneOrder
             });
             return response;
         } catch (error) {
-            console.error('Error reordering scenes:', error);
-            return rejectWithValue(
-                error.response?.data || { message: 'Failed to reorder scenes' }
-            );
+            return rejectWithValue(error.response?.data || error.message);
+        }
+    }
+);
+
+/**
+ * Update physics parameters for a scene
+ */
+export const updateScenePhysicsParams = createAsyncThunk(
+    'scenes/updatePhysicsParams',
+    async ({ sceneId, physicsParams }, { rejectWithValue }) => {
+        try {
+            const response = await api.put(`/api/scenes/${sceneId}/physics_parameters`, physicsParams);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message);
+        }
+    }
+);
+
+/**
+ * Update harmony parameters for a scene
+ */
+export const updateSceneHarmonyParams = createAsyncThunk(
+    'scenes/updateHarmonyParams',
+    async ({ sceneId, harmonyParams }, { rejectWithValue }) => {
+        try {
+            const response = await api.put(`/api/scenes/${sceneId}/harmony_parameters`, harmonyParams);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message);
         }
     }
 );

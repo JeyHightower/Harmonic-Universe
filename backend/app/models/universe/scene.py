@@ -1,22 +1,46 @@
 """Scene model."""
-from sqlalchemy import Column, String, Text, ForeignKey, Boolean, Integer
+from sqlalchemy import Column, String, Text, ForeignKey, Boolean, Integer, DateTime, Float
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 from ..base import BaseModel
 
 class Scene(BaseModel):
-    """Scene model for managing individual scenes within a universe."""
-
+    """
+    Scene model - represents a scene within a universe.
+    Each scene can have its own physics and harmony parameters.
+    """
     __tablename__ = "scenes"
 
-    name = Column(String(255), nullable=False)
-    description = Column(Text)
-    scene_order = Column(Integer, default=0)  # For scene ordering
+    # Basic information
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    image_url = Column(String(1024), nullable=True)
+
+    # Positioning/ordering
+    order = Column(Integer, default=0)  # Order within universe
+
+    # Universe relationship
+    universe_id = Column(Integer, ForeignKey('universes.id', ondelete="CASCADE"), nullable=False)
+    universe = relationship("Universe", back_populates="scenes")
+
+    # Scene type
+    scene_type = Column(String(50), default="standard")  # standard, cinematic, interactive, etc.
+
+    # Parameters for visualization and physics
+    physics_parameters = Column(JSONB, default=dict)
+    harmony_parameters = Column(JSONB, default=dict)
+    visualization_settings = Column(JSONB, default=dict)
+
+    # State tracking
     is_active = Column(Boolean, default=True)
-    version = Column(Integer, default=1)
+    is_complete = Column(Boolean, default=False)
+
+    # Additional scene-specific parameters
+    duration = Column(Float, default=60.0)  # Duration in seconds
+    tempo = Column(Float, default=120.0)    # Music tempo in BPM
 
     # Foreign Keys
-    universe_id = Column(UUID(as_uuid=True), ForeignKey("universes.id", ondelete="CASCADE"), nullable=False)
     creator_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
     # Scene-specific parameter overrides
@@ -28,30 +52,6 @@ class Scene(BaseModel):
     harmony_overrides = Column(JSONB, default=lambda: {
         'enabled': False,
         'parameters': {}  # Override specific harmony parameters from universe
-    })
-
-    # Scene-specific visualization settings
-    visualization_settings = Column(JSONB, default=lambda: {
-        'camera': {
-            'position': {'x': 0, 'y': 5, 'z': 10},
-            'target': {'x': 0, 'y': 0, 'z': 0},
-            'fov': 75
-        },
-        'lighting': {
-            'ambient': {'intensity': 0.5, 'color': '#ffffff'},
-            'directional': {'intensity': 1.0, 'color': '#ffffff', 'position': {'x': 1, 'y': 1, 'z': 1}},
-            'shadows': True
-        },
-        'post_processing': {
-            'enabled': True,
-            'bloom': {'enabled': True, 'intensity': 1.0},
-            'ambient_occlusion': {'enabled': True, 'intensity': 1.0},
-            'motion_blur': {'enabled': False, 'intensity': 0.5}
-        },
-        'background': {
-            'type': 'gradient',
-            'colors': ['#1a2b3c', '#3c2b1a']
-        }
     })
 
     # Scene-specific AI settings
@@ -78,31 +78,39 @@ class Scene(BaseModel):
     })
 
     # Relationships
-    universe = relationship("Universe", back_populates="scenes")
     creator = relationship("User", back_populates="scenes")
     physics_objects = relationship("PhysicsObject", back_populates="scene", cascade="all, delete-orphan")
-    physics_parameters = relationship("PhysicsParameters", back_populates="scene", cascade="all, delete-orphan")
-    harmony_parameters = relationship("HarmonyParameter", back_populates="scene", cascade="all, delete-orphan")
     physics_constraints = relationship("PhysicsConstraint", back_populates="scene", cascade="all, delete-orphan")
     audio_tracks = relationship("AudioTrack", back_populates="scene", cascade="all, delete-orphan")
     visualizations = relationship("Visualization", back_populates="scene", cascade="all, delete-orphan")
 
     def to_dict(self):
-        """Return a dictionary representation of the scene."""
+        """Convert scene object to dictionary"""
         return {
-            "id": str(self.id),
-            "name": self.name,
+            "id": self.id,
+            "title": self.title,
             "description": self.description,
-            "scene_order": self.scene_order,
-            "is_active": self.is_active,
-            "version": self.version,
-            "universe_id": str(self.universe_id),
-            "creator_id": str(self.creator_id),
-            "physics_overrides": self.physics_overrides,
-            "harmony_overrides": self.harmony_overrides,
+            "image_url": self.image_url,
+            "order": self.order,
+            "universe_id": self.universe_id,
+            "scene_type": self.scene_type,
+            "physics_parameters": self.physics_parameters,
+            "harmony_parameters": self.harmony_parameters,
             "visualization_settings": self.visualization_settings,
-            "ai_settings": self.ai_settings,
-            "timeline_settings": self.timeline_settings,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat()
+            "is_active": self.is_active,
+            "is_complete": self.is_complete,
+            "duration": self.duration,
+            "tempo": self.tempo,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
         }
+
+    def to_dict_with_relationships(self):
+        """
+        Convert scene object to dictionary including universe name
+        and other important relationship information
+        """
+        scene_dict = self.to_dict()
+        if self.universe:
+            scene_dict["universe_name"] = self.universe.name
+        return scene_dict

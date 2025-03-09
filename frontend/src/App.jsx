@@ -36,8 +36,8 @@ MemoizedModalRegistry.displayName = 'MemoizedModalRegistry';
 
 // Lazy-loaded components
 const Home = lazy(() => import('./components/features/home/Home'));
-const Login = lazy(() => import('./components/features/auth/Login'));
-const Register = lazy(() => import('./components/features/auth/Register'));
+const Login = lazy(() => import('./features/auth/Login'));
+const Register = lazy(() => import('./features/auth/Register'));
 const DemoLogin = lazy(() => import('./features/auth/DemoLogin'));
 const Dashboard = lazy(() =>
   import('./components/features/dashboard/Dashboard')

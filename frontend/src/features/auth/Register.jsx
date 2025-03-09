@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useState } from 'react';
 import useForm from '../../../hooks/useForm';
 import { openModal } from '../../../store/slices/modalSlice';
@@ -80,6 +80,7 @@ function Register() {
     <div className="auth-container">
       <form onSubmit={handleSubmit} className="auth-form">
         <h1>Register</h1>
+        <p className="auth-description">Create your account to start building your universe.</p>
         <Input
           type="text"
           label="Username"
@@ -110,9 +111,29 @@ function Register() {
           error={errors.password}
           required
         />
+        <div className="password-requirements">
+          <p>Password requirements:</p>
+          <ul>
+            <li className={values.password.length >= 8 ? 'requirement-met' : ''}>
+              At least 8 characters
+            </li>
+            <li className={/[A-Z]/.test(values.password) ? 'requirement-met' : ''}>
+              At least one uppercase letter
+            </li>
+            <li className={/[a-z]/.test(values.password) ? 'requirement-met' : ''}>
+              At least one lowercase letter
+            </li>
+            <li className={/[0-9]/.test(values.password) ? 'requirement-met' : ''}>
+              At least one number
+            </li>
+          </ul>
+        </div>
         <Button type="submit" fullWidth disabled={loading}>
           {loading ? 'Registering...' : 'Register'}
         </Button>
+        <div className="auth-links">
+          <p>Already have an account? <Link to="/login" className="auth-link">Login here</Link></p>
+        </div>
       </form>
     </div>
   );

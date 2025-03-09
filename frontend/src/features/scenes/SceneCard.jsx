@@ -1,71 +1,58 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import Button from '../../components/common/Button';
+import PropTypes from 'prop-types';
+import { Link } from 'react-router-dom';
+import { formatDate } from '../../utils/dateUtils';
 import './SceneCard.css';
 
-const SceneCard = ({ scene, onEdit, onDelete }) => {
-    const navigate = useNavigate();
-
-    const handleClick = () => {
-        navigate(`/universes/${scene.universe_id}/scenes/${scene.id}`);
-    };
-
-    const formatDate = dateString => {
-        const options = { year: 'numeric', month: 'short', day: 'numeric' };
-        return new Date(dateString).toLocaleDateString(undefined, options);
-    };
+const SceneCard = ({ scene }) => {
+    const defaultImage = '/images/default-scene.jpg';
 
     return (
-        <div className="scene-card">
-            <div className="scene-card-content" onClick={handleClick}>
-                <h3>{scene.name}</h3>
-                <p>
-                    {scene.description || 'No description provided for this scene.'}
-                </p>
+        <Link to={`/scenes/${scene.id}`} className="scene-card">
+            <div className="scene-card-image">
+                <img
+                    src={scene.image_url || defaultImage}
+                    alt={scene.title}
+                    onError={(e) => { e.target.src = defaultImage; }}
+                />
+                {scene.scene_type && (
+                    <div className="scene-type-badge">{scene.scene_type}</div>
+                )}
             </div>
-            <div className="scene-card-footer">
-                <div className="scene-card-meta">
-                    <span>Created: {formatDate(scene.created_at)}</span>
-                    <span className="scene-order">Order: {scene.scene_order || 1}</span>
-                    {scene.type && (
-                        <span className="scene-type">{scene.type}</span>
+            <div className="scene-card-content">
+                <h3 className="scene-card-title">{scene.title}</h3>
+                <p className="scene-card-description">
+                    {scene.description ? (
+                        scene.description.length > 80
+                            ? `${scene.description.substring(0, 80)}...`
+                            : scene.description
+                    ) : (
+                        'No description provided'
                     )}
-                </div>
-                <div className="scene-card-actions">
-                    <Button
-                        onClick={e => {
-                            e.stopPropagation();
-                            navigate(`/universes/${scene.universe_id}/scenes/${scene.id}/physics`);
-                        }}
-                        variant="secondary"
-                        size="small"
-                    >
-                        Physics
-                    </Button>
-                    <Button
-                        onClick={e => {
-                            e.stopPropagation();
-                            onEdit(scene);
-                        }}
-                        variant="secondary"
-                        size="small"
-                    >
-                        Edit
-                    </Button>
-                    <Button
-                        onClick={e => {
-                            e.stopPropagation();
-                            onDelete(scene.id);
-                        }}
-                        variant="danger"
-                        size="small"
-                    >
-                        Delete
-                    </Button>
+                </p>
+                <div className="scene-card-footer">
+                    <span className="scene-card-order">
+                        Order: {scene.order}
+                    </span>
+                    <span className="scene-card-date">
+                        {formatDate(scene.created_at)}
+                    </span>
                 </div>
             </div>
-        </div>
+        </Link>
     );
+};
+
+SceneCard.propTypes = {
+    scene: PropTypes.shape({
+        id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+        title: PropTypes.string.isRequired,
+        description: PropTypes.string,
+        image_url: PropTypes.string,
+        scene_type: PropTypes.string,
+        order: PropTypes.number,
+        created_at: PropTypes.string
+    }).isRequired
 };
 
 export default SceneCard;

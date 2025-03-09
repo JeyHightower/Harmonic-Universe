@@ -1,113 +1,104 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom';
-import { fetchUniverses } from '../../../store/thunks/universeThunks';
-import Button from '../../common/Button';
-import Modal from '../../common/Modal';
-import Spinner from '../../common/Spinner';
+import { Link } from 'react-router-dom';
+import { fetchUniverses } from '../../store/thunks/universeThunks';
+import Button from '../../components/common/Button';
+import UniverseCard from './UniverseCard';
+import UniverseFormModal from './UniverseFormModal';
 import './Universe.css';
-import UniverseCreate from './UniverseCreate';
 
 function UniverseList() {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { universes, loading, error } = useSelector(state => state.universe);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const { universes, loading, error } = useSelector((state) => state.universe);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [filter, setFilter] = useState('all'); // 'all', 'public', 'private'
 
   useEffect(() => {
-    dispatch(fetchUniverses());
+    // Fetch universes when component mounts
+    dispatch(fetchUniverses({ includePublic: true }));
   }, [dispatch]);
 
   const handleCreateClick = () => {
-    setShowCreateModal(true);
+    setIsCreateModalOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setShowCreateModal(false);
+  const handleCreateSuccess = () => {
+    setIsCreateModalOpen(false);
+    // Refresh the list after creating a new universe
+    dispatch(fetchUniverses({ includePublic: true }));
   };
 
-  const handleUniverseCreated = universeId => {
-    setShowCreateModal(false);
-    navigate(`/universes/${universeId}`);
-  };
-
-  if (loading && universes.length === 0) {
-    return (
-      <div className="universe-container">
-        <div className="universe-loading">
-          <Spinner size="large" />
-          <p>Loading universes...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error && universes.length === 0) {
-    return (
-      <div className="universe-container">
-        <div className="universe-error">
-          <p>{error}</p>
-          <Button onClick={() => dispatch(fetchUniverses())}>Retry</Button>
-        </div>
-      </div>
-    );
-  }
+  const filteredUniverses = universes.filter(universe => {
+    if (filter === 'all') return true;
+    if (filter === 'public') return universe.is_public;
+    if (filter === 'private') return !universe.is_public;
+    return true;
+  });
 
   return (
-    <div className="universe-container">
+    <div className="universe-list-container">
       <div className="universe-list-header">
-        <h1>Your Universes</h1>
-        <Button onClick={handleCreateClick}>Create New Universe</Button>
-      </div>
-
-      {universes.length === 0 ? (
-        <div className="universe-empty-state">
-          <p>You haven't created any universes yet.</p>
-          <Button onClick={handleCreateClick}>
-            Create Your First Universe
+        <h1>My Universes</h1>
+        <div className="universe-list-actions">
+          <div className="filter-buttons">
+            <Button
+              variant={filter === 'all' ? 'primary' : 'secondary'}
+              size="small"
+              onClick={() => setFilter('all')}
+            >
+              All
+            </Button>
+            <Button
+              variant={filter === 'public' ? 'primary' : 'secondary'}
+              size="small"
+              onClick={() => setFilter('public')}
+            >
+              Public
+            </Button>
+            <Button
+              variant={filter === 'private' ? 'primary' : 'secondary'}
+              size="small"
+              onClick={() => setFilter('private')}
+            >
+              Private
+            </Button>
+          </div>
+          <Button onClick={handleCreateClick} variant="primary">
+            Create Universe
           </Button>
         </div>
-      ) : (
-        <div className="universe-list">
-          {universes.map(universe => (
-            <Link
-              to={`/universes/${universe.id}`}
-              key={universe.id}
-              className="universe-card card"
-            >
-              <div className="universe-card-content">
-                <h2>{universe.name}</h2>
-                <p className="universe-description">{universe.description}</p>
-                <div className="universe-meta">
-                  <span className="universe-date">
-                    Created:{' '}
-                    {new Date(universe.created_at).toLocaleDateString()}
-                  </span>
-                  <span
-                    className={`universe-visibility ${
-                      universe.is_public ? 'public' : 'private'
-                    }`}
-                  >
-                    {universe.is_public ? 'Public' : 'Private'}
-                  </span>
-                </div>
-              </div>
-            </Link>
+      </div>
+
+      {error && <div className="error-message">{error}</div>}
+
+      {loading ? (
+        <div className="loading-container">
+          <div className="spinner"></div>
+          <p>Loading universes...</p>
+        </div>
+      ) : filteredUniverses.length > 0 ? (
+        <div className="universe-grid">
+          {filteredUniverses.map((universe) => (
+            <UniverseCard key={universe.id} universe={universe} />
           ))}
+        </div>
+      ) : (
+        <div className="empty-state">
+          <h2>No universes found</h2>
+          <p>Create your first universe to get started!</p>
+          <Button onClick={handleCreateClick} variant="primary">
+            Create Universe
+          </Button>
         </div>
       )}
 
-      <Modal
-        isOpen={showCreateModal}
-        onClose={handleCloseModal}
-        title="Create New Universe"
-      >
-        <UniverseCreate
-          isModal
-          onSuccess={handleUniverseCreated}
-          onCancel={handleCloseModal}
+      {isCreateModalOpen && (
+        <UniverseFormModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSuccess={handleCreateSuccess}
         />
-      </Modal>
+      )}
     </div>
   );
 }
