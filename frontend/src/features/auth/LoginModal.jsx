@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { loginStart, loginSuccess, loginFailure } from '../../store/slices/authSlice';
-import { api, endpoints } from '../../utils/api';
+import { loginUser } from '../../store/thunks/authThunks';
 import { validateEmail, validatePassword } from '../../utils/validation';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
@@ -48,36 +48,22 @@ const LoginModal = ({ onClose }) => {
         setIsLoading(true);
 
         try {
-            dispatch(loginStart());
+            // Use the loginUser thunk instead of direct API call
+            const resultAction = await dispatch(loginUser(values));
 
-            const response = await api.post(endpoints.auth.login, values);
-            console.debug('Login response:', response);
-
-            // Store tokens
-            if (response.access_token) {
-                localStorage.setItem('accessToken', response.access_token);
+            if (loginUser.fulfilled.match(resultAction)) {
+                // Login successful - close modal and navigate to dashboard
+                console.log('Login successful, navigating to dashboard');
+                onClose();
+                navigate('/dashboard');
+            } else {
+                // Login failed, display error message
+                const errorMessage = resultAction.payload?.message || 'Login failed. Please try again.';
+                setErrors({
+                    ...errors,
+                    form: errorMessage
+                });
             }
-            if (response.refresh_token) {
-                localStorage.setItem('refreshToken', response.refresh_token);
-            }
-
-            // Fetch user info if not included in response
-            let userData = response.user;
-            if (!userData) {
-                try {
-                    const userResponse = await api.get(endpoints.auth.me);
-                    userData = userResponse;
-                } catch (error) {
-                    console.error('Failed to fetch user info:', error);
-                }
-            }
-
-            // Dispatch login success with user data
-            dispatch(loginSuccess(userData || {}));
-
-            // Close modal and navigate to dashboard
-            onClose();
-            navigate('/dashboard');
         } catch (error) {
             console.error('Login error:', error);
 
@@ -88,8 +74,6 @@ const LoginModal = ({ onClose }) => {
             } else if (error.response?.data?.error) {
                 errorMessage = error.response.data.error;
             }
-
-            dispatch(loginFailure(errorMessage));
 
             // Show error in form
             setErrors({

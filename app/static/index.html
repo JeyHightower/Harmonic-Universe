@@ -91,13 +91,18 @@
           transform: rotate(360deg);
         }
       }
+      .hidden {
+        display: none;
+      }
     </style>
   </head>
   <body>
     <div class="container">
       <h1>Harmonic Universe</h1>
       <p>Explore the fascinating connection between music and physics.</p>
-      <div class="button-container">
+
+      <!-- Authentication Buttons Section - shown when user is not logged in -->
+      <div id="auth-section" class="button-container">
         <button id="login-button" class="button button-primary login-button">
           Login
         </button>
@@ -111,6 +116,17 @@
           Try Demo
         </button>
       </div>
+
+      <!-- User Section - shown when user is logged in -->
+      <div id="user-section" class="button-container hidden">
+        <button id="dashboardButton" class="button button-primary">
+          Dashboard
+        </button>
+        <button id="logoutButton" class="button button-secondary">
+          Logout
+        </button>
+      </div>
+
       <div style="margin-top: 2rem">
         <a href="/api/health" class="button button-health">API Health Check</a>
       </div>
@@ -126,6 +142,30 @@
         const registerButton = document.getElementById('register-button');
         const demoButton = document.getElementById('demo-button');
         const loadingElement = document.getElementById('loading');
+        const authSection = document.getElementById('auth-section');
+        const userSection = document.getElementById('user-section');
+        const dashboardButton = document.getElementById('dashboardButton');
+
+        // Check if user is logged in
+        const accessToken = localStorage.getItem('accessToken');
+        if (accessToken) {
+          console.log('User is logged in');
+          // Show user section and hide auth section
+          authSection.classList.add('hidden');
+          userSection.classList.remove('hidden');
+        } else {
+          console.log('User is not logged in');
+          // Show auth section and hide user section
+          authSection.classList.remove('hidden');
+          userSection.classList.add('hidden');
+        }
+
+        // Dashboard button click event
+        if (dashboardButton) {
+          dashboardButton.addEventListener('click', function () {
+            window.location.href = '/dashboard';
+          });
+        }
 
         // Open login modal
         loginButton.addEventListener('click', function () {
@@ -148,35 +188,72 @@
           demoButton.disabled = true;
 
           try {
-            // Make API request to demo login endpoint
-            const response = await fetch('/api/auth/demo-login', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              credentials: 'include',
-              mode: 'cors',
-            });
+            // Try API endpoints in sequence until one works
+            let response = null;
+            let error = null;
 
-            if (response.ok) {
-              const data = await response.json();
+            // Try endpoints in order
+            const endpoints = [
+              '/api/auth/demo-login', // Core API endpoint
+              '/api/v1/auth/demo-login', // Versioned API endpoint
+              'http://localhost:8000/api/auth/demo-login', // Direct backend endpoint
+              'http://localhost:5001/api/auth/demo-login', // Demo server endpoint
+            ];
 
-              // Store tokens in localStorage
-              if (data.token) {
-                localStorage.setItem('accessToken', data.token);
+            // Try each endpoint until one works
+            for (const endpoint of endpoints) {
+              try {
+                console.log(`Trying demo login with endpoint: ${endpoint}`);
+                response = await fetch(endpoint, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  credentials: 'include',
+                  mode: 'cors',
+                });
+
+                if (response.ok) {
+                  console.log(
+                    `Demo login successful with endpoint: ${endpoint}`
+                  );
+                  break; // Exit the loop if successful
+                } else {
+                  console.error(
+                    `Demo login failed with endpoint ${endpoint}:`,
+                    response.statusText
+                  );
+                  error = new Error(
+                    `Demo login failed: ${response.statusText}`
+                  );
+                }
+              } catch (err) {
+                console.error(`Error with endpoint ${endpoint}:`, err);
+                error = err;
               }
-              if (data.refresh_token) {
-                localStorage.setItem('refreshToken', data.refresh_token);
-              }
-
-              // Redirect to dashboard
-              window.location.href = '/dashboard';
-            } else {
-              console.error('Demo login failed:', response.statusText);
-              alert('Demo login failed. Please try again.');
-              loadingElement.classList.remove('active');
-              demoButton.disabled = false;
             }
+
+            // If no endpoint worked, throw the last error
+            if (!response || !response.ok) {
+              throw error || new Error('All demo login endpoints failed');
+            }
+
+            const data = await response.json();
+            console.log('Demo login response:', data);
+
+            // Store tokens in localStorage
+            if (data.token) {
+              localStorage.setItem('accessToken', data.token);
+            }
+            if (data.access_token) {
+              localStorage.setItem('accessToken', data.access_token);
+            }
+            if (data.refresh_token) {
+              localStorage.setItem('refreshToken', data.refresh_token);
+            }
+
+            // Redirect to dashboard
+            window.location.href = '/dashboard';
           } catch (error) {
             console.error('Error during demo login:', error);
             alert('An error occurred during demo login. Please try again.');
@@ -184,6 +261,205 @@
             demoButton.disabled = false;
           }
         });
+
+        // Login form submission
+        loginForm.addEventListener('submit', async function (e) {
+          e.preventDefault();
+
+          // Show loading indicator
+          loadingElement.classList.add('active');
+          loginButton.disabled = true;
+
+          // Gather form data
+          const formData = {
+            email: loginEmailInput.value,
+            password: loginPasswordInput.value,
+          };
+
+          try {
+            // Try API endpoints in sequence until one works
+            let response = null;
+            let error = null;
+
+            // Try endpoints in order
+            const endpoints = [
+              '/api/auth/login', // Core API endpoint
+              '/api/v1/auth/login', // Versioned API endpoint
+              'http://localhost:8000/api/auth/login', // Direct backend endpoint
+              'http://localhost:5001/api/auth/login', // Demo server endpoint
+            ];
+
+            // Try each endpoint until one works
+            for (const endpoint of endpoints) {
+              try {
+                console.log(`Trying login with endpoint: ${endpoint}`);
+                response = await fetch(endpoint, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(formData),
+                  credentials: 'include',
+                  mode: 'cors',
+                });
+
+                if (response.ok) {
+                  console.log(`Login successful with endpoint: ${endpoint}`);
+                  break; // Exit the loop if successful
+                } else {
+                  console.error(
+                    `Login failed with endpoint ${endpoint}:`,
+                    response.statusText
+                  );
+                  error = new Error(`Login failed: ${response.statusText}`);
+                }
+              } catch (err) {
+                console.error(`Error with endpoint ${endpoint}:`, err);
+                error = err;
+              }
+            }
+
+            // If no endpoint worked, throw the last error
+            if (!response || !response.ok) {
+              throw error || new Error('All login endpoints failed');
+            }
+
+            const data = await response.json();
+            console.log('Login response:', data);
+
+            // Store tokens in localStorage
+            if (data.token) {
+              localStorage.setItem('accessToken', data.token);
+            }
+            if (data.access_token) {
+              localStorage.setItem('accessToken', data.access_token);
+            }
+            if (data.refresh_token) {
+              localStorage.setItem('refreshToken', data.refresh_token);
+            }
+
+            // Redirect to dashboard
+            window.location.href = '/dashboard';
+          } catch (error) {
+            console.error('Error during login:', error);
+            alert('Login failed. Please check your credentials and try again.');
+            loadingElement.classList.remove('active');
+            loginButton.disabled = false;
+          }
+        });
+
+        // Signup form submission
+        signupForm.addEventListener('submit', async function (e) {
+          e.preventDefault();
+
+          // Show loading indicator
+          loadingElement.classList.add('active');
+          signupButton.disabled = true;
+
+          // Gather form data
+          const formData = {
+            username: signupUsernameInput.value,
+            email: signupEmailInput.value,
+            password: signupPasswordInput.value,
+          };
+
+          try {
+            // Try API endpoints in sequence until one works
+            let response = null;
+            let error = null;
+
+            // Try endpoints in order
+            const endpoints = [
+              '/api/auth/signup', // Core API endpoint
+              '/api/v1/auth/signup', // Versioned API endpoint
+              'http://localhost:8000/api/auth/signup', // Direct backend endpoint
+              'http://localhost:5001/api/auth/signup', // Demo server endpoint
+            ];
+
+            // Try each endpoint until one works
+            for (const endpoint of endpoints) {
+              try {
+                console.log(`Trying signup with endpoint: ${endpoint}`);
+                response = await fetch(endpoint, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(formData),
+                  credentials: 'include',
+                  mode: 'cors',
+                });
+
+                if (response.ok) {
+                  console.log(`Signup successful with endpoint: ${endpoint}`);
+                  break; // Exit the loop if successful
+                } else {
+                  console.error(
+                    `Signup failed with endpoint ${endpoint}:`,
+                    response.statusText
+                  );
+                  error = new Error(`Signup failed: ${response.statusText}`);
+                }
+              } catch (err) {
+                console.error(`Error with endpoint ${endpoint}:`, err);
+                error = err;
+              }
+            }
+
+            // If no endpoint worked, throw the last error
+            if (!response || !response.ok) {
+              throw error || new Error('All signup endpoints failed');
+            }
+
+            const data = await response.json();
+            console.log('Signup response:', data);
+
+            // Store tokens in localStorage
+            if (data.token) {
+              localStorage.setItem('accessToken', data.token);
+            }
+            if (data.access_token) {
+              localStorage.setItem('accessToken', data.access_token);
+            }
+            if (data.refresh_token) {
+              localStorage.setItem('refreshToken', data.refresh_token);
+            }
+
+            // Redirect to dashboard
+            window.location.href = '/dashboard';
+          } catch (error) {
+            console.error('Error during signup:', error);
+            alert(
+              'Signup failed. Please check your information and try again.'
+            );
+            loadingElement.classList.remove('active');
+            signupButton.disabled = false;
+          }
+        });
+
+        // Add event listener for logout button
+        const logoutButton = document.getElementById('logoutButton');
+        if (logoutButton) {
+          logoutButton.addEventListener('click', function () {
+            console.log('Logout button clicked');
+
+            // Clear tokens from localStorage
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+
+            console.log('Tokens cleared from localStorage');
+
+            // Update UI
+            const authSection = document.getElementById('auth-section');
+            const userSection = document.getElementById('user-section');
+
+            if (authSection) authSection.classList.remove('hidden');
+            if (userSection) userSection.classList.add('hidden');
+
+            // Redirect to homepage
+            window.location.href = '/';
+          });
+        }
       });
     </script>
   </body>
