@@ -8,6 +8,7 @@ import {
   Routes,
   useLocation,
   useNavigate,
+  useRoutes,
 } from 'react-router-dom';
 import { SettingOutlined, UserOutlined } from '@ant-design/icons';
 import Layout from './components/layout/Layout';
@@ -27,6 +28,7 @@ import { initializeTheme } from './utils/themeUtils';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ModalRegistry } from './utils/modalRegistry';
 import { MODAL_TYPES } from './utils/modalRegistry';
+import routes from './routes';
 
 // Create a memoized version of ModalRegistry to prevent unnecessary re-renders
 const MemoizedModalRegistry = React.memo(() => {
@@ -139,6 +141,12 @@ const IconTestComponent = () => {
     </div>
   );
 };
+
+function AppRoutes() {
+  // Use the routes configuration from routes.js
+  const routeElements = useRoutes(routes);
+  return routeElements;
+}
 
 const App = () => {
   // Initialize theme on app load

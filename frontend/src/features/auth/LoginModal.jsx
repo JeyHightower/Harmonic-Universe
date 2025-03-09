@@ -1,40 +1,47 @@
-import { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { loginStart, loginSuccess, loginFailure } from '../../store/slices/authSlice';
-import { loginUser } from '../../store/thunks/authThunks';
-import { validateEmail, validatePassword } from '../../utils/validation';
-import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
+import React, { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { login } from './authSlice';
+import PropTypes from 'prop-types';
 import './Auth.css';
 
 const LoginModal = ({ onClose }) => {
+    const [formData, setFormData] = useState({
+        email: '',
+        password: '',
+    });
+    const [errors, setErrors] = useState({});
+
     const dispatch = useDispatch();
-    const navigate = useNavigate();
-    const [values, setValues] = useState({ email: '', password: '' });
-    const [errors, setErrors] = useState({ email: '', password: '' });
-    const [isLoading, setIsLoading] = useState(false);
+    const { loading, error } = useSelector((state) => state.auth);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setValues(prev => ({ ...prev, [name]: value }));
+        setFormData({
+            ...formData,
+            [name]: value,
+        });
 
         // Clear error when user types
         if (errors[name]) {
-            setErrors(prev => ({ ...prev, [name]: '' }));
+            setErrors({
+                ...errors,
+                [name]: '',
+            });
         }
     };
 
     const validateForm = () => {
         const newErrors = {};
 
-        // Validate email
-        const emailError = validateEmail(values.email);
-        if (emailError) newErrors.email = emailError;
+        if (!formData.email) {
+            newErrors.email = 'Email is required';
+        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+            newErrors.email = 'Email is invalid';
+        }
 
-        // Validate password
-        const passwordError = validatePassword(values.password);
-        if (passwordError) newErrors.password = passwordError;
+        if (!formData.password) {
+            newErrors.password = 'Password is required';
+        }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -43,106 +50,93 @@ const LoginModal = ({ onClose }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!validateForm()) return;
-
-        setIsLoading(true);
+        if (!validateForm()) {
+            return;
+        }
 
         try {
-            // Use the loginUser thunk instead of direct API call
-            const resultAction = await dispatch(loginUser(values));
-
-            if (loginUser.fulfilled.match(resultAction)) {
-                // Login successful - close modal and navigate to dashboard
-                console.log('Login successful, navigating to dashboard');
+            const resultAction = await dispatch(login(formData));
+            if (login.fulfilled.match(resultAction)) {
+                // Successful login
                 onClose();
-                navigate('/dashboard');
-            } else {
-                // Login failed, display error message
-                const errorMessage = resultAction.payload?.message || 'Login failed. Please try again.';
-                setErrors({
-                    ...errors,
-                    form: errorMessage
-                });
             }
-        } catch (error) {
-            console.error('Login error:', error);
-
-            // Extract error message
-            let errorMessage = 'An error occurred during login. Please try again.';
-            if (error.response?.data?.message) {
-                errorMessage = error.response.data.message;
-            } else if (error.response?.data?.error) {
-                errorMessage = error.response.data.error;
-            }
-
-            // Show error in form
-            setErrors({
-                ...errors,
-                form: errorMessage
-            });
-        } finally {
-            setIsLoading(false);
+        } catch (err) {
+            console.error('Login failed:', err);
         }
     };
 
     return (
-        <div className="auth-modal">
+        <div className="modal-container">
+            <div className="modal-header">
+                <h2>Login</h2>
+                <button className="close-button" onClick={onClose}>×</button>
+            </div>
+
             <form onSubmit={handleSubmit} className="auth-form">
-                <h2>Log In</h2>
-
-                {errors.form && (
-                    <div className="error-message form-error">{errors.form}</div>
-                )}
-
                 <div className="form-group">
-                    <Input
+                    <label htmlFor="email">Email</label>
+                    <input
                         type="email"
-                        label="Email"
+                        id="email"
                         name="email"
-                        value={values.email}
+                        value={formData.email}
                         onChange={handleChange}
-                        error={errors.email}
-                        required
+                        placeholder="Enter your email"
+                        className={errors.email ? 'input-error' : ''}
                     />
+                    {errors.email && <div className="error-message">{errors.email}</div>}
                 </div>
 
                 <div className="form-group">
-                    <Input
+                    <label htmlFor="password">Password</label>
+                    <input
                         type="password"
-                        label="Password"
+                        id="password"
                         name="password"
-                        value={values.password}
+                        value={formData.password}
                         onChange={handleChange}
-                        error={errors.password}
-                        required
+                        placeholder="Enter your password"
+                        className={errors.password ? 'input-error' : ''}
                     />
+                    {errors.password && <div className="error-message">{errors.password}</div>}
                 </div>
+
+                {error && <div className="error-message">{error}</div>}
 
                 <div className="form-actions">
-                    <Button
+                    <button
                         type="submit"
-                        variant="primary"
-                        fullWidth
-                        disabled={isLoading}
-                        loading={isLoading}
+                        className="submit-button"
+                        disabled={loading}
                     >
-                        {isLoading ? 'Logging in...' : 'Log In'}
-                    </Button>
+                        {loading ? 'Logging in...' : 'Login'}
+                    </button>
                 </div>
 
                 <div className="form-footer">
-                    <p>Don't have an account? <a href="#" onClick={(e) => {
-                        e.preventDefault();
-                        onClose();
-                        // This should be replaced with a proper modal switch mechanism
-                        setTimeout(() => {
-                            document.querySelector('.register-button').click();
-                        }, 100);
-                    }}>Sign up</a></p>
+                    <p>
+                        Don't have an account?{' '}
+                        <button
+                            type="button"
+                            className="text-button"
+                            onClick={() => {
+                                onClose();
+                                // You would typically use your modal context here to open the register modal
+                                // For now we'll use a window.location approach
+                                window.location.href = '/signup';
+                            }}
+                        >
+                            Sign up
+                        </button>
+                    </p>
                 </div>
             </form>
         </div>
     );
+};
+
+LoginModal.propTypes = {
+    onClose: PropTypes.func.isRequired,
 };
 
 export default LoginModal;

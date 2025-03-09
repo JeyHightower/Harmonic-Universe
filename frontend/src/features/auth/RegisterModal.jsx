@@ -1,43 +1,61 @@
-import { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { registerUser } from '../../store/thunks/authThunks';
-import { validateEmail, validatePassword, validateUsername } from '../../utils/validation';
-import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
+import React, { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { register } from './authSlice';
+import PropTypes from 'prop-types';
 import './Auth.css';
 
 const RegisterModal = ({ onClose }) => {
+    const [formData, setFormData] = useState({
+        username: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+    });
+    const [errors, setErrors] = useState({});
+
     const dispatch = useDispatch();
-    const navigate = useNavigate();
-    const [values, setValues] = useState({ username: '', email: '', password: '' });
-    const [errors, setErrors] = useState({ username: '', email: '', password: '' });
-    const [isLoading, setIsLoading] = useState(false);
+    const { loading, error } = useSelector((state) => state.auth);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setValues(prev => ({ ...prev, [name]: value }));
+        setFormData({
+            ...formData,
+            [name]: value,
+        });
 
         // Clear error when user types
         if (errors[name]) {
-            setErrors(prev => ({ ...prev, [name]: '' }));
+            setErrors({
+                ...errors,
+                [name]: '',
+            });
         }
     };
 
     const validateForm = () => {
         const newErrors = {};
 
-        // Validate username
-        const usernameError = validateUsername(values.username);
-        if (usernameError) newErrors.username = usernameError;
+        if (!formData.username) {
+            newErrors.username = 'Username is required';
+        } else if (formData.username.length < 3) {
+            newErrors.username = 'Username must be at least 3 characters';
+        }
 
-        // Validate email
-        const emailError = validateEmail(values.email);
-        if (emailError) newErrors.email = emailError;
+        if (!formData.email) {
+            newErrors.email = 'Email is required';
+        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+            newErrors.email = 'Email is invalid';
+        }
 
-        // Validate password
-        const passwordError = validatePassword(values.password);
-        if (passwordError) newErrors.password = passwordError;
+        if (!formData.password) {
+            newErrors.password = 'Password is required';
+        } else if (formData.password.length < 6) {
+            newErrors.password = 'Password must be at least 6 characters';
+        }
+
+        if (formData.password !== formData.confirmPassword) {
+            newErrors.confirmPassword = 'Passwords do not match';
+        }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -46,128 +64,124 @@ const RegisterModal = ({ onClose }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!validateForm()) return;
+        if (!validateForm()) {
+            return;
+        }
 
-        setIsLoading(true);
+        // Remove confirmPassword from data sent to API
+        const { confirmPassword, ...registerData } = formData;
 
         try {
-            // Dispatch the register action
-            const resultAction = await dispatch(registerUser(values));
-
-            if (registerUser.fulfilled.match(resultAction)) {
-                // Registration successful
+            const resultAction = await dispatch(register(registerData));
+            if (register.fulfilled.match(resultAction)) {
+                // Successful registration
                 onClose();
-                navigate('/dashboard');
-            } else {
-                // Registration failed, show error
-                const errorMessage = resultAction.payload?.message ||
-                    'An error occurred during registration. Please try again.';
-
-                setErrors({
-                    ...errors,
-                    form: errorMessage
-                });
             }
-        } catch (error) {
-            console.error('Registration error:', error);
-
-            setErrors({
-                ...errors,
-                form: 'An unexpected error occurred. Please try again.'
-            });
-        } finally {
-            setIsLoading(false);
+        } catch (err) {
+            console.error('Registration failed:', err);
         }
     };
 
     return (
-        <div className="auth-modal">
-            <form onSubmit={handleSubmit} className="auth-form">
+        <div className="modal-container">
+            <div className="modal-header">
                 <h2>Sign Up</h2>
+                <button className="close-button" onClick={onClose}>×</button>
+            </div>
 
-                {errors.form && (
-                    <div className="error-message form-error">{errors.form}</div>
-                )}
-
+            <form onSubmit={handleSubmit} className="auth-form">
                 <div className="form-group">
-                    <Input
+                    <label htmlFor="username">Username</label>
+                    <input
                         type="text"
-                        label="Username"
+                        id="username"
                         name="username"
-                        value={values.username}
+                        value={formData.username}
                         onChange={handleChange}
-                        error={errors.username}
-                        required
+                        placeholder="Choose a username"
+                        className={errors.username ? 'input-error' : ''}
                     />
+                    {errors.username && <div className="error-message">{errors.username}</div>}
                 </div>
 
                 <div className="form-group">
-                    <Input
+                    <label htmlFor="email">Email</label>
+                    <input
                         type="email"
-                        label="Email"
+                        id="email"
                         name="email"
-                        value={values.email}
+                        value={formData.email}
                         onChange={handleChange}
-                        error={errors.email}
-                        required
+                        placeholder="Enter your email"
+                        className={errors.email ? 'input-error' : ''}
                     />
+                    {errors.email && <div className="error-message">{errors.email}</div>}
                 </div>
 
                 <div className="form-group">
-                    <Input
+                    <label htmlFor="password">Password</label>
+                    <input
                         type="password"
-                        label="Password"
+                        id="password"
                         name="password"
-                        value={values.password}
+                        value={formData.password}
                         onChange={handleChange}
-                        error={errors.password}
-                        required
+                        placeholder="Create a password"
+                        className={errors.password ? 'input-error' : ''}
                     />
+                    {errors.password && <div className="error-message">{errors.password}</div>}
                 </div>
 
-                <div className="password-requirements">
-                    <p>Password requirements:</p>
-                    <ul>
-                        <li className={values.password.length >= 8 ? 'requirement-met' : ''}>
-                            At least 8 characters
-                        </li>
-                        <li className={/[A-Z]/.test(values.password) ? 'requirement-met' : ''}>
-                            At least one uppercase letter
-                        </li>
-                        <li className={/[a-z]/.test(values.password) ? 'requirement-met' : ''}>
-                            At least one lowercase letter
-                        </li>
-                        <li className={/[0-9]/.test(values.password) ? 'requirement-met' : ''}>
-                            At least one number
-                        </li>
-                    </ul>
+                <div className="form-group">
+                    <label htmlFor="confirmPassword">Confirm Password</label>
+                    <input
+                        type="password"
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        placeholder="Confirm your password"
+                        className={errors.confirmPassword ? 'input-error' : ''}
+                    />
+                    {errors.confirmPassword && <div className="error-message">{errors.confirmPassword}</div>}
                 </div>
+
+                {error && <div className="error-message">{error}</div>}
 
                 <div className="form-actions">
-                    <Button
+                    <button
                         type="submit"
-                        variant="primary"
-                        fullWidth
-                        disabled={isLoading}
-                        loading={isLoading}
+                        className="submit-button"
+                        disabled={loading}
                     >
-                        {isLoading ? 'Creating Account...' : 'Sign Up'}
-                    </Button>
+                        {loading ? 'Creating Account...' : 'Sign Up'}
+                    </button>
                 </div>
 
                 <div className="form-footer">
-                    <p>Already have an account? <a href="#" onClick={(e) => {
-                        e.preventDefault();
-                        onClose();
-                        // This should be replaced with a proper modal switch mechanism
-                        setTimeout(() => {
-                            document.querySelector('.login-button').click();
-                        }, 100);
-                    }}>Log in</a></p>
+                    <p>
+                        Already have an account?{' '}
+                        <button
+                            type="button"
+                            className="text-button"
+                            onClick={() => {
+                                onClose();
+                                // You would typically use your modal context here to open the login modal
+                                // For now we'll use a window.location approach
+                                window.location.href = '/login';
+                            }}
+                        >
+                            Log in
+                        </button>
+                    </p>
                 </div>
             </form>
         </div>
     );
+};
+
+RegisterModal.propTypes = {
+    onClose: PropTypes.func.isRequired,
 };
 
 export default RegisterModal;
