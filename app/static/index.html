@@ -295,6 +295,12 @@
     </div>
 
     <script>
+      // Modal type constants (to match React implementation)
+      const MODAL_TYPES = {
+        LOGIN: 'LOGIN',
+        REGISTER: 'REGISTER',
+      };
+
       document.addEventListener('DOMContentLoaded', function () {
         // Get DOM elements
         const loginButton = document.getElementById('login-button');
@@ -310,6 +316,12 @@
         const loginModal = document.getElementById('loginModal');
         const signupModal = document.getElementById('signupModal');
         const closeButtons = document.querySelectorAll('.modal-close');
+
+        // Modal registry (to match React implementation)
+        const modalRegistry = {
+          [MODAL_TYPES.LOGIN]: loginModal,
+          [MODAL_TYPES.REGISTER]: signupModal,
+        };
 
         // Form elements
         const loginForm = document.getElementById('loginForm');
@@ -336,30 +348,88 @@
           userSection.classList.add('hidden');
         }
 
+        // URL parameter-based modal handler (to match React architecture)
+        function checkUrlForModals() {
+          const urlParams = new URLSearchParams(window.location.search);
+          const modalParam = urlParams.get('modal');
+
+          console.log('Checking URL parameters for modals:', modalParam);
+
+          if (modalParam === 'login') {
+            console.log('Opening login modal from URL parameter');
+            openModal(MODAL_TYPES.LOGIN);
+          } else if (modalParam === 'register') {
+            console.log('Opening register modal from URL parameter');
+            openModal(MODAL_TYPES.REGISTER);
+          }
+        }
+
+        // Check for modal parameters on page load
+        checkUrlForModals();
+
+        // Listen for history changes (back/forward navigation)
+        window.addEventListener('popstate', function () {
+          checkUrlForModals();
+        });
+
+        // Function to open modals programmatically
+        function openModal(modalType) {
+          console.log(`Opening modal: ${modalType}`);
+
+          // Close any open modals first
+          Object.values(modalRegistry).forEach(modal => {
+            modal.classList.remove('active');
+          });
+
+          // Open the requested modal
+          const modalElement = modalRegistry[modalType];
+          if (modalElement) {
+            modalElement.classList.add('active');
+
+            // Update URL to match React architecture pattern
+            const url = new URL(window.location);
+            url.searchParams.set(
+              'modal',
+              modalType === MODAL_TYPES.LOGIN ? 'login' : 'register'
+            );
+            window.history.pushState({}, '', url);
+          } else {
+            console.error(`Modal type not found: ${modalType}`);
+          }
+        }
+
+        // Function to close all modals
+        function closeAllModals() {
+          Object.values(modalRegistry).forEach(modal => {
+            modal.classList.remove('active');
+          });
+
+          // Remove modal parameter from URL
+          const url = new URL(window.location);
+          url.searchParams.delete('modal');
+          window.history.pushState({}, '', url);
+        }
+
         // Modal open handlers
         loginButton.addEventListener('click', function () {
-          loginModal.classList.add('active');
+          openModal(MODAL_TYPES.LOGIN);
         });
 
         registerButton.addEventListener('click', function () {
-          signupModal.classList.add('active');
+          openModal(MODAL_TYPES.REGISTER);
         });
 
         // Modal close handlers
         closeButtons.forEach(button => {
           button.addEventListener('click', function () {
-            loginModal.classList.remove('active');
-            signupModal.classList.remove('active');
+            closeAllModals();
           });
         });
 
         // Close modal when clicking outside
         window.addEventListener('click', function (event) {
-          if (event.target === loginModal) {
-            loginModal.classList.remove('active');
-          }
-          if (event.target === signupModal) {
-            signupModal.classList.remove('active');
+          if (event.target === loginModal || event.target === signupModal) {
+            closeAllModals();
           }
         });
 
@@ -370,15 +440,27 @@
           });
         }
 
-        // Demo Login
-        demoButton.addEventListener('click', async function (e) {
-          e.preventDefault();
+        // Demo Login Handler
+        function handleDemoLogin() {
+          console.log('Demo login handler called');
 
           // Show loading indicator
           loadingElement.textContent = 'Logging in as demo user...';
           loadingElement.classList.add('active');
           demoButton.disabled = true;
 
+          // Demo credentials (similar to the React implementation requested)
+          const demoCredentials = {
+            email: 'demo@example.com',
+            password: 'demopassword',
+          };
+
+          // Call the demo login API function
+          demoLoginApi(demoCredentials);
+        }
+
+        // Demo Login API Function
+        async function demoLoginApi(credentials) {
           try {
             // Try API endpoints in sequence until one works
             let response = null;
@@ -388,6 +470,8 @@
             const endpoints = [
               '/api/auth/demo-login', // Core API endpoint
               '/api/v1/auth/demo-login', // Versioned API endpoint
+              '/api/auth/login', // Try regular login with demo credentials
+              '/api/v1/auth/login', // Try versioned login with demo credentials
               'http://localhost:8000/api/auth/demo-login', // Direct backend endpoint
               'http://localhost:5001/api/auth/demo-login', // Demo server endpoint
             ];
@@ -401,6 +485,7 @@
                   headers: {
                     'Content-Type': 'application/json',
                   },
+                  body: JSON.stringify(credentials),
                   credentials: 'include',
                   mode: 'cors',
                 });
@@ -456,6 +541,12 @@
             loadingElement.classList.remove('active');
             demoButton.disabled = false;
           }
+        }
+
+        // Demo Button click handler
+        demoButton.addEventListener('click', function (e) {
+          e.preventDefault();
+          handleDemoLogin();
         });
 
         // Login form submission
@@ -534,7 +625,7 @@
             }
 
             // Close modal
-            loginModal.classList.remove('active');
+            closeAllModals();
 
             // Update UI before redirect
             authSection.classList.add('hidden');
@@ -630,7 +721,7 @@
             }
 
             // Close modal
-            signupModal.classList.remove('active');
+            closeAllModals();
 
             // Update UI before redirect
             authSection.classList.add('hidden');
