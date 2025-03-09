@@ -22,50 +22,22 @@ export const demoLogin = createAsyncThunk(
 
             // Try the demo login server first
             let response;
-            let error;
 
             try {
-                console.debug('Trying demo login with demo server on port 5001');
-                response = await fetch('http://localhost:5001/api/auth/demo-login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Demo server responded with status: ${response.status}`);
-                }
-
-                response = await response.json();
-                console.debug('Demo login successful with demo server:', response);
+                console.debug('Trying demo login with API endpoint');
+                response = await api.post(endpoints.auth.demoLogin);
+                console.debug('Demo login successful with API endpoint:', response);
             } catch (err) {
-                console.debug('Demo login failed with demo server, trying alternative endpoint:', err);
-                error = err;
+                console.debug('Demo login failed with API endpoint, trying fallback:', err);
 
-                // If the demo server fails, try the main app endpoint
+                // Try fallback endpoint
+                console.debug('Trying fallback demo login endpoint /api/auth/demo-login');
                 try {
-                    console.debug('Trying demo login with /api/auth/demo-login endpoint');
-                    response = await api.post(
-                        '/api/auth/demo-login',
-                        {}
-                    );
-                    console.debug('Demo login successful with /api/auth/demo-login:', response);
+                    response = await api.post('/api/auth/demo-login');
+                    console.debug('Demo login successful with fallback endpoint:', response);
                 } catch (err2) {
-                    console.debug('Demo login failed with /api/auth/demo-login, trying blueprint endpoint');
-
-                    // If the main app endpoint fails, try the blueprint endpoint
-                    try {
-                        console.debug('Trying demo login with blueprint endpoint');
-                        response = await api.post(
-                            endpoints.auth.demoLogin,
-                            {}
-                        );
-                        console.debug('Demo login successful with blueprint endpoint:', response);
-                    } catch (err3) {
-                        console.error('All demo login endpoints failed:', err, err2, err3);
-                        throw err3; // Throw the last error
-                    }
+                    console.error('All demo login endpoints failed:', err, err2);
+                    throw err2; // Throw the last error
                 }
             }
 
@@ -80,13 +52,19 @@ export const demoLogin = createAsyncThunk(
                 localStorage.setItem('refreshToken', response.refresh_token);
             }
 
-            // Dispatch login success with user data
-            if (response.user) {
-                dispatch(loginSuccess(response.user));
-            } else {
-                console.warn('No user data in response, using empty user object');
-                dispatch(loginSuccess({}));
+            // Fetch user info if not included in response
+            let userData = response.user;
+            if (!userData) {
+                try {
+                    const userResponse = await api.get(endpoints.auth.me);
+                    userData = userResponse;
+                } catch (error) {
+                    console.error('Failed to fetch user info:', error);
+                }
             }
+
+            // Dispatch login success with user data
+            dispatch(loginSuccess(userData || {}));
 
             return response;
         } catch (error) {
@@ -121,7 +99,7 @@ export const registerUser = createAsyncThunk(
             }
 
             // Dispatch login success with user data
-            dispatch(loginSuccess(response.user));
+            dispatch(loginSuccess(response.user || {}));
 
             return response;
         } catch (error) {
@@ -152,6 +130,41 @@ export const updateUserProfile = createAsyncThunk(
         } catch (error) {
             console.error('Failed to update user profile:', error);
             return rejectWithValue(handleError(error));
+        }
+    }
+);
+
+// Login user
+export const loginUser = createAsyncThunk(
+    'auth/loginUser',
+    async (loginData, { dispatch, rejectWithValue }) => {
+        try {
+            dispatch(loginStart());
+            console.debug('Logging in user:', loginData);
+
+            const response = await api.post(
+                endpoints.auth.login,
+                loginData
+            );
+            console.debug('Login successful:', response);
+
+            // Store tokens
+            if (response.access_token) {
+                localStorage.setItem('accessToken', response.access_token);
+            }
+            if (response.refresh_token) {
+                localStorage.setItem('refreshToken', response.refresh_token);
+            }
+
+            // Dispatch login success with user data
+            dispatch(loginSuccess(response.user || {}));
+
+            return response;
+        } catch (error) {
+            console.error('Login failed:', error);
+            const errorData = handleError(error);
+            dispatch(loginFailure(errorData.message));
+            return rejectWithValue(errorData);
         }
     }
 );

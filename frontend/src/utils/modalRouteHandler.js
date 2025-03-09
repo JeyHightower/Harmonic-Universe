@@ -79,6 +79,12 @@ export const getModalDataFromRoute = (path) => {
 
     // Prepare data based on modal type
     switch (modalType) {
+        case MODAL_TYPES.LOGIN:
+            return { modalType };
+
+        case MODAL_TYPES.REGISTER:
+            return { modalType };
+
         case MODAL_TYPES.UNIVERSE_CREATE:
             return { modalType };
 

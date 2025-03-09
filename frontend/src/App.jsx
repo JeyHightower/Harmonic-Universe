@@ -26,6 +26,7 @@ import { handleModalRoute } from './utils/modalRouteHandler';
 import { initializeTheme } from './utils/themeUtils';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ModalRegistry } from './utils/modalRegistry';
+import { MODAL_TYPES } from './utils/modalRegistry';
 
 // Create a memoized version of ModalRegistry to prevent unnecessary re-renders
 const MemoizedModalRegistry = React.memo(() => {
@@ -76,15 +77,41 @@ const NotFound = lazy(() => import('./components/features/errors/NotFound'));
 const ModalRouteHandler = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { openModalByType } = useModal();
+  const { openModal } = useModal();
 
   useEffect(() => {
+    // Check for modal parameter in query string
+    const searchParams = new URLSearchParams(location.search);
+    const modalParam = searchParams.get('modal');
+
+    if (modalParam) {
+      // Handle specific modal types from URL parameters
+      if (modalParam === 'true' || modalParam === '1') {
+        // Generic modal parameter - determine what modal to open based on path
+        if (location.pathname === '/login') {
+          openModal(null, {}, { modalType: MODAL_TYPES.LOGIN });
+          navigate('/', { replace: true }); // Redirect to home
+        } else if (location.pathname === '/register') {
+          openModal(null, {}, { modalType: MODAL_TYPES.REGISTER });
+          navigate('/', { replace: true }); // Redirect to home
+        }
+      } else if (Object.values(MODAL_TYPES).includes(modalParam)) {
+        // If the modal parameter is a valid modal type, open that modal
+        openModal(null, {}, { modalType: modalParam });
+
+        // Remove the modal parameter from URL
+        searchParams.delete('modal');
+        const newSearch = searchParams.toString() ? `?${searchParams.toString()}` : '';
+        navigate({ pathname: location.pathname, search: newSearch }, { replace: true });
+      }
+    }
+
     // Check if the current path is an API modal route
     const path = location.pathname;
 
     if (path.startsWith('/api/')) {
       // Try to handle the route as a modal
-      const handled = handleModalRoute(path, openModalByType);
+      const handled = handleModalRoute(path, openModal);
 
       if (handled) {
         // If we successfully opened a modal, navigate back to the previous page
@@ -92,7 +119,7 @@ const ModalRouteHandler = () => {
         navigate(-1, { replace: true });
       }
     }
-  }, [location, navigate, openModalByType]);
+  }, [location, navigate, openModal]);
 
   return null;
 };

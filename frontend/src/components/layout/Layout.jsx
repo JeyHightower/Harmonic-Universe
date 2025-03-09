@@ -1,21 +1,37 @@
 import { useCallback, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { ROUTES } from '../../routes';
 import { logout } from '../../store/slices/authSlice';
 import { api, endpoints } from '../../utils/api';
 import Button from '../common/Button';
 import Logo from '../common/Logo';
 import ThemeToggle from '../common/ThemeToggle';
+import { useModal } from '../../contexts/ModalContext';
+import { MODAL_TYPES } from '../../utils/modalRegistry';
 import './Layout.css';
 
 function Layout() {
   const { isAuthenticated } = useSelector(state => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { openModal } = useModal();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [error, setError] = useState(null);
+
+  const handleLoginClick = useCallback((e) => {
+    e.preventDefault();
+    console.log('Login button clicked');
+    navigate({ pathname: location.pathname, search: '?modal=login' }, { replace: true });
+  }, [navigate, location]);
+
+  const handleRegisterClick = useCallback((e) => {
+    e.preventDefault();
+    console.log('Register button clicked');
+    navigate({ pathname: location.pathname, search: '?modal=register' }, { replace: true });
+  }, [navigate, location]);
 
   const handleLogoutClick = useCallback(e => {
     console.log('Logout button clicked');
@@ -95,8 +111,8 @@ function Layout() {
               </>
             ) : (
               <>
-                <Link to="/login">Login</Link>
-                <Link to="/register">Register</Link>
+                <a href="#" className="login-button" onClick={handleLoginClick}>Login</a>
+                <a href="#" className="register-button" onClick={handleRegisterClick}>Register</a>
                 <Link to={ROUTES.SETTINGS}>Settings</Link>
                 <ThemeToggle />
               </>
@@ -197,41 +213,6 @@ function Layout() {
           </div>
         </div>
       )}
-
-      {/* Original Modal component (commented out for testing) */}
-      {/* <Modal
-        isOpen={showLogoutModal}
-        onClose={handleCloseModal}
-        title="Confirm Logout"
-      >
-        <div className="logout-modal-content" onClick={handleModalContentClick}>
-          <p>Are you sure you want to logout?</p>
-          {error && <div className="error-message">{error}</div>}
-          <div className="logout-modal-actions">
-            <Button
-              variant="primary"
-              onClick={() => {
-                console.log('Confirm button clicked in modal');
-                handleLogoutConfirm();
-              }}
-              disabled={isLoggingOut}
-              loading={isLoggingOut}
-            >
-              {isLoggingOut ? 'Logging out...' : 'Logout'}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                console.log('Cancel button clicked in modal');
-                handleCloseModal();
-              }}
-              disabled={isLoggingOut}
-            >
-              Cancel
-            </Button>
-          </div>
-        </div>
-      </Modal> */}
     </div>
   );
 }

@@ -98,8 +98,15 @@
       <h1>Harmonic Universe</h1>
       <p>Explore the fascinating connection between music and physics.</p>
       <div class="button-container">
-        <a href="/login" class="button button-primary">Login</a>
-        <a href="/register" class="button button-secondary">Sign Up</a>
+        <button id="login-button" class="button button-primary login-button">
+          Login
+        </button>
+        <button
+          id="register-button"
+          class="button button-secondary register-button"
+        >
+          Sign Up
+        </button>
         <button id="demo-button" class="button button-tertiary">
           Try Demo
         </button>
@@ -115,9 +122,24 @@
 
     <script>
       document.addEventListener('DOMContentLoaded', function () {
+        const loginButton = document.getElementById('login-button');
+        const registerButton = document.getElementById('register-button');
         const demoButton = document.getElementById('demo-button');
         const loadingElement = document.getElementById('loading');
 
+        // Open login modal
+        loginButton.addEventListener('click', function () {
+          // Use modal parameter to trigger login modal
+          window.location.href = '/#/?modal=login';
+        });
+
+        // Open register modal
+        registerButton.addEventListener('click', function () {
+          // Use modal parameter to trigger register modal
+          window.location.href = '/#/?modal=register';
+        });
+
+        // Demo Login
         demoButton.addEventListener('click', async function (e) {
           e.preventDefault();
 

@@ -1,7 +1,7 @@
 import { Dropdown, Menu, Space } from 'antd';
 import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { DownOutlined } from '@ant-design/icons';
 import { ROUTES } from '../../../constants/routes';
 import {
@@ -10,21 +10,35 @@ import {
   loginStart,
   loginSuccess,
 } from '../../../store/slices/authSlice';
-import { openModal } from '../../../store/slices/modalSlice';
 import { api, endpoints } from '../../../utils/api';
 import Button from '../../common/Button';
+import { useModal } from '../../../contexts/ModalContext';
+import { MODAL_TYPES } from '../../../utils/modalRegistry';
+import { demoLogin } from '../../../store/thunks/authThunks';
 import './Home.css';
 
 function Home() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, loading } = useSelector(state => state.auth);
-  const buttonRef = useRef(null); // Add ref for the button to avoid findDOMNode
+  const buttonRef = useRef(null);
+  const { openModal } = useModal();
 
   useEffect(() => {
     console.debug('Home component mounted');
     dispatch(checkAuthState());
-  }, [dispatch]);
+
+    // Check for modal parameter in URL
+    const searchParams = new URLSearchParams(location.search);
+    const modalParam = searchParams.get('modal');
+
+    if (modalParam === 'login') {
+      handleLoginClick();
+    } else if (modalParam === 'register') {
+      handleRegisterClick();
+    }
+  }, [dispatch, location]);
 
   useEffect(() => {
     console.debug('Auth state updated:', { isAuthenticated, loading });
@@ -34,77 +48,38 @@ function Home() {
     }
   }, [isAuthenticated, loading, navigate]);
 
+  const handleLoginClick = () => {
+    console.debug('Opening login modal');
+    navigate({ pathname: location.pathname, search: '?modal=login' }, { replace: true });
+  };
+
+  const handleRegisterClick = () => {
+    console.debug('Opening register modal');
+    navigate({ pathname: location.pathname, search: '?modal=register' }, { replace: true });
+  };
+
   const handleDemoLogin = async () => {
     try {
       console.debug('Starting demo login');
-      dispatch(loginStart());
-      const response = await api.post(endpoints.auth.demoLogin);
-      console.debug('Demo login response:', response);
 
-      if (response.access_token) {
-        localStorage.setItem('accessToken', response.access_token);
-      }
-      if (response.refresh_token) {
-        localStorage.setItem('refreshToken', response.refresh_token);
-      }
+      // Use the thunk action for demo login
+      const resultAction = await dispatch(demoLogin());
 
-      // Force navigation to dashboard immediately after setting tokens
-      console.debug('Forcing navigation to dashboard');
-
-      // Dispatch login success with the user data from the response
-      if (response.user) {
-        dispatch(loginSuccess(response.user));
+      if (demoLogin.fulfilled.match(resultAction)) {
+        console.debug('Demo login succeeded, navigating to dashboard');
+        navigate('/dashboard', { replace: true });
       } else {
-        // If no user data in response, fetch it separately
-        try {
-          const userResponse = await api.get(endpoints.auth.me);
-          console.debug('User info response:', userResponse);
-          dispatch(loginSuccess(userResponse));
-        } catch (error) {
-          console.error('Failed to fetch user info:', error);
-          // Continue with navigation even if user info fetch fails
-        }
+        // The error handling is done in the thunk
+        console.error('Demo login failed:', resultAction.payload);
       }
-
-      // Try multiple navigation methods to ensure we get to the dashboard
-
-      // Method 1: Use React Router navigate with explicit path
-      console.debug('Attempting navigation with React Router');
-      navigate('/dashboard', { replace: true });
-
-      // Method 2: Use direct navigation after a short delay with full URL
-      setTimeout(() => {
-        console.debug('Attempting direct navigation to dashboard');
-        // Ensure we're using the correct origin without appending /api
-        const origin = window.location.origin;
-        const dashboardUrl = `${origin}/dashboard`;
-        console.debug('Dashboard URL:', dashboardUrl);
-        window.location.href = dashboardUrl;
-      }, 500);
     } catch (error) {
-      console.error('Demo login error:', error);
-      let errorMessage =
-        'An error occurred during demo login. Please try again.';
-
-      if (error.response) {
-        const { data } = error.response;
-        if (data.message) {
-          errorMessage = data.message;
-        } else if (data.error) {
-          errorMessage = data.error;
-        }
-      }
-
-      dispatch(loginFailure(errorMessage));
-      dispatch(
-        openModal({
-          title: 'Demo Login Error',
-          content: errorMessage,
-          actionType: 'RETRY_DEMO_LOGIN',
-          severity: 'error',
-          showCancel: true,
-        })
-      );
+      console.error('Unexpected error during demo login:', error);
+      dispatch(loginFailure('An unexpected error occurred during demo login.'));
+      openModal({
+        title: 'Demo Login Error',
+        content: 'An unexpected error occurred. Please try again.',
+        type: 'alert',
+      });
     }
   };
 
@@ -142,10 +117,6 @@ function Home() {
     },
   ];
 
-  const testMenu = (
-    <Menu items={testMenuItems} onClick={({ key }) => navigate(key)} />
-  );
-
   if (loading) {
     return (
       <div className="home-container">
@@ -175,8 +146,30 @@ function Home() {
         <h1>Welcome to Harmonic Universe</h1>
         <p>Experience the harmony of sound and physics in a unique way.</p>
         <div className="home-actions">
-          <Button onClick={handleDemoLogin} variant="primary" ref={buttonRef}>
+          <Button
+            onClick={handleDemoLogin}
+            variant="primary"
+            ref={buttonRef}
+          >
             Try Demo
+          </Button>
+
+          <Button
+            onClick={handleLoginClick}
+            variant="secondary"
+            className="login-button"
+            style={{ marginLeft: '10px' }}
+          >
+            Login
+          </Button>
+
+          <Button
+            onClick={handleRegisterClick}
+            variant="secondary"
+            className="register-button"
+            style={{ marginLeft: '10px' }}
+          >
+            Sign Up
           </Button>
 
           <Dropdown

@@ -21,6 +21,10 @@ export const ROUTES = {
 
 // API routes that can be accessed via modals
 export const API_MODAL_ROUTES = {
+  // Auth routes
+  LOGIN: `${API_CONFIG.API_PREFIX}/auth/login`,
+  REGISTER: `${API_CONFIG.API_PREFIX}/auth/register`,
+
   // Universe routes
   CREATE_UNIVERSE: `${API_CONFIG.API_PREFIX}/universes/create`,
   EDIT_UNIVERSE: `${API_CONFIG.API_PREFIX}/universes/:id/edit`,
@@ -62,6 +66,11 @@ export const API_MODAL_ROUTES = {
 
 // Map API routes to modal types
 export const API_ROUTE_TO_MODAL_TYPE = {
+  // Auth routes
+  [API_MODAL_ROUTES.LOGIN]: 'login',
+  [API_MODAL_ROUTES.REGISTER]: 'register',
+
+  // Universe routes
   [API_MODAL_ROUTES.CREATE_UNIVERSE]: 'universe-create',
   [API_MODAL_ROUTES.EDIT_UNIVERSE]: 'universe-edit',
   [API_MODAL_ROUTES.DELETE_UNIVERSE]: 'universe-delete',

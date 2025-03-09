@@ -17,6 +17,8 @@ import UniverseDeleteModal from '../features/universe/UniverseDeleteModal';
 import SceneCreateModal from '../features/scenes/SceneCreateModal';
 import SceneEditModal from '../features/scenes/SceneEditModal';
 import ConfirmDeleteWrapper from '../features/common/ConfirmDeleteWrapper';
+import LoginModal from '../features/auth/LoginModal';
+import RegisterModal from '../features/auth/RegisterModal';
 
 // Import new modal components
 import { API_CONFIG } from './config';
@@ -44,6 +46,8 @@ export const MODAL_TYPES = {
 
     // User related modals
     USER_PROFILE: 'user-profile',
+    LOGIN: 'login',
+    REGISTER: 'register',
 
     // Audio related modals
     AUDIO_GENERATE: 'audio-generate',
@@ -68,27 +72,75 @@ export const MODAL_TYPES = {
  */
 export const ModalRegistry = () => {
     const { registerModal, modalRegistry } = useModal();
-    const hasRegisteredRef = useRef(false);
 
-    console.log('ModalRegistry component mounted');
-    console.log('registerModal function available:', !!registerModal);
-    console.log('Current modalRegistry:', modalRegistry);
+    // Use a ref to check if modals are already registered
+    const registeredRef = useRef(false);
 
     useEffect(() => {
         console.log('ModalRegistry useEffect running');
+        console.log('Current modal registry:', modalRegistry);
 
-        if (!registerModal) {
-            console.error('registerModal function is not available in ModalRegistry');
-            return;
-        }
-
-        // Skip registration if we've already done it
-        if (hasRegisteredRef.current) {
+        // Prevent re-registering modals on component remount
+        if (registeredRef.current) {
             console.log('Modals already registered, skipping registration');
             return;
         }
 
+        console.log('Registering modals...');
+
         try {
+            // Register Login Modal
+            console.log('Registering login modal');
+            if (!LoginModal) {
+                console.error('LoginModal component is not available');
+            } else {
+                registerModal(
+                    MODAL_TYPES.LOGIN,
+                    LoginModal,
+                    {
+                        getProps: (data = {}) => ({
+                            isGlobalModal: true,
+                            onClose: () => { }, // Will be overridden by GlobalModal
+                        }),
+                        getModalProps: () => ({
+                            title: 'Log In',
+                            size: 'small',
+                            type: 'form',
+                            preventAutoClose: true,
+                            preventBackdropClick: true,
+                            'data-modal-type': 'login',
+                        }),
+                    }
+                );
+                console.log('login modal registered successfully');
+            }
+
+            // Register Register Modal
+            console.log('Registering register modal');
+            if (!RegisterModal) {
+                console.error('RegisterModal component is not available');
+            } else {
+                registerModal(
+                    MODAL_TYPES.REGISTER,
+                    RegisterModal,
+                    {
+                        getProps: (data = {}) => ({
+                            isGlobalModal: true,
+                            onClose: () => { }, // Will be overridden by GlobalModal
+                        }),
+                        getModalProps: () => ({
+                            title: 'Sign Up',
+                            size: 'small',
+                            type: 'form',
+                            preventAutoClose: true,
+                            preventBackdropClick: true,
+                            'data-modal-type': 'register',
+                        }),
+                    }
+                );
+                console.log('register modal registered successfully');
+            }
+
             // Register PhysicsParametersModal
             console.log('Registering PhysicsParametersModal');
             if (!PhysicsParametersModal) {
@@ -312,14 +364,14 @@ export const ModalRegistry = () => {
                 console.log('confirm-delete modal registered successfully');
             }
 
-            console.log('All modals registered successfully');
+            console.log('All modals registered successfully:', Object.keys(MODAL_TYPES));
 
             // Mark that we've completed registration
-            hasRegisteredRef.current = true;
+            registeredRef.current = true;
         } catch (error) {
             console.error('Error registering modals:', error);
         }
-    }, [registerModal]); // Only depend on registerModal
+    }, [registerModal, modalRegistry]); // Only depend on registerModal and modalRegistry
 
     // This component doesn't render anything
     return null;
