@@ -480,3 +480,70 @@ If your problematic migration ID is different than the default:
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Demo Login Server
+
+To enable the demo login functionality, you need to run the demo login server:
+
+```bash
+# Make the script executable (if not already)
+chmod +x demo_login_server.py
+
+# Run the demo login server
+./demo_login_server.py
+```
+
+The demo login server will run on port 5001 and provide a simple JWT token for demo users.
+
+## Running the Application
+
+To run the main application:
+
+```bash
+# Run the Flask application
+python app.py
+```
+
+The main application will run on port 10000.
+
+## Accessing the Application
+
+Open your browser and navigate to:
+
+```
+http://localhost:10000
+```
+
+## Demo Login
+
+To try the demo login:
+
+1. Make sure the demo login server is running on port 5001
+2. Click the "Try Demo" button on the home page
+3. You will be automatically logged in and redirected to the dashboard
+
+## Authentication
+
+The application uses JWT tokens for authentication. The tokens are stored in localStorage:
+
+- `accessToken`: Used for API requests
+- `refreshToken`: Used to get a new access token when it expires
+
+## API Endpoints
+
+The application provides the following API endpoints:
+
+- `/api/auth/demo-login`: Demo login endpoint
+- `/api/v1/auth/login`: User login endpoint
+- `/api/v1/auth/register`: User registration endpoint
+- `/api/v1/auth/me`: Get current user information
+- `/api/v1/auth/refresh`: Refresh access token
+
+## Troubleshooting
+
+If you encounter issues with the demo login:
+
+1. Check that the demo login server is running on port 5001
+2. Check the browser console for error messages
+3. Try clearing localStorage and refreshing the page
+4. Ensure there are no CORS issues by checking the network tab in developer tools

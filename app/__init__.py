@@ -376,6 +376,10 @@ def create_app():
             import jwt
             import datetime
 
+            # Log the request for debugging
+            logger.info("Demo login request received")
+            print("DEBUG - Demo login request received")
+
             demo_user = User.query.filter_by(username='demo_user').first()
 
             if not demo_user:
@@ -387,8 +391,10 @@ def create_app():
                 db.session.add(demo_user)
                 db.session.commit()
                 logger.info("Created new demo user")
+                print("DEBUG - Created new demo user")
             else:
                 logger.info("Using existing demo user")
+                print("DEBUG - Using existing demo user")
 
             # Generate token
             token = jwt.encode({
@@ -396,9 +402,18 @@ def create_app():
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
             }, app.config['SECRET_KEY'])
 
+            # Convert bytes to string if needed (for PyJWT >= 2.0.0)
+            if isinstance(token, bytes):
+                token = token.decode('utf-8')
+
+            logger.info("Demo login successful")
+            print("DEBUG - Demo login successful")
+
             return jsonify({
                 'message': 'Demo login successful',
                 'token': token,
+                'access_token': token,  # Add this for consistency with frontend expectations
+                'refresh_token': token,  # Add this for consistency with frontend expectations
                 'user': {
                     'id': demo_user.id,
                     'username': demo_user.username,
@@ -407,6 +422,7 @@ def create_app():
             })
         except Exception as e:
             logger.error(f"Error in demo login: {e}")
+            print(f"DEBUG - Error in demo login: {e}")
             return jsonify({'message': 'An error occurred during demo login'}), 500
 
     return app
