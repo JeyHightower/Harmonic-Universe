@@ -24,20 +24,26 @@ mkdir -p static
 echo "===== SETTING UP FRONTEND ====="
 cd frontend
 
-# Install dependencies including Vite globally first
-echo "===== INSTALLING DEPENDENCIES ====="
-npm install -g vite
-npm install --legacy-peer-deps
-npm install --save-dev vite@latest @vitejs/plugin-react@latest
+# Clear any existing node_modules
+echo "===== CLEANING UP ====="
+rm -rf node_modules
+rm -rf .vite
 
-# Ensure vite.config.js exists
+# Install dependencies
+echo "===== INSTALLING DEPENDENCIES ====="
+# Install vite and plugin-react first
+npm install --save-dev vite@latest @vitejs/plugin-react@latest
+# Then install other dependencies
+npm install --legacy-peer-deps
+
+# Create temporary vite config
 echo "===== CREATING VITE CONFIG ====="
 cat > vite.config.js << 'EOF'
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+const { defineConfig } = require('vite')
+const react = require('@vitejs/plugin-react')
+const path = require('path')
 
-export default defineConfig({
+module.exports = defineConfig({
   plugins: [react()],
   build: {
     outDir: '../static',
@@ -57,10 +63,11 @@ export default defineConfig({
 })
 EOF
 
-# Build the frontend
+# Build the frontend with explicit node path
 echo "===== BUILDING FRONTEND ====="
 export NODE_ENV=production
-npx vite build --config vite.config.js
+export NODE_PATH="$PWD/node_modules"
+./node_modules/.bin/vite build --config vite.config.js
 
 # Copy React production files if needed
 echo "===== COPYING REACT PRODUCTION FILES ====="
