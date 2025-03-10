@@ -9,7 +9,8 @@
     "vite": "vite",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "postbuild": "node scripts/copy-build.cjs"
+    "postbuild": "node scripts/copy-build.cjs",
+    "render-build": "node scripts/render-build.js"
   },
   "dependencies": {
     "@ant-design/icons": "^5.3.0",
