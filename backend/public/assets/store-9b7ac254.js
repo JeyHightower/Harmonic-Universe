@@ -1,2 +1,0 @@
-import{c as o,a as r}from"./authSlice-98ab73e3.js";import"./axios-439bb627.js";const i=o({reducer:{auth:r},middleware:e=>e({serializableCheck:{ignoredActions:["persist/PERSIST"]}}),devTools:!0});export{i as default};
-//# sourceMappingURL=store-9b7ac254.js.map

@@ -4,17 +4,30 @@
 FRONTEND_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 STATIC_DIR="$FRONTEND_DIR/../static"
 REACT_FIXES_DIR="$STATIC_DIR/react-fixes"
+DIST_DIR="$FRONTEND_DIR/dist"
 
 # Create necessary directories
 mkdir -p "$STATIC_DIR" "$REACT_FIXES_DIR"
 
 # Run Vite build
-npx vite build
+echo "Running Vite build..."
+cd "$FRONTEND_DIR" && npx vite build
+
+# Check if build was successful
+if [ ! -d "$DIST_DIR" ]; then
+    echo "Error: Build failed - dist directory not created"
+    exit 1
+fi
 
 # Copy build files
-cp -r dist/* "$STATIC_DIR/"
+echo "Copying build files..."
+cp -r "$DIST_DIR"/* "$STATIC_DIR/" || {
+    echo "Error: Failed to copy build files"
+    exit 1
+}
 
 # Create version.js
+echo "Creating version.js..."
 cat > "$STATIC_DIR/version.js" << EOL
 export const version = {
     react: '18.2.0',
@@ -34,8 +47,8 @@ EOL
 
 # Copy React fixes
 for file in ensure-react-dom.js ensure-redux-provider.js ensure-router-provider.js fallback.js; do
-    if [ -f "src/utils/$file" ]; then
-        cp "src/utils/$file" "$REACT_FIXES_DIR/"
+    if [ -f "$FRONTEND_DIR/src/utils/$file" ]; then
+        cp "$FRONTEND_DIR/src/utils/$file" "$REACT_FIXES_DIR/"
         echo "Copied $file to react-fixes directory"
     else
         echo "Warning: $file not found in utils directory"
