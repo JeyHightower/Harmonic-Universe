@@ -13,6 +13,7 @@ export default defineConfig({
   // Build configuration
   build: {
     outDir: 'dist',
+    emptyOutDir: true,
     assetsDir: 'assets',
     sourcemap: true,
     rollupOptions: {
@@ -37,7 +38,12 @@ export default defineConfig({
 
   server: {
     port: 3000,
-    strictPort: true,
-    host: true
+    hot: true
+  },
+
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src')
+    }
   }
 });

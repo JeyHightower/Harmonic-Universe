@@ -32,7 +32,7 @@ try {
 }
 
 // Import safety patch at the very top
-import './utils/react-safety-patch';
+import './utils/react-safety-patch.jsx';
 
 // Import at the very top to ensure React is available globally
 import './utils/ensure-react';
@@ -46,6 +46,7 @@ import { UserOutlined } from '@ant-design/icons';
 import './styles/global.css';
 import './styles/variables.css';
 import './styles/modal-fix.css';
+import './index.css';
 
 // Add debug log
 console.log('main.jsx is being loaded');
