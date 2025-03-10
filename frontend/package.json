@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "render-build": "node scripts/render-build.js",
     "vite": "vite",
-    "vite build": "vite build"
+    "vite build": "vite build",
+    "npx vite build": "vite build"
   },
   "dependencies": {
     "react": "^18.2.0",
