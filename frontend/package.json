@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postbuild": "node scripts/copy-build.cjs",
+    "render-build": "node scripts/render-build.js"
   },
   "dependencies": {
     "react": "^18.2.0",
