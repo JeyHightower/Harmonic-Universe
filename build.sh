@@ -48,29 +48,33 @@ cat > package.json << 'EOF'
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.22.3"
+    "react-router-dom": "^6.22.3",
+    "vite": "^5.1.6",
+    "@vitejs/plugin-react": "^4.2.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.64",
-    "@types/react-dom": "^18.2.21",
-    "@vitejs/plugin-react": "^4.2.1",
-    "vite": "^5.1.6",
-    "@rollup/rollup-linux-x64-gnu": "4.9.0"
-  },
-  "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "4.9.0"
+    "@types/react-dom": "^18.2.21"
   }
 }
 EOF
 
-# Install dependencies with specific flags
+# Install dependencies
 echo "===== INSTALLING DEPENDENCIES ====="
-# First install core dependencies
-npm install --no-optional --ignore-scripts || exit 1
+# First install Vite and its plugin
+echo "Installing Vite and React plugin..."
+npm install vite@latest @vitejs/plugin-react@latest --save-exact || exit 1
 
-# Then install platform-specific dependencies
-echo "Installing platform-specific dependencies..."
-npm install @rollup/rollup-linux-x64-gnu@4.9.0 --no-save || true
+# Then install remaining dependencies
+echo "Installing remaining dependencies..."
+npm install || exit 1
+
+# Verify Vite installation
+echo "===== VERIFYING VITE INSTALLATION ====="
+if [ ! -f "node_modules/.bin/vite" ]; then
+    echo "Vite binary not found, attempting global installation..."
+    npm install -g vite || true
+fi
 
 # Create vite config
 echo "===== CREATING VITE CONFIG ====="
@@ -82,16 +86,7 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: '../static',
-    emptyOutDir: true,
-    rollupOptions: {
-      external: ['@rollup/rollup-linux-x64-gnu'],
-      output: {
-        manualChunks: undefined
-      }
-    }
-  },
-  optimizeDeps: {
-    exclude: ['@rollup/rollup-linux-x64-gnu']
+    emptyOutDir: true
   }
 })
 EOF
@@ -99,12 +94,17 @@ EOF
 # Build the frontend
 echo "===== BUILDING FRONTEND ====="
 export NODE_ENV=production
-export VITE_PLATFORM=linux
 export NODE_PATH="$PWD/node_modules"
 
-# Attempt build with platform-specific options
+# Attempt build with fallbacks
 echo "Attempting build..."
-ROLLUP_SKIP_PLATFORM_CHECK=true ./node_modules/.bin/vite build
+if command -v npx &> /dev/null; then
+    echo "Using npx..."
+    npx vite build
+else
+    echo "Falling back to direct node execution..."
+    node node_modules/vite/bin/vite.js build
+fi
 
 # Verify build output
 echo "===== VERIFYING BUILD ====="
