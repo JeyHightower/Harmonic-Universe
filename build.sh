@@ -22,28 +22,38 @@ mkdir -p static
 
 # Set up and build frontend
 echo "===== SETTING UP FRONTEND ====="
-cd frontend
+cd frontend || exit 1
+echo "Current directory: $(pwd)"
 
 # Clear any existing node_modules
 echo "===== CLEANING UP ====="
-rm -rf node_modules
-rm -rf .vite
+rm -rf node_modules package-lock.json
+rm -rf .vite dist
 
 # Install dependencies
 echo "===== INSTALLING DEPENDENCIES ====="
-# Install vite and plugin-react first
-npm install --save-dev vite@latest @vitejs/plugin-react@latest
-# Then install other dependencies
-npm install --legacy-peer-deps
+# First, verify npm is working
+npm -v || exit 1
+
+# Install all dependencies
+echo "Installing all dependencies..."
+npm install || exit 1
+
+# Verify vite installation
+echo "Verifying vite installation..."
+if [ ! -f "node_modules/.bin/vite" ]; then
+    echo "Vite not found, installing explicitly..."
+    npm install --save-dev vite@latest @vitejs/plugin-react@latest
+fi
 
 # Create temporary vite config
 echo "===== CREATING VITE CONFIG ====="
 cat > vite.config.js << 'EOF'
-const { defineConfig } = require('vite')
-const react = require('@vitejs/plugin-react')
-const path = require('path')
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import path from 'path'
 
-module.exports = defineConfig({
+export default defineConfig({
   plugins: [react()],
   build: {
     outDir: '../static',
@@ -63,20 +73,37 @@ module.exports = defineConfig({
 })
 EOF
 
-# Build the frontend with explicit node path
+# Build the frontend
 echo "===== BUILDING FRONTEND ====="
 export NODE_ENV=production
 export NODE_PATH="$PWD/node_modules"
-./node_modules/.bin/vite build --config vite.config.js
+
+# Try different build commands in order of preference
+echo "Attempting build..."
+if npx vite build; then
+    echo "Build successful with npx vite build"
+elif npm run build; then
+    echo "Build successful with npm run build"
+else
+    echo "Build failed with both methods"
+    exit 1
+fi
+
+# Verify build output
+echo "===== VERIFYING BUILD ====="
+cd ..
+if [ ! -d "static" ] || [ ! "$(ls -A static 2>/dev/null)" ]; then
+    echo "Error: Build failed - static directory is empty or missing"
+    exit 1
+fi
 
 # Copy React production files if needed
 echo "===== COPYING REACT PRODUCTION FILES ====="
-cd ..
 if [ ! -f "static/react.production.min.js" ]; then
-  cp frontend/node_modules/react/umd/react.production.min.js static/ || echo "Warning: Could not copy react.production.min.js"
+    cp frontend/node_modules/react/umd/react.production.min.js static/ || echo "Warning: Could not copy react.production.min.js"
 fi
 if [ ! -f "static/react-dom.production.min.js" ]; then
-  cp frontend/node_modules/react-dom/umd/react-dom.production.min.js static/ || echo "Warning: Could not copy react-dom.production.min.js"
+    cp frontend/node_modules/react-dom/umd/react-dom.production.min.js static/ || echo "Warning: Could not copy react-dom.production.min.js"
 fi
 
 # Create version info

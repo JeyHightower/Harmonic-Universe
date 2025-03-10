@@ -1,13 +1,13 @@
 // vite.config.js
-const { defineConfig } = require('vite');
-const react = require('@vitejs/plugin-react');
-const path = require('path');
-import { fileURLToPath } from 'url';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
-module.exports = defineConfig({
+export default defineConfig({
   plugins: [react()],
   build: {
     outDir: '../static',
@@ -35,4 +35,4 @@ module.exports = defineConfig({
       }
     }
   }
-});
+})
