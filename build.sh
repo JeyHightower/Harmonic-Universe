@@ -61,50 +61,56 @@ EOF
 
 # Install dependencies
 echo "===== INSTALLING DEPENDENCIES ====="
-# First install Vite and its plugin
-echo "Installing Vite and React plugin..."
-npm install vite@latest @vitejs/plugin-react@latest --save-exact || exit 1
-
-# Then install remaining dependencies
-echo "Installing remaining dependencies..."
 npm install || exit 1
-
-# Verify Vite installation
-echo "===== VERIFYING VITE INSTALLATION ====="
-if [ ! -f "node_modules/.bin/vite" ]; then
-    echo "Vite binary not found, attempting global installation..."
-    npm install -g vite || true
-fi
 
 # Create vite config
 echo "===== CREATING VITE CONFIG ====="
 cat > vite.config.js << 'EOF'
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export default defineConfig({
   plugins: [react()],
   build: {
-    outDir: '../static',
-    emptyOutDir: true
+    outDir: resolve(__dirname, '../static'),
+    emptyOutDir: true,
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined
+      }
+    }
+  },
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, './src')
+    }
+  },
+  server: {
+    port: 3000,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true
+      }
+    }
   }
-})
+});
 EOF
 
 # Build the frontend
 echo "===== BUILDING FRONTEND ====="
 export NODE_ENV=production
-export NODE_PATH="$PWD/node_modules"
+export NODE_OPTIONS="--experimental-json-modules"
 
-# Attempt build with fallbacks
+# Attempt build
 echo "Attempting build..."
-if command -v npx &> /dev/null; then
-    echo "Using npx..."
-    npx vite build
-else
-    echo "Falling back to direct node execution..."
-    node node_modules/vite/bin/vite.js build
-fi
+npm run build
 
 # Verify build output
 echo "===== VERIFYING BUILD ====="
