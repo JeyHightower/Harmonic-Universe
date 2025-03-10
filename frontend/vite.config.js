@@ -4,38 +4,30 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export default defineConfig({
   plugins: [react()],
   build: {
-    outDir: path.resolve(__dirname, '../static'),
+    outDir: '../static',
     emptyOutDir: true,
-    minify: 'terser',
-    sourcemap: true,
+    sourcemap: false,
     rollupOptions: {
-      // This helps identify and resolve issues
-      onwarn(warning, warn) {
-        // Skip certain warnings
-        if (warning.code === 'CIRCULAR_DEPENDENCY') return;
-        warn(warning);
-      },
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom']
-        }
+        manualChunks: undefined
       }
     }
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src')
+      '@': path.resolve(__dirname, './src')
     }
   },
   // Add more verbose logging
   logLevel: 'info',
   server: {
-    port: 5173,
+    port: 3000,
     proxy: {
       '/api': {
         target: 'http://localhost:5000',

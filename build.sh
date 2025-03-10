@@ -16,41 +16,61 @@ echo "===== INSTALLING PYTHON DEPENDENCIES ====="
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 
-# Fix React CDN issues
-echo "===== FIXING REACT CDN ISSUES ====="
-chmod +x ./fix-react-cdn.sh
-./fix-react-cdn.sh
-
 # Prepare directory structure
 echo "===== PREPARING DIRECTORY STRUCTURE ====="
 mkdir -p static
-mkdir -p static/react-fixes
 
 # Set up and build frontend
 echo "===== SETTING UP FRONTEND ====="
 cd frontend
 
-# Install dependencies
-echo "===== INSTALLING FRONTEND DEPENDENCIES ====="
+# Install dependencies including Vite globally first
+echo "===== INSTALLING DEPENDENCIES ====="
+npm install -g vite
 npm install --legacy-peer-deps
-
-# Install Vite explicitly
-echo "===== INSTALLING VITE ====="
 npm install --save-dev vite@latest @vitejs/plugin-react@latest
+
+# Ensure vite.config.js exists
+echo "===== CREATING VITE CONFIG ====="
+cat > vite.config.js << 'EOF'
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import path from 'path'
+
+export default defineConfig({
+  plugins: [react()],
+  build: {
+    outDir: '../static',
+    emptyOutDir: true,
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined
+      }
+    }
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src')
+    }
+  }
+})
+EOF
 
 # Build the frontend
 echo "===== BUILDING FRONTEND ====="
-npm run build
+export NODE_ENV=production
+npx vite build --config vite.config.js
 
-# Copy build files to static directory
-echo "===== COPYING BUILD FILES ====="
-cd ..
-cp -r frontend/dist/* static/
-
-# Copy React production files
+# Copy React production files if needed
 echo "===== COPYING REACT PRODUCTION FILES ====="
-cp frontend/node_modules/react/umd/react.production.min.js static/ || echo "Warning: Could not copy react.production.min.js"
-cp frontend/node_modules/react-dom/umd/react-dom.production.min.js static/ || echo "Warning: Could not copy react-dom.production.min.js"
+cd ..
+if [ ! -f "static/react.production.min.js" ]; then
+  cp frontend/node_modules/react/umd/react.production.min.js static/ || echo "Warning: Could not copy react.production.min.js"
+fi
+if [ ! -f "static/react-dom.production.min.js" ]; then
+  cp frontend/node_modules/react-dom/umd/react-dom.production.min.js static/ || echo "Warning: Could not copy react-dom.production.min.js"
+fi
 
 # Create version info
 echo "===== CREATING VERSION INFO ====="
