@@ -14,8 +14,6 @@ echo "Python version: $(python -V)"
 # Install Python dependencies
 echo "===== INSTALLING PYTHON DEPENDENCIES ====="
 python -m pip install --upgrade pip
-# Install requirements without hash verification for build process
-echo "Installing Python packages..."
 if [ -f "requirements.txt" ]; then
     pip install --no-cache-dir -r requirements.txt || pip install --no-cache-dir --no-deps -r requirements.txt
 fi
@@ -29,19 +27,10 @@ echo "===== SETTING UP FRONTEND ====="
 cd frontend || exit 1
 echo "Current directory: $(pwd)"
 
-# Clear any existing node_modules
+# Clear any existing installations
 echo "===== CLEANING UP ====="
 rm -rf node_modules package-lock.json
 rm -rf .vite dist
-
-# Install dependencies
-echo "===== INSTALLING DEPENDENCIES ====="
-# First, verify npm is working
-npm -v || exit 1
-
-# Install Vite globally first
-echo "Installing Vite globally..."
-npm install -g vite || true
 
 # Create package.json first
 echo "===== CREATING PACKAGE.JSON ====="
@@ -58,57 +47,38 @@ cat > package.json << 'EOF'
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.22.3"
+    "react-router-dom": "^6.22.3",
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.1.6"
   },
   "devDependencies": {
     "@types/react": "^18.2.64",
-    "@types/react-dom": "^18.2.21",
-    "@vitejs/plugin-react": "^4.2.1",
-    "vite": "^5.1.6"
+    "@types/react-dom": "^18.2.21"
   }
 }
 EOF
 
-# Install dependencies
-echo "Installing project dependencies..."
-export NODE_OPTIONS="--max-old-space-size=4096"
-npm install --legacy-peer-deps
+# Install core dependencies first
+echo "===== INSTALLING CORE DEPENDENCIES ====="
+npm install vite@latest @vitejs/plugin-react@latest --save-exact || exit 1
+
+# Then install remaining dependencies
+echo "===== INSTALLING REMAINING DEPENDENCIES ====="
+npm install --no-optional || exit 1
 
 # Create vite config
 echo "===== CREATING VITE CONFIG ====="
-cat > vite.config.cjs << 'EOF'
-/** @type {import('vite').UserConfig} */
-module.exports = {
-  plugins: [require('@vitejs/plugin-react')()],
+cat > vite.config.js << 'EOF'
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
   build: {
     outDir: '../static',
-    emptyOutDir: true,
-    sourcemap: false,
-    rollupOptions: {
-      output: {
-        manualChunks: undefined
-      }
-    }
-  },
-  resolve: {
-    alias: {
-      '@': require('path').resolve(__dirname, 'src')
-    }
+    emptyOutDir: true
   }
-}
-EOF
-
-# Create jsconfig for better module resolution
-echo "===== CREATING JSCONFIG ====="
-cat > jsconfig.json << 'EOF'
-{
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    }
-  }
-}
+})
 EOF
 
 # Build the frontend
@@ -116,9 +86,9 @@ echo "===== BUILDING FRONTEND ====="
 export NODE_ENV=production
 export NODE_PATH="$PWD/node_modules"
 
-# Try to build with different Node.js options
+# Attempt build
 echo "Attempting build..."
-VITE_CJS_IGNORE_WARNING=true npx vite build --config vite.config.cjs
+./node_modules/.bin/vite build
 
 # Verify build output
 echo "===== VERIFYING BUILD ====="
