@@ -7,23 +7,43 @@ console.log('📦 Starting Render.com build process for frontend...');
 process.env.RENDER = 'true';
 
 execSync('cd frontend && npm install', { stdio: 'inherit' })
-import fs from 'fs-extra';
+
+// Make sure to use the correct import format based on your Node.js environment
+// If using ES modules (package.json has "type": "module")
+import fsExtra from 'fs-extra';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 
-// Get __dirname equivalent in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Determine build paths
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const distDir = path.resolve(__dirname, '../dist');
+const staticDir = path.resolve(__dirname, '../../static');
 
-// Configuration
-const config = {
-    frontendDir: path.resolve(__dirname, '..'),
-    staticDir: path.resolve(__dirname, '../static'),
-    reactFixesDir: path.resolve(__dirname, '../static/react-fixes'),
-    distDir: path.resolve(__dirname, '../dist'),
-    nodeEnv: process.env.NODE_ENV || 'production'
-};
+console.log('Copying from:', distDir);
+console.log('Copying to:', staticDir);
+
+// Ensure the static directory exists
+fsExtra.ensureDirSync(staticDir);
+
+// Copy the built files to the static directory
+try {
+    if (fsExtra.existsSync(distDir)) {
+        fsExtra.copySync(distDir, staticDir, { overwrite: true });
+        console.log('Successfully copied build files to static directory');
+    } else {
+        console.error('Error: Build directory does not exist:', distDir);
+        // Create a placeholder file so the build doesn't fail completely
+        fsExtra.ensureDirSync(staticDir);
+        fsExtra.writeFileSync(
+            path.join(staticDir, 'index.html'),
+            '<html><body><h1>Build Failed</h1><p>Please check build logs.</p></body></html>'
+        );
+    }
+} catch (error) {
+    console.error('Error during copy operation:', error);
+    process.exit(1);
+}
 
 // Utility functions
 const log = {
@@ -35,14 +55,14 @@ const log = {
 
 async function ensureDirectories() {
     log.info('Creating necessary directories...');
-    await fs.ensureDir(config.staticDir);
-    await fs.ensureDir(config.reactFixesDir);
+    await fsExtra.ensureDir(staticDir);
+    await fsExtra.ensureDir(path.resolve(__dirname, '../static/react-fixes'));
 }
 
 async function runViteBuild() {
     log.info('Running Vite build...');
     try {
-        process.chdir(config.frontendDir);
+        process.chdir(path.resolve(__dirname, '..'));
         execSync('npm run vite build', { stdio: 'inherit' });
     } catch (error) {
         log.error('Vite build failed');
@@ -50,18 +70,10 @@ async function runViteBuild() {
     }
 }
 
-async function copyBuildFiles() {
-    log.info('Copying build files...');
-    if (!await fs.pathExists(config.distDir)) {
-        throw new Error('Build failed - dist directory not created');
-    }
-    await fs.copy(config.distDir, config.staticDir, { overwrite: true });
-}
-
 async function createVersionFile() {
     log.info('Creating version.js...');
     const content = `window.BUILD_VERSION = '${Date.now()}';`;
-    await fs.writeFile(path.join(config.staticDir, 'version.js'), content);
+    await fsExtra.writeFile(path.join(staticDir, 'version.js'), content);
 }
 
 async function createBuildInfo() {
@@ -69,21 +81,21 @@ async function createBuildInfo() {
     const buildInfo = {
         timestamp: new Date().toISOString(),
         version: '1.0.0',
-        environment: config.nodeEnv
+        environment: process.env.NODE_ENV || 'production'
     };
-    await fs.writeJson(path.join(config.staticDir, 'build-info.json'), buildInfo, { spaces: 4 });
+    await fsExtra.writeJson(path.join(staticDir, 'build-info.json'), buildInfo, { spaces: 4 });
 }
 
 async function copyReactProductionFiles() {
     log.info('Copying React production files...');
     const files = {
-        react: path.join(config.frontendDir, 'node_modules/react/umd/react.production.min.js'),
-        reactDom: path.join(config.frontendDir, 'node_modules/react-dom/umd/react-dom.production.min.js')
+        react: path.join(__dirname, '../node_modules/react/umd/react.production.min.js'),
+        reactDom: path.join(__dirname, '../node_modules/react-dom/umd/react-dom.production.min.js')
     };
 
     for (const [name, src] of Object.entries(files)) {
         try {
-            await fs.copy(src, path.join(config.staticDir, path.basename(src)));
+            await fsExtra.copy(src, path.join(staticDir, path.basename(src)));
             log.success(`Copied ${path.basename(src)}`);
         } catch (error) {
             log.warning(`Could not copy ${name}: ${error.message}`);
@@ -93,7 +105,7 @@ async function copyReactProductionFiles() {
 
 async function copyReactFixes() {
     log.info('Copying React fix files...');
-    const utilsDir = path.join(config.frontendDir, 'src/utils');
+    const utilsDir = path.join(__dirname, '../src/utils');
     const fixFiles = [
         'ensure-react-dom.js',
         'ensure-redux-provider.js',
@@ -103,10 +115,10 @@ async function copyReactFixes() {
 
     for (const file of fixFiles) {
         const src = path.join(utilsDir, file);
-        const dest = path.join(config.reactFixesDir, file);
+        const dest = path.join(staticDir, 'react-fixes', file);
         try {
-            if (await fs.pathExists(src)) {
-                await fs.copy(src, dest);
+            if (await fsExtra.pathExists(src)) {
+                await fsExtra.copy(src, dest);
                 log.success(`Copied ${file}`);
             } else {
                 log.warning(`${file} not found in utils directory`);
@@ -126,11 +138,11 @@ async function copyAdditionalFixes() {
     ];
 
     for (const file of additionalFiles) {
-        const src = path.join(config.staticDir, file);
-        const dest = path.join(config.reactFixesDir, file);
+        const src = path.join(staticDir, file);
+        const dest = path.join(staticDir, 'react-fixes', file);
         try {
-            if (await fs.pathExists(src)) {
-                await fs.copy(src, dest);
+            if (await fsExtra.pathExists(src)) {
+                await fsExtra.copy(src, dest);
                 log.success(`Copied ${file}`);
             } else {
                 log.warning(`${file} not found in static directory`);
@@ -152,12 +164,12 @@ import './react-fixes/ensure-redux-provider.js';
 import './react-fixes/ensure-router-provider.js';
 import './react-fixes/fallback.js';`;
 
-    const consolidatedPath = path.join(config.staticDir, 'consolidated-fixes.js');
-    await fs.writeFile(consolidatedPath, content);
+    const consolidatedPath = path.join(staticDir, 'consolidated-fixes.js');
+    await fsExtra.writeFile(consolidatedPath, content);
 
     // Copy to react-fixes directory
-    if (await fs.pathExists(config.reactFixesDir)) {
-        await fs.copy(consolidatedPath, path.join(config.reactFixesDir, 'consolidated-fixes.js'));
+    if (await fsExtra.pathExists(path.join(staticDir, 'react-fixes'))) {
+        await fsExtra.copy(consolidatedPath, path.join(staticDir, 'react-fixes', 'consolidated-fixes.js'));
         log.success('Copied consolidated-fixes.js');
     } else {
         throw new Error('React fixes directory not found');
@@ -168,7 +180,6 @@ async function build() {
     try {
         await ensureDirectories();
         await runViteBuild();
-        await copyBuildFiles();
         await createVersionFile();
         await createBuildInfo();
         await copyReactProductionFiles();
