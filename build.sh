@@ -256,14 +256,8 @@ EOF
 # Create utilities for context fixes
 echo "===== CREATING REACT CONTEXT UTILITY MODULES ====="
 
-# Add this line before line 259 in build.sh:
-cd ..  # Move back to the project root
-mkdir -p src/utils
-cat > src/utils/react-diagnostics.js << 'EOF'
-
-# Create React Context diagnostics module
-mkdir -p src/utils
-cat > src/utils/react-diagnostics.js << 'EOF'
+mkdir -p utils
+cat > utils/react-diagnostics.js << 'EOF'
 /**
  * React diagnostics module - helps diagnose context issues
  */
@@ -319,38 +313,35 @@ export default {
 EOF
 echo "React diagnostics module created"
 
-# Apply fixes for React app loading issues - these modules already exist from previous edits
+# Apply fixes for React app loading issues
 echo "===== CHECKING REACT APP LOADING FIXES ====="
 
 # 1. Check ReactDOM fix utility
-if [ ! -f "src/utils/ensure-react-dom.js" ]; then
+if [ ! -f "utils/ensure-react-dom.js" ]; then
   echo "ReactDOM fix module missing - creating it"
-  # The content of this file is already defined above, no need to redefine it
 else
   echo "ReactDOM fix module already exists"
 fi
 
 # 2. Check Redux Provider Fix
-if [ ! -f "src/utils/ensure-redux-provider.js" ]; then
+if [ ! -f "utils/ensure-redux-provider.js" ]; then
   echo "Redux Provider fix module missing - creating it"
-  # The content of this file is already defined above, no need to redefine it
 else
   echo "Redux Provider fix module already exists"
 fi
 
 # 3. Check Router Provider Fix
-if [ ! -f "src/utils/ensure-router-provider.js" ]; then
+if [ ! -f "utils/ensure-router-provider.js" ]; then
   echo "Router Provider fix module missing - creating it"
-  # The content of this file is already defined above, no need to redefine it
 else
   echo "Router Provider fix module already exists"
 fi
 
 # Update index.js to import the diagnostic module
 echo "===== UPDATING INDEX.JS WITH DIAGNOSTICS ====="
-if [ -f "src/index.js" ]; then
-  if ! grep -q "react-diagnostics" src/index.js; then
-    sed -i '4i import "./utils/react-diagnostics";' src/index.js
+if [ -f "frontend/src/index.js" ]; then
+  if ! grep -q "react-diagnostics" frontend/src/index.js; then
+    sed -i '4i import "../../utils/react-diagnostics";' frontend/src/index.js
     echo "Added React diagnostics to index.js"
   else
     echo "React diagnostics already imported in index.js"
