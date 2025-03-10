@@ -39,27 +39,23 @@ echo "===== INSTALLING DEPENDENCIES ====="
 # First, verify npm is working
 npm -v || exit 1
 
-# Install Vite globally first
-echo "Installing Vite globally..."
-npm install -g vite || true
-
 # Install dependencies with legacy peer deps
 echo "Installing project dependencies..."
 export NODE_OPTIONS="--max-old-space-size=4096"
 npm install --legacy-peer-deps
 
-# Ensure Vite and React plugin are installed
-echo "Installing Vite and React plugin..."
-npm install --save-dev vite@latest @vitejs/plugin-react@latest
-
 # Create temporary vite config
 echo "===== CREATING VITE CONFIG ====="
 cat > vite.config.js << 'EOF'
-const { defineConfig } = require('vite')
-const react = require('@vitejs/plugin-react')
-const path = require('path')
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
-module.exports = defineConfig({
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+export default defineConfig({
   plugins: [react()],
   build: {
     outDir: '../static',
@@ -82,20 +78,11 @@ EOF
 # Build the frontend
 echo "===== BUILDING FRONTEND ====="
 export NODE_ENV=production
-export NODE_PATH="$PWD/node_modules:$NODE_PATH"
+export NODE_PATH="$PWD/node_modules"
 
-# Try different build commands in order of preference
-echo "Attempting build..."
-if [ -f "node_modules/.bin/vite" ]; then
-    echo "Using local Vite installation..."
-    ./node_modules/.bin/vite build
-elif command -v vite >/dev/null 2>&1; then
-    echo "Using global Vite installation..."
-    vite build
-else
-    echo "Using npx fallback..."
-    npx --no-install vite build
-fi
+# Try to build with different Node.js options
+echo "Attempting build with Node.js ESM..."
+NODE_OPTIONS="--experimental-json-modules --no-warnings" npx vite build
 
 # Verify build output
 echo "===== VERIFYING BUILD ====="
