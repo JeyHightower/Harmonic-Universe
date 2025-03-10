@@ -80,26 +80,50 @@ async function ensureDirectories() {
     await ensureDir(config.reactFixesDir);
 }
 
+async function installDependencies() {
+    log.info('Installing dependencies...');
+    try {
+        // Change to frontend directory
+        process.chdir(config.frontendDir);
+
+        // Clean install
+        log.info('Removing node_modules...');
+        try {
+            await fs.rm(path.join(config.frontendDir, 'node_modules'), { recursive: true, force: true });
+        } catch (e) {
+            log.warning('No existing node_modules to remove');
+        }
+
+        // Install dependencies with legacy peer deps
+        log.info('Installing npm dependencies...');
+        execSync('npm install --legacy-peer-deps', { stdio: 'inherit' });
+
+        // Explicitly install Vite
+        log.info('Installing Vite...');
+        execSync('npm install vite@latest @vitejs/plugin-react@latest --save-dev', { stdio: 'inherit' });
+
+        log.success('Dependencies installed successfully');
+    } catch (error) {
+        log.error('Failed to install dependencies');
+        throw error;
+    }
+}
+
 async function runViteBuild() {
     log.info('Running Vite build...');
     try {
+        // Ensure we're in the frontend directory
         process.chdir(config.frontendDir);
         log.info('Current working directory: ' + process.cwd());
 
-        // Install dependencies
-        log.info('Installing dependencies...');
-        execSync('npm install --legacy-peer-deps', { stdio: 'inherit' });
-
-        // Run the build
+        // Run the build using npx to ensure we use the local installation
         log.info('Running build command...');
-        execSync('npm run build', { stdio: 'inherit' });
+        execSync('npx vite build', { stdio: 'inherit' });
 
         log.success('Build completed successfully');
     } catch (error) {
         log.error('Build failed');
         log.error(error.message);
-        if (error.stdout) log.error('stdout:', error.stdout.toString());
-        if (error.stderr) log.error('stderr:', error.stderr.toString());
         throw error;
     }
 }
@@ -160,8 +184,11 @@ async function build() {
     try {
         log.info('Starting build process...');
 
+        // Install dependencies first
+        await installDependencies();
+
         // Ensure directories exist
-        await ensureDirectories();
+        await ensureDir(config.staticDir);
 
         // Run Vite build
         await runViteBuild();

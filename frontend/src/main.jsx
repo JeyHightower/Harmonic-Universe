@@ -37,16 +37,11 @@ import './utils/react-safety-patch.jsx';
 // Import at the very top to ensure React is available globally
 import './utils/ensure-react';
 
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './utils/ensure-antd-version'; // Import the version utility first
-import './utils/ant-icons-fallback'; // Import the more comprehensive fallback
-import { BrowserRouter } from 'react-router-dom';
-import App from './App';
-import './styles/global.css';
-import './styles/variables.css';
-import './styles/modal-fix.css';
-import './index.css';
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
+import App from './App'
+import './index.css'
 
 // Add debug log
 console.log('main.jsx is being loaded');
@@ -58,10 +53,11 @@ try {
   console.error('Error importing icon:', error);
 }
 
+// Initialize the React application
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <App />
     </BrowserRouter>
   </React.StrictMode>
-);
+)

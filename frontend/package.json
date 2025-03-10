@@ -6,11 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "postbuild": "node scripts/copy-build.cjs",
-    "render-build": "node scripts/render-build.js",
-    "vite": "vite",
-    "vite:build": "vite build"
+    "preview": "vite preview"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -20,7 +16,7 @@
   "devDependencies": {
     "@types/react": "^18.2.64",
     "@types/react-dom": "^18.2.21",
-    "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^5.4.14"
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.1.6"
   }
 }
