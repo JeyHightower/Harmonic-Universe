@@ -42,37 +42,77 @@ npm -v || exit 1
 # Install dependencies with legacy peer deps
 echo "Installing project dependencies..."
 export NODE_OPTIONS="--max-old-space-size=4096"
+
+# Install core dependencies first
+echo "Installing core dependencies..."
+npm install vite@latest @vitejs/plugin-react@latest --save-dev
+npm install react react-dom react-router-dom --save
+
+# Then install remaining dependencies
+echo "Installing remaining dependencies..."
 npm install --legacy-peer-deps
 
 # Create temporary vite config
 echo "===== CREATING VITE CONFIG ====="
 cat > vite.config.js << 'EOF'
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
-import { fileURLToPath } from 'url'
+// @ts-check
+const loadConfig = async () => {
+  try {
+    // Try ESM first
+    const { defineConfig } = await import('vite')
+    const react = await import('@vitejs/plugin-react')
+    const path = await import('path')
+    const { fileURLToPath } = await import('url')
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+    const __filename = fileURLToPath(import.meta.url)
+    const __dirname = path.dirname(__filename)
 
-export default defineConfig({
-  plugins: [react()],
-  build: {
-    outDir: '../static',
-    emptyOutDir: true,
-    sourcemap: false,
-    rollupOptions: {
-      output: {
-        manualChunks: undefined
+    return defineConfig({
+      plugins: [react.default()],
+      build: {
+        outDir: '../static',
+        emptyOutDir: true,
+        sourcemap: false,
+        rollupOptions: {
+          output: {
+            manualChunks: undefined
+          }
+        }
+      },
+      resolve: {
+        alias: {
+          '@': path.resolve(__dirname, './src')
+        }
       }
-    }
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src')
-    }
+    })
+  } catch (e) {
+    // Fallback to CommonJS
+    const { defineConfig } = require('vite')
+    const react = require('@vitejs/plugin-react')
+    const path = require('path')
+
+    return defineConfig({
+      plugins: [react()],
+      build: {
+        outDir: '../static',
+        emptyOutDir: true,
+        sourcemap: false,
+        rollupOptions: {
+          output: {
+            manualChunks: undefined
+          }
+        }
+      },
+      resolve: {
+        alias: {
+          '@': path.resolve(__dirname, './src')
+        }
+      }
+    })
   }
-})
+}
+
+export default loadConfig()
 EOF
 
 # Build the frontend
@@ -81,8 +121,8 @@ export NODE_ENV=production
 export NODE_PATH="$PWD/node_modules"
 
 # Try to build with different Node.js options
-echo "Attempting build with Node.js ESM..."
-NODE_OPTIONS="--experimental-json-modules --no-warnings" npx vite build
+echo "Attempting build..."
+NODE_OPTIONS="--experimental-json-modules --no-warnings --es-module-specifier-resolution=node" npx vite build
 
 # Verify build output
 echo "===== VERIFYING BUILD ====="
