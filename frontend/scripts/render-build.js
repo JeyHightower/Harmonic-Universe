@@ -13,6 +13,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 
+// Move to the parent directory and install npm packages
+execSync('cd .. && npm install', { stdio: 'inherit' });
+
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
