@@ -55,64 +55,59 @@ npm install --legacy-peer-deps
 # Create temporary vite config
 echo "===== CREATING VITE CONFIG ====="
 cat > vite.config.js << 'EOF'
-// @ts-check
-const loadConfig = async () => {
-  try {
-    // Try ESM first
-    const { defineConfig } = await import('vite')
-    const react = await import('@vitejs/plugin-react')
-    const path = await import('path')
-    const { fileURLToPath } = await import('url')
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
-    const __filename = fileURLToPath(import.meta.url)
-    const __dirname = path.dirname(__filename)
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
-    return defineConfig({
-      plugins: [react.default()],
-      build: {
-        outDir: '../static',
-        emptyOutDir: true,
-        sourcemap: false,
-        rollupOptions: {
-          output: {
-            manualChunks: undefined
-          }
-        }
-      },
-      resolve: {
-        alias: {
-          '@': path.resolve(__dirname, './src')
-        }
+export default defineConfig({
+  plugins: [react()],
+  build: {
+    outDir: '../static',
+    emptyOutDir: true,
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined
       }
-    })
-  } catch (e) {
-    // Fallback to CommonJS
-    const { defineConfig } = require('vite')
-    const react = require('@vitejs/plugin-react')
-    const path = require('path')
+    }
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src')
+    }
+  }
+})
+EOF
 
-    return defineConfig({
-      plugins: [react()],
-      build: {
-        outDir: '../static',
-        emptyOutDir: true,
-        sourcemap: false,
-        rollupOptions: {
-          output: {
-            manualChunks: undefined
-          }
-        }
-      },
-      resolve: {
-        alias: {
-          '@': path.resolve(__dirname, './src')
-        }
-      }
-    })
+# Create package.json if it doesn't exist
+echo "===== UPDATING PACKAGE.JSON ====="
+cat > package.json << 'EOF'
+{
+  "name": "harmonic-universe-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.3"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.64",
+    "@types/react-dom": "^18.2.21",
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.1.6"
   }
 }
-
-export default loadConfig()
 EOF
 
 # Build the frontend
@@ -122,7 +117,7 @@ export NODE_PATH="$PWD/node_modules"
 
 # Try to build with different Node.js options
 echo "Attempting build..."
-NODE_OPTIONS="--experimental-json-modules --no-warnings --es-module-specifier-resolution=node" npx vite build
+NODE_OPTIONS="--experimental-json-modules --no-warnings" npx vite build
 
 # Verify build output
 echo "===== VERIFYING BUILD ====="
