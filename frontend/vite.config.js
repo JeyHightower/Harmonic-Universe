@@ -1,13 +1,13 @@
 // @ts-check
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
-import { fileURLToPath } from 'url'
+const { defineConfig } = require('vite')
+const react = require('@vitejs/plugin-react')
+const path = require('path')
+const { fileURLToPath } = require('url')
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-export default defineConfig({
+module.exports = defineConfig({
   plugins: [react()],
   build: {
     outDir: '../static',
@@ -21,7 +21,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src')
+      '@': __dirname + '/src'
     }
   },
   // Add more verbose logging

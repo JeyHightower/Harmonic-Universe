@@ -39,58 +39,17 @@ echo "===== INSTALLING DEPENDENCIES ====="
 # First, verify npm is working
 npm -v || exit 1
 
-# Install dependencies with legacy peer deps
-echo "Installing project dependencies..."
-export NODE_OPTIONS="--max-old-space-size=4096"
+# Install Vite globally first
+echo "Installing Vite globally..."
+npm install -g vite || true
 
-# Install core dependencies first
-echo "Installing core dependencies..."
-npm install vite@latest @vitejs/plugin-react@latest --save-dev
-npm install react react-dom react-router-dom --save
-
-# Then install remaining dependencies
-echo "Installing remaining dependencies..."
-npm install --legacy-peer-deps
-
-# Create temporary vite config
-echo "===== CREATING VITE CONFIG ====="
-cat > vite.config.js << 'EOF'
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
-import { fileURLToPath } from 'url'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
-export default defineConfig({
-  plugins: [react()],
-  build: {
-    outDir: '../static',
-    emptyOutDir: true,
-    sourcemap: false,
-    rollupOptions: {
-      output: {
-        manualChunks: undefined
-      }
-    }
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src')
-    }
-  }
-})
-EOF
-
-# Create package.json if it doesn't exist
-echo "===== UPDATING PACKAGE.JSON ====="
+# Create package.json first
+echo "===== CREATING PACKAGE.JSON ====="
 cat > package.json << 'EOF'
 {
   "name": "harmonic-universe-frontend",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -110,6 +69,48 @@ cat > package.json << 'EOF'
 }
 EOF
 
+# Install dependencies
+echo "Installing project dependencies..."
+export NODE_OPTIONS="--max-old-space-size=4096"
+npm install --legacy-peer-deps
+
+# Create vite config
+echo "===== CREATING VITE CONFIG ====="
+cat > vite.config.cjs << 'EOF'
+/** @type {import('vite').UserConfig} */
+module.exports = {
+  plugins: [require('@vitejs/plugin-react')()],
+  build: {
+    outDir: '../static',
+    emptyOutDir: true,
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined
+      }
+    }
+  },
+  resolve: {
+    alias: {
+      '@': require('path').resolve(__dirname, 'src')
+    }
+  }
+}
+EOF
+
+# Create jsconfig for better module resolution
+echo "===== CREATING JSCONFIG ====="
+cat > jsconfig.json << 'EOF'
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  }
+}
+EOF
+
 # Build the frontend
 echo "===== BUILDING FRONTEND ====="
 export NODE_ENV=production
@@ -117,7 +118,7 @@ export NODE_PATH="$PWD/node_modules"
 
 # Try to build with different Node.js options
 echo "Attempting build..."
-NODE_OPTIONS="--experimental-json-modules --no-warnings" npx vite build
+VITE_CJS_IGNORE_WARNING=true npx vite build --config vite.config.cjs
 
 # Verify build output
 echo "===== VERIFYING BUILD ====="
@@ -139,16 +140,6 @@ fi
 # Create version info
 echo "===== CREATING VERSION INFO ====="
 echo "{\"version\": \"1.0.0\", \"buildDate\": \"$(date)\"}" > static/build-info.json
-
-# Create diagnostic script
-echo "===== CREATING DIAGNOSTIC SCRIPT ====="
-cat > static/runtime-diagnostics.js << 'EOF'
-console.log('Runtime diagnostics loaded');
-window.APP_VERSION = {
-  buildDate: '$(date)',
-  environment: 'production'
-};
-EOF
 
 echo "===== BUILD PROCESS COMPLETE ====="
 echo "Final static directory contents:"
