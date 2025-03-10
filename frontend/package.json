@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "postbuild": "node scripts/copy-build.cjs",
-    "render-build": "node scripts/render-build.js"
+    "render-build": "node scripts/render-build.js",
+    "vite": "vite",
+    "vite:build": "vite build"
   },
   "dependencies": {
     "react": "^18.2.0",
