@@ -3,8 +3,10 @@
 
 console.log('📦 Starting Render.com build process for frontend...');
 
-// Set environment variable to skip husky
+// Set environment variables
 process.env.RENDER = 'true';
+process.env.NODE_ENV = 'production';
+process.env.VITE_APP_ENV = 'production';
 
 import * as fs from 'node:fs/promises';
 import path from 'node:path';
@@ -23,6 +25,14 @@ const config = {
     distDir: path.resolve(__dirname, '../dist'),
     nodeEnv: process.env.NODE_ENV || 'production'
 };
+
+console.log('Build Configuration:', {
+    NODE_ENV: process.env.NODE_ENV,
+    VITE_APP_ENV: process.env.VITE_APP_ENV,
+    frontendDir: config.frontendDir,
+    staticDir: config.staticDir,
+    distDir: config.distDir
+});
 
 console.log('Copying from:', config.distDir);
 console.log('Copying to:', config.staticDir);
@@ -62,9 +72,27 @@ async function runViteBuild() {
     log.info('Running Vite build...');
     try {
         process.chdir(config.frontendDir);
-        execSync('npm run vite build', { stdio: 'inherit' });
+        log.info('Current working directory: ' + process.cwd());
+        log.info('Checking for vite.config.js...');
+
+        try {
+            await fs.access('vite.config.js');
+            log.success('vite.config.js found');
+        } catch (err) {
+            log.warning('vite.config.js not found in ' + process.cwd());
+        }
+
+        log.info('Running npm install to ensure dependencies...');
+        execSync('npm install', { stdio: 'inherit' });
+
+        log.info('Starting Vite build...');
+        execSync('npm run vite:build', { stdio: 'inherit' });
     } catch (error) {
         log.error('Vite build failed');
+        log.error('Error details:');
+        log.error(error.message);
+        if (error.stdout) log.error('stdout:', error.stdout.toString());
+        if (error.stderr) log.error('stderr:', error.stderr.toString());
         throw error;
     }
 }
