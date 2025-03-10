@@ -256,6 +256,11 @@ EOF
 # Create utilities for context fixes
 echo "===== CREATING REACT CONTEXT UTILITY MODULES ====="
 
+# Add this line before line 259 in build.sh:
+cd ..  # Move back to the project root
+mkdir -p src/utils
+cat > src/utils/react-diagnostics.js << 'EOF'
+
 # Create React Context diagnostics module
 mkdir -p src/utils
 cat > src/utils/react-diagnostics.js << 'EOF'
