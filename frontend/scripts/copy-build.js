@@ -1,51 +1,66 @@
-import fs from 'fs';
-import path from 'path';
+import { copyFileSync, mkdirSync, readdirSync, statSync, existsSync } from 'fs';
+import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = dirname(__filename);
 
-const srcDir = path.join(__dirname, '../dist');
-const destDir = path.join(__dirname, '../../static');
+function copyDirectory(source, destination) {
+    // Create destination directory if it doesn't exist
+    if (!existsSync(destination)) {
+        mkdirSync(destination, { recursive: true });
+    }
 
-// Create destination directory if it doesn't exist
-if (!fs.existsSync(destDir)) {
-    fs.mkdirSync(destDir, { recursive: true });
+    // Read source directory
+    const files = readdirSync(source);
+
+    // Copy each file/directory
+    files.forEach(file => {
+        const sourcePath = join(source, file);
+        const destPath = join(destination, file);
+
+        const stats = statSync(sourcePath);
+        if (stats.isDirectory()) {
+            copyDirectory(sourcePath, destPath);
+        } else {
+            copyFileSync(sourcePath, destPath);
+        }
+    });
 }
 
-// Copy function that handles both files and directories
-function copyRecursive(src, dest) {
-    const exists = fs.existsSync(src);
-    const stats = exists && fs.statSync(src);
-    const isDirectory = exists && stats.isDirectory();
+// Paths
+const distDir = resolve(__dirname, '../dist');
+const staticDir = resolve(__dirname, '../../static');
 
-    if (isDirectory) {
-        if (!fs.existsSync(dest)) {
-            fs.mkdirSync(dest, { recursive: true });
+// Copy build files
+console.log('Copying build files from dist to static directory...');
+copyDirectory(distDir, staticDir);
+console.log('Build files copied successfully!');
+
+// Create React fixes directory
+const reactFixesDir = join(staticDir, 'react-fixes');
+mkdirSync(reactFixesDir, { recursive: true });
+
+// Copy React fixes
+console.log('Setting up React fixes...');
+const utilsDir = resolve(__dirname, '../src/utils');
+const fixesFiles = [
+    'ensure-react-dom.js',
+    'ensure-redux-provider.js',
+    'ensure-router-provider.js',
+    'react-diagnostics.js'
+].map(file => join(utilsDir, file));
+
+for (const file of fixesFiles) {
+    try {
+        if (existsSync(file) && statSync(file).isFile()) {
+            const destFile = join(reactFixesDir, file.split('/').pop());
+            copyFileSync(file, destFile);
+            console.log(`Copied ${file} to ${destFile}`);
         }
-        fs.readdirSync(src).forEach(childItemName => {
-            copyRecursive(
-                path.join(src, childItemName),
-                path.join(dest, childItemName)
-            );
-        });
-    } else {
-        try {
-            fs.copyFileSync(src, dest);
-            console.log(`Copied: ${path.basename(src)}`);
-        } catch (error) {
-            console.error(`Error copying ${src}: ${error.message}`);
-        }
+    } catch (err) {
+        console.warn(`Warning: Could not copy ${file}: ${err.message}`);
     }
 }
 
-console.log('Starting build copy process...');
-
-try {
-    // Copy the entire dist directory to static
-    copyRecursive(srcDir, destDir);
-    console.log('Build copy completed successfully!');
-} catch (error) {
-    console.error('Error during build copy:', error);
-    process.exit(1);
-}
+console.log('Build copy process completed successfully');
