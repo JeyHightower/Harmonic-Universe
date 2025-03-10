@@ -7,6 +7,7 @@ REACT_FIXES_DIR="$STATIC_DIR/react-fixes"
 DIST_DIR="$FRONTEND_DIR/dist"
 
 # Create necessary directories
+echo "Creating directories..."
 mkdir -p "$STATIC_DIR" "$REACT_FIXES_DIR"
 
 # Run Vite build
@@ -39,21 +40,33 @@ cat > "$STATIC_DIR/build-info.json" << EOL
 }
 EOL
 
-# Copy React fix files from src/utils to static/react-fixes
+# Ensure React production files are present
+echo "Copying React production files..."
+cp "$FRONTEND_DIR/node_modules/react/umd/react.production.min.js" "$STATIC_DIR/" || echo "Warning: Could not copy react.production.min.js"
+cp "$FRONTEND_DIR/node_modules/react-dom/umd/react-dom.production.min.js" "$STATIC_DIR/" || echo "Warning: Could not copy react-dom.production.min.js"
+
+# Copy React fix files from src/utils to react-fixes
 echo "Copying React fix files..."
-cp "$FRONTEND_DIR/src/utils/ensure-react-dom.js" "$REACT_FIXES_DIR/" && echo "Copied ensure-react-dom.js"
-cp "$FRONTEND_DIR/src/utils/ensure-redux-provider.js" "$REACT_FIXES_DIR/" && echo "Copied ensure-redux-provider.js"
-cp "$FRONTEND_DIR/src/utils/ensure-router-provider.js" "$REACT_FIXES_DIR/" && echo "Copied ensure-router-provider.js"
-cp "$FRONTEND_DIR/src/utils/fallback.js" "$REACT_FIXES_DIR/" && echo "Copied fallback.js"
+for file in ensure-react-dom.js ensure-redux-provider.js ensure-router-provider.js fallback.js; do
+    if [ -f "$FRONTEND_DIR/src/utils/$file" ]; then
+        cp "$FRONTEND_DIR/src/utils/$file" "$REACT_FIXES_DIR/" && echo "Copied $file"
+    else
+        echo "Warning: $file not found in src/utils"
+    fi
+done
 
-# Copy additional React fix files
+# Copy additional React fixes
 echo "Copying additional React fixes..."
-cp "$STATIC_DIR/critical-react-fix.js" "$REACT_FIXES_DIR/" && echo "Copied critical-react-fix.js"
-cp "$STATIC_DIR/runtime-diagnostics.js" "$REACT_FIXES_DIR/" && echo "Copied runtime-diagnostics.js"
-cp "$STATIC_DIR/react-fallback.js" "$REACT_FIXES_DIR/" && echo "Copied react-fallback.js"
+for file in critical-react-fix.js runtime-diagnostics.js react-fallback.js; do
+    if [ -f "$STATIC_DIR/$file" ]; then
+        cp "$STATIC_DIR/$file" "$REACT_FIXES_DIR/" && echo "Copied $file"
+    else
+        echo "Warning: $file not found in static directory"
+    fi
+done
 
-# Consolidate React fixes
-echo "Consolidating React fixes..."
+# Create consolidated fixes file
+echo "Creating consolidated fixes file..."
 cat > "$STATIC_DIR/consolidated-fixes.js" << EOL
 // Consolidated React fixes
 import './react-fixes/critical-react-fix.js';
@@ -64,5 +77,14 @@ import './react-fixes/ensure-redux-provider.js';
 import './react-fixes/ensure-router-provider.js';
 import './react-fixes/fallback.js';
 EOL
+
+# Copy consolidated fixes to react-fixes directory
+echo "Copying consolidated React fixes..."
+if [ -d "$REACT_FIXES_DIR" ]; then
+    cp "$STATIC_DIR/consolidated-fixes.js" "$REACT_FIXES_DIR/" && echo "Copied consolidated-fixes.js"
+else
+    echo "Error: React fixes directory not found"
+    exit 1
+fi
 
 echo "Build process completed successfully"
