@@ -8,10 +8,14 @@ process.env.RENDER = 'true';
 process.env.NODE_ENV = 'production';
 process.env.VITE_APP_ENV = 'production';
 
+// Move to the parent directory and install npm packages
+import { execSync } from 'node:child_process';
+execSync('cd .. && npm install', { stdio: 'inherit' });
+// Import necessary modules
 import * as fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execSync } from 'node:child_process';
+
 
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
