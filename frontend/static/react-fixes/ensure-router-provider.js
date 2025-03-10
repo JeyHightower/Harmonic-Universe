@@ -3,12 +3,17 @@
  * Fixes React error #321 with Router context
  */
 import React from 'react';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter as ReactBrowserRouter } from 'react-router-dom';
+
+export function ensureRouterProvider(element) {
+    return React.createElement(ReactBrowserRouter, null, element);
+}
 
 // Keep track of the module promise to avoid multiple imports
 let RouterComponentsPromise = null;
 
 // Initialize with minimal fallbacks
+let BrowserRouter = ({ children }) => children;
 let Routes = ({ children }) => children;
 let Route = ({ children }) => children;
 let useLocation = () => ({ pathname: '/', search: '', hash: '', state: null });
@@ -36,7 +41,7 @@ async function loadRouterComponents() {
             console.error('[Router Fix] Failed to import React Router:', err);
             // Return minimal mock components
             return {
-                BrowserRouter,
+                BrowserRouter: ReactBrowserRouter,
                 Routes,
                 Route,
                 useLocation,
@@ -52,7 +57,7 @@ async function loadRouterComponents() {
 // Initialize the router components
 RouterComponentsPromise = loadRouterComponents().then(components => {
     // Extract router components
-    BrowserRouter = components.BrowserRouter || BrowserRouter;
+    BrowserRouter = components.BrowserRouter || ReactBrowserRouter;
     Routes = components.Routes || Routes;
     Route = components.Route || Route;
     useLocation = components.useLocation || useLocation;
@@ -182,7 +187,3 @@ export {
     safeUseNavigate as useNavigate,
     safeUseParams as useParams
 };
-
-export function ensureRouterProvider(element) {
-    return React.createElement(BrowserRouter, null, element);
-}

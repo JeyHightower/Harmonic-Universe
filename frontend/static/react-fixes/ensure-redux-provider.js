@@ -3,17 +3,17 @@
  * Fixes React error #321 with Redux context
  */
 import React from 'react';
-import { Provider } from 'react-redux';
+import { Provider as ReduxProvider } from 'react-redux';
 import { createStore } from 'redux';
 
 const defaultReducer = (state = {}, action) => state;
 
 export function ensureReduxProvider(element, store) {
-    return React.createElement(Provider, { store }, element);
+    return React.createElement(ReduxProvider, { store }, element);
 }
 
 // Initialize with minimal fallbacks
-let Provider = ({ children }) => children;
+let ProviderComponent = ({ children }) => children;
 let store = null;
 
 // Try to import Redux store asynchronously
@@ -51,7 +51,7 @@ async function loadReactRedux() {
 // Initialize Redux components
 Promise.all([loadReduxStore(), loadReactRedux()]).then(([storeInstance, reduxModule]) => {
     store = storeInstance;
-    Provider = reduxModule.Provider || Provider;
+    ProviderComponent = reduxModule.Provider || ProviderComponent;
 
     // Make Provider available in root window context
     if (typeof window !== 'undefined') {
@@ -59,12 +59,12 @@ Promise.all([loadReduxStore(), loadReactRedux()]).then(([storeInstance, reduxMod
     }
 
     // Tag Provider with proper React component properties to avoid Error #321
-    if (Provider && !Provider.isReactComponent) {
-        Provider.isReactComponent = true;
+    if (ProviderComponent && !ProviderComponent.isReactComponent) {
+        ProviderComponent.isReactComponent = true;
 
         // Add React internal type symbols if possible
         if (typeof Symbol !== 'undefined') {
-            Provider.$$typeof = Symbol.for('react.element');
+            ProviderComponent.$$typeof = Symbol.for('react.element');
         }
 
         console.log('[Redux Fix] Enhanced Provider with React component properties');
@@ -78,7 +78,7 @@ Promise.all([loadReduxStore(), loadReactRedux()]).then(([storeInstance, reduxMod
 
     console.log('[Redux Fix] Using Redux store:', store ? 'available' : 'missing');
 
-    return { Provider, store };
+    return { Provider: ProviderComponent, store };
 });
 
 // Export a wrapped Provider that includes error handling
@@ -95,13 +95,13 @@ export const SafeReduxProvider = function ({ children, store: externalStore }) {
 
     try {
         // Check if Provider exists
-        if (!Provider || typeof Provider !== 'function') {
+        if (!ProviderComponent || typeof ProviderComponent !== 'function') {
             console.error('[Redux Fix] Redux Provider is not a valid component');
             return children;
         }
 
         return React.createElement(
-            Provider,
+            ProviderComponent,
             { store: storeToUse },
             children
         );
@@ -143,7 +143,7 @@ export const safeUseDispatch = () => {
 
 // Make the Provider directly available globally
 if (typeof window !== 'undefined' && window.React) {
-    window.ReduxProvider = Provider;
+    window.ReduxProvider = ProviderComponent;
     window.SafeReduxProvider = SafeReduxProvider;
     window.safeUseDispatch = safeUseDispatch;
 
@@ -151,4 +151,4 @@ if (typeof window !== 'undefined' && window.React) {
     window.useDispatchSafe = safeUseDispatch;
 }
 
-export default Provider;
+export default ProviderComponent;
