@@ -6,6 +6,7 @@ console.log('📦 Starting Render.com build process for frontend...');
 // Set environment variable to skip husky
 process.env.RENDER = 'true';
 
+execSync('npm install', { stdio: 'inherit' })
 import fs from 'fs-extra';
 import path from 'path';
 import { fileURLToPath } from 'url';
