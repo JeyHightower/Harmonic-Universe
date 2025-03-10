@@ -3,6 +3,20 @@
  * Fixes React error #321 with Redux context
  */
 import React from 'react';
+import { Provider } from 'react-redux';
+import { createStore } from 'redux';
+
+const defaultReducer = (state = {}, action) => state;
+
+export const ensureReduxProvider = (WrappedComponent, store = createStore(defaultReducer)) => {
+    return function ReduxProviderWrapper(props) {
+        return (
+            <Provider store={store}>
+                <WrappedComponent {...props} />
+            </Provider>
+        );
+    };
+};
 
 // Initialize with minimal fallbacks
 let Provider = ({ children }) => children;

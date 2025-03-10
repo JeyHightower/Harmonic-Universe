@@ -3,7 +3,8 @@
  * Fixes React error #321 (contexts) and provider initialization
  */
 import React from 'react';
-import ReactDOM from 'react-dom/client';
+import * as ReactDOM from 'react-dom';
+import * as ReactDOMClient from 'react-dom/client';
 
 // Make sure React is properly configured for contexts
 if (typeof React !== 'undefined') {
@@ -106,10 +107,8 @@ if (typeof React !== 'undefined') {
 
 // Make sure ReactDOM is available globally
 if (typeof window !== 'undefined') {
-    if (!window.ReactDOM) {
-        window.ReactDOM = ReactDOM;
-        console.log('[ReactDOM Fix] Made ReactDOM available globally');
-    }
+    window.ReactDOM = window.ReactDOM || ReactDOM;
+    window.ReactDOMClient = window.ReactDOMClient || ReactDOMClient;
 
     // Ensure createRoot method is available
     if (!window.ReactDOM.createRoot) {
@@ -197,4 +196,14 @@ if (typeof window !== 'undefined') {
     console.log('[ReactDOM Fix] React and ReactDOM fixes applied');
 }
 
-export default ReactDOM;
+export const ensureReactDOM = () => {
+    if (typeof window === 'undefined') return;
+
+    if (!window.ReactDOM) {
+        window.ReactDOM = ReactDOM;
+    }
+
+    if (!window.ReactDOMClient) {
+        window.ReactDOMClient = ReactDOMClient;
+    }
+};

@@ -3,12 +3,12 @@
  * Fixes React error #321 with Router context
  */
 import React from 'react';
+import { BrowserRouter } from 'react-router-dom';
 
 // Keep track of the module promise to avoid multiple imports
 let RouterComponentsPromise = null;
 
 // Initialize with minimal fallbacks
-let BrowserRouter = ({ children }) => children;
 let Routes = ({ children }) => children;
 let Route = ({ children }) => children;
 let useLocation = () => ({ pathname: '/', search: '', hash: '', state: null });
@@ -181,4 +181,14 @@ export {
     safeUseLocation as useLocation,
     safeUseNavigate as useNavigate,
     safeUseParams as useParams
+};
+
+export const ensureRouterProvider = (WrappedComponent) => {
+    return function RouterProviderWrapper(props) {
+        return (
+            <BrowserRouter>
+                <WrappedComponent {...props} />
+            </BrowserRouter>
+        );
+    };
 };

@@ -4,6 +4,7 @@
  */
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { render, hydrate } from 'react-dom';
 
 // Make sure React is properly configured for contexts
 if (typeof React !== 'undefined') {
@@ -107,8 +108,27 @@ if (typeof React !== 'undefined') {
 // Make sure ReactDOM is available globally
 if (typeof window !== 'undefined') {
     if (!window.ReactDOM) {
-        window.ReactDOM = ReactDOM;
-        console.log('[ReactDOM Fix] Made ReactDOM available globally');
+        window.ReactDOM = {
+            render,
+            hydrate,
+            // Provide basic implementation for other methods
+            createPortal: (children, container) => {
+                console.warn('ReactDOM.createPortal is not fully implemented in fallback');
+                return children;
+            },
+            findDOMNode: (element) => {
+                console.warn('ReactDOM.findDOMNode is deprecated and not implemented in fallback');
+                return null;
+            },
+            unmountComponentAtNode: (container) => {
+                console.warn('ReactDOM.unmountComponentAtNode called in fallback');
+                if (container) {
+                    container.innerHTML = '';
+                    return true;
+                }
+                return false;
+            }
+        };
     }
 
     // Ensure createRoot method is available
@@ -197,4 +217,9 @@ if (typeof window !== 'undefined') {
     console.log('[ReactDOM Fix] React and ReactDOM fixes applied');
 }
 
-export default ReactDOM;
+export const ensureReactDOM = () => {
+    if (typeof window !== 'undefined' && !window.ReactDOM) {
+        console.warn('ReactDOM not found, using fallback implementation');
+    }
+    return window.ReactDOM;
+};
