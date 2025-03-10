@@ -3,20 +3,24 @@
  * Fixes React error #321 with Router context
  */
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as ReactBrowserRouter } from 'react-router-dom';
+
+export function ensureRouterProvider(element) {
+    return React.createElement(ReactBrowserRouter, null, element);
+}
 
 // Keep track of the module promise to avoid multiple imports
 let RouterComponentsPromise = null;
 
 // Initialize with minimal fallbacks
-let BrowserRouterFallback = ({ children }) => children;
-let RoutesFallback = ({ children }) => children;
-let RouteFallback = ({ children }) => children;
-let useLocationFallback = () => ({ pathname: '/', search: '', hash: '', state: null });
-let useNavigateFallback = () => () => console.warn('[Router Fix] Mock navigate called');
-let useParamsFallback = () => ({});
-let OutletFallback = () => null;
-let LinkFallback = ({ to, children }) => React.createElement('a', { href: to }, children);
+let BrowserRouter = ({ children }) => children;
+let Routes = ({ children }) => children;
+let Route = ({ children }) => children;
+let useLocation = () => ({ pathname: '/', search: '', hash: '', state: null });
+let useNavigate = () => () => console.warn('[Router Fix] Mock navigate called');
+let useParams = () => ({});
+let Outlet = () => null;
+let Link = ({ to, children }) => React.createElement('a', { href: to }, children);
 
 // Try to import router components with dynamic import
 async function loadRouterComponents() {
@@ -37,14 +41,14 @@ async function loadRouterComponents() {
             console.error('[Router Fix] Failed to import React Router:', err);
             // Return minimal mock components
             return {
-                BrowserRouter: BrowserRouterFallback,
-                Routes: RoutesFallback,
-                Route: RouteFallback,
-                useLocation: useLocationFallback,
-                useNavigate: useNavigateFallback,
-                useParams: useParamsFallback,
-                Outlet: OutletFallback,
-                Link: LinkFallback
+                BrowserRouter: ReactBrowserRouter,
+                Routes,
+                Route,
+                useLocation,
+                useNavigate,
+                useParams,
+                Outlet,
+                Link
             };
         }
     }
@@ -53,14 +57,14 @@ async function loadRouterComponents() {
 // Initialize the router components
 RouterComponentsPromise = loadRouterComponents().then(components => {
     // Extract router components
-    BrowserRouterFallback = components.BrowserRouter || BrowserRouterFallback;
-    RoutesFallback = components.Routes || RoutesFallback;
-    RouteFallback = components.Route || RouteFallback;
-    useLocationFallback = components.useLocation || useLocationFallback;
-    useNavigateFallback = components.useNavigate || useNavigateFallback;
-    useParamsFallback = components.useParams || useParamsFallback;
-    OutletFallback = components.Outlet || OutletFallback;
-    LinkFallback = components.Link || LinkFallback;
+    BrowserRouter = components.BrowserRouter || ReactBrowserRouter;
+    Routes = components.Routes || Routes;
+    Route = components.Route || Route;
+    useLocation = components.useLocation || useLocation;
+    useNavigate = components.useNavigate || useNavigate;
+    useParams = components.useParams || useParams;
+    Outlet = components.Outlet || Outlet;
+    Link = components.Link || Link;
 
     // Register React Router contexts in global registry
     if (typeof window !== 'undefined' && window.__registerReactContext) {
@@ -74,7 +78,7 @@ RouterComponentsPromise = loadRouterComponents().then(components => {
     }
 
     // Tag Router components with proper React component properties to avoid Error #321
-    for (const Component of [BrowserRouterFallback, RoutesFallback, RouteFallback, OutletFallback, LinkFallback]) {
+    for (const Component of [BrowserRouter, Routes, Route, Outlet, Link]) {
         if (Component && !Component.isReactComponent) {
             Component.isReactComponent = true;
 
@@ -93,8 +97,8 @@ RouterComponentsPromise = loadRouterComponents().then(components => {
 // Create safe versions of Router hooks
 export const safeUseLocation = () => {
     try {
-        if (typeof useLocationFallback === 'function') {
-            return useLocationFallback();
+        if (typeof useLocation === 'function') {
+            return useLocation();
         }
     } catch (error) {
         console.warn('[Router Fix] Error using useLocation:', error);
@@ -106,8 +110,8 @@ export const safeUseLocation = () => {
 
 export const safeUseNavigate = () => {
     try {
-        if (typeof useNavigateFallback === 'function') {
-            return useNavigateFallback();
+        if (typeof useNavigate === 'function') {
+            return useNavigate();
         }
     } catch (error) {
         console.warn('[Router Fix] Error using useNavigate:', error);
@@ -125,8 +129,8 @@ export const safeUseNavigate = () => {
 
 export const safeUseParams = () => {
     try {
-        if (typeof useParamsFallback === 'function') {
-            return useParamsFallback();
+        if (typeof useParams === 'function') {
+            return useParams();
         }
     } catch (error) {
         console.warn('[Router Fix] Error using useParams:', error);
@@ -139,13 +143,13 @@ export const safeUseParams = () => {
 // Export a wrapped BrowserRouter with error handling
 export const SafeRouter = function ({ children }) {
     // Check if BrowserRouter exists
-    if (!BrowserRouterFallback || typeof BrowserRouterFallback !== 'function') {
+    if (!BrowserRouter || typeof BrowserRouter !== 'function') {
         console.error('[Router Fix] BrowserRouter is not available, using fallback');
         return children;
     }
 
     try {
-        return React.createElement(BrowserRouterFallback, null, children);
+        return React.createElement(BrowserRouter, null, children);
     } catch (error) {
         console.error('[Router Fix] Error rendering BrowserRouter:', error);
         return children;
@@ -155,14 +159,14 @@ export const SafeRouter = function ({ children }) {
 // Make the Router components directly available globally
 if (typeof window !== 'undefined' && window.React) {
     window.ReactRouter = {
-        BrowserRouter: BrowserRouterFallback,
-        Routes: RoutesFallback,
-        Route: RouteFallback,
+        BrowserRouter,
+        Routes,
+        Route,
         useLocation: safeUseLocation,
         useNavigate: safeUseNavigate,
         useParams: safeUseParams,
-        Outlet: OutletFallback,
-        Link: LinkFallback,
+        Outlet,
+        Link,
         SafeRouter
     };
 
@@ -172,41 +176,14 @@ if (typeof window !== 'undefined' && window.React) {
     window.useParamsSafe = safeUseParams;
 }
 
-// Export router components
 export {
     BrowserRouter,
     Routes,
-    Route
-};
-
-export const ensureRouterProvider = () => {
-    if (typeof window !== 'undefined' && !window.ReactRouter) {
-        window.ReactRouter = {
-            BrowserRouter,
-            Routes,
-            Route,
-            // Basic implementation of hooks
-            useNavigate: () => {
-                console.warn('Router useNavigate called with minimal implementation');
-                return (path) => {
-                    console.warn('Navigation attempted to:', path);
-                    window.location.href = path;
-                };
-            },
-            useLocation: () => {
-                return {
-                    pathname: window.location.pathname,
-                    search: window.location.search,
-                    hash: window.location.hash
-                };
-            }
-        };
-    }
-    return window.ReactRouter;
-};
-
-// Fallback router component
-export const FallbackRouter = ({ children }) => {
-    console.warn('Using fallback router implementation');
-    return children;
+    Route,
+    Outlet,
+    Link,
+    // Export safe hooks by default
+    safeUseLocation as useLocation,
+    safeUseNavigate as useNavigate,
+    safeUseParams as useParams
 };

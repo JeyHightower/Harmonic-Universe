@@ -3,8 +3,8 @@
  * Fixes React error #321 (contexts) and provider initialization
  */
 import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { render, hydrate } from 'react-dom';
+import * as ReactDOM from 'react-dom';
+import * as ReactDOMClient from 'react-dom/client';
 
 // Make sure React is properly configured for contexts
 if (typeof React !== 'undefined') {
@@ -107,29 +107,8 @@ if (typeof React !== 'undefined') {
 
 // Make sure ReactDOM is available globally
 if (typeof window !== 'undefined') {
-    if (!window.ReactDOM) {
-        window.ReactDOM = {
-            render,
-            hydrate,
-            // Provide basic implementation for other methods
-            createPortal: (children, container) => {
-                console.warn('ReactDOM.createPortal is not fully implemented in fallback');
-                return children;
-            },
-            findDOMNode: (element) => {
-                console.warn('ReactDOM.findDOMNode is deprecated and not implemented in fallback');
-                return null;
-            },
-            unmountComponentAtNode: (container) => {
-                console.warn('ReactDOM.unmountComponentAtNode called in fallback');
-                if (container) {
-                    container.innerHTML = '';
-                    return true;
-                }
-                return false;
-            }
-        };
-    }
+    window.ReactDOM = ReactDOM;
+    window.ReactDOMClient = ReactDOMClient;
 
     // Ensure createRoot method is available
     if (!window.ReactDOM.createRoot) {
@@ -218,8 +197,13 @@ if (typeof window !== 'undefined') {
 }
 
 export const ensureReactDOM = () => {
-    if (typeof window !== 'undefined' && !window.ReactDOM) {
-        console.warn('ReactDOM not found, using fallback implementation');
+    if (typeof window === 'undefined') return;
+
+    if (!window.ReactDOM) {
+        window.ReactDOM = ReactDOM;
     }
-    return window.ReactDOM;
+
+    if (!window.ReactDOMClient) {
+        window.ReactDOMClient = ReactDOMClient;
+    }
 };

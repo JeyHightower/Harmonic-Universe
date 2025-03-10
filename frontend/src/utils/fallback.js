@@ -1,3 +1,5 @@
+import React from 'react';
+
 // Fallback handlers for React components
 export const createFallbackComponent = (name, props) => {
     return {
@@ -32,3 +34,11 @@ export const FallbackBoundary = ({ children, name = 'Unknown' }) => {
         return createFallbackComponent(name, {});
     }
 };
+
+export function FallbackComponent() {
+    return React.createElement('div', null, 'Loading...');
+}
+
+export function ErrorBoundary({ children }) {
+    return React.createElement(React.Fragment, null, children);
+}
