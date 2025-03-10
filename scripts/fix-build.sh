@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Navigate to frontend source directory
-cd frontend/src
+cd .. && cd frontend/src
 
 # Create simplified App.jsx
 cat > App.jsx << 'EOF'
