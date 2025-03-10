@@ -17,22 +17,7 @@ python -m pip install --upgrade pip
 # Install requirements without hash verification for build process
 echo "Installing Python packages..."
 if [ -f "requirements.txt" ]; then
-    # Try first with hash verification
-    if ! pip install -r requirements.txt; then
-        echo "Hash verification failed, installing without hash verification..."
-        # If that fails, try without hash verification
-        pip install --no-deps --ignore-installed -r requirements.txt
-        # Now install dependencies
-        while read requirement; do
-            if [[ ! -z "$requirement" && ! $requirement == \#* ]]; then
-                package=$(echo "$requirement" | cut -d'=' -f1)
-                pip install --no-deps "$package"
-            fi
-        done < requirements.txt
-    fi
-else
-    echo "No requirements.txt found!"
-    exit 1
+    pip install --no-cache-dir -r requirements.txt || pip install --no-cache-dir --no-deps -r requirements.txt
 fi
 
 # Prepare directory structure
@@ -54,25 +39,27 @@ echo "===== INSTALLING DEPENDENCIES ====="
 # First, verify npm is working
 npm -v || exit 1
 
-# Install all dependencies
-echo "Installing all dependencies..."
-npm install || exit 1
+# Install Vite globally first
+echo "Installing Vite globally..."
+npm install -g vite || true
 
-# Verify vite installation
-echo "Verifying vite installation..."
-if [ ! -f "node_modules/.bin/vite" ]; then
-    echo "Vite not found, installing explicitly..."
-    npm install --save-dev vite@latest @vitejs/plugin-react@latest
-fi
+# Install dependencies with legacy peer deps
+echo "Installing project dependencies..."
+export NODE_OPTIONS="--max-old-space-size=4096"
+npm install --legacy-peer-deps
+
+# Ensure Vite and React plugin are installed
+echo "Installing Vite and React plugin..."
+npm install --save-dev vite@latest @vitejs/plugin-react@latest
 
 # Create temporary vite config
 echo "===== CREATING VITE CONFIG ====="
 cat > vite.config.js << 'EOF'
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+const { defineConfig } = require('vite')
+const react = require('@vitejs/plugin-react')
+const path = require('path')
 
-export default defineConfig({
+module.exports = defineConfig({
   plugins: [react()],
   build: {
     outDir: '../static',
@@ -95,17 +82,19 @@ EOF
 # Build the frontend
 echo "===== BUILDING FRONTEND ====="
 export NODE_ENV=production
-export NODE_PATH="$PWD/node_modules"
+export NODE_PATH="$PWD/node_modules:$NODE_PATH"
 
 # Try different build commands in order of preference
 echo "Attempting build..."
-if npx vite build; then
-    echo "Build successful with npx vite build"
-elif npm run build; then
-    echo "Build successful with npm run build"
+if [ -f "node_modules/.bin/vite" ]; then
+    echo "Using local Vite installation..."
+    ./node_modules/.bin/vite build
+elif command -v vite >/dev/null 2>&1; then
+    echo "Using global Vite installation..."
+    vite build
 else
-    echo "Build failed with both methods"
-    exit 1
+    echo "Using npx fallback..."
+    npx --no-install vite build
 fi
 
 # Verify build output
