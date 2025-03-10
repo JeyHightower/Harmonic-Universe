@@ -3,7 +3,7 @@ services:
     name: harmonic-universe
     runtime: python
     buildCommand: ./build.sh
-    startCommand: ./start.sh
+    startCommand: python app.py
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
@@ -11,8 +11,6 @@ services:
         value: 20.11.1
       - key: NODE_OPTIONS
         value: --max-old-space-size=4096
-      - key: VITE_APP_DEBUG
-        value: 'true'
       - key: FLASK_ENV
         value: production
       # Add any other environment variables your app needs
