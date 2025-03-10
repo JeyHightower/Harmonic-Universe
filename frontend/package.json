@@ -6,11 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "./scripts/build.sh",
-    "render-build": "./scripts/build.sh",
-    "postbuild": "node scripts/copy-build.cjs",
-    "start": "vite",
+    "vite": "vite",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0"
+    "postbuild": "node scripts/copy-build.cjs"
   },
   "dependencies": {
     "@ant-design/icons": "^5.3.0",

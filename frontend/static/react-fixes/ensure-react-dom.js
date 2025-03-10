@@ -107,8 +107,8 @@ if (typeof React !== 'undefined') {
 
 // Make sure ReactDOM is available globally
 if (typeof window !== 'undefined') {
-    window.ReactDOM = window.ReactDOM || ReactDOM;
-    window.ReactDOMClient = window.ReactDOMClient || ReactDOMClient;
+    window.ReactDOM = ReactDOM;
+    window.ReactDOMClient = ReactDOMClient;
 
     // Ensure createRoot method is available
     if (!window.ReactDOM.createRoot) {

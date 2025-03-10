@@ -8,15 +8,9 @@ import { createStore } from 'redux';
 
 const defaultReducer = (state = {}, action) => state;
 
-export const ensureReduxProvider = (WrappedComponent, store = createStore(defaultReducer)) => {
-    return function ReduxProviderWrapper(props) {
-        return (
-            <Provider store={store}>
-                <WrappedComponent {...props} />
-            </Provider>
-        );
-    };
-};
+export function ensureReduxProvider(element, store) {
+    return React.createElement(Provider, { store }, element);
+}
 
 // Initialize with minimal fallbacks
 let Provider = ({ children }) => children;

@@ -183,12 +183,6 @@ export {
     safeUseParams as useParams
 };
 
-export const ensureRouterProvider = (WrappedComponent) => {
-    return function RouterProviderWrapper(props) {
-        return (
-            <BrowserRouter>
-                <WrappedComponent {...props} />
-            </BrowserRouter>
-        );
-    };
-};
+export function ensureRouterProvider(element) {
+    return React.createElement(BrowserRouter, null, element);
+}
