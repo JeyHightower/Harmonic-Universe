@@ -1,36 +1,18 @@
 // vite.config.js
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
-  root: process.cwd(),
-  base: '/',
   build: {
-    outDir: 'dist',
+    outDir: path.resolve(__dirname, 'dist'), // Ensure output goes to frontend/dist
     emptyOutDir: true,
-    sourcemap: false,
-    rollupOptions: {
-      input: {
-        main: resolve(__dirname, 'index.html')
-      }
-    }
-  },
-  server: {
-    port: 3000,
-    hot: true
+    sourcemap: true
   },
   resolve: {
     alias: {
-      '@': resolve(__dirname, './src')
+      '@': path.resolve(__dirname, 'src')
     }
-  },
-  optimizeDeps: {
-    include: ['react', 'react-dom']
   }
 });
