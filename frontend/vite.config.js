@@ -11,24 +11,31 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, '../static'),
     emptyOutDir: true,
+    minify: 'terser',
     sourcemap: true,
     rollupOptions: {
+      // This helps identify and resolve issues
+      onwarn(warning, warn) {
+        // Skip certain warnings
+        if (warning.code === 'CIRCULAR_DEPENDENCY') return;
+        warn(warning);
+      },
       output: {
         manualChunks: {
-          'vendor-react': ['react', 'react-dom'],
-        },
-      },
-    },
+          'vendor-react': ['react', 'react-dom']
+        }
+      }
+    }
   },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src')
     }
   },
-  optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom']
-  },
+  // Add more verbose logging
+  logLevel: 'info',
   server: {
+    port: 5173,
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
