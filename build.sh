@@ -39,6 +39,7 @@ cat > package.json << 'EOF'
   "name": "harmonic-universe-frontend",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -47,24 +48,29 @@ cat > package.json << 'EOF'
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.22.3",
-    "@vitejs/plugin-react": "^4.2.1",
-    "vite": "^5.1.6"
+    "react-router-dom": "^6.22.3"
   },
   "devDependencies": {
     "@types/react": "^18.2.64",
-    "@types/react-dom": "^18.2.21"
+    "@types/react-dom": "^18.2.21",
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.1.6",
+    "@rollup/rollup-linux-x64-gnu": "4.9.0"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "4.9.0"
   }
 }
 EOF
 
-# Install core dependencies first
-echo "===== INSTALLING CORE DEPENDENCIES ====="
-npm install vite@latest @vitejs/plugin-react@latest --save-exact || exit 1
+# Install dependencies with specific flags
+echo "===== INSTALLING DEPENDENCIES ====="
+# First install core dependencies
+npm install --no-optional --ignore-scripts || exit 1
 
-# Then install remaining dependencies
-echo "===== INSTALLING REMAINING DEPENDENCIES ====="
-npm install --no-optional || exit 1
+# Then install platform-specific dependencies
+echo "Installing platform-specific dependencies..."
+npm install @rollup/rollup-linux-x64-gnu@4.9.0 --no-save || true
 
 # Create vite config
 echo "===== CREATING VITE CONFIG ====="
@@ -76,7 +82,16 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: '../static',
-    emptyOutDir: true
+    emptyOutDir: true,
+    rollupOptions: {
+      external: ['@rollup/rollup-linux-x64-gnu'],
+      output: {
+        manualChunks: undefined
+      }
+    }
+  },
+  optimizeDeps: {
+    exclude: ['@rollup/rollup-linux-x64-gnu']
   }
 })
 EOF
@@ -84,11 +99,12 @@ EOF
 # Build the frontend
 echo "===== BUILDING FRONTEND ====="
 export NODE_ENV=production
+export VITE_PLATFORM=linux
 export NODE_PATH="$PWD/node_modules"
 
-# Attempt build
+# Attempt build with platform-specific options
 echo "Attempting build..."
-./node_modules/.bin/vite build
+ROLLUP_SKIP_PLATFORM_CHECK=true ./node_modules/.bin/vite build
 
 # Verify build output
 echo "===== VERIFYING BUILD ====="
