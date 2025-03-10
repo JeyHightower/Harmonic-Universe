@@ -1,0 +1,71 @@
+{
+  "name": "harmonic-universe",
+  "version": "1.0.0",
+  "description": "Physics-based music generation application",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && python run.py",
+    "start": "npm run start:backend",
+    "start:backend": "cd backend && python run.py",
+    "start:frontend": "cd frontend && npm run start",
+    "build": "cd frontend && npm run build",
+    "test": "concurrently \"npm run test:frontend\" \"npm run test:backend\"",
+    "test:frontend": "cd frontend && npm run test",
+    "test:backend": "cd backend && pytest",
+    "fix-frontend": "cd frontend && node scripts/fix-vite-deps.js",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && pip install -r requirements.txt",
+    "render-build": "cd frontend && npm run render-build && node scripts/generate-ant-icons-fallback.js",
+    "generate-ant-fallback": "cd frontend && node scripts/generate-ant-icons-fallback.js",
+    "test-ant-fallback": "cd frontend && node scripts/test-ant-icons-fallback.js",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:backend": "cd backend && flake8",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "clean": "rm -rf frontend/build backend/dist frontend/node_modules node_modules",
+    "deploy": "./build.sh",
+    "eject": "react-scripts eject"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "cliui": "^8.0.1",
+    "concurrently": "^7.6.0"
+  },
+  "resolutions": {
+    "react-is": "^18.2.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "express": "^4.21.2",
+    "nginx": "^1.0.8",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-redux": "^8.1.3",
+    "react-router-dom": "^6.18.0",
+    "react-scripts": "5.0.1",
+    "redux": "^4.2.1",
+    "redux-thunk": "^2.4.2"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "engines": {
+    "node": ">=14",
+    "npm": ">=6"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/harmonic-universe.git"
+  },
+  "author": "",
+  "license": "MIT"
+}

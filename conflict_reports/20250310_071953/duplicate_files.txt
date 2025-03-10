@@ -1,0 +1,76 @@
+Calculating file hashes...
+Finding duplicate files...
+
+Duplicate set found (MD5: 071d61cce78c4391e3175cc8828adf73):
+  ./frontend/public/assets/test.html
+  ./frontend/public/test.html
+  ./static/assets 2/test.html
+  ./static/assets/test.html
+  ./static/test.html
+
+Duplicate set found (MD5: 1ec4628d1b75baa7a5950dfc7b7d4594):
+  ./frontend/public/assets/react-context-provider.js
+  ./static/assets 2/react-context-provider.js
+  ./static/assets/react-context-provider.js
+
+Duplicate set found (MD5: 1f3e299f56fbe56002d1f96423483e13):
+  ./frontend/public/assets/react-polyfill.js
+  ./frontend/public/react-polyfill.js
+  ./static/assets 2/react-polyfill.js
+  ./static/assets/react-polyfill.js
+  ./static/react-polyfill.js
+
+Duplicate set found (MD5: 6126bec79d37652a825b48af177dd26f):
+  ./frontend/debug-build.js
+  ./frontend/scripts/debug-build.js
+
+Duplicate set found (MD5: 7215ee9c7d9dc229d2921a40e899ec5f):
+  ./app/core/config.py
+  ./app/core/database.py
+  ./app/core/security.py
+
+Duplicate set found (MD5: 7b9399ddf56ef91d617d13df01c1767c):
+  ./app/db/repositories/physics_parameter.py
+  ./app/services/physics/crud_physics_parameter.py
+
+Duplicate set found (MD5: 7cc10c3cc335baf1b9861f707de82eab):
+  ./frontend/scripts/simplified-build.js
+  ./frontend/simplified-build.js
+
+Duplicate set found (MD5: 83427999d826a5d2afbaa10c2cd6a5a4):
+  ./static/index-_bIjTHVT.css
+  ./static/static 2/index-_bIjTHVT.css
+  ./static/static/index-_bIjTHVT.css
+
+Duplicate set found (MD5: a3dae8744e916053ea18aeadb3fff4b9):
+  ./static/index-CCEb0U2D.js
+  ./static/static 2/index-CCEb0U2D.js
+  ./static/static/index-CCEb0U2D.js
+
+Duplicate set found (MD5: b8e94fc8478e48a4a270a854ad64ab6d):
+  ./frontend/public/assets/index.html
+  ./static/assets 2/index.html
+  ./static/assets/index.html
+
+Duplicate set found (MD5: d41d8cd98f00b204e9800998ecf8427e):
+  ./backend/app/schemas/ai/__init__.py
+  ./backend/app/schemas/audio/__init__.py
+  ./backend/app/schemas/core/__init__.py
+  ./backend/app/schemas/export/__init__.py
+  ./backend/app/schemas/organization/__init__.py
+  ./backend/app/schemas/visualization/__init__.py
+  ./backend/app/services/ai/__init__.py
+  ./backend/app/services/audio/__init__.py
+  ./backend/app/services/core/__init__.py
+  ./backend/app/services/export/__init__.py
+  ./backend/app/services/organization/__init__.py
+  ./backend/app/services/visualization/__init__.py
+  ./backend/tests/e2e/__init__.py
+  ./backend/tests/integration/__init__.py
+  ./backend/tests/integration/api/__init__.py
+  ./backend/tests/unit/__init__.py
+  ./backend/tests/unit/api/__init__.py
+  ./backend/tests/unit/models/__init__.py
+  ./fix-start-port.sh
+
+Found 11 sets of duplicate files

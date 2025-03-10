@@ -1,0 +1,1070 @@
+find_conflicts.sh completed successfully (Iteration 13)
+
+--- Task 2: Cleaning up the codebase ---
+
+====== Running cleanup_codebase.sh (Iteration 13) ======
+Started at: Mon Mar 10 11:01:34 CDT 2025
+====== Starting Codebase Cleanup Process ======
+Mon Mar 10 11:01:35 CDT 2025: Cleanup initiated
+Created backup directory: ./backups/20250310_110135
+==== Step 1: Cleaning up duplicate shell scripts ====
+Created scripts directory for canonical script versions
+Backed up: build-nomigrations.sh
+Backed up: build.sh
+Backed up: cleanup-cache.sh
+Backed up: cleanup.sh
+Backed up: cleanup_codebase.sh
+Backed up: db_connect.sh
+Backed up: debug-frontend-build.sh
+Backed up: deploy-react-fixes.sh
+Backed up: deploy-updates.sh
+Backed up: deploy-with-fixes.sh
+Backed up: deploy.sh
+Backed up: dev.sh
+Backed up: final-deploy-fix.sh
+Backed up: final-render-fix.sh
+Backed up: find_conflicts.sh
+Backed up: fix-all.sh
+Backed up: fix-app-module.sh
+Backed up: fix-build-directory.sh
+Backed up: fix-build-simple.sh
+Backed up: fix-build.sh
+Backed up: fix-deployment.sh
+Backed up: fix-gunicorn-app.sh
+Backed up: fix-gunicorn-import.sh
+Backed up: fix-jsx-extension.sh
+Backed up: fix-react-cdn.sh
+Backed up: fix-react-errors.sh
+Backed up: fix-render-simple.sh
+Backed up: fix-render-yaml.sh
+Backed up: fix-script-loading.sh
+Backed up: fix-start-port.sh
+Backed up: fix-start-script.sh
+Backed up: fix-start-simple.sh
+Backed up: fix-vite-simple.sh
+Backed up: fix-wsgi-config.sh
+Backed up: integrate-react-fixes.sh
+Backed up: master-cleanup.sh
+Backed up: master_cleanup.sh
+Backed up: migrate-to-vite-mac.sh
+Backed up: migrate-to-vite.sh
+Backed up: minimal_start.sh
+Backed up: optimize_assets.sh
+Backed up: prerun.sh
+Backed up: prerun_simple.sh
+Backed up: pure_bash_server.sh
+Backed up: render-build.sh
+Backed up: render-start.sh
+Backed up: render_build.sh
+Backed up: render_build_safe.sh
+Backed up: render_db_manager.sh
+Backed up: render_deploy.sh
+Backed up: render_quickdeploy.sh
+Backed up: render_start.sh
+Backed up: rollback.sh
+Backed up: run.sh
+Backed up: run_local.sh
+Backed up: setup.sh
+Backed up: setup_database.sh
+Backed up: setup_db.sh
+Backed up: setup_executable.sh
+Backed up: simple-cleanup.sh
+Backed up: start-gunicorn.sh
+Backed up: start-render.sh
+Backed up: start-safe.sh
+Backed up: start.sh
+Backed up: start_app.sh
+Backed up: start_standard.sh
+Backed up: static_solution.sh
+Backed up: symlinks.sh
+Backed up: test-react-fixes-directly.sh
+Backed up: test-react-fixes.sh
+Backed up: test.sh
+Backed up: test_deployment.sh
+Backed up: test_setup.sh
+Backed up: thorough-cleanup.sh
+Backed up: update-build-for-vite.sh
+Backed up: update-deploy-script.sh
+Backed up: update-render-build.sh
+Backed up: update-vite-config.sh
+Backed up: utils.sh
+Backed up: verify-fixes.sh
+Backed up: verify_cleanup.sh
+Backed up: verify_deployment.sh
+Backed up: verify_features.sh
+Backed up: verify_start.sh
+Preserved essential script: build.sh (from build.sh)
+Preserved essential script: start.sh (from start.sh)
+Preserved essential script: render_build.sh (from render_build.sh)
+Preserved essential script: start-gunicorn.sh (from start-gunicorn.sh)
+Preserved essential script: run_local.sh (from run_local.sh)
+Moved utility script: deploy-react-fixes.sh to scripts/utils/
+Moved utility script: deploy-with-fixes.sh to scripts/utils/
+Moved utility script: final-deploy-fix.sh to scripts/utils/
+Moved utility script: final-render-fix.sh to scripts/utils/
+Moved utility script: fix-app-module.sh to scripts/utils/
+Moved utility script: fix-build-directory.sh to scripts/utils/
+Moved utility script: fix-build-simple.sh to scripts/utils/
+Moved utility script: fix-build.sh to scripts/utils/
+Moved utility script: fix-deployment.sh to scripts/utils/
+Moved utility script: fix-gunicorn-app.sh to scripts/utils/
+Moved utility script: fix-gunicorn-import.sh to scripts/utils/
+Moved utility script: fix-jsx-extension.sh to scripts/utils/
+Moved utility script: fix-react-cdn.sh to scripts/utils/
+Moved utility script: fix-react-errors.sh to scripts/utils/
+Moved utility script: fix-render-simple.sh to scripts/utils/
+Moved utility script: fix-render-yaml.sh to scripts/utils/
+Moved utility script: fix-script-loading.sh to scripts/utils/
+Moved utility script: fix-start-port.sh to scripts/utils/
+Moved utility script: fix-start-script.sh to scripts/utils/
+Moved utility script: fix-start-simple.sh to scripts/utils/
+Moved utility script: fix-vite-simple.sh to scripts/utils/
+Moved utility script: fix-wsgi-config.sh to scripts/utils/
+Moved utility script: integrate-react-fixes.sh to scripts/utils/
+Moved utility script: test-react-fixes-directly.sh to scripts/utils/
+Moved utility script: test-react-fixes.sh to scripts/utils/
+Moved utility script: verify-fixes.sh to scripts/utils/
+Moved utility script: deploy-react-fixes.sh to scripts/utils/
+Moved utility script: deploy-updates.sh to scripts/utils/
+Moved utility script: deploy-with-fixes.sh to scripts/utils/
+Moved utility script: deploy.sh to scripts/utils/
+Moved utility script: final-deploy-fix.sh to scripts/utils/
+Moved utility script: fix-deployment.sh to scripts/utils/
+Moved utility script: render_deploy.sh to scripts/utils/
+Moved utility script: render_quickdeploy.sh to scripts/utils/
+Moved utility script: test_deployment.sh to scripts/utils/
+Moved utility script: update-deploy-script.sh to scripts/utils/
+Moved utility script: verify_deployment.sh to scripts/utils/
+Moved utility script: cleanup-cache.sh to scripts/utils/
+Moved utility script: cleanup.sh to scripts/utils/
+Moved utility script: cleanup_codebase.sh to scripts/utils/
+Moved utility script: master-cleanup.sh to scripts/utils/
+Moved utility script: master_cleanup.sh to scripts/utils/
+Moved utility script: simple-cleanup.sh to scripts/utils/
+Moved utility script: thorough-cleanup.sh to scripts/utils/
+Moved utility script: verify_cleanup.sh to scripts/utils/
+Moved utility script: verify-fixes.sh to scripts/utils/
+Moved utility script: verify_cleanup.sh to scripts/utils/
+Moved utility script: verify_deployment.sh to scripts/utils/
+Moved utility script: verify_features.sh to scripts/utils/
+Moved utility script: verify_start.sh to scripts/utils/
+==== Step 2: Consolidating static files ====
+Consolidating React fix files...
+Created symlink for: hook-fix.js
+Created symlink for: hook-js-patcher.js
+Created symlink for: react-context-fix.js
+Created symlink for: react-fix-loader.js
+Created symlink for: react-hook-fix.js
+Created symlink for: vendor-react-BasmCCun.js
+Created symlink for: vendor-react-DJ7Kff-Q.js
+Created symlink for: vendor-react.js
+Backed up: ./static/index.html
+Using frontend/dist/index.html as the canonical version
+Created redirecting index.html for app/static
+==== Step 3: Cleaning up JavaScript files ====
+Backed up: static/index-D8-aAJoQ.js
+Backing up duplicate JS file: static/index-D8-aAJoQ.js (will be removed)
+Backed up: static/Layout-CaNh0xx_.js
+Backing up duplicate JS file: static/Layout-CaNh0xx_.js (will be removed)
+Backed up: static/Dashboard-3e6RHIoY.js
+Backing up duplicate JS file: static/Dashboard-3e6RHIoY.js (will be removed)
+Backed up: static/Home-BrEEk1Rb.js
+Backing up duplicate JS file: static/Home-BrEEk1Rb.js (will be removed)
+Kept latest index file: static/index-D8-aAJoQ.js
+Kept latest Layout file: static/Layout-CaNh0xx_.js
+Kept latest Dashboard file: static/Dashboard-3e6RHIoY.js
+Kept latest Home file: static/Home-BrEEk1Rb.js
+Backed up: ./static/index.html
+Updated index.html to use consolidated JS files
+==== Step 4: Updating Python codebase references ====
+Backed up: ./app.py
+Updated static folder path in app.py
+Backed up: ./app/__init__.py
+Verified static folder path in app/__init__.py
+==== Step 5: Updating frontend configuration ====
+==== Cleanup Complete! ====
+Backup of original files stored in: ./backups/20250310_110135
+All major code duplications have been consolidated
+Next steps: 
+1. Verify the application runs correctly with the consolidated files
+2. Remove unnecessary backup files once verified
+3. Update documentation to reflect the new directory structure
+Mon Mar 10 11:01:42 CDT 2025: Cleanup process completed successfully!
+cleanup_codebase.sh completed successfully (Iteration 13)
+
+--- Task 3: Verifying the cleanup ---
+
+====== Running verify_cleanup.sh (Iteration 13) ======
+Started at: Mon Mar 10 11:01:42 CDT 2025
+====== Starting Cleanup Verification Process ======
+Mon Mar 10 11:01:42 CDT 2025: Verification initiated
+==== Verifying Directory Structure ====
+✅ Directory ./scripts exists
+✅ Directory ./scripts/utils exists
+✅ Directory ./static exists
+✅ Directory ./static/js exists
+✅ Directory ./static/css exists
+✅ Directory ./static/assets exists
+✅ Directory ./static/react-fixes exists
+✅ Directory ./frontend exists
+✅ Directory ./frontend/src exists
+✅ Directory ./frontend/public exists
+✅ Directory ./app exists
+
+==== Verifying Essential Scripts ====
+✅ ./scripts/build.sh exists
+✅ ./scripts/start.sh exists
+✅ ./scripts/render_build.sh exists
+✅ ./scripts/start-gunicorn.sh exists
+✅ ./scripts/run_local.sh exists
+✅ ./scripts/utils/common.sh exists
+
+==== Verifying Static Files ====
+✅ ./static/index.html exists
+✅ ./static/js/index.js exists
+✅ ./static/js/Layout.js exists
+✅ ./static/js/Dashboard.js exists
+✅ ./static/js/Home.js exists
+
+==== Verifying Frontend Files ====
+✅ ./frontend/public/index.html exists
+✅ ./frontend/src/index.js exists
+✅ ./frontend/src/App.jsx exists
+
+==== Verifying Python Files ====
+✅ ./app/__init__.py exists
+✅ ./app/routes.py exists
+✅ ./app.py exists
+✅ ./wsgi.py exists
+
+==== Checking for Duplicate Files ====
+Checking for duplicate build script...
+⚠️ Found multiple build script files (15):
+./backups/20250310_075128/build.sh
+./backups/20250310_080835/build.sh
+./backups/20250310_082535/build.sh
+./backups/20250310_084300/build.sh
+./backups/20250310_090114/build.sh
+./backups/20250310_092236/build.sh
+./backups/20250310_094558/build.sh
+./backups/20250310_095238/build.sh
+./backups/20250310_101512/build.sh
+./backups/20250310_102441/build.sh
+./backups/20250310_103318/build.sh
+./backups/20250310_110019/build.sh
+./backups/20250310_110135/build.sh
+./build.sh
+./scripts/build.sh
+Checking for duplicate start script...
+⚠️ Found multiple start script files (15):
+./backups/20250310_075128/start.sh
+./backups/20250310_080835/start.sh
+./backups/20250310_082535/start.sh
+./backups/20250310_084300/start.sh
+./backups/20250310_090114/start.sh
+./backups/20250310_092236/start.sh
+./backups/20250310_094558/start.sh
+./backups/20250310_095238/start.sh
+./backups/20250310_101512/start.sh
+./backups/20250310_102441/start.sh
+./backups/20250310_103318/start.sh
+./backups/20250310_110019/start.sh
+./backups/20250310_110135/start.sh
+./scripts/start.sh
+./start.sh
+Checking for duplicate render build script...
+⚠️ Found multiple render build script files (15):
+./backups/20250310_075128/render_build.sh
+./backups/20250310_080835/render_build.sh
+./backups/20250310_082535/render_build.sh
+./backups/20250310_084300/render_build.sh
+./backups/20250310_090114/render_build.sh
+./backups/20250310_092236/render_build.sh
+./backups/20250310_094558/render_build.sh
+./backups/20250310_095238/render_build.sh
+./backups/20250310_101512/render_build.sh
+./backups/20250310_102441/render_build.sh
+./backups/20250310_103318/render_build.sh
+./backups/20250310_110019/render_build.sh
+./backups/20250310_110135/render_build.sh
+./render_build.sh
+./scripts/render_build.sh
+Checking for duplicate WSGI file...
+⚠️ Found multiple WSGI file files (12):
+./app/wsgi.py
+./backend/venv/lib/python3.9/site-packages/asgiref/wsgi.py
+./backend/venv/lib/python3.9/site-packages/eventlet/wsgi.py
+./backend/venv/lib/python3.9/site-packages/eventlet/zipkin/wsgi.py
+./backend/venv/lib/python3.9/site-packages/fastapi/middleware/wsgi.py
+./backend/venv/lib/python3.9/site-packages/gunicorn/http/wsgi.py
+./backend/venv/lib/python3.9/site-packages/httpx/_transports/wsgi.py
+./backend/venv/lib/python3.9/site-packages/starlette/middleware/wsgi.py
+./backend/venv/lib/python3.9/site-packages/uvicorn/middleware/wsgi.py
+./backend/venv/lib/python3.9/site-packages/werkzeug/wsgi.py
+./backend/wsgi.py
+./wsgi.py
+Checking for duplicate index.html...
+⚠️ Found multiple index.html files (33):
+./app/static/index.html
+./backend/reports/coverage_html/index.html
+./backend/static/index.html
+./backend/venv/lib/python3.9/site-packages/coverage/htmlfiles/index.html
+./backups/20250310_075128/static/index.html
+./backups/20250310_080835/static/index.html
+./backups/20250310_082535/static/index.html
+./backups/20250310_084300/static/index.html
+./backups/20250310_090114/static/index.html
+./backups/20250310_092236/static/index.html
+./backups/20250310_094558/static/index.html
+./backups/20250310_095238/static/index.html
+./backups/20250310_101512/static/index.html
+./backups/20250310_102441/static/index.html
+./backups/20250310_103318/static/index.html
+./backups/20250310_110019/static/index.html
+./backups/20250310_110135/static/index.html
+./dist/index.html
+./frontend/backups/public.backup/index.html
+./frontend/backups/public.backup/public/index.html
+./frontend/dist/index.html
+./frontend/index.html
+./frontend/node_modules/lazy-ass/index.html
+./frontend/node_modules/toggle-selection/example/index.html
+./frontend/public/assets/index.html
+./frontend/public/index.html
+./node_modules/tryer/test/index.html
+./public/index.html
+./render_static/index.html
+./static/assets/index.html
+./static/index.html
+./static/react-app/public/index.html
+./venv/lib/python3.13/site-packages/setuptools/tests/indexes/test_links_priority/simple/foobar/index.html
+
+==== Checking Symlinks ====
+Checking React fix symlinks...
+verify_cleanup.sh completed successfully (Iteration 13)
+
+--- Completed iteration 13 of 15 ---
+Finished at: Mon Mar 10 11:01:55 CDT 2025
+Waiting 2 seconds before starting the next iteration...
+
+
+======= ITERATION 14 OF 15 =======
+Started at: Mon Mar 10 11:01:57 CDT 2025
+
+--- Task 1: Finding conflicts in the codebase ---
+
+====== Running find_conflicts.sh (Iteration 14) ======
+Started at: Mon Mar 10 11:01:57 CDT 2025
+====== Starting Conflict Detection Process ======
+Mon Mar 10 11:01:57 CDT 2025: Conflict detection initiated
+Created report directory: ./conflict_reports/20250310_110157
+==== Checking for direct file duplicates ====
+Calculating file hashes...
+Finding duplicate files...
+
+Found 64 sets of duplicate files
+Detailed report: ./conflict_reports/20250310_110157/duplicate_files.txt
+==== Checking for similar JavaScript files ====
+Checking JavaScript file similarity...
+Analyzing      363 JavaScript files...
+./find_conflicts.sh: line 91: ./frontend/public/assets/react-polyfill.js: No such file or directory
+find_conflicts.sh completed successfully (Iteration 14)
+
+--- Task 2: Cleaning up the codebase ---
+
+====== Running cleanup_codebase.sh (Iteration 14) ======
+Started at: Mon Mar 10 11:04:20 CDT 2025
+====== Starting Codebase Cleanup Process ======
+Mon Mar 10 11:04:20 CDT 2025: Cleanup initiated
+Created backup directory: ./backups/20250310_110420
+==== Step 1: Cleaning up duplicate shell scripts ====
+Created scripts directory for canonical script versions
+Backed up: aggressive-cleanup.sh
+Backed up: build-nomigrations.sh
+Backed up: build.sh
+Backed up: cleanup-cache.sh
+Backed up: cleanup.sh
+Backed up: cleanup_codebase.sh
+Backed up: db_connect.sh
+Backed up: debug-frontend-build.sh
+Backed up: deploy-react-fixes.sh
+Backed up: deploy-updates.sh
+Backed up: deploy-with-fixes.sh
+Backed up: deploy.sh
+Backed up: dev.sh
+Backed up: final-deploy-fix.sh
+Backed up: final-render-fix.sh
+Backed up: find_conflicts.sh
+Backed up: fix-all.sh
+Backed up: fix-app-module.sh
+Backed up: fix-build-directory.sh
+Backed up: fix-build-simple.sh
+Backed up: fix-build.sh
+Backed up: fix-deployment.sh
+Backed up: fix-gunicorn-app.sh
+Backed up: fix-gunicorn-import.sh
+Backed up: fix-jsx-extension.sh
+Backed up: fix-react-cdn.sh
+Backed up: fix-react-errors.sh
+Backed up: fix-render-simple.sh
+Backed up: fix-render-yaml.sh
+Backed up: fix-script-loading.sh
+Backed up: fix-start-port.sh
+Backed up: fix-start-script.sh
+Backed up: fix-start-simple.sh
+Backed up: fix-vite-simple.sh
+Backed up: fix-wsgi-config.sh
+Backed up: integrate-react-fixes.sh
+Backed up: master-cleanup.sh
+Backed up: master_cleanup.sh
+Backed up: migrate-to-vite-mac.sh
+Backed up: migrate-to-vite.sh
+Backed up: minimal_start.sh
+Backed up: optimize_assets.sh
+Backed up: prerun.sh
+Backed up: prerun_simple.sh
+Backed up: pure_bash_server.sh
+Backed up: render-build.sh
+Backed up: render-start.sh
+Backed up: render_build.sh
+Backed up: render_build_safe.sh
+Backed up: render_db_manager.sh
+Backed up: render_deploy.sh
+Backed up: render_quickdeploy.sh
+Backed up: render_start.sh
+Backed up: rollback.sh
+Backed up: run.sh
+Backed up: run_local.sh
+Backed up: setup.sh
+Backed up: setup_database.sh
+Backed up: setup_db.sh
+Backed up: setup_executable.sh
+Backed up: simple-cleanup.sh
+Backed up: start-gunicorn.sh
+Backed up: start-render.sh
+Backed up: start-safe.sh
+Backed up: start.sh
+Backed up: start_app.sh
+Backed up: start_standard.sh
+Backed up: static_solution.sh
+Backed up: symlinks.sh
+Backed up: test-react-fixes-directly.sh
+Backed up: test-react-fixes.sh
+Backed up: test.sh
+Backed up: test_deployment.sh
+Backed up: test_setup.sh
+Backed up: thorough-cleanup.sh
+Backed up: update-build-for-vite.sh
+Backed up: update-deploy-script.sh
+Backed up: update-render-build.sh
+Backed up: update-vite-config.sh
+Backed up: utils.sh
+Backed up: verify-fixes.sh
+Backed up: verify_cleanup.sh
+Backed up: verify_deployment.sh
+Backed up: verify_features.sh
+Backed up: verify_start.sh
+Preserved essential script: build.sh (from build.sh)
+Preserved essential script: start.sh (from start.sh)
+Preserved essential script: render_build.sh (from render_build.sh)
+Preserved essential script: start-gunicorn.sh (from start-gunicorn.sh)
+Preserved essential script: run_local.sh (from run_local.sh)
+Moved utility script: deploy-react-fixes.sh to scripts/utils/
+Moved utility script: deploy-with-fixes.sh to scripts/utils/
+Moved utility script: final-deploy-fix.sh to scripts/utils/
+Moved utility script: final-render-fix.sh to scripts/utils/
+Moved utility script: fix-app-module.sh to scripts/utils/
+Moved utility script: fix-build-directory.sh to scripts/utils/
+Moved utility script: fix-build-simple.sh to scripts/utils/
+Moved utility script: fix-build.sh to scripts/utils/
+Moved utility script: fix-deployment.sh to scripts/utils/
+Moved utility script: fix-gunicorn-app.sh to scripts/utils/
+Moved utility script: fix-gunicorn-import.sh to scripts/utils/
+Moved utility script: fix-jsx-extension.sh to scripts/utils/
+Moved utility script: fix-react-cdn.sh to scripts/utils/
+Moved utility script: fix-react-errors.sh to scripts/utils/
+Moved utility script: fix-render-simple.sh to scripts/utils/
+Moved utility script: fix-render-yaml.sh to scripts/utils/
+Moved utility script: fix-script-loading.sh to scripts/utils/
+Moved utility script: fix-start-port.sh to scripts/utils/
+Moved utility script: fix-start-script.sh to scripts/utils/
+Moved utility script: fix-start-simple.sh to scripts/utils/
+Moved utility script: fix-vite-simple.sh to scripts/utils/
+Moved utility script: fix-wsgi-config.sh to scripts/utils/
+Moved utility script: integrate-react-fixes.sh to scripts/utils/
+Moved utility script: test-react-fixes-directly.sh to scripts/utils/
+Moved utility script: test-react-fixes.sh to scripts/utils/
+Moved utility script: verify-fixes.sh to scripts/utils/
+Moved utility script: deploy-react-fixes.sh to scripts/utils/
+Moved utility script: deploy-updates.sh to scripts/utils/
+Moved utility script: deploy-with-fixes.sh to scripts/utils/
+Moved utility script: deploy.sh to scripts/utils/
+Moved utility script: final-deploy-fix.sh to scripts/utils/
+Moved utility script: fix-deployment.sh to scripts/utils/
+Moved utility script: render_deploy.sh to scripts/utils/
+Moved utility script: render_quickdeploy.sh to scripts/utils/
+Moved utility script: test_deployment.sh to scripts/utils/
+Moved utility script: update-deploy-script.sh to scripts/utils/
+Moved utility script: verify_deployment.sh to scripts/utils/
+Moved utility script: aggressive-cleanup.sh to scripts/utils/
+Moved utility script: cleanup-cache.sh to scripts/utils/
+Moved utility script: cleanup.sh to scripts/utils/
+Moved utility script: cleanup_codebase.sh to scripts/utils/
+Moved utility script: master-cleanup.sh to scripts/utils/
+Moved utility script: master_cleanup.sh to scripts/utils/
+Moved utility script: simple-cleanup.sh to scripts/utils/
+Moved utility script: thorough-cleanup.sh to scripts/utils/
+Moved utility script: verify_cleanup.sh to scripts/utils/
+Moved utility script: verify-fixes.sh to scripts/utils/
+Moved utility script: verify_cleanup.sh to scripts/utils/
+Moved utility script: verify_deployment.sh to scripts/utils/
+Moved utility script: verify_features.sh to scripts/utils/
+Moved utility script: verify_start.sh to scripts/utils/
+==== Step 2: Consolidating static files ====
+Consolidating React fix files...
+Backed up: ./static/index.html
+Using frontend/public/index.html as the canonical version
+Created redirecting index.html for app/static
+==== Step 3: Cleaning up JavaScript files ====
+Backed up: static/index-D8-aAJoQ.js
+Backing up duplicate JS file: static/index-D8-aAJoQ.js (will be removed)
+Backed up: static/Layout-CaNh0xx_.js
+Backing up duplicate JS file: static/Layout-CaNh0xx_.js (will be removed)
+Backed up: static/Dashboard-3e6RHIoY.js
+Backing up duplicate JS file: static/Dashboard-3e6RHIoY.js (will be removed)
+Backed up: static/Home-BrEEk1Rb.js
+Backing up duplicate JS file: static/Home-BrEEk1Rb.js (will be removed)
+Kept latest index file: static/index-D8-aAJoQ.js
+Kept latest Layout file: static/Layout-CaNh0xx_.js
+Kept latest Dashboard file: static/Dashboard-3e6RHIoY.js
+Kept latest Home file: static/Home-BrEEk1Rb.js
+Backed up: ./static/index.html
+Updated index.html to use consolidated JS files
+==== Step 4: Updating Python codebase references ====
+Backed up: ./app.py
+Updated static folder path in app.py
+Backed up: ./app/__init__.py
+Verified static folder path in app/__init__.py
+==== Step 5: Updating frontend configuration ====
+Created symlink for react-diagnostics.js in frontend/src/utils
+==== Cleanup Complete! ====
+Backup of original files stored in: ./backups/20250310_110420
+All major code duplications have been consolidated
+Next steps: 
+1. Verify the application runs correctly with the consolidated files
+2. Remove unnecessary backup files once verified
+3. Update documentation to reflect the new directory structure
+Mon Mar 10 11:04:25 CDT 2025: Cleanup process completed successfully!
+cleanup_codebase.sh completed successfully (Iteration 14)
+
+--- Task 3: Verifying the cleanup ---
+
+====== Running verify_cleanup.sh (Iteration 14) ======
+Started at: Mon Mar 10 11:04:25 CDT 2025
+====== Starting Cleanup Verification Process ======
+Mon Mar 10 11:04:25 CDT 2025: Verification initiated
+==== Verifying Directory Structure ====
+✅ Directory ./scripts exists
+✅ Directory ./scripts/utils exists
+✅ Directory ./static exists
+✅ Directory ./static/js exists
+✅ Directory ./static/css exists
+✅ Directory ./static/assets exists
+✅ Directory ./static/react-fixes exists
+✅ Directory ./frontend exists
+✅ Directory ./frontend/src exists
+✅ Directory ./frontend/public exists
+✅ Directory ./app exists
+
+==== Verifying Essential Scripts ====
+✅ ./scripts/build.sh exists
+✅ ./scripts/start.sh exists
+✅ ./scripts/render_build.sh exists
+✅ ./scripts/start-gunicorn.sh exists
+✅ ./scripts/run_local.sh exists
+✅ ./scripts/utils/common.sh exists
+
+==== Verifying Static Files ====
+✅ ./static/index.html exists
+✅ ./static/js/index.js exists
+✅ ./static/js/Layout.js exists
+✅ ./static/js/Dashboard.js exists
+✅ ./static/js/Home.js exists
+
+==== Verifying Frontend Files ====
+✅ ./frontend/public/index.html exists
+✅ ./frontend/src/index.js exists
+✅ ./frontend/src/App.jsx exists
+
+==== Verifying Python Files ====
+✅ ./app/__init__.py exists
+✅ ./app/routes.py exists
+✅ ./app.py exists
+✅ ./wsgi.py exists
+
+==== Checking for Duplicate Files ====
+Checking for duplicate build script...
+⚠️ Found multiple build script files (16):
+./backups/20250310_075128/build.sh
+./backups/20250310_080835/build.sh
+./backups/20250310_082535/build.sh
+./backups/20250310_084300/build.sh
+./backups/20250310_090114/build.sh
+./backups/20250310_092236/build.sh
+./backups/20250310_094558/build.sh
+./backups/20250310_095238/build.sh
+./backups/20250310_101512/build.sh
+./backups/20250310_102441/build.sh
+./backups/20250310_103318/build.sh
+./backups/20250310_110019/build.sh
+./backups/20250310_110135/build.sh
+./backups/20250310_110420/build.sh
+./build.sh
+./scripts/build.sh
+Checking for duplicate start script...
+⚠️ Found multiple start script files (16):
+./backups/20250310_075128/start.sh
+./backups/20250310_080835/start.sh
+./backups/20250310_082535/start.sh
+./backups/20250310_084300/start.sh
+./backups/20250310_090114/start.sh
+./backups/20250310_092236/start.sh
+./backups/20250310_094558/start.sh
+./backups/20250310_095238/start.sh
+./backups/20250310_101512/start.sh
+./backups/20250310_102441/start.sh
+./backups/20250310_103318/start.sh
+./backups/20250310_110019/start.sh
+./backups/20250310_110135/start.sh
+./backups/20250310_110420/start.sh
+./scripts/start.sh
+./start.sh
+Checking for duplicate render build script...
+⚠️ Found multiple render build script files (16):
+./backups/20250310_075128/render_build.sh
+./backups/20250310_080835/render_build.sh
+./backups/20250310_082535/render_build.sh
+./backups/20250310_084300/render_build.sh
+./backups/20250310_090114/render_build.sh
+./backups/20250310_092236/render_build.sh
+./backups/20250310_094558/render_build.sh
+./backups/20250310_095238/render_build.sh
+./backups/20250310_101512/render_build.sh
+./backups/20250310_102441/render_build.sh
+./backups/20250310_103318/render_build.sh
+./backups/20250310_110019/render_build.sh
+./backups/20250310_110135/render_build.sh
+./backups/20250310_110420/render_build.sh
+./render_build.sh
+./scripts/render_build.sh
+Checking for duplicate WSGI file...
+⚠️ Found multiple WSGI file files (3):
+./app/wsgi.py
+./backend/wsgi.py
+./wsgi.py
+Checking for duplicate index.html...
+⚠️ Found multiple index.html files (31):
+./app/static/index.html
+./backend/reports/coverage_html/index.html
+./backend/static/index.html
+./backend/venv/lib/python3.9/site-packages/coverage/htmlfiles/index.html
+./backups/20250310_075128/static/index.html
+./backups/20250310_080835/static/index.html
+./backups/20250310_082535/static/index.html
+./backups/20250310_084300/static/index.html
+./backups/20250310_090114/static/index.html
+./backups/20250310_092236/static/index.html
+./backups/20250310_094558/static/index.html
+./backups/20250310_095238/static/index.html
+./backups/20250310_101512/static/index.html
+./backups/20250310_102441/static/index.html
+./backups/20250310_103318/static/index.html
+./backups/20250310_110019/static/index.html
+./backups/20250310_110135/static/index.html
+./backups/20250310_110420/static/index.html
+./dist/index.html
+./frontend/backups/public.backup/index.html
+./frontend/backups/public.backup/public/index.html
+./frontend/index.html
+./frontend/public/assets/index.html
+./frontend/public/index.html
+./node_modules/tryer/test/index.html
+./public/index.html
+./render_static/index.html
+./static/assets/index.html
+./static/index.html
+./static/react-app/public/index.html
+./venv/lib/python3.13/site-packages/setuptools/tests/indexes/test_links_priority/simple/foobar/index.html
+
+==== Checking Symlinks ====
+Checking React fix symlinks...
+verify_cleanup.sh completed successfully (Iteration 14)
+
+--- Completed iteration 14 of 15 ---
+Finished at: Mon Mar 10 11:04:32 CDT 2025
+Waiting 2 seconds before starting the next iteration...
+
+
+======= ITERATION 15 OF 15 =======
+Started at: Mon Mar 10 11:04:34 CDT 2025
+
+--- Task 1: Finding conflicts in the codebase ---
+
+====== Running find_conflicts.sh (Iteration 15) ======
+Started at: Mon Mar 10 11:04:34 CDT 2025
+====== Starting Conflict Detection Process ======
+Mon Mar 10 11:04:34 CDT 2025: Conflict detection initiated
+Created report directory: ./conflict_reports/20250310_110434
+==== Checking for direct file duplicates ====
+Calculating file hashes...
+Finding duplicate files...
+
+Found 65 sets of duplicate files
+Detailed report: ./conflict_reports/20250310_110434/duplicate_files.txt
+==== Checking for similar JavaScript files ====
+Checking JavaScript file similarity...
+Analyzing      341 JavaScript files...
+./find_conflicts.sh: line 91: ./backend/tests/unit/test-setup.js: No such file or directory
+find_conflicts.sh completed successfully (Iteration 15)
+
+--- Task 2: Cleaning up the codebase ---
+
+====== Running cleanup_codebase.sh (Iteration 15) ======
+Started at: Mon Mar 10 11:08:48 CDT 2025
+====== Starting Codebase Cleanup Process ======
+Mon Mar 10 11:08:48 CDT 2025: Cleanup initiated
+Created backup directory: ./backups/20250310_110849
+==== Step 1: Cleaning up duplicate shell scripts ====
+Created scripts directory for canonical script versions
+Backed up: aggressive-cleanup.sh
+Backed up: build-nomigrations.sh
+Backed up: build.sh
+Backed up: cleanup-cache.sh
+Backed up: cleanup.sh
+Backed up: cleanup_codebase.sh
+Backed up: db_connect.sh
+Backed up: debug-frontend-build.sh
+Backed up: deploy-react-fixes.sh
+Backed up: deploy-updates.sh
+Backed up: deploy-with-fixes.sh
+Backed up: deploy.sh
+Backed up: dev.sh
+Backed up: final-cleanup.sh
+Backed up: final-deploy-fix.sh
+Backed up: final-render-fix.sh
+Backed up: find_conflicts.sh
+Backed up: fix-all.sh
+Backed up: fix-app-module.sh
+Backed up: fix-build-directory.sh
+Backed up: fix-build-simple.sh
+Backed up: fix-build.sh
+Backed up: fix-deployment.sh
+Backed up: fix-gunicorn-app.sh
+Backed up: fix-gunicorn-import.sh
+Backed up: fix-jsx-extension.sh
+Backed up: fix-react-cdn.sh
+Backed up: fix-react-errors.sh
+Backed up: fix-render-simple.sh
+Backed up: fix-render-yaml.sh
+Backed up: fix-script-loading.sh
+Backed up: fix-start-port.sh
+Backed up: fix-start-script.sh
+Backed up: fix-start-simple.sh
+Backed up: fix-vite-simple.sh
+Backed up: fix-wsgi-config.sh
+Backed up: integrate-react-fixes.sh
+Backed up: master-cleanup.sh
+Backed up: master_cleanup.sh
+Backed up: migrate-to-vite-mac.sh
+Backed up: migrate-to-vite.sh
+Backed up: minimal_start.sh
+Backed up: optimize_assets.sh
+Backed up: prerun.sh
+Backed up: prerun_simple.sh
+Backed up: pure_bash_server.sh
+Backed up: render-build.sh
+Backed up: render-start.sh
+Backed up: render_build.sh
+Backed up: render_build_safe.sh
+Backed up: render_db_manager.sh
+Backed up: render_deploy.sh
+Backed up: render_quickdeploy.sh
+Backed up: render_start.sh
+Backed up: rollback.sh
+Backed up: run.sh
+Backed up: run_local.sh
+Backed up: setup.sh
+Backed up: setup_database.sh
+Backed up: setup_db.sh
+Backed up: setup_executable.sh
+Backed up: simple-cleanup.sh
+Backed up: start-gunicorn.sh
+Backed up: start-render.sh
+Backed up: start-safe.sh
+Backed up: start.sh
+Backed up: start_app.sh
+Backed up: start_standard.sh
+Backed up: static_solution.sh
+Backed up: symlinks.sh
+Backed up: test-react-fixes-directly.sh
+Backed up: test-react-fixes.sh
+Backed up: test.sh
+Backed up: test_deployment.sh
+Backed up: test_setup.sh
+Backed up: thorough-cleanup-v2.sh
+Backed up: thorough-cleanup.sh
+Backed up: update-build-for-vite.sh
+Backed up: update-deploy-script.sh
+Backed up: update-render-build.sh
+Backed up: update-vite-config.sh
+Backed up: utils.sh
+Backed up: verify-fixes.sh
+Backed up: verify_cleanup.sh
+Backed up: verify_deployment.sh
+Backed up: verify_features.sh
+Backed up: verify_start.sh
+Preserved essential script: build.sh (from build.sh)
+Preserved essential script: start.sh (from start.sh)
+Preserved essential script: render_build.sh (from render_build.sh)
+Preserved essential script: start-gunicorn.sh (from start-gunicorn.sh)
+Preserved essential script: run_local.sh (from run_local.sh)
+Moved utility script: deploy-react-fixes.sh to scripts/utils/
+Moved utility script: deploy-with-fixes.sh to scripts/utils/
+Moved utility script: final-deploy-fix.sh to scripts/utils/
+Moved utility script: final-render-fix.sh to scripts/utils/
+Moved utility script: fix-app-module.sh to scripts/utils/
+Moved utility script: fix-build-directory.sh to scripts/utils/
+Moved utility script: fix-build-simple.sh to scripts/utils/
+Moved utility script: fix-build.sh to scripts/utils/
+Moved utility script: fix-deployment.sh to scripts/utils/
+Moved utility script: fix-gunicorn-app.sh to scripts/utils/
+Moved utility script: fix-gunicorn-import.sh to scripts/utils/
+Moved utility script: fix-jsx-extension.sh to scripts/utils/
+Moved utility script: fix-react-cdn.sh to scripts/utils/
+Moved utility script: fix-react-errors.sh to scripts/utils/
+Moved utility script: fix-render-simple.sh to scripts/utils/
+Moved utility script: fix-render-yaml.sh to scripts/utils/
+Moved utility script: fix-script-loading.sh to scripts/utils/
+Moved utility script: fix-start-port.sh to scripts/utils/
+Moved utility script: fix-start-script.sh to scripts/utils/
+Moved utility script: fix-start-simple.sh to scripts/utils/
+Moved utility script: fix-vite-simple.sh to scripts/utils/
+Moved utility script: fix-wsgi-config.sh to scripts/utils/
+Moved utility script: integrate-react-fixes.sh to scripts/utils/
+Moved utility script: test-react-fixes-directly.sh to scripts/utils/
+Moved utility script: test-react-fixes.sh to scripts/utils/
+Moved utility script: verify-fixes.sh to scripts/utils/
+Moved utility script: deploy-react-fixes.sh to scripts/utils/
+Moved utility script: deploy-updates.sh to scripts/utils/
+Moved utility script: deploy-with-fixes.sh to scripts/utils/
+Moved utility script: deploy.sh to scripts/utils/
+Moved utility script: final-deploy-fix.sh to scripts/utils/
+Moved utility script: fix-deployment.sh to scripts/utils/
+Moved utility script: render_deploy.sh to scripts/utils/
+Moved utility script: render_quickdeploy.sh to scripts/utils/
+Moved utility script: test_deployment.sh to scripts/utils/
+Moved utility script: update-deploy-script.sh to scripts/utils/
+Moved utility script: verify_deployment.sh to scripts/utils/
+Moved utility script: aggressive-cleanup.sh to scripts/utils/
+Moved utility script: cleanup-cache.sh to scripts/utils/
+Moved utility script: cleanup.sh to scripts/utils/
+Moved utility script: cleanup_codebase.sh to scripts/utils/
+Moved utility script: final-cleanup.sh to scripts/utils/
+Moved utility script: master-cleanup.sh to scripts/utils/
+Moved utility script: master_cleanup.sh to scripts/utils/
+Moved utility script: simple-cleanup.sh to scripts/utils/
+Moved utility script: thorough-cleanup-v2.sh to scripts/utils/
+Moved utility script: thorough-cleanup.sh to scripts/utils/
+Moved utility script: verify_cleanup.sh to scripts/utils/
+Moved utility script: verify-fixes.sh to scripts/utils/
+Moved utility script: verify_cleanup.sh to scripts/utils/
+Moved utility script: verify_deployment.sh to scripts/utils/
+Moved utility script: verify_features.sh to scripts/utils/
+Moved utility script: verify_start.sh to scripts/utils/
+==== Step 2: Consolidating static files ====
+Consolidating React fix files...
+Backed up: ./static/index.html
+Using frontend/public/index.html as the canonical version
+Created redirecting index.html for app/static
+==== Step 3: Cleaning up JavaScript files ====
+Backed up: static/index-D8-aAJoQ.js
+Backing up duplicate JS file: static/index-D8-aAJoQ.js (will be removed)
+Backed up: static/Layout-CaNh0xx_.js
+Backing up duplicate JS file: static/Layout-CaNh0xx_.js (will be removed)
+Backed up: static/Dashboard-3e6RHIoY.js
+Backing up duplicate JS file: static/Dashboard-3e6RHIoY.js (will be removed)
+Backed up: static/Home-BrEEk1Rb.js
+Backing up duplicate JS file: static/Home-BrEEk1Rb.js (will be removed)
+Kept latest index file: static/index-D8-aAJoQ.js
+Kept latest Layout file: static/Layout-CaNh0xx_.js
+Kept latest Dashboard file: static/Dashboard-3e6RHIoY.js
+Kept latest Home file: static/Home-BrEEk1Rb.js
+Backed up: ./static/index.html
+Updated index.html to use consolidated JS files
+==== Step 4: Updating Python codebase references ====
+Backed up: ./app.py
+Updated static folder path in app.py
+Backed up: ./app/__init__.py
+Verified static folder path in app/__init__.py
+==== Step 5: Updating frontend configuration ====
+==== Cleanup Complete! ====
+Backup of original files stored in: ./backups/20250310_110849
+All major code duplications have been consolidated
+Next steps: 
+1. Verify the application runs correctly with the consolidated files
+2. Remove unnecessary backup files once verified
+3. Update documentation to reflect the new directory structure
+Mon Mar 10 11:08:56 CDT 2025: Cleanup process completed successfully!
+cleanup_codebase.sh completed successfully (Iteration 15)
+
+--- Task 3: Verifying the cleanup ---
+
+====== Running verify_cleanup.sh (Iteration 15) ======
+Started at: Mon Mar 10 11:08:56 CDT 2025
+====== Starting Cleanup Verification Process ======
+Mon Mar 10 11:08:56 CDT 2025: Verification initiated
+==== Verifying Directory Structure ====
+✅ Directory ./scripts exists
+✅ Directory ./scripts/utils exists
+✅ Directory ./static exists
+✅ Directory ./static/js exists
+✅ Directory ./static/css exists
+✅ Directory ./static/assets exists
+✅ Directory ./static/react-fixes exists
+✅ Directory ./frontend exists
+✅ Directory ./frontend/src exists
+✅ Directory ./frontend/public exists
+✅ Directory ./app exists
+
+==== Verifying Essential Scripts ====
+✅ ./scripts/build.sh exists
+✅ ./scripts/start.sh exists
+✅ ./scripts/render_build.sh exists
+✅ ./scripts/start-gunicorn.sh exists
+✅ ./scripts/run_local.sh exists
+✅ ./scripts/utils/common.sh exists
+
+==== Verifying Static Files ====
+✅ ./static/index.html exists
+✅ ./static/js/index.js exists
+✅ ./static/js/Layout.js exists
+✅ ./static/js/Dashboard.js exists
+✅ ./static/js/Home.js exists
+
+==== Verifying Frontend Files ====
+✅ ./frontend/public/index.html exists
+✅ ./frontend/src/index.js exists
+✅ ./frontend/src/App.jsx exists
+
+==== Verifying Python Files ====
+✅ ./app/__init__.py exists
+✅ ./app/routes.py exists
+✅ ./app.py exists
+✅ ./wsgi.py exists
+
+==== Checking for Duplicate Files ====
+Checking for duplicate build script...
+⚠️ Found multiple build script files (17):
+./backups/20250310_075128/build.sh
+./backups/20250310_080835/build.sh
+./backups/20250310_082535/build.sh
+./backups/20250310_084300/build.sh
+./backups/20250310_090114/build.sh
+./backups/20250310_092236/build.sh
+./backups/20250310_094558/build.sh
+./backups/20250310_095238/build.sh
+./backups/20250310_101512/build.sh
+./backups/20250310_102441/build.sh
+./backups/20250310_103318/build.sh
+./backups/20250310_110019/build.sh
+./backups/20250310_110135/build.sh
+./backups/20250310_110420/build.sh
+./backups/20250310_110849/build.sh
+./build.sh
+./scripts/build.sh
+Checking for duplicate start script...
+⚠️ Found multiple start script files (17):
+./backups/20250310_075128/start.sh
+./backups/20250310_080835/start.sh
+./backups/20250310_082535/start.sh
+./backups/20250310_084300/start.sh
+./backups/20250310_090114/start.sh
+./backups/20250310_092236/start.sh
+./backups/20250310_094558/start.sh
+./backups/20250310_095238/start.sh
+./backups/20250310_101512/start.sh
+./backups/20250310_102441/start.sh
+./backups/20250310_103318/start.sh
+./backups/20250310_110019/start.sh
+./backups/20250310_110135/start.sh
+./backups/20250310_110420/start.sh
+./backups/20250310_110849/start.sh
+./scripts/start.sh
+./start.sh
+Checking for duplicate render build script...
+⚠️ Found multiple render build script files (17):
+./backups/20250310_075128/render_build.sh
+./backups/20250310_080835/render_build.sh
+./backups/20250310_082535/render_build.sh
+./backups/20250310_084300/render_build.sh
+./backups/20250310_090114/render_build.sh
+./backups/20250310_092236/render_build.sh
+./backups/20250310_094558/render_build.sh
+./backups/20250310_095238/render_build.sh
+./backups/20250310_101512/render_build.sh
+./backups/20250310_102441/render_build.sh
+./backups/20250310_103318/render_build.sh
+./backups/20250310_110019/render_build.sh
+./backups/20250310_110135/render_build.sh
+./backups/20250310_110420/render_build.sh
+./backups/20250310_110849/render_build.sh
+./render_build.sh
+./scripts/render_build.sh
+Checking for duplicate WSGI file...
+⚠️ Found multiple WSGI file files (3):
+./app/wsgi.py
+./backend/wsgi.py
+./wsgi.py
+Checking for duplicate index.html...
+⚠️ Found multiple index.html files (30):
+./app/static/index.html
+./backend/reports/coverage_html/index.html
+./backend/static/index.html
+./backend/venv/lib/python3.9/site-packages/coverage/htmlfiles/index.html
+./backups/20250310_075128/static/index.html
+./backups/20250310_080835/static/index.html
+./backups/20250310_082535/static/index.html
+./backups/20250310_084300/static/index.html
+./backups/20250310_090114/static/index.html
+./backups/20250310_092236/static/index.html
+./backups/20250310_094558/static/index.html
+./backups/20250310_095238/static/index.html
+./backups/20250310_101512/static/index.html
+./backups/20250310_102441/static/index.html
+./backups/20250310_103318/static/index.html
+./backups/20250310_110019/static/index.html
+./backups/20250310_110135/static/index.html
+./backups/20250310_110420/static/index.html
+./backups/20250310_110849/static/index.html
+./dist/index.html
+./frontend/index.html
+./frontend/public/assets/index.html
+./frontend/public/index.html
+./node_modules/tryer/test/index.html
+./public/index.html
+./render_static/index.html
+./static/assets/index.html
+./static/index.html
+./static/react-app/public/index.html
+./venv/lib/python3.13/site-packages/setuptools/tests/indexes/test_links_priority/simple/foobar/index.html
+
+==== Checking Symlinks ====
+Checking React fix symlinks...
+verify_cleanup.sh completed successfully (Iteration 15)
+
+--- Completed iteration 15 of 15 ---
+Finished at: Mon Mar 10 11:09:04 CDT 2025
+
+====== Master Cleanup Process Complete! ======
+Ran all cleanup tasks 15 times
+Completed at: Mon Mar 10 11:09:04 CDT 2025

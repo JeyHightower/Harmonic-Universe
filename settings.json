@@ -1,0 +1,8 @@
+{
+  "blackbox.apiKey": "your-api-key-here",
+  "blackbox.telemetry": false, // Optional: disable telemetry
+  "blackbox.suggestions": {
+    "enabled": true,
+    "delay": 0.5 // Delay in seconds before suggestions appear
+  }
+}

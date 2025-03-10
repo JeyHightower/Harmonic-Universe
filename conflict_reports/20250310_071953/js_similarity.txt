@@ -1,0 +1,66 @@
+Checking JavaScript file similarity...
+Analyzing      380 JavaScript files...
+
+Potentially similar files (       0 diff lines, sizes:       44,       44):
+  ./frontend/simplified-build.js
+  ./frontend/scripts/simplified-build.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./frontend/public/react-polyfill.js
+  ./frontend/public/assets/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./frontend/public/react-polyfill.js
+  ./static/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./frontend/public/react-polyfill.js
+  ./static/assets 2/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./frontend/public/react-polyfill.js
+  ./static/assets/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./frontend/public/assets/react-polyfill.js
+  ./frontend/public/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./frontend/public/assets/react-polyfill.js
+  ./static/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./frontend/public/assets/react-polyfill.js
+  ./static/assets 2/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./frontend/public/assets/react-polyfill.js
+  ./static/assets/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       39,       39):
+  ./frontend/public/assets/react-context-provider.js
+  ./static/assets 2/react-context-provider.js
+
+Potentially similar files (       0 diff lines, sizes:       39,       39):
+  ./frontend/public/assets/react-context-provider.js
+  ./static/assets/react-context-provider.js
+
+Potentially similar files (       0 diff lines, sizes:       44,       44):
+  ./frontend/scripts/simplified-build.js
+  ./frontend/simplified-build.js
+
+Potentially similar files (       0 diff lines, sizes:      181,      181):
+  ./frontend/scripts/debug-build.js
+  ./frontend/debug-build.js
+
+Potentially similar files (       0 diff lines, sizes:      181,      181):
+  ./frontend/debug-build.js
+  ./frontend/scripts/debug-build.js
+
+Potentially similar files (       0 diff lines, sizes:       41,       41):
+  ./static/index-CCEb0U2D.js
+  ./static/static 2/index-CCEb0U2D.js
+
+Potentially similar files (       0 diff lines, sizes:       41,       41):
+  ./static/index-CCEb0U2D.js
+  ./static/static/index-CCEb0U2D.js

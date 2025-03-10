@@ -1,0 +1,324 @@
+Checking JavaScript file similarity...
+Analyzing      402 JavaScript files...
+
+Potentially similar files (       0 diff lines, sizes:       44,       44):
+  ./frontend/simplified-build.js
+  ./frontend/scripts/simplified-build.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./frontend/public/react-polyfill.js
+  ./frontend/public/assets/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./frontend/public/react-polyfill.js
+  ./static/assets 2/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./frontend/public/react-polyfill.js
+  ./static/assets/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./frontend/public/react-polyfill.js
+  ./static/react-fixes/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./frontend/public/assets/react-polyfill.js
+  ./frontend/public/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./frontend/public/assets/react-polyfill.js
+  ./static/assets 2/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./frontend/public/assets/react-polyfill.js
+  ./static/assets/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./frontend/public/assets/react-polyfill.js
+  ./static/react-fixes/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       39,       39):
+  ./frontend/public/assets/react-context-provider.js
+  ./static/assets 2/react-context-provider.js
+
+Potentially similar files (       0 diff lines, sizes:       39,       39):
+  ./frontend/public/assets/react-context-provider.js
+  ./static/assets/react-context-provider.js
+
+Potentially similar files (       0 diff lines, sizes:       44,       44):
+  ./frontend/scripts/simplified-build.js
+  ./frontend/simplified-build.js
+
+Potentially similar files (       0 diff lines, sizes:      181,      181):
+  ./frontend/scripts/debug-build.js
+  ./frontend/debug-build.js
+
+Potentially similar files (       0 diff lines, sizes:      181,      181):
+  ./frontend/debug-build.js
+  ./frontend/scripts/debug-build.js
+
+Potentially similar files (       0 diff lines, sizes:      101,      101):
+  ./static/dynamic-import 2.js
+  ./static/react-fixes/dynamic-import.js
+
+Potentially similar files (       0 diff lines, sizes:        1,        1):
+  ./static/Layout-CaNh0xx_.js
+  ./static/js/Layout.js
+
+Potentially similar files (       0 diff lines, sizes:        1,        1):
+  ./static/Dashboard-3e6RHIoY.js
+  ./static/js/Dashboard.js
+
+Potentially similar files (       0 diff lines, sizes:       41,       41):
+  ./static/index-CCEb0U2D.js
+  ./static/static 2/index-CCEb0U2D.js
+
+Potentially similar files (       0 diff lines, sizes:       41,       41):
+  ./static/index-CCEb0U2D.js
+  ./static/static/index-CCEb0U2D.js
+
+Potentially similar files (       0 diff lines, sizes:        1,        1):
+  ./static/Home-BrEEk1Rb.js
+  ./static/js/Home.js
+
+Potentially similar files (       0 diff lines, sizes:       10,       10):
+  ./static/index-D8-aAJoQ.js
+  ./static/js/index.js
+
+Potentially similar files (       0 diff lines, sizes:        1,        1):
+  ./static/js/Layout.js
+  ./static/Layout-CaNh0xx_.js
+
+Potentially similar files (       0 diff lines, sizes:       10,       10):
+  ./static/js/index.js
+  ./static/index-D8-aAJoQ.js
+
+Potentially similar files (       0 diff lines, sizes:        1,        1):
+  ./static/js/Home.js
+  ./static/Home-BrEEk1Rb.js
+
+Potentially similar files (       0 diff lines, sizes:        1,        1):
+  ./static/js/Dashboard.js
+  ./static/Dashboard-3e6RHIoY.js
+
+Potentially similar files (       0 diff lines, sizes:       41,       41):
+  ./static/static 2/index-CCEb0U2D.js
+  ./static/index-CCEb0U2D.js
+
+Potentially similar files (       0 diff lines, sizes:       41,       41):
+  ./static/static 2/index-CCEb0U2D.js
+  ./static/static/index-CCEb0U2D.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./static/assets 2/react-polyfill.js
+  ./frontend/public/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./static/assets 2/react-polyfill.js
+  ./frontend/public/assets/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./static/assets 2/react-polyfill.js
+  ./static/assets/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./static/assets 2/react-polyfill.js
+  ./static/react-fixes/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       39,       39):
+  ./static/assets 2/react-context-provider.js
+  ./frontend/public/assets/react-context-provider.js
+
+Potentially similar files (       0 diff lines, sizes:       39,       39):
+  ./static/assets 2/react-context-provider.js
+  ./static/assets/react-context-provider.js
+
+Potentially similar files (       0 diff lines, sizes:      179,      179):
+  ./static/runtime-diagnostics 2.js
+  ./static/react-fixes/runtime-diagnostics.js
+
+Potentially similar files (       0 diff lines, sizes:       41,       41):
+  ./static/static/index-CCEb0U2D.js
+  ./static/index-CCEb0U2D.js
+
+Potentially similar files (       0 diff lines, sizes:       41,       41):
+  ./static/static/index-CCEb0U2D.js
+  ./static/static 2/index-CCEb0U2D.js
+
+Potentially similar files (      14 diff lines, sizes:      175,      185):
+  ./static/redux-provider-fix 2.js
+  ./static/react-fixes/redux-provider-fix.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./static/assets/react-polyfill.js
+  ./frontend/public/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./static/assets/react-polyfill.js
+  ./frontend/public/assets/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./static/assets/react-polyfill.js
+  ./static/assets 2/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./static/assets/react-polyfill.js
+  ./static/react-fixes/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       39,       39):
+  ./static/assets/react-context-provider.js
+  ./frontend/public/assets/react-context-provider.js
+
+Potentially similar files (       0 diff lines, sizes:       39,       39):
+  ./static/assets/react-context-provider.js
+  ./static/assets 2/react-context-provider.js
+
+Potentially similar files (      14 diff lines, sizes:      190,      200):
+  ./static/early-warning-interceptor 2.js
+  ./static/react-fixes/early-warning-interceptor.js
+
+Potentially similar files (       0 diff lines, sizes:      142,      142):
+  ./static/react-fixes/react-error-handler 2.js
+  ./static/react-fixes/react-error-handler.js
+
+Potentially similar files (      10 diff lines, sizes:      210,      200):
+  ./static/react-fixes/final-hook-suppressor.js
+  ./static/react-fixes/final-hook-suppressor 2.js
+
+Potentially similar files (      12 diff lines, sizes:      126,      136):
+  ./static/react-fixes/react-hook-fix 2.js
+  ./static/react-fixes/react-hook-fix.js
+
+Potentially similar files (       0 diff lines, sizes:      353,      353):
+  ./static/react-fixes/react-force-expose 2.js
+  ./static/react-fixes/react-force-expose.js
+
+Potentially similar files (      10 diff lines, sizes:       99,      105):
+  ./static/react-fixes/hook-js-patcher 2.js
+  ./static/react-fixes/hook-js-patcher.js
+
+Potentially similar files (       0 diff lines, sizes:      150,      150):
+  ./static/react-fixes/vendor-react 2.js
+  ./static/react-fixes/vendor-react.js
+
+Potentially similar files (       0 diff lines, sizes:       58,       58):
+  ./static/react-fixes/vendor-react-BasmCCun.js
+  ./static/react-fixes/vendor-react-BasmCCun 2.js
+
+Potentially similar files (      15 diff lines, sizes:      259,      250):
+  ./static/react-fixes/critical-react-fix.js
+  ./static/react-fixes/critical-react-fix 2.js
+
+Potentially similar files (       0 diff lines, sizes:      470,      470):
+  ./static/react-fixes/react-diagnostics.js
+  ./static/react-fixes/react-diagnostics 2.js
+
+Potentially similar files (      10 diff lines, sizes:      200,      210):
+  ./static/react-fixes/final-hook-suppressor 2.js
+  ./static/react-fixes/final-hook-suppressor.js
+
+Potentially similar files (      15 diff lines, sizes:      191,      200):
+  ./static/react-fixes/direct-hook-patcher 2.js
+  ./static/react-fixes/direct-hook-patcher.js
+
+Potentially similar files (       0 diff lines, sizes:      142,      142):
+  ./static/react-fixes/react-error-handler.js
+  ./static/react-fixes/react-error-handler 2.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./static/react-fixes/react-polyfill.js
+  ./frontend/public/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./static/react-fixes/react-polyfill.js
+  ./frontend/public/assets/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./static/react-fixes/react-polyfill.js
+  ./static/assets 2/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       67,       67):
+  ./static/react-fixes/react-polyfill.js
+  ./static/assets/react-polyfill.js
+
+Potentially similar files (       0 diff lines, sizes:       72,       72):
+  ./static/react-fixes/vendor-react-DJ7Kff-Q 2.js
+  ./static/react-fixes/vendor-react-DJ7Kff-Q.js
+
+Potentially similar files (       0 diff lines, sizes:      495,      495):
+  ./static/react-fixes/hook-fix.js
+  ./static/react-fixes/hook-fix 2.js
+
+Potentially similar files (       0 diff lines, sizes:      181,      181):
+  ./static/react-fixes/react-version-checker 2.js
+  ./static/react-fixes/react-version-checker.js
+
+Potentially similar files (      14 diff lines, sizes:      185,      175):
+  ./static/react-fixes/redux-provider-fix.js
+  ./static/redux-provider-fix 2.js
+
+Potentially similar files (       0 diff lines, sizes:      150,      150):
+  ./static/react-fixes/vendor-react.js
+  ./static/react-fixes/vendor-react 2.js
+
+Potentially similar files (       0 diff lines, sizes:      353,      353):
+  ./static/react-fixes/react-force-expose.js
+  ./static/react-fixes/react-force-expose 2.js
+
+Potentially similar files (       0 diff lines, sizes:      495,      495):
+  ./static/react-fixes/hook-fix 2.js
+  ./static/react-fixes/hook-fix.js
+
+Potentially similar files (      14 diff lines, sizes:       96,      106):
+  ./static/react-fixes/react-context-fix 2.js
+  ./static/react-fixes/react-context-fix.js
+
+Potentially similar files (      12 diff lines, sizes:      136,      126):
+  ./static/react-fixes/react-hook-fix.js
+  ./static/react-fixes/react-hook-fix 2.js
+
+Potentially similar files (       0 diff lines, sizes:       72,       72):
+  ./static/react-fixes/vendor-react-DJ7Kff-Q.js
+  ./static/react-fixes/vendor-react-DJ7Kff-Q 2.js
+
+Potentially similar files (      15 diff lines, sizes:      200,      191):
+  ./static/react-fixes/direct-hook-patcher.js
+  ./static/react-fixes/direct-hook-patcher 2.js
+
+Potentially similar files (       0 diff lines, sizes:      181,      181):
+  ./static/react-fixes/react-version-checker.js
+  ./static/react-fixes/react-version-checker 2.js
+
+Potentially similar files (      14 diff lines, sizes:      106,       96):
+  ./static/react-fixes/react-context-fix.js
+  ./static/react-fixes/react-context-fix 2.js
+
+Potentially similar files (       0 diff lines, sizes:       58,       58):
+  ./static/react-fixes/vendor-react-BasmCCun 2.js
+  ./static/react-fixes/vendor-react-BasmCCun.js
+
+Potentially similar files (       0 diff lines, sizes:      470,      470):
+  ./static/react-fixes/react-diagnostics 2.js
+  ./static/react-fixes/react-diagnostics.js
+
+Potentially similar files (       0 diff lines, sizes:      101,      101):
+  ./static/react-fixes/dynamic-import.js
+  ./static/dynamic-import 2.js
+
+Potentially similar files (      15 diff lines, sizes:      250,      259):
+  ./static/react-fixes/critical-react-fix 2.js
+  ./static/react-fixes/critical-react-fix.js
+
+Potentially similar files (      10 diff lines, sizes:      105,       99):
+  ./static/react-fixes/hook-js-patcher.js
+  ./static/react-fixes/hook-js-patcher 2.js
+
+Potentially similar files (      14 diff lines, sizes:      200,      190):
+  ./static/react-fixes/early-warning-interceptor.js
+  ./static/early-warning-interceptor 2.js
+
+Potentially similar files (       0 diff lines, sizes:      179,      179):
+  ./static/react-fixes/runtime-diagnostics.js
+  ./static/runtime-diagnostics 2.js
+
+Found 80 potentially similar JavaScript file pairs
