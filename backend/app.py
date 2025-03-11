@@ -7,29 +7,28 @@ def create_app(test_config=None):
     """Create and configure the Flask application"""
     app = Flask(__name__, static_folder="static")
 
-    # Get CORS settings from environment variables
-    cors_origins = os.environ.get(
-        "CORS_ORIGINS", "http://localhost:3000,http://localhost:5173"
-    ).split(",")
+    # Centralized CORS configuration
+    cors_config = {
+        "origins": os.environ.get(
+            "CORS_ORIGINS",
+            "http://localhost:3000,http://localhost:5173,http://localhost:5000"
+        ).split(","),
+        "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        "allow_headers": [
+            "Content-Type",
+            "Authorization",
+            "X-Requested-With",
+            "Accept",
+        ],
+        "expose_headers": ["Content-Length", "Content-Type"],
+        "supports_credentials": True,
+        "max_age": int(os.environ.get("CORS_MAX_AGE", "600")),  # 10 minutes
+    }
 
     # Configure CORS with specific settings
     CORS(
         app,
-        resources={
-            r"/*": {
-                "origins": cors_origins,
-                "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-                "allow_headers": [
-                    "Content-Type",
-                    "Authorization",
-                    "X-Requested-With",
-                    "Accept",
-                ],
-                "expose_headers": ["Content-Length", "Content-Type"],
-                "supports_credentials": True,
-                "max_age": 600,  # 10 minutes
-            }
-        },
+        resources={r"/*": cors_config},
     )
 
     # Configure app based on environment
@@ -38,6 +37,8 @@ def create_app(test_config=None):
         app.config.from_mapping(
             SECRET_KEY=os.environ.get("SECRET_KEY", "dev-key-for-testing"),
             DATABASE_URI=os.environ.get("DATABASE_URL", "sqlite:///app.db"),
+            # Add CORS configuration to app config for reference
+            CORS_CONFIG=cors_config,
         )
     else:
         # Load test configuration
