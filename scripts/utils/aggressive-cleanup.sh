@@ -2,7 +2,8 @@
 
 echo "Starting aggressive cleanup process..."
 
-# Function to keep only the latest version of a file pattern
+# Function to move to root directory and keep only the latest version of a file pattern
+cd ../../
 cleanup_pattern() {
     local pattern=$1
     local dir=$2
@@ -98,7 +99,7 @@ clean_backend() {
         -name "*.bak" -o \
         -name "*.swp" -o \
         -name "*.swo" \
-    \) -delete
+              \)         -delete
 
     # Clean up specific backend patterns
     cleanup_pattern "config*.py" "$dir"

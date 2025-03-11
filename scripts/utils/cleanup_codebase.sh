@@ -7,7 +7,9 @@ set -e # Exit on error
 set -u # Exit on undefined variables
 
 echo "====== Starting Codebase Cleanup Process ======"
-echo "$(date): Cleanup initiated"
+echo "$(date): Cleanup initiated move to root directory"
+
+cd ../../
 
 # Create backup directory
 BACKUP_DIR="./backups/$(date +%Y%m%d_%H%M%S)"
@@ -154,6 +156,7 @@ elif [ -f "./frontend/public/index.html" ]; then
 fi
 
 # Create a simple redirecting index.html for app/static
+mkdir -p ./app/static
 cat > ./app/static/index.html << 'EOF'
 <!DOCTYPE html>
 <html lang="en">
@@ -229,7 +232,7 @@ if [ -f "./app.py" ]; then
   backup_file "./app.py"
 
   # Update static folder reference
-  sed -i.bak "s|app = Flask(__name__, static_folder='static')|app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))|g" "./app.py"
+  sed -i.bak "s| app = Flask(__name__, static_folder='static')|app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))|g" "./app.py"
   rm -f "./app.py.bak"
   echo "Updated static folder path in app.py"
 fi

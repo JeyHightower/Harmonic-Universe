@@ -1,0 +1,83 @@
+.physics-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.physics-page-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.physics-page-header h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.physics-page-description {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.physics-page-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 50vh;
+}
+
+.physics-tabs {
+  margin-top: 1.5rem;
+}
+
+.physics-tab-content {
+  padding: 1.5rem 0;
+}
+
+.physics-actions {
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.physics-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.physics-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.physics-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Dark mode adjustments */
+[data-theme='dark'] .physics-card {
+  background-color: var(--component-background);
+  border-color: var(--border-color-base);
+}
+
+@media (max-width: 768px) {
+  .physics-page {
+    padding: 1rem;
+  }
+
+  .physics-content {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,1 @@
+./static/react-fixes/direct-hook-patcher 2.js

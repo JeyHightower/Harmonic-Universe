@@ -1,0 +1,629 @@
+/**
+ * Unified Modal CSS Styles
+ * This file contains styles for all modal components in the application.
+ */
+
+/* CSS Variables for modal theming */
+:root {
+  /* Light mode modal variables */
+  --modal-background: rgba(15, 23, 42, 0.6);
+  --modal-content-bg: var(--surface);
+  --modal-header-bg: var(--surface);
+  --modal-footer-bg: var(--surface);
+  --modal-border: var(--border-color);
+  --modal-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08),
+    0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  --modal-title-color: var(--heading-color);
+  --modal-text-color: var(--text-color);
+  --modal-close-color: var(--text-secondary);
+  --modal-close-hover-color: var(--text-color);
+  --modal-z-index: 1000;
+  --modal-animation-duration: 0.3s;
+  --modal-border-radius: var(--radius-lg);
+  --modal-header-border: 1px solid var(--border-color);
+  --modal-footer-border: 1px solid var(--border-color);
+  --padding-md: 1rem;
+  --padding-lg: 2rem;
+  --radius-lg: 8px;
+  --shadow-xl: 0 4px 20px rgba(0, 0, 0, 0.15);
+  --surface: #ffffff;
+  --surface-hover: #f0f0f0;
+  --text-secondary: #666666;
+  --text-color: #000000;
+  --heading-color: #000000;
+  --margin-lg: 1.5rem;
+  --margin-md: 1rem;
+  --margin-sm: 0.5rem;
+}
+
+/* Dark mode modal variables */
+[data-theme='dark'] {
+  --modal-background: rgba(3, 7, 18, 0.7);
+  --modal-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3),
+    0 8px 10px -6px rgba(0, 0, 0, 0.2);
+  --modal-content-bg: var(--dark-surface);
+  --modal-header-border: 1px solid var(--dark-border);
+  --modal-footer-border: 1px solid var(--dark-border);
+  --surface: #1f1f1f;
+  --surface-hover: #333333;
+  --text-secondary: #999999;
+  --text-color: #ffffff;
+  --heading-color: #ffffff;
+}
+
+/* Modal Container */
+.modal-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--modal-z-index);
+  background-color: var(--modal-background);
+  overflow-y: auto;
+  padding: 1rem;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--modal-animation-duration) ease,
+    visibility var(--modal-animation-duration) ease;
+}
+
+.modal-container.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Modal Backdrop */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--modal-background);
+  z-index: calc(var(--modal-z-index) - 1);
+}
+
+/* Modal Content */
+.modal {
+  position: relative;
+  background-color: var(--modal-content-bg);
+  border-radius: var(--modal-border-radius);
+  box-shadow: var(--modal-shadow);
+  width: 100%;
+  max-width: 500px;
+  max-height: calc(100vh - 2rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: scale(0.95);
+  opacity: 0;
+  transition: transform var(--modal-animation-duration) ease,
+    opacity var(--modal-animation-duration) ease;
+  border: 1px solid var(--modal-border);
+}
+
+.modal.open {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* Modal sizes */
+.modal.small {
+  max-width: 400px;
+}
+
+.modal.medium {
+  max-width: 600px;
+}
+
+.modal.large {
+  max-width: 800px;
+}
+
+.modal.full {
+  max-width: 95%;
+  height: 95vh;
+}
+
+/* Modal Header */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: var(--modal-header-border);
+  background-color: var(--modal-header-bg);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--modal-title-color);
+  line-height: 1.4;
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  margin: -0.5rem;
+  color: var(--modal-close-color);
+  font-size: 1.5rem;
+  line-height: 1;
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+}
+
+.modal-close:hover {
+  color: var(--modal-close-hover-color);
+  background-color: var(--surface-hover);
+}
+
+.modal-close:focus-visible {
+  outline: 2px solid var(--primary-500);
+  outline-offset: 2px;
+}
+
+/* Modal Body */
+.modal-content {
+  padding: 1.5rem;
+  overflow-y: auto;
+  color: var(--modal-text-color);
+  flex: 1;
+}
+
+/* Modal Footer */
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  border-top: var(--modal-footer-border);
+  background-color: var(--modal-footer-bg);
+}
+
+/* Modal Animations */
+.modal-fade-enter {
+  opacity: 0;
+}
+
+.modal-fade-enter-active {
+  opacity: 1;
+  transition: opacity var(--modal-animation-duration) ease;
+}
+
+.modal-fade-exit {
+  opacity: 1;
+}
+
+.modal-fade-exit-active {
+  opacity: 0;
+  transition: opacity var(--modal-animation-duration) ease;
+}
+
+.modal-slide-enter {
+  transform: translateY(20px);
+  opacity: 0;
+}
+
+.modal-slide-enter-active {
+  transform: translateY(0);
+  opacity: 1;
+  transition: transform var(--modal-animation-duration) ease,
+    opacity var(--modal-animation-duration) ease;
+}
+
+.modal-slide-exit {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.modal-slide-exit-active {
+  transform: translateY(20px);
+  opacity: 0;
+  transition: transform var(--modal-animation-duration) ease,
+    opacity var(--modal-animation-duration) ease;
+}
+
+.modal-zoom-enter {
+  transform: scale(0.9);
+  opacity: 0;
+}
+
+.modal-zoom-enter-active {
+  transform: scale(1);
+  opacity: 1;
+  transition: transform var(--modal-animation-duration) ease,
+    opacity var(--modal-animation-duration) ease;
+}
+
+.modal-zoom-exit {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.modal-zoom-exit-active {
+  transform: scale(0.9);
+  opacity: 0;
+  transition: transform var(--modal-animation-duration) ease,
+    opacity var(--modal-animation-duration) ease;
+}
+
+/* Modal Positions */
+.modal-container.top .modal {
+  margin-top: 5vh;
+  margin-bottom: auto;
+}
+
+.modal-container.bottom .modal {
+  margin-top: auto;
+  margin-bottom: 5vh;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .modal {
+    max-width: 95% !important;
+  }
+
+  .modal.full {
+    max-width: 100%;
+    height: 100vh;
+    border-radius: 0;
+  }
+
+  .modal-header,
+  .modal-content,
+  .modal-footer {
+    padding: 1rem;
+  }
+}
+
+/* Accessibility improvements */
+.modal:focus {
+  outline: none;
+}
+
+.modal:focus-visible {
+  outline: 2px solid var(--primary-500);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .modal {
+    border: 2px solid #000;
+  }
+
+  [data-theme='dark'] .modal {
+    border: 2px solid #fff;
+  }
+
+  .modal-close:focus-visible,
+  .modal:focus-visible {
+    outline: 3px solid #000;
+  }
+
+  [data-theme='dark'] .modal-close:focus-visible,
+  [data-theme='dark'] .modal:focus-visible {
+    outline: 3px solid #fff;
+  }
+}
+
+/* Draggable Modal Styles */
+.draggable-modal {
+  position: absolute;
+  cursor: move;
+  min-width: 300px;
+  min-height: 200px;
+}
+
+.draggable-modal .modal-header {
+  cursor: move;
+  user-select: none;
+}
+
+.draggable-modal-resizer {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: var(--text-secondary);
+  border-radius: 50%;
+  bottom: 5px;
+  right: 5px;
+  cursor: se-resize;
+  z-index: 1;
+}
+
+/* Message Styles */
+.error-message {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: var(--margin-md);
+  border-left: 4px solid #c62828;
+}
+
+.warning-message {
+  background-color: #fff8e1;
+  color: #f57f17;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: var(--margin-md);
+  border-left: 4px solid #f57f17;
+}
+
+.success-message {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: var(--margin-md);
+  border-left: 4px solid #2e7d32;
+}
+
+/* Form Styles */
+.form-group {
+  margin-bottom: var(--margin-md);
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--margin-sm);
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: var(--margin-lg);
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: var(--margin-md);
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.parameters-fieldset {
+  border: 1px solid var(--modal-header-border);
+  border-radius: 4px;
+  padding: var(--padding-md);
+  margin-bottom: var(--margin-md);
+}
+
+.parameters-fieldset legend {
+  padding: 0 0.5rem;
+  font-weight: 500;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--padding-lg);
+  text-align: center;
+}
+
+.empty-state {
+  text-align: center;
+  padding: var(--padding-lg);
+  color: var(--text-secondary);
+}
+
+.audio-player {
+  border: 1px solid var(--modal-header-border);
+  border-radius: 4px;
+  padding: var(--padding-md);
+  margin-bottom: var(--margin-md);
+}
+
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: var(--margin-sm);
+}
+
+.time-display {
+  font-family: monospace;
+  margin: 0 0.5rem;
+}
+
+.progress-container {
+  position: relative;
+  height: 8px;
+  background-color: var(--surface-hover);
+  border-radius: 4px;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.progress-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background-color: var(--surface-hover);
+  border-radius: 4px;
+}
+
+.progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: var(--primary-color, #4a90e2);
+  border-radius: 4px;
+  transition: width 0.1s linear;
+}
+
+/* Modal Type Specific Styles */
+.modal-type-form .modal-body {
+  padding: var(--padding-md) var(--padding-lg);
+}
+
+.modal-type-info .modal-body {
+  padding: var(--padding-lg);
+}
+
+.modal-type-confirm .modal-body {
+  text-align: center;
+  padding: var(--padding-lg);
+}
+
+/* Audio Details Styles */
+.audio-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.audio-info {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 0.5rem;
+  margin-bottom: var(--margin-md);
+}
+
+.parameters-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.parameters-list li {
+  margin-bottom: 0.5rem;
+}
+
+/* Screen Reader Only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes zoomOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+/* Force Visible State for Testing */
+.modal.force-visible {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  animation: pulse-border 2s infinite;
+}
+
+.modal-overlay.force-visible {
+  display: block !important;
+  opacity: 0.5 !important;
+  visibility: visible !important;
+  background-color: rgba(255, 0, 0, 0.2) !important;
+}
+
+.modal.force-visible .modal-content {
+  transform: scale(1) !important;
+  opacity: 1 !important;
+  border: 2px dashed red;
+}
+
+@keyframes pulse-border {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 0, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
+  }
+}
+
+.modal.force-visible {
+  z-index: 999999 !important;
+}

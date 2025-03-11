@@ -1,0 +1,1 @@
+./static/react-fixes/react-hook-fix.js
