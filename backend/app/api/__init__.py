@@ -8,7 +8,7 @@ from .routes.universe import universe_bp
 from .routes.physics_objects import physics_objects_bp
 
 # Create a main API blueprint
-api_bp = Blueprint('api', __name__)
+api_bp = Blueprint("api", __name__)
 
 # Register all route blueprints with the main API blueprint
 api_bp.register_blueprint(auth_bp)
@@ -27,5 +27,5 @@ __all__ = [
     "visualization_bp",
     "physics_bp",
     "ai_bp",
-    "physics_objects_bp"
+    "physics_objects_bp",
 ]

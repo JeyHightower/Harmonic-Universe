@@ -6,6 +6,7 @@ import asyncio
 from flask_socketio import emit
 from backend.app.models.visualization import RenderingMode, SceneObjectType
 
+
 class Renderer:
     def __init__(self, scene_data: Dict[str, Any]):
         self.scene_data = scene_data
@@ -25,6 +26,7 @@ class Renderer:
             self.frame_count += 1
             # Use eventlet/gevent sleep instead of asyncio
             from eventlet import sleep
+
             sleep(1 / self.scene_data.get("fps", 60))
 
     def stop(self):
@@ -38,7 +40,7 @@ class Renderer:
             "timestamp": self.last_frame_time,
             "objects": [],
             "camera": self.scene_data["camera_settings"],
-            "lights": self.scene_data["lighting_settings"]
+            "lights": self.scene_data["lighting_settings"],
         }
 
         # Process each object in the scene
@@ -65,21 +67,22 @@ class Renderer:
             "transform": {
                 "position": obj.get("position", {"x": 0, "y": 0, "z": 0}),
                 "rotation": obj.get("rotation", {"x": 0, "y": 0, "z": 0}),
-                "scale": obj.get("scale", {"x": 1, "y": 1, "z": 1})
-            }
+                "scale": obj.get("scale", {"x": 1, "y": 1, "z": 1}),
+            },
         }
 
         if obj_type == SceneObjectType.MESH:
-            processed_data.update({
-                "geometry": obj["geometry"],
-                "material": obj["material"]
-            })
+            processed_data.update(
+                {"geometry": obj["geometry"], "material": obj["material"]}
+            )
         elif obj_type == SceneObjectType.LIGHT:
-            processed_data.update({
-                "color": obj.get("parameters", {}).get("color"),
-                "intensity": obj.get("parameters", {}).get("intensity", 1.0),
-                "shadow": obj.get("parameters", {}).get("shadow", False)
-            })
+            processed_data.update(
+                {
+                    "color": obj.get("parameters", {}).get("color"),
+                    "intensity": obj.get("parameters", {}).get("intensity", 1.0),
+                    "shadow": obj.get("parameters", {}).get("shadow", False),
+                }
+            )
         elif obj_type == SceneObjectType.PARAMETER_VISUAL:
             processed_data.update(self._process_parameter_visual(obj))
 
@@ -94,19 +97,19 @@ class Renderer:
             return {
                 "visual_type": "waveform",
                 "data": self._generate_waveform_data(params),
-                "style": params.get("style", {})
+                "style": params.get("style", {}),
             }
         elif visual_type == "spectrum":
             return {
                 "visual_type": "spectrum",
                 "data": self._generate_spectrum_data(params),
-                "style": params.get("style", {})
+                "style": params.get("style", {}),
             }
         elif visual_type == "parameter_graph":
             return {
                 "visual_type": "parameter_graph",
                 "data": self._generate_parameter_graph(params),
-                "style": params.get("style", {})
+                "style": params.get("style", {}),
             }
 
         return {"visual_type": "unknown"}
@@ -117,7 +120,7 @@ class Renderer:
         return {
             "points": audio_data,
             "range": params.get("range", {"min": -1, "max": 1}),
-            "resolution": params.get("resolution", 1000)
+            "resolution": params.get("resolution", 1000),
         }
 
     def _generate_spectrum_data(self, params: Dict[str, Any]) -> Dict[str, Any]:
@@ -126,7 +129,7 @@ class Renderer:
             return {
                 "frequencies": params["fft_data"],
                 "range": params.get("range", {"min": 0, "max": 20000}),
-                "scale": params.get("scale", "linear")
+                "scale": params.get("scale", "linear"),
             }
         return {"frequencies": []}
 
@@ -136,7 +139,7 @@ class Renderer:
             "parameter": params.get("parameter", ""),
             "values": params.get("values", []),
             "range": params.get("range", {"min": 0, "max": 1}),
-            "interpolation": params.get("interpolation", "linear")
+            "interpolation": params.get("interpolation", "linear"),
         }
 
     def _apply_post_processing(self, frame_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -148,7 +151,7 @@ class Renderer:
                 frame_data["post_processing"] = {
                     "bloom": {
                         "intensity": effect.get("intensity", 1.0),
-                        "threshold": effect.get("threshold", 0.8)
+                        "threshold": effect.get("threshold", 0.8),
                     }
                 }
             elif effect["type"] == "color_correction":
@@ -156,7 +159,7 @@ class Renderer:
                     "color_correction": {
                         "brightness": effect.get("brightness", 1.0),
                         "contrast": effect.get("contrast", 1.0),
-                        "saturation": effect.get("saturation", 1.0)
+                        "saturation": effect.get("saturation", 1.0),
                     }
                 }
 
@@ -173,7 +176,7 @@ class Renderer:
     def broadcast_frame(self, frame_data: Dict[str, Any]):
         """Broadcast frame data to all rooms."""
         for room in self.rooms:
-            emit('frame', frame_data, room=room)
+            emit("frame", frame_data, room=room)
 
     def export_frame(self, frame_data: Dict[str, Any], output_path: Path):
         """Export a frame to file."""

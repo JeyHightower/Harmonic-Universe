@@ -5,12 +5,13 @@ import librosa
 import soundfile as sf
 from backend.app.core.config import settings
 
+
 class AudioProcessor:
     def __init__(
         self,
         sample_rate: int = settings.AUDIO_SAMPLE_RATE,
         hop_length: int = 512,
-        n_fft: int = 2048
+        n_fft: int = 2048,
     ):
         self.sample_rate = sample_rate
         self.hop_length = hop_length
@@ -29,9 +30,7 @@ class AudioProcessor:
             # Resample if necessary
             if sr != self.sample_rate:
                 audio_array = librosa.resample(
-                    audio_array,
-                    orig_sr=sr,
-                    target_sr=self.sample_rate
+                    audio_array, orig_sr=sr, target_sr=self.sample_rate
                 )
 
             return audio_array, self.sample_rate
@@ -43,16 +42,14 @@ class AudioProcessor:
         self,
         audio: np.ndarray,
         target_tempo: float,
-        current_tempo: Optional[float] = None
+        current_tempo: Optional[float] = None,
     ) -> np.ndarray:
         """Adjust the tempo of the audio."""
         try:
             if current_tempo is None:
                 # Estimate current tempo
                 tempo, _ = librosa.beat.beat_track(
-                    y=audio,
-                    sr=self.sample_rate,
-                    hop_length=self.hop_length
+                    y=audio, sr=self.sample_rate, hop_length=self.hop_length
                 )
                 current_tempo = tempo
 
@@ -60,21 +57,14 @@ class AudioProcessor:
             tempo_ratio = target_tempo / current_tempo
 
             # Time stretch audio
-            audio_stretched = librosa.effects.time_stretch(
-                audio,
-                rate=tempo_ratio
-            )
+            audio_stretched = librosa.effects.time_stretch(audio, rate=tempo_ratio)
 
             return audio_stretched
 
         except Exception as e:
             raise ValueError(f"Error adjusting tempo: {str(e)}")
 
-    def apply_effects(
-        self,
-        audio: np.ndarray,
-        complexity: float = 0.5
-    ) -> np.ndarray:
+    def apply_effects(self, audio: np.ndarray, complexity: float = 0.5) -> np.ndarray:
         """Apply audio effects based on complexity parameter."""
         try:
             # Apply reverb
@@ -95,29 +85,23 @@ class AudioProcessor:
         except Exception as e:
             raise ValueError(f"Error applying effects: {str(e)}")
 
-    def _apply_reverb(
-        self,
-        audio: np.ndarray,
-        complexity: float
-    ) -> np.ndarray:
+    def _apply_reverb(self, audio: np.ndarray, complexity: float) -> np.ndarray:
         """Apply reverb effect to audio."""
         # Create impulse response
         reverb_length = int(self.sample_rate * (0.5 + complexity))
         impulse_response = np.exp(-6 * np.linspace(0, 1, reverb_length))
-        impulse_response = np.pad(impulse_response, (0, len(audio) - len(impulse_response)))
+        impulse_response = np.pad(
+            impulse_response, (0, len(audio) - len(impulse_response))
+        )
 
         # Apply convolution
-        audio_reverb = signal.convolve(audio, impulse_response, mode='same')
+        audio_reverb = signal.convolve(audio, impulse_response, mode="same")
 
         # Mix dry and wet signals
         mix_ratio = 0.3 + (complexity * 0.4)
         return (1 - mix_ratio) * audio + mix_ratio * audio_reverb
 
-    def _apply_eq(
-        self,
-        audio: np.ndarray,
-        complexity: float
-    ) -> np.ndarray:
+    def _apply_eq(self, audio: np.ndarray, complexity: float) -> np.ndarray:
         """Apply equalizer to audio."""
         # Get frequency domain representation
         stft = librosa.stft(audio, n_fft=self.n_fft, hop_length=self.hop_length)
@@ -131,19 +115,11 @@ class AudioProcessor:
         stft_eq = stft * eq_curve
 
         # Convert back to time domain
-        audio_eq = librosa.istft(
-            stft_eq,
-            hop_length=self.hop_length,
-            length=len(audio)
-        )
+        audio_eq = librosa.istft(stft_eq, hop_length=self.hop_length, length=len(audio))
 
         return audio_eq
 
-    def _apply_compression(
-        self,
-        audio: np.ndarray,
-        complexity: float
-    ) -> np.ndarray:
+    def _apply_compression(self, audio: np.ndarray, complexity: float) -> np.ndarray:
         """Apply dynamic range compression to audio."""
         # Calculate threshold based on complexity
         threshold_db = -20 - (complexity * 20)
@@ -161,10 +137,9 @@ class AudioProcessor:
 
         return audio_compressed
 
+
 async def process_audio_data(
-    audio_data: bytes,
-    target_tempo: float,
-    complexity: float
+    audio_data: bytes, target_tempo: float, complexity: float
 ) -> np.ndarray:
     """Process audio data with specified parameters."""
     try:
@@ -183,6 +158,7 @@ async def process_audio_data(
 
     except Exception as e:
         raise ValueError(f"Error processing audio data: {str(e)}")
+
 
 def validate_audio(audio: np.ndarray) -> bool:
     """Validate processed audio data."""

@@ -6,10 +6,12 @@ from backend.app.db.base_class import Base
 from backend.app.models.mixins import TimestampMixin
 from uuid import uuid4
 
+
 class PhysicsParameters(Base, TimestampMixin):
     """Physics parameters model."""
+
     __tablename__ = "physics_parameters"
-    __table_args__ = {'extend_existing': True}
+    __table_args__ = {"extend_existing": True}
 
     id = Column(String, primary_key=True, default=lambda: str(uuid4()))
     name = Column(String, nullable=False)
@@ -52,7 +54,7 @@ class PhysicsParameters(Base, TimestampMixin):
             "universe_id": self.universe_id,
             "scene_id": self.scene_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
 
     @staticmethod
@@ -70,5 +72,5 @@ class PhysicsParameters(Base, TimestampMixin):
             constraint_iterations=data.get("constraint_iterations", 10),
             custom_parameters=data.get("custom_parameters"),
             universe_id=data.get("universe_id"),
-            scene_id=data.get("scene_id")
+            scene_id=data.get("scene_id"),
         )

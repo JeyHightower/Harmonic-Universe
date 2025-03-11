@@ -7,6 +7,7 @@ import json
 from app.core.visualization.renderer import Renderer
 from app.models.visualization import RenderingMode, SceneObjectType
 
+
 @pytest.fixture
 def scene_data():
     """Create test scene data."""
@@ -15,7 +16,7 @@ def scene_data():
         "camera_settings": {
             "position": {"x": 0, "y": 0, "z": 5},
             "rotation": {"x": 0, "y": 0, "z": 0},
-            "fov": 75
+            "fov": 75,
         },
         "lighting_settings": {
             "ambient": {"color": "#ffffff", "intensity": 0.5},
@@ -23,9 +24,9 @@ def scene_data():
                 {
                     "color": "#ffffff",
                     "intensity": 1.0,
-                    "position": {"x": 1, "y": 1, "z": 1}
+                    "position": {"x": 1, "y": 1, "z": 1},
                 }
-            ]
+            ],
         },
         "objects": [
             {
@@ -35,33 +36,20 @@ def scene_data():
                 "position": {"x": 0, "y": 0, "z": 0},
                 "rotation": {"x": 0, "y": 0, "z": 0},
                 "scale": {"x": 1, "y": 1, "z": 1},
-                "geometry": {
-                    "type": "box",
-                    "width": 1,
-                    "height": 1,
-                    "depth": 1
-                },
-                "material": {
-                    "color": "#ff0000",
-                    "metalness": 0.5,
-                    "roughness": 0.5
-                }
+                "geometry": {"type": "box", "width": 1, "height": 1, "depth": 1},
+                "material": {"color": "#ff0000", "metalness": 0.5, "roughness": 0.5},
             }
         ],
-        "post_processing": [
-            {
-                "type": "bloom",
-                "intensity": 1.0,
-                "threshold": 0.8
-            }
-        ],
-        "fps": 60
+        "post_processing": [{"type": "bloom", "intensity": 1.0, "threshold": 0.8}],
+        "fps": 60,
     }
+
 
 @pytest.fixture
 def renderer(scene_data):
     """Create test renderer."""
     return Renderer(scene_data)
+
 
 @pytest.mark.asyncio
 async def test_renderer_initialization(renderer, scene_data):
@@ -71,6 +59,7 @@ async def test_renderer_initialization(renderer, scene_data):
     assert not renderer.is_running
     assert len(renderer.clients) == 0
     assert renderer.scene_data == scene_data
+
 
 @pytest.mark.asyncio
 async def test_render_frame(renderer):
@@ -91,6 +80,7 @@ async def test_render_frame(renderer):
     assert "geometry" in obj
     assert "material" in obj
 
+
 @pytest.mark.asyncio
 async def test_process_object(renderer):
     """Test processing different object types."""
@@ -101,7 +91,7 @@ async def test_process_object(renderer):
         "visible": True,
         "position": {"x": 0, "y": 0, "z": 0},
         "geometry": {"type": "box"},
-        "material": {"color": "#ff0000"}
+        "material": {"color": "#ff0000"},
     }
     processed = renderer._process_object(mesh_obj)
     assert processed["type"] == SceneObjectType.MESH
@@ -114,11 +104,7 @@ async def test_process_object(renderer):
         "type": SceneObjectType.LIGHT,
         "visible": True,
         "position": {"x": 0, "y": 0, "z": 0},
-        "parameters": {
-            "color": "#ffffff",
-            "intensity": 1.0,
-            "shadow": True
-        }
+        "parameters": {"color": "#ffffff", "intensity": 1.0, "shadow": True},
     }
     processed = renderer._process_object(light_obj)
     assert processed["type"] == SceneObjectType.LIGHT
@@ -127,13 +113,10 @@ async def test_process_object(renderer):
     assert "shadow" in processed
 
     # Test invisible object
-    invisible_obj = {
-        "id": "inv1",
-        "type": SceneObjectType.MESH,
-        "visible": False
-    }
+    invisible_obj = {"id": "inv1", "type": SceneObjectType.MESH, "visible": False}
     processed = renderer._process_object(invisible_obj)
     assert processed is None
+
 
 @pytest.mark.asyncio
 async def test_process_parameter_visual(renderer):
@@ -146,8 +129,8 @@ async def test_process_parameter_visual(renderer):
             "visual_type": "waveform",
             "audio_data": [0.1, -0.2, 0.3],
             "range": {"min": -1, "max": 1},
-            "resolution": 100
-        }
+            "resolution": 100,
+        },
     }
     processed = renderer._process_object(waveform_obj)
     assert processed["type"] == SceneObjectType.PARAMETER_VISUAL
@@ -163,8 +146,8 @@ async def test_process_parameter_visual(renderer):
             "visual_type": "spectrum",
             "fft_data": [1, 2, 3],
             "range": {"min": 0, "max": 20000},
-            "scale": "linear"
-        }
+            "scale": "linear",
+        },
     }
     processed = renderer._process_object(spectrum_obj)
     assert processed["type"] == SceneObjectType.PARAMETER_VISUAL
@@ -172,19 +155,18 @@ async def test_process_parameter_visual(renderer):
     assert "data" in processed
     assert "frequencies" in processed["data"]
 
+
 @pytest.mark.asyncio
 async def test_post_processing(renderer):
     """Test applying post-processing effects."""
-    frame_data = {
-        "frame_number": 0,
-        "objects": []
-    }
+    frame_data = {"frame_number": 0, "objects": []}
 
     processed = renderer._apply_post_processing(frame_data)
     assert "post_processing" in processed
     assert "bloom" in processed["post_processing"]
     assert processed["post_processing"]["bloom"]["intensity"] == 1.0
     assert processed["post_processing"]["bloom"]["threshold"] == 0.8
+
 
 @pytest.mark.asyncio
 async def test_client_management(renderer):
@@ -201,6 +183,7 @@ async def test_client_management(renderer):
     await renderer.remove_client(mock_client)
     assert len(renderer.clients) == 0
 
+
 @pytest.mark.asyncio
 async def test_broadcast_frame(renderer):
     """Test broadcasting frame data to clients."""
@@ -213,17 +196,14 @@ async def test_broadcast_frame(renderer):
     await renderer.add_client(mock_client2)
 
     # Create test frame data
-    frame_data = {
-        "frame_number": 0,
-        "objects": []
-    }
+    frame_data = {"frame_number": 0, "objects": []}
 
     # Broadcast frame
     await renderer.broadcast_frame(frame_data)
 
     # Verify both clients received the frame
-    mock_client1.emit.assert_called_once_with('frame', frame_data)
-    mock_client2.emit.assert_called_once_with('frame', frame_data)
+    mock_client1.emit.assert_called_once_with("frame", frame_data)
+    mock_client2.emit.assert_called_once_with("frame", frame_data)
 
     # Test handling disconnected client
     mock_client1.emit.side_effect = Exception("Connection lost")

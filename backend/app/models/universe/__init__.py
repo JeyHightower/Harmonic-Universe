@@ -2,4 +2,4 @@
 
 from .universe import Universe
 
-__all__ = ['Universe']
+__all__ = ["Universe"]

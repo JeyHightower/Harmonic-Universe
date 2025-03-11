@@ -4,13 +4,14 @@ from datetime import datetime, timezone
 from backend.app.models import Storyboard
 from tests.factories import StoryboardFactory, UniverseFactory, SceneFactory
 
+
 def test_create_storyboard(session):
     """Test creating a new storyboard."""
     universe = UniverseFactory()
     storyboard = StoryboardFactory(
         name="Test Storyboard",
         description="A test storyboard description",
-        universe=universe
+        universe=universe,
     )
     session.commit()
 
@@ -21,6 +22,7 @@ def test_create_storyboard(session):
     assert isinstance(storyboard.created_at, datetime)
     assert isinstance(storyboard.updated_at, datetime)
 
+
 def test_storyboard_to_dict(session):
     """Test the to_dict method of Storyboard model."""
     storyboard = StoryboardFactory()
@@ -28,12 +30,13 @@ def test_storyboard_to_dict(session):
 
     storyboard_dict = storyboard.to_dict()
     assert isinstance(storyboard_dict, dict)
-    assert storyboard_dict['id'] == storyboard.id
-    assert storyboard_dict['name'] == storyboard.name
-    assert storyboard_dict['description'] == storyboard.description
-    assert storyboard_dict['universe_id'] == storyboard.universe.id
-    assert isinstance(storyboard_dict['created_at'], str)
-    assert isinstance(storyboard_dict['updated_at'], str)
+    assert storyboard_dict["id"] == storyboard.id
+    assert storyboard_dict["name"] == storyboard.name
+    assert storyboard_dict["description"] == storyboard.description
+    assert storyboard_dict["universe_id"] == storyboard.universe.id
+    assert isinstance(storyboard_dict["created_at"], str)
+    assert isinstance(storyboard_dict["updated_at"], str)
+
 
 def test_storyboard_relationships(session):
     """Test storyboard relationships with other models."""
@@ -43,13 +46,14 @@ def test_storyboard_relationships(session):
 
     # Test universe relationship
     assert storyboard.universe is not None
-    assert hasattr(storyboard.universe, 'id')
-    assert hasattr(storyboard.universe, 'name')
+    assert hasattr(storyboard.universe, "id")
+    assert hasattr(storyboard.universe, "name")
 
     # Test scenes relationship
     assert len(storyboard.scenes) == 3
     assert all(isinstance(scene, Scene) for scene in storyboard.scenes)
     assert all(scene.storyboard_id == storyboard.id for scene in storyboard.scenes)
+
 
 def test_storyboard_cascade_delete(session):
     """Test that deleting a storyboard cascades to related models."""
@@ -70,8 +74,10 @@ def test_storyboard_cascade_delete(session):
 
     # Verify related scenes are deleted
     from backend.app.models import Scene
+
     for scene_id in scene_ids:
         assert Scene.query.get(scene_id) is None
+
 
 def test_storyboard_validation(session):
     """Test storyboard model validation."""
@@ -89,6 +95,7 @@ def test_storyboard_validation(session):
         session.add(storyboard)
         session.commit()
 
+
 def test_storyboard_unique_name_per_universe(session):
     """Test that storyboard names must be unique per universe."""
     universe = UniverseFactory()
@@ -105,13 +112,11 @@ def test_storyboard_unique_name_per_universe(session):
     storyboard3 = StoryboardFactory(name="Same Name", universe=other_universe)
     session.commit()  # Should not raise an exception
 
+
 def test_storyboard_scene_ordering(session):
     """Test that scenes maintain proper ordering."""
     storyboard = StoryboardFactory()
-    scenes = [
-        SceneFactory(storyboard=storyboard, sequence=i)
-        for i in range(3)
-    ]
+    scenes = [SceneFactory(storyboard=storyboard, sequence=i) for i in range(3)]
     session.commit()
 
     # Verify scenes are ordered by sequence

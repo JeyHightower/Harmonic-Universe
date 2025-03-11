@@ -24,6 +24,7 @@ fastapi_app = FastAPI(
     openapi_url="/openapi.json",
 )
 
+
 def mount_fastapi_app(flask_app: Flask) -> Flask:
     """
     Integrates FastAPI routers with the Flask app.
@@ -48,7 +49,9 @@ def mount_fastapi_app(flask_app: Flask) -> Flask:
         from asgiref.wsgi import WsgiToAsgi
 
         # Middleware for handling API requests
-        @flask_app.route('/api/music/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+        @flask_app.route(
+            "/api/music/<path:path>", methods=["GET", "POST", "PUT", "DELETE"]
+        )
         def proxy_to_fastapi(path):
             """
             Proxy requests to /api/music/* to the FastAPI app
@@ -60,18 +63,26 @@ def mount_fastapi_app(flask_app: Flask) -> Flask:
             from starlette.responses import Response as StarletteResponse
 
             async def _call_fastapi():
-                path_with_query = request.full_path if request.query_string else request.path
+                path_with_query = (
+                    request.full_path if request.query_string else request.path
+                )
                 scope = {
-                    'type': 'http',
-                    'http_version': '1.1',
-                    'method': request.method,
-                    'path': path_with_query,
-                    'root_path': '',
-                    'scheme': request.scheme,
-                    'query_string': request.query_string,
-                    'headers': [(k.lower().encode(), v.encode()) for k, v in request.headers.items()],
-                    'client': (request.remote_addr, 0),
-                    'server': (request.host.split(':')[0], int(request.host.split(':')[1]) if ':' in request.host else 80),
+                    "type": "http",
+                    "http_version": "1.1",
+                    "method": request.method,
+                    "path": path_with_query,
+                    "root_path": "",
+                    "scheme": request.scheme,
+                    "query_string": request.query_string,
+                    "headers": [
+                        (k.lower().encode(), v.encode())
+                        for k, v in request.headers.items()
+                    ],
+                    "client": (request.remote_addr, 0),
+                    "server": (
+                        request.host.split(":")[0],
+                        int(request.host.split(":")[1]) if ":" in request.host else 80,
+                    ),
                 }
 
                 req = Request(scope)
@@ -82,7 +93,7 @@ def mount_fastapi_app(flask_app: Flask) -> Flask:
             return Response(
                 response.body,
                 status=response.status_code,
-                headers=dict(response.headers)
+                headers=dict(response.headers),
             )
 
         logger.info("FastAPI integration successful")
@@ -90,9 +101,11 @@ def mount_fastapi_app(flask_app: Flask) -> Flask:
     except Exception as e:
         logger.error(f"FastAPI integration failed: {e}")
         import traceback
+
         logger.error(traceback.format_exc())
 
     return flask_app
+
 
 def get_fastapi_app() -> FastAPI:
     """

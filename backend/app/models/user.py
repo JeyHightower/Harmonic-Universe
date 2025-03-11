@@ -5,6 +5,7 @@ from sqlalchemy.orm import relationship
 from .base import BaseModel
 from backend.app.core.pwd_context import get_password_hash, verify_password
 
+
 class User(BaseModel):
     """User model."""
 
@@ -24,10 +25,18 @@ class User(BaseModel):
     color = Column(String(7))  # Hex color code
 
     # Relationships
-    universes = relationship("Universe", back_populates="user", cascade="all, delete-orphan")
-    scenes = relationship("Scene", back_populates="creator", cascade="all, delete-orphan")
-    audio_tracks = relationship("AudioTrack", back_populates="user", cascade="all, delete-orphan")
-    visualizations = relationship("Visualization", back_populates="user", cascade="all, delete-orphan")
+    universes = relationship(
+        "Universe", back_populates="user", cascade="all, delete-orphan"
+    )
+    scenes = relationship(
+        "Scene", back_populates="creator", cascade="all, delete-orphan"
+    )
+    audio_tracks = relationship(
+        "AudioTrack", back_populates="user", cascade="all, delete-orphan"
+    )
+    visualizations = relationship(
+        "Visualization", back_populates="user", cascade="all, delete-orphan"
+    )
 
     @classmethod
     def get_by_id(cls, db, user_id):
@@ -59,5 +68,5 @@ class User(BaseModel):
             "is_active": self.is_active,
             "is_verified": self.is_verified,
             "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

@@ -6,8 +6,10 @@ from backend.app.db.session import get_db
 from backend.app.models.user import User
 from backend.app.core.errors import AuthorizationError
 
+
 def protect_demo_user(f):
     """Decorator to prevent demo user from performing certain actions."""
+
     @wraps(f)
     def decorated_function(*args, **kwargs):
         current_user_id = get_jwt_identity()
@@ -15,12 +17,11 @@ def protect_demo_user(f):
         with get_db() as db:
             user = User.get_by_id(db, current_user_id)
             if not user:
-                raise AuthorizationError('User not found')
+                raise AuthorizationError("User not found")
 
-            if user.email == 'demo@example.com':
-                return jsonify({
-                    'error': 'Demo user cannot perform this action'
-                }), 403
+            if user.email == "demo@example.com":
+                return jsonify({"error": "Demo user cannot perform this action"}), 403
 
         return f(*args, **kwargs)
+
     return decorated_function

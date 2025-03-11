@@ -2,7 +2,13 @@
 import pytest
 from datetime import datetime, timezone
 from backend.app.models import Scene
-from tests.factories import SceneFactory, StoryboardFactory, VisualEffectFactory, AudioTrackFactory
+from tests.factories import (
+    SceneFactory,
+    StoryboardFactory,
+    VisualEffectFactory,
+    AudioTrackFactory,
+)
+
 
 def test_create_scene(session):
     """Test creating a new scene."""
@@ -12,7 +18,7 @@ def test_create_scene(session):
         description="A test scene description",
         sequence=1,
         content={"layout": "grid", "elements": []},
-        storyboard=storyboard
+        storyboard=storyboard,
     )
     session.commit()
 
@@ -25,23 +31,23 @@ def test_create_scene(session):
     assert isinstance(scene.created_at, datetime)
     assert isinstance(scene.updated_at, datetime)
 
+
 def test_scene_to_dict(session):
     """Test the to_dict method of Scene model."""
-    scene = SceneFactory(
-        content={"test": "data"}
-    )
+    scene = SceneFactory(content={"test": "data"})
     session.commit()
 
     scene_dict = scene.to_dict()
     assert isinstance(scene_dict, dict)
-    assert scene_dict['id'] == scene.id
-    assert scene_dict['name'] == scene.name
-    assert scene_dict['description'] == scene.description
-    assert scene_dict['sequence'] == scene.sequence
-    assert scene_dict['content'] == {"test": "data"}
-    assert scene_dict['storyboard_id'] == scene.storyboard.id
-    assert isinstance(scene_dict['created_at'], str)
-    assert isinstance(scene_dict['updated_at'], str)
+    assert scene_dict["id"] == scene.id
+    assert scene_dict["name"] == scene.name
+    assert scene_dict["description"] == scene.description
+    assert scene_dict["sequence"] == scene.sequence
+    assert scene_dict["content"] == {"test": "data"}
+    assert scene_dict["storyboard_id"] == scene.storyboard.id
+    assert isinstance(scene_dict["created_at"], str)
+    assert isinstance(scene_dict["updated_at"], str)
+
 
 def test_scene_relationships(session):
     """Test scene relationships with other models."""
@@ -52,8 +58,8 @@ def test_scene_relationships(session):
 
     # Test storyboard relationship
     assert scene.storyboard is not None
-    assert hasattr(scene.storyboard, 'id')
-    assert hasattr(scene.storyboard, 'name')
+    assert hasattr(scene.storyboard, "id")
+    assert hasattr(scene.storyboard, "name")
 
     # Test visual effects relationship
     assert len(scene.visual_effects) == 2
@@ -64,6 +70,7 @@ def test_scene_relationships(session):
     assert len(scene.audio_tracks) == 2
     assert all(isinstance(track, AudioTrack) for track in scene.audio_tracks)
     assert all(track.scene_id == scene.id for track in scene.audio_tracks)
+
 
 def test_scene_cascade_delete(session):
     """Test that deleting a scene cascades to related models."""
@@ -86,10 +93,12 @@ def test_scene_cascade_delete(session):
 
     # Verify related effects and tracks are deleted
     from backend.app.models import VisualEffect, AudioTrack
+
     for effect_id in effect_ids:
         assert VisualEffect.query.get(effect_id) is None
     for track_id in track_ids:
         assert AudioTrack.query.get(track_id) is None
+
 
 def test_scene_validation(session):
     """Test scene model validation."""
@@ -113,6 +122,7 @@ def test_scene_validation(session):
         session.add(scene)
         session.commit()
 
+
 def test_scene_content_validation(session):
     """Test scene content validation."""
     # Test invalid JSON content
@@ -125,13 +135,11 @@ def test_scene_content_validation(session):
     session.commit()
     assert scene.content == {"valid": "json"}
 
+
 def test_scene_sequence_ordering(session):
     """Test scene sequence ordering within a storyboard."""
     storyboard = StoryboardFactory()
-    scenes = [
-        SceneFactory(storyboard=storyboard, sequence=i)
-        for i in range(3)
-    ]
+    scenes = [SceneFactory(storyboard=storyboard, sequence=i) for i in range(3)]
     session.commit()
 
     # Test automatic reordering when inserting a scene in the middle
@@ -139,8 +147,13 @@ def test_scene_sequence_ordering(session):
     session.commit()
 
     # Verify sequences were adjusted
-    scenes = Scene.query.filter_by(storyboard_id=storyboard.id).order_by(Scene.sequence).all()
+    scenes = (
+        Scene.query.filter_by(storyboard_id=storyboard.id)
+        .order_by(Scene.sequence)
+        .all()
+    )
     assert [scene.sequence for scene in scenes] == [0, 1, 2, 3]
+
 
 def test_scene_duplicate_sequence(session):
     """Test handling of duplicate sequence numbers."""

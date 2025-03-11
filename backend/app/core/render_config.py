@@ -3,6 +3,7 @@ Configuration module for Render.com deployment.
 """
 import os
 
+
 def configure_for_render(app):
     """
     Configure Flask application for Render.com deployment.
@@ -17,7 +18,4 @@ def configure_for_render(app):
     app.logger.info(f"Configuring for Render deployment on port {port}")
 
     # Return necessary configuration
-    return {
-        "host": "0.0.0.0",  # Bind to all interfaces
-        "port": port
-    }
+    return {"host": "0.0.0.0", "port": port}  # Bind to all interfaces

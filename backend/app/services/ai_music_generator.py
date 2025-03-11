@@ -7,8 +7,12 @@ from backend.app.services.music_generator import generate_music_from_params
 # Initialize logger
 logger = logging.getLogger(__name__)
 
-def generate_ai_music(harmony_params: Dict[str, Any], physics_params: Dict[str, Any],
-                      ai_style: str = "default") -> Dict[str, Any]:
+
+def generate_ai_music(
+    harmony_params: Dict[str, Any],
+    physics_params: Dict[str, Any],
+    ai_style: str = "default",
+) -> Dict[str, Any]:
     """
     Generate music with AI assistance based on universe parameters and a chosen style.
 
@@ -38,6 +42,7 @@ def generate_ai_music(harmony_params: Dict[str, Any], physics_params: Dict[str, 
         # Default - simple enhancements
         return apply_default_enhancements(base_music)
 
+
 def apply_default_enhancements(music_data: Dict[str, Any]) -> Dict[str, Any]:
     """Apply simple AI-like enhancements to make music more pleasing."""
     # Keep a copy of the original
@@ -53,7 +58,7 @@ def apply_default_enhancements(music_data: Dict[str, Any]) -> Dict[str, Any]:
     for i in range(1, len(melody)):
         # If the jump between consecutive notes is too large, add intermediate notes
         current_note = melody[i]["note"]
-        prev_note = melody[i-1]["note"]
+        prev_note = melody[i - 1]["note"]
 
         if abs(current_note - prev_note) > 12:  # More than an octave
             # Move current note closer to previous
@@ -79,10 +84,11 @@ def apply_default_enhancements(music_data: Dict[str, Any]) -> Dict[str, Any]:
         "style": "default",
         "complexity": 0.5,
         "mood": "neutral",
-        "energy": 0.5
+        "energy": 0.5,
     }
 
     return enhanced
+
 
 def apply_ambient_style(music_data: Dict[str, Any]) -> Dict[str, Any]:
     """Apply ambient style transformations to the music."""
@@ -105,10 +111,11 @@ def apply_ambient_style(music_data: Dict[str, Any]) -> Dict[str, Any]:
         "mood": "relaxed",
         "energy": 0.2,
         "reverb": 0.8,
-        "delay": 0.6
+        "delay": 0.6,
     }
 
     return ambient
+
 
 def apply_classical_style(music_data: Dict[str, Any]) -> Dict[str, Any]:
     """Apply classical style transformations to the music."""
@@ -145,11 +152,12 @@ def apply_classical_style(music_data: Dict[str, Any]) -> Dict[str, Any]:
         "energy": 0.5,
         "dynamics": {
             "crescendos": [{"start": 0.2, "end": 0.3}, {"start": 0.6, "end": 0.8}],
-            "pattern": "classical"
-        }
+            "pattern": "classical",
+        },
     }
 
     return classical
+
 
 def apply_electronic_style(music_data: Dict[str, Any]) -> Dict[str, Any]:
     """Apply electronic style transformations to the music."""
@@ -191,14 +199,11 @@ def apply_electronic_style(music_data: Dict[str, Any]) -> Dict[str, Any]:
         "complexity": 0.6,
         "mood": "energetic",
         "energy": 0.8,
-        "effects": {
-            "filter_cutoff": 0.7,
-            "filter_resonance": 0.5,
-            "bitcrush": 0.2
-        }
+        "effects": {"filter_cutoff": 0.7, "filter_resonance": 0.5, "bitcrush": 0.2},
     }
 
     return electronic
+
 
 def apply_jazz_style(music_data: Dict[str, Any]) -> Dict[str, Any]:
     """Apply jazz style transformations to the music."""
@@ -231,10 +236,7 @@ def apply_jazz_style(music_data: Dict[str, Any]) -> Dict[str, Any]:
         if random.random() > 0.8:
             note_value = note_value - 1  # Flat 5th or blue note
 
-        melody.append({
-            "note": note_value,
-            "duration": duration
-        })
+        melody.append({"note": note_value, "duration": duration})
 
     jazz["melody"] = melody
 
@@ -248,7 +250,7 @@ def apply_jazz_style(music_data: Dict[str, Any]) -> Dict[str, Any]:
         "mood": "sophisticated",
         "energy": 0.6,
         "swing": 0.7,
-        "blue_notes": True
+        "blue_notes": True,
     }
 
     return jazz

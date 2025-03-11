@@ -2,6 +2,7 @@
 
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
 
+
 @as_declarative()
 class Base:
     """Base class for all database models."""
@@ -15,9 +16,9 @@ class Base:
     def to_dict(self):
         """Convert model instance to dictionary."""
         return {
-            'id': self.id,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+            "id": self.id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
 
     def save(self, db_session):

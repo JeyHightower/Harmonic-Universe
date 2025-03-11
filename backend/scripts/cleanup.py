@@ -4,12 +4,13 @@ import glob
 
 # Define directories and files to clean
 CLEANUP_PATHS = [
-    '../.pytest_cache',
-    '../logs',
-    '../test.db',
-    '../*.pyc',
-    '../__pycache__'
+    "../.pytest_cache",
+    "../logs",
+    "../test.db",
+    "../*.pyc",
+    "../__pycache__",
 ]
+
 
 # Function to remove files and directories
 def cleanup():
@@ -27,6 +28,7 @@ def cleanup():
             for file in glob.glob(path):
                 os.remove(file)
                 print(f"Removed file: {file}")
+
 
 if __name__ == "__main__":
     cleanup()

@@ -11,10 +11,10 @@ import logging
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
 
 class CodebaseCleanup:
     def __init__(self, root_dir: str):
@@ -25,8 +25,8 @@ class CodebaseCleanup:
     def calculate_file_hash(self, file_path: Path) -> str:
         """Calculate SHA-256 hash of file contents."""
         hasher = hashlib.sha256()
-        with open(file_path, 'rb') as f:
-            for chunk in iter(lambda: f.read(4096), b''):
+        with open(file_path, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
                 hasher.update(chunk)
         return hasher.hexdigest()
 
@@ -41,7 +41,7 @@ class CodebaseCleanup:
 
             try:
                 for item in current_dir.iterdir():
-                    if item.is_dir() and not item.name.startswith('.'):
+                    if item.is_dir() and not item.name.startswith("."):
                         queue.append(item)
                     elif item.is_file():
                         file_hash = self.calculate_file_hash(item)
@@ -68,7 +68,7 @@ class CodebaseCleanup:
     def choose_primary_file(self, file_paths: List[Path]) -> Path:
         """Choose which file to keep as primary."""
         # Prioritize files in standard locations
-        priority_dirs = ['src', 'app', 'tests', 'scripts']
+        priority_dirs = ["src", "app", "tests", "scripts"]
         for priority_dir in priority_dirs:
             for file_path in file_paths:
                 if priority_dir in str(file_path):
@@ -94,20 +94,24 @@ class CodebaseCleanup:
 
         for root, _, files in os.walk(self.root_dir):
             for file in files:
-                if file.endswith(('.py', '.js', '.jsx', '.ts', '.tsx', '.json', '.md')):
+                if file.endswith((".py", ".js", ".jsx", ".ts", ".tsx", ".json", ".md")):
                     file_path = Path(root) / file
                     try:
-                        with open(file_path, 'r') as f:
+                        with open(file_path, "r") as f:
                             content = f.read()
 
                         # Update references
-                        updated_content = content.replace(str(old_rel_path), str(new_rel_path))
+                        updated_content = content.replace(
+                            str(old_rel_path), str(new_rel_path)
+                        )
                         if updated_content != content:
-                            with open(file_path, 'w') as f:
+                            with open(file_path, "w") as f:
                                 f.write(updated_content)
                             logger.info(f"Updated references in {file_path}")
                     except Exception as e:
-                        logger.error(f"Error updating references in {file_path}: {str(e)}")
+                        logger.error(
+                            f"Error updating references in {file_path}: {str(e)}"
+                        )
 
     def audit_features(self) -> None:
         """Audit implemented features in the codebase."""
@@ -121,22 +125,22 @@ class CodebaseCleanup:
 
         # Combine and save results
         self.implemented_features = {
-            'backend_routes': backend_routes,
-            'frontend_components': frontend_components
+            "backend_routes": backend_routes,
+            "frontend_components": frontend_components,
         }
 
-        with open(self.root_dir / 'IMPLEMENTATION_STATUS.md', 'w') as f:
+        with open(self.root_dir / "IMPLEMENTATION_STATUS.md", "w") as f:
             json.dump(self.implemented_features, f, indent=2)
 
     def find_implemented_routes(self) -> List[Dict]:
         """Find implemented backend routes."""
         routes = []
-        backend_dir = self.root_dir / 'backend' / 'app' / 'routes'
+        backend_dir = self.root_dir / "backend" / "app" / "routes"
 
         if backend_dir.exists():
-            for route_file in backend_dir.glob('*.py'):
+            for route_file in backend_dir.glob("*.py"):
                 try:
-                    with open(route_file, 'r') as f:
+                    with open(route_file, "r") as f:
                         content = f.read()
                     # Parse route definitions
                     routes.extend(self.parse_route_definitions(content))
@@ -148,17 +152,19 @@ class CodebaseCleanup:
     def find_implemented_components(self) -> List[Dict]:
         """Find implemented frontend components."""
         components = []
-        frontend_dir = self.root_dir / 'frontend' / 'src' / 'components'
+        frontend_dir = self.root_dir / "frontend" / "src" / "components"
 
         if frontend_dir.exists():
-            for component_file in frontend_dir.glob('**/*.{jsx,tsx}'):
+            for component_file in frontend_dir.glob("**/*.{jsx,tsx}"):
                 try:
-                    with open(component_file, 'r') as f:
+                    with open(component_file, "r") as f:
                         content = f.read()
                     # Parse component definitions
                     components.extend(self.parse_component_definitions(content))
                 except Exception as e:
-                    logger.error(f"Error parsing component in {component_file}: {str(e)}")
+                    logger.error(
+                        f"Error parsing component in {component_file}: {str(e)}"
+                    )
 
         return components
 
@@ -179,7 +185,7 @@ class CodebaseCleanup:
         logger.info("Combining test files...")
 
         # Create new test directories
-        new_test_dir = self.root_dir / 'tests'
+        new_test_dir = self.root_dir / "tests"
         new_test_dir.mkdir(exist_ok=True)
 
         # Combine backend tests
@@ -193,7 +199,7 @@ class CodebaseCleanup:
 
     def combine_backend_tests(self, new_test_dir: Path) -> None:
         """Combine backend test files."""
-        backend_test_dir = self.root_dir / 'backend' / 'tests'
+        backend_test_dir = self.root_dir / "backend" / "tests"
         if backend_test_dir.exists():
             # Group tests by functionality
             test_groups = self.group_tests_by_functionality(backend_test_dir)
@@ -204,20 +210,22 @@ class CodebaseCleanup:
 
     def combine_frontend_tests(self, new_test_dir: Path) -> None:
         """Combine frontend test files."""
-        frontend_test_dir = self.root_dir / 'frontend' / 'tests'
+        frontend_test_dir = self.root_dir / "frontend" / "tests"
         if frontend_test_dir.exists():
             # Group tests by functionality
             test_groups = self.group_tests_by_functionality(frontend_test_dir)
 
             # Create combined test files
             for group, tests in test_groups.items():
-                self.create_combined_test_file(new_test_dir / f"test_{group}.spec.js", tests)
+                self.create_combined_test_file(
+                    new_test_dir / f"test_{group}.spec.js", tests
+                )
 
     def group_tests_by_functionality(self, test_dir: Path) -> Dict[str, List[Path]]:
         """Group test files by functionality."""
         groups: Dict[str, List[Path]] = {}
 
-        for test_file in test_dir.glob('**/*test*.{py,js,jsx,ts,tsx}'):
+        for test_file in test_dir.glob("**/*test*.{py,js,jsx,ts,tsx}"):
             # Determine functionality group based on file name/content
             group = self.determine_test_group(test_file)
             if group not in groups:
@@ -232,12 +240,14 @@ class CodebaseCleanup:
         # This is a placeholder
         return "misc"
 
-    def create_combined_test_file(self, output_file: Path, input_files: List[Path]) -> None:
+    def create_combined_test_file(
+        self, output_file: Path, input_files: List[Path]
+    ) -> None:
         """Create a combined test file from multiple input files."""
-        with open(output_file, 'w') as out_f:
+        with open(output_file, "w") as out_f:
             for input_file in input_files:
                 try:
-                    with open(input_file, 'r') as in_f:
+                    with open(input_file, "r") as in_f:
                         content = in_f.read()
                     out_f.write(f"\n# From {input_file.name}\n")
                     out_f.write(content)
@@ -248,21 +258,21 @@ class CodebaseCleanup:
     def update_test_config(self) -> None:
         """Update test configuration files for the new test structure."""
         # Update pytest.ini
-        pytest_config = self.root_dir / 'pytest.ini'
+        pytest_config = self.root_dir / "pytest.ini"
         if pytest_config.exists():
-            with open(pytest_config, 'w') as f:
+            with open(pytest_config, "w") as f:
                 f.write("[pytest]\n")
                 f.write("testpaths = tests\n")
                 f.write("python_files = test_*.py\n")
 
         # Update package.json for frontend tests
-        package_json = self.root_dir / 'package.json'
+        package_json = self.root_dir / "package.json"
         if package_json.exists():
             try:
-                with open(package_json, 'r') as f:
+                with open(package_json, "r") as f:
                     config = json.load(f)
-                config['scripts']['test'] = 'jest tests'
-                with open(package_json, 'w') as f:
+                config["scripts"]["test"] = "jest tests"
+                with open(package_json, "w") as f:
                     json.dump(config, f, indent=2)
             except Exception as e:
                 logger.error(f"Error updating package.json: {str(e)}")
@@ -286,7 +296,7 @@ class CodebaseCleanup:
     def update_database_schema(self) -> None:
         """Update database schema based on current models."""
         try:
-            subprocess.run(['flask', 'db', 'migrate'], check=True)
+            subprocess.run(["flask", "db", "migrate"], check=True)
             logger.info("Database schema updated successfully")
         except subprocess.CalledProcessError as e:
             logger.error(f"Error updating database schema: {str(e)}")
@@ -299,7 +309,7 @@ class CodebaseCleanup:
     def run_migrations(self) -> None:
         """Run database migrations."""
         try:
-            subprocess.run(['flask', 'db', 'upgrade'], check=True)
+            subprocess.run(["flask", "db", "upgrade"], check=True)
             logger.info("Database migrations completed successfully")
         except subprocess.CalledProcessError as e:
             logger.error(f"Error running migrations: {str(e)}")
@@ -307,7 +317,7 @@ class CodebaseCleanup:
     def run_seeders(self) -> None:
         """Run database seeders."""
         try:
-            subprocess.run(['python', 'scripts/seed.py'], check=True)
+            subprocess.run(["python", "scripts/seed.py"], check=True)
             logger.info("Database seeding completed successfully")
         except subprocess.CalledProcessError as e:
             logger.error(f"Error running seeders: {str(e)}")
@@ -317,18 +327,18 @@ class CodebaseCleanup:
         logger.info("Consolidating scripts...")
 
         # Create scripts directory in root if it doesn't exist
-        scripts_dir = self.root_dir / 'scripts'
+        scripts_dir = self.root_dir / "scripts"
         scripts_dir.mkdir(exist_ok=True)
 
         # Move and combine scripts from different directories
         script_locations = [
-            self.root_dir / 'backend' / 'scripts',
-            self.root_dir / 'frontend' / 'scripts'
+            self.root_dir / "backend" / "scripts",
+            self.root_dir / "frontend" / "scripts",
         ]
 
         for script_location in script_locations:
             if script_location.exists():
-                for script_file in script_location.glob('**/*'):
+                for script_file in script_location.glob("**/*"):
                     if script_file.is_file():
                         # Determine new script name and location
                         new_name = self.get_unique_script_name(scripts_dir, script_file)
@@ -348,7 +358,7 @@ class CodebaseCleanup:
         new_name = base_name
 
         while (target_dir / new_name).exists():
-            name_parts = base_name.rsplit('.', 1)
+            name_parts = base_name.rsplit(".", 1)
             new_name = f"{name_parts[0]}_{counter}.{name_parts[1]}"
             counter += 1
 
@@ -357,18 +367,20 @@ class CodebaseCleanup:
     def update_script_paths(self, script_file: Path, new_path: Path) -> None:
         """Update paths within the script to reflect new location."""
         try:
-            with open(script_file, 'r') as f:
+            with open(script_file, "r") as f:
                 content = f.read()
 
             # Update relative imports and paths
             updated_content = self.update_relative_paths(content, script_file, new_path)
 
-            with open(script_file, 'w') as f:
+            with open(script_file, "w") as f:
                 f.write(updated_content)
         except Exception as e:
             logger.error(f"Error updating paths in {script_file}: {str(e)}")
 
-    def update_relative_paths(self, content: str, old_path: Path, new_path: Path) -> str:
+    def update_relative_paths(
+        self, content: str, old_path: Path, new_path: Path
+    ) -> str:
         """Update relative paths in script content."""
         # Implementation depends on your import and path patterns
         # This is a placeholder
@@ -400,6 +412,7 @@ class CodebaseCleanup:
             logger.error(f"Error during codebase cleanup: {str(e)}")
             raise
 
+
 def main():
     """Main entry point."""
     if len(sys.argv) != 2:
@@ -414,5 +427,6 @@ def main():
     cleanup = CodebaseCleanup(root_dir)
     cleanup.run()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

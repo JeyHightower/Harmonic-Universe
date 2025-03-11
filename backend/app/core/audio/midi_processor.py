@@ -7,6 +7,7 @@ from pathlib import Path
 from backend.app.models.midi_event import MIDIEventType, MIDIEvent
 from backend.app.schemas.midi_event import MIDIEventCreate
 
+
 class MIDIProcessor:
     def __init__(self, file_path: Optional[str] = None):
         self.file_path = file_path
@@ -28,7 +29,7 @@ class MIDIProcessor:
         self,
         events: List[Dict[str, Any]],
         tempo: int = 120,
-        time_signature: Tuple[int, int] = (4, 4)
+        time_signature: Tuple[int, int] = (4, 4),
     ) -> None:
         """Create a new MIDI file from events."""
         self._midi_data = pretty_midi.PrettyMIDI(initial_tempo=tempo)
@@ -43,7 +44,7 @@ class MIDIProcessor:
                     velocity=event.get("velocity", 100),
                     pitch=event["pitch"],
                     start=event["start_time"],
-                    end=event["end_time"]
+                    end=event["end_time"],
                 )
                 instrument.notes.append(note)
             elif event["type"] == "control_change":
@@ -51,7 +52,7 @@ class MIDIProcessor:
                     pretty_midi.ControlChange(
                         number=event["control"],
                         value=event["value"],
-                        time=event["time"]
+                        time=event["time"],
                     )
                 )
 
@@ -65,32 +66,38 @@ class MIDIProcessor:
             # Process notes
             for note in instrument.notes:
                 # Note On event
-                events.append(MIDIEventCreate(
-                    event_type=MIDIEventType.NOTE_ON,
-                    timestamp=note.start,
-                    channel=instrument.program,
-                    note=note.pitch,
-                    velocity=note.velocity
-                ))
+                events.append(
+                    MIDIEventCreate(
+                        event_type=MIDIEventType.NOTE_ON,
+                        timestamp=note.start,
+                        channel=instrument.program,
+                        note=note.pitch,
+                        velocity=note.velocity,
+                    )
+                )
 
                 # Note Off event
-                events.append(MIDIEventCreate(
-                    event_type=MIDIEventType.NOTE_OFF,
-                    timestamp=note.end,
-                    channel=instrument.program,
-                    note=note.pitch,
-                    velocity=0
-                ))
+                events.append(
+                    MIDIEventCreate(
+                        event_type=MIDIEventType.NOTE_OFF,
+                        timestamp=note.end,
+                        channel=instrument.program,
+                        note=note.pitch,
+                        velocity=0,
+                    )
+                )
 
             # Process control changes
             for cc in instrument.control_changes:
-                events.append(MIDIEventCreate(
-                    event_type=MIDIEventType.CONTROL_CHANGE,
-                    timestamp=cc.time,
-                    channel=instrument.program,
-                    control=cc.number,
-                    value=cc.value
-                ))
+                events.append(
+                    MIDIEventCreate(
+                        event_type=MIDIEventType.CONTROL_CHANGE,
+                        timestamp=cc.time,
+                        channel=instrument.program,
+                        control=cc.number,
+                        value=cc.value,
+                    )
+                )
 
         # Sort events by timestamp
         events.sort(key=lambda x: x.timestamp)
@@ -98,7 +105,9 @@ class MIDIProcessor:
 
     def get_tempo_changes(self) -> List[Tuple[float, float]]:
         """Get list of tempo changes with their timestamps."""
-        return [(change.time, change.tempo) for change in self.midi_data.get_tempo_changes()]
+        return [
+            (change.time, change.tempo) for change in self.midi_data.get_tempo_changes()
+        ]
 
     def get_time_signature_changes(self) -> List[Tuple[float, Tuple[int, int]]]:
         """Get list of time signature changes with their timestamps."""

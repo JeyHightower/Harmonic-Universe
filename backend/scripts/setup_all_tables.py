@@ -25,11 +25,14 @@ from backend.app.models.organization.organization import Organization, Project, 
 
 # Create project_users association table
 project_users = Table(
-    'project_users',
+    "project_users",
     Base.metadata,
-    Column('project_id', UUID(as_uuid=True), ForeignKey('projects.id', ondelete='CASCADE')),
-    Column('user_id', UUID(as_uuid=True), ForeignKey('users.id', ondelete='CASCADE'))
+    Column(
+        "project_id", UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE")
+    ),
+    Column("user_id", UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE")),
 )
+
 
 def setup_database():
     """Create all database tables."""
@@ -44,6 +47,7 @@ def setup_database():
     print("Created all tables")
 
     print("Database tables created successfully!")
+
 
 if __name__ == "__main__":
     setup_database()

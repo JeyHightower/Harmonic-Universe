@@ -5,7 +5,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def generate_music_from_params(harmony_params: Dict[str, Any], physics_params: Dict[str, Any]) -> Dict[str, Any]:
+
+def generate_music_from_params(
+    harmony_params: Dict[str, Any], physics_params: Dict[str, Any]
+) -> Dict[str, Any]:
     """
     Generate music parameters based on universe's harmony and physics parameters.
 
@@ -22,14 +25,14 @@ def generate_music_from_params(harmony_params: Dict[str, Any], physics_params: D
         "minor": [0, 2, 3, 5, 7, 8, 10],
         "pentatonic": [0, 2, 4, 7, 9],
         "blues": [0, 3, 5, 6, 7, 10],
-        "chromatic": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        "chromatic": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
     }
 
     # Default chord progressions
     chord_progressions = {
         "pop": ["I", "V", "vi", "IV"],
         "jazz": ["ii", "V", "I"],
-        "blues": ["I", "IV", "I", "V", "IV", "I"]
+        "blues": ["I", "IV", "I", "V", "IV", "I"],
     }
 
     try:
@@ -38,9 +41,25 @@ def generate_music_from_params(harmony_params: Dict[str, Any], physics_params: D
         root_note = 60  # C4 in MIDI
         if "key" in harmony_params:
             # Map key to MIDI note number (C4 = 60, C#4 = 61, etc.)
-            key_map = {"C": 60, "C#": 61, "D": 62, "D#": 63, "E": 64, "F": 65,
-                      "F#": 66, "G": 67, "G#": 68, "A": 69, "A#": 70, "B": 71,
-                      "Db": 61, "Eb": 63, "Gb": 66, "Ab": 68, "Bb": 70}
+            key_map = {
+                "C": 60,
+                "C#": 61,
+                "D": 62,
+                "D#": 63,
+                "E": 64,
+                "F": 65,
+                "F#": 66,
+                "G": 67,
+                "G#": 68,
+                "A": 69,
+                "A#": 70,
+                "B": 71,
+                "Db": 61,
+                "Eb": 63,
+                "Gb": 66,
+                "Ab": 68,
+                "Bb": 70,
+            }
             key = harmony_params["key"]["value"]
             root_note = key_map.get(key, 60)
 
@@ -60,7 +79,9 @@ def generate_music_from_params(harmony_params: Dict[str, Any], physics_params: D
         # Get melody complexity (if provided)
         melody_complexity = 0.5
         if "harmony_scale" in harmony_params:
-            melody_complexity = harmony_params["harmony_scale"]["value"] / 2.0  # Normalize to 0-1 range
+            melody_complexity = (
+                harmony_params["harmony_scale"]["value"] / 2.0
+            )  # Normalize to 0-1 range
 
         # Use physics parameters to influence music
         gravity = 9.81
@@ -76,12 +97,18 @@ def generate_music_from_params(harmony_params: Dict[str, Any], physics_params: D
         tempo_modifier = 1.0 - (gravity / 20.0)  # Normalize gravity
 
         # Only apply physics modifications if no custom tempo is provided
-        if "tempo" not in harmony_params or harmony_params["tempo"].get("is_default", True):
-            tempo = int(tempo * (0.8 + (tempo_modifier * 0.4)))  # Adjust tempo based on gravity
+        if "tempo" not in harmony_params or harmony_params["tempo"].get(
+            "is_default", True
+        ):
+            tempo = int(
+                tempo * (0.8 + (tempo_modifier * 0.4))
+            )  # Adjust tempo based on gravity
 
         # Higher temperature = brighter sound (major scales), more energy (faster tempo)
         # Only apply if scale type is not explicitly set
-        if ("scale" not in harmony_params or harmony_params["scale"].get("is_default", True)):
+        if "scale" not in harmony_params or harmony_params["scale"].get(
+            "is_default", True
+        ):
             if temperature > 350:
                 scale_type = "major"
                 tempo += 20
@@ -94,7 +121,9 @@ def generate_music_from_params(harmony_params: Dict[str, Any], physics_params: D
         melody = []
 
         # Adjust note count based on complexity
-        note_count = int(12 + (melody_complexity * 8))  # 12-20 notes based on complexity
+        note_count = int(
+            12 + (melody_complexity * 8)
+        )  # 12-20 notes based on complexity
 
         # Melody pattern complexity increases with complexity parameter
         # More complex melodies have more variation in note choice and duration
@@ -126,13 +155,12 @@ def generate_music_from_params(harmony_params: Dict[str, Any], physics_params: D
                 # Complex rhythms use more variation including triplets
                 duration = random.choice([0.25, 0.25, 0.33, 0.5, 0.66, 1.0, 1.5])
 
-            melody.append({
-                "note": note_value,
-                "duration": duration
-            })
+            melody.append({"note": note_value, "duration": duration})
 
         # Generate chord progression
-        if "scale" not in harmony_params or harmony_params["scale"].get("is_default", True):
+        if "scale" not in harmony_params or harmony_params["scale"].get(
+            "is_default", True
+        ):
             if temperature > 300:
                 progression_type = "pop"
             elif temperature < 280:
@@ -156,10 +184,7 @@ def generate_music_from_params(harmony_params: Dict[str, Any], physics_params: D
             "tempo": tempo,
             "melody": melody,
             "chord_progression": chord_progression,
-            "physics_influence": {
-                "gravity": gravity,
-                "temperature": temperature
-            }
+            "physics_influence": {"gravity": gravity, "temperature": temperature},
         }
     except Exception as e:
         logger.error(f"Error in generate_music_from_params: {str(e)}")
@@ -170,8 +195,5 @@ def generate_music_from_params(harmony_params: Dict[str, Any], physics_params: D
             "tempo": 120,
             "melody": [{"note": 60, "duration": 1.0} for _ in range(8)],
             "chord_progression": ["I", "IV", "V", "I"],
-            "physics_influence": {
-                "gravity": 9.81,
-                "temperature": 293.15
-            }
+            "physics_influence": {"gravity": 9.81, "temperature": 293.15},
         }

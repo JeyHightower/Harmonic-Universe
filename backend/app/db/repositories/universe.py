@@ -6,6 +6,7 @@ from uuid import UUID
 from backend.app.models.universe.universe import Universe
 from backend.app.core.errors import NotFoundError
 
+
 class UniverseRepository:
     """Repository for Universe-related database operations."""
 
@@ -29,20 +30,21 @@ class UniverseRepository:
         except Exception as e:
             # Log the error and return None
             import logging
+
             logging.error(f"Error getting universe by ID: {e}")
             return None
 
     def create_universe(self, universe_data: dict, user_id: UUID) -> Universe:
         """Create a new universe."""
         universe = Universe(
-            name=universe_data.get('name'),
-            description=universe_data.get('description', ''),
-            is_public=universe_data.get('is_public', False),
+            name=universe_data.get("name"),
+            description=universe_data.get("description", ""),
+            is_public=universe_data.get("is_public", False),
             user_id=user_id,
-            physics_params=universe_data.get('physics_params'),
-            harmony_params=universe_data.get('harmony_params'),
-            visualization_params=universe_data.get('visualization_params'),
-            ai_params=universe_data.get('ai_params')
+            physics_params=universe_data.get("physics_params"),
+            harmony_params=universe_data.get("harmony_params"),
+            visualization_params=universe_data.get("visualization_params"),
+            ai_params=universe_data.get("ai_params"),
         )
         self.session.add(universe)
         self.session.commit()
@@ -79,5 +81,6 @@ class UniverseRepository:
         except Exception as e:
             # Log the error and return False
             import logging
+
             logging.error(f"Error deleting universe: {e}")
             return False

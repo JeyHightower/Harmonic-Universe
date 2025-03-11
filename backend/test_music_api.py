@@ -13,7 +13,8 @@ import os
 # Configuration
 API_URL = "http://localhost:8000"
 EMAIL = "demo@example.com"  # Default demo user
-PASSWORD = "demo123"        # Updated with correct demo password
+PASSWORD = "demo123"  # Updated with correct demo password
+
 
 def login():
     """Login and get access token."""
@@ -22,7 +23,7 @@ def login():
         print(f"Attempting to connect to {API_URL}/api/v1/auth/demo-login")
         response = requests.post(
             f"{API_URL}/api/v1/auth/demo-login",
-            timeout=10  # Set a timeout of 10 seconds
+            timeout=10,  # Set a timeout of 10 seconds
         )
 
         if response.status_code != 200:
@@ -41,6 +42,7 @@ def login():
         print(f"Unexpected error: {type(e).__name__}: {e}")
         sys.exit(1)
 
+
 def get_universes(token):
     """Get all universes for the user."""
     print("Getting universes...")
@@ -48,7 +50,7 @@ def get_universes(token):
         response = requests.get(
             f"{API_URL}/api/v1/universes/",
             headers={"Authorization": f"Bearer {token}"},
-            timeout=10
+            timeout=10,
         )
 
         if response.status_code != 200:
@@ -63,6 +65,7 @@ def get_universes(token):
         print(f"Error getting universes: {type(e).__name__}: {e}")
         return []
 
+
 def generate_music(token, universe_id):
     """Generate music for a universe."""
     print(f"Generating music for universe {universe_id}...")
@@ -70,7 +73,7 @@ def generate_music(token, universe_id):
         response = requests.get(
             f"{API_URL}/api/v1/music/{universe_id}/generate",
             headers={"Authorization": f"Bearer {token}"},
-            timeout=30  # Longer timeout for music generation
+            timeout=30,  # Longer timeout for music generation
         )
 
         if response.status_code != 200:
@@ -85,6 +88,7 @@ def generate_music(token, universe_id):
         print(f"Error generating music: {type(e).__name__}: {e}")
         return None
 
+
 def download_music(token, universe_id):
     """Download music for a universe."""
     print(f"Downloading music for universe {universe_id}...")
@@ -93,7 +97,7 @@ def download_music(token, universe_id):
             f"{API_URL}/api/v1/music/{universe_id}/download",
             headers={"Authorization": f"Bearer {token}"},
             timeout=30,  # Longer timeout for music download
-            stream=True  # Stream the response to handle large files
+            stream=True,  # Stream the response to handle large files
         )
 
         if response.status_code != 200:
@@ -108,23 +112,33 @@ def download_music(token, universe_id):
                 f.write(chunk)
 
         file_size = os.path.getsize(download_path)
-        print(f"Music downloaded successfully! File saved to {download_path} ({file_size} bytes)")
+        print(
+            f"Music downloaded successfully! File saved to {download_path} ({file_size} bytes)"
+        )
         return True
     except Exception as e:
         print(f"Error downloading music: {type(e).__name__}: {e}")
         return False
 
+
 def test_visualization_data(music_data):
     """Check if music data has all necessary elements for visualization."""
     required_elements = ["melody", "tempo", "scale_type", "physics_influence"]
-    missing = [elem for elem in required_elements if elem not in music_data.get("music_data", {})]
+    missing = [
+        elem
+        for elem in required_elements
+        if elem not in music_data.get("music_data", {})
+    ]
 
     if missing:
-        print(f"Warning: Music data is missing elements needed for visualization: {', '.join(missing)}")
+        print(
+            f"Warning: Music data is missing elements needed for visualization: {', '.join(missing)}"
+        )
         return False
 
     print("Music data contains all elements needed for visualization!")
     return True
+
 
 def main():
     # Check if server is running
@@ -153,10 +167,12 @@ def main():
 
     # Use the first universe without asking for input
     selected_universe = universes[0]
-    print(f"\nAutomatically selected universe: {selected_universe['name']} (ID: {selected_universe['id']})")
+    print(
+        f"\nAutomatically selected universe: {selected_universe['name']} (ID: {selected_universe['id']})"
+    )
 
     # Generate music
-    music_data = generate_music(token, selected_universe['id'])
+    music_data = generate_music(token, selected_universe["id"])
 
     if music_data:
         print("\nGenerated Music Data:")
@@ -166,11 +182,12 @@ def main():
         test_visualization_data(music_data)
 
         # Download music
-        download_success = download_music(token, selected_universe['id'])
+        download_success = download_music(token, selected_universe["id"])
         if download_success:
             print("\nAll music generation features are working correctly!")
     else:
         print("Failed to generate music data.")
+
 
 if __name__ == "__main__":
     main()

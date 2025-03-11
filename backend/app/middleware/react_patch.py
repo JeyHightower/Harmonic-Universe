@@ -41,6 +41,7 @@ var IconContext = ensureIconContext();
 
 """
 
+
 def init_app(app):
     """
     Initialize the Flask app with the patching middleware
@@ -54,27 +55,26 @@ def init_app(app):
         Patch JavaScript responses to ensure React.createContext is available
         """
         # Only patch JavaScript files that might be related to Ant Icons
-        if (response.mimetype == 'application/javascript' or
-            response.mimetype == 'text/javascript') and (
-            'ant-icons' in request.path or
-            '@ant-design/icons' in request.path):
-
+        if (
+            response.mimetype == "application/javascript"
+            or response.mimetype == "text/javascript"
+        ) and ("ant-icons" in request.path or "@ant-design/icons" in request.path):
             logger.debug(f"Checking JavaScript file for patching: {request.path}")
 
             # Check if the file is already patched
-            if b'// Direct patch for React.createContext' not in response.data:
+            if b"// Direct patch for React.createContext" not in response.data:
                 logger.info(f"Patching JavaScript file: {request.path}")
 
                 # Apply the patch to the JavaScript content
-                patched_content = REACT_CONTEXT_PATCH + response.data.decode('utf-8')
+                patched_content = REACT_CONTEXT_PATCH + response.data.decode("utf-8")
 
                 # Create a new response with the patched content
                 response = Response(
                     patched_content,
                     status=response.status_code,
-                    headers=dict(response.headers)
+                    headers=dict(response.headers),
                 )
-                response.headers['Content-Type'] = 'application/javascript'
+                response.headers["Content-Type"] = "application/javascript"
 
         return response
 
@@ -84,9 +84,6 @@ def init_app(app):
         """
         Inject the React polyfill into all templates
         """
-        return {
-            'react_polyfill': True,
-            'react_polyfill_url': '/react-polyfill.js'
-        }
+        return {"react_polyfill": True, "react_polyfill_url": "/react-polyfill.js"}
 
     logger.info("React patching middleware initialized")

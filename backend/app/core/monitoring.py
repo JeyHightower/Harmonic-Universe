@@ -13,9 +13,11 @@ from .logging import get_logger
 
 logger = get_logger(__name__)
 
+
 @dataclass
 class RequestMetrics:
     """Metrics for a single request."""
+
     request_id: str
     path: str
     method: str
@@ -26,9 +28,11 @@ class RequestMetrics:
     user_id: Optional[int] = None
     error: Optional[str] = None
 
+
 @dataclass
 class ResourceMetrics:
     """System resource usage metrics."""
+
     timestamp: str
     cpu_percent: float
     memory_percent: float
@@ -36,6 +40,7 @@ class ResourceMetrics:
     open_file_descriptors: int
     thread_count: int
     active_connections: int
+
 
 class MetricsTracker:
     """Tracks and stores application metrics."""
@@ -72,9 +77,9 @@ class MetricsTracker:
         metrics_file = os.path.join(self.metrics_dir, f"requests_{timestamp}.json")
 
         try:
-            with open(metrics_file, 'a') as f:
+            with open(metrics_file, "a") as f:
                 for metrics in self._request_metrics:
-                    f.write(json.dumps(asdict(metrics)) + '\n')
+                    f.write(json.dumps(asdict(metrics)) + "\n")
             self._request_metrics.clear()
         except Exception as e:
             logger.error(f"Failed to save request metrics: {str(e)}")
@@ -88,9 +93,9 @@ class MetricsTracker:
         metrics_file = os.path.join(self.metrics_dir, f"resources_{timestamp}.json")
 
         try:
-            with open(metrics_file, 'a') as f:
+            with open(metrics_file, "a") as f:
                 for metrics in self._resource_metrics:
-                    f.write(json.dumps(asdict(metrics)) + '\n')
+                    f.write(json.dumps(asdict(metrics)) + "\n")
             self._resource_metrics.clear()
         except Exception as e:
             logger.error(f"Failed to save resource metrics: {str(e)}")
@@ -101,11 +106,14 @@ class MetricsTracker:
 
         for filename in os.listdir(self.metrics_dir):
             try:
-                file_date = datetime.strptime(filename.split('_')[1].split('.')[0], "%Y%m%d")
+                file_date = datetime.strptime(
+                    filename.split("_")[1].split(".")[0], "%Y%m%d"
+                )
                 if file_date < cutoff_date:
                     os.remove(os.path.join(self.metrics_dir, filename))
             except (ValueError, IndexError):
                 continue
+
 
 class PerformanceMonitor:
     """Monitors application performance."""
@@ -118,11 +126,7 @@ class PerformanceMonitor:
 
     @contextmanager
     def track_request(
-        self,
-        request_id: str,
-        path: str,
-        method: str,
-        user_id: Optional[int] = None
+        self, request_id: str, path: str, method: str, user_id: Optional[int] = None
     ):
         """Track request timing and metrics."""
         start_time = time.time()
@@ -148,7 +152,7 @@ class PerformanceMonitor:
                 duration_ms=duration_ms,
                 status_code=status_code,
                 user_id=user_id,
-                error=error
+                error=error,
             )
             self.tracker.add_request_metrics(metrics)
 
@@ -159,10 +163,10 @@ class PerformanceMonitor:
                 timestamp=datetime.now().isoformat(),
                 cpu_percent=psutil.cpu_percent(),
                 memory_percent=psutil.virtual_memory().percent,
-                disk_usage_percent=psutil.disk_usage('/').percent,
+                disk_usage_percent=psutil.disk_usage("/").percent,
                 open_file_descriptors=psutil.Process().num_fds(),
                 thread_count=threading.active_count(),
-                active_connections=self._active_connections
+                active_connections=self._active_connections,
             )
             self.tracker.add_resource_metrics(metrics)
         except Exception as e:
@@ -181,24 +185,19 @@ class PerformanceMonitor:
     def get_performance_stats(self) -> Dict[str, Any]:
         """Get current performance statistics."""
         return {
-            'timestamp': datetime.now().isoformat(),
-            'system': {
-                'cpu_percent': psutil.cpu_percent(),
-                'memory_percent': psutil.virtual_memory().percent,
-                'disk_usage_percent': psutil.disk_usage('/').percent,
-                'open_file_descriptors': psutil.Process().num_fds(),
-                'thread_count': threading.active_count()
+            "timestamp": datetime.now().isoformat(),
+            "system": {
+                "cpu_percent": psutil.cpu_percent(),
+                "memory_percent": psutil.virtual_memory().percent,
+                "disk_usage_percent": psutil.disk_usage("/").percent,
+                "open_file_descriptors": psutil.Process().num_fds(),
+                "thread_count": threading.active_count(),
             },
-            'application': {
-                'active_connections': self._active_connections
-            }
+            "application": {"active_connections": self._active_connections},
         }
+
 
 # Global performance monitor instance
 performance_monitor = PerformanceMonitor()
 
-__all__ = [
-    'performance_monitor',
-    'RequestMetrics',
-    'ResourceMetrics'
-]
+__all__ = ["performance_monitor", "RequestMetrics", "ResourceMetrics"]

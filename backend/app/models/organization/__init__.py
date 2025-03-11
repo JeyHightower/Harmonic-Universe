@@ -7,15 +7,15 @@ from .organization import (
     Workspace,
     Project,
     Resource,
-    Activity
+    Activity,
 )
 
 __all__ = [
-    'Permission',
-    'Role',
-    'Organization',
-    'Workspace',
-    'Project',
-    'Resource',
-    'Activity'
+    "Permission",
+    "Role",
+    "Organization",
+    "Workspace",
+    "Project",
+    "Resource",
+    "Activity",
 ]

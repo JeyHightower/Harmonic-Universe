@@ -5,6 +5,7 @@ from app.models import Universe, User
 from app.extensions import db
 from tests.factories import UniverseFactory, UserFactory
 
+
 def test_new_universe(session):
     """Test creating a new universe."""
     # Create and save user
@@ -14,9 +15,7 @@ def test_new_universe(session):
 
     # Create and save universe
     universe = Universe(
-        name="Test Universe",
-        description="Test Description",
-        user_id=user.id
+        name="Test Universe", description="Test Description", user_id=user.id
     )
     session.add(universe)
     session.commit()
@@ -28,6 +27,7 @@ def test_new_universe(session):
     assert isinstance(universe.created_at, datetime)
     assert isinstance(universe.updated_at, datetime)
     assert universe.collaborators_count == 0
+
 
 def test_universe_to_dict(session):
     """Test converting universe to dictionary."""
@@ -45,7 +45,7 @@ def test_universe_to_dict(session):
         description="A test universe",
         user_id=user.id,
         music_parameters=music_params,
-        visual_parameters=visual_params
+        visual_parameters=visual_params,
     )
     session.add(universe)
     session.commit()
@@ -60,6 +60,7 @@ def test_universe_to_dict(session):
     assert isinstance(result["created_at"], str)
     assert isinstance(result["updated_at"], str)
 
+
 def test_default_parameters(session):
     """Test default values for music and visual parameters."""
     # Create and save user
@@ -67,15 +68,13 @@ def test_default_parameters(session):
     session.add(user)
     session.commit()
 
-    universe = Universe(
-        name="Test Universe",
-        user_id=user.id
-    )
+    universe = Universe(name="Test Universe", user_id=user.id)
     session.add(universe)
     session.commit()
 
     assert universe.music_parameters == {}
     assert universe.visual_parameters == {}
+
 
 def test_can_user_access(session, test_user, test_universe):
     """Test universe access control."""
@@ -101,13 +100,12 @@ def test_can_user_access(session, test_user, test_universe):
     assert test_universe.can_user_access(test_user.id)  # Owner
     assert not test_universe.can_user_access(999)  # Other user
 
+
 def test_create_universe(session):
     """Test creating a new universe."""
     user = UserFactory()
     universe = UniverseFactory(
-        name="Test Universe",
-        description="A test universe description",
-        user=user
+        name="Test Universe", description="A test universe description", user=user
     )
     session.commit()
 
@@ -116,6 +114,7 @@ def test_create_universe(session):
     assert universe.description == "A test universe description"
     assert universe.user == user
 
+
 def test_universe_to_dict(session):
     """Test the to_dict method of Universe model."""
     universe = UniverseFactory()
@@ -123,10 +122,11 @@ def test_universe_to_dict(session):
 
     universe_dict = universe.to_dict()
     assert isinstance(universe_dict, dict)
-    assert universe_dict['id'] == universe.id
-    assert universe_dict['name'] == universe.name
-    assert universe_dict['description'] == universe.description
-    assert universe_dict['user_id'] == universe.user.id
+    assert universe_dict["id"] == universe.id
+    assert universe_dict["name"] == universe.name
+    assert universe_dict["description"] == universe.description
+    assert universe_dict["user_id"] == universe.user.id
+
 
 def test_universe_relationships(session):
     """Test universe relationships with other models."""
@@ -135,12 +135,13 @@ def test_universe_relationships(session):
 
     # Test user relationship
     assert universe.user is not None
-    assert hasattr(universe.user, 'id')
-    assert hasattr(universe.user, 'username')
+    assert hasattr(universe.user, "id")
+    assert hasattr(universe.user, "username")
 
     # Test storyboards relationship
-    assert hasattr(universe, 'storyboards')
+    assert hasattr(universe, "storyboards")
     assert isinstance(universe.storyboards, list)
+
 
 def test_universe_cascade_delete(session):
     """Test that deleting a universe cascades to related models."""
@@ -160,8 +161,10 @@ def test_universe_cascade_delete(session):
 
     # Verify related storyboards are deleted
     from backend.app.models import Storyboard
+
     for sb_id in storyboard_ids:
         assert Storyboard.query.get(sb_id) is None
+
 
 def test_universe_validation(session):
     """Test universe model validation."""
@@ -178,6 +181,7 @@ def test_universe_validation(session):
         universe = Universe(name="Test", description="Test")
         session.add(universe)
         session.commit()
+
 
 def test_universe_unique_name_per_user(session):
     """Test that universe names must be unique per user."""

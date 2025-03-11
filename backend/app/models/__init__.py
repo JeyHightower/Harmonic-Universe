@@ -18,5 +18,5 @@ __all__ = [
     "PhysicsParameters",
     "PhysicsConstraint",
     "AudioTrack",
-    "Visualization"
+    "Visualization",
 ]

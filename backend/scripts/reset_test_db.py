@@ -18,16 +18,21 @@ from backend.app.models.user import User
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def reset_test_database():
     """Reset the test database by dropping and recreating all tables."""
     try:
         # Use the test configuration
-        test_config = config['testing']
+        test_config = config["testing"]
 
         # Confirm we're working with the test database
-        db_url = os.environ.get('DATABASE_URL_TEST') or test_config.SQLALCHEMY_DATABASE_URI
-        if 'test' not in db_url.lower():
-            logger.error("Refusing to reset non-test database. Database URL must contain 'test'.")
+        db_url = (
+            os.environ.get("DATABASE_URL_TEST") or test_config.SQLALCHEMY_DATABASE_URI
+        )
+        if "test" not in db_url.lower():
+            logger.error(
+                "Refusing to reset non-test database. Database URL must contain 'test'."
+            )
             return False
 
         logger.info(f"Resetting test database: {db_url}")
@@ -42,7 +47,7 @@ def reset_test_database():
             email="admin@example.com",
             username="admin",
             is_active=True,
-            is_verified=True
+            is_verified=True,
         )
         test_user.set_password("admin123")
         db.add(test_user)
@@ -54,6 +59,7 @@ def reset_test_database():
     except Exception as e:
         logger.error(f"Error resetting test database: {str(e)}")
         return False
+
 
 if __name__ == "__main__":
     success = reset_test_database()

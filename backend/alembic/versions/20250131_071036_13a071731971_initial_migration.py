@@ -30,30 +30,22 @@ def upgrade() -> None:
         sa.Column("avatar_url", sa.String(), nullable=True),
         sa.Column("bio", sa.String(), nullable=True),
         sa.Column("is_active", sa.Boolean(), nullable=False),
-        sa.Column(
-            "settings", postgresql.JSONB(astext_type=sa.Text()), nullable=False
-        ),
+        sa.Column("settings", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
         sa.Column("id", sa.UUID(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_user")),
     )
     op.create_index(op.f("ix_user_email"), "user", ["email"], unique=True)
-    op.create_index(
-        op.f("ix_user_username"), "user", ["username"], unique=True
-    )
+    op.create_index(op.f("ix_user_username"), "user", ["username"], unique=True)
     op.create_table(
         "universe",
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("description", sa.String(), nullable=True),
         sa.Column("owner_id", sa.UUID(), nullable=False),
         sa.Column("is_public", sa.Boolean(), nullable=False),
-        sa.Column(
-            "collaborators", postgresql.ARRAY(sa.String()), nullable=False
-        ),
-        sa.Column(
-            "settings", postgresql.JSONB(astext_type=sa.Text()), nullable=False
-        ),
+        sa.Column("collaborators", postgresql.ARRAY(sa.String()), nullable=False),
+        sa.Column("settings", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
         sa.Column("id", sa.UUID(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
@@ -66,15 +58,11 @@ def upgrade() -> None:
         "scene",
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("description", sa.String(), nullable=True),
-        sa.Column(
-            "content", postgresql.JSONB(astext_type=sa.Text()), nullable=False
-        ),
+        sa.Column("content", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
         sa.Column("universe_id", sa.UUID(), nullable=False),
         sa.Column("creator_id", sa.UUID(), nullable=False),
         sa.Column("position", sa.Integer(), nullable=False),
-        sa.Column(
-            "settings", postgresql.JSONB(astext_type=sa.Text()), nullable=False
-        ),
+        sa.Column("settings", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
         sa.Column("id", sa.UUID(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),

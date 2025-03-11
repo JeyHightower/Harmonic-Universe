@@ -12,10 +12,12 @@ import threading
 import logging
 
 # Type variable for generic cache key
-T = TypeVar('T')
+T = TypeVar("T")
+
 
 class Cache:
     """Simple in-memory cache implementation."""
+
     def __init__(self, default_ttl: int = 300):
         self._cache: Dict[str, Tuple[Any, float]] = {}
         self._default_ttl = default_ttl
@@ -56,7 +58,8 @@ class Cache:
         removed = 0
         with self._lock:
             keys_to_delete = [
-                key for key, (_, expiry) in self._cache.items()
+                key
+                for key, (_, expiry) in self._cache.items()
                 if expiry <= current_time
             ]
             for key in keys_to_delete:
@@ -64,12 +67,14 @@ class Cache:
                 removed += 1
         return removed
 
+
 def cache_key(*args: Any, **kwargs: Any) -> str:
     """Generate cache key from arguments."""
     key_parts = [str(arg) for arg in args]
     key_parts.extend(f"{k}:{v}" for k, v in sorted(kwargs.items()))
     key_string = "|".join(key_parts)
     return hashlib.md5(key_string.encode()).hexdigest()
+
 
 def memoize(ttl: int = 300):
     """Decorator to memoize function results."""
@@ -84,11 +89,15 @@ def memoize(ttl: int = 300):
                 result = func(*args, **kwargs)
                 cache.set(key, result)
             return result
+
         return wrapper
+
     return decorator
+
 
 class FileCache:
     """File-based cache implementation."""
+
     def __init__(self, cache_dir: Union[str, Path], default_ttl: int = 300):
         self.cache_dir = Path(cache_dir)
         self.default_ttl = default_ttl
@@ -105,10 +114,10 @@ class FileCache:
             return None
 
         try:
-            with open(cache_path, 'rb') as f:
+            with open(cache_path, "rb") as f:
                 data = pickle.load(f)
-                if data['expiry'] > time.time():
-                    return data['value']
+                if data["expiry"] > time.time():
+                    return data["value"]
                 cache_path.unlink()
         except (pickle.PickleError, OSError):
             if cache_path.exists():
@@ -121,8 +130,8 @@ class FileCache:
         expiry = time.time() + (ttl if ttl is not None else self.default_ttl)
 
         try:
-            with open(cache_path, 'wb') as f:
-                pickle.dump({'value': value, 'expiry': expiry}, f)
+            with open(cache_path, "wb") as f:
+                pickle.dump({"value": value, "expiry": expiry}, f)
         except (pickle.PickleError, OSError) as e:
             logging.error(f"Error setting cache value: {e}")
 
@@ -139,7 +148,7 @@ class FileCache:
 
     def clear(self) -> None:
         """Clear all cache files."""
-        for cache_file in self.cache_dir.glob('*.cache'):
+        for cache_file in self.cache_dir.glob("*.cache"):
             try:
                 cache_file.unlink()
             except OSError:
@@ -150,11 +159,11 @@ class FileCache:
         removed = 0
         current_time = time.time()
 
-        for cache_file in self.cache_dir.glob('*.cache'):
+        for cache_file in self.cache_dir.glob("*.cache"):
             try:
-                with open(cache_file, 'rb') as f:
+                with open(cache_file, "rb") as f:
                     data = pickle.load(f)
-                    if data['expiry'] <= current_time:
+                    if data["expiry"] <= current_time:
                         cache_file.unlink()
                         removed += 1
             except (pickle.PickleError, OSError):
@@ -164,8 +173,10 @@ class FileCache:
 
         return removed
 
+
 def cache_result(cache: Union[Cache, FileCache], ttl: Optional[int] = None):
     """Decorator to cache function results using provided cache instance."""
+
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> T:
@@ -175,5 +186,7 @@ def cache_result(cache: Union[Cache, FileCache], ttl: Optional[int] = None):
                 result = func(*args, **kwargs)
                 cache.set(key, result, ttl)
             return result
+
         return wrapper
+
     return decorator

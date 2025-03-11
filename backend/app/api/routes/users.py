@@ -6,9 +6,10 @@ from backend.app.models.user import User
 from backend.app.core.errors import ValidationError, NotFoundError
 from backend.app.core.jwt import add_token_to_blocklist
 
-users_bp = Blueprint('users', __name__)
+users_bp = Blueprint("users", __name__)
 
-@users_bp.route('/me', methods=['GET'])
+
+@users_bp.route("/me", methods=["GET"])
 @jwt_required()
 def get_me():
     """Get current user profile."""
@@ -17,11 +18,12 @@ def get_me():
     with get_db() as db:
         user = db.query(User).filter(User.id == current_user_id).first()
         if not user:
-            raise NotFoundError('User not found')
+            raise NotFoundError("User not found")
         return jsonify(user.to_dict())
 
+
 # Additional route aliases for user profile to match verification script expectations
-@users_bp.route('/profile', methods=['GET'])
+@users_bp.route("/profile", methods=["GET"])
 @jwt_required()
 def get_user_profile():
     """
@@ -29,7 +31,8 @@ def get_user_profile():
     """
     return get_me()
 
-@users_bp.route('/me', methods=['PUT'])
+
+@users_bp.route("/me", methods=["PUT"])
 @jwt_required()
 def update_me():
     """Update current user profile."""
@@ -37,53 +40,57 @@ def update_me():
     data = request.get_json()
 
     if not data:
-        raise ValidationError('No input data provided')
+        raise ValidationError("No input data provided")
 
-    allowed_fields = {'username', 'email'}
+    allowed_fields = {"username", "email"}
     update_data = {k: v for k, v in data.items() if k in allowed_fields}
 
     # Validate input data
-    if 'username' in update_data:
-        username = update_data['username']
+    if "username" in update_data:
+        username = update_data["username"]
         # Check if username is a string
         if not isinstance(username, str):
-            raise ValidationError('Username must be a string')
+            raise ValidationError("Username must be a string")
         # Check username length
         if len(username) < 3:
-            raise ValidationError('Username must be at least 3 characters')
+            raise ValidationError("Username must be at least 3 characters")
         if len(username) > 30:
-            raise ValidationError('Username must be at most 30 characters')
+            raise ValidationError("Username must be at most 30 characters")
         # Check if username contains only alphanumeric characters and underscores
-        if not username.replace('_', '').isalnum():
-            raise ValidationError('Username can only contain letters, numbers, and underscores')
+        if not username.replace("_", "").isalnum():
+            raise ValidationError(
+                "Username can only contain letters, numbers, and underscores"
+            )
 
-    if 'email' in update_data:
-        email = update_data['email']
+    if "email" in update_data:
+        email = update_data["email"]
         # Check if email is a string
         if not isinstance(email, str):
-            raise ValidationError('Email must be a string')
+            raise ValidationError("Email must be a string")
         # Basic email validation
-        if '@' not in email or '.' not in email:
-            raise ValidationError('Invalid email format')
+        if "@" not in email or "." not in email:
+            raise ValidationError("Invalid email format")
         # Check email length
         if len(email) < 5 or len(email) > 255:
-            raise ValidationError('Email must be between 5 and 255 characters')
+            raise ValidationError("Email must be between 5 and 255 characters")
 
     with get_db() as db:
         user = db.query(User).filter(User.id == current_user_id).first()
         if not user:
-            raise NotFoundError('User not found')
+            raise NotFoundError("User not found")
 
         # Check unique constraints
-        if 'email' in update_data:
-            existing = db.query(User).filter_by(email=update_data['email']).first()
+        if "email" in update_data:
+            existing = db.query(User).filter_by(email=update_data["email"]).first()
             if existing and existing.id != current_user_id:
-                raise ValidationError('Email already registered')
+                raise ValidationError("Email already registered")
 
-        if 'username' in update_data:
-            existing = db.query(User).filter_by(username=update_data['username']).first()
+        if "username" in update_data:
+            existing = (
+                db.query(User).filter_by(username=update_data["username"]).first()
+            )
             if existing and existing.id != current_user_id:
-                raise ValidationError('Username already taken')
+                raise ValidationError("Username already taken")
 
         # Update user
         for key, value in update_data.items():
@@ -92,8 +99,9 @@ def update_me():
 
         return jsonify(user.to_dict())
 
+
 # Additional route alias for profile update to match verification script expectations
-@users_bp.route('/profile', methods=['PUT'])
+@users_bp.route("/profile", methods=["PUT"])
 @jwt_required()
 def update_user_profile():
     """
@@ -101,7 +109,8 @@ def update_user_profile():
     """
     return update_me()
 
-@users_bp.route('/me/settings', methods=['PUT'])
+
+@users_bp.route("/me/settings", methods=["PUT"])
 @jwt_required()
 def update_settings():
     """Update user settings."""
@@ -109,28 +118,31 @@ def update_settings():
     data = request.get_json()
 
     if not data:
-        raise ValidationError('No input data provided')
+        raise ValidationError("No input data provided")
 
-    allowed_settings = {'theme', 'notifications', 'color'}
+    allowed_settings = {"theme", "notifications", "color"}
     settings_data = {k: v for k, v in data.items() if k in allowed_settings}
 
     with get_db() as db:
         user = db.query(User).filter(User.id == current_user_id).first()
         if not user:
-            raise NotFoundError('User not found')
+            raise NotFoundError("User not found")
 
         # Update settings
-        if 'theme' in settings_data:
-            if settings_data['theme'] not in ['light', 'dark']:
-                raise ValidationError('Invalid theme value')
+        if "theme" in settings_data:
+            if settings_data["theme"] not in ["light", "dark"]:
+                raise ValidationError("Invalid theme value")
 
-        if 'notifications' in settings_data:
-            if not isinstance(settings_data['notifications'], bool):
-                raise ValidationError('Invalid notifications value')
+        if "notifications" in settings_data:
+            if not isinstance(settings_data["notifications"], bool):
+                raise ValidationError("Invalid notifications value")
 
-        if 'color' in settings_data:
-            if not isinstance(settings_data['color'], str) or len(settings_data['color']) != 7:
-                raise ValidationError('Invalid color value')
+        if "color" in settings_data:
+            if (
+                not isinstance(settings_data["color"], str)
+                or len(settings_data["color"]) != 7
+            ):
+                raise ValidationError("Invalid color value")
 
         # Update user settings
         for key, value in settings_data.items():
@@ -139,15 +151,16 @@ def update_settings():
 
         return jsonify(user.to_dict())
 
+
 # New endpoints to implement
-@users_bp.route('/<user_id>', methods=['GET'])
+@users_bp.route("/<user_id>", methods=["GET"])
 @jwt_required()
 def get_user_by_id(user_id):
     """Get a user by ID."""
     with get_db() as db:
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
-            raise NotFoundError('User not found')
+            raise NotFoundError("User not found")
 
         # Return a limited subset of user data for privacy
         user_data = {
@@ -158,13 +171,14 @@ def get_user_by_id(user_id):
         }
         return jsonify(user_data)
 
-@users_bp.route('/', methods=['GET'])
+
+@users_bp.route("/", methods=["GET"])
 @jwt_required()
 def list_users():
     """List all users with pagination."""
     # Get pagination parameters
-    limit = request.args.get('limit', 10, type=int)
-    offset = request.args.get('offset', 0, type=int)
+    limit = request.args.get("limit", 10, type=int)
+    offset = request.args.get("offset", 0, type=int)
 
     # Validate pagination parameters
     if limit < 1 or limit > 100:  # Set reasonable limits
@@ -177,7 +191,13 @@ def list_users():
         total_users = db.query(User).count()
 
         # Get paginated results
-        users = db.query(User).order_by(User.created_at.desc()).limit(limit).offset(offset).all()
+        users = (
+            db.query(User)
+            .order_by(User.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+            .all()
+        )
 
         # Format results
         user_list = []
@@ -196,26 +216,27 @@ def list_users():
             "items": user_list,
             "total": total_users,
             "limit": limit,
-            "offset": offset
+            "offset": offset,
         }
         return jsonify(response)
 
-@users_bp.route('/search', methods=['GET'])
+
+@users_bp.route("/search", methods=["GET"])
 @jwt_required()
 def search_users():
     """Search for users by username."""
-    username_query = request.args.get('username', '')
+    username_query = request.args.get("username", "")
 
     if not username_query:
-        raise ValidationError('Search query is required')
+        raise ValidationError("Search query is required")
 
     # Get pagination parameters
-    limit = request.args.get('limit', 10, type=int)
-    offset = request.args.get('offset', 0, type=int)
+    limit = request.args.get("limit", 10, type=int)
+    offset = request.args.get("offset", 0, type=int)
 
     with get_db() as db:
         # Search for users with usernames containing the query (case insensitive)
-        query = db.query(User).filter(User.username.ilike(f'%{username_query}%'))
+        query = db.query(User).filter(User.username.ilike(f"%{username_query}%"))
 
         # Get total count for pagination metadata
         total_results = query.count()
@@ -236,7 +257,8 @@ def search_users():
 
         return jsonify(user_list)
 
-@users_bp.route('/me', methods=['DELETE'])
+
+@users_bp.route("/me", methods=["DELETE"])
 @jwt_required()
 def delete_user():
     """Delete the current user."""
@@ -245,7 +267,7 @@ def delete_user():
     with get_db() as db:
         user = db.query(User).filter(User.id == current_user_id).first()
         if not user:
-            raise NotFoundError('User not found')
+            raise NotFoundError("User not found")
 
         # Delete the user
         db.delete(user)

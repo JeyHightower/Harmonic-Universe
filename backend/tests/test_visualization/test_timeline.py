@@ -7,6 +7,7 @@ import json
 from app.core.visualization.timeline import TimelineManager
 from app.models.visualization import Timeline, Keyframe, Animation
 
+
 @pytest.fixture
 def timeline_data():
     """Create test timeline data."""
@@ -18,14 +19,14 @@ def timeline_data():
                 "id": "marker1",
                 "time": 1.0,
                 "type": "cue",
-                "metadata": {"name": "First Marker"}
+                "metadata": {"name": "First Marker"},
             },
             {
                 "id": "marker2",
                 "time": 5.0,
                 "type": "sync",
-                "metadata": {"name": "Middle Marker"}
-            }
+                "metadata": {"name": "Middle Marker"},
+            },
         ],
         "keyframes": [
             {
@@ -34,7 +35,7 @@ def timeline_data():
                 "property_name": "position.x",
                 "time": 0.0,
                 "value": 0.0,
-                "easing": "linear"
+                "easing": "linear",
             },
             {
                 "id": "kf2",
@@ -42,15 +43,17 @@ def timeline_data():
                 "property_name": "position.x",
                 "time": 5.0,
                 "value": 10.0,
-                "easing": "ease-in-out"
-            }
-        ]
+                "easing": "ease-in-out",
+            },
+        ],
     }
+
 
 @pytest.fixture
 def timeline_manager(timeline_data):
     """Create test timeline manager."""
     return TimelineManager(timeline_data)
+
 
 @pytest.mark.asyncio
 async def test_timeline_initialization(timeline_manager, timeline_data):
@@ -62,6 +65,7 @@ async def test_timeline_initialization(timeline_manager, timeline_data):
     assert timeline_manager.current_time == 0.0
     assert len(timeline_manager._sorted_markers) == 2
     assert len(timeline_manager._keyframes) == 1  # One animated property
+
 
 @pytest.mark.asyncio
 async def test_playback_control(timeline_manager):
@@ -88,6 +92,7 @@ async def test_playback_control(timeline_manager):
     assert not timeline_manager.is_playing
     assert timeline_manager.current_time == 0.0
 
+
 @pytest.mark.asyncio
 async def test_seek(timeline_manager):
     """Test seeking to specific time."""
@@ -102,6 +107,7 @@ async def test_seek(timeline_manager):
     # Seek before start
     await timeline_manager.seek(-1.0)
     assert timeline_manager.current_time == 0.0
+
 
 @pytest.mark.asyncio
 async def test_frame_callbacks(timeline_manager):
@@ -122,6 +128,7 @@ async def test_frame_callbacks(timeline_manager):
     for frame in callback_frames:
         assert "time" in frame
         assert "properties" in frame
+
 
 @pytest.mark.asyncio
 async def test_marker_callbacks(timeline_manager):
@@ -145,6 +152,7 @@ async def test_marker_callbacks(timeline_manager):
     assert len(marker_events) == 1
     assert marker_events[0]["id"] == "marker1"
 
+
 @pytest.mark.asyncio
 async def test_keyframe_interpolation(timeline_manager):
     """Test keyframe value interpolation."""
@@ -167,6 +175,7 @@ async def test_keyframe_interpolation(timeline_manager):
     frame_state = timeline_manager._calculate_frame_state()
     assert frame_state["properties"]["anim1:position.x"] == 10.0
 
+
 @pytest.mark.asyncio
 async def test_easing_functions(timeline_manager):
     """Test different easing functions."""
@@ -174,12 +183,13 @@ async def test_easing_functions(timeline_manager):
         ("linear", 0.5, 0.5),
         ("ease-in", 0.5, 0.25),
         ("ease-out", 0.5, 0.75),
-        ("ease-in-out", 0.5, 0.5)
+        ("ease-in-out", 0.5, 0.5),
     ]
 
     for easing, t, expected in test_cases:
         value = timeline_manager._interpolate_number(0, 1, t, easing)
         assert value == pytest.approx(expected, rel=1e-2)
+
 
 @pytest.mark.asyncio
 async def test_looping_playback(timeline_manager):

@@ -6,19 +6,25 @@ from typing import Any, Dict, Optional, List
 from pydantic import BaseModel, Field, validator
 from uuid import UUID
 
+
 class PhysicsParameterValue(BaseModel):
     """Structure for a physics parameter value."""
+
     value: float = Field(..., description="Current value of the parameter")
     unit: str = Field(..., description="Unit of measurement")
     min: float = Field(..., description="Minimum allowed value")
     max: float = Field(..., description="Maximum allowed value")
     enabled: bool = Field(default=True, description="Whether the parameter is enabled")
 
+
 class PhysicsParameterBase(BaseModel):
     """Base physics parameters."""
+
     scene_id: UUID
     version: Optional[int] = Field(default=1, description="Version of the parameters")
-    is_active: Optional[bool] = Field(default=True, description="Whether the parameters are active")
+    is_active: Optional[bool] = Field(
+        default=True, description="Whether the parameters are active"
+    )
 
     # Basic physics parameters
     gravity: PhysicsParameterValue = Field(
@@ -27,7 +33,7 @@ class PhysicsParameterBase(BaseModel):
             "unit": "m/s²",
             "min": 0,
             "max": 20,
-            "enabled": True
+            "enabled": True,
         }
     )
     air_resistance: PhysicsParameterValue = Field(
@@ -36,7 +42,7 @@ class PhysicsParameterBase(BaseModel):
             "unit": "kg/m³",
             "min": 0,
             "max": 1,
-            "enabled": True
+            "enabled": True,
         }
     )
     collision_elasticity: PhysicsParameterValue = Field(
@@ -45,7 +51,7 @@ class PhysicsParameterBase(BaseModel):
             "unit": "coefficient",
             "min": 0,
             "max": 1,
-            "enabled": True
+            "enabled": True,
         }
     )
     friction: PhysicsParameterValue = Field(
@@ -54,7 +60,7 @@ class PhysicsParameterBase(BaseModel):
             "unit": "coefficient",
             "min": 0,
             "max": 1,
-            "enabled": True
+            "enabled": True,
         }
     )
 
@@ -65,7 +71,7 @@ class PhysicsParameterBase(BaseModel):
             "unit": "K",
             "min": 0,
             "max": 1000,
-            "enabled": True
+            "enabled": True,
         }
     )
     pressure: PhysicsParameterValue = Field(
@@ -74,7 +80,7 @@ class PhysicsParameterBase(BaseModel):
             "unit": "kPa",
             "min": 0,
             "max": 200,
-            "enabled": True
+            "enabled": True,
         }
     )
 
@@ -85,7 +91,7 @@ class PhysicsParameterBase(BaseModel):
             "unit": "kg/m³",
             "min": 0,
             "max": 2000,
-            "enabled": False
+            "enabled": False,
         }
     )
     viscosity: PhysicsParameterValue = Field(
@@ -94,7 +100,7 @@ class PhysicsParameterBase(BaseModel):
             "unit": "Pa·s",
             "min": 0,
             "max": 1,
-            "enabled": False
+            "enabled": False,
         }
     )
 
@@ -105,7 +111,7 @@ class PhysicsParameterBase(BaseModel):
             "unit": "s",
             "min": 0.001,
             "max": 0.1,
-            "enabled": True
+            "enabled": True,
         }
     )
     substeps: PhysicsParameterValue = Field(
@@ -114,14 +120,13 @@ class PhysicsParameterBase(BaseModel):
             "unit": "steps",
             "min": 1,
             "max": 32,
-            "enabled": True
+            "enabled": True,
         }
     )
 
     # Custom parameters
     custom_parameters: Dict[str, PhysicsParameterValue] = Field(
-        default_factory=dict,
-        description="Custom physics parameters"
+        default_factory=dict, description="Custom physics parameters"
     )
 
     @validator("*")
@@ -134,12 +139,16 @@ class PhysicsParameterBase(BaseModel):
                 )
         return v
 
+
 class PhysicsParameterCreate(PhysicsParameterBase):
     """Properties to receive on parameter creation."""
+
     pass
+
 
 class PhysicsParameterUpdate(BaseModel):
     """Properties to receive on parameter update."""
+
     version: Optional[int] = None
     is_active: Optional[bool] = None
     gravity: Optional[PhysicsParameterValue] = None
@@ -154,14 +163,19 @@ class PhysicsParameterUpdate(BaseModel):
     substeps: Optional[PhysicsParameterValue] = None
     custom_parameters: Optional[Dict[str, PhysicsParameterValue]] = None
 
+
 class PhysicsParameterInDBBase(PhysicsParameterBase):
     """Properties shared by models stored in DB."""
+
     id: int
 
     class Config:
         """Pydantic configuration."""
+
         from_attributes = True
+
 
 class PhysicsParameterResponse(PhysicsParameterInDBBase):
     """Properties to return to client."""
+
     pass

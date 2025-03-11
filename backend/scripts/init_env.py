@@ -10,10 +10,10 @@ import logging
 
 # Setup logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s'
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
 )
 logger = logging.getLogger(__name__)
+
 
 class EnvironmentSetup:
     """Handles environment setup for the backend."""
@@ -22,36 +22,36 @@ class EnvironmentSetup:
         """Initialize with root directory."""
         self.root_dir = Path(root_dir or os.path.dirname(os.path.dirname(__file__)))
         self.required_dirs = [
-            'logs',
-            'uploads/audio',
-            'uploads/exports',
-            'uploads/temp',
-            'reports',
-            'migrations/versions',
-            'tests/unit',
-            'tests/integration',
-            'tests/e2e',
-            'app/api/v1/endpoints',
-            'app/models/audio',
-            'app/models/physics',
-            'app/models/visualization',
-            'app/schemas/audio',
-            'app/schemas/physics',
-            'app/schemas/visualization',
-            'app/services/audio',
-            'app/services/physics',
-            'app/services/visualization',
-            'docs/source',
-            'docs/build'
+            "logs",
+            "uploads/audio",
+            "uploads/exports",
+            "uploads/temp",
+            "reports",
+            "migrations/versions",
+            "tests/unit",
+            "tests/integration",
+            "tests/e2e",
+            "app/api/v1/endpoints",
+            "app/models/audio",
+            "app/models/physics",
+            "app/models/visualization",
+            "app/schemas/audio",
+            "app/schemas/physics",
+            "app/schemas/visualization",
+            "app/services/audio",
+            "app/services/physics",
+            "app/services/visualization",
+            "docs/source",
+            "docs/build",
         ]
         self.required_files = [
-            '.env',
-            '.env.example',
-            'requirements.txt',
-            'requirements-test.txt',
-            'pytest.ini',
-            '.coveragerc',
-            'alembic.ini'
+            ".env",
+            ".env.example",
+            "requirements.txt",
+            "requirements-test.txt",
+            "pytest.ini",
+            ".coveragerc",
+            "alembic.ini",
         ]
 
     def create_directories(self) -> None:
@@ -74,13 +74,13 @@ class EnvironmentSetup:
 
     def setup_virtual_env(self) -> bool:
         """Set up virtual environment if it doesn't exist."""
-        venv_path = self.root_dir / 'venv'
+        venv_path = self.root_dir / "venv"
         if venv_path.exists():
             logger.info("Virtual environment already exists")
             return True
 
         try:
-            subprocess.run([sys.executable, '-m', 'venv', str(venv_path)], check=True)
+            subprocess.run([sys.executable, "-m", "venv", str(venv_path)], check=True)
             logger.info("Created virtual environment")
             return True
         except subprocess.CalledProcessError as e:
@@ -89,15 +89,19 @@ class EnvironmentSetup:
 
     def install_dependencies(self) -> bool:
         """Install project dependencies."""
-        pip_path = self.root_dir / 'venv' / 'bin' / 'pip'
+        pip_path = self.root_dir / "venv" / "bin" / "pip"
         if not pip_path.exists():
-            pip_path = self.root_dir / 'venv' / 'Scripts' / 'pip'  # Windows
+            pip_path = self.root_dir / "venv" / "Scripts" / "pip"  # Windows
 
         try:
             # Install main dependencies
-            subprocess.run([str(pip_path), 'install', '-r', 'requirements.txt'], check=True)
+            subprocess.run(
+                [str(pip_path), "install", "-r", "requirements.txt"], check=True
+            )
             # Install test dependencies
-            subprocess.run([str(pip_path), 'install', '-r', 'requirements-test.txt'], check=True)
+            subprocess.run(
+                [str(pip_path), "install", "-r", "requirements-test.txt"], check=True
+            )
             logger.info("Installed dependencies")
             return True
         except subprocess.CalledProcessError as e:
@@ -107,12 +111,13 @@ class EnvironmentSetup:
     def verify_setup(self) -> Dict[str, bool]:
         """Verify the environment setup."""
         return {
-            'directories': all((self.root_dir / dir_path).exists()
-                             for dir_path in self.required_dirs),
-            'files': len(self.check_files()) == 0,
-            'venv': (self.root_dir / 'venv').exists(),
-            'dependencies': (self.root_dir / 'venv' / 'lib').exists() or
-                          (self.root_dir / 'venv' / 'Lib').exists()  # Windows
+            "directories": all(
+                (self.root_dir / dir_path).exists() for dir_path in self.required_dirs
+            ),
+            "files": len(self.check_files()) == 0,
+            "venv": (self.root_dir / "venv").exists(),
+            "dependencies": (self.root_dir / "venv" / "lib").exists()
+            or (self.root_dir / "venv" / "Lib").exists(),  # Windows
         }
 
     def setup(self) -> bool:
@@ -144,7 +149,9 @@ class EnvironmentSetup:
                 logger.info("Environment setup completed successfully")
             else:
                 failed = [k for k, v in verification.items() if not v]
-                logger.error(f"Setup incomplete. Failed verifications: {', '.join(failed)}")
+                logger.error(
+                    f"Setup incomplete. Failed verifications: {', '.join(failed)}"
+                )
 
             return all_verified
 
@@ -152,11 +159,13 @@ class EnvironmentSetup:
             logger.error(f"Setup failed: {str(e)}")
             return False
 
+
 def main():
     """Main entry point."""
     setup = EnvironmentSetup()
     success = setup.setup()
     sys.exit(0 if success else 1)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

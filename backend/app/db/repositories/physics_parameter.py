@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from backend.app.models.physics.parameters import PhysicsParameters
 from backend.app.core.errors import NotFoundError
 
+
 class PhysicsParameterRepository:
     """Repository for PhysicsParameters-related database operations."""
 
@@ -19,7 +20,9 @@ class PhysicsParameterRepository:
         try:
             if isinstance(scene_id, str):
                 scene_id = UUID(scene_id)
-            return self.session.query(PhysicsParameters).filter_by(scene_id=scene_id).all()
+            return (
+                self.session.query(PhysicsParameters).filter_by(scene_id=scene_id).all()
+            )
         except ValueError:
             return []
 
@@ -31,13 +34,14 @@ class PhysicsParameterRepository:
             return self.session.query(PhysicsParameters).filter_by(id=id).first()
         except ValueError:
             import logging
+
             logging.error(f"Invalid physics parameter ID format: {id}")
             return None
 
     def create_with_scene(self, obj_in: dict) -> PhysicsParameters:
         """Create new physics parameters for a scene."""
-        if isinstance(obj_in.get('scene_id'), str):
-            obj_in['scene_id'] = UUID(obj_in['scene_id'])
+        if isinstance(obj_in.get("scene_id"), str):
+            obj_in["scene_id"] = UUID(obj_in["scene_id"])
         db_obj = PhysicsParameters(**obj_in)
         self.session.add(db_obj)
         self.session.commit()
@@ -58,6 +62,7 @@ class PhysicsParameterRepository:
         except Exception as e:
             self.session.rollback()
             import logging
+
             logging.error(f"Error updating physics parameter: {e}")
             raise
 
@@ -78,5 +83,6 @@ class PhysicsParameterRepository:
         except Exception as e:
             self.session.rollback()
             import logging
+
             logging.error(f"Error removing physics parameter: {e}")
             raise

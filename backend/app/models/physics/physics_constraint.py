@@ -4,6 +4,7 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from ..base import BaseModel
 
+
 class PhysicsConstraint(BaseModel):
     """Physics constraint model."""
 
@@ -11,9 +12,19 @@ class PhysicsConstraint(BaseModel):
 
     name = Column(String(255), nullable=False)
     type = Column(String(50), nullable=False)  # e.g., "distance", "angle", "spring"
-    scene_id = Column(UUID(as_uuid=True), ForeignKey("scenes.id", ondelete="CASCADE"), nullable=False)
-    object1_id = Column(UUID(as_uuid=True), ForeignKey("physics_objects.id", ondelete="CASCADE"), nullable=False)
-    object2_id = Column(UUID(as_uuid=True), ForeignKey("physics_objects.id", ondelete="CASCADE"), nullable=False)
+    scene_id = Column(
+        UUID(as_uuid=True), ForeignKey("scenes.id", ondelete="CASCADE"), nullable=False
+    )
+    object1_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("physics_objects.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    object2_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("physics_objects.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     parameters = Column(JSONB, nullable=False, default=lambda: {})
 
     # Relationships
@@ -32,5 +43,5 @@ class PhysicsConstraint(BaseModel):
             "object2_id": str(self.object2_id),
             "parameters": self.parameters,
             "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat()
+            "updated_at": self.updated_at.isoformat(),
         }

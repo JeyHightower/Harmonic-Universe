@@ -3,8 +3,10 @@ from datetime import timedelta
 import os
 from typing import Optional, List
 
+
 class Config:
     """Base configuration."""
+
     # Flask settings
     SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")
     DEBUG = False
@@ -17,7 +19,7 @@ class Config:
     # Database
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_URL",
-        "postgresql://postgres:postgres@localhost:5432/harmonic_universe"
+        "postgresql://postgres:postgres@localhost:5432/harmonic_universe",
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
@@ -26,13 +28,19 @@ class Config:
 
     # JWT Settings
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-jwt-secret-here")
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=int(os.getenv("JWT_ACCESS_TOKEN_EXPIRES_MINUTES", "30")))
-    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=int(os.getenv("JWT_REFRESH_TOKEN_EXPIRES_DAYS", "7")))
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(
+        minutes=int(os.getenv("JWT_ACCESS_TOKEN_EXPIRES_MINUTES", "30"))
+    )
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(
+        days=int(os.getenv("JWT_REFRESH_TOKEN_EXPIRES_DAYS", "7"))
+    )
     ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
     REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
     # CORS
-    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
+    CORS_ORIGINS = os.getenv(
+        "CORS_ORIGINS", "http://localhost:3000,http://localhost:5173"
+    ).split(",")
     CORS_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
     CORS_HEADERS = ["Content-Type", "Authorization", "X-Requested-With", "Accept"]
     CORS_EXPOSE_HEADERS = ["Content-Length", "Content-Type"]
@@ -40,8 +48,10 @@ class Config:
     CORS_MAX_AGE = 600  # 10 minutes
 
     # Audio Processing
-    UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../uploads')
-    AUDIO_UPLOAD_DIR = os.path.join(UPLOAD_FOLDER, 'audio')
+    UPLOAD_FOLDER = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "../../uploads"
+    )
+    AUDIO_UPLOAD_DIR = os.path.join(UPLOAD_FOLDER, "audio")
     AUDIO_SAMPLE_RATE = int(os.getenv("AUDIO_SAMPLE_RATE", 44100))
     MAX_AUDIO_LENGTH = int(os.getenv("MAX_AUDIO_LENGTH", 300))
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
@@ -57,27 +67,33 @@ class Config:
     @staticmethod
     def init_app(app):
         """Initialize application."""
-        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-        os.makedirs(app.config['AUDIO_UPLOAD_DIR'], exist_ok=True)
+        os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+        os.makedirs(app.config["AUDIO_UPLOAD_DIR"], exist_ok=True)
+
 
 class DevelopmentConfig(Config):
     """Development configuration."""
+
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_URL",
-        "postgresql://user:password@localhost:5432/harmonic_universe_dev"
+        "postgresql://user:password@localhost:5432/harmonic_universe_dev",
     )
+
 
 class TestingConfig(Config):
     """Testing configuration."""
+
     TESTING = True
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "TEST_DATABASE_URL",
-        "postgresql://user:password@localhost:5432/harmonic_universe_test"
+        "postgresql://user:password@localhost:5432/harmonic_universe_test",
     )
+
 
 class ProductionConfig(Config):
     """Production configuration."""
+
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
 
     @classmethod
@@ -87,13 +103,15 @@ class ProductionConfig(Config):
         # Log to stderr in production
         import logging
         from logging import StreamHandler
+
         file_handler = StreamHandler()
         file_handler.setLevel(logging.INFO)
         app.logger.addHandler(file_handler)
 
+
 config = {
-    'development': DevelopmentConfig,
-    'testing': TestingConfig,
-    'production': ProductionConfig,
-    'default': DevelopmentConfig
+    "development": DevelopmentConfig,
+    "testing": TestingConfig,
+    "production": ProductionConfig,
+    "default": DevelopmentConfig,
 }

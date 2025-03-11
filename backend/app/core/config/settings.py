@@ -7,11 +7,13 @@ from pydantic_settings import BaseSettings
 from pathlib import Path
 import dj_database_url
 
+
 def clean_env_value(value: str) -> str:
     """Clean environment variable value by removing comments."""
     if value is None:
         return None
-    return value.split('#')[0].strip()
+    return value.split("#")[0].strip()
+
 
 def get_env_value(key: str, default: str) -> str:
     """Get environment variable value with cleaning."""
@@ -20,8 +22,10 @@ def get_env_value(key: str, default: str) -> str:
         return clean_env_value(default)
     return clean_env_value(value)
 
+
 class Settings(BaseSettings):
     """Application settings."""
+
     # Project info
     PROJECT_NAME: str = "Harmonic Universe"
     VERSION: str = "0.1.0"
@@ -29,15 +33,28 @@ class Settings(BaseSettings):
 
     # API configuration
     API_V1_STR: str = "/api/v1"
-    SECRET_KEY: str = Field(default_factory=lambda: get_env_value("SECRET_KEY", "your-secret-key-here"))
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default_factory=lambda: int(get_env_value("ACCESS_TOKEN_EXPIRE_MINUTES", "11520")))
-    REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default_factory=lambda: int(get_env_value("REFRESH_TOKEN_EXPIRE_DAYS", "30")))
+    SECRET_KEY: str = Field(
+        default_factory=lambda: get_env_value("SECRET_KEY", "your-secret-key-here")
+    )
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
+        default_factory=lambda: int(
+            get_env_value("ACCESS_TOKEN_EXPIRE_MINUTES", "11520")
+        )
+    )
+    REFRESH_TOKEN_EXPIRE_DAYS: int = Field(
+        default_factory=lambda: int(get_env_value("REFRESH_TOKEN_EXPIRE_DAYS", "30"))
+    )
     JWT_ALGORITHM: str = "HS256"
 
     # CORS
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
     CORS_METHODS: List[str] = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
-    CORS_HEADERS: List[str] = ["Content-Type", "Authorization", "X-Requested-With", "Accept"]
+    CORS_HEADERS: List[str] = [
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "Accept",
+    ]
     CORS_EXPOSE_HEADERS: List[str] = ["Content-Length", "Content-Type"]
     CORS_SUPPORTS_CREDENTIALS: bool = True
     CORS_MAX_AGE: int = 600  # 10 minutes
@@ -54,13 +71,17 @@ class Settings(BaseSettings):
     SQLALCHEMY_DATABASE_URI: str = Field(
         default_factory=lambda: get_env_value(
             "DATABASE_URL",
-            "postgresql://postgres:postgres@localhost:5432/harmonic_universe_dev"
-        ).replace('db:5432', 'localhost:5432')
+            "postgresql://postgres:postgres@localhost:5432/harmonic_universe_dev",
+        ).replace("db:5432", "localhost:5432")
     )
     SQLALCHEMY_TRACK_MODIFICATIONS: bool = False
     SQLALCHEMY_ECHO: bool = True
-    SQLALCHEMY_POOL_SIZE: int = Field(default_factory=lambda: int(get_env_value("SQLALCHEMY_POOL_SIZE", "5")))
-    SQLALCHEMY_MAX_OVERFLOW: int = Field(default_factory=lambda: int(get_env_value("SQLALCHEMY_MAX_OVERFLOW", "10")))
+    SQLALCHEMY_POOL_SIZE: int = Field(
+        default_factory=lambda: int(get_env_value("SQLALCHEMY_POOL_SIZE", "5"))
+    )
+    SQLALCHEMY_MAX_OVERFLOW: int = Field(
+        default_factory=lambda: int(get_env_value("SQLALCHEMY_MAX_OVERFLOW", "10"))
+    )
 
     # File paths
     BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent.parent
@@ -68,15 +89,25 @@ class Settings(BaseSettings):
     TEST_REPORTS_DIR: Path = BASE_DIR / "reports"
 
     # First superuser
-    FIRST_SUPERUSER_EMAIL: str = Field(default_factory=lambda: get_env_value("FIRST_SUPERUSER_EMAIL", "admin@example.com"))
-    FIRST_SUPERUSER_PASSWORD: str = Field(default_factory=lambda: get_env_value("FIRST_SUPERUSER_PASSWORD", "admin123"))
+    FIRST_SUPERUSER_EMAIL: str = Field(
+        default_factory=lambda: get_env_value(
+            "FIRST_SUPERUSER_EMAIL", "admin@example.com"
+        )
+    )
+    FIRST_SUPERUSER_PASSWORD: str = Field(
+        default_factory=lambda: get_env_value("FIRST_SUPERUSER_PASSWORD", "admin123")
+    )
 
     # Audio settings
-    AUDIO_SAMPLE_RATE: int = Field(default_factory=lambda: int(get_env_value("AUDIO_SAMPLE_RATE", "44100")))
+    AUDIO_SAMPLE_RATE: int = Field(
+        default_factory=lambda: int(get_env_value("AUDIO_SAMPLE_RATE", "44100"))
+    )
     AUDIO_CHANNELS: int = 2
     AUDIO_BIT_DEPTH: int = 16
     AUDIO_BUFFER_SIZE: int = 2048
-    AUDIO_MAX_LENGTH: int = Field(default_factory=lambda: int(get_env_value("MAX_AUDIO_LENGTH", "600")))
+    AUDIO_MAX_LENGTH: int = Field(
+        default_factory=lambda: int(get_env_value("MAX_AUDIO_LENGTH", "600"))
+    )
     AUDIO_FORMAT: str = "wav"
     AUDIO_QUALITY: float = 0.9
     AUDIO_UPLOAD_DIR: Path = UPLOAD_DIR / "audio"
@@ -93,18 +124,25 @@ class Settings(BaseSettings):
         return v
 
     # AI Service settings
-    AI_SERVICE_URL: str = Field(default_factory=lambda: get_env_value("AI_SERVICE_URL", "http://localhost:5001"))
-    AI_SERVICE_API_KEY: Optional[str] = Field(default_factory=lambda: get_env_value("AI_SERVICE_API_KEY", None))
+    AI_SERVICE_URL: str = Field(
+        default_factory=lambda: get_env_value("AI_SERVICE_URL", "http://localhost:5001")
+    )
+    AI_SERVICE_API_KEY: Optional[str] = Field(
+        default_factory=lambda: get_env_value("AI_SERVICE_API_KEY", None)
+    )
 
     class Config:
         case_sensitive = True
         env_file = ".env"
         extra = "allow"
 
+
 settings = Settings()
+
 
 class Config:
     """Base configuration."""
+
     # Flask settings
     SECRET_KEY = get_env_value("SECRET_KEY", "your-secret-key-here")
     DEBUG = get_env_value("DEBUG", "True").lower() == "true"
@@ -117,21 +155,27 @@ class Config:
     # Database
     SQLALCHEMY_DATABASE_URI = get_env_value(
         "DATABASE_URL",
-        "postgresql://postgres:postgres@localhost:5432/harmonic_universe"
-    ).replace('db:5432', 'localhost:5432')
+        "postgresql://postgres:postgres@localhost:5432/harmonic_universe",
+    ).replace("db:5432", "localhost:5432")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # JWT Settings
     JWT_SECRET_KEY = SECRET_KEY
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=int(get_env_value("JWT_ACCESS_TOKEN_EXPIRES", "30")))
-    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=int(get_env_value("JWT_REFRESH_TOKEN_EXPIRES", "7")))
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(
+        minutes=int(get_env_value("JWT_ACCESS_TOKEN_EXPIRES", "30"))
+    )
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(
+        days=int(get_env_value("JWT_REFRESH_TOKEN_EXPIRES", "7"))
+    )
 
     # CORS
     CORS_ORIGINS = ["*"]
 
     # Audio Processing
-    UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../../uploads')
-    AUDIO_UPLOAD_DIR = os.path.join(UPLOAD_FOLDER, 'audio')
+    UPLOAD_FOLDER = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "../../../uploads"
+    )
+    AUDIO_UPLOAD_DIR = os.path.join(UPLOAD_FOLDER, "audio")
     AUDIO_SAMPLE_RATE = int(get_env_value("AUDIO_SAMPLE_RATE", "44100"))
     MAX_AUDIO_LENGTH = int(get_env_value("MAX_AUDIO_LENGTH", "600"))
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
@@ -143,32 +187,38 @@ class Config:
     @staticmethod
     def init_app(app):
         """Initialize application."""
-        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-        os.makedirs(app.config['AUDIO_UPLOAD_DIR'], exist_ok=True)
+        os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+        os.makedirs(app.config["AUDIO_UPLOAD_DIR"], exist_ok=True)
+
 
 class DevelopmentConfig(Config):
     """Development configuration."""
+
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = get_env_value(
         "DATABASE_URL",
-        "postgresql://postgres:postgres@localhost:5432/harmonic_universe_dev"
-    ).replace('db:5432', 'localhost:5432')
+        "postgresql://postgres:postgres@localhost:5432/harmonic_universe_dev",
+    ).replace("db:5432", "localhost:5432")
+
 
 class TestingConfig(Config):
     """Testing configuration."""
+
     TESTING = True
     SQLALCHEMY_DATABASE_URI = get_env_value(
         "DATABASE_URL_TEST",
-        "postgresql://postgres:postgres@localhost:5432/harmonic_universe_test"
-    ).replace('db:5432', 'localhost:5432')
+        "postgresql://postgres:postgres@localhost:5432/harmonic_universe_test",
+    ).replace("db:5432", "localhost:5432")
+
 
 class ProductionConfig(Config):
     """Production configuration."""
+
     DEBUG = False
     SQLALCHEMY_DATABASE_URI = get_env_value(
         "DATABASE_URL",
-        "postgresql://postgres:postgres@localhost:5432/harmonic_universe"
-    ).replace('db:5432', 'localhost:5432')
+        "postgresql://postgres:postgres@localhost:5432/harmonic_universe",
+    ).replace("db:5432", "localhost:5432")
 
     @classmethod
     def init_app(cls, app):
@@ -177,27 +227,29 @@ class ProductionConfig(Config):
         # Log to stderr in production
         import logging
         from logging import StreamHandler
+
         file_handler = StreamHandler()
         file_handler.setLevel(logging.INFO)
         app.logger.addHandler(file_handler)
 
+
 config = {
-    'development': DevelopmentConfig,
-    'testing': TestingConfig,
-    'production': ProductionConfig,
-    'default': DevelopmentConfig
+    "development": DevelopmentConfig,
+    "testing": TestingConfig,
+    "production": ProductionConfig,
+    "default": DevelopmentConfig,
 }
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'your-default-secret-key-for-dev')
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "your-default-secret-key-for-dev")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
+DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
 
 # Application definition
 # ... existing code ...
@@ -206,23 +258,20 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-    'default': dj_database_url.config(
-        default='sqlite:///db.sqlite3',
-        conn_max_age=600
-    )
+    "default": dj_database_url.config(default="sqlite:///db.sqlite3", conn_max_age=600)
 }
 
 # CORS settings
-CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
+CORS_ALLOWED_ORIGINS = os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
 CORS_ALLOW_CREDENTIALS = True
 
 # Static files (CSS, JavaScript, Images)
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 # Media files
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'mediafiles')
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "mediafiles")
 
 # Security settings for production
 if not DEBUG:
@@ -234,4 +283,4 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-    X_FRAME_OPTIONS = 'DENY'
+    X_FRAME_OPTIONS = "DENY"

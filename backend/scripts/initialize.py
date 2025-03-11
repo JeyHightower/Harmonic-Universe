@@ -12,10 +12,10 @@ import logging
 
 # Setup logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s'
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
 )
 logger = logging.getLogger(__name__)
+
 
 class Initializer:
     """Handles all initialization tasks for the application."""
@@ -28,7 +28,7 @@ class Initializer:
 
     def _load_config(self) -> Dict[str, Any]:
         """Load configuration based on environment."""
-        config_path = os.path.join(self.root_dir, 'config', f'{self.env}.json')
+        config_path = os.path.join(self.root_dir, "config", f"{self.env}.json")
         try:
             with open(config_path) as f:
                 return json.load(f)
@@ -39,15 +39,15 @@ class Initializer:
     def setup_directories(self) -> None:
         """Create necessary directories."""
         directories = [
-            'logs',
-            'logs/errors',
-            'logs/metrics',
-            'uploads',
-            'uploads/audio',
-            'uploads/exports',
-            'uploads/temp',
-            'backups',
-            'reports'
+            "logs",
+            "logs/errors",
+            "logs/metrics",
+            "uploads",
+            "uploads/audio",
+            "uploads/exports",
+            "uploads/temp",
+            "backups",
+            "reports",
         ]
 
         for directory in directories:
@@ -60,36 +60,25 @@ class Initializer:
         try:
             # Create database first
             subprocess.run(
-                [sys.executable, 'scripts/create_db.py', '--env', self.env],
-                check=True
+                [sys.executable, "scripts/create_db.py", "--env", self.env], check=True
             )
             logger.info("Database created successfully")
 
             # Initialize database schema and initial data
-            subprocess.run(
-                [sys.executable, 'scripts/db_ops.py', 'init'],
-                check=True
-            )
+            subprocess.run([sys.executable, "scripts/db_ops.py", "init"], check=True)
             logger.info("Database initialized successfully")
 
             # Run migrations
-            subprocess.run(
-                [sys.executable, 'scripts/db_ops.py', 'migrate'],
-                check=True
-            )
+            subprocess.run([sys.executable, "scripts/db_ops.py", "migrate"], check=True)
             logger.info("Database migrations completed successfully")
 
             # Verify database setup
-            subprocess.run(
-                [sys.executable, 'scripts/db_ops.py', 'verify'],
-                check=True
-            )
+            subprocess.run([sys.executable, "scripts/db_ops.py", "verify"], check=True)
             logger.info("Database verification completed successfully")
 
             # Verify demo user setup
             subprocess.run(
-                [sys.executable, 'scripts/user_management.py', 'verify'],
-                check=True
+                [sys.executable, "scripts/user_management.py", "verify"], check=True
             )
             logger.info("Demo user verification completed successfully")
 
@@ -99,9 +88,9 @@ class Initializer:
 
     def setup_environment(self) -> None:
         """Set up environment variables and configuration."""
-        env_file = os.path.join(self.root_dir, f'.env.{self.env}')
+        env_file = os.path.join(self.root_dir, f".env.{self.env}")
         if not os.path.exists(env_file):
-            with open(env_file, 'w') as f:
+            with open(env_file, "w") as f:
                 f.write(f"ENVIRONMENT={self.env}\n")
                 f.write(f"DATABASE_URL={self.config.get('database_url', '')}\n")
                 f.write(f"SECRET_KEY={self.config.get('secret_key', '')}\n")
@@ -113,8 +102,7 @@ class Initializer:
         if self.env == "test":
             try:
                 subprocess.run(
-                    [sys.executable, 'scripts/db_ops.py', 'init', '--test'],
-                    check=True
+                    [sys.executable, "scripts/db_ops.py", "init", "--test"], check=True
                 )
                 logger.info("Test environment setup completed successfully")
             except subprocess.CalledProcessError as e:
@@ -125,8 +113,8 @@ class Initializer:
         """Generate API documentation."""
         try:
             subprocess.run(
-                ['sphinx-build', '-b', 'html', 'docs/source', 'docs/build/html'],
-                check=True
+                ["sphinx-build", "-b", "html", "docs/source", "docs/build/html"],
+                check=True,
             )
             logger.info("Documentation generated successfully")
         except subprocess.CalledProcessError as e:
@@ -154,19 +142,21 @@ class Initializer:
             logger.error(f"Initialization failed: {str(e)}")
             sys.exit(1)
 
+
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Initialize the application")
     parser.add_argument(
-        '--env',
-        choices=['development', 'test', 'production'],
-        default='development',
-        help='Environment to initialize'
+        "--env",
+        choices=["development", "test", "production"],
+        default="development",
+        help="Environment to initialize",
     )
     args = parser.parse_args()
 
     initializer = Initializer(env=args.env)
     initializer.initialize()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

@@ -567,3 +567,161 @@ The application has several authentication routes:
 3. **Demo Login Server**:
    - `http://localhost:5001/api/auth/demo-login` - Standalone demo login server
    - `http://localhost:5001/api/v1/auth/demo-login` - Alternative path for the same endpoint
+
+## Deployment on Render.com
+
+### Prerequisites
+
+1. A Render.com account
+2. A PostgreSQL database (can be created on Render.com)
+3. Your project code in a Git repository
+
+### Environment Variables
+
+Set the following environment variables in your Render.com dashboard:
+
+```
+DJANGO_SECRET_KEY=<your-secret-key>
+DATABASE_URL=<your-database-url>
+DJANGO_SETTINGS_MODULE=backend.settings.production
+WEB_CONCURRENCY=4
+PYTHON_VERSION=3.11.0
+NODE_VERSION=20.0.0
+```
+
+### Deployment Steps
+
+1. **Fork or Clone the Repository**
+
+   ```bash
+   git clone https://github.com/yourusername/harmonic-universe.git
+   cd harmonic-universe
+   ```
+
+2. **Create a New Web Service on Render**
+
+   - Go to your Render dashboard
+   - Click "New +" and select "Web Service"
+   - Connect your repository
+   - Choose a name for your service
+   - Select "Python" as the environment
+   - Set the build command: `./scripts/build.sh`
+   - Set the start command: `./scripts/start.sh`
+
+3. **Configure Environment Variables**
+
+   - In your Render dashboard, go to the web service settings
+   - Add all required environment variables
+   - Make sure to set `DJANGO_SETTINGS_MODULE=backend.settings.production`
+
+4. **Set Up the Database**
+
+   - Create a new PostgreSQL database on Render
+   - Copy the internal database URL
+   - Add it as `DATABASE_URL` in your web service environment variables
+
+5. **Deploy**
+   - Render will automatically deploy your application
+   - Monitor the deployment logs for any issues
+   - Once complete, your app will be available at `https://<your-app-name>.onrender.com`
+
+### Directory Structure
+
+```
+harmonic-universe/
+├── backend/
+│   ├── settings/
+│   │   ├── __init__.py
+│   │   ├── base.py
+│   │   └── production.py
+│   ├── requirements.txt
+│   └── ...
+├── frontend/
+│   ├── src/
+│   ├── package.json
+│   └── ...
+├── nginx/
+│   └── nginx.conf
+├── scripts/
+│   ├── build.sh
+│   └── start.sh
+├── static/
+├── media/
+└── render.yaml
+```
+
+### Monitoring and Maintenance
+
+1. **Logs**
+
+   - Access logs through Render dashboard
+   - Monitor application logs: `gunicorn` and `nginx` logs
+   - Set up Sentry for error tracking
+
+2. **Updates**
+
+   - Deploy updates by pushing to your repository
+   - Render will automatically rebuild and deploy
+
+3. **Scaling**
+   - Adjust `WEB_CONCURRENCY` for more workers
+   - Upgrade your Render plan for more resources
+
+### Troubleshooting
+
+1. **Static Files Issues**
+
+   - Check if `collectstatic` ran successfully
+   - Verify Nginx configuration
+   - Check whitenoise configuration
+
+2. **Database Issues**
+
+   - Verify DATABASE_URL is correct
+   - Check database migrations
+   - Monitor database connections
+
+3. **Application Errors**
+   - Check application logs
+   - Verify environment variables
+   - Check Sentry for error reports
+
+### Local Development
+
+1. **Setup Virtual Environment**
+
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r backend/requirements.txt
+   ```
+
+2. **Install Frontend Dependencies**
+
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+3. **Run Development Servers**
+
+   ```bash
+   # Terminal 1 (Backend)
+   python manage.py runserver
+
+   # Terminal 2 (Frontend)
+   cd frontend
+   npm run dev
+   ```
+
+### Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

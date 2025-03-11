@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 from sqlalchemy.exc import ProgrammingError, OperationalError
 
 # Add the project root directory to the Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from sqlalchemy import create_engine, text, inspect
 from sqlalchemy.orm import sessionmaker
@@ -23,6 +23,7 @@ from alembic import command
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def get_db_session(database_url: str = None):
     """Create a database session."""
     if database_url is None:
@@ -31,6 +32,7 @@ def get_db_session(database_url: str = None):
     engine = init_engine(database_url)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     return SessionLocal(), engine
+
 
 def run_migrations():
     """Run database migrations."""
@@ -44,13 +46,15 @@ def run_migrations():
         logger.error(f"Error running migrations: {e}")
         return False
 
+
 @click.group()
 def cli():
     """Database operations CLI."""
     pass
 
+
 @cli.command()
-@click.option('--test', is_flag=True, help='Initialize test database')
+@click.option("--test", is_flag=True, help="Initialize test database")
 def init(test):
     """Initialize the database."""
     if test:
@@ -70,6 +74,7 @@ def init(test):
     finally:
         db.close()
 
+
 @cli.command()
 def migrate():
     """Run database migrations."""
@@ -77,8 +82,9 @@ def migrate():
         sys.exit(0)
     sys.exit(1)
 
+
 @cli.command()
-@click.argument('name')
+@click.argument("name")
 def create_migration(name):
     """Create a new migration."""
     try:
@@ -90,8 +96,9 @@ def create_migration(name):
         logger.error(f"Error creating migration: {e}")
         sys.exit(1)
 
+
 @cli.command()
-@click.option('--fix', is_flag=True, help='Attempt to fix issues by running migrations')
+@click.option("--fix", is_flag=True, help="Attempt to fix issues by running migrations")
 def verify(fix):
     """Verify database schema."""
     db, engine = get_db_session()
@@ -107,6 +114,7 @@ def verify(fix):
 
         # Check if all tables exist
         from backend.app.db.base import Base
+
         missing_tables = []
         for table in Base.metadata.sorted_tables:
             try:
@@ -142,5 +150,6 @@ def verify(fix):
     finally:
         db.close()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     cli()

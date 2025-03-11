@@ -18,6 +18,7 @@ from backend.app.models.physics.physics_parameter import PhysicsParameter
 from backend.app.models.audio.audio_track import AudioTrack
 from backend.app.models.audio.midi_sequence import MIDISequence
 
+
 def setup_database():
     """Create all database tables."""
     print("Creating database tables...")
@@ -31,6 +32,7 @@ def setup_database():
     print("Created all tables")
 
     print("Database tables created successfully!")
+
 
 if __name__ == "__main__":
     setup_database()

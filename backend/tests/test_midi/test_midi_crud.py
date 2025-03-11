@@ -14,17 +14,20 @@ from app.tests.utils.utils import random_lower_string
 from app.tests.utils.user import create_random_user
 from app.tests.utils.universe import create_random_universe
 
+
 @pytest.fixture
 def app():
     """Create test Flask app."""
     app = create_app()
-    app.config['TESTING'] = True
+    app.config["TESTING"] = True
     return app
+
 
 @pytest.fixture
 def client(app):
     """Create test client."""
     return app.test_client()
+
 
 def create_test_midi_file(db: Session, universe_id: str) -> dict:
     """Helper function to create a test MIDI file."""
@@ -38,9 +41,10 @@ def create_test_midi_file(db: Session, universe_id: str) -> dict:
         type=AudioType.UPLOADED,
         universe_id=universe_id,
         file_path=str(test_file),
-        file_size=os.path.getsize(test_file)
+        file_size=os.path.getsize(test_file),
     )
     return crud.audio_file.create(db=db, obj_in=audio_in)
+
 
 def test_create_midi_event(
     client: FlaskClient,
@@ -57,18 +61,17 @@ def test_create_midi_event(
         "timestamp": 1000,
         "note": 60,
         "velocity": 100,
-        "audio_file_id": audio_file.id
+        "audio_file_id": audio_file.id,
     }
 
     response = client.post(
-        f"/api/midi/events",
-        json=data,
-        headers=superuser_token_headers
+        f"/api/midi/events", json=data, headers=superuser_token_headers
     )
     assert response.status_code == 200
     content = response.get_json()
     assert content["type"] == MIDIEventType.NOTE_ON.value
     assert content["note"] == 60
+
 
 def test_create_midi_events_batch(
     client: FlaskClient,
@@ -86,27 +89,28 @@ def test_create_midi_events_batch(
             "timestamp": 1000,
             "note": 60,
             "velocity": 100,
-            "audio_file_id": audio_file.id
+            "audio_file_id": audio_file.id,
         },
         {
             "type": MIDIEventType.NOTE_OFF.value,
             "timestamp": 2000,
             "note": 60,
             "velocity": 0,
-            "audio_file_id": audio_file.id
-        }
+            "audio_file_id": audio_file.id,
+        },
     ]
 
     response = client.post(
         f"/api/midi/events/batch",
         json={"events": events},
-        headers=superuser_token_headers
+        headers=superuser_token_headers,
     )
     assert response.status_code == 200
     content = response.get_json()
     assert len(content) == 2
     assert content[0]["type"] == MIDIEventType.NOTE_ON.value
     assert content[1]["type"] == MIDIEventType.NOTE_OFF.value
+
 
 def test_get_midi_events_by_audio_file(
     client: FlaskClient,
@@ -126,7 +130,7 @@ def test_get_midi_events_by_audio_file(
                 timestamp=float(i),
                 channel=0,
                 note=60 + i,
-                velocity=100
+                velocity=100,
             )
             for i in range(3)
         ]
@@ -147,6 +151,7 @@ def test_get_midi_events_by_audio_file(
         if Path(audio_file.file_path).exists():
             Path(audio_file.file_path).unlink()
 
+
 def test_get_midi_events_by_type(
     client: FlaskClient,
     db: Session,
@@ -165,7 +170,7 @@ def test_get_midi_events_by_type(
                 timestamp=0.0,
                 channel=0,
                 note=60,
-                velocity=100
+                velocity=100,
             ),
             MIDIEventCreate(
                 audio_file_id=str(audio_file.id),
@@ -173,16 +178,14 @@ def test_get_midi_events_by_type(
                 timestamp=1.0,
                 channel=0,
                 note=60,
-                velocity=0
-            )
+                velocity=0,
+            ),
         ]
         crud.midi_event.create_batch(db=db, events=events_in)
 
         # Get events by type
         note_on_events = crud.midi_event.get_by_type(
-            db=db,
-            audio_file_id=audio_file.id,
-            event_type=MIDIEventType.NOTE_ON
+            db=db, audio_file_id=audio_file.id, event_type=MIDIEventType.NOTE_ON
         )
 
         assert len(note_on_events) == 1
@@ -191,6 +194,7 @@ def test_get_midi_events_by_type(
     finally:
         if Path(audio_file.file_path).exists():
             Path(audio_file.file_path).unlink()
+
 
 def test_get_midi_events_by_time_range(
     client: FlaskClient,
@@ -210,7 +214,7 @@ def test_get_midi_events_by_time_range(
                 timestamp=float(i),
                 channel=0,
                 note=60,
-                velocity=100
+                velocity=100,
             )
             for i in range(5)
         ]
@@ -218,10 +222,7 @@ def test_get_midi_events_by_time_range(
 
         # Get events in time range
         events = crud.midi_event.get_by_time_range(
-            db=db,
-            audio_file_id=audio_file.id,
-            start_time=1.5,
-            end_time=3.5
+            db=db, audio_file_id=audio_file.id, start_time=1.5, end_time=3.5
         )
 
         assert len(events) == 2  # Should get events at t=2 and t=3
@@ -231,6 +232,7 @@ def test_get_midi_events_by_time_range(
     finally:
         if Path(audio_file.file_path).exists():
             Path(audio_file.file_path).unlink()
+
 
 def test_delete_midi_event(
     client: FlaskClient,
@@ -248,7 +250,7 @@ def test_delete_midi_event(
             timestamp=0.0,
             channel=0,
             note=60,
-            velocity=100
+            velocity=100,
         )
         event = crud.midi_event.create(db=db, obj_in=event_in)
 

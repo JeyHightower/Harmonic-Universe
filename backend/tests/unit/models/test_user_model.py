@@ -4,12 +4,10 @@ from app.models.user import User
 from app.models.universe import Universe
 from sqlalchemy.exc import IntegrityError
 
+
 def test_new_user(session):
     """Test creating a new user"""
-    user = User(
-        username="testuser",
-        email="test@example.com"
-    )
+    user = User(username="testuser", email="test@example.com")
     user.set_password("password123")
     session.add(user)
     session.commit()
@@ -23,6 +21,7 @@ def test_new_user(session):
     assert isinstance(user.created_at, datetime)
     assert isinstance(user.updated_at, datetime)
 
+
 def test_user_to_dict(session, test_user):
     """Test converting a user to dictionary"""
     user_dict = test_user.to_dict()
@@ -33,6 +32,7 @@ def test_user_to_dict(session, test_user):
     assert "id" in user_dict
     assert "created_at" in user_dict
     assert "updated_at" in user_dict
+
 
 def test_user_validation(session):
     """Test user validation constraints"""
@@ -65,6 +65,7 @@ def test_user_validation(session):
         session.commit()
     session.rollback()
 
+
 def test_user_password_management(session):
     """Test user password management"""
     user = User(username="testuser", email="test@example.com")
@@ -79,18 +80,15 @@ def test_user_password_management(session):
     assert user.check_password("password123") is False
     assert user.check_password("newpassword123") is True
 
+
 def test_user_universe_relationships(session, test_user):
     """Test user universe relationships"""
     # Create owned universes
     universe1 = Universe(
-        name="Universe 1",
-        description="First universe",
-        user_id=test_user.id
+        name="Universe 1", description="First universe", user_id=test_user.id
     )
     universe2 = Universe(
-        name="Universe 2",
-        description="Second universe",
-        user_id=test_user.id
+        name="Universe 2", description="Second universe", user_id=test_user.id
     )
     session.add_all([universe1, universe2])
     session.commit()
@@ -99,6 +97,7 @@ def test_user_universe_relationships(session, test_user):
     assert len(test_user.owned_universes.all()) == 2
     assert universe1 in test_user.owned_universes
     assert universe2 in test_user.owned_universes
+
 
 def test_user_universe_access(session, test_user):
     """Test user universe access control"""
@@ -112,7 +111,7 @@ def test_user_universe_access(session, test_user):
         name="Private Universe",
         description="A private universe",
         user_id=test_user.id,
-        is_public=False
+        is_public=False,
     )
     session.add(private_universe)
     session.commit()
@@ -133,6 +132,7 @@ def test_user_universe_access(session, test_user):
     session.commit()
     assert not other_user.can_access(private_universe)
 
+
 def test_user_account_management(session, test_user):
     """Test user account management"""
     # Test account deactivation
@@ -148,10 +148,7 @@ def test_user_account_management(session, test_user):
     assert isinstance(test_user.last_login, datetime)
 
     # Test user update
-    update_data = {
-        "username": "updateduser",
-        "email": "updated@example.com"
-    }
+    update_data = {"username": "updateduser", "email": "updated@example.com"}
     test_user.update(update_data)
     assert test_user.username == "updateduser"
     assert test_user.email == "updated@example.com"

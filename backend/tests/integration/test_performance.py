@@ -4,9 +4,13 @@ import time
 import concurrent.futures
 from app.models import Universe, Storyboard, Scene, PhysicsObject
 from .factories import (
-    UserFactory, UniverseFactory, StoryboardFactory,
-    SceneFactory, PhysicsObjectFactory
+    UserFactory,
+    UniverseFactory,
+    StoryboardFactory,
+    SceneFactory,
+    PhysicsObjectFactory,
 )
+
 
 def test_database_query_performance(client, auth_headers):
     """Test database query performance."""
@@ -20,7 +24,7 @@ def test_database_query_performance(client, auth_headers):
 
     # Test universe retrieval time
     start_time = time.time()
-    response = client.get(f'/api/universes/{universe.id}', headers=auth_headers)
+    response = client.get(f"/api/universes/{universe.id}", headers=auth_headers)
     end_time = time.time()
 
     assert response.status_code == 200
@@ -28,48 +32,46 @@ def test_database_query_performance(client, auth_headers):
 
     # Test scene list retrieval time
     start_time = time.time()
-    response = client.get(f'/api/universes/{universe.id}/scenes', headers=auth_headers)
+    response = client.get(f"/api/universes/{universe.id}/scenes", headers=auth_headers)
     end_time = time.time()
 
     assert response.status_code == 200
     assert end_time - start_time < 1.0  # Should respond within 1 second
 
+
 def test_physics_simulation_performance(client, auth_headers):
     """Test physics simulation performance."""
     scene = SceneFactory(
-        physics_settings={
-            'gravity': {'x': 0, 'y': -9.81},
-            'enabled': True
-        }
+        physics_settings={"gravity": {"x": 0, "y": -9.81}, "enabled": True}
     )
 
     # Create many physics objects
     objects = [
         PhysicsObjectFactory(
-            scene=scene,
-            position={'x': i * 10, 'y': 100},
-            velocity={'x': 0, 'y': 0}
+            scene=scene, position={"x": i * 10, "y": 100}, velocity={"x": 0, "y": 0}
         )
         for i in range(100)
     ]
 
     # Measure simulation step time
     start_time = time.time()
-    response = client.post(f'/api/scenes/{scene.id}/physics/step',
-        json={'dt': 1/60},
-        headers=auth_headers
+    response = client.post(
+        f"/api/scenes/{scene.id}/physics/step",
+        json={"dt": 1 / 60},
+        headers=auth_headers,
     )
     end_time = time.time()
 
     assert response.status_code == 200
     assert end_time - start_time < 0.016  # Should complete within one frame (60 FPS)
 
+
 def test_concurrent_requests(client, auth_headers):
     """Test handling of concurrent requests."""
     universe = UniverseFactory()
 
     def make_request():
-        return client.get(f'/api/universes/{universe.id}', headers=auth_headers)
+        return client.get(f"/api/universes/{universe.id}", headers=auth_headers)
 
     # Make concurrent requests
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
@@ -79,25 +81,26 @@ def test_concurrent_requests(client, auth_headers):
     # Verify all requests succeeded
     assert all(r.status_code == 200 for r in responses)
 
+
 def test_websocket_performance(authenticated_websocket_client, scene):
     """Test WebSocket performance under load."""
     # Join scene
-    authenticated_websocket_client.emit('join_scene', {'scene_id': scene.id})
+    authenticated_websocket_client.emit("join_scene", {"scene_id": scene.id})
     authenticated_websocket_client.get_received()
 
     # Send rapid updates
     start_time = time.time()
     for i in range(100):
-        authenticated_websocket_client.emit('cursor_move', {
-            'scene_id': scene.id,
-            'position': {'x': i, 'y': i}
-        })
+        authenticated_websocket_client.emit(
+            "cursor_move", {"scene_id": scene.id, "position": {"x": i, "y": i}}
+        )
     end_time = time.time()
 
     # Verify messages were processed
     received = authenticated_websocket_client.get_received()
     assert len(received) > 0
     assert end_time - start_time < 1.0  # Should process 100 messages within 1 second
+
 
 def test_media_processing_performance(client, auth_headers):
     """Test media processing performance."""
@@ -106,36 +109,35 @@ def test_media_processing_performance(client, auth_headers):
     # Create multiple visual effects
     start_time = time.time()
     for i in range(10):
-        response = client.post(f'/api/scenes/{scene.id}/visual-effects',
+        response = client.post(
+            f"/api/scenes/{scene.id}/visual-effects",
             json={
-                'name': f'Effect {i}',
-                'effect_type': 'fade',
-                'parameters': {
-                    'duration': 1.0,
-                    'start_opacity': 0,
-                    'end_opacity': 1
-                }
+                "name": f"Effect {i}",
+                "effect_type": "fade",
+                "parameters": {"duration": 1.0, "start_opacity": 0, "end_opacity": 1},
             },
-            headers=auth_headers
+            headers=auth_headers,
         )
         assert response.status_code == 201
     end_time = time.time()
 
     assert end_time - start_time < 2.0  # Should create 10 effects within 2 seconds
 
+
 def test_search_performance(client, auth_headers):
     """Test search functionality performance."""
     # Create searchable content
     for i in range(100):
-        UniverseFactory(name=f'Test Universe {i}')
+        UniverseFactory(name=f"Test Universe {i}")
 
     # Test search response time
     start_time = time.time()
-    response = client.get('/api/universes/search?q=Test', headers=auth_headers)
+    response = client.get("/api/universes/search?q=Test", headers=auth_headers)
     end_time = time.time()
 
     assert response.status_code == 200
     assert end_time - start_time < 0.5  # Should search within 500ms
+
 
 def test_memory_usage(client, auth_headers):
     """Test memory usage under load."""
@@ -152,7 +154,7 @@ def test_memory_usage(client, auth_headers):
 
     # Make requests to load data
     for universe in universes:
-        response = client.get(f'/api/universes/{universe.id}', headers=auth_headers)
+        response = client.get(f"/api/universes/{universe.id}", headers=auth_headers)
         assert response.status_code == 200
 
     final_memory = process.memory_info().rss
@@ -160,6 +162,7 @@ def test_memory_usage(client, auth_headers):
 
     # Memory increase should be reasonable
     assert memory_increase < 100 * 1024 * 1024  # Less than 100MB increase
+
 
 def test_database_connection_pool(client, auth_headers):
     """Test database connection pool performance."""
@@ -172,7 +175,7 @@ def test_database_connection_pool(client, auth_headers):
 
     # Make concurrent database requests
     def make_db_request():
-        response = client.get('/api/universes', headers=auth_headers)
+        response = client.get("/api/universes", headers=auth_headers)
         assert response.status_code == 200
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
@@ -183,22 +186,26 @@ def test_database_connection_pool(client, auth_headers):
     final_connections = engine.pool.size()
     assert final_connections - initial_connections < 10  # Pool growth should be limited
 
+
 def test_caching_performance(client, auth_headers):
     """Test caching system performance."""
     universe = UniverseFactory()
 
     # First request (uncached)
     start_time = time.time()
-    response1 = client.get(f'/api/universes/{universe.id}', headers=auth_headers)
+    response1 = client.get(f"/api/universes/{universe.id}", headers=auth_headers)
     uncached_time = time.time() - start_time
 
     # Second request (should be cached)
     start_time = time.time()
-    response2 = client.get(f'/api/universes/{universe.id}', headers=auth_headers)
+    response2 = client.get(f"/api/universes/{universe.id}", headers=auth_headers)
     cached_time = time.time() - start_time
 
     assert response1.status_code == response2.status_code == 200
-    assert cached_time < uncached_time / 2  # Cached response should be significantly faster
+    assert (
+        cached_time < uncached_time / 2
+    )  # Cached response should be significantly faster
+
 
 def test_bulk_operations_performance(client, auth_headers):
     """Test bulk operation performance."""
@@ -207,17 +214,18 @@ def test_bulk_operations_performance(client, auth_headers):
     # Test bulk object creation
     objects_data = [
         {
-            'name': f'Object {i}',
-            'object_type': 'circle',
-            'position': {'x': i * 10, 'y': 0}
+            "name": f"Object {i}",
+            "object_type": "circle",
+            "position": {"x": i * 10, "y": 0},
         }
         for i in range(100)
     ]
 
     start_time = time.time()
-    response = client.post(f'/api/universes/{universe.id}/bulk-create',
-        json={'objects': objects_data},
-        headers=auth_headers
+    response = client.post(
+        f"/api/universes/{universe.id}/bulk-create",
+        json={"objects": objects_data},
+        headers=auth_headers,
     )
     end_time = time.time()
 

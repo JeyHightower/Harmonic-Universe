@@ -2,7 +2,10 @@ from typing import Dict, Any
 import openai
 from backend.app.models.ai_model import AIModel
 
-async def generate_visualization(input_data: Dict[str, Any], ai_model: AIModel) -> Dict[str, Any]:
+
+async def generate_visualization(
+    input_data: Dict[str, Any], ai_model: AIModel
+) -> Dict[str, Any]:
     """
     Generate visualization using AI.
     """
@@ -13,7 +16,10 @@ async def generate_visualization(input_data: Dict[str, Any], ai_model: AIModel) 
     else:
         raise ValueError(f"Unsupported AI provider: {ai_model.provider}")
 
-async def _generate_visualization_openai(input_data: Dict[str, Any], ai_model: AIModel) -> Dict[str, Any]:
+
+async def _generate_visualization_openai(
+    input_data: Dict[str, Any], ai_model: AIModel
+) -> Dict[str, Any]:
     """
     Generate visualization using OpenAI's DALL-E API.
     """
@@ -38,22 +44,22 @@ async def _generate_visualization_openai(input_data: Dict[str, Any], ai_model: A
             prompt=prompt,
             n=1,
             size=ai_model.configuration.get("size", "1024x1024"),
-            response_format="b64_json"
+            response_format="b64_json",
         )
 
         return {
             "image_data": response.data[0].b64_json,
             "format": "png",
             "size": ai_model.configuration.get("size", "1024x1024"),
-            "model_info": {
-                "model": "dall-e",
-                "provider": "openai"
-            }
+            "model_info": {"model": "dall-e", "provider": "openai"},
         }
     except Exception as e:
         raise ValueError(f"Failed to generate image with DALL-E: {str(e)}")
 
-async def _generate_visualization_stable_diffusion(input_data: Dict[str, Any], ai_model: AIModel) -> Dict[str, Any]:
+
+async def _generate_visualization_stable_diffusion(
+    input_data: Dict[str, Any], ai_model: AIModel
+) -> Dict[str, Any]:
     """
     Generate visualization using Stable Diffusion.
     """
@@ -65,8 +71,12 @@ async def _generate_visualization_stable_diffusion(input_data: Dict[str, Any], a
         from PIL import Image
 
         # Load model
-        model_id = ai_model.configuration.get("model_id", "runwayml/stable-diffusion-v1-5")
-        pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
+        model_id = ai_model.configuration.get(
+            "model_id", "runwayml/stable-diffusion-v1-5"
+        )
+        pipe = StableDiffusionPipeline.from_pretrained(
+            model_id, torch_dtype=torch.float16
+        )
         pipe = pipe.to("cuda")
 
         # Prepare prompt
@@ -78,7 +88,7 @@ async def _generate_visualization_stable_diffusion(input_data: Dict[str, Any], a
         image = pipe(
             prompt,
             num_inference_steps=ai_model.parameters.get("num_inference_steps", 50),
-            guidance_scale=ai_model.parameters.get("guidance_scale", 7.5)
+            guidance_scale=ai_model.parameters.get("guidance_scale", 7.5),
         ).images[0]
 
         # Convert to base64
@@ -90,10 +100,7 @@ async def _generate_visualization_stable_diffusion(input_data: Dict[str, Any], a
             "image_data": image_base64,
             "format": "png",
             "size": f"{image.size[0]}x{image.size[1]}",
-            "model_info": {
-                "model": model_id,
-                "provider": "stable-diffusion"
-            }
+            "model_info": {"model": model_id, "provider": "stable-diffusion"},
         }
 
     except Exception as e:

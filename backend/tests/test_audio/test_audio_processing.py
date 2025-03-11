@@ -7,6 +7,7 @@ import json
 from app.core.audio.processor import AudioProcessor
 from app.models.audio_file import AudioFormat
 
+
 @pytest.fixture
 def test_wav_file(tmp_path):
     """Create a test WAV file."""
@@ -18,6 +19,7 @@ def test_wav_file(tmp_path):
     sf.write(file_path, audio_data, sample_rate)
     return file_path
 
+
 def test_audio_loading(test_wav_file):
     """Test loading audio file."""
     processor = AudioProcessor(str(test_wav_file), AudioFormat.WAV)
@@ -25,11 +27,13 @@ def test_audio_loading(test_wav_file):
     assert processor.sample_rate == 44100
     assert len(processor.audio_data) == processor.sample_rate
 
+
 def test_get_duration(test_wav_file):
     """Test getting audio duration."""
     processor = AudioProcessor(str(test_wav_file), AudioFormat.WAV)
     duration = processor.get_duration()
     assert duration == pytest.approx(1.0, rel=1e-3)
+
 
 def test_get_waveform_data(test_wav_file):
     """Test generating waveform visualization data."""
@@ -43,18 +47,17 @@ def test_get_waveform_data(test_wav_file):
     assert waveform_data["sample_rate"] == 44100
     assert waveform_data["duration"] == pytest.approx(1.0, rel=1e-3)
 
+
 def test_format_conversion(test_wav_file, tmp_path):
     """Test converting audio format."""
     processor = AudioProcessor(str(test_wav_file), AudioFormat.WAV)
     output_path = tmp_path / "converted.mp3"
 
-    converted_path = processor.convert_format(
-        AudioFormat.MP3,
-        str(output_path)
-    )
+    converted_path = processor.convert_format(AudioFormat.MP3, str(output_path))
 
     assert Path(converted_path).exists()
     assert Path(converted_path).suffix == ".mp3"
+
 
 def test_apply_effects(test_wav_file):
     """Test applying audio effects."""
@@ -76,6 +79,7 @@ def test_apply_effects(test_wav_file):
     processor.apply_effects({"time_stretch": {"rate": 2.0}})
     assert len(processor.audio_data) != len(original_data)
 
+
 def test_save_audio(test_wav_file, tmp_path):
     """Test saving processed audio."""
     processor = AudioProcessor(str(test_wav_file), AudioFormat.WAV)
@@ -88,6 +92,7 @@ def test_save_audio(test_wav_file, tmp_path):
     loaded_data, sr = sf.read(saved_path)
     assert len(loaded_data) == len(processor.audio_data)
     assert sr == processor.sample_rate
+
 
 def test_to_base64(test_wav_file):
     """Test converting audio to base64."""

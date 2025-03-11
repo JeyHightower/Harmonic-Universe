@@ -4,7 +4,7 @@ from backend.app.db.session import init_engine
 
 app = create_app()
 with app.app_context():
-    engine = init_engine(app.config['SQLALCHEMY_DATABASE_URI'])
+    engine = init_engine(app.config["SQLALCHEMY_DATABASE_URI"])
     inspector = inspect(engine)
 
     print("\nDatabase Tables:")

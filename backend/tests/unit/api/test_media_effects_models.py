@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from backend.app.models import VisualEffect, AudioTrack
 from tests.factories import VisualEffectFactory, AudioTrackFactory, SceneFactory
 
+
 def test_create_visual_effect(session):
     """Test creating a new visual effect."""
     scene = SceneFactory()
@@ -11,7 +12,7 @@ def test_create_visual_effect(session):
         name="Test Effect",
         effect_type="particle",
         parameters={"speed": 1.0, "size": 2.0},
-        scene=scene
+        scene=scene,
     )
     session.commit()
 
@@ -23,6 +24,7 @@ def test_create_visual_effect(session):
     assert isinstance(effect.created_at, datetime)
     assert isinstance(effect.updated_at, datetime)
 
+
 def test_create_audio_track(session):
     """Test creating a new audio track."""
     scene = SceneFactory()
@@ -31,7 +33,7 @@ def test_create_audio_track(session):
         track_type="background",
         file_path="audio/test.mp3",
         parameters={"volume": 0.8, "loop": True},
-        scene=scene
+        scene=scene,
     )
     session.commit()
 
@@ -44,40 +46,39 @@ def test_create_audio_track(session):
     assert isinstance(track.created_at, datetime)
     assert isinstance(track.updated_at, datetime)
 
+
 def test_visual_effect_to_dict(session):
     """Test the to_dict method of VisualEffect model."""
-    effect = VisualEffectFactory(
-        parameters={"test": "data"}
-    )
+    effect = VisualEffectFactory(parameters={"test": "data"})
     session.commit()
 
     effect_dict = effect.to_dict()
     assert isinstance(effect_dict, dict)
-    assert effect_dict['id'] == effect.id
-    assert effect_dict['name'] == effect.name
-    assert effect_dict['effect_type'] == effect.effect_type
-    assert effect_dict['parameters'] == {"test": "data"}
-    assert effect_dict['scene_id'] == effect.scene.id
-    assert isinstance(effect_dict['created_at'], str)
-    assert isinstance(effect_dict['updated_at'], str)
+    assert effect_dict["id"] == effect.id
+    assert effect_dict["name"] == effect.name
+    assert effect_dict["effect_type"] == effect.effect_type
+    assert effect_dict["parameters"] == {"test": "data"}
+    assert effect_dict["scene_id"] == effect.scene.id
+    assert isinstance(effect_dict["created_at"], str)
+    assert isinstance(effect_dict["updated_at"], str)
+
 
 def test_audio_track_to_dict(session):
     """Test the to_dict method of AudioTrack model."""
-    track = AudioTrackFactory(
-        parameters={"test": "data"}
-    )
+    track = AudioTrackFactory(parameters={"test": "data"})
     session.commit()
 
     track_dict = track.to_dict()
     assert isinstance(track_dict, dict)
-    assert track_dict['id'] == track.id
-    assert track_dict['name'] == track.name
-    assert track_dict['track_type'] == track.track_type
-    assert track_dict['file_path'] == track.file_path
-    assert track_dict['parameters'] == {"test": "data"}
-    assert track_dict['scene_id'] == track.scene.id
-    assert isinstance(track_dict['created_at'], str)
-    assert isinstance(track_dict['updated_at'], str)
+    assert track_dict["id"] == track.id
+    assert track_dict["name"] == track.name
+    assert track_dict["track_type"] == track.track_type
+    assert track_dict["file_path"] == track.file_path
+    assert track_dict["parameters"] == {"test": "data"}
+    assert track_dict["scene_id"] == track.scene.id
+    assert isinstance(track_dict["created_at"], str)
+    assert isinstance(track_dict["updated_at"], str)
+
 
 def test_visual_effect_validation(session):
     """Test visual effect model validation."""
@@ -105,6 +106,7 @@ def test_visual_effect_validation(session):
     with pytest.raises(Exception):
         effect = VisualEffectFactory(effect_type="invalid_type")
         session.commit()
+
 
 def test_audio_track_validation(session):
     """Test audio track model validation."""
@@ -139,6 +141,7 @@ def test_audio_track_validation(session):
         track = AudioTrackFactory(track_type="invalid_type")
         session.commit()
 
+
 def test_visual_effect_parameters_validation(session):
     """Test visual effect parameters validation."""
     # Test invalid JSON parameters
@@ -150,6 +153,7 @@ def test_visual_effect_parameters_validation(session):
     effect = VisualEffectFactory(parameters={"valid": "json"})
     session.commit()
     assert effect.parameters == {"valid": "json"}
+
 
 def test_audio_track_parameters_validation(session):
     """Test audio track parameters validation."""
@@ -163,6 +167,7 @@ def test_audio_track_parameters_validation(session):
     session.commit()
     assert track.parameters == {"valid": "json"}
 
+
 def test_visual_effect_type_enum(session):
     """Test visual effect type enumeration."""
     # Test valid effect types
@@ -172,6 +177,7 @@ def test_visual_effect_type_enum(session):
         session.commit()
         assert effect.effect_type == effect_type
 
+
 def test_audio_track_type_enum(session):
     """Test audio track type enumeration."""
     # Test valid track types
@@ -180,6 +186,7 @@ def test_audio_track_type_enum(session):
         track = AudioTrackFactory(track_type=track_type)
         session.commit()
         assert track.track_type == track_type
+
 
 def test_cascade_delete_from_scene(session):
     """Test that deleting a scene cascades to media effects."""

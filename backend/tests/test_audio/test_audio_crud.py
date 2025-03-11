@@ -12,6 +12,7 @@ from app.tests.utils.utils import random_lower_string
 from app.tests.utils.user import create_random_user
 from app.tests.utils.universe import create_random_universe
 
+
 def test_create_audio_file(
     client: FlaskClient,
     db: Session,
@@ -34,7 +35,7 @@ def test_create_audio_file(
             "type": AudioType.UPLOADED,
             "universe_id": str(universe.id),
             "file_path": str(test_file),
-            "file_size": os.path.getsize(test_file)
+            "file_size": os.path.getsize(test_file),
         }
 
         audio_in = AudioFileCreate(**file_data)
@@ -48,6 +49,7 @@ def test_create_audio_file(
     finally:
         if test_file.exists():
             test_file.unlink()
+
 
 def test_get_audio_file(
     client: FlaskClient,
@@ -69,7 +71,7 @@ def test_get_audio_file(
             type=AudioType.UPLOADED,
             universe_id=str(universe.id),
             file_path=str(test_file),
-            file_size=os.path.getsize(test_file)
+            file_size=os.path.getsize(test_file),
         )
         audio = crud.audio_file.create(db=db, obj_in=audio_in)
 
@@ -82,6 +84,7 @@ def test_get_audio_file(
     finally:
         if test_file.exists():
             test_file.unlink()
+
 
 def test_get_audio_files_by_universe(
     client: FlaskClient,
@@ -109,15 +112,13 @@ def test_get_audio_files_by_universe(
                 type=AudioType.UPLOADED,
                 universe_id=str(universe.id),
                 file_path=str(test_file),
-                file_size=os.path.getsize(test_file)
+                file_size=os.path.getsize(test_file),
             )
             audio = crud.audio_file.create(db=db, obj_in=audio_in)
             created_files.append(audio)
 
         # Get audio files by universe
-        stored_files = crud.audio_file.get_by_universe(
-            db=db, universe_id=universe.id
-        )
+        stored_files = crud.audio_file.get_by_universe(db=db, universe_id=universe.id)
         assert len(stored_files) == len(created_files)
         for stored, created in zip(stored_files, created_files):
             assert stored.id == created.id
@@ -127,6 +128,7 @@ def test_get_audio_files_by_universe(
         for test_file in test_files:
             if test_file.exists():
                 test_file.unlink()
+
 
 def test_delete_audio_file(
     client: FlaskClient,
@@ -148,7 +150,7 @@ def test_delete_audio_file(
             type=AudioType.UPLOADED,
             universe_id=str(universe.id),
             file_path=str(test_file),
-            file_size=os.path.getsize(test_file)
+            file_size=os.path.getsize(test_file),
         )
         audio = crud.audio_file.create(db=db, obj_in=audio_in)
 

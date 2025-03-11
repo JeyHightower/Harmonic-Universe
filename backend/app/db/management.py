@@ -12,6 +12,7 @@ from ..core.logging import get_logger
 
 logger = get_logger(__name__)
 
+
 class DatabaseManager:
     """Database management utilities."""
 
@@ -21,11 +22,11 @@ class DatabaseManager:
             self.engine = db_engine
         else:
             database_url = os.getenv(
-                'DATABASE_URL',
-                'postgresql://postgres:postgres@localhost:5432/harmonic_universe_dev'
+                "DATABASE_URL",
+                "postgresql://postgres:postgres@localhost:5432/harmonic_universe_dev",
             )
-            if 'db:5432' in database_url:
-                database_url = database_url.replace('db:5432', 'localhost:5432')
+            if "db:5432" in database_url:
+                database_url = database_url.replace("db:5432", "localhost:5432")
             self.engine = create_engine(database_url)
 
         self.inspector = inspect(self.engine)
@@ -38,33 +39,35 @@ class DatabaseManager:
             indexes = self.inspector.get_indexes(table_name)
             foreign_keys = self.inspector.get_foreign_keys(table_name)
 
-            tables.append({
-                'name': table_name,
-                'columns': [
-                    {
-                        'name': col['name'],
-                        'type': str(col['type']),
-                        'nullable': col['nullable']
-                    }
-                    for col in columns
-                ],
-                'indexes': [
-                    {
-                        'name': idx['name'],
-                        'columns': idx['column_names'],
-                        'unique': idx['unique']
-                    }
-                    for idx in indexes
-                ],
-                'foreign_keys': [
-                    {
-                        'referred_table': fk['referred_table'],
-                        'referred_columns': fk['referred_columns'],
-                        'constrained_columns': fk['constrained_columns']
-                    }
-                    for fk in foreign_keys
-                ]
-            })
+            tables.append(
+                {
+                    "name": table_name,
+                    "columns": [
+                        {
+                            "name": col["name"],
+                            "type": str(col["type"]),
+                            "nullable": col["nullable"],
+                        }
+                        for col in columns
+                    ],
+                    "indexes": [
+                        {
+                            "name": idx["name"],
+                            "columns": idx["column_names"],
+                            "unique": idx["unique"],
+                        }
+                        for idx in indexes
+                    ],
+                    "foreign_keys": [
+                        {
+                            "referred_table": fk["referred_table"],
+                            "referred_columns": fk["referred_columns"],
+                            "constrained_columns": fk["constrained_columns"],
+                        }
+                        for fk in foreign_keys
+                    ],
+                }
+            )
         return tables
 
     def backup_database(self, backup_dir: str = "backups") -> str:
@@ -81,16 +84,18 @@ class DatabaseManager:
                 for table in tables:
                     query = text(f"SELECT * FROM {table['name']}")
                     result = db.execute(query)
-                    data[table['name']] = [dict(row) for row in result]
+                    data[table["name"]] = [dict(row) for row in result]
 
-            with open(backup_file, 'w') as f:
-                json.dump({
-                    'metadata': {
-                        'timestamp': timestamp,
-                        'tables': tables
+            with open(backup_file, "w") as f:
+                json.dump(
+                    {
+                        "metadata": {"timestamp": timestamp, "tables": tables},
+                        "data": data,
                     },
-                    'data': data
-                }, f, indent=2, default=str)
+                    f,
+                    indent=2,
+                    default=str,
+                )
 
             logger.info(f"Database backup created: {backup_file}")
             return backup_file
@@ -102,19 +107,21 @@ class DatabaseManager:
     def restore_database(self, backup_file: str) -> None:
         """Restore database from backup."""
         try:
-            with open(backup_file, 'r') as f:
+            with open(backup_file, "r") as f:
                 backup = json.load(f)
 
             with Session(self.engine) as db:
-                for table_name, records in backup['data'].items():
+                for table_name, records in backup["data"].items():
                     # Clear existing data
                     db.execute(text(f"DELETE FROM {table_name}"))
 
                     # Insert backup data
                     if records:
                         columns = records[0].keys()
-                        placeholders = ', '.join([f":{col}" for col in columns])
-                        query = text(f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({placeholders})")
+                        placeholders = ", ".join([f":{col}" for col in columns])
+                        query = text(
+                            f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({placeholders})"
+                        )
 
                         for record in records:
                             db.execute(query, record)
@@ -150,25 +157,26 @@ class DatabaseManager:
                 for table in tables:
                     result = db.execute(text(f"SELECT COUNT(*) FROM {table['name']}"))
                     row_count = result.scalar()
-                    table_stats[table['name']] = {
-                        'row_count': row_count,
-                        'columns': len(table['columns']),
-                        'indexes': len(table['indexes'])
+                    table_stats[table["name"]] = {
+                        "row_count": row_count,
+                        "columns": len(table["columns"]),
+                        "indexes": len(table["indexes"]),
                     }
 
                 return {
-                    'status': 'healthy',
-                    'timestamp': datetime.now().isoformat(),
-                    'table_stats': table_stats
+                    "status": "healthy",
+                    "timestamp": datetime.now().isoformat(),
+                    "table_stats": table_stats,
                 }
 
         except Exception as e:
             logger.error(f"Database health check failed: {str(e)}")
             return {
-                'status': 'unhealthy',
-                'timestamp': datetime.now().isoformat(),
-                'error': str(e)
+                "status": "unhealthy",
+                "timestamp": datetime.now().isoformat(),
+                "error": str(e),
             }
+
 
 # Initialize database manager
 db_manager = DatabaseManager()

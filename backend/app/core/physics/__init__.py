@@ -3,12 +3,13 @@
 from typing import Dict, Any, List
 import numpy as np
 
+
 class PhysicsEngine:
     """Core physics engine functionality."""
 
     def __init__(self):
         self.gravity = np.array([0, -9.81, 0])
-        self.time_step = 1/60  # 60 FPS
+        self.time_step = 1 / 60  # 60 FPS
 
     def apply_forces(self, objects: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Apply physics forces to objects."""
@@ -33,9 +34,10 @@ class PhysicsEngine:
         """Check for collisions between objects."""
         # Basic collision detection
         for i, obj1 in enumerate(objects):
-            for j, obj2 in enumerate(objects[i+1:], i+1):
-                if (obj1.get("physics_enabled", True) and
-                    obj2.get("physics_enabled", True)):
+            for j, obj2 in enumerate(objects[i + 1 :], i + 1):
+                if obj1.get("physics_enabled", True) and obj2.get(
+                    "physics_enabled", True
+                ):
                     # Simple sphere collision check
                     pos1 = np.array(obj1.get("position", [0, 0, 0]))
                     pos2 = np.array(obj2.get("position", [0, 0, 0]))
@@ -50,10 +52,11 @@ class PhysicsEngine:
 
                         # Move objects apart
                         if not obj1.get("is_static", False):
-                            obj1["position"] = (pos1 - normal * overlap/2).tolist()
+                            obj1["position"] = (pos1 - normal * overlap / 2).tolist()
                         if not obj2.get("is_static", False):
-                            obj2["position"] = (pos2 + normal * overlap/2).tolist()
+                            obj2["position"] = (pos2 + normal * overlap / 2).tolist()
 
         return objects
+
 
 physics_engine = PhysicsEngine()

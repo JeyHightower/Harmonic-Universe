@@ -2,7 +2,10 @@ from typing import Dict, Any
 import openai
 from backend.app.models.ai_model import AIModel
 
-async def generate_parameters(input_data: Dict[str, Any], ai_model: AIModel) -> Dict[str, Any]:
+
+async def generate_parameters(
+    input_data: Dict[str, Any], ai_model: AIModel
+) -> Dict[str, Any]:
     """
     Generate physics or music parameters using AI.
     """
@@ -13,7 +16,10 @@ async def generate_parameters(input_data: Dict[str, Any], ai_model: AIModel) -> 
     else:
         raise ValueError(f"Unsupported AI provider: {ai_model.provider}")
 
-async def _generate_parameters_openai(input_data: Dict[str, Any], ai_model: AIModel) -> Dict[str, Any]:
+
+async def _generate_parameters_openai(
+    input_data: Dict[str, Any], ai_model: AIModel
+) -> Dict[str, Any]:
     """
     Generate parameters using OpenAI's API.
     """
@@ -39,11 +45,14 @@ async def _generate_parameters_openai(input_data: Dict[str, Any], ai_model: AIMo
     response = await openai.ChatCompletion.acreate(
         model=ai_model.configuration.get("model_name", "gpt-4"),
         messages=[
-            {"role": "system", "content": "You are a parameter generation assistant for the Harmonic Universe application."},
-            {"role": "user", "content": prompt}
+            {
+                "role": "system",
+                "content": "You are a parameter generation assistant for the Harmonic Universe application.",
+            },
+            {"role": "user", "content": prompt},
         ],
         temperature=ai_model.parameters.get("temperature", 0.7),
-        max_tokens=ai_model.parameters.get("max_tokens", 1000)
+        max_tokens=ai_model.parameters.get("max_tokens", 1000),
     )
 
     # Process and validate the response
@@ -53,13 +62,16 @@ async def _generate_parameters_openai(input_data: Dict[str, Any], ai_model: AIMo
             "parameters": parameters,
             "model_info": {
                 "model": ai_model.configuration.get("model_name"),
-                "provider": "openai"
-            }
+                "provider": "openai",
+            },
         }
     except Exception as e:
         raise ValueError(f"Failed to process OpenAI response: {str(e)}")
 
-async def _generate_parameters_anthropic(input_data: Dict[str, Any], ai_model: AIModel) -> Dict[str, Any]:
+
+async def _generate_parameters_anthropic(
+    input_data: Dict[str, Any], ai_model: AIModel
+) -> Dict[str, Any]:
     """
     Generate parameters using Anthropic's API.
     """

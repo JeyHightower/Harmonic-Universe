@@ -9,6 +9,7 @@ from .parameter_generation import generate_parameters
 from .music_generation import generate_music
 from .visualization_generation import generate_visualization
 
+
 async def process_generation(generation_id: UUID, db: Session) -> None:
     """
     Process an AI generation request.
@@ -22,7 +23,7 @@ async def process_generation(generation_id: UUID, db: Session) -> None:
     crud.ai_generation.update(
         db=db,
         db_obj=generation,
-        obj_in=schemas.AIGenerationUpdate(status=GenerationStatus.PROCESSING)
+        obj_in=schemas.AIGenerationUpdate(status=GenerationStatus.PROCESSING),
     )
 
     try:
@@ -40,16 +41,17 @@ async def process_generation(generation_id: UUID, db: Session) -> None:
         elif generation.generation_type == AIModelType.VISUALIZATION:
             output_data = await generate_visualization(generation.input_data, ai_model)
         else:
-            raise ValueError(f"Unsupported generation type: {generation.generation_type}")
+            raise ValueError(
+                f"Unsupported generation type: {generation.generation_type}"
+            )
 
         # Update generation with results
         crud.ai_generation.update(
             db=db,
             db_obj=generation,
             obj_in=schemas.AIGenerationUpdate(
-                status=GenerationStatus.COMPLETED,
-                output_data=output_data
-            )
+                status=GenerationStatus.COMPLETED, output_data=output_data
+            ),
         )
 
     except Exception as e:
@@ -58,7 +60,6 @@ async def process_generation(generation_id: UUID, db: Session) -> None:
             db=db,
             db_obj=generation,
             obj_in=schemas.AIGenerationUpdate(
-                status=GenerationStatus.FAILED,
-                error_message=str(e)
-            )
+                status=GenerationStatus.FAILED, error_message=str(e)
+            ),
         )

@@ -9,6 +9,7 @@ from backend.app.extensions import db
 from backend.app.models.scene import Scene, RenderingMode
 from backend.app import create_app
 
+
 def verify_database():
     """Verify database connection and models."""
     app = create_app()
@@ -30,7 +31,7 @@ def verify_database():
             test_scene = Scene(
                 name="Test Scene",
                 description="A test scene",
-                rendering_mode=RenderingMode.SOLID
+                rendering_mode=RenderingMode.SOLID,
             )
             db.session.add(test_scene)
             db.session.commit()
@@ -49,6 +50,7 @@ def verify_database():
         except Exception as e:
             print(f"❌ Unexpected error: {str(e)}")
             return False
+
 
 if __name__ == "__main__":
     success = verify_database()

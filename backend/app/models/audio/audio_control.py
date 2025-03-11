@@ -8,18 +8,24 @@ from sqlalchemy.orm import relationship
 import enum
 from ..base import BaseModel
 
+
 class AutomationType(str, enum.Enum):
     """Types of automation parameters."""
+
     VOLUME = "volume"
     PAN = "pan"
     EFFECT_PARAM = "effect_param"
     CUSTOM = "custom"
 
+
 class AudioMarker(BaseModel):
     """Marker in an audio track."""
+
     __tablename__ = "audio_markers"
 
-    track_id = Column(UUID(as_uuid=True), ForeignKey("audio_tracks.id", ondelete="CASCADE"))
+    track_id = Column(
+        UUID(as_uuid=True), ForeignKey("audio_tracks.id", ondelete="CASCADE")
+    )
     name = Column(String, index=True)
     time = Column(Float)
     color = Column(String, nullable=True)
@@ -44,14 +50,18 @@ class AudioMarker(BaseModel):
             "description": self.description,
             "parameters": self.parameters,
             "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat()
+            "updated_at": self.updated_at.isoformat(),
         }
+
 
 class AudioAutomation(BaseModel):
     """Automation data for audio parameters."""
+
     __tablename__ = "audio_automation"
 
-    track_id = Column(UUID(as_uuid=True), ForeignKey("audio_tracks.id", ondelete="CASCADE"))
+    track_id = Column(
+        UUID(as_uuid=True), ForeignKey("audio_tracks.id", ondelete="CASCADE")
+    )
     parameter_type = Column(Enum(AutomationType))
     target_id = Column(String, nullable=True)  # For effect parameters
     points = Column(JSON, default=list)  # List of {time, value} points
@@ -117,5 +127,5 @@ class AudioAutomation(BaseModel):
             "enabled": self.enabled,
             "parameters": self.parameters,
             "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat()
+            "updated_at": self.updated_at.isoformat(),
         }

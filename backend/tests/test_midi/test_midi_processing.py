@@ -7,6 +7,7 @@ import json
 from app.core.audio.midi_processor import MIDIProcessor
 from app.models.midi_event import MIDIEventType
 
+
 @pytest.fixture
 def test_midi_file(tmp_path):
     """Create a test MIDI file."""
@@ -18,20 +19,11 @@ def test_midi_file(tmp_path):
 
     # Add some notes
     note_number = 60
-    note = pretty_midi.Note(
-        velocity=100,
-        pitch=note_number,
-        start=0,
-        end=0.5
-    )
+    note = pretty_midi.Note(velocity=100, pitch=note_number, start=0, end=0.5)
     piano.notes.append(note)
 
     # Add a control change
-    cc = pretty_midi.ControlChange(
-        number=64,  # Sustain pedal
-        value=100,
-        time=0.1
-    )
+    cc = pretty_midi.ControlChange(number=64, value=100, time=0.1)  # Sustain pedal
     piano.control_changes.append(cc)
 
     midi_data.instruments.append(piano)
@@ -39,12 +31,14 @@ def test_midi_file(tmp_path):
 
     return file_path
 
+
 def test_midi_loading(test_midi_file):
     """Test loading MIDI file."""
     processor = MIDIProcessor(str(test_midi_file))
     assert processor.midi_data is not None
     assert len(processor.midi_data.instruments) == 1
     assert len(processor.midi_data.instruments[0].notes) == 1
+
 
 def test_extract_events(test_midi_file):
     """Test extracting MIDI events."""
@@ -62,6 +56,7 @@ def test_extract_events(test_midi_file):
     # Check timestamps are in order
     assert events[0].timestamp < events[1].timestamp < events[2].timestamp
 
+
 def test_create_midi_file(tmp_path):
     """Test creating MIDI file from events."""
     processor = MIDIProcessor()
@@ -74,14 +69,9 @@ def test_create_midi_file(tmp_path):
             "pitch": 60,
             "velocity": 100,
             "start_time": 0.0,
-            "end_time": 0.5
+            "end_time": 0.5,
         },
-        {
-            "type": "control_change",
-            "control": 64,
-            "value": 100,
-            "time": 0.1
-        }
+        {"type": "control_change", "control": 64, "value": 100, "time": 0.1},
     ]
 
     # Create MIDI file
@@ -97,6 +87,7 @@ def test_create_midi_file(tmp_path):
     assert len(created_processor.midi_data.instruments[0].notes) == 1
     assert len(created_processor.midi_data.instruments[0].control_changes) == 1
 
+
 def test_get_tempo_changes(test_midi_file):
     """Test getting tempo changes."""
     processor = MIDIProcessor(str(test_midi_file))
@@ -108,6 +99,7 @@ def test_get_tempo_changes(test_midi_file):
         assert isinstance(tempo, float)
         assert tempo > 0
 
+
 def test_get_time_signature_changes(test_midi_file):
     """Test getting time signature changes."""
     processor = MIDIProcessor(str(test_midi_file))
@@ -118,6 +110,7 @@ def test_get_time_signature_changes(test_midi_file):
         assert len(time_sig) == 2
         assert isinstance(time_sig[0], float)  # time
         assert isinstance(time_sig[1], tuple)  # numerator, denominator
+
 
 def test_quantize_events(test_midi_file):
     """Test quantizing note timings."""
@@ -145,6 +138,7 @@ def test_quantize_events(test_midi_file):
         assert quant_end % 0.25 == pytest.approx(0, abs=1e-6)
         assert quant_start != orig_start or quant_end != orig_end
 
+
 def test_transpose(test_midi_file):
     """Test transposing notes."""
     processor = MIDIProcessor(str(test_midi_file))
@@ -167,6 +161,7 @@ def test_transpose(test_midi_file):
     for orig_pitch, trans_pitch in zip(original_pitches, transposed_pitches):
         assert trans_pitch == orig_pitch + 2
 
+
 def test_save_midi(test_midi_file, tmp_path):
     """Test saving MIDI file."""
     processor = MIDIProcessor(str(test_midi_file))
@@ -180,11 +175,12 @@ def test_save_midi(test_midi_file, tmp_path):
 
     # Load saved file and verify changes
     loaded_processor = MIDIProcessor(str(saved_path))
-    assert len(loaded_processor.midi_data.instruments) == len(processor.midi_data.instruments)
+    assert len(loaded_processor.midi_data.instruments) == len(
+        processor.midi_data.instruments
+    )
 
     for orig_inst, saved_inst in zip(
-        processor.midi_data.instruments,
-        loaded_processor.midi_data.instruments
+        processor.midi_data.instruments, loaded_processor.midi_data.instruments
     ):
         assert len(orig_inst.notes) == len(saved_inst.notes)
         for orig_note, saved_note in zip(orig_inst.notes, saved_inst.notes):

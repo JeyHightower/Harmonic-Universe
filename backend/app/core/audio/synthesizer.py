@@ -4,6 +4,7 @@ import sounddevice as sd
 import pretty_midi
 from scipy import signal
 
+
 class Synthesizer:
     def __init__(self, sample_rate: int = 44100):
         self.sample_rate = sample_rate
@@ -16,13 +17,13 @@ class Synthesizer:
         name: str,
         waveform: str = "sine",
         frequency: float = 440.0,
-        amplitude: float = 0.5
+        amplitude: float = 0.5,
     ) -> None:
         """Create a new oscillator."""
         self._oscillators[name] = {
             "waveform": waveform,
             "frequency": frequency,
-            "amplitude": amplitude
+            "amplitude": amplitude,
         }
 
     def create_envelope(
@@ -31,14 +32,14 @@ class Synthesizer:
         attack: float = 0.1,
         decay: float = 0.1,
         sustain: float = 0.7,
-        release: float = 0.2
+        release: float = 0.2,
     ) -> None:
         """Create an ADSR envelope."""
         self._envelopes[name] = {
             "attack": attack,
             "decay": decay,
             "sustain": sustain,
-            "release": release
+            "release": release,
         }
 
     def create_filter(
@@ -46,20 +47,17 @@ class Synthesizer:
         name: str,
         filter_type: str = "lowpass",
         cutoff: float = 1000.0,
-        resonance: float = 1.0
+        resonance: float = 1.0,
     ) -> None:
         """Create an audio filter."""
         self._filters[name] = {
             "type": filter_type,
             "cutoff": cutoff,
-            "resonance": resonance
+            "resonance": resonance,
         }
 
     def _generate_waveform(
-        self,
-        frequency: float,
-        duration: float,
-        waveform: str = "sine"
+        self, frequency: float, duration: float, waveform: str = "sine"
     ) -> np.ndarray:
         """Generate a waveform of specified type."""
         t = np.linspace(0, duration, int(self.sample_rate * duration), False)
@@ -76,9 +74,7 @@ class Synthesizer:
             raise ValueError(f"Unsupported waveform type: {waveform}")
 
     def _apply_envelope(
-        self,
-        audio: np.ndarray,
-        envelope: Dict[str, float]
+        self, audio: np.ndarray, envelope: Dict[str, float]
     ) -> np.ndarray:
         """Apply ADSR envelope to audio."""
         total_samples = len(audio)
@@ -110,9 +106,7 @@ class Synthesizer:
         return audio * envelope_curve
 
     def _apply_filter(
-        self,
-        audio: np.ndarray,
-        filter_params: Dict[str, Any]
+        self, audio: np.ndarray, filter_params: Dict[str, Any]
     ) -> np.ndarray:
         """Apply filter to audio."""
         nyquist = self.sample_rate / 2
@@ -123,10 +117,7 @@ class Synthesizer:
         elif filter_params["type"] == "highpass":
             b, a = signal.butter(2, normalized_cutoff, "high")
         elif filter_params["type"] == "bandpass":
-            b, a = signal.butter(2, [
-                normalized_cutoff / 2,
-                normalized_cutoff
-            ], "band")
+            b, a = signal.butter(2, [normalized_cutoff / 2, normalized_cutoff], "band")
         else:
             raise ValueError(f"Unsupported filter type: {filter_params['type']}")
 
@@ -138,17 +129,16 @@ class Synthesizer:
         duration: float,
         oscillator_name: Optional[str] = None,
         envelope_name: Optional[str] = None,
-        filter_name: Optional[str] = None
+        filter_name: Optional[str] = None,
     ) -> np.ndarray:
         """Synthesize a single note."""
         # Generate base waveform
         if oscillator_name and oscillator_name in self._oscillators:
             osc = self._oscillators[oscillator_name]
-            audio = self._generate_waveform(
-                frequency,
-                duration,
-                osc["waveform"]
-            ) * osc["amplitude"]
+            audio = (
+                self._generate_waveform(frequency, duration, osc["waveform"])
+                * osc["amplitude"]
+            )
         else:
             audio = self._generate_waveform(frequency, duration)
 
@@ -162,21 +152,14 @@ class Synthesizer:
 
         return audio
 
-    def play_note(
-        self,
-        frequency: float,
-        duration: float,
-        **kwargs
-    ) -> None:
+    def play_note(self, frequency: float, duration: float, **kwargs) -> None:
         """Synthesize and play a note in real-time."""
         audio = self.synthesize_note(frequency, duration, **kwargs)
         sd.play(audio, self.sample_rate)
         sd.wait()
 
     def synthesize_midi(
-        self,
-        midi_data: pretty_midi.PrettyMIDI,
-        **kwargs
+        self, midi_data: pretty_midi.PrettyMIDI, **kwargs
     ) -> np.ndarray:
         """Synthesize audio from MIDI data."""
         # Get total duration
@@ -191,9 +174,7 @@ class Synthesizer:
 
                 # Synthesize note
                 note_audio = self.synthesize_note(
-                    frequency=frequency,
-                    duration=note.end - note.start,
-                    **kwargs
+                    frequency=frequency, duration=note.end - note.start, **kwargs
                 )
 
                 # Add to output at correct position

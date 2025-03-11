@@ -10,6 +10,7 @@ JWT_BLOCKLIST = set()
 
 logger = logging.getLogger(__name__)
 
+
 def add_token_to_blocklist(token):
     """Add a token to the blocklist.
 
@@ -22,6 +23,7 @@ def add_token_to_blocklist(token):
         logger.info(f"Token with JTI {jti} has been added to the blocklist")
     else:
         logger.warning("Attempted to blocklist a token without a JTI")
+
 
 def is_token_in_blocklist(jwt_header, jwt_payload):
     """Check if a token is in the blocklist.

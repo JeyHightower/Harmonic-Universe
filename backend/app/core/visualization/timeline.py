@@ -5,6 +5,7 @@ import bisect
 from backend.app.models.visualization import Timeline, Keyframe, Animation
 from backend.app.core.audio.processor import AudioProcessor
 
+
 class TimelineManager:
     def __init__(self, timeline_data: Dict[str, Any]):
         self.timeline_data = timeline_data
@@ -27,14 +28,13 @@ class TimelineManager:
         if "audio_file" in self.timeline_data:
             self.audio_processor = AudioProcessor(
                 self.timeline_data["audio_file"]["file_path"],
-                self.timeline_data["audio_file"]["format"]
+                self.timeline_data["audio_file"]["format"],
             )
 
         # Sort markers
         if "markers" in self.timeline_data:
             self._sorted_markers = sorted(
-                self.timeline_data["markers"],
-                key=lambda x: x["time"]
+                self.timeline_data["markers"], key=lambda x: x["time"]
             )
 
         # Organize keyframes by property
@@ -42,11 +42,7 @@ class TimelineManager:
             prop_key = f"{keyframe['animation_id']}:{keyframe['property_name']}"
             if prop_key not in self._keyframes:
                 self._keyframes[prop_key] = []
-            bisect.insort(
-                self._keyframes[prop_key],
-                keyframe,
-                key=lambda x: x["time"]
-            )
+            bisect.insort(self._keyframes[prop_key], keyframe, key=lambda x: x["time"])
 
     async def start(self):
         """Start timeline playback."""
@@ -110,10 +106,7 @@ class TimelineManager:
 
     def _calculate_frame_state(self) -> Dict[str, Any]:
         """Calculate current frame state including interpolated values."""
-        frame_state = {
-            "time": self.current_time,
-            "properties": {}
-        }
+        frame_state = {"time": self.current_time, "properties": {}}
 
         # Calculate interpolated values for each animated property
         for prop_key, keyframes in self._keyframes.items():
@@ -122,9 +115,7 @@ class TimelineManager:
 
             # Find surrounding keyframes
             next_idx = bisect.bisect_right(
-                keyframes,
-                self.current_time,
-                key=lambda x: x["time"]
+                keyframes, self.current_time, key=lambda x: x["time"]
             )
 
             if next_idx == 0:
@@ -137,31 +128,21 @@ class TimelineManager:
                 # Interpolate between keyframes
                 prev_kf = keyframes[next_idx - 1]
                 next_kf = keyframes[next_idx]
-                value = self._interpolate_value(
-                    prev_kf,
-                    next_kf,
-                    self.current_time
-                )
+                value = self._interpolate_value(prev_kf, next_kf, self.current_time)
 
             frame_state["properties"][prop_key] = value
 
         return frame_state
 
     def _interpolate_value(
-        self,
-        prev_kf: Dict[str, Any],
-        next_kf: Dict[str, Any],
-        current_time: float
+        self, prev_kf: Dict[str, Any], next_kf: Dict[str, Any], current_time: float
     ) -> Any:
         """Interpolate between keyframe values."""
         t = (current_time - prev_kf["time"]) / (next_kf["time"] - prev_kf["time"])
 
         if isinstance(prev_kf["value"], (int, float)):
             return self._interpolate_number(
-                prev_kf["value"],
-                next_kf["value"],
-                t,
-                prev_kf.get("easing", "linear")
+                prev_kf["value"], next_kf["value"], t, prev_kf.get("easing", "linear")
             )
         elif isinstance(prev_kf["value"], dict):
             result = {}
@@ -171,18 +152,14 @@ class TimelineManager:
                         prev_kf["value"][key],
                         next_kf["value"][key],
                         t,
-                        prev_kf.get("easing", "linear")
+                        prev_kf.get("easing", "linear"),
                     )
             return result
 
         return prev_kf["value"]
 
     def _interpolate_number(
-        self,
-        start: float,
-        end: float,
-        t: float,
-        easing: str
+        self, start: float, end: float, t: float, easing: str
     ) -> float:
         """Interpolate between two numbers with easing."""
         if easing == "linear":
@@ -203,8 +180,9 @@ class TimelineManager:
     async def _check_markers(self):
         """Check and trigger marker callbacks."""
         for marker in self._sorted_markers:
-            if (marker["time"] <= self.current_time and
-                marker["time"] > self.current_time - (1 / self.fps)):
+            if marker["time"] <= self.current_time and marker[
+                "time"
+            ] > self.current_time - (1 / self.fps):
                 if marker["id"] in self.marker_callbacks:
                     for callback in self.marker_callbacks[marker["id"]]:
                         await callback(marker)

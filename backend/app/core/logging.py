@@ -7,6 +7,7 @@ from datetime import datetime
 import structlog
 from typing import Dict, Any
 
+
 def configure_logging(env: str = "development") -> None:
     """Configure logging for the application."""
     # Create logs directory if it doesn't exist
@@ -26,9 +27,7 @@ def configure_logging(env: str = "development") -> None:
                 "()": structlog.stdlib.ProcessorFormatter,
                 "processor": structlog.processors.JSONRenderer(),
             },
-            "standard": {
-                "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-            },
+            "standard": {"format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s"},
         },
         "handlers": {
             "console": {
@@ -86,8 +85,10 @@ def configure_logging(env: str = "development") -> None:
     # Apply configuration
     logging.config.dictConfig(logging_config)
 
+
 def get_logger(name: str) -> structlog.BoundLogger:
     """Get a structured logger instance."""
     return structlog.get_logger(name)
+
 
 __all__ = ["configure_logging", "get_logger"]

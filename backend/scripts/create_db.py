@@ -10,14 +10,15 @@ from backend.app.core.config import config
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def create_database(env='development'):
+
+def create_database(env="development"):
     """Create database if it doesn't exist."""
     cfg = config[env]
     db_url = cfg.SQLALCHEMY_DATABASE_URI
-    db_name = db_url.split('/')[-1]
+    db_name = db_url.split("/")[-1]
 
     # Create connection string for postgres database
-    postgres_url = '/'.join(db_url.split('/')[:-1] + ['postgres'])
+    postgres_url = "/".join(db_url.split("/")[:-1] + ["postgres"])
 
     try:
         # Connect to postgres database
@@ -26,11 +27,13 @@ def create_database(env='development'):
         cursor = conn.cursor()
 
         # Check if database exists
-        cursor.execute(f"SELECT 1 FROM pg_catalog.pg_database WHERE datname = '{db_name}'")
+        cursor.execute(
+            f"SELECT 1 FROM pg_catalog.pg_database WHERE datname = '{db_name}'"
+        )
         exists = cursor.fetchone()
 
         if not exists:
-            cursor.execute(f'CREATE DATABASE {db_name}')
+            cursor.execute(f"CREATE DATABASE {db_name}")
             logger.info(f"Created database {db_name}")
         else:
             logger.info(f"Database {db_name} already exists")
@@ -42,15 +45,22 @@ def create_database(env='development'):
         cursor.close()
         conn.close()
 
+
 def main():
     """Main entry point."""
     import argparse
-    parser = argparse.ArgumentParser(description='Create database')
-    parser.add_argument('--env', choices=['development', 'testing', 'production'],
-                      default='development', help='Environment to create database for')
+
+    parser = argparse.ArgumentParser(description="Create database")
+    parser.add_argument(
+        "--env",
+        choices=["development", "testing", "production"],
+        default="development",
+        help="Environment to create database for",
+    )
     args = parser.parse_args()
 
     create_database(args.env)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

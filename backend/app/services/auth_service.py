@@ -6,6 +6,7 @@ from backend.app.models.user import User
 from backend.app.core.config import settings
 from backend.app.utils.email import send_verification_email, send_password_reset_email
 
+
 class AuthService:
     def __init__(self, db: Session):
         self.db = db
@@ -31,10 +32,14 @@ class AuthService:
         return user
 
     def verify_email(self, token: str) -> bool:
-        user = self.db.query(User).filter(
-            User.verification_token == token,
-            User.verification_token_expires > datetime.utcnow()
-        ).first()
+        user = (
+            self.db.query(User)
+            .filter(
+                User.verification_token == token,
+                User.verification_token_expires > datetime.utcnow(),
+            )
+            .first()
+        )
 
         if not user:
             return False
@@ -56,10 +61,13 @@ class AuthService:
         return True
 
     def reset_password(self, token: str, new_password: str) -> bool:
-        user = self.db.query(User).filter(
-            User.reset_token == token,
-            User.reset_token_expires > datetime.utcnow()
-        ).first()
+        user = (
+            self.db.query(User)
+            .filter(
+                User.reset_token == token, User.reset_token_expires > datetime.utcnow()
+            )
+            .first()
+        )
 
         if not user:
             return False
@@ -71,10 +79,14 @@ class AuthService:
         return True
 
     def refresh_access_token(self, refresh_token: str) -> Optional[dict]:
-        user = self.db.query(User).filter(
-            User.refresh_token == refresh_token,
-            User.refresh_token_expires > datetime.utcnow()
-        ).first()
+        user = (
+            self.db.query(User)
+            .filter(
+                User.refresh_token == refresh_token,
+                User.refresh_token_expires > datetime.utcnow(),
+            )
+            .first()
+        )
 
         if not user:
             return None
@@ -89,7 +101,7 @@ class AuthService:
         return {
             "access_token": access_token,
             "refresh_token": new_refresh_token,
-            "token_type": "bearer"
+            "token_type": "bearer",
         }
 
     def revoke_refresh_token(self, refresh_token: str) -> bool:

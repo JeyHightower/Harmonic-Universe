@@ -7,6 +7,7 @@ from ..core.logging import get_logger
 
 logger = get_logger(__name__)
 
+
 class ServiceRegistry:
     """Service registry for managing service initialization and lifecycle."""
 
@@ -23,7 +24,7 @@ class ServiceRegistry:
 
     def __init__(self):
         """Initialize service registry."""
-        if not hasattr(self, '_initialized'):
+        if not hasattr(self, "_initialized"):
             self._services: Dict[str, Any] = {}
             self._service_states: Dict[str, bool] = {}
             self._initialized = True
@@ -54,7 +55,7 @@ class ServiceRegistry:
 
         service = self._services[name]
         try:
-            if hasattr(service, 'start'):
+            if hasattr(service, "start"):
                 service.start()
             self._service_states[name] = True
             logger.info(f"Service {name} started successfully")
@@ -73,7 +74,7 @@ class ServiceRegistry:
 
         service = self._services[name]
         try:
-            if hasattr(service, 'stop'):
+            if hasattr(service, "stop"):
                 service.stop()
             self._service_states[name] = False
             logger.info(f"Service {name} stopped successfully")
@@ -91,8 +92,8 @@ class ServiceRegistry:
         """List all registered services and their states."""
         return {
             name: {
-                'running': self._service_states[name],
-                'type': type(service).__name__
+                "running": self._service_states[name],
+                "type": type(service).__name__,
             }
             for name, service in self._services.items()
         }
@@ -123,6 +124,7 @@ class ServiceRegistry:
                 del self._service_states[name]
             except Exception as e:
                 logger.error(f"Error cleaning up service {name}: {str(e)}")
+
 
 # Global service registry instance
 service_registry = ServiceRegistry()

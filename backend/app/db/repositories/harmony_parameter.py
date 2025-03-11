@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from backend.app.models.audio.harmony_parameter import HarmonyParameter
 from backend.app.core.errors import NotFoundError
 
+
 class HarmonyParameterRepository:
     """Repository for HarmonyParameter-related database operations."""
 
@@ -19,7 +20,9 @@ class HarmonyParameterRepository:
         try:
             if isinstance(scene_id, str):
                 scene_id = UUID(scene_id)
-            return self.session.query(HarmonyParameter).filter_by(scene_id=scene_id).all()
+            return (
+                self.session.query(HarmonyParameter).filter_by(scene_id=scene_id).all()
+            )
         except ValueError:
             return []
 
@@ -31,13 +34,14 @@ class HarmonyParameterRepository:
             return self.session.query(HarmonyParameter).filter_by(id=id).first()
         except ValueError:
             import logging
+
             logging.error(f"Invalid harmony parameter ID format: {id}")
             return None
 
     def create_with_scene(self, obj_in: dict) -> HarmonyParameter:
         """Create new harmony parameters for a scene."""
-        if isinstance(obj_in.get('scene_id'), str):
-            obj_in['scene_id'] = UUID(obj_in['scene_id'])
+        if isinstance(obj_in.get("scene_id"), str):
+            obj_in["scene_id"] = UUID(obj_in["scene_id"])
         db_obj = HarmonyParameter(**obj_in)
         self.session.add(db_obj)
         self.session.commit()
@@ -58,6 +62,7 @@ class HarmonyParameterRepository:
         except Exception as e:
             self.session.rollback()
             import logging
+
             logging.error(f"Error updating harmony parameter: {e}")
             raise
 
@@ -78,5 +83,6 @@ class HarmonyParameterRepository:
         except Exception as e:
             self.session.rollback()
             import logging
+
             logging.error(f"Error removing harmony parameter: {e}")
             raise

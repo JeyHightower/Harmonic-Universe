@@ -12,6 +12,7 @@ from .physics_parameters import physics_parameters_bp
 from .physics_constraints import physics_constraints_bp
 from .music_flask import music_bp
 
+
 def register_all_routes(app: Flask):
     """Register all API routes with the Flask app"""
 
@@ -25,13 +26,17 @@ def register_all_routes(app: Flask):
     app.register_blueprint(scenes_bp)
 
     # Register other blueprints as needed
-    app.register_blueprint(audio_bp, url_prefix='/api/v1/audio')
-    app.register_blueprint(visualization_bp, url_prefix='/api/v1/visualizations')
-    app.register_blueprint(physics_bp, url_prefix='/api/v1/physics')
-    app.register_blueprint(ai_bp, url_prefix='/api/v1/ai')
-    app.register_blueprint(physics_objects_bp, url_prefix='/api/v1/physics-objects')
-    app.register_blueprint(physics_constraints_bp, url_prefix='/api/v1/physics-constraints')
-    app.register_blueprint(music_bp, url_prefix='/api/v1/music')
-    app.register_blueprint(physics_parameters_bp, url_prefix='/api/v1/physics-parameters')
+    app.register_blueprint(audio_bp, url_prefix="/api/v1/audio")
+    app.register_blueprint(visualization_bp, url_prefix="/api/v1/visualizations")
+    app.register_blueprint(physics_bp, url_prefix="/api/v1/physics")
+    app.register_blueprint(ai_bp, url_prefix="/api/v1/ai")
+    app.register_blueprint(physics_objects_bp, url_prefix="/api/v1/physics-objects")
+    app.register_blueprint(
+        physics_constraints_bp, url_prefix="/api/v1/physics-constraints"
+    )
+    app.register_blueprint(music_bp, url_prefix="/api/v1/music")
+    app.register_blueprint(
+        physics_parameters_bp, url_prefix="/api/v1/physics-parameters"
+    )
 
     return app

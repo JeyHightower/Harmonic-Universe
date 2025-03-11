@@ -9,6 +9,7 @@ import ffmpeg
 from app.core.visualization.export import ExportManager
 from app.models.visualization import RenderingMode, SceneObjectType
 
+
 @pytest.fixture
 def scene_data():
     """Create test scene data."""
@@ -16,40 +17,20 @@ def scene_data():
         "id": "scene1",
         "name": "Test Scene",
         "rendering_mode": RenderingMode.WEBGL,
-        "camera_settings": {
-            "position": {"x": 0, "y": 0, "z": 5}
-        },
-        "lighting_settings": {
-            "ambient": {"intensity": 0.5}
-        },
+        "camera_settings": {"position": {"x": 0, "y": 0, "z": 5}},
+        "lighting_settings": {"ambient": {"intensity": 0.5}},
         "objects": [
-            {
-                "id": "obj1",
-                "type": SceneObjectType.MESH,
-                "geometry": {"type": "box"}
-            }
+            {"id": "obj1", "type": SceneObjectType.MESH, "geometry": {"type": "box"}}
         ],
-        "timeline": {
-            "duration": 5.0,
-            "fps": 30
-        },
+        "timeline": {"duration": 5.0, "fps": 30},
         "physics_parameters": [
-            {
-                "id": "param1",
-                "name": "gravity",
-                "type": "float",
-                "value": 9.81
-            }
+            {"id": "param1", "name": "gravity", "type": "float", "value": 9.81}
         ],
         "music_parameters": [
-            {
-                "id": "param2",
-                "name": "tempo",
-                "type": "float",
-                "value": 120
-            }
-        ]
+            {"id": "param2", "name": "tempo", "type": "float", "value": 120}
+        ],
     }
+
 
 @pytest.fixture
 def export_data():
@@ -59,22 +40,19 @@ def export_data():
         "format": "mp4",
         "settings": {
             "fps": 30,
-            "resolution": {
-                "width": 1280,
-                "height": 720
-            },
-            "quality": "high"
-        }
+            "resolution": {"width": 1280, "height": 720},
+            "quality": "high",
+        },
     }
+
 
 @pytest.fixture
 def export_manager(scene_data, export_data, tmp_path):
     """Create test export manager."""
     return ExportManager(
-        scene_data=scene_data,
-        export_data=export_data,
-        output_dir=tmp_path
+        scene_data=scene_data, export_data=export_data, output_dir=tmp_path
     )
+
 
 @pytest.mark.asyncio
 async def test_export_initialization(export_manager, tmp_path):
@@ -86,6 +64,7 @@ async def test_export_initialization(export_manager, tmp_path):
     # Check directory structure
     assert (tmp_path / "frames").exists()
     assert (tmp_path / "data").exists()
+
 
 @pytest.mark.asyncio
 async def test_video_export(export_manager, tmp_path):
@@ -99,11 +78,12 @@ async def test_video_export(export_manager, tmp_path):
 
     # Verify video properties using ffprobe
     probe = ffmpeg.probe(str(output_path))
-    video_stream = next(s for s in probe['streams'] if s['codec_type'] == 'video')
+    video_stream = next(s for s in probe["streams"] if s["codec_type"] == "video")
 
-    assert video_stream['width'] == 1280
-    assert video_stream['height'] == 720
-    assert video_stream['r_frame_rate'] == '30/1'
+    assert video_stream["width"] == 1280
+    assert video_stream["height"] == 720
+    assert video_stream["r_frame_rate"] == "30/1"
+
 
 @pytest.mark.asyncio
 async def test_scene_export(export_manager, tmp_path):
@@ -141,6 +121,7 @@ async def test_scene_export(export_manager, tmp_path):
         assert timeline_data["duration"] == 5.0
         assert timeline_data["fps"] == 30
 
+
 @pytest.mark.asyncio
 async def test_parameter_export(export_manager, tmp_path):
     """Test parameter data export functionality."""
@@ -166,6 +147,7 @@ async def test_parameter_export(export_manager, tmp_path):
         assert params_data["music"][0]["name"] == "tempo"
         assert params_data["music"][0]["value"] == 120
 
+
 @pytest.mark.asyncio
 async def test_frame_rendering(export_manager):
     """Test frame rendering for export."""
@@ -179,6 +161,7 @@ async def test_frame_rendering(export_manager):
     assert image.shape == (480, 640, 3)
     assert image.dtype == np.uint8
 
+
 @pytest.mark.asyncio
 async def test_export_progress(export_manager):
     """Test export progress tracking."""
@@ -189,12 +172,15 @@ async def test_export_progress(export_manager):
 
     # Start export
     export_manager.export_data["type"] = "video"
-    export_manager.export_data["settings"]["duration"] = 1.0  # Short duration for testing
+    export_manager.export_data["settings"][
+        "duration"
+    ] = 1.0  # Short duration for testing
 
     await export_manager.start_export()
 
     assert len(progress_values) > 0
     assert progress_values[-1] == 100.0
+
 
 @pytest.mark.asyncio
 async def test_export_cancellation(export_manager):

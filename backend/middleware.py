@@ -5,15 +5,17 @@ import traceback
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def log_request_errors(wsgi_app):
     """Middleware to log request details when errors occur"""
+
     def middleware(environ, start_response):
-        path = environ.get('PATH_INFO', '')
+        path = environ.get("PATH_INFO", "")
 
         # Define a custom start_response to catch errors
         def custom_start_response(status, headers, exc_info=None):
             # Log error details for 500 responses
-            if status.startswith('500'):
+            if status.startswith("500"):
                 logger.error(f"500 Error on path: {path}")
                 logger.error(f"Request method: {environ.get('REQUEST_METHOD')}")
                 if exc_info:

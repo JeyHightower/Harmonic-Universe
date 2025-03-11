@@ -7,11 +7,15 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from ..base import BaseModel
 
+
 class MIDIEvent(BaseModel):
     """MIDI event in a sequence."""
+
     __tablename__ = "midi_events"
 
-    sequence_id = Column(UUID(as_uuid=True), ForeignKey("midi_sequences.id", ondelete="CASCADE"))
+    sequence_id = Column(
+        UUID(as_uuid=True), ForeignKey("midi_sequences.id", ondelete="CASCADE")
+    )
     event_type = Column(String, index=True)  # note_on, note_off, control_change, etc.
     channel = Column(Integer)
     note = Column(Integer, nullable=True)  # For note events
@@ -44,5 +48,5 @@ class MIDIEvent(BaseModel):
             "duration": self.duration,
             "parameters": self.parameters,
             "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat()
+            "updated_at": self.updated_at.isoformat(),
         }

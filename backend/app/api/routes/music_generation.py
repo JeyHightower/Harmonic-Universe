@@ -9,17 +9,18 @@ from backend.app.db.session import get_db
 from uuid import UUID
 import os
 
-audio_bp = Blueprint('audio', __name__)
-physics_bp = Blueprint('physics', __name__)
-ai_bp = Blueprint('ai', __name__)
+audio_bp = Blueprint("audio", __name__)
+physics_bp = Blueprint("physics", __name__)
+ai_bp = Blueprint("ai", __name__)
 
-@audio_bp.route('/tracks', methods=['GET'])
+
+@audio_bp.route("/tracks", methods=["GET"])
 @jwt_required()
 def list_audio_tracks():
     """List audio tracks with optional filters."""
     current_user_id = get_jwt_identity()
-    scene_id = request.args.get('scene_id')
-    universe_id = request.args.get('universe_id')
+    scene_id = request.args.get("scene_id")
+    universe_id = request.args.get("universe_id")
 
     # Validate UUID formats if provided
     if scene_id:
@@ -51,7 +52,8 @@ def list_audio_tracks():
         audio_tracks = query.all()
         return jsonify([track.to_dict() for track in audio_tracks])
 
-@audio_bp.route('/generate', methods=['POST'])
+
+@audio_bp.route("/generate", methods=["POST"])
 @jwt_required()
 def generate_audio():
     """Generate audio based on parameters."""
@@ -61,13 +63,13 @@ def generate_audio():
     if not data:
         raise ValidationError("No data provided")
 
-    required_fields = ['scene_id', 'parameters']
+    required_fields = ["scene_id", "parameters"]
     for field in required_fields:
         if field not in data:
             raise ValidationError(f"Missing required field: {field}")
 
     try:
-        scene_id = UUID(data['scene_id'])
+        scene_id = UUID(data["scene_id"])
     except ValueError:
         raise ValidationError("Invalid scene_id format")
 
@@ -79,11 +81,11 @@ def generate_audio():
 
         # Create audio track
         audio_track = AudioTrack(
-            name=data.get('name', 'Generated Audio'),
+            name=data.get("name", "Generated Audio"),
             scene_id=scene_id,
             universe_id=scene.universe_id,
             user_id=current_user_id,
-            parameters=data['parameters']
+            parameters=data["parameters"],
         )
 
         db.add(audio_track)
@@ -92,7 +94,8 @@ def generate_audio():
 
         return jsonify(audio_track.to_dict()), 201
 
-@audio_bp.route('/<audio_id>', methods=['GET'])
+
+@audio_bp.route("/<audio_id>", methods=["GET"])
 @jwt_required()
 def get_audio(audio_id):
     """Get audio track details."""
@@ -110,11 +113,14 @@ def get_audio(audio_id):
 
         # Check permissions
         if str(audio_track.user_id) != current_user_id:
-            raise AuthorizationError("You don't have permission to access this audio track")
+            raise AuthorizationError(
+                "You don't have permission to access this audio track"
+            )
 
         return jsonify(audio_track.to_dict())
 
-@audio_bp.route('/<audio_id>/file', methods=['GET'])
+
+@audio_bp.route("/<audio_id>/file", methods=["GET"])
 @jwt_required()
 def get_audio_file(audio_id):
     """Get audio file."""
@@ -132,16 +138,22 @@ def get_audio_file(audio_id):
 
         # Check permissions
         if str(audio_track.user_id) != current_user_id:
-            raise AuthorizationError("You don't have permission to access this audio file")
+            raise AuthorizationError(
+                "You don't have permission to access this audio file"
+            )
 
         # For testing purposes - return a mock audio file if the track doesn't have a file path
         if not audio_track.file_path:
             # Create a mock audio directory if it doesn't exist
-            mock_audio_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'static', 'mock_audio')
+            mock_audio_dir = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                "static",
+                "mock_audio",
+            )
             os.makedirs(mock_audio_dir, exist_ok=True)
 
             # Use a static mock file path
-            mock_file_path = os.path.join(mock_audio_dir, 'mock_audio.wav')
+            mock_file_path = os.path.join(mock_audio_dir, "mock_audio.wav")
 
             # Create a simple WAV file if it doesn't exist (1 second of silence)
             if not os.path.exists(mock_file_path):
@@ -150,31 +162,32 @@ def get_audio_file(audio_id):
                     import struct
 
                     # Create a 1-second silent WAV file
-                    with wave.open(mock_file_path, 'w') as wf:
+                    with wave.open(mock_file_path, "w") as wf:
                         wf.setnchannels(1)  # Mono
                         wf.setsampwidth(2)  # 2 bytes per sample
                         wf.setframerate(44100)  # 44.1 kHz
 
                         # Generate 1 second of silence (44100 frames)
-                        silence_data = struct.pack('<' + 'h' * 44100, *([0] * 44100))
+                        silence_data = struct.pack("<" + "h" * 44100, *([0] * 44100))
                         wf.writeframes(silence_data)
                 except ImportError:
                     # If wave module isn't available, create an empty file
-                    with open(mock_file_path, 'wb') as f:
-                        f.write(b'\x00' * 1000)
+                    with open(mock_file_path, "wb") as f:
+                        f.write(b"\x00" * 1000)
 
             # Update the audio track with the mock file path
             audio_track.file_path = mock_file_path
             db.commit()
 
-            return send_file(mock_file_path, mimetype='audio/wav')
+            return send_file(mock_file_path, mimetype="audio/wav")
 
         if not os.path.exists(audio_track.file_path):
             raise NotFoundError("Audio file not found")
 
         return send_file(audio_track.file_path)
 
-@audio_bp.route('/<audio_id>', methods=['DELETE'])
+
+@audio_bp.route("/<audio_id>", methods=["DELETE"])
 @jwt_required()
 def delete_audio(audio_id):
     """Delete audio track."""
@@ -192,7 +205,9 @@ def delete_audio(audio_id):
 
         # Check permissions
         if str(audio_track.user_id) != current_user_id:
-            raise AuthorizationError("You don't have permission to delete this audio track")
+            raise AuthorizationError(
+                "You don't have permission to delete this audio track"
+            )
 
         # Delete file if it exists
         if audio_track.file_path and os.path.exists(audio_track.file_path):
@@ -203,17 +218,20 @@ def delete_audio(audio_id):
 
         return jsonify({"message": "Audio track deleted successfully"})
 
+
 def delete_audio_track_compat(audio_id):
     """Compatibility route for deleting audio tracks."""
     return delete_audio(audio_id)
 
-@physics_bp.route('/simulate', methods=['POST'])
+
+@physics_bp.route("/simulate", methods=["POST"])
 @jwt_required()
 def simulate_physics():
     """Run physics simulation."""
     return jsonify({"message": "Not implemented yet"}), 501
 
-@ai_bp.route('/optimize', methods=['POST'])
+
+@ai_bp.route("/optimize", methods=["POST"])
 @jwt_required()
 def optimize_parameters():
     """Optimize parameters using AI."""

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from backend.app.models.universe.scene import Scene
 from backend.app.core.errors import NotFoundError
 
+
 class SceneRepository:
     """Repository for Scene-related database operations."""
 
@@ -33,7 +34,7 @@ class SceneRepository:
     def create_scene(self, scene_data: dict, creator_id: str) -> Scene:
         """Create a new scene."""
         # Ensure creator_id is set
-        scene_data['creator_id'] = creator_id
+        scene_data["creator_id"] = creator_id
 
         # Create new scene
         scene = Scene(**scene_data)
@@ -67,7 +68,9 @@ class SceneRepository:
         self.session.commit()
         return True
 
-    def reorder_scenes(self, universe_id: str, scene_ids: List[str], current_user_id: str) -> List[Scene]:
+    def reorder_scenes(
+        self, universe_id: str, scene_ids: List[str], current_user_id: str
+    ) -> List[Scene]:
         """Reorder scenes in a universe."""
         # Get all scenes for this universe
         scenes = self.get_scenes_by_universe(universe_id)

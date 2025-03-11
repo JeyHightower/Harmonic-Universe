@@ -4,6 +4,7 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from ..base import BaseModel
 
+
 class PhysicsObject(BaseModel):
     """Physics object model."""
 
@@ -11,16 +12,32 @@ class PhysicsObject(BaseModel):
 
     name = Column(String(255), nullable=False)
     type = Column(String(50), nullable=False)
-    universe_id = Column(UUID(as_uuid=True), ForeignKey("universes.id", ondelete="CASCADE"), nullable=False)
-    scene_id = Column(UUID(as_uuid=True), ForeignKey("scenes.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    universe_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("universes.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    scene_id = Column(
+        UUID(as_uuid=True), ForeignKey("scenes.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
 
     # Physics properties
-    position = Column(JSONB, nullable=False, default=lambda: {"x": 0.0, "y": 0.0, "z": 0.0})
-    rotation = Column(JSONB, nullable=False, default=lambda: {"x": 0.0, "y": 0.0, "z": 0.0})
-    scale = Column(JSONB, nullable=False, default=lambda: {"x": 1.0, "y": 1.0, "z": 1.0})
+    position = Column(
+        JSONB, nullable=False, default=lambda: {"x": 0.0, "y": 0.0, "z": 0.0}
+    )
+    rotation = Column(
+        JSONB, nullable=False, default=lambda: {"x": 0.0, "y": 0.0, "z": 0.0}
+    )
+    scale = Column(
+        JSONB, nullable=False, default=lambda: {"x": 1.0, "y": 1.0, "z": 1.0}
+    )
     mass = Column(Float, nullable=False, default=1.0)
-    velocity = Column(JSONB, nullable=False, default=lambda: {"x": 0.0, "y": 0.0, "z": 0.0})
+    velocity = Column(
+        JSONB, nullable=False, default=lambda: {"x": 0.0, "y": 0.0, "z": 0.0}
+    )
     parameters = Column(JSONB, nullable=False, default=lambda: {})
 
     # Relationships
@@ -44,5 +61,5 @@ class PhysicsObject(BaseModel):
             "velocity": self.velocity,
             "parameters": self.parameters,
             "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat()
+            "updated_at": self.updated_at.isoformat(),
         }

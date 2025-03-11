@@ -7,8 +7,10 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from ..base import BaseModel
 
+
 class MIDISequence(BaseModel):
     """MIDI sequence containing multiple events."""
+
     __tablename__ = "midi_sequences"
 
     scene_id = Column(UUID(as_uuid=True), ForeignKey("scenes.id", ondelete="CASCADE"))
@@ -23,8 +25,12 @@ class MIDISequence(BaseModel):
 
     # Relationships
     scene = relationship("Scene", back_populates="midi_sequences")
-    events = relationship("MIDIEvent", back_populates="sequence", cascade="all, delete-orphan")
-    audio_tracks = relationship("AudioTrack", back_populates="midi_sequence", cascade="all, delete-orphan")
+    events = relationship(
+        "MIDIEvent", back_populates="sequence", cascade="all, delete-orphan"
+    )
+    audio_tracks = relationship(
+        "AudioTrack", back_populates="midi_sequence", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         """String representation."""
@@ -39,9 +45,13 @@ class MIDISequence(BaseModel):
     def get_events_in_range(self, start_time: float, end_time: float):
         """Get all events within a time range."""
         return [
-            event for event in self.events
+            event
+            for event in self.events
             if start_time <= event.timestamp <= end_time
-            or (event.duration and start_time <= event.timestamp + event.duration <= end_time)
+            or (
+                event.duration
+                and start_time <= event.timestamp + event.duration <= end_time
+            )
         ]
 
     def to_dict(self):
@@ -58,5 +68,5 @@ class MIDISequence(BaseModel):
             "quantization": self.quantization,
             "parameters": self.parameters,
             "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat()
+            "updated_at": self.updated_at.isoformat(),
         }
