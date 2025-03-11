@@ -1,3 +1,0 @@
-# Explicitly pin SQLAlchemy to prevent conflicts
-sqlalchemy==1.4.41
-# Add other pinned dependencies here if needed

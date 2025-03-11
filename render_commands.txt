@@ -1,5 +1,0 @@
-# Build Command (single line with &&)
-pip install -r backend/requirements.txt && pip install gunicorn && cd frontend && npm install && npm run render-build && cd .. && mkdir -p static && cp -r frontend/dist/* static/ && cp frontend/public/react-polyfill.js static/ 2>/dev/null || true && cp frontend/public/react-context-provider.js static/ 2>/dev/null || true
-
-# Start Command
-PYTHONPATH=. gunicorn app:create_app()
