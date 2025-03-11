@@ -1,79 +1,45 @@
-import React, { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import useModal from '../../hooks/useModal';
+import { selectModalType, selectModalProps } from '../../store/slices/modalSlice';
+import { getModalComponent } from '../modals';
 import StableModalWrapper from './StableModalWrapper';
 
 const GlobalModal = () => {
-  const { modals, closeModal } = useModal();
-  const [portalContainer, setPortalContainer] = useState(null);
+  const modalType = useSelector(selectModalType);
+  const modalProps = useSelector(selectModalProps);
+  const { closeModal } = useModal();
 
-  // Create a portal container if it doesn't exist
   useEffect(() => {
-    let container = document.getElementById('modal-portal');
-    if (!container) {
-      container = document.createElement('div');
-      container.id = 'modal-portal';
-      document.body.appendChild(container);
-      console.log('Created modal portal container');
+    // Create modal root if it doesn't exist
+    let modalRoot = document.getElementById('modal-root');
+    if (!modalRoot) {
+      modalRoot = document.createElement('div');
+      modalRoot.id = 'modal-root';
+      document.body.appendChild(modalRoot);
     }
-    setPortalContainer(container);
 
     return () => {
-      // Clean up the portal container when the component unmounts
-      if (container && container.parentNode) {
-        container.parentNode.removeChild(container);
+      // Clean up modal root on unmount if empty
+      modalRoot = document.getElementById('modal-root');
+      if (modalRoot && !modalRoot.hasChildNodes()) {
+        document.body.removeChild(modalRoot);
       }
     };
   }, []);
 
-  // If there are no modals or no portal container, don't render anything
-  if (!modals.length || !portalContainer) {
+  if (!modalType) return null;
+
+  const ModalComponent = getModalComponent(modalType);
+  if (!ModalComponent) {
+    console.warn(`No modal component found for type: ${modalType}`);
     return null;
   }
 
-  console.log(
-    `Rendering ${modals.length} modals:`,
-    modals.map(m => m.id)
-  );
-
-  // Render each modal in the portal
-  return createPortal(
-    <>
-      {modals.map(modal => {
-        const { id, component: Component, props, modalProps = {} } = modal;
-
-        if (!Component) {
-          console.error(`No component found for modal with id ${id}`);
-          return null;
-        }
-
-        const handleClose = () => {
-          console.log(`Closing modal with id ${id}`);
-          closeModal(id);
-        };
-
-        // Add additional debugging
-        console.log(`Rendering modal ${id}:`, {
-          component: Component,
-          props,
-          modalProps,
-          modalType: modal.modalType,
-        });
-
-        return (
-          <StableModalWrapper
-            key={id}
-            id={id}
-            Component={Component}
-            props={{ ...props, onClose: handleClose }}
-            modalProps={{ ...modalProps, onClose: handleClose }}
-            onClose={handleClose}
-            data-modal-type={modal.modalType}
-          />
-        );
-      })}
-    </>,
-    portalContainer
+  return (
+    <StableModalWrapper isOpen={!!modalType} onClose={closeModal}>
+      <ModalComponent {...modalProps} onClose={closeModal} />
+    </StableModalWrapper>
   );
 };
 

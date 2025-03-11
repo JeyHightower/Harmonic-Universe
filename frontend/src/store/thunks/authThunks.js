@@ -1,6 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { api, endpoints } from '../../utils/api';
 import { updateUser, loginSuccess, loginFailure, loginStart } from '../slices/authSlice';
+import { AUTH_CONFIG } from '../../utils/config';
 
 const handleError = error => {
     console.error('API Error:', error);
@@ -11,6 +12,58 @@ const handleError = error => {
         data: error.response?.data,
     };
 };
+
+// Login
+export const login = createAsyncThunk(
+    'auth/login',
+    async (credentials, { dispatch, rejectWithValue }) => {
+        try {
+            dispatch(loginStart());
+            console.debug('Logging in user:', credentials.email);
+
+            const response = await api.post(endpoints.auth.login, credentials);
+            console.debug('Login successful:', response);
+
+            // Store tokens
+            localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.token);
+            if (response.data.user) {
+                localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(response.data.user));
+            }
+
+            dispatch(loginSuccess(response.data));
+            return response.data;
+        } catch (error) {
+            console.error('Login failed:', error);
+            dispatch(loginFailure(handleError(error)));
+            return rejectWithValue(handleError(error));
+        }
+    }
+);
+
+// Register
+export const register = createAsyncThunk(
+    'auth/register',
+    async (userData, { dispatch, rejectWithValue }) => {
+        try {
+            console.debug('Registering user:', userData.email);
+
+            const response = await api.post(endpoints.auth.register, userData);
+            console.debug('Registration successful:', response);
+
+            // Store tokens
+            localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.token);
+            if (response.data.user) {
+                localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(response.data.user));
+            }
+
+            dispatch(loginSuccess(response.data));
+            return response.data;
+        } catch (error) {
+            console.error('Registration failed:', error);
+            return rejectWithValue(handleError(error));
+        }
+    }
+);
 
 // Demo login
 export const demoLogin = createAsyncThunk(
@@ -45,37 +98,18 @@ export const demoLogin = createAsyncThunk(
                 }
             }
 
-            // Store tokens - handle different response formats
-            if (response.token) {
-                localStorage.setItem('accessToken', response.token);
-            }
-            if (response.access_token) {
-                localStorage.setItem('accessToken', response.access_token);
-            }
-            if (response.refresh_token) {
-                localStorage.setItem('refreshToken', response.refresh_token);
+            // Store tokens
+            localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.token);
+            if (response.data.user) {
+                localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(response.data.user));
             }
 
-            // Fetch user info if not included in response
-            let userData = response.user;
-            if (!userData) {
-                try {
-                    const userResponse = await api.get(endpoints.auth.me);
-                    userData = userResponse;
-                } catch (error) {
-                    console.error('Failed to fetch user info:', error);
-                }
-            }
-
-            // Dispatch login success with user data
-            dispatch(loginSuccess(userData || {}));
-
-            return response;
+            dispatch(loginSuccess(response.data));
+            return response.data;
         } catch (error) {
             console.error('Demo login failed:', error);
-            const errorData = handleError(error);
-            dispatch(loginFailure(errorData.message));
-            return rejectWithValue(errorData);
+            dispatch(loginFailure(handleError(error)));
+            return rejectWithValue(handleError(error));
         }
     }
 );

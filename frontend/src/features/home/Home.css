@@ -1,74 +1,72 @@
 .home-container {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  min-height: calc(100vh - 64px);
+  justify-content: center;
+  min-height: 100vh;
   padding: 2rem;
-  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #ffffff;
 }
 
 .home-content {
-  max-width: 800px;
   text-align: center;
-  padding: 2rem;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .home-content h1 {
   font-size: 3rem;
-  color: #ffffff;
   margin-bottom: 1.5rem;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(45deg, #4a90e2, #67b26f);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .home-content p {
-  font-size: 1.25rem;
-  color: #e0e0e0;
-  margin-bottom: 2.5rem;
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+  color: #b8c6db;
   line-height: 1.6;
 }
 
 .home-actions {
   display: flex;
-  justify-content: center;
   gap: 1rem;
+  justify-content: center;
   flex-wrap: wrap;
 }
 
 .button {
-  padding: 0.75rem 1.5rem;
+  padding: 0.8rem 1.5rem;
   font-size: 1rem;
-  font-weight: 600;
   border-radius: 8px;
-  border: none;
   cursor: pointer;
   transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  border: none;
+  font-weight: 600;
 }
 
 .button-primary {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  background: linear-gradient(45deg, #4a90e2, #67b26f);
   color: white;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
 }
 
 .button-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4);
 }
 
 .button-secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: #4a90e2;
+  border: 2px solid #4a90e2;
 }
 
 .button-secondary:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(74, 144, 226, 0.1);
   transform: translateY(-2px);
 }
 
@@ -95,16 +93,16 @@
 
 @media (max-width: 768px) {
   .home-content h1 {
-    font-size: 2.5rem;
+    font-size: 2rem;
   }
 
   .home-content p {
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
 
   .button {
-    padding: 0.6rem 1.2rem;
-    font-size: 0.9rem;
+    width: 100%;
+    margin-bottom: 0.5rem;
   }
 }
 

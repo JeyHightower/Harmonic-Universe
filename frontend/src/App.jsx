@@ -1,33 +1,26 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Provider } from 'react-redux';
-import store from './store';
+import store from './store/store';
 import Home from './features/home/Home';
 import Dashboard from './features/dashboard/Dashboard';
-import ProtectedRoute from './components/ProtectedRoute';
-import ModalProvider from './providers/ModalProvider';
+import GlobalModal from './components/common/GlobalModal';
 import './App.css';
 
-function App() {
+const App = () => {
   return (
     <Provider store={store}>
-      <ModalProvider>
+      <Router>
         <div className="app">
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/dashboard" element={<Dashboard />} />
           </Routes>
+          <GlobalModal />
         </div>
-      </ModalProvider>
+      </Router>
     </Provider>
   );
-}
+};
 
 export default App;

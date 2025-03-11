@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AUTH_CONFIG } from '../../utils/config';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -7,7 +8,7 @@ const Dashboard = () => {
 
   // Check for authentication on component mount
   useEffect(() => {
-    const accessToken = localStorage.getItem('accessToken');
+    const accessToken = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
     if (!accessToken) {
       console.log('No access token found, redirecting to login');
       navigate('/?modal=login', { replace: true });
@@ -16,8 +17,8 @@ const Dashboard = () => {
 
   const handleLogout = () => {
     // Clear tokens from localStorage
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+    localStorage.removeItem(AUTH_CONFIG.USER_KEY);
 
     // Redirect to homepage
     navigate('/', { replace: true });

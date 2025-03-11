@@ -28,15 +28,6 @@ export function ModalProvider({ children }) {
   );
 }
 
-// Hook to use the modal context
-export function useModal() {
-  const context = useContext(ModalContext);
-  if (context === undefined) {
-    console.warn('[MODAL] useModal called outside of provider');
-  }
-  return context;
-}
-
 export default ModalContext;
 
 ModalProvider.propTypes = {

@@ -1,24 +1,42 @@
 services:
+  # Backend service
   - type: web
-    name: harmonic-universe
+    name: harmonic-universe-backend
     runtime: python
-    buildCommand: ./build.sh
-    startCommand: python app.py
+    region: oregon # Choose your preferred region
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && gunicorn wsgi:application
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
+      - key: DATABASE_URL
+        fromDatabase:
+          name: harmonic-universe-db
+          property: connectionString
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: 'false'
+      - key: ALLOWED_HOSTS
+        value: '.onrender.com'
+      - key: CORS_ALLOWED_ORIGINS
+        value: 'https://harmonic-universe-x84a.onrender.com'
+
+  # Frontend service
+  - type: web
+    name: harmonic-universe-frontend
+    runtime: node
+    region: oregon # Choose your preferred region
+    buildCommand: cd frontend && npm install && npm run build
+    startCommand: cd frontend && npm run start
+    envVars:
       - key: NODE_VERSION
         value: 20.11.1
-      - key: NODE_OPTIONS
-        value: --max-old-space-size=4096
-      - key: FLASK_ENV
+      - key: NODE_ENV
         value: production
-      # Add any other environment variables your app needs
-      # - key: DATABASE_URL
-      #   fromDatabase:
-      #     name: harmonic-universe-db
-      #     property: connectionString
-# If you need a database
-# databases:
-#  - name: harmonic-universe-db
-#    plan: free
+      - key: REACT_APP_API_URL
+        value: 'https://harmonic-universe-x84a.onrender.com/api'
+
+databases:
+  - name: harmonic-universe-db
+    plan: free

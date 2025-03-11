@@ -1,4 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
+import { AUTH_CONFIG } from '../../utils/config';
 
 // Helper function to check if token is valid
 const isTokenValid = token => {
@@ -14,12 +15,12 @@ const isTokenValid = token => {
 // Helper to get initial auth state
 const getInitialAuthState = () => {
   console.debug('Initializing auth state');
-  const token = localStorage.getItem('accessToken');
-  const refreshToken = localStorage.getItem('refreshToken');
+  const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+  const user = localStorage.getItem(AUTH_CONFIG.USER_KEY);
 
-  // If we have no tokens, we know we're not authenticated
-  if (!token && !refreshToken) {
-    console.debug('No tokens found during initialization');
+  // If we have no token, we know we're not authenticated
+  if (!token) {
+    console.debug('No token found during initialization');
     return {
       isAuthenticated: false,
       user: null,
@@ -29,31 +30,20 @@ const getInitialAuthState = () => {
   }
 
   // If we have a valid token, we're authenticated
-  if (token && isTokenValid(token)) {
-    console.debug('Valid access token found during initialization');
+  if (isTokenValid(token)) {
+    console.debug('Valid token found during initialization');
     return {
       isAuthenticated: true,
-      user: null,
+      user: user ? JSON.parse(user) : null,
       loading: false,
       error: null,
     };
   }
 
-  // If we have a valid refresh token, we're authenticated
-  if (refreshToken && isTokenValid(refreshToken)) {
-    console.debug('Valid refresh token found during initialization');
-    return {
-      isAuthenticated: true,
-      user: null,
-      loading: false,
-      error: null,
-    };
-  }
-
-  // If we have tokens but they're invalid, we're not authenticated
-  console.debug('Invalid tokens found during initialization');
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
+  // If token is invalid, clear it and return unauthenticated state
+  console.debug('Invalid token found during initialization');
+  localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+  localStorage.removeItem(AUTH_CONFIG.USER_KEY);
   return {
     isAuthenticated: false,
     user: null,
@@ -82,13 +72,13 @@ const authSlice = createSlice({
       state.loading = false;
       state.error = action.payload;
       // Clear tokens on login failure
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+      localStorage.removeItem(AUTH_CONFIG.USER_KEY);
     },
     logout: state => {
       // Clear tokens
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+      localStorage.removeItem(AUTH_CONFIG.USER_KEY);
 
       // Reset state
       state.isAuthenticated = false;
@@ -107,35 +97,26 @@ const authSlice = createSlice({
     },
     checkAuthState: state => {
       console.debug('Checking auth state...');
-      const token = localStorage.getItem('accessToken');
-      const refreshToken = localStorage.getItem('refreshToken');
+      const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
 
-      if (!token && !refreshToken) {
-        console.debug('No tokens found during check');
+      if (!token) {
+        console.debug('No token found during check');
         state.isAuthenticated = false;
         state.loading = false;
         return;
       }
 
       if (isTokenValid(token)) {
-        console.debug('Valid access token found during check');
+        console.debug('Valid token found during check');
         state.isAuthenticated = true;
         state.loading = false;
         return;
       }
 
-      if (refreshToken && isTokenValid(refreshToken)) {
-        console.debug('Valid refresh token found during check');
-        state.isAuthenticated = true;
-        state.loading = false;
-        return;
-      }
-
-      console.debug('Invalid tokens found during check');
+      console.debug('Invalid token found during check');
       state.isAuthenticated = false;
       state.loading = false;
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
     },
   },
 });

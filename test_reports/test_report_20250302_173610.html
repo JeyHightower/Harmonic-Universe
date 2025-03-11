@@ -1,0 +1,3619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harmonic Universe - Feature Verification Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .summary {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .summary-box {
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+            flex: 1;
+            margin: 0 5px;
+        }
+        .pass-box {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .fail-box {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .skip-box {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .total-box {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+        .feature-section {
+            margin-bottom: 30px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .feature-header {
+            background-color: #e9ecef;
+            padding: 10px 15px;
+            font-weight: bold;
+            border-bottom: 1px solid #dee2e6;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        th {
+            background-color: #f8f9fa;
+        }
+        .result-pass {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .result-fail {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .result-skip {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        .timestamp {
+            color: #6c757d;
+            font-size: 0.85em;
+        }
+        .meta-info {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        .expandable {
+            cursor: pointer;
+        }
+        .details-row {
+            display: none;
+            background-color: #f8f9fa;
+        }
+        .details-cell {
+            padding: 15px;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .mock-mode-banner {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #ffeeba;
+        }
+        .error-message {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .request-info {
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+    </style>
+    <script>
+        function toggleDetails(rowId) {
+            const detailsRow = document.getElementById(rowId);
+            if (detailsRow.style.display === 'table-row') {
+                detailsRow.style.display = 'none';
+            } else {
+                detailsRow.style.display = 'table-row';
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Harmonic Universe - Feature Verification Report</h1>
+
+        <div class="meta-info">
+            <strong>Generated:</strong> 2025-03-02 17:36:10
+            <br>
+            <strong>Execution Time:</strong> 1.47 seconds
+        </div>
+
+        
+
+        <div class="summary">
+            <div class="summary-box total-box">
+                <h2>14</h2>
+                <div>Total Tests</div>
+            </div>
+            <div class="summary-box pass-box">
+                <h2>8</h2>
+                <div>Passed</div>
+            </div>
+            <div class="summary-box fail-box">
+                <h2>6</h2>
+                <div>Failed</div>
+            </div>
+            <div class="summary-box skip-box">
+                <h2>0</h2>
+                <div>Skipped</div>
+            </div>
+        </div>
+
+        <h2>Test Results</h2>
+
+        <div class="feature-section">
+            <div class="feature-header">
+                User Authentication (2/4 passed)
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Test</th>
+                        <th>Result</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    <tr class="expandable" onclick="toggleDetails('details-User-Authentication-0')">
+                        <td>User registration</td>
+                        <td class="result-pass">PASS</td>
+                        <td class="timestamp">17:36:10</td>
+                    </tr>
+
+                    <tr id="details-User-Authentication-0" class="details-row">
+                        <td colspan="3" class="details-cell">
+
+                            <strong>Details:</strong>
+                            <pre>{
+  "created_at": "2025-03-02T23:36:10.246908",
+  "email": "test-a9288d51-9595-4383-a3bf-878c5e2c4c20@example.com",
+  "id": "47bec661-aab5-4a1f-845e-59dac2ec26da",
+  "is_active": true,
+  "is_verified": false,
+  "updated_at": "2025-03-02T23:36:10.246918",
+  "username": "testuser-ff86cdc3"
+}</pre>
+
+                        </td>
+                    </tr>
+
+                    <tr class="expandable" onclick="toggleDetails('details-User-Authentication-1')">
+                        <td>Token refresh</td>
+                        <td class="result-pass">PASS</td>
+                        <td class="timestamp">17:36:10</td>
+                    </tr>
+
+                    <tr id="details-User-Authentication-1" class="details-row">
+                        <td colspan="3" class="details-cell">
+
+                            <strong>Details:</strong>
+                            <pre>{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc0MDk1ODU3MCwianRpIjoiNGRkNDE1OTktNDkxNC00NmRjLTg0MjgtYmQ2MmEwMmZmMjdkIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjljZGEzOTcyLTQ2MjctNDhiYS04NTNkLWJmY2Q0NTc1ODJiZCIsIm5iZiI6MTc0MDk1ODU3MCwiY3NyZiI6ImI2MmQzZWQ4LTRjODEtNDliNi1hZWRhLWRiNzljYjQyMzQ2NyIsImV4cCI6MTc0MDk2MjE3MH0.nu039UFDW3m2NID2cv0a8Ek8YDu6_M_sZ87GkjAoc8Y",
+  "token_type": "bearer"
+}</pre>
+
+                        </td>
+                    </tr>
+
+                    <tr class="expandable" onclick="toggleDetails('details-User-Authentication-2')">
+                        <td>User profile retrieval</td>
+                        <td class="result-fail">FAIL</td>
+                        <td class="timestamp">17:36:10</td>
+                    </tr>
+
+                    <tr id="details-User-Authentication-2" class="details-row">
+                        <td colspan="3" class="details-cell">
+
+                            <strong>Error:</strong>
+                            <pre class="error-message">Failed to get profile: {
+  "category": "system",
+  "details": null,
+  "error_code": "NotFound",
+  "message": "The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.",
+  "severity": "error",
+  "status_code": 404
+}
+</pre>
+
+                        </td>
+                    </tr>
+
+                    <tr class="expandable" onclick="toggleDetails('details-User-Authentication-3')">
+                        <td>User profile update</td>
+                        <td class="result-fail">FAIL</td>
+                        <td class="timestamp">17:36:10</td>
+                    </tr>
+
+                    <tr id="details-User-Authentication-3" class="details-row">
+                        <td colspan="3" class="details-cell">
+
+                            <strong>Error:</strong>
+                            <pre class="error-message">Failed to update profile: {
+  "category": "system",
+  "details": null,
+  "error_code": "NotFound",
+  "message": "The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.",
+  "severity": "error",
+  "status_code": 404
+}
+</pre>
+
+                        </td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </div>
+
+        <div class="feature-section">
+            <div class="feature-header">
+                Universe Management (5/6 passed)
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Test</th>
+                        <th>Result</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    <tr class="expandable" onclick="toggleDetails('details-Universe-Management-0')">
+                        <td>Create universe</td>
+                        <td class="result-pass">PASS</td>
+                        <td class="timestamp">17:36:10</td>
+                    </tr>
+
+                    <tr id="details-Universe-Management-0" class="details-row">
+                        <td colspan="3" class="details-cell">
+
+                            <strong>Details:</strong>
+                            <pre>{
+  "ai_params": {
+    "constraints": {
+      "max_complexity": 0.8,
+      "min_harmony": 0.2
+    },
+    "enabled": true,
+    "learning_rate": 0.001,
+    "optimization_target": "harmony",
+    "update_frequency": "realtime"
+  },
+  "created_at": "2025-03-02T23:36:10.763103",
+  "description": "A test universe for API verification",
+  "harmony_params": {
+    "dissonance": {
+      "max": 1,
+      "min": 0,
+      "value": 0.0
+    },
+    "harmony_scale": {
+      "max": 2,
+      "min": 0,
+      "value": 1.0
+    },
+    "instruments": {
+      "options": [
+        "piano",
+        "strings",
+        "pad",
+        "bass",
+        "drums",
+        "synth"
+      ],
+      "primary": "piano",
+      "secondary": [
+        "strings",
+        "pad"
+      ]
+    },
+    "key": {
+      "options": [
+        "C",
+        "G",
+        "D",
+        "A",
+        "E",
+        "B",
+        "F#",
+        "C#",
+        "F",
+        "Bb",
+        "Eb",
+        "Ab"
+      ],
+      "value": "C"
+    },
+    "resonance": {
+      "max": 1,
+      "min": 0,
+      "value": 1.0
+    },
+    "scale": {
+      "options": [
+        "major",
+        "minor",
+        "harmonic_minor",
+        "melodic_minor",
+        "pentatonic"
+      ],
+      "value": "major"
+    },
+    "tempo": {
+      "max": 200,
+      "min": 60,
+      "unit": "bpm",
+      "value": 120
+    }
+  },
+  "id": "728320b5-05c4-441d-abcb-a18f36176785",
+  "is_public": false,
+  "name": "Test Universe 31d5e2e6",
+  "physics_params": {
+    "air_resistance": {
+      "max": 1,
+      "min": 0,
+      "unit": "kg/m\u00b3",
+      "value": 0.0
+    },
+    "elasticity": {
+      "max": 1,
+      "min": 0,
+      "unit": "coefficient",
+      "value": 1.0
+    },
+    "friction": {
+      "max": 1,
+      "min": 0,
+      "unit": "coefficient",
+      "value": 0.1
+    },
+    "gravity": {
+      "max": 20,
+      "min": 0,
+      "unit": "m/s\u00b2",
+      "value": 9.81
+    },
+    "pressure": {
+      "max": 200,
+      "min": 0,
+      "unit": "kPa",
+      "value": 101.325
+    },
+    "temperature": {
+      "max": 1000,
+      "min": 0,
+      "unit": "K",
+      "value": 293.15
+    }
+  },
+  "story_points": {
+    "current_page": 1,
+    "items_per_page": 10,
+    "metadata": {
+      "last_modified": null,
+      "total_points": 0
+    },
+    "points": [],
+    "total_pages": 1
+  },
+  "updated_at": "2025-03-02T23:36:10.763104",
+  "user_id": "9cda3972-4627-48ba-853d-bfcd457582bd",
+  "version": 1,
+  "visualization_params": {
+    "camera": {
+      "far": 1000,
+      "fov": 75,
+      "near": 0.1
+    },
+    "color_scheme": "default",
+    "effects": {
+      "ambient_occlusion": true,
+      "bloom": true,
+      "motion_blur": false
+    },
+    "particle_density": 1.0,
+    "render_quality": "medium"
+  }
+}</pre>
+
+                        </td>
+                    </tr>
+
+                    <tr class="expandable" onclick="toggleDetails('details-Universe-Management-1')">
+                        <td>List universes</td>
+                        <td class="result-pass">PASS</td>
+                        <td class="timestamp">17:36:10</td>
+                    </tr>
+
+                    <tr id="details-Universe-Management-1" class="details-row">
+                        <td colspan="3" class="details-cell">
+
+                            <strong>Details:</strong>
+                            <pre>{
+  "items": [
+    {
+      "ai_params": {
+        "constraints": {
+          "max_complexity": 0.8,
+          "min_harmony": 0.2
+        },
+        "enabled": true,
+        "learning_rate": 0.001,
+        "optimization_target": "harmony",
+        "update_frequency": "realtime"
+      },
+      "created_at": "2025-03-02T23:36:10.763103",
+      "description": "A test universe for API verification",
+      "harmony_params": {
+        "dissonance": {
+          "max": 1,
+          "min": 0,
+          "value": 0.0
+        },
+        "harmony_scale": {
+          "max": 2,
+          "min": 0,
+          "value": 1.0
+        },
+        "instruments": {
+          "options": [
+            "piano",
+            "strings",
+            "pad",
+            "bass",
+            "drums",
+            "synth"
+          ],
+          "primary": "piano",
+          "secondary": [
+            "strings",
+            "pad"
+          ]
+        },
+        "key": {
+          "options": [
+            "C",
+            "G",
+            "D",
+            "A",
+            "E",
+            "B",
+            "F#",
+            "C#",
+            "F",
+            "Bb",
+            "Eb",
+            "Ab"
+          ],
+          "value": "C"
+        },
+        "resonance": {
+          "max": 1,
+          "min": 0,
+          "value": 1.0
+        },
+        "scale": {
+          "options": [
+            "major",
+            "minor",
+            "harmonic_minor",
+            "melodic_minor",
+            "pentatonic"
+          ],
+          "value": "major"
+        },
+        "tempo": {
+          "max": 200,
+          "min": 60,
+          "unit": "bpm",
+          "value": 120
+        }
+      },
+      "id": "728320b5-05c4-441d-abcb-a18f36176785",
+      "is_public": false,
+      "name": "Test Universe 31d5e2e6",
+      "physics_params": {
+        "air_resistance": {
+          "max": 1,
+          "min": 0,
+          "unit": "kg/m\u00b3",
+          "value": 0.0
+        },
+        "elasticity": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 1.0
+        },
+        "friction": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 0.1
+        },
+        "gravity": {
+          "max": 20,
+          "min": 0,
+          "unit": "m/s\u00b2",
+          "value": 9.81
+        },
+        "pressure": {
+          "max": 200,
+          "min": 0,
+          "unit": "kPa",
+          "value": 101.325
+        },
+        "temperature": {
+          "max": 1000,
+          "min": 0,
+          "unit": "K",
+          "value": 293.15
+        }
+      },
+      "story_points": {
+        "current_page": 1,
+        "items_per_page": 10,
+        "metadata": {
+          "last_modified": null,
+          "total_points": 0
+        },
+        "points": [],
+        "total_pages": 1
+      },
+      "updated_at": "2025-03-02T23:36:10.763104",
+      "user_id": "9cda3972-4627-48ba-853d-bfcd457582bd",
+      "version": 1,
+      "visualization_params": {
+        "camera": {
+          "far": 1000,
+          "fov": 75,
+          "near": 0.1
+        },
+        "color_scheme": "default",
+        "effects": {
+          "ambient_occlusion": true,
+          "bloom": true,
+          "motion_blur": false
+        },
+        "particle_density": 1.0,
+        "render_quality": "medium"
+      }
+    },
+    {
+      "ai_params": {
+        "constraints": {
+          "max_complexity": 0.8,
+          "min_harmony": 0.2
+        },
+        "enabled": true,
+        "learning_rate": 0.001,
+        "optimization_target": "harmony",
+        "update_frequency": "realtime"
+      },
+      "created_at": "2025-03-02T02:16:04.115003",
+      "description": "Test Description",
+      "harmony_params": {
+        "dissonance": {
+          "max": 1,
+          "min": 0,
+          "value": 0.0
+        },
+        "harmony_scale": {
+          "max": 2,
+          "min": 0,
+          "value": 1.0
+        },
+        "instruments": {
+          "options": [
+            "piano",
+            "strings",
+            "pad",
+            "bass",
+            "drums",
+            "synth"
+          ],
+          "primary": "piano",
+          "secondary": [
+            "strings",
+            "pad"
+          ]
+        },
+        "key": {
+          "options": [
+            "C",
+            "G",
+            "D",
+            "A",
+            "E",
+            "B",
+            "F#",
+            "C#",
+            "F",
+            "Bb",
+            "Eb",
+            "Ab"
+          ],
+          "value": "C"
+        },
+        "resonance": {
+          "max": 1,
+          "min": 0,
+          "value": 1.0
+        },
+        "scale": {
+          "options": [
+            "major",
+            "minor",
+            "harmonic_minor",
+            "melodic_minor",
+            "pentatonic"
+          ],
+          "value": "major"
+        },
+        "tempo": {
+          "max": 200,
+          "min": 60,
+          "unit": "bpm",
+          "value": 120
+        }
+      },
+      "id": "d3a742e5-49df-432d-9738-42ff704e50f0",
+      "is_public": true,
+      "name": "Test Universe 1740881764",
+      "physics_params": {
+        "air_resistance": {
+          "max": 1,
+          "min": 0,
+          "unit": "kg/m\u00b3",
+          "value": 0.0
+        },
+        "elasticity": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 1.0
+        },
+        "friction": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 0.1
+        },
+        "gravity": {
+          "max": 20,
+          "min": 0,
+          "unit": "m/s\u00b2",
+          "value": 9.81
+        },
+        "pressure": {
+          "max": 200,
+          "min": 0,
+          "unit": "kPa",
+          "value": 101.325
+        },
+        "temperature": {
+          "max": 1000,
+          "min": 0,
+          "unit": "K",
+          "value": 293.15
+        }
+      },
+      "story_points": {
+        "current_page": 1,
+        "items_per_page": 10,
+        "metadata": {
+          "last_modified": null,
+          "total_points": 0
+        },
+        "points": [],
+        "total_pages": 1
+      },
+      "updated_at": "2025-03-02T02:16:04.115005",
+      "user_id": "9cda3972-4627-48ba-853d-bfcd457582bd",
+      "version": 1,
+      "visualization_params": {
+        "camera": {
+          "far": 1000,
+          "fov": 75,
+          "near": 0.1
+        },
+        "color_scheme": "default",
+        "effects": {
+          "ambient_occlusion": true,
+          "bloom": true,
+          "motion_blur": false
+        },
+        "particle_density": 1.0,
+        "render_quality": "medium"
+      }
+    },
+    {
+      "ai_params": {
+        "constraints": {
+          "max_complexity": 0.8,
+          "min_harmony": 0.2
+        },
+        "enabled": true,
+        "learning_rate": 0.001,
+        "optimization_target": "harmony",
+        "update_frequency": "realtime"
+      },
+      "created_at": "2025-03-02T02:13:41.161330",
+      "description": "Test Description",
+      "harmony_params": {
+        "dissonance": {
+          "max": 1,
+          "min": 0,
+          "value": 0.0
+        },
+        "harmony_scale": {
+          "max": 2,
+          "min": 0,
+          "value": 1.0
+        },
+        "instruments": {
+          "options": [
+            "piano",
+            "strings",
+            "pad",
+            "bass",
+            "drums",
+            "synth"
+          ],
+          "primary": "piano",
+          "secondary": [
+            "strings",
+            "pad"
+          ]
+        },
+        "key": {
+          "options": [
+            "C",
+            "G",
+            "D",
+            "A",
+            "E",
+            "B",
+            "F#",
+            "C#",
+            "F",
+            "Bb",
+            "Eb",
+            "Ab"
+          ],
+          "value": "C"
+        },
+        "resonance": {
+          "max": 1,
+          "min": 0,
+          "value": 1.0
+        },
+        "scale": {
+          "options": [
+            "major",
+            "minor",
+            "harmonic_minor",
+            "melodic_minor",
+            "pentatonic"
+          ],
+          "value": "major"
+        },
+        "tempo": {
+          "max": 200,
+          "min": 60,
+          "unit": "bpm",
+          "value": 120
+        }
+      },
+      "id": "a2664abf-8ee5-439a-8826-d68dfefa11b9",
+      "is_public": true,
+      "name": "Test Universe 1740881621",
+      "physics_params": {
+        "air_resistance": {
+          "max": 1,
+          "min": 0,
+          "unit": "kg/m\u00b3",
+          "value": 0.0
+        },
+        "elasticity": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 1.0
+        },
+        "friction": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 0.1
+        },
+        "gravity": {
+          "max": 20,
+          "min": 0,
+          "unit": "m/s\u00b2",
+          "value": 9.81
+        },
+        "pressure": {
+          "max": 200,
+          "min": 0,
+          "unit": "kPa",
+          "value": 101.325
+        },
+        "temperature": {
+          "max": 1000,
+          "min": 0,
+          "unit": "K",
+          "value": 293.15
+        }
+      },
+      "story_points": {
+        "current_page": 1,
+        "items_per_page": 10,
+        "metadata": {
+          "last_modified": null,
+          "total_points": 0
+        },
+        "points": [],
+        "total_pages": 1
+      },
+      "updated_at": "2025-03-02T02:13:41.161332",
+      "user_id": "9cda3972-4627-48ba-853d-bfcd457582bd",
+      "version": 1,
+      "visualization_params": {
+        "camera": {
+          "far": 1000,
+          "fov": 75,
+          "near": 0.1
+        },
+        "color_scheme": "default",
+        "effects": {
+          "ambient_occlusion": true,
+          "bloom": true,
+          "motion_blur": false
+        },
+        "particle_density": 1.0,
+        "render_quality": "medium"
+      }
+    },
+    {
+      "ai_params": {
+        "constraints": {
+          "max_complexity": 0.8,
+          "min_harmony": 0.2
+        },
+        "enabled": true,
+        "learning_rate": 0.001,
+        "optimization_target": "harmony",
+        "update_frequency": "realtime"
+      },
+      "created_at": "2025-03-02T02:09:25.457584",
+      "description": "Test Description",
+      "harmony_params": {
+        "dissonance": {
+          "max": 1,
+          "min": 0,
+          "value": 0.0
+        },
+        "harmony_scale": {
+          "max": 2,
+          "min": 0,
+          "value": 1.0
+        },
+        "instruments": {
+          "options": [
+            "piano",
+            "strings",
+            "pad",
+            "bass",
+            "drums",
+            "synth"
+          ],
+          "primary": "piano",
+          "secondary": [
+            "strings",
+            "pad"
+          ]
+        },
+        "key": {
+          "options": [
+            "C",
+            "G",
+            "D",
+            "A",
+            "E",
+            "B",
+            "F#",
+            "C#",
+            "F",
+            "Bb",
+            "Eb",
+            "Ab"
+          ],
+          "value": "C"
+        },
+        "resonance": {
+          "max": 1,
+          "min": 0,
+          "value": 1.0
+        },
+        "scale": {
+          "options": [
+            "major",
+            "minor",
+            "harmonic_minor",
+            "melodic_minor",
+            "pentatonic"
+          ],
+          "value": "major"
+        },
+        "tempo": {
+          "max": 200,
+          "min": 60,
+          "unit": "bpm",
+          "value": 120
+        }
+      },
+      "id": "a85add59-5bab-4ff5-b040-2e6eb15d515f",
+      "is_public": true,
+      "name": "Test Universe 1740881365",
+      "physics_params": {
+        "air_resistance": {
+          "max": 1,
+          "min": 0,
+          "unit": "kg/m\u00b3",
+          "value": 0.0
+        },
+        "elasticity": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 1.0
+        },
+        "friction": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 0.1
+        },
+        "gravity": {
+          "max": 20,
+          "min": 0,
+          "unit": "m/s\u00b2",
+          "value": 9.81
+        },
+        "pressure": {
+          "max": 200,
+          "min": 0,
+          "unit": "kPa",
+          "value": 101.325
+        },
+        "temperature": {
+          "max": 1000,
+          "min": 0,
+          "unit": "K",
+          "value": 293.15
+        }
+      },
+      "story_points": {
+        "current_page": 1,
+        "items_per_page": 10,
+        "metadata": {
+          "last_modified": null,
+          "total_points": 0
+        },
+        "points": [],
+        "total_pages": 1
+      },
+      "updated_at": "2025-03-02T02:09:25.457586",
+      "user_id": "9cda3972-4627-48ba-853d-bfcd457582bd",
+      "version": 1,
+      "visualization_params": {
+        "camera": {
+          "far": 1000,
+          "fov": 75,
+          "near": 0.1
+        },
+        "color_scheme": "default",
+        "effects": {
+          "ambient_occlusion": true,
+          "bloom": true,
+          "motion_blur": false
+        },
+        "particle_density": 1.0,
+        "render_quality": "medium"
+      }
+    },
+    {
+      "ai_params": {
+        "constraints": {
+          "max_complexity": 0.8,
+          "min_harmony": 0.2
+        },
+        "enabled": true,
+        "learning_rate": 0.001,
+        "optimization_target": "harmony",
+        "update_frequency": "realtime"
+      },
+      "created_at": "2025-03-02T02:06:20.309984",
+      "description": "Test Description",
+      "harmony_params": {
+        "dissonance": {
+          "max": 1,
+          "min": 0,
+          "value": 0.0
+        },
+        "harmony_scale": {
+          "max": 2,
+          "min": 0,
+          "value": 1.0
+        },
+        "instruments": {
+          "options": [
+            "piano",
+            "strings",
+            "pad",
+            "bass",
+            "drums",
+            "synth"
+          ],
+          "primary": "piano",
+          "secondary": [
+            "strings",
+            "pad"
+          ]
+        },
+        "key": {
+          "options": [
+            "C",
+            "G",
+            "D",
+            "A",
+            "E",
+            "B",
+            "F#",
+            "C#",
+            "F",
+            "Bb",
+            "Eb",
+            "Ab"
+          ],
+          "value": "C"
+        },
+        "resonance": {
+          "max": 1,
+          "min": 0,
+          "value": 1.0
+        },
+        "scale": {
+          "options": [
+            "major",
+            "minor",
+            "harmonic_minor",
+            "melodic_minor",
+            "pentatonic"
+          ],
+          "value": "major"
+        },
+        "tempo": {
+          "max": 200,
+          "min": 60,
+          "unit": "bpm",
+          "value": 120
+        }
+      },
+      "id": "7b7d7058-a603-4c0f-9858-ceac75159557",
+      "is_public": true,
+      "name": "Test Universe 1740881180",
+      "physics_params": {
+        "air_resistance": {
+          "max": 1,
+          "min": 0,
+          "unit": "kg/m\u00b3",
+          "value": 0.0
+        },
+        "elasticity": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 1.0
+        },
+        "friction": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 0.1
+        },
+        "gravity": {
+          "max": 20,
+          "min": 0,
+          "unit": "m/s\u00b2",
+          "value": 9.81
+        },
+        "pressure": {
+          "max": 200,
+          "min": 0,
+          "unit": "kPa",
+          "value": 101.325
+        },
+        "temperature": {
+          "max": 1000,
+          "min": 0,
+          "unit": "K",
+          "value": 293.15
+        }
+      },
+      "story_points": {
+        "current_page": 1,
+        "items_per_page": 10,
+        "metadata": {
+          "last_modified": null,
+          "total_points": 0
+        },
+        "points": [],
+        "total_pages": 1
+      },
+      "updated_at": "2025-03-02T02:06:20.309986",
+      "user_id": "9cda3972-4627-48ba-853d-bfcd457582bd",
+      "version": 1,
+      "visualization_params": {
+        "camera": {
+          "far": 1000,
+          "fov": 75,
+          "near": 0.1
+        },
+        "color_scheme": "default",
+        "effects": {
+          "ambient_occlusion": true,
+          "bloom": true,
+          "motion_blur": false
+        },
+        "particle_density": 1.0,
+        "render_quality": "medium"
+      }
+    },
+    {
+      "ai_params": {
+        "constraints": {
+          "max_complexity": 0.8,
+          "min_harmony": 0.2
+        },
+        "enabled": true,
+        "learning_rate": 0.001,
+        "optimization_target": "harmony",
+        "update_frequency": "realtime"
+      },
+      "created_at": "2025-03-02T02:05:33.351116",
+      "description": "Test Description",
+      "harmony_params": {
+        "dissonance": {
+          "max": 1,
+          "min": 0,
+          "value": 0.0
+        },
+        "harmony_scale": {
+          "max": 2,
+          "min": 0,
+          "value": 1.0
+        },
+        "instruments": {
+          "options": [
+            "piano",
+            "strings",
+            "pad",
+            "bass",
+            "drums",
+            "synth"
+          ],
+          "primary": "piano",
+          "secondary": [
+            "strings",
+            "pad"
+          ]
+        },
+        "key": {
+          "options": [
+            "C",
+            "G",
+            "D",
+            "A",
+            "E",
+            "B",
+            "F#",
+            "C#",
+            "F",
+            "Bb",
+            "Eb",
+            "Ab"
+          ],
+          "value": "C"
+        },
+        "resonance": {
+          "max": 1,
+          "min": 0,
+          "value": 1.0
+        },
+        "scale": {
+          "options": [
+            "major",
+            "minor",
+            "harmonic_minor",
+            "melodic_minor",
+            "pentatonic"
+          ],
+          "value": "major"
+        },
+        "tempo": {
+          "max": 200,
+          "min": 60,
+          "unit": "bpm",
+          "value": 120
+        }
+      },
+      "id": "70d18c67-5d9a-4972-bb5c-29463a3af888",
+      "is_public": true,
+      "name": "Test Universe 1740881133",
+      "physics_params": {
+        "air_resistance": {
+          "max": 1,
+          "min": 0,
+          "unit": "kg/m\u00b3",
+          "value": 0.0
+        },
+        "elasticity": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 1.0
+        },
+        "friction": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 0.1
+        },
+        "gravity": {
+          "max": 20,
+          "min": 0,
+          "unit": "m/s\u00b2",
+          "value": 9.81
+        },
+        "pressure": {
+          "max": 200,
+          "min": 0,
+          "unit": "kPa",
+          "value": 101.325
+        },
+        "temperature": {
+          "max": 1000,
+          "min": 0,
+          "unit": "K",
+          "value": 293.15
+        }
+      },
+      "story_points": {
+        "current_page": 1,
+        "items_per_page": 10,
+        "metadata": {
+          "last_modified": null,
+          "total_points": 0
+        },
+        "points": [],
+        "total_pages": 1
+      },
+      "updated_at": "2025-03-02T02:05:33.351118",
+      "user_id": "9cda3972-4627-48ba-853d-bfcd457582bd",
+      "version": 1,
+      "visualization_params": {
+        "camera": {
+          "far": 1000,
+          "fov": 75,
+          "near": 0.1
+        },
+        "color_scheme": "default",
+        "effects": {
+          "ambient_occlusion": true,
+          "bloom": true,
+          "motion_blur": false
+        },
+        "particle_density": 1.0,
+        "render_quality": "medium"
+      }
+    },
+    {
+      "ai_params": {
+        "constraints": {
+          "max_complexity": 0.8,
+          "min_harmony": 0.2
+        },
+        "enabled": true,
+        "learning_rate": 0.001,
+        "optimization_target": "harmony",
+        "update_frequency": "realtime"
+      },
+      "created_at": "2025-03-02T02:03:36.541279",
+      "description": "Test Description",
+      "harmony_params": {
+        "dissonance": {
+          "max": 1,
+          "min": 0,
+          "value": 0.0
+        },
+        "harmony_scale": {
+          "max": 2,
+          "min": 0,
+          "value": 1.0
+        },
+        "instruments": {
+          "options": [
+            "piano",
+            "strings",
+            "pad",
+            "bass",
+            "drums",
+            "synth"
+          ],
+          "primary": "piano",
+          "secondary": [
+            "strings",
+            "pad"
+          ]
+        },
+        "key": {
+          "options": [
+            "C",
+            "G",
+            "D",
+            "A",
+            "E",
+            "B",
+            "F#",
+            "C#",
+            "F",
+            "Bb",
+            "Eb",
+            "Ab"
+          ],
+          "value": "C"
+        },
+        "resonance": {
+          "max": 1,
+          "min": 0,
+          "value": 1.0
+        },
+        "scale": {
+          "options": [
+            "major",
+            "minor",
+            "harmonic_minor",
+            "melodic_minor",
+            "pentatonic"
+          ],
+          "value": "major"
+        },
+        "tempo": {
+          "max": 200,
+          "min": 60,
+          "unit": "bpm",
+          "value": 120
+        }
+      },
+      "id": "e9e33e45-c3ce-4603-8f31-7d6d674af2fd",
+      "is_public": true,
+      "name": "Test Universe 1740881016",
+      "physics_params": {
+        "air_resistance": {
+          "max": 1,
+          "min": 0,
+          "unit": "kg/m\u00b3",
+          "value": 0.0
+        },
+        "elasticity": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 1.0
+        },
+        "friction": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 0.1
+        },
+        "gravity": {
+          "max": 20,
+          "min": 0,
+          "unit": "m/s\u00b2",
+          "value": 9.81
+        },
+        "pressure": {
+          "max": 200,
+          "min": 0,
+          "unit": "kPa",
+          "value": 101.325
+        },
+        "temperature": {
+          "max": 1000,
+          "min": 0,
+          "unit": "K",
+          "value": 293.15
+        }
+      },
+      "story_points": {
+        "current_page": 1,
+        "items_per_page": 10,
+        "metadata": {
+          "last_modified": null,
+          "total_points": 0
+        },
+        "points": [],
+        "total_pages": 1
+      },
+      "updated_at": "2025-03-02T02:03:36.541282",
+      "user_id": "9cda3972-4627-48ba-853d-bfcd457582bd",
+      "version": 1,
+      "visualization_params": {
+        "camera": {
+          "far": 1000,
+          "fov": 75,
+          "near": 0.1
+        },
+        "color_scheme": "default",
+        "effects": {
+          "ambient_occlusion": true,
+          "bloom": true,
+          "motion_blur": false
+        },
+        "particle_density": 1.0,
+        "render_quality": "medium"
+      }
+    },
+    {
+      "ai_params": {
+        "constraints": {
+          "max_complexity": 0.8,
+          "min_harmony": 0.2
+        },
+        "enabled": true,
+        "learning_rate": 0.001,
+        "optimization_target": "harmony",
+        "update_frequency": "realtime"
+      },
+      "created_at": "2025-03-02T02:02:18.208202",
+      "description": "Test Description",
+      "harmony_params": {
+        "dissonance": {
+          "max": 1,
+          "min": 0,
+          "value": 0.0
+        },
+        "harmony_scale": {
+          "max": 2,
+          "min": 0,
+          "value": 1.0
+        },
+        "instruments": {
+          "options": [
+            "piano",
+            "strings",
+            "pad",
+            "bass",
+            "drums",
+            "synth"
+          ],
+          "primary": "piano",
+          "secondary": [
+            "strings",
+            "pad"
+          ]
+        },
+        "key": {
+          "options": [
+            "C",
+            "G",
+            "D",
+            "A",
+            "E",
+            "B",
+            "F#",
+            "C#",
+            "F",
+            "Bb",
+            "Eb",
+            "Ab"
+          ],
+          "value": "C"
+        },
+        "resonance": {
+          "max": 1,
+          "min": 0,
+          "value": 1.0
+        },
+        "scale": {
+          "options": [
+            "major",
+            "minor",
+            "harmonic_minor",
+            "melodic_minor",
+            "pentatonic"
+          ],
+          "value": "major"
+        },
+        "tempo": {
+          "max": 200,
+          "min": 60,
+          "unit": "bpm",
+          "value": 120
+        }
+      },
+      "id": "cbd07696-4723-443c-81ad-f14dc8c38d6b",
+      "is_public": true,
+      "name": "Test Universe 1740880938",
+      "physics_params": {
+        "air_resistance": {
+          "max": 1,
+          "min": 0,
+          "unit": "kg/m\u00b3",
+          "value": 0.0
+        },
+        "elasticity": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 1.0
+        },
+        "friction": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 0.1
+        },
+        "gravity": {
+          "max": 20,
+          "min": 0,
+          "unit": "m/s\u00b2",
+          "value": 9.81
+        },
+        "pressure": {
+          "max": 200,
+          "min": 0,
+          "unit": "kPa",
+          "value": 101.325
+        },
+        "temperature": {
+          "max": 1000,
+          "min": 0,
+          "unit": "K",
+          "value": 293.15
+        }
+      },
+      "story_points": {
+        "current_page": 1,
+        "items_per_page": 10,
+        "metadata": {
+          "last_modified": null,
+          "total_points": 0
+        },
+        "points": [],
+        "total_pages": 1
+      },
+      "updated_at": "2025-03-02T02:02:18.208214",
+      "user_id": "9cda3972-4627-48ba-853d-bfcd457582bd",
+      "version": 1,
+      "visualization_params": {
+        "camera": {
+          "far": 1000,
+          "fov": 75,
+          "near": 0.1
+        },
+        "color_scheme": "default",
+        "effects": {
+          "ambient_occlusion": true,
+          "bloom": true,
+          "motion_blur": false
+        },
+        "particle_density": 1.0,
+        "render_quality": "medium"
+      }
+    },
+    {
+      "ai_params": {
+        "constraints": {
+          "max_complexity": 0.8,
+          "min_harmony": 0.2
+        },
+        "enabled": true,
+        "learning_rate": 0.001,
+        "optimization_target": "harmony",
+        "update_frequency": "realtime"
+      },
+      "created_at": "2025-03-02T02:01:36.014346",
+      "description": "Test Description",
+      "harmony_params": {
+        "dissonance": {
+          "max": 1,
+          "min": 0,
+          "value": 0.0
+        },
+        "harmony_scale": {
+          "max": 2,
+          "min": 0,
+          "value": 1.0
+        },
+        "instruments": {
+          "options": [
+            "piano",
+            "strings",
+            "pad",
+            "bass",
+            "drums",
+            "synth"
+          ],
+          "primary": "piano",
+          "secondary": [
+            "strings",
+            "pad"
+          ]
+        },
+        "key": {
+          "options": [
+            "C",
+            "G",
+            "D",
+            "A",
+            "E",
+            "B",
+            "F#",
+            "C#",
+            "F",
+            "Bb",
+            "Eb",
+            "Ab"
+          ],
+          "value": "C"
+        },
+        "resonance": {
+          "max": 1,
+          "min": 0,
+          "value": 1.0
+        },
+        "scale": {
+          "options": [
+            "major",
+            "minor",
+            "harmonic_minor",
+            "melodic_minor",
+            "pentatonic"
+          ],
+          "value": "major"
+        },
+        "tempo": {
+          "max": 200,
+          "min": 60,
+          "unit": "bpm",
+          "value": 120
+        }
+      },
+      "id": "9d69e6a0-c884-45de-943c-fd02b4bd86fb",
+      "is_public": true,
+      "name": "Test Universe 1740880896",
+      "physics_params": {
+        "air_resistance": {
+          "max": 1,
+          "min": 0,
+          "unit": "kg/m\u00b3",
+          "value": 0.0
+        },
+        "elasticity": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 1.0
+        },
+        "friction": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 0.1
+        },
+        "gravity": {
+          "max": 20,
+          "min": 0,
+          "unit": "m/s\u00b2",
+          "value": 9.81
+        },
+        "pressure": {
+          "max": 200,
+          "min": 0,
+          "unit": "kPa",
+          "value": 101.325
+        },
+        "temperature": {
+          "max": 1000,
+          "min": 0,
+          "unit": "K",
+          "value": 293.15
+        }
+      },
+      "story_points": {
+        "current_page": 1,
+        "items_per_page": 10,
+        "metadata": {
+          "last_modified": null,
+          "total_points": 0
+        },
+        "points": [],
+        "total_pages": 1
+      },
+      "updated_at": "2025-03-02T02:01:36.014348",
+      "user_id": "9cda3972-4627-48ba-853d-bfcd457582bd",
+      "version": 1,
+      "visualization_params": {
+        "camera": {
+          "far": 1000,
+          "fov": 75,
+          "near": 0.1
+        },
+        "color_scheme": "default",
+        "effects": {
+          "ambient_occlusion": true,
+          "bloom": true,
+          "motion_blur": false
+        },
+        "particle_density": 1.0,
+        "render_quality": "medium"
+      }
+    },
+    {
+      "ai_params": {
+        "constraints": {
+          "max_complexity": 0.8,
+          "min_harmony": 0.2
+        },
+        "enabled": true,
+        "learning_rate": 0.001,
+        "optimization_target": "harmony",
+        "update_frequency": "realtime"
+      },
+      "created_at": "2025-03-02T02:00:36.046065",
+      "description": "Test Description",
+      "harmony_params": {
+        "dissonance": {
+          "max": 1,
+          "min": 0,
+          "value": 0.0
+        },
+        "harmony_scale": {
+          "max": 2,
+          "min": 0,
+          "value": 1.0
+        },
+        "instruments": {
+          "options": [
+            "piano",
+            "strings",
+            "pad",
+            "bass",
+            "drums",
+            "synth"
+          ],
+          "primary": "piano",
+          "secondary": [
+            "strings",
+            "pad"
+          ]
+        },
+        "key": {
+          "options": [
+            "C",
+            "G",
+            "D",
+            "A",
+            "E",
+            "B",
+            "F#",
+            "C#",
+            "F",
+            "Bb",
+            "Eb",
+            "Ab"
+          ],
+          "value": "C"
+        },
+        "resonance": {
+          "max": 1,
+          "min": 0,
+          "value": 1.0
+        },
+        "scale": {
+          "options": [
+            "major",
+            "minor",
+            "harmonic_minor",
+            "melodic_minor",
+            "pentatonic"
+          ],
+          "value": "major"
+        },
+        "tempo": {
+          "max": 200,
+          "min": 60,
+          "unit": "bpm",
+          "value": 120
+        }
+      },
+      "id": "0d1e71f0-34d9-4ed3-97c7-113fccfb1499",
+      "is_public": true,
+      "name": "Test Universe 1740880836",
+      "physics_params": {
+        "air_resistance": {
+          "max": 1,
+          "min": 0,
+          "unit": "kg/m\u00b3",
+          "value": 0.0
+        },
+        "elasticity": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 1.0
+        },
+        "friction": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 0.1
+        },
+        "gravity": {
+          "max": 20,
+          "min": 0,
+          "unit": "m/s\u00b2",
+          "value": 9.81
+        },
+        "pressure": {
+          "max": 200,
+          "min": 0,
+          "unit": "kPa",
+          "value": 101.325
+        },
+        "temperature": {
+          "max": 1000,
+          "min": 0,
+          "unit": "K",
+          "value": 293.15
+        }
+      },
+      "story_points": {
+        "current_page": 1,
+        "items_per_page": 10,
+        "metadata": {
+          "last_modified": null,
+          "total_points": 0
+        },
+        "points": [],
+        "total_pages": 1
+      },
+      "updated_at": "2025-03-02T02:00:36.046066",
+      "user_id": "9cda3972-4627-48ba-853d-bfcd457582bd",
+      "version": 1,
+      "visualization_params": {
+        "camera": {
+          "far": 1000,
+          "fov": 75,
+          "near": 0.1
+        },
+        "color_scheme": "default",
+        "effects": {
+          "ambient_occlusion": true,
+          "bloom": true,
+          "motion_blur": false
+        },
+        "particle_density": 1.0,
+        "render_quality": "medium"
+      }
+    },
+    {
+      "ai_params": {
+        "constraints": {
+          "max_complexity": 0.8,
+          "min_harmony": 0.2
+        },
+        "enabled": true,
+        "learning_rate": 0.001,
+        "optimization_target": "harmony",
+        "update_frequency": "realtime"
+      },
+      "created_at": "2025-03-02T02:00:02.772914",
+      "description": "Test Description",
+      "harmony_params": {
+        "dissonance": {
+          "max": 1,
+          "min": 0,
+          "value": 0.0
+        },
+        "harmony_scale": {
+          "max": 2,
+          "min": 0,
+          "value": 1.0
+        },
+        "instruments": {
+          "options": [
+            "piano",
+            "strings",
+            "pad",
+            "bass",
+            "drums",
+            "synth"
+          ],
+          "primary": "piano",
+          "secondary": [
+            "strings",
+            "pad"
+          ]
+        },
+        "key": {
+          "options": [
+            "C",
+            "G",
+            "D",
+            "A",
+            "E",
+            "B",
+            "F#",
+            "C#",
+            "F",
+            "Bb",
+            "Eb",
+            "Ab"
+          ],
+          "value": "C"
+        },
+        "resonance": {
+          "max": 1,
+          "min": 0,
+          "value": 1.0
+        },
+        "scale": {
+          "options": [
+            "major",
+            "minor",
+            "harmonic_minor",
+            "melodic_minor",
+            "pentatonic"
+          ],
+          "value": "major"
+        },
+        "tempo": {
+          "max": 200,
+          "min": 60,
+          "unit": "bpm",
+          "value": 120
+        }
+      },
+      "id": "418895b8-0f5c-4d9d-98a8-28e5225756f7",
+      "is_public": true,
+      "name": "Test Universe 1740880802",
+      "physics_params": {
+        "air_resistance": {
+          "max": 1,
+          "min": 0,
+          "unit": "kg/m\u00b3",
+          "value": 0.0
+        },
+        "elasticity": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 1.0
+        },
+        "friction": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 0.1
+        },
+        "gravity": {
+          "max": 20,
+          "min": 0,
+          "unit": "m/s\u00b2",
+          "value": 9.81
+        },
+        "pressure": {
+          "max": 200,
+          "min": 0,
+          "unit": "kPa",
+          "value": 101.325
+        },
+        "temperature": {
+          "max": 1000,
+          "min": 0,
+          "unit": "K",
+          "value": 293.15
+        }
+      },
+      "story_points": {
+        "current_page": 1,
+        "items_per_page": 10,
+        "metadata": {
+          "last_modified": null,
+          "total_points": 0
+        },
+        "points": [],
+        "total_pages": 1
+      },
+      "updated_at": "2025-03-02T02:00:02.772916",
+      "user_id": "9cda3972-4627-48ba-853d-bfcd457582bd",
+      "version": 1,
+      "visualization_params": {
+        "camera": {
+          "far": 1000,
+          "fov": 75,
+          "near": 0.1
+        },
+        "color_scheme": "default",
+        "effects": {
+          "ambient_occlusion": true,
+          "bloom": true,
+          "motion_blur": false
+        },
+        "particle_density": 1.0,
+        "render_quality": "medium"
+      }
+    },
+    {
+      "ai_params": {
+        "constraints": {
+          "max_complexity": 0.8,
+          "min_harmony": 0.2
+        },
+        "enabled": true,
+        "learning_rate": 0.001,
+        "optimization_target": "harmony",
+        "update_frequency": "realtime"
+      },
+      "created_at": "2025-03-02T01:59:22.223626",
+      "description": "Test Description",
+      "harmony_params": {
+        "dissonance": {
+          "max": 1,
+          "min": 0,
+          "value": 0.0
+        },
+        "harmony_scale": {
+          "max": 2,
+          "min": 0,
+          "value": 1.0
+        },
+        "instruments": {
+          "options": [
+            "piano",
+            "strings",
+            "pad",
+            "bass",
+            "drums",
+            "synth"
+          ],
+          "primary": "piano",
+          "secondary": [
+            "strings",
+            "pad"
+          ]
+        },
+        "key": {
+          "options": [
+            "C",
+            "G",
+            "D",
+            "A",
+            "E",
+            "B",
+            "F#",
+            "C#",
+            "F",
+            "Bb",
+            "Eb",
+            "Ab"
+          ],
+          "value": "C"
+        },
+        "resonance": {
+          "max": 1,
+          "min": 0,
+          "value": 1.0
+        },
+        "scale": {
+          "options": [
+            "major",
+            "minor",
+            "harmonic_minor",
+            "melodic_minor",
+            "pentatonic"
+          ],
+          "value": "major"
+        },
+        "tempo": {
+          "max": 200,
+          "min": 60,
+          "unit": "bpm",
+          "value": 120
+        }
+      },
+      "id": "469bcd48-f108-458b-9150-51f180bdd231",
+      "is_public": true,
+      "name": "Test Universe 1740880762",
+      "physics_params": {
+        "air_resistance": {
+          "max": 1,
+          "min": 0,
+          "unit": "kg/m\u00b3",
+          "value": 0.0
+        },
+        "elasticity": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 1.0
+        },
+        "friction": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 0.1
+        },
+        "gravity": {
+          "max": 20,
+          "min": 0,
+          "unit": "m/s\u00b2",
+          "value": 9.81
+        },
+        "pressure": {
+          "max": 200,
+          "min": 0,
+          "unit": "kPa",
+          "value": 101.325
+        },
+        "temperature": {
+          "max": 1000,
+          "min": 0,
+          "unit": "K",
+          "value": 293.15
+        }
+      },
+      "story_points": {
+        "current_page": 1,
+        "items_per_page": 10,
+        "metadata": {
+          "last_modified": null,
+          "total_points": 0
+        },
+        "points": [],
+        "total_pages": 1
+      },
+      "updated_at": "2025-03-02T01:59:22.223627",
+      "user_id": "9cda3972-4627-48ba-853d-bfcd457582bd",
+      "version": 1,
+      "visualization_params": {
+        "camera": {
+          "far": 1000,
+          "fov": 75,
+          "near": 0.1
+        },
+        "color_scheme": "default",
+        "effects": {
+          "ambient_occlusion": true,
+          "bloom": true,
+          "motion_blur": false
+        },
+        "particle_density": 1.0,
+        "render_quality": "medium"
+      }
+    },
+    {
+      "ai_params": {
+        "constraints": {
+          "max_complexity": 0.8,
+          "min_harmony": 0.2
+        },
+        "enabled": true,
+        "learning_rate": 0.001,
+        "optimization_target": "harmony",
+        "update_frequency": "realtime"
+      },
+      "created_at": "2025-03-02T01:58:08.947938",
+      "description": "Test Description",
+      "harmony_params": {
+        "dissonance": {
+          "max": 1,
+          "min": 0,
+          "value": 0.0
+        },
+        "harmony_scale": {
+          "max": 2,
+          "min": 0,
+          "value": 1.0
+        },
+        "instruments": {
+          "options": [
+            "piano",
+            "strings",
+            "pad",
+            "bass",
+            "drums",
+            "synth"
+          ],
+          "primary": "piano",
+          "secondary": [
+            "strings",
+            "pad"
+          ]
+        },
+        "key": {
+          "options": [
+            "C",
+            "G",
+            "D",
+            "A",
+            "E",
+            "B",
+            "F#",
+            "C#",
+            "F",
+            "Bb",
+            "Eb",
+            "Ab"
+          ],
+          "value": "C"
+        },
+        "resonance": {
+          "max": 1,
+          "min": 0,
+          "value": 1.0
+        },
+        "scale": {
+          "options": [
+            "major",
+            "minor",
+            "harmonic_minor",
+            "melodic_minor",
+            "pentatonic"
+          ],
+          "value": "major"
+        },
+        "tempo": {
+          "max": 200,
+          "min": 60,
+          "unit": "bpm",
+          "value": 120
+        }
+      },
+      "id": "f80f468a-f50b-43f5-a2dd-e20cdbb9e731",
+      "is_public": true,
+      "name": "Test Universe 1740880688",
+      "physics_params": {
+        "air_resistance": {
+          "max": 1,
+          "min": 0,
+          "unit": "kg/m\u00b3",
+          "value": 0.0
+        },
+        "elasticity": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 1.0
+        },
+        "friction": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 0.1
+        },
+        "gravity": {
+          "max": 20,
+          "min": 0,
+          "unit": "m/s\u00b2",
+          "value": 9.81
+        },
+        "pressure": {
+          "max": 200,
+          "min": 0,
+          "unit": "kPa",
+          "value": 101.325
+        },
+        "temperature": {
+          "max": 1000,
+          "min": 0,
+          "unit": "K",
+          "value": 293.15
+        }
+      },
+      "story_points": {
+        "current_page": 1,
+        "items_per_page": 10,
+        "metadata": {
+          "last_modified": null,
+          "total_points": 0
+        },
+        "points": [],
+        "total_pages": 1
+      },
+      "updated_at": "2025-03-02T01:58:08.947940",
+      "user_id": "9cda3972-4627-48ba-853d-bfcd457582bd",
+      "version": 1,
+      "visualization_params": {
+        "camera": {
+          "far": 1000,
+          "fov": 75,
+          "near": 0.1
+        },
+        "color_scheme": "default",
+        "effects": {
+          "ambient_occlusion": true,
+          "bloom": true,
+          "motion_blur": false
+        },
+        "particle_density": 1.0,
+        "render_quality": "medium"
+      }
+    },
+    {
+      "ai_params": {
+        "constraints": {
+          "max_complexity": 0.8,
+          "min_harmony": 0.2
+        },
+        "enabled": true,
+        "learning_rate": 0.001,
+        "optimization_target": "harmony",
+        "update_frequency": "realtime"
+      },
+      "created_at": "2025-03-02T01:57:45.219062",
+      "description": "Test Description",
+      "harmony_params": {
+        "dissonance": {
+          "max": 1,
+          "min": 0,
+          "value": 0.0
+        },
+        "harmony_scale": {
+          "max": 2,
+          "min": 0,
+          "value": 1.0
+        },
+        "instruments": {
+          "options": [
+            "piano",
+            "strings",
+            "pad",
+            "bass",
+            "drums",
+            "synth"
+          ],
+          "primary": "piano",
+          "secondary": [
+            "strings",
+            "pad"
+          ]
+        },
+        "key": {
+          "options": [
+            "C",
+            "G",
+            "D",
+            "A",
+            "E",
+            "B",
+            "F#",
+            "C#",
+            "F",
+            "Bb",
+            "Eb",
+            "Ab"
+          ],
+          "value": "C"
+        },
+        "resonance": {
+          "max": 1,
+          "min": 0,
+          "value": 1.0
+        },
+        "scale": {
+          "options": [
+            "major",
+            "minor",
+            "harmonic_minor",
+            "melodic_minor",
+            "pentatonic"
+          ],
+          "value": "major"
+        },
+        "tempo": {
+          "max": 200,
+          "min": 60,
+          "unit": "bpm",
+          "value": 120
+        }
+      },
+      "id": "e0e7a6e0-249d-4647-b96c-7fccf2b60c32",
+      "is_public": true,
+      "name": "Test Universe 1740880665",
+      "physics_params": {
+        "air_resistance": {
+          "max": 1,
+          "min": 0,
+          "unit": "kg/m\u00b3",
+          "value": 0.0
+        },
+        "elasticity": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 1.0
+        },
+        "friction": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 0.1
+        },
+        "gravity": {
+          "max": 20,
+          "min": 0,
+          "unit": "m/s\u00b2",
+          "value": 9.81
+        },
+        "pressure": {
+          "max": 200,
+          "min": 0,
+          "unit": "kPa",
+          "value": 101.325
+        },
+        "temperature": {
+          "max": 1000,
+          "min": 0,
+          "unit": "K",
+          "value": 293.15
+        }
+      },
+      "story_points": {
+        "current_page": 1,
+        "items_per_page": 10,
+        "metadata": {
+          "last_modified": null,
+          "total_points": 0
+        },
+        "points": [],
+        "total_pages": 1
+      },
+      "updated_at": "2025-03-02T01:57:45.219066",
+      "user_id": "9cda3972-4627-48ba-853d-bfcd457582bd",
+      "version": 1,
+      "visualization_params": {
+        "camera": {
+          "far": 1000,
+          "fov": 75,
+          "near": 0.1
+        },
+        "color_scheme": "default",
+        "effects": {
+          "ambient_occlusion": true,
+          "bloom": true,
+          "motion_blur": false
+        },
+        "particle_density": 1.0,
+        "render_quality": "medium"
+      }
+    },
+    {
+      "ai_params": {
+        "constraints": {
+          "max_complexity": 0.8,
+          "min_harmony": 0.2
+        },
+        "enabled": true,
+        "learning_rate": 0.001,
+        "optimization_target": "harmony",
+        "update_frequency": "realtime"
+      },
+      "created_at": "2025-03-02T01:53:34.684581",
+      "description": "Test Description",
+      "harmony_params": {
+        "dissonance": {
+          "max": 1,
+          "min": 0,
+          "value": 0.0
+        },
+        "harmony_scale": {
+          "max": 2,
+          "min": 0,
+          "value": 1.0
+        },
+        "instruments": {
+          "options": [
+            "piano",
+            "strings",
+            "pad",
+            "bass",
+            "drums",
+            "synth"
+          ],
+          "primary": "piano",
+          "secondary": [
+            "strings",
+            "pad"
+          ]
+        },
+        "key": {
+          "options": [
+            "C",
+            "G",
+            "D",
+            "A",
+            "E",
+            "B",
+            "F#",
+            "C#",
+            "F",
+            "Bb",
+            "Eb",
+            "Ab"
+          ],
+          "value": "C"
+        },
+        "resonance": {
+          "max": 1,
+          "min": 0,
+          "value": 1.0
+        },
+        "scale": {
+          "options": [
+            "major",
+            "minor",
+            "harmonic_minor",
+            "melodic_minor",
+            "pentatonic"
+          ],
+          "value": "major"
+        },
+        "tempo": {
+          "max": 200,
+          "min": 60,
+          "unit": "bpm",
+          "value": 120
+        }
+      },
+      "id": "eb5a356c-767d-487a-8f31-1fc2e16f7233",
+      "is_public": true,
+      "name": "Test Universe 1740880414",
+      "physics_params": {
+        "air_resistance": {
+          "max": 1,
+          "min": 0,
+          "unit": "kg/m\u00b3",
+          "value": 0.0
+        },
+        "elasticity": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 1.0
+        },
+        "friction": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 0.1
+        },
+        "gravity": {
+          "max": 20,
+          "min": 0,
+          "unit": "m/s\u00b2",
+          "value": 9.81
+        },
+        "pressure": {
+          "max": 200,
+          "min": 0,
+          "unit": "kPa",
+          "value": 101.325
+        },
+        "temperature": {
+          "max": 1000,
+          "min": 0,
+          "unit": "K",
+          "value": 293.15
+        }
+      },
+      "story_points": {
+        "current_page": 1,
+        "items_per_page": 10,
+        "metadata": {
+          "last_modified": null,
+          "total_points": 0
+        },
+        "points": [],
+        "total_pages": 1
+      },
+      "updated_at": "2025-03-02T01:53:34.684582",
+      "user_id": "9cda3972-4627-48ba-853d-bfcd457582bd",
+      "version": 1,
+      "visualization_params": {
+        "camera": {
+          "far": 1000,
+          "fov": 75,
+          "near": 0.1
+        },
+        "color_scheme": "default",
+        "effects": {
+          "ambient_occlusion": true,
+          "bloom": true,
+          "motion_blur": false
+        },
+        "particle_density": 1.0,
+        "render_quality": "medium"
+      }
+    },
+    {
+      "ai_params": {
+        "constraints": {
+          "max_complexity": 0.8,
+          "min_harmony": 0.2
+        },
+        "enabled": true,
+        "learning_rate": 0.001,
+        "optimization_target": "harmony",
+        "update_frequency": "realtime"
+      },
+      "created_at": "2025-03-02T01:50:55.943306",
+      "description": "Test Description",
+      "harmony_params": {
+        "dissonance": {
+          "max": 1,
+          "min": 0,
+          "value": 0.0
+        },
+        "harmony_scale": {
+          "max": 2,
+          "min": 0,
+          "value": 1.0
+        },
+        "instruments": {
+          "options": [
+            "piano",
+            "strings",
+            "pad",
+            "bass",
+            "drums",
+            "synth"
+          ],
+          "primary": "piano",
+          "secondary": [
+            "strings",
+            "pad"
+          ]
+        },
+        "key": {
+          "options": [
+            "C",
+            "G",
+            "D",
+            "A",
+            "E",
+            "B",
+            "F#",
+            "C#",
+            "F",
+            "Bb",
+            "Eb",
+            "Ab"
+          ],
+          "value": "C"
+        },
+        "resonance": {
+          "max": 1,
+          "min": 0,
+          "value": 1.0
+        },
+        "scale": {
+          "options": [
+            "major",
+            "minor",
+            "harmonic_minor",
+            "melodic_minor",
+            "pentatonic"
+          ],
+          "value": "major"
+        },
+        "tempo": {
+          "max": 200,
+          "min": 60,
+          "unit": "bpm",
+          "value": 120
+        }
+      },
+      "id": "d78b0ba0-2718-4c68-bcb8-dc9c7764ec61",
+      "is_public": true,
+      "name": "Test Universe 1740880255",
+      "physics_params": {
+        "air_resistance": {
+          "max": 1,
+          "min": 0,
+          "unit": "kg/m\u00b3",
+          "value": 0.0
+        },
+        "elasticity": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 1.0
+        },
+        "friction": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 0.1
+        },
+        "gravity": {
+          "max": 20,
+          "min": 0,
+          "unit": "m/s\u00b2",
+          "value": 9.81
+        },
+        "pressure": {
+          "max": 200,
+          "min": 0,
+          "unit": "kPa",
+          "value": 101.325
+        },
+        "temperature": {
+          "max": 1000,
+          "min": 0,
+          "unit": "K",
+          "value": 293.15
+        }
+      },
+      "story_points": {
+        "current_page": 1,
+        "items_per_page": 10,
+        "metadata": {
+          "last_modified": null,
+          "total_points": 0
+        },
+        "points": [],
+        "total_pages": 1
+      },
+      "updated_at": "2025-03-02T01:50:55.943307",
+      "user_id": "9cda3972-4627-48ba-853d-bfcd457582bd",
+      "version": 1,
+      "visualization_params": {
+        "camera": {
+          "far": 1000,
+          "fov": 75,
+          "near": 0.1
+        },
+        "color_scheme": "default",
+        "effects": {
+          "ambient_occlusion": true,
+          "bloom": true,
+          "motion_blur": false
+        },
+        "particle_density": 1.0,
+        "render_quality": "medium"
+      }
+    },
+    {
+      "ai_params": {
+        "constraints": {
+          "max_complexity": 0.8,
+          "min_harmony": 0.2
+        },
+        "enabled": true,
+        "learning_rate": 0.001,
+        "optimization_target": "harmony",
+        "update_frequency": "realtime"
+      },
+      "created_at": "2025-03-02T01:50:45.284619",
+      "description": "Test Description",
+      "harmony_params": {
+        "dissonance": {
+          "max": 1,
+          "min": 0,
+          "value": 0.0
+        },
+        "harmony_scale": {
+          "max": 2,
+          "min": 0,
+          "value": 1.0
+        },
+        "instruments": {
+          "options": [
+            "piano",
+            "strings",
+            "pad",
+            "bass",
+            "drums",
+            "synth"
+          ],
+          "primary": "piano",
+          "secondary": [
+            "strings",
+            "pad"
+          ]
+        },
+        "key": {
+          "options": [
+            "C",
+            "G",
+            "D",
+            "A",
+            "E",
+            "B",
+            "F#",
+            "C#",
+            "F",
+            "Bb",
+            "Eb",
+            "Ab"
+          ],
+          "value": "C"
+        },
+        "resonance": {
+          "max": 1,
+          "min": 0,
+          "value": 1.0
+        },
+        "scale": {
+          "options": [
+            "major",
+            "minor",
+            "harmonic_minor",
+            "melodic_minor",
+            "pentatonic"
+          ],
+          "value": "major"
+        },
+        "tempo": {
+          "max": 200,
+          "min": 60,
+          "unit": "bpm",
+          "value": 120
+        }
+      },
+      "id": "239fda27-5198-4d53-a157-95fd7cb34fdc",
+      "is_public": true,
+      "name": "Test Universe 1740880245",
+      "physics_params": {
+        "air_resistance": {
+          "max": 1,
+          "min": 0,
+          "unit": "kg/m\u00b3",
+          "value": 0.0
+        },
+        "elasticity": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 1.0
+        },
+        "friction": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 0.1
+        },
+        "gravity": {
+          "max": 20,
+          "min": 0,
+          "unit": "m/s\u00b2",
+          "value": 9.81
+        },
+        "pressure": {
+          "max": 200,
+          "min": 0,
+          "unit": "kPa",
+          "value": 101.325
+        },
+        "temperature": {
+          "max": 1000,
+          "min": 0,
+          "unit": "K",
+          "value": 293.15
+        }
+      },
+      "story_points": {
+        "current_page": 1,
+        "items_per_page": 10,
+        "metadata": {
+          "last_modified": null,
+          "total_points": 0
+        },
+        "points": [],
+        "total_pages": 1
+      },
+      "updated_at": "2025-03-02T01:50:45.284622",
+      "user_id": "9cda3972-4627-48ba-853d-bfcd457582bd",
+      "version": 1,
+      "visualization_params": {
+        "camera": {
+          "far": 1000,
+          "fov": 75,
+          "near": 0.1
+        },
+        "color_scheme": "default",
+        "effects": {
+          "ambient_occlusion": true,
+          "bloom": true,
+          "motion_blur": false
+        },
+        "particle_density": 1.0,
+        "render_quality": "medium"
+      }
+    },
+    {
+      "ai_params": {
+        "constraints": {
+          "max_complexity": 0.8,
+          "min_harmony": 0.2
+        },
+        "enabled": true,
+        "learning_rate": 0.001,
+        "optimization_target": "harmony",
+        "update_frequency": "realtime"
+      },
+      "created_at": "2025-03-02T01:48:30.359765",
+      "description": "Test Description",
+      "harmony_params": {
+        "dissonance": {
+          "max": 1,
+          "min": 0,
+          "value": 0.0
+        },
+        "harmony_scale": {
+          "max": 2,
+          "min": 0,
+          "value": 1.0
+        },
+        "instruments": {
+          "options": [
+            "piano",
+            "strings",
+            "pad",
+            "bass",
+            "drums",
+            "synth"
+          ],
+          "primary": "piano",
+          "secondary": [
+            "strings",
+            "pad"
+          ]
+        },
+        "key": {
+          "options": [
+            "C",
+            "G",
+            "D",
+            "A",
+            "E",
+            "B",
+            "F#",
+            "C#",
+            "F",
+            "Bb",
+            "Eb",
+            "Ab"
+          ],
+          "value": "C"
+        },
+        "resonance": {
+          "max": 1,
+          "min": 0,
+          "value": 1.0
+        },
+        "scale": {
+          "options": [
+            "major",
+            "minor",
+            "harmonic_minor",
+            "melodic_minor",
+            "pentatonic"
+          ],
+          "value": "major"
+        },
+        "tempo": {
+          "max": 200,
+          "min": 60,
+          "unit": "bpm",
+          "value": 120
+        }
+      },
+      "id": "0b5cd279-9747-4bfe-ac67-663c973b5494",
+      "is_public": true,
+      "name": "Test Universe 1740880110",
+      "physics_params": {
+        "air_resistance": {
+          "max": 1,
+          "min": 0,
+          "unit": "kg/m\u00b3",
+          "value": 0.0
+        },
+        "elasticity": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 1.0
+        },
+        "friction": {
+          "max": 1,
+          "min": 0,
+          "unit": "coefficient",
+          "value": 0.1
+        },
+        "gravity": {
+          "max": 20,
+          "min": 0,
+          "unit": "m/s\u00b2",
+          "value": 9.81
+        },
+        "pressure": {
+          "max": 200,
+          "min": 0,
+          "unit": "kPa",
+          "value": 101.325
+        },
+        "temperature": {
+          "max": 1000,
+          "min": 0,
+          "unit": "K",
+          "value": 293.15
+        }
+      },
+      "story_points": {
+        "current_page": 1,
+        "items_per_page": 10,
+        "metadata": {
+          "last_modified": null,
+          "total_points": 0
+        },
+        "points": [],
+        "total_pages": 1
+      },
+      "updated_at": "2025-03-02T01:48:30.359769",
+      "user_id": "9cda3972-4627-48ba-853d-bfcd457582bd",
+      "version": 1,
+      "visualization_params": {
+        "camera": {
+          "far": 1000,
+          "fov": 75,
+          "near": 0.1
+        },
+        "color_scheme": "default",
+        "effects": {
+          "ambient_occlusion": true,
+          "bloom": true,
+          "motion_blur": false
+        },
+        "particle_density": 1.0,
+        "render_quality": "medium"
+      }
+    }
+  ]
+}</pre>
+
+                        </td>
+                    </tr>
+
+                    <tr class="expandable" onclick="toggleDetails('details-Universe-Management-2')">
+                        <td>Get single universe</td>
+                        <td class="result-pass">PASS</td>
+                        <td class="timestamp">17:36:10</td>
+                    </tr>
+
+                    <tr id="details-Universe-Management-2" class="details-row">
+                        <td colspan="3" class="details-cell">
+
+                            <strong>Details:</strong>
+                            <pre>{
+  "ai_params": {
+    "constraints": {
+      "max_complexity": 0.8,
+      "min_harmony": 0.2
+    },
+    "enabled": true,
+    "learning_rate": 0.001,
+    "optimization_target": "harmony",
+    "update_frequency": "realtime"
+  },
+  "created_at": "2025-03-02T23:36:10.763103",
+  "description": "A test universe for API verification",
+  "harmony_params": {
+    "dissonance": {
+      "max": 1,
+      "min": 0,
+      "value": 0.0
+    },
+    "harmony_scale": {
+      "max": 2,
+      "min": 0,
+      "value": 1.0
+    },
+    "instruments": {
+      "options": [
+        "piano",
+        "strings",
+        "pad",
+        "bass",
+        "drums",
+        "synth"
+      ],
+      "primary": "piano",
+      "secondary": [
+        "strings",
+        "pad"
+      ]
+    },
+    "key": {
+      "options": [
+        "C",
+        "G",
+        "D",
+        "A",
+        "E",
+        "B",
+        "F#",
+        "C#",
+        "F",
+        "Bb",
+        "Eb",
+        "Ab"
+      ],
+      "value": "C"
+    },
+    "resonance": {
+      "max": 1,
+      "min": 0,
+      "value": 1.0
+    },
+    "scale": {
+      "options": [
+        "major",
+        "minor",
+        "harmonic_minor",
+        "melodic_minor",
+        "pentatonic"
+      ],
+      "value": "major"
+    },
+    "tempo": {
+      "max": 200,
+      "min": 60,
+      "unit": "bpm",
+      "value": 120
+    }
+  },
+  "id": "728320b5-05c4-441d-abcb-a18f36176785",
+  "is_public": false,
+  "name": "Test Universe 31d5e2e6",
+  "physics_params": {
+    "air_resistance": {
+      "max": 1,
+      "min": 0,
+      "unit": "kg/m\u00b3",
+      "value": 0.0
+    },
+    "elasticity": {
+      "max": 1,
+      "min": 0,
+      "unit": "coefficient",
+      "value": 1.0
+    },
+    "friction": {
+      "max": 1,
+      "min": 0,
+      "unit": "coefficient",
+      "value": 0.1
+    },
+    "gravity": {
+      "max": 20,
+      "min": 0,
+      "unit": "m/s\u00b2",
+      "value": 9.81
+    },
+    "pressure": {
+      "max": 200,
+      "min": 0,
+      "unit": "kPa",
+      "value": 101.325
+    },
+    "temperature": {
+      "max": 1000,
+      "min": 0,
+      "unit": "K",
+      "value": 293.15
+    }
+  },
+  "story_points": {
+    "current_page": 1,
+    "items_per_page": 10,
+    "metadata": {
+      "last_modified": null,
+      "total_points": 0
+    },
+    "points": [],
+    "total_pages": 1
+  },
+  "updated_at": "2025-03-02T23:36:10.763104",
+  "user_id": "9cda3972-4627-48ba-853d-bfcd457582bd",
+  "user_role": "owner",
+  "version": 1,
+  "visualization_params": {
+    "camera": {
+      "far": 1000,
+      "fov": 75,
+      "near": 0.1
+    },
+    "color_scheme": "default",
+    "effects": {
+      "ambient_occlusion": true,
+      "bloom": true,
+      "motion_blur": false
+    },
+    "particle_density": 1.0,
+    "render_quality": "medium"
+  }
+}</pre>
+
+                        </td>
+                    </tr>
+
+                    <tr class="expandable" onclick="toggleDetails('details-Universe-Management-3')">
+                        <td>Update universe</td>
+                        <td class="result-pass">PASS</td>
+                        <td class="timestamp">17:36:10</td>
+                    </tr>
+
+                    <tr id="details-Universe-Management-3" class="details-row">
+                        <td colspan="3" class="details-cell">
+
+                            <strong>Details:</strong>
+                            <pre>{
+  "ai_params": {
+    "constraints": {
+      "max_complexity": 0.8,
+      "min_harmony": 0.2
+    },
+    "enabled": true,
+    "learning_rate": 0.001,
+    "optimization_target": "harmony",
+    "update_frequency": "realtime"
+  },
+  "created_at": "2025-03-02T23:36:10.763103",
+  "description": "An updated test universe",
+  "harmony_params": {
+    "dissonance": {
+      "max": 1,
+      "min": 0,
+      "value": 0.0
+    },
+    "harmony_scale": {
+      "max": 2,
+      "min": 0,
+      "value": 1.0
+    },
+    "instruments": {
+      "options": [
+        "piano",
+        "strings",
+        "pad",
+        "bass",
+        "drums",
+        "synth"
+      ],
+      "primary": "piano",
+      "secondary": [
+        "strings",
+        "pad"
+      ]
+    },
+    "key": {
+      "options": [
+        "C",
+        "G",
+        "D",
+        "A",
+        "E",
+        "B",
+        "F#",
+        "C#",
+        "F",
+        "Bb",
+        "Eb",
+        "Ab"
+      ],
+      "value": "C"
+    },
+    "resonance": {
+      "max": 1,
+      "min": 0,
+      "value": 1.0
+    },
+    "scale": {
+      "options": [
+        "major",
+        "minor",
+        "harmonic_minor",
+        "melodic_minor",
+        "pentatonic"
+      ],
+      "value": "major"
+    },
+    "tempo": {
+      "max": 200,
+      "min": 60,
+      "unit": "bpm",
+      "value": 120
+    }
+  },
+  "id": "728320b5-05c4-441d-abcb-a18f36176785",
+  "is_public": false,
+  "name": "Updated Universe 15a9f156",
+  "physics_params": {
+    "air_resistance": {
+      "max": 1,
+      "min": 0,
+      "unit": "kg/m\u00b3",
+      "value": 0.0
+    },
+    "elasticity": {
+      "max": 1,
+      "min": 0,
+      "unit": "coefficient",
+      "value": 1.0
+    },
+    "friction": {
+      "max": 1,
+      "min": 0,
+      "unit": "coefficient",
+      "value": 0.1
+    },
+    "gravity": {
+      "max": 20,
+      "min": 0,
+      "unit": "m/s\u00b2",
+      "value": 9.81
+    },
+    "pressure": {
+      "max": 200,
+      "min": 0,
+      "unit": "kPa",
+      "value": 101.325
+    },
+    "temperature": {
+      "max": 1000,
+      "min": 0,
+      "unit": "K",
+      "value": 293.15
+    }
+  },
+  "story_points": {
+    "current_page": 1,
+    "items_per_page": 10,
+    "metadata": {
+      "last_modified": null,
+      "total_points": 0
+    },
+    "points": [],
+    "total_pages": 1
+  },
+  "updated_at": "2025-03-02T23:36:10.834471",
+  "user_id": "9cda3972-4627-48ba-853d-bfcd457582bd",
+  "version": 1,
+  "visualization_params": {
+    "camera": {
+      "far": 1000,
+      "fov": 75,
+      "near": 0.1
+    },
+    "color_scheme": "default",
+    "effects": {
+      "ambient_occlusion": true,
+      "bloom": true,
+      "motion_blur": false
+    },
+    "particle_density": 1.0,
+    "render_quality": "medium"
+  }
+}</pre>
+
+                        </td>
+                    </tr>
+
+                    <tr class="expandable" onclick="toggleDetails('details-Universe-Management-4')">
+                        <td>Update universe physics</td>
+                        <td class="result-fail">FAIL</td>
+                        <td class="timestamp">17:36:10</td>
+                    </tr>
+
+                    <tr id="details-Universe-Management-4" class="details-row">
+                        <td colspan="3" class="details-cell">
+
+                            <strong>Error:</strong>
+                            <pre class="error-message">Failed to update universe physics: {
+  "error_code": "ValidationError",
+  "message": "Invalid physics parameters"
+}
+</pre>
+
+                        </td>
+                    </tr>
+
+                    <tr class="expandable" onclick="toggleDetails('details-Universe-Management-5')">
+                        <td>Delete universe</td>
+                        <td class="result-pass">PASS</td>
+                        <td class="timestamp">17:36:10</td>
+                    </tr>
+
+                    <tr id="details-Universe-Management-5" class="details-row">
+                        <td colspan="3" class="details-cell">
+
+                            <strong>Details:</strong>
+                            <pre>{
+  "success": true,
+  "deleted_id": "758e1720-0f5b-494a-ab12-341a5a5efe81"
+}</pre>
+
+                        </td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </div>
+
+        <div class="feature-section">
+            <div class="feature-header">
+                Scene Management (1/2 passed)
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Test</th>
+                        <th>Result</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    <tr class="expandable" onclick="toggleDetails('details-Scene-Management-0')">
+                        <td>Create scene</td>
+                        <td class="result-fail">FAIL</td>
+                        <td class="timestamp">17:36:10</td>
+                    </tr>
+
+                    <tr id="details-Scene-Management-0" class="details-row">
+                        <td colspan="3" class="details-cell">
+
+                            <strong>Error:</strong>
+                            <pre class="error-message">Failed to create scene: {
+  "category": "system",
+  "details": "name 'UniverseRepository' is not defined",
+  "error_code": "INTERNAL_SERVER_ERROR",
+  "message": "An unexpected error occurred",
+  "severity": "critical",
+  "status_code": 500
+}
+</pre>
+
+                        </td>
+                    </tr>
+
+                    <tr class="" >
+                        <td>List scenes</td>
+                        <td class="result-pass">PASS</td>
+                        <td class="timestamp">17:36:10</td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </div>
+
+        <div class="feature-section">
+            <div class="feature-header">
+                Physics Parameters (0/2 passed)
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Test</th>
+                        <th>Result</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    <tr class="expandable" onclick="toggleDetails('details-Physics-Parameters-0')">
+                        <td>Create physics parameters</td>
+                        <td class="result-fail">FAIL</td>
+                        <td class="timestamp">17:36:10</td>
+                    </tr>
+
+                    <tr id="details-Physics-Parameters-0" class="details-row">
+                        <td colspan="3" class="details-cell">
+
+                            <strong>Error:</strong>
+                            <pre class="error-message">Failed to create physics parameters: {
+  "category": "system",
+  "details": null,
+  "error_code": "NotFound",
+  "message": "The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.",
+  "severity": "error",
+  "status_code": 404
+}
+</pre>
+
+                        </td>
+                    </tr>
+
+                    <tr class="expandable" onclick="toggleDetails('details-Physics-Parameters-1')">
+                        <td>List physics parameters</td>
+                        <td class="result-fail">FAIL</td>
+                        <td class="timestamp">17:36:10</td>
+                    </tr>
+
+                    <tr id="details-Physics-Parameters-1" class="details-row">
+                        <td colspan="3" class="details-cell">
+
+                            <strong>Error:</strong>
+                            <pre class="error-message">Failed to list physics parameters: {
+  "category": "system",
+  "details": null,
+  "error_code": "NotFound",
+  "message": "The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.",
+  "severity": "error",
+  "status_code": 404
+}
+</pre>
+
+                        </td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</body>
+</html>

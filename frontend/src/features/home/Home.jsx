@@ -2,11 +2,14 @@ import React from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { demoLogin } from '../../store/thunks/authThunks';
+import useModal from '../../hooks/useModal';
+import { MODAL_TYPES } from '../../utils/modalRegistry';
 import './Home.css';
 
 const Home = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { openModal } = useModal();
 
   const handleDemoLogin = async () => {
     try {
@@ -20,11 +23,11 @@ const Home = () => {
   };
 
   const handleLogin = () => {
-    navigate('/?modal=login');
+    openModal(MODAL_TYPES.LOGIN);
   };
 
   const handleSignup = () => {
-    navigate('/?modal=register');
+    openModal(MODAL_TYPES.SIGNUP);
   };
 
   return (

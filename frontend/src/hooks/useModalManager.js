@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useModalRoute } from '../providers/ModalProvider';
+import { MODAL_TYPES } from '../utils/modalRegistry';
 
 /**
  * Custom hook for managing modal state and interactions
@@ -21,8 +22,13 @@ const useModalManager = (modalType, options = {}) => {
 
   // Open modal with optional ID and additional parameters
   const openModal = useCallback((id = null, params = {}) => {
+    if (!modalType || !MODAL_TYPES[modalType]) {
+      console.warn(`Invalid modal type: ${modalType}`);
+      return;
+    }
+
     setError(null);
-    openModalRoute(modalType, id, {
+    openModalRoute(MODAL_TYPES[modalType], id, {
       ...additionalParams,
       ...params,
     });
@@ -60,7 +66,7 @@ const useModalManager = (modalType, options = {}) => {
   }, [closeModal, onSuccess, onError]);
 
   // Check if this modal is currently active
-  const isActive = currentModal === modalType;
+  const isActive = currentModal === MODAL_TYPES[modalType];
 
   return {
     openModal,

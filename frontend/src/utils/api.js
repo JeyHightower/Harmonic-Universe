@@ -1,9 +1,10 @@
 import axios from 'axios';
+import { AUTH_CONFIG } from './config';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Create axios instance with base configuration
-const api = axios.create({
+export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json'
@@ -13,7 +14,7 @@ const api = axios.create({
 // Request interceptor for adding auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -30,7 +31,7 @@ api.interceptors.response.use(
   async (error) => {
     if (error.response?.status === 401) {
       // Handle token refresh or logout
-      localStorage.removeItem('token');
+      localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
       window.location.href = '/login';
     }
     return Promise.reject(error);
