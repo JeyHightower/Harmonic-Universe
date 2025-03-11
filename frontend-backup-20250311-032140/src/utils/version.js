@@ -1,0 +1,1 @@
+./static/react-fixes/version.js

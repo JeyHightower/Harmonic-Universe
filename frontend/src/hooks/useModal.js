@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useDispatch } from 'react-redux';
-import { openModal as openModalAction, closeModal as closeModalAction } from '../store/slices/modalSlice';
+import { openModal as openModalAction, closeModal as closeModalAction } from '../store/modalSlice';
 import { MODAL_TYPES, isValidModalType } from '../utils/modalRegistry';
 
 /**

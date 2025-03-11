@@ -1,6 +1,8 @@
 #!/bin/bash
 
-echo "Starting master cleanup process..."
+echo "Starting master cleanup process moving to root directory"
+
+cd ../../
 
 # Function to keep only the latest version of a file pattern
 cleanup_pattern() {

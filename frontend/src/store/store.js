@@ -1,9 +1,9 @@
 import { configureStore } from '@reduxjs/toolkit';
-import authReducer from './slices/authSlice';
-import modalReducer from './slices/modalSlice';
-import physicsObjectsReducer from './slices/physicsObjectsSlice';
-import scenesReducer from './slices/scenesSlice';
-import universeReducer from './slices/universeSlice';
+import authReducer from './authSlice';
+import modalReducer from './modalSlice';
+import physicsObjectsReducer from './physicsObjectsSlice';
+import scenesReducer from './scenesSlice';
+import universeReducer from './universeSlice';
 
 const store = configureStore({
   reducer: {

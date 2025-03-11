@@ -1,0 +1,26 @@
+.logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo svg {
+  width: 100%;
+  height: 100%;
+}
+
+.logo-circle {
+  stroke: var(--primary-color);
+  stroke-width: 8;
+  fill: none;
+}
+
+.logo-cross {
+  stroke: var(--primary-color);
+}
+
+.logo:hover .logo-circle,
+.logo:hover .logo-cross {
+  stroke: var(--secondary-color);
+  transition: stroke var(--transition-speed) ease-in-out;
+}

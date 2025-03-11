@@ -1,13 +1,16 @@
 import axios from 'axios';
 import { AUTH_CONFIG } from './config';
+import { shouldUseFallback } from './authFallback';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Create axios instance with base configuration
 export const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 10000,
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
   }
 });
 
@@ -18,22 +21,45 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // For development, log all outgoing requests
+    if (process.env.NODE_ENV === 'development') {
+      console.debug(`API Request: ${config.method.toUpperCase()} ${config.url}`, config);
+    }
+
     return config;
   },
   (error) => {
+    console.error('API Request Error:', error);
     return Promise.reject(error);
   }
 );
 
 // Response interceptor for handling errors
 api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401) {
-      // Handle token refresh or logout
-      localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-      window.location.href = '/login';
+  (response) => {
+    // For development, log all responses
+    if (process.env.NODE_ENV === 'development') {
+      console.debug(`API Response: ${response.status} ${response.config.url}`, response.data);
     }
+
+    return response;
+  },
+  (error) => {
+    // Check if we should use offline fallback
+    if (shouldUseFallback(error)) {
+      console.warn('Network error detected in API call - using fallback mode');
+      // Return a resolved promise with fake "fallback mode" indicator
+      // This will allow the authFallback system to take over
+      return Promise.resolve({
+        data: {
+          fallbackMode: true,
+          error: error.message || 'Network error'
+        }
+      });
+    }
+
+    console.error('API Response Error:', error);
     return Promise.reject(error);
   }
 );

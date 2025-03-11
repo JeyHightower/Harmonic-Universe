@@ -1,2 +1,0 @@
-import{j as a,L as s}from"./index-92e5fcf1.js";const n=()=>a.jsxs("nav",{className:"navbar",children:[a.jsx("div",{className:"navbar-brand",children:a.jsx(s,{to:"/",children:"Harmonic Universe"})}),a.jsxs("div",{className:"navbar-links",children:[a.jsx(s,{to:"/",children:"Home"}),a.jsx(s,{to:"/dashboard",children:"Dashboard"})]})]});export{n as default};
-//# sourceMappingURL=Navbar-3edb2139.js.map
