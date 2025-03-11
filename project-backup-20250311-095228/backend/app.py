@@ -1,0 +1,100 @@
+from flask import Flask, jsonify
+from flask_cors import CORS
+import os
+import time
+
+# Create Flask application
+app = Flask(__name__, static_folder="static")
+app.debug = True  # Enable debug mode
+
+# Centralized CORS configuration
+cors_config = {
+    "origins": os.environ.get(
+        "CORS_ORIGINS",
+        "http://localhost:3000,http://localhost:5173,http://localhost:5000"
+    ).split(","),
+    "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    "allow_headers": [
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "Accept",
+    ],
+    "expose_headers": ["Content-Length", "Content-Type"],
+    "supports_credentials": True,
+    "max_age": int(os.environ.get("CORS_MAX_AGE", "600")),  # 10 minutes
+}
+
+# Configure CORS with specific settings
+CORS(
+    app,
+    resources={r"/*": cors_config},
+)
+
+# Configure app based on environment
+app.config.from_mapping(
+    SECRET_KEY=os.environ.get("SECRET_KEY", "dev-key-for-testing"),
+    DATABASE_URI=os.environ.get("DATABASE_URL", "sqlite:///app.db"),
+    # Add CORS configuration to app config for reference
+    CORS_CONFIG=cors_config,
+)
+
+# Root route for testing
+@app.route('/')
+def index():
+    return jsonify({
+        "message": "Welcome to Harmonic Universe API",
+        "version": "1.0.0",
+        "status": "running"
+    })
+
+# Health check endpoints
+@app.route("/health")
+@app.route("/api/health")
+def health_check():
+    """Health check endpoint"""
+    return jsonify({
+        "status": "healthy",
+        "timestamp": int(time.time()),
+        "version": "1.0.0"
+    }), 200
+
+# Demo login endpoint
+@app.route("/auth/demo-login", methods=["POST"])
+def demo_login():
+    """Demo login endpoint"""
+    return jsonify({
+        "token": "demo-token",
+        "user": {
+            "id": 1,
+            "username": "demo",
+            "email": "demo@example.com"
+        }
+    }), 200
+
+# Test endpoint
+@app.route("/api/test")
+def test():
+    """Test endpoint"""
+    return jsonify({
+        "message": "API is working"
+    }), 200
+
+# Error handlers
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({
+        "error": "Not Found",
+        "message": str(error)
+    }), 404
+
+@app.errorhandler(500)
+def server_error(error):
+    return jsonify({
+        "error": "Internal Server Error",
+        "message": str(error)
+    }), 500
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)

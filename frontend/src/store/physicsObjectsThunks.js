@@ -1,5 +1,4 @@
-import { createAsyncThunk } from '@reduxjs/toolkit';
-import { api, endpoints } from '../utils/api.js';
+import { createAsyncThunk } from '@reduxjs/to.js;
 
 const handleError = error => {
   console.error('API Error:', error);
