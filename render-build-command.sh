@@ -77,9 +77,52 @@ exports.getDefaultNativeFactory = function() {
 exports.getNativeFactory = function() {
   return null;
 };
+
+// Add exports that might be imported by ES modules
+exports.parse = function() {
+  return null;
+};
+
+exports.parseAsync = function() {
+  return Promise.resolve(null);
+};
 EOF
     echo "✅ Rollup native module patched successfully."
   fi
+
+  # Patch any files that have CommonJS vs ES Module import issues
+  echo "🔧 Patching files with CommonJS vs ES Module import issues..."
+
+  # Search for problematic files in node_modules that might import from native.js
+  find node_modules -type f -name "*.js" -exec grep -l "from '../../native.js'" {} \; 2>/dev/null | while read -r file; do
+    echo "🔍 Found problematic import in $file, patching..."
+
+    # Create a backup of the original file
+    cp "$file" "${file}.bak"
+
+    # Replace the problematic import with the recommended pattern
+    sed -i.tmp "s/import { parse, parseAsync } from '..\/..\/native.js';/import pkg from '..\/..\/native.js';\nconst { parse, parseAsync } = pkg;/g" "$file"
+    rm -f "${file}.tmp"
+
+    echo "✅ Patched $file"
+  done
+
+  # Create a wrapper for ES modules to work with CommonJS
+  echo "🔧 Creating ESM wrapper for CommonJS modules..."
+  mkdir -p esm-wrappers
+  cat > esm-wrappers/native-wrapper.js << EOF
+// ES Module wrapper for CommonJS native.js
+import native from '../node_modules/rollup/dist/native.js';
+
+// Re-export all properties as named exports
+export const parse = native.parse || (() => null);
+export const parseAsync = native.parseAsync || (() => Promise.resolve(null));
+export const getDefaultNativeFactory = native.getDefaultNativeFactory || (() => null);
+export const getNativeFactory = native.getNativeFactory || (() => null);
+
+// Also export the default
+export default native;
+EOF
 
   # Try building with our special ES module build script
   echo "🔨 Building with ES module build script..."
@@ -118,13 +161,49 @@ EOF
   else
     echo "⚠️ ES module build script failed, trying fallback methods..."
 
-    # Try building with npx vite directly
-    echo "🔨 Trying direct vite build..."
-    ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true ROLLUP_NATIVE_PURE_JS=true npx vite@4.5.1 build --mode production
+    # Update build-render.js to use named imports properly
+    echo "🔧 Creating fallback build script with proper imports..."
+    cat > build-render-fallback.js << EOF
+// ES Module compatible build script for Render - Fallback version
+import { build } from 'vite';
+
+// Set environment variables to force pure JS implementation
+process.env.ROLLUP_SKIP_NODEJS_NATIVE_BUILD = 'true';
+process.env.ROLLUP_NATIVE_PURE_JS = 'true';
+process.env.ROLLUP_DISABLE_NATIVE = 'true';
+process.env.VITE_SKIP_ROLLUP_NATIVE = 'true';
+process.env.VITE_PURE_JS = 'true';
+process.env.VITE_FORCE_ESM = 'true';
+
+console.log('🚀 Starting Vite build with pure JS implementation (fallback)...');
+
+// Load the config directly
+import('./vite.config.render.js').then(config => {
+  // Run the build with production mode and emptyOutDir option
+  build({
+    mode: 'production',
+    emptyOutDir: true,
+    configFile: false,
+    ...config.default
+  }).then(() => {
+    console.log('✅ Build completed successfully!');
+  }).catch(error => {
+    console.error('❌ Build failed:', error);
+    process.exit(1);
+  });
+}).catch(error => {
+  console.error('❌ Failed to load config:', error);
+  process.exit(1);
+});
+EOF
+
+    # Try the fallback build script
+    echo "🔨 Trying fallback build script..."
+    node build-render-fallback.js
     BUILD_RESULT=$?
 
     if [ $BUILD_RESULT -eq 0 ] && [ -d "dist" ]; then
-      echo "✅ Build successful using direct vite build!"
+      echo "✅ Build successful using fallback build script!"
 
       # Copy dist files to static directory
       if [ ! -d "../static" ]; then
@@ -152,12 +231,102 @@ EOF
       echo "✅ Build completed successfully at $(date)"
       exit 0
     else
-      echo "⚠️ All build methods failed, creating minimal fallback page..."
+      # Try direct build with vite and CommonJS-compatible config
+      echo "🔧 Creating CommonJS-compatible Vite config..."
+      cat > vite.config.cjs << EOF
+// CommonJS-compatible Vite config
+const react = require('@vitejs/plugin-react');
+const path = require('path');
 
-      # Create a minimal default HTML page
-      cd ..
-      mkdir -p static
-      cat > static/index.html << EOFHTML
+/** @type {import('vite').UserConfig} */
+module.exports = {
+  plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src')
+    }
+  },
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+    target: 'es2020',
+    commonjsOptions: {
+      transformMixedEsModules: true,
+      include: [/node_modules/],
+    },
+    rollupOptions: {
+      external: [],
+      output: {
+        manualChunks: {
+          vendor: [
+            'react',
+            'react-dom',
+            'react-router-dom',
+            '@reduxjs/toolkit',
+            'react-redux'
+          ]
+        }
+      }
+    }
+  },
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@reduxjs/toolkit',
+      'react-redux',
+      'axios',
+      'moment',
+      'prop-types'
+    ],
+    esbuildOptions: {
+      target: 'es2020'
+    }
+  }
+};
+EOF
+
+      # Try building with the CommonJS config
+      echo "🔨 Trying build with CommonJS config..."
+      ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true ROLLUP_NATIVE_PURE_JS=true npx vite@4.5.1 build --config vite.config.cjs --mode production
+      BUILD_RESULT=$?
+
+      if [ $BUILD_RESULT -eq 0 ] && [ -d "dist" ]; then
+        echo "✅ Build successful using CommonJS config!"
+
+        # Copy dist files to static directory
+        if [ ! -d "../static" ]; then
+          mkdir -p ../static
+        fi
+
+        echo "📂 Copying build to static directory..."
+        cp -r dist/* ../static/ 2>/dev/null || echo "⚠️ No dist files found"
+
+        # Go back to project root
+        cd ..
+
+        # Install backend dependencies if needed
+        if [ -d "backend" ]; then
+          echo "📦 Installing backend dependencies..."
+          cd backend
+          python -m pip install --upgrade pip
+          if [ -f "requirements.txt" ]; then
+            python -m pip install -r requirements.txt
+          fi
+          python -m pip install gunicorn
+          cd ..
+        fi
+
+        echo "✅ Build completed successfully at $(date)"
+        exit 0
+      else
+        echo "⚠️ All build methods failed, creating minimal fallback page..."
+
+        # Create a minimal default HTML page
+        cd ..
+        mkdir -p static
+        cat > static/index.html << EOFHTML
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -201,21 +370,22 @@ EOF
 </html>
 EOFHTML
 
-      # Install backend dependencies regardless
-      if [ -d "backend" ]; then
-        echo "📦 Installing backend dependencies..."
-        cd backend
-        python -m pip install --upgrade pip
-        if [ -f "requirements.txt" ]; then
-          python -m pip install -r requirements.txt
+        # Install backend dependencies regardless
+        if [ -d "backend" ]; then
+          echo "📦 Installing backend dependencies..."
+          cd backend
+          python -m pip install --upgrade pip
+          if [ -f "requirements.txt" ]; then
+            python -m pip install -r requirements.txt
+          fi
+          python -m pip install gunicorn
+          cd ..
         fi
-        python -m pip install gunicorn
-        cd ..
-      fi
 
-      echo "⚠️ Frontend build process failed but created a fallback page."
-      echo "ℹ️ Backend dependencies have been installed and should still function."
-      echo "✅ Final build completed with fallback at $(date)"
+        echo "⚠️ Frontend build process failed but created a fallback page."
+        echo "ℹ️ Backend dependencies have been installed and should still function."
+        echo "✅ Final build completed with fallback at $(date)"
+      fi
     fi
   fi
 else

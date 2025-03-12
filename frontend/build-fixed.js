@@ -1,4 +1,4 @@
-// ES Module compatible build script for Render
+// Fixed ES Module build script for Render
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
@@ -17,7 +17,7 @@ process.env.VITE_SKIP_ROLLUP_NATIVE = 'true';
 process.env.VITE_PURE_JS = 'true';
 process.env.VITE_FORCE_ESM = 'true';
 
-console.log('🚀 Starting Render build with pure JS implementation...');
+console.log('🚀 Starting fixed build process...');
 
 // First, check and patch any Rollup native module issues
 const nativePath = resolve(__dirname, 'node_modules/rollup/dist/native.js');
@@ -66,8 +66,8 @@ exports.parseAsync = function() {
     }
 }
 
-// Fix the CommonJS vs ES Module import issue
-const fixImportIssues = () => {
+// Look for problematic ES imports from CommonJS modules
+const patchImportIssues = () => {
     console.log('🔍 Searching for problematic imports...');
 
     // Common problematic import paths
@@ -111,7 +111,7 @@ const fixImportIssues = () => {
 };
 
 // Execute the import issue patching
-fixImportIssues();
+patchImportIssues();
 
 // Now attempt to load and run Vite build
 console.log('🔨 Attempting to load Vite...');
