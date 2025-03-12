@@ -1,15 +1,19 @@
-// ES Module compatible build script for Render
-import { createRequire } from 'module';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
-import fs from 'fs';
+#!/usr/bin/env node
 
-// Create a require function for ES modules
-const require = createRequire(import.meta.url);
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+/**
+ * Simple build script for Render.com that directly uses npx to run Vite
+ * instead of trying to dynamically import or require it.
+ */
 
-// Set environment variables to force pure JS implementation
+const { execSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const { promisify } = require('util');
+const rimraf = promisify(require('child_process').exec);
+
+console.log('🚀 Starting simplified Render build process...');
+
+// Ensure environment variables are set to disable native modules
 process.env.ROLLUP_SKIP_NODEJS_NATIVE_BUILD = 'true';
 process.env.ROLLUP_NATIVE_PURE_JS = 'true';
 process.env.ROLLUP_DISABLE_NATIVE = 'true';
@@ -17,25 +21,112 @@ process.env.VITE_SKIP_ROLLUP_NATIVE = 'true';
 process.env.VITE_PURE_JS = 'true';
 process.env.VITE_FORCE_ESM = 'true';
 
-console.log('🚀 Starting Render build with pure JS implementation...');
+// Clean up function to handle ENOTEMPTY errors
+const cleanupNodeModules = () => {
+    console.log('🧹 Cleaning problematic directories to prevent ENOTEMPTY errors...');
 
-// First, check and patch any Rollup native module issues
-const nativePath = resolve(__dirname, 'node_modules/rollup/dist/native.js');
-if (fs.existsSync(nativePath)) {
+    try {
+        // Remove common problematic directories
+        const dirsToClean = [
+            'dist',
+            '.vite',
+            'node_modules/.vite',
+            'node_modules/.cache',
+            'node_modules/.tmp'
+        ];
+
+        dirsToClean.forEach(dir => {
+            try {
+                execSync(`rm -rf ${dir}`, { stdio: 'ignore' });
+            } catch (err) {
+                // Ignore errors, continue with other directories
+            }
+        });
+
+        // Try a deeper clean if needed
+        try {
+            execSync('find node_modules -type d -name ".vite" -exec rm -rf {} \\; 2>/dev/null || true', { stdio: 'ignore' });
+            execSync('find node_modules -type d -name ".cache" -exec rm -rf {} \\; 2>/dev/null || true', { stdio: 'ignore' });
+            execSync('find node_modules -type d -name ".tmp" -exec rm -rf {} \\; 2>/dev/null || true', { stdio: 'ignore' });
+        } catch (err) {
+            // Ignore errors, this is a best-effort cleanup
+        }
+
+        console.log('✅ Cleanup completed');
+    } catch (error) {
+        console.warn('⚠️ Cleanup had some issues, but will continue:', error.message);
+    }
+};
+
+// Run cleanup before starting
+cleanupNodeModules();
+
+// Check if vite is installed
+try {
+    console.log('📦 Checking for Vite installation...');
+
+    // Ensure Vite is installed
+    try {
+        execSync('npm list vite', { stdio: 'ignore' });
+    } catch (err) {
+        console.log('📦 Vite not found, installing...');
+        execSync('npm install --no-save vite@4.5.1 @vitejs/plugin-react@4.2.1 --no-optional --ignore-scripts --legacy-peer-deps --prefer-offline',
+            { stdio: 'inherit' });
+    }
+
+    // Check if vite.config.js exists
+    if (!fs.existsSync(path.join(process.cwd(), 'vite.config.js'))) {
+        console.log('⚠️ vite.config.js not found, creating a minimal one...');
+
+        const minimalConfig = `
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+// This special config disables Rollup native functionality
+export default defineConfig({
+  plugins: [react()],
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+    ],
+    esbuildOptions: {
+      target: 'es2020',
+    }
+  },
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+    target: 'es2020',
+    rollupOptions: {
+      external: [],
+      output: {
+        manualChunks: {
+          vendor: [
+            'react',
+            'react-dom',
+          ],
+        },
+      },
+    },
+  },
+});
+`;
+        fs.writeFileSync(path.join(process.cwd(), 'vite.config.js'), minimalConfig);
+        console.log('✅ Created minimal vite.config.js');
+    }
+
+    // Patch rollup native module
     console.log('🔧 Patching Rollup native module...');
+    const nativePath = path.join(process.cwd(), 'node_modules/rollup/dist/native.js');
 
-    // Create a patched version of native.js
-    const patchedCode = `'use strict';
+    if (fs.existsSync(path.dirname(nativePath))) {
+        const patchedNative = `'use strict';
 
 // This is a patched version that skips native module loading
 // and always returns null to force pure JS implementation
 
 Object.defineProperty(exports, '__esModule', { value: true });
-
-function requireWithFriendlyError() {
-  // Always return null to force pure JS implementation
-  return null;
-}
 
 // Export patched functions
 exports.getDefaultNativeFactory = function() {
@@ -54,108 +145,111 @@ exports.parse = function() {
 exports.parseAsync = function() {
   return Promise.resolve(null);
 };
-`;
 
-    // Backup the original file
-    try {
-        fs.copyFileSync(nativePath, `${nativePath}.bak`);
-        fs.writeFileSync(nativePath, patchedCode);
-        console.log('✅ Successfully patched Rollup native module');
-    } catch (error) {
-        console.error('❌ Error patching Rollup native module:', error);
-    }
-}
-
-// Fix the CommonJS vs ES Module import issue
-const fixImportIssues = () => {
-    console.log('🔍 Searching for problematic imports...');
-
-    // Common problematic import paths
-    const problematicPaths = [
-        resolve(__dirname, 'node_modules/rollup/dist'),
-        resolve(__dirname, 'node_modules/@rollup')
-    ];
-
-    problematicPaths.forEach(dir => {
-        if (!fs.existsSync(dir)) return;
-
-        try {
-            const files = fs.readdirSync(dir);
-            files.forEach(file => {
-                if (!file.endsWith('.js')) return;
-
-                const filePath = resolve(dir, file);
-                const content = fs.readFileSync(filePath, 'utf8');
-
-                // Check for problematic import pattern
-                if (content.includes("import { parse, parseAsync } from '../../native.js'")) {
-                    console.log(`🔧 Found problematic import in ${filePath}, patching...`);
-
-                    // Backup the file
-                    fs.copyFileSync(filePath, `${filePath}.bak`);
-
-                    // Replace the problematic import
-                    const fixedContent = content.replace(
-                        "import { parse, parseAsync } from '../../native.js'",
-                        "import pkg from '../../native.js';\nconst { parse, parseAsync } = pkg;"
-                    );
-
-                    fs.writeFileSync(filePath, fixedContent);
-                    console.log(`✅ Successfully patched ${filePath}`);
-                }
-            });
-        } catch (error) {
-            console.error(`❌ Error searching directory ${dir}:`, error);
-        }
-    });
+// Add xxhash exports
+exports.xxhashBase16 = function() {
+  return null;
 };
 
-// Execute the import issue patching
-fixImportIssues();
+exports.xxhashBase64Url = function() {
+  return null;
+};
 
-// Now attempt to load and run Vite build
-console.log('🔨 Attempting to load Vite...');
+exports.xxhashBase36 = function() {
+  return null;
+};`;
 
-try {
-    // Dynamic import Vite
-    import('vite').then(async ({ build }) => {
-        console.log('✅ Successfully loaded Vite');
+        // Ensure the directory exists
+        fs.mkdirSync(path.dirname(nativePath), { recursive: true });
 
+        // Write the patched file
+        fs.writeFileSync(nativePath, patchedNative);
+        console.log('✅ Rollup native module patched successfully');
+    }
+
+    console.log('🔨 Running build with npx vite...');
+
+    try {
+        // Try to directly use npx to run vite build
+        execSync('npx vite build --mode production', {
+            stdio: 'inherit',
+            env: {
+                ...process.env,
+                ROLLUP_SKIP_NODEJS_NATIVE_BUILD: 'true',
+                ROLLUP_NATIVE_PURE_JS: 'true',
+                ROLLUP_DISABLE_NATIVE: 'true'
+            }
+        });
+        console.log('✅ Build completed successfully!');
+    } catch (error) {
+        console.error('❌ Build failed with npx vite. Trying with a specific version...');
+
+        // Attempt with a specific version of vite
         try {
-            console.log('🔨 Starting build with fixed configuration...');
-            await build({
-                mode: 'production',
-                emptyOutDir: true,
-                configFile: './vite.config.render.js'
+            execSync('npx vite@4.5.1 build --mode production', {
+                stdio: 'inherit',
+                env: {
+                    ...process.env,
+                    ROLLUP_SKIP_NODEJS_NATIVE_BUILD: 'true',
+                    ROLLUP_NATIVE_PURE_JS: 'true',
+                    ROLLUP_DISABLE_NATIVE: 'true'
+                }
             });
-            console.log('✅ Build completed successfully!');
-        } catch (buildError) {
-            console.error('❌ Build failed:', buildError);
-            process.exit(1);
-        }
-    }).catch(importError => {
-        console.error('❌ Failed to import Vite:', importError);
+            console.log('✅ Build with specific Vite version completed successfully!');
+        } catch (secondError) {
+            console.error('❌ Second build attempt failed. Trying with more specific options...');
 
-        // Try fallback with require
-        console.log('🔄 Trying fallback with CommonJS require...');
-        try {
-            const vite = require('vite');
-            console.log('✅ Successfully loaded Vite via require');
+            try {
+                // One more attempt with more explicit options
+                execSync('npx vite@4.5.1 build --mode production --minify=esbuild --assetsInlineLimit=0 --emptyOutDir --outDir=dist', {
+                    stdio: 'inherit',
+                    env: {
+                        ...process.env,
+                        ROLLUP_SKIP_NODEJS_NATIVE_BUILD: 'true',
+                        ROLLUP_NATIVE_PURE_JS: 'true',
+                        ROLLUP_DISABLE_NATIVE: 'true',
+                        NODE_OPTIONS: '--max-old-space-size=4096 --experimental-vm-modules'
+                    }
+                });
+                console.log('✅ Build with specific options completed successfully!');
+            } catch (thirdError) {
+                console.error('❌ All build attempts failed.');
 
-            vite.build({
-                mode: 'production',
-                emptyOutDir: true,
-                configFile: './vite.config.render.js'
-            }).catch(err => {
-                console.error('❌ Build failed with CommonJS fallback:', err);
+                // Create a fallback index.html for debugging
+                console.log('⚠️ Creating fallback index.html for debugging purposes...');
+                const distDir = path.join(process.cwd(), 'dist');
+
+                if (!fs.existsSync(distDir)) {
+                    fs.mkdirSync(distDir, { recursive: true });
+                }
+
+                const fallbackHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harmonic Universe - Build Error</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+    .error { color: red; background: #ffeeee; padding: 20px; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <h1>Harmonic Universe - Build Error</h1>
+  <div class="error">
+    <p>There was an error during the build process. Please check the build logs for details.</p>
+    <p>Build time: ${new Date().toISOString()}</p>
+  </div>
+</body>
+</html>`;
+
+                fs.writeFileSync(path.join(distDir, 'index.html'), fallbackHtml);
                 process.exit(1);
-            });
-        } catch (requireError) {
-            console.error('❌ Failed to require Vite:', requireError);
-            process.exit(1);
+            }
         }
-    });
+    }
+
 } catch (error) {
-    console.error('❌ Unexpected error:', error);
+    console.error('❌ Build process failed:', error.message);
     process.exit(1);
 }

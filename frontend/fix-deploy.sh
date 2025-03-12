@@ -15,9 +15,23 @@ export VITE_PURE_JS=true
 export VITE_FORCE_ESM=true
 export NODE_OPTIONS="--max-old-space-size=4096 --experimental-vm-modules"
 
-# Clean up previous build artifacts
-echo "🧹 Cleaning up previous build artifacts..."
+# Clean up previous build artifacts and temporary directories
+echo "🧹 Cleaning up previous build artifacts and temporary directories..."
 rm -rf dist .vite 2>/dev/null || true
+rm -rf node_modules/.vite node_modules/.cache node_modules/.tmp 2>/dev/null || true
+
+# Deeper clean of problematic node_modules directories to prevent ENOTEMPTY errors
+echo "🧹 Deep cleaning of problematic node_modules directories..."
+find node_modules -type d -name ".vite" -exec rm -rf {} \; 2>/dev/null || true
+find node_modules -type d -name ".cache" -exec rm -rf {} \; 2>/dev/null || true
+find node_modules -type d -name ".tmp" -exec rm -rf {} \; 2>/dev/null || true
+
+# Ensure Vite is installed
+echo "📦 Ensuring Vite is installed..."
+if ! npm list vite >/dev/null 2>&1; then
+  echo "📦 Vite not found, installing..."
+  npm install --no-save vite@4.5.1 @vitejs/plugin-react@4.2.1 --no-optional --ignore-scripts --legacy-peer-deps --prefer-offline
+fi
 
 # Patch the rollup native module
 echo "🔧 Patching Rollup native module to use pure JS implementation..."
@@ -96,6 +110,44 @@ find node_modules -type f -name "*.js" -exec grep -l "from '../../native.js'" {}
   echo "✅ Fixed $file"
 done
 
+# Create a simplified Vite configuration
+echo "🔧 Creating simplified vite.config.js..."
+cat > vite.config.js << EOF
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+// This special config disables Rollup native functionality
+export default defineConfig({
+  plugins: [react()],
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+    ],
+    esbuildOptions: {
+      target: 'es2020',
+    }
+  },
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+    target: 'es2020',
+    rollupOptions: {
+      external: [],
+      output: {
+        manualChunks: {
+          vendor: [
+            'react',
+            'react-dom',
+          ],
+        },
+      },
+    },
+  },
+});
+EOF
+echo "✅ Simplified vite.config.js created successfully."
+
 # Create a redirect file for SPA routing
 echo "🔧 Creating _redirects file for deployment..."
 mkdir -p dist
@@ -112,13 +164,23 @@ cat > dist/netlify.toml << EOF
   status = 200
 EOF
 
-# Build with the fixed configuration
-echo "🔨 Building for production deployment..."
-ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true ROLLUP_NATIVE_PURE_JS=true ROLLUP_DISABLE_NATIVE=true npm run build
+# Build using npx to directly run Vite
+echo "🔨 Building for production deployment using npx..."
+ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true ROLLUP_NATIVE_PURE_JS=true ROLLUP_DISABLE_NATIVE=true npx vite@4.5.1 build --mode production || {
+  echo "❌ First build attempt failed. Trying with alternative approach..."
 
-# Check if the build was successful
-if [ $? -eq 0 ]; then
-  echo "✅ Build successful!"
+  # Try our specialized build script
+  ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true ROLLUP_NATIVE_PURE_JS=true ROLLUP_DISABLE_NATIVE=true node build-render.js || {
+    echo "❌ Second build attempt failed. Trying a more direct approach with specific options..."
+
+    # Try one more approach with specific options
+    ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true ROLLUP_NATIVE_PURE_JS=true ROLLUP_DISABLE_NATIVE=true NODE_OPTIONS="--max-old-space-size=4096 --experimental-vm-modules" npx vite@4.5.1 build --mode production --minify=esbuild --assetsInlineLimit=0 --emptyOutDir --outDir=dist
+  }
+}
+
+# Check if the build was successful by looking for index.html in the dist folder
+if [ -f "dist/index.html" ]; then
+  echo "✅ Build successful! Found dist/index.html"
   echo ""
   echo "🚀 Your app is ready for deployment to Render.com!"
   echo ""
@@ -128,7 +190,33 @@ if [ $? -eq 0 ]; then
   echo "  ROLLUP_DISABLE_NATIVE=true"
   echo "  NODE_OPTIONS=--max-old-space-size=4096 --experimental-vm-modules"
 else
-  echo "❌ Build failed. Please check the error messages above."
+  echo "❌ Build failed. No dist/index.html found."
+
+  # Create an empty dist folder with a minimal index.html as a fallback
+  mkdir -p dist
+  cat > dist/index.html << EOF
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harmonic Universe - Build Error</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+    .error { color: red; background: #ffeeee; padding: 20px; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <h1>Harmonic Universe - Build Error</h1>
+  <div class="error">
+    <p>There was an error during the build process. Please check the build logs for details.</p>
+    <p>Build time: $(date)</p>
+  </div>
+</body>
+</html>
+EOF
+  echo "⚠️ Created fallback index.html for debugging purposes."
+  exit 1
 fi
 
 # Create some helpful info for deployment
