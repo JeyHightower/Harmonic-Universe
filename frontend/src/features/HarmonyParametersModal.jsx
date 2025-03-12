@@ -13,8 +13,8 @@ import {
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { api, endpoints } from '../../utils/api';
-import './HarmonyParametersModal.css';
+import { api } from '../utils/api';
+import '../styles/HarmonyParametersModal.css';
 
 const { Option } = Select;
 
@@ -63,8 +63,8 @@ const HarmonyParametersModal = ({
       setLoading(true);
 
       const endpoint = initialData
-        ? endpoints.scenes.harmonyParameters.update(sceneId, initialData.id)
-        : endpoints.scenes.harmonyParameters.create(sceneId);
+        ? `/api/scenes/${sceneId}/harmony_parameters/${initialData.id}`
+        : `/api/scenes/${sceneId}/harmony_parameters`;
 
       const response = await api.post(endpoint, values);
 

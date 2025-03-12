@@ -1,10 +1,10 @@
-import { Button, Card, Empty, Spin, Tabs } from 'antd';
+import { Spin } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useModal } from '../../../contexts/ModalContext';
-import { fetchUniverseById } from '../../../store/thunks/universeThunks';
-import './PhysicsPage.css';
+import { useModal } from '../contexts/ModalContext.jsx';
+import { fetchUniverseById } from '../store/universeThunks.js';
+import '../styles/PhysicsPage.css';
 
 const PhysicsPage = () => {
   const { universeId } = useParams();

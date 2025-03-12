@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
-import Button from '../../components/common/Button';
-import Spinner from '../../components/common/Spinner';
-import { fetchUniverseById } from '../../store/thunks/universeThunks';
-import { api, endpoints } from '../../utils/api';
-import './Storyboard.css';
+import Button from '../components/Button.jsx';
+import Spinner from '../components/Spinner.jsx';
+import { fetchUniverseById } from '../store/universeThunks.js';
+import { api, endpoints } from '../utils/api.js';
+import '../styles/Storyboard.css';
 
 const StoryboardEditor = () => {
   const { universeId, storyboardId } = useParams();
@@ -341,9 +341,8 @@ const StoryboardEditor = () => {
         {storyPoints.map(point => (
           <div
             key={point.id}
-            className={`story-point ${
-              selectedPoint?.id === point.id ? 'selected' : ''
-            }`}
+            className={`story-point ${selectedPoint?.id === point.id ? 'selected' : ''
+              }`}
             style={{
               left: `${point.position_x}px`,
               top: `${point.position_y}px`,

@@ -115,6 +115,70 @@
   border-color: var(--border-color-base);
 }
 
+/* Harmony Parameters List Styling */
+.harmony-parameters-list {
+  background-color: var(--component-background);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 0;
+  width: 100%;
+}
+
+.harmony-parameters-list .ant-list-item {
+  padding: 16px 24px;
+  transition: all 0.3s ease;
+  border-bottom: 1px solid var(--border-color-base);
+}
+
+.harmony-parameters-list .ant-list-item:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.harmony-parameters-list .ant-list-item:last-child {
+  border-bottom: none;
+}
+
+.harmony-parameters-list .ant-list-item-meta-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.harmony-parameters-list .ant-list-item-meta-description {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.harmony-parameter-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-right: 24px;
+}
+
+.harmony-parameter-details span {
+  background-color: var(--background-color-light);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Dark mode adjustments for parameters list */
+[data-theme='dark'] .harmony-parameters-list {
+  background-color: var(--component-background);
+}
+
+[data-theme='dark'] .harmony-parameters-list .ant-list-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme='dark'] .harmony-parameter-details span {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-color);
+}
+
 @media (max-width: 768px) {
   .harmony-page {
     padding: 1rem;
@@ -123,4 +187,41 @@
   .harmony-content {
     grid-template-columns: 1fr;
   }
+
+  .harmony-parameter-details {
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+    margin-right: 0;
+  }
+
+  .harmony-parameters-list .ant-list-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .harmony-parameters-list .ant-list-item-action {
+    margin-top: 16px;
+    margin-left: 0;
+  }
+}
+
+.harmony-parameters-container {
+  width: 100%;
+}
+
+.harmony-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  background-color: var(--component-background);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.harmony-loading-container p {
+  margin-top: 1rem;
+  color: var(--text-secondary);
 }

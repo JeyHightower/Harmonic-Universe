@@ -1,5 +1,5 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import apiClient, { endpoints } from '../utils/api.js';
+import { apiClient, endpoints } from '../utils/api.js';
 import { updateUser, loginSuccess, loginFailure, loginStart } from './authSlice.js';
 import { AUTH_CONFIG } from '../utils/config.js';
 import { handleOfflineAuthentication, shouldUseFallback } from '../utils/authFallback';
@@ -22,7 +22,7 @@ export const login = createAsyncThunk(
             dispatch(loginStart());
             console.debug('Logging in user:', credentials.email);
 
-            const response = await apiClient.post(endpoints.auth.login, credentials);
+            const response = await apiClient.login(credentials);
             console.debug('Login successful:', response);
 
             // Store tokens
@@ -65,7 +65,7 @@ export const register = createAsyncThunk(
         try {
             console.debug('Registering user:', userData.email);
 
-            const response = await apiClient.post(endpoints.auth.register, userData);
+            const response = await apiClient.register(userData);
             console.debug('Registration successful:', response);
 
             // Store tokens
@@ -112,7 +112,7 @@ export const demoLogin = createAsyncThunk(
 
                 try {
                     console.debug('Trying demo login with API endpoint');
-                    response = await apiClient.post(endpoints.auth.demoLogin, {}, {
+                    response = await apiClient.demoLogin({
                         credentials: 'include', // Include credentials for CORS
                     });
                     console.debug('Demo login successful with API endpoint:', response);
@@ -205,10 +205,7 @@ export const registerUser = createAsyncThunk(
             dispatch(loginStart());
             console.debug('Registering user:', userData);
 
-            const response = await apiClient.post(
-                endpoints.auth.register,
-                userData
-            );
+            const response = await apiClient.register(userData);
             console.debug('Registration successful:', response);
 
             // Store tokens
@@ -238,10 +235,7 @@ export const updateUserProfile = createAsyncThunk(
     async (profileData, { dispatch, rejectWithValue }) => {
         try {
             console.debug('Updating user profile:', profileData);
-            const response = await apiClient.put(
-                endpoints.auth.me,
-                profileData
-            );
+            const response = await apiClient.updateUserProfile(profileData);
             console.debug('User profile updated:', response);
 
             // Update the user in the Redux store
@@ -263,10 +257,7 @@ export const loginUser = createAsyncThunk(
             dispatch(loginStart());
             console.debug('Logging in user:', loginData);
 
-            const response = await apiClient.post(
-                endpoints.auth.login,
-                loginData
-            );
+            const response = await apiClient.login(loginData);
             console.debug('Login successful:', response);
 
             // Store tokens

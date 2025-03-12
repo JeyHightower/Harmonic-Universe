@@ -8,11 +8,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { updateHarmonyParams } from '../../../store/thunks/universeThunks';
-import Button from '../../common/Button';
-import Input from '../../common/Input';
-import Select from '../../common/Select';
-import './Universe.css';
+import { updateHarmonyParams } from '../store/universeThunks';
+import Button from '../components/Button';
+import Input from '../components/Input';
+import Select from '../components/Select';
+import '../styles/Universe.css';
 
 const DEFAULT_HARMONY_PARAMS = {
   resonance: {

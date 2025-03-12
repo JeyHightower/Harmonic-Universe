@@ -99,42 +99,6 @@ const Modal = forwardRef(
         const timeOpen = now - openedAt;
 
         console.log(`Modal has been open for ${timeOpen}ms`);
-
-        const minTimeOpen = dataModalType === 'universe-create' ? 60000 : 30000;
-
-        if (timeOpen < minTimeOpen) {
-          console.warn(`Modal tried to close too soon after opening (${timeOpen}ms), preventing close. Minimum time: ${minTimeOpen}ms`);
-          forceModalVisible();
-          return;
-        }
-
-        const mountedAtStr = modalRef.current?.getAttribute('data-mounted-at');
-        if (mountedAtStr) {
-          const mountedAt = parseInt(mountedAtStr, 10);
-          const timeOpen = now - mountedAt;
-
-          console.log(`Modal component has been mounted for ${timeOpen}ms`);
-
-          if (timeOpen < minTimeOpen) {
-            console.warn(`Modal component mounted too recently (${timeOpen}ms), preventing close. Minimum time: ${minTimeOpen}ms`);
-            forceModalVisible();
-            return;
-          }
-        }
-      }
-
-      const preventClose = modalRef.current?.getAttribute('data-prevent-close');
-      if (preventClose === 'true') {
-        console.log('Modal has explicit close prevention active - ignoring close request');
-        forceModalVisible();
-        return;
-      }
-
-      const closeReason = modalRef.current?.getAttribute('data-close-reason');
-      if (!closeReason || closeReason !== 'user-action') {
-        console.warn('Modal close not initiated by user action, preventing close');
-        forceModalVisible();
-        return;
       }
 
       if (!isClosing) {
@@ -145,14 +109,12 @@ const Modal = forwardRef(
             onClose();
           }
           setIsClosing(false);
-        }, 500);
+        }, 300);
       }
     }, [
       isClosing,
       onClose,
       preventAutoClose,
-      forceModalVisible,
-      dataModalType,
     ]);
 
     useEffect(() => {
@@ -200,7 +162,7 @@ const Modal = forwardRef(
         mountedRef.current = true;
         openedAtRef.current = Date.now();
         modalRef.current?.setAttribute('data-opened-at', openedAtRef.current.toString());
-        modalRef.current?.setAttribute('data-prevent-close', 'true');
+        modalRef.current?.setAttribute('data-prevent-close', 'false');
 
         if (dataModalType) {
           modalRef.current?.setAttribute('data-modal-type', dataModalType);
@@ -210,49 +172,12 @@ const Modal = forwardRef(
           modalRef.current?.setAttribute('data-modal-id', dataModalId);
         }
 
-        const observer = new MutationObserver(mutations => {
-          mutations.forEach(mutation => {
-            if (mutation.type === 'childList' && mutation.removedNodes.length > 0) {
-              for (let i = 0; i < mutation.removedNodes.length; i++) {
-                const node = mutation.removedNodes[i];
-                if (node === portalElementRef.current || (node.contains && node.contains(portalElementRef.current))) {
-                  console.error('Detected attempt to remove modal from DOM!');
-
-                  try {
-                    mutation.target.appendChild(node);
-                    console.log('Successfully restored modal to DOM');
-                  } catch (e) {
-                    console.error('Failed to restore modal:', e);
-                    try {
-                      window.dispatchEvent(new CustomEvent('modal:reopen', {
-                        detail: {
-                          modalType: dataModalType || 'universe-create',
-                          forceReopen: true,
-                          timestamp: Date.now(),
-                          isRetry: true,
-                        },
-                      }));
-                    } catch (e) {
-                      console.error('Failed to dispatch reopen event:', e);
-                    }
-                  }
-                }
-              }
-            }
-          });
-        });
-
-        observer.observe(document.body, {
-          childList: true,
-          subtree: true,
-        });
-
         const protectionTimeout = setTimeout(() => {
           if (modalRef.current) {
             console.log('Modal protection timeout complete - allowing normal close functionality');
             modalRef.current.setAttribute('data-prevent-close', 'false');
           }
-        }, dataModalType === 'universe-create' ? 60000 : 30000);
+        }, 500);
 
         previousFocus.current = document.activeElement;
         modalStackCount++;
@@ -290,12 +215,6 @@ const Modal = forwardRef(
           }
         });
 
-        const protectInterval = setInterval(() => {
-          if (modalRef.current) {
-            forceModalVisible();
-          }
-        }, 100);
-
         try {
           window.dispatchEvent(new CustomEvent('modal:mounted', {
             detail: {
@@ -310,8 +229,6 @@ const Modal = forwardRef(
 
         return () => {
           clearTimeout(protectionTimeout);
-          clearInterval(protectInterval);
-          observer.disconnect();
         };
       }
 
@@ -321,28 +238,7 @@ const Modal = forwardRef(
           const now = Date.now();
           const timeOpen = now - openedAt;
 
-          const minTimeOpen = dataModalType === 'universe-create' ? 60000 : 30000;
-
           console.log(`Modal has been open for ${timeOpen}ms`);
-
-          if (timeOpen < minTimeOpen) {
-            console.warn(`Modal is closing too quickly after opening! ${timeOpen}ms < ${minTimeOpen}ms`);
-
-            try {
-              window.dispatchEvent(new CustomEvent('modal:reopen', {
-                detail: {
-                  modalType: dataModalType || 'universe-create',
-                  forceReopen: true,
-                  timestamp: Date.now(),
-                  isRetry: true,
-                },
-              }));
-            } catch (e) {
-              console.error('Failed to dispatch reopen event:', e);
-            }
-
-            return;
-          }
 
           modalStackCount--;
 

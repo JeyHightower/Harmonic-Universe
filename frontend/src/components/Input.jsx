@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import './Input.css';
+import '../styles/Input.css';
 
 function Input({
   type = 'text',
@@ -36,9 +36,8 @@ function Input({
           placeholder={placeholder}
           disabled={disabled}
           required={required}
-          className={`input-field input-textarea ${
-            hasError ? 'input-error' : ''
-          }`}
+          className={`input-field input-textarea ${hasError ? 'input-error' : ''
+            }`}
           aria-invalid={hasError}
           aria-describedby={hasError ? `${inputId}-error` : undefined}
           rows={rows}
@@ -80,7 +79,11 @@ Input.propTypes = {
   ]),
   label: PropTypes.string,
   name: PropTypes.string.isRequired,
-  value: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.number,
+    PropTypes.bool
+  ]).isRequired,
   onChange: PropTypes.func.isRequired,
   onBlur: PropTypes.func,
   error: PropTypes.string,

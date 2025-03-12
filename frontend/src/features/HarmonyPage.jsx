@@ -1,15 +1,18 @@
 import {
+  DeleteOutlined,
+  EditOutlined,
   PlayCircleOutlined,
   SettingOutlined,
   SoundOutlined,
 } from '@ant-design/icons';
-import { Button, Card, Col, Empty, Row, Slider, Spin, Tabs } from 'antd';
+import { Button, Card, Col, Empty, Row, Slider, Spin, Tabs, List, Modal, message } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useModal } from '../../../contexts/ModalContext';
-import { fetchUniverseById } from '../../../store/thunks/universeThunks';
-import './HarmonyPage.css';
+import { useModal } from '../contexts/ModalContext.jsx';
+import { fetchUniverseById } from '../store/universeThunks.js';
+import '../styles/HarmonyPage.css';
+import { api } from '../utils/api.js';
 
 const HarmonyPage = () => {
   const { universeId } = useParams();
@@ -25,6 +28,10 @@ const HarmonyPage = () => {
     reverb: 30,
     delay: 20,
   });
+  const [harmonyParameters, setHarmonyParameters] = useState([]);
+  const [fetchingParameters, setFetchingParameters] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [parameterToDelete, setParameterToDelete] = useState(null);
 
   const universe = useSelector(state => state.universe.currentUniverse);
 
@@ -41,10 +48,85 @@ const HarmonyPage = () => {
     };
 
     loadUniverse();
+    fetchHarmonyParameters();
   }, [dispatch, universeId]);
 
+  const fetchHarmonyParameters = async () => {
+    try {
+      setFetchingParameters(true);
+      // Assuming we're working with scene-based harmony parameters for the universe's first scene
+      // This may need to be adjusted based on your app's structure
+      if (universe && universe.scenes && universe.scenes.length > 0) {
+        const sceneId = universe.scenes[0].id;
+        const response = await api.get(`/api/scenes/${sceneId}/harmony_parameters`);
+        setHarmonyParameters(response.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching harmony parameters:', error);
+      message.error('Failed to load harmony parameters');
+    } finally {
+      setFetchingParameters(false);
+    }
+  };
+
   const handleCreateHarmonyParameter = () => {
-    openModal('harmony-parameters', { universeId });
+    // Get the first scene ID from the universe
+    if (universe && universe.scenes && universe.scenes.length > 0) {
+      const sceneId = universe.scenes[0].id;
+      openModal('harmony-parameters', {
+        universeId,
+        sceneId,
+        onClose: () => {
+          fetchHarmonyParameters(); // Refresh the list after creation
+          message.success('Harmony parameter created successfully!');
+        }
+      });
+    } else {
+      message.warning('You need to create a scene first before adding harmony parameters.');
+    }
+  };
+
+  const handleEditHarmonyParameter = (parameter) => {
+    // Get the first scene ID from the universe
+    if (universe && universe.scenes && universe.scenes.length > 0) {
+      const sceneId = universe.scenes[0].id;
+      openModal('harmony-parameters', {
+        universeId,
+        sceneId,
+        initialData: parameter,
+        onClose: () => {
+          fetchHarmonyParameters(); // Refresh the list after editing
+          message.success('Harmony parameter updated successfully!');
+        }
+      });
+    }
+  };
+
+  const showDeleteConfirm = (parameter) => {
+    setParameterToDelete(parameter);
+    setDeleteModalVisible(true);
+  };
+
+  const handleDeleteHarmonyParameter = async () => {
+    if (!parameterToDelete) return;
+
+    try {
+      // Get the first scene ID from the universe
+      if (universe && universe.scenes && universe.scenes.length > 0) {
+        const sceneId = universe.scenes[0].id;
+        await api.delete(`/api/scenes/${sceneId}/harmony_parameters/${parameterToDelete.id}`);
+
+        // Update the local state to remove the deleted parameter
+        setHarmonyParameters(prev => prev.filter(p => p.id !== parameterToDelete.id));
+        message.success('Harmony parameter deleted successfully!');
+      }
+    } catch (error) {
+      console.error('Error deleting harmony parameter:', error);
+      message.error('Failed to delete harmony parameter');
+    } finally {
+      setDeleteModalVisible(false);
+      setParameterToDelete(null);
+    }
   };
 
   const handleGenerateMusic = () => {
@@ -66,6 +148,44 @@ const HarmonyPage = () => {
       </div>
     );
   }
+
+  const renderHarmonyParametersList = () => {
+    return (
+      <List
+        className="harmony-parameters-list"
+        itemLayout="horizontal"
+        dataSource={harmonyParameters}
+        renderItem={parameter => (
+          <List.Item
+            actions={[
+              <Button
+                icon={<EditOutlined />}
+                onClick={() => handleEditHarmonyParameter(parameter)}
+                title="Edit"
+              />,
+              <Button
+                icon={<DeleteOutlined />}
+                danger
+                onClick={() => showDeleteConfirm(parameter)}
+                title="Delete"
+              />
+            ]}
+          >
+            <List.Item.Meta
+              title={parameter.name}
+              description={parameter.description || 'No description'}
+            />
+            <div className="harmony-parameter-details">
+              <span>Key: {parameter.key}</span>
+              <span>Scale: {parameter.scale}</span>
+              <span>Tempo: {parameter.tempo} BPM</span>
+              <span>Mood: {parameter.mood}</span>
+            </div>
+          </List.Item>
+        )}
+      />
+    );
+  };
 
   return (
     <div className="harmony-page">
@@ -95,18 +215,31 @@ const HarmonyPage = () => {
                 </div>
 
                 <div className="harmony-content">
-                  <Card className="harmony-card">
-                    <Empty
-                      description="No harmony parameters defined yet"
-                      image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    />
-                    <Button
-                      type="primary"
-                      onClick={handleCreateHarmonyParameter}
-                    >
-                      Create Your First Harmony Parameter
-                    </Button>
-                  </Card>
+                  {harmonyParameters.length === 0 && !fetchingParameters ? (
+                    <Card className="harmony-card">
+                      <Empty
+                        description="No harmony parameters defined yet"
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      />
+                      <Button
+                        type="primary"
+                        onClick={handleCreateHarmonyParameter}
+                      >
+                        Create Your First Harmony Parameter
+                      </Button>
+                    </Card>
+                  ) : (
+                    <div className="harmony-parameters-container">
+                      {fetchingParameters ? (
+                        <div className="harmony-loading-container">
+                          <Spin size="large" />
+                          <p>Loading harmony parameters...</p>
+                        </div>
+                      ) : (
+                        renderHarmonyParametersList()
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ),
@@ -208,6 +341,22 @@ const HarmonyPage = () => {
           },
         ]}
       />
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        title="Delete Harmony Parameter"
+        open={deleteModalVisible}
+        onOk={handleDeleteHarmonyParameter}
+        onCancel={() => {
+          setDeleteModalVisible(false);
+          setParameterToDelete(null);
+        }}
+        okText="Delete"
+        okButtonProps={{ danger: true }}
+      >
+        <p>Are you sure you want to delete "{parameterToDelete?.name}"?</p>
+        <p>This action cannot be undone.</p>
+      </Modal>
     </div>
   );
 };

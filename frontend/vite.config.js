@@ -9,25 +9,33 @@ const __dirname = dirname(__filename)
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react({
+      // This enables legacy decorators support
+      babel: {
+        plugins: [
+          ['@babel/plugin-transform-runtime']
+        ]
+      }
+    })
+  ],
   build: {
     outDir: resolve(__dirname, '../static'),
     emptyOutDir: true,
     sourcemap: process.env.NODE_ENV !== 'production',
     minify: true,
-    cssCodeSplit: false,
-    rollupOptions: {
-      input: resolve(__dirname, 'index.html'),
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom', '@reduxjs/toolkit', 'react-redux'],
-        },
-      },
-    }
+    cssCodeSplit: false
   },
   resolve: {
     alias: {
       '@': resolve(__dirname, './src')
+    }
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      define: {
+        global: 'globalThis'
+      }
     }
   },
   server: {
@@ -37,34 +45,19 @@ export default defineConfig({
         target: 'http://localhost:5001',
         changeOrigin: true,
         secure: false,
-        ws: true,
-        configure: (proxy, _options) => {
-          proxy.on('error', (err, _req, _res) => {
-            console.log('proxy error', err);
-          });
-          proxy.on('proxyReq', (proxyReq, req, _res) => {
-            console.log('Sending Request:', req.method, req.url);
-          });
-          proxy.on('proxyRes', (proxyRes, req, _res) => {
-            console.log('Received Response:', proxyRes.statusCode, req.url);
-          });
-        },
+        ws: true
       },
       '^/auth/.*': {
         target: 'http://localhost:5001',
         changeOrigin: true,
         secure: false,
-        ws: true,
+        ws: true
       },
       '^/health': {
         target: 'http://localhost:5001',
         changeOrigin: true,
-        secure: false,
+        secure: false
       }
-    },
-    cors: false
-  },
-  define: {
-    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV)
+    }
   }
 })

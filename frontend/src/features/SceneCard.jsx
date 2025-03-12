@@ -1,8 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
-import { formatDate } from '../../utils/dateUtils';
-import './SceneCard.css';
+import { formatDate } from '../utils/dateUtils.js';
+import '../styles/SceneCard.css';
 
 const SceneCard = ({ scene }) => {
     const defaultImage = '/images/default-scene.jpg';
@@ -51,7 +51,7 @@ SceneCard.propTypes = {
         image_url: PropTypes.string,
         scene_type: PropTypes.string,
         order: PropTypes.number,
-        created_at: PropTypes.string
+        created_at: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
     }).isRequired
 };
 

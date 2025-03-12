@@ -1,49 +1,81 @@
 # Harmonic Universe
 
-A web application for creating and sharing universes with AI-generated content.
+A web application that allows users to create and explore musical universes based on physics principles.
 
 ## Project Structure
 
-- `frontend/` - React frontend application
-- `backend/` - Flask API backend
-- `scripts/` - Utility scripts for development and deployment
-- `docs/` - Project documentation
+- **frontend/**: React frontend application
+- **backend/**: Python Flask API
 
-## Getting Started
+## Setup and Running
 
 ### Prerequisites
 
-- Node.js (v16+)
-- Python (v3.8+)
-- npm or yarn
-- pip
+- Node.js (v18+)
+- npm (v8+)
+- Python 3.8+
 
-### Backend Setup
+### Starting the Application
+
+1. **Clone the repository**
 
 ```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-python app.py
+git clone <repository-url>
+cd Harmonic-Universe
 ```
 
-The backend server will start at http://localhost:5001
-
-### Frontend Setup
+2. **Install dependencies**
 
 ```bash
-cd frontend
+# Install frontend dependencies
 npm install
+
+# Install backend dependencies
+cd backend
+pip install -r requirements.txt
+cd ..
+```
+
+3. **Run the application**
+
+```bash
+# Start both frontend and backend
 npm start
 ```
 
-The frontend development server will start at http://localhost:3000
+This will:
 
-## Deployment
+- Start the backend Flask API on port 5001
+- Start the frontend development server on port 5175 (or another available port)
 
-This project is configured for deployment on Render.com.
-See the deployment instructions in the `docs/deployment.md` file.
+4. **Access the application**
+
+Open your browser and go to:
+
+- Frontend: http://localhost:5175
+- Backend API: http://localhost:5001
+
+## Troubleshooting
+
+### Backend Not Starting
+
+If you encounter issues with the backend not starting:
+
+1. Make sure Python and required packages are installed
+2. Try running the backend directly:
+
+```bash
+cd backend
+python simple_app.py
+```
+
+### Frontend Not Loading Data
+
+If the frontend loads but doesn't show any data:
+
+1. Check browser console for errors
+2. Verify the backend is running by visiting http://localhost:5001/api/health
+3. Refresh the page and clear browser cache if needed
 
 ## License
 

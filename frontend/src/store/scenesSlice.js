@@ -40,10 +40,30 @@ const scenesSlice = createSlice({
             })
             .addCase(fetchScenes.fulfilled, (state, action) => {
                 state.loading = false;
-                state.scenes = action.payload.data.scenes;
+
+                // Handle different response formats
+                let scenesData = [];
+                if (action.payload && action.payload.data && Array.isArray(action.payload.data.scenes)) {
+                    // Format: { data: { scenes: [...] } }
+                    scenesData = action.payload.data.scenes;
+                } else if (action.payload && Array.isArray(action.payload.scenes)) {
+                    // Format: { scenes: [...] }
+                    scenesData = action.payload.scenes;
+                } else if (action.payload && typeof action.payload === 'object' && action.payload.status === 'success') {
+                    // Format from simple_app.py: { status: 'success', data: { scenes: [...] } }
+                    scenesData = action.payload.data?.scenes || [];
+                } else if (Array.isArray(action.payload)) {
+                    // Direct array format
+                    scenesData = action.payload;
+                } else {
+                    console.error('Unexpected scenes response format:', action.payload);
+                    scenesData = [];
+                }
+
+                state.scenes = scenesData;
 
                 // Organize scenes by universe for easy access
-                action.payload.data.scenes.forEach(scene => {
+                scenesData.forEach(scene => {
                     const universeId = scene.universe_id;
                     if (!state.universeScenes[universeId]) {
                         state.universeScenes[universeId] = [];
@@ -66,7 +86,7 @@ const scenesSlice = createSlice({
             })
             .addCase(fetchSceneById.fulfilled, (state, action) => {
                 state.loading = false;
-                state.currentScene = action.payload.data.scene;
+                state.currentScene = action.payload.scene;
             })
             .addCase(fetchSceneById.rejected, (state, action) => {
                 state.loading = false;
@@ -82,20 +102,47 @@ const scenesSlice = createSlice({
             .addCase(createScene.fulfilled, (state, action) => {
                 state.loading = false;
                 state.success = true;
-                const newScene = action.payload.data.scene;
 
-                // Add to general scenes array
-                state.scenes.push(newScene);
-
-                // Add to universe-specific array
-                const universeId = newScene.universe_id;
-                if (!state.universeScenes[universeId]) {
-                    state.universeScenes[universeId] = [];
+                // Handle different possible response formats
+                let newScene;
+                if (action.payload && typeof action.payload === 'object') {
+                    if (action.payload.status === 'success' && action.payload.data && action.payload.data.scene) {
+                        // Simple backend format: { status: 'success', data: { scene: {...} } }
+                        newScene = action.payload.data.scene;
+                    } else if (action.payload.scene && typeof action.payload.scene === 'object') {
+                        // Response format: { scene: {...} }
+                        newScene = action.payload.scene;
+                    } else if (action.payload.data && action.payload.data.scene) {
+                        // Response format: { data: { scene: {...} } }
+                        newScene = action.payload.data.scene;
+                    } else if (action.payload.id) {
+                        // Response format: The payload itself is the scene
+                        newScene = action.payload;
+                    } else {
+                        console.error('Unexpected response format in createScene.fulfilled:', action.payload);
+                        newScene = null;
+                    }
+                } else {
+                    console.error('Invalid payload in createScene.fulfilled:', action.payload);
+                    newScene = null;
                 }
-                state.universeScenes[universeId].push(newScene);
 
-                // Set as current scene
-                state.currentScene = newScene;
+                if (newScene) {
+                    // Add the new scene to the scenes array
+                    state.scenes.push(newScene);
+                    state.currentScene = newScene;
+
+                    // Also add to the universeScenes mapping
+                    const universeId = newScene.universe_id;
+                    if (!state.universeScenes[universeId]) {
+                        state.universeScenes[universeId] = [];
+                    }
+                    state.universeScenes[universeId].push(newScene);
+                } else {
+                    console.error('Failed to extract scene data from response:', action.payload);
+                }
+
+                state.error = null;
             })
             .addCase(createScene.rejected, (state, action) => {
                 state.loading = false;
@@ -112,7 +159,7 @@ const scenesSlice = createSlice({
             .addCase(updateScene.fulfilled, (state, action) => {
                 state.loading = false;
                 state.success = true;
-                const updatedScene = action.payload.data.scene;
+                const updatedScene = action.payload.scene;
 
                 // Update in general scenes array
                 const index = state.scenes.findIndex(s => s.id === updatedScene.id);
@@ -186,7 +233,7 @@ const scenesSlice = createSlice({
             .addCase(reorderScenes.fulfilled, (state, action) => {
                 state.loading = false;
                 const { universeId } = action.meta.arg;
-                const reorderedScenes = action.payload.data.scenes;
+                const reorderedScenes = action.payload.scenes;
 
                 // Update the scenes in the universeScenes object
                 state.universeScenes[universeId] = reorderedScenes;

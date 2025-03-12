@@ -99,7 +99,25 @@ const universeSlice = createSlice({
       .addCase(fetchUniverses.fulfilled, (state, action) => {
         console.debug('Universes fetched successfully:', action.payload);
         state.loading = false;
-        state.universes = action.payload.data.universes;
+
+        // Handle different response formats
+        if (action.payload && action.payload.data && Array.isArray(action.payload.data.universes)) {
+          // Format: { data: { universes: [...] } }
+          state.universes = action.payload.data.universes;
+        } else if (action.payload && Array.isArray(action.payload.universes)) {
+          // Format: { universes: [...] }
+          state.universes = action.payload.universes;
+        } else if (action.payload && typeof action.payload === 'object' && action.payload.status === 'success') {
+          // Format from simple_app.py: { status: 'success', data: { universes: [...] } }
+          state.universes = action.payload.data?.universes || [];
+        } else if (Array.isArray(action.payload)) {
+          // Direct array format
+          state.universes = action.payload;
+        } else {
+          console.error('Unexpected universes response format:', action.payload);
+          state.universes = [];
+        }
+
         state.lastFetched = Date.now();
         state.error = null;
         state.authError = false;
@@ -122,7 +140,7 @@ const universeSlice = createSlice({
       })
       .addCase(fetchUniverseById.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentUniverse = action.payload.data.universe;
+        state.currentUniverse = action.payload?.universe;
       })
       .addCase(fetchUniverseById.rejected, (state, action) => {
         state.loading = false;
@@ -139,8 +157,40 @@ const universeSlice = createSlice({
         console.debug('Universe created:', action.payload);
         state.loading = false;
         state.success = true;
-        state.universes = [...(state.universes || []), action.payload.data.universe];
-        state.currentUniverse = action.payload.data.universe;
+
+        // Handle different possible response formats
+        let newUniverse;
+        if (action.payload && typeof action.payload === 'object') {
+          if (action.payload.status === 'success' && action.payload.data && action.payload.data.universe) {
+            // Simple backend format: { status: 'success', data: { universe: {...} } }
+            newUniverse = action.payload.data.universe;
+          } else if (action.payload.universe && typeof action.payload.universe === 'object') {
+            // Response format: { universe: {...} }
+            newUniverse = action.payload.universe;
+          } else if (action.payload.data && action.payload.data.universe) {
+            // Response format: { data: { universe: {...} } }
+            newUniverse = action.payload.data.universe;
+          } else if (action.payload.id) {
+            // Response format: The payload itself is the universe
+            newUniverse = action.payload;
+          } else {
+            console.error('Unexpected response format in createUniverse.fulfilled:', action.payload);
+            newUniverse = null;
+          }
+        } else {
+          console.error('Invalid payload in createUniverse.fulfilled:', action.payload);
+          newUniverse = null;
+        }
+
+        if (newUniverse) {
+          // Add the new universe to the state
+          state.universes = [...(state.universes || []), newUniverse];
+          state.currentUniverse = newUniverse;
+          console.debug('New universe added to store:', newUniverse);
+        } else {
+          console.error('Failed to extract universe data from response:', action.payload);
+        }
+
         state.error = null;
         state.authError = false;
       })
@@ -161,12 +211,16 @@ const universeSlice = createSlice({
         console.debug('Universe updated:', action.payload);
         state.loading = false;
         state.success = true;
-        const updatedUniverse = action.payload.data.universe;
-        state.universes = state.universes.map(universe =>
-          universe.id === updatedUniverse.id ? updatedUniverse : universe
-        );
-        if (state.currentUniverse?.id === updatedUniverse.id) {
-          state.currentUniverse = updatedUniverse;
+        const updatedUniverse = action.payload?.universe;
+        if (updatedUniverse) {
+          state.universes = state.universes.map(universe =>
+            universe.id === updatedUniverse.id ? updatedUniverse : universe
+          );
+          if (state.currentUniverse?.id === updatedUniverse.id) {
+            state.currentUniverse = updatedUniverse;
+          }
+        } else {
+          console.error('Missing universe data in update response:', action.payload);
         }
         state.error = null;
         state.authError = false;
@@ -217,25 +271,22 @@ const universeSlice = createSlice({
           return;
         }
 
-        const updatedUniverse = {
-          ...action.payload,
-          updated_at: new Date().toISOString(),
-        };
+        const updatedUniverse = action.payload;
 
         // Update current universe if it matches
-        if (state.currentUniverse?.id === action.payload.id) {
+        if (state.currentUniverse?.id === updatedUniverse.id) {
           state.currentUniverse = updatedUniverse;
         }
 
         // Update in universes list if present
         state.universes = state.universes.map(universe =>
-          universe.id === action.payload.id ? updatedUniverse : universe
+          universe.id === updatedUniverse.id ? updatedUniverse : universe
         );
 
         // Log the update for debugging
         console.debug('Physics params updated in store:', {
-          id: action.payload.id,
-          params: action.payload.physics_params,
+          id: updatedUniverse.id,
+          params: updatedUniverse.physics_params,
         });
       })
       .addCase(updatePhysicsParams.rejected, (state, action) => {
@@ -258,25 +309,22 @@ const universeSlice = createSlice({
           return;
         }
 
-        const updatedUniverse = {
-          ...action.payload,
-          updated_at: new Date().toISOString(),
-        };
+        const updatedUniverse = action.payload;
 
         // Update current universe if it matches
-        if (state.currentUniverse?.id === action.payload.id) {
+        if (state.currentUniverse?.id === updatedUniverse.id) {
           state.currentUniverse = updatedUniverse;
         }
 
         // Update in universes list if present
         state.universes = state.universes.map(universe =>
-          universe.id === action.payload.id ? updatedUniverse : universe
+          universe.id === updatedUniverse.id ? updatedUniverse : universe
         );
 
         // Log the update for debugging
         console.debug('Harmony params updated in store:', {
-          id: action.payload.id,
-          params: action.payload.harmony_params,
+          id: updatedUniverse.id,
+          params: updatedUniverse.harmony_params,
         });
       })
       .addCase(updateHarmonyParams.rejected, (state, action) => {

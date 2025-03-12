@@ -1,21 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { fetchUniverses } from '../../store/thunks/universeThunks';
-import Button from '../../components/common/Button';
+import { fetchUniverses } from '../store/universeThunks';
+import Button from '../components/Button';
 import UniverseCard from './UniverseCard';
 import UniverseFormModal from './UniverseFormModal';
-import './Universe.css';
+import UniverseDeleteModal from './UniverseDeleteModal';
+import '../styles/UniverseList.css';
 
-function UniverseList() {
+const UniverseList = () => {
   const dispatch = useDispatch();
   const { universes, loading, error } = useSelector((state) => state.universe);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [universeToDelete, setUniverseToDelete] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all', 'public', 'private'
+  const [sortBy, setSortBy] = useState('updated_at'); // 'name', 'created_at', 'updated_at'
+  const [sortOrder, setSortOrder] = useState('desc'); // 'asc', 'desc'
 
   useEffect(() => {
     // Fetch universes when component mounts
-    dispatch(fetchUniverses({ includePublic: true }));
+    dispatch(fetchUniverses());
   }, [dispatch]);
 
   const handleCreateClick = () => {
@@ -25,15 +29,54 @@ function UniverseList() {
   const handleCreateSuccess = () => {
     setIsCreateModalOpen(false);
     // Refresh the list after creating a new universe
-    dispatch(fetchUniverses({ includePublic: true }));
+    dispatch(fetchUniverses());
   };
 
-  const filteredUniverses = universes.filter(universe => {
-    if (filter === 'all') return true;
-    if (filter === 'public') return universe.is_public;
-    if (filter === 'private') return !universe.is_public;
-    return true;
-  });
+  const handleDeleteClick = (universe) => {
+    setUniverseToDelete(universe);
+  };
+
+  const handleDeleteSuccess = () => {
+    setUniverseToDelete(null);
+    // Refresh the list after deleting a universe
+    dispatch(fetchUniverses());
+  };
+
+  const handleSortChange = (e) => {
+    setSortBy(e.target.value);
+  };
+
+  const handleSortOrderToggle = () => {
+    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+  };
+
+  // Filter and sort universes
+  const filteredAndSortedUniverses = [...universes]
+    .filter(universe => {
+      if (filter === 'all') return true;
+      if (filter === 'public') return universe.is_public;
+      if (filter === 'private') return !universe.is_public;
+      return true;
+    })
+    .sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortBy) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'created_at':
+          comparison = new Date(a.created_at) - new Date(b.created_at);
+          break;
+        case 'updated_at':
+          comparison = new Date(a.updated_at || a.created_at) - new Date(b.updated_at || b.created_at);
+          break;
+        default:
+          comparison = 0;
+      }
+
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
 
   return (
     <div className="universe-list-container">
@@ -63,6 +106,27 @@ function UniverseList() {
               Private
             </Button>
           </div>
+
+          <div className="sort-controls">
+            <select
+              value={sortBy}
+              onChange={handleSortChange}
+              className="sort-select"
+            >
+              <option value="updated_at">Last Updated</option>
+              <option value="created_at">Date Created</option>
+              <option value="name">Name</option>
+            </select>
+            <Button
+              variant="icon"
+              size="small"
+              onClick={handleSortOrderToggle}
+              className="sort-order-button"
+            >
+              {sortOrder === 'asc' ? '↑' : '↓'}
+            </Button>
+          </div>
+
           <Button onClick={handleCreateClick} variant="primary">
             Create Universe
           </Button>
@@ -76,10 +140,26 @@ function UniverseList() {
           <div className="spinner"></div>
           <p>Loading universes...</p>
         </div>
-      ) : filteredUniverses.length > 0 ? (
+      ) : filteredAndSortedUniverses.length > 0 ? (
         <div className="universe-grid">
-          {filteredUniverses.map((universe) => (
-            <UniverseCard key={universe.id} universe={universe} />
+          {filteredAndSortedUniverses.map((universe) => (
+            <div key={universe.id} className="universe-card-wrapper">
+              <UniverseCard universe={universe} />
+              <div className="universe-card-actions">
+                <Link to={`/universes/${universe.id}`} className="view-button">
+                  View
+                </Link>
+                <Link to={`/universes/${universe.id}/edit`} className="edit-button">
+                  Edit
+                </Link>
+                <button
+                  className="delete-button"
+                  onClick={() => handleDeleteClick(universe)}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
           ))}
         </div>
       ) : (
@@ -99,8 +179,17 @@ function UniverseList() {
           onSuccess={handleCreateSuccess}
         />
       )}
+
+      {universeToDelete && (
+        <UniverseDeleteModal
+          isOpen={!!universeToDelete}
+          onClose={() => setUniverseToDelete(null)}
+          onSuccess={handleDeleteSuccess}
+          universe={universeToDelete}
+        />
+      )}
     </div>
   );
-}
+};
 
 export default UniverseList;

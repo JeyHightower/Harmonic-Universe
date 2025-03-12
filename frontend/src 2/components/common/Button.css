@@ -1,0 +1,278 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  border: none;
+  outline: none;
+}
+
+/* Variants */
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-secondary {
+  background-color: var(--secondary-color);
+  color: white;
+}
+
+.btn-outline {
+  background-color: transparent;
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
+}
+
+.btn-text {
+  background-color: transparent;
+  color: var(--primary-color);
+  padding: 0;
+}
+
+/* Sizes */
+.btn-small {
+  padding: 0.5rem 1rem;
+  font-size: var(--font-size-sm);
+}
+
+.btn-medium {
+  padding: 0.75rem 1.5rem;
+  font-size: var(--font-size-md);
+}
+
+.btn-large {
+  padding: 1rem 2rem;
+  font-size: var(--font-size-lg);
+}
+
+/* Width */
+.btn-full {
+  width: 100%;
+}
+
+/* States */
+.btn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Loading state */
+.btn-loading {
+  position: relative;
+  color: transparent;
+}
+
+.btn-spinner {
+  position: absolute;
+  width: 1.25em;
+  height: 1.25em;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  border-right-color: transparent;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Variants */
+.button-primary {
+  background-color: var(--primary-color);
+  color: var(--text-on-primary);
+}
+
+.button-primary:hover:not(.button-disabled) {
+  background-color: var(--primary-hover);
+}
+
+.button-secondary {
+  background-color: var(--secondary-color);
+  color: var(--text-on-secondary);
+}
+
+.button-secondary:hover:not(.button-disabled) {
+  background-color: var(--secondary-hover);
+}
+
+.button-tertiary {
+  background-color: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.button-tertiary:hover:not(.button-disabled) {
+  background-color: var(--surface-hover);
+  border-color: var(--text-primary);
+}
+
+.button-danger {
+  background-color: var(--error-color);
+  color: var(--text-on-error);
+}
+
+.button-danger:hover:not(.button-disabled) {
+  background-color: var(--error-hover);
+  transform: translateY(-1px);
+}
+
+.button-danger:active:not(.button-disabled) {
+  transform: translateY(0);
+}
+
+/* Sizes */
+.button-small {
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: var(--font-size-sm);
+}
+
+.button-medium {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-size: var(--font-size-md);
+}
+
+.button-large {
+  padding: var(--spacing-md) var(--spacing-xl);
+  font-size: var(--font-size-lg);
+}
+
+/* States */
+.button:hover:not(.button-disabled) {
+  transform: translateY(-1px);
+}
+
+.button:active:not(.button-disabled) {
+  transform: translateY(0);
+}
+
+.button-full-width {
+  width: 100%;
+}
+
+.button-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Loading state */
+.button-loading {
+  color: transparent;
+}
+
+.button-loading .button-text {
+  visibility: visible;
+  opacity: 0.5;
+}
+
+.button-loading .spinner {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Focus states */
+.button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--primary-color);
+}
+
+.button:focus:not(:focus-visible) {
+  box-shadow: none;
+}
+
+.button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--primary-color);
+}
+
+/* Icon button variants */
+.button-icon {
+  background-color: transparent;
+  color: var(--text-primary);
+  width: 36px;
+  height: 36px;
+  padding: var(--spacing-xs);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.button-icon:hover:not(.button-disabled) {
+  background-color: var(--surface-hover);
+  transform: translateY(0);
+}
+
+.button-icon-danger {
+  background-color: transparent;
+  color: var(--error-color);
+  width: 36px;
+  height: 36px;
+  padding: var(--spacing-xs);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.button-icon-danger:hover:not(.button-disabled) {
+  background-color: rgba(var(--error-color-rgb), 0.1);
+  transform: translateY(0);
+}
+
+/* Sizes for icon buttons */
+.button-icon.button-small,
+.button-icon-danger.button-small {
+  width: 28px;
+  height: 28px;
+  padding: var(--spacing-xxs);
+}
+
+.button-icon.button-large,
+.button-icon-danger.button-large {
+  width: 44px;
+  height: 44px;
+  padding: var(--spacing-sm);
+}
+
+/* Focus states for icon buttons */
+.button-icon:focus,
+.button-icon-danger:focus {
+  box-shadow: 0 0 0 2px var(--primary-color-light);
+}

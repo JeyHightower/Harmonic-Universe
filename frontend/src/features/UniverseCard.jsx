@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import { formatDate } from '../../utils/dateUtils';
-import './Universe.css';
+import { formatDate } from '../utils/dateUtils';
+import '../styles/UniverseCard.css';
 
 const UniverseCard = ({ universe }) => {
     const defaultImage = '/images/default-universe.jpg';
@@ -31,9 +31,14 @@ const UniverseCard = ({ universe }) => {
                     )}
                 </p>
                 <div className="universe-card-footer">
-                    <span className="universe-card-scenes">
-                        {universe.scene_count} {universe.scene_count === 1 ? 'Scene' : 'Scenes'}
-                    </span>
+                    <div className="universe-card-meta">
+                        {universe.theme && (
+                            <span className="universe-card-theme">{universe.theme}</span>
+                        )}
+                        {universe.genre && (
+                            <span className="universe-card-genre">{universe.genre}</span>
+                        )}
+                    </div>
                     <span className="universe-card-date">
                         {formatDate(universe.created_at)}
                     </span>
@@ -50,8 +55,9 @@ UniverseCard.propTypes = {
         description: PropTypes.string,
         image_url: PropTypes.string,
         is_public: PropTypes.bool,
-        created_at: PropTypes.string,
-        scene_count: PropTypes.number
+        created_at: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        theme: PropTypes.string,
+        genre: PropTypes.string
     }).isRequired
 };
 

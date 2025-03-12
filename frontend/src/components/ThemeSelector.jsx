@@ -1,6 +1,6 @@
 import React from 'react';
-import { useTheme } from '../../contexts/ThemeContext';
-import './ThemeSelector.css';
+import { useTheme } from '../contexts/ThemeContext.jsx';
+import '../styles/ThemeSelector.css';
 
 const ThemeSelector = () => {
   const { currentTheme, setTheme, themes } = useTheme();
@@ -12,9 +12,8 @@ const ThemeSelector = () => {
         {themes.map(theme => (
           <button
             key={theme.id}
-            className={`theme-option ${
-              currentTheme === theme.id ? 'active' : ''
-            }`}
+            className={`theme-option ${currentTheme === theme.id ? 'active' : ''
+              }`}
             onClick={() => setTheme(theme.id)}
             aria-label={`Switch to ${theme.name} theme`}
             title={theme.description}

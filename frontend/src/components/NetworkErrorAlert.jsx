@@ -16,17 +16,26 @@ const NetworkErrorAlert = () => {
     const [hasShownModal, setHasShownModal] = useState(false);
     const [isCheckingConnection, setIsCheckingConnection] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
+    const [lastCheckTime, setLastCheckTime] = useState(0);
 
-    const checkApiConnection = useCallback(async () => {
+    const checkApiConnection = useCallback(async (force = false) => {
+        // Prevent checking too frequently - at least 5 seconds between checks
+        const now = Date.now();
+        if (!force && now - lastCheckTime < 5000) {
+            console.debug('Skipping API check - checked too recently');
+            return;
+        }
+
         if (isCheckingConnection) return;
         setIsCheckingConnection(true);
+        setLastCheckTime(now);
 
         try {
             console.debug('Checking API connection...');
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.HEALTH_CHECK.TIMEOUT);
 
-            const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.HEALTH_CHECK.ENDPOINT}`, {
+            const response = await fetch(`${API_CONFIG.HEALTH_CHECK.ENDPOINT}`, {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json',
@@ -58,22 +67,30 @@ const NetworkErrorAlert = () => {
         } finally {
             setIsCheckingConnection(false);
         }
-    }, [dispatch, networkError, isCheckingConnection]);
+    }, [dispatch, networkError, isCheckingConnection, lastCheckTime]);
 
     const handleConnectionError = async () => {
         if (retryCount < API_CONFIG.HEALTH_CHECK.RETRY_ATTEMPTS) {
             setRetryCount(prev => prev + 1);
             await new Promise(resolve => setTimeout(resolve, API_CONFIG.ERROR_HANDLING.RETRY_DELAY));
-            return checkApiConnection();
+            return checkApiConnection(true);
         }
         dispatch(setNetworkError(true));
     };
 
-    // Check API connection periodically
+    // Check API connection periodically - but use a longer interval (60 seconds minimum)
     useEffect(() => {
-        checkApiConnection();
-        const interval = setInterval(checkApiConnection, API_CONFIG.HEALTH_CHECK.INTERVAL);
-        return () => clearInterval(interval);
+        // Initial check with a delay to avoid immediate check on mount
+        const initialCheck = setTimeout(() => checkApiConnection(), 2000);
+
+        // Use a longer interval than configured to prevent excessive checks
+        const checkInterval = Math.max(60000, API_CONFIG.HEALTH_CHECK.INTERVAL);
+        const interval = setInterval(() => checkApiConnection(), checkInterval);
+
+        return () => {
+            clearTimeout(initialCheck);
+            clearInterval(interval);
+        };
     }, [checkApiConnection]);
 
     // Show modal when network error is detected

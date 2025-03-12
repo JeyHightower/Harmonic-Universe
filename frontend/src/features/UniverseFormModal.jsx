@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import PropTypes from 'prop-types';
-import { createUniverse, updateUniverse } from '../../store/thunks/universeThunks';
-import Modal from '../../components/common/Modal';
-import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
-import './UniverseFormModal.css';
+import { createUniverse, updateUniverse } from '../store/universeThunks';
+import Modal from '../components/Modal';
+import Button from '../components/Button';
+import Input from '../components/Input';
+import '../styles/UniverseFormModal.css';
 
 const UniverseFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
   const dispatch = useDispatch();
   const { loading, error } = useSelector(state => state.universe);
   const isEditing = !!initialData;
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -82,32 +83,73 @@ const UniverseFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
+    // Run validation before submission
     if (!validateForm()) {
-      return;
+      console.log('UniverseFormModal - Form validation failed');
+      return; // Stop submission if validation fails
     }
+
+    setIsSubmitting(true);
+    console.log('UniverseFormModal - Submitting form...', formData);
 
     try {
       let result;
-
       if (isEditing) {
         // Update existing universe
+        console.log('UniverseFormModal - Updating universe:', initialData.id);
         result = await dispatch(updateUniverse({
           id: initialData.id,
           ...formData
         })).unwrap();
       } else {
         // Create new universe
+        console.log('UniverseFormModal - Creating new universe');
         result = await dispatch(createUniverse(formData)).unwrap();
       }
 
+      console.log('UniverseFormModal - API call successful:', result);
+
       if (onSuccess) {
-        onSuccess(result.data.universe);
+        // Extract the universe data - handle different possible response formats
+        let universeData;
+
+        if (result && typeof result === 'object') {
+          // Try different possible structures
+          if (result.universe && typeof result.universe === 'object') {
+            // Case: { universe: {...} }
+            universeData = result.universe;
+          } else if (result.data && result.data.universe) {
+            // Case: { data: { universe: {...} } }
+            universeData = result.data.universe;
+          } else if (result.id) {
+            // Case: The result itself is the universe object
+            universeData = result;
+          } else {
+            // Fallback
+            console.warn('UniverseFormModal - Unexpected response format:', result);
+            universeData = result;
+          }
+        } else {
+          // Unexpected non-object response
+          console.warn('UniverseFormModal - Unexpected non-object response:', result);
+          universeData = result;
+        }
+
+        console.log('UniverseFormModal - Calling onSuccess with extracted data:', universeData);
+        onSuccess(universeData);
       }
     } catch (err) {
-      console.error('Failed to save universe:', err);
+      console.error('UniverseFormModal - Failed to save universe:', err);
+      // Set form-wide error message
+      setErrors(prev => ({
+        ...prev,
+        form: err.message || 'Failed to save universe. Please try again.'
+      }));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -116,6 +158,7 @@ const UniverseFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
       isOpen={isOpen}
       onClose={onClose}
       title={isEditing ? 'Edit Universe' : 'Create Universe'}
+      className="universe-form-modal"
     >
       <form onSubmit={handleSubmit} className="universe-form">
         <Input
@@ -177,6 +220,7 @@ const UniverseFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
         </div>
 
         {error && <div className="form-error">{error}</div>}
+        {errors.form && <div className="form-error">{errors.form}</div>}
 
         <div className="form-actions">
           <Button
@@ -189,9 +233,9 @@ const UniverseFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
           <Button
             type="submit"
             variant="primary"
-            disabled={loading}
+            disabled={isSubmitting}
           >
-            {loading ? 'Saving...' : isEditing ? 'Update' : 'Create'}
+            {isSubmitting ? 'Saving...' : isEditing ? 'Update' : 'Create'}
           </Button>
         </div>
       </form>
@@ -204,7 +248,7 @@ UniverseFormModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   onSuccess: PropTypes.func,
   initialData: PropTypes.shape({
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     name: PropTypes.string,
     description: PropTypes.string,
     image_url: PropTypes.string,

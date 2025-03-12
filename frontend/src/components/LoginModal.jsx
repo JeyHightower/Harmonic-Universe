@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useDispatch } from 'react-redux';
-import { login } from '../../store/thunks/authThunks';
-import './Modal.css';
+import { useNavigate } from 'react-router-dom';
+import { login } from '../store/authThunks.js';
+import '../styles/modal.css';
 
 const LoginModal = ({ onClose }) => {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -27,6 +29,7 @@ const LoginModal = ({ onClose }) => {
             const resultAction = await dispatch(login(formData));
             if (login.fulfilled.match(resultAction)) {
                 onClose();
+                navigate('/dashboard');
             } else {
                 setError(resultAction.error.message);
             }

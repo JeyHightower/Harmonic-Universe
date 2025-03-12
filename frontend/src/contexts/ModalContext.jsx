@@ -4,6 +4,15 @@ import React, { createContext, useContext, useState } from 'react';
 // Create the context
 const ModalContext = createContext(null);
 
+// Custom hook to use the modal context
+export function useModal() {
+  const context = useContext(ModalContext);
+  if (!context) {
+    throw new Error('useModal must be used within a ModalProvider');
+  }
+  return context;
+}
+
 // Provider component
 export function ModalProvider({ children }) {
   const [modalType, setModalType] = useState(null);

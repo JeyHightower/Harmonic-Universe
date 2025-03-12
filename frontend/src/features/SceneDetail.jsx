@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { fetchSceneById, deleteScene } from '../../store/thunks/scenesThunks';
-import { fetchUniverseById } from '../../store/thunks/universeThunks';
-import Button from '../../components/common/Button';
-import Modal from '../../components/common/Modal';
-import SceneFormModal from './SceneFormModal';
-import './SceneDetail.css';
+import { fetchSceneById, deleteScene } from '../store/scenesThunks.js';
+import { fetchUniverseById } from '../store/universeThunks.js';
+import Button from '../components/Button.jsx';
+import Modal from '../components/Modal.jsx';
+import SceneFormModal from './SceneFormModal.jsx';
+import '../styles/SceneDetail.css';
 
 const SceneDetail = () => {
     const { id } = useParams();

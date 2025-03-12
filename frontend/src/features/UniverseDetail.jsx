@@ -1,70 +1,88 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { fetchUniverseById, deleteUniverse } from '../../store/thunks/universeThunks';
-import { fetchScenesForUniverse } from '../../store/thunks/universeThunks';
-import Button from '../../components/common/Button';
-import Modal from '../../components/common/Modal';
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
+import { fetchUniverseById } from '../store/universeThunks';
+import { fetchScenesForUniverse } from '../store/scenesThunks';
+import Button from '../components/Button';
 import UniverseFormModal from './UniverseFormModal';
-import SceneCard from '../scenes/SceneCard';
-import './Universe.css';
+import UniverseDeleteModal from './UniverseDeleteModal';
+import SceneCard from './SceneCard';
+import SceneFormModal from './SceneFormModal';
+import '../styles/UniverseDetail.css';
 
 const UniverseDetail = () => {
   const { id } = useParams();
+  const location = useLocation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { currentUniverse, loading, error } = useSelector(state => state.universe);
-  const { universeScenes } = useSelector(state => state.scenes);
+  const { scenes, loading: scenesLoading } = useSelector(state => state.scenes);
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [scenesLoading, setScenesLoading] = useState(false);
+  const [isCreateSceneModalOpen, setIsCreateSceneModalOpen] = useState(false);
 
-  // Fetch universe data when component mounts
+  // Fetch universe data when component mounts or id changes
   useEffect(() => {
     if (id) {
-      dispatch(fetchUniverseById({
-        id,
-        includeScenes: true
-      }));
-
-      // Also fetch scenes separately to ensure we have the complete data
-      setScenesLoading(true);
-      dispatch(fetchScenesForUniverse(id))
-        .finally(() => setScenesLoading(false));
+      dispatch(fetchUniverseById({ id }));
+      dispatch(fetchScenesForUniverse(id));
     }
   }, [dispatch, id]);
 
+  // Open edit modal automatically if accessed through the edit route
+  useEffect(() => {
+    if (location.pathname.endsWith('/edit') && currentUniverse) {
+      setIsEditModalOpen(true);
+    }
+  }, [location.pathname, currentUniverse]);
+
   const handleEditClick = () => {
     setIsEditModalOpen(true);
+  };
+
+  const handleEditSuccess = () => {
+    setIsEditModalOpen(false);
+    // Redirect to the detail page if we're on the edit route
+    if (location.pathname.endsWith('/edit')) {
+      navigate(`/universes/${id}`);
+    } else {
+      // Refresh universe data
+      dispatch(fetchUniverseById({ id }));
+    }
   };
 
   const handleDeleteClick = () => {
     setIsDeleteModalOpen(true);
   };
 
-  const handleDeleteConfirm = async () => {
-    try {
-      await dispatch(deleteUniverse(id)).unwrap();
-      // Navigate back to universes list after successful deletion
-      navigate('/universes');
-    } catch (err) {
-      console.error('Failed to delete universe:', err);
-      // Keep the modal open if there's an error
+  const handleDeleteSuccess = () => {
+    setIsDeleteModalOpen(false);
+    // Navigate back to universes list after successful deletion
+    navigate('/universes');
+  };
+
+  const handleCreateSceneClick = () => {
+    setIsCreateSceneModalOpen(true);
+  };
+
+  const handleCreateSceneSuccess = () => {
+    setIsCreateSceneModalOpen(false);
+    // Refresh scenes data
+    dispatch(fetchScenesForUniverse(id));
+  };
+
+  // Modal close handlers
+  const handleEditModalClose = () => {
+    setIsEditModalOpen(false);
+    // Redirect to detail page if accessed via edit route
+    if (location.pathname.endsWith('/edit')) {
+      navigate(`/universes/${id}`);
     }
   };
 
-  const handleEditSuccess = () => {
-    setIsEditModalOpen(false);
-    // Refresh universe data
-    dispatch(fetchUniverseById({
-      id,
-      includeScenes: true
-    }));
-  };
-
-  // Get scenes for this universe
-  const scenes = universeScenes[id] || [];
+  // Filter scenes for this universe
+  const universeScenes = scenes.filter(scene => scene.universe_id === parseInt(id, 10));
 
   if (loading && !currentUniverse) {
     return (
@@ -141,9 +159,12 @@ const UniverseDetail = () => {
       <div className="universe-content">
         <div className="universe-scenes-header">
           <h2>Scenes</h2>
-          <Link to={`/universes/${id}/scenes/new`} className="button button-primary">
+          <Button
+            onClick={handleCreateSceneClick}
+            variant="primary"
+          >
             Create Scene
-          </Link>
+          </Button>
         </div>
 
         {scenesLoading ? (
@@ -151,18 +172,21 @@ const UniverseDetail = () => {
             <div className="spinner"></div>
             <p>Loading scenes...</p>
           </div>
-        ) : scenes.length > 0 ? (
+        ) : universeScenes.length > 0 ? (
           <div className="scene-grid">
-            {scenes.map(scene => (
+            {universeScenes.map(scene => (
               <SceneCard key={scene.id} scene={scene} />
             ))}
           </div>
         ) : (
           <div className="empty-state">
             <p>No scenes found in this universe</p>
-            <Link to={`/universes/${id}/scenes/new`} className="button button-primary">
+            <Button
+              onClick={handleCreateSceneClick}
+              variant="primary"
+            >
               Create Your First Scene
-            </Link>
+            </Button>
           </div>
         )}
       </div>
@@ -170,39 +194,29 @@ const UniverseDetail = () => {
       {isEditModalOpen && (
         <UniverseFormModal
           isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
+          onClose={handleEditModalClose}
           onSuccess={handleEditSuccess}
           initialData={currentUniverse}
         />
       )}
 
-      <Modal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        title="Delete Universe"
-      >
-        <div className="delete-confirmation">
-          <p>
-            Are you sure you want to delete the universe "{currentUniverse.name}"?
-            This action cannot be undone and will delete all scenes and data associated with this universe.
-          </p>
-          <div className="modal-actions">
-            <Button
-              onClick={() => setIsDeleteModalOpen(false)}
-              variant="secondary"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleDeleteConfirm}
-              variant="danger"
-              disabled={loading}
-            >
-              {loading ? 'Deleting...' : 'Delete Universe'}
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      {isDeleteModalOpen && (
+        <UniverseDeleteModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          onSuccess={handleDeleteSuccess}
+          universe={currentUniverse}
+        />
+      )}
+
+      {isCreateSceneModalOpen && (
+        <SceneFormModal
+          isOpen={isCreateSceneModalOpen}
+          onClose={() => setIsCreateSceneModalOpen(false)}
+          onSuccess={handleCreateSceneSuccess}
+          universeId={id}
+        />
+      )}
     </div>
   );
 };

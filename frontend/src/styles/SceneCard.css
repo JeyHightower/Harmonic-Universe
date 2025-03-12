@@ -1,18 +1,20 @@
 .scene-card {
-  display: block;
+  background-color: var(--background-light);
   border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s, box-shadow 0.2s;
-  background-color: #fff;
-  text-decoration: none;
-  color: inherit;
-  height: 100%;
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+  border: 1px solid var(--border-color);
 }
 
 .scene-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .scene-card-image {
@@ -34,51 +36,156 @@
 
 .scene-type-badge {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  background-color: rgba(155, 89, 182, 0.8);
+  top: 1rem;
+  right: 1rem;
+  background-color: var(--primary-color);
   color: white;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-weight: 500;
 }
 
 .scene-card-content {
   padding: 1.25rem;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  height: calc(100% - 160px);
 }
 
 .scene-card-title {
-  margin-top: 0;
-  margin-bottom: 0.5rem;
-  font-size: 1.125rem;
+  font-size: 1.25rem;
+  margin: 0 0 0.5rem;
+  color: var(--text-primary);
   font-weight: 600;
-  color: #333;
 }
 
 .scene-card-description {
-  margin-bottom: 1rem;
+  color: var(--text-secondary);
   font-size: 0.875rem;
-  color: #666;
+  margin-bottom: 1rem;
   line-height: 1.5;
   flex-grow: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.scene-card-details {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  font-size: 0.8125rem;
+}
+
+.scene-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+}
+
+.scene-detail-item i {
+  font-size: 0.875rem;
+  color: var(--primary-color);
+}
+
+.scene-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.scene-status.active {
+  color: var(--success-color);
+}
+
+.scene-status.inactive {
+  color: var(--error-color);
 }
 
 .scene-card-footer {
   display: flex;
   justify-content: space-between;
+  color: var(--text-tertiary);
   font-size: 0.75rem;
-  color: #888;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color-light);
 }
 
-.scene-card-order {
-  background-color: rgba(52, 152, 219, 0.1);
-  color: #3498db;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+.scene-date {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.scene-date i {
+  font-size: 0.8125rem;
+  opacity: 0.8;
+}
+
+.scene-card-actions {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.scene-card:hover .scene-card-actions {
+  opacity: 1;
+}
+
+.scene-action-btn {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: none;
+  background-color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.scene-action-btn:hover {
+  transform: scale(1.1);
+}
+
+.scene-action-btn.edit-btn:hover {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.scene-action-btn.delete-btn:hover {
+  background-color: var(--error-color);
+  color: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .scene-card-actions {
+    opacity: 1;
+    position: static;
+    flex-direction: row;
+    padding: 0.5rem 1rem;
+    background-color: rgba(0, 0, 0, 0.03);
+    border-top: 1px solid var(--border-color-light);
+  }
+
+  .scene-card-title {
+    padding-right: 5rem; /* Make space for the type badge */
+  }
 }
 
 /* Media Queries */

@@ -3,7 +3,6 @@ import { useSelector } from 'react-redux';
 import useModal from '../hooks/useModal.js';
 import { selectModalType, selectModalProps } from '../store/modalSlice.js';
 import { getModalComponent } from './ModalUtils.jsx';
-import StableModalWrapper from './StableModalWrapper';
 
 const GlobalModal = () => {
   const modalType = useSelector(selectModalType);
@@ -54,11 +53,8 @@ const GlobalModal = () => {
     return null;
   }
 
-  return (
-    <StableModalWrapper isOpen={!!modalType} onClose={closeModal}>
-      <ModalComponent {...modalProps} onClose={closeModal} />
-    </StableModalWrapper>
-  );
+  // Render the modal component directly
+  return <ModalComponent {...modalProps} onClose={closeModal} />;
 };
 
 export default GlobalModal;
