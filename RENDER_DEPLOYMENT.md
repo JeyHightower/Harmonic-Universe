@@ -126,7 +126,33 @@ gunicorn --workers=2 --timeout=120 wsgi:app
 ```bash
 cd frontend
 npm install
-npm run render-build
+npm run build  # Note: The frontend uses ES modules, not CommonJS
+```
+
+### Important Note About Node.js Scripts
+
+This project uses ES modules for Node.js scripts (package.json has `"type": "module"`). Any Node.js scripts should use ES module syntax:
+
+```javascript
+// Correct (ES modules):
+import { execSync } from 'child_process';
+import path from 'path';
+import fs from 'fs';
+
+// Incorrect (CommonJS):
+const { execSync } = require('child_process');
+const path = require('path');
+const fs = require('fs');
+```
+
+If you need to use `__dirname` or `__filename` in ES modules, use this pattern:
+
+```javascript
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 ```
 
 ## Continuous Deployment
