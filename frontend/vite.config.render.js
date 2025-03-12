@@ -17,17 +17,19 @@ export default defineConfig({
         outDir: '../static',
         emptyOutDir: true,
         rollupOptions: {
-            external: [], // Don't externalize any dependencies
+            external: [], // Don't externalize dependencies
             output: {
-                manualChunks: undefined,
+                manualChunks: {
+                    vendor: ['react', 'react-dom', 'react-router-dom', '@reduxjs/toolkit', 'react-redux', 'antd'],
+                },
                 format: 'es'
             }
         },
         commonjsOptions: {
-            transformMixedEsModules: true,
             include: [
                 /node_modules/
-            ]
+            ],
+            transformMixedEsModules: true
         },
         target: 'es2015',
         sourcemap: false,

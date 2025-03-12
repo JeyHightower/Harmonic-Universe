@@ -1,63 +1,62 @@
 // @ts-check
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { fileURLToPath } from 'url'
-import { dirname, resolve } from 'path'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-
-// https://vitejs.dev/config/
+// Simplified Vite config specifically for Render.com deployment
 export default defineConfig({
-  plugins: [
-    react({
-      // This enables legacy decorators support
-      babel: {
-        plugins: [
-          ['@babel/plugin-transform-runtime']
-        ]
-      }
-    })
-  ],
-  build: {
-    outDir: resolve(__dirname, '../static'),
-    emptyOutDir: true,
-    sourcemap: process.env.NODE_ENV !== 'production',
-    minify: true,
-    cssCodeSplit: false
-  },
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, './src')
+    plugins: [react()],
+
+    resolve: {
+        alias: {
+            '@': resolve(__dirname, 'src')
+        }
+    },
+
+    build: {
+        outDir: '../static',
+        emptyOutDir: true,
+        rollupOptions: {
+            external: [], // Don't externalize dependencies
+            output: {
+                manualChunks: {
+                    vendor: ['react', 'react-dom', 'react-router-dom', '@reduxjs/toolkit', 'react-redux', 'antd'],
+                },
+                format: 'es'
+            }
+        },
+        commonjsOptions: {
+            include: [
+                /node_modules/
+            ],
+            transformMixedEsModules: true
+        },
+        target: 'es2015',
+        sourcemap: false,
+        minify: true
+    },
+
+    define: {
+        'process.env': {}
+    },
+
+    optimizeDeps: {
+        include: [
+            'react',
+            'react-dom',
+            'react-router-dom',
+            '@reduxjs/toolkit',
+            'react-redux',
+            'antd',
+            '@ant-design/icons',
+            'axios',
+            'moment',
+            'prop-types'
+        ],
+        esbuildOptions: {
+            define: {
+                global: 'globalThis'
+            }
+        }
     }
-  },
-  optimizeDeps: {
-    esbuildOptions: {
-      define: {
-        global: 'globalThis'
-      }
-    }
-  },
-  server: {
-    port: 5173,
-    proxy: {
-      '^/api/.*': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-        secure: false,
-        ws: true
-      },
-      '^/auth/.*': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-        secure: false,
-        ws: true
-      },
-      '^/health': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-        secure: false
-      }
-    }
-  }
-})
+});

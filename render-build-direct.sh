@@ -62,8 +62,9 @@ npm install --no-save vite@4.5.1 @vitejs/plugin-react@4.2.1 --no-optional
 
 # Try multiple build methods - one of them should work
 
-# Method 1: Use direct npx vite with explicit version
-echo "🔨 Build Method 1: Using npx with explicit version..."
+# Method 1: Use direct npx vite with explicit version and config file
+echo "🔨 Build Method 1: Using npx with explicit version and config file..."
+cp vite.config.render.js vite.config.js || true  # Use render config as default
 npx vite@4.5.1 build --mode production --emptyOutDir || echo "Method 1 failed, trying next method..."
 
 # Method 2: Use direct node execution if vite.js exists
