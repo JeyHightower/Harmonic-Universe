@@ -1,29 +1,50 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import path from 'path';
 
-// This special config disables Rollup native functionality
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+    },
+  },
   optimizeDeps: {
     include: [
       'react',
       'react-dom',
+      'react-router-dom',
+      '@reduxjs/toolkit',
+      'react-redux',
+      'antd',
+      '@ant-design/icons',
+      'axios',
+      'moment',
+      'prop-types',
     ],
-    esbuildOptions: {
-      target: 'es2020',
-    }
   },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    target: 'es2020',
+    sourcemap: true,
     rollupOptions: {
-      external: [],
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+      },
       output: {
         manualChunks: {
           vendor: [
             'react',
             'react-dom',
+            'react-router-dom',
+            '@reduxjs/toolkit',
+            'react-redux',
+            'antd',
+          ],
+          utils: [
+            'axios',
+            'moment',
+            'prop-types',
           ],
         },
       },
