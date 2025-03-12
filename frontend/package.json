@@ -9,7 +9,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "render-build": "npx vite@4.5.1 build --mode production",
-    "render-dev": "node scripts/render-dev.js"
+    "render-dev": "node scripts/render-dev.js",
+    "serve": "node serve.js"
   },
   "dependencies": {
     "@ant-design/icons": "^4.8.0",
@@ -17,6 +18,7 @@
     "@reduxjs/toolkit": "1.9.7",
     "antd": "^4.24.10",
     "axios": "^1.8.2",
+    "express": "^4.21.2",
     "moment": "^2.30.1",
     "prop-types": "^15.8.1",
     "react": "18.2.0",

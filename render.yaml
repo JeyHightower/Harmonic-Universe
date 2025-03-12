@@ -1,25 +1,10 @@
 services:
-  # Static Site service for frontend
+  # Web service for frontend (changed from static to web with Node runtime)
   - type: web
     name: harmonic-universe-frontend
-    runtime: static
-    buildCommand: >
-      cd frontend &&
-      rm -rf node_modules/.vite node_modules/.cache node_modules/.tmp node_modules/@esbuild 2>/dev/null || true &&
-      npm cache clean --force &&
-      echo 'fund=false
-      audit=false
-      loglevel=error
-      prefer-offline=false
-      legacy-peer-deps=true
-      unsafe-perm=true
-      force=true
-      no-package-lock=true' > .npmrc &&
-      npm install --no-fund --legacy-peer-deps --no-optional --ignore-scripts --force --no-package-lock &&
-      npm install --no-save vite@4.5.1 @vitejs/plugin-react@4.2.1 --no-optional --ignore-scripts --legacy-peer-deps --force --no-package-lock &&
-      chmod +x fix-deploy.sh build-render.js esm-build.js fix-enotempty.sh &&
-      ./fix-deploy.sh
-    staticPublishPath: ./frontend/dist
+    runtime: node
+    buildCommand: ./fix-render-build.sh
+    startCommand: cd frontend && node serve.js
     envVars:
       - key: NODE_VERSION
         value: '18.19.0'
@@ -40,17 +25,15 @@ services:
       - key: NPM_CONFIG_PREFER_OFFLINE
         value: 'false'
       - key: NPM_CONFIG_IGNORE_SCRIPTS
-        value: 'true'
+        value: 'false'
       - key: NPM_CONFIG_FORCE
         value: 'true'
       - key: NPM_CONFIG_NO_PACKAGE_LOCK
         value: 'true'
       - key: NPM_CONFIG_UNSAFE_PERM
         value: 'true'
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+      - key: PORT
+        value: '10000'
 
   # Web service for backend
   - type: web
