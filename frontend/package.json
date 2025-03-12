@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "render-build": "ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true NODE_ENV=production vite build --mode production --force --emptyOutDir",
+    "render-build": "ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true NODE_ENV=production vite build --mode production --emptyOutDir",
     "render-dev": "node scripts/render-dev.js",
     "start": "npm run dev"
   },
