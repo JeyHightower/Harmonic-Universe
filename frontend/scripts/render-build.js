@@ -3,6 +3,7 @@
 /**
  * Script to build frontend assets for Render.com deployment
  * This script is called from the project's render.yaml during the build phase
+ * It uses the pure JS implementation of Rollup to avoid native binding issues
  */
 
 import { execSync } from 'child_process';
@@ -21,6 +22,10 @@ const STATIC_DIR = path.resolve(FRONTEND_DIR, '..', 'static');
 
 console.log('🚀 Starting Render.com frontend build process...');
 
+// Force using the pure JS implementation of Rollup
+console.log('Setting ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true');
+process.env.ROLLUP_SKIP_NODEJS_NATIVE_BUILD = 'true';
+
 // Function to execute shell commands and log output
 function runCommand(command, cwd = FRONTEND_DIR) {
     console.log(`\n📋 Executing: ${command}\n`);
@@ -35,13 +40,17 @@ function runCommand(command, cwd = FRONTEND_DIR) {
 
 // Main build process
 try {
-    // Step 1: Ensure we have the latest dependencies
+    // Step 1: Ensure we have the latest dependencies (with no optional dependencies)
     console.log('📦 Installing dependencies...');
-    runCommand('npm install');
+    console.log('🧹 Cleaning up previous installations...');
+    runCommand('rm -rf node_modules package-lock.json');
+
+    console.log('📦 Installing dependencies with --no-optional flag...');
+    runCommand('npm install --no-optional');
 
     // Step 2: Build the frontend
     console.log('🔨 Building frontend assets...');
-    runCommand('npm run build');
+    runCommand('ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true npm run build');
 
     // Step 3: Ensure destination directory exists
     console.log('📁 Setting up static directory...');
