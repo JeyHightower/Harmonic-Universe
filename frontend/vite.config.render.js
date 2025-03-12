@@ -1,37 +1,50 @@
 // @ts-check
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { resolve } from 'path';
+import path from 'path';
 
-// Simplified Vite config specifically for Render.com deployment
+// Special Vite configuration for Render.com deployment
 export default defineConfig({
     plugins: [react()],
 
     resolve: {
         alias: {
-            '@': resolve(__dirname, 'src')
+            '@': path.resolve(__dirname, 'src')
         }
     },
 
     build: {
-        outDir: '../static',
+        outDir: 'dist',
         emptyOutDir: true,
+        target: 'es2020',
+        commonjsOptions: {
+            transformMixedEsModules: true,
+            include: [/node_modules/],
+        },
         rollupOptions: {
-            external: [], // Don't externalize dependencies
+            external: [],
             output: {
                 manualChunks: {
-                    vendor: ['react', 'react-dom', 'react-router-dom', '@reduxjs/toolkit', 'react-redux', 'antd'],
+                    vendor: [
+                        'react',
+                        'react-dom',
+                        'react-router-dom',
+                        '@reduxjs/toolkit',
+                        'react-redux'
+                    ],
                 },
-                format: 'es'
+            },
+            context: 'globalThis',
+            shimMissingExports: true,
+            treeshake: {
+                moduleSideEffects: 'no-external',
+                propertyReadSideEffects: false,
+            },
+            onwarn(warning, warn) {
+                if (warning.code === 'CIRCULAR_DEPENDENCY') return;
+                warn(warning);
             }
         },
-        commonjsOptions: {
-            include: [
-                /node_modules/
-            ],
-            transformMixedEsModules: true
-        },
-        target: 'es2015',
         sourcemap: false,
         minify: true
     },
@@ -47,16 +60,16 @@ export default defineConfig({
             'react-router-dom',
             '@reduxjs/toolkit',
             'react-redux',
-            'antd',
-            '@ant-design/icons',
             'axios',
             'moment',
             'prop-types'
         ],
         esbuildOptions: {
-            define: {
-                global: 'globalThis'
-            }
-        }
+            target: 'es2020',
+        },
+    },
+
+    json: {
+        stringify: true,
     }
 });

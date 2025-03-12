@@ -9,8 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "render-build": "npx vite@4.5.1 build --mode production",
-    "render-dev": "node scripts/render-dev.js",
-    "start": "vite"
+    "render-dev": "node scripts/render-dev.js"
   },
   "dependencies": {
     "@ant-design/icons": "^4.8.0",
