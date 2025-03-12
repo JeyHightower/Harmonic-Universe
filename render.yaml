@@ -1,43 +1,73 @@
 services:
+  # Static Site service for frontend
   - type: web
-    name: harmonic-universe
-    runtime: python
-    plan: free
-    region: ohio
-    buildCommand: |
-      chmod +x render-build-command.sh && ./render-build-command.sh
-    startCommand: cd backend && gunicorn --workers=2 --timeout=120 --log-level info wsgi:app
+    name: harmonic-universe-frontend
+    runtime: static
+    buildCommand: >
+      cd frontend &&
+      rm -rf node_modules/.vite node_modules/.cache node_modules/.tmp node_modules/@esbuild 2>/dev/null || true &&
+      npm cache clean --force &&
+      echo 'fund=false
+      audit=false
+      loglevel=error
+      prefer-offline=false
+      legacy-peer-deps=true
+      unsafe-perm=true
+      force=true
+      no-package-lock=true' > .npmrc &&
+      npm install --no-fund --legacy-peer-deps --no-optional --ignore-scripts --force --no-package-lock &&
+      npm install --no-save vite@4.5.1 @vitejs/plugin-react@4.2.1 --no-optional --ignore-scripts --legacy-peer-deps --force --no-package-lock &&
+      chmod +x fix-deploy.sh build-render.js esm-build.js fix-enotempty.sh &&
+      ./fix-deploy.sh
+    staticPublishPath: ./frontend/dist
     envVars:
       - key: NODE_VERSION
         value: '18.19.0'
-      - key: PYTHON_VERSION
-        value: '3.11.4'
-      - key: FLASK_ENV
-        value: production
-      - key: FLASK_APP
-        value: app
-      - key: PYTHONPATH
-        value: /opt/render/project/src:/opt/render/project/src/backend
-      - key: CI
-        value: 'false'
       - key: ROLLUP_SKIP_NODEJS_NATIVE_BUILD
         value: 'true'
       - key: ROLLUP_NATIVE_PURE_JS
         value: 'true'
       - key: ROLLUP_DISABLE_NATIVE
         value: 'true'
-      - key: VITE_SKIP_ROLLUP_NATIVE
-        value: 'true'
-      - key: VITE_PURE_JS
-        value: 'true'
-      - key: VITE_FORCE_ESM
-        value: 'true'
       - key: NODE_OPTIONS
-        value: '--no-experimental-fetch --max-old-space-size=4096'
-      - key: NPM_CONFIG_OPTIONAL
+        value: --max-old-space-size=4096 --experimental-vm-modules
+      - key: NPM_CONFIG_LEGACY_PEER_DEPS
+        value: 'true'
+      - key: NPM_CONFIG_FUND
         value: 'false'
-      - key: NODE_ENV
-        value: production
+      - key: NPM_CONFIG_AUDIT
+        value: 'false'
+      - key: NPM_CONFIG_PREFER_OFFLINE
+        value: 'false'
+      - key: NPM_CONFIG_IGNORE_SCRIPTS
+        value: 'true'
+      - key: NPM_CONFIG_FORCE
+        value: 'true'
+      - key: NPM_CONFIG_NO_PACKAGE_LOCK
+        value: 'true'
+      - key: NPM_CONFIG_UNSAFE_PERM
+        value: 'true'
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
 
-    healthCheckPath: /
-    autoDeploy: false
+  # Web service for backend
+  - type: web
+    name: harmonic-universe-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt && python -m pip install gunicorn
+    startCommand: gunicorn wsgi:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.18
+      - key: DATABASE_URL
+        fromDatabase:
+          name: harmonic-universe-db
+          property: connectionString
+
+# Database
+databases:
+  - name: harmonic-universe-db
+    databaseName: harmonic_universe
+    user: harmonic_user

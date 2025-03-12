@@ -1,234 +1,132 @@
-# Harmonic Universe - Deployment Guide
+# Harmonic Universe Deployment Guide
 
-This guide provides comprehensive instructions for deploying the Harmonic Universe application, addressing common issues with Vite/Rollup on Render.com and other environments.
+This guide provides comprehensive instructions for deploying the Harmonic Universe application to Render.com.
 
-## Table of Contents
+## Prerequisites
 
-- [Quick Reference](#quick-reference)
-- [Common Issues & Solutions](#common-issues--solutions)
-- [Environment Variables](#environment-variables)
-- [Local Development Setup](#local-development-setup)
-- [Render.com Deployment](#rendercom-deployment)
-- [Troubleshooting](#troubleshooting)
+- A Render.com account
+- Git repository with your Harmonic Universe code
+- Node.js (for local testing)
+- Python 3.9 or later (for backend)
 
-## Quick Reference
+## Files for Deployment
 
-### Render.com Build Command
+The repository includes several important files for deployment:
 
-```bash
-chmod +x render-build-command.sh && ./render-build-command.sh
-```
+1. `render.yaml` - Configuration for Render.com services
+2. `frontend/fix-deploy.sh` - Script to fix frontend build issues
+3. `frontend/package.json` - Frontend dependencies and scripts
+4. `requirements.txt` - Backend dependencies
 
-### Render.com Start Command
+## Deployment Steps
 
-```bash
-cd backend && gunicorn --workers=2 --timeout=120 --log-level info wsgi:app
-```
+### 1. Push Your Code to GitHub
 
-### Local Development Commands
+Ensure your code is pushed to a GitHub repository that Render.com can access.
 
-```bash
-# Fix build issues:
-./fix-build.sh
+### 2. Deploy to Render.com
 
-# Start development server:
-cd frontend && npm run dev
+#### Option 1: Using Blueprint (Recommended)
 
-# Start backend:
-cd backend && python -m app
-```
+1. Log in to your Render.com account
+2. Click "New" and select "Blueprint"
+3. Connect your GitHub repository
+4. Render will automatically detect the `render.yaml` file and configure the services
+5. Review the settings and click "Apply"
 
-## Common Issues & Solutions
+#### Option 2: Manual Setup
 
-### 1. "Cannot find module 'vite'" Error
+If you prefer to set up services manually:
 
-**Solution implemented in `render-build-command.sh`:**
+1. **Frontend Setup**:
 
-- Explicitly installs Vite with a specific version (4.5.1)
-- Adds file existence checks before running commands
-- Implements multiple fallback methods for building
+   - Create a new "Static Site" in Render
+   - Connect your GitHub repository
+   - Set build command: `cd frontend && ./fix-deploy.sh`
+   - Set publish directory: `frontend/dist`
+   - Add environment variables:
+     ```
+     ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true
+     ROLLUP_NATIVE_PURE_JS=true
+     ROLLUP_DISABLE_NATIVE=true
+     NODE_OPTIONS=--max-old-space-size=4096 --experimental-vm-modules
+     ```
 
-### 2. "Rollup failed to resolve import" Error
+2. **Backend Setup**:
 
-**Solution implemented in `vite.config.js` and build scripts:**
+   - Create a new "Web Service" in Render
+   - Connect your GitHub repository
+   - Set build command: `pip install -r requirements.txt && python -m pip install gunicorn`
+   - Set start command: `gunicorn wsgi:app`
+   - Add environment variables:
+     ```
+     PYTHON_VERSION=3.9.18
+     ```
 
-- Configure Vite to bundle external dependencies correctly
-- Updated `optimizeDeps` to include critical libraries
-- Set `external: []` in rollupOptions to force bundling
+3. **Database Setup**:
+   - Create a new PostgreSQL database in Render
+   - Link the database to your web service
 
-### 3. Rollup Linux GNU Module Error
+### 3. Configure Environment Variables
 
-**Solution implemented in `fix-rollup-linux-gnu.sh`:**
+Make sure to add all necessary environment variables in the Render.com dashboard:
 
-- Creates a pure JavaScript implementation configuration
-- Patches Rollup native module to force pure JS mode
-- Sets environment variables to skip native builds
-- Creates a specialized build script for Render.com
+- API keys
+- Database credentials
+- Other configuration settings
 
-### 4. npm Install Errors
+### 4. Verify Deployment
 
-**Solution implemented across multiple scripts:**
-
-- Clean removal of node_modules and package-lock.json
-- Use of `--no-optional` and `--ignore-scripts` flags
-- Implementation of `--legacy-peer-deps` for compatibility
-- Specific dependency versions to ensure compatibility
-
-## Environment Variables
-
-### Critical Environment Variables for Render.com
-
-```
-# Node.js Version
-NODE_VERSION=18.19.0
-
-# Python Version
-PYTHON_VERSION=3.11.4
-
-# Rollup/Vite Configuration
-ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true
-ROLLUP_NATIVE_PURE_JS=true
-ROLLUP_DISABLE_NATIVE=true
-VITE_SKIP_ROLLUP_NATIVE=true
-VITE_PURE_JS=true
-VITE_FORCE_ESM=true
-
-# Node Options
-NODE_OPTIONS=--no-experimental-fetch --max-old-space-size=4096
-
-# npm Configuration
-NPM_CONFIG_OPTIONAL=false
-```
-
-## Local Development Setup
-
-### Quick Start
-
-1. Clone the repository
-2. Run the fix script:
-   ```bash
-   ./fix-build.sh
-   ```
-3. Start the development server:
-   ```bash
-   cd frontend && npm run dev
-   ```
-4. In a separate terminal, start the backend:
-   ```bash
-   cd backend && python -m app
-   ```
-
-### Manual Setup
-
-If the quick start doesn't work, follow these steps:
-
-1. Set up the frontend:
-
-   ```bash
-   cd frontend
-   rm -rf node_modules package-lock.json
-   npm install
-   ```
-
-2. Create a proper Vite configuration:
-
-   ```bash
-   # Copy the special configuration
-   cp vite.config.no-rollup.js vite.config.js
-   ```
-
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
-
-## Render.com Deployment
-
-### Setup Instructions
-
-1. Create a new Web Service on Render.com
-2. Connect to your repository
-3. Configure the service with:
-   - **Build Command:** `chmod +x render-build-command.sh && ./render-build-command.sh`
-   - **Start Command:** `cd backend && gunicorn --workers=2 --timeout=120 --log-level info wsgi:app`
-   - **Add all environment variables** from the [Environment Variables section](#environment-variables)
-
-### Alternative Build Approaches
-
-If you encounter issues with the default build command, try these alternatives:
-
-1. **Pure JS Implementation:**
-
-   ```bash
-   cd frontend && chmod +x render-pure-js-build.sh && ./render-pure-js-build.sh && cd .. && cp -r frontend/dist/* static/ 2>/dev/null || echo "No dist files found" && cd backend && python -m pip install -r requirements.txt
-   ```
-
-2. **Direct Vite Build:**
-   ```bash
-   chmod +x render-build-direct.sh && ./render-build-direct.sh
-   ```
+1. Wait for the build to complete
+2. Visit your deployed frontend URL
+3. Check that the sample test page loads: `https://your-frontend-url.onrender.com/test.html`
+4. Test API endpoints at: `https://your-backend-url.onrender.com/api/`
 
 ## Troubleshooting
 
-### Vite Module Not Found
+### Common Issues and Solutions
 
-If you encounter "Cannot find module 'vite'" errors:
+1. **ESM/CommonJS Import Errors**:
 
-1. Check if the module is correctly installed
-2. Try reinstalling with a specific version:
-   ```bash
-   npm install --no-save vite@4.5.1
-   ```
-3. Use the `fix-rollup-linux-gnu.sh` script
+   - These should be fixed by the `fix-deploy.sh` script
+   - If problems persist, check the build logs for specific errors
 
-### Rollup Resolve Errors
+2. **npm ENOTEMPTY Errors**:
 
-If you encounter "Rollup failed to resolve import" errors:
+   - These should be fixed by the environment variables
+   - If they still occur, try increasing the NODE_OPTIONS memory limit
 
-1. Check if the problematic module is installed
-2. Update your Vite configuration to handle externals correctly
-3. Make sure the module is included in optimizeDeps
+3. **Build Timeouts**:
 
-### Build Fails on Render.com
+   - Render has a 15-minute build timeout
+   - Optimize the build process if needed
 
-1. Check the build logs for specific errors
-2. Try the alternative build commands listed above
-3. Ensure all environment variables are set correctly
-4. Consider deploying the frontend and backend separately
+4. **Missing Dependencies**:
+   - Check `requirements.txt` for backend dependencies
+   - Check `package.json` for frontend dependencies
 
-### Local Development Issues
+## Maintenance
 
-1. Run the `fix-build.sh` script to reset your local environment
-2. Check browser console for frontend errors
-3. Check terminal output for backend errors
-4. Ensure proxy settings in Vite configuration point to correct backend URL
+### Updating Your Deployment
 
----
+1. Push changes to your GitHub repository
+2. Render will automatically rebuild and deploy
 
-## Reference Scripts
+### Monitoring
 
-The project includes several utility scripts to help with deployment and troubleshooting:
+1. Use Render's built-in logs to monitor your application
+2. Set up alerts for any issues
 
-### `fix-build.sh`
+## Contact and Support
 
-- Fixes local build dependency issues
-- Creates optimized Vite configuration
-- Cleans up previous installations
+If you encounter any deployment issues, please:
 
-### `fix-rollup-linux-gnu.sh`
+1. Check the build logs in Render.com dashboard
+2. Review the error details in this guide
+3. Contact the development team if the issue persists
 
-- Addresses Rollup Linux GNU module error
-- Creates pure JS implementation configuration
-- Patches Rollup native module
+## Additional Resources
 
-### `render-build-command.sh`
-
-- Main build script for Render.com
-- Handles dependency resolution
-- Provides fallback build methods
-
-### `render-pure-js-build.sh`
-
-- Special build command for Render.com
-- Uses pure JS implementation to avoid native module issues
-- Sets critical environment variables
+- [Render.com Documentation](https://render.com/docs)
+- [Vite Deployment Guide](https://vitejs.dev/guide/static-deploy)
+- [Frontend README](./frontend/README.md)

@@ -2,70 +2,48 @@
 set -e
 
 echo "╔══════════════════════════════════════════════════════════╗"
-echo "║             ENOTEMPTY ERROR FIX                          ║"
+echo "║           FIXING NPM ENOTEMPTY ERRORS                    ║"
 echo "╚══════════════════════════════════════════════════════════╝"
-echo ""
 
-# Check if we're in the project root
-if [ ! -d "./frontend" ]; then
-  echo "❌ This script must be run from the project root!"
-  exit 1
-fi
-
-# First kill any npm processes that might be locking files
-echo "🛑 Terminating any npm processes..."
+# Terminate any npm processes that might be locking files
+echo "🔄 Terminating any npm processes that might be locking files..."
 pkill -f npm || true
 pkill -f node || true
-sleep 2
+sleep 1
 
-# Clean up node_modules directory in the frontend
-echo "🧹 Cleaning up frontend/node_modules directory..."
-rm -rf frontend/node_modules frontend/package-lock.json 2>/dev/null || true
-
-# Clean up node_modules directory in the project root
-echo "🧹 Cleaning up node_modules in project root..."
-rm -rf node_modules package-lock.json 2>/dev/null || true
-
-# Create an .npmrc file with settings to avoid ENOTEMPTY errors
-echo "🔧 Creating .npmrc files with settings to avoid ENOTEMPTY errors..."
-
-# Create project root .npmrc
-cat > .npmrc << EOF
-# Fix for ENOTEMPTY errors
-legacy-peer-deps=true
-fund=false
-audit=false
-loglevel=error
-fetch-retries=5
-fetch-retry-mintimeout=20000
-fetch-retry-maxtimeout=120000
-fetch-timeout=300000
-cache-min=3600
-EOF
-
-# Create frontend .npmrc
-cat > frontend/.npmrc << EOF
-# Fix for ENOTEMPTY errors
-legacy-peer-deps=true
-fund=false
-audit=false
-loglevel=error
-fetch-retries=5
-fetch-retry-mintimeout=20000
-fetch-retry-maxtimeout=120000
-fetch-timeout=300000
-cache-min=3600
-EOF
-
-# Clear npm cache
-echo "🧹 Clearing npm cache..."
+# Clear npm cache for problematic packages
+echo "🧹 Clearing npm cache for problematic packages..."
 npm cache clean --force
 
-echo "✅ ENOTEMPTY error fixes applied."
-echo ""
-echo "🚀 Next steps:"
-echo "  1. To reinstall dependencies, run:"
-echo "     cd frontend && npm install --legacy-peer-deps"
-echo ""
-echo "  2. If you still encounter ENOTEMPTY errors, try:"
-echo "     npm install --prefer-offline --no-fund --legacy-peer-deps"
+# Remove the problematic esbuild directories
+echo "🧹 Removing problematic esbuild directories..."
+rm -rf node_modules/@esbuild
+rm -rf node_modules/.esbuild*
+rm -rf node_modules/.vite node_modules/.cache node_modules/.tmp
+
+# Clean deeper in node_modules
+echo "🧹 Deep cleaning node_modules..."
+find node_modules -type d -name ".vite" -exec rm -rf {} \; 2>/dev/null || true
+find node_modules -type d -name ".cache" -exec rm -rf {} \; 2>/dev/null || true
+find node_modules -type d -name ".tmp" -exec rm -rf {} \; 2>/dev/null || true
+find node_modules -type d -name "darwin-arm64" -exec rm -rf {} \; 2>/dev/null || true
+
+# Create a custom .npmrc file with settings to prevent ENOTEMPTY
+echo "📝 Creating custom .npmrc file..."
+cat > .npmrc << EOF
+fund=false
+audit=false
+loglevel=error
+prefer-offline=false
+legacy-peer-deps=true
+unsafe-perm=true
+no-package-lock=true
+force=true
+EOF
+
+# Install vite with special flags to avoid ENOTEMPTY errors
+echo "📦 Installing vite with special flags..."
+npm install --no-save vite@4.5.1 @vitejs/plugin-react@4.2.1 --no-optional --no-fund --legacy-peer-deps --force --no-package-lock --unsafe-perm
+
+echo "✅ ENOTEMPTY fixes applied successfully!"
+echo "🚀 You can now run the deployment script: ./fix-deploy.sh"

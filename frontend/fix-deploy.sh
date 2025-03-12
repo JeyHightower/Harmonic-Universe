@@ -19,18 +19,39 @@ export NODE_OPTIONS="--max-old-space-size=4096 --experimental-vm-modules"
 echo "🧹 Cleaning up previous build artifacts and temporary directories..."
 rm -rf dist .vite 2>/dev/null || true
 rm -rf node_modules/.vite node_modules/.cache node_modules/.tmp 2>/dev/null || true
+rm -rf node_modules/@esbuild/darwin-arm64 2>/dev/null || true
 
 # Deeper clean of problematic node_modules directories to prevent ENOTEMPTY errors
 echo "🧹 Deep cleaning of problematic node_modules directories..."
 find node_modules -type d -name ".vite" -exec rm -rf {} \; 2>/dev/null || true
 find node_modules -type d -name ".cache" -exec rm -rf {} \; 2>/dev/null || true
 find node_modules -type d -name ".tmp" -exec rm -rf {} \; 2>/dev/null || true
+find node_modules -type d -name "darwin-arm64" -exec rm -rf {} \; 2>/dev/null || true
+
+# Create a custom .npmrc file with settings to prevent ENOTEMPTY
+echo "📝 Creating custom .npmrc file..."
+cat > .npmrc << EOF
+fund=false
+audit=false
+loglevel=error
+prefer-offline=false
+legacy-peer-deps=true
+unsafe-perm=true
+EOF
 
 # Ensure Vite is installed
 echo "📦 Ensuring Vite is installed..."
 if ! npm list vite >/dev/null 2>&1; then
   echo "📦 Vite not found, installing..."
-  npm install --no-save vite@4.5.1 @vitejs/plugin-react@4.2.1 --no-optional --ignore-scripts --legacy-peer-deps --prefer-offline
+
+  # Try to install vite with special flags
+  npm install --no-save vite@4.5.1 @vitejs/plugin-react@4.2.1 --no-optional --ignore-scripts --legacy-peer-deps --force || {
+    echo "⚠️ ENOTEMPTY error detected during npm install. Running specialized fix..."
+
+    # Make the fix-enotempty.sh script executable and run it
+    chmod +x fix-enotempty.sh
+    ./fix-enotempty.sh
+  }
 fi
 
 # Patch the rollup native module
@@ -169,12 +190,17 @@ echo "🔨 Building for production deployment using npx..."
 ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true ROLLUP_NATIVE_PURE_JS=true ROLLUP_DISABLE_NATIVE=true npx vite@4.5.1 build --mode production || {
   echo "❌ First build attempt failed. Trying with alternative approach..."
 
-  # Try our specialized build script
-  ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true ROLLUP_NATIVE_PURE_JS=true ROLLUP_DISABLE_NATIVE=true node build-render.js || {
-    echo "❌ Second build attempt failed. Trying a more direct approach with specific options..."
+  # Try our specialized build script with NODE_OPTIONS to enable ESM modules
+  ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true ROLLUP_NATIVE_PURE_JS=true ROLLUP_DISABLE_NATIVE=true NODE_OPTIONS="--max-old-space-size=4096 --experimental-vm-modules" node build-render.js || {
+    echo "❌ Second build attempt failed. Trying with ESM build script..."
 
-    # Try one more approach with specific options
-    ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true ROLLUP_NATIVE_PURE_JS=true ROLLUP_DISABLE_NATIVE=true NODE_OPTIONS="--max-old-space-size=4096 --experimental-vm-modules" npx vite@4.5.1 build --mode production --minify=esbuild --assetsInlineLimit=0 --emptyOutDir --outDir=dist
+    # Try the ESM-specific build script
+    NODE_OPTIONS="--max-old-space-size=4096 --experimental-vm-modules" node esm-build.js || {
+      echo "❌ Third build attempt failed. Trying one more approach with specific options..."
+
+      # Try one more approach with specific options
+      ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true ROLLUP_NATIVE_PURE_JS=true ROLLUP_DISABLE_NATIVE=true NODE_OPTIONS="--max-old-space-size=4096 --experimental-vm-modules" npx vite@4.5.1 build --mode production --minify=esbuild --assetsInlineLimit=0 --emptyOutDir --outDir=dist
+    }
   }
 }
 
