@@ -1,6 +1,23 @@
 # Render.com Deployment Commands
 
-## Build Command (Updated)
+## Recommended Build Command (NEW - Fixes Module Not Found Error)
+
+```bash
+chmod +x render-build-command.sh && ./render-build-command.sh
+```
+
+This new wrapper script:
+
+- Handles the "Cannot find module '/opt/render/project/src/frontend/node_modules/vite/bin/vite.js'" error
+- Uses a fixed version of Vite (4.5.1) instead of "latest"
+- Includes multiple fallback methods if one approach fails
+- Creates a maintenance page if all build methods fail
+
+## Alternative Build Commands
+
+```bash
+chmod +x render-build-direct.sh && ./render-build-direct.sh
+```
 
 ```bash
 chmod +x render-deploy.sh && ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true NODE_ENV=production ./render-deploy.sh
@@ -12,11 +29,16 @@ chmod +x render-deploy.sh && ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true NODE_ENV=produ
 cd backend && gunicorn --workers=2 --timeout=120 --log-level info wsgi:app
 ```
 
-## Alternative Build Command (Without Shell Script)
+## Direct npx Command (For Render's Build Command Field)
 
 ```bash
-cd frontend && rm -rf node_modules package-lock.json && rm -rf dist .vite && ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true NODE_ENV=production npm install --no-optional --prefer-offline --no-fund --no-audit --ignore-scripts && npm install --no-save vite@latest @vitejs/plugin-react@latest --no-optional && NODE_ENV=production ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true node ./node_modules/vite/bin/vite.js build && cd .. && mkdir -p static && cp -r frontend/dist/* static/ 2>/dev/null || echo "No dist files found" && cd backend && python -m pip install --upgrade pip && python -m pip install -r requirements.txt && python -m pip install gunicorn
+cd frontend && ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true NODE_ENV=production npx vite@4.5.1 build --mode production --emptyOutDir
 ```
+
+> ⚠️ **IMPORTANT:**
+>
+> 1. Do NOT use the `--force` flag with Vite on Render.com. It results in the error: `CACError: Unknown option '--force'`
+> 2. Always use a specific version number with Vite (e.g., vite@4.5.1) to avoid compatibility issues
 
 ## Required Environment Variables
 
@@ -51,19 +73,29 @@ REACT_APP_BASE_URL=[Your application URL, e.g., https://harmonic-universe.onrend
 
 ## Troubleshooting Tips
 
-### If you encounter Rollup/Vite build issues:
+### Common Errors and Solutions
 
-- The script now includes 3 fallback build methods that should cover most issues
-- If all else fails, a maintenance page will be displayed so the backend can still run
-- Check the deployment logs for specific error messages
-- Try manually triggering a new build after the first deployment completes
+1. **Error: `Cannot find module '/opt/render/project/src/frontend/node_modules/vite/bin/vite.js'`**
 
-### If you encounter "Failed to find attribute 'app' in 'wsgi'" error:
+   - Solution: Use our new `render-build-command.sh` script which ensures Vite is properly installed before using it
+   - Or explicitly install Vite with a specific version: `npm install --no-save vite@4.5.1 @vitejs/plugin-react@4.2.1 --no-optional`
+   - Always check if the file exists before trying to use it directly: `if [ -f "./node_modules/vite/bin/vite.js" ]`
 
-- The wsgi.py file has been updated to include `app = application`
-- Alternatively, use: `cd backend && gunicorn --workers=2 --timeout=120 --log-level info simple_app:app`
+2. **Error: `CACError: Unknown option '--force'`**
 
-## If Build Fails Despite All Precautions
+   - Solution: Remove the `--force` flag from any Vite command when deploying on Render
+   - Update the `render-build` script in package.json to remove this flag
+
+3. **If you encounter other Rollup/Vite build issues:**
+
+   - Use the `render-build-command.sh` script which includes multiple fallback build methods
+   - If all else fails, a maintenance page will be displayed so the backend can still run
+
+4. **If you encounter "Failed to find attribute 'app' in 'wsgi'" error:**
+   - The wsgi.py file has been updated to include `app = application`
+   - Alternatively, use: `cd backend && gunicorn --workers=2 --timeout=120 --log-level info simple_app:app`
+
+## Two-Step Deployment (If All Else Fails)
 
 If your build still fails despite all these precautions, you can deploy in steps:
 
@@ -74,6 +106,21 @@ If your build still fails despite all these precautions, you can deploy in steps
    ```
 
 2. After the backend is running, build the frontend locally and upload to a separate static site service (e.g., Netlify, Vercel)
+
+## Using render.yaml for Blueprint Deployments
+
+We've provided a `render.yaml` file that you can use with Render's Blueprint feature:
+
+```yaml
+services:
+  - type: web
+    name: harmonic-universe
+    runtime: python
+    region: ohio
+    buildCommand: chmod +x render-build-command.sh && ./render-build-command.sh
+    startCommand: cd backend && gunicorn --workers=2 --timeout=120 --log-level info wsgi:app
+    # Environment variables are set in the file
+```
 
 ## Note on ES Modules
 

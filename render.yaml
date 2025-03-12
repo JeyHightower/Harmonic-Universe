@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: harmonic-universe
+    runtime: python
+    region: ohio
+    buildCommand: |
+      chmod +x render-build-command.sh && ./render-build-command.sh
+    startCommand: cd backend && gunicorn --workers=2 --timeout=120 --log-level info wsgi:app
+    envVars:
+      - key: NODE_VERSION
+        value: 18.17.0
+      - key: PYTHON_VERSION
+        value: 3.9.6
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_APP
+        value: app
+      - key: PYTHONPATH
+        value: /opt/render/project/src:/opt/render/project/src/backend
+      - key: CI
+        value: 'false'
+      - key: ROLLUP_SKIP_NODEJS_NATIVE_BUILD
+        value: 'true'
+      - key: VITE_SKIP_ROLLUP_NATIVE
+        value: 'true'
+      - key: VITE_PURE_JS
+        value: 'true'
+      - key: VITE_FORCE_ESM
+        value: 'true'
+      - key: NODE_OPTIONS
+        value: --no-experimental-fetch
+      - key: NPM_CONFIG_OPTIONAL
+        value: 'false'
+      - key: NODE_ENV
+        value: production
+
+    healthCheckPath: /
+    autoDeploy: false

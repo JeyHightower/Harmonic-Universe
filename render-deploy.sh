@@ -80,21 +80,25 @@ npm install --no-optional --prefer-offline --no-fund --no-audit --ignore-scripts
 
 # Ensure vite is installed properly
 echo "🔧 Ensuring Vite is installed correctly..."
-npm install --no-save vite@latest @vitejs/plugin-react@latest --no-optional
+npm install --no-save vite@4.5.1 @vitejs/plugin-react@4.2.1 --no-optional
 
 # Try three different build methods - one of them should work
 
-# Method 1: Use direct node execution of vite
+# Method 1: Check if vite.js exists before trying to use it directly
 echo "🔨 Build Method 1: Direct Vite execution..."
-NODE_ENV=production ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true node ./node_modules/vite/bin/vite.js build
+if [ -f "./node_modules/vite/bin/vite.js" ]; then
+    NODE_ENV=production ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true node ./node_modules/vite/bin/vite.js build --config vite.config.render.js || echo "Method 1 failed, continuing to method 2..."
+else
+    echo "⚠️ Vite.js not found in node_modules, skipping method 1"
+fi
 
 # If the first method fails, try the second one
 if [ ! -d "dist" ] || [ -z "$(ls -A dist 2>/dev/null)" ]; then
     echo "⚠️ First build method failed, trying method 2..."
 
-    # Method 2: Use npx with specific options
-    echo "🔨 Build Method 2: Using npx..."
-    ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true NODE_ENV=production npx --no-install vite build --mode production
+    # Method 2: Use npx with specific version
+    echo "🔨 Build Method 2: Using npx with explicit version..."
+    ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true NODE_ENV=production npx vite@4.5.1 build --mode production --emptyOutDir || echo "Method 2 failed, continuing to method 3..."
 fi
 
 # If the second method also fails, try the third one
