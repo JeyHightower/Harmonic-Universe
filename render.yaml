@@ -2,15 +2,16 @@ services:
   - type: web
     name: harmonic-universe
     runtime: python
+    plan: free
     region: ohio
     buildCommand: |
       chmod +x render-build-command.sh && ./render-build-command.sh
     startCommand: cd backend && gunicorn --workers=2 --timeout=120 --log-level info wsgi:app
     envVars:
       - key: NODE_VERSION
-        value: 18.17.0
+        value: '18.19.0'
       - key: PYTHON_VERSION
-        value: 3.9.6
+        value: '3.11.4'
       - key: FLASK_ENV
         value: production
       - key: FLASK_APP
@@ -21,6 +22,10 @@ services:
         value: 'false'
       - key: ROLLUP_SKIP_NODEJS_NATIVE_BUILD
         value: 'true'
+      - key: ROLLUP_NATIVE_PURE_JS
+        value: 'true'
+      - key: ROLLUP_DISABLE_NATIVE
+        value: 'true'
       - key: VITE_SKIP_ROLLUP_NATIVE
         value: 'true'
       - key: VITE_PURE_JS
@@ -28,7 +33,7 @@ services:
       - key: VITE_FORCE_ESM
         value: 'true'
       - key: NODE_OPTIONS
-        value: --no-experimental-fetch
+        value: '--no-experimental-fetch --max-old-space-size=4096'
       - key: NPM_CONFIG_OPTIONAL
         value: 'false'
       - key: NODE_ENV

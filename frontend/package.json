@@ -4,12 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "start": "vite",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "render-build": "ROLLUP_SKIP_NODEJS_NATIVE_BUILD=true NODE_ENV=production node ./node_modules/vite/bin/vite.js build --mode production --emptyOutDir || npx vite@4.5.1 build --mode production --emptyOutDir",
+    "render-build": "npx vite@4.5.1 build --mode production",
     "render-dev": "node scripts/render-dev.js",
-    "start": "npm run dev"
+    "start": "vite"
   },
   "dependencies": {
     "@ant-design/icons": "^4.8.0",
@@ -32,8 +33,8 @@
     "@types/node": "20.11.24",
     "@types/react": "18.2.64",
     "@types/react-dom": "18.2.21",
-    "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^6.2.1"
+    "@vitejs/plugin-react": "4.2.1",
+    "vite": "4.5.1"
   },
   "resolutions": {
     "@babel/runtime": "^7.22.5"
