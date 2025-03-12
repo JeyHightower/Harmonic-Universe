@@ -3,7 +3,7 @@ services:
   - type: web
     name: harmonic-universe-frontend
     runtime: node
-    buildCommand: ./fix-render-build.sh
+    buildCommand: ./build-full-app.sh
     startCommand: cd frontend && node serve.js
     envVars:
       - key: NODE_VERSION
