@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="Explore the fascinating connection between music and physics with Harmonic Universe"
+    />
+    <title>Harmonic Universe</title>
+
+    <!-- React Fixes Loader - Must be first -->
+    <script src="/static/react-fixes/react-fix-loader.js"></script>
+
+    <!-- Load React from CDN with crossorigin attribute -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react@16.8.0/umd/react.production.min.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@16.8.0/umd/react-dom.production.min.js"
+    ></script>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <!-- Load app bundle last -->
+    <script type="module" src="/src/index.js"></script>
+  </body>
+</html>

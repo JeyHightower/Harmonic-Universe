@@ -1,0 +1,1 @@
+./static/react-fixes/react-diagnostics 2.js

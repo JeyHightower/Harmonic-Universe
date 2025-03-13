@@ -1,0 +1,1 @@
+./static/react-fixes/hook-js-patcher.js

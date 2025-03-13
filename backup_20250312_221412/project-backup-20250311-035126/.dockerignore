@@ -1,0 +1,9 @@
+node_modules
+.git
+*.log
+*.tmp
+*.md
+venv
+__pycache__
+pytest_cache
+test_uploads

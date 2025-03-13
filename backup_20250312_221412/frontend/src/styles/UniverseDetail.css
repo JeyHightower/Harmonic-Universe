@@ -1,0 +1,261 @@
+.universe-detail-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.universe-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.universe-info {
+  flex: 1;
+  min-width: 300px;
+}
+
+.universe-info h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 0 16px 0;
+  color: var(--text-primary);
+}
+
+.universe-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.universe-visibility {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.universe-visibility.public {
+  background-color: var(--success-color);
+  color: white;
+}
+
+.universe-visibility.private {
+  background-color: var(--warning-color);
+  color: white;
+}
+
+.universe-theme,
+.universe-genre {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  background-color: var(--bg-color-light);
+  color: var(--text-secondary);
+}
+
+.universe-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.universe-description {
+  background-color: var(--bg-color-light);
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.universe-description p {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.universe-content {
+  margin-top: 32px;
+}
+
+.universe-scenes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.universe-scenes-header h2 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.scene-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  text-align: center;
+}
+
+.loading-container.small {
+  padding: 24px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top-color: var(--primary-color);
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+.loading-container.small .spinner {
+  width: 30px;
+  height: 30px;
+  border-width: 3px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px;
+  background-color: var(--bg-color-light);
+  border-radius: 12px;
+  margin-bottom: 32px;
+}
+
+.empty-state p {
+  font-size: 1.125rem;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.error-container,
+.not-found-container {
+  text-align: center;
+  padding: 48px;
+  background-color: var(--bg-color-light);
+  border-radius: 12px;
+  margin-bottom: 32px;
+  max-width: 600px;
+  margin: 48px auto;
+}
+
+.error-container h2,
+.not-found-container h2 {
+  font-size: 1.75rem;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.error-container p,
+.not-found-container p {
+  font-size: 1.125rem;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.delete-confirmation {
+  padding: 16px 0;
+}
+
+.delete-message {
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+
+.delete-warning {
+  font-size: 0.9375rem;
+  color: var(--danger-color);
+  margin-bottom: 24px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .universe-detail-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .universe-actions {
+    justify-content: flex-start;
+  }
+
+  .scene-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .universe-detail-container {
+    padding: 16px;
+  }
+
+  .universe-info h1 {
+    font-size: 2rem;
+  }
+
+  .scene-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .universe-scenes-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .universe-description,
+  .empty-state,
+  .error-container,
+  .not-found-container {
+    background-color: var(--bg-color-dark);
+  }
+
+  .universe-theme,
+  .universe-genre {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .spinner {
+    border-color: rgba(255, 255, 255, 0.1);
+    border-top-color: var(--primary-color);
+  }
+}
