@@ -1,10 +1,10 @@
 import { configureStore } from '@reduxjs/toolkit';
-import authReducer from './slices/authSlice';
-import modalReducer from './slices/modalSlice';
-import physicsObjectsReducer from './slices/physicsObjectsSlice';
-import physicsParametersReducer from './slices/physicsParametersSlice';
-import scenesReducer from './slices/scenesSlice';
-import universeReducer from './slices/universeSlice';
+import authReducer from './authSlice.js';
+import modalReducer from './modalSlice.js';
+import physicsObjectsReducer from './physicsObjectsSlice.js';
+import physicsParametersReducer from './physicsParametersSlice.js';
+import scenesReducer from './scenesSlice.js';
+import universeReducer from 'universeSlice.js';
 
 const store = configureStore({
   reducer: {
