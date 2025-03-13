@@ -1,3 +1,23 @@
+#!/bin/bash
+
+# Script to fix the syntax error in App.jsx
+echo "╔═══════════════════════════════════════════════════════════╗"
+echo "║            FIXING APP.JSX SYNTAX ERROR                    ║"
+echo "╚═══════════════════════════════════════════════════════════╝"
+
+# Navigate to the frontend directory
+cd frontend || exit 1
+echo "📂 Changed to frontend directory: $(pwd)"
+
+# Backup the existing App.jsx file
+if [ -f "src/App.jsx" ]; then
+  echo "📄 Backing up existing App.jsx file..."
+  cp src/App.jsx src/App.jsx.syntax-error.bak
+fi
+
+# Create a new App.jsx file with corrected syntax
+echo "📝 Creating corrected App.jsx file..."
+cat > src/App.jsx << 'EOL'
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Provider } from 'react-redux';
@@ -79,3 +99,13 @@ function App() {
 
 // Export the App component - this is now outside all blocks
 export default App;
+EOL
+
+# Confirm the fix
+echo "✅ Fixed App.jsx syntax error"
+echo "📄 New App.jsx file has been created"
+
+# Return to the original directory
+cd ..
+
+echo "🎉 App.jsx syntax fix complete!"

@@ -22,11 +22,17 @@ export default defineConfig({
       'moment',
       'prop-types',
     ],
+    exclude: []
   },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
     sourcemap: true,
+    commonjsOptions: {
+      include: [/node_modules/],
+      extensions: ['.js', '.jsx'],
+      strictRequires: true,
+    },
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),
@@ -50,4 +56,9 @@ export default defineConfig({
       },
     },
   },
+  server: {
+    port: 10000,
+    strictPort: true,
+    host: true
+  }
 });
