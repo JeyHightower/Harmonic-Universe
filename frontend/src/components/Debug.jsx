@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { getLogs, clearLogs, toggleLogging, enableDebugMode } from '../utils/logger';
+import React, { useEffect, useState } from 'react';
 import '../styles/Debug.css';
+import { clearLogs, enableDebugMode, getLogs, toggleLogging } from '../utils/logger';
 
 /**
  * Debug panel component for viewing logs in production

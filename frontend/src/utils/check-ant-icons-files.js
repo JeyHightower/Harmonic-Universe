@@ -1,8 +1,7 @@
 import fs from 'fs';
 import pkg from 'glob';
-const glob = pkg;
-import { exec } from 'child_process';
 import path from 'path';
+const glob = pkg;
 
 // Get the current working directory and determine if we're already in frontend
 const cwd = process.cwd();

@@ -1,8 +1,8 @@
+import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { login } from './authSlice';
-import PropTypes from 'prop-types';
 import './Auth.css';
+import { login } from './authSlice';
 
 const LoginModal = ({ onClose }) => {
     const [formData, setFormData] = useState({

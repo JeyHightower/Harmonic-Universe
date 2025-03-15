@@ -1,8 +1,8 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import Tooltip from './Tooltip';
 import '../styles/UniverseCard.css';
+import Tooltip from './Tooltip';
 
 const UniverseCard = ({ universe, isNew = false }) => {
     const navigate = useNavigate();

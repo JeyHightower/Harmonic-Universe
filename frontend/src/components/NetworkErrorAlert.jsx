@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { setNetworkError } from '../store/authSlice';
+import { useCallback, useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import useModal from '../hooks/useModal';
-import { MODAL_TYPES } from '../utils/modalRegistry';
+import { setNetworkError } from '../store/authSlice';
 import { API_CONFIG } from '../utils/config';
+import { MODAL_TYPES } from '../utils/modalRegistry';
 
 /**
  * Component that monitors for network errors and displays an alert

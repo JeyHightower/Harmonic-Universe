@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { fetchUniverses } from '../store/universeThunks';
 import Button from '../components/Button';
-import UniverseCard from './UniverseCard';
-import UniverseFormModal from './UniverseFormModal';
-import UniverseDeleteModal from './UniverseDeleteModal';
+import { fetchUniverses } from '../store/universeThunks';
 import '../styles/UniverseList.css';
+import UniverseCard from './UniverseCard';
+import UniverseDeleteModal from './UniverseDeleteModal';
+import UniverseFormModal from './UniverseFormModal';
 
 const UniverseList = () => {
   const dispatch = useDispatch();

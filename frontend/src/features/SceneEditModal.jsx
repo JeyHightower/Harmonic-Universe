@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import SceneFormModal from './SceneFormModal';
 
 // Global state to prevent modal from unmounting

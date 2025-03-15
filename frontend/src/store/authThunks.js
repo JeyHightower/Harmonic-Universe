@@ -1,8 +1,8 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { apiClient, endpoints } from '../utils/api.js';
-import { updateUser, loginSuccess, loginFailure, loginStart } from './authSlice.js';
-import { AUTH_CONFIG } from '../utils/config.js';
+import { apiClient } from '../utils/api.js';
 import { handleOfflineAuthentication, shouldUseFallback } from '../utils/authFallback';
+import { AUTH_CONFIG } from '../utils/config.js';
+import { loginFailure, loginStart, loginSuccess, updateUser } from './authSlice.js';
 
 const handleError = error => {
     console.error('API Error:', error);

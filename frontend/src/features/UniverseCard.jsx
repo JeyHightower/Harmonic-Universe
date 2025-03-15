@@ -1,8 +1,8 @@
+import PropTypes from 'prop-types';
 import React from 'react';
 import { Link } from 'react-router-dom';
-import PropTypes from 'prop-types';
-import { formatDate } from '../utils/dateUtils';
 import '../styles/UniverseCard.css';
+import { formatDate } from '../utils/dateUtils';
 
 const UniverseCard = ({ universe }) => {
     const defaultImage = '/images/default-universe.jpg';

@@ -1,5 +1,5 @@
 import { useDispatch } from 'react-redux';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import useForm from '../../../hooks/useForm';
 import {
   loginFailure,

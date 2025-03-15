@@ -1,6 +1,6 @@
-import { fetchUniverses } from '../store/thunks/universeThunks';
 import { message } from 'antd';
 import store from '../store';
+import { fetchUniverses } from '../store/thunks/universeThunks';
 
 /**
  * Utility to refresh universe data

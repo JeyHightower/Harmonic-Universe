@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import PropTypes from 'prop-types';
-import { createUniverse, updateUniverse } from '../store/universeThunks';
-import Modal from '../components/Modal';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import Modal from '../components/Modal';
+import { createUniverse, updateUniverse } from '../store/universeThunks';
 import '../styles/UniverseFormModal.css';
 
 const UniverseFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {

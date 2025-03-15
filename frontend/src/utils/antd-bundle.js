@@ -1,43 +1,38 @@
 // This file explicitly exports the antd components needed by the application
 // instead of importing the entire library
+import { SettingOutlined, UserOutlined } from '@ant-design/icons';
 import {
-    ConfigProvider, theme, Modal, Form, Input, InputNumber, Select,
-    Button, Card, Empty, Spin, Tabs, Col, Row, Space, Image, Tag,
-    Typography, App as AntApp, Dropdown, Menu, Slider, Popconfirm,
-    Table, message, Result
+    App as AntApp,
+    Button, Card,
+    Col,
+    ConfigProvider,
+    Dropdown,
+    Empty,
+    Form,
+    Image,
+    Input, InputNumber,
+    Menu,
+    message,
+    Modal,
+    Popconfirm,
+    Result,
+    Row,
+    Select,
+    Slider,
+    Space,
+    Spin,
+    Table,
+    Tabs,
+    Tag,
+    theme,
+    Typography
 } from 'antd';
-import { UserOutlined, SettingOutlined } from '@ant-design/icons';
 
 // Export all components
 export {
-    ConfigProvider,
-    theme,
-    Modal,
-    Form,
-    Input,
-    InputNumber,
-    Select,
-    Button,
-    Card,
-    Empty,
-    Spin,
-    Tabs,
-    Col,
-    Row,
-    Space,
-    Image,
-    Tag,
-    Typography,
-    AntApp,
-    Dropdown,
-    Menu,
-    Slider,
-    Popconfirm,
-    Table,
-    message,
-    Result,
-    UserOutlined,
-    SettingOutlined
+    AntApp, Button,
+    Card, Col, ConfigProvider, Dropdown, Empty, Form, Image, Input,
+    InputNumber, Menu, message, Modal, Popconfirm, Result, Row, Select, SettingOutlined, Slider, Space, Spin, Table, Tabs, Tag, theme, Typography, UserOutlined
 };
 
 // Default export for convenience

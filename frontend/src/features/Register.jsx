@@ -1,6 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, Link } from 'react-router-dom';
-import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import useForm from '../../../hooks/useForm';
 import { openModal } from '../../../store/slices/modalSlice';
 import { registerUser } from '../../../store/thunks/authThunks';

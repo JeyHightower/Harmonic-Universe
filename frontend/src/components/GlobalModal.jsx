@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import useModal from '../hooks/useModal.js';
-import { selectModalType, selectModalProps } from '../store/modalSlice.js';
+import { selectModalProps, selectModalType } from '../store/modalSlice.js';
 import { getModalComponent } from './ModalUtils.jsx';
 
 const GlobalModal = () => {

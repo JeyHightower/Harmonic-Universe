@@ -1,11 +1,11 @@
 import { createSlice } from '@reduxjs/toolkit';
 import {
-    fetchScenes,
-    fetchSceneById,
     createScene,
-    updateScene,
     deleteScene,
-    reorderScenes
+    fetchSceneById,
+    fetchScenes,
+    reorderScenes,
+    updateScene
 } from './scenesThunks.js';
 
 const initialState = {

@@ -6,8 +6,8 @@
  * to prevent 500 errors due to version mismatches.
  */
 
-import React from 'react';
 import * as AntIcons from '@ant-design/icons';
+import React from 'react';
 import { SafeIcon, withIconErrorBoundary } from './SafeIcon';
 
 // Fallback icon component that doesn't depend on Ant Design

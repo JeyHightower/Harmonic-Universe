@@ -1,9 +1,9 @@
+import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import PropTypes from 'prop-types';
-import { deleteUniverse } from '../store/universeThunks';
-import Modal from '../components/Modal';
 import Button from '../components/Button';
+import Modal from '../components/Modal';
+import { deleteUniverse } from '../store/universeThunks';
 
 const UniverseDeleteModal = ({ isOpen, onClose, onSuccess, universe }) => {
     const dispatch = useDispatch();

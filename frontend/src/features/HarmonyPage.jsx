@@ -5,7 +5,7 @@ import {
   SettingOutlined,
   SoundOutlined,
 } from '@ant-design/icons';
-import { Button, Card, Col, Empty, Row, Slider, Spin, Tabs, List, Modal, message } from 'antd';
+import { Button, Card, Col, Empty, List, Modal, Row, Slider, Spin, Tabs, message } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';

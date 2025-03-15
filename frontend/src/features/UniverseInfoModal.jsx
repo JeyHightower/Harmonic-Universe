@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Button from '../../components/common/Button';
 import { useModal } from '../../contexts/ModalContext';
 import { MODAL_TYPES } from '../../utils/modalRegistry';

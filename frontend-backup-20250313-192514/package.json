@@ -1,0 +1,43 @@
+{
+  "name": "harmonic-universe-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "vite",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "render-build": "npx vite@4.5.1 build --mode production",
+    "render-dev": "node scripts/render-dev.js",
+    "serve": "node serve.js"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^4.8.0",
+    "@babel/runtime": "^7.22.5",
+    "@reduxjs/toolkit": "1.9.7",
+    "antd": "^4.24.10",
+    "axios": "^1.8.2",
+    "express": "^4.21.2",
+    "moment": "^2.30.1",
+    "prop-types": "^15.8.1",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-redux": "8.1.3",
+    "react-router-dom": "6.20.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.22.5",
+    "@babel/plugin-transform-runtime": "^7.22.5",
+    "@babel/preset-env": "^7.22.5",
+    "@babel/preset-react": "^7.22.5",
+    "@types/node": "20.11.24",
+    "@types/react": "18.2.64",
+    "@types/react-dom": "18.2.21",
+    "@vitejs/plugin-react": "4.2.1",
+    "vite": "4.5.1"
+  },
+  "resolutions": {
+    "@babel/runtime": "^7.22.5"
+  }
+}

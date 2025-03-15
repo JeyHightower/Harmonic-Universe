@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useModalRoute } from '../providers/ModalProvider';
 import { MODAL_TYPES } from '../utils/modalRegistry';
 

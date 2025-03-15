@@ -1,7 +1,8 @@
-import { Card, Typography } from 'antd'; import React from 'react';
+import { Card, Typography } from 'antd';
+import React from 'react';
 import { useSelector } from 'react-redux';
-import UserProfileModal from './UserProfileModal.jsx';
 import '../styles/Auth.css';
+import UserProfileModal from './UserProfileModal.jsx';
 
 const { Title } = Typography;
 

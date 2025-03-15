@@ -13,8 +13,8 @@ import {
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { api } from '../utils/api';
 import '../styles/HarmonyParametersModal.css';
+import { api } from '../utils/api';
 
 const { Option } = Select;
 

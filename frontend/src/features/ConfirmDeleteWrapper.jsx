@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import ConfirmDeleteModal from '../../components/common/ConfirmDeleteModal';
 import { deleteScene } from '../../store/thunks/scenesThunks';

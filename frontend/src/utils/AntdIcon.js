@@ -1,18 +1,18 @@
 'use client';
 
-import _extends from "@babel/runtime/helpers/esm/extends";
-import _slicedToArray from "@babel/runtime/helpers/esm/slicedToArray";
 import _defineProperty from "@babel/runtime/helpers/esm/defineProperty";
+import _extends from "@babel/runtime/helpers/esm/extends";
 import _objectWithoutProperties from "@babel/runtime/helpers/esm/objectWithoutProperties";
-var _excluded = ["className", "icon", "spin", "rotate", "tabIndex", "onClick", "twoToneColor"];
+import _slicedToArray from "@babel/runtime/helpers/esm/slicedToArray";
 import * as React from 'react';
+var _excluded = ["className", "icon", "spin", "rotate", "tabIndex", "onClick", "twoToneColor"];
 // Fix import to use our shim instead
-import classNames from '../../../utils/classnames-shim';
 import { blue } from '@ant-design/colors';
+import classNames from '../../../utils/classnames-shim';
+import { normalizeTwoToneColors } from "../utils";
 import Context from "./Context";
 import ReactIcon from "./IconBase";
-import { getTwoToneColor, setTwoToneColor } from "./twoTonePrimaryColor";
-import { normalizeTwoToneColors } from "../utils";
+import { setTwoToneColor } from "./twoTonePrimaryColor";
 
 // Initial setting
 // should move it to antd main repo?

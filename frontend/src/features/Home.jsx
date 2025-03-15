@@ -1,10 +1,10 @@
 import React from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { demoLogin } from '../store/authThunks';
 import useModal from '../hooks/useModal.js';
-import { MODAL_TYPES } from '../utils/modalRegistry.js';
+import { demoLogin } from '../store/authThunks';
 import '../styles/Home.css';
+import { MODAL_TYPES } from '../utils/modalRegistry.js';
 
 const Home = () => {
   const dispatch = useDispatch();

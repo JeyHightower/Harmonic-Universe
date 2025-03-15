@@ -4,7 +4,6 @@
 // since our handleMissingModulesPlugin in vite.config.js handles all icons dynamically
 
 import { promises as fs } from 'fs';
-import path from 'path';
 import glob from 'glob';
 import { promisify } from 'util';
 

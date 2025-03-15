@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useDispatch } from 'react-redux';
-import { openModal as openModalAction, closeModal as closeModalAction } from '../store/modalSlice';
-import { MODAL_TYPES, isValidModalType } from '../utils/modalRegistry';
+import { closeModal as closeModalAction, openModal as openModalAction } from '../store/modalSlice';
+import { isValidModalType } from '../utils/modalRegistry';
 
 /**
  * Custom hook for interacting with the modal system

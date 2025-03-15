@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import PropTypes from 'prop-types';
-import { createScene, updateScene } from '../store/scenesThunks.js';
-import Modal from '../components/Modal.jsx';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import Modal from '../components/Modal.jsx';
+import { createScene, updateScene } from '../store/scenesThunks.js';
 import '../styles/SceneFormModal.css';
 
 const SceneFormModal = ({ isOpen, onClose, onSuccess, initialData, universeId }) => {

@@ -172,13 +172,10 @@ if (typeof window !== 'undefined' && window.React) {
 }
 
 export {
-    BrowserRouter,
-    Routes,
-    Route,
-    Outlet,
-    Link,
+    BrowserRouter, Link, Outlet, Route, Routes,
     // Export safe hooks by default
     safeUseLocation as useLocation,
     safeUseNavigate as useNavigate,
     safeUseParams as useParams
 };
+

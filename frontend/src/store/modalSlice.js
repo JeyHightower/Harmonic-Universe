@@ -1,5 +1,4 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { MODAL_TYPES } from '../utils/modalRegistry.js';
 
 const initialState = {
     modalType: null,

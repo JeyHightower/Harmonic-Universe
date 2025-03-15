@@ -1,8 +1,8 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { formatDate } from '../utils/dateUtils.js';
 import '../styles/SceneCard.css';
+import { formatDate } from '../utils/dateUtils.js';
 
 const SceneCard = ({ scene }) => {
     const defaultImage = '/images/default-scene.jpg';

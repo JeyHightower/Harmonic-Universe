@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
-import { fetchUniverseById } from '../store/universeThunks';
-import { fetchScenesForUniverse } from '../store/scenesThunks';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import Button from '../components/Button';
-import UniverseFormModal from './UniverseFormModal';
-import UniverseDeleteModal from './UniverseDeleteModal';
+import { fetchScenesForUniverse } from '../store/scenesThunks';
+import { fetchUniverseById } from '../store/universeThunks';
+import '../styles/UniverseDetail.css';
 import SceneCard from './SceneCard';
 import SceneFormModal from './SceneFormModal';
-import '../styles/UniverseDetail.css';
+import UniverseDeleteModal from './UniverseDeleteModal';
+import UniverseFormModal from './UniverseFormModal';
 
 const UniverseDetail = () => {
   const { id } = useParams();

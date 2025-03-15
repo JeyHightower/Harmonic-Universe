@@ -2,11 +2,11 @@ import { createSlice } from '@reduxjs/toolkit';
 import {
   createUniverse,
   deleteUniverse,
+  fetchUniverseById,
   fetchUniverses,
   updateHarmonyParams,
   updatePhysicsParams,
   updateUniverse,
-  fetchUniverseById,
 } from './universeThunks.js';
 
 const initialState = {

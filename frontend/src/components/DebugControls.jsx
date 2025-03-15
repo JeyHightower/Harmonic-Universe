@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { useModal } from '../../contexts/ModalContext';
-import { MODAL_TYPES } from '../../constants/modalTypes';
-import './DebugControls.css';
-import { Button, Switch, Space, Tooltip, Card } from 'antd';
 import { BugOutlined, SettingOutlined } from '@ant-design/icons';
+import { Button, Card, Space, Switch, Tooltip } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { MODAL_TYPES } from '../../constants/modalTypes';
+import { useModal } from '../../contexts/ModalContext';
+import './DebugControls.css';
 
 /**
  * Debug Controls Panel - For testing modal and login functionality

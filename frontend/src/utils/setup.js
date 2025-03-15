@@ -1,5 +1,5 @@
-import { mkdirSync, writeFileSync, existsSync } from 'fs';
-import { join, resolve } from 'path';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);

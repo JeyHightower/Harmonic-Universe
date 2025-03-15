@@ -1,12 +1,12 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import Tooltip from '../components/Tooltip.jsx';
+import UniverseCard from '../components/UniverseCard.jsx';
 import { fetchUniverses } from '../store/universeThunks.js';
+import '../styles/Dashboard.css';
 import { AUTH_CONFIG } from '../utils/config.js';
 import UniverseFormModal from './UniverseFormModal.jsx';
-import UniverseCard from '../components/UniverseCard.jsx';
-import Tooltip from '../components/Tooltip.jsx';
-import '../styles/Dashboard.css';
 
 const Dashboard = () => {
   const navigate = useNavigate();

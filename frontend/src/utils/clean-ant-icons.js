@@ -5,9 +5,8 @@ import pkg from 'glob';
 const { glob } = pkg;
 
 import fs from 'fs';
-import path from 'path';
+import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 
 // In ES modules, __dirname is not available directly
 const __filename = fileURLToPath(import.meta.url);

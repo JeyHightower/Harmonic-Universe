@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { API_CONFIG } from './config';
 import { shouldUseFallback } from './authFallback';
+import { API_CONFIG } from './config';
 
 // Create axios instance with base configuration
 const api = axios.create({

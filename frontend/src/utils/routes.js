@@ -1,9 +1,9 @@
 import { Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
-import Home from './features/home/Home';
-import Dashboard from './features/dashboard/Dashboard';
-import Settings from './components/Settings.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import Settings from './components/Settings.jsx';
+import Dashboard from './features/dashboard/Dashboard';
+import Home from './features/home/Home';
 
 export const ROUTES = {
     HOME: '/',
