@@ -8,7 +8,7 @@
     "preview": "cd frontend && npm run preview",
     "start:backend": "cd backend && python simple_app.py",
     "start:frontend": "cd frontend && npm run dev",
-    "clean": "rimraf dist && rimraf node_modules/.cache",
+    "clean": "rimraf src && rimraf dist && rimraf node_modules/.cache",
     "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\""
   },
   "workspaces": [
