@@ -1,1 +1,0 @@
-./static/react-fixes/react-force-expose.js

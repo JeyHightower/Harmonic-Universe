@@ -1,1 +1,0 @@
-./static/react-fixes/redux-provider-fix.js
