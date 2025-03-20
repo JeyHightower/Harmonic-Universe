@@ -8,12 +8,18 @@
     "preview": "cd frontend && npm run preview",
     "start:backend": "cd backend && python simple_app.py",
     "start:frontend": "cd frontend && npm run dev",
+<<<<<<< HEAD
     "clean": "rimraf src && rimraf dist && rimraf node_modules/.cache",
     "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\""
   },
   "workspaces": [
     "Harmonic-Universe",
     "backend",
+=======
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\""
+  },
+  "workspaces": [
+>>>>>>> 721db21d (frist commit)
     "frontend"
   ],
   "engines": {
@@ -21,7 +27,11 @@
     "npm": ">=8.0.0"
   },
   "devDependencies": {
+<<<<<<< HEAD
     "concurrently": "^8.2.2",
     "rimraf": "^6.0.1"
+=======
+    "concurrently": "^8.2.2"
+>>>>>>> 721db21d (frist commit)
   }
 }
