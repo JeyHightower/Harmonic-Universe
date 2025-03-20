@@ -1,1 +1,0 @@
-./static/react-fixes/react-version-checker 2.js

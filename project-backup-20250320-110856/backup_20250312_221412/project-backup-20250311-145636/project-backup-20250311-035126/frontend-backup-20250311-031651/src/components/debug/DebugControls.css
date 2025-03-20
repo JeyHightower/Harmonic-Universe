@@ -1,0 +1,164 @@
+/* Debug Controls Component Styles */
+.debug-controls {
+  position: fixed;
+  z-index: 9999;
+  bottom: 20px;
+  left: 20px;
+  background-color: rgba(0, 0, 0, 0.85);
+  color: #00ff00;
+  font-family: monospace;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  transition: all 0.3s ease;
+  max-width: 80%;
+  max-height: 80vh;
+  overflow: hidden;
+}
+
+.debug-controls.collapsed {
+  width: 200px;
+  height: auto;
+}
+
+.debug-controls.expanded {
+  width: 600px;
+  height: auto;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.debug-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background-color: #222;
+  border-bottom: 1px solid #444;
+}
+
+.debug-header h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #ff9900;
+}
+
+.debug-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.debug-actions button {
+  background-color: #333;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  padding: 3px 7px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.debug-actions button:hover {
+  background-color: #444;
+}
+
+.debug-section {
+  padding: 10px;
+  border-bottom: 1px solid #333;
+}
+
+.debug-section h4 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: #66ccff;
+}
+
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.button-group button {
+  background-color: #2a3a4a;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.button-group button:hover {
+  background-color: #3a5a7a;
+}
+
+.debug-logs {
+  padding: 10px;
+  background-color: #111;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.logs-container {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+
+.log-entry {
+  font-size: 11px;
+  line-height: 1.4;
+  margin-bottom: 4px;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.debug-logs button {
+  background-color: #990000;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  padding: 3px 7px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.debug-logs button:hover {
+  background-color: #cc0000;
+}
+
+/* Different log types */
+.log-entry.error {
+  color: #ff4444;
+}
+
+.log-entry.warning {
+  color: #ffaa00;
+}
+
+.log-entry.success {
+  color: #00cc00;
+}
+
+/* Make sure debug controls are visible in all contexts */
+.debug-controls {
+  pointer-events: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 767px) {
+  .debug-controls.expanded {
+    width: 90%;
+    left: 5%;
+  }
+
+  .debug-controls.collapsed {
+    width: 150px;
+  }
+
+  .button-group button {
+    padding: 4px 6px;
+    font-size: 11px;
+  }
+}

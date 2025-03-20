@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Static File Test - Harmonic Universe</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        color: #333;
+      }
+      h1 {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 10px;
+      }
+      .success {
+        background-color: #d4edda;
+        color: #155724;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+      }
+      .info-box {
+        background-color: #e2f0fb;
+        border-left: 5px solid #3498db;
+        padding: 15px;
+        margin-bottom: 20px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      button {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #2980b9;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Static Test Page</h1>
+
+    <div class="success">
+      <strong>Success!</strong> This confirms static files are being served
+      correctly by the server.
+    </div>
+
+    <div class="info-box">
+      <h2>What This Means</h2>
+      <p>
+        If you can see this page, your server is correctly serving static files.
+        This is different from correctly serving your React application, which
+        requires additional JavaScript bundles to be correctly built and loaded.
+      </p>
+    </div>
+
+    <h2>Diagnostic Information</h2>
+    <table>
+      <tr>
+        <th>Item</th>
+        <th>Value</th>
+      </tr>
+      <tr>
+        <td>Current URL</td>
+        <td id="current-url">Loading...</td>
+      </tr>
+      <tr>
+        <td>Time Generated</td>
+        <td>Sun Mar 9 14:29:51 CDT 2025</td>
+      </tr>
+      <tr>
+        <td>Time Loaded</td>
+        <td id="load-time">Loading...</td>
+      </tr>
+      <tr>
+        <td>User Agent</td>
+        <td id="user-agent">Loading...</td>
+      </tr>
+      <tr>
+        <td>Screen Size</td>
+        <td id="screen-size">Loading...</td>
+      </tr>
+    </table>
+
+    <h2>Next Steps</h2>
+    <p>
+      If this page loads but your React app doesn't, you likely have a build
+      configuration issue. Check:
+    </p>
+    <ul>
+      <li>
+        That your build script is correctly generating the JavaScript bundles
+      </li>
+      <li>That the bundles are being copied to the correct static directory</li>
+      <li>That your index.html file includes the correct script tags</li>
+      <li>
+        That there are no JavaScript errors preventing your app from
+        initializing
+      </li>
+    </ul>
+
+    <button onclick="checkMainApp()">Check Main Application</button>
+    <div id="app-check-result" style="margin-top: 15px"></div>
+
+    <script>
+      // Fill in diagnostic information
+      document.getElementById('current-url').textContent = window.location.href;
+      document.getElementById('load-time').textContent = new Date().toString();
+      document.getElementById('user-agent').textContent = navigator.userAgent;
+      document.getElementById(
+        'screen-size'
+      ).textContent = `${window.innerWidth}x${window.innerHeight}`;
+
+      // Function to check the main application
+      function checkMainApp() {
+        const resultDiv = document.getElementById('app-check-result');
+        resultDiv.innerHTML = '<p>Checking main application...</p>';
+
+        try {
+          fetch('/')
+            .then(response => {
+              if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+              }
+              return response.text();
+            })
+            .then(html => {
+              // Count script tags in the main HTML
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(html, 'text/html');
+              const scriptTags = doc.querySelectorAll('script');
+              const scriptWithSrc = Array.from(scriptTags).filter(
+                s => s.src
+              ).length;
+
+              resultDiv.innerHTML = `
+                            <div class="info-box">
+                                <h3>Main Application Check Results</h3>
+                                <p>Main index.html retrieved: ${
+                                  html.length
+                                } bytes</p>
+                                <p>Script tags found: ${
+                                  scriptTags.length
+                                } (${scriptWithSrc} with src attribute)</p>
+                                <p>Root element found: ${
+                                  doc.getElementById('root') ? 'Yes' : 'No'
+                                }</p>
+                                <p>Modal root element found: ${
+                                  doc.getElementById('modal-root')
+                                    ? 'Yes'
+                                    : 'No'
+                                }</p>
+                            </div>
+                        `;
+            })
+            .catch(error => {
+              resultDiv.innerHTML = `
+                            <div style="background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 4px;">
+                                <strong>Error checking main application:</strong> ${error.message}
+                            </div>
+                        `;
+            });
+        } catch (e) {
+          resultDiv.innerHTML = `
+                    <div style="background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 4px;">
+                        <strong>Error:</strong> ${e.message}
+                    </div>
+                `;
+        }
+      }
+    </script>
+  </body>
+</html>

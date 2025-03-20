@@ -1,0 +1,31 @@
+# Files to remove
+
+## Duplicate/Backup Files
+app/__init__.py.bak  # Backup of init file that's no longer needed
+
+## Temporary/Debug Test Files
+test_api_registration.py         # Used for debugging, functionality now works
+test_api_registration_detailed.py  # Enhanced version of the above, no longer needed
+test_direct_db.py                # Used for direct db testing, no longer needed
+test_registration.py             # Simple registration test, superseded by feature_verification.py
+test_db.py                       # Simple DB connection test, not needed for production
+test_user_model.py               # Used for debugging, no longer needed
+test_physics_parameters.sh       # Deprecated shell script, replaced by feature_verification.py
+
+## Redundant Files
+create_demo.py                   # Functionality duplicated in create_demo_user.py
+
+## Duplicate/Redundant Directories
+venv311/                         # Older Python virtual environment, using venv/ now
+__pycache__/                     # Python cache files, can be safely removed
+backups/                         # Backup directory, should be managed externally
+
+## Files to Keep
+run.py                          # Main server runner
+create_demo_user.py             # Useful for demo setup
+requirements.txt                # Essential for dependency management
+alembic.ini                     # Required for database migrations
+.env.example                    # Template for environment setup
+.env.development                # Development environment settings
+README.md                       # Documentation
+test_music_api.py               # Still useful for testing music API endpoints specifically

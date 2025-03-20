@@ -1,0 +1,20 @@
+import { configureStore } from '@reduxjs/toolkit';
+import authReducer from './authSlice.js';
+import modalReducer from './modalSlice.js';
+import physicsObjectsReducer from './physicsObjectsSlice.js';
+import physicsParametersReducer from './physicsParametersSlice.js';
+import scenesReducer from './scenesSlice.js';
+import universeReducer from 'universeSlice.js';
+
+const store = configureStore({
+  reducer: {
+    auth: authReducer,
+    modal: modalReducer,
+    universe: universeReducer,
+    scenes: scenesReducer,
+    physicsParameters: physicsParametersReducer,
+    physicsObjects: physicsObjectsReducer,
+  },
+});
+
+export default store;

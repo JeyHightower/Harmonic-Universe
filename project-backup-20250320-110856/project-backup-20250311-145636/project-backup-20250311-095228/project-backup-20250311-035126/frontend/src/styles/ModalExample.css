@@ -1,0 +1,107 @@
+.modal-examples {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--spacing-xl);
+}
+
+.modal-examples h1 {
+  font-size: var(--font-size-xxl);
+  margin-bottom: var(--spacing-lg);
+  color: var(--primary-color);
+  text-align: center;
+}
+
+.modal-examples p.intro {
+  margin-bottom: var(--spacing-xl);
+  color: var(--text-secondary);
+  text-align: center;
+  font-size: var(--font-size-md);
+  line-height: 1.6;
+}
+
+.examples-section {
+  margin-bottom: var(--spacing-xxl);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  background-color: var(--surface-color);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.examples-section:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.examples-section h2 {
+  margin-bottom: var(--spacing-lg);
+  color: var(--secondary-color);
+  font-size: var(--font-size-xl);
+  position: relative;
+  padding-bottom: var(--spacing-sm);
+}
+
+.examples-section h2::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 50px;
+  height: 3px;
+  background-color: var(--primary-color);
+  border-radius: 2px;
+}
+
+.examples-section p.description {
+  margin-bottom: var(--spacing-lg);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.submission-data {
+  background-color: var(--info-bg);
+  border: 1px solid var(--info-color);
+}
+
+.submission-data h3 {
+  font-size: var(--font-size-md);
+  margin-bottom: var(--spacing-sm);
+  color: var(--info-color);
+}
+
+pre {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  overflow: auto;
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .modal-examples {
+    padding: var(--spacing-md);
+  }
+
+  .examples-section {
+    padding: var(--spacing-md);
+  }
+
+  .button-group {
+    flex-direction: column;
+  }
+
+  .button-group button {
+    width: 100%;
+  }
+}

@@ -1,0 +1,151 @@
+.visual-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.visual-page-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.visual-page-header h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.visual-page-description {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.visual-page-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 50vh;
+}
+
+.visual-tabs {
+  margin-top: 1.5rem;
+}
+
+.visual-tab-content {
+  padding: 1.5rem 0;
+}
+
+.visual-actions {
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.visual-gallery {
+  margin-top: 1rem;
+}
+
+.visual-card {
+  height: 100%;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.visual-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.visual-image-container {
+  height: 200px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f0f2f5;
+}
+
+.visual-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.visual-tags {
+  margin-top: 1rem;
+}
+
+.visual-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+.visual-empty button {
+  margin-top: 1.5rem;
+}
+
+.template-card {
+  height: 100%;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.template-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.template-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80px;
+  width: 80px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  background-color: rgba(var(--primary-rgb), 0.1);
+}
+
+.template-card h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.template-card p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Dark mode adjustments */
+[data-theme='dark'] .visual-card,
+[data-theme='dark'] .template-card {
+  background-color: var(--component-background);
+  border-color: var(--border-color-base);
+}
+
+[data-theme='dark'] .visual-empty {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme='dark'] .visual-image-container {
+  background-color: #1f1f1f;
+}
+
+@media (max-width: 768px) {
+  .visual-page {
+    padding: 1rem;
+  }
+}

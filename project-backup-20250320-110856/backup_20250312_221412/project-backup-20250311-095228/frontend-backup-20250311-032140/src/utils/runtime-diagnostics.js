@@ -1,0 +1,1 @@
+./static/react-fixes/runtime-diagnostics.js

@@ -1,0 +1,1 @@
+./static/react-fixes/early-warning-interceptor.js

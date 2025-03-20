@@ -1,0 +1,67 @@
+.settings-page {
+  padding: var(--spacing-xl) 0;
+}
+
+.settings-header {
+  margin-bottom: var(--spacing-xl);
+}
+
+.settings-description {
+  color: var(--text-secondary);
+  max-width: 600px;
+}
+
+.settings-content {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-xl);
+}
+
+@media (min-width: 1024px) {
+  .settings-content {
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  }
+}
+
+.settings-section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.settings-section h2 {
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.settings-card {
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.settings-card h3 {
+  margin-bottom: var(--spacing-sm);
+}
+
+.settings-card p {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
+}
+
+/* Theme-specific enhancements */
+.dark-theme .settings-card {
+  background: rgba(31, 41, 55, 0.7);
+}
+
+.cosmic-theme .settings-card {
+  background: rgba(26, 16, 51, 0.7);
+  box-shadow: var(--card-shadow), 0 0 15px rgba(107, 70, 193, 0.1);
+}
+
+.harmony-theme .settings-card {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(56, 161, 105, 0.1);
+}
