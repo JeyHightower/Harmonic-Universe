@@ -2,7 +2,6 @@
   "name": "harmonic-universe-frontend",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "scripts": {
     "start": "vite",
     "dev": "vite",
@@ -10,6 +9,7 @@
     "preview": "vite preview",
     "render-build": "npx vite@4.5.1 build --mode production",
     "render-dev": "node scripts/render-dev.js",
+    "test": "jest",
     "serve": "node serve.js"
   },
   "dependencies": {
