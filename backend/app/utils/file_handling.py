@@ -9,26 +9,22 @@ import magic
 import hashlib
 from datetime import datetime
 
-
 def get_file_mime_type(file_path: str) -> str:
     """Get MIME type of a file."""
     mime = magic.Magic(mime=True)
     return mime.from_file(file_path)
 
-
-def get_file_hash(file_path: str, algorithm: str = "sha256") -> str:
+def get_file_hash(file_path: str, algorithm: str = 'sha256') -> str:
     """Calculate hash of a file."""
     hash_obj = hashlib.new(algorithm)
-    with open(file_path, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
+    with open(file_path, 'rb') as f:
+        for chunk in iter(lambda: f.read(4096), b''):
             hash_obj.update(chunk)
     return hash_obj.hexdigest()
-
 
 def ensure_directory(directory: str) -> None:
     """Ensure a directory exists, create if it doesn't."""
     os.makedirs(directory, exist_ok=True)
-
 
 def safe_filename(filename: str) -> str:
     """Generate a safe filename."""
@@ -39,11 +35,9 @@ def safe_filename(filename: str) -> str:
     name, ext = os.path.splitext(filename)
     return f"{name}_{timestamp}{ext}"
 
-
 def get_file_size(file_path: str) -> int:
     """Get file size in bytes."""
     return os.path.getsize(file_path)
-
 
 def create_temp_copy(file_path: str) -> Tuple[str, tempfile._TemporaryFileWrapper]:
     """Create a temporary copy of a file."""
@@ -54,7 +48,6 @@ def create_temp_copy(file_path: str) -> Tuple[str, tempfile._TemporaryFileWrappe
     shutil.copy2(file_path, temp_path)
     return temp_path, temp_file
 
-
 def delete_file_safely(file_path: str) -> bool:
     """Safely delete a file."""
     try:
@@ -63,7 +56,6 @@ def delete_file_safely(file_path: str) -> bool:
         return True
     except Exception:
         return False
-
 
 def list_files_with_extension(directory: str, extension: str) -> List[str]:
     """List all files with a specific extension in a directory."""
@@ -74,11 +66,9 @@ def list_files_with_extension(directory: str, extension: str) -> List[str]:
                 files.append(os.path.join(root, filename))
     return files
 
-
 def get_relative_path(file_path: str, base_path: str) -> str:
     """Get relative path from base path."""
     return os.path.relpath(file_path, base_path)
-
 
 def move_file_safely(src: str, dst: str) -> bool:
     """Safely move a file to a new location."""
@@ -90,7 +80,6 @@ def move_file_safely(src: str, dst: str) -> bool:
         return True
     except Exception:
         return False
-
 
 def backup_file(file_path: str, backup_dir: str) -> Optional[str]:
     """Create a backup of a file."""
@@ -112,7 +101,6 @@ def backup_file(file_path: str, backup_dir: str) -> Optional[str]:
         return backup_path
     except Exception:
         return None
-
 
 def clean_temp_files(temp_dir: Optional[str] = None, max_age_hours: int = 24) -> int:
     """Clean temporary files older than specified age."""

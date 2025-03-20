@@ -6,14 +6,11 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import text
 from datetime import datetime
 
-from backend.app.db.base import Base
+from app.db.base import Base
 
 ModelType = TypeVar("ModelType", bound=Base)
 
-
-def create_db_item(
-    db: Session, model: Type[ModelType], **kwargs
-) -> Optional[ModelType]:
+def create_db_item(db: Session, model: Type[ModelType], **kwargs) -> Optional[ModelType]:
     """Create a database item."""
     try:
         db_item = model(**kwargs)
@@ -25,10 +22,7 @@ def create_db_item(
         db.rollback()
         return None
 
-
-def update_db_item(
-    db: Session, model: Type[ModelType], id: Any, **kwargs
-) -> Optional[ModelType]:
+def update_db_item(db: Session, model: Type[ModelType], id: Any, **kwargs) -> Optional[ModelType]:
     """Update a database item."""
     try:
         db_item = db.query(model).filter(model.id == id).first()
@@ -45,7 +39,6 @@ def update_db_item(
         db.rollback()
         return None
 
-
 def delete_db_item(db: Session, model: Type[ModelType], id: Any) -> bool:
     """Delete a database item."""
     try:
@@ -60,7 +53,6 @@ def delete_db_item(db: Session, model: Type[ModelType], id: Any) -> bool:
         db.rollback()
         return False
 
-
 def get_db_item(db: Session, model: Type[ModelType], id: Any) -> Optional[ModelType]:
     """Get a database item by ID."""
     try:
@@ -68,30 +60,21 @@ def get_db_item(db: Session, model: Type[ModelType], id: Any) -> Optional[ModelT
     except SQLAlchemyError:
         return None
 
-
-def get_db_items(
-    db: Session, model: Type[ModelType], skip: int = 0, limit: int = 100
-) -> List[ModelType]:
+def get_db_items(db: Session, model: Type[ModelType], skip: int = 0, limit: int = 100) -> List[ModelType]:
     """Get multiple database items with pagination."""
     try:
         return db.query(model).offset(skip).limit(limit).all()
     except SQLAlchemyError:
         return []
 
-
-def get_db_items_by_field(
-    db: Session, model: Type[ModelType], field: str, value: Any
-) -> List[ModelType]:
+def get_db_items_by_field(db: Session, model: Type[ModelType], field: str, value: Any) -> List[ModelType]:
     """Get database items by field value."""
     try:
         return db.query(model).filter(getattr(model, field) == value).all()
     except SQLAlchemyError:
         return []
 
-
-def execute_raw_sql(
-    db: Session, sql: str, params: Optional[Dict[str, Any]] = None
-) -> List[Dict[str, Any]]:
+def execute_raw_sql(db: Session, sql: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
     """Execute raw SQL query."""
     try:
         result = db.execute(text(sql), params or {})
@@ -99,10 +82,7 @@ def execute_raw_sql(
     except SQLAlchemyError:
         return []
 
-
-def bulk_create_db_items(
-    db: Session, model: Type[ModelType], items: List[Dict[str, Any]]
-) -> List[ModelType]:
+def bulk_create_db_items(db: Session, model: Type[ModelType], items: List[Dict[str, Any]]) -> List[ModelType]:
     """Bulk create database items."""
     try:
         db_items = [model(**item) for item in items]
@@ -113,13 +93,7 @@ def bulk_create_db_items(
         db.rollback()
         return []
 
-
-def bulk_update_db_items(
-    db: Session,
-    model: Type[ModelType],
-    items: List[Dict[str, Any]],
-    id_field: str = "id",
-) -> bool:
+def bulk_update_db_items(db: Session, model: Type[ModelType], items: List[Dict[str, Any]], id_field: str = 'id') -> bool:
     """Bulk update database items."""
     try:
         for item in items:
@@ -131,13 +105,8 @@ def bulk_update_db_items(
         db.rollback()
         return False
 
-
-def get_or_create_db_item(
-    db: Session,
-    model: Type[ModelType],
-    defaults: Optional[Dict[str, Any]] = None,
-    **kwargs
-) -> tuple[ModelType, bool]:
+def get_or_create_db_item(db: Session, model: Type[ModelType], defaults: Optional[Dict[str, Any]] = None,
+                         **kwargs) -> tuple[ModelType, bool]:
     """Get an existing db item, or create it if it doesn't exist."""
     try:
         instance = db.query(model).filter_by(**kwargs).first()
@@ -157,7 +126,6 @@ def get_or_create_db_item(
         db.rollback()
         return None, False
 
-
 def soft_delete_db_item(db: Session, model: Type[ModelType], id: Any) -> bool:
     """Soft delete a database item by setting deleted_at timestamp."""
     try:
@@ -171,7 +139,6 @@ def soft_delete_db_item(db: Session, model: Type[ModelType], id: Any) -> bool:
     except SQLAlchemyError:
         db.rollback()
         return False
-
 
 def restore_soft_deleted_item(db: Session, model: Type[ModelType], id: Any) -> bool:
     """Restore a soft-deleted database item."""

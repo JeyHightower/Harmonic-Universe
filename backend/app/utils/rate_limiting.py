@@ -9,30 +9,22 @@ from dataclasses import dataclass
 import logging
 from collections import defaultdict
 
-
 @dataclass
 class RateLimit:
     """Rate limit configuration."""
-
     requests: int
     period: int  # in seconds
     block_duration: Optional[int] = None  # in seconds
 
-
 class RateLimitExceeded(Exception):
     """Exception raised when rate limit is exceeded."""
-
     def __init__(self, limit: RateLimit, reset_time: float):
         self.limit = limit
         self.reset_time = reset_time
-        super().__init__(
-            f"Rate limit exceeded. Try again in {reset_time - time.time():.1f} seconds"
-        )
-
+        super().__init__(f"Rate limit exceeded. Try again in {reset_time - time.time():.1f} seconds")
 
 class RateLimiter:
     """Rate limiter implementation."""
-
     def __init__(self):
         self._requests: Dict[str, list] = defaultdict(list)
         self._blocked_until: Dict[str, float] = {}
@@ -50,9 +42,7 @@ class RateLimiter:
                 del self._blocked_until[key]
 
             # Clean old requests
-            self._requests[key] = [
-                ts for ts in self._requests[key] if ts > now - limit.period
-            ]
+            self._requests[key] = [ts for ts in self._requests[key] if ts > now - limit.period]
 
             # Check rate limit
             if len(self._requests[key]) >= limit.requests:
@@ -73,10 +63,8 @@ class RateLimiter:
             if key in self._blocked_until:
                 del self._blocked_until[key]
 
-
 class TokenBucket:
     """Token bucket rate limiter implementation."""
-
     def __init__(self, capacity: int, fill_rate: float):
         """
         Initialize token bucket.
@@ -105,7 +93,10 @@ class TokenBucket:
             now = time.time()
             # Add new tokens based on time passed
             time_passed = now - self.last_update
-            self.tokens = min(self.capacity, self.tokens + time_passed * self.fill_rate)
+            self.tokens = min(
+                self.capacity,
+                self.tokens + time_passed * self.fill_rate
+            )
             self.last_update = now
 
             if tokens <= self.tokens:
@@ -113,10 +104,8 @@ class TokenBucket:
                 return True
             return False
 
-
 class SlidingWindowRateLimiter:
     """Sliding window rate limiter implementation."""
-
     def __init__(self):
         self._windows: Dict[str, Dict[int, int]] = defaultdict(lambda: defaultdict(int))
         self._lock = threading.Lock()
@@ -130,8 +119,7 @@ class SlidingWindowRateLimiter:
             # Clean old windows
             if key in self._windows:
                 self._windows[key] = {
-                    ts: count
-                    for ts, count in self._windows[key].items()
+                    ts: count for ts, count in self._windows[key].items()
                     if ts > window_start
                 }
 
@@ -140,9 +128,7 @@ class SlidingWindowRateLimiter:
 
             if total_requests >= limit.requests:
                 # Find reset time
-                oldest_timestamp = (
-                    min(self._windows[key].keys()) if self._windows[key] else now
-                )
+                oldest_timestamp = min(self._windows[key].keys()) if self._windows[key] else now
                 return False, oldest_timestamp + limit.period
 
             # Add new request
@@ -154,7 +140,6 @@ class SlidingWindowRateLimiter:
         with self._lock:
             if key in self._windows:
                 del self._windows[key]
-
 
 def rate_limit(limit: RateLimit, key_func: Optional[callable] = None):
     """
@@ -181,11 +166,8 @@ def rate_limit(limit: RateLimit, key_func: Optional[callable] = None):
                 raise RateLimitExceeded(limit, reset_time)
 
             return func(*args, **kwargs)
-
         return wrapper
-
     return decorator
-
 
 def ip_rate_limit(requests: int, period: int, block_duration: Optional[int] = None):
     """

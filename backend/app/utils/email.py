@@ -1,13 +1,15 @@
 from flask_mail import Message
-from backend.app.core.config import settings
-from backend.app.extensions import mail
-
+from app.core.config import settings
+from app.extensions import mail
 
 def send_email(to: str, subject: str, template: str):
-    msg = Message(subject, sender=settings.MAIL_DEFAULT_SENDER, recipients=[to])
+    msg = Message(
+        subject,
+        sender=settings.MAIL_DEFAULT_SENDER,
+        recipients=[to]
+    )
     msg.html = template
     mail.send(msg)
-
 
 def send_verification_email(to: str, token: str):
     verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
@@ -19,7 +21,6 @@ def send_verification_email(to: str, token: str):
     <p>If you did not create an account, please ignore this email.</p>
     """
     send_email(to, "Verify Your Email - Harmonic Universe", template)
-
 
 def send_password_reset_email(to: str, token: str):
     reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
