@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+<<<<<<< HEAD
 from app import db
 from app.api.models.note import Note
 from app.api.models.character import Character
@@ -20,11 +21,51 @@ def get_note(id):
     return jsonify(note.to_dict())
 
 @notes_bp.route('', methods=['POST'])
+=======
+from ..models import db, Note
+from flask_login import login_required, current_user
+
+notes_bp = Blueprint('notes', __name__)
+
+# Get all notes
+@notes_bp.route('/api/notes', methods=['GET'])
+@login_required
+def get_notes():
+    # Filter parameters
+    universe_id = request.args.get('universe_id')
+    scene_id = request.args.get('scene_id')
+    character_id = request.args.get('character_id')
+    
+    # Build query based on filters
+    query = Note.query.filter_by(user_id=current_user.id)
+    
+    if universe_id:
+        query = query.filter_by(universe_id=universe_id)
+    if scene_id:
+        query = query.filter_by(scene_id=scene_id)
+    if character_id:
+        query = query.filter_by(character_id=character_id)
+        
+    notes = query.all()
+    return jsonify([note.to_dict() for note in notes])
+
+# Get a specific note
+@notes_bp.route('/api/notes/<int:note_id>', methods=['GET'])
+@login_required
+def get_note(note_id):
+    note = Note.query.filter_by(id=note_id, user_id=current_user.id).first_or_404()
+    return jsonify(note.to_dict())
+
+# Create a new note
+@notes_bp.route('/api/notes', methods=['POST'])
+@login_required
+>>>>>>> origin/main
 def create_note():
     data = request.get_json()
     
     if not data.get('content'):
         return jsonify({'error': 'Content is required'}), 400
+<<<<<<< HEAD
     if not data.get('character_id'):
         return jsonify({'error': 'Character ID is required'}), 400
         
@@ -34,6 +75,15 @@ def create_note():
     note = Note(
         content=data['content'],
         character_id=data['character_id']
+=======
+        
+    note = Note(
+        content=data['content'],
+        universe_id=data.get('universe_id'),
+        scene_id=data.get('scene_id'),
+        character_id=data.get('character_id'),
+        user_id=current_user.id
+>>>>>>> origin/main
     )
     
     db.session.add(note)
@@ -41,22 +91,39 @@ def create_note():
     
     return jsonify(note.to_dict()), 201
 
+<<<<<<< HEAD
 @notes_bp.route('/<int:id>', methods=['PUT'])
 def update_note(id):
     note = Note.query.get_or_404(id)
+=======
+# Update a note
+@notes_bp.route('/api/notes/<int:note_id>', methods=['PUT'])
+@login_required
+def update_note(note_id):
+    note = Note.query.filter_by(id=note_id, user_id=current_user.id).first_or_404()
+>>>>>>> origin/main
     data = request.get_json()
     
     if 'content' in data:
         note.content = data['content']
+<<<<<<< HEAD
     if 'character_id' in data:
         # Verify new character exists
         Character.query.get_or_404(data['character_id'])
+=======
+    if 'universe_id' in data:
+        note.universe_id = data['universe_id']
+    if 'scene_id' in data:
+        note.scene_id = data['scene_id']
+    if 'character_id' in data:
+>>>>>>> origin/main
         note.character_id = data['character_id']
         
     db.session.commit()
     
     return jsonify(note.to_dict())
 
+<<<<<<< HEAD
 @notes_bp.route('/<int:id>', methods=['DELETE'])
 def delete_note(id):
     note = Note.query.get_or_404(id)
@@ -64,3 +131,14 @@ def delete_note(id):
     db.session.commit()
     
     return '', 204 
+=======
+# Delete a note
+@notes_bp.route('/api/notes/<int:note_id>', methods=['DELETE'])
+@login_required
+def delete_note(note_id):
+    note = Note.query.filter_by(id=note_id, user_id=current_user.id).first_or_404()
+    db.session.delete(note)
+    db.session.commit()
+    
+    return jsonify({'message': 'Note deleted successfully'}) 
+>>>>>>> origin/main

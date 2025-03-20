@@ -1,5 +1,7 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 import os
 import time
 import sys
@@ -7,11 +9,8 @@ import sys
 # Add the current directory to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Import the blueprints
-from api import auth_bp, api_bp
-from app.api.routes.universe import universe_bp
-from app.api.routes.scenes import scenes_bp
-from app.api.routes.auth import auth_bp as auth_routes_bp
+# Initialize SQLAlchemy
+db = SQLAlchemy()
 
 # Create Flask application
 app = Flask(__name__, static_folder="static")
@@ -44,33 +43,26 @@ CORS(
 # Configure app based on environment
 app.config.from_mapping(
     SECRET_KEY=os.environ.get("SECRET_KEY", "dev-key-for-testing"),
-    DATABASE_URI=os.environ.get("DATABASE_URL", "sqlite:///app.db"),
+    SQLALCHEMY_DATABASE_URI=os.environ.get("DATABASE_URL", "sqlite:///app.db"),
+    SQLALCHEMY_TRACK_MODIFICATIONS=False,
     # Add CORS configuration to app config for reference
     CORS_CONFIG=cors_config,
 )
 
-# Register basic blueprints
-app.register_blueprint(auth_bp)
-app.register_blueprint(api_bp)
+# Initialize extensions
+db.init_app(app)
+migrate = Migrate(app, db)
 
-# Register CRUD routes
-try:
-    app.register_blueprint(universe_bp)
-    print("Successfully registered Universe routes")
-except Exception as e:
-    print(f"Error registering Universe routes: {str(e)}")
+# Import models (after db initialization)
+from app.api.models import Character, Note
 
-try:
-    app.register_blueprint(scenes_bp)
-    print("Successfully registered Scene routes")
-except Exception as e:
-    print(f"Error registering Scene routes: {str(e)}")
+# Import routes (after model imports)
+from app.api.routes.characters import characters_bp
+from app.api.routes.notes import notes_bp
 
-try:
-    app.register_blueprint(auth_routes_bp)
-    print("Successfully registered Auth routes")
-except Exception as e:
-    print(f"Error registering Auth routes: {str(e)}")
+# Register blueprints
+app.register_blueprint(characters_bp)
+app.register_blueprint(notes_bp)
 
 # Root route for testing
 @app.route('/')
