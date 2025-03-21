@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
-from ..models import db, Character
+from ..models import Character
+from app import db
 from flask_login import login_required, current_user
 
 characters_bp = Blueprint('characters', __name__)
@@ -28,13 +29,13 @@ def get_character(character_id):
 def create_character():
     data = request.get_json()
     
-    if not data.get('name') or not data.get('universe_id'):
-        return jsonify({'error': 'Name and universe_id are required'}), 400
+    if not data.get('name'):
+        return jsonify({'error': 'Name is required'}), 400
         
     character = Character(
         name=data['name'],
         description=data.get('description', ''),
-        universe_id=data['universe_id']
+        universe_id=data.get('universe_id')
     )
     
     db.session.add(character)

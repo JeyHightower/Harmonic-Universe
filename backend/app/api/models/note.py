@@ -13,6 +13,10 @@ class Note(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Relationships
+    user = db.relationship('User', back_populates='notes')
+    character = db.relationship('Character', back_populates='notes')
+
     def to_dict(self):
         return {
             'id': self.id,
