@@ -33,6 +33,9 @@ echo -e "${NC}"
 # Configuration
 # ================================================================
 
+# Move to root directory
+cd .. 
+
 # Project root (current directory)
 PROJECT_ROOT=$(pwd)
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
