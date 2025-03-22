@@ -1,1 +1,0 @@
-./static/react-fixes/react-error-handler.js

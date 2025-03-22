@@ -1,1 +1,0 @@
-./static/react-fixes/critical-react-fix 2.js
