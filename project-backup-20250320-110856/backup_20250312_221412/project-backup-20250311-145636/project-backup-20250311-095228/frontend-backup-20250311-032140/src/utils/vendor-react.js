@@ -1,1 +1,0 @@
-./static/react-fixes/vendor-react.js

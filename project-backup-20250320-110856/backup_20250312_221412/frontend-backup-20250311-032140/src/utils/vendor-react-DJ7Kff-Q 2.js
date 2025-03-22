@@ -1,1 +1,0 @@
-./static/react-fixes/vendor-react-DJ7Kff-Q 2.js

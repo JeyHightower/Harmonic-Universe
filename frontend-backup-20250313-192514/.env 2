@@ -1,7 +1,0 @@
-# Vite environment variables must be prefixed with VITE_
-# This ensures compatibility with your existing env vars
-VITE_APP_DEBUG=true
-
-# Add other environment variables your app needs
-PUBLIC_URL=/
-VITE_PUBLIC_URL=/

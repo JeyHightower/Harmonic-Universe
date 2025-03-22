@@ -1,8 +1,0 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
-# Run linting
-npm run lint
-
-# Check for direct imports from @ant-design/icons
-npm run check-icons
