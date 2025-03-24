@@ -34,7 +34,7 @@ echo -e "${NC}"
 # ================================================================
 
 # Move to root directory
-cd .. 
+cd ../.. 
 
 # Project root (current directory)
 PROJECT_ROOT=$(pwd)
