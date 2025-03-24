@@ -12,9 +12,7 @@
     "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\""
   },
   "workspaces": [
-    "Harmonic-Universe",
-    "frontend",
-    "backend"
+    "frontend"
   ],
   "engines": {
     "node": ">=18.0.0",
