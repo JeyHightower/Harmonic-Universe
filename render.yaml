@@ -1,19 +1,9 @@
 services:
   - type: web
-    name: harmonic-universe-frontend
-    env: node
-    buildCommand: cd frontend && npm install && npm run build
-    startCommand: cd frontend && npm run preview
-    envVars:
-      - fromGroup: harmonic-universe-env
-    healthCheckPath: /
-    autoDeploy: true
-
-  - type: web
-    name: harmonic-universe-backend
+    name: harmonic-universe
     env: python
-    buildCommand: cd backend && pip install -r requirements.txt
-    startCommand: cd backend && gunicorn app:app
+    buildCommand: cd backend && pip install -r requirements.txt && flask db upgrade && cd ../frontend && npm install && npm run build && cd ..
+    startCommand: cd backend && gunicorn --workers=4 --bind=0.0.0.0:$PORT app:app
     envVars:
       - fromGroup: harmonic-universe-env
     healthCheckPath: /api/health
