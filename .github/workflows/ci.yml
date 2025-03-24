@@ -1,10 +1,15 @@
-name: CI/CD
+name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
 
 jobs:
   test:
@@ -132,3 +137,11 @@ jobs:
         with:
           name: backend-build
           path: backend/dist
+
+      - name: Security scan
+        run: |
+          if [[ $(npm audit --json | jq -r '.metadata.vulnerabilities.high') -gt 0 ]]; then
+            echo "High severity vulnerabilities found"
+            gh issue create --title "🚨 Security Alert" --body "High severity vulnerabilities detected in npm audit" --label "security,high"
+            exit 1
+          fi
