@@ -160,3 +160,24 @@ build/
 .env.test.local
 .env.production.local
 .vercel
+
+# Project-specific files
+.npmrc
+*.code-workspace
+backend/.dockerignore
+backend/.htaccess
+backend/app.py
+backend/config/
+backend/render.yaml
+backend/requirements.txt
+backend/src/
+backend/static/
+backend/wsgi.py
+frontend/.env*
+frontend/.npmrc
+frontend/.preinstallrc
+frontend/.render-buildcommands.yaml
+frontend/config/
+frontend/index.html
+frontend/package.json
+frontend/vite.config.js
