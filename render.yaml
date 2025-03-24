@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: harmonic-universe-frontend
+    env: node
+    buildCommand: cd frontend && npm install && npm run build
+    startCommand: cd frontend && npm run preview
+    envVars:
+      - fromGroup: harmonic-universe-env
+    
+  - type: web
+    name: harmonic-universe-backend
+    env: python
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && gunicorn app:app
+    envVars:
+      - fromGroup: harmonic-universe-env
+
+envVarGroups:
+  - name: harmonic-universe-env
+    isSecret: true 
