@@ -6,7 +6,9 @@ services:
     startCommand: cd frontend && npm run preview
     envVars:
       - fromGroup: harmonic-universe-env
-    
+    healthCheckPath: /
+    autoDeploy: true
+
   - type: web
     name: harmonic-universe-backend
     env: python
@@ -14,6 +16,8 @@ services:
     startCommand: cd backend && gunicorn app:app
     envVars:
       - fromGroup: harmonic-universe-env
+    healthCheckPath: /api/health
+    autoDeploy: true
 
 envVarGroups:
   - name: harmonic-universe-env
