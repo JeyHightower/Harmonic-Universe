@@ -1,31 +1,162 @@
 # Dependencies
 node_modules/
-**/node_modules/
+/.pnp
+.pnp.js
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+env/
+venv/
+ENV/
+.env
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
 
-# Build
+# Testing
+/coverage
+.coverage
+htmlcov/
+.tox/
+.nox/
+.pytest_cache/
+nosetests.xml
+coverage.xml
+
+# Production & Build
+/build
+/dist
+/.next/
+/out/
+.nuxt
 dist/
 build/
+*.egg-info/
+.installed.cfg
+*.egg
+.eggs/
 
-# Environment
+# Environment Variables
 .env
-.env.*
-!.env.example
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# Debug & Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+logs/
+*.log
+debug.log
 
 # IDE
 .idea/
 .vscode/
+*.swp
+*.swo
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# Logs
-*.log
-logs/
+# Cache & Temp
+.cache/
+.temp/
+.tmp/
+*.tmp
+*.temp
+.eslintcache
+.stylelintcache
+.parcel-cache
 
-# Media
-*.wav
+# Database
+*.sqlite
+*.sqlite3
+*.db
+backend/instance/
+
+# Media & Assets
+/public/uploads/
+/uploads/
+/media/
 *.mp3
+*.wav
+*.ogg
+*.mp4
+*.mov
+*.avi
 
-# Temp
-temp/
-tmp/
-**/temp/
-**/tmp/
+# Config (except examples)
+config/*
+!config/default.js
+!config/example.js
+
+# Package Files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build Output
+/.next/
+/out/
+.vercel
+.netlify
+.serverless/
+.fusebox/
+.dynamodb/
+.tern-port
+.vscode-test
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Python
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.Python
+*.egg
+*.egg-info
+dist/
+build/
+eggs/
+parts/
+bin/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+__pycache__/
+
+# React/Next.js
+.next/
+out/
+build/
+.DS_Store
+*.pem
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.vercel
