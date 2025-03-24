@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { apiLogger } from '../utils/logger';
+import { apiLogger } from './utils/logger';
 
 // Debug helper for API operations
 const logApiOperation = (operation, data = {}) => {

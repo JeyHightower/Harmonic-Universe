@@ -5,7 +5,7 @@ import physicsObjectsReducer from './physicsObjectsSlice';
 import scenesReducer from './scenesSlice';
 import universeReducer from './universeSlice';
 
-const store = configureStore({
+export const store = configureStore({
   reducer: {
     auth: authReducer,
     modal: modalReducer,
