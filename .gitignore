@@ -152,3 +152,17 @@ htmlcov/
 # System Files
 .DS_Store
 Thumbs.db
+
+# Sensitive files
+*.pem
+*.key
+*.crt
+*.csr
+*.srl
+*.p12
+*.pfx
+
+# Backup files
+backup_*/
+*.bak
+*.backup

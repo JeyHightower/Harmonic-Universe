@@ -1,0 +1,242 @@
+.universe-list-container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.universe-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.universe-list-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.universe-list-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort-select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-color-light);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.sort-order-button {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background-color: var(--bg-color-light);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+.sort-order-button:hover {
+  background-color: var(--bg-color);
+}
+
+.universe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.universe-card-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.universe-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.universe-card-actions a,
+.universe-card-actions button {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+  text-decoration: none;
+}
+
+.view-button {
+  background-color: var(--bg-color-light);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.view-button:hover {
+  background-color: var(--bg-color);
+}
+
+.edit-button {
+  background-color: var(--primary-color-light);
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color-light);
+}
+
+.edit-button:hover {
+  background-color: var(--primary-color-lighter);
+}
+
+.delete-button {
+  background-color: var(--danger-color-light);
+  color: var(--danger-color);
+  border: 1px solid var(--danger-color-light);
+}
+
+.delete-button:hover {
+  background-color: var(--danger-color-lighter);
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  text-align: center;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top-color: var(--primary-color);
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px;
+  background-color: var(--bg-color-light);
+  border-radius: 12px;
+}
+
+.empty-state h2 {
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.empty-state p {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.error-message {
+  padding: 16px;
+  background-color: var(--danger-color-light);
+  color: var(--danger-color);
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .universe-list-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .universe-list-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .universe-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .universe-list-container {
+    padding: 16px;
+  }
+
+  .universe-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .universe-list-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-buttons {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .sort-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .sort-select,
+  .sort-order-button,
+  .view-button {
+    background-color: var(--bg-color-dark);
+    border-color: var(--border-color-dark);
+  }
+
+  .empty-state {
+    background-color: var(--bg-color-dark);
+  }
+
+  .spinner {
+    border-color: rgba(255, 255, 255, 0.1);
+    border-top-color: var(--primary-color);
+  }
+}

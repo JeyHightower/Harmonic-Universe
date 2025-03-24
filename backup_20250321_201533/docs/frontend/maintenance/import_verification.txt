@@ -1,0 +1,601 @@
+Starting import verification...
+Checking frontend imports...
+Running TypeScript checks...
+
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m                                                                               [0m
+
+To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
+
+- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
+- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+Checking for circular dependencies...
+Need to install the following packages:
+madge@8.0.0
+Ok to proceed? (y) Processed 85 files (466ms) (47 warnings)
+
+
+Checking for unused exports...
+Need to install the following packages:
+ts-prune@0.10.3
+Ok to proceed? (y) src/App.tsx:66 - default
+src/components/EmptyState.js:27 - default
+src/contexts/AuthContext.jsx:24 - default
+src/hooks/useApi.js:55 - default
+src/hooks/useControlPanel.js:62 - default
+src/hooks/useScenePreview.ts:10 - useScenePreview
+src/hooks/useStoryboard.ts:52 - useStoryboard
+src/hooks/useStoryboard.ts:5 - Scene (used in module)
+src/hooks/useStoryboard.ts:17 - VisualEffect (used in module)
+src/hooks/useStoryboard.ts:25 - AudioTrack (used in module)
+src/hooks/useStoryboard.ts:34 - Storyboard (used in module)
+src/hooks/useUI.ts:101 - default
+src/hooks/useUniverseSocket.ts:5 - UniverseState (used in module)
+src/hooks/useUniverseSocket.ts:29 - UseUniverseSocketProps (used in module)
+src/hooks/useUser.ts:17 - useUser (used in module)
+src/hooks/useUser.ts:136 - default
+src/pages/NotFound.jsx:47 - default
+src/pages/ProfilePage.js:78 - default
+src/pages/UniverseDetailsPage.jsx:153 - default
+src/pages/UniverseParametersPage.jsx:72 - default
+src/routes/index.jsx:20 - default
+src/services/authService.js:271 - default
+src/services/CollaborationService.js:154 - default
+src/services/errorLogging.js:153 - handleApiError
+src/services/errorLogging.js:199 - handleWebSocketError
+src/services/errorLogging.js:208 - handleValidationError
+src/services/errorLogging.js:217 - handleAuthError
+src/services/errorLogging.js:226 - getErrorStats (used in module)
+src/services/errorLogging.js:227 - clearErrors (used in module)
+src/services/errorLogging.js:228 - addErrorCallback (used in module)
+src/services/errorLogging.js:230 - removeErrorCallback (used in module)
+src/services/index.ts:118 - auth
+src/services/index.ts:138 - universe
+src/services/index.ts:151 - collaboration
+src/services/index.ts:170 - physics
+src/services/monitoring.js:511 - monitoring
+src/store/index 3.js:4 - store (used in module)
+src/store/index 3.js:19 - default
+src/store/physicsSlice.js:13 - getPhysicsObject (used in module)
+src/store/physicsSlice.js:37 - createPhysicsConstraint (used in module)
+src/store/physicsSlice.js:45 - getPhysicsConstraint (used in module)
+src/store/physicsSlice.js:53 - updatePhysicsConstraint (used in module)
+src/store/physicsSlice.js:61 - deletePhysicsConstraint (used in module)
+src/styles/theme.ts:53 - theme
+src/theme/index 2.js:249 - default
+src/types/comment.js:3 - CommentPropTypes (used in module)
+src/types/comment.js:21 - CommentStatePropTypes
+src/types/comment.js:28 - AddCommentPayloadPropTypes
+src/types/comment.js:34 - UpdateCommentPayloadPropTypes
+src/types/comment.js:40 - DeleteCommentPayloadPropTypes
+src/types/index.ts:1 - LoginCredentials
+src/types/index.ts:6 - RegisterCredentials
+src/types/index.ts:10 - AuthState
+src/types/index.ts:18 - User
+src/types/index.ts:26 - AuthResponse
+src/types/index.ts:1 - Scene
+src/types/index.ts:11 - SceneState
+src/types/index.ts:18 - SceneFormData
+src/types/index.ts:24 - SceneEditorProps
+src/types/index.ts:30 - SceneDialogState
+src/types/index.ts:39 - DragDropResult
+src/types/index.ts:1 - Storyboard
+src/types/index.ts:11 - StoryboardState
+src/types/index.ts:18 - StoryboardFormData
+src/types/index.ts:24 - StoryboardEditorProps
+src/types/index.ts:29 - StoryboardDialogState
+src/types/index.ts:1 - AlertMessage
+src/types/index.ts:7 - ConfirmDialog
+src/types/index.ts:14 - UIState
+src/types/index.ts:21 - ThemeConfig
+src/types/index.ts:1 - Universe
+src/types/index.ts:11 - UniverseState
+src/types/index.ts:18 - UniverseFormData
+src/types/index.ts:24 - UniverseCollaborator
+src/types/index.ts:9 - UserProfile
+src/types/index.ts:19 - UserSettings
+src/types/index.ts:30 - UserState
+src/types/index.ts:37 - UserFormData
+src/utils/errorHandling.js:8 - formatApiError (used in module)
+src/utils/errorHandling.js:61 - createAsyncThunkHandler
+src/utils/errorHandling.js:91 - withErrorHandling
+src/utils/storage.js:6 - storage
+src/utils/storage.js:64 - STORAGE_DEFAULTS
+src/utils/test-auth-helper.ts:27 - getAuthPreloadedState
+src/utils/test-auth-helper.ts:3 - mockUser (used in module)
+src/utils/test-auth-helper.ts:11 - mockAuthState (used in module)
+src/utils/test-auth-helper.ts:19 - mockUnauthenticatedState (used in module)
+src/utils/test-utils.tsx:35 - renderWithProviders
+src/utils/test-utils.tsx:65 - createTestStore
+src/utils/test-utils.tsx:73 - createMockApiResponse
+src/utils/test-utils.tsx:81 - createMockApiError
+src/utils/test-utils.tsx:92 - render (used in module)
+src/utils/validation.js:44 - validateField (used in module)
+src/utils/validation.js:56 - validateForm (used in module)
+src/utils/validation.js:73 - loginValidationSchema
+src/utils/validation.js:78 - signupValidationSchema
+src/utils/validation.js:85 - universeValidationSchema
+src/utils/validation.js:122 - isValidEmail (used in module)
+src/utils/validation.js:132 - validatePassword (used in module)
+src/utils/validation.js:162 - validateRegistration
+src/utils/validation.js:197 - validateLogin
+src/utils/validation.js:221 - validateUniverse
+src/utils/validation.js:242 - default
+src/pages/auth/Login.jsx:115 - default
+src/pages/auth/Register.jsx:132 - default
+src/pages/Dashboard/index.jsx:219 - default
+src/pages/Home/index.jsx:172 - default
+src/pages/Login/index.jsx:107 - default
+src/pages/NotFound/index.jsx:41 - default
+src/pages/profile/index.jsx:278 - default
+src/pages/Register/index.jsx:149 - default
+src/pages/settings/index.jsx:188 - default
+src/pages/universe/Create.jsx:275 - default
+src/pages/universe/Details.jsx:279 - default
+src/pages/universe/index.jsx:114 - default
+src/pages/universe/Music.jsx:107 - default
+src/pages/universe/Physics.jsx:154 - default
+src/pages/universe/Visualization.jsx:227 - default
+src/store/slices/authSlice.ts:82 - refreshToken (used in module)
+src/store/slices/authSlice.ts:111 - requestPasswordReset (used in module)
+src/store/slices/authSlice.ts:125 - resetPassword (used in module)
+src/store/slices/authSlice.ts:264 - clearError (used in module)
+src/store/slices/collaboratorSlice.ts:153 - default
+src/store/slices/commentSlice.ts:95 - fetchUserComments (used in module)
+src/store/slices/commentSlice.ts:220 - default
+src/store/slices/mediaEffectSlice.ts:44 - fetchVisualEffects (used in module)
+src/store/slices/mediaEffectSlice.ts:62 - createVisualEffect (used in module)
+src/store/slices/mediaEffectSlice.ts:81 - updateVisualEffect (used in module)
+src/store/slices/mediaEffectSlice.ts:100 - deleteVisualEffect (used in module)
+src/store/slices/mediaEffectSlice.ts:119 - fetchAudioTracks (used in module)
+src/store/slices/mediaEffectSlice.ts:137 - createAudioTrack (used in module)
+src/store/slices/mediaEffectSlice.ts:156 - updateAudioTrack (used in module)
+src/store/slices/mediaEffectSlice.ts:175 - deleteAudioTrack (used in module)
+src/store/slices/mediaEffectSlice.ts:322 - clearCurrentEffects (used in module)
+src/store/slices/mediaEffectSlice.ts:322 - clearError (used in module)
+src/store/slices/mediaEffectSlice.ts:324 - selectVisualEffects
+src/store/slices/mediaEffectSlice.ts:325 - selectAudioTracks
+src/store/slices/mediaEffectSlice.ts:326 - selectCurrentVisualEffect
+src/store/slices/mediaEffectSlice.ts:327 - selectCurrentAudioTrack
+src/store/slices/mediaEffectSlice.ts:328 - selectMediaEffectLoading
+src/store/slices/mediaEffectSlice.ts:329 - selectMediaEffectError
+src/store/slices/sceneSlice.ts:30 - fetchScenes (used in module)
+src/store/slices/sceneSlice.ts:60 - createScene (used in module)
+src/store/slices/sceneSlice.ts:79 - updateScene (used in module)
+src/store/slices/sceneSlice.ts:98 - deleteScene (used in module)
+src/store/slices/sceneSlice.ts:116 - reorderScenes (used in module)
+src/store/slices/sceneSlice.ts:236 - clearCurrentScene (used in module)
+src/store/slices/sceneSlice.ts:236 - clearError (used in module)
+src/store/slices/sceneSlice.ts:238 - selectScenes
+src/store/slices/storyboardSlice.ts:30 - fetchStoryboards (used in module)
+src/store/slices/storyboardSlice.ts:54 - createStoryboard (used in module)
+src/store/slices/storyboardSlice.ts:66 - updateStoryboard (used in module)
+src/store/slices/storyboardSlice.ts:85 - deleteStoryboard (used in module)
+src/store/slices/storyboardSlice.ts:187 - clearCurrentStoryboard (used in module)
+src/store/slices/storyboardSlice.ts:187 - clearError (used in module)
+src/store/slices/storyboardSlice.ts:189 - selectStoryboards
+src/store/slices/uiSlice.ts:104 - default
+src/store/slices/universeSlice.ts:115 - fetchUserUniverses (used in module)
+src/store/slices/universeSlice.ts:129 - fetchCollaboratingUniverses (used in module)
+src/store/slices/universeSlice.ts:144 - fetchFavoriteUniverses (used in module)
+src/store/slices/userSlice.ts:229 - clearError (used in module)
+src/store/slices/userSlice.ts:232 - default
+src/components/features/Audio/AudioController.js:185 - default
+src/components/features/Audio/AudioEngine.js:124 - default
+src/components/features/Audio/AudioExport.js:79 - default
+src/components/features/Audio/AudioRecorder.js:212 - default
+src/components/features/Audio/AudioVisualizer.js:112 - default
+src/components/features/Audio/AudioWorkspace.jsx:91 - default
+src/components/features/Audio/FrequencyAnalyzer.js:111 - default
+src/components/features/Audio/HarmonicsEditor.js:174 - default
+src/components/features/Audio/PresetBank.js:156 - default
+src/components/features/Audio/WaveformSelector.js:43 - default
+src/components/features/Auth/AuthModal.jsx:79 - default
+src/components/features/Auth/PrivateRoute.jsx:26 - default
+src/components/features/Auth/Profile.jsx:248 - default
+src/components/features/Auth/ProtectedRoute.jsx:15 - default
+src/components/features/Auth/Register.jsx:212 - default
+src/components/features/Auth/ResetPassword.jsx:108 - ResetPassword (used in module)
+src/components/features/Auth/SignupForm.jsx:146 - default
+src/components/features/Physics/PhysicsControlPanel.jsx:107 - default
+src/components/features/Physics/PhysicsSimulation.jsx:192 - default
+src/components/features/Physics/PhysicsVisualization.jsx:216 - default
+src/components/features/Physics/PhysicsVisualizer.jsx:132 - default
+src/components/features/Scene/ScenePreview.tsx:29 - ScenePreview
+src/components/features/Scene/ScenePreviewControls.tsx:24 - ScenePreviewControls
+src/components/features/Storyboard/StoryboardEditor.tsx:67 - StoryboardEditor
+src/components/features/Storyboard/StoryboardFilters.js:101 - default
+src/components/features/Storyboard/StoryboardList.js:63 - default
+src/components/features/Storyboard/StoryboardModal.js:156 - default
+src/components/features/Storyboard/StoryboardPagination.js:112 - default
+src/components/features/Universe/CollaboratorManager.jsx:129 - default
+src/components/features/Universe/CollaboratorsList.tsx:117 - CollaboratorsList
+src/components/features/Universe/FavoritesList.jsx:137 - default
+src/components/features/Universe/ParameterForm.jsx:174 - default
+src/components/features/Universe/PrivacySettings.jsx:241 - default
+src/components/features/Universe/UniverseCreator.jsx:275 - default
+src/components/features/Universe/UniverseDetail.jsx:158 - default
+src/components/features/Universe/UniverseDetails.jsx:201 - default
+src/components/features/Universe/UniverseEdit.jsx:173 - default
+src/components/features/Universe/UniverseEditor.jsx:31 - default
+src/components/features/Universe/UniverseExport.jsx:196 - default
+src/components/features/Universe/UniverseForm.jsx:99 - default
+src/components/features/Universe/UniverseGrid.jsx:80 - default
+src/components/features/Universe/UniverseList.jsx:284 - default
+src/components/features/Universe/UniverseViewer.jsx:197 - default
+src/store/features/analytics/analyticsSlice.js:4 - fetchAnalytics (used in module)
+src/store/features/analytics/analyticsSlice.js:84 - clearError (used in module)
+src/store/features/analytics/analyticsSlice.js:85 - analyticsReducer (used in module)
+src/store/features/analytics/analyticsSlice.js:86 - default
+src/store/features/analytics/Dashboard.jsx:283 - default
+src/store/features/audio/AudioControls.jsx:140 - default
+src/store/features/auth/authSlice.js:5 - login (used in module)
+src/store/features/auth/authSlice.js:16 - register (used in module)
+src/store/features/auth/authSlice.js:27 - resetPassword (used in module)
+src/store/features/auth/authSlice.js:107 - logout (used in module)
+src/store/features/auth/authSlice.js:107 - clearError (used in module)
+src/store/features/auth/authSlice.js:108 - authReducer
+src/store/features/auth/Login.jsx:125 - default
+src/store/features/auth/Register.jsx:171 - default
+src/store/features/auth/ResetPassword.jsx:114 - default
+src/components/features/ui/analytics/AnalyticsDashboard.jsx:245 - default
+src/components/features/ui/analytics/Dashboard.jsx:341 - default
+src/components/features/ui/analytics/UniverseStats.jsx:240 - default
+src/components/features/ui/analytics/UserStats.jsx:265 - default
+src/components/features/ui/audio/MusicParametersEditor.jsx:142 - default
+src/components/features/ui/collaboration/ActivityHistory.jsx:183 - default
+src/components/features/ui/collaboration/CollaborationOverlay.jsx:118 - default
+src/components/features/ui/collaboration/CollaborationPanel.jsx:205 - default
+src/components/features/ui/collaboration/CursorOverlay.jsx:119 - default
+src/components/features/ui/collaboration/UserPresence.jsx:97 - default
+src/components/features/ui/comments/CommentList.jsx:96 - default
+src/components/features/ui/comments/Comments.jsx:89 - default
+src/components/features/ui/editor/Editor.jsx:178 - default
+src/components/features/ui/editor/RichTextEditor.jsx:152 - default
+src/components/features/ui/editor/VersionHistory.jsx:71 - default
+src/components/features/ui/operations/BatchOperations.js:158 - default
+src/components/features/ui/presence/Presence.jsx:52 - default
+src/components/features/ui/profile/Profile.jsx:294 - default
+src/components/features/ui/profile/ProfileSettings.jsx:127 - default
+src/components/features/ui/profile/UserProfile.jsx:116 - default
+src/components/features/ui/settings/Settings.jsx:252 - default
+src/components/features/ui/settings/UserPreferences.jsx:268 - default
+src/components/features/ui/templates/TemplatesPage.js:67 - default
+src/components/features/ui/universe/UniverseParametersEditor.jsx:171 - default
+src/components/features/ui/Visualization/VisualParametersEditor.jsx:217 - default
+src/components/features/ui/audio/AudioControls/index.js:52 - default
+src/components/features/ui/audio/Music/AudioVisualizer.jsx:124 - default
+src/components/features/ui/audio/Music/MusicControlPanel.jsx:114 - default
+src/components/features/ui/audio/Music/MusicControls.jsx:78 - default
+src/components/features/ui/audio/Music/MusicInterface.jsx:43 - default
+src/components/features/ui/audio/Music/MusicParameters.jsx:139 - default
+src/components/features/ui/audio/Music/MusicWorkspace.jsx:100 - default
+src/components/features/ui/audio/Music/SequenceDisplay.jsx:53 - default
+src/components/features/ui/audio/Music/TransportControls.jsx:88 - default
+src/components/features/ui/audio/MusicControls/MusicControlPanel.jsx:179 - default
+src/components/features/ui/physics/PhysicsControls/ForceFieldEditor.jsx:163 - default
+src/components/features/ui/physics/PhysicsControls/ParticleSystem.jsx:179 - default
+src/components/features/ui/scene/SceneEditor/SceneEditor.tsx:80 - SceneEditor
+src/components/features/ui/storyboard/StoryboardEditor/StoryboardEditor.tsx:51 - StoryboardEditor
+src/components/features/ui/universe/UniverseDetails/UniverseNav.jsx:35 - default
+Checking backend imports...
+Running pylint import checks...
+************* Module backend.src.core.websocket.events
+src/core/websocket/events.py:4:0: E0401: Unable to import 'backend.src.core.models' (import-error)
+src/core/websocket/events.py:6:0: C0411: standard import "datetime.datetime" should be placed before third party imports "flask_socketio.emit", "flask_jwt_extended.jwt_required" and local imports ".socketio", "models.User", ".db" (wrong-import-order)
+************* Module backend.src.core.websocket
+src/core/websocket/__init__.py:1:0: E0401: Unable to import 'backend.src.core.extensions' (import-error)
+************* Module backend.src.core.websocket.universe_handler
+src/core/websocket/universe_handler.py:4:0: E0401: Unable to import 'backend.src.core.models' (import-error)
+src/core/websocket/universe_handler.py:5:0: E0401: Unable to import 'backend.src.core.extensions' (import-error)
+src/core/websocket/universe_handler.py:6:0: C0411: standard import "typing.Dict" should be placed before third party imports "flask_socketio.emit", "flask_login.current_user" and local imports "models.Universe", "extensions.socketio" (wrong-import-order)
+************* Module backend.src.core.websocket.websocket
+src/core/websocket/websocket.py:5:0: E0401: Unable to import 'backend.src.core.websocket.models.user' (import-error)
+src/core/websocket/websocket.py:6:0: E0401: Unable to import 'backend.src.core.websocket.models.universe' (import-error)
+src/core/websocket/websocket.py:11:0: E0401: Unable to import 'backend.src.core.websocket.auth' (import-error)
+src/core/websocket/websocket.py:3:0: C0411: standard import "functools.wraps" should be placed before third party imports "flask_socketio.SocketIO", "flask.request" (wrong-import-order)
+src/core/websocket/websocket.py:7:0: C0411: standard import "datetime.datetime" should be placed before third party imports "flask_socketio.SocketIO", "flask.request" and local imports ".db", "models.user.User", "models.universe.Universe" (wrong-import-order)
+src/core/websocket/websocket.py:8:0: C0411: third party import "flask_jwt_extended.decode_token" should be placed before local imports ".db", "models.user.User", "models.universe.Universe" (wrong-import-order)
+src/core/websocket/websocket.py:9:0: C0411: standard import "json" should be placed before third party imports "flask_socketio.SocketIO", "flask.request", "flask_jwt_extended.decode_token" and local imports ".db", "models.user.User", "models.universe.Universe" (wrong-import-order)
+src/core/websocket/websocket.py:10:0: C0411: standard import "urllib.parse.parse_qs" should be placed before third party imports "flask_socketio.SocketIO", "flask.request", "flask_jwt_extended.decode_token" and local imports ".db", "models.user.User", "models.universe.Universe" (wrong-import-order)
+src/core/websocket/websocket.py:12:0: C0411: standard import "traceback" should be placed before third party imports "flask_socketio.SocketIO", "flask.request", "flask_jwt_extended.decode_token" and local imports ".db", "models.user.User", "models.universe.Universe", "auth.verify_token" (wrong-import-order)
+src/core/websocket/websocket.py:13:0: C0411: standard import "threading" should be placed before third party imports "flask_socketio.SocketIO", "flask.request", "flask_jwt_extended.decode_token" and local imports ".db", "models.user.User", "models.universe.Universe", "auth.verify_token" (wrong-import-order)
+src/core/websocket/websocket.py:14:0: C0411: standard import "time" should be placed before third party imports "flask_socketio.SocketIO", "flask.request", "flask_jwt_extended.decode_token" and local imports ".db", "models.user.User", "models.universe.Universe", "auth.verify_token" (wrong-import-order)
+src/core/websocket/websocket.py:15:0: C0411: standard import "logging" should be placed before third party imports "flask_socketio.SocketIO", "flask.request", "flask_jwt_extended.decode_token" and local imports ".db", "models.user.User", "models.universe.Universe", "auth.verify_token" (wrong-import-order)
+src/core/websocket/websocket.py:1:0: W0611: Unused SocketIO imported from flask_socketio (unused-import)
+src/core/websocket/websocket.py:1:0: W0611: Unused disconnect imported from flask_socketio (unused-import)
+src/core/websocket/websocket.py:2:0: W0611: Unused current_app imported from flask (unused-import)
+src/core/websocket/websocket.py:4:0: W0611: Unused import db (unused-import)
+src/core/websocket/websocket.py:6:0: W0611: Unused Universe imported from models.universe (unused-import)
+src/core/websocket/websocket.py:9:0: W0611: Unused import json (unused-import)
+src/core/websocket/websocket.py:10:0: W0611: Unused parse_qs imported from urllib.parse (unused-import)
+src/core/websocket/websocket.py:10:0: W0611: Unused parse_qsl imported from urllib.parse (unused-import)
+************* Module backend.src.core.auth.auth
+src/core/auth/auth.py:4:0: E0401: Unable to import 'backend.src.core.auth.models' (import-error)
+************* Module backend.src.core.physics.simulation_manager
+src/core/physics/simulation_manager.py:4:0: E0401: Unable to import 'src.extensions' (import-error)
+src/core/physics/simulation_manager.py:5:0: C0411: standard import "math" should be placed before first party imports "src.models.PhysicsObject", "src.extensions.db"  (wrong-import-order)
+src/core/physics/simulation_manager.py:2:0: W0611: Unused Any imported from typing (unused-import)
+src/core/physics/simulation_manager.py:3:0: W0611: Unused PhysicsConstraint imported from src.models (unused-import)
+************* Module backend.src.config.config
+src/config/config.py:3:0: W0611: Unused import secrets (unused-import)
+************* Module backend.src.config.extensions
+src/config/extensions.py:84:8: E0401: Unable to import 'app' (import-error)
+src/config/extensions.py:10:0: W0611: Unused QueuePool imported from sqlalchemy.pool (unused-import)
+************* Module backend.src.utils.auth
+src/utils/auth.py:62:16: E0401: Unable to import 'src.models.universe' (import-error)
+************* Module backend.src.utils.db
+src/utils/db.py:8:0: E0401: Unable to import 'src.extensions' (import-error)
+************* Module backend.src.utils.cli
+src/utils/cli.py:4:0: E0401: Unable to import 'backend.src.utils.models' (import-error)
+src/utils/cli.py:5:0: C0411: standard import "os" should be placed before third party imports "click", "flask.cli.with_appcontext" and local import "models.User" (wrong-import-order)
+************* Module backend.src.utils.rate_limit
+src/utils/rate_limit.py:2:0: C0411: standard import "functools.wraps" should be placed before third party import "flask.request" (wrong-import-order)
+src/utils/rate_limit.py:3:0: C0411: standard import "time" should be placed before third party import "flask.request" (wrong-import-order)
+src/utils/rate_limit.py:3:0: W0611: Unused import time (unused-import)
+************* Module backend.src.utils.permissions
+src/utils/permissions.py:4:0: E0401: Unable to import 'backend.src.models.user' (import-error)
+src/utils/permissions.py:5:0: E0401: Unable to import 'backend.src.models.universe' (import-error)
+src/utils/permissions.py:2:0: W0611: Unused current_app imported from flask (unused-import)
+************* Module backend.src.utils.validation
+src/utils/validation.py:3:0: W0611: Unused Union imported from typing (unused-import)
+************* Module backend.src.models
+src/models/__init__.py:2:0: E0401: Unable to import 'backend.src.models.base' (import-error)
+************* Module backend.src.api.models.user
+src/api/models/user.py:5:0: E0401: Unable to import 'backend.src.api.extensions' (import-error)
+src/api/models/user.py:7:0: C0411: standard import "datetime.datetime" should be placed before third party imports "sqlalchemy.Column", "sqlalchemy.orm.relationship", "werkzeug.security.generate_password_hash" and local imports "extensions.db", "base_models.BaseModel" (wrong-import-order)
+************* Module backend.src.api.models.association_tables
+src/api/models/association_tables.py:2:0: W0611: Unused Column imported from sqlalchemy (unused-import)
+src/api/models/association_tables.py:2:0: W0611: Unused Integer imported from sqlalchemy (unused-import)
+src/api/models/association_tables.py:2:0: W0611: Unused ForeignKey imported from sqlalchemy (unused-import)
+src/api/models/association_tables.py:3:0: W0611: Unused relationship imported from sqlalchemy.orm (unused-import)
+src/api/models/association_tables.py:4:0: W0611: Unused import db (unused-import)
+src/api/models/association_tables.py:5:0: W0611: Unused BaseModel imported from base_models (unused-import)
+************* Module backend.src.api.models.base_models
+src/api/models/base_models.py:9:0: E0401: Unable to import 'backend.src.api.extensions' (import-error)
+************* Module backend.src.api.models.universe_access
+src/api/models/universe_access.py:6:0: E0401: Unable to import 'backend.src.api.extensions' (import-error)
+src/api/models/universe_access.py:4:0: C0411: standard import "datetime.datetime" should be placed before third party imports "sqlalchemy.Column", "sqlalchemy.orm.relationship" (wrong-import-order)
+src/api/models/universe_access.py:3:0: W0611: Unused relationship imported from sqlalchemy.orm (unused-import)
+src/api/models/universe_access.py:6:0: W0611: Unused db imported from extensions (unused-import)
+************* Module backend.src.api.models.profile
+src/api/models/profile.py:4:0: C0411: standard import "datetime.datetime" should be placed before third party imports "sqlalchemy.Column", "sqlalchemy.orm.relationship" (wrong-import-order)
+src/api/models/profile.py:2:0: W0611: Unused String imported from sqlalchemy (unused-import)
+src/api/models/profile.py:4:0: W0611: Unused datetime imported from datetime (unused-import)
+src/api/models/profile.py:4:0: W0611: Unused timezone imported from datetime (unused-import)
+src/api/models/profile.py:5:0: W0611: Unused import db (unused-import)
+************* Module backend.src.api.models.scene
+src/api/models/scene.py:7:0: C0411: standard import "typing.List" should be placed before third party imports "sqlalchemy.Column", "sqlalchemy.orm.relationship" (wrong-import-order)
+src/api/models/scene.py:2:0: W0611: Unused Column imported from sqlalchemy (unused-import)
+src/api/models/scene.py:8:0: W0611: Unused import db (unused-import)
+************* Module backend.src.api.models.universe
+src/api/models/universe.py:7:0: C0411: standard import "typing.Optional" should be placed before third party imports "sqlalchemy.Column", "sqlalchemy.orm.relationship", "sqlalchemy.ext.mutable.MutableDict" and local imports ".db", "base_models.BaseModel" (wrong-import-order)
+src/api/models/universe.py:5:0: W0611: Unused import db (unused-import)
+************* Module backend.src.api.models.physics_constraint
+src/api/models/physics_constraint.py:4:0: C0411: standard import "typing.Dict" should be placed before third party imports "sqlalchemy.Column", "sqlalchemy.orm.relationship" (wrong-import-order)
+src/api/models/physics_constraint.py:5:0: C0411: standard import "datetime.datetime" should be placed before third party imports "sqlalchemy.Column", "sqlalchemy.orm.relationship" (wrong-import-order)
+src/api/models/physics_constraint.py:2:0: W0611: Unused Column imported from sqlalchemy (unused-import)
+src/api/models/physics_constraint.py:5:0: W0611: Unused datetime imported from datetime (unused-import)
+src/api/models/physics_constraint.py:6:0: W0611: Unused import db (unused-import)
+************* Module backend.src.api.models.storyboard
+src/api/models/storyboard.py:4:0: C0411: standard import "typing.List" should be placed before third party imports "sqlalchemy.Column", "sqlalchemy.orm.relationship" (wrong-import-order)
+src/api/models/storyboard.py:2:0: W0611: Unused Column imported from sqlalchemy (unused-import)
+src/api/models/storyboard.py:2:0: W0611: Unused JSON imported from sqlalchemy (unused-import)
+src/api/models/storyboard.py:5:0: W0611: Unused import db (unused-import)
+************* Module backend.src.api.models.media_effects
+src/api/models/media_effects.py:4:0: C0411: standard import "typing.Optional" should be placed before third party imports "sqlalchemy.Integer", "sqlalchemy.orm.relationship" (wrong-import-order)
+************* Module backend.src.api.models.collaborator
+src/api/models/collaborator.py:6:0: E0401: Unable to import 'backend.src.api.extensions' (import-error)
+src/api/models/collaborator.py:7:0: C0411: standard import "typing.Dict" should be placed before third party imports "sqlalchemy.orm.relationship", "sqlalchemy.Column" and local imports "base_models.BaseModel", "extensions.db" (wrong-import-order)
+************* Module backend.src.api.models.physics_object
+src/api/models/physics_object.py:7:0: C0411: standard import "typing.Dict" should be placed before third party imports "sqlalchemy.Column", "sqlalchemy.orm.relationship" (wrong-import-order)
+src/api/models/physics_object.py:2:0: W0611: Unused Column imported from sqlalchemy (unused-import)
+src/api/models/physics_object.py:2:0: W0611: Unused Index imported from sqlalchemy (unused-import)
+************* Module backend.src.api.schemas.scene
+src/api/schemas/scene.py:6:0: E0401: Unable to import 'backend.src.api.extensions' (import-error)
+src/api/schemas/scene.py:25:0: C0413: Import "from ..models.scene import Scene" should be placed at the top of the module (wrong-import-position)
+src/api/schemas/scene.py:4:0: C0411: standard import "typing.Optional" should be placed before third party imports "marshmallow.Schema", "pydantic.BaseModel" (wrong-import-order)
+src/api/schemas/scene.py:2:0: W0611: Unused Schema imported from marshmallow (unused-import)
+src/api/schemas/scene.py:2:0: W0611: Unused validates imported from marshmallow (unused-import)
+src/api/schemas/scene.py:2:0: W0611: Unused ValidationError imported from marshmallow (unused-import)
+src/api/schemas/scene.py:4:0: W0611: Unused List imported from typing (unused-import)
+************* Module backend.src.api.schemas.physics
+src/api/schemas/physics.py:6:0: E0401: Unable to import 'backend.src.api.extensions' (import-error)
+src/api/schemas/physics.py:42:0: C0413: Import "from ..models.physics_object import PhysicsObject" should be placed at the top of the module (wrong-import-position)
+src/api/schemas/physics.py:43:0: C0413: Import "from ..models.physics_constraint import PhysicsConstraint" should be placed at the top of the module (wrong-import-position)
+src/api/schemas/physics.py:4:0: C0411: standard import "typing.Optional" should be placed before third party imports "marshmallow.Schema", "pydantic.BaseModel" (wrong-import-order)
+src/api/schemas/physics.py:2:0: W0611: Unused Schema imported from marshmallow (unused-import)
+src/api/schemas/physics.py:2:0: W0611: Unused validates imported from marshmallow (unused-import)
+src/api/schemas/physics.py:2:0: W0611: Unused ValidationError imported from marshmallow (unused-import)
+src/api/schemas/physics.py:4:0: W0611: Unused List imported from typing (unused-import)
+************* Module backend.src.api.schemas.universe
+src/api/schemas/universe.py:3:0: C0411: standard import "typing.Optional" should be placed before third party imports "marshmallow.Schema", "pydantic.BaseModel" (wrong-import-order)
+src/api/schemas/universe.py:4:0: C0411: standard import "collections.OrderedDict" should be placed before third party imports "marshmallow.Schema", "pydantic.BaseModel" (wrong-import-order)
+src/api/schemas/universe.py:5:0: C0411: standard import "re" should be placed before third party imports "marshmallow.Schema", "pydantic.BaseModel" (wrong-import-order)
+************* Module backend.src.api.schemas.storyboard
+src/api/schemas/storyboard.py:6:0: E0401: Unable to import 'backend.src.api.extensions' (import-error)
+src/api/schemas/storyboard.py:21:0: C0413: Import "from ..models.storyboard import Storyboard" should be placed at the top of the module (wrong-import-position)
+src/api/schemas/storyboard.py:4:0: C0411: standard import "typing.Optional" should be placed before third party imports "marshmallow.Schema", "pydantic.BaseModel" (wrong-import-order)
+src/api/schemas/storyboard.py:2:0: W0611: Unused Schema imported from marshmallow (unused-import)
+src/api/schemas/storyboard.py:2:0: W0611: Unused fields imported from marshmallow (unused-import)
+src/api/schemas/storyboard.py:2:0: W0611: Unused validates imported from marshmallow (unused-import)
+src/api/schemas/storyboard.py:2:0: W0611: Unused ValidationError imported from marshmallow (unused-import)
+src/api/schemas/storyboard.py:3:0: W0611: Unused Field imported from pydantic (unused-import)
+src/api/schemas/storyboard.py:4:0: W0611: Unused Dict imported from typing (unused-import)
+src/api/schemas/storyboard.py:4:0: W0611: Unused Any imported from typing (unused-import)
+src/api/schemas/storyboard.py:4:0: W0611: Unused List imported from typing (unused-import)
+************* Module backend.src.api.routes.auth
+src/api/routes/auth.py:6:0: C0411: standard import "datetime.datetime" should be placed before third party imports "flask.Blueprint", "flask_jwt_extended.create_access_token", "sqlalchemy.select" and local imports "models.User", ".db" (wrong-import-order)
+src/api/routes/auth.py:1:0: W0611: Unused jsonify imported from flask (unused-import)
+************* Module backend.src.api.routes.physics_routes
+src/api/routes/physics_routes.py:2:0: W0611: Unused jsonify imported from flask (unused-import)
+src/api/routes/physics_routes.py:3:0: W0611: Unused get_jwt_identity imported from flask_jwt_extended (unused-import)
+src/api/routes/physics_routes.py:4:0: W0611: Unused select imported from sqlalchemy (unused-import)
+src/api/routes/physics_routes.py:5:0: W0611: Unused User imported from models (unused-import)
+************* Module backend.src.api.routes.realtime
+src/api/routes/realtime.py:6:0: C0411: standard import "datetime.datetime" should be placed before third party imports "flask.Blueprint", "flask_login.login_required" and first party imports "src.models.db", "src.utils.auth.require_universe_access"  (wrong-import-order)
+src/api/routes/realtime.py:6:0: W0611: Unused datetime imported from datetime (unused-import)
+src/api/routes/realtime.py:6:0: W0611: Unused timezone imported from datetime (unused-import)
+src/api/routes/realtime.py:6:0: W0611: Unused timedelta imported from datetime (unused-import)
+************* Module backend.src.api.routes.profile
+src/api/routes/profile.py:1:0: W0611: Unused jsonify imported from flask (unused-import)
+************* Module backend.src.api.routes.physics
+src/api/routes/physics.py:5:0: E0401: Unable to import 'backend.src.api.utils.auth' (import-error)
+src/api/routes/physics.py:6:0: E0401: Unable to import 'backend.src.api.utils.validation' (import-error)
+src/api/routes/physics.py:11:0: C0411: standard import "datetime.datetime" should be placed before third party imports "flask.Blueprint", "flask_login.login_required" and local imports "models.db", "utils.auth.check_universe_access", "utils.validation.validate_physics_object" (wrong-import-order)
+src/api/routes/physics.py:6:0: W0611: Unused validate_simulation_settings imported from utils.validation (unused-import)
+************* Module backend.src.api.routes.universe
+src/api/routes/universe.py:8:0: E0401: Unable to import 'backend.src.api.auth' (import-error)
+src/api/routes/universe.py:12:0: E0401: Unable to import 'backend.src.api.utils.auth' (import-error)
+src/api/routes/universe.py:6:0: C0411: standard import "json" should be placed before third party imports "flask.Blueprint", "flask_jwt_extended.jwt_required" and local imports "models.universe.Universe", "models.user.User", ".db" (wrong-import-order)
+src/api/routes/universe.py:7:0: C0411: third party import "sqlalchemy.or_" should be placed before local imports "models.universe.Universe", "models.user.User", ".db" (wrong-import-order)
+src/api/routes/universe.py:10:0: C0411: third party import "flask_login.current_user" should be placed before local imports "models.universe.Universe", "models.user.User", ".db", "auth.get_current_user", "schemas.universe.UniverseCreate" (wrong-import-order)
+src/api/routes/universe.py:11:0: C0411: standard import "http.HTTPStatus" should be placed before third party imports "flask.Blueprint", "flask_jwt_extended.jwt_required", "sqlalchemy.or_", "flask_login.current_user" and local imports "models.universe.Universe", "models.user.User", ".db", "auth.get_current_user", "schemas.universe.UniverseCreate" (wrong-import-order)
+src/api/routes/universe.py:6:0: W0611: Unused import json (unused-import)
+src/api/routes/universe.py:7:0: W0611: Unused or_ imported from sqlalchemy (unused-import)
+src/api/routes/universe.py:8:0: W0611: Unused get_current_user imported from auth (unused-import)
+src/api/routes/universe.py:9:0: W0611: Unused UniverseCreate imported from schemas.universe (unused-import)
+src/api/routes/universe.py:9:0: W0611: Unused UniverseUpdate imported from schemas.universe (unused-import)
+src/api/routes/universe.py:10:0: W0611: Unused current_user imported from flask_login (unused-import)
+src/api/routes/universe.py:10:0: W0611: Unused login_required imported from flask_login (unused-import)
+************* Module backend.src.api.routes.collaboration
+src/api/routes/collaboration.py:4:0: E0401: Unable to import 'src.models.universe' (import-error)
+src/api/routes/collaboration.py:5:0: E0401: Unable to import 'src.models.activity' (import-error)
+src/api/routes/collaboration.py:6:0: E0401: Unable to import 'src.sockets' (import-error)
+src/api/routes/collaboration.py:9:0: E0401: Unable to import 'src.models.collaborator' (import-error)
+src/api/routes/collaboration.py:7:0: C0411: standard import "datetime.datetime" should be placed before third party imports "flask.Blueprint", "flask_login.current_user" and first party imports "src.models.universe.Universe", "src.models.activity.Activity", "src.sockets.socketio"  (wrong-import-order)
+src/api/routes/collaboration.py:8:0: C0411: third party import "flask_jwt_extended.jwt_required" should be placed before first party imports "src.models.universe.Universe", "src.models.activity.Activity", "src.sockets.socketio"  (wrong-import-order)
+************* Module backend.src.api.routes.storyboard
+src/api/routes/storyboard.py:7:0: C0411: third party import "sqlalchemy.exc.SQLAlchemyError" should be placed before first party imports "src.models.db", "src.utils.auth.require_universe_access", "src.utils.validation.validate_request_json"  (wrong-import-order)
+************* Module backend.src.api.routes.media_effect_routes
+src/api/routes/media_effect_routes.py:7:0: E0401: Unable to import 'backend.src.api.utils.validation' (import-error)
+************* Module backend.src.api.routes.scene_routes
+src/api/routes/scene_routes.py:5:0: E0401: Unable to import 'backend.src.api.utils.auth' (import-error)
+src/api/routes/scene_routes.py:6:0: E0401: Unable to import 'backend.src.api.utils.validation' (import-error)
+src/api/routes/scene_routes.py:7:0: C0411: third party import "flask_jwt_extended.jwt_required" should be placed before local imports "models.db", "utils.auth.check_universe_access", "utils.validation.validate_scene_data" (wrong-import-order)
+src/api/routes/scene_routes.py:7:0: W0611: Unused jwt_required imported from flask_jwt_extended (unused-import)
+src/api/routes/scene_routes.py:7:0: W0611: Unused get_jwt_identity imported from flask_jwt_extended (unused-import)
+************* Module backend.src.routes.media_effect_routes
+src/routes/media_effect_routes.py:4:0: E0401: Unable to import 'src.extensions' (import-error)
+src/routes/media_effect_routes.py:5:0: C0411: standard import "functools.wraps" should be placed before third party imports "flask.Blueprint", "flask_jwt_extended.jwt_required" and first party imports "src.models.VisualEffect", "src.extensions.jwt"  (wrong-import-order)
+src/routes/media_effect_routes.py:2:0: W0611: Unused jwt_required imported from flask_jwt_extended (unused-import)
+src/routes/media_effect_routes.py:3:0: W0611: Unused db imported from src.models (unused-import)
+src/routes/media_effect_routes.py:4:0: W0611: Unused jwt imported from src.extensions (unused-import)
+************* Module backend.src.services.auth_service
+src/services/auth_service.py:6:0: E0401: Unable to import 'src.extensions' (import-error)
+************* Module backend.src.services
+src/services/__init__.py:2:0: E0401: Unable to import 'backend.src.services.auth' (import-error)
+************* Module backend.src.services.preferences_service
+src/services/preferences_service.py:4:0: E0401: Unable to import 'src.extensions' (import-error)
+************* Module backend.src.services.music_engine
+src/services/music_engine.py:1:0: E0401: Unable to import 'numpy' (import-error)
+src/services/music_engine.py:2:0: C0411: standard import "typing.Dict" should be placed before third party import "numpy" (wrong-import-order)
+src/services/music_engine.py:3:0: C0411: standard import "dataclasses.dataclass" should be placed before third party import "numpy" (wrong-import-order)
+src/services/music_engine.py:4:0: C0411: standard import "threading" should be placed before third party import "numpy" (wrong-import-order)
+src/services/music_engine.py:5:0: C0411: standard import "time" should be placed before third party import "numpy" (wrong-import-order)
+src/services/music_engine.py:2:0: W0611: Unused Optional imported from typing (unused-import)
+src/services/music_engine.py:2:0: W0611: Unused Tuple imported from typing (unused-import)
+************* Module backend.src.services.universe_service
+src/services/universe_service.py:7:0: E0401: Unable to import 'src.extensions' (import-error)
+************* Module backend.src.services.crud.universe
+src/services/crud/universe.py:4:0: E0401: Unable to import 'src.services.crud.base' (import-error)
+src/services/crud/universe.py:5:0: C0411: third party import "sqlalchemy.or_" should be placed before first party imports "src.models.Universe", "src.services.crud.base.CRUDBase"  (wrong-import-order)
+
+-----------------------------------
+Your code has been rated at 9.08/10
+
+Checking for circular imports...
+[0;31mImport error in src/middleware/__init__.py: No module named 'middleware'[0m
+[0;31mImport error in src/core/__init__.py: No module named 'core'[0m
+[0;31mImport error in src/core/websocket/events.py: No module named 'core'[0m
+[0;31mImport error in src/core/websocket/__init__.py: No module named 'core'[0m
+[0;31mImport error in src/core/websocket/universe_handler.py: No module named 'core'[0m
+[0;31mImport error in src/core/websocket/websocket.py: No module named 'core'[0m
+[0;31mImport error in src/core/auth/auth.py: No module named 'core'[0m
+[0;31mImport error in src/core/auth/__init__.py: No module named 'core'[0m
+[0;31mImport error in src/core/audio/__init__.py: No module named 'core'[0m
+[0;31mImport error in src/core/physics/__init__.py: No module named 'core'[0m
+[0;31mImport error in src/core/physics/simulation_manager.py: No module named 'core'[0m
+[0;31mImport error in src/core/scene/__init__.py: No module named 'core'[0m
+[0;31mImport error in src/core/universe/__init__.py: No module named 'core'[0m
+[0;31mImport error in src/core/media/__init__.py: No module named 'core'[0m
+[0;31mImport error in src/config/config.py: No module named 'config'[0m
+[0;31mImport error in src/config/__init__.py: No module named 'config'[0m
+[0;31mImport error in src/config/extensions.py: No module named 'config'[0m
+[0;31mImport error in src/utils/auth.py: No module named 'utils'[0m
+[0;31mImport error in src/utils/db.py: No module named 'utils'[0m
+[0;31mImport error in src/utils/route_utils.py: No module named 'utils'[0m
+[0;31mImport error in src/utils/__init__.py: No module named 'utils'[0m
+[0;31mImport error in src/utils/cli.py: No module named 'utils'[0m
+[0;31mImport error in src/utils/rate_limit.py: No module named 'utils'[0m
+[0;31mImport error in src/utils/permissions.py: No module named 'utils'[0m
+[0;31mImport error in src/utils/error_handlers.py: No module named 'utils'[0m
+[0;31mImport error in src/utils/validation.py: No module named 'utils'[0m
+[0;31mImport error in src/utils/__pycache__/__init__.py: No module named 'utils'[0m
+[0;31mImport error in src/models/__init__.py: No module named 'models'[0m
+[0;31mImport error in src/api/__init__.py: No module named 'api'[0m
+[0;31mImport error in src/api/middleware/__init__.py: No module named 'api'[0m
+[0;31mImport error in src/api/models/physics_parameters.py: No module named 'api'[0m
+[0;31mImport error in src/api/models/user.py: No module named 'api'[0m
+[0;31mImport error in src/api/models/association_tables.py: No module named 'api'[0m
+[0;31mImport error in src/api/models/base_models.py: No module named 'api'[0m
+[0;31mImport error in src/api/models/universe_access.py: No module named 'api'[0m
+[0;31mImport error in src/api/models/profile.py: No module named 'api'[0m
+[0;31mImport error in src/api/models/activity.py: No module named 'api'[0m
+[0;31mImport error in src/api/models/__init__.py: No module named 'api'[0m
+[0;31mImport error in src/api/models/scene.py: No module named 'api'[0m
+[0;31mImport error in src/api/models/universe.py: No module named 'api'[0m
+[0;31mImport error in src/api/models/physics_constraint.py: No module named 'api'[0m
+[0;31mImport error in src/api/models/storyboard.py: No module named 'api'[0m
+[0;31mImport error in src/api/models/media_effects.py: No module named 'api'[0m
+[0;31mImport error in src/api/models/collaborator.py: No module named 'api'[0m
+[0;31mImport error in src/api/models/physics_object.py: No module named 'api'[0m
+[0;31mImport error in src/api/models/__pycache__/__init__.py: No module named 'api'[0m
+[0;31mImport error in src/api/schemas/__init__.py: No module named 'api'[0m
+[0;31mImport error in src/api/schemas/scene.py: No module named 'api'[0m
+[0;31mImport error in src/api/schemas/physics.py: No module named 'api'[0m
+[0;31mImport error in src/api/schemas/universe.py: No module named 'api'[0m
+[0;31mImport error in src/api/schemas/storyboard.py: No module named 'api'[0m
+[0;31mImport error in src/api/schemas/__pycache__/__init__.py: No module named 'api'[0m
+[0;31mImport error in src/api/controllers/__init__.py: No module named 'api'[0m
+[0;31mImport error in src/api/routes/auth.py: No module named 'api'[0m
+[0;31mImport error in src/api/routes/storyboard_routes.py: No module named 'api'[0m
+[0;31mImport error in src/api/routes/physics_routes.py: No module named 'api'[0m
+[0;31mImport error in src/api/routes/realtime.py: No module named 'api'[0m
+[0;31mImport error in src/api/routes/profile.py: No module named 'api'[0m
+[0;31mImport error in src/api/routes/__init__.py: No module named 'api'[0m
+[0;31mImport error in src/api/routes/physics.py: No module named 'api'[0m
+[0;31mImport error in src/api/routes/universe.py: No module named 'api'[0m
+[0;31mImport error in src/api/routes/collaboration.py: No module named 'api'[0m
+[0;31mImport error in src/api/routes/storyboard.py: No module named 'api'[0m
+[0;31mImport error in src/api/routes/media_effect_routes.py: No module named 'api'[0m
+[0;31mImport error in src/api/routes/scene_routes.py: No module named 'api'[0m
+[0;31mImport error in src/api/routes/__pycache__/__init__.py: No module named 'api'[0m
+[0;31mImport error in src/controllers/__init__.py: No module named 'controllers'[0m
+[0;31mImport error in src/routes/__init__.py: No module named 'routes'[0m
+[0;31mImport error in src/routes/media_effect_routes.py: No module named 'routes'[0m
+[0;31mImport error in src/services/auth_service.py: No module named 'services'[0m
+[0;31mImport error in src/services/__init__.py: No module named 'services'[0m
+[0;31mImport error in src/services/preferences_service.py: No module named 'services'[0m
+[0;31mImport error in src/services/music_engine.py: No module named 'services'[0m
+[0;31mImport error in src/services/websocket.py: No module named 'services'[0m
+[0;31mImport error in src/services/universe_service.py: No module named 'services'[0m
+[0;31mImport error in src/services/crud/__init__.py: No module named 'services'[0m
+[0;31mImport error in src/services/crud/universe.py: No module named 'services'[0m
+Verifying module boundaries...
+Checking frontend module boundaries...
+Checking Audio feature boundaries...
+Checking Auth feature boundaries...
+Checking Physics feature boundaries...
+Checking Scene feature boundaries...
+Checking Storyboard feature boundaries...
+[1;33mWarning: Direct import from outside feature in src/components/features/Storyboard/StoryboardEditor.tsx[0m
+[1;33mWarning: Direct import from outside feature in src/components/features/Storyboard/SceneManager.tsx[0m
+Checking Universe feature boundaries...
+[1;33mWarning: Direct import from outside feature in src/components/features/Universe/CollaboratorsList.tsx[0m
+Checking ui feature boundaries...
+[1;33mWarning: Direct import from outside feature in src/components/features/ui/storyboard/StoryboardEditor/StoryboardEditor.tsx[0m
+[1;33mWarning: Direct import from outside feature in src/components/features/ui/scene/SceneEditor/SceneEditor.tsx[0m
+Checking backend module boundaries...
+Import verification complete!
