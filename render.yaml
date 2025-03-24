@@ -9,5 +9,11 @@ services:
     healthCheckPath: /api/health
     autoDeploy: true
 
+databases:
+  - name: harmonic_universe_db
+    databaseName: harmonic_universe
+    user: harmonic_universe_user
+    plan: free
+
 envVarGroups:
   - name: harmonic-universe-env 

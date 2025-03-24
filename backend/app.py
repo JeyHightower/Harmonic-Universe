@@ -17,15 +17,17 @@ app = Flask(__name__, static_folder="static")
 # Configure CORS
 CORS(app)
 
-# Configure app
-app.config.from_mapping(
-    SQLALCHEMY_TRACK_MODIFICATIONS=False
-)
-
 # Load environment variables
 if os.path.exists('.env'):
     from dotenv import load_dotenv
     load_dotenv()
+
+# Configure app and database
+app.config.from_mapping(
+    SECRET_KEY=os.environ.get('SECRET_KEY', 'dev'),
+    SQLALCHEMY_DATABASE_URI=os.environ.get('DATABASE_URL'),
+    SQLALCHEMY_TRACK_MODIFICATIONS=False
+)
 
 # Initialize extensions
 db.init_app(app)
@@ -47,7 +49,8 @@ app.register_blueprint(notes_bp)
 def health_check():
     return jsonify({
         "status": "healthy",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "database": "connected" if db.engine.pool.status() == 'ready' else "disconnected"
     }), 200
 
 # Error handlers
