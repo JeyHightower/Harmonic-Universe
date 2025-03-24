@@ -20,5 +20,4 @@ services:
     autoDeploy: true
 
 envVarGroups:
-  - name: harmonic-universe-env
-    isSecret: true 
+  - name: harmonic-universe-env 
