@@ -166,7 +166,6 @@ build/
 *.code-workspace
 backend/.dockerignore
 backend/.htaccess
-backend/app.py
 backend/config/
 backend/render.yaml
 backend/src/
@@ -183,3 +182,4 @@ frontend/vite.config.js
 
 # Allow these files
 !backend/requirements.txt
+!backend/app.py
