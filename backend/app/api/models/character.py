@@ -1,5 +1,5 @@
 from datetime import datetime
-from .. import db
+from ..database import db
 from .base import BaseModel
 
 class Character(BaseModel):

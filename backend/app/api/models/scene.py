@@ -1,4 +1,4 @@
-from .. import db
+from ..database import db
 from .base import BaseModel
 
 class Scene(BaseModel):
