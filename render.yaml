@@ -7,7 +7,7 @@ services:
       pip install -r requirements.txt && \
       export FLASK_APP=app.py && \
       export PYTHONPATH=$PYTHONPATH:$(pwd) && \
-      python -c "import os, sys; sys.path.insert(0, os.getcwd()); import app; app.db.create_all(); print('Database setup complete')" && \
+      python -c "import os, sys; sys.path.insert(0, os.getcwd()); import app; with app.app.app_context(): app.db.create_all(); print('Database setup complete')" && \
       cd ../frontend && \
       npm install && \
       npm run build
