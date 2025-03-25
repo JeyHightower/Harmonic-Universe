@@ -15,7 +15,9 @@ def create_app():
     
     if not database_url:
         # Default to SQLite for local development if no DATABASE_URL is provided
-        database_url = 'sqlite:///instance/app.db'
+        # Use absolute path for SQLite database
+        db_path = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'instance', 'app.db'))
+        database_url = f'sqlite:///{db_path}'
         print(f"Using local SQLite database at: {database_url}")
     elif database_url.startswith('postgres://'):
         # Handle Render.com PostgreSQL URL format
