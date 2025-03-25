@@ -22,11 +22,22 @@ if os.path.exists('.env'):
     from dotenv import load_dotenv
     load_dotenv()
 
+# Handle Render.com PostgreSQL URL format
+database_url = os.environ.get('DATABASE_URL')
+if database_url and database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+
 # Configure app and database
 app.config.from_mapping(
     SECRET_KEY=os.environ.get('SECRET_KEY', 'dev'),
-    SQLALCHEMY_DATABASE_URI=os.environ.get('DATABASE_URL'),
-    SQLALCHEMY_TRACK_MODIFICATIONS=False
+    SQLALCHEMY_DATABASE_URI=database_url or 'postgresql://postgres@localhost/harmonic_universe_dev',
+    SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    SQLALCHEMY_ENGINE_OPTIONS={
+        'pool_size': 5,
+        'max_overflow': 2,
+        'pool_timeout': 30,
+        'pool_recycle': 1800,
+    }
 )
 
 # Initialize extensions
@@ -47,10 +58,16 @@ app.register_blueprint(notes_bp)
 # Health check route
 @app.route('/api/health')
 def health_check():
+    try:
+        db.session.execute('SELECT 1')
+        db_status = "connected"
+    except Exception as e:
+        db_status = f"disconnected: {str(e)}"
+    
     return jsonify({
         "status": "healthy",
         "version": "1.0.0",
-        "database": "connected" if db.engine.pool.status() == 'ready' else "disconnected"
+        "database": db_status
     }), 200
 
 # Error handlers
