@@ -7,7 +7,7 @@ services:
       pip install -r requirements.txt && \
       export FLASK_APP=app.py && \
       export PYTHONPATH=$PYTHONPATH:$(pwd) && \
-      python -c "import os; from app import app, db; app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL'); db.init_app(app); app.app_context().push(); db.create_all(); print('Database setup complete')" && \
+      python -c "import os, sys; sys.path.insert(0, os.getcwd()); import app; app.db.create_all(); print('Database setup complete')" && \
       cd ../frontend && \
       npm install && \
       npm run build
