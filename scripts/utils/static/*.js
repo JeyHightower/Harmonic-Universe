@@ -1,1 +1,0 @@
-./static/react-fixes/*.js
