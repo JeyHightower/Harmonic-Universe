@@ -28,6 +28,10 @@ def create_app():
         database_url = f"sqlite:///{os.path.join(instance_dir, 'app.db')}"
         print(f"Using local SQLite database at: {database_url}")
     
+    # Get port from environment or use default
+    port = int(os.environ.get('PORT', 5000))
+    host = os.environ.get('HOST', '0.0.0.0')
+    
     # Default configuration
     app.config.update(
         SECRET_KEY=os.environ.get('SECRET_KEY', 'dev'),
@@ -36,7 +40,9 @@ def create_app():
         UPLOAD_FOLDER=os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads'),
         MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16MB max file size
         RATELIMIT_STORAGE_URL=os.environ.get('REDIS_URL', 'redis://localhost:6379/0'),
-        RATELIMIT_STRATEGY="fixed-window"
+        RATELIMIT_STRATEGY="fixed-window",
+        PORT=port,
+        HOST=host
     )
     
     # Initialize extensions
