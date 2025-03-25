@@ -15,18 +15,16 @@ services:
         echo "Waiting for database to be ready..." && \
         sleep 10 && \
         # Initialize DB with create_all() instead of migrations
-        python -c "
-        from app import app, db
-        with app.app_context():
-            db.create_all()
-            print('Database tables created successfully')
-        "
+        python -c "from app import app, db; app.app_context().push(); db.create_all(); print('Database tables created successfully')" && \
+        cd ../frontend && \
+        npm install && \
+        npm run build
       else \
-        echo "DATABASE_URL not set, skipping db setup"
-      fi && \
-      cd ../frontend && \
-      npm install && \
-      npm run build
+        echo "DATABASE_URL not set, skipping db setup" && \
+        cd ../frontend && \
+        npm install && \
+        npm run build
+      fi
     startCommand: cd backend && gunicorn --workers=2 app:app
     envVars:
       - key: FLASK_APP
