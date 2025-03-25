@@ -1,32 +1,34 @@
-from app import db
-from datetime import datetime
+from .. import db
+from .base import BaseModel
 
-class Note(db.Model):
+class Note(BaseModel):
     __tablename__ = 'notes'
-
+    
     id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.Text, nullable=False)
-    character_id = db.Column(db.Integer, db.ForeignKey('characters.id'), nullable=True)
-    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id'), nullable=True)
-    scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id'), nullable=True)
+    title = db.Column(db.String(100), nullable=False)
+    content = db.Column(db.Text)
+    
+    # Foreign keys
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
+    character_id = db.Column(db.Integer, db.ForeignKey('characters.id'))
+    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id'))
+    scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id'))
+    
     # Relationships
-    user = db.relationship('User', back_populates='notes')
-    character = db.relationship('Character', back_populates='notes')
-    universe = db.relationship('Universe', back_populates='notes')
-    scene = db.relationship('Scene', back_populates='notes')
-
+    user = db.relationship('User', backref=db.backref('notes', lazy=True))
+    character = db.relationship('Character', backref=db.backref('notes', lazy=True))
+    universe = db.relationship('Universe', backref=db.backref('notes', lazy=True))
+    scene = db.relationship('Scene', backref=db.backref('notes', lazy=True))
+    
     def to_dict(self):
-        return {
+        base_dict = super().to_dict()
+        base_dict.update({
             'id': self.id,
+            'title': self.title,
             'content': self.content,
+            'user_id': self.user_id,
             'character_id': self.character_id,
             'universe_id': self.universe_id,
-            'scene_id': self.scene_id,
-            'user_id': self.user_id,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
-        } 
+            'scene_id': self.scene_id
+        })
+        return base_dict 

@@ -1,29 +1,34 @@
-from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
-from . import db
+from .. import db
+from .base import BaseModel
 
-class User(UserMixin, db.Model):
+class User(UserMixin, BaseModel):
     __tablename__ = 'users'
-
+    
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
+    password_hash = db.Column(db.String(128))
+    
     # Relationships
-    notes = db.relationship('Note', back_populates='user', lazy=True)
-    universes = db.relationship('Universe', back_populates='creator', lazy=True)
+    notes = db.relationship('Note', backref='author', lazy=True)
+    universes = db.relationship('Universe', backref='creator', lazy=True)
     music_pieces = db.relationship('MusicPiece', back_populates='creator', lazy=True)
     harmonies = db.relationship('Harmony', back_populates='creator', lazy=True)
     audio_samples = db.relationship('AudioSample', back_populates='uploader', lazy=True)
 
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+        
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+    
     def to_dict(self):
-        return {
+        base_dict = super().to_dict()
+        base_dict.update({
             'id': self.id,
             'username': self.username,
-            'email': self.email,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
-        } 
+            'email': self.email
+        })
+        return base_dict 
