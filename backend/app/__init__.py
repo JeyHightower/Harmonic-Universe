@@ -4,7 +4,6 @@ from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_limiter.storage import RedisStorage
 import os
 from .api.database import db
 
@@ -35,7 +34,9 @@ def create_app():
         SQLALCHEMY_DATABASE_URI=database_url,
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         UPLOAD_FOLDER=os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads'),
-        MAX_CONTENT_LENGTH=16 * 1024 * 1024  # 16MB max file size
+        MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16MB max file size
+        RATELIMIT_STORAGE_URL=os.environ.get('REDIS_URL', 'redis://localhost:6379/0'),
+        RATELIMIT_STRATEGY="fixed-window"
     )
     
     # Initialize extensions
@@ -46,14 +47,12 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     
-    # Initialize rate limiter with Redis
-    redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+    # Initialize rate limiter
     limiter = Limiter(
         app=app,
         key_func=get_remote_address,
-        storage_uri=redis_url,
-        storage_options={"socket_connect_timeout": 30},
-        strategy="fixed-window"
+        storage_uri=app.config['RATELIMIT_STORAGE_URL'],
+        strategy=app.config['RATELIMIT_STRATEGY']
     )
     
     # Register blueprints

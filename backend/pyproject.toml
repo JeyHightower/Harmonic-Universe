@@ -29,8 +29,8 @@ PyJWT = "2.8.0"
 passlib = "1.7.4"
 cryptography = "41.0.7"
 Flask-Talisman = "1.1.0"
-Flask-Limiter = "3.5.0"
-limits = "3.7.0"
+Flask-Limiter = {version = "3.5.0", extras = ["redis"]}
+limits = {version = "3.7.0", extras = ["redis"]}
 python-magic = "0.4.27"
 python-dateutil = "2.8.2"
 email-validator = "2.1.0"

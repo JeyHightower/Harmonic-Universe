@@ -46,6 +46,9 @@ echo "Running database migrations..."
 echo "Waiting for database to be ready..."
 sleep 5
 
+# Activate the virtual environment
+source .venv/bin/activate
+
 # Run migrations with error handling
 if poetry run flask db upgrade; then
     echo "Database migrations completed successfully"
