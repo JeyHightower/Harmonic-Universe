@@ -13,7 +13,11 @@ class User(UserMixin, db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    notes = db.relationship('Note', backref='user', lazy=True)
+    notes = db.relationship('Note', back_populates='user', lazy=True)
+    universes = db.relationship('Universe', back_populates='creator', lazy=True)
+    music_pieces = db.relationship('MusicPiece', back_populates='creator', lazy=True)
+    harmonies = db.relationship('Harmony', back_populates='creator', lazy=True)
+    audio_samples = db.relationship('AudioSample', back_populates='uploader', lazy=True)
 
     def to_dict(self):
         return {

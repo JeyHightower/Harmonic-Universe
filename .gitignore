@@ -89,6 +89,10 @@ Thumbs.db
 *.sqlite3
 *.db
 backend/instance/
+instance/
+*.pem
+*.key
+config/secrets.yml
 
 # Media & Assets
 /public/uploads/

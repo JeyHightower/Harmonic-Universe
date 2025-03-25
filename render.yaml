@@ -7,7 +7,20 @@ services:
       pip install -r requirements.txt && \
       export FLASK_APP=app.py && \
       export PYTHONPATH=$PYTHONPATH:$(pwd) && \
-      python -c "import os, sys; sys.path.insert(0, os.getcwd()); import app; app.db.create_all(); print('Database setup complete')" && \
+      # Wait for the database to be ready
+      echo "Waiting for database to be ready..." && \
+      sleep 5 && \
+      # Fix Postgres URL format if needed
+      python -c "
+      import os
+      db_url = os.environ.get('DATABASE_URL', '')
+      if db_url.startswith('postgres://'):
+          os.environ['DATABASE_URL'] = db_url.replace('postgres://', 'postgresql://')
+          print('Fixed DATABASE_URL format')
+      " && \
+      # Run migrations instead of create_all
+      flask db upgrade && \
+      echo "Database migrations completed successfully" && \
       cd ../frontend && \
       npm install && \
       npm run build

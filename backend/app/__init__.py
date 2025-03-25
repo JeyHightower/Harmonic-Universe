@@ -82,10 +82,12 @@ def create_app(test_config=None):
     from .api.routes.characters import characters_bp
     from .api.routes.notes import notes_bp
     from .api.routes.auth import auth_bp
+    from .api.routes.physics import physics_bp
     
     app.register_blueprint(characters_bp)
     app.register_blueprint(notes_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(physics_bp)
 
     # Add rate limiting to auth routes
     from .api.routes.auth import auth_bp
