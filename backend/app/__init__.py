@@ -13,17 +13,13 @@ def create_app():
     # Get database URL from environment
     database_url = os.environ.get('DATABASE_URL')
     
-    # Handle Render.com PostgreSQL URL format
-    if database_url:
-        if database_url.startswith('postgres://'):
-            database_url = database_url.replace('postgres://', 'postgresql://', 1)
-        elif database_url == '<your-postgres-database-url>':
-            print("Error: DATABASE_URL is not properly configured. Please set a valid database URL in your environment variables.")
-            raise ValueError("Invalid DATABASE_URL configuration")
-    else:
-        # For local development, use PostgreSQL
-        database_url = "postgresql://postgres:postgres@localhost:5432/harmonic_universe"
-        print(f"Using local PostgreSQL database at: {database_url}")
+    if not database_url:
+        # Default to SQLite for local development if no DATABASE_URL is provided
+        database_url = 'sqlite:///instance/app.db'
+        print(f"Using local SQLite database at: {database_url}")
+    elif database_url.startswith('postgres://'):
+        # Handle Render.com PostgreSQL URL format
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
     
     # Get port from environment or use default
     port = int(os.environ.get('PORT', 5000))
