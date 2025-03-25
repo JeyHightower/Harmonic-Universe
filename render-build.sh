@@ -14,7 +14,9 @@ cd backend
 
 # Install production dependencies only (using new syntax)
 echo "Installing dependencies with Poetry..."
-poetry install --only main
+poetry config virtualenvs.create true
+poetry config virtualenvs.in-project true
+poetry install --only main --no-root
 
 # Run database migrations
 echo "Running database migrations..."

@@ -3,6 +3,9 @@ name = "harmonic-universe"
 version = "0.1.0"
 description = "A web application for music and physics exploration"
 authors = ["James Hightower"]
+packages = [
+    { include = "app" },
+]
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.13"

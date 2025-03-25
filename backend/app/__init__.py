@@ -20,15 +20,14 @@ talisman = Talisman()
 redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
 try:
     redis_client = redis.from_url(redis_url)
-    redis_storage = RedisStorage(redis_client)
+    # Create Redis storage with URL string instead of client
     limiter = Limiter(
         key_func=get_remote_address,
         storage_uri=redis_url,
-        storage=redis_storage,
         strategy="fixed-window"
     )
-except redis.ConnectionError:
-    print("Warning: Redis connection failed. Falling back to in-memory storage for rate limiting.")
+except (redis.ConnectionError, Exception) as e:
+    print(f"Warning: Redis initialization failed ({str(e)}). Falling back to in-memory storage for rate limiting.")
     limiter = Limiter(key_func=get_remote_address)
 
 def create_app(test_config=None):
