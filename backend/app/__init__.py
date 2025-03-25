@@ -33,14 +33,23 @@ except (redis.ConnectionError, Exception) as e:
 def create_app(test_config=None):
     app = Flask(__name__, static_folder="static")
     
-    # Get the absolute path for the database
-    basedir = os.path.abspath(os.path.dirname(__file__))
-    db_path = os.path.join(os.path.dirname(basedir), 'instance', 'app.db')
+    # Get database URL from environment
+    database_url = os.environ.get('DATABASE_URL')
+    
+    # Handle Render.com PostgreSQL URL format
+    if database_url and database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    elif not database_url:
+        # For local development, create instance directory if it doesn't exist
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        instance_dir = os.path.join(os.path.dirname(basedir), 'instance')
+        os.makedirs(instance_dir, exist_ok=True)
+        database_url = f"sqlite:///{os.path.join(instance_dir, 'app.db')}"
     
     # Default configuration
     app.config.from_mapping(
         SECRET_KEY=os.environ.get("SECRET_KEY"),
-        SQLALCHEMY_DATABASE_URI=f"sqlite:///{db_path}",
+        SQLALCHEMY_DATABASE_URI=database_url,
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE", "True").lower() == "true",
         SESSION_COOKIE_HTTPONLY=True,

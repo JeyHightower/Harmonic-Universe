@@ -17,6 +17,12 @@ logger = logging.getLogger('alembic.env')
 database_url = os.environ.get('DATABASE_URL')
 if database_url and database_url.startswith('postgres://'):
     database_url = database_url.replace('postgres://', 'postgresql://', 1)
+elif not database_url:
+    # For local development, create instance directory if it doesn't exist
+    basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+    instance_dir = os.path.join(os.path.dirname(basedir), 'instance')
+    os.makedirs(instance_dir, exist_ok=True)
+    database_url = f"sqlite:///{os.path.join(instance_dir, 'app.db')}"
 
 def get_metadata():
     return current_app.extensions['migrate'].db.metadata
