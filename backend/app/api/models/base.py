@@ -4,8 +4,8 @@ from ..database import db
 class BaseModel(db.Model):
     __abstract__ = True
     
-    created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
-    updated_at = db.Column(db.TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.TIMESTAMP(timezone=True), default=datetime.utcnow, index=True)
+    updated_at = db.Column(db.TIMESTAMP(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, index=True)
     
     def to_dict(self):
         return {
