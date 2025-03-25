@@ -5,7 +5,7 @@ description = "A web application for music and physics exploration"
 authors = ["James Hightower"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.9,<3.13"
 Flask = "2.3.3"
 Flask-SQLAlchemy = "3.1.1"
 SQLAlchemy = "2.0.23"

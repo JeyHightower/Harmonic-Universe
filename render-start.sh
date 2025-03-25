@@ -3,6 +3,9 @@
 # Exit on error
 set -e
 
+# Set Python version explicitly
+export PYTHON_VERSION=3.11.0
+
 # Navigate to backend directory
 cd backend
 
