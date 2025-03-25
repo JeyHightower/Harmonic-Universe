@@ -37,14 +37,19 @@ def create_app(test_config=None):
     database_url = os.environ.get('DATABASE_URL')
     
     # Handle Render.com PostgreSQL URL format
-    if database_url and database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
-    elif not database_url:
+    if database_url:
+        if database_url.startswith('postgres://'):
+            database_url = database_url.replace('postgres://', 'postgresql://', 1)
+        elif database_url == '<your-postgres-database-url>':
+            print("Error: DATABASE_URL is not properly configured. Please set a valid database URL in your environment variables.")
+            raise ValueError("Invalid DATABASE_URL configuration")
+    else:
         # For local development, create instance directory if it doesn't exist
         basedir = os.path.abspath(os.path.dirname(__file__))
         instance_dir = os.path.join(os.path.dirname(basedir), 'instance')
         os.makedirs(instance_dir, exist_ok=True)
         database_url = f"sqlite:///{os.path.join(instance_dir, 'app.db')}"
+        print(f"Using local SQLite database at: {database_url}")
     
     # Default configuration
     app.config.from_mapping(
