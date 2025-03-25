@@ -1,7 +1,8 @@
-from app import db
 from datetime import datetime
+from ..database import db
+from .base import BaseModel
 
-class Harmony(db.Model):
+class Harmony(BaseModel):
     __tablename__ = 'harmonies'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -11,22 +12,20 @@ class Harmony(db.Model):
     key = db.Column(db.String(20))  # Musical key (e.g., C Major, A Minor)
     creator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     music_piece_id = db.Column(db.Integer, db.ForeignKey('music_pieces.id'), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    creator = db.relationship('User', back_populates='harmonies')
-    music_piece = db.relationship('MusicPiece', back_populates='harmonies')
+    creator = db.relationship('User', backref=db.backref('harmonies', lazy=True))
+    music_piece = db.relationship('MusicPiece', backref=db.backref('harmonies', lazy=True))
     
     def to_dict(self):
-        return {
+        base_dict = super().to_dict()
+        base_dict.update({
             'id': self.id,
             'name': self.name,
             'description': self.description,
             'progression': self.progression,
             'key': self.key,
             'creator_id': self.creator_id,
-            'music_piece_id': self.music_piece_id,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
-        } 
+            'music_piece_id': self.music_piece_id
+        })
+        return base_dict 

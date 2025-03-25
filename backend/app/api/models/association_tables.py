@@ -1,4 +1,4 @@
-from app import db
+from ..database import db
 
 # Association table for Character-Scene relationship
 character_scenes = db.Table('character_scenes',

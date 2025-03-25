@@ -1,7 +1,8 @@
-from app import db
 from datetime import datetime
+from ..database import db
+from .base import BaseModel
 
-class MusicalTheme(db.Model):
+class MusicalTheme(BaseModel):
     __tablename__ = 'musical_themes'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -13,15 +14,14 @@ class MusicalTheme(db.Model):
     key = db.Column(db.String(20))  # Musical key
     tempo = db.Column(db.Integer)   # BPM
     mood = db.Column(db.String(50)) # Mood/emotion of the theme
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    character = db.relationship('Character', back_populates='musical_themes')
-    universe = db.relationship('Universe', back_populates='musical_themes')
+    character = db.relationship('Character', backref=db.backref('musical_themes', lazy=True))
+    universe = db.relationship('Universe', backref=db.backref('musical_themes', lazy=True))
     
     def to_dict(self):
-        return {
+        base_dict = super().to_dict()
+        base_dict.update({
             'id': self.id,
             'name': self.name,
             'description': self.description,
@@ -30,7 +30,6 @@ class MusicalTheme(db.Model):
             'universe_id': self.universe_id,
             'key': self.key,
             'tempo': self.tempo,
-            'mood': self.mood,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
-        } 
+            'mood': self.mood
+        })
+        return base_dict 

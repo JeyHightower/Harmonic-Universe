@@ -1,7 +1,8 @@
-from app import db
 from datetime import datetime
+from ..database import db
+from .base import BaseModel
 
-class MusicPiece(db.Model):
+class MusicPiece(BaseModel):
     __tablename__ = 'music_pieces'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -12,17 +13,16 @@ class MusicPiece(db.Model):
     duration = db.Column(db.Float)  # Duration in seconds
     tempo = db.Column(db.Integer)   # BPM
     key = db.Column(db.String(20))  # Musical key (e.g., C Major, A Minor)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    creator = db.relationship('User', back_populates='music_pieces')
-    scenes = db.relationship('Scene', back_populates='music_piece', lazy=True)
-    harmonies = db.relationship('Harmony', back_populates='music_piece', lazy=True)
-    audio_samples = db.relationship('AudioSample', secondary='music_audio_samples', back_populates='music_pieces')
+    creator = db.relationship('User', backref=db.backref('music_pieces', lazy=True))
+    scenes = db.relationship('Scene', backref=db.backref('music_piece', lazy=True))
+    harmonies = db.relationship('Harmony', backref=db.backref('music_piece', lazy=True))
+    audio_samples = db.relationship('AudioSample', secondary='music_audio_samples', backref=db.backref('music_pieces', lazy=True))
     
     def to_dict(self):
-        return {
+        base_dict = super().to_dict()
+        base_dict.update({
             'id': self.id,
             'title': self.title,
             'description': self.description,
@@ -30,7 +30,6 @@ class MusicPiece(db.Model):
             'file_path': self.file_path,
             'duration': self.duration,
             'tempo': self.tempo,
-            'key': self.key,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
-        } 
+            'key': self.key
+        })
+        return base_dict 

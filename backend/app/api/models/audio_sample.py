@@ -1,7 +1,8 @@
-from app import db
 from datetime import datetime
+from ..database import db
+from .base import BaseModel
 
-class AudioSample(db.Model):
+class AudioSample(BaseModel):
     __tablename__ = 'audio_samples'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -12,15 +13,14 @@ class AudioSample(db.Model):
     format = db.Column(db.String(10))  # File format (e.g., mp3, wav)
     sample_rate = db.Column(db.Integer)  # Sample rate in Hz
     uploader_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    uploader = db.relationship('User', back_populates='audio_samples')
-    music_pieces = db.relationship('MusicPiece', secondary='music_audio_samples', back_populates='audio_samples')
+    uploader = db.relationship('User', backref=db.backref('audio_samples', lazy=True))
+    music_pieces = db.relationship('MusicPiece', secondary='music_audio_samples', backref=db.backref('audio_samples', lazy=True))
     
     def to_dict(self):
-        return {
+        base_dict = super().to_dict()
+        base_dict.update({
             'id': self.id,
             'name': self.name,
             'description': self.description,
@@ -28,7 +28,6 @@ class AudioSample(db.Model):
             'duration': self.duration,
             'format': self.format,
             'sample_rate': self.sample_rate,
-            'uploader_id': self.uploader_id,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
-        } 
+            'uploader_id': self.uploader_id
+        })
+        return base_dict 

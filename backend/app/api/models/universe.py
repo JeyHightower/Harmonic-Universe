@@ -16,10 +16,10 @@ class Universe(BaseModel):
     characters = db.relationship('Character', backref=db.backref('universe', lazy=True))
     scenes = db.relationship('Scene', backref=db.backref('universe', lazy=True))
     notes = db.relationship('Note', backref=db.backref('universe', lazy=True))
-    sound_profile = db.relationship('SoundProfile', back_populates='universes')
-    musical_themes = db.relationship('MusicalTheme', back_populates='universe', lazy=True)
-    physics_2d = db.relationship('Physics2D', back_populates='universe', uselist=False)
-    physics_3d = db.relationship('Physics3D', back_populates='universe', uselist=False)
+    sound_profile = db.relationship('SoundProfile', backref=db.backref('universes', lazy=True))
+    musical_themes = db.relationship('MusicalTheme', backref=db.backref('universe', lazy=True))
+    physics_2d = db.relationship('Physics2D', backref=db.backref('universe', uselist=False))
+    physics_3d = db.relationship('Physics3D', backref=db.backref('universe', uselist=False))
     
     def to_dict(self):
         base_dict = super().to_dict()
