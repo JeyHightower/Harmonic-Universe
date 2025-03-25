@@ -7,13 +7,29 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
 import os
+import redis
+from limits.storage import RedisStorage
 
 # Initialize extensions
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
 talisman = Talisman()
-limiter = Limiter(key_func=get_remote_address)
+
+# Initialize Redis for rate limiting
+redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+try:
+    redis_client = redis.from_url(redis_url)
+    redis_storage = RedisStorage(redis_client)
+    limiter = Limiter(
+        key_func=get_remote_address,
+        storage_uri=redis_url,
+        storage=redis_storage,
+        strategy="fixed-window"
+    )
+except redis.ConnectionError:
+    print("Warning: Redis connection failed. Falling back to in-memory storage for rate limiting.")
+    limiter = Limiter(key_func=get_remote_address)
 
 def create_app(test_config=None):
     app = Flask(__name__, static_folder="static")
@@ -31,7 +47,7 @@ def create_app(test_config=None):
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
         PERMANENT_SESSION_LIFETIME=3600,  # 1 hour
-        RATELIMIT_STORAGE_URL=os.environ.get("RATELIMIT_STORAGE_URL", "memory://"),
+        RATELIMIT_STORAGE_URL=os.environ.get("RATELIMIT_STORAGE_URL", redis_url),
         RATELIMIT_STRATEGY="fixed-window",
         RATELIMIT_DEFAULT="200 per day;50 per hour;1 per second",
         RATELIMIT_HEADERS_ENABLED=True,
