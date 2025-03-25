@@ -26,11 +26,14 @@ if os.path.exists('.env'):
 database_url = os.environ.get('DATABASE_URL')
 if database_url and database_url.startswith('postgres://'):
     database_url = database_url.replace('postgres://', 'postgresql://', 1)
+else:
+    # Default to a local SQLite database for development if no DATABASE_URL is provided
+    database_url = os.environ.get('DATABASE_URL') or 'sqlite:///app.db'
 
 # Configure app and database
 app.config.from_mapping(
     SECRET_KEY=os.environ.get('SECRET_KEY', 'dev'),
-    SQLALCHEMY_DATABASE_URI=database_url or 'postgresql://postgres@localhost/harmonic_universe_dev',
+    SQLALCHEMY_DATABASE_URI=database_url,
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
     SQLALCHEMY_ENGINE_OPTIONS={
         'pool_size': 5,
