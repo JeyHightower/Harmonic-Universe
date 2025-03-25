@@ -8,12 +8,18 @@ services:
       export FLASK_APP=app.py && \
       export PYTHONPATH=$PYTHONPATH:$(pwd) && \
       if [ -n "$DATABASE_URL" ]; then \
+        # Replace postgres:// with postgresql://
+        export FIXED_DATABASE_URL=$(echo $DATABASE_URL | sed 's/postgres:\/\//postgresql:\/\//') && \
+        export DATABASE_URL=$FIXED_DATABASE_URL && \
+        # Wait for DB to be ready
+        echo "Waiting for database to be ready..." && \
+        sleep 10 && \
+        # Initialize DB with create_all() instead of migrations
         python -c "
-        import time
         from app import app, db
-        time.sleep(5)  # Wait for DB to be ready
         with app.app_context():
             db.create_all()
+            print('Database tables created successfully')
         "
       else \
         echo "DATABASE_URL not set, skipping db setup"
