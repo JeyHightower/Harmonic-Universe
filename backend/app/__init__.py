@@ -21,12 +21,9 @@ def create_app():
             print("Error: DATABASE_URL is not properly configured. Please set a valid database URL in your environment variables.")
             raise ValueError("Invalid DATABASE_URL configuration")
     else:
-        # For local development, create instance directory if it doesn't exist
-        basedir = os.path.abspath(os.path.dirname(__file__))
-        instance_dir = os.path.join(os.path.dirname(basedir), 'instance')
-        os.makedirs(instance_dir, exist_ok=True)
-        database_url = f"sqlite:///{os.path.join(instance_dir, 'app.db')}"
-        print(f"Using local SQLite database at: {database_url}")
+        # For local development, use PostgreSQL
+        database_url = "postgresql://postgres:postgres@localhost:5432/harmonic_universe"
+        print(f"Using local PostgreSQL database at: {database_url}")
     
     # Get port from environment or use default
     port = int(os.environ.get('PORT', 5000))
