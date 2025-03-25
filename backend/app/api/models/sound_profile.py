@@ -1,33 +1,47 @@
-from app import db
 from datetime import datetime
+from ..database import db
+from .base import BaseModel
 
-class SoundProfile(db.Model):
+class SoundProfile(BaseModel):
     __tablename__ = 'sound_profiles'
-
+    
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
-    base_key = db.Column(db.String(20))  # Base musical key
-    dominant_scale = db.Column(db.String(50))  # Dominant scale type
-    mood_palette = db.Column(db.String(255))  # Comma-separated mood keywords
-    tempo_range = db.Column(db.String(50))  # Range of tempos (e.g., "60-120" BPM)
-    instrumentation = db.Column(db.Text)  # Typical instruments used
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    volume = db.Column(db.Float, default=1.0)
+    pitch = db.Column(db.Float, default=1.0)
+    pan = db.Column(db.Float, default=0.0)  # -1 (left) to 1 (right)
+    reverb = db.Column(db.Float, default=0.0)
+    delay = db.Column(db.Float, default=0.0)
+    echo = db.Column(db.Float, default=0.0)
+    chorus = db.Column(db.Float, default=0.0)
+    distortion = db.Column(db.Float, default=0.0)
+    low_pass = db.Column(db.Float, default=20000.0)  # Hz
+    high_pass = db.Column(db.Float, default=20.0)  # Hz
+    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id'), nullable=False)
+    scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id'))
     
     # Relationships
-    universes = db.relationship('Universe', back_populates='sound_profile', lazy=True)
+    universe = db.relationship('Universe', backref=db.backref('sound_profiles', lazy=True))
+    scene = db.relationship('Scene', backref=db.backref('sound_profiles', lazy=True))
     
     def to_dict(self):
-        return {
+        base_dict = super().to_dict()
+        base_dict.update({
             'id': self.id,
             'name': self.name,
             'description': self.description,
-            'base_key': self.base_key,
-            'dominant_scale': self.dominant_scale,
-            'mood_palette': self.mood_palette,
-            'tempo_range': self.tempo_range,
-            'instrumentation': self.instrumentation,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
-        } 
+            'volume': self.volume,
+            'pitch': self.pitch,
+            'pan': self.pan,
+            'reverb': self.reverb,
+            'delay': self.delay,
+            'echo': self.echo,
+            'chorus': self.chorus,
+            'distortion': self.distortion,
+            'low_pass': self.low_pass,
+            'high_pass': self.high_pass,
+            'universe_id': self.universe_id,
+            'scene_id': self.scene_id
+        })
+        return base_dict 
