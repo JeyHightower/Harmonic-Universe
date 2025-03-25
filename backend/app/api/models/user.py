@@ -12,11 +12,11 @@ class User(UserMixin, BaseModel):
     password_hash = db.Column(db.String(128))
     
     # Relationships
-    notes = db.relationship('Note', backref='author', lazy=True)
-    universes = db.relationship('Universe', backref='creator', lazy=True)
-    music_pieces = db.relationship('MusicPiece', back_populates='creator', lazy=True)
-    harmonies = db.relationship('Harmony', back_populates='creator', lazy=True)
-    audio_samples = db.relationship('AudioSample', back_populates='uploader', lazy=True)
+    notes = db.relationship('Note', backref=db.backref('author', lazy=True))
+    universes = db.relationship('Universe', backref=db.backref('creator', lazy=True))
+    music_pieces = db.relationship('MusicPiece', backref=db.backref('creator', lazy=True))
+    harmonies = db.relationship('Harmony', backref=db.backref('creator', lazy=True))
+    audio_samples = db.relationship('AudioSample', backref=db.backref('uploader', lazy=True))
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

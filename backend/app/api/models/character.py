@@ -13,9 +13,9 @@ class Character(BaseModel):
     
     # Relationships
     universe = db.relationship('Universe', backref=db.backref('characters', lazy=True))
-    notes = db.relationship('Note', backref='character', lazy=True)
+    notes = db.relationship('Note', backref=db.backref('character', lazy=True))
     scenes = db.relationship('Scene', secondary='character_scenes', backref=db.backref('characters', lazy=True))
-    musical_themes = db.relationship('MusicalTheme', back_populates='character', lazy=True, cascade='all, delete-orphan')
+    musical_themes = db.relationship('MusicalTheme', backref=db.backref('character', lazy=True))
     # physics_objects relationship is defined in the PhysicsObject model
 
     def to_dict(self):

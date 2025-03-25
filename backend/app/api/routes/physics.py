@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.api.models import db, Physics2D, Physics3D, PhysicsObject, PhysicsParameter, PhysicsConstraint, Universe, Scene, Character
+from flask_login import login_required, current_user
+from ..database import db
+from ..models import Physics2D, Physics3D, PhysicsObject, PhysicsParameter, PhysicsConstraint, Universe, Scene, Character
 from sqlalchemy.exc import SQLAlchemyError
 
 physics_bp = Blueprint('physics', __name__, url_prefix='/api/physics')
@@ -43,119 +44,70 @@ def get_physics_2d(id):
         }), 500
 
 @physics_bp.route('/2d', methods=['POST'])
-@jwt_required()
+@login_required
 def create_physics_2d():
     """Create a new 2D physics setting"""
-    data = request.json
-    
     try:
-        physics = Physics2D(
-            name=data.get('name'),
-            description=data.get('description'),
-            gravity_x=data.get('gravity_x', 0.0),
-            gravity_y=data.get('gravity_y', 9.8),
-            friction=data.get('friction', 0.1),
-            restitution=data.get('restitution', 0.5),
-            linear_damping=data.get('linear_damping', 0.1),
-            angular_damping=data.get('angular_damping', 0.1),
-            time_scale=data.get('time_scale', 1.0),
+        data = request.get_json()
+        
+        # Get the user ID from the JWT token
+        user_id = current_user.id
+        
+        # Create a new Physics2D instance
+        physics_2d = Physics2D(
+            user_id=user_id,
+            gravity=data.get('gravity'),
+            air_resistance=data.get('air_resistance'),
+            friction=data.get('friction'),
+            elasticity=data.get('elasticity'),
             universe_id=data.get('universe_id'),
             scene_id=data.get('scene_id')
         )
         
-        db.session.add(physics)
+        # Add to database and commit
+        db.session.add(physics_2d)
         db.session.commit()
         
-        return jsonify({
-            'success': True,
-            'data': physics.to_dict()
-        }), 201
+        return jsonify(physics_2d.to_dict()), 201
+        
     except SQLAlchemyError as e:
         db.session.rollback()
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({'error': str(e)}), 500
 
 @physics_bp.route('/2d/<int:id>', methods=['PUT'])
-@jwt_required()
+@login_required
 def update_physics_2d(id):
     """Update a specific 2D physics setting"""
-    data = request.json
-    
     try:
-        physics = Physics2D.query.get(id)
-        if not physics:
-            return jsonify({
-                'success': False,
-                'error': 'Physics setting not found'
-            }), 404
+        # Get the physics setting
+        physics_2d = Physics2D.query.filter_by(id=id, user_id=current_user.id).first_or_404()
         
-        physics.name = data.get('name', physics.name)
-        physics.description = data.get('description', physics.description)
-        physics.gravity_x = data.get('gravity_x', physics.gravity_x)
-        physics.gravity_y = data.get('gravity_y', physics.gravity_y)
-        physics.friction = data.get('friction', physics.friction)
-        physics.restitution = data.get('restitution', physics.restitution)
-        physics.linear_damping = data.get('linear_damping', physics.linear_damping)
-        physics.angular_damping = data.get('angular_damping', physics.angular_damping)
-        physics.time_scale = data.get('time_scale', physics.time_scale)
-        physics.universe_id = data.get('universe_id', physics.universe_id)
-        physics.scene_id = data.get('scene_id', physics.scene_id)
+        # Update fields from request data
+        data = request.get_json()
+        for key, value in data.items():
+            if hasattr(physics_2d, key):
+                setattr(physics_2d, key, value)
         
         db.session.commit()
+        return jsonify(physics_2d.to_dict())
         
-        return jsonify({
-            'success': True,
-            'data': physics.to_dict()
-        }), 200
     except SQLAlchemyError as e:
         db.session.rollback()
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({'error': str(e)}), 500
 
 @physics_bp.route('/2d/<int:id>', methods=['DELETE'])
-@jwt_required()
+@login_required
 def delete_physics_2d(id):
     """Delete a specific 2D physics setting"""
     try:
-        physics = Physics2D.query.get(id)
-        if not physics:
-            return jsonify({
-                'success': False,
-                'error': 'Physics setting not found'
-            }), 404
-        
-        db.session.delete(physics)
+        physics_2d = Physics2D.query.filter_by(id=id, user_id=current_user.id).first_or_404()
+        db.session.delete(physics_2d)
         db.session.commit()
+        return jsonify({'message': 'Physics 2D setting deleted successfully'})
         
-        return jsonify({
-            'success': True,
-            'message': 'Physics setting deleted successfully'
-        }), 200
     except SQLAlchemyError as e:
         db.session.rollback()
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({'error': str(e)}), 500
 
 # 3D Physics Routes
 @physics_bp.route('/3d', methods=['GET'])
@@ -195,117 +147,68 @@ def get_physics_3d(id):
         }), 500
 
 @physics_bp.route('/3d', methods=['POST'])
-@jwt_required()
+@login_required
 def create_physics_3d():
     """Create a new 3D physics setting"""
-    data = request.json
-    
     try:
-        physics = Physics3D(
-            name=data.get('name'),
-            description=data.get('description'),
-            gravity_x=data.get('gravity_x', 0.0),
-            gravity_y=data.get('gravity_y', -9.8),
-            gravity_z=data.get('gravity_z', 0.0),
-            friction=data.get('friction', 0.3),
-            restitution=data.get('restitution', 0.5),
-            linear_damping=data.get('linear_damping', 0.05),
-            angular_damping=data.get('angular_damping', 0.05),
-            collision_margin=data.get('collision_margin', 0.04),
-            continuous_detection=data.get('continuous_detection', True),
-            substeps=data.get('substeps', 2),
-            solver_iterations=data.get('solver_iterations', 10),
-            time_scale=data.get('time_scale', 1.0),
+        data = request.get_json()
+        
+        # Get the user ID from the JWT token
+        user_id = current_user.id
+        
+        # Create a new Physics3D instance
+        physics_3d = Physics3D(
+            user_id=user_id,
+            gravity=data.get('gravity'),
+            air_resistance=data.get('air_resistance'),
+            friction=data.get('friction'),
+            elasticity=data.get('elasticity'),
             universe_id=data.get('universe_id'),
             scene_id=data.get('scene_id')
         )
         
-        db.session.add(physics)
+        # Add to database and commit
+        db.session.add(physics_3d)
         db.session.commit()
         
-        return jsonify({
-            'success': True,
-            'data': physics.to_dict()
-        }), 201
+        return jsonify(physics_3d.to_dict()), 201
+        
     except SQLAlchemyError as e:
         db.session.rollback()
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({'error': str(e)}), 500
 
 @physics_bp.route('/3d/<int:id>', methods=['PUT'])
-@jwt_required()
+@login_required
 def update_physics_3d(id):
     """Update a specific 3D physics setting"""
-    data = request.json
-    
     try:
-        physics = Physics3D.query.get(id)
-        if not physics:
-            return jsonify({
-                'success': False,
-                'error': 'Physics setting not found'
-            }), 404
+        physics_3d = Physics3D.query.filter_by(id=id, user_id=current_user.id).first_or_404()
         
-        # Update fields from request data
+        data = request.get_json()
         for key, value in data.items():
-            if hasattr(physics, key):
-                setattr(physics, key, value)
+            if hasattr(physics_3d, key):
+                setattr(physics_3d, key, value)
         
         db.session.commit()
+        return jsonify(physics_3d.to_dict())
         
-        return jsonify({
-            'success': True,
-            'data': physics.to_dict()
-        }), 200
     except SQLAlchemyError as e:
         db.session.rollback()
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({'error': str(e)}), 500
 
 @physics_bp.route('/3d/<int:id>', methods=['DELETE'])
-@jwt_required()
+@login_required
 def delete_physics_3d(id):
     """Delete a specific 3D physics setting"""
     try:
-        physics = Physics3D.query.get(id)
-        if not physics:
-            return jsonify({
-                'success': False,
-                'error': 'Physics setting not found'
-            }), 404
-        
-        db.session.delete(physics)
+        physics_3d = Physics3D.query.filter_by(id=id, user_id=current_user.id).first_or_404()
+        db.session.delete(physics_3d)
         db.session.commit()
+        return jsonify({'message': 'Physics 3D setting deleted successfully'})
         
-        return jsonify({
-            'success': True,
-            'message': 'Physics setting deleted successfully'
-        }), 200
     except SQLAlchemyError as e:
         db.session.rollback()
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({'error': str(e)}), 500
 
 # Physics Objects Routes
 @physics_bp.route('/objects', methods=['GET'])
@@ -359,125 +262,66 @@ def get_physics_object(id):
         }), 500
 
 @physics_bp.route('/objects', methods=['POST'])
-@jwt_required()
+@login_required
 def create_physics_object():
     """Create a new physics object"""
-    data = request.json
-    
     try:
-        obj = PhysicsObject(
+        data = request.get_json()
+        
+        physics_object = PhysicsObject(
+            user_id=current_user.id,
             name=data.get('name'),
-            description=data.get('description'),
             object_type=data.get('object_type'),
+            mass=data.get('mass'),
+            position=data.get('position'),
+            rotation=data.get('rotation'),
+            scale=data.get('scale'),
             is_static=data.get('is_static', False),
-            is_2d=data.get('is_2d', True),
-            position_x=data.get('position_x', 0.0),
-            position_y=data.get('position_y', 0.0),
-            position_z=data.get('position_z', 0.0),
-            rotation_x=data.get('rotation_x', 0.0),
-            rotation_y=data.get('rotation_y', 0.0),
-            rotation_z=data.get('rotation_z', 0.0),
-            scale_x=data.get('scale_x', 1.0),
-            scale_y=data.get('scale_y', 1.0),
-            scale_z=data.get('scale_z', 1.0),
-            mass=data.get('mass', 1.0),
-            friction=data.get('friction', 0.3),
-            restitution=data.get('restitution', 0.5),
-            linear_damping=data.get('linear_damping', 0.05),
-            angular_damping=data.get('angular_damping', 0.05),
-            collision_group=data.get('collision_group', 1),
-            collision_mask=data.get('collision_mask', 1),
             universe_id=data.get('universe_id'),
-            scene_id=data.get('scene_id'),
-            character_id=data.get('character_id')
+            scene_id=data.get('scene_id')
         )
         
-        db.session.add(obj)
+        db.session.add(physics_object)
         db.session.commit()
         
-        return jsonify({
-            'success': True,
-            'data': obj.to_dict()
-        }), 201
+        return jsonify(physics_object.to_dict()), 201
+        
     except SQLAlchemyError as e:
         db.session.rollback()
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({'error': str(e)}), 500
 
 @physics_bp.route('/objects/<int:id>', methods=['PUT'])
-@jwt_required()
+@login_required
 def update_physics_object(id):
     """Update a specific physics object"""
-    data = request.json
-    
     try:
-        obj = PhysicsObject.query.get(id)
-        if not obj:
-            return jsonify({
-                'success': False,
-                'error': 'Physics object not found'
-            }), 404
+        physics_object = PhysicsObject.query.filter_by(id=id, user_id=current_user.id).first_or_404()
         
-        # Update fields from request data
+        data = request.get_json()
         for key, value in data.items():
-            if hasattr(obj, key):
-                setattr(obj, key, value)
+            if hasattr(physics_object, key):
+                setattr(physics_object, key, value)
         
         db.session.commit()
+        return jsonify(physics_object.to_dict())
         
-        return jsonify({
-            'success': True,
-            'data': obj.to_dict()
-        }), 200
     except SQLAlchemyError as e:
         db.session.rollback()
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({'error': str(e)}), 500
 
 @physics_bp.route('/objects/<int:id>', methods=['DELETE'])
-@jwt_required()
+@login_required
 def delete_physics_object(id):
     """Delete a specific physics object"""
     try:
-        obj = PhysicsObject.query.get(id)
-        if not obj:
-            return jsonify({
-                'success': False,
-                'error': 'Physics object not found'
-            }), 404
-        
-        db.session.delete(obj)
+        physics_object = PhysicsObject.query.filter_by(id=id, user_id=current_user.id).first_or_404()
+        db.session.delete(physics_object)
         db.session.commit()
+        return jsonify({'message': 'Physics object deleted successfully'})
         
-        return jsonify({
-            'success': True,
-            'message': 'Physics object deleted successfully'
-        }), 200
     except SQLAlchemyError as e:
         db.session.rollback()
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({'error': str(e)}), 500
 
 # Physics Constraints Routes
 @physics_bp.route('/constraints', methods=['GET'])
@@ -529,117 +373,60 @@ def get_physics_constraint(id):
         }), 500
 
 @physics_bp.route('/constraints', methods=['POST'])
-@jwt_required()
+@login_required
 def create_physics_constraint():
     """Create a new physics constraint"""
-    data = request.json
-    
     try:
+        data = request.get_json()
+        
         constraint = PhysicsConstraint(
-            name=data.get('name'),
-            description=data.get('description'),
+            user_id=current_user.id,
             constraint_type=data.get('constraint_type'),
             object_a_id=data.get('object_a_id'),
             object_b_id=data.get('object_b_id'),
-            breaking_threshold=data.get('breaking_threshold'),
-            position_x=data.get('position_x', 0.0),
-            position_y=data.get('position_y', 0.0),
-            position_z=data.get('position_z', 0.0),
-            axis_x=data.get('axis_x', 0.0),
-            axis_y=data.get('axis_y', 1.0),
-            axis_z=data.get('axis_z', 0.0),
-            limit_lower=data.get('limit_lower'),
-            limit_upper=data.get('limit_upper'),
-            spring_stiffness=data.get('spring_stiffness'),
-            spring_damping=data.get('spring_damping'),
-            is_2d=data.get('is_2d', True),
-            is_enabled=data.get('is_enabled', True),
+            parameters=data.get('parameters'),
+            universe_id=data.get('universe_id'),
             scene_id=data.get('scene_id')
         )
         
         db.session.add(constraint)
         db.session.commit()
         
-        return jsonify({
-            'success': True,
-            'data': constraint.to_dict()
-        }), 201
+        return jsonify(constraint.to_dict()), 201
+        
     except SQLAlchemyError as e:
         db.session.rollback()
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({'error': str(e)}), 500
 
 @physics_bp.route('/constraints/<int:id>', methods=['PUT'])
-@jwt_required()
+@login_required
 def update_physics_constraint(id):
     """Update a specific physics constraint"""
-    data = request.json
-    
     try:
-        constraint = PhysicsConstraint.query.get(id)
-        if not constraint:
-            return jsonify({
-                'success': False,
-                'error': 'Physics constraint not found'
-            }), 404
+        constraint = PhysicsConstraint.query.filter_by(id=id, user_id=current_user.id).first_or_404()
         
-        # Update fields from request data
+        data = request.get_json()
         for key, value in data.items():
             if hasattr(constraint, key):
                 setattr(constraint, key, value)
         
         db.session.commit()
+        return jsonify(constraint.to_dict())
         
-        return jsonify({
-            'success': True,
-            'data': constraint.to_dict()
-        }), 200
     except SQLAlchemyError as e:
         db.session.rollback()
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({'error': str(e)}), 500
 
 @physics_bp.route('/constraints/<int:id>', methods=['DELETE'])
-@jwt_required()
+@login_required
 def delete_physics_constraint(id):
     """Delete a specific physics constraint"""
     try:
-        constraint = PhysicsConstraint.query.get(id)
-        if not constraint:
-            return jsonify({
-                'success': False,
-                'error': 'Physics constraint not found'
-            }), 404
-        
+        constraint = PhysicsConstraint.query.filter_by(id=id, user_id=current_user.id).first_or_404()
         db.session.delete(constraint)
         db.session.commit()
+        return jsonify({'message': 'Physics constraint deleted successfully'})
         
-        return jsonify({
-            'success': True,
-            'message': 'Physics constraint deleted successfully'
-        }), 200
     except SQLAlchemyError as e:
         db.session.rollback()
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500 
+        return jsonify({'error': str(e)}), 500 

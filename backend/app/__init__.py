@@ -56,14 +56,11 @@ def create_app():
     )
     
     # Register blueprints
-    from .api.routes import auth_bp, characters_bp, notes_bp, universes_bp, scenes_bp, physics_bp, music_bp
+    from .api.routes import auth_bp, characters_bp, notes_bp, physics_bp
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(characters_bp, url_prefix='/api/characters')
     app.register_blueprint(notes_bp, url_prefix='/api/notes')
-    app.register_blueprint(universes_bp, url_prefix='/api/universes')
-    app.register_blueprint(scenes_bp, url_prefix='/api/scenes')
     app.register_blueprint(physics_bp, url_prefix='/api/physics')
-    app.register_blueprint(music_bp, url_prefix='/api/music')
     
     # User loader for Flask-Login
     from .api.models import User
