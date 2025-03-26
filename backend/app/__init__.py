@@ -1,10 +1,13 @@
-from flask import Flask, jsonify
+from flask import Flask
 from flask_cors import CORS
+from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import os
-from .api import db, migrate, api_bp
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from api.database import db
 
 def create_app():
     app = Flask(__name__)
@@ -12,8 +15,9 @@ def create_app():
     # Get database URL from environment
     database_url = os.environ.get('DATABASE_URL')
     
-    if not database_url or database_url.startswith('sqlite://'):
-        # Use SQLite for local development
+    if not database_url:
+        # Default to SQLite for local development if no DATABASE_URL is provided
+        # Use absolute path for SQLite database
         db_path = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'instance', 'app.db'))
         database_url = f'sqlite:///{db_path}'
         print(f"Using local SQLite database at: {database_url}")
@@ -41,7 +45,7 @@ def create_app():
     # Initialize extensions
     CORS(app)
     db.init_app(app)
-    migrate.init_app(app, db)
+    migrate = Migrate(app, db)
     login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
@@ -55,27 +59,16 @@ def create_app():
     )
     
     # Register blueprints
-    app.register_blueprint(api_bp, url_prefix='/api')
+    from api.routes import auth_bp, characters_bp, notes_bp, physics_bp
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(characters_bp, url_prefix='/api/characters')
+    app.register_blueprint(notes_bp, url_prefix='/api/notes')
+    app.register_blueprint(physics_bp, url_prefix='/api/physics')
     
     # User loader for Flask-Login
-    from .api.models import User
+    from api.models import User
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
-    
-    # Health check route
-    @app.route('/api/health')
-    def health_check():
-        try:
-            db.session.execute('SELECT 1')
-            db_status = "connected"
-        except Exception as e:
-            db_status = f"disconnected: {str(e)}"
-        
-        return jsonify({
-            "status": "healthy",
-            "version": "1.0.0",
-            "database": db_status
-        }), 200
     
     return app

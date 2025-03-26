@@ -1,8 +1,8 @@
 """initial migration
 
-Revision ID: d724c8fd9b79
+Revision ID: ce624ed3cba6
 Revises: 
-Create Date: 2025-03-25 14:12:00.788616
+Create Date: 2025-03-25 22:44:45.788832
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'd724c8fd9b79'
+revision = 'ce624ed3cba6'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -25,11 +25,19 @@ def upgrade():
     sa.Column('universe_id', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=True),
     sa.Column('updated_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('is_deleted', sa.Boolean(), nullable=True),
+    sa.Column('deleted_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('version', sa.Integer(), nullable=False),
+    sa.Column('created_by_id', sa.Integer(), nullable=True),
+    sa.Column('updated_by_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['created_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['universe_id'], ['universes.id'], ),
+    sa.ForeignKeyConstraint(['updated_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('scenes', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_scenes_created_at'), ['created_at'], unique=False)
+        batch_op.create_index(batch_op.f('ix_scenes_is_deleted'), ['is_deleted'], unique=False)
         batch_op.create_index(batch_op.f('ix_scenes_updated_at'), ['updated_at'], unique=False)
 
     op.create_table('sound_profiles',
@@ -50,12 +58,20 @@ def upgrade():
     sa.Column('scene_id', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=True),
     sa.Column('updated_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('is_deleted', sa.Boolean(), nullable=True),
+    sa.Column('deleted_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('version', sa.Integer(), nullable=False),
+    sa.Column('created_by_id', sa.Integer(), nullable=True),
+    sa.Column('updated_by_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['created_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['scene_id'], ['scenes.id'], ),
     sa.ForeignKeyConstraint(['universe_id'], ['universes.id'], ),
+    sa.ForeignKeyConstraint(['updated_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('sound_profiles', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_sound_profiles_created_at'), ['created_at'], unique=False)
+        batch_op.create_index(batch_op.f('ix_sound_profiles_is_deleted'), ['is_deleted'], unique=False)
         batch_op.create_index(batch_op.f('ix_sound_profiles_updated_at'), ['updated_at'], unique=False)
 
     op.create_table('universes',
@@ -67,14 +83,22 @@ def upgrade():
     sa.Column('is_2d', sa.Boolean(), nullable=True),
     sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=True),
     sa.Column('updated_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('is_deleted', sa.Boolean(), nullable=True),
+    sa.Column('deleted_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('version', sa.Integer(), nullable=False),
+    sa.Column('created_by_id', sa.Integer(), nullable=True),
+    sa.Column('updated_by_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['created_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['creator_id'], ['users.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['sound_profile_id'], ['sound_profiles.id'], ondelete='SET NULL'),
+    sa.ForeignKeyConstraint(['updated_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('universes', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_universes_created_at'), ['created_at'], unique=False)
         batch_op.create_index(batch_op.f('ix_universes_creator_id'), ['creator_id'], unique=False)
         batch_op.create_index(batch_op.f('ix_universes_is_2d'), ['is_2d'], unique=False)
+        batch_op.create_index(batch_op.f('ix_universes_is_deleted'), ['is_deleted'], unique=False)
         batch_op.create_index(batch_op.f('ix_universes_name'), ['name'], unique=False)
         batch_op.create_index(batch_op.f('ix_universes_sound_profile_id'), ['sound_profile_id'], unique=False)
         batch_op.create_index(batch_op.f('ix_universes_updated_at'), ['updated_at'], unique=False)
@@ -86,11 +110,19 @@ def upgrade():
     sa.Column('password_hash', sa.String(length=128), nullable=True),
     sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=True),
     sa.Column('updated_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('is_deleted', sa.Boolean(), nullable=True),
+    sa.Column('deleted_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('version', sa.Integer(), nullable=False),
+    sa.Column('created_by_id', sa.Integer(), nullable=True),
+    sa.Column('updated_by_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['created_by_id'], ['users.id'], ondelete='SET NULL'),
+    sa.ForeignKeyConstraint(['updated_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('users', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_users_created_at'), ['created_at'], unique=False)
         batch_op.create_index(batch_op.f('ix_users_email'), ['email'], unique=True)
+        batch_op.create_index(batch_op.f('ix_users_is_deleted'), ['is_deleted'], unique=False)
         batch_op.create_index(batch_op.f('ix_users_updated_at'), ['updated_at'], unique=False)
         batch_op.create_index(batch_op.f('ix_users_username'), ['username'], unique=True)
 
@@ -105,11 +137,19 @@ def upgrade():
     sa.Column('uploader_id', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=True),
     sa.Column('updated_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('is_deleted', sa.Boolean(), nullable=True),
+    sa.Column('deleted_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('version', sa.Integer(), nullable=False),
+    sa.Column('created_by_id', sa.Integer(), nullable=True),
+    sa.Column('updated_by_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['created_by_id'], ['users.id'], ondelete='SET NULL'),
+    sa.ForeignKeyConstraint(['updated_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['uploader_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('audio_samples', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_audio_samples_created_at'), ['created_at'], unique=False)
+        batch_op.create_index(batch_op.f('ix_audio_samples_is_deleted'), ['is_deleted'], unique=False)
         batch_op.create_index(batch_op.f('ix_audio_samples_updated_at'), ['updated_at'], unique=False)
 
     op.create_table('characters',
@@ -120,11 +160,19 @@ def upgrade():
     sa.Column('has_physics', sa.Boolean(), nullable=True),
     sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=True),
     sa.Column('updated_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('is_deleted', sa.Boolean(), nullable=True),
+    sa.Column('deleted_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('version', sa.Integer(), nullable=False),
+    sa.Column('created_by_id', sa.Integer(), nullable=True),
+    sa.Column('updated_by_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['created_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['universe_id'], ['universes.id'], ),
+    sa.ForeignKeyConstraint(['updated_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('characters', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_characters_created_at'), ['created_at'], unique=False)
+        batch_op.create_index(batch_op.f('ix_characters_is_deleted'), ['is_deleted'], unique=False)
         batch_op.create_index(batch_op.f('ix_characters_updated_at'), ['updated_at'], unique=False)
 
     op.create_table('music_pieces',
@@ -138,11 +186,19 @@ def upgrade():
     sa.Column('key', sa.String(length=20), nullable=True),
     sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=True),
     sa.Column('updated_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('is_deleted', sa.Boolean(), nullable=True),
+    sa.Column('deleted_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('version', sa.Integer(), nullable=False),
+    sa.Column('created_by_id', sa.Integer(), nullable=True),
+    sa.Column('updated_by_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['created_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['creator_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['updated_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('music_pieces', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_music_pieces_created_at'), ['created_at'], unique=False)
+        batch_op.create_index(batch_op.f('ix_music_pieces_is_deleted'), ['is_deleted'], unique=False)
         batch_op.create_index(batch_op.f('ix_music_pieces_updated_at'), ['updated_at'], unique=False)
 
     op.create_table('physics_2d',
@@ -153,11 +209,19 @@ def upgrade():
     sa.Column('friction', sa.Float(), nullable=True),
     sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=True),
     sa.Column('updated_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('is_deleted', sa.Boolean(), nullable=True),
+    sa.Column('deleted_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('version', sa.Integer(), nullable=False),
+    sa.Column('created_by_id', sa.Integer(), nullable=True),
+    sa.Column('updated_by_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['created_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['universe_id'], ['universes.id'], ),
+    sa.ForeignKeyConstraint(['updated_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('physics_2d', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_physics_2d_created_at'), ['created_at'], unique=False)
+        batch_op.create_index(batch_op.f('ix_physics_2d_is_deleted'), ['is_deleted'], unique=False)
         batch_op.create_index(batch_op.f('ix_physics_2d_updated_at'), ['updated_at'], unique=False)
 
     op.create_table('physics_3d',
@@ -170,11 +234,19 @@ def upgrade():
     sa.Column('friction', sa.Float(), nullable=True),
     sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=True),
     sa.Column('updated_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('is_deleted', sa.Boolean(), nullable=True),
+    sa.Column('deleted_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('version', sa.Integer(), nullable=False),
+    sa.Column('created_by_id', sa.Integer(), nullable=True),
+    sa.Column('updated_by_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['created_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['universe_id'], ['universes.id'], ),
+    sa.ForeignKeyConstraint(['updated_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('physics_3d', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_physics_3d_created_at'), ['created_at'], unique=False)
+        batch_op.create_index(batch_op.f('ix_physics_3d_is_deleted'), ['is_deleted'], unique=False)
         batch_op.create_index(batch_op.f('ix_physics_3d_updated_at'), ['updated_at'], unique=False)
 
     op.create_table('harmonies',
@@ -187,12 +259,20 @@ def upgrade():
     sa.Column('music_piece_id', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=True),
     sa.Column('updated_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('is_deleted', sa.Boolean(), nullable=True),
+    sa.Column('deleted_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('version', sa.Integer(), nullable=False),
+    sa.Column('created_by_id', sa.Integer(), nullable=True),
+    sa.Column('updated_by_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['created_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['creator_id'], ['users.id'], ),
     sa.ForeignKeyConstraint(['music_piece_id'], ['music_pieces.id'], ),
+    sa.ForeignKeyConstraint(['updated_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('harmonies', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_harmonies_created_at'), ['created_at'], unique=False)
+        batch_op.create_index(batch_op.f('ix_harmonies_is_deleted'), ['is_deleted'], unique=False)
         batch_op.create_index(batch_op.f('ix_harmonies_updated_at'), ['updated_at'], unique=False)
 
     op.create_table('musical_themes',
@@ -207,12 +287,20 @@ def upgrade():
     sa.Column('mood', sa.String(length=50), nullable=True),
     sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=True),
     sa.Column('updated_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('is_deleted', sa.Boolean(), nullable=True),
+    sa.Column('deleted_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('version', sa.Integer(), nullable=False),
+    sa.Column('created_by_id', sa.Integer(), nullable=True),
+    sa.Column('updated_by_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['character_id'], ['characters.id'], ),
+    sa.ForeignKeyConstraint(['created_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['universe_id'], ['universes.id'], ),
+    sa.ForeignKeyConstraint(['updated_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('musical_themes', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_musical_themes_created_at'), ['created_at'], unique=False)
+        batch_op.create_index(batch_op.f('ix_musical_themes_is_deleted'), ['is_deleted'], unique=False)
         batch_op.create_index(batch_op.f('ix_musical_themes_updated_at'), ['updated_at'], unique=False)
 
     op.create_table('notes',
@@ -225,14 +313,22 @@ def upgrade():
     sa.Column('scene_id', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=True),
     sa.Column('updated_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('is_deleted', sa.Boolean(), nullable=True),
+    sa.Column('deleted_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('version', sa.Integer(), nullable=False),
+    sa.Column('created_by_id', sa.Integer(), nullable=True),
+    sa.Column('updated_by_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['character_id'], ['characters.id'], ),
+    sa.ForeignKeyConstraint(['created_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['scene_id'], ['scenes.id'], ),
     sa.ForeignKeyConstraint(['universe_id'], ['universes.id'], ),
+    sa.ForeignKeyConstraint(['updated_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('notes', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_notes_created_at'), ['created_at'], unique=False)
+        batch_op.create_index(batch_op.f('ix_notes_is_deleted'), ['is_deleted'], unique=False)
         batch_op.create_index(batch_op.f('ix_notes_updated_at'), ['updated_at'], unique=False)
 
     op.create_table('physics_objects',
@@ -263,12 +359,20 @@ def upgrade():
     sa.Column('physics_3d_id', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=True),
     sa.Column('updated_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('is_deleted', sa.Boolean(), nullable=True),
+    sa.Column('deleted_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('version', sa.Integer(), nullable=False),
+    sa.Column('created_by_id', sa.Integer(), nullable=True),
+    sa.Column('updated_by_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['created_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['physics_2d_id'], ['physics_2d.id'], ),
     sa.ForeignKeyConstraint(['physics_3d_id'], ['physics_3d.id'], ),
+    sa.ForeignKeyConstraint(['updated_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('physics_objects', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_physics_objects_created_at'), ['created_at'], unique=False)
+        batch_op.create_index(batch_op.f('ix_physics_objects_is_deleted'), ['is_deleted'], unique=False)
         batch_op.create_index(batch_op.f('ix_physics_objects_updated_at'), ['updated_at'], unique=False)
 
     op.create_table('physics_parameters',
@@ -285,10 +389,20 @@ def upgrade():
     sa.Column('physics_3d_id', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.Column('is_deleted', sa.Boolean(), nullable=True),
+    sa.Column('deleted_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('version', sa.Integer(), nullable=False),
+    sa.Column('created_by_id', sa.Integer(), nullable=True),
+    sa.Column('updated_by_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['created_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['physics_2d_id'], ['physics_2d.id'], ),
     sa.ForeignKeyConstraint(['physics_3d_id'], ['physics_3d.id'], ),
+    sa.ForeignKeyConstraint(['updated_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
+    with op.batch_alter_table('physics_parameters', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_physics_parameters_is_deleted'), ['is_deleted'], unique=False)
+
     op.create_table('physics_constraints',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
@@ -315,12 +429,20 @@ def upgrade():
     sa.Column('is_enabled', sa.Boolean(), nullable=True),
     sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=True),
     sa.Column('updated_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('is_deleted', sa.Boolean(), nullable=True),
+    sa.Column('deleted_at', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('version', sa.Integer(), nullable=False),
+    sa.Column('created_by_id', sa.Integer(), nullable=True),
+    sa.Column('updated_by_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['created_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['object_a_id'], ['physics_objects.id'], ),
     sa.ForeignKeyConstraint(['object_b_id'], ['physics_objects.id'], ),
+    sa.ForeignKeyConstraint(['updated_by_id'], ['users.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('physics_constraints', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_physics_constraints_created_at'), ['created_at'], unique=False)
+        batch_op.create_index(batch_op.f('ix_physics_constraints_is_deleted'), ['is_deleted'], unique=False)
         batch_op.create_index(batch_op.f('ix_physics_constraints_updated_at'), ['updated_at'], unique=False)
 
     # ### end Alembic commands ###
@@ -330,58 +452,72 @@ def downgrade():
     # ### commands auto generated by Alembic - please adjust! ###
     with op.batch_alter_table('physics_constraints', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_physics_constraints_updated_at'))
+        batch_op.drop_index(batch_op.f('ix_physics_constraints_is_deleted'))
         batch_op.drop_index(batch_op.f('ix_physics_constraints_created_at'))
 
     op.drop_table('physics_constraints')
+    with op.batch_alter_table('physics_parameters', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_physics_parameters_is_deleted'))
+
     op.drop_table('physics_parameters')
     with op.batch_alter_table('physics_objects', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_physics_objects_updated_at'))
+        batch_op.drop_index(batch_op.f('ix_physics_objects_is_deleted'))
         batch_op.drop_index(batch_op.f('ix_physics_objects_created_at'))
 
     op.drop_table('physics_objects')
     with op.batch_alter_table('notes', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_notes_updated_at'))
+        batch_op.drop_index(batch_op.f('ix_notes_is_deleted'))
         batch_op.drop_index(batch_op.f('ix_notes_created_at'))
 
     op.drop_table('notes')
     with op.batch_alter_table('musical_themes', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_musical_themes_updated_at'))
+        batch_op.drop_index(batch_op.f('ix_musical_themes_is_deleted'))
         batch_op.drop_index(batch_op.f('ix_musical_themes_created_at'))
 
     op.drop_table('musical_themes')
     with op.batch_alter_table('harmonies', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_harmonies_updated_at'))
+        batch_op.drop_index(batch_op.f('ix_harmonies_is_deleted'))
         batch_op.drop_index(batch_op.f('ix_harmonies_created_at'))
 
     op.drop_table('harmonies')
     with op.batch_alter_table('physics_3d', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_physics_3d_updated_at'))
+        batch_op.drop_index(batch_op.f('ix_physics_3d_is_deleted'))
         batch_op.drop_index(batch_op.f('ix_physics_3d_created_at'))
 
     op.drop_table('physics_3d')
     with op.batch_alter_table('physics_2d', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_physics_2d_updated_at'))
+        batch_op.drop_index(batch_op.f('ix_physics_2d_is_deleted'))
         batch_op.drop_index(batch_op.f('ix_physics_2d_created_at'))
 
     op.drop_table('physics_2d')
     with op.batch_alter_table('music_pieces', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_music_pieces_updated_at'))
+        batch_op.drop_index(batch_op.f('ix_music_pieces_is_deleted'))
         batch_op.drop_index(batch_op.f('ix_music_pieces_created_at'))
 
     op.drop_table('music_pieces')
     with op.batch_alter_table('characters', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_characters_updated_at'))
+        batch_op.drop_index(batch_op.f('ix_characters_is_deleted'))
         batch_op.drop_index(batch_op.f('ix_characters_created_at'))
 
     op.drop_table('characters')
     with op.batch_alter_table('audio_samples', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_audio_samples_updated_at'))
+        batch_op.drop_index(batch_op.f('ix_audio_samples_is_deleted'))
         batch_op.drop_index(batch_op.f('ix_audio_samples_created_at'))
 
     op.drop_table('audio_samples')
     with op.batch_alter_table('users', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_users_username'))
         batch_op.drop_index(batch_op.f('ix_users_updated_at'))
+        batch_op.drop_index(batch_op.f('ix_users_is_deleted'))
         batch_op.drop_index(batch_op.f('ix_users_email'))
         batch_op.drop_index(batch_op.f('ix_users_created_at'))
 
@@ -390,6 +526,7 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_universes_updated_at'))
         batch_op.drop_index(batch_op.f('ix_universes_sound_profile_id'))
         batch_op.drop_index(batch_op.f('ix_universes_name'))
+        batch_op.drop_index(batch_op.f('ix_universes_is_deleted'))
         batch_op.drop_index(batch_op.f('ix_universes_is_2d'))
         batch_op.drop_index(batch_op.f('ix_universes_creator_id'))
         batch_op.drop_index(batch_op.f('ix_universes_created_at'))
@@ -397,11 +534,13 @@ def downgrade():
     op.drop_table('universes')
     with op.batch_alter_table('sound_profiles', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_sound_profiles_updated_at'))
+        batch_op.drop_index(batch_op.f('ix_sound_profiles_is_deleted'))
         batch_op.drop_index(batch_op.f('ix_sound_profiles_created_at'))
 
     op.drop_table('sound_profiles')
     with op.batch_alter_table('scenes', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_scenes_updated_at'))
+        batch_op.drop_index(batch_op.f('ix_scenes_is_deleted'))
         batch_op.drop_index(batch_op.f('ix_scenes_created_at'))
 
     op.drop_table('scenes')

@@ -1,11 +1,14 @@
 import os
 import sys
+from dotenv import load_dotenv
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from flask_migrate import Migrate, init, migrate, upgrade
 from app import create_app, db
+from api.models import User, Universe, Scene, Character, Note, Physics2D, Physics3D, PhysicsObject, PhysicsConstraint
 
 def setup_database():
-    # Create Flask application
-    app = create_app()
+    # Load environment variables
+    load_dotenv()
     
     # Ensure instance directory exists
     instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
@@ -22,15 +25,26 @@ def setup_database():
         pass
     os.chmod(db_path, 0o666)
     
+    # Set SQLite database URL explicitly
+    os.environ['DATABASE_URL'] = f'sqlite:///{db_path}'
+    
+    # Create Flask application
+    app = create_app()
+    
     with app.app_context():
-        # Initialize migrations if they don't exist
-        if not os.path.exists('migrations'):
-            init()
+        # Remove existing migrations directory if it exists
+        migrations_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'migrations')
+        if os.path.exists(migrations_dir):
+            import shutil
+            shutil.rmtree(migrations_dir)
         
-        # Create a migration
+        # Initialize migrations
+        init()
+        
+        # Create a new migration
         migrate(message='initial migration')
         
-        # Apply migration
+        # Apply the migration
         upgrade()
         
         print("Database setup completed successfully!")

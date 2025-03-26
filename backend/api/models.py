@@ -1,19 +1,22 @@
-from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
+from .database import db
 
-db = SQLAlchemy()
-
-class User(UserMixin, db.Model):
-    __tablename__ = 'users'
+class BaseModel(db.Model):
+    __abstract__ = True
     
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, index=True)
+    is_deleted = db.Column(db.Boolean, default=False, index=True)
+
+class User(UserMixin, BaseModel):
+    __tablename__ = 'users'
+    
+    username = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(128))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     notes = db.relationship('Note', backref='user', lazy=True, cascade='all, delete-orphan')
@@ -33,18 +36,16 @@ class User(UserMixin, db.Model):
             'username': self.username,
             'email': self.email,
             'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
+            'updated_at': self.updated_at.isoformat(),
+            'is_deleted': self.is_deleted
         }
 
-class Universe(db.Model):
+class Universe(BaseModel):
     __tablename__ = 'universes'
     
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.String(100), nullable=False, index=True)
     description = db.Column(db.Text)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
     
     # Relationships
     scenes = db.relationship('Scene', backref='universe', lazy=True, cascade='all, delete-orphan')
@@ -61,18 +62,16 @@ class Universe(db.Model):
             'description': self.description,
             'user_id': self.user_id,
             'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
+            'updated_at': self.updated_at.isoformat(),
+            'is_deleted': self.is_deleted
         }
 
-class Scene(db.Model):
+class Scene(BaseModel):
     __tablename__ = 'scenes'
     
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.String(100), nullable=False, index=True)
     description = db.Column(db.Text)
-    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), nullable=False, index=True)
     
     # Relationships
     notes = db.relationship('Note', backref='scene', lazy=True, cascade='all, delete-orphan')
@@ -88,18 +87,16 @@ class Scene(db.Model):
             'description': self.description,
             'universe_id': self.universe_id,
             'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
+            'updated_at': self.updated_at.isoformat(),
+            'is_deleted': self.is_deleted
         }
 
-class Character(db.Model):
+class Character(BaseModel):
     __tablename__ = 'characters'
     
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.String(100), nullable=False, index=True)
     description = db.Column(db.Text)
-    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), nullable=False, index=True)
     
     # Relationships
     notes = db.relationship('Note', backref='character', lazy=True, cascade='all, delete-orphan')
@@ -112,20 +109,18 @@ class Character(db.Model):
             'description': self.description,
             'universe_id': self.universe_id,
             'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
+            'updated_at': self.updated_at.isoformat(),
+            'is_deleted': self.is_deleted
         }
 
-class Note(db.Model):
+class Note(BaseModel):
     __tablename__ = 'notes'
     
-    id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
-    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'))
-    scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id', ondelete='CASCADE'))
-    character_id = db.Column(db.Integer, db.ForeignKey('characters.id', ondelete='CASCADE'))
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), index=True)
+    scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id', ondelete='CASCADE'), index=True)
+    character_id = db.Column(db.Integer, db.ForeignKey('characters.id', ondelete='CASCADE'), index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
 
     def to_dict(self):
         return {
@@ -136,7 +131,8 @@ class Note(db.Model):
             'character_id': self.character_id,
             'user_id': self.user_id,
             'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
+            'updated_at': self.updated_at.isoformat(),
+            'is_deleted': self.is_deleted
         }
 
 # Association table for Character-Scene relationship
@@ -145,19 +141,16 @@ character_scenes = db.Table('character_scenes',
     db.Column('scene_id', db.Integer, db.ForeignKey('scenes.id', ondelete='CASCADE'), primary_key=True)
 )
 
-class Physics2D(db.Model):
+class Physics2D(BaseModel):
     __tablename__ = 'physics_2d'
     
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
-    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'))
-    scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id', ondelete='CASCADE'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), index=True)
+    scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id', ondelete='CASCADE'), index=True)
     gravity = db.Column(db.Float, default=9.81)
     air_resistance = db.Column(db.Float, default=0.0)
     friction = db.Column(db.Float, default=0.0)
     elasticity = db.Column(db.Float, default=0.5)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     physics_objects = db.relationship('PhysicsObject', backref='physics_2d', lazy=True, cascade='all, delete-orphan')
@@ -173,22 +166,20 @@ class Physics2D(db.Model):
             'friction': self.friction,
             'elasticity': self.elasticity,
             'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
+            'updated_at': self.updated_at.isoformat(),
+            'is_deleted': self.is_deleted
         }
 
-class Physics3D(db.Model):
+class Physics3D(BaseModel):
     __tablename__ = 'physics_3d'
     
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
-    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'))
-    scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id', ondelete='CASCADE'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), index=True)
+    scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id', ondelete='CASCADE'), index=True)
     gravity = db.Column(db.Float, default=9.81)
     air_resistance = db.Column(db.Float, default=0.0)
     friction = db.Column(db.Float, default=0.0)
     elasticity = db.Column(db.Float, default=0.5)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     physics_objects = db.relationship('PhysicsObject', backref='physics_3d', lazy=True, cascade='all, delete-orphan')
@@ -204,15 +195,15 @@ class Physics3D(db.Model):
             'friction': self.friction,
             'elasticity': self.elasticity,
             'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
+            'updated_at': self.updated_at.isoformat(),
+            'is_deleted': self.is_deleted
         }
 
-class PhysicsObject(db.Model):
+class PhysicsObject(BaseModel):
     __tablename__ = 'physics_objects'
     
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    type = db.Column(db.String(50), nullable=False)  # e.g., 'sphere', 'cube', 'plane'
+    name = db.Column(db.String(100), nullable=False, index=True)
+    type = db.Column(db.String(50), nullable=False, index=True)  # e.g., 'sphere', 'cube', 'plane'
     mass = db.Column(db.Float, default=1.0)
     position_x = db.Column(db.Float, default=0.0)
     position_y = db.Column(db.Float, default=0.0)
@@ -220,13 +211,11 @@ class PhysicsObject(db.Model):
     velocity_x = db.Column(db.Float, default=0.0)
     velocity_y = db.Column(db.Float, default=0.0)
     velocity_z = db.Column(db.Float, default=0.0)
-    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'))
-    scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id', ondelete='CASCADE'))
-    character_id = db.Column(db.Integer, db.ForeignKey('characters.id', ondelete='CASCADE'))
-    physics_2d_id = db.Column(db.Integer, db.ForeignKey('physics_2d.id', ondelete='CASCADE'))
-    physics_3d_id = db.Column(db.Integer, db.ForeignKey('physics_3d.id', ondelete='CASCADE'))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), index=True)
+    scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id', ondelete='CASCADE'), index=True)
+    character_id = db.Column(db.Integer, db.ForeignKey('characters.id', ondelete='CASCADE'), index=True)
+    physics_2d_id = db.Column(db.Integer, db.ForeignKey('physics_2d.id', ondelete='CASCADE'), index=True)
+    physics_3d_id = db.Column(db.Integer, db.ForeignKey('physics_3d.id', ondelete='CASCADE'), index=True)
     
     # Relationships
     constraints_as_object1 = db.relationship('PhysicsConstraint', 
@@ -258,21 +247,19 @@ class PhysicsObject(db.Model):
             'physics_2d_id': self.physics_2d_id,
             'physics_3d_id': self.physics_3d_id,
             'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
+            'updated_at': self.updated_at.isoformat(),
+            'is_deleted': self.is_deleted
         }
 
-class PhysicsConstraint(db.Model):
+class PhysicsConstraint(BaseModel):
     __tablename__ = 'physics_constraints'
     
-    id = db.Column(db.Integer, primary_key=True)
-    type = db.Column(db.String(50), nullable=False)  # e.g., 'hinge', 'spring', 'fixed'
-    object1_id = db.Column(db.Integer, db.ForeignKey('physics_objects.id', ondelete='CASCADE'), nullable=False)
-    object2_id = db.Column(db.Integer, db.ForeignKey('physics_objects.id', ondelete='CASCADE'), nullable=False)
+    type = db.Column(db.String(50), nullable=False, index=True)  # e.g., 'hinge', 'spring', 'fixed'
+    object1_id = db.Column(db.Integer, db.ForeignKey('physics_objects.id', ondelete='CASCADE'), nullable=False, index=True)
+    object2_id = db.Column(db.Integer, db.ForeignKey('physics_objects.id', ondelete='CASCADE'), nullable=False, index=True)
     parameters = db.Column(db.JSON)  # Store constraint-specific parameters
-    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'))
-    scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id', ondelete='CASCADE'))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), index=True)
+    scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id', ondelete='CASCADE'), index=True)
     
     def to_dict(self):
         return {
@@ -284,5 +271,6 @@ class PhysicsConstraint(db.Model):
             'universe_id': self.universe_id,
             'scene_id': self.scene_id,
             'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
+            'updated_at': self.updated_at.isoformat(),
+            'is_deleted': self.is_deleted
         } 
