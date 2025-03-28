@@ -23,6 +23,9 @@ class User(UserMixin, BaseModel):
     universes = db.relationship('Universe', backref='user', lazy=True, cascade='all, delete-orphan')
     physics_2d = db.relationship('Physics2D', backref='user', lazy=True, cascade='all, delete-orphan')
     physics_3d = db.relationship('Physics3D', backref='user', lazy=True, cascade='all, delete-orphan')
+    sound_profiles = db.relationship('SoundProfile', backref='user', lazy=True, cascade='all, delete-orphan')
+    audio_samples = db.relationship('AudioSample', backref='user', lazy=True, cascade='all, delete-orphan')
+    music_pieces = db.relationship('MusicPiece', backref='user', lazy=True, cascade='all, delete-orphan')
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -40,12 +43,157 @@ class User(UserMixin, BaseModel):
             'is_deleted': self.is_deleted
         }
 
+class SoundProfile(BaseModel):
+    __tablename__ = 'sound_profiles'
+    
+    name = db.Column(db.String(100), nullable=False, index=True)
+    description = db.Column(db.Text)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), index=True)
+    scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id', ondelete='CASCADE'), index=True)
+    ambient_volume = db.Column(db.Float, default=0.5)
+    music_volume = db.Column(db.Float, default=0.5)
+    effects_volume = db.Column(db.Float, default=0.5)
+    
+    # Relationships
+    audio_samples = db.relationship('AudioSample', backref='sound_profile', lazy=True, cascade='all, delete-orphan')
+    music_pieces = db.relationship('MusicPiece', backref='sound_profile', lazy=True, cascade='all, delete-orphan')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'user_id': self.user_id,
+            'universe_id': self.universe_id,
+            'scene_id': self.scene_id,
+            'ambient_volume': self.ambient_volume,
+            'music_volume': self.music_volume,
+            'effects_volume': self.effects_volume,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+            'is_deleted': self.is_deleted
+        }
+
+class AudioSample(BaseModel):
+    __tablename__ = 'audio_samples'
+    
+    name = db.Column(db.String(100), nullable=False, index=True)
+    description = db.Column(db.Text)
+    file_path = db.Column(db.String(255), nullable=False)
+    duration = db.Column(db.Float)  # Duration in seconds
+    sample_rate = db.Column(db.Integer)
+    channels = db.Column(db.Integer)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    sound_profile_id = db.Column(db.Integer, db.ForeignKey('sound_profiles.id', ondelete='CASCADE'), index=True)
+    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), index=True)
+    scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id', ondelete='CASCADE'), index=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'file_path': self.file_path,
+            'duration': self.duration,
+            'sample_rate': self.sample_rate,
+            'channels': self.channels,
+            'user_id': self.user_id,
+            'sound_profile_id': self.sound_profile_id,
+            'universe_id': self.universe_id,
+            'scene_id': self.scene_id,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+            'is_deleted': self.is_deleted
+        }
+
+class MusicPiece(BaseModel):
+    __tablename__ = 'music_pieces'
+    
+    name = db.Column(db.String(100), nullable=False, index=True)
+    description = db.Column(db.Text)
+    file_path = db.Column(db.String(255), nullable=False)
+    duration = db.Column(db.Float)  # Duration in seconds
+    tempo = db.Column(db.Integer)  # BPM
+    key = db.Column(db.String(10))  # Musical key
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    sound_profile_id = db.Column(db.Integer, db.ForeignKey('sound_profiles.id', ondelete='CASCADE'), index=True)
+    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), index=True)
+    scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id', ondelete='CASCADE'), index=True)
+    
+    # Relationships
+    harmonies = db.relationship('Harmony', backref='music_piece', lazy=True, cascade='all, delete-orphan')
+    musical_themes = db.relationship('MusicalTheme', backref='music_piece', lazy=True, cascade='all, delete-orphan')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'file_path': self.file_path,
+            'duration': self.duration,
+            'tempo': self.tempo,
+            'key': self.key,
+            'user_id': self.user_id,
+            'sound_profile_id': self.sound_profile_id,
+            'universe_id': self.universe_id,
+            'scene_id': self.scene_id,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+            'is_deleted': self.is_deleted
+        }
+
+class Harmony(BaseModel):
+    __tablename__ = 'harmonies'
+    
+    name = db.Column(db.String(100), nullable=False, index=True)
+    description = db.Column(db.Text)
+    music_piece_id = db.Column(db.Integer, db.ForeignKey('music_pieces.id', ondelete='CASCADE'), nullable=False, index=True)
+    chord_progression = db.Column(db.JSON)  # Store chord progression data
+    duration = db.Column(db.Float)  # Duration in seconds
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'music_piece_id': self.music_piece_id,
+            'chord_progression': self.chord_progression,
+            'duration': self.duration,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+            'is_deleted': self.is_deleted
+        }
+
+class MusicalTheme(BaseModel):
+    __tablename__ = 'musical_themes'
+    
+    name = db.Column(db.String(100), nullable=False, index=True)
+    description = db.Column(db.Text)
+    music_piece_id = db.Column(db.Integer, db.ForeignKey('music_pieces.id', ondelete='CASCADE'), nullable=False, index=True)
+    character_id = db.Column(db.Integer, db.ForeignKey('characters.id', ondelete='CASCADE'), nullable=False, index=True)
+    motif = db.Column(db.JSON)  # Store musical motif data
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'music_piece_id': self.music_piece_id,
+            'character_id': self.character_id,
+            'motif': self.motif,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+            'is_deleted': self.is_deleted
+        }
+
 class Universe(BaseModel):
     __tablename__ = 'universes'
     
     name = db.Column(db.String(100), nullable=False, index=True)
     description = db.Column(db.Text)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    sound_profile_id = db.Column(db.Integer, db.ForeignKey('sound_profiles.id', ondelete='SET NULL'), index=True)
     
     # Relationships
     scenes = db.relationship('Scene', backref='universe', lazy=True, cascade='all, delete-orphan')
@@ -54,6 +202,8 @@ class Universe(BaseModel):
     physics_objects = db.relationship('PhysicsObject', backref='universe', lazy=True, cascade='all, delete-orphan')
     physics_2d = db.relationship('Physics2D', backref='universe', lazy=True, cascade='all, delete-orphan')
     physics_3d = db.relationship('Physics3D', backref='universe', lazy=True, cascade='all, delete-orphan')
+    audio_samples = db.relationship('AudioSample', backref='universe', lazy=True, cascade='all, delete-orphan')
+    music_pieces = db.relationship('MusicPiece', backref='universe', lazy=True, cascade='all, delete-orphan')
     
     def to_dict(self):
         return {
@@ -61,6 +211,7 @@ class Universe(BaseModel):
             'name': self.name,
             'description': self.description,
             'user_id': self.user_id,
+            'sound_profile_id': self.sound_profile_id,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
             'is_deleted': self.is_deleted
@@ -72,6 +223,7 @@ class Scene(BaseModel):
     name = db.Column(db.String(100), nullable=False, index=True)
     description = db.Column(db.Text)
     universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), nullable=False, index=True)
+    sound_profile_id = db.Column(db.Integer, db.ForeignKey('sound_profiles.id', ondelete='SET NULL'), index=True)
     
     # Relationships
     notes = db.relationship('Note', backref='scene', lazy=True, cascade='all, delete-orphan')
@@ -79,6 +231,8 @@ class Scene(BaseModel):
     physics_objects = db.relationship('PhysicsObject', backref='scene', lazy=True, cascade='all, delete-orphan')
     physics_2d = db.relationship('Physics2D', backref='scene', lazy=True, cascade='all, delete-orphan')
     physics_3d = db.relationship('Physics3D', backref='scene', lazy=True, cascade='all, delete-orphan')
+    audio_samples = db.relationship('AudioSample', backref='scene', lazy=True, cascade='all, delete-orphan')
+    music_pieces = db.relationship('MusicPiece', backref='scene', lazy=True, cascade='all, delete-orphan')
     
     def to_dict(self):
         return {
@@ -86,6 +240,7 @@ class Scene(BaseModel):
             'name': self.name,
             'description': self.description,
             'universe_id': self.universe_id,
+            'sound_profile_id': self.sound_profile_id,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
             'is_deleted': self.is_deleted
@@ -101,6 +256,7 @@ class Character(BaseModel):
     # Relationships
     notes = db.relationship('Note', backref='character', lazy=True, cascade='all, delete-orphan')
     physics_objects = db.relationship('PhysicsObject', backref='character', lazy=True, cascade='all, delete-orphan')
+    musical_themes = db.relationship('MusicalTheme', backref='character', lazy=True, cascade='all, delete-orphan')
     
     def to_dict(self):
         return {
