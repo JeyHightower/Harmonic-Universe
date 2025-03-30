@@ -1,7 +1,7 @@
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
-from ..database import db
+from ..models.database import db
 
 class BaseModel(db.Model):
     __abstract__ = True
@@ -17,6 +17,7 @@ class User(UserMixin, BaseModel):
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(128))
+    version = db.Column(db.Integer, nullable=False, default=1)
     
     # Relationships
     notes = db.relationship('Note', backref='user', lazy=True, cascade='all, delete-orphan')

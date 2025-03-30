@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 from typing import Optional, Union
 
-from .api.database import db, migrate
+from .api.models.database import db
 
 def create_app():
     app = Flask(__name__)
@@ -33,13 +33,24 @@ def create_app():
         RATELIMIT_STORAGE_URL=os.environ.get('REDIS_URL', 'redis://localhost:6379/0'),
         RATELIMIT_STRATEGY="fixed-window",
         JWT_SECRET_KEY=os.environ.get('JWT_SECRET_KEY', 'dev-jwt-secret'),
-        JWT_ACCESS_TOKEN_EXPIRES=3600  # 1 hour
+        JWT_ACCESS_TOKEN_EXPIRES=3600,  # 1 hour
+        JWT_TOKEN_LOCATION=['headers'],
+        JWT_HEADER_NAME='Authorization',
+        JWT_HEADER_TYPE='Bearer'
     )
     
     # Initialize extensions
-    CORS(app)
+    CORS(app, resources={
+        r"/api/*": {
+            "origins": ["http://localhost:5173", "http://localhost:3000", "http://localhost:5001"],
+            "supports_credentials": True,
+            "allow_headers": ["Content-Type", "Authorization", "Accept"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "expose_headers": ["Content-Type", "Authorization"]
+        }
+    })
     db.init_app(app)
-    migrate.init_app(app, db)
+    migrate = Migrate(app, db)
     
     # Create database tables
     with app.app_context():
@@ -47,8 +58,7 @@ def create_app():
             # Import all models to ensure they are registered with SQLAlchemy
             from .api.models import User, Note, Universe, Physics2D, Physics3D, SoundProfile, AudioSample, MusicPiece
             
-            # Create tables
-            db.drop_all()  # Clear any existing tables
+            # Create tables if they don't exist
             db.create_all()
             print("Database tables created successfully")
         except Exception as e:
@@ -60,6 +70,42 @@ def create_app():
     login_manager.login_view = None  # Disable redirect
     jwt = JWTManager(app)
     
+    # JWT error handlers
+    @jwt.expired_token_loader
+    def expired_token_callback(jwt_header, jwt_payload):
+        return jsonify({
+            'message': 'The token has expired',
+            'error': 'token_expired'
+        }), 401
+
+    @jwt.invalid_token_loader
+    def invalid_token_callback(error):
+        return jsonify({
+            'message': 'Signature verification failed',
+            'error': 'invalid_token'
+        }), 401
+
+    @jwt.unauthorized_loader
+    def missing_token_callback(error):
+        return jsonify({
+            'message': 'Request does not contain an access token',
+            'error': 'authorization_required'
+        }), 401
+
+    @jwt.needs_fresh_token_loader
+    def token_not_fresh_callback(jwt_header, jwt_payload):
+        return jsonify({
+            'message': 'The token is not fresh',
+            'error': 'fresh_token_required'
+        }), 401
+
+    @jwt.revoked_token_loader
+    def revoked_token_callback(jwt_header, jwt_payload):
+        return jsonify({
+            'message': 'The token has been revoked',
+            'error': 'token_revoked'
+        }), 401
+    
     # Initialize rate limiter
     limiter = Limiter(
         app=app,
@@ -69,10 +115,11 @@ def create_app():
     )
     
     # Register blueprints
-    from .api.routes import auth_bp, characters_bp, notes_bp
+    from .api.routes import auth_bp, characters_bp, notes_bp, user_bp
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(characters_bp, url_prefix='/api/characters')
     app.register_blueprint(notes_bp, url_prefix='/api/notes')
+    app.register_blueprint(user_bp, url_prefix='/api/user')
     
     # User loader for Flask-Login
     from .api.models import User

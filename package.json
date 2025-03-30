@@ -6,12 +6,12 @@
     "install-all": "npm install && cd frontend && npm install && cd ../backend && pip install -r requirements.txt",
     "start": "concurrently \"npm run backend\" \"npm run frontend\"",
     "start:prod": "concurrently \"npm run backend:prod\" \"npm run frontend:prod\"",
-    "backend": "cd backend && PYTHONPATH=$PYTHONPATH:. python app.py",
+    "backend": "cd backend && PYTHONPATH=$PYTHONPATH:. python run.py",
     "backend:prod": "cd backend && gunicorn app.app:create_app() -b 0.0.0.0:5001",
     "frontend": "cd frontend && npm run dev",
     "frontend:prod": "cd frontend && npm run build && npm run preview",
     "build": "cd frontend && npm run build",
-    "test": "cd backend && python -m pytest"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "engines": {
     "node": ">=18.0.0",
@@ -21,7 +21,7 @@
   "devDependencies": {
     "concurrently": "^8.2.2"
   },
-  "description": "A full-stack application for creating and managing harmonic universes",
+  "description": "A web application for creating and exploring musical universes",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/JeyHightower/Harmonic-Universe.git"

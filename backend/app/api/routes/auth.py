@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash
 from ..models import User
-from ..database import db
+from ..models.database import db
 from datetime import datetime, timedelta
 import jwt
 import os
@@ -100,31 +100,61 @@ def logout():
 def demo_login():
     """Login as a demo user."""
     try:
+        current_app.logger.info('Starting demo login process')
+        
         # Check if demo user exists
         demo_user = User.query.filter_by(email='demo@example.com').first()
+        current_app.logger.info(f'Demo user exists: {demo_user is not None}')
         
         if not demo_user:
-            # Create demo user if it doesn't exist
-            demo_user = User()
-            demo_user.username = 'demo'
-            demo_user.email = 'demo@example.com'
-            demo_user.set_password('demo123')
-            db.session.add(demo_user)
-            db.session.commit()
+            try:
+                current_app.logger.info('Creating new demo user')
+                # Create demo user if it doesn't exist
+                demo_user = User(
+                    username='demo',
+                    email='demo@example.com'
+                )
+                demo_user.set_password('demo123')
+                db.session.add(demo_user)
+                db.session.commit()
+                current_app.logger.info('Demo user created successfully')
+            except Exception as e:
+                db.session.rollback()
+                current_app.logger.error(f'Error creating demo user: {str(e)}')
+                current_app.logger.exception('Full traceback:')
+                return jsonify({
+                    'message': 'Failed to create demo user',
+                    'error': str(e)
+                }), 500
         
-        # Generate token
-        access_token = create_access_token(identity=demo_user.id)
-        
-        return jsonify({
-            'message': 'Demo login successful',
-            'user': demo_user.to_dict(),
-            'token': access_token
-        }), 200
+        try:
+            current_app.logger.info('Generating access token')
+            # Generate token
+            access_token = create_access_token(identity=demo_user.id)
+            
+            response_data = {
+                'message': 'Demo login successful',
+                'user': demo_user.to_dict(),
+                'token': access_token
+            }
+            current_app.logger.info('Demo login successful')
+            return jsonify(response_data), 200
+        except Exception as e:
+            current_app.logger.error(f'Error generating token: {str(e)}')
+            current_app.logger.exception('Full traceback:')
+            return jsonify({
+                'message': 'Failed to generate access token',
+                'error': str(e)
+            }), 500
         
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Demo login error: {str(e)}')
-        return jsonify({'message': 'An error occurred during demo login'}), 500
+        current_app.logger.exception('Full traceback:')
+        return jsonify({
+            'message': 'An error occurred during demo login',
+            'error': str(e)
+        }), 500
 
 @auth_bp.route('/me', methods=['GET'])
 @jwt_required()
