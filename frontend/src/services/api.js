@@ -1,8 +1,6 @@
 import axios from "axios";
 import { shouldUseFallback } from "../utils/authFallback";
-import { API_CONFIG, AUTH_CONFIG } from "../utils/config";
-
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+import { API_CONFIG, AUTH_CONFIG, API_URL } from "../utils/config";
 
 // Create axios instance with base configuration
 const api = axios.create({

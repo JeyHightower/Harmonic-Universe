@@ -1,5 +1,5 @@
 import axios from "axios";
-import { generalLogger } from "../utils/logger";
+import { log } from "../utils/logger";
 
 // Constants
 export const API_BASE_ENDPOINT = chooseApiEndpoint();
@@ -47,7 +47,7 @@ function chooseApiEndpoint() {
   const isDev = process.env.NODE_ENV === "development";
 
   // Log the selection process
-  window.debugLog("API", "Selecting API endpoint", {
+  log("api", "Selecting API endpoint", {
     environment: process.env.NODE_ENV,
     isDev,
   });
@@ -55,10 +55,7 @@ function chooseApiEndpoint() {
   // Allow override with .env variables
   const envEndpoint = import.meta.env.VITE_API_ENDPOINT;
   if (envEndpoint) {
-    window.debugLog("API", "Using API endpoint from environment variable", {
-      endpoint: envEndpoint,
-    });
-    generalLogger.log("Using API endpoint from environment variable", {
+    log("api", "Using API endpoint from environment variable", {
       endpoint: envEndpoint,
     });
     return envEndpoint;
@@ -66,10 +63,7 @@ function chooseApiEndpoint() {
 
   // For development, use local endpoint
   if (isDev) {
-    window.debugLog("API", "Using local development endpoint", {
-      endpoint: endpoints.local,
-    });
-    generalLogger.log("Using local development endpoint");
+    log("api", "Using local development endpoint");
     return endpoints.local;
   }
 
@@ -77,19 +71,12 @@ function chooseApiEndpoint() {
   // If we're on the same domain as our API, use relative path
   const currentHost = window.location.hostname;
   if (currentHost.includes("harmonic-universe")) {
-    window.debugLog("API", "Using relative API endpoint", {
-      endpoint: endpoints.fallback,
-      currentHost,
-    });
-    generalLogger.log("Using relative API endpoint", { host: currentHost });
+    log("api", "Using relative API endpoint", { host: currentHost });
     return endpoints.fallback;
   }
 
   // Default to using the production endpoint
-  window.debugLog("API", "Using production API endpoint", {
-    endpoint: endpoints.production,
-  });
-  generalLogger.log("Using production API endpoint");
+  log("api", "Using production API endpoint");
   return endpoints.production;
 }
 
@@ -108,15 +95,11 @@ client.interceptors.request.use(
   (config) => {
     try {
       // Log request
-      window.debugLog("API", "Sending request", {
+      log("api", "Sending request", {
         method: config.method.toUpperCase(),
         url: config.url,
         baseURL: config.baseURL,
         fullURL: `${config.baseURL}${config.url}`,
-      });
-      generalLogger.log("API Request", {
-        method: config.method.toUpperCase(),
-        url: config.url,
       });
 
       // Store for debugging
@@ -135,16 +118,19 @@ client.interceptors.request.use(
 
       return config;
     } catch (error) {
-      window.debugError("API", "Error in request interceptor", error);
-      generalLogger.error("Error in API request interceptor", {
+      log("api", "Error in request interceptor", {
         error: error.message,
       });
+      window.apiDebug.lastError = {
+        type: "request",
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      };
       return config;
     }
   },
   (error) => {
-    window.debugError("API", "Request failed", error);
-    generalLogger.error("API request failed", { error: error.message });
+    log("api", "Request failed", { error: error.message });
     window.apiDebug.lastError = {
       type: "request",
       error: error.message,
@@ -159,14 +145,10 @@ client.interceptors.response.use(
   (response) => {
     try {
       // Log successful response
-      window.debugLog("API", "Response received", {
+      log("api", "Response received", {
         status: response.status,
         url: response.config.url,
         data: response.data ? "Present" : "Empty",
-      });
-      generalLogger.log("API Response", {
-        status: response.status,
-        url: response.config.url,
       });
 
       // Store for debugging
@@ -178,8 +160,7 @@ client.interceptors.response.use(
 
       return response;
     } catch (error) {
-      window.debugError("API", "Error in response interceptor", error);
-      generalLogger.error("Error in API response interceptor", {
+      log("api", "Error in response interceptor", {
         error: error.message,
       });
       return response;
@@ -195,18 +176,12 @@ client.interceptors.response.use(
         : "Unknown Method";
 
       // Log error
-      window.debugError("API", "Response error", {
+      log("api", "Response error", {
         status,
         url,
         method,
         message: error.message,
         response: error.response ? error.response.data : "No response data",
-      });
-      generalLogger.error("API Response error", {
-        status,
-        url,
-        method,
-        message: error.message,
       });
 
       // Store for debugging
@@ -221,19 +196,13 @@ client.interceptors.response.use(
 
       // Special handling for demo login
       if (url.includes("/auth/demo")) {
-        window.debugLog(
-          "API",
-          "Demo login failed, trying alternative endpoints"
-        );
+        log("api", "Demo login failed, trying alternative endpoints");
         return retryWithFallbacks(error, "/auth/demo");
       }
 
       // Retry token refresh with alternative endpoints
       if (url.includes("/auth/refresh") && status === 401) {
-        window.debugLog(
-          "API",
-          "Token refresh failed, trying alternative endpoints"
-        );
+        log("api", "Token refresh failed, trying alternative endpoints");
         return retryWithFallbacks(error, "/auth/refresh");
       }
 
@@ -244,7 +213,7 @@ client.interceptors.response.use(
         localStorage.removeItem("refreshToken");
 
         // Redirect to login
-        window.debugLog("API", "Unauthorized access, redirecting to login");
+        log("api", "Unauthorized access, redirecting to login");
         setTimeout(() => {
           window.location.href = "/#/?modal=login&authError=true";
         }, 100);
@@ -252,8 +221,7 @@ client.interceptors.response.use(
 
       return Promise.reject(error);
     } catch (interceptorError) {
-      window.debugError("API", "Error handling API error", interceptorError);
-      generalLogger.error("Error handling API error", {
+      log("api", "Error handling API error", {
         error: interceptorError.message,
       });
       return Promise.reject(error);
@@ -272,14 +240,14 @@ async function retryWithFallbacks(originalError, endpoint) {
   // Original request config
   const config = originalError.config;
   if (!config) {
-    window.debugError("API", "Cannot retry request without config");
+    log("api", "Cannot retry request without config");
     return Promise.reject(originalError);
   }
 
   // Try each fallback endpoint
   for (const baseURL of fallbackEndpoints) {
     try {
-      window.debugLog("API", "Trying fallback endpoint", { baseURL, endpoint });
+      log("api", "Trying fallback endpoint", { baseURL, endpoint });
 
       // Create new config with fallback baseURL
       const retryConfig = {
@@ -291,7 +259,7 @@ async function retryWithFallbacks(originalError, endpoint) {
       const response = await axios(retryConfig);
 
       // If successful, update the main API endpoint for future requests
-      window.debugLog("API", "Fallback endpoint successful", {
+      log("api", "Fallback endpoint successful", {
         baseURL,
         status: response.status,
       });
@@ -301,7 +269,7 @@ async function retryWithFallbacks(originalError, endpoint) {
 
       return response;
     } catch (retryError) {
-      window.debugError("API", "Fallback endpoint failed", {
+      log("api", "Fallback endpoint failed", {
         baseURL,
         error: retryError.message,
       });

@@ -1,15 +1,13 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { client } from "../../services/client";
 import { endpoints } from "../../services/endpoints";
+import { log } from "../../utils/logger";
 
 // Debug logging for all authentication operations
 const logAuthOperation = (operation, data = {}) => {
   try {
     console.log(`Auth operation: ${operation}`, data);
-
-    if (window.debugLog) {
-      window.debugLog("AUTH", operation, data);
-    }
+    log("auth", `Auth operation: ${operation}`, data);
   } catch (error) {
     console.error("Error logging auth operation", error);
   }
@@ -19,10 +17,7 @@ const logAuthOperation = (operation, data = {}) => {
 const logAuthError = (operation, error) => {
   try {
     console.error(`Auth error in ${operation}:`, error);
-
-    if (window.debugError) {
-      window.debugError("AUTH", `Error in ${operation}`, error);
-    }
+    log("auth", `Auth error in ${operation}`, { error: error.message });
   } catch (logError) {
     console.error("Error logging auth error", logError);
   }

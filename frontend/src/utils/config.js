@@ -3,6 +3,53 @@
  * This file centralizes environment-specific configuration with validation
  */
 
+// Export environment
+export const ENV = import.meta.env.MODE || "development";
+
+// Export whether we're in production
+export const IS_PRODUCTION = ENV === "production";
+
+// Export whether we're in development
+export const IS_DEVELOPMENT = ENV === "development";
+
+// Export whether we're in test
+export const IS_TEST = ENV === "test";
+
+// Export the base URL
+export const BASE_URL = import.meta.env.BASE_URL || "/";
+
+// Export the public URL
+export const PUBLIC_URL = import.meta.env.PUBLIC_URL || "/";
+
+// Export the API URL
+export const API_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
+// Export the CDN URL
+export const CDN_URL = import.meta.env.VITE_CDN_URL || "";
+
+// Export the version
+export const VERSION = import.meta.env.VITE_APP_VERSION || "1.0.0";
+
+// Export the build time
+export const BUILD_TIME =
+  import.meta.env.VITE_BUILD_TIME || new Date().toISOString();
+
+// Export the git hash
+export const GIT_HASH = import.meta.env.VITE_GIT_HASH || "";
+
+// Export the environment variables
+export const ENV_VARS = {
+  NODE_ENV: ENV,
+  BASE_URL,
+  PUBLIC_URL,
+  API_URL,
+  CDN_URL,
+  VERSION,
+  BUILD_TIME,
+  GIT_HASH,
+};
+
 // Utility function to validate required environment variables
 const validateEnvVar = (key, defaultValue = undefined, validator = null) => {
   const value = import.meta.env[key] ?? defaultValue;
@@ -29,7 +76,7 @@ const parseInt = (value, defaultValue = undefined) => {
 
 // API configuration
 export const API_CONFIG = {
-  BASE_URL: process.env.REACT_APP_API_URL || "http://localhost:5000/api",
+  BASE_URL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
   TIMEOUT: 10000,
   HEADERS: {
     "Content-Type": "application/json",
@@ -66,6 +113,14 @@ export const API_CONFIG = {
       validateEnvVar("VITE_NETWORK_ERROR_THRESHOLD", "5000")
     ),
   },
+  RETRY: {
+    MAX_ATTEMPTS: parseInt(validateEnvVar("VITE_API_RETRY_MAX_ATTEMPTS", "3")),
+    DELAY: parseInt(validateEnvVar("VITE_API_RETRY_DELAY", "1000")),
+  },
+  CACHE: {
+    ENABLED: parseBool(validateEnvVar("VITE_API_CACHE_ENABLED", "true")),
+    TTL: parseInt(validateEnvVar("VITE_API_CACHE_TTL", "300000")), // 5 minutes
+  },
 };
 
 // Authentication configuration
@@ -75,10 +130,7 @@ export const AUTH_CONFIG = {
   REFRESH_TOKEN_KEY: "refreshToken",
   TOKEN_EXPIRY: 3600, // 1 hour
   REFRESH_TOKEN_EXPIRY: 604800, // 7 days
-  COOKIE_DOMAIN:
-    process.env.NODE_ENV === "production"
-      ? ".harmonic-universe.com"
-      : "localhost",
+  COOKIE_DOMAIN: IS_PRODUCTION ? ".harmonic-universe.com" : "localhost",
   COOKIE_SECURE: parseBool(validateEnvVar("VITE_AUTH_COOKIE_SECURE", "false")),
   COOKIE_SAMESITE: validateEnvVar("VITE_AUTH_COOKIE_SAMESITE", "strict"),
   ENDPOINTS: {
@@ -95,10 +147,11 @@ export const AUTH_CONFIG = {
 export const SECURITY_CONFIG = {
   ENABLE_HTTPS: parseBool(validateEnvVar("VITE_ENABLE_HTTPS", "false")),
   RATE_LIMIT: {
-    WINDOW: parseInt(validateEnvVar("VITE_RATE_LIMIT_WINDOW", "900000")),
+    ENABLED: parseBool(validateEnvVar("VITE_RATE_LIMIT_ENABLED", "true")),
     MAX_REQUESTS: parseInt(
       validateEnvVar("VITE_RATE_LIMIT_MAX_REQUESTS", "100")
     ),
+    WINDOW_MS: parseInt(validateEnvVar("VITE_RATE_LIMIT_WINDOW_MS", "60000")), // 1 minute
   },
   PASSWORD: {
     MIN_LENGTH: parseInt(validateEnvVar("VITE_PASSWORD_MIN_LENGTH", "8")),
@@ -116,6 +169,15 @@ export const SECURITY_CONFIG = {
       validateEnvVar("VITE_PASSWORD_REQUIRE_SYMBOLS", "true")
     ),
   },
+  JWT: {
+    STORAGE_KEY: validateEnvVar("VITE_JWT_STORAGE_KEY", "token"),
+    REFRESH_KEY: validateEnvVar("VITE_JWT_REFRESH_KEY", "refreshToken"),
+    EXPIRY_BUFFER: parseInt(validateEnvVar("VITE_JWT_EXPIRY_BUFFER", "300")), // 5 minutes
+  },
+  CSRF: {
+    ENABLED: parseBool(validateEnvVar("VITE_CSRF_ENABLED", "true")),
+    HEADER_NAME: validateEnvVar("VITE_CSRF_HEADER_NAME", "X-CSRF-Token"),
+  },
 };
 
 // Feature flags
@@ -131,6 +193,13 @@ export const FEATURES = {
     validateEnvVar("VITE_ENABLE_DEBUG_LOGGING", "false")
   ),
   MOCK_AUTH_IN_DEV: parseBool(validateEnvVar("VITE_MOCK_AUTH_IN_DEV", "false")),
+  DEMO_MODE: parseBool(validateEnvVar("VITE_FEATURE_DEMO_MODE", "false")),
+  OFFLINE_MODE: parseBool(validateEnvVar("VITE_FEATURE_OFFLINE_MODE", "true")),
+  DEBUG_MODE: parseBool(validateEnvVar("VITE_FEATURE_DEBUG_MODE", "false")),
+  ANALYTICS: parseBool(validateEnvVar("VITE_FEATURE_ANALYTICS", "false")),
+  PERFORMANCE_MONITORING: parseBool(
+    validateEnvVar("VITE_FEATURE_PERFORMANCE_MONITORING", "true")
+  ),
 };
 
 // Session configuration
@@ -156,7 +225,7 @@ export const SESSION_CONFIG = {
  * @property {Object.<string, Function>} CUSTOM_HANDLERS - Custom error handlers for specific error types
  */
 export const MONITORING_CONFIG = {
-  ENABLE_ERROR_MONITORING: process.env.NODE_ENV === "production",
+  ENABLE_ERROR_MONITORING: IS_PRODUCTION,
   SAMPLE_RATE: 0.1,
   MAX_ERRORS_PER_MINUTE: 100,
   ERROR_WINDOW: 60000,
@@ -341,12 +410,12 @@ export const ERROR_MESSAGES = {
  */
 export const APP_CONFIG = {
   API: {
-    BASE_URL: process.env.VITE_API_BASE_URL || "http://localhost:3000",
+    BASE_URL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3000",
     TIMEOUT: 30000,
   },
   FEATURES: {
-    ENABLE_ANALYTICS: process.env.NODE_ENV === "production",
-    ENABLE_LOGGING: process.env.NODE_ENV === "development",
+    ENABLE_ANALYTICS: IS_PRODUCTION,
+    ENABLE_LOGGING: IS_DEVELOPMENT,
   },
   SECURITY: {
     MAX_LOGIN_ATTEMPTS: 5,
