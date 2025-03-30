@@ -70,6 +70,7 @@ class Physics2D(BaseModel):
     
     name = db.Column(db.String(100), nullable=False, index=True)
     description = db.Column(db.Text)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
     universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), nullable=False, index=True)
     scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id', ondelete='CASCADE'), index=True)
     gravity_x = db.Column(db.Float, nullable=False, default=0.0)
@@ -85,6 +86,8 @@ class Physics2D(BaseModel):
         """Validate 2D physics settings."""
         if not self.name:
             raise ValueError("Name is required")
+        if not self.user_id:
+            raise ValueError("User ID is required")
         if not self.universe_id:
             raise ValueError("Universe ID is required")
         if self.velocity_iterations < 1:
@@ -98,6 +101,7 @@ class Physics2D(BaseModel):
             'id': self.id,
             'name': self.name,
             'description': self.description,
+            'user_id': self.user_id,
             'universe_id': self.universe_id,
             'scene_id': self.scene_id,
             'gravity': {'x': self.gravity_x, 'y': self.gravity_y},
@@ -117,6 +121,7 @@ class Physics3D(BaseModel):
     
     name = db.Column(db.String(100), nullable=False, index=True)
     description = db.Column(db.Text)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
     universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), nullable=False, index=True)
     scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id', ondelete='CASCADE'), index=True)
     gravity_x = db.Column(db.Float, nullable=False, default=0.0)
@@ -133,6 +138,8 @@ class Physics3D(BaseModel):
         """Validate 3D physics settings."""
         if not self.name:
             raise ValueError("Name is required")
+        if not self.user_id:
+            raise ValueError("User ID is required")
         if not self.universe_id:
             raise ValueError("Universe ID is required")
         if self.solver_iterations < 1:
@@ -146,6 +153,7 @@ class Physics3D(BaseModel):
             'id': self.id,
             'name': self.name,
             'description': self.description,
+            'user_id': self.user_id,
             'universe_id': self.universe_id,
             'scene_id': self.scene_id,
             'gravity': {'x': self.gravity_x, 'y': self.gravity_y, 'z': self.gravity_z},

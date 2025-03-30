@@ -121,6 +121,14 @@ def create_app():
     app.register_blueprint(notes_bp, url_prefix='/api/notes')
     app.register_blueprint(user_bp, url_prefix='/api/user')
     
+    # Health check endpoint
+    @app.route('/api/health')
+    def health_check():
+        return jsonify({
+            'status': 'healthy',
+            'message': 'The Harmonic Universe API is running'
+        })
+    
     # User loader for Flask-Login
     from .api.models import User
     @login_manager.user_loader

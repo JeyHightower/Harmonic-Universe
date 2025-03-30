@@ -56,14 +56,6 @@ def create_app():
 # Create the application instance
 app = create_app()
 
-# Health check endpoint
-@app.route('/api/health')
-def health_check():
-    return jsonify({
-        'status': 'healthy',
-        'message': 'The Harmonic Universe API is running'
-    })
-
 # Error handlers
 @app.errorhandler(404)
 def not_found(error):

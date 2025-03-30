@@ -8,9 +8,8 @@ import {
   loginSuccess,
 } from "../store/slices/authSlice";
 import { openModal } from "../store/slices/modalSlice";
-import { api } from "../services/api";
-import { endpoints } from "../services/endpoints";
-import { AUTH_CONFIG } from "../utils/config";
+import apiClient from "../services/api";
+import { AUTH_CONFIG, IS_DEVELOPMENT } from "../utils/config";
 import Button from "../components/common/Button";
 import "../styles/Home.css";
 
@@ -42,8 +41,17 @@ function Home() {
       dispatch(loginStart());
 
       // Make demo login request
-      const response = await api.demoLogin();
-      console.debug("Demo login response:", response);
+      if (IS_DEVELOPMENT) {
+        console.debug(
+          "Making demo login request to:",
+          apiClient.defaults?.baseURL
+        );
+      }
+      const response = await apiClient.demoLogin();
+
+      if (IS_DEVELOPMENT) {
+        console.debug("Demo login response:", response);
+      }
 
       if (!response?.data?.token) {
         throw new Error("Invalid response from demo login endpoint");
@@ -57,17 +65,24 @@ function Home() {
         JSON.stringify(response.data.user)
       );
 
-      console.debug("Token stored:", token.substring(0, 10) + "...");
-      console.debug("User data stored:", response.data.user);
+      if (IS_DEVELOPMENT) {
+        console.debug("Token stored:", token.substring(0, 10) + "...");
+        console.debug("User data stored:", response.data.user);
+      }
 
       // Wait a brief moment to ensure token is set
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Fetch user info after successful login
       try {
-        console.debug("Fetching user profile with token");
-        const userResponse = await api.getUserProfile();
-        console.debug("User profile response:", userResponse);
+        if (IS_DEVELOPMENT) {
+          console.debug("Fetching user profile with token");
+        }
+        const userResponse = await apiClient.getUserProfile();
+
+        if (IS_DEVELOPMENT) {
+          console.debug("User profile response:", userResponse);
+        }
 
         if (!userResponse?.data?.message || !userResponse?.data?.profile) {
           throw new Error(
@@ -91,6 +106,12 @@ function Home() {
       }
     } catch (error) {
       console.error("Demo login error:", error);
+      console.error("Error details:", {
+        message: error.message,
+        status: error.status,
+        data: error.data,
+        config: error.config,
+      });
       dispatch(loginFailure(error.message));
     }
   };

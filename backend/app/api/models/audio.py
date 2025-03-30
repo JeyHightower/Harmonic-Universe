@@ -16,6 +16,7 @@ class SoundProfile(BaseModel):
     # Relationships
     audio_samples = db.relationship('AudioSample', backref='sound_profile', lazy=True, cascade='all, delete-orphan')
     music_pieces = db.relationship('MusicPiece', backref='sound_profile', lazy=True, cascade='all, delete-orphan')
+    child_universe = db.relationship('Universe', foreign_keys='Universe.sound_profile_id', backref=db.backref('owned_sound_profile', uselist=False), uselist=False, lazy=True)
     
     def validate(self):
         """Validate sound profile data."""

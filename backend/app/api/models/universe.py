@@ -18,6 +18,7 @@ class Universe(BaseModel):
     physics_3d = db.relationship('Physics3D', backref='universe', lazy=True, cascade='all, delete-orphan')
     audio_samples = db.relationship('AudioSample', backref='universe', lazy=True, cascade='all, delete-orphan')
     music_pieces = db.relationship('MusicPiece', backref='universe', lazy=True, cascade='all, delete-orphan')
+    sound_profile = db.relationship('SoundProfile', foreign_keys=[sound_profile_id], backref=db.backref('parent_universe', uselist=False), uselist=False, lazy=True)
     
     def validate(self):
         """Validate universe data."""

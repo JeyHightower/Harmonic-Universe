@@ -33,7 +33,7 @@ window.apiDebug = {
 function chooseApiEndpoint() {
   const endpoints = {
     // Local development endpoint
-    local: "http://localhost:5000/api",
+    local: "http://localhost:5001/api",
 
     // Production endpoints
     production: "https://harmonic-universe-api.onrender.com/api",

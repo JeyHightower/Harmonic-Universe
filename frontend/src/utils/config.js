@@ -23,7 +23,7 @@ export const PUBLIC_URL = import.meta.env.PUBLIC_URL || "/";
 
 // Export the API URL
 export const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  import.meta.env.VITE_API_URL || "http://localhost:5001/api";
 
 // Export the CDN URL
 export const CDN_URL = import.meta.env.VITE_CDN_URL || "";
@@ -76,7 +76,7 @@ const parseInt = (value, defaultValue = undefined) => {
 
 // API configuration
 export const API_CONFIG = {
-  BASE_URL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  BASE_URL: import.meta.env.VITE_API_URL || "http://localhost:5001/api",
   TIMEOUT: 10000,
   HEADERS: {
     "Content-Type": "application/json",

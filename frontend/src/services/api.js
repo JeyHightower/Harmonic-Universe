@@ -1,6 +1,11 @@
 import axios from "axios";
 import { shouldUseFallback } from "../utils/authFallback";
-import { API_CONFIG, AUTH_CONFIG, API_URL } from "../utils/config";
+import {
+  API_CONFIG,
+  AUTH_CONFIG,
+  API_URL,
+  IS_DEVELOPMENT,
+} from "../utils/config";
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -13,6 +18,35 @@ const api = axios.create({
   withCredentials: true,
 });
 
+// Test API connection on startup
+const testApiConnection = async () => {
+  try {
+    if (IS_DEVELOPMENT) {
+      console.debug("Testing API connection to:", API_URL);
+    }
+    const response = await api.get("/health");
+    if (IS_DEVELOPMENT) {
+      console.debug("API connection successful:", response.data);
+    }
+    return true;
+  } catch (error) {
+    console.error("API connection failed:", {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      config: {
+        baseURL: error.config?.baseURL,
+        url: error.config?.url,
+        method: error.config?.method,
+      },
+    });
+    return false;
+  }
+};
+
+// Test connection on startup
+testApiConnection();
+
 // Add request interceptor
 api.interceptors.request.use(
   (config) => {
@@ -20,20 +54,27 @@ api.interceptors.request.use(
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.debug("Adding token to request:", token.substring(0, 10) + "...");
-      console.debug("Full request config:", {
-        url: config.url,
-        baseURL: config.baseURL,
-        method: config.method,
-        headers: config.headers,
-        withCredentials: config.withCredentials,
-      });
+      if (IS_DEVELOPMENT) {
+        console.debug(
+          "Adding token to request:",
+          token.substring(0, 10) + "..."
+        );
+        console.debug("Full request config:", {
+          url: config.url,
+          baseURL: config.baseURL,
+          method: config.method,
+          headers: config.headers,
+          withCredentials: config.withCredentials,
+        });
+      }
     } else {
-      console.debug("No token found in localStorage");
+      if (IS_DEVELOPMENT) {
+        console.debug("No token found in localStorage");
+      }
     }
 
     // Log outgoing requests in development
-    if (process.env.NODE_ENV === "development") {
+    if (IS_DEVELOPMENT) {
       console.debug("API Request:", {
         method: config.method?.toUpperCase(),
         url: config.url,
@@ -56,7 +97,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     // Log successful responses in development
-    if (process.env.NODE_ENV === "development") {
+    if (IS_DEVELOPMENT) {
       console.debug("API Response:", {
         status: response.status,
         data: response.data,
@@ -77,7 +118,7 @@ api.interceptors.response.use(
   },
   async (error) => {
     // Log error details in development
-    if (process.env.NODE_ENV === "development") {
+    if (IS_DEVELOPMENT) {
       console.error("API Error:", {
         message: error.message,
         status: error.response?.status,
@@ -106,6 +147,7 @@ api.interceptors.response.use(
         "An unknown error occurred",
       status: error.response?.status,
       data: error.response?.data,
+      config: error.config,
     };
 
     if (error.response?.status === 401) {
@@ -172,6 +214,7 @@ export const endpoints = {
     changePassword: "/auth/password",
     resetPassword: "/auth/reset-password",
     verifyEmail: "/auth/verify-email",
+    demo: "/auth/demo",
   },
   user: {
     profile: "/user/profile",
@@ -231,6 +274,7 @@ export const apiClient = {
   register: (userData) => api.post(endpoints.auth.register, userData),
   logout: () => api.post(endpoints.auth.logout),
   checkAuth: () => api.get(endpoints.auth.checkAuth),
+  demoLogin: () => api.post(endpoints.auth.demo),
 
   // User methods
   getUserProfile: async () => {
