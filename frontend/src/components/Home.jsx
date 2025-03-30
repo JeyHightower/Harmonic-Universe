@@ -34,7 +34,7 @@ function Home() {
     try {
       console.debug("Starting demo login");
       dispatch(loginStart());
-      const response = await api.post("/api/auth/demo-login");
+      const response = await api.post("/auth/demo-login");
       console.debug("Demo login response:", response);
 
       if (response.access_token) {
