@@ -1,9 +1,10 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_jwt_extended import JWTManager
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -30,7 +31,9 @@ def create_app():
         RATELIMIT_STORAGE_URL=os.environ.get('REDIS_URL', 'redis://localhost:6379/0'),
         RATELIMIT_STRATEGY="fixed-window",
         PORT=port,
-        HOST=host
+        HOST=host,
+        JWT_SECRET_KEY=os.environ.get('JWT_SECRET_KEY', 'dev-jwt-secret'),
+        JWT_ACCESS_TOKEN_EXPIRES=3600  # 1 hour
     )
     
     # Initialize extensions
@@ -39,7 +42,8 @@ def create_app():
     migrate = Migrate(app, db)
     login_manager = LoginManager()
     login_manager.init_app(app)
-    login_manager.login_view = 'auth.login'
+    login_manager.login_view = None  # Disable redirect
+    jwt = JWTManager(app)
     
     # Initialize rate limiter
     limiter = Limiter(
@@ -61,5 +65,14 @@ def create_app():
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
+    
+    @login_manager.unauthorized_handler
+    def unauthorized():
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    # Create tables
+    with app.app_context():
+        db.drop_all()  # Clear any existing tables
+        db.create_all()
     
     return app
