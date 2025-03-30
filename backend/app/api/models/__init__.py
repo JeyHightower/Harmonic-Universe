@@ -1,7 +1,7 @@
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
-from .database import db
+from ..database import db
 
 class BaseModel(db.Model):
     __abstract__ = True
@@ -26,6 +26,11 @@ class User(UserMixin, BaseModel):
     sound_profiles = db.relationship('SoundProfile', backref='user', lazy=True, cascade='all, delete-orphan')
     audio_samples = db.relationship('AudioSample', backref='user', lazy=True, cascade='all, delete-orphan')
     music_pieces = db.relationship('MusicPiece', backref='user', lazy=True, cascade='all, delete-orphan')
+    
+    def __init__(self, username=None, email=None):
+        super().__init__()
+        self.username = username
+        self.email = email
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

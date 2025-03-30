@@ -1,7 +1,8 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash
-from ..models import User, db
+from ..models import User
+from ..database import db
 from datetime import datetime, timedelta
 import jwt
 import os
@@ -27,11 +28,13 @@ def register():
             return jsonify({'message': 'Email already exists'}), 409
         
         # Create new user
-        user = User()
-        user.username = data['username']
-        user.email = data['email']
+        user = User(
+            username=data['username'],
+            email=data['email']
+        )
         user.set_password(data['password'])
         
+        # Add user to session and commit
         db.session.add(user)
         db.session.commit()
         
@@ -47,7 +50,10 @@ def register():
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Registration error: {str(e)}')
-        return jsonify({'message': 'An error occurred during registration'}), 500
+        return jsonify({
+            'message': 'An error occurred during registration',
+            'error': str(e)
+        }), 500
 
 @auth_bp.route('/login', methods=['POST'])
 def login():

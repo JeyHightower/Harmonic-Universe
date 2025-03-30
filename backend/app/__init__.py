@@ -6,20 +6,17 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_jwt_extended import JWTManager
 import os
-import sys
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from api.database import db
+
+from .api.database import db, migrate
 
 def create_app():
     app = Flask(__name__)
     
     # Get database URL from environment
-    database_url = 'sqlite:///app.db'
+    db_dir = os.path.dirname(os.path.dirname(__file__))
+    os.makedirs(db_dir, exist_ok=True)
+    database_url = 'sqlite:///' + os.path.abspath(os.path.join(db_dir, 'app.db'))
     print(f"Using SQLite database at: {database_url}")
-    
-    # Get port from environment or use default
-    port = int(os.environ.get('PORT', 5000))
-    host = os.environ.get('HOST', '0.0.0.0')
     
     # Default configuration
     app.config.update(
@@ -30,8 +27,6 @@ def create_app():
         MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16MB max file size
         RATELIMIT_STORAGE_URL=os.environ.get('REDIS_URL', 'redis://localhost:6379/0'),
         RATELIMIT_STRATEGY="fixed-window",
-        PORT=port,
-        HOST=host,
         JWT_SECRET_KEY=os.environ.get('JWT_SECRET_KEY', 'dev-jwt-secret'),
         JWT_ACCESS_TOKEN_EXPIRES=3600  # 1 hour
     )
@@ -39,7 +34,22 @@ def create_app():
     # Initialize extensions
     CORS(app)
     db.init_app(app)
-    migrate = Migrate(app, db)
+    migrate.init_app(app, db)
+    
+    # Create database tables
+    with app.app_context():
+        try:
+            # Import all models to ensure they are registered with SQLAlchemy
+            from .api.models import User, Note, Universe, Physics2D, Physics3D, SoundProfile, AudioSample, MusicPiece
+            
+            # Create tables
+            db.drop_all()  # Clear any existing tables
+            db.create_all()
+            print("Database tables created successfully")
+        except Exception as e:
+            print(f"Error creating database tables: {e}")
+            raise e
+    
     login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = None  # Disable redirect
@@ -54,14 +64,13 @@ def create_app():
     )
     
     # Register blueprints
-    from api.routes import auth_bp, characters_bp, notes_bp, physics_bp
+    from .api.routes import auth_bp, characters_bp, notes_bp
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(characters_bp, url_prefix='/api/characters')
     app.register_blueprint(notes_bp, url_prefix='/api/notes')
-    app.register_blueprint(physics_bp, url_prefix='/api/physics')
     
     # User loader for Flask-Login
-    from api.models import User
+    from .api.models import User
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
@@ -69,10 +78,5 @@ def create_app():
     @login_manager.unauthorized_handler
     def unauthorized():
         return jsonify({'error': 'Unauthorized'}), 401
-    
-    # Create tables
-    with app.app_context():
-        db.drop_all()  # Clear any existing tables
-        db.create_all()
     
     return app
