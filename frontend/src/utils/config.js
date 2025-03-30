@@ -144,15 +144,25 @@ export const SESSION_CONFIG = {
   ),
 };
 
-// Monitoring configuration
+/**
+ * Configuration for monitoring and error tracking
+ * @typedef {Object} MonitoringConfig
+ * @property {boolean} ENABLE_ERROR_MONITORING - Enable/disable error monitoring
+ * @property {number} SAMPLE_RATE - Sampling rate for error reporting (0-1)
+ * @property {number} MAX_ERRORS_PER_MINUTE - Maximum number of errors to report per minute
+ * @property {number} ERROR_WINDOW - Error reporting window in milliseconds
+ * @property {Object} MONITORING_SERVICE - Monitoring service configuration
+ * @property {string[]} IGNORED_ERRORS - Error categories to ignore
+ * @property {Object.<string, Function>} CUSTOM_HANDLERS - Custom error handlers for specific error types
+ */
 export const MONITORING_CONFIG = {
-  ENABLE_PERFORMANCE: parseBool(
-    validateEnvVar("VITE_ENABLE_PERFORMANCE_MONITORING", "false")
-  ),
-  ENABLE_ERROR_MONITORING: parseBool(
-    validateEnvVar("VITE_ENABLE_ERROR_MONITORING", "false")
-  ),
-  SAMPLE_RATE: parseFloat(validateEnvVar("VITE_MONITORING_SAMPLE_RATE", "0.1")),
+  ENABLE_ERROR_MONITORING: process.env.NODE_ENV === "production",
+  SAMPLE_RATE: 0.1,
+  MAX_ERRORS_PER_MINUTE: 100,
+  ERROR_WINDOW: 60000,
+  MONITORING_SERVICE: {},
+  IGNORED_ERRORS: ["NetworkError", "TimeoutError", "ValidationError"],
+  CUSTOM_HANDLERS: {},
 };
 
 // Theme configuration
@@ -250,4 +260,43 @@ export const ERROR_MESSAGES = {
   NOT_FOUND: "The requested resource was not found.",
   VALIDATION_ERROR: "Please check your input and try again.",
   UNKNOWN_ERROR: "An unknown error occurred. Please try again.",
+};
+
+/**
+ * Application-wide configuration
+ * @typedef {Object} AppConfig
+ * @property {Object} API - API configuration
+ * @property {string} API.BASE_URL - Base URL for API endpoints
+ * @property {number} API.TIMEOUT - API timeout in milliseconds
+ * @property {Object} FEATURES - Feature flags
+ * @property {boolean} FEATURES.ENABLE_ANALYTICS - Enable/disable analytics
+ * @property {boolean} FEATURES.ENABLE_LOGGING - Enable/disable logging
+ * @property {Object} SECURITY - Security settings
+ * @property {number} SECURITY.MAX_LOGIN_ATTEMPTS - Maximum login attempts
+ * @property {number} SECURITY.SESSION_TIMEOUT - Session timeout in milliseconds
+ * @property {number} SECURITY.PASSWORD_MIN_LENGTH - Minimum password length
+ * @property {Object} PERFORMANCE - Performance settings
+ * @property {number} PERFORMANCE.CACHE_TTL - Cache time-to-live in milliseconds
+ * @property {number} PERFORMANCE.DEBOUNCE_DELAY - Debounce delay in milliseconds
+ * @property {number} PERFORMANCE.THROTTLE_DELAY - Throttle delay in milliseconds
+ */
+export const APP_CONFIG = {
+  API: {
+    BASE_URL: process.env.VITE_API_BASE_URL || "http://localhost:3000",
+    TIMEOUT: 30000,
+  },
+  FEATURES: {
+    ENABLE_ANALYTICS: process.env.NODE_ENV === "production",
+    ENABLE_LOGGING: process.env.NODE_ENV === "development",
+  },
+  SECURITY: {
+    MAX_LOGIN_ATTEMPTS: 5,
+    SESSION_TIMEOUT: 3600000,
+    PASSWORD_MIN_LENGTH: 8,
+  },
+  PERFORMANCE: {
+    CACHE_TTL: 3600000,
+    DEBOUNCE_DELAY: 300,
+    THROTTLE_DELAY: 1000,
+  },
 };

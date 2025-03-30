@@ -1,23 +1,13 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { Component } from "react";
+import PropTypes from "prop-types";
 import { logError } from "../../services/errorService";
-
-interface Props {
-  children: ReactNode;
-  fallback?: ReactNode;
-  onError?: (error: Error, errorInfo: ErrorInfo) => void;
-}
-
-interface State {
-  hasError: boolean;
-  error: Error | null;
-}
 
 /**
  * Error boundary component that catches JavaScript errors anywhere in the child component tree
  * and displays a fallback UI instead of crashing the app.
  */
-class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
+class ErrorBoundary extends Component {
+  constructor(props) {
     super(props);
     this.state = {
       hasError: false,
@@ -25,16 +15,16 @@ class ErrorBoundary extends Component<Props, State> {
     };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error) {
     return {
       hasError: true,
       error,
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+  componentDidCatch(error, errorInfo) {
     // Log the error using our error service
-    errorService.handleError(error, 'ErrorBoundary', {
+    errorService.handleError(error, "ErrorBoundary", {
       componentStack: errorInfo.componentStack,
     });
 
@@ -44,7 +34,7 @@ class ErrorBoundary extends Component<Props, State> {
     }
   }
 
-  render(): ReactNode {
+  render() {
     if (this.state.hasError) {
       // Render fallback UI if provided, otherwise render default error UI
       if (this.props.fallback) {
@@ -54,9 +44,11 @@ class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="error-boundary">
           <h2>Something went wrong</h2>
-          <p>We apologize for the inconvenience. Please try refreshing the page.</p>
-          {process.env.NODE_ENV === 'development' && this.state.error && (
-            <details style={{ whiteSpace: 'pre-wrap' }}>
+          <p>
+            We apologize for the inconvenience. Please try refreshing the page.
+          </p>
+          {process.env.NODE_ENV === "development" && this.state.error && (
+            <details style={{ whiteSpace: "pre-wrap" }}>
               <summary>Error Details</summary>
               {this.state.error.toString()}
               <br />
@@ -79,4 +71,11 @@ class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-export default ErrorBoundary; 
+// PropTypes for type checking
+ErrorBoundary.propTypes = {
+  children: PropTypes.node.isRequired,
+  fallback: PropTypes.node,
+  onError: PropTypes.func,
+};
+
+export default ErrorBoundary;
