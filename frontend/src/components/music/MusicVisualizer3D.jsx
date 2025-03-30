@@ -1,5 +1,18 @@
-import React, { useEffect, useRef } from 'react';
-import * as THREE from 'three';
+import React, { useEffect, useRef } from "react";
+import {
+  Scene,
+  PerspectiveCamera,
+  WebGLRenderer,
+  AmbientLight,
+  DirectionalLight,
+  BufferGeometry,
+  BufferAttribute,
+  PointsMaterial,
+  Points,
+  AdditiveBlending,
+  Color,
+  ShaderMaterial,
+} from "three";
 
 const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
   const containerRef = useRef(null);
@@ -12,9 +25,9 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
   const visualizerStartTime = useRef(Date.now());
   const effectsRef = useRef({
     energy: 0.5,
-    mood: 'neutral',
+    mood: "neutral",
     complexity: 0.5,
-    style: 'default',
+    style: "default",
   });
 
   // Initialize Three.js scene
@@ -22,11 +35,11 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
     if (!containerRef.current) return;
 
     // Create scene
-    const scene = new THREE.Scene();
+    const scene = new Scene();
     sceneRef.current = scene;
 
     // Create camera
-    const camera = new THREE.PerspectiveCamera(
+    const camera = new PerspectiveCamera(
       75,
       containerRef.current.clientWidth / containerRef.current.clientHeight,
       0.1,
@@ -36,7 +49,7 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
     cameraRef.current = camera;
 
     // Create renderer
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    const renderer = new WebGLRenderer({ alpha: true, antialias: true });
     renderer.setSize(
       containerRef.current.clientWidth,
       containerRef.current.clientHeight
@@ -46,11 +59,11 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
     rendererRef.current = renderer;
 
     // Add ambient light
-    const ambientLight = new THREE.AmbientLight(0x404040);
+    const ambientLight = new AmbientLight(0x404040);
     scene.add(ambientLight);
 
     // Add directional light
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    const directionalLight = new DirectionalLight(0xffffff, 1);
     directionalLight.position.set(1, 1, 1);
     scene.add(directionalLight);
 
@@ -74,10 +87,10 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
       );
     };
 
-    window.addEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
 
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("resize", handleResize);
       if (frameIdRef.current) {
         cancelAnimationFrame(frameIdRef.current);
       }
@@ -102,7 +115,7 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
       : 1000;
 
     // Create geometry
-    const geometry = new THREE.BufferGeometry();
+    const geometry = new BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
     const sizes = new Float32Array(particleCount);
@@ -128,21 +141,21 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
       sizes[i] = Math.random() * 0.5 + 0.5;
     }
 
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    geometry.setAttribute("position", new BufferAttribute(positions, 3));
+    geometry.setAttribute("color", new BufferAttribute(colors, 3));
+    geometry.setAttribute("size", new BufferAttribute(sizes, 1));
 
     // Create material
-    const material = new THREE.PointsMaterial({
+    const material = new PointsMaterial({
       size: 0.5,
       vertexColors: true,
-      blending: THREE.AdditiveBlending,
+      blending: AdditiveBlending,
       transparent: true,
       sizeAttenuation: true,
     });
 
     // Create points
-    const particles = new THREE.Points(geometry, material);
+    const particles = new Points(geometry, material);
     sceneRef.current.add(particles);
     particlesRef.current = particles;
   };
@@ -157,7 +170,7 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
     }
 
     const starCount = 2000;
-    const starGeometry = new THREE.BufferGeometry();
+    const starGeometry = new BufferGeometry();
     const starPositions = new Float32Array(starCount * 3);
     const starSizes = new Float32Array(starCount);
 
@@ -176,15 +189,15 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
     }
 
     starGeometry.setAttribute(
-      'position',
-      new THREE.BufferAttribute(starPositions, 3)
+      "position",
+      new BufferAttribute(starPositions, 3)
     );
-    starGeometry.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
+    starGeometry.setAttribute("size", new BufferAttribute(starSizes, 1));
 
     // Star material with custom shader for better-looking stars
-    const starMaterial = new THREE.ShaderMaterial({
+    const starMaterial = new ShaderMaterial({
       uniforms: {
-        color: { value: new THREE.Color(0xffffff) },
+        color: { value: new Color(0xffffff) },
         pointTexture: { value: null }, // We'll use a simple shader without texture
       },
       vertexShader: `
@@ -206,11 +219,11 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
           gl_FragColor = vec4(vColor, intensity);
         }
       `,
-      blending: THREE.AdditiveBlending,
+      blending: AdditiveBlending,
       transparent: true,
     });
 
-    const stars = new THREE.Points(starGeometry, starMaterial);
+    const stars = new Points(starGeometry, starMaterial);
     sceneRef.current.add(stars);
     starsRef.current = stars;
   };
@@ -253,9 +266,9 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
       if (musicData.ai_metadata) {
         effectsRef.current = {
           energy: musicData.ai_metadata.energy || 0.5,
-          mood: musicData.ai_metadata.mood || 'neutral',
+          mood: musicData.ai_metadata.mood || "neutral",
           complexity: musicData.ai_metadata.complexity || 0.5,
-          style: musicData.ai_metadata.style || 'default',
+          style: musicData.ai_metadata.style || "default",
         };
 
         // Update scene based on style
@@ -265,11 +278,11 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
   }, [musicData]);
 
   // Update scene appearance based on AI style
-  const updateSceneForStyle = style => {
+  const updateSceneForStyle = (style) => {
     if (!sceneRef.current) return;
 
     switch (style) {
-      case 'ambient':
+      case "ambient":
         // Slower, more ethereal movement with soft blue/purple colors
         if (particlesRef.current) {
           const colors = particlesRef.current.geometry.attributes.color;
@@ -285,7 +298,7 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
         }
         break;
 
-      case 'classical':
+      case "classical":
         // More ordered, golden/warm colors
         if (particlesRef.current) {
           const colors = particlesRef.current.geometry.attributes.color;
@@ -301,7 +314,7 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
         }
         break;
 
-      case 'electronic':
+      case "electronic":
         // Vibrant, high contrast neon colors
         if (particlesRef.current) {
           const colors = particlesRef.current.geometry.attributes.color;
@@ -320,7 +333,7 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
         }
         break;
 
-      case 'jazz':
+      case "jazz":
         // Deep, rich purples, blues and golds
         if (particlesRef.current) {
           const colors = particlesRef.current.geometry.attributes.color;
@@ -365,7 +378,7 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
   };
 
   // Update particles based on analyzer data
-  const updateParticles = dataArray => {
+  const updateParticles = (dataArray) => {
     if (!particlesRef.current || !musicData) return;
 
     const particles = particlesRef.current;
@@ -427,7 +440,7 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
   };
 
   // Rotate the entire scene
-  const rotateScene = speed => {
+  const rotateScene = (speed) => {
     if (particlesRef.current) {
       particlesRef.current.rotation.y += speed;
       particlesRef.current.rotation.x += speed * 0.5;
@@ -441,9 +454,9 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
     <div
       ref={containerRef}
       style={{
-        width: '100%',
-        height: '100%',
-        position: 'absolute',
+        width: "100%",
+        height: "100%",
+        position: "absolute",
         top: 0,
         left: 0,
         zIndex: 0,
