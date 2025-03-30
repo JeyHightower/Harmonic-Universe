@@ -1,10 +1,13 @@
+import { lazy } from "react";
 import { Navigate } from "react-router-dom";
 import Layout from "../components/layout/Layout";
 import ProtectedRoute from "../components/routing/ProtectedRoute";
-import SettingsPage from "../pages/SettingsPage";
-import Dashboard from "../features/Dashboard";
-import Home from "../pages/Home";
 import { ROUTES } from "../utils/routes";
+
+// Lazy load components
+const SettingsPage = lazy(() => import("../pages/SettingsPage"));
+const Dashboard = lazy(() => import("../features/Dashboard"));
+const Home = lazy(() => import("../pages/Home"));
 
 const routes = [
   {
