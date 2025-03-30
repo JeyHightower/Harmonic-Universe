@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory, Response
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_login import LoginManager
@@ -6,11 +6,16 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_jwt_extended import JWTManager
 import os
+from pathlib import Path
+from typing import Optional, Union
 
 from .api.database import db, migrate
 
 def create_app():
     app = Flask(__name__)
+    static_folder = str(Path(__file__).parent.parent / 'frontend' / 'dist')
+    app.static_folder = static_folder
+    app.static_url_path = ''
     
     # Get database URL from environment
     db_dir = os.path.dirname(os.path.dirname(__file__))
@@ -78,5 +83,25 @@ def create_app():
     @login_manager.unauthorized_handler
     def unauthorized():
         return jsonify({'error': 'Unauthorized'}), 401
+    
+    # Serve favicon.ico
+    @app.route('/favicon.ico')
+    def favicon() -> Response:
+        favicon_path = str(Path(__file__).parent.parent / 'frontend' / 'public')
+        return send_from_directory(
+            favicon_path,
+            'favicon.ico',
+            mimetype='image/vnd.microsoft.icon'
+        )
+    
+    # Serve index.html for all non-API routes
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def serve(path: str = '') -> Response:
+        if not app.static_folder:
+            app.static_folder = str(Path(__file__).parent.parent / 'frontend' / 'dist')
+        if path and os.path.exists(os.path.join(app.static_folder, path)):
+            return send_from_directory(app.static_folder, path)
+        return send_from_directory(app.static_folder, 'index.html')
     
     return app
