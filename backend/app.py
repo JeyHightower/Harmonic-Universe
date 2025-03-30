@@ -23,12 +23,6 @@ def create_app():
     # Configure SQLAlchemy
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        'pool_size': None,  # SQLite doesn't use connection pooling
-        'max_overflow': None,
-        'pool_timeout': None,
-        'pool_recycle': None,
-    }
 
     # Initialize extensions
     db.init_app(app)
