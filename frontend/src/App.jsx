@@ -1,19 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
-import { Provider } from 'react-redux';
-import { store } from './store';
+import React, { useState, useEffect } from "react";
+import { Routes, Route, BrowserRouter } from "react-router-dom";
+import { Provider } from "react-redux";
+import { store } from "./store";
 
 // Define a fallback component in case of errors
 const ErrorFallback = () => (
-  <div style={{
-    padding: '2rem',
-    margin: '2rem auto',
-    maxWidth: '600px',
-    textAlign: 'center',
-    backgroundColor: '#f8f9fa',
-    borderRadius: '8px',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-  }}>
+  <div
+    style={{
+      padding: "2rem",
+      margin: "2rem auto",
+      maxWidth: "600px",
+      textAlign: "center",
+      backgroundColor: "#f8f9fa",
+      borderRadius: "8px",
+      boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+    }}
+  >
     <h1>Something went wrong</h1>
     <p>We're having trouble loading the application. Please try again later.</p>
   </div>
@@ -24,14 +26,17 @@ const AppContent = () => {
   try {
     // Import and use components from your application
     return (
-      <Router>
+      <BrowserRouter>
         <div className="App">
           <header className="App-header">
             <h1>Harmonic Universe</h1>
           </header>
           <main>
             <Routes>
-              <Route path="/" element={<div>Welcome to Harmonic Universe</div>} />
+              <Route
+                path="/"
+                element={<div>Welcome to Harmonic Universe</div>}
+              />
               {/* Your other routes should go here */}
             </Routes>
           </main>
@@ -39,7 +44,7 @@ const AppContent = () => {
             <p>&copy; {new Date().getFullYear()} Harmonic Universe</p>
           </footer>
         </div>
-      </Router>
+      </BrowserRouter>
     );
   } catch (error) {
     console.error("Error rendering app content:", error);
