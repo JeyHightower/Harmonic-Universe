@@ -6,7 +6,7 @@ import {
   validateDescription,
   validateUniverseName,
 } from "../../utils/validation";
-import Button from "../common/Button";
+import { Button } from "../common";
 import Input from "../common/Input";
 import "../../styles/Universe.css";
 

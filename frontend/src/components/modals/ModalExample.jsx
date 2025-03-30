@@ -1,32 +1,32 @@
-import React, { useState } from 'react';
-import { useModal } from '../../contexts/ModalContext';
+import React, { useState } from "react";
+import { useModal } from "../../contexts/ModalContext";
 import {
   createAlertModal,
   createConfirmModal,
   createFormModal,
-} from '../../utils/modalHelpers';
-import Button from '../common/Button';
-import DraggableModal from '../common/DraggableModal';
-import Input from '../common/Input';
-import './ModalExample.css';
+} from "../../utils/modalHelpers";
+import { Button } from "../common";
+import { DraggableModal } from "./";
+import Input from "../common/Input";
+import "./ModalExample.css";
 
 // Example form component for the form modal
 const ExampleForm = ({ onSubmit, onClose }) => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    message: '',
+    name: "",
+    email: "",
+    message: "",
   });
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
-  const handleSubmit = e => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(formData);
   };
@@ -68,10 +68,11 @@ const ModalExample = () => {
 
   // Alert modal example
   const handleOpenAlertModal = () => {
+    console.log("Opening alert modal");
     openModal(
       createAlertModal(
-        'This is an alert message to inform the user about something important.',
-        { title: 'Information' }
+        "This is an alert message to inform the user about something important.",
+        { title: "Information" }
       )
     );
   };
@@ -80,19 +81,19 @@ const ModalExample = () => {
   const handleOpenConfirmModal = () => {
     openModal(
       createConfirmModal(
-        'Are you sure you want to proceed with this action?',
+        "Are you sure you want to proceed with this action?",
         () => {
           openModal(
-            createAlertModal('Action confirmed successfully!', {
-              title: 'Success',
-              animation: 'zoom',
+            createAlertModal("Action confirmed successfully!", {
+              title: "Success",
+              animation: "zoom",
             })
           );
         },
         {
-          title: 'Please Confirm',
-          confirmText: 'Yes, Proceed',
-          cancelText: 'Cancel',
+          title: "Please Confirm",
+          confirmText: "Yes, Proceed",
+          cancelText: "Cancel",
         }
       )
     );
@@ -101,22 +102,22 @@ const ModalExample = () => {
   const handleOpenDeleteConfirmModal = () => {
     openModal(
       createConfirmModal(
-        'Are you sure you want to delete this item? This action cannot be undone.',
+        "Are you sure you want to delete this item? This action cannot be undone.",
         () => {
           openModal(
-            createAlertModal('Item deleted successfully!', {
-              title: 'Deleted',
-              animation: 'zoom',
-              type: 'alert',
+            createAlertModal("Item deleted successfully!", {
+              title: "Deleted",
+              animation: "zoom",
+              type: "alert",
             })
           );
         },
         {
-          title: 'Delete Item',
-          confirmText: 'Delete',
-          cancelText: 'Cancel',
+          title: "Delete Item",
+          confirmText: "Delete",
+          cancelText: "Cancel",
           isDestructive: true,
-          animation: 'slide',
+          animation: "slide",
         }
       )
     );
@@ -124,11 +125,11 @@ const ModalExample = () => {
 
   // Form modal example
   const handleOpenFormModal = () => {
-    const handleSubmit = async data => {
+    const handleSubmit = async (data) => {
       setIsSubmitting(true);
 
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       setSubmittedData(data);
       setIsSubmitting(false);
@@ -137,7 +138,7 @@ const ModalExample = () => {
       openModal(
         createAlertModal(
           `Form submitted successfully with name: ${data.name}, email: ${data.email}`,
-          { title: 'Form Submitted' }
+          { title: "Form Submitted" }
         )
       );
     };
@@ -150,11 +151,11 @@ const ModalExample = () => {
           isSubmitting,
         },
         {
-          title: 'Contact Form',
-          submitText: 'Submit Form',
-          cancelText: 'Cancel',
-          size: 'medium',
-          position: 'center',
+          title: "Contact Form",
+          submitText: "Submit Form",
+          cancelText: "Cancel",
+          size: "medium",
+          position: "center",
         }
       )
     );
@@ -163,27 +164,27 @@ const ModalExample = () => {
   // Size variant examples
   const handleOpenSmallModal = () => {
     openModal(
-      createAlertModal('This is a small modal', {
-        title: 'Small Modal',
-        size: 'small',
+      createAlertModal("This is a small modal", {
+        title: "Small Modal",
+        size: "small",
       })
     );
   };
 
   const handleOpenMediumModal = () => {
     openModal(
-      createAlertModal('This is a medium modal (default size)', {
-        title: 'Medium Modal',
-        size: 'medium',
+      createAlertModal("This is a medium modal (default size)", {
+        title: "Medium Modal",
+        size: "medium",
       })
     );
   };
 
   const handleOpenLargeModal = () => {
     openModal(
-      createAlertModal('This is a large modal for displaying more content', {
-        title: 'Large Modal',
-        size: 'large',
+      createAlertModal("This is a large modal for displaying more content", {
+        title: "Large Modal",
+        size: "large",
       })
     );
   };
@@ -191,10 +192,10 @@ const ModalExample = () => {
   const handleOpenFullModal = () => {
     openModal(
       createAlertModal(
-        'This is a full-sized modal that takes up most of the screen',
+        "This is a full-sized modal that takes up most of the screen",
         {
-          title: 'Full Modal',
-          size: 'full',
+          title: "Full Modal",
+          size: "full",
         }
       )
     );
@@ -203,27 +204,27 @@ const ModalExample = () => {
   // Animation variant examples
   const handleOpenFadeModal = () => {
     openModal(
-      createAlertModal('This modal uses a fade animation (default)', {
-        title: 'Fade Animation',
-        animation: 'fade',
+      createAlertModal("This modal uses a fade animation (default)", {
+        title: "Fade Animation",
+        animation: "fade",
       })
     );
   };
 
   const handleOpenSlideModal = () => {
     openModal(
-      createAlertModal('This modal uses a slide animation', {
-        title: 'Slide Animation',
-        animation: 'slide',
+      createAlertModal("This modal uses a slide animation", {
+        title: "Slide Animation",
+        animation: "slide",
       })
     );
   };
 
   const handleOpenZoomModal = () => {
     openModal(
-      createAlertModal('This modal uses a zoom animation', {
-        title: 'Zoom Animation',
-        animation: 'zoom',
+      createAlertModal("This modal uses a zoom animation", {
+        title: "Zoom Animation",
+        animation: "zoom",
       })
     );
   };
@@ -231,9 +232,9 @@ const ModalExample = () => {
   // Position variant examples
   const handleOpenTopModal = () => {
     openModal(
-      createAlertModal('This modal appears at the top of the screen', {
-        title: 'Top Position',
-        position: 'top',
+      createAlertModal("This modal appears at the top of the screen", {
+        title: "Top Position",
+        position: "top",
       })
     );
   };
@@ -241,10 +242,10 @@ const ModalExample = () => {
   const handleOpenCenterModal = () => {
     openModal(
       createAlertModal(
-        'This modal appears in the center of the screen (default)',
+        "This modal appears in the center of the screen (default)",
         {
-          title: 'Center Position',
-          position: 'center',
+          title: "Center Position",
+          position: "center",
         }
       )
     );
@@ -252,9 +253,9 @@ const ModalExample = () => {
 
   const handleOpenBottomModal = () => {
     openModal(
-      createAlertModal('This modal appears at the bottom of the screen', {
-        title: 'Bottom Position',
-        position: 'bottom',
+      createAlertModal("This modal appears at the bottom of the screen", {
+        title: "Bottom Position",
+        position: "bottom",
       })
     );
   };
@@ -262,25 +263,25 @@ const ModalExample = () => {
   // Stacked modals example
   const handleOpenStackedModals = () => {
     openModal(
-      createAlertModal('This is the first modal', {
-        title: 'Modal 1',
-        animation: 'fade',
+      createAlertModal("This is the first modal", {
+        title: "Modal 1",
+        animation: "fade",
         footerContent: (
           <Button
             onClick={() => {
               openModal(
-                createAlertModal('This is the second modal stacked on top', {
-                  title: 'Modal 2',
-                  animation: 'slide',
+                createAlertModal("This is the second modal stacked on top", {
+                  title: "Modal 2",
+                  animation: "slide",
                   footerContent: (
                     <Button
                       onClick={() => {
                         openModal(
                           createAlertModal(
-                            'This is the third modal stacked on top',
+                            "This is the third modal stacked on top",
                             {
-                              title: 'Modal 3',
-                              animation: 'zoom',
+                              title: "Modal 3",
+                              animation: "zoom",
                             }
                           )
                         );
@@ -425,7 +426,7 @@ const ModalExample = () => {
           </p>
           <div
             className="modal-actions"
-            style={{ marginTop: '20px', textAlign: 'right' }}
+            style={{ marginTop: "20px", textAlign: "right" }}
           >
             <Button onClick={handleCloseDraggableModal}>Close</Button>
           </div>

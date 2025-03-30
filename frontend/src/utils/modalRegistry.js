@@ -1,5 +1,6 @@
 import React from "react";
 import { MODAL_TYPES } from "./config";
+import { ModalSystem } from "../components/modals";
 
 // Lazy load modal components
 const LoginModal = React.lazy(() => import("../components/auth/LoginModal"));
@@ -85,7 +86,7 @@ export const getModalComponent = (type) => {
       return ImportModal;
     default:
       console.error(`No modal component found for type: ${type}`);
-      return null;
+      return ModalSystem;
   }
 };
 
@@ -126,4 +127,8 @@ export const getModalTitle = (type) => {
     default:
       return "Modal";
   }
+};
+
+export const isValidModalType = (type) => {
+  return Object.values(MODAL_TYPES).includes(type);
 };

@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import Button from "../common/Button";
+import { Button } from "../common";
 import Input from "../common/Input";
 import Modal from "../common/Modal";
 import {

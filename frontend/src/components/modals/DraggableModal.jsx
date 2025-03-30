@@ -1,6 +1,6 @@
 import PropTypes from "prop-types";
 import React, { useCallback, useEffect, useState } from "react";
-import BaseModal from "./BaseModal";
+import ModalSystem from "./ModalSystem";
 
 const DraggableModal = ({ children, ...modalProps }) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -19,7 +19,7 @@ const DraggableModal = ({ children, ...modalProps }) => {
   const modalRefCallback = useCallback((node) => {
     if (node !== null) {
       // The node is the modal overlay, find the actual modal element
-      const modalElement = node.querySelector(".modal");
+      const modalElement = node.querySelector(".modal-content");
       setModalEl(modalElement);
     }
   }, []);
@@ -85,15 +85,15 @@ const DraggableModal = ({ children, ...modalProps }) => {
   );
 
   return (
-    <BaseModal
+    <ModalSystem
       {...modalProps}
-      contentClassName={`draggable-modal ${modalProps.contentClassName || ""} ${
+      className={`draggable-modal ${modalProps.className || ""} ${
         isDragging ? "dragging" : ""
       }`}
       ref={modalRefCallback}
     >
       {draggableContent}
-    </BaseModal>
+    </ModalSystem>
   );
 };
 

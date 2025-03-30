@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import Button from "../common/Button";
+import { Button } from "../common";
 import { fetchScenesForUniverse } from "../../store/thunks/scenesThunks";
 import { fetchUniverseById } from "../../store/thunks/universeThunks";
 import "../../styles/UniverseDetail.css";

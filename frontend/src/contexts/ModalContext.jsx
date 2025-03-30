@@ -1,5 +1,6 @@
 import PropTypes from "prop-types";
 import React, { createContext, useContext, useState } from "react";
+import ModalSystem from "../components/modals";
 
 // Create the context
 const ModalContext = createContext();
@@ -15,23 +16,26 @@ export const useModal = () => {
 
 // Provider component
 export const ModalProvider = ({ children }) => {
-  const [modalState, setModalState] = useState({
-    isOpen: false,
-    type: null,
-    props: {},
-  });
+  const [modalProps, setModalProps] = useState(null);
 
-  const openModal = (type, props = {}) => {
-    setModalState({ isOpen: true, type, props });
+  const openModal = (props) => {
+    setModalProps(props);
   };
 
   const closeModal = () => {
-    setModalState({ isOpen: false, type: null, props: {} });
+    setModalProps(null);
+  };
+
+  const value = {
+    modalProps,
+    openModal,
+    closeModal,
   };
 
   return (
-    <ModalContext.Provider value={{ modalState, openModal, closeModal }}>
+    <ModalContext.Provider value={value}>
       {children}
+      {modalProps && <ModalSystem {...modalProps} onClose={closeModal} />}
     </ModalContext.Provider>
   );
 };

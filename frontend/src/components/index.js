@@ -2,8 +2,11 @@
 export { default as Login } from "./auth/Login";
 export { default as Register } from "./auth/Register";
 
+// Navigation Components
+export { default as Navigation } from "./navigation/Navigation";
+
 // Common Components
-export { default as Button } from "./common/Button";
+export { Button } from "./common";
 export { default as Icon } from "./common/Icon";
 export { default as Input } from "./common/Input";
 export { default as Modal } from "./common/Modal";
@@ -14,7 +17,7 @@ export { default as Tooltip } from "./common/Tooltip";
 export { default as SafeIcon } from "./common/SafeIcon";
 
 // Essential Pages
-export { default as Home } from "./pages/Home";
+export { default as Home } from "../pages/Home";
 
 // Lazy loaded components - these will be imported dynamically where needed
 export const MusicComponents = {

@@ -10,7 +10,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { fetchUniverses } from "../../store/thunks/universeThunks";
-import Button from "../common/Button";
+import { Button } from "../common";
 import Icon from "../common/Icon";
 import Modal from "../common/Modal";
 import Spinner from "../common/Spinner";

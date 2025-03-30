@@ -5,7 +5,7 @@ import {
   deleteUniverse,
   updateUniverse,
 } from "../../store/thunks/universeThunks";
-import Button from "../common/Button";
+import { Button } from "../common";
 import Icon from "../common/Icon";
 import Input from "../common/Input";
 import Spinner from "../common/Spinner";

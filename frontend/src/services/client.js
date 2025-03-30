@@ -1,451 +1,314 @@
-import axios from 'axios';
-import { apiLogger } from '../utils/logger';
+import axios from "axios";
+import { generalLogger } from "../utils/logger";
 
-// Debug helper for API operations
-const logApiOperation = (operation, data = {}) => {
-    apiLogger.log(operation, data);
+// Constants
+export const API_BASE_ENDPOINT = chooseApiEndpoint();
 
-    // Initialize debug object if not exists
-    if (!window.apiDebug) {
-        window.apiDebug = {
-            operations: [],
-            errors: [],
-            baseUrl: null
-        };
-    }
-
-    // Add operation to log
-    window.apiDebug.operations.push({
-        time: new Date().toISOString(),
-        operation,
-        ...data
-    });
-};
-
-// Determine the base URL based on environment with enhanced detection
-const getBaseUrl = () => {
-    logApiOperation('getBaseUrl-started');
-
+// Add global debugging endpoint for API operations
+window.apiDebug = {
+  lastRequest: null,
+  lastResponse: null,
+  lastError: null,
+  baseEndpoint: API_BASE_ENDPOINT,
+  testEndpoint: async () => {
     try {
-        // Try environment variable first
-        const envUrl = import.meta.env.VITE_API_URL;
-        if (envUrl) {
-            logApiOperation('getBaseUrl-env', { url: envUrl });
-            return envUrl;
-        }
-
-        // Get information about current environment
-        const hostname = window.location.hostname;
-        const protocol = window.location.protocol;
-        const port = window.location.port;
-        const origin = window.location.origin;
-
-        logApiOperation('getBaseUrl-environment', {
-            hostname,
-            protocol,
-            port,
-            origin
-        });
-
-        // Special handling for Render.com deployments
-        if (hostname.includes('render.com')) {
-            // For Render we'll use the API-specific subdomain
-            const apiUrl = 'https://harmonic-universe-api.onrender.com';
-            logApiOperation('getBaseUrl-render', { url: apiUrl });
-            window.apiDebug.baseUrl = apiUrl;
-            return apiUrl;
-        }
-
-        // Other production environments
-        if (!hostname.includes('localhost') && !hostname.includes('127.0.0.1')) {
-            // Try multiple potential API URL patterns
-
-            // Option 1: Replace 'app' with 'api' in hostname (common pattern)
-            const apiHostname1 = hostname.replace('app.', 'api.').replace('www.', 'api.');
-
-            // Option 2: Add -api suffix to hostname base (common pattern)
-            const hostParts = hostname.replace('www.', '').split('.');
-            hostParts[0] = `${hostParts[0]}-api`;
-            const apiHostname2 = hostParts.join('.');
-
-            // Option 3: harmonic-universe-api.onrender.com as fallback
-            const apiHostname3 = 'harmonic-universe-api.onrender.com';
-
-            // Log all options
-            logApiOperation('getBaseUrl-production-options', {
-                option1: apiHostname1,
-                option2: apiHostname2,
-                option3: apiHostname3
-            });
-
-            // Select the first option as default
-            const apiUrl = `https://${apiHostname1}`;
-            logApiOperation('getBaseUrl-production', { url: apiUrl });
-            window.apiDebug.baseUrl = apiUrl;
-            return apiUrl;
-        }
-
-        // Default for local development: use relative URLs
-        logApiOperation('getBaseUrl-local');
-        window.apiDebug.baseUrl = '';
-        return '';
+      const response = await axios.get(`${API_BASE_ENDPOINT}/ping`);
+      return {
+        success: true,
+        endpoint: API_BASE_ENDPOINT,
+        status: response.status,
+        data: response.data,
+      };
     } catch (error) {
-        console.error('Error in getBaseUrl:', error);
-        logApiOperation('getBaseUrl-error', {
-            message: error.message,
-            stack: error.stack
-        });
-
-        // Add to errors collection
-        if (window.apiDebug) {
-            window.apiDebug.errors.push({
-                time: new Date().toISOString(),
-                operation: 'getBaseUrl',
-                error: error.message,
-                stack: error.stack
-            });
-        }
-
-        // Return empty string as fallback
-        return '';
+      return {
+        success: false,
+        endpoint: API_BASE_ENDPOINT,
+        error: error.message,
+      };
     }
+  },
 };
 
-// Get and log the base URL early
-const apiBaseUrl = getBaseUrl();
-apiLogger.info('API base URL determined', { baseURL: apiBaseUrl });
+// Choose the appropriate API endpoint based on environment
+function chooseApiEndpoint() {
+  const endpoints = {
+    // Local development endpoint
+    local: "http://localhost:5000/api",
 
-// Create axios instance with improved configuration
-const api = axios.create({
-    baseURL: apiBaseUrl,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Origin': window.location.origin,
-    },
-    withCredentials: true,
-    timeout: 15000, // 15 second timeout
+    // Production endpoints
+    production: "https://harmonic-universe-api.onrender.com/api",
+    prodCDN: "https://harmonic-universe.onrender.com/api",
+
+    // Fallback endpoint (same origin)
+    fallback: "/api",
+  };
+
+  // Check environment
+  const isDev = process.env.NODE_ENV === "development";
+
+  // Log the selection process
+  window.debugLog("API", "Selecting API endpoint", {
+    environment: process.env.NODE_ENV,
+    isDev,
+  });
+
+  // Allow override with .env variables
+  const envEndpoint = import.meta.env.VITE_API_ENDPOINT;
+  if (envEndpoint) {
+    window.debugLog("API", "Using API endpoint from environment variable", {
+      endpoint: envEndpoint,
+    });
+    generalLogger.log("Using API endpoint from environment variable", {
+      endpoint: envEndpoint,
+    });
+    return envEndpoint;
+  }
+
+  // For development, use local endpoint
+  if (isDev) {
+    window.debugLog("API", "Using local development endpoint", {
+      endpoint: endpoints.local,
+    });
+    generalLogger.log("Using local development endpoint");
+    return endpoints.local;
+  }
+
+  // For production, try to infer the best endpoint
+  // If we're on the same domain as our API, use relative path
+  const currentHost = window.location.hostname;
+  if (currentHost.includes("harmonic-universe")) {
+    window.debugLog("API", "Using relative API endpoint", {
+      endpoint: endpoints.fallback,
+      currentHost,
+    });
+    generalLogger.log("Using relative API endpoint", { host: currentHost });
+    return endpoints.fallback;
+  }
+
+  // Default to using the production endpoint
+  window.debugLog("API", "Using production API endpoint", {
+    endpoint: endpoints.production,
+  });
+  generalLogger.log("Using production API endpoint");
+  return endpoints.production;
+}
+
+// Create axios instance
+const client = axios.create({
+  baseURL: API_BASE_ENDPOINT,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
-apiLogger.log('API client initialized', {
-    baseURL: apiBaseUrl,
-    withCredentials: true,
-    origin: window.location.origin
-});
+export { client };
 
-// Request interceptor with enhanced logging
-api.interceptors.request.use(
-    (config) => {
-        // Log the request
-        logApiOperation('request', {
-            method: config.method,
-            url: config.url,
-            baseUrl: config.baseURL,
-            fullUrl: config.baseURL + config.url,
-            headers: config.headers
-        });
+// Request interceptor
+client.interceptors.request.use(
+  (config) => {
+    try {
+      // Log request
+      window.debugLog("API", "Sending request", {
+        method: config.method.toUpperCase(),
+        url: config.url,
+        baseURL: config.baseURL,
+        fullURL: `${config.baseURL}${config.url}`,
+      });
+      generalLogger.log("API Request", {
+        method: config.method.toUpperCase(),
+        url: config.url,
+      });
 
-        // Get token from localStorage
-        const token = localStorage.getItem('accessToken');
+      // Store for debugging
+      window.apiDebug.lastRequest = {
+        method: config.method.toUpperCase(),
+        url: config.url,
+        baseURL: config.baseURL,
+        timestamp: new Date().toISOString(),
+      };
 
-        // If token exists, add to headers
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-            apiLogger.log('Added token to request');
-        }
+      // Add auth token if available
+      const token = localStorage.getItem("token");
+      if (token) {
+        config.headers["Authorization"] = `Bearer ${token}`;
+      }
 
-        return config;
-    },
-    (error) => {
-        apiLogger.error('Request error', error);
-        return Promise.reject(error);
+      return config;
+    } catch (error) {
+      window.debugError("API", "Error in request interceptor", error);
+      generalLogger.error("Error in API request interceptor", {
+        error: error.message,
+      });
+      return config;
     }
+  },
+  (error) => {
+    window.debugError("API", "Request failed", error);
+    generalLogger.error("API request failed", { error: error.message });
+    window.apiDebug.lastError = {
+      type: "request",
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    };
+    return Promise.reject(error);
+  }
 );
 
-// Response interceptor with enhanced error handling
-api.interceptors.response.use(
-    (response) => {
-        logApiOperation('response-success', {
-            status: response.status,
-            url: response.config.url,
-            data: typeof response.data === 'object' ?
-                Object.keys(response.data) :
-                typeof response.data
-        });
-        return response;
-    },
-    async (error) => {
-        logApiOperation('response-error', {
-            message: error.message,
-            status: error.response?.status,
-            url: error.config?.url,
-            data: error.response?.data
-        });
+// Response interceptor
+client.interceptors.response.use(
+  (response) => {
+    try {
+      // Log successful response
+      window.debugLog("API", "Response received", {
+        status: response.status,
+        url: response.config.url,
+        data: response.data ? "Present" : "Empty",
+      });
+      generalLogger.log("API Response", {
+        status: response.status,
+        url: response.config.url,
+      });
 
-        // Add to errors collection
-        if (window.apiDebug) {
-            window.apiDebug.errors.push({
-                time: new Date().toISOString(),
-                url: error.config?.url,
-                status: error.response?.status,
-                message: error.message
-            });
-        }
+      // Store for debugging
+      window.apiDebug.lastResponse = {
+        status: response.status,
+        url: response.config.url,
+        timestamp: new Date().toISOString(),
+      };
 
-        const originalRequest = error.config;
-
-        // Try token refresh for 401 errors
-        if (error.response?.status === 401 && !originalRequest._retry) {
-            originalRequest._retry = true;
-            logApiOperation('token-refresh-attempt');
-
-            try {
-                // Try to refresh token
-                const refreshToken = localStorage.getItem('refreshToken');
-
-                if (refreshToken) {
-                    logApiOperation('token-refresh-request');
-
-                    try {
-                        // Try multiple refresh endpoints
-                        let response = null;
-                        const refreshEndpoints = [
-                            '/api/auth/refresh',
-                            '/api/v1/auth/refresh',
-                            `${apiBaseUrl}/api/auth/refresh`,
-                            `${apiBaseUrl}/api/v1/auth/refresh`
-                        ];
-
-                        for (const endpoint of refreshEndpoints) {
-                            try {
-                                logApiOperation('token-refresh-endpoint', { endpoint });
-                                response = await axios.post(endpoint, {
-                                    refresh_token: refreshToken,
-                                });
-
-                                if (response.status === 200) {
-                                    logApiOperation('token-refresh-success', { endpoint });
-                                    break;
-                                }
-                            } catch (endpointError) {
-                                logApiOperation('token-refresh-endpoint-error', {
-                                    endpoint,
-                                    error: endpointError.message
-                                });
-                            }
-                        }
-
-                        if (!response || response.status !== 200) {
-                            throw new Error('All refresh token endpoints failed');
-                        }
-
-                        if (response.data.access_token) {
-                            // Update token in localStorage
-                            localStorage.setItem('accessToken', response.data.access_token);
-                            logApiOperation('access-token-updated');
-
-                            // Update token in headers
-                            api.defaults.headers.common.Authorization = `Bearer ${response.data.access_token}`;
-                            originalRequest.headers.Authorization = `Bearer ${response.data.access_token}`;
-
-                            // Retry original request
-                            logApiOperation('request-retry');
-                            return api(originalRequest);
-                        } else {
-                            logApiOperation('token-refresh-invalid-response');
-                            throw new Error('Invalid refresh token response');
-                        }
-                    } catch (refreshError) {
-                        logApiOperation('token-refresh-failed', {
-                            error: refreshError.message
-                        });
-                        throw refreshError;
-                    }
-                } else {
-                    logApiOperation('token-refresh-no-token');
-                    throw new Error('No refresh token available');
-                }
-            } catch (authError) {
-                logApiOperation('auth-error-logout', {
-                    error: authError.message
-                });
-
-                // Log out on refresh failure
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('refreshToken');
-
-                // Only redirect if we're not already on the login page
-                if (!window.location.pathname.includes('login') &&
-                    !window.location.search.includes('modal=login')) {
-                    window.location.href = '/?modal=login';
-                }
-            }
-        }
-
-        return Promise.reject(error);
+      return response;
+    } catch (error) {
+      window.debugError("API", "Error in response interceptor", error);
+      generalLogger.error("Error in API response interceptor", {
+        error: error.message,
+      });
+      return response;
     }
-);
+  },
+  (error) => {
+    try {
+      // Get error details
+      const status = error.response ? error.response.status : "No status";
+      const url = error.config ? error.config.url : "Unknown URL";
+      const method = error.config
+        ? error.config.method.toUpperCase()
+        : "Unknown Method";
 
-// Enhanced fetch with credentials method
-const fetchWithCredentials = async (url, method = 'GET', data = null) => {
-    apiLogger.log('fetchWithCredentials started', {
+      // Log error
+      window.debugError("API", "Response error", {
+        status,
         url,
-        method
-    });
+        method,
+        message: error.message,
+        response: error.response ? error.response.data : "No response data",
+      });
+      generalLogger.error("API Response error", {
+        status,
+        url,
+        method,
+        message: error.message,
+      });
 
-    try {
-        // Determine if the URL is absolute or needs the base URL
-        const isAbsoluteUrl = url.startsWith('http');
-        const fullUrl = isAbsoluteUrl ? url : `${apiBaseUrl}${url}`;
-        apiLogger.log('Using URL', { fullUrl });
+      // Store for debugging
+      window.apiDebug.lastError = {
+        type: "response",
+        status,
+        url,
+        method,
+        message: error.message,
+        timestamp: new Date().toISOString(),
+      };
 
-        const options = {
-            method,
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'Origin': window.location.origin,
-            },
-            credentials: 'include',
-            mode: 'cors',
-        };
+      // Special handling for demo login
+      if (url.includes("/auth/demo")) {
+        window.debugLog(
+          "API",
+          "Demo login failed, trying alternative endpoints"
+        );
+        return retryWithFallbacks(error, "/auth/demo");
+      }
 
-        if (data) {
-            options.body = JSON.stringify(data);
-            logApiOperation('fetchWithCredentials-data', {
-                dataKeys: Object.keys(data)
-            });
-        }
+      // Retry token refresh with alternative endpoints
+      if (url.includes("/auth/refresh") && status === 401) {
+        window.debugLog(
+          "API",
+          "Token refresh failed, trying alternative endpoints"
+        );
+        return retryWithFallbacks(error, "/auth/refresh");
+      }
 
-        const token = localStorage.getItem('accessToken');
-        if (token) {
-            options.headers.Authorization = `Bearer ${token}`;
-            logApiOperation('fetchWithCredentials-token-added');
-        }
+      // If auth token expired
+      if (status === 401 && !url.includes("/auth/login")) {
+        // Remove token
+        localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
 
-        apiLogger.log('Fetch request details', {
-            url: fullUrl,
-            method,
-            headers: options.headers,
-            mode: options.mode
-        });
+        // Redirect to login
+        window.debugLog("API", "Unauthorized access, redirecting to login");
+        setTimeout(() => {
+          window.location.href = "/#/?modal=login&authError=true";
+        }, 100);
+      }
 
-        const response = await fetch(fullUrl, options);
-        apiLogger.log('Fetch response received', {
-            status: response.status,
-            ok: response.ok,
-            statusText: response.statusText
-        });
-
-        if (!response.ok) {
-            let errorText = '';
-            try {
-                errorText = await response.text();
-                apiLogger.error('Fetch error response', {
-                    text: errorText,
-                    status: response.status
-                });
-            } catch (textError) {
-                apiLogger.error('Failed to parse error response', {
-                    error: textError.message
-                });
-            }
-
-            throw new Error(`Request failed: ${response.status} ${response.statusText}. ${errorText}`);
-        }
-
-        const responseData = await response.json();
-        apiLogger.success('Fetch successful', {
-            dataKeys: Object.keys(responseData)
-        });
-
-        return responseData;
-    } catch (error) {
-        apiLogger.error('Fetch failed', {
-            url,
-            method,
-            message: error.message
-        });
-
-        // Add to errors collection
-        if (window.apiDebug) {
-            window.apiDebug.errors.push({
-                time: new Date().toISOString(),
-                operation: `fetchWithCredentials-${method}`,
-                url: url,
-                error: error.message,
-                stack: error.stack
-            });
-        }
-
-        throw error;
+      return Promise.reject(error);
+    } catch (interceptorError) {
+      window.debugError("API", "Error handling API error", interceptorError);
+      generalLogger.error("Error handling API error", {
+        error: interceptorError.message,
+      });
+      return Promise.reject(error);
     }
-};
+  }
+);
 
-// Export API methods with error handling and logging
-const apiClient = {
-    get: async (url, config = {}) => {
-        try {
-            logApiOperation('get-started', { url });
-            const response = await api.get(url, config);
-            logApiOperation('get-success', { url });
-            return response;
-        } catch (error) {
-            logApiOperation('get-error', {
-                url,
-                message: error.message
-            });
-            throw error;
-        }
-    },
+// Retry failed requests with alternative endpoints
+async function retryWithFallbacks(originalError, endpoint) {
+  const fallbackEndpoints = [
+    "/api",
+    "https://harmonic-universe-api.onrender.com/api",
+    "https://harmonic-universe.onrender.com/api",
+  ];
 
-    post: async (url, data = {}, config = {}) => {
-        try {
-            logApiOperation('post-started', { url });
-            const response = await api.post(url, data, config);
-            logApiOperation('post-success', { url });
-            return response;
-        } catch (error) {
-            logApiOperation('post-error', {
-                url,
-                message: error.message
-            });
-            throw error;
-        }
-    },
+  // Original request config
+  const config = originalError.config;
+  if (!config) {
+    window.debugError("API", "Cannot retry request without config");
+    return Promise.reject(originalError);
+  }
 
-    // Updated fetchWithCredentials
-    fetchWithCredentials,
+  // Try each fallback endpoint
+  for (const baseURL of fallbackEndpoints) {
+    try {
+      window.debugLog("API", "Trying fallback endpoint", { baseURL, endpoint });
 
-    put: async (url, data = {}, config = {}) => {
-        try {
-            logApiOperation('put-started', { url });
-            const response = await api.put(url, data, config);
-            logApiOperation('put-success', { url });
-            return response;
-        } catch (error) {
-            logApiOperation('put-error', {
-                url,
-                message: error.message
-            });
-            throw error;
-        }
-    },
+      // Create new config with fallback baseURL
+      const retryConfig = {
+        ...config,
+        baseURL,
+        url: endpoint,
+      };
 
-    delete: async (url, config = {}) => {
-        try {
-            logApiOperation('delete-started', { url });
-            const response = await api.delete(url, config);
-            logApiOperation('delete-success', { url });
-            return response;
-        } catch (error) {
-            logApiOperation('delete-error', {
-                url,
-                message: error.message
-            });
-            throw error;
-        }
-    },
-};
+      const response = await axios(retryConfig);
 
-export default apiClient;
+      // If successful, update the main API endpoint for future requests
+      window.debugLog("API", "Fallback endpoint successful", {
+        baseURL,
+        status: response.status,
+      });
+
+      // Store the successful endpoint in sessionStorage for future use
+      sessionStorage.setItem("lastSuccessfulEndpoint", baseURL);
+
+      return response;
+    } catch (retryError) {
+      window.debugError("API", "Fallback endpoint failed", {
+        baseURL,
+        error: retryError.message,
+      });
+      continue;
+    }
+  }
+
+  // If all fallbacks fail, reject with original error
+  return Promise.reject(originalError);
+}

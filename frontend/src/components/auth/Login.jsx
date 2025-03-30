@@ -9,7 +9,8 @@ import {
   loginSuccess,
 } from "../../store/slices/authSlice";
 import { openModal } from "../../store/slices/modalSlice";
-import { api, endpoints } from "../../utils/api";
+import { api } from "../../services/api";
+import { endpoints } from "../../services/endpoints";
 import { validateEmail, validatePassword } from "../../utils/validation";
 import { Button, Input } from "../common";
 import "../../styles/Auth.css";

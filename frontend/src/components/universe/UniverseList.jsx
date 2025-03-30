@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import Button from "../common/Button";
+import { Button } from "../common";
 import { fetchUniverses } from "../../store/thunks/universeThunks";
 import "../../styles/UniverseList.css";
 import UniverseCard from "./UniverseCard";

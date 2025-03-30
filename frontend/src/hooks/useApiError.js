@@ -1,6 +1,6 @@
-import { useCallback } from 'react';
-import errorService from '../utils/errorService';
-import { APP_CONFIG } from '../utils/config';
+import { useCallback } from "react";
+import errorService from "../services/errorService";
+import { APP_CONFIG } from "../utils/config";
 
 /**
  * Custom hook for handling API errors consistently across the application
@@ -15,8 +15,8 @@ export function useApiError({
     async (error, retryFn) => {
       // Create a standardized error object
       const apiError = {
-        name: error.name || 'ApiError',
-        message: error.message || 'An unexpected error occurred',
+        name: error.name || "ApiError",
+        message: error.message || "An unexpected error occurred",
         status: error.status,
         code: error.code,
         details: error.details,
@@ -48,7 +48,7 @@ export function useApiError({
       if (apiError.status === 429) {
         // Handle rate limiting
         if (retryFn && retryCount > 0) {
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
           return retryFn();
         }
         return;
@@ -57,7 +57,7 @@ export function useApiError({
       if (apiError.status >= 500) {
         // Handle server errors
         if (retryFn && retryCount > 0) {
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
           return retryFn();
         }
         return;
@@ -73,25 +73,25 @@ export function useApiError({
 
   const isNetworkError = useCallback((error) => {
     return (
-      error.name === 'NetworkError' ||
-      error.message?.includes('network') ||
-      error.message?.includes('timeout')
+      error.name === "NetworkError" ||
+      error.message?.includes("network") ||
+      error.message?.includes("timeout")
     );
   }, []);
 
   const isTimeoutError = useCallback((error) => {
     return (
-      error.name === 'TimeoutError' ||
-      error.message?.includes('timeout') ||
+      error.name === "TimeoutError" ||
+      error.message?.includes("timeout") ||
       error.status === 408
     );
   }, []);
 
   const isValidationError = useCallback((error) => {
     return (
-      error.name === 'ValidationError' ||
+      error.name === "ValidationError" ||
       error.status === 400 ||
-      error.message?.includes('validation')
+      error.message?.includes("validation")
     );
   }, []);
 
@@ -101,4 +101,4 @@ export function useApiError({
     isTimeoutError,
     isValidationError,
   };
-} 
+}

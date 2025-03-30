@@ -3,14 +3,13 @@ import { Routes, Route, BrowserRouter, Navigate } from "react-router-dom";
 import { Provider } from "react-redux";
 import store from "./store/store";
 import { useSelector } from "react-redux";
-import { Home, Login, Register, Modal } from "./components";
-import { Navigation } from "./components/navigation";
+import { Home, Login, Register, Modal, Navigation } from "./components";
 import "./styles/App.css";
 
 // Lazy load route components
-const Dashboard = lazy(() => import("./components/pages/Dashboard"));
-const Profile = lazy(() => import("./components/pages/Profile"));
-const SettingsPage = lazy(() => import("./components/pages/SettingsPage"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Profile = lazy(() => import("./pages/Profile"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 
 // Loading component for Suspense fallback
 const LoadingPage = () => (

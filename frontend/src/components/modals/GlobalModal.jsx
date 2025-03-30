@@ -1,12 +1,11 @@
 import React, { useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import useModal from "../../hooks/useModal.js";
-import { selectModalProps, selectModalType } from "../../store/modalSlice.js";
+import { selectModalProps } from "../../store/modalSlice.js";
 import { getModalComponent } from "../ModalUtils.jsx";
-import BaseModal from "./BaseModal";
+import { ModalSystem } from "./ModalSystem";
 
 const GlobalModal = () => {
-  const modalType = useSelector(selectModalType);
   const modalProps = useSelector(selectModalProps);
   const { closeModal } = useModal();
   const portalRootRef = useRef(null);
@@ -46,21 +45,22 @@ const GlobalModal = () => {
   // Add console log to debug modal state
   useEffect(() => {
     console.debug("Modal state changed:", {
-      modalType,
       hasProps: !!modalProps,
     });
-  }, [modalType, modalProps]);
+  }, [modalProps]);
 
-  if (!modalType) return null;
+  if (!modalProps) return null;
 
-  const ModalComponent = getModalComponent(modalType);
-  if (!ModalComponent) {
-    console.warn(`No modal component found for type: ${modalType}`);
-    return null;
+  // If a specific modal component is requested, use it
+  if (modalProps.type) {
+    const ModalComponent = getModalComponent(modalProps.type);
+    if (ModalComponent) {
+      return <ModalComponent {...modalProps} onClose={closeModal} />;
+    }
   }
 
-  // Render the modal component directly
-  return <ModalComponent {...modalProps} onClose={closeModal} />;
+  // Otherwise, use the ModalSystem
+  return <ModalSystem {...modalProps} onClose={closeModal} />;
 };
 
 export default GlobalModal;

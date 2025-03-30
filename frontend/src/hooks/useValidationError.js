@@ -1,6 +1,6 @@
-import { useCallback } from 'react';
-import errorService from '../utils/errorService';
-import { APP_CONFIG } from '../utils/config';
+import { useCallback } from "react";
+import errorService from "../services/errorService";
+import { APP_CONFIG } from "../utils/config";
 
 /**
  * Custom hook for handling validation errors in API responses consistently across the application
@@ -15,13 +15,13 @@ export function useValidationError({
     (response) => {
       // Log the validation errors using our error service
       errorService.handleError(
-        new Error(response.message || 'Validation failed'),
+        new Error(response.message || "Validation failed"),
         context,
         { errors: response.errors }
       );
 
       // Handle field-specific errors
-      response.errors.forEach(error => {
+      response.errors.forEach((error) => {
         if (onFieldError) {
           onFieldError(error.field, error);
         }
@@ -42,63 +42,45 @@ export function useValidationError({
 
   const isValidationError = useCallback((error) => {
     return (
-      error.name === 'ValidationError' ||
+      error.name === "ValidationError" ||
       error.status === 400 ||
-      error.code?.startsWith('VALIDATION_') ||
-      error.message?.toLowerCase().includes('validation') ||
-      error.message?.toLowerCase().includes('invalid') ||
+      error.code?.startsWith("VALIDATION_") ||
+      error.message?.toLowerCase().includes("validation") ||
+      error.message?.toLowerCase().includes("invalid") ||
       Array.isArray(error.errors)
     );
   }, []);
 
-  const getFieldError = useCallback(
-    (errors, field) => {
-      return errors.find(error => error.field === field);
-    },
-    []
-  );
+  const getFieldError = useCallback((errors, field) => {
+    return errors.find((error) => error.field === field);
+  }, []);
 
-  const hasFieldError = useCallback(
-    (errors, field) => {
-      return errors.some(error => error.field === field);
-    },
-    []
-  );
+  const hasFieldError = useCallback((errors, field) => {
+    return errors.some((error) => error.field === field);
+  }, []);
 
-  const getFieldErrors = useCallback(
-    (errors, field) => {
-      return errors.filter(error => error.field === field);
-    },
-    []
-  );
+  const getFieldErrors = useCallback((errors, field) => {
+    return errors.filter((error) => error.field === field);
+  }, []);
 
-  const getGlobalError = useCallback(
-    (errors) => {
-      return errors.find(error => !error.field)?.message;
-    },
-    []
-  );
+  const getGlobalError = useCallback((errors) => {
+    return errors.find((error) => !error.field)?.message;
+  }, []);
 
-  const clearFieldError = useCallback(
-    (errors, field) => {
-      return errors.filter(error => error.field !== field);
-    },
-    []
-  );
+  const clearFieldError = useCallback((errors, field) => {
+    return errors.filter((error) => error.field !== field);
+  }, []);
 
   const clearAllErrors = useCallback(() => {
     return [];
   }, []);
 
-  const formatErrorMessage = useCallback(
-    (error) => {
-      if (!error.field) {
-        return error.message;
-      }
-      return `${error.field}: ${error.message}`;
-    },
-    []
-  );
+  const formatErrorMessage = useCallback((error) => {
+    if (!error.field) {
+      return error.message;
+    }
+    return `${error.field}: ${error.message}`;
+  }, []);
 
   const formatErrorList = useCallback(
     (errors) => {
@@ -119,4 +101,4 @@ export function useValidationError({
     formatErrorMessage,
     formatErrorList,
   };
-} 
+}

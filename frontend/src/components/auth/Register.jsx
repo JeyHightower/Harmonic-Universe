@@ -5,7 +5,8 @@ import { useNavigate } from "react-router-dom";
 import useForm from "../../hooks/useForm";
 import { loginSuccess } from "../../store/slices/authSlice";
 import { openModal } from "../../store/slices/modalSlice";
-import { api } from "../../utils/api";
+import { api } from "../../services/api";
+import { endpoints } from "../../services/endpoints";
 import {
   validateEmail,
   validatePassword,

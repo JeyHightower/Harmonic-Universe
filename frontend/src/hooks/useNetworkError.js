@@ -1,6 +1,6 @@
-import { useCallback, useState, useEffect } from 'react';
-import errorService from '../utils/errorService';
-import { APP_CONFIG } from '../utils/config';
+import { useCallback, useState, useEffect } from "react";
+import errorService from "../services/errorService";
+import { APP_CONFIG } from "../utils/config";
 
 /**
  * Custom hook for handling network errors consistently across the application
@@ -32,12 +32,12 @@ export function useNetworkError({
       }
     };
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, [onOnline, onOffline]);
 
@@ -45,8 +45,8 @@ export function useNetworkError({
     async (error, retryFn) => {
       // Create a standardized error object
       const networkError = {
-        name: error.name || 'NetworkError',
-        message: error.message || 'A network error occurred',
+        name: error.name || "NetworkError",
+        message: error.message || "A network error occurred",
         code: error.code,
         status: error.status,
         details: error.details,
@@ -71,8 +71,8 @@ export function useNetworkError({
       if (networkError.status === 0) {
         // Handle CORS or network connectivity issues
         if (retryFn && retryAttempts < retryCount) {
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
-          setRetryAttempts(prev => prev + 1);
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+          setRetryAttempts((prev) => prev + 1);
           return retryFn();
         }
         return;
@@ -81,8 +81,8 @@ export function useNetworkError({
       if (networkError.status === 408) {
         // Handle timeout errors
         if (retryFn && retryAttempts < retryCount) {
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
-          setRetryAttempts(prev => prev + 1);
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+          setRetryAttempts((prev) => prev + 1);
           return retryFn();
         }
         return;
@@ -91,8 +91,8 @@ export function useNetworkError({
       if (networkError.status >= 500) {
         // Handle server errors
         if (retryFn && retryAttempts < retryCount) {
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
-          setRetryAttempts(prev => prev + 1);
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+          setRetryAttempts((prev) => prev + 1);
           return retryFn();
         }
         return;
@@ -100,19 +100,19 @@ export function useNetworkError({
 
       // Handle specific error codes
       switch (networkError.code) {
-        case 'NETWORK_ERROR':
+        case "NETWORK_ERROR":
           // Handle general network errors
           break;
-        case 'TIMEOUT_ERROR':
+        case "TIMEOUT_ERROR":
           // Handle timeout errors
           break;
-        case 'CORS_ERROR':
+        case "CORS_ERROR":
           // Handle CORS errors
           break;
-        case 'DNS_ERROR':
+        case "DNS_ERROR":
           // Handle DNS errors
           break;
-        case 'SSL_ERROR':
+        case "SSL_ERROR":
           // Handle SSL errors
           break;
         default:
@@ -125,34 +125,42 @@ export function useNetworkError({
         onError(networkError);
       }
     },
-    [context, onError, onOffline, isOnline, retryAttempts, retryCount, retryDelay]
+    [
+      context,
+      onError,
+      onOffline,
+      isOnline,
+      retryAttempts,
+      retryCount,
+      retryDelay,
+    ]
   );
 
   const isNetworkError = useCallback((error) => {
     return (
-      error.name === 'NetworkError' ||
+      error.name === "NetworkError" ||
       error.status === 0 ||
       error.status === 408 ||
-      error.code?.startsWith('NETWORK_') ||
-      error.message?.toLowerCase().includes('network') ||
-      error.message?.toLowerCase().includes('timeout') ||
-      error.message?.toLowerCase().includes('cors')
+      error.code?.startsWith("NETWORK_") ||
+      error.message?.toLowerCase().includes("network") ||
+      error.message?.toLowerCase().includes("timeout") ||
+      error.message?.toLowerCase().includes("cors")
     );
   }, []);
 
   const isTimeoutError = useCallback((error) => {
     return (
-      error.code === 'TIMEOUT_ERROR' ||
+      error.code === "TIMEOUT_ERROR" ||
       error.status === 408 ||
-      error.message?.toLowerCase().includes('timeout')
+      error.message?.toLowerCase().includes("timeout")
     );
   }, []);
 
   const isCorsError = useCallback((error) => {
     return (
-      error.code === 'CORS_ERROR' ||
-      error.message?.toLowerCase().includes('cors') ||
-      error.message?.toLowerCase().includes('cross-origin')
+      error.code === "CORS_ERROR" ||
+      error.message?.toLowerCase().includes("cors") ||
+      error.message?.toLowerCase().includes("cross-origin")
     );
   }, []);
 
@@ -169,4 +177,4 @@ export function useNetworkError({
     isCorsError,
     resetRetryAttempts,
   };
-} 
+}

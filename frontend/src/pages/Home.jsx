@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
@@ -6,12 +6,13 @@ import {
   loginFailure,
   loginStart,
   loginSuccess,
-} from "../../store/slices/authSlice";
-import { openModal } from "../../store/slices/modalSlice";
-import { apiClient, endpoints } from "../../utils/api";
-import { AUTH_CONFIG } from "../../utils/config";
-import Button from "../common/Button";
-import "../../styles/Home.css";
+} from "../store/slices/authSlice";
+import { openModal } from "../store/slices/modalSlice";
+import { api } from "../services/api";
+import { endpoints } from "../services/endpoints";
+import { AUTH_CONFIG } from "../utils/config";
+import Button from "../components/common/Button";
+import "../styles/Home.css";
 
 function Home() {
   const dispatch = useDispatch();
@@ -41,7 +42,7 @@ function Home() {
       dispatch(loginStart());
 
       // Make demo login request
-      const response = await apiClient.demoLogin();
+      const response = await api.demoLogin();
       console.debug("Demo login response:", response);
 
       if (!response?.data?.token) {
@@ -65,7 +66,7 @@ function Home() {
       // Fetch user info after successful login
       try {
         console.debug("Fetching user profile with token");
-        const userResponse = await apiClient.getUserProfile();
+        const userResponse = await api.getUserProfile();
         console.debug("User profile response:", userResponse);
 
         if (!userResponse?.data?.message || !userResponse?.data?.profile) {

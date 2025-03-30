@@ -235,22 +235,81 @@ export const ROUTES = {
 };
 
 export const MODAL_TYPES = {
+  // Auth modals
   LOGIN: "LOGIN",
   REGISTER: "REGISTER",
   SETTINGS: "SETTINGS",
+
+  // Universe modals
   CREATE_UNIVERSE: "CREATE_UNIVERSE",
   EDIT_UNIVERSE: "EDIT_UNIVERSE",
   DELETE_UNIVERSE: "DELETE_UNIVERSE",
+
+  // Scene modals
   CREATE_SCENE: "CREATE_SCENE",
   EDIT_SCENE: "EDIT_SCENE",
   DELETE_SCENE: "DELETE_SCENE",
+
+  // Physics modals
   CREATE_PHYSICS_OBJECT: "CREATE_PHYSICS_OBJECT",
   EDIT_PHYSICS_OBJECT: "EDIT_PHYSICS_OBJECT",
   DELETE_PHYSICS_OBJECT: "DELETE_PHYSICS_OBJECT",
   PHYSICS_PARAMETERS: "PHYSICS_PARAMETERS",
+
+  // Harmony modals
   HARMONY_PARAMETERS: "HARMONY_PARAMETERS",
-  EXPORT: "EXPORT",
-  IMPORT: "IMPORT",
+
+  // System modals
+  NETWORK_ERROR: "NETWORK_ERROR",
+  CONFIRM: "CONFIRM",
+  ALERT: "ALERT",
+  FORM: "FORM",
+  DIALOG: "DIALOG",
+  CUSTOM: "CUSTOM",
+};
+
+// Modal configuration
+export const MODAL_CONFIG = {
+  // Default sizes
+  SIZES: {
+    SMALL: "small",
+    MEDIUM: "medium",
+    LARGE: "large",
+    FULL: "full",
+  },
+
+  // Modal types
+  TYPES: {
+    DEFAULT: "default",
+    ALERT: "alert",
+    CONFIRM: "confirm",
+    FORM: "form",
+  },
+
+  // Animation types
+  ANIMATIONS: {
+    FADE: "fade",
+    SLIDE: "slide",
+    ZOOM: "zoom",
+    NONE: "none",
+  },
+
+  // Position types
+  POSITIONS: {
+    CENTER: "center",
+    TOP: "top",
+    BOTTOM: "bottom",
+  },
+
+  // Default settings
+  DEFAULTS: {
+    ANIMATION_DURATION: 300,
+    BACKDROP_OPACITY: 0.5,
+    Z_INDEX: 1000,
+    CLOSE_ON_ESCAPE: true,
+    CLOSE_ON_BACKDROP: true,
+    SHOW_CLOSE_BUTTON: true,
+  },
 };
 
 export const ERROR_MESSAGES = {

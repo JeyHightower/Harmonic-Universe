@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { client } from "../../utils/client";
-import { endpoints } from "../../utils/endpoints";
+import { client } from "../../services/client";
+import { endpoints } from "../../services/endpoints";
 
 // Debug logging for all authentication operations
 const logAuthOperation = (operation, data = {}) => {

@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useModal } from "../../contexts/ModalContext";
 import { updatePhysicsParams } from "../../store/thunks/universeThunks";
 import { MODAL_TYPES } from "../../utils/config";
-import Button from "../common/Button";
+import { Button } from "../common";
 import "./Universe.css";
 
 const DEFAULT_PHYSICS_PARAMS = {

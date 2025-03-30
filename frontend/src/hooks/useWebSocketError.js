@@ -1,6 +1,6 @@
-import { useCallback, useState, useEffect } from 'react';
-import errorService from '../utils/errorService';
-import { APP_CONFIG } from '../utils/config';
+import { useCallback, useState, useEffect } from "react";
+import errorService from "../services/errorService";
+import { APP_CONFIG } from "../utils/config";
 
 /**
  * Custom hook for handling WebSocket errors consistently across the application
@@ -20,8 +20,8 @@ export function useWebSocketError({
     (error) => {
       // Create a standardized error object
       const wsError = {
-        name: error.name || 'WebSocketError',
-        message: error.message || 'A WebSocket error occurred',
+        name: error.name || "WebSocketError",
+        message: error.message || "A WebSocket error occurred",
         code: error.code,
         type: error.type,
         wasClean: error.wasClean,
@@ -35,7 +35,7 @@ export function useWebSocketError({
       });
 
       // Handle specific WebSocket error cases
-      if (wsError.type === 'connection') {
+      if (wsError.type === "connection") {
         // Handle connection errors
         if (onConnectionError) {
           onConnectionError(wsError);
@@ -43,7 +43,7 @@ export function useWebSocketError({
         return;
       }
 
-      if (wsError.type === 'message') {
+      if (wsError.type === "message") {
         // Handle message errors
         if (onMessageError) {
           onMessageError(wsError);
@@ -51,7 +51,7 @@ export function useWebSocketError({
         return;
       }
 
-      if (wsError.type === 'close') {
+      if (wsError.type === "close") {
         // Handle close errors
         if (onCloseError) {
           onCloseError(wsError);
@@ -69,79 +69,80 @@ export function useWebSocketError({
 
   const isWebSocketError = useCallback((error) => {
     return (
-      error.name === 'WebSocketError' ||
-      error.type === 'connection' ||
-      error.type === 'message' ||
-      error.type === 'close' ||
-      error.message?.toLowerCase().includes('websocket')
+      error.name === "WebSocketError" ||
+      error.type === "connection" ||
+      error.type === "message" ||
+      error.type === "close" ||
+      error.message?.toLowerCase().includes("websocket")
     );
   }, []);
 
   const isConnectionError = useCallback((error) => {
     return (
-      error.type === 'connection' ||
-      error.message?.toLowerCase().includes('connection')
+      error.type === "connection" ||
+      error.message?.toLowerCase().includes("connection")
     );
   }, []);
 
   const isMessageError = useCallback((error) => {
     return (
-      error.type === 'message' ||
-      error.message?.toLowerCase().includes('message')
+      error.type === "message" ||
+      error.message?.toLowerCase().includes("message")
     );
   }, []);
 
   const isCloseError = useCallback((error) => {
     return (
-      error.type === 'close' ||
-      error.message?.toLowerCase().includes('close')
+      error.type === "close" || error.message?.toLowerCase().includes("close")
     );
   }, []);
 
   const getErrorMessage = useCallback((error) => {
     switch (error.code) {
       case 1000:
-        return 'WebSocket connection closed normally.';
+        return "WebSocket connection closed normally.";
       case 1001:
-        return 'WebSocket connection closed due to endpoint going away.';
+        return "WebSocket connection closed due to endpoint going away.";
       case 1002:
-        return 'WebSocket connection closed due to protocol error.';
+        return "WebSocket connection closed due to protocol error.";
       case 1003:
-        return 'WebSocket connection closed due to unsupported data.';
+        return "WebSocket connection closed due to unsupported data.";
       case 1005:
-        return 'WebSocket connection closed with no status code.';
+        return "WebSocket connection closed with no status code.";
       case 1006:
-        return 'WebSocket connection closed abnormally.';
+        return "WebSocket connection closed abnormally.";
       case 1007:
-        return 'WebSocket connection closed due to invalid frame payload data.';
+        return "WebSocket connection closed due to invalid frame payload data.";
       case 1008:
-        return 'WebSocket connection closed due to policy violation.';
+        return "WebSocket connection closed due to policy violation.";
       case 1009:
-        return 'WebSocket connection closed due to message too big.';
+        return "WebSocket connection closed due to message too big.";
       case 1010:
-        return 'WebSocket connection closed due to client not accepting extension.';
+        return "WebSocket connection closed due to client not accepting extension.";
       case 1011:
-        return 'WebSocket connection closed due to server error.';
+        return "WebSocket connection closed due to server error.";
       case 1015:
-        return 'WebSocket connection closed due to TLS handshake failure.';
+        return "WebSocket connection closed due to TLS handshake failure.";
       default:
-        return error.message || 'An error occurred with the WebSocket connection.';
+        return (
+          error.message || "An error occurred with the WebSocket connection."
+        );
     }
   }, []);
 
   const getConnectionState = useCallback((socket) => {
-    if (!socket) return 'CLOSED';
+    if (!socket) return "CLOSED";
     switch (socket.readyState) {
       case WebSocket.CONNECTING:
-        return 'CONNECTING';
+        return "CONNECTING";
       case WebSocket.OPEN:
-        return 'OPEN';
+        return "OPEN";
       case WebSocket.CLOSING:
-        return 'CLOSING';
+        return "CLOSING";
       case WebSocket.CLOSED:
-        return 'CLOSED';
+        return "CLOSED";
       default:
-        return 'UNKNOWN';
+        return "UNKNOWN";
     }
   }, []);
 
@@ -167,4 +168,4 @@ export function useWebSocketError({
     retryAttempts,
     resetRetryAttempts,
   };
-} 
+}

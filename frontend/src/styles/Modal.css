@@ -5,15 +5,17 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.65);
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.modal-overlay:not(.closing) {
   opacity: 1;
-  transition: opacity var(--transition-speed) var(--transition-ease);
-  padding: var(--spacing-md);
-  backdrop-filter: blur(4px);
 }
 
 .modal {
@@ -67,11 +69,14 @@
 }
 
 .modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
+  padding: 1rem;
   border-bottom: 1px solid #eee;
+  cursor: grab;
+  user-select: none;
+}
+
+.modal-header:active {
+  cursor: grabbing;
 }
 
 .modal-title {
@@ -80,24 +85,42 @@
   font-weight: 600;
 }
 
-.modal-close-button {
+.modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 1.5rem;
   cursor: pointer;
+  padding: 0.5rem;
+  line-height: 1;
   color: #666;
+  transition: color 0.2s ease-in-out;
+}
+
+.modal-close:hover {
+  color: #000;
 }
 
 .modal-content {
-  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+  transform: translateY(0);
+  transition: transform 0.3s ease-in-out;
 }
 
 .modal-footer {
-  padding: 16px;
+  padding: 1rem;
   border-top: 1px solid #eee;
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 /* Animation styles */
@@ -299,19 +322,10 @@
 }
 
 /* Header, Content, and Footer */
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-md);
-  border-bottom: 1px solid var(--border-color);
-  position: relative;
-}
-
 .modal-header::after {
-  content: '';
+  content: "";
   position: absolute;
-  left: var(--spacing-lg);
+  left: 1rem;
   bottom: -1px;
   width: 50px;
   height: 3px;
@@ -335,48 +349,9 @@
   letter-spacing: -0.01em;
 }
 
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 1.7rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  color: var(--text-secondary);
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  margin-right: -0.5rem;
-  opacity: 0.7;
-}
-
-.modal-close:hover {
-  background-color: var(--surface-hover);
-  color: var(--error-color);
-  opacity: 1;
-}
-
-.modal-close:focus {
-  outline: 2px solid var(--primary-color);
-  outline-offset: 2px;
-}
-
-.modal-content {
-  padding: var(--spacing-lg);
-  color: var(--text-primary);
-  line-height: 1.6;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-top: 1px solid var(--border-color);
-  background: var(--surface-color);
+.modal-body {
+  padding: 1rem;
+  overflow-y: auto;
 }
 
 /* Modal Content Types */
@@ -413,7 +388,7 @@
 
 /* Stacked modal depth indicator */
 .modal-overlay:not(:first-child)::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 10px;
   right: 10px;
@@ -482,5 +457,193 @@ body.modal-open {
 
   .modal-footer button {
     width: 100%;
+  }
+}
+
+/* Modal System Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.modal-overlay:not(.closing) {
+  opacity: 1;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+  transform: translateY(0);
+  transition: transform 0.3s ease-in-out;
+}
+
+/* Sizes */
+.modal-content.small {
+  width: 400px;
+}
+
+.modal-content.medium {
+  width: 600px;
+}
+
+.modal-content.large {
+  width: 800px;
+}
+
+.modal-content.full {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  border-radius: 0;
+}
+
+/* Types */
+.modal-content.alert {
+  border-left: 4px solid #ff4444;
+}
+
+.modal-content.confirm {
+  border-left: 4px solid #00c851;
+}
+
+.modal-content.form {
+  border-left: 4px solid #33b5e5;
+}
+
+/* Animations */
+.modal-content.fade {
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.modal-content.fade:not(.closing) {
+  opacity: 1;
+}
+
+.modal-content.slide {
+  transform: translateY(20px);
+  opacity: 0;
+  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+}
+
+.modal-content.slide:not(.closing) {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.modal-content.zoom {
+  transform: scale(0.95);
+  opacity: 0;
+  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+}
+
+.modal-content.zoom:not(.closing) {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* Positions */
+.modal-content.top {
+  align-self: flex-start;
+  margin-top: 20px;
+}
+
+.modal-content.bottom {
+  align-self: flex-end;
+  margin-bottom: 20px;
+}
+
+/* Dragging */
+.modal-content.dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.modal-content.dragging * {
+  cursor: grabbing;
+}
+
+/* Body and footer */
+.modal-body {
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  padding: 1rem;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+/* Portal */
+.modal-portal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.modal-portal > * {
+  pointer-events: auto;
+}
+
+/* Body scroll lock */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .modal-content {
+    width: 95vw;
+    margin: 1rem;
+  }
+
+  .modal-content.small,
+  .modal-content.medium,
+  .modal-content.large {
+    width: 95vw;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .modal-content {
+    background: #1a1a1a;
+    color: #fff;
+  }
+
+  .modal-header,
+  .modal-footer {
+    border-color: #333;
+  }
+
+  .modal-close {
+    color: #999;
+  }
+
+  .modal-close:hover {
+    color: #fff;
   }
 }

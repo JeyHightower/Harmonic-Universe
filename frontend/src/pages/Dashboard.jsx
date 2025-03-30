@@ -1,9 +1,9 @@
 import React from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { logout } from "../../store/slices/authSlice";
-import Button from "../common/Button";
-import "../../styles/Dashboard.css";
+import { logout } from "../store/slices/authSlice";
+import { Button } from "../components/common";
+import "../styles/Dashboard.css";
 
 const Dashboard = () => {
   const { user } = useSelector((state) => state.auth);

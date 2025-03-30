@@ -14,17 +14,18 @@ const useModal = () => {
   const dispatch = useDispatch();
 
   const openModal = useCallback(
-    (modalType, modalProps = {}) => {
-      if (!modalType) {
-        console.error("Modal type is required");
+    (props) => {
+      if (!props) {
+        console.error("Modal props are required");
         return;
       }
 
-      if (!isValidModalType(modalType)) {
-        console.warn(`Unknown modal type: ${modalType}`);
+      // If type is provided, validate it
+      if (props.type && !isValidModalType(props.type)) {
+        console.warn(`Unknown modal type: ${props.type}`);
       }
 
-      dispatch(openModalAction({ modalType, modalProps }));
+      dispatch(openModalAction(props));
     },
     [dispatch]
   );

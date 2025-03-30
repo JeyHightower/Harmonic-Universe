@@ -9,7 +9,7 @@ import {
 import { openModal } from '../../../store/slices/modalSlice';
 import { api, endpoints } from '../../../utils/api';
 import { validateEmail, validatePassword } from '../../../utils/validation';
-import Button from '../../common/Button';
+import { Button } from '../components/common';
 import Input from '../../common/Input';
 import './Auth.css';
 

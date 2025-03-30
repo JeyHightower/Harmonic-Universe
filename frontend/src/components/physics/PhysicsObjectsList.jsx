@@ -5,7 +5,7 @@ import {
   selectPhysicsObjects,
 } from "../../store/slices/physicsObjectsSlice";
 import { fetchPhysicsObjects } from "../../store/thunks/physicsObjectsThunks";
-import Button from "../common/Button";
+import { Button } from "../common";
 import Icon from "../common/Icon";
 import Spinner from "../common/Spinner";
 import "./PhysicsObjects.css";

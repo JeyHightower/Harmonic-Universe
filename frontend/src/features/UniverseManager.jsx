@@ -6,21 +6,21 @@
  * Consider using the Modal.jsx component for any modal functionality.
  */
 
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { fetchUniverses } from '../../../store/thunks/universeThunks';
-import Button from '../../common/Button';
-import Icon from '../../common/Icon';
-import Modal from '../../common/Modal';
-import Spinner from '../../common/Spinner';
-import './Universe.css';
-import UniverseModal from './UniverseModal';
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { fetchUniverses } from "../../../store/thunks/universeThunks";
+import { Button } from "../components/common";
+import Icon from "../../common/Icon";
+import Modal from "../../common/Modal";
+import Spinner from "../../common/Spinner";
+import "./Universe.css";
+import UniverseModal from "./UniverseModal";
 
 const UniverseManager = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { universes, loading, error } = useSelector(state => state.universes);
+  const { universes, loading, error } = useSelector((state) => state.universes);
 
   const [selectedUniverse, setSelectedUniverse] = useState(null);
   const [modalMode, setModalMode] = useState(null); // 'create', 'edit', 'view', 'delete'
@@ -37,25 +37,25 @@ const UniverseManager = () => {
 
   const handleCreateUniverse = () => {
     setSelectedUniverse(null);
-    setModalMode('create');
+    setModalMode("create");
     setIsModalVisible(true);
   };
 
-  const handleViewUniverse = universe => {
+  const handleViewUniverse = (universe) => {
     setSelectedUniverse(universe);
-    setModalMode('view');
+    setModalMode("view");
     setIsModalVisible(true);
   };
 
-  const handleEditUniverse = universe => {
+  const handleEditUniverse = (universe) => {
     setSelectedUniverse(universe);
-    setModalMode('edit');
+    setModalMode("edit");
     setIsModalVisible(true);
   };
 
-  const handleDeleteUniverse = universe => {
+  const handleDeleteUniverse = (universe) => {
     setSelectedUniverse(universe);
-    setModalMode('delete');
+    setModalMode("delete");
     setIsModalVisible(true);
   };
 
@@ -63,16 +63,16 @@ const UniverseManager = () => {
     setIsModalVisible(false);
   };
 
-  const handleModalSuccess = action => {
-    if (action === 'delete') {
+  const handleModalSuccess = (action) => {
+    if (action === "delete") {
       // No need to navigate, just refresh the list
       handleRefresh();
-    } else if (action === 'create' || action === 'update') {
+    } else if (action === "create" || action === "update") {
       handleRefresh();
     }
   };
 
-  const handleNavigateToUniverse = universeId => {
+  const handleNavigateToUniverse = (universeId) => {
     navigate(`/universes/${universeId}`);
   };
 
@@ -114,7 +114,7 @@ const UniverseManager = () => {
 
     return (
       <div className="universe-list">
-        {universes.map(universe => (
+        {universes.map((universe) => (
           <div
             key={universe.id}
             className="universe-item"
@@ -126,13 +126,13 @@ const UniverseManager = () => {
             <div className="universe-item-content">
               <h3 className="universe-item-title">{universe.name}</h3>
               <p className="universe-item-description">
-                {universe.description || 'No description'}
+                {universe.description || "No description"}
               </p>
             </div>
             <div className="universe-item-actions">
               <button
                 className="action-button"
-                onClick={e => {
+                onClick={(e) => {
                   e.stopPropagation();
                   handleViewUniverse(universe);
                 }}
@@ -141,7 +141,7 @@ const UniverseManager = () => {
               </button>
               <button
                 className="action-button"
-                onClick={e => {
+                onClick={(e) => {
                   e.stopPropagation();
                   handleEditUniverse(universe);
                 }}
@@ -150,7 +150,7 @@ const UniverseManager = () => {
               </button>
               <button
                 className="action-button danger"
-                onClick={e => {
+                onClick={(e) => {
                   e.stopPropagation();
                   handleDeleteUniverse(universe);
                 }}
