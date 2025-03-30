@@ -1,63 +1,63 @@
-import { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import {
   checkAuthState,
   loginFailure,
   loginStart,
   loginSuccess,
-} from '../../../store/slices/authSlice';
-import { openModal } from '../../../store/slices/modalSlice';
-import { api, endpoints } from '../../../utils/api';
-import Button from '../../common/Button';
-import './Home.css';
+} from "../store/slices/authSlice";
+import { openModal } from "../store/slices/modalSlice";
+import { api, endpoints } from "../utils/api";
+import Button from "../common/Button";
+import "./Home.css";
 
 function Home() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { isAuthenticated, loading } = useSelector(state => state.auth);
+  const { isAuthenticated, loading } = useSelector((state) => state.auth);
 
   useEffect(() => {
-    console.debug('Home component mounted');
+    console.debug("Home component mounted");
     dispatch(checkAuthState());
   }, [dispatch]);
 
   useEffect(() => {
-    console.debug('Auth state updated:', { isAuthenticated, loading });
+    console.debug("Auth state updated:", { isAuthenticated, loading });
     if (isAuthenticated && !loading) {
-      console.debug('Redirecting to dashboard');
-      navigate('/dashboard', { replace: true });
+      console.debug("Redirecting to dashboard");
+      navigate("/dashboard", { replace: true });
     }
   }, [isAuthenticated, loading, navigate]);
 
   const handleDemoLogin = async () => {
     try {
-      console.debug('Starting demo login');
+      console.debug("Starting demo login");
       dispatch(loginStart());
-      const response = await api.post('/api/auth/demo-login');
-      console.debug('Demo login response:', response);
+      const response = await api.post("/api/auth/demo-login");
+      console.debug("Demo login response:", response);
 
       if (response.access_token) {
-        localStorage.setItem('accessToken', response.access_token);
+        localStorage.setItem("accessToken", response.access_token);
       }
       if (response.refresh_token) {
-        localStorage.setItem('refreshToken', response.refresh_token);
+        localStorage.setItem("refreshToken", response.refresh_token);
       }
 
       // Fetch user info after successful demo login
       try {
         const userResponse = await api.get(endpoints.auth.me);
-        console.debug('User info response:', userResponse);
+        console.debug("User info response:", userResponse);
         dispatch(loginSuccess(userResponse));
-        navigate('/dashboard', { replace: true });
+        navigate("/dashboard", { replace: true });
       } catch (error) {
-        console.error('Failed to fetch user info:', error);
+        console.error("Failed to fetch user info:", error);
         throw error;
       }
     } catch (error) {
-      console.error('Demo login error:', error);
+      console.error("Demo login error:", error);
       let errorMessage =
-        'An error occurred during demo login. Please try again.';
+        "An error occurred during demo login. Please try again.";
 
       if (error.response) {
         const { data } = error.response;
@@ -71,17 +71,25 @@ function Home() {
       dispatch(loginFailure(errorMessage));
       dispatch(
         openModal({
-          title: 'Demo Login Error',
+          title: "Demo Login Error",
           content: errorMessage,
-          actionType: 'RETRY_DEMO_LOGIN',
-          severity: 'error',
+          actionType: "RETRY_DEMO_LOGIN",
+          severity: "error",
           showCancel: true,
         })
       );
     }
   };
 
-  console.debug('Rendering Home component:', { isAuthenticated, loading });
+  const handleLogin = () => {
+    dispatch(openModal({ type: "LOGIN" }));
+  };
+
+  const handleRegister = () => {
+    dispatch(openModal({ type: "REGISTER" }));
+  };
+
+  console.debug("Rendering Home component:", { isAuthenticated, loading });
 
   if (loading) {
     return (
@@ -110,11 +118,51 @@ function Home() {
     <div className="home-container">
       <div className="home-content">
         <h1>Welcome to Harmonic Universe</h1>
-        <p>Experience the harmony of sound and physics in a unique way.</p>
+        <p>
+          Experience the perfect harmony of sound and physics in an immersive
+          environment. Create, explore, and discover the beauty of musical
+          universes.
+        </p>
         <div className="home-actions">
           <Button onClick={handleDemoLogin} variant="primary">
             Try Demo
           </Button>
+          <Button onClick={handleLogin} variant="secondary">
+            Login
+          </Button>
+          <Button onClick={handleRegister} variant="secondary">
+            Register
+          </Button>
+        </div>
+      </div>
+      <div className="features-grid">
+        <div className="feature-card">
+          <h3>Create Universes</h3>
+          <p>
+            Design your own musical universes with unique physics parameters and
+            sound profiles.
+          </p>
+        </div>
+        <div className="feature-card">
+          <h3>Interactive Physics</h3>
+          <p>
+            Experiment with 2D and 3D physics simulations that respond to your
+            musical creations.
+          </p>
+        </div>
+        <div className="feature-card">
+          <h3>Sound Design</h3>
+          <p>
+            Craft beautiful soundscapes with our advanced audio generation and
+            manipulation tools.
+          </p>
+        </div>
+        <div className="feature-card">
+          <h3>Visual Experience</h3>
+          <p>
+            Watch your music come to life with stunning visualizations and
+            animations.
+          </p>
         </div>
       </div>
     </div>

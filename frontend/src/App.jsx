@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { Routes, Route, BrowserRouter } from "react-router-dom";
+import { Routes, Route, BrowserRouter, Navigate } from "react-router-dom";
 import { Provider } from "react-redux";
 import { store } from "./store";
+import { useSelector } from "react-redux";
+import Home from "./components/Home";
+import Login from "./components/auth/Login";
+import Register from "./components/auth/Register";
+import Modal from "./components/Modal";
+import Navigation from "./components/Navigation";
+import Dashboard from "./components/Dashboard";
+import Profile from "./components/Profile";
+import "./App.css";
 
 // Define a fallback component in case of errors
 const ErrorFallback = () => (
@@ -21,30 +30,83 @@ const ErrorFallback = () => (
   </div>
 );
 
+// Protected Route component
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useSelector((state) => state.auth);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
+
 // Create a separate component for the main app content
 const AppContent = () => {
+  const { isAuthenticated } = useSelector((state) => state.auth);
+  const { isOpen, type } = useSelector((state) => state.modal);
+
+  const renderModalContent = () => {
+    switch (type) {
+      case "LOGIN":
+        return (
+          <Login onClose={() => store.dispatch({ type: "modal/closeModal" })} />
+        );
+      case "REGISTER":
+        return (
+          <Register
+            onClose={() => store.dispatch({ type: "modal/closeModal" })}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
   try {
-    // Import and use components from your application
     return (
       <BrowserRouter
         future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
       >
         <div className="App">
-          <header className="App-header">
-            <h1>Harmonic Universe</h1>
-          </header>
-          <main>
+          <Navigation />
+          <main className="App-main">
             <Routes>
+              <Route path="/" element={<Home />} />
               <Route
-                path="/"
-                element={<div>Welcome to Harmonic Universe</div>}
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
               />
-              {/* Your other routes should go here */}
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
           </main>
           <footer className="App-footer">
             <p>&copy; {new Date().getFullYear()} Harmonic Universe</p>
           </footer>
+          {isOpen && (
+            <Modal
+              isOpen={isOpen}
+              onClose={() => store.dispatch({ type: "modal/closeModal" })}
+              type={type}
+            >
+              {renderModalContent()}
+            </Modal>
+          )}
         </div>
       </BrowserRouter>
     );
@@ -84,5 +146,5 @@ function App() {
   }
 }
 
-// Export the App component - this is now outside all blocks
+// Export the App component
 export default App;
