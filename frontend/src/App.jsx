@@ -26,7 +26,9 @@ const AppContent = () => {
   try {
     // Import and use components from your application
     return (
-      <BrowserRouter>
+      <BrowserRouter
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
         <div className="App">
           <header className="App-header">
             <h1>Harmonic Universe</h1>
