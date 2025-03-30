@@ -1,0 +1,16 @@
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.logo-circle {
+  stroke: currentColor;
+  stroke-width: 2;
+  transition: stroke 0.3s ease;
+}
+
+.logo:hover .logo-circle {
+  stroke: var(--accent-color);
+}

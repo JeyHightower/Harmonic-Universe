@@ -1,78 +1,42 @@
-import React, { useState } from "react";
+import React from "react";
+import PropTypes from "prop-types";
 import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import useForm from "../../hooks/useForm";
+import { loginSuccess } from "../../store/slices/authSlice";
+import { openModal } from "../../store/slices/modalSlice";
+import { api } from "../../utils/api";
 import {
-  loginStart,
-  loginSuccess,
-  loginFailure,
-} from "../../store/slices/authSlice";
-import { api, endpoints } from "../../utils/api";
-import Button from "../../common/Button";
-import "./Auth.css";
+  validateEmail,
+  validatePassword,
+  validateUsername,
+} from "../../utils/validation";
+import { Button, Input } from "../common";
+import "../../styles/Auth.css";
 
-const Register = ({ onClose }) => {
+function Register() {
   const dispatch = useDispatch();
-  const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
-  const [errors, setErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const validateForm = () => {
-    const newErrors = {};
-    if (!formData.username) {
-      newErrors.username = "Username is required";
-    } else if (formData.username.length < 3) {
-      newErrors.username = "Username must be at least 3 characters";
+  const { values, errors, handleChange, handleBlur, validateForm } = useForm(
+    {
+      username: "",
+      email: "",
+      password: "",
+    },
+    {
+      username: validateUsername,
+      email: validateEmail,
+      password: validatePassword,
     }
-    if (!formData.email) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Email is invalid";
-    }
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
-    }
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = "Please confirm your password";
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
-    }
-  };
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     try {
-      setIsLoading(true);
-      dispatch(loginStart());
-      const response = await api.post("/api/auth/register", {
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-      });
+      const response = await api.post("/api/auth/register", values);
 
       if (response.access_token) {
         localStorage.setItem("accessToken", response.access_token);
@@ -81,17 +45,9 @@ const Register = ({ onClose }) => {
         localStorage.setItem("refreshToken", response.refresh_token);
       }
 
-      // Fetch user info after successful registration
-      try {
-        const userResponse = await api.get(endpoints.auth.me);
-        dispatch(loginSuccess(userResponse));
-        onClose();
-      } catch (error) {
-        console.error("Failed to fetch user info:", error);
-        throw error;
-      }
+      dispatch(loginSuccess(response.user));
+      navigate("/dashboard");
     } catch (error) {
-      console.error("Registration error:", error);
       let errorMessage =
         "An error occurred during registration. Please try again.";
 
@@ -104,101 +60,56 @@ const Register = ({ onClose }) => {
         }
       }
 
-      dispatch(loginFailure(errorMessage));
-      setErrors((prev) => ({
-        ...prev,
-        submit: errorMessage,
-      }));
-    } finally {
-      setIsLoading(false);
+      dispatch(
+        openModal({
+          title: "Registration Error",
+          content: errorMessage,
+          severity: "error",
+        })
+      );
     }
   };
 
   return (
-    <div className="auth-form">
-      <h2>Create Account</h2>
-      <p>Join Harmonic Universe today</p>
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label htmlFor="username">Username</label>
-          <input
-            type="text"
-            id="username"
-            name="username"
-            value={formData.username}
-            onChange={handleChange}
-            className={errors.username ? "error" : ""}
-            placeholder="Choose a username"
-          />
-          {errors.username && (
-            <span className="error-message">{errors.username}</span>
-          )}
-        </div>
-        <div className="form-group">
-          <label htmlFor="email">Email</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className={errors.email ? "error" : ""}
-            placeholder="Enter your email"
-          />
-          {errors.email && (
-            <span className="error-message">{errors.email}</span>
-          )}
-        </div>
-        <div className="form-group">
-          <label htmlFor="password">Password</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            className={errors.password ? "error" : ""}
-            placeholder="Create a password"
-          />
-          {errors.password && (
-            <span className="error-message">{errors.password}</span>
-          )}
-        </div>
-        <div className="form-group">
-          <label htmlFor="confirmPassword">Confirm Password</label>
-          <input
-            type="password"
-            id="confirmPassword"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            className={errors.confirmPassword ? "error" : ""}
-            placeholder="Confirm your password"
-          />
-          {errors.confirmPassword && (
-            <span className="error-message">{errors.confirmPassword}</span>
-          )}
-        </div>
-        {errors.submit && <div className="error-message">{errors.submit}</div>}
-        <Button
-          type="submit"
-          variant="primary"
-          disabled={isLoading}
-          className={isLoading ? "button-loading" : ""}
-        >
-          {isLoading ? "Creating account..." : "Create Account"}
+    <div className="auth-container">
+      <form onSubmit={handleSubmit} className="auth-form">
+        <h1>Register</h1>
+        <Input
+          type="text"
+          label="Username"
+          name="username"
+          value={values.username}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          error={errors.username}
+          required
+        />
+        <Input
+          type="email"
+          label="Email"
+          name="email"
+          value={values.email}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          error={errors.email}
+          required
+        />
+        <Input
+          type="password"
+          label="Password"
+          name="password"
+          value={values.password}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          error={errors.password}
+          required
+        />
+        <Button type="submit" fullWidth>
+          Register
         </Button>
       </form>
-      <div className="auth-footer">
-        <p>
-          Already have an account?{" "}
-          <button onClick={() => onClose("LOGIN")} className="link-button">
-            Sign in
-          </button>
-        </p>
-      </div>
     </div>
   );
-};
+}
 
 export default Register;

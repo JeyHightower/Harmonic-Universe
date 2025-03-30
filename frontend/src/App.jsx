@@ -1,16 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import { Routes, Route, BrowserRouter, Navigate } from "react-router-dom";
 import { Provider } from "react-redux";
-import { store } from "./store";
+import store from "./store/store";
 import { useSelector } from "react-redux";
-import Home from "./components/Home";
-import Login from "./components/auth/Login";
-import Register from "./components/auth/Register";
-import Modal from "./components/Modal";
-import Navigation from "./components/Navigation";
-import Dashboard from "./components/Dashboard";
-import Profile from "./components/Profile";
-import "./App.css";
+import { Home, Login, Register, Modal, Navigation } from "./components";
+import "./styles/App.css";
+
+// Lazy load route components
+const Dashboard = lazy(() => import("./components/pages/Dashboard"));
+const Profile = lazy(() => import("./components/pages/Profile"));
+const SettingsPage = lazy(() => import("./components/pages/SettingsPage"));
+
+// Loading component for Suspense fallback
+const LoadingPage = () => (
+  <div className="loading-page">
+    <div className="loading-spinner"></div>
+    <p>Loading...</p>
+  </div>
+);
 
 // Define a fallback component in case of errors
 const ErrorFallback = () => (
@@ -35,7 +42,7 @@ const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useSelector((state) => state.auth);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <LoadingPage />;
   }
 
   if (!isAuthenticated) {
@@ -75,25 +82,35 @@ const AppContent = () => {
         <div className="App">
           <Navigation />
           <main className="App-main">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
+            <Suspense fallback={<LoadingPage />}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <Profile />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <SettingsPage />
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+            </Suspense>
           </main>
           <footer className="App-footer">
             <p>&copy; {new Date().getFullYear()} Harmonic Universe</p>

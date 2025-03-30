@@ -1,10 +1,10 @@
-import React from 'react';
-import { useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import useModal from '../hooks/useModal.js';
-import { demoLogin } from '../store/authThunks';
-import '../styles/Home.css';
-import { MODAL_TYPES } from '../utils/modalRegistry.js';
+import React from "react";
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import useModal from "../hooks/useModal.js";
+import { demoLogin } from "../store/thunks/authThunks";
+import "../styles/Home.css";
+import { MODAL_TYPES } from "../utils/modalRegistry.js";
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -15,10 +15,10 @@ const Home = () => {
     try {
       const resultAction = await dispatch(demoLogin());
       if (demoLogin.fulfilled.match(resultAction)) {
-        navigate('/dashboard');
+        navigate("/dashboard");
       }
     } catch (error) {
-      console.error('Demo login failed:', error);
+      console.error("Demo login failed:", error);
     }
   };
 
@@ -35,25 +35,17 @@ const Home = () => {
       <div className="home-content">
         <h1>Welcome to Harmonic Universe</h1>
         <p>
-          Experience the power of physics simulation and create your own universe.
+          Experience the power of physics simulation and create your own
+          universe.
         </p>
         <div className="home-actions">
-          <button
-            className="button button-primary"
-            onClick={handleDemoLogin}
-          >
+          <button className="button button-primary" onClick={handleDemoLogin}>
             Try Demo
           </button>
-          <button
-            className="button button-secondary"
-            onClick={handleLogin}
-          >
+          <button className="button button-secondary" onClick={handleLogin}>
             Login
           </button>
-          <button
-            className="button button-secondary"
-            onClick={handleSignup}
-          >
+          <button className="button button-secondary" onClick={handleSignup}>
             Sign Up
           </button>
         </div>

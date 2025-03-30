@@ -1,0 +1,99 @@
+.physics-parameters-modal {
+  max-width: 800px;
+}
+
+.physics-parameters-form {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.physics-parameters-form-item {
+  margin-bottom: 16px;
+}
+
+.physics-parameters-form-item.full-width {
+  grid-column: span 2;
+}
+
+.physics-parameters-form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.physics-parameters-form-input {
+  width: 100%;
+}
+
+.physics-parameters-form-error {
+  color: #ff4d4f;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.physics-parameters-form-help {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.physics-parameters-form-buttons {
+  grid-column: span 2;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.physics-parameters-loading {
+  text-align: center;
+  padding: 48px;
+}
+
+.physics-parameters-error {
+  color: #ff4d4f;
+  margin-bottom: 16px;
+}
+
+.physics-parameters-success {
+  color: #52c41a;
+  margin-bottom: 16px;
+}
+
+.physics-parameters-warning {
+  color: #faad14;
+  margin-bottom: 16px;
+}
+
+.physics-parameters-info {
+  color: #1890ff;
+  margin-bottom: 16px;
+}
+
+.physics-parameters-preview {
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  background-color: #fafafa;
+}
+
+.physics-parameters-preview-title {
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.physics-parameters-preview-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.physics-parameters-preview-label {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.physics-parameters-preview-value {
+  font-weight: 500;
+}

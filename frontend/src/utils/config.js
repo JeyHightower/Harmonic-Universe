@@ -29,8 +29,11 @@ const parseInt = (value, defaultValue = undefined) => {
 
 // API configuration
 export const API_CONFIG = {
-  BASE_URL: validateEnvVar("VITE_API_BASE_URL", "http://localhost:5000"),
-  TIMEOUT: parseInt(validateEnvVar("VITE_API_TIMEOUT", "30000")),
+  BASE_URL: process.env.REACT_APP_API_URL || "http://localhost:5000/api",
+  TIMEOUT: 10000,
+  HEADERS: {
+    "Content-Type": "application/json",
+  },
   CORS: {
     CREDENTIALS: true,
     ALLOWED_ORIGINS: parseArray(
@@ -67,19 +70,24 @@ export const API_CONFIG = {
 
 // Authentication configuration
 export const AUTH_CONFIG = {
-  TOKEN_EXPIRY: parseInt(validateEnvVar("VITE_AUTH_TOKEN_EXPIRY", "86400000")),
-  REFRESH_TOKEN_EXPIRY: parseInt(
-    validateEnvVar("VITE_REFRESH_TOKEN_EXPIRY", "604800000")
-  ),
-  COOKIE_DOMAIN: validateEnvVar("VITE_AUTH_COOKIE_DOMAIN", "localhost"),
+  TOKEN_KEY: "token",
+  USER_KEY: "user",
+  REFRESH_TOKEN_KEY: "refreshToken",
+  TOKEN_EXPIRY: 3600, // 1 hour
+  REFRESH_TOKEN_EXPIRY: 604800, // 7 days
+  COOKIE_DOMAIN:
+    process.env.NODE_ENV === "production"
+      ? ".harmonic-universe.com"
+      : "localhost",
   COOKIE_SECURE: parseBool(validateEnvVar("VITE_AUTH_COOKIE_SECURE", "false")),
   COOKIE_SAMESITE: validateEnvVar("VITE_AUTH_COOKIE_SAMESITE", "strict"),
   ENDPOINTS: {
-    LOGIN: "/auth/login",
-    REGISTER: "/auth/register",
-    LOGOUT: "/auth/logout",
-    REFRESH: "/auth/refresh",
-    DEMO: "/auth/demo-login",
+    LOGIN: "/api/auth/login",
+    REGISTER: "/api/auth/register",
+    LOGOUT: "/api/auth/logout",
+    REFRESH: "/api/auth/refresh",
+    DEMO: "/api/auth/demo-login",
+    ME: "/api/auth/me",
   },
 };
 
@@ -147,6 +155,51 @@ export const MONITORING_CONFIG = {
   SAMPLE_RATE: parseFloat(validateEnvVar("VITE_MONITORING_SAMPLE_RATE", "0.1")),
 };
 
+// Theme configuration
+export const THEME_CONFIG = {
+  LIGHT: {
+    primary: "#4a90e2",
+    secondary: "#f39c12",
+    background: "#ffffff",
+    text: "#333333",
+    error: "#e74c3c",
+    success: "#2ecc71",
+    warning: "#f1c40f",
+    info: "#3498db",
+  },
+  DARK: {
+    primary: "#3498db",
+    secondary: "#e67e22",
+    background: "#1a1a1a",
+    text: "#ffffff",
+    error: "#c0392b",
+    success: "#27ae60",
+    warning: "#d35400",
+    info: "#2980b9",
+  },
+};
+
+// Physics configuration
+export const PHYSICS_CONFIG = {
+  GRAVITY: 9.81,
+  TIME_STEP: 0.016,
+  MAX_STEPS: 1000,
+  DAMPING: 0.99,
+  RESTITUTION: 0.8,
+  FRICTION: 0.5,
+};
+
+// Music configuration
+export const MUSIC_CONFIG = {
+  SAMPLE_RATE: 44100,
+  BUFFER_SIZE: 2048,
+  MAX_DURATION: 300, // 5 minutes in seconds
+  MIN_FREQUENCY: 20,
+  MAX_FREQUENCY: 20000,
+  DEFAULT_TEMPO: 120,
+  DEFAULT_VOLUME: 0.7,
+};
+
 // Export a default configuration object that combines all configs
 export default {
   api: API_CONFIG,
@@ -155,4 +208,46 @@ export default {
   features: FEATURES,
   session: SESSION_CONFIG,
   monitoring: MONITORING_CONFIG,
+  theme: THEME_CONFIG,
+  physics: PHYSICS_CONFIG,
+  music: MUSIC_CONFIG,
+};
+
+export const ROUTES = {
+  HOME: "/",
+  LOGIN: "/login",
+  REGISTER: "/register",
+  DASHBOARD: "/dashboard",
+  UNIVERSE: "/universe/:id",
+  SCENE: "/scene/:id",
+  SETTINGS: "/settings",
+  PROFILE: "/profile",
+};
+
+export const MODAL_TYPES = {
+  LOGIN: "LOGIN",
+  REGISTER: "REGISTER",
+  SETTINGS: "SETTINGS",
+  CREATE_UNIVERSE: "CREATE_UNIVERSE",
+  EDIT_UNIVERSE: "EDIT_UNIVERSE",
+  DELETE_UNIVERSE: "DELETE_UNIVERSE",
+  CREATE_SCENE: "CREATE_SCENE",
+  EDIT_SCENE: "EDIT_SCENE",
+  DELETE_SCENE: "DELETE_SCENE",
+  CREATE_PHYSICS_OBJECT: "CREATE_PHYSICS_OBJECT",
+  EDIT_PHYSICS_OBJECT: "EDIT_PHYSICS_OBJECT",
+  DELETE_PHYSICS_OBJECT: "DELETE_PHYSICS_OBJECT",
+  PHYSICS_PARAMETERS: "PHYSICS_PARAMETERS",
+  HARMONY_PARAMETERS: "HARMONY_PARAMETERS",
+  EXPORT: "EXPORT",
+  IMPORT: "IMPORT",
+};
+
+export const ERROR_MESSAGES = {
+  NETWORK_ERROR: "Network error occurred. Please check your connection.",
+  SERVER_ERROR: "Server error occurred. Please try again later.",
+  UNAUTHORIZED: "You are not authorized to perform this action.",
+  NOT_FOUND: "The requested resource was not found.",
+  VALIDATION_ERROR: "Please check your input and try again.",
+  UNKNOWN_ERROR: "An unknown error occurred. Please try again.",
 };

@@ -5,11 +5,12 @@
  * They handle theme switching, persistence, and system preference detection.
  */
 
+import { THEME_CONFIG } from "./config";
+
 // Available themes
 export const THEMES = {
-  LIGHT: 'light',
-  DARK: 'dark',
-  SYSTEM: 'system',
+  LIGHT: "light",
+  DARK: "dark",
 };
 
 /**
@@ -17,70 +18,21 @@ export const THEMES = {
  * @returns {string} The current theme (light, dark, or system)
  */
 export const getCurrentTheme = () => {
-  const savedTheme = localStorage.getItem('app-theme');
-
-  if (savedTheme) {
-    return savedTheme;
-  }
-
-  return THEMES.SYSTEM;
+  const savedTheme = localStorage.getItem("theme");
+  return savedTheme || THEMES.LIGHT;
 };
 
 /**
  * Set the theme for the application
  * @param {string} theme - The theme to set (light, dark, or system)
  */
-export const setTheme = theme => {
-  // Save theme preference to localStorage
-  localStorage.setItem('app-theme', theme);
-
-  // Apply theme to document
-  applyTheme(theme);
-};
-
-/**
- * Apply the specified theme to the document
- * @param {string} theme - The theme to apply (light, dark, or system)
- */
-export const applyTheme = theme => {
-  // Handle system preference
-  if (theme === THEMES.SYSTEM) {
-    const prefersDarkMode = window.matchMedia(
-      '(prefers-color-scheme: dark)'
-    ).matches;
-    document.documentElement.setAttribute(
-      'data-theme',
-      prefersDarkMode ? THEMES.DARK : THEMES.LIGHT
-    );
-  } else {
-    document.documentElement.setAttribute('data-theme', theme);
+export const setTheme = (theme) => {
+  if (!Object.values(THEMES).includes(theme)) {
+    console.error(`Invalid theme: ${theme}`);
+    return;
   }
-};
-
-/**
- * Initialize theme based on saved preference or system settings
- */
-export const initializeTheme = () => {
-  const savedTheme = getCurrentTheme();
-  applyTheme(savedTheme);
-
-  // Listen for system preference changes
-  const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-  const handleSystemThemeChange = () => {
-    const currentTheme = getCurrentTheme();
-    if (currentTheme === THEMES.SYSTEM) {
-      applyTheme(THEMES.SYSTEM);
-    }
-  };
-
-  // Modern browsers
-  if (darkModeMediaQuery.addEventListener) {
-    darkModeMediaQuery.addEventListener('change', handleSystemThemeChange);
-  } else {
-    // Fallback for older browsers
-    darkModeMediaQuery.addListener(handleSystemThemeChange);
-  }
+  localStorage.setItem("theme", theme);
+  document.documentElement.setAttribute("data-theme", theme);
 };
 
 /**
@@ -89,19 +41,57 @@ export const initializeTheme = () => {
  */
 export const toggleTheme = () => {
   const currentTheme = getCurrentTheme();
-  let newTheme;
-
-  // If system theme, just switch to explicit light/dark
-  if (currentTheme === THEMES.SYSTEM) {
-    const systemIsDark = window.matchMedia(
-      '(prefers-color-scheme: dark)'
-    ).matches;
-    newTheme = systemIsDark ? THEMES.LIGHT : THEMES.DARK;
-  } else {
-    // Toggle between light and dark
-    newTheme = currentTheme === THEMES.LIGHT ? THEMES.DARK : THEMES.LIGHT;
-  }
-
+  const newTheme = currentTheme === THEMES.LIGHT ? THEMES.DARK : THEMES.LIGHT;
   setTheme(newTheme);
-  return newTheme;
+};
+
+export const getThemeColors = () => {
+  const currentTheme = getCurrentTheme();
+  return THEME_CONFIG[currentTheme.toUpperCase()];
+};
+
+export const applyThemeColors = () => {
+  const colors = getThemeColors();
+  const root = document.documentElement;
+
+  Object.entries(colors).forEach(([key, value]) => {
+    root.style.setProperty(`--${key}`, value);
+  });
+};
+
+export const getContrastColor = (color) => {
+  // Convert hex to RGB
+  const hex = color.replace("#", "");
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+
+  // Calculate luminance
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+  // Return black or white based on luminance
+  return luminance > 0.5 ? "#000000" : "#ffffff";
+};
+
+export const getColorWithOpacity = (color, opacity) => {
+  const hex = color.replace("#", "");
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+};
+
+export const getGradient = (color, direction = "to right") => {
+  const baseColor = getColorWithOpacity(color, 1);
+  const transparentColor = getColorWithOpacity(color, 0);
+
+  return `linear-gradient(${direction}, ${baseColor}, ${transparentColor})`;
+};
+
+export const getBoxShadow = (color) => {
+  return `0 2px 4px ${getColorWithOpacity(
+    color,
+    0.1
+  )}, 0 4px 8px ${getColorWithOpacity(color, 0.1)}`;
 };

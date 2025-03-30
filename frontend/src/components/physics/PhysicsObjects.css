@@ -1,0 +1,103 @@
+.physics-objects-manager {
+  padding: 24px;
+}
+
+.physics-objects-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.physics-objects-title {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.title-icon {
+  color: #1890ff;
+}
+
+.physics-objects-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.physics-objects-list {
+  margin-top: 24px;
+}
+
+.physics-object-item {
+  padding: 16px;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  transition: all 0.3s;
+}
+
+.physics-object-item:hover {
+  border-color: #1890ff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
+}
+
+.physics-object-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.physics-object-name {
+  font-weight: 500;
+  margin: 0;
+}
+
+.physics-object-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.physics-object-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.physics-object-detail {
+  display: flex;
+  flex-direction: column;
+}
+
+.physics-object-detail-label {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.physics-object-detail-value {
+  font-weight: 500;
+}
+
+.physics-object-description {
+  margin-top: 8px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.physics-objects-empty {
+  text-align: center;
+  padding: 48px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.physics-objects-loading {
+  text-align: center;
+  padding: 48px;
+}
+
+.physics-objects-error {
+  color: #ff4d4f;
+  margin-bottom: 16px;
+}

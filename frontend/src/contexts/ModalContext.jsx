@@ -1,41 +1,40 @@
-import PropTypes from 'prop-types';
-import React, { createContext, useContext, useState } from 'react';
+import PropTypes from "prop-types";
+import React, { createContext, useContext, useState } from "react";
 
 // Create the context
-const ModalContext = createContext(null);
+const ModalContext = createContext();
 
 // Custom hook to use the modal context
-export function useModal() {
+export const useModal = () => {
   const context = useContext(ModalContext);
   if (!context) {
-    throw new Error('useModal must be used within a ModalProvider');
+    throw new Error("useModal must be used within a ModalProvider");
   }
   return context;
-}
+};
 
 // Provider component
-export function ModalProvider({ children }) {
-  const [modalType, setModalType] = useState(null);
-  const [modalProps, setModalProps] = useState({});
+export const ModalProvider = ({ children }) => {
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    type: null,
+    props: {},
+  });
 
   const openModal = (type, props = {}) => {
-    console.log(`Opening modal: ${type}`);
-    setModalType(type);
-    setModalProps(props);
+    setModalState({ isOpen: true, type, props });
   };
 
   const closeModal = () => {
-    console.log('Closing modal');
-    setModalType(null);
-    setModalProps({});
+    setModalState({ isOpen: false, type: null, props: {} });
   };
 
   return (
-    <ModalContext.Provider value={{ modalType, modalProps, openModal, closeModal }}>
+    <ModalContext.Provider value={{ modalState, openModal, closeModal }}>
       {children}
     </ModalContext.Provider>
   );
-}
+};
 
 export default ModalContext;
 

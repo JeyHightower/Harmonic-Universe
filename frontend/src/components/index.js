@@ -1,10 +1,57 @@
-/**
- * Common components index
- * This file provides a centralized export point for all common components
- */
+// Auth Components
+export { default as Login } from "./auth/Login";
+export { default as Register } from "./auth/Register";
 
-// Re-export all icons from the Icons module
-export { default as Icon } from './Icon';
-export * from './Icons';
-export { default as IconProvider } from './Icons';
+// Common Components
+export { default as Button } from "./common/Button";
+export { default as Icon } from "./common/Icon";
+export { default as Input } from "./common/Input";
+export { default as Modal } from "./common/Modal";
+export { default as Select } from "./common/Select";
+export { default as Slider } from "./common/Slider";
+export { default as Spinner } from "./common/Spinner";
+export { default as Tooltip } from "./common/Tooltip";
+export { default as SafeIcon } from "./common/SafeIcon";
 
+// Layout Components
+export { default as Layout } from "./layout/Layout";
+export { default as Navigation } from "./layout/Navigation";
+export { default as Navbar } from "./layout/Navbar";
+export { default as Footer } from "./layout/Footer";
+
+// Essential Pages
+export { default as Home } from "./pages/Home";
+
+// Lazy loaded components - these will be imported dynamically where needed
+export const MusicComponents = {
+  MusicPlayer: () => import("./music/MusicPlayer"),
+  MusicGenerationModal: () => import("./music/MusicGenerationModal"),
+  MusicVisualizer3D: () => import("./music/MusicVisualizer3D"),
+  MusicModal: () => import("./music/MusicModal"),
+  AudioDetailsModal: () => import("./music/AudioDetailsModal"),
+  AudioGenerationModal: () => import("./music/AudioGenerationModal"),
+};
+
+export const PhysicsComponents = {
+  PhysicsPanel: () => import("./physics/PhysicsPanel"),
+  PhysicsEditor: () => import("./physics/PhysicsEditor"),
+  PhysicsParametersModal: () => import("./physics/PhysicsParametersModal"),
+  PhysicsObjectsManager: () => import("./physics/PhysicsObjectsManager"),
+  PhysicsObjectForm: () => import("./physics/PhysicsObjectForm"),
+  PhysicsObjectsList: () => import("./physics/PhysicsObjectsList"),
+  PhysicsSettingsModal: () => import("./physics/PhysicsSettingsModal"),
+  PhysicsParametersManager: () => import("./physics/PhysicsParametersManager"),
+};
+
+export const ModalComponents = {
+  ExportModal: () => import("./common/ExportModal"),
+  ImportModal: () => import("./common/ImportModal"),
+  LoginModal: () => import("./auth/LoginModal"),
+  RegisterModal: () => import("./auth/RegisterModal"),
+};
+
+export const DebugComponents = {
+  Debug: () => import("./debug/Debug"),
+  DebugControls: () => import("./debug/DebugControls"),
+  IconTest: () => import("./debug/IconTest"),
+};

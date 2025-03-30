@@ -22,6 +22,54 @@ class AuthService {
     return AuthService.instance;
   }
 
+  public setTokens(accessToken: string, refreshToken: string): void {
+    localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, accessToken);
+    localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, refreshToken);
+  }
+
+  public getAccessToken(): string | null {
+    return localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+  }
+
+  public getRefreshToken(): string | null {
+    return localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+  }
+
+  public clearTokens(): void {
+    localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+    localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+  }
+
+  public async refreshAccessToken(): Promise<string> {
+    if (this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    this.refreshPromise = (async () => {
+      try {
+        const refreshToken = this.getRefreshToken();
+        if (!refreshToken) {
+          throw new Error('No refresh token available');
+        }
+
+        const response = await apiClient.post(AUTH_CONFIG.ENDPOINTS.REFRESH, {
+          refresh_token: refreshToken
+        });
+
+        const { access_token } = response.data;
+        this.setTokens(access_token, refreshToken);
+        return access_token;
+      } catch (error) {
+        this.clearTokens();
+        throw error;
+      } finally {
+        this.refreshPromise = null;
+      }
+    })();
+
+    return this.refreshPromise;
+  }
+
   /**
    * Login with rate limiting and security checks
    * @param {Object} credentials - User credentials
@@ -79,38 +127,6 @@ class AuthService {
     } finally {
       CookieService.removeAuthTokens();
     }
-  }
-
-  /**
-   * Refresh access token
-   * @returns {Promise<Object>} New tokens
-   */
-  async refreshToken(): Promise<any> {
-    // Prevent multiple refresh attempts
-    if (this.refreshPromise) {
-      return this.refreshPromise;
-    }
-
-    this.refreshPromise = (async () => {
-      try {
-        const tokens = CookieService.getAuthTokens();
-        if (!tokens.refresh_token) {
-          throw new Error('No refresh token available');
-        }
-
-        const response = await apiClient.refreshToken(tokens.refresh_token);
-        CookieService.setAuthTokens(response.tokens);
-        return response;
-      } catch (error) {
-        // Clear tokens on refresh failure
-        CookieService.removeAuthTokens();
-        throw error;
-      } finally {
-        this.refreshPromise = null;
-      }
-    })();
-
-    return this.refreshPromise;
   }
 
   /**

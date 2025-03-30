@@ -24,6 +24,35 @@ body {
   flex-direction: column;
 }
 
+/* App specific styles */
+.App {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8fafc;
+}
+
+.App-main {
+  flex: 1;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.App-footer {
+  background-color: #fff;
+  padding: 1.5rem;
+  text-align: center;
+  color: #64748b;
+  border-top: 1px solid #e2e8f0;
+}
+
+.App-footer p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
 /* Modal styles */
 .modal-overlay {
   position: fixed;
@@ -104,9 +133,22 @@ body {
 /* Loading state */
 .loading {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
   min-height: 200px;
+  color: #64748b;
+}
+
+.loading p {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+.loading small {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
 }
 
 .loading-spinner {
@@ -127,6 +169,30 @@ body {
   }
 }
 
+/* Error state */
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 2rem;
+  text-align: center;
+  background-color: #fff;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.error-container h1 {
+  color: #ef4444;
+  margin-bottom: 1rem;
+}
+
+.error-container p {
+  color: #64748b;
+  margin: 0;
+}
+
 /* Base styles */
 :root {
   /* Color variables */
@@ -140,8 +206,8 @@ body {
   --shadow-color: rgba(0, 0, 0, 0.3);
 
   /* Font variables */
-  --font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
+  --font-primary: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
   --font-size-base: 16px;
   --line-height-base: 1.5;
 
@@ -271,7 +337,25 @@ select:focus {
   margin-top: var(--spacing-xl);
 }
 
-/* Animations */
+/* Animation classes */
+.fade-enter {
+  opacity: 0;
+}
+
+.fade-enter-active {
+  opacity: 1;
+  transition: opacity 200ms ease-in;
+}
+
+.fade-exit {
+  opacity: 1;
+}
+
+.fade-exit-active {
+  opacity: 0;
+  transition: opacity 200ms ease-in;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -285,9 +369,37 @@ select:focus {
   animation: fadeIn var(--transition-base);
 }
 
-/* Responsive utilities */
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Responsive styles */
 @media (max-width: 768px) {
   html {
-    font-size: calc(var(--font-size-base) * 0.9);
+    font-size: 14px;
+  }
+
+  .App-main {
+    padding: 1rem;
+  }
+
+  .App-footer {
+    padding: 1rem;
   }
 }
