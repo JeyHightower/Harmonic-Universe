@@ -4,6 +4,7 @@ import { Provider } from "react-redux";
 import store from "./store/store";
 import { useSelector } from "react-redux";
 import { Home, Login, Register, Modal, Navigation } from "./components";
+import routes from "./routes";
 import "./styles/App.css";
 
 // Lazy load route components
@@ -84,31 +85,18 @@ const AppContent = () => {
           <main className="App-main">
             <Suspense fallback={<LoadingPage />}>
               <Routes>
-                <Route path="/" element={<Home />} />
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/profile"
-                  element={
-                    <ProtectedRoute>
-                      <Profile />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/settings"
-                  element={
-                    <ProtectedRoute>
-                      <SettingsPage />
-                    </ProtectedRoute>
-                  }
-                />
+                {routes.map((route, index) => (
+                  <Route key={index} path={route.path} element={route.element}>
+                    {route.children?.map((child, childIndex) => (
+                      <Route
+                        key={childIndex}
+                        index={child.index}
+                        path={child.path}
+                        element={child.element}
+                      />
+                    ))}
+                  </Route>
+                ))}
               </Routes>
             </Suspense>
           </main>
@@ -128,7 +116,7 @@ const AppContent = () => {
       </BrowserRouter>
     );
   } catch (error) {
-    console.error("Error rendering app content:", error);
+    console.error("Error rendering AppContent:", error);
     return <ErrorFallback />;
   }
 };

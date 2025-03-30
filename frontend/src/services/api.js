@@ -75,11 +75,13 @@ api.interceptors.request.use(
 
     // Log outgoing requests in development
     if (IS_DEVELOPMENT) {
+      // Remove any leading /api from the URL to prevent duplication
+      const cleanUrl = config.url.replace(/^\/api/, "");
       console.debug("API Request:", {
         method: config.method?.toUpperCase(),
-        url: config.url,
+        url: cleanUrl,
         baseURL: config.baseURL,
-        fullURL: `${config.baseURL}${config.url}`,
+        fullURL: `${config.baseURL}${cleanUrl}`,
         data: config.data,
         headers: config.headers,
         withCredentials: config.withCredentials,
@@ -215,6 +217,8 @@ export const endpoints = {
     resetPassword: "/auth/reset-password",
     verifyEmail: "/auth/verify-email",
     demo: "/auth/demo",
+    demoLogin: "/auth/demo-login",
+    me: "/auth/me",
   },
   user: {
     profile: "/user/profile",
@@ -273,8 +277,8 @@ export const apiClient = {
   login: (credentials) => api.post(endpoints.auth.login, credentials),
   register: (userData) => api.post(endpoints.auth.register, userData),
   logout: () => api.post(endpoints.auth.logout),
-  checkAuth: () => api.get(endpoints.auth.checkAuth),
-  demoLogin: () => api.post(endpoints.auth.demo),
+  checkAuth: () => api.get(endpoints.auth.me),
+  demoLogin: () => api.post(endpoints.auth.demoLogin),
 
   // User methods
   getUserProfile: async () => {

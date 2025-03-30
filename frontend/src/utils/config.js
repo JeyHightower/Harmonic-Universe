@@ -134,12 +134,12 @@ export const AUTH_CONFIG = {
   COOKIE_SECURE: parseBool(validateEnvVar("VITE_AUTH_COOKIE_SECURE", "false")),
   COOKIE_SAMESITE: validateEnvVar("VITE_AUTH_COOKIE_SAMESITE", "strict"),
   ENDPOINTS: {
-    LOGIN: "/api/auth/login",
-    REGISTER: "/api/auth/register",
-    LOGOUT: "/api/auth/logout",
-    REFRESH: "/api/auth/refresh",
-    DEMO: "/api/auth/demo-login",
-    ME: "/api/auth/me",
+    LOGIN: "/auth/login",
+    REGISTER: "/auth/register",
+    LOGOUT: "/auth/logout",
+    REFRESH: "/auth/refresh",
+    DEMO: "/auth/demo-login",
+    ME: "/auth/me",
   },
 };
 

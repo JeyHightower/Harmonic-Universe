@@ -330,3 +330,25 @@ export const loginUser = createAsyncThunk(
     }
   }
 );
+
+// Logout
+export const logout = createAsyncThunk(
+  "auth/logout",
+  async (_, { dispatch, rejectWithValue }) => {
+    try {
+      console.debug("Logging out user");
+
+      // Clear local storage
+      localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+      localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+
+      // Clear auth state
+      dispatch(loginFailure({ message: "Logged out successfully" }));
+
+      return { message: "Logged out successfully" };
+    } catch (error) {
+      console.error("Logout failed:", error);
+      return rejectWithValue(handleError(error));
+    }
+  }
+);

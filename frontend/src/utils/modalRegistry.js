@@ -1,6 +1,6 @@
 import React from "react";
 import { MODAL_TYPES } from "./config";
-import { ModalSystem } from "../components/modals";
+import ModalSystem from "../components/modals";
 
 // Lazy load modal components
 const LoginModal = React.lazy(() => import("../components/auth/LoginModal"));

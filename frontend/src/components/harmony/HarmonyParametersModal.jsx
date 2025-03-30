@@ -14,7 +14,7 @@ import PropTypes from "prop-types";
 import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import "../../styles/HarmonyParametersModal.css";
-import { api } from "../../utils/api";
+import { apiClient } from "../../services/api";
 
 const { Option } = Select;
 
@@ -66,7 +66,7 @@ const HarmonyParametersModal = ({
         ? `/api/scenes/${sceneId}/harmony_parameters/${initialData.id}`
         : `/api/scenes/${sceneId}/harmony_parameters`;
 
-      const response = await api.post(endpoint, values);
+      const response = await apiClient.post(endpoint, values);
 
       message.success(
         initialData

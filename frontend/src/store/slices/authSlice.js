@@ -2,6 +2,10 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { client } from "../../services/client";
 import { endpoints } from "../../services/endpoints";
 import { log } from "../../utils/logger";
+import { apiClient } from "../../services/api";
+import { AUTH_CONFIG } from "../../utils/config";
+import { ROUTES } from "../../utils/routes";
+import { useNavigate } from "react-router-dom";
 
 // Debug logging for all authentication operations
 const logAuthOperation = (operation, data = {}) => {
@@ -30,12 +34,12 @@ export const checkAuthState = createAsyncThunk(
     try {
       logAuthOperation("Check auth state");
 
-      const token = localStorage.getItem("accessToken");
+      const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
       if (!token) {
         throw new Error("No token found");
       }
 
-      const response = await client.get(endpoints.auth.me);
+      const response = await apiClient.checkAuth();
       logAuthOperation("Auth state check successful", {
         status: response.status,
       });
@@ -171,9 +175,18 @@ export const logout = createAsyncThunk(
     try {
       logAuthOperation("Logout attempt");
 
+      // Get the token before clearing it
+      const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+      if (!token) {
+        throw new Error("No token found");
+      }
+
+      // Call backend logout endpoint
+      await apiClient.logout();
+
       // Clear local storage tokens
-      localStorage.removeItem("token");
-      localStorage.removeItem("refreshToken");
+      localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+      localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
 
       // Also clear session cache
       sessionStorage.removeItem("demoLoginResponse");
@@ -185,10 +198,10 @@ export const logout = createAsyncThunk(
       logAuthError("Logout", error);
 
       // Still clear tokens even if API call fails
-      localStorage.removeItem("token");
-      localStorage.removeItem("refreshToken");
+      localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+      localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
 
-      return rejectWithValue("Failed to logout");
+      return rejectWithValue(error.message || "Failed to logout");
     }
   }
 );
