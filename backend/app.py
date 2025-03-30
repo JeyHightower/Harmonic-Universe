@@ -8,7 +8,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Import db from models
-from app.api.models import db
+from app.api.models.database import db
 
 def create_app():
     # Create Flask application
@@ -18,30 +18,17 @@ def create_app():
     CORS(app)
 
     # Load environment variables
-    if os.path.exists('.env'):
-        from dotenv import load_dotenv
-        load_dotenv()
+    app.config.from_object('app.config.Config')
 
-    # Handle Render.com PostgreSQL URL format
-    database_url = os.environ.get('DATABASE_URL')
-    if database_url and database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
-    else:
-        # Default to a local SQLite database for development if no DATABASE_URL is provided
-        database_url = os.environ.get('DATABASE_URL') or f'sqlite:///{os.path.join(os.path.dirname(os.path.abspath(__file__)), "instance", "app.db")}'
-
-    # Configure app and database
-    app.config.from_mapping(
-        SECRET_KEY=os.environ.get('SECRET_KEY', 'dev'),
-        SQLALCHEMY_DATABASE_URI=database_url,
-        SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        SQLALCHEMY_ENGINE_OPTIONS={
-            'pool_size': 5,
-            'max_overflow': 2,
-            'pool_timeout': 30,
-            'pool_recycle': 1800,
-        }
-    )
+    # Configure SQLAlchemy
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_size': None,  # SQLite doesn't use connection pooling
+        'max_overflow': None,
+        'pool_timeout': None,
+        'pool_recycle': None,
+    }
 
     # Initialize extensions
     db.init_app(app)
@@ -51,7 +38,7 @@ def create_app():
     from app.api.models import (
         AudioSample, Character, Harmony, MusicPiece, MusicalTheme,
         Note, Physics2D, Physics3D, PhysicsConstraint, PhysicsObject,
-        PhysicsParameter, Scene, SoundProfile, Universe, User
+        Scene, SoundProfile, Universe, User
     )
 
     # Import routes (after model imports)
@@ -59,43 +46,40 @@ def create_app():
     from app.api.routes.notes import notes_bp
 
     # Register blueprints
-    app.register_blueprint(characters_bp)
-    app.register_blueprint(notes_bp)
+    app.register_blueprint(characters_bp, url_prefix='/api/characters')
+    app.register_blueprint(notes_bp, url_prefix='/api/notes')
 
-    # Health check route
-    @app.route('/api/health')
-    def health_check():
-        try:
-            db.session.execute('SELECT 1')
-            db_status = "connected"
-        except Exception as e:
-            db_status = f"disconnected: {str(e)}"
-        
-        return jsonify({
-            "status": "healthy",
-            "version": "1.0.0",
-            "database": db_status
-        }), 200
-
-    # Error handlers
-    @app.errorhandler(404)
-    def not_found(error):
-        return jsonify({
-            "error": "Not Found",
-            "message": str(error)
-        }), 404
-
-    @app.errorhandler(500)
-    def server_error(error):
-        return jsonify({
-            "error": "Internal Server Error",
-            "message": str(error)
-        }), 500
+    # Create database tables
+    with app.app_context():
+        db.create_all()
 
     return app
 
+# Create the application instance
 app = create_app()
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+# Health check endpoint
+@app.route('/api/health')
+def health_check():
+    return jsonify({
+        'status': 'healthy',
+        'message': 'The Harmonic Universe API is running'
+    })
+
+# Error handlers
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({
+        'error': 'Not Found',
+        'message': 'The requested resource was not found'
+    }), 404
+
+@app.errorhandler(500)
+def server_error(error):
+    return jsonify({
+        'error': 'Internal Server Error',
+        'message': 'An unexpected error occurred'
+    }), 500
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)

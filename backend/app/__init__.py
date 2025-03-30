@@ -13,17 +13,8 @@ def create_app():
     app = Flask(__name__)
     
     # Get database URL from environment
-    database_url = os.environ.get('DATABASE_URL')
-    
-    if not database_url:
-        # Default to SQLite for local development if no DATABASE_URL is provided
-        # Use absolute path for SQLite database
-        db_path = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'instance', 'app.db'))
-        database_url = f'sqlite:///{db_path}'
-        print(f"Using local SQLite database at: {database_url}")
-    elif database_url.startswith('postgres://'):
-        # Handle Render.com PostgreSQL URL format
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    database_url = 'sqlite:///app.db'
+    print(f"Using SQLite database at: {database_url}")
     
     # Get port from environment or use default
     port = int(os.environ.get('PORT', 5000))
