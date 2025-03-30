@@ -3,13 +3,23 @@
 # Exit on error
 set -e
 
+echo "Starting build process..."
+
 # Set Python version explicitly
 export PYTHON_VERSION=3.11.0
 
 # Add Poetry binary to PATH
 export PATH="/opt/render/project/poetry/bin:$PATH"
 
-# Navigate to backend directory
+# Build Frontend
+echo "Building frontend..."
+cd frontend
+npm install
+npm run build
+cd ..
+
+# Build Backend
+echo "Building backend..."
 cd backend
 
 # Install production dependencies only (using new syntax)
@@ -57,5 +67,12 @@ else
     echo "Please check your DATABASE_URL configuration and ensure the database is accessible"
     exit 1
 fi
+
+# Set up environment variables
+echo "Setting up environment variables..."
+export FLASK_APP=app.py
+export FLASK_ENV=production
+export FLASK_DEBUG=0
+export PYTHONPATH=$PYTHONPATH:$(pwd)
 
 echo "Build completed successfully!" 

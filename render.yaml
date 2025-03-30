@@ -2,34 +2,19 @@ services:
   - type: web
     name: harmonic-universe
     env: python
-    buildCommand: |
-      cd backend && \
-      pip install -r requirements.txt && \
-      export FLASK_APP=app.py && \
-      export PYTHONPATH=$PYTHONPATH:$(pwd) && \
-      # Wait for the database to be ready
-      echo "Waiting for database to be ready..." && \
-      sleep 5 && \
-      # Fix Postgres URL format if needed
-      python -c "
-      import os
-      db_url = os.environ.get('DATABASE_URL', '')
-      if db_url.startswith('postgres://'):
-          os.environ['DATABASE_URL'] = db_url.replace('postgres://', 'postgresql://')
-          print('Fixed DATABASE_URL format')
-      " && \
-      # Run migrations instead of create_all
-      flask db upgrade && \
-      echo "Database migrations completed successfully" && \
-      cd ../frontend && \
-      npm install && \
-      npm run build
-    startCommand: cd backend && gunicorn --workers=2 app:app
+    buildCommand: ./render-build.sh
+    startCommand: ./render-start.sh
     envVars:
       - key: FLASK_APP
         value: app.py
       - key: PYTHON_VERSION
         value: 3.11.0
+      - key: NODE_VERSION
+        value: 18.17.0
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_DEBUG
+        value: 0
       - fromGroup: harmonic-universe-env
     healthCheckPath: /api/health
     autoDeploy: true
@@ -40,4 +25,15 @@ databases:
     postgresMajorVersion: 15
 
 envVarGroups:
-  - name: harmonic-universe-env 
+  - name: harmonic-universe-env
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: harmonic_universe_db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: https://harmonic-universe.onrender.com 
