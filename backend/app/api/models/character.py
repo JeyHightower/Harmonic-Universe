@@ -14,17 +14,17 @@ class Character(BaseModel):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
-    scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id'), nullable=False)
+    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), nullable=False, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_deleted = db.Column(db.Boolean, default=False)
 
     # Relationships
-    scene = db.relationship('Scene', backref=db.backref('characters', lazy=True))
+    scenes = db.relationship('Scene', secondary=character_scenes, lazy=True)
 
-    def __init__(self, name, scene_id, description=None):
+    def __init__(self, name, universe_id, description=None):
         self.name = name
-        self.scene_id = scene_id
+        self.universe_id = universe_id
         self.description = description
 
     def validate(self):
@@ -33,8 +33,8 @@ class Character(BaseModel):
             raise ValueError("Character name cannot be empty")
         if len(self.name) > 100:
             raise ValueError("Character name cannot exceed 100 characters")
-        if not self.scene_id:
-            raise ValueError("Character must belong to a scene")
+        if not self.universe_id:
+            raise ValueError("Universe ID is required")
 
     def to_dict(self):
         """Convert character to dictionary"""
@@ -42,7 +42,7 @@ class Character(BaseModel):
             'id': self.id,
             'name': self.name,
             'description': self.description,
-            'scene_id': self.scene_id,
+            'universe_id': self.universe_id,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

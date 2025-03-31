@@ -7,7 +7,7 @@ import { deleteUniverse } from "../store/universeThunks";
 
 const UniverseDeleteModal = ({ isOpen, onClose, onSuccess, universe }) => {
   const dispatch = useDispatch();
-  const { loading } = useSelector((state) => state.universe);
+  const { loading } = useSelector((state) => state.universes);
   const [error, setError] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 

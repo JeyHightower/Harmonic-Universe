@@ -9,7 +9,7 @@ import "../styles/UniverseFormModal.css";
 
 const UniverseFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
   const dispatch = useDispatch();
-  const { loading, error } = useSelector((state) => state.universe);
+  const { loading, error } = useSelector((state) => state.universes);
   const isEditing = !!initialData;
   const [isSubmitting, setIsSubmitting] = useState(false);
 

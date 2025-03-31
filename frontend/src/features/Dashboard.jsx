@@ -6,7 +6,7 @@ import UniverseCard from "../components/universe/UniverseCard";
 import { fetchUniverses } from "../store/universeThunks";
 import "../styles/Dashboard.css";
 import { AUTH_CONFIG } from "../utils/config";
-import UniverseFormModal from "./UniverseFormModal";
+import UniverseFormModal from "../components/universe/UniverseFormModal";
 import { logout } from "../store/thunks/authThunks";
 import { Button } from "@mui/material";
 import {
@@ -52,7 +52,7 @@ import { log } from "../utils/logger";
 const Dashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { universes, loading, error } = useSelector((state) => state.universe);
+  const { universes, loading, error } = useSelector((state) => state.universes);
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [sortOption, setSortOption] = useState("updated_at");
@@ -177,6 +177,7 @@ const Dashboard = () => {
   };
 
   const handleCreateClick = () => {
+    console.log("Dashboard - Create button clicked");
     setIsCreateModalOpen(true);
   };
 
@@ -189,10 +190,8 @@ const Dashboard = () => {
       setNewUniverseId(universe.id);
     }
 
-    // Refresh the list after creating a new universe
-    setTimeout(() => {
-      loadUniverses();
-    }, 100);
+    // Refresh the list immediately
+    loadUniverses();
   };
 
   // Render loading state
@@ -251,6 +250,13 @@ const Dashboard = () => {
             Create Your First Universe
           </Button>
         </div>
+        {isCreateModalOpen && (
+          <UniverseFormModal
+            isOpen={isCreateModalOpen}
+            onClose={() => setIsCreateModalOpen(false)}
+            onSuccess={handleCreateSuccess}
+          />
+        )}
       </div>
     );
   }
@@ -263,6 +269,15 @@ const Dashboard = () => {
           Your Universes
         </Typography>
         <div className="dashboard-actions">
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={loadUniverses}
+            startIcon={<RefreshIcon />}
+            disabled={loading}
+          >
+            Refresh
+          </Button>
           <Button
             variant="contained"
             color="primary"
@@ -292,8 +307,9 @@ const Dashboard = () => {
       </div>
       {isCreateModalOpen && (
         <UniverseFormModal
+          isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
-          onSubmit={handleCreateSuccess}
+          onSuccess={handleCreateSuccess}
         />
       )}
     </div>

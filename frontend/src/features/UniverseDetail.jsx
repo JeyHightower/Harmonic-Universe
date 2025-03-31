@@ -16,7 +16,7 @@ const UniverseDetail = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { currentUniverse, loading, error } = useSelector(
-    (state) => state.universe
+    (state) => state.universes
   );
   const { scenes, loading: scenesLoading } = useSelector(
     (state) => state.scenes

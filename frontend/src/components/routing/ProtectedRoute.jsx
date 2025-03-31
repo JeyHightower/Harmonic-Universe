@@ -2,6 +2,7 @@ import { useSelector } from "react-redux";
 import { Navigate, useLocation } from "react-router-dom";
 import { ROUTES } from "../../utils/routes";
 import { AUTH_CONFIG } from "../../utils/config";
+import { Suspense } from "react";
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useSelector((state) => state.auth);
@@ -27,9 +28,11 @@ function ProtectedRoute({ children }) {
     return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
   }
 
-  // If authenticated, render children
+  // If authenticated, render children with Suspense boundary to handle lazy loading
   console.debug("User is authenticated, rendering protected content");
-  return children;
+  return (
+    <Suspense fallback={<div>Loading content...</div>}>{children}</Suspense>
+  );
 }
 
 export default ProtectedRoute;

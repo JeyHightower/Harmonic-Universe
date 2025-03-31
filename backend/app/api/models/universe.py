@@ -56,26 +56,20 @@ class Universe(BaseModel):
             
     def to_dict(self) -> Dict[str, Any]:
         """Convert universe to dictionary."""
-        scenes_count = db.session.execute(
-            select(func.count()).select_from(Scene).where(
-                Scene.universe_id == self.id,
-                Scene.is_deleted == False
-            )
-        ).scalar() or 0
+        scenes_count = db.session.query(Scene).filter_by(
+            universe_id=self.id,
+            is_deleted=False
+        ).count()
 
-        characters_count = db.session.execute(
-            select(func.count()).select_from(Character).where(
-                Character.universe_id == self.id,
-                Character.is_deleted == False
-            )
-        ).scalar() or 0
+        characters_count = db.session.query(Character).filter_by(
+            universe_id=self.id,
+            is_deleted=False
+        ).count()
 
-        notes_count = db.session.execute(
-            select(func.count()).select_from(Note).where(
-                Note.universe_id == self.id,
-                Note.is_deleted == False
-            )
-        ).scalar() or 0
+        notes_count = db.session.query(Note).filter_by(
+            universe_id=self.id,
+            is_deleted=False
+        ).count()
 
         return {
             'id': self.id,
@@ -192,7 +186,7 @@ class Scene(BaseModel):
     # Relationships
     universe: Mapped[Optional[Universe]] = relationship('Universe', foreign_keys=[universe_id], lazy=True)
     notes: Mapped[List[Note]] = relationship('Note', backref='scene', lazy=True, cascade='all, delete-orphan')
-    characters: Mapped[List[Character]] = relationship('Character', secondary=character_scenes, backref='scenes', lazy=True)
+    characters: Mapped[List[Character]] = relationship('Character', secondary=character_scenes, lazy=True)
     physics_objects: Mapped[List[PhysicsObject]] = relationship('PhysicsObject', backref='scene', lazy=True, cascade='all, delete-orphan')
     physics_2d: Mapped[List[Physics2D]] = relationship('Physics2D', backref='scene', lazy=True, cascade='all, delete-orphan')
     physics_3d: Mapped[List[Physics3D]] = relationship('Physics3D', backref='scene', lazy=True, cascade='all, delete-orphan')

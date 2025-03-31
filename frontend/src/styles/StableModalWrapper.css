@@ -168,10 +168,15 @@
   right: 0;
   bottom: 0;
   pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 #portal-root > * {
   pointer-events: auto;
+  position: relative;
+  z-index: 1001;
 }
 
 /* Animation keyframes */
@@ -191,4 +196,5 @@
   overflow-y: auto;
   margin: auto;
   position: relative;
+  z-index: 1002;
 }

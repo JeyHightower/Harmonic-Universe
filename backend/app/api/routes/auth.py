@@ -139,6 +139,8 @@ def demo_login():
     try:
         current_app.logger.info('Starting demo login process')
         current_app.logger.info(f'Request method: {request.method}')
+        current_app.logger.info(f'Request headers: {dict(request.headers)}')
+        current_app.logger.info(f'Request origin: {request.headers.get("Origin")}')
         
         # Check if demo user exists
         demo_user = User.query.filter_by(email='demo@example.com').first()

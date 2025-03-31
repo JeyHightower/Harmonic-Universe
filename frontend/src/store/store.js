@@ -25,8 +25,8 @@ const authPersistConfig = {
   whitelist: ["user", "isAuthenticated"], // Only persist these fields
 };
 
-const universePersistConfig = {
-  key: "universe",
+const universesPersistConfig = {
+  key: "universes",
   storage,
   whitelist: ["universes", "currentUniverse"], // Only persist these fields
 };
@@ -46,8 +46,8 @@ const persistConfig = {
 
 const rootReducer = combineReducers({
   auth: persistReducer(authPersistConfig, authReducer),
-  universes: universeReducer,
-  scenes: sceneReducer,
+  universes: persistReducer(universesPersistConfig, universeReducer),
+  scenes: persistReducer(scenesPersistConfig, sceneReducer),
   characters: characterReducer,
   notes: noteReducer,
   modal: modalReducer,

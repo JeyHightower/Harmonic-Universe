@@ -277,6 +277,16 @@ const authSlice = createSlice({
       state.user = null;
       state.error = action.payload;
     },
+    logoutSuccess: (state) => {
+      state.isLoading = false;
+      state.isAuthenticated = false;
+      state.user = null;
+      state.error = null;
+    },
+    logoutFailure: (state, action) => {
+      state.isLoading = false;
+      state.error = action.payload;
+    },
     updateUser: (state, action) => {
       state.user = action.payload;
     },
@@ -390,6 +400,8 @@ export const {
   loginStart,
   loginSuccess,
   loginFailure,
+  logoutSuccess,
+  logoutFailure,
   updateUser,
   clearError,
   setNetworkError,
