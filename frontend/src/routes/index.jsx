@@ -11,10 +11,18 @@ const Dashboard = lazy(() => import("../features/Dashboard"));
 const Home = lazy(() => import("../pages/Home"));
 const UniverseDetail = lazy(() => import("../features/UniverseDetail"));
 const SceneList = lazy(() => import("../components/scene/SceneList"));
-const SceneDetail = lazy(() => import("../components/consolidated/SceneDetail"));
+const SceneDetail = lazy(() =>
+  import("../components/consolidated/SceneDetail")
+);
 const SceneEditPage = lazy(() =>
   import("../components/consolidated/SceneEditPage")
 );
+
+// New character and note pages
+const CharactersPage = lazy(() => import("../pages/CharactersPage"));
+const NotesPage = lazy(() => import("../pages/NotesPage"));
+
+// Legacy components to be replaced
 const CharacterList = lazy(() =>
   import("../components/character/CharacterList")
 );
@@ -81,11 +89,20 @@ const routes = [
           </ProtectedRoute>
         ),
       },
+      // New character routes
       {
         path: ROUTES.CHARACTERS,
         element: (
           <ProtectedRoute>
-            <CharacterList />
+            <CharactersPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTES.CHARACTERS_FOR_SCENE,
+        element: (
+          <ProtectedRoute>
+            <CharactersPage />
           </ProtectedRoute>
         ),
       },
@@ -105,11 +122,28 @@ const routes = [
           </ProtectedRoute>
         ),
       },
+      // New note routes
       {
         path: ROUTES.NOTES,
         element: (
           <ProtectedRoute>
-            <NoteList />
+            <NotesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTES.NOTES_FOR_SCENE,
+        element: (
+          <ProtectedRoute>
+            <NotesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTES.NOTES_FOR_CHARACTER,
+        element: (
+          <ProtectedRoute>
+            <NotesPage />
           </ProtectedRoute>
         ),
       },

@@ -1,14 +1,14 @@
-import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
-import Modal from '../../components/common/Modal';
-import Select from '../../components/common/Select';
-import Slider from '../../components/common/Slider';
-import Spinner from '../../components/common/Spinner';
-import { fetchAudioByParams } from '../../services/audioService';
-import '../../styles/modal.css';
+import PropTypes from "prop-types";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Button from "../../components/common/Button";
+import Input from "../../components/common/Input";
+import Modal from "../../components/common/Modal";
+import Select from "../../components/common/Select";
+import Slider from "../../components/common/Slider";
+import Spinner from "../../components/common/Spinner";
+import { fetchAudioByParams } from "../../services/audioService";
+import "../../styles/Modal.css";
 
 /**
  * Modal for generating audio based on the physics of a universe and scene.
@@ -35,13 +35,13 @@ const AudioGenerationModal = ({
   const [audioUrl, setAudioUrl] = useState(null);
   const [audioId, setAudioId] = useState(null);
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    algorithm: 'harmonic_synthesis',
+    name: "",
+    description: "",
+    algorithm: "harmonic_synthesis",
     duration: 10,
     tempo: 120,
-    scale: 'major',
-    key: 'C',
+    scale: "major",
+    key: "C",
     parameters: {
       harmonicity: 1.0,
       modulation_index: 3.0,
@@ -71,16 +71,16 @@ const AudioGenerationModal = ({
     }
   }, [initialData]);
 
-  const handleInputChange = e => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
   const handleParameterChange = (name, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       parameters: {
         ...prev.parameters,
@@ -89,7 +89,7 @@ const AudioGenerationModal = ({
     }));
   };
 
-  const handleAlgorithmChange = value => {
+  const handleAlgorithmChange = (value) => {
     // Reset parameters based on selected algorithm
     const defaultParams = {
       harmonic_synthesis: {
@@ -120,7 +120,7 @@ const AudioGenerationModal = ({
       },
     };
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       algorithm: value,
       parameters: defaultParams[value] || {},
@@ -143,10 +143,10 @@ const AudioGenerationModal = ({
         setAudioUrl(response.audio_url);
         setAudioId(response.id);
       } else {
-        setError('Failed to generate audio preview');
+        setError("Failed to generate audio preview");
       }
     } catch (err) {
-      setError(err.message || 'Failed to generate audio preview');
+      setError(err.message || "Failed to generate audio preview");
     } finally {
       setGenerating(false);
     }
@@ -154,7 +154,7 @@ const AudioGenerationModal = ({
 
   const handleSubmit = async () => {
     if (!formData.name.trim()) {
-      setError('Name is required');
+      setError("Name is required");
       return;
     }
 
@@ -185,10 +185,10 @@ const AudioGenerationModal = ({
           );
         }
       } else {
-        setError('Failed to save audio');
+        setError("Failed to save audio");
       }
     } catch (err) {
-      setError(err.message || 'Failed to save audio');
+      setError(err.message || "Failed to save audio");
     } finally {
       setLoading(false);
     }
@@ -198,7 +198,7 @@ const AudioGenerationModal = ({
     const { algorithm } = formData;
 
     switch (algorithm) {
-      case 'harmonic_synthesis':
+      case "harmonic_synthesis":
         return (
           <div className="parameters-fieldset">
             <legend>Harmonic Synthesis Parameters</legend>
@@ -211,8 +211,8 @@ const AudioGenerationModal = ({
                   max={10}
                   step={0.1}
                   value={formData.parameters.harmonicity}
-                  onChange={value =>
-                    handleParameterChange('harmonicity', value)
+                  onChange={(value) =>
+                    handleParameterChange("harmonicity", value)
                   }
                 />
               </div>
@@ -224,8 +224,8 @@ const AudioGenerationModal = ({
                   max={10}
                   step={0.1}
                   value={formData.parameters.modulation_index}
-                  onChange={value =>
-                    handleParameterChange('modulation_index', value)
+                  onChange={(value) =>
+                    handleParameterChange("modulation_index", value)
                   }
                 />
               </div>
@@ -239,7 +239,7 @@ const AudioGenerationModal = ({
                   max={2}
                   step={0.001}
                   value={formData.parameters.attack}
-                  onChange={value => handleParameterChange('attack', value)}
+                  onChange={(value) => handleParameterChange("attack", value)}
                 />
               </div>
               <div className="form-group">
@@ -250,7 +250,7 @@ const AudioGenerationModal = ({
                   max={2}
                   step={0.001}
                   value={formData.parameters.decay}
-                  onChange={value => handleParameterChange('decay', value)}
+                  onChange={(value) => handleParameterChange("decay", value)}
                 />
               </div>
             </div>
@@ -263,7 +263,7 @@ const AudioGenerationModal = ({
                   max={1}
                   step={0.01}
                   value={formData.parameters.sustain}
-                  onChange={value => handleParameterChange('sustain', value)}
+                  onChange={(value) => handleParameterChange("sustain", value)}
                 />
               </div>
               <div className="form-group">
@@ -274,7 +274,7 @@ const AudioGenerationModal = ({
                   max={5}
                   step={0.001}
                   value={formData.parameters.release}
-                  onChange={value => handleParameterChange('release', value)}
+                  onChange={(value) => handleParameterChange("release", value)}
                 />
               </div>
             </div>
@@ -287,8 +287,8 @@ const AudioGenerationModal = ({
                   max={1}
                   step={0.01}
                   value={formData.parameters.reverb_amount}
-                  onChange={value =>
-                    handleParameterChange('reverb_amount', value)
+                  onChange={(value) =>
+                    handleParameterChange("reverb_amount", value)
                   }
                 />
               </div>
@@ -300,7 +300,9 @@ const AudioGenerationModal = ({
                   max={1}
                   step={0.01}
                   value={formData.parameters.delay_time}
-                  onChange={value => handleParameterChange('delay_time', value)}
+                  onChange={(value) =>
+                    handleParameterChange("delay_time", value)
+                  }
                 />
               </div>
             </div>
@@ -312,15 +314,15 @@ const AudioGenerationModal = ({
                 max={0.9}
                 step={0.01}
                 value={formData.parameters.delay_feedback}
-                onChange={value =>
-                  handleParameterChange('delay_feedback', value)
+                onChange={(value) =>
+                  handleParameterChange("delay_feedback", value)
                 }
               />
             </div>
           </div>
         );
 
-      case 'granular_synthesis':
+      case "granular_synthesis":
         return (
           <div className="parameters-fieldset">
             <legend>Granular Synthesis Parameters</legend>
@@ -333,7 +335,9 @@ const AudioGenerationModal = ({
                   max={1}
                   step={0.01}
                   value={formData.parameters.grain_size}
-                  onChange={value => handleParameterChange('grain_size', value)}
+                  onChange={(value) =>
+                    handleParameterChange("grain_size", value)
+                  }
                 />
               </div>
               <div className="form-group">
@@ -344,8 +348,8 @@ const AudioGenerationModal = ({
                   max={1}
                   step={0.01}
                   value={formData.parameters.grain_spacing}
-                  onChange={value =>
-                    handleParameterChange('grain_spacing', value)
+                  onChange={(value) =>
+                    handleParameterChange("grain_spacing", value)
                   }
                 />
               </div>
@@ -359,7 +363,7 @@ const AudioGenerationModal = ({
                   max={1}
                   step={0.01}
                   value={formData.parameters.position}
-                  onChange={value => handleParameterChange('position', value)}
+                  onChange={(value) => handleParameterChange("position", value)}
                 />
               </div>
               <div className="form-group">
@@ -370,7 +374,7 @@ const AudioGenerationModal = ({
                   max={1}
                   step={0.01}
                   value={formData.parameters.spread}
-                  onChange={value => handleParameterChange('spread', value)}
+                  onChange={(value) => handleParameterChange("spread", value)}
                 />
               </div>
             </div>
@@ -383,7 +387,7 @@ const AudioGenerationModal = ({
                   max={100}
                   step={1}
                   value={formData.parameters.density}
-                  onChange={value => handleParameterChange('density', value)}
+                  onChange={(value) => handleParameterChange("density", value)}
                 />
               </div>
               <div className="form-group">
@@ -394,8 +398,8 @@ const AudioGenerationModal = ({
                   max={1}
                   step={0.01}
                   value={formData.parameters.reverb_amount}
-                  onChange={value =>
-                    handleParameterChange('reverb_amount', value)
+                  onChange={(value) =>
+                    handleParameterChange("reverb_amount", value)
                   }
                 />
               </div>
@@ -403,7 +407,7 @@ const AudioGenerationModal = ({
           </div>
         );
 
-      case 'physical_modeling':
+      case "physical_modeling":
         return (
           <div className="parameters-fieldset">
             <legend>Physical Modeling Parameters</legend>
@@ -416,7 +420,9 @@ const AudioGenerationModal = ({
                   max={1}
                   step={0.01}
                   value={formData.parameters.stiffness}
-                  onChange={value => handleParameterChange('stiffness', value)}
+                  onChange={(value) =>
+                    handleParameterChange("stiffness", value)
+                  }
                 />
               </div>
               <div className="form-group">
@@ -427,7 +433,7 @@ const AudioGenerationModal = ({
                   max={1}
                   step={0.01}
                   value={formData.parameters.damping}
-                  onChange={value => handleParameterChange('damping', value)}
+                  onChange={(value) => handleParameterChange("damping", value)}
                 />
               </div>
             </div>
@@ -440,7 +446,9 @@ const AudioGenerationModal = ({
                   max={1}
                   step={0.01}
                   value={formData.parameters.resonance}
-                  onChange={value => handleParameterChange('resonance', value)}
+                  onChange={(value) =>
+                    handleParameterChange("resonance", value)
+                  }
                 />
               </div>
               <div className="form-group">
@@ -451,7 +459,7 @@ const AudioGenerationModal = ({
                   max={1}
                   step={0.01}
                   value={formData.parameters.position}
-                  onChange={value => handleParameterChange('position', value)}
+                  onChange={(value) => handleParameterChange("position", value)}
                 />
               </div>
             </div>
@@ -463,7 +471,7 @@ const AudioGenerationModal = ({
                 max={1}
                 step={0.01}
                 value={formData.parameters.excitation}
-                onChange={value => handleParameterChange('excitation', value)}
+                onChange={(value) => handleParameterChange("excitation", value)}
               />
             </div>
           </div>
@@ -480,7 +488,7 @@ const AudioGenerationModal = ({
     return (
       <div className="audio-player">
         <h3>Preview</h3>
-        <audio controls src={audioUrl} style={{ width: '100%' }}>
+        <audio controls src={audioUrl} style={{ width: "100%" }}>
           Your browser does not support the audio element.
         </audio>
       </div>
@@ -489,7 +497,7 @@ const AudioGenerationModal = ({
 
   return (
     <Modal
-      title={initialData ? 'Edit Audio' : 'Generate Audio'}
+      title={initialData ? "Edit Audio" : "Generate Audio"}
       onClose={onClose}
       {...modalProps}
     >
@@ -528,9 +536,9 @@ const AudioGenerationModal = ({
             value={formData.algorithm}
             onChange={handleAlgorithmChange}
             options={[
-              { value: 'harmonic_synthesis', label: 'Harmonic Synthesis' },
-              { value: 'granular_synthesis', label: 'Granular Synthesis' },
-              { value: 'physical_modeling', label: 'Physical Modeling' },
+              { value: "harmonic_synthesis", label: "Harmonic Synthesis" },
+              { value: "granular_synthesis", label: "Granular Synthesis" },
+              { value: "physical_modeling", label: "Physical Modeling" },
             ]}
           />
         </div>
@@ -566,22 +574,22 @@ const AudioGenerationModal = ({
           <Select
             id="key"
             value={formData.key}
-            onChange={value =>
-              handleInputChange({ target: { name: 'key', value } })
+            onChange={(value) =>
+              handleInputChange({ target: { name: "key", value } })
             }
             options={[
-              { value: 'C', label: 'C' },
-              { value: 'C#', label: 'C#' },
-              { value: 'D', label: 'D' },
-              { value: 'D#', label: 'D#' },
-              { value: 'E', label: 'E' },
-              { value: 'F', label: 'F' },
-              { value: 'F#', label: 'F#' },
-              { value: 'G', label: 'G' },
-              { value: 'G#', label: 'G#' },
-              { value: 'A', label: 'A' },
-              { value: 'A#', label: 'A#' },
-              { value: 'B', label: 'B' },
+              { value: "C", label: "C" },
+              { value: "C#", label: "C#" },
+              { value: "D", label: "D" },
+              { value: "D#", label: "D#" },
+              { value: "E", label: "E" },
+              { value: "F", label: "F" },
+              { value: "F#", label: "F#" },
+              { value: "G", label: "G" },
+              { value: "G#", label: "G#" },
+              { value: "A", label: "A" },
+              { value: "A#", label: "A#" },
+              { value: "B", label: "B" },
             ]}
           />
         </div>
@@ -590,22 +598,22 @@ const AudioGenerationModal = ({
           <Select
             id="scale"
             value={formData.scale}
-            onChange={value =>
-              handleInputChange({ target: { name: 'scale', value } })
+            onChange={(value) =>
+              handleInputChange({ target: { name: "scale", value } })
             }
             options={[
-              { value: 'major', label: 'Major' },
-              { value: 'minor', label: 'Minor' },
-              { value: 'harmonic_minor', label: 'Harmonic Minor' },
-              { value: 'melodic_minor', label: 'Melodic Minor' },
-              { value: 'dorian', label: 'Dorian' },
-              { value: 'phrygian', label: 'Phrygian' },
-              { value: 'lydian', label: 'Lydian' },
-              { value: 'mixolydian', label: 'Mixolydian' },
-              { value: 'locrian', label: 'Locrian' },
-              { value: 'pentatonic_major', label: 'Pentatonic Major' },
-              { value: 'pentatonic_minor', label: 'Pentatonic Minor' },
-              { value: 'blues', label: 'Blues' },
+              { value: "major", label: "Major" },
+              { value: "minor", label: "Minor" },
+              { value: "harmonic_minor", label: "Harmonic Minor" },
+              { value: "melodic_minor", label: "Melodic Minor" },
+              { value: "dorian", label: "Dorian" },
+              { value: "phrygian", label: "Phrygian" },
+              { value: "lydian", label: "Lydian" },
+              { value: "mixolydian", label: "Mixolydian" },
+              { value: "locrian", label: "Locrian" },
+              { value: "pentatonic_major", label: "Pentatonic Major" },
+              { value: "pentatonic_minor", label: "Pentatonic Minor" },
+              { value: "blues", label: "Blues" },
             ]}
           />
         </div>
@@ -626,7 +634,7 @@ const AudioGenerationModal = ({
               <Spinner size="small" /> Generating...
             </>
           ) : (
-            'Generate Preview'
+            "Generate Preview"
           )}
         </Button>
         <Button onClick={onClose} variant="outline" disabled={loading}>
@@ -638,9 +646,9 @@ const AudioGenerationModal = ({
               <Spinner size="small" /> Saving...
             </>
           ) : initialData ? (
-            'Update'
+            "Update"
           ) : (
-            'Save'
+            "Save"
           )}
         </Button>
       </div>

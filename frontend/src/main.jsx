@@ -8,11 +8,44 @@ import "./styles/theme.css"; // Third: Define theme variables
 import "./styles/global.css"; // Fourth: Global styles
 import "./styles/common.css"; // Fifth: Common component styles
 import "./styles/buttons.css"; // Sixth: Button styles
-import "./styles/modal.css"; // Seventh: Modal styles
+// import "./styles/modal.css"; // Seventh: Modal styles - commented out as it may not exist
 import "./styles/index.css"; // Eighth: Additional global styles
 // App.css comes last so it can override component-specific styles if needed
 import "./styles/App.css";
 import { ensurePortalRoot } from "./utils/portalUtils";
+
+// Environment setup
+const isLocal =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1";
+const isDev = process.env.NODE_ENV === "development";
+const isProd = process.env.NODE_ENV === "production";
+
+// Log environment
+if (isDev) {
+  console.log(
+    `Running in ${isLocal ? "local" : ""} ${isDev ? "development" : ""} mode`
+  );
+}
+
+// Setup error handling
+window.onerror = function (message, source, lineno, colno, error) {
+  console.error("Global error caught", {
+    message,
+    source,
+    lineno,
+    colno,
+    error,
+  });
+
+  // Optionally send to error tracking service in production
+  if (isProd) {
+    // Example: errorTrackingService.logError(error);
+  }
+
+  // Don't prevent default error handling
+  return false;
+};
 
 // Function to initialize the application
 const initializeApp = () => {

@@ -14,7 +14,7 @@ import { Home, Navigation } from "./components";
 import ModalProvider from "./components/modals/ModalProvider";
 import routes from "./routes";
 import { checkAuthState } from "./store/slices/authSlice";
-import "./styles/App.css";
+import "./styles"; // Import all styles
 
 // Loading component for Suspense fallback
 const LoadingPage = () => (

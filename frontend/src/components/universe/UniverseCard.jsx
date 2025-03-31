@@ -1,57 +1,123 @@
 import PropTypes from "prop-types";
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "../../styles/UniverseCard.css";
 import { formatDate } from "../../utils/dateUtils";
+import {
+  Card,
+  CardContent,
+  CardMedia,
+  CardActions,
+  Typography,
+  Button,
+  Box,
+} from "@mui/material";
+import {
+  PersonOutline,
+  NoteAlt,
+  Visibility,
+  Edit,
+  Delete,
+} from "@mui/icons-material";
 
-const UniverseCard = ({ universe, isNew }) => {
+const UniverseCard = ({ universe, isNew, onEdit, onDelete, onView }) => {
   const defaultImage = "/images/default-universe.svg";
+  const navigate = useNavigate();
+
+  const handleViewScenes = () => {
+    navigate(`/universes/${universe.id}/scenes`);
+  };
+
+  const handleViewCharacters = () => {
+    navigate(`/universes/${universe.id}/characters`);
+  };
+
+  const handleViewNotes = () => {
+    navigate(`/universes/${universe.id}/notes`);
+  };
 
   return (
-    <Link
-      to={`/universes/${universe.id}`}
-      className={`universe-card ${isNew ? "universe-card-new" : ""}`}
-    >
-      <div className="universe-card-image">
-        <img
-          src={universe.image_url || defaultImage}
-          alt={universe.name}
-          onError={(e) => {
-            e.target.src = defaultImage;
-          }}
-        />
-        <div
-          className={`universe-visibility-badge ${
-            universe.is_public ? "public" : "private"
-          }`}
+    <Card className="universe-card" elevation={3}>
+      <CardMedia
+        component="img"
+        height="140"
+        image={universe.image_url || "/images/default-universe.jpg"}
+        alt={universe.name}
+        className="universe-card-media"
+      />
+      <CardContent className="universe-card-content">
+        <Typography
+          variant="h5"
+          component="div"
+          className="universe-card-title"
         >
-          {universe.is_public ? "Public" : "Private"}
-        </div>
-      </div>
-      <div className="universe-card-content">
-        <h2 className="universe-card-title">{universe.name}</h2>
-        <p className="universe-card-description">
-          {universe.description
-            ? universe.description.length > 100
-              ? `${universe.description.substring(0, 100)}...`
-              : universe.description
-            : "No description provided"}
-        </p>
-        <div className="universe-card-footer">
-          <div className="universe-card-meta">
-            {universe.theme && (
-              <span className="universe-card-theme">{universe.theme}</span>
-            )}
-            {universe.genre && (
-              <span className="universe-card-genre">{universe.genre}</span>
-            )}
-          </div>
-          <span className="universe-card-date">
-            {formatDate(universe.created_at)}
-          </span>
-        </div>
-      </div>
-    </Link>
+          {universe.name}
+        </Typography>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          className="universe-card-description"
+        >
+          {universe.description?.length > 100
+            ? `${universe.description.substring(0, 100)}...`
+            : universe.description}
+        </Typography>
+      </CardContent>
+      <CardActions className="universe-card-actions">
+        <Box className="universe-card-action-buttons">
+          <Button
+            size="small"
+            startIcon={<Visibility />}
+            onClick={onView}
+            className="universe-card-button"
+          >
+            View
+          </Button>
+          <Button
+            size="small"
+            startIcon={<Edit />}
+            onClick={onEdit}
+            className="universe-card-button"
+          >
+            Edit
+          </Button>
+          <Button
+            size="small"
+            color="error"
+            startIcon={<Delete />}
+            onClick={onDelete}
+            className="universe-card-button"
+          >
+            Delete
+          </Button>
+        </Box>
+        <Box className="universe-card-feature-buttons">
+          <Button
+            size="small"
+            onClick={handleViewScenes}
+            className="universe-card-feature-button"
+          >
+            Scenes
+          </Button>
+          <Button
+            size="small"
+            startIcon={<PersonOutline />}
+            onClick={handleViewCharacters}
+            className="universe-card-feature-button"
+          >
+            Characters
+          </Button>
+          <Button
+            size="small"
+            startIcon={<NoteAlt />}
+            onClick={handleViewNotes}
+            className="universe-card-feature-button"
+          >
+            Notes
+          </Button>
+        </Box>
+      </CardActions>
+    </Card>
   );
 };
 
@@ -67,6 +133,9 @@ UniverseCard.propTypes = {
     genre: PropTypes.string,
   }).isRequired,
   isNew: PropTypes.bool,
+  onEdit: PropTypes.func,
+  onDelete: PropTypes.func,
+  onView: PropTypes.func,
 };
 
 UniverseCard.defaultProps = {

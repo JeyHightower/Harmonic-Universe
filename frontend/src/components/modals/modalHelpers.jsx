@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "../common";
-import "../styles/modal.css";
+import "../../styles/Modal.css";
 
 // Alert Modal Component
 export const AlertModal = ({ message, onClose, title = "Alert" }) => {

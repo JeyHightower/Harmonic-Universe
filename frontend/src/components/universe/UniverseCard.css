@@ -1,0 +1,124 @@
+.universe-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
+  border-radius: 12px;
+  position: relative;
+}
+
+.universe-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.universe-card-media {
+  height: 150px;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.universe-card:hover .universe-card-media {
+  transform: scale(1.05);
+}
+
+.universe-card-content {
+  padding: 16px;
+  flex-grow: 1;
+}
+
+.universe-card-title {
+  margin-bottom: 8px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.universe-card-description {
+  color: rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  margin-bottom: 16px;
+  font-size: 0.875rem;
+  line-height: 1.43;
+}
+
+.universe-card-actions {
+  padding: 8px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.universe-card-action-buttons {
+  display: flex;
+  justify-content: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.universe-card-feature-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  padding-top: 8px;
+}
+
+.universe-card-button {
+  min-width: 60px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+}
+
+.universe-card-feature-button {
+  flex: 1;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  text-transform: none;
+  border-radius: 20px;
+  background-color: rgba(0, 0, 0, 0.05);
+  transition: background-color 0.3s ease;
+}
+
+.universe-card-feature-button:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Add colorful accents for different feature buttons */
+.universe-card-feature-button:nth-child(1) {
+  color: #2196f3; /* Blue for Scenes */
+}
+
+.universe-card-feature-button:nth-child(2) {
+  color: #4caf50; /* Green for Characters */
+}
+
+.universe-card-feature-button:nth-child(3) {
+  color: #ff9800; /* Orange for Notes */
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .universe-card-actions {
+    flex-direction: column;
+  }
+
+  .universe-card-action-buttons,
+  .universe-card-feature-buttons {
+    flex-wrap: wrap;
+  }
+
+  .universe-card-button,
+  .universe-card-feature-button {
+    flex: 1 0 40%;
+  }
+}

@@ -1,11 +1,11 @@
-import PropTypes from 'prop-types';
-import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Button from '../../components/common/Button';
-import Modal from '../../components/common/Modal';
-import Spinner from '../../components/common/Spinner';
-import { deleteAudio, fetchAudioDetails } from '../../services/audioService';
-import '../../styles/modal.css';
+import PropTypes from "prop-types";
+import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Button from "../../components/common/Button";
+import Modal from "../../components/common/Modal";
+import Spinner from "../../components/common/Spinner";
+import { deleteAudio, fetchAudioDetails } from "../../services/audioService";
+import "../../styles/Modal.css";
 
 /**
  * Modal for displaying and playing audio tracks.
@@ -50,7 +50,7 @@ const AudioDetailsModal = ({
           audioRef.current.load();
         }
       } catch (err) {
-        setError(err.message || 'An error occurred while fetching audio data');
+        setError(err.message || "An error occurred while fetching audio data");
       } finally {
         setLoading(false);
       }
@@ -121,16 +121,16 @@ const AudioDetailsModal = ({
   };
 
   // Format time in MM:SS format
-  const formatTime = timeInSeconds => {
-    if (isNaN(timeInSeconds)) return '0:00';
+  const formatTime = (timeInSeconds) => {
+    if (isNaN(timeInSeconds)) return "0:00";
 
     const minutes = Math.floor(timeInSeconds / 60);
     const seconds = Math.floor(timeInSeconds % 60);
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
   };
 
   // Handle click on progress bar to seek
-  const handleProgressClick = e => {
+  const handleProgressClick = (e) => {
     if (!audioRef.current || !progressRef.current) return;
 
     const progressContainer = e.currentTarget;
@@ -150,7 +150,7 @@ const AudioDetailsModal = ({
   const handleDelete = async () => {
     if (
       !confirm(
-        'Are you sure you want to delete this audio track? This action cannot be undone.'
+        "Are you sure you want to delete this audio track? This action cannot be undone."
       )
     ) {
       return;
@@ -165,7 +165,7 @@ const AudioDetailsModal = ({
         navigate(`/universes/${universeId}/scenes/${sceneId}`);
       }
     } catch (err) {
-      setError(err.message || 'Failed to delete audio');
+      setError(err.message || "Failed to delete audio");
       setLoading(false);
     }
   };
@@ -185,7 +185,7 @@ const AudioDetailsModal = ({
   };
 
   // Format parameters for display
-  const renderParameters = parameters => {
+  const renderParameters = (parameters) => {
     if (!parameters || Object.keys(parameters).length === 0) {
       return <p>No parameters available</p>;
     }
@@ -194,8 +194,8 @@ const AudioDetailsModal = ({
       <ul className="parameters-list">
         {Object.entries(parameters).map(([key, value]) => (
           <li key={key}>
-            <strong>{key.replace(/_/g, ' ')}:</strong>{' '}
-            {typeof value === 'number' ? value.toFixed(2) : value}
+            <strong>{key.replace(/_/g, " ")}:</strong>{" "}
+            {typeof value === "number" ? value.toFixed(2) : value}
           </li>
         ))}
       </ul>
@@ -207,7 +207,7 @@ const AudioDetailsModal = ({
       <div className="modal-header">
         <h2>
           {modalProps.title ||
-            (audio ? `Audio: ${audio.name}` : 'Audio Details')}
+            (audio ? `Audio: ${audio.name}` : "Audio Details")}
         </h2>
       </div>
 
@@ -226,22 +226,22 @@ const AudioDetailsModal = ({
                 <strong>Name:</strong> {audio.name}
               </p>
               <p>
-                <strong>Description:</strong>{' '}
-                {audio.description || 'No description provided'}
+                <strong>Description:</strong>{" "}
+                {audio.description || "No description provided"}
               </p>
               <p>
-                <strong>Algorithm:</strong>{' '}
-                {audio.algorithm?.replace(/_/g, ' ') || 'Unknown'}
+                <strong>Algorithm:</strong>{" "}
+                {audio.algorithm?.replace(/_/g, " ") || "Unknown"}
               </p>
               <p>
                 <strong>Duration:</strong> {formatTime(audio.duration || 0)}
               </p>
               <p>
-                <strong>Key:</strong> {audio.key || 'C'}
+                <strong>Key:</strong> {audio.key || "C"}
               </p>
               <p>
-                <strong>Scale:</strong>{' '}
-                {audio.scale?.replace(/_/g, ' ') || 'major'}
+                <strong>Scale:</strong>{" "}
+                {audio.scale?.replace(/_/g, " ") || "major"}
               </p>
 
               <div className="parameters-section">
@@ -264,9 +264,9 @@ const AudioDetailsModal = ({
                   variant="icon"
                   onClick={handlePlayPause}
                   className="play-button"
-                  aria-label={isPlaying ? 'Pause' : 'Play'}
+                  aria-label={isPlaying ? "Pause" : "Play"}
                 >
-                  {isPlaying ? '❚❚' : '▶'}
+                  {isPlaying ? "❚❚" : "▶"}
                 </Button>
 
                 <div className="time-display">

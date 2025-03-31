@@ -1,12 +1,12 @@
-import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
-import Modal from '../../components/common/Modal';
-import Spinner from '../../components/common/Spinner';
-import '../../styles/modal.css';
-import { API_CONFIG } from '../../utils/config';
+import PropTypes from "prop-types";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Button from "../../components/common/Button";
+import Input from "../../components/common/Input";
+import Modal from "../../components/common/Modal";
+import Spinner from "../../components/common/Spinner";
+import "../../styles/Modal.css";
+import { API_CONFIG } from "../../utils/config";
 
 /**
  * Modal for creating and editing visualizations.
@@ -33,23 +33,23 @@ const VisualizationFormModal = ({
   const [fetchLoading, setFetchLoading] = useState(!!visualizationId);
   const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
-    name: '',
-    type: 'PARTICLE',
+    name: "",
+    type: "PARTICLE",
     parameters: {
       particleCount: 100,
       particleSize: 5,
-      particleColor: '#00AAFF',
-      backgroundColor: '#000000',
+      particleColor: "#00AAFF",
+      backgroundColor: "#000000",
       speedFactor: 1.0,
     },
   });
 
   // Visualization types
   const visualizationTypes = [
-    { value: 'PARTICLE', label: 'Particle System' },
-    { value: 'WAVEFORM', label: 'Waveform' },
-    { value: 'SPECTRUM', label: 'Frequency Spectrum' },
-    { value: 'CIRCULAR', label: 'Circular' },
+    { value: "PARTICLE", label: "Particle System" },
+    { value: "WAVEFORM", label: "Waveform" },
+    { value: "SPECTRUM", label: "Frequency Spectrum" },
+    { value: "CIRCULAR", label: "Circular" },
   ];
 
   // Fetch visualization data if editing
@@ -63,7 +63,7 @@ const VisualizationFormModal = ({
         );
 
         if (!response.ok) {
-          throw new Error('Failed to fetch visualization data');
+          throw new Error("Failed to fetch visualization data");
         }
 
         const data = await response.json();
@@ -73,14 +73,14 @@ const VisualizationFormModal = ({
           parameters: data.parameters || {
             particleCount: 100,
             particleSize: 5,
-            particleColor: '#00AAFF',
-            backgroundColor: '#000000',
+            particleColor: "#00AAFF",
+            backgroundColor: "#000000",
             speedFactor: 1.0,
           },
         });
       } catch (err) {
         setError(
-          err.message || 'An error occurred while fetching visualization data'
+          err.message || "An error occurred while fetching visualization data"
         );
       } finally {
         setFetchLoading(false);
@@ -90,7 +90,7 @@ const VisualizationFormModal = ({
     fetchVisualizationData();
   }, [visualizationId]);
 
-  const handleInputChange = e => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
@@ -98,12 +98,12 @@ const VisualizationFormModal = ({
     });
   };
 
-  const handleParameterChange = e => {
+  const handleParameterChange = (e) => {
     const { name, value } = e.target;
     let processedValue = value;
 
     // Convert numeric fields to numbers
-    if (['particleCount', 'particleSize', 'speedFactor'].includes(name)) {
+    if (["particleCount", "particleSize", "speedFactor"].includes(name)) {
       processedValue = parseFloat(value);
     }
 
@@ -116,7 +116,7 @@ const VisualizationFormModal = ({
     });
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -126,7 +126,7 @@ const VisualizationFormModal = ({
         ? `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/visualizations/${visualizationId}`
         : `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/visualizations`;
 
-      const method = visualizationId ? 'PUT' : 'POST';
+      const method = visualizationId ? "PUT" : "POST";
 
       // Prepare data for API
       const apiData = {
@@ -144,7 +144,7 @@ const VisualizationFormModal = ({
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(apiData),
       });
@@ -153,7 +153,7 @@ const VisualizationFormModal = ({
         const errorData = await response.json();
         throw new Error(
           errorData.message ||
-            `Failed to ${visualizationId ? 'update' : 'create'} visualization`
+            `Failed to ${visualizationId ? "update" : "create"} visualization`
         );
       }
 
@@ -164,7 +164,7 @@ const VisualizationFormModal = ({
         navigate(`/universes/${universeId}`);
       }
     } catch (err) {
-      setError(err.message || 'An error occurred while saving visualization');
+      setError(err.message || "An error occurred while saving visualization");
     } finally {
       setLoading(false);
     }
@@ -198,7 +198,7 @@ const VisualizationFormModal = ({
       <div className="modal-header">
         <h2>
           {modalProps.title ||
-            (isEditing ? 'Edit Visualization' : 'Create Visualization')}
+            (isEditing ? "Edit Visualization" : "Create Visualization")}
         </h2>
       </div>
 
@@ -228,7 +228,7 @@ const VisualizationFormModal = ({
               className="form-control"
               required
             >
-              {visualizationTypes.map(type => (
+              {visualizationTypes.map((type) => (
                 <option key={type.value} value={type.value}>
                   {type.label}
                 </option>
@@ -239,7 +239,7 @@ const VisualizationFormModal = ({
           <fieldset className="parameters-fieldset">
             <legend>Visualization Parameters</legend>
 
-            {formData.type === 'PARTICLE' && (
+            {formData.type === "PARTICLE" && (
               <>
                 <div className="form-group">
                   <label htmlFor="particleCount">Particle Count</label>
@@ -320,9 +320,9 @@ const VisualizationFormModal = ({
               {loading ? (
                 <Spinner size="small" />
               ) : isEditing ? (
-                'Save Changes'
+                "Save Changes"
               ) : (
-                'Create Visualization'
+                "Create Visualization"
               )}
             </Button>
           </div>

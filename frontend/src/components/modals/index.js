@@ -1,20 +1,17 @@
-import ModalSystem from "./ModalSystem";
-import DraggableModal from "./DraggableModal";
-import AlertModal from "./AlertModal";
-import ConfirmationModal from "./ConfirmationModal";
-import FormModal from "./FormModal";
-import ConfirmDeleteModal from "./ConfirmDeleteModal";
-import GlobalModal from "./GlobalModal";
-import NetworkErrorModal from "./NetworkErrorModal";
+// Export all modal components for easy imports
+export { default as GlobalModal } from './GlobalModal';
+export { default as ModalProvider } from './ModalProvider';
+export { default as ModalSystem } from './ModalSystem';
+export { default as ConfirmationModal } from './ConfirmationModal';
+export { default as AlertModal } from './AlertModal';
+export { default as DraggableModal } from './DraggableModal';
+export { default as FormModal } from './FormModal';
+export { default as NetworkErrorModal } from './NetworkErrorModal';
+export { default as StableModalWrapper } from './StableModalWrapper';
+export { default as UniverseCreateModal } from './UniverseCreateModal';
+export { default as ConfirmDeleteModal } from './ConfirmDeleteModal';
+export { default as CharacterFormModal } from './CharacterFormModal';
+export { default as NoteFormModal } from './NoteFormModal';
 
-// Export all modal components
-export {
-  ModalSystem,
-  DraggableModal,
-  AlertModal,
-  ConfirmationModal as ConfirmModal,
-  FormModal,
-  ConfirmDeleteModal,
-  GlobalModal,
-  NetworkErrorModal,
-};
+// Export modal helpers
+export * from './modalHelpers';

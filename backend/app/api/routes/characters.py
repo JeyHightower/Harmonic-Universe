@@ -19,15 +19,16 @@ def get_characters(scene_id):
                 'message': 'Access denied'
             }), 403
 
-        # Get all characters for the scene
-        characters = Character.query.filter_by(
-            scene_id=scene_id,
-            is_deleted=False
-        ).all()
+        # Get all characters for the scene through the many-to-many relationship
+        # using the scene.characters relationship
+        characters = scene.characters
+        
+        # Filter out deleted characters
+        active_characters = [c for c in characters if not c.is_deleted]
 
         return jsonify({
             'message': 'Characters retrieved successfully',
-            'characters': [character.to_dict() for character in characters]
+            'characters': [character.to_dict() for character in active_characters]
         }), 200
 
     except Exception as e:
@@ -44,8 +45,14 @@ def get_character(character_id):
         character = Character.query.get_or_404(character_id)
         user_id = get_jwt_identity()
 
-        # Check if user has access to this character's scene's universe
-        if not character.scene.universe.is_public and character.scene.universe.user_id != user_id:
+        # Get the universe for this character
+        universe_id = character.universe_id
+        
+        # Check if the universe is public or belongs to the user
+        from app.api.models.universe import Universe
+        universe = Universe.query.get_or_404(universe_id)
+        
+        if not universe.is_public and universe.user_id != user_id:
             return jsonify({
                 'message': 'Access denied'
             }), 403
@@ -56,12 +63,13 @@ def get_character(character_id):
         }), 200
 
     except Exception as e:
+        print(f"Error retrieving character: {str(e)}")
         return jsonify({
             'message': 'Error retrieving character',
             'error': str(e)
         }), 500
 
-@characters_bp.route('/', methods=['POST'])
+@characters_bp.route('', methods=['POST'])
 @jwt_required()
 def create_character():
     try:
@@ -100,9 +108,12 @@ def create_character():
         # Create new character
         character = Character(
             name=name,
-            description=data.get('description', '').strip(),
-            scene_id=scene_id
+            universe_id=scene.universe_id,
+            description=data.get('description', '').strip()
         )
+        
+        # Add relationship to scene
+        character.scenes.append(scene)
 
         # Validate the character
         try:
@@ -135,8 +146,14 @@ def update_character(character_id):
         character = Character.query.get_or_404(character_id)
         user_id = get_jwt_identity()
 
-        # Check if user has access to this character's scene's universe
-        if not character.scene.universe.is_public and character.scene.universe.user_id != user_id:
+        # Get the universe for this character
+        universe_id = character.universe_id
+        
+        # Check if the universe is public or belongs to the user
+        from app.api.models.universe import Universe
+        universe = Universe.query.get_or_404(universe_id)
+        
+        if not universe.is_public and universe.user_id != user_id:
             return jsonify({
                 'message': 'Access denied'
             }), 403
@@ -167,6 +184,7 @@ def update_character(character_id):
 
     except Exception as e:
         db.session.rollback()
+        print(f"Error updating character: {str(e)}")
         return jsonify({
             'message': 'Error updating character',
             'error': str(e)
@@ -178,14 +196,25 @@ def delete_character(character_id):
     try:
         character = Character.query.get_or_404(character_id)
         user_id = get_jwt_identity()
-
-        # Check if user has access to this character's scene's universe
-        if not character.scene.universe.is_public and character.scene.universe.user_id != user_id:
+        
+        # Get the universe for this character
+        universe_id = character.universe_id
+        
+        # Check if the universe is public or belongs to the user
+        from app.api.models.universe import Universe
+        universe = Universe.query.get_or_404(universe_id)
+        
+        if not universe.is_public and universe.user_id != user_id:
             return jsonify({
                 'message': 'Access denied'
             }), 403
 
-        # Soft delete the character
+        # First, remove any character-scene relationships
+        if character.scenes:
+            for scene in character.scenes:
+                character.scenes.remove(scene)
+            
+        # Then soft delete the character
         character.is_deleted = True
         db.session.commit()
 
@@ -195,6 +224,7 @@ def delete_character(character_id):
 
     except Exception as e:
         db.session.rollback()
+        print(f"Error deleting character: {str(e)}")
         return jsonify({
             'message': 'Error deleting character',
             'error': str(e)

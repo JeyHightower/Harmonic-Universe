@@ -1,12 +1,12 @@
-import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
-import Modal from '../../components/common/Modal';
-import Spinner from '../../components/common/Spinner';
-import '../../styles/modal.css';
-import { API_CONFIG } from '../../utils/config';
+import PropTypes from "prop-types";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Button from "../../components/common/Button";
+import Input from "../../components/common/Input";
+import Modal from "../../components/common/Modal";
+import Spinner from "../../components/common/Spinner";
+import "../../styles/Modal.css";
+import { API_CONFIG } from "../../utils/config";
 
 /**
  * Modal for creating and editing physics constraints between objects.
@@ -30,10 +30,10 @@ const PhysicsConstraintModal = ({
   const [error, setError] = useState(null);
   const [physicsObjects, setPhysicsObjects] = useState([]);
   const [formData, setFormData] = useState({
-    name: '',
-    type: 'SPRING',
-    object1_id: '',
-    object2_id: '',
+    name: "",
+    type: "SPRING",
+    object1_id: "",
+    object2_id: "",
     parameters: {
       stiffness: 50,
       damping: 0.5,
@@ -44,10 +44,10 @@ const PhysicsConstraintModal = ({
 
   // Constraint types
   const constraintTypes = [
-    { value: 'SPRING', label: 'Spring' },
-    { value: 'DISTANCE', label: 'Distance' },
-    { value: 'HINGE', label: 'Hinge' },
-    { value: 'POINT_TO_POINT', label: 'Point to Point' },
+    { value: "SPRING", label: "Spring" },
+    { value: "DISTANCE", label: "Distance" },
+    { value: "HINGE", label: "Hinge" },
+    { value: "POINT_TO_POINT", label: "Point to Point" },
   ];
 
   // Fetch physics objects and constraint data if editing
@@ -59,14 +59,14 @@ const PhysicsConstraintModal = ({
         );
 
         if (!response.ok) {
-          throw new Error('Failed to fetch physics objects');
+          throw new Error("Failed to fetch physics objects");
         }
 
         const data = await response.json();
         setPhysicsObjects(data);
       } catch (err) {
         setError(
-          err.message || 'An error occurred while fetching physics objects'
+          err.message || "An error occurred while fetching physics objects"
         );
       }
     };
@@ -83,7 +83,7 @@ const PhysicsConstraintModal = ({
         );
 
         if (!response.ok) {
-          throw new Error('Failed to fetch constraint data');
+          throw new Error("Failed to fetch constraint data");
         }
 
         const data = await response.json();
@@ -101,7 +101,7 @@ const PhysicsConstraintModal = ({
         });
       } catch (err) {
         setError(
-          err.message || 'An error occurred while fetching constraint data'
+          err.message || "An error occurred while fetching constraint data"
         );
       } finally {
         setFetchLoading(false);
@@ -112,7 +112,7 @@ const PhysicsConstraintModal = ({
     fetchConstraintData();
   }, [initialData, sceneId]);
 
-  const handleInputChange = e => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
@@ -120,7 +120,7 @@ const PhysicsConstraintModal = ({
     });
   };
 
-  const handleParameterChange = e => {
+  const handleParameterChange = (e) => {
     const { name, value } = e.target;
     // All parameters should be numeric
     const numericValue = parseFloat(value);
@@ -134,7 +134,7 @@ const PhysicsConstraintModal = ({
     });
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -142,14 +142,14 @@ const PhysicsConstraintModal = ({
     try {
       // Validate that two different objects are selected
       if (formData.object1_id === formData.object2_id) {
-        throw new Error('A constraint must connect two different objects');
+        throw new Error("A constraint must connect two different objects");
       }
 
       const url = initialData?.id
         ? `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-constraints/${initialData.id}`
         : `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-constraints`;
 
-      const method = initialData?.id ? 'PUT' : 'POST';
+      const method = initialData?.id ? "PUT" : "POST";
 
       // Prepare data for API
       const apiData = {
@@ -165,7 +165,7 @@ const PhysicsConstraintModal = ({
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(apiData),
       });
@@ -175,7 +175,7 @@ const PhysicsConstraintModal = ({
         throw new Error(
           errorData.message ||
             `Failed to ${
-              initialData?.id ? 'update' : 'create'
+              initialData?.id ? "update" : "create"
             } physics constraint`
         );
       }
@@ -188,7 +188,7 @@ const PhysicsConstraintModal = ({
       }
     } catch (err) {
       setError(
-        err.message || 'An error occurred while saving physics constraint'
+        err.message || "An error occurred while saving physics constraint"
       );
     } finally {
       setLoading(false);
@@ -224,8 +224,8 @@ const PhysicsConstraintModal = ({
         <h2>
           {modalProps.title ||
             (isEditing
-              ? 'Edit Physics Constraint'
-              : 'Create Physics Constraint')}
+              ? "Edit Physics Constraint"
+              : "Create Physics Constraint")}
         </h2>
       </div>
 
@@ -261,7 +261,7 @@ const PhysicsConstraintModal = ({
                 className="form-control"
                 required
               >
-                {constraintTypes.map(type => (
+                {constraintTypes.map((type) => (
                   <option key={type.value} value={type.value}>
                     {type.label}
                   </option>
@@ -281,7 +281,7 @@ const PhysicsConstraintModal = ({
                   required
                 >
                   <option value="">Select an object</option>
-                  {physicsObjects.map(obj => (
+                  {physicsObjects.map((obj) => (
                     <option key={obj.id} value={obj.id}>
                       {obj.name}
                     </option>
@@ -300,7 +300,7 @@ const PhysicsConstraintModal = ({
                   required
                 >
                   <option value="">Select an object</option>
-                  {physicsObjects.map(obj => (
+                  {physicsObjects.map((obj) => (
                     <option key={obj.id} value={obj.id}>
                       {obj.name}
                     </option>
@@ -312,7 +312,7 @@ const PhysicsConstraintModal = ({
             <fieldset className="parameters-fieldset">
               <legend>Constraint Parameters</legend>
 
-              {formData.type === 'SPRING' && (
+              {formData.type === "SPRING" && (
                 <>
                   <div className="form-group">
                     <label htmlFor="stiffness">Stiffness</label>
@@ -389,9 +389,9 @@ const PhysicsConstraintModal = ({
                 {loading ? (
                   <Spinner size="small" />
                 ) : isEditing ? (
-                  'Save Changes'
+                  "Save Changes"
                 ) : (
-                  'Create Constraint'
+                  "Create Constraint"
                 )}
               </Button>
             </div>

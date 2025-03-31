@@ -19,10 +19,17 @@ export const ROUTES = {
   STANDALONE_TEST: "/standalone-test",
   MODAL_ACCESSIBILITY_TEST: "/test/modal-accessibility",
   MODAL_ROUTE_TEST: "/test/modal-routes",
-  CHARACTERS: "/scenes/:sceneId/characters",
-  CHARACTER_DETAIL: "/scenes/:sceneId/characters/:characterId",
-  CHARACTER_EDIT: "/scenes/:sceneId/characters/:characterId/edit",
+
+  // Updated character routes - now at universe level too
+  CHARACTERS: "/universes/:universeId/characters",
+  CHARACTERS_FOR_SCENE: "/universes/:universeId/scenes/:sceneId/characters",
+  CHARACTER_DETAIL: "/universes/:universeId/characters/:characterId",
+  CHARACTER_EDIT: "/universes/:universeId/characters/:characterId/edit",
+
+  // Updated notes routes
   NOTES: "/universes/:universeId/notes",
+  NOTES_FOR_SCENE: "/universes/:universeId/scenes/:sceneId/notes",
+  NOTES_FOR_CHARACTER: "/universes/:universeId/characters/:characterId/notes",
   NOTE_DETAIL: "/universes/:universeId/notes/:noteId",
   NOTE_EDIT: "/universes/:universeId/notes/:noteId/edit",
 };
@@ -41,6 +48,11 @@ export const API_MODAL_ROUTES = {
   CREATE_SCENE: `${API_CONFIG.API_PREFIX}/scenes/create`,
   EDIT_SCENE: `${API_CONFIG.API_PREFIX}/scenes/:id/edit`,
   DELETE_SCENE: `${API_CONFIG.API_PREFIX}/scenes/:id/delete`,
+
+  // Character routes
+  CREATE_CHARACTER: `${API_CONFIG.API_PREFIX}/characters/create`,
+  EDIT_CHARACTER: `${API_CONFIG.API_PREFIX}/characters/:id/edit`,
+  DELETE_CHARACTER: `${API_CONFIG.API_PREFIX}/characters/:id/delete`,
 
   // Note routes
   CREATE_NOTE: `${API_CONFIG.API_PREFIX}/notes/create`,
@@ -88,9 +100,15 @@ export const API_ROUTE_TO_MODAL_TYPE = {
   [API_MODAL_ROUTES.EDIT_UNIVERSE]: "universe-edit",
   [API_MODAL_ROUTES.DELETE_UNIVERSE]: "universe-delete",
 
+  // Scene routes
   [API_MODAL_ROUTES.CREATE_SCENE]: "scene-create",
   [API_MODAL_ROUTES.EDIT_SCENE]: "scene-edit",
   [API_MODAL_ROUTES.DELETE_SCENE]: "scene-delete",
+
+  // Character routes
+  [API_MODAL_ROUTES.CREATE_CHARACTER]: "character-create",
+  [API_MODAL_ROUTES.EDIT_CHARACTER]: "character-edit",
+  [API_MODAL_ROUTES.DELETE_CHARACTER]: "character-delete",
 
   // Note routes
   [API_MODAL_ROUTES.CREATE_NOTE]: "note-create",
@@ -99,6 +117,7 @@ export const API_ROUTE_TO_MODAL_TYPE = {
   [API_MODAL_ROUTES.ARCHIVE_NOTE]: "note-archive",
   [API_MODAL_ROUTES.UNARCHIVE_NOTE]: "note-unarchive",
 
+  // Physics routes
   [API_MODAL_ROUTES.CREATE_PHYSICS_OBJECT]: "physics-object",
   [API_MODAL_ROUTES.EDIT_PHYSICS_OBJECT]: "physics-object",
   [API_MODAL_ROUTES.DELETE_PHYSICS_OBJECT]: "confirm-delete",

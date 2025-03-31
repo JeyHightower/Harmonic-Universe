@@ -44,6 +44,8 @@ const universeEndpoints = {
   audio: (id) => `${API_VERSION}/universes/${id}/audio`,
   visualization: (id) => `${API_VERSION}/universes/${id}/visualization`,
   scenes: (id) => `${API_VERSION}/universes/${id}/scenes`,
+  characters: (id) => `${API_VERSION}/universes/${id}/characters`,
+  notes: (id) => `${API_VERSION}/universes/${id}/notes`,
 };
 
 // Scene endpoints
@@ -55,6 +57,32 @@ const sceneEndpoints = {
   delete: (id) => `${API_VERSION}/scenes/${id}`,
   forUniverse: (universeId) => `${API_VERSION}/universes/${universeId}/scenes`,
   reorder: `${API_VERSION}/scenes/reorder`,
+  characters: (id) => `${API_VERSION}/scenes/${id}/characters`,
+  notes: (id) => `${API_VERSION}/scenes/${id}/notes`,
+};
+
+// Character endpoints
+const characterEndpoints = {
+  list: `${API_VERSION}/characters`,
+  create: `${API_VERSION}/characters`,
+  get: (id) => `${API_VERSION}/characters/${id}`,
+  update: (id) => `${API_VERSION}/characters/${id}`,
+  delete: (id) => `${API_VERSION}/characters/${id}`,
+  forUniverse: (universeId) => `${API_VERSION}/universes/${universeId}/characters`,
+  forScene: (sceneId) => `${API_VERSION}/scenes/${sceneId}/characters`,
+  notes: (id) => `${API_VERSION}/characters/${id}/notes`,
+};
+
+// Note endpoints
+const noteEndpoints = {
+  list: `${API_VERSION}/notes`,
+  create: `${API_VERSION}/notes`,
+  get: (id) => `${API_VERSION}/notes/${id}`,
+  update: (id) => `${API_VERSION}/notes/${id}`,
+  delete: (id) => `${API_VERSION}/notes/${id}`,
+  forUniverse: (universeId) => `${API_VERSION}/universes/${universeId}/notes`,
+  forScene: (sceneId) => `${API_VERSION}/scenes/${sceneId}/notes`,
+  forCharacter: (characterId) => `${API_VERSION}/characters/${characterId}/notes`,
 };
 
 // Physics objects endpoints
@@ -94,6 +122,8 @@ export const endpoints = {
   user: userEndpoints,
   universes: universeEndpoints,
   scenes: sceneEndpoints,
+  characters: characterEndpoints,
+  notes: noteEndpoints,
   physicsObjects: physicsObjectEndpoints,
   audioTracks: audioTrackEndpoints,
   system: systemEndpoints,

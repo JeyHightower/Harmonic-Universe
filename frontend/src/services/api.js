@@ -420,9 +420,44 @@ const apiClient = {
   resetPhysicsParameters: () => axiosInstance.post(endpoints.physicsParameters.reset),
 
   // Character methods
-  getCharactersByUniverse: (universeId) => {
-    return axiosInstance.get(`/api/universes/${universeId}/characters`);
+  getCharacters: () => axiosInstance.get(endpoints.characters.list),
+  getCharacter: (id) => axiosInstance.get(endpoints.characters.get(id)),
+  createCharacter: (data) => {
+    const normalizedData = { ...data };
+    if (data.universeId && !data.universe_id) {
+      normalizedData.universe_id = data.universeId;
+    }
+    if (data.sceneId && !data.scene_id) {
+      normalizedData.scene_id = data.sceneId;
+    }
+    return axiosInstance.post(endpoints.characters.create, normalizedData);
   },
+  updateCharacter: (id, data) => axiosInstance.put(endpoints.characters.update(id), data),
+  deleteCharacter: (id) => axiosInstance.delete(endpoints.characters.delete(id)),
+  getCharactersByUniverse: (universeId) => axiosInstance.get(endpoints.characters.forUniverse(universeId)),
+  getCharactersByScene: (sceneId) => axiosInstance.get(endpoints.characters.forScene(sceneId)),
+
+  // Note methods
+  getNotes: () => axiosInstance.get(endpoints.notes.list),
+  getNote: (id) => axiosInstance.get(endpoints.notes.get(id)),
+  createNote: (data) => {
+    const normalizedData = { ...data };
+    if (data.universeId && !data.universe_id) {
+      normalizedData.universe_id = data.universeId;
+    }
+    if (data.sceneId && !data.scene_id) {
+      normalizedData.scene_id = data.sceneId;
+    }
+    if (data.characterId && !data.character_id) {
+      normalizedData.character_id = data.characterId;
+    }
+    return axiosInstance.post(endpoints.notes.create, normalizedData);
+  },
+  updateNote: (id, data) => axiosInstance.put(endpoints.notes.update(id), data),
+  deleteNote: (id) => axiosInstance.delete(endpoints.notes.delete(id)),
+  getNotesByUniverse: (universeId) => axiosInstance.get(endpoints.notes.forUniverse(universeId)),
+  getNotesByScene: (sceneId) => axiosInstance.get(endpoints.notes.forScene(sceneId)),
+  getNotesByCharacter: (characterId) => axiosInstance.get(endpoints.notes.forCharacter(characterId)),
 };
 
 export default apiClient;
