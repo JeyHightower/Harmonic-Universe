@@ -6,6 +6,7 @@ import ConfirmationModal from "../components/modals/ConfirmationModal";
 import FormModal from "../components/modals/FormModal";
 import LoginModal from "../components/auth/LoginModal";
 import SignupModal from "../components/auth/SignupModal";
+import DemoLogin from "../components/auth/DemoLogin";
 
 // Create modal registry
 const modalRegistry = new Map();

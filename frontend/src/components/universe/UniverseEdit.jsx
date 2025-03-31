@@ -5,7 +5,7 @@ import {
   fetchUniverses,
   updateUniverse,
 } from "../../store/thunks/universeThunks";
-import { api, endpoints } from "../../utils/api";
+import { api, endpoints } from "@services/api";
 import {
   validateDescription,
   validateUniverseName,

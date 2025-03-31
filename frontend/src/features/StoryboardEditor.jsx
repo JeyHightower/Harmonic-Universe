@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
-import Button from '../components/Button.jsx';
-import Spinner from '../components/Spinner.jsx';
-import { fetchUniverseById } from '../store/universeThunks.js';
-import '../styles/Storyboard.css';
-import { api, endpoints } from '../utils/api.js';
+import React, { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useParams } from "react-router-dom";
+import Button from "../components/Button.jsx";
+import Spinner from "../components/Spinner.jsx";
+import { fetchUniverseById } from "../store/universeThunks.js";
+import "../styles/Storyboard.css";
+import { api, endpoints } from "@services/api";
 
 const StoryboardEditor = () => {
   const { universeId, storyboardId } = useParams();
@@ -23,13 +23,13 @@ const StoryboardEditor = () => {
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [showPointForm, setShowPointForm] = useState(false);
   const [newPoint, setNewPoint] = useState({
-    title: '',
-    content: '',
+    title: "",
+    content: "",
     position_x: 0,
     position_y: 0,
   });
 
-  const universe = useSelector(state => state.universe.currentUniverse);
+  const universe = useSelector((state) => state.universe.currentUniverse);
 
   // Fetch universe if not already loaded
   useEffect(() => {
@@ -46,9 +46,9 @@ const StoryboardEditor = () => {
 
         // Check if the API endpoints are available
         if (!endpoints.storyboards) {
-          console.error('Storyboard endpoints not available');
+          console.error("Storyboard endpoints not available");
           setError(
-            'Storyboard feature is not available yet. Please check back later.'
+            "Storyboard feature is not available yet. Please check back later."
           );
           setLoading(false);
           return;
@@ -68,15 +68,15 @@ const StoryboardEditor = () => {
 
         setError(null);
       } catch (err) {
-        console.error('Error fetching storyboard data:', err);
+        console.error("Error fetching storyboard data:", err);
 
         // Handle 404 errors (endpoint not found)
         if (err.response && err.response.status === 404) {
           setError(
-            'Storyboard feature is not available yet. Please check back later.'
+            "Storyboard feature is not available yet. Please check back later."
           );
         } else {
-          setError('Failed to load storyboard. Please try again.');
+          setError("Failed to load storyboard. Please try again.");
         }
       } finally {
         setLoading(false);
@@ -86,7 +86,7 @@ const StoryboardEditor = () => {
     fetchStoryboardData();
   }, [universeId, storyboardId]);
 
-  const handleCanvasClick = e => {
+  const handleCanvasClick = (e) => {
     if (isDragging) return;
 
     // Get canvas-relative coordinates
@@ -98,7 +98,7 @@ const StoryboardEditor = () => {
     setSelectedPoint(null);
 
     // Set position for new point
-    setNewPoint(prev => ({
+    setNewPoint((prev) => ({
       ...prev,
       position_x: x,
       position_y: y,
@@ -114,7 +114,7 @@ const StoryboardEditor = () => {
     setSelectedPoint(point);
   };
 
-  const handleMouseMove = e => {
+  const handleMouseMove = (e) => {
     if (!isDragging || !draggedPoint) return;
 
     const rect = canvasRef.current.getBoundingClientRect();
@@ -122,8 +122,8 @@ const StoryboardEditor = () => {
     const y = (e.clientY - rect.top) / zoom;
 
     // Update the dragged point's position
-    setStoryPoints(points =>
-      points.map(p =>
+    setStoryPoints((points) =>
+      points.map((p) =>
         p.id === draggedPoint.id ? { ...p, position_x: x, position_y: y } : p
       )
     );
@@ -133,7 +133,7 @@ const StoryboardEditor = () => {
     if (isDragging && draggedPoint) {
       try {
         // Get the updated point
-        const updatedPoint = storyPoints.find(p => p.id === draggedPoint.id);
+        const updatedPoint = storyPoints.find((p) => p.id === draggedPoint.id);
 
         // Save the new position to the backend
         await api.put(
@@ -148,8 +148,8 @@ const StoryboardEditor = () => {
           }
         );
       } catch (err) {
-        console.error('Error updating point position:', err);
-        setError('Failed to update point position. Please try again.');
+        console.error("Error updating point position:", err);
+        setError("Failed to update point position. Please try again.");
       }
     }
 
@@ -157,11 +157,11 @@ const StoryboardEditor = () => {
     setDraggedPoint(null);
   };
 
-  const handleCreatePoint = async e => {
+  const handleCreatePoint = async (e) => {
     e.preventDefault();
 
     if (!newPoint.title.trim()) {
-      setError('Point title is required');
+      setError("Point title is required");
       return;
     }
 
@@ -175,7 +175,7 @@ const StoryboardEditor = () => {
         !endpoints.storyboards.points.create
       ) {
         setError(
-          'Story point creation is not available yet. Please check back later.'
+          "Story point creation is not available yet. Please check back later."
         );
         setLoading(false);
         return;
@@ -191,31 +191,31 @@ const StoryboardEditor = () => {
 
       // Reset form
       setNewPoint({
-        title: '',
-        content: '',
+        title: "",
+        content: "",
         position_x: 0,
         position_y: 0,
       });
       setShowPointForm(false);
       setError(null);
     } catch (err) {
-      console.error('Error creating story point:', err);
+      console.error("Error creating story point:", err);
 
       // Handle 404 errors (endpoint not found)
       if (err.response && err.response.status === 404) {
         setError(
-          'Story point creation is not available yet. Please check back later.'
+          "Story point creation is not available yet. Please check back later."
         );
       } else {
-        setError('Failed to create story point. Please try again.');
+        setError("Failed to create story point. Please try again.");
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeletePoint = async pointId => {
-    if (!window.confirm('Are you sure you want to delete this story point?')) {
+  const handleDeletePoint = async (pointId) => {
+    if (!window.confirm("Are you sure you want to delete this story point?")) {
       return;
     }
 
@@ -226,34 +226,34 @@ const StoryboardEditor = () => {
       );
 
       // Remove deleted point from the list
-      setStoryPoints(storyPoints.filter(p => p.id !== pointId));
+      setStoryPoints(storyPoints.filter((p) => p.id !== pointId));
 
       // Deselect if this was the selected point
       if (selectedPoint && selectedPoint.id === pointId) {
         setSelectedPoint(null);
       }
     } catch (err) {
-      console.error('Error deleting story point:', err);
-      setError('Failed to delete story point. Please try again.');
+      console.error("Error deleting story point:", err);
+      setError("Failed to delete story point. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = e => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setNewPoint(prev => ({
+    setNewPoint((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
   const handleZoomIn = () => {
-    setZoom(prev => Math.min(prev + 0.1, 2));
+    setZoom((prev) => Math.min(prev + 0.1, 2));
   };
 
   const handleZoomOut = () => {
-    setZoom(prev => Math.max(prev - 0.1, 0.5));
+    setZoom((prev) => Math.max(prev - 0.1, 0.5));
   };
 
   const handleSaveStoryboard = async () => {
@@ -265,8 +265,8 @@ const StoryboardEditor = () => {
       });
       setError(null);
     } catch (err) {
-      console.error('Error saving storyboard:', err);
-      setError('Failed to save storyboard. Please try again.');
+      console.error("Error saving storyboard:", err);
+      setError("Failed to save storyboard. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -284,8 +284,8 @@ const StoryboardEditor = () => {
   return (
     <div className="storyboard-editor">
       <div className="storyboard-sidebar">
-        <h2>{storyboard?.name || 'Storyboard'}</h2>
-        <p>{storyboard?.description || 'No description'}</p>
+        <h2>{storyboard?.name || "Storyboard"}</h2>
+        <p>{storyboard?.description || "No description"}</p>
 
         <div className="sidebar-actions">
           <Button
@@ -312,7 +312,7 @@ const StoryboardEditor = () => {
         {selectedPoint && (
           <div className="point-details">
             <h3>Selected Point: {selectedPoint.title}</h3>
-            <p>{selectedPoint.content || 'No content'}</p>
+            <p>{selectedPoint.content || "No content"}</p>
             <div className="point-actions">
               <Button
                 onClick={() => handleDeletePoint(selectedPoint.id)}
@@ -335,20 +335,21 @@ const StoryboardEditor = () => {
         onMouseLeave={handleMouseUp}
         style={{
           transform: `scale(${zoom})`,
-          transformOrigin: '0 0',
+          transformOrigin: "0 0",
         }}
       >
-        {storyPoints.map(point => (
+        {storyPoints.map((point) => (
           <div
             key={point.id}
-            className={`story-point ${selectedPoint?.id === point.id ? 'selected' : ''
-              }`}
+            className={`story-point ${
+              selectedPoint?.id === point.id ? "selected" : ""
+            }`}
             style={{
               left: `${point.position_x}px`,
               top: `${point.position_y}px`,
             }}
-            onMouseDown={e => handlePointMouseDown(e, point)}
-            onClick={e => e.stopPropagation()}
+            onMouseDown={(e) => handlePointMouseDown(e, point)}
+            onClick={(e) => e.stopPropagation()}
           >
             <h4>{point.title}</h4>
           </div>
@@ -403,7 +404,7 @@ const StoryboardEditor = () => {
                   Cancel
                 </Button>
                 <Button type="submit" variant="primary" disabled={loading}>
-                  {loading ? 'Creating...' : 'Create Point'}
+                  {loading ? "Creating..." : "Create Point"}
                 </Button>
               </div>
             </form>

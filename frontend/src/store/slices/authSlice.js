@@ -80,7 +80,7 @@ export const checkAuthState = createAsyncThunk(
         throw new Error("No token found");
       }
 
-      const response = await api.auth.checkAuth();
+      const response = await apiClient.checkAuth();
       logAuthOperation("Auth state check successful", {
         status: response.status,
       });
@@ -99,7 +99,7 @@ export const login = createAsyncThunk(
     try {
       logAuthOperation("Login attempt", { email: credentials.email });
 
-      const response = await api.auth.login(credentials);
+      const response = await apiClient.login(credentials);
       logAuthOperation("Login successful", { status: response.status });
 
       // Store tokens
@@ -108,9 +108,9 @@ export const login = createAsyncThunk(
       return response.data.user;
     } catch (error) {
       logAuthError("Login", error);
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to login"
-      );
+      // Use the error message from the API response if available
+      const errorMessage = error.response?.data?.message || error.message || "Invalid email or password";
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -121,7 +121,7 @@ export const signup = createAsyncThunk(
     try {
       logAuthOperation("Signup attempt", { email: userData.email });
 
-      const response = await api.auth.register(userData);
+      const response = await apiClient.register(userData);
       logAuthOperation("Signup successful", { status: response.status });
 
       // Store tokens
@@ -150,7 +150,7 @@ export const logout = createAsyncThunk(
 
       // Call logout endpoint if available
       try {
-        await api.auth.logout();
+        await apiClient.logout();
       } catch (error) {
         console.warn("Logout endpoint failed:", error);
       }

@@ -6,15 +6,15 @@
  * Consider using the Modal.jsx component for any modal functionality.
  */
 
-import React, { useEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { api, endpoints } from '../../../utils/api';
-import Button from '../../common/Button';
-import Icon from '../../common/Icon';
-import Spinner from '../../common/Spinner';
-import './Music.css';
-import MusicModal from './MusicModal';
-import MusicPlayer from './MusicPlayer';
+import React, { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
+import { api, endpoints } from "@services/api";
+import Button from "../../common/Button";
+import Icon from "../../common/Icon";
+import Spinner from "../../common/Spinner";
+import "./Music.css";
+import MusicModal from "./MusicModal";
+import MusicPlayer from "./MusicPlayer";
 
 const MusicManager = ({ universeId }) => {
   const dispatch = useDispatch();
@@ -44,8 +44,8 @@ const MusicManager = ({ universeId }) => {
           setSelectedMusicId(response.data[0].id);
         }
       } catch (error) {
-        console.error('Error fetching music list:', error);
-        setError('Failed to load music. Please try again.');
+        console.error("Error fetching music list:", error);
+        setError("Failed to load music. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -57,25 +57,25 @@ const MusicManager = ({ universeId }) => {
   // Handle creating a new music
   const handleAddMusic = () => {
     setSelectedMusic(null);
-    setModalMode('create');
+    setModalMode("create");
   };
 
   // Handle viewing music details
-  const handleViewMusic = music => {
+  const handleViewMusic = (music) => {
     setSelectedMusic(music);
-    setModalMode('view');
+    setModalMode("view");
   };
 
   // Handle editing music
-  const handleEditMusic = music => {
+  const handleEditMusic = (music) => {
     setSelectedMusic(music);
-    setModalMode('edit');
+    setModalMode("edit");
   };
 
   // Handle deleting music
-  const handleDeleteMusic = music => {
+  const handleDeleteMusic = (music) => {
     setSelectedMusic(music);
-    setModalMode('delete');
+    setModalMode("delete");
   };
 
   // Handle modal close
@@ -86,23 +86,23 @@ const MusicManager = ({ universeId }) => {
 
   // Handle modal success (create, edit, delete)
   const handleModalSuccess = (data, mode) => {
-    if (mode === 'create') {
+    if (mode === "create") {
       // Add new music to the list
-      setMusicList(prev => [...prev, data]);
+      setMusicList((prev) => [...prev, data]);
       setSelectedMusicId(data.id);
-    } else if (mode === 'edit' || mode === 'generate') {
+    } else if (mode === "edit" || mode === "generate") {
       // Update existing music in the list
-      setMusicList(prev =>
-        prev.map(item => (item.id === data.id ? data : item))
+      setMusicList((prev) =>
+        prev.map((item) => (item.id === data.id ? data : item))
       );
       setSelectedMusicId(data.id);
-    } else if (mode === 'delete') {
+    } else if (mode === "delete") {
       // Remove music from the list
-      setMusicList(prev => prev.filter(item => item.id !== data.id));
+      setMusicList((prev) => prev.filter((item) => item.id !== data.id));
 
       // Update selected music if the deleted one was selected
       if (selectedMusicId === data.id) {
-        const newList = musicList.filter(item => item.id !== data.id);
+        const newList = musicList.filter((item) => item.id !== data.id);
         setSelectedMusicId(newList.length > 0 ? newList[0].id : null);
       }
     }
@@ -141,16 +141,16 @@ const MusicManager = ({ universeId }) => {
 
     return (
       <div className="music-list">
-        {musicList.map(music => (
+        {musicList.map((music) => (
           <div
             key={music.id}
             className={`music-item ${
-              selectedMusicId === music.id ? 'selected' : ''
+              selectedMusicId === music.id ? "selected" : ""
             }`}
             onClick={() => setSelectedMusicId(music.id)}
           >
             <div className="music-item-content">
-              <h3>{music.name || 'Unnamed Music'}</h3>
+              <h3>{music.name || "Unnamed Music"}</h3>
               {music.description && <p>{music.description}</p>}
               <div className="music-item-details">
                 <span>Tempo: {music.tempo} BPM</span>
@@ -163,7 +163,7 @@ const MusicManager = ({ universeId }) => {
                 variant="text"
                 icon="view"
                 tooltip="View Details"
-                onClick={e => {
+                onClick={(e) => {
                   e.stopPropagation();
                   handleViewMusic(music);
                 }}
@@ -172,7 +172,7 @@ const MusicManager = ({ universeId }) => {
                 variant="text"
                 icon="edit"
                 tooltip="Edit"
-                onClick={e => {
+                onClick={(e) => {
                   e.stopPropagation();
                   handleEditMusic(music);
                 }}
@@ -181,7 +181,7 @@ const MusicManager = ({ universeId }) => {
                 variant="text"
                 icon="delete"
                 tooltip="Delete"
-                onClick={e => {
+                onClick={(e) => {
                   e.stopPropagation();
                   handleDeleteMusic(music);
                 }}
@@ -199,7 +199,9 @@ const MusicManager = ({ universeId }) => {
       return null;
     }
 
-    const selectedMusic = musicList.find(music => music.id === selectedMusicId);
+    const selectedMusic = musicList.find(
+      (music) => music.id === selectedMusicId
+    );
     if (!selectedMusic) return null;
 
     return (

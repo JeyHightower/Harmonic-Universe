@@ -29,6 +29,7 @@ import {
   closeModal,
   updateModalProps,
 } from "../store/slices/modalSlice";
+import { useModal as useModalHook } from "../hooks/useModal";
 
 // Create the context
 const ModalContext = createContext();
@@ -85,6 +86,7 @@ const ModalProvider = ({ children }) => {
   const props = useSelector(selectModalProps);
   const isTransitioning = useSelector(selectIsModalTransitioning);
   const dispatch = useDispatch();
+  const { close } = useModalHook();
 
   // Ensure portal root exists and store reference
   useEffect(() => {
@@ -96,14 +98,33 @@ const ModalProvider = ({ children }) => {
     }
   }, []);
 
+  // Log modal state changes for debugging
+  useEffect(() => {
+    console.log("[ModalContext] Modal state changed:", {
+      isOpen,
+      type,
+      isTransitioning,
+      hasProps: !!props,
+    });
+  }, [isOpen, type, isTransitioning, props]);
+
   const value = {
     isModalOpen: isOpen,
     modalType: type,
     modalProps: props,
     isTransitioning,
-    openModal: (type, props = {}) => dispatch(openModal({ type, props })),
-    closeModal: () => dispatch(closeModal()),
-    updateModalProps: (props) => dispatch(updateModalProps(props)),
+    openModal: (type, props = {}) => {
+      console.log("[ModalContext] Opening modal:", { type, props });
+      dispatch(openModal({ type, props }));
+    },
+    closeModal: () => {
+      console.log("[ModalContext] Closing modal");
+      close();
+    },
+    updateModalProps: (props) => {
+      console.log("[ModalContext] Updating modal props:", props);
+      dispatch(updateModalProps(props));
+    },
   };
 
   return (
@@ -115,9 +136,8 @@ const ModalProvider = ({ children }) => {
             type={type}
             props={props}
             onClose={() => {
-              // Close modal through Redux
-              const event = new CustomEvent("modal-close");
-              document.dispatchEvent(event);
+              console.log("[ModalContext] Modal close requested");
+              close();
             }}
           />
         </Suspense>

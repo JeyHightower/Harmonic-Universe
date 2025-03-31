@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   openModal,
@@ -7,7 +7,7 @@ import {
   updateModalProps,
 } from "../store/slices/modalSlice";
 import { MODAL_CONFIG } from "../utils/config";
-import { validateModalType } from "../utils/modalRegistry";
+import { isValidModalType } from "../utils/modalRegistry";
 
 /**
  * Hook for managing modals
@@ -16,10 +16,11 @@ import { validateModalType } from "../utils/modalRegistry";
 export const useModal = () => {
   const dispatch = useDispatch();
   const modalState = useSelector((state) => state.modal);
+  const closeTimeoutRef = useRef(null);
 
   const open = useCallback(
     (type, props = {}) => {
-      if (!validateModalType(type)) {
+      if (!isValidModalType(type)) {
         console.error(`Invalid modal type: ${type}`);
         return;
       }
@@ -35,18 +36,19 @@ export const useModal = () => {
   );
 
   const close = useCallback(() => {
-    if (modalState.isTransitioning) {
-      console.warn("Modal transition in progress, ignoring close request");
-      return;
+    // Clear any existing timeout
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
     }
 
+    // Always dispatch closeModal to start the transition
     dispatch(closeModal());
 
-    // Complete close after animation
-    setTimeout(() => {
+    // Set a new timeout to complete the close after animation
+    closeTimeoutRef.current = setTimeout(() => {
       dispatch(closeModalComplete());
     }, MODAL_CONFIG.ANIMATIONS.FADE.duration);
-  }, [dispatch, modalState.isTransitioning]);
+  }, [dispatch]);
 
   const updateProps = useCallback(
     (props) => {

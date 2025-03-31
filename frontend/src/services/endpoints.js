@@ -5,11 +5,11 @@
 
 // Base API URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
-const API_V1_URL = `${API_BASE_URL}/v1`;
 
 // Auth endpoints
 const authEndpoints = {
   login: `${API_BASE_URL}/api/auth/login`,
+  register: `${API_BASE_URL}/api/auth/signup`,
   signup: `${API_BASE_URL}/api/auth/signup`,
   demoLogin: `${API_BASE_URL}/api/auth/demo-login`,
   refresh: `${API_BASE_URL}/api/auth/refresh`,
@@ -18,16 +18,6 @@ const authEndpoints = {
   resetPassword: `${API_BASE_URL}/api/auth/reset-password`,
   forgotPassword: `${API_BASE_URL}/api/auth/forgot-password`,
   verifyEmail: `${API_BASE_URL}/api/auth/verify-email`,
-};
-
-// Versioned auth endpoints (for fallback)
-const authV1Endpoints = {
-  login: `${API_BASE_URL}/api/v1/auth/login`,
-  signup: `${API_BASE_URL}/api/v1/auth/signup`,
-  demoLogin: `${API_BASE_URL}/api/v1/auth/demo-login`,
-  refresh: `${API_BASE_URL}/api/v1/auth/refresh`,
-  logout: `${API_BASE_URL}/api/v1/auth/logout`,
-  me: `${API_BASE_URL}/api/v1/auth/me`,
 };
 
 // User endpoints
@@ -84,7 +74,6 @@ const systemEndpoints = {
 // Export all endpoints
 export const endpoints = {
   auth: authEndpoints,
-  authV1: authV1Endpoints,
   users: userEndpoints,
   universes: universeEndpoints,
   physicsObjects: physicsObjectEndpoints,
@@ -125,5 +114,6 @@ export const getApiEndpoint = (endpoint) => {
     return `/api/v1${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
   }
 
-  return endpoint;
+  // Default to current API version
+  return `/api${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
 };

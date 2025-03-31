@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { demoLogin } from "../../store/thunks/authThunks";
+import { ModalSystem } from "../modals";
+import { MODAL_CONFIG } from "../../utils/config";
 import "./Auth.css";
 import PropTypes from "prop-types";
 
@@ -51,9 +53,19 @@ const DemoLogin = ({ onClose }) => {
   };
 
   return (
-    <div className="auth-container">
+    <ModalSystem
+      isOpen={true}
+      onClose={onClose}
+      title="Demo Login"
+      size={MODAL_CONFIG.SIZES.MEDIUM}
+      type="form"
+      showCloseButton={true}
+      closeOnEscape={true}
+      closeOnBackdrop={true}
+      preventBodyScroll={true}
+      animation={MODAL_CONFIG.ANIMATIONS.FADE}
+    >
       <div className="auth-form">
-        <h1>Demo Login</h1>
         {isLoading ? (
           <>
             <p>Logging you in as a demo user...</p>
@@ -70,7 +82,7 @@ const DemoLogin = ({ onClose }) => {
           <p>Redirecting to dashboard...</p>
         )}
       </div>
-    </div>
+    </ModalSystem>
   );
 };
 

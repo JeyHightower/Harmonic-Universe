@@ -1,51 +1,51 @@
-import React, { useEffect, useState } from 'react';
-import { api, endpoints } from '../../../utils/api';
-import Button from '../../common/Button';
-import Icon from '../../common/Icon';
-import Input from '../../common/Input';
-import Spinner from '../../common/Spinner';
-import './Music.css';
+import React, { useEffect, useState } from "react";
+import { api, endpoints } from "@services/api";
+import Button from "../../common/Button";
+import Icon from "../../common/Icon";
+import Input from "../../common/Input";
+import Spinner from "../../common/Spinner";
+import "./Music.css";
 
 // Default music parameters
 const DEFAULT_MUSIC_PARAMS = {
-  name: '',
-  description: '',
+  name: "",
+  description: "",
   tempo: 120,
-  scale_type: 'major',
-  root_note: 'C',
+  scale_type: "major",
+  root_note: "C",
   melody_complexity: 0.5,
   universe_id: null,
 };
 
 // Scale options for the dropdown
 const SCALE_OPTIONS = [
-  { value: 'major', label: 'Major' },
-  { value: 'minor', label: 'Minor' },
-  { value: 'harmonic_minor', label: 'Harmonic Minor' },
-  { value: 'melodic_minor', label: 'Melodic Minor' },
-  { value: 'pentatonic', label: 'Pentatonic' },
-  { value: 'blues', label: 'Blues' },
-  { value: 'dorian', label: 'Dorian' },
-  { value: 'phrygian', label: 'Phrygian' },
-  { value: 'lydian', label: 'Lydian' },
-  { value: 'mixolydian', label: 'Mixolydian' },
-  { value: 'locrian', label: 'Locrian' },
+  { value: "major", label: "Major" },
+  { value: "minor", label: "Minor" },
+  { value: "harmonic_minor", label: "Harmonic Minor" },
+  { value: "melodic_minor", label: "Melodic Minor" },
+  { value: "pentatonic", label: "Pentatonic" },
+  { value: "blues", label: "Blues" },
+  { value: "dorian", label: "Dorian" },
+  { value: "phrygian", label: "Phrygian" },
+  { value: "lydian", label: "Lydian" },
+  { value: "mixolydian", label: "Mixolydian" },
+  { value: "locrian", label: "Locrian" },
 ];
 
 // Root note options for the dropdown
 const ROOT_NOTE_OPTIONS = [
-  { value: 'C', label: 'C' },
-  { value: 'C#', label: 'C#' },
-  { value: 'D', label: 'D' },
-  { value: 'D#', label: 'D#' },
-  { value: 'E', label: 'E' },
-  { value: 'F', label: 'F' },
-  { value: 'F#', label: 'F#' },
-  { value: 'G', label: 'G' },
-  { value: 'G#', label: 'G#' },
-  { value: 'A', label: 'A' },
-  { value: 'A#', label: 'A#' },
-  { value: 'B', label: 'B' },
+  { value: "C", label: "C" },
+  { value: "C#", label: "C#" },
+  { value: "D", label: "D" },
+  { value: "D#", label: "D#" },
+  { value: "E", label: "E" },
+  { value: "F", label: "F" },
+  { value: "F#", label: "F#" },
+  { value: "G", label: "G" },
+  { value: "G#", label: "G#" },
+  { value: "A", label: "A" },
+  { value: "A#", label: "A#" },
+  { value: "B", label: "B" },
 ];
 
 const MusicModal = ({
@@ -53,7 +53,7 @@ const MusicModal = ({
   musicId = null,
   onClose,
   onSuccess,
-  mode = 'create',
+  mode = "create",
   initialData = {},
 }) => {
   const [formData, setFormData] = useState({
@@ -63,30 +63,30 @@ const MusicModal = ({
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [loading, setLoading] = useState(mode === 'edit' || mode === 'view');
+  const [successMessage, setSuccessMessage] = useState("");
+  const [loading, setLoading] = useState(mode === "edit" || mode === "view");
   const [generateInProgress, setGenerateInProgress] = useState(false);
 
   // Modal title based on the mode
   const getModalTitle = () => {
     switch (mode) {
-      case 'create':
-        return 'Create New Music';
-      case 'edit':
-        return 'Edit Music Settings';
-      case 'view':
-        return 'Music Details';
-      case 'delete':
-        return 'Delete Music';
+      case "create":
+        return "Create New Music";
+      case "edit":
+        return "Edit Music Settings";
+      case "view":
+        return "Music Details";
+      case "delete":
+        return "Delete Music";
       default:
-        return 'Music';
+        return "Music";
     }
   };
 
   // Fetch music data if in edit or view mode
   useEffect(() => {
     const fetchMusicData = async () => {
-      if (musicId && (mode === 'edit' || mode === 'view')) {
+      if (musicId && (mode === "edit" || mode === "view")) {
         try {
           setLoading(true);
           const response = await api.get(`${endpoints.music}/${musicId}`);
@@ -95,8 +95,8 @@ const MusicModal = ({
             universe_id: universeId,
           });
         } catch (error) {
-          console.error('Error fetching music data:', error);
-          setErrors({ api: 'Failed to load music data. Please try again.' });
+          console.error("Error fetching music data:", error);
+          setErrors({ api: "Failed to load music data. Please try again." });
         } finally {
           setLoading(false);
         }
@@ -109,7 +109,7 @@ const MusicModal = ({
   // Update form data with values from initialData prop
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         ...initialData,
         universe_id: universeId,
@@ -119,14 +119,14 @@ const MusicModal = ({
 
   // Handle input changes and clear errors
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
 
     // Clear error for the field being changed
     if (errors[field]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
@@ -137,17 +137,17 @@ const MusicModal = ({
   // Validate individual field
   const validateField = (field, value) => {
     switch (field) {
-      case 'name':
-        if (!value) return 'Name is required';
-        if (value.length > 100) return 'Name cannot exceed 100 characters';
+      case "name":
+        if (!value) return "Name is required";
+        if (value.length > 100) return "Name cannot exceed 100 characters";
         return null;
-      case 'description':
+      case "description":
         if (value && value.length > 500)
-          return 'Description cannot exceed 500 characters';
+          return "Description cannot exceed 500 characters";
         return null;
-      case 'tempo':
+      case "tempo":
         if (value < 60 || value > 200)
-          return 'Tempo must be between 60 and 200 BPM';
+          return "Tempo must be between 60 and 200 BPM";
         return null;
       default:
         return null;
@@ -159,7 +159,7 @@ const MusicModal = ({
     const newErrors = {};
 
     // Validate each field
-    Object.keys(formData).forEach(field => {
+    Object.keys(formData).forEach((field) => {
       const error = validateField(field, formData[field]);
       if (error) newErrors[field] = error;
     });
@@ -170,7 +170,7 @@ const MusicModal = ({
 
   // Handle form submission
   const handleSubmit = async () => {
-    if (mode === 'delete') {
+    if (mode === "delete") {
       await handleDelete();
       return;
     }
@@ -178,19 +178,19 @@ const MusicModal = ({
     if (!validateForm()) return;
 
     setIsSubmitting(true);
-    setSuccessMessage('');
+    setSuccessMessage("");
 
     try {
       let response;
 
-      if (mode === 'create') {
+      if (mode === "create") {
         // Create new music settings
         response = await api.post(endpoints.music, formData);
-        setSuccessMessage('Music settings created successfully');
-      } else if (mode === 'edit') {
+        setSuccessMessage("Music settings created successfully");
+      } else if (mode === "edit") {
         // Update existing music settings
         response = await api.put(`${endpoints.music}/${musicId}`, formData);
-        setSuccessMessage('Music settings updated successfully');
+        setSuccessMessage("Music settings updated successfully");
       }
 
       // Call the onSuccess callback with the response data
@@ -202,12 +202,12 @@ const MusicModal = ({
       }, 1500);
     } catch (error) {
       console.error(
-        `Error ${mode === 'create' ? 'creating' : 'updating'} music:`,
+        `Error ${mode === "create" ? "creating" : "updating"} music:`,
         error
       );
       setErrors({
         api: `Failed to ${
-          mode === 'create' ? 'create' : 'update'
+          mode === "create" ? "create" : "update"
         } music settings. Please try again.`,
       });
     } finally {
@@ -221,18 +221,18 @@ const MusicModal = ({
 
     try {
       await api.delete(`${endpoints.music}/${musicId}`);
-      setSuccessMessage('Music deleted successfully');
+      setSuccessMessage("Music deleted successfully");
 
       // Call the onSuccess callback
-      if (onSuccess) onSuccess({ id: musicId }, 'delete');
+      if (onSuccess) onSuccess({ id: musicId }, "delete");
 
       // Close the modal after a short delay
       setTimeout(() => {
         onClose();
       }, 1500);
     } catch (error) {
-      console.error('Error deleting music:', error);
-      setErrors({ api: 'Failed to delete music. Please try again.' });
+      console.error("Error deleting music:", error);
+      setErrors({ api: "Failed to delete music. Please try again." });
     } finally {
       setIsSubmitting(false);
     }
@@ -243,23 +243,23 @@ const MusicModal = ({
     if (!validateForm()) return;
 
     setGenerateInProgress(true);
-    setSuccessMessage('');
+    setSuccessMessage("");
 
     try {
       const response = await api.post(`${endpoints.music}/generate`, formData);
-      setSuccessMessage('Music generated successfully');
+      setSuccessMessage("Music generated successfully");
 
       // Update form data with the generated music data
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         ...response.data,
       }));
 
       // Call the onSuccess callback
-      if (onSuccess) onSuccess(response.data, 'generate');
+      if (onSuccess) onSuccess(response.data, "generate");
     } catch (error) {
-      console.error('Error generating music:', error);
-      setErrors({ api: 'Failed to generate music. Please try again.' });
+      console.error("Error generating music:", error);
+      setErrors({ api: "Failed to generate music. Please try again." });
     } finally {
       setGenerateInProgress(false);
     }
@@ -276,7 +276,7 @@ const MusicModal = ({
       );
     }
 
-    if (mode === 'delete') {
+    if (mode === "delete") {
       return (
         <div className="delete-confirmation">
           <h3>Delete Music</h3>
@@ -301,7 +301,7 @@ const MusicModal = ({
       );
     }
 
-    const isViewOnly = mode === 'view';
+    const isViewOnly = mode === "view";
 
     return (
       <>
@@ -316,7 +316,7 @@ const MusicModal = ({
             label="Name"
             type="text"
             value={formData.name}
-            onChange={value => handleInputChange('name', value)}
+            onChange={(value) => handleInputChange("name", value)}
             error={errors.name}
             disabled={isViewOnly}
             required
@@ -328,7 +328,7 @@ const MusicModal = ({
             label="Description"
             type="textarea"
             value={formData.description}
-            onChange={value => handleInputChange('description', value)}
+            onChange={(value) => handleInputChange("description", value)}
             error={errors.description}
             disabled={isViewOnly}
           />
@@ -341,7 +341,7 @@ const MusicModal = ({
             min={60}
             max={200}
             value={formData.tempo}
-            onChange={value => handleInputChange('tempo', Number(value))}
+            onChange={(value) => handleInputChange("tempo", Number(value))}
             error={errors.tempo}
             disabled={isViewOnly}
           />
@@ -351,10 +351,10 @@ const MusicModal = ({
           <label>Scale Type</label>
           <select
             value={formData.scale_type}
-            onChange={e => handleInputChange('scale_type', e.target.value)}
+            onChange={(e) => handleInputChange("scale_type", e.target.value)}
             disabled={isViewOnly}
           >
-            {SCALE_OPTIONS.map(option => (
+            {SCALE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -366,10 +366,10 @@ const MusicModal = ({
           <label>Root Note</label>
           <select
             value={formData.root_note}
-            onChange={e => handleInputChange('root_note', e.target.value)}
+            onChange={(e) => handleInputChange("root_note", e.target.value)}
             disabled={isViewOnly}
           >
-            {ROOT_NOTE_OPTIONS.map(option => (
+            {ROOT_NOTE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -385,8 +385,8 @@ const MusicModal = ({
             max={1}
             step={0.1}
             value={formData.melody_complexity}
-            onChange={value =>
-              handleInputChange('melody_complexity', parseFloat(value))
+            onChange={(value) =>
+              handleInputChange("melody_complexity", parseFloat(value))
             }
             disabled={isViewOnly}
           />
@@ -408,11 +408,11 @@ const MusicModal = ({
               loading={isSubmitting}
               disabled={isSubmitting || generateInProgress}
             >
-              {mode === 'create' ? 'Create' : 'Update'}
+              {mode === "create" ? "Create" : "Update"}
             </Button>
           )}
 
-          {(mode === 'create' || mode === 'edit') && (
+          {(mode === "create" || mode === "edit") && (
             <Button
               variant="accent"
               onClick={handleGenerate}

@@ -1,6 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import Modal from "../common/Modal";
+import { MODAL_CONFIG } from "../../utils/config";
 
 const AlertModal = ({
   title,
@@ -11,7 +12,14 @@ const AlertModal = ({
   ...props
 }) => {
   return (
-    <Modal type="alert" title={title} onClose={onClose} {...props}>
+    <Modal
+      type="alert"
+      title={title}
+      onClose={onClose}
+      size={MODAL_CONFIG.SIZES.SMALL}
+      animation={MODAL_CONFIG.ANIMATIONS.FADE}
+      {...props}
+    >
       <div className="modal-content">
         <p>{message}</p>
         <div className="modal-actions">

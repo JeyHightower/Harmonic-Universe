@@ -49,28 +49,6 @@ try {
   };
 }
 
-// Navbar with React.lazy for code splitting
-const NavbarFallback = () => (
-  <header
-    className="navbar-fallback"
-    style={{
-      padding: "10px 20px",
-      backgroundColor: "#f0f0f0",
-      boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-    }}
-  >
-    <h1 style={{ margin: 0, fontSize: "1.5rem" }}>Harmonic Universe</h1>
-  </header>
-);
-
-// Use React.lazy instead of require
-const Navbar = lazy(() =>
-  import("./Navbar").catch((error) => {
-    console.warn("[Layout] Navbar component not available, using fallback");
-    return { default: NavbarFallback };
-  })
-);
-
 // Footer with React.lazy for code splitting
 const FooterFallback = () => (
   <footer
@@ -284,9 +262,6 @@ function Layout() {
 
   return (
     <div className="layout">
-      <Suspense fallback={<NavbarFallback />}>
-        <Navbar />
-      </Suspense>
       <main className="main-content">
         <ContentErrorBoundary>
           <SafeOutlet />

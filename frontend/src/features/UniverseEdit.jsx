@@ -1,40 +1,40 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   fetchUniverses,
   updateUniverse,
-} from '../../../store/thunks/universeThunks';
-import { api, endpoints } from '../../../utils/api';
+} from "../../../store/thunks/universeThunks";
+import { api, endpoints } from "@services/api";
 import {
   validateDescription,
   validateUniverseName,
-} from '../../../utils/validation';
-import { Button } from '../components/common';
-import Input from '../../common/Input';
-import Modal from '../../common/Modal';
-import Spinner from '../../common/Spinner';
-import PhysicsPanel from './PhysicsPanel';
-import './Universe.css';
+} from "../../../utils/validation";
+import { Button } from "../components/common";
+import Input from "../../common/Input";
+import Modal from "../../common/Modal";
+import Spinner from "../../common/Spinner";
+import PhysicsPanel from "./PhysicsPanel";
+import "./Universe.css";
 
 function UniverseEdit() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { id } = useParams();
-  const { universes } = useSelector(state => state.universe);
+  const { universes } = useSelector((state) => state.universe);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
+    name: "",
+    description: "",
     is_public: false,
     physics_params: null,
   });
   const [originalFormData, setOriginalFormData] = useState(null);
   const [formErrors, setFormErrors] = useState({
-    name: '',
-    description: '',
+    name: "",
+    description: "",
   });
   const [canEdit, setCanEdit] = useState(false);
   const [lastFetchTime, setLastFetchTime] = useState(0);
@@ -46,18 +46,18 @@ function UniverseEdit() {
       const response = await api.get(endpoints.universes.detail(id));
       const newFormData = {
         name: response.name,
-        description: response.description || '',
+        description: response.description || "",
         is_public: response.is_public || false,
         physics_params: response.physics_params || null,
       };
       setFormData(newFormData);
       setOriginalFormData(JSON.stringify(newFormData));
       // Check if user has edit permissions
-      setCanEdit(response.user_role === 'owner');
+      setCanEdit(response.user_role === "owner");
       setLastFetchTime(Date.now());
     } catch (error) {
-      console.error('Failed to fetch universe:', error);
-      setError(error.response?.data?.message || 'Failed to load universe');
+      console.error("Failed to fetch universe:", error);
+      setError(error.response?.data?.message || "Failed to load universe");
     } finally {
       setLoading(false);
     }
@@ -83,20 +83,20 @@ function UniverseEdit() {
       }
     };
 
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, [lastFetchTime]);
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: type === "checkbox" ? checked : value,
     }));
     // Clear error when user starts typing
-    setFormErrors(prev => ({
+    setFormErrors((prev) => ({
       ...prev,
-      [name]: '',
+      [name]: "",
     }));
   };
 
@@ -112,7 +112,7 @@ function UniverseEdit() {
     return !nameError && !descriptionError;
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
@@ -135,11 +135,11 @@ function UniverseEdit() {
       ).unwrap();
       navigate(`/universes/${id}`);
     } catch (error) {
-      console.error('Failed to update universe:', error);
+      console.error("Failed to update universe:", error);
       setError(
         error.response?.data?.message ||
           error.message ||
-          'Failed to update universe'
+          "Failed to update universe"
       );
       setIsSubmitting(false);
     }
@@ -179,8 +179,8 @@ function UniverseEdit() {
     setShowCancelModal(false);
   };
 
-  const handlePhysicsParamsChange = updatedParams => {
-    setFormData(prev => ({
+  const handlePhysicsParamsChange = (updatedParams) => {
+    setFormData((prev) => ({
       ...prev,
       physics_params: updatedParams,
     }));

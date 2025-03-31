@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
-import Button from '../components/Button.jsx';
-import Spinner from '../components/Spinner.jsx';
-import { fetchUniverseById } from '../store/universeThunks.js';
-import '../styles/Storyboard.css';
-import { api, endpoints } from '../utils/api.js';
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useParams } from "react-router-dom";
+import Button from "../components/Button.jsx";
+import Spinner from "../components/Spinner.jsx";
+import { fetchUniverseById } from "../store/universeThunks.js";
+import "../styles/Storyboard.css";
+import { api, endpoints } from "@services/api";
 
 const StoryboardList = () => {
   const { universeId } = useParams();
@@ -17,11 +17,11 @@ const StoryboardList = () => {
   const [error, setError] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newStoryboard, setNewStoryboard] = useState({
-    name: '',
-    description: '',
+    name: "",
+    description: "",
   });
 
-  const universe = useSelector(state => state.universe.currentUniverse);
+  const universe = useSelector((state) => state.universe.currentUniverse);
 
   // Fetch universe if not already loaded
   useEffect(() => {
@@ -38,9 +38,9 @@ const StoryboardList = () => {
 
         // Check if the API endpoints are available
         if (!endpoints.storyboards) {
-          console.error('Storyboard endpoints not available');
+          console.error("Storyboard endpoints not available");
           setError(
-            'Storyboard feature is not available yet. Please check back later.'
+            "Storyboard feature is not available yet. Please check back later."
           );
           setStoryboards([]);
           setLoading(false);
@@ -51,15 +51,15 @@ const StoryboardList = () => {
         setStoryboards(response.storyboards || []);
         setError(null);
       } catch (err) {
-        console.error('Error fetching storyboards:', err);
+        console.error("Error fetching storyboards:", err);
 
         // Handle 404 errors (endpoint not found)
         if (err.response && err.response.status === 404) {
           setError(
-            'Storyboard feature is not available yet. Please check back later.'
+            "Storyboard feature is not available yet. Please check back later."
           );
         } else {
-          setError('Failed to load storyboards. Please try again.');
+          setError("Failed to load storyboards. Please try again.");
         }
 
         // Set empty array to prevent null reference errors
@@ -72,11 +72,11 @@ const StoryboardList = () => {
     fetchStoryboards();
   }, [universeId]);
 
-  const handleCreateStoryboard = async e => {
+  const handleCreateStoryboard = async (e) => {
     e.preventDefault();
 
     if (!newStoryboard.name.trim()) {
-      setError('Storyboard name is required');
+      setError("Storyboard name is required");
       return;
     }
 
@@ -86,7 +86,7 @@ const StoryboardList = () => {
       // Check if the API endpoints are available
       if (!endpoints.storyboards || !endpoints.storyboards.create) {
         setError(
-          'Storyboard creation is not available yet. Please check back later.'
+          "Storyboard creation is not available yet. Please check back later."
         );
         setLoading(false);
         return;
@@ -101,27 +101,27 @@ const StoryboardList = () => {
       setStoryboards([...storyboards, response]);
 
       // Reset form
-      setNewStoryboard({ name: '', description: '' });
+      setNewStoryboard({ name: "", description: "" });
       setShowCreateForm(false);
       setError(null);
     } catch (err) {
-      console.error('Error creating storyboard:', err);
+      console.error("Error creating storyboard:", err);
 
       // Handle 404 errors (endpoint not found)
       if (err.response && err.response.status === 404) {
         setError(
-          'Storyboard creation is not available yet. Please check back later.'
+          "Storyboard creation is not available yet. Please check back later."
         );
       } else {
-        setError('Failed to create storyboard. Please try again.');
+        setError("Failed to create storyboard. Please try again.");
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteStoryboard = async storyboardId => {
-    if (!window.confirm('Are you sure you want to delete this storyboard?')) {
+  const handleDeleteStoryboard = async (storyboardId) => {
+    if (!window.confirm("Are you sure you want to delete this storyboard?")) {
       return;
     }
 
@@ -130,18 +130,18 @@ const StoryboardList = () => {
       await api.delete(endpoints.storyboards.delete(universeId, storyboardId));
 
       // Remove deleted storyboard from the list
-      setStoryboards(storyboards.filter(sb => sb.id !== storyboardId));
+      setStoryboards(storyboards.filter((sb) => sb.id !== storyboardId));
     } catch (err) {
-      console.error('Error deleting storyboard:', err);
-      setError('Failed to delete storyboard. Please try again.');
+      console.error("Error deleting storyboard:", err);
+      setError("Failed to delete storyboard. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = e => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setNewStoryboard(prev => ({
+    setNewStoryboard((prev) => ({
       ...prev,
       [name]: value,
     }));
@@ -159,12 +159,12 @@ const StoryboardList = () => {
   return (
     <div className="storyboard-list-container">
       <div className="storyboard-list-header">
-        <h1>Storyboards for {universe?.name || 'Universe'}</h1>
+        <h1>Storyboards for {universe?.name || "Universe"}</h1>
         <Button
           onClick={() => setShowCreateForm(!showCreateForm)}
           variant="primary"
         >
-          {showCreateForm ? 'Cancel' : 'Create Storyboard'}
+          {showCreateForm ? "Cancel" : "Create Storyboard"}
         </Button>
       </div>
 
@@ -212,7 +212,7 @@ const StoryboardList = () => {
                 Cancel
               </Button>
               <Button type="submit" variant="primary" disabled={loading}>
-                {loading ? 'Creating...' : 'Create Storyboard'}
+                {loading ? "Creating..." : "Create Storyboard"}
               </Button>
             </div>
           </form>
@@ -232,14 +232,14 @@ const StoryboardList = () => {
         </div>
       ) : (
         <div className="storyboard-grid">
-          {storyboards.map(storyboard => (
+          {storyboards.map((storyboard) => (
             <div key={storyboard.id} className="storyboard-card">
               <h3>{storyboard.name}</h3>
-              <p>{storyboard.description || 'No description'}</p>
+              <p>{storyboard.description || "No description"}</p>
 
               <div className="storyboard-card-footer">
                 <span>
-                  Created:{' '}
+                  Created:{" "}
                   {new Date(storyboard.created_at).toLocaleDateString()}
                 </span>
               </div>

@@ -1,9 +1,9 @@
 import React, { useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
-import Logo from "./Logo";
 import { useModal } from "../../contexts/ModalContext";
 import { MODAL_TYPES } from "../../constants/modalTypes";
+import logoSvg from "../../assets/logo.svg";
 import "./Navigation.css";
 
 function Navigation() {
@@ -48,38 +48,30 @@ function Navigation() {
 
   return (
     <nav className="navigation">
-      <div className="navigation-brand">
-        <Link to="/" className="navigation-logo">
-          <Logo size={32} />
+      <div className="navigation-left">
+        <Link to="/" className="logo-link">
+          <img
+            src={logoSvg}
+            alt="Harmonic Universe Logo"
+            className="navigation-logo"
+            style={{ height: "40px", width: "auto" }}
+          />
         </Link>
       </div>
-      <div className="navigation-menu">
-        {isAuthenticated ? (
+      <div className="navigation-right">
+        {!isAuthenticated ? (
           <>
-            <Link to="/dashboard" className="navigation-link">
-              Dashboard
-            </Link>
-            <Link to="/profile" className="navigation-link">
-              Profile
-            </Link>
-          </>
-        ) : (
-          <>
-            <button
-              onClick={handleLoginClick}
-              className="navigation-button"
-              type="button"
-            >
+            <button onClick={handleLoginClick} className="nav-button">
               Login
             </button>
-            <button
-              onClick={handleSignupClick}
-              className="navigation-button"
-              type="button"
-            >
+            <button onClick={handleSignupClick} className="nav-button">
               Sign Up
             </button>
           </>
+        ) : (
+          <Link to="/dashboard" className="nav-button">
+            Dashboard
+          </Link>
         )}
       </div>
     </nav>

@@ -7,12 +7,12 @@ import { CACHE_CONFIG } from "../utils/cacheConfig";
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5001/api",
+  baseURL: "", // Remove base URL since it's included in endpoints
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
   },
-  withCredentials: true,
+  withCredentials: false, // Disable credentials for now
   timeout: 15000,
 });
 
@@ -23,14 +23,19 @@ api.interceptors.request.use(
     log("api", "Sending request", {
       method: config.method.toUpperCase(),
       url: config.url,
-      baseURL: config.baseURL,
-      fullURL: `${config.baseURL}${config.url}`,
+      data: config.data,
+      headers: config.headers,
     });
 
     // Add auth token if available
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    // Remove credentials from login request
+    if (config.url.includes("/auth/login")) {
+      config.withCredentials = false;
     }
 
     return config;
@@ -48,6 +53,8 @@ api.interceptors.response.use(
     log("api", "Response received", {
       status: response.status,
       url: response.config.url,
+      data: response.data,
+      headers: response.headers,
     });
 
     return response;
@@ -55,13 +62,16 @@ api.interceptors.response.use(
   async (error) => {
     const status = error.response?.status;
     const url = error.config?.url;
+    const data = error.response?.data;
 
     // Log error
     log("api", "Response error", {
       status,
       url,
       message: error.message,
-      response: error.response?.data,
+      response: data,
+      request: error.config?.data,
+      headers: error.response?.headers,
     });
 
     // Handle token refresh
@@ -86,9 +96,18 @@ api.interceptors.response.use(
 
     // Handle unauthorized access
     if (status === 401) {
-      localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-      localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-      window.location.href = "/#/?modal=login&authError=true";
+      // Only clear tokens if it's not a login attempt
+      if (!url.includes("/auth/login")) {
+        localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+        localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+      }
+
+      // Return a more descriptive error
+      return Promise.reject({
+        message: data?.message || "Invalid email or password",
+        status: 401,
+        data: data,
+      });
     }
 
     return Promise.reject(error);
@@ -131,18 +150,40 @@ export const apiClient = {
 
       const response = await api.get(endpoints.user.profile);
 
-      // Cache the response
+      // Log the response for debugging
+      log("api", "User profile response", { response: response?.data });
+
+      // Handle different response structures
+      let profileData;
       if (response?.data?.profile) {
-        cache.set(
-          CACHE_CONFIG.USER_PROFILE.key,
-          response.data.profile,
-          CACHE_CONFIG.USER_PROFILE.ttl
-        );
+        profileData = response.data.profile;
+      } else if (response?.data?.user) {
+        profileData = response.data.user;
+      } else if (response?.data) {
+        profileData = response.data;
+      } else {
+        throw new Error("Invalid response structure from user profile endpoint");
       }
 
-      return response;
+      // Cache the profile data
+      cache.set(
+        CACHE_CONFIG.USER_PROFILE.key,
+        profileData,
+        CACHE_CONFIG.USER_PROFILE.ttl
+      );
+
+      // Return the response in the expected format
+      return {
+        data: {
+          message: "User profile retrieved successfully",
+          profile: profileData,
+        },
+      };
     } catch (error) {
-      log("api", "Error fetching user profile", { error: error.message });
+      log("api", "Error fetching user profile", {
+        error: error.message,
+        response: error.response?.data
+      });
       throw error;
     }
   },

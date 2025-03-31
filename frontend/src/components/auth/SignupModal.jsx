@@ -10,7 +10,8 @@ import {
   validateUsername,
 } from "../../utils/validation";
 import { useNavigate } from "react-router-dom";
-import StableModalWrapper from "../modals/StableModalWrapper";
+import { ModalSystem } from "../modals";
+import { MODAL_CONFIG } from "../../utils/config";
 import "./Auth.css";
 
 const SignupModal = ({ onClose }) => {
@@ -34,7 +35,13 @@ const SignupModal = ({ onClose }) => {
         throw new Error(emailError || passwordError || usernameError);
       }
 
-      const resultAction = await dispatch(signup(values));
+      // Convert email to lowercase
+      const signupData = {
+        ...values,
+        email: values.email.toLowerCase(),
+      };
+
+      const resultAction = await dispatch(signup(signupData));
       if (signup.fulfilled.match(resultAction)) {
         log("auth", "Signup successful", { email: values.email });
         message.success("Signup successful! Please log in.");
@@ -52,7 +59,18 @@ const SignupModal = ({ onClose }) => {
   };
 
   return (
-    <StableModalWrapper title="Sign Up" onClose={onClose}>
+    <ModalSystem
+      isOpen={true}
+      onClose={onClose}
+      title="Sign Up"
+      size={MODAL_CONFIG.SIZES.MEDIUM}
+      type="form"
+      showCloseButton={true}
+      closeOnEscape={true}
+      closeOnBackdrop={true}
+      preventBodyScroll={true}
+      animation={MODAL_CONFIG.ANIMATIONS.FADE}
+    >
       <Form
         form={form}
         onFinish={handleSubmit}
@@ -123,7 +141,7 @@ const SignupModal = ({ onClose }) => {
           </Button>
         </div>
       </Form>
-    </StableModalWrapper>
+    </ModalSystem>
   );
 };
 

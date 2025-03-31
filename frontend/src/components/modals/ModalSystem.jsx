@@ -120,63 +120,25 @@ const ModalSystem = forwardRef(
       setIsDragging(false);
     }, []);
 
-    useEffect(() => {
-      if (isDragging) {
-        document.addEventListener("mousemove", handleMouseMove);
-        document.addEventListener("mouseup", handleMouseUp);
-      }
-      return () => {
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
-      };
-    }, [isDragging, handleMouseMove, handleMouseUp]);
-
     const handleClose = useCallback(() => {
-      if (preventAutoClose) {
-        const openedAt = openedAtRef.current;
-        const now = Date.now();
-        const timeOpen = now - openedAt;
-        console.log(`Modal has been open for ${timeOpen}ms`);
-      }
+      if (isClosing) return;
+      setIsClosing(true);
+      onClose();
+    }, [isClosing, onClose]);
 
-      if (!isClosing) {
-        setIsClosing(true);
-        setTimeout(() => {
-          if (onClose) {
-            onClose();
-          }
-          setIsClosing(false);
-        }, ANIMATION_DURATION);
-      }
-    }, [isClosing, onClose, preventAutoClose]);
-
+    // Handle ESC key press
     useEffect(() => {
-      if (!isOpen || !modalRef.current) return;
-
-      const modalElement = modalRef.current;
-      const focusableElements = modalElement.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-
-      const firstElement = focusableElements[0];
-      const lastElement = focusableElements[focusableElements.length - 1];
-
-      const handleTabKey = (e) => {
-        if (e.key !== "Tab") return;
-
-        if (e.shiftKey && document.activeElement === firstElement) {
-          e.preventDefault();
-          lastElement.focus();
-        } else if (!e.shiftKey && document.activeElement === lastElement) {
-          e.preventDefault();
-          firstElement.focus();
+      const handleEscape = (event) => {
+        if (event.key === "Escape" && isOpen && !isClosing && closeOnEscape) {
+          handleClose();
         }
       };
 
-      document.addEventListener("keydown", handleTabKey);
-      return () => document.removeEventListener("keydown", handleTabKey);
-    }, [isOpen]);
+      document.addEventListener("keydown", handleEscape);
+      return () => document.removeEventListener("keydown", handleEscape);
+    }, [isOpen, isClosing, handleClose, closeOnEscape]);
 
+    // Handle modal open/close state
     useEffect(() => {
       if (isOpen) {
         mountedRef.current = true;
@@ -232,34 +194,20 @@ const ModalSystem = forwardRef(
         return () => {
           clearTimeout(protectionTimeout);
         };
+      } else {
+        setIsClosing(false);
+        mountedRef.current = false;
+        modalStackCount--;
+        if (modalStackCount === 0) {
+          document.body.classList.remove("modal-open");
+          document.body.style.position = "";
+          document.body.style.top = "";
+          document.body.style.width = "";
+          document.body.style.overflow = "";
+          window.scrollTo(0, scrollY);
+        }
       }
-
-      return () => {
-        if (isOpen) {
-          modalStackCount--;
-          if (modalStackCount === 0) {
-            document.body.classList.remove("modal-open");
-            document.body.style.position = "";
-            document.body.style.top = "";
-            document.body.style.width = "";
-            document.body.style.overflow = "";
-            window.scrollTo(0, scrollY);
-          }
-        }
-      };
     }, [isOpen, initialFocusRef, dataModalType, dataModalId]);
-
-    // Handle ESC key press
-    useEffect(() => {
-      const handleEscape = (event) => {
-        if (event.key === "Escape" && isOpen && !isClosing && closeOnEscape) {
-          handleClose();
-        }
-      };
-
-      document.addEventListener("keydown", handleEscape);
-      return () => document.removeEventListener("keydown", handleEscape);
-    }, [isOpen, isClosing, handleClose, closeOnEscape]);
 
     if (!isOpen) return null;
 
@@ -272,7 +220,7 @@ const ModalSystem = forwardRef(
         aria-labelledby={titleId}
         aria-describedby={ariaDescribedBy || contentId}
         className={`modal-overlay ${isClosing ? "closing" : ""}`}
-        style={{ zIndex: MODAL_CONFIG.DEFAULTS.Z_INDEX + stackLevel }}
+        style={{ zIndex: 1000 + stackLevel }}
         tabIndex="-1"
         data-testid="modal"
         data-mounted-at={Date.now().toString()}

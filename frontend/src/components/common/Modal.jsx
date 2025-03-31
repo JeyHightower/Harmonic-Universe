@@ -9,15 +9,15 @@ const Modal = ({
   isOpen,
   onClose,
   children,
-  type = "default",
-  size = "medium",
-  position = "center",
-  animation = "fade",
-  draggable = false,
-  closeOnEscape = true,
-  closeOnBackdrop = true,
-  preventBodyScroll = true,
-  showCloseButton = true,
+  type = MODAL_CONFIG.TYPES.DEFAULT,
+  size = MODAL_CONFIG.SIZES.MEDIUM,
+  position = MODAL_CONFIG.POSITIONS.CENTER,
+  animation = MODAL_CONFIG.ANIMATIONS.FADE,
+  draggable = MODAL_CONFIG.DEFAULT_SETTINGS.draggable,
+  closeOnEscape = MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape,
+  closeOnBackdrop = MODAL_CONFIG.DEFAULT_SETTINGS.closeOnBackdrop,
+  preventBodyScroll = MODAL_CONFIG.DEFAULT_SETTINGS.preventBodyScroll,
+  showCloseButton = MODAL_CONFIG.DEFAULT_SETTINGS.showCloseButton,
   title,
   style = {},
 }) => {
@@ -147,19 +147,6 @@ Modal.propTypes = {
   showCloseButton: PropTypes.bool,
   title: PropTypes.string,
   style: PropTypes.object,
-};
-
-Modal.defaultProps = {
-  type: MODAL_CONFIG.TYPES.DEFAULT,
-  size: MODAL_CONFIG.SIZES.MEDIUM,
-  position: MODAL_CONFIG.POSITIONS.CENTER,
-  animation: MODAL_CONFIG.ANIMATIONS.FADE,
-  draggable: MODAL_CONFIG.DEFAULT_SETTINGS.draggable,
-  closeOnEscape: MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape,
-  closeOnBackdrop: MODAL_CONFIG.DEFAULT_SETTINGS.closeOnBackdrop,
-  preventBodyScroll: MODAL_CONFIG.DEFAULT_SETTINGS.preventBodyScroll,
-  showCloseButton: MODAL_CONFIG.DEFAULT_SETTINGS.showCloseButton,
-  style: {},
 };
 
 export default Modal;

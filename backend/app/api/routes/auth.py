@@ -67,7 +67,7 @@ def signup():
         # Create new user
         new_user = User(
             username=username,
-            email=email,
+            email=email.lower(),
         )
         new_user.set_password(password)
         
@@ -103,7 +103,7 @@ def login():
             return jsonify({'message': 'Email and password are required'}), 400
         
         # Find user by email
-        user = User.query.filter_by(email=data['email']).first()
+        user = User.query.filter_by(email=data['email'].lower()).first()
         
         if not user or not user.check_password(data['password']):
             return jsonify({'message': 'Invalid email or password'}), 401

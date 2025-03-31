@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { api, endpoints } from "../../utils/api";
+import { api, endpoints } from "@services/api";
 import Button from "../common/Button";
 import Icon from "../common/Icon";
 import Input from "../common/Input";

@@ -43,17 +43,17 @@ def create_app():
     CORS(app, resources={
         r"/api/*": {
             "origins": ["http://localhost:5173", "http://localhost:3000", "http://localhost:5001"],
-            "supports_credentials": True,
-            "allow_headers": ["Content-Type", "Authorization", "Accept"],
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "supports_credentials": False,  # Disable credentials for now
+            "allow_headers": ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
             "expose_headers": ["Content-Type", "Authorization"],
             "max_age": 600
         },
         r"/auth/*": {
             "origins": ["http://localhost:5173", "http://localhost:3000", "http://localhost:5001"],
-            "supports_credentials": True,
-            "allow_headers": ["Content-Type", "Authorization", "Accept"],
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "supports_credentials": False,  # Disable credentials for now
+            "allow_headers": ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
             "expose_headers": ["Content-Type", "Authorization"],
             "max_age": 600
         }

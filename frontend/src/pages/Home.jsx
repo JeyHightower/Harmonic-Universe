@@ -8,7 +8,6 @@ import {
   loginSuccess,
   demoLogin,
 } from "../store/slices/authSlice";
-import { openModal } from "../store/slices/modalSlice";
 import api from "../services/api";
 import { AUTH_CONFIG, IS_DEVELOPMENT } from "../utils/config";
 import Button from "../components/common/Button";
@@ -60,7 +59,7 @@ function Home() {
         if (IS_DEVELOPMENT) {
           console.debug("[Home] Fetching user profile with token");
         }
-        const userResponse = await api.user.getProfile();
+        const userResponse = await api.getUserProfile();
 
         if (IS_DEVELOPMENT) {
           console.debug("[Home] User profile response:", userResponse);
@@ -96,14 +95,6 @@ function Home() {
       });
       dispatch(loginFailure(error.message));
     }
-  };
-
-  const handleLogin = () => {
-    dispatch(openModal({ type: "LOGIN" }));
-  };
-
-  const handleSignup = () => {
-    dispatch(openModal({ type: "SIGNUP" }));
   };
 
   console.debug("Rendering Home component:", { isAuthenticated, loading });
@@ -143,12 +134,6 @@ function Home() {
         <div className="home-actions">
           <Button onClick={handleDemoLogin} variant="primary">
             Try Demo
-          </Button>
-          <Button onClick={handleLogin} variant="secondary">
-            Login
-          </Button>
-          <Button onClick={handleSignup} variant="secondary">
-            Sign Up
           </Button>
         </div>
       </div>

@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
-import Button from '../components/Button.jsx';
-import Spinner from '../components/Spinner.jsx';
-import { fetchUniverseById } from '../store/universeThunks.js';
-import '../styles/Storyboard.css';
-import { api, endpoints } from '../utils/api.js';
+import React, { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useParams } from "react-router-dom";
+import Button from "../components/Button.jsx";
+import Spinner from "../components/Spinner.jsx";
+import { fetchUniverseById } from "../store/universeThunks.js";
+import "../styles/Storyboard.css";
+import { api, endpoints } from "@services/api";
 
 const StoryboardDetail = () => {
   const { universeId, storyboardId } = useParams();
@@ -20,7 +20,7 @@ const StoryboardDetail = () => {
   const [zoom, setZoom] = useState(1);
   const [selectedPoint, setSelectedPoint] = useState(null);
 
-  const universe = useSelector(state => state.universe.currentUniverse);
+  const universe = useSelector((state) => state.universe.currentUniverse);
 
   // Fetch universe if not already loaded
   useEffect(() => {
@@ -37,9 +37,9 @@ const StoryboardDetail = () => {
 
         // Check if the API endpoints are available
         if (!endpoints.storyboards) {
-          console.error('Storyboard endpoints not available');
+          console.error("Storyboard endpoints not available");
           setError(
-            'Storyboard feature is not available yet. Please check back later.'
+            "Storyboard feature is not available yet. Please check back later."
           );
           setLoading(false);
           return;
@@ -59,15 +59,15 @@ const StoryboardDetail = () => {
 
         setError(null);
       } catch (err) {
-        console.error('Error fetching storyboard data:', err);
+        console.error("Error fetching storyboard data:", err);
 
         // Handle 404 errors (endpoint not found)
         if (err.response && err.response.status === 404) {
           setError(
-            'Storyboard feature is not available yet. Please check back later.'
+            "Storyboard feature is not available yet. Please check back later."
           );
         } else {
-          setError('Failed to load storyboard. Please try again.');
+          setError("Failed to load storyboard. Please try again.");
         }
       } finally {
         setLoading(false);
@@ -77,16 +77,16 @@ const StoryboardDetail = () => {
     fetchStoryboardData();
   }, [universeId, storyboardId]);
 
-  const handlePointClick = point => {
+  const handlePointClick = (point) => {
     setSelectedPoint(point);
   };
 
   const handleZoomIn = () => {
-    setZoom(prev => Math.min(prev + 0.1, 2));
+    setZoom((prev) => Math.min(prev + 0.1, 2));
   };
 
   const handleZoomOut = () => {
-    setZoom(prev => Math.max(prev - 0.1, 0.5));
+    setZoom((prev) => Math.max(prev - 0.1, 0.5));
   };
 
   if (loading && !storyboard) {
@@ -101,8 +101,8 @@ const StoryboardDetail = () => {
   return (
     <div className="storyboard-editor">
       <div className="storyboard-sidebar">
-        <h2>{storyboard?.name || 'Storyboard'}</h2>
-        <p>{storyboard?.description || 'No description'}</p>
+        <h2>{storyboard?.name || "Storyboard"}</h2>
+        <p>{storyboard?.description || "No description"}</p>
 
         <div className="sidebar-actions">
           <Button
@@ -132,7 +132,7 @@ const StoryboardDetail = () => {
         {selectedPoint && (
           <div className="point-details">
             <h3>{selectedPoint.title}</h3>
-            <p>{selectedPoint.content || 'No content'}</p>
+            <p>{selectedPoint.content || "No content"}</p>
           </div>
         )}
       </div>
@@ -142,14 +142,15 @@ const StoryboardDetail = () => {
         ref={canvasRef}
         style={{
           transform: `scale(${zoom})`,
-          transformOrigin: '0 0',
+          transformOrigin: "0 0",
         }}
       >
-        {storyPoints.map(point => (
+        {storyPoints.map((point) => (
           <div
             key={point.id}
-            className={`story-point ${selectedPoint?.id === point.id ? 'selected' : ''
-              }`}
+            className={`story-point ${
+              selectedPoint?.id === point.id ? "selected" : ""
+            }`}
             style={{
               left: `${point.position_x}px`,
               top: `${point.position_y}px`,
