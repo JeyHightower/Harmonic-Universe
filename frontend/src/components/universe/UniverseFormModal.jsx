@@ -20,9 +20,6 @@ const UniverseFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    image_url: "",
-    theme: "",
-    genre: "",
     is_public: false,
   });
 
@@ -35,9 +32,6 @@ const UniverseFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
       setFormData({
         name: initialData.name || "",
         description: initialData.description || "",
-        image_url: initialData.image_url || "",
-        theme: initialData.theme || "",
-        genre: initialData.genre || "",
         is_public: initialData.is_public || false,
       });
     }
@@ -56,21 +50,8 @@ const UniverseFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
       newErrors.description = "Description must be less than 500 characters";
     }
 
-    if (formData.image_url && !isValidUrl(formData.image_url)) {
-      newErrors.image_url = "Please enter a valid URL";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  const isValidUrl = (string) => {
-    try {
-      new URL(string);
-      return true;
-    } catch (_) {
-      return false;
-    }
   };
 
   const handleChange = (e) => {
@@ -173,8 +154,12 @@ const UniverseFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
       onClose={onClose}
       title={isEditing ? "Edit Universe" : "Create Universe"}
       className="universe-form-modal"
+      size="small"
     >
-      <form onSubmit={handleSubmit} className="universe-form">
+      <form
+        onSubmit={handleSubmit}
+        className="universe-form universe-form-compact"
+      >
         <Input
           label="Universe Name"
           name="name"
@@ -183,6 +168,7 @@ const UniverseFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
           onChange={handleChange}
           error={errors.name}
           required
+          className="compact-input"
         />
 
         <Input
@@ -192,35 +178,9 @@ const UniverseFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
           value={formData.description}
           onChange={handleChange}
           error={errors.description}
-          rows={4}
+          rows={2}
+          className="compact-input"
         />
-
-        <Input
-          label="Image URL"
-          name="image_url"
-          type="url"
-          value={formData.image_url}
-          onChange={handleChange}
-          error={errors.image_url}
-        />
-
-        <div className="form-row">
-          <Input
-            label="Theme"
-            name="theme"
-            type="text"
-            value={formData.theme}
-            onChange={handleChange}
-          />
-
-          <Input
-            label="Genre"
-            name="genre"
-            type="text"
-            value={formData.genre}
-            onChange={handleChange}
-          />
-        </div>
 
         <div className="checkbox-field">
           <input
@@ -253,15 +213,12 @@ UniverseFormModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onSuccess: PropTypes.func,
-  initialData: PropTypes.shape({
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    name: PropTypes.string,
-    description: PropTypes.string,
-    image_url: PropTypes.string,
-    theme: PropTypes.string,
-    genre: PropTypes.string,
-    is_public: PropTypes.bool,
-  }),
+  initialData: PropTypes.object,
+};
+
+UniverseFormModal.defaultProps = {
+  onSuccess: null,
+  initialData: null,
 };
 
 export default UniverseFormModal;

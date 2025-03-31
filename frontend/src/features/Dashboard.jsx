@@ -206,7 +206,40 @@ const Dashboard = () => {
     );
   }
 
-  // Render error state
+  // Skip error state and show empty state for new users
+  if (error && !universes?.length) {
+    return (
+      <div className="dashboard-container">
+        <div className="empty-state">
+          <Typography variant="h4" gutterBottom>
+            No Universes Found
+          </Typography>
+          <Typography variant="body1" paragraph>
+            You haven't created any universes yet. Create your first universe to
+            start your journey into harmonizing music and physics!
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            size="large"
+            onClick={handleCreateClick}
+            startIcon={<AddIcon />}
+          >
+            Create Your First Universe
+          </Button>
+        </div>
+        {isCreateModalOpen && (
+          <UniverseFormModal
+            isOpen={isCreateModalOpen}
+            onClose={() => setIsCreateModalOpen(false)}
+            onSuccess={handleCreateSuccess}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Show actual error state for other errors
   if (error) {
     return (
       <div className="dashboard-container">
@@ -215,15 +248,39 @@ const Dashboard = () => {
             Error loading universes:{" "}
             {typeof error === "object" ? JSON.stringify(error) : error}
           </Alert>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={loadUniverses}
-            startIcon={<RefreshIcon />}
+          <div
+            style={{
+              marginTop: "20px",
+              display: "flex",
+              gap: "10px",
+              justifyContent: "center",
+            }}
           >
-            Retry
-          </Button>
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={loadUniverses}
+              startIcon={<RefreshIcon />}
+            >
+              Retry
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleCreateClick}
+              startIcon={<AddIcon />}
+            >
+              Create Your First Universe
+            </Button>
+          </div>
         </div>
+        {isCreateModalOpen && (
+          <UniverseFormModal
+            isOpen={isCreateModalOpen}
+            onClose={() => setIsCreateModalOpen(false)}
+            onSuccess={handleCreateSuccess}
+          />
+        )}
       </div>
     );
   }

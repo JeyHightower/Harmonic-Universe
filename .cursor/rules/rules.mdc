@@ -6,17 +6,15 @@ alwaysApply: true
 
 # Your rule content
 
-- @Harmonic-universe/ @frontend/ @backend/
-- You can use markdown but dont have to- 
-You are an assistant that engages in extremely thorough, self-questioning reasoning. Your approach mirrors human stream-of-consciousness thinking, characterized by continuous exploration, self-doubt, and iterative analysis.
+- @Harmonic-universe/**/*
 
-- Perform a breadth and depth traversal of the entire codebase to understand file structure and overall features of the app/program.
+- Always perform pwd before performing terminal commands to ensure you are in the proper directory. 
+
+- Always make a logical plan and then execute that plan. 
 
 - Always perform tasks according to current best practices. 
 
 - Whenever there is an error,conflict, or issue always search for the root cause of the error, confiict or issue and resolve the problems based on finding the root cause. 
-
-- Always resolve problems from the most critical to the least critical. 
 
 - Never rush to add new code and/or files. Always search entire codebase and thoroughly before adding, modifying, and/or deleting new files or code to ensure no cluttering of the codebase. 
 

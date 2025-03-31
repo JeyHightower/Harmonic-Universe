@@ -239,11 +239,17 @@ class Scene(BaseModel):
             # Fail gracefully if counts can't be retrieved
             print(f"Error getting counts for scene {self.id}: {str(e)}")
         
+        # Safely handle attributes that might not exist in the database schema yet
+        try:
+            summary = self.summary
+        except Exception:
+            summary = None
+            
         return {
             'id': self.id,
             'name': self.name,
             'description': self.description,
-            'summary': self.summary,
+            'summary': summary,
             'content': self.content,
             'notes': self.notes_text,  # Map notes_text back to notes for API consistency
             'location': self.location,
