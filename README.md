@@ -1,13 +1,45 @@
 # Harmonic Universe
 
-A full-stack application for creating and managing harmonic universes.
+A full-stack application for creating and managing interactive harmonic universes. Create scenes, characters, and notes in your universe with rich editing features and physics-based sound generation.
+
+## Features
+
+- **Universe Management**: Create and manage multiple interactive universes
+- **Scene Editor**: Design scenes within your universes with detailed properties and relationships
+- **Character System**: Add characters to your universe and assign them to specific scenes
+- **Note Taking**: Create notes associated with universes, scenes, or characters
+- **Physics-Based Sound**: Generate sounds using physics principles within your universe
+- **Interactive Dashboard**: Visualize and manage your universe content from a central hub
+- **Demo User Login**: Quick access to try out the application without registration
+- **Responsive Design**: Seamless experience across desktop and mobile devices
+
+## Tech Stack
+
+### Frontend
+
+- **React 18** with **Vite** for fast development and optimized builds
+- **Redux** and **Redux Toolkit** for state management
+- **React Router** for client-side routing
+- **Ant Design** and **Material UI** for UI components
+- **Axios** for API requests
+- **Three.js** for 3D visualizations
+- **Tone.js** for audio generation
+
+### Backend
+
+- **Flask** web framework
+- **SQLAlchemy ORM** for database operations
+- **Flask-JWT-Extended** for authentication
+- **PostgreSQL** for production and **SQLite** for development
+- **Flask-Migrate** for database migrations
+- **Flask-SocketIO** for real-time communication
 
 ## Prerequisites
 
-- Node.js (v14 or higher)
-- Python (v3.8 or higher)
-- pip (Python package manager)
+- Node.js (v16 or higher)
+- Python (v3.11 or higher recommended, minimum v3.8)
 - npm (Node package manager)
+- pip (Python package manager)
 
 ## Installation
 
@@ -18,170 +50,142 @@ git clone https://github.com/JeyHightower/Harmonic-Universe.git
 cd Harmonic-Universe
 ```
 
-2. Install all dependencies:
+2. Install frontend dependencies:
 
 ```bash
-npm run install-all
+cd frontend
+npm install
+cd ..
 ```
 
-This will install:
+3. Install backend dependencies:
 
-- Frontend dependencies (npm packages)
-- Backend dependencies (Python packages)
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
+pip install -r requirements.txt
+cd ..
+```
+
+4. Set up environment variables:
+
+Create a `.env` file in the backend directory with the following variables:
+
+```env
+FLASK_APP=app.py
+FLASK_ENV=development
+SECRET_KEY=your-secret-key
+JWT_SECRET_KEY=your-jwt-secret-key
+DATABASE_URL=sqlite:///app.db
+CORS_ORIGINS=http://localhost:5173
+```
+
+Create a `.env` file in the frontend directory with:
+
+```env
+VITE_API_BASE_URL=http://localhost:5001
+```
 
 ## Development
 
 To run both frontend and backend servers in development mode:
 
-```bash
-npm start
-```
-
-This will start:
-
-- Frontend development server (Vite)
-- Backend Flask server on port 5001
-
-## Production
-
-To run the application in production mode:
+### Backend:
 
 ```bash
-npm run start:prod
-```
-
-This will:
-
-1. Build the frontend
-2. Start the frontend preview server
-3. Start the backend with Gunicorn
-
-## Available Commands
-
-- `npm start` - Run both servers in development mode
-- `npm run start:prod` - Run both servers in production mode
-- `npm run backend` - Run only the backend server
-- `npm run frontend` - Run only the frontend development server
-- `npm run build` - Build the frontend for production
-- `npm test` - Run backend tests
-
-## Environment Variables
-
-Create a `.env` file in the root directory with the following variables:
-
-```env
-FLASK_APP=backend/app
-FLASK_ENV=development
-SECRET_KEY=your-secret-key
-JWT_SECRET_KEY=your-jwt-secret-key
-```
-
-## Project Structure
-
-```
-harmonic-universe/
-├── frontend/           # React frontend
-│   ├── src/           # Source files
-│   ├── public/        # Static files
-│   └── package.json   # Frontend dependencies
-├── backend/           # Flask backend
-│   ├── app/          # Application code
-│   └── requirements.txt # Backend dependencies
-└── package.json      # Root package.json
-```
-
-## Project Structure
-
-- `frontend/`: React frontend application
-- `backend/`: Python Flask API
-- `docs/`: Project documentation
-- `scripts/`: Utility scripts
-
-## Setup and Running
-
-### Prerequisites
-
-- Node.js (v18+)
-- npm (v8+)
-- Python 3.8+
-
-### Starting the Application
-
-1. **Clone the repository**
-
-```bash
-git clone https://github.com/JeyHightower/Harmonic-Universe.git
-cd Harmonic-Universe
-```
-
-2. **Install dependencies**
-
-```bash
-# Install frontend dependencies
-cd frontend
-npm install
-cd ..
-
-# Install backend dependencies
 cd backend
-pip install -r requirements.txt
-cd ..
+source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
+python app.py
 ```
 
-3. **Run the application**
+The backend will run on http://localhost:5001
 
-```bash
-# Start both frontend and backend
-npm start
-```
-
-This will:
-
-- Start the backend Flask API on port 5001
-- Start the frontend development server on port 5175
-
-4. **Access the application**
-
-- Frontend: http://localhost:5175
-- Backend API: http://localhost:5001
-
-## Development
-
-### Frontend Development
+### Frontend:
 
 ```bash
 cd frontend
 npm run dev
 ```
 
-### Backend Development
+The frontend will run on http://localhost:5173
 
-```bash
-cd backend
-python app.py
+## API Documentation
+
+The application provides a RESTful API for interacting with universes, scenes, characters, and notes. For detailed API documentation, see:
+
+- [API Documentation](docs/api/README.md) - Primary API reference
+- [Physics API](docs/frontend/api/PHYSICS_API.md) - Physics-related API endpoints
+- [WebSocket Protocol](docs/frontend/api/WEBSOCKET_PROTOCOL.md) - Real-time communication
+
+## Production Deployment
+
+The application is configured for deployment on Render.com using the provided scripts:
+
+- `render-build.sh`: Builds both frontend and backend for production
+- `render-start.sh`: Starts the production application
+- `render.yaml`: Blueprint configuration for automated deployment
+
+### Deployment Options:
+
+#### 1. Blueprint Deployment (Recommended)
+
+Use Render.com's Blueprint feature to deploy the entire stack with a single click:
+
+1. Connect your repository to Render
+2. Select "Blueprint" deployment
+3. Let Render create all necessary services based on the `render.yaml` configuration
+
+#### 2. Manual Deployment
+
+1. Push your code to a Git repository
+2. Create a new Web Service on Render
+3. Connect to your repository
+4. Set build command to `./render-build.sh`
+5. Set start command to `./render-start.sh`
+6. Add necessary environment variables (see `docs/RENDER_DEPLOYMENT.md`)
+
+See `docs/RENDER_DEPLOYMENT.md` for more detailed deployment instructions.
+
+## Project Structure
+
+```
+harmonic-universe/
+├── frontend/           # React frontend
+│   ├── src/            # Source files
+│   │   ├── components/ # React components
+│   │   ├── features/   # Feature components
+│   │   ├── pages/      # Page components
+│   │   ├── store/      # Redux store
+│   │   ├── services/   # API services
+│   │   └── utils/      # Utility functions
+│   ├── public/         # Static files
+│   └── package.json    # Frontend dependencies
+├── backend/            # Flask backend
+│   ├── app/            # Application code
+│   │   ├── api/        # API routes
+│   │   ├── models/     # Database models
+│   │   └── utils/      # Utility functions
+│   ├── migrations/     # Database migrations
+│   └── requirements.txt # Backend dependencies
+├── docs/               # Documentation
+├── render-build.sh     # Render.com build script
+├── render-start.sh     # Render.com start script
+├── render.yaml         # Render.com blueprint configuration
+└── README.md           # Project documentation
 ```
 
-## Testing
+## Troubleshooting
 
-### Frontend Tests
-
-```bash
-cd frontend
-npm test
-```
-
-### Backend Tests
-
-```bash
-cd backend
-pytest
-```
+For common issues and their solutions, see `docs/FIXES-README.md`.
 
 ## Contributing
 
-1. Create a feature branch
-2. Make your changes
-3. Submit a pull request
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 

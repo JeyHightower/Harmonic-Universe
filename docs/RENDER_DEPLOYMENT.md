@@ -14,12 +14,12 @@ Before you begin, ensure you have:
 
 There are two main methods to deploy this application:
 
-1. **Automatic Deployment** - Using the `render.yaml` configuration file
+1. **Blueprint Deployment** - Using the `render.yaml` configuration file
 2. **Manual Deployment** - Setting up services individually through the Render dashboard
 
-## Option 1: Automatic Deployment (Recommended)
+## Option 1: Blueprint Deployment (Recommended)
 
-Render's Blueprint feature allows you to deploy directly from the `render.yaml` configuration file.
+Render's Blueprint feature allows you to deploy the entire stack with a single click.
 
 ### Steps:
 
@@ -55,114 +55,111 @@ The deployment will create:
 3. Configure your service:
    - Name: `harmonic-universe`
    - Runtime: `Python 3`
-   - Build Command:
-     ```bash
-     ./render-deploy.sh
-     ```
-   - Start Command:
-     ```bash
-     cd backend && gunicorn --workers=2 --timeout=120 wsgi:app
-     ```
+   - Build Command: `./render-build.sh`
+   - Start Command: `./render-start.sh`
 4. Add the following environment variables:
-   - `NODE_VERSION`: 18.17.0
-   - `PYTHON_VERSION`: 3.9.6
+   - `NODE_VERSION`: 16.x (or your preferred Node.js version)
+   - `PYTHON_VERSION`: 3.11.0 (or your preferred Python version)
    - `FLASK_ENV`: production
-   - `FLASK_APP`: app
+   - `FLASK_APP`: app.py
    - `SECRET_KEY`: [Generate a secure random string]
+   - `JWT_SECRET_KEY`: [Generate a secure random string]
    - `DATABASE_URL`: [Use the connection URL from your database setup]
-   - `PYTHONPATH`: /opt/render/project/src:/opt/render/project/src/backend
-   - `REACT_APP_BASE_URL`: Your application URL (e.g., https://harmonic-universe.onrender.com)
+   - `VITE_API_BASE_URL`: Your application URL (e.g., https://harmonic-universe.onrender.com)
 5. Click "Create Web Service"
+
+## Understanding the Deployment Scripts
+
+The repository contains two key scripts for deployment:
+
+### render-build.sh
+
+This script handles the build process:
+
+- Installs frontend dependencies and builds the React application
+- Sets up the backend environment and installs dependencies
+- Runs database migrations
+- Copies the frontend build to the backend static directory
+
+### render-start.sh
+
+This script starts the application in production:
+
+- Activates the virtual environment
+- Ensures any pending migrations are applied
+- Starts the application with Gunicorn, a production-ready WSGI server
+
+## Environment Variables
+
+The following environment variables are required for a successful deployment:
+
+| Variable            | Description                   | Example                                       |
+| ------------------- | ----------------------------- | --------------------------------------------- |
+| `NODE_VERSION`      | Version of Node.js            | 16.x                                          |
+| `PYTHON_VERSION`    | Version of Python             | 3.11.0                                        |
+| `FLASK_ENV`         | Flask environment             | production                                    |
+| `FLASK_APP`         | Flask application entry point | app.py                                        |
+| `SECRET_KEY`        | Secret key for Flask          | [random string]                               |
+| `JWT_SECRET_KEY`    | Key for JWT token generation  | [random string]                               |
+| `DATABASE_URL`      | Database connection string    | postgresql://user:password@host:port/database |
+| `VITE_API_BASE_URL` | API URL for frontend          | https://your-app.onrender.com                 |
 
 ## Monitoring and Troubleshooting
 
-After deployment, you can monitor your application in the Render dashboard.
+After deployment, you can monitor your application in the Render dashboard:
+
+1. View application logs in real-time
+2. Check CPU and memory usage
+3. See recent deploys and their status
 
 ### Common Issues:
 
 1. **Build Failures**:
 
    - Check the build logs for errors
-   - Ensure all dependencies are correctly specified in requirements.txt and package.json
-   - Verify that the render-deploy.sh script has the correct permissions
+   - Ensure all dependencies are correctly specified
+   - Verify that the render-build.sh script has execute permissions (`git update-index --chmod=+x render-build.sh`)
 
-2. **Runtime Errors**:
+2. **Database Connection Issues**:
 
-   - Check the application logs in the Render dashboard
-   - Common issues include database connection problems or environment variable misconfigurations
+   - Verify that the `DATABASE_URL` is correctly formatted
+   - Check that the database server is accessible from the web service
+   - Ensure all required database extensions are enabled
 
 3. **Frontend Not Loading**:
-   - Verify that the build process completed successfully
-   - Check that static files were properly copied to the static directory
+   - Check that the frontend build was successful
+   - Verify that `VITE_API_BASE_URL` is set correctly
+   - Inspect the browser console for any JavaScript errors
 
-## Environment Variables
+## Database Migrations
 
-The following environment variables are required:
+Database migrations are run automatically during the build process. If you need to run migrations manually:
 
-- `NODE_VERSION`: Version of Node.js (e.g., 18.17.0)
-- `PYTHON_VERSION`: Version of Python (e.g., 3.9.6)
-- `FLASK_ENV`: The Flask environment (production)
-- `FLASK_APP`: The Flask application entry point (app)
-- `SECRET_KEY`: A secure random string for session encryption
-- `DATABASE_URL`: PostgreSQL connection string
-- `PYTHONPATH`: Path to find Python modules
-- `REACT_APP_BASE_URL`: The URL of your deployed application
-
-## Manual Deployment Commands
-
-If you need to manually deploy components, you can use the following commands:
-
-### Backend:
-
-```bash
-cd backend
-python -m pip install -r requirements.txt
-python -m pip install gunicorn
-gunicorn --workers=2 --timeout=120 wsgi:app
-```
-
-### Frontend:
-
-```bash
-cd frontend
-npm install
-npm run build  # Note: The frontend uses ES modules, not CommonJS
-```
-
-### Important Note About Node.js Scripts
-
-This project uses ES modules for Node.js scripts (package.json has `"type": "module"`). Any Node.js scripts should use ES module syntax:
-
-```javascript
-// Correct (ES modules):
-import { execSync } from 'child_process';
-import path from 'path';
-import fs from 'fs';
-
-// Incorrect (CommonJS):
-const { execSync } = require('child_process');
-const path = require('path');
-const fs = require('fs');
-```
-
-If you need to use `__dirname` or `__filename` in ES modules, use this pattern:
-
-```javascript
-import { fileURLToPath } from 'url';
-import path from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-```
+1. SSH into your Render instance (if available)
+2. Navigate to the backend directory
+3. Run: `python -m flask db upgrade`
 
 ## Continuous Deployment
 
-Render automatically deploys when changes are pushed to your repository's main branch. You can configure this behavior in the service settings.
+Render automatically deploys when changes are pushed to your repository's main branch. You can configure this behavior in the service settings to:
 
-## Support
+1. Enable auto-deploy for specific branches
+2. Disable auto-deploy and manually trigger deploys
+3. Set up pull request previews
 
-For support with deployment issues:
+## Scaling Your Application
 
-- Check the Render logs for detailed error messages
-- Consult the [Render documentation](https://render.com/docs)
-- Reach out to the Harmonic Universe development team
+As your application grows, you may need to scale it:
+
+1. Upgrade to a higher tier plan for more resources
+2. Configure auto-scaling if available
+3. Set up a Redis cache to improve performance
+
+## Support and Resources
+
+- [Render Documentation](https://render.com/docs)
+- [Render Community Forum](https://community.render.com/)
+- [Flask Deployment Guide](https://flask.palletsprojects.com/en/2.3.x/deploying/)
+- [React Deployment Best Practices](https://vitejs.dev/guide/build.html)
+
+For project-specific support, please contact the Harmonic Universe development team.

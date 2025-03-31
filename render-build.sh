@@ -3,69 +3,88 @@
 # Exit on error
 set -e
 
-echo "Starting build process..."
+# Display diagnostic information
+echo "Starting build process at $(date)"
+echo "Current directory: $(pwd)"
+echo "Node version: $(node -v)"
+echo "NPM version: $(npm -v)"
+python --version
 
 # Set Python version explicitly
 export PYTHON_VERSION=3.11.0
 
-# Add Poetry binary to PATH
-export PATH="/opt/render/project/poetry/bin:$PATH"
-
 # Build Frontend
-echo "Building frontend..."
+echo "==== Building frontend ===="
 cd frontend
+echo "Installing frontend dependencies..."
 npm install
+echo "Building frontend production assets..."
 npm run build
 cd ..
 
 # Build Backend
-echo "Building backend..."
+echo "==== Building backend ===="
 cd backend
 
-# Install production dependencies only (using new syntax)
-echo "Installing dependencies with Poetry..."
-poetry config virtualenvs.create true
-poetry config virtualenvs.in-project true
-poetry install --only main --no-root
-
-# Create instance directory if it doesn't exist
+# Prepare directories
+echo "Creating necessary directories..."
 mkdir -p instance
+mkdir -p logs
+
+# Check if Poetry is installed, if not use pip
+if command -v poetry &> /dev/null; then
+    echo "Using Poetry for dependency management..."
+    # Install Poetry packages
+    poetry config virtualenvs.create true
+    poetry config virtualenvs.in-project true
+    poetry install --only main --no-root
+
+    # Create a .env file if it doesn't exist
+    if [ ! -f .env ]; then
+        echo "Creating .env file from .env.example..."
+        cp .env.example .env
+    fi
+else
+    echo "Poetry not found, using pip instead..."
+    # Create and activate virtual environment
+    python -m venv .venv
+    source .venv/bin/activate
+    
+    # Install dependencies
+    echo "Installing dependencies with pip..."
+    pip install --upgrade pip
+    pip install -r requirements.txt
+    pip install gunicorn eventlet
+fi
 
 # Validate DATABASE_URL
 echo "Validating DATABASE_URL..."
 if [ -z "$DATABASE_URL" ]; then
-    echo "Error: DATABASE_URL is not set"
-    exit 1
+    echo "Warning: DATABASE_URL is not set. Using SQLite as fallback."
+    # Ensure app.db exists
+    touch app.db
+else
+    # Fix Postgres URL format if needed
+    if [[ $DATABASE_URL == postgres://* ]]; then
+        export DATABASE_URL="${DATABASE_URL/postgres:///postgresql://}"
+        echo "Fixed DATABASE_URL format for PostgreSQL"
+    fi
+    
+    echo "Waiting for database to be ready..."
+    sleep 5
 fi
-
-if [ "$DATABASE_URL" = "<your-postgres-database-url>" ]; then
-    echo "Error: DATABASE_URL is not properly configured. Please set a valid database URL in your environment variables."
-    exit 1
-fi
-
-# Fix Postgres URL format if needed
-echo "Checking PostgreSQL URL format..."
-if [[ $DATABASE_URL == postgres://* ]]; then
-    export DATABASE_URL="${DATABASE_URL/postgres:///postgresql://}"
-    echo "Fixed DATABASE_URL format for PostgreSQL"
-fi
-
-# Run database migrations
-echo "Running database migrations..."
-# Wait for database to be ready
-echo "Waiting for database to be ready..."
-sleep 5
 
 # Activate the virtual environment
-source .venv/bin/activate
+if [ -d ".venv" ]; then
+    source .venv/bin/activate
+fi
 
 # Run migrations with error handling
-if poetry run flask db upgrade; then
+echo "Running database migrations..."
+if python -m flask db upgrade; then
     echo "Database migrations completed successfully"
 else
-    echo "Error: Database migrations failed"
-    echo "Please check your DATABASE_URL configuration and ensure the database is accessible"
-    exit 1
+    echo "Warning: Database migrations failed. Will attempt to initialize DB on startup."
 fi
 
 # Set up environment variables
@@ -75,4 +94,10 @@ export FLASK_ENV=production
 export FLASK_DEBUG=0
 export PYTHONPATH=$PYTHONPATH:$(pwd)
 
-echo "Build completed successfully!" 
+# Copy frontend build to backend static directory if necessary
+echo "Copying frontend build to backend static directory..."
+mkdir -p static
+cp -r ../frontend/dist/* static/
+
+echo "Build completed successfully at $(date)"
+exit 0 

@@ -10,11 +10,13 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: NODE_VERSION
-        value: 18.17.0
+        value: 16.20.0
       - key: FLASK_ENV
         value: production
       - key: FLASK_DEBUG
         value: 0
+      - key: VITE_API_BASE_URL
+        value: https://harmonic-universe.onrender.com
       - fromGroup: harmonic-universe-env
     healthCheckPath: /api/health
     autoDeploy: true
@@ -36,4 +38,4 @@ envVarGroups:
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: CORS_ORIGINS
-        value: https://harmonic-universe.onrender.com 
+        value: https://harmonic-universe.onrender.com

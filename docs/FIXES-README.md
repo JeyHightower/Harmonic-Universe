@@ -1,110 +1,113 @@
-# Harmonic Universe - Fix Scripts
+# Harmonic Universe - Fix Scripts & Deployment Utilities
 
-This repository contains several scripts to fix common issues with the Harmonic Universe application.
+This document contains information about scripts to fix common issues with the Harmonic Universe application and deploy it successfully.
 
-## Quick Start
+## Deployment Scripts
 
-For the fastest fix of all issues, run:
+### Render.com Deployment
 
-```bash
-./fix-everything.sh
-```
+The project includes two main scripts for deployment on Render.com:
 
-This will run all fix scripts in sequence with appropriate error handling.
+#### render-build.sh
 
-## Individual Fix Scripts
+Handles the build process:
 
-### 1. Missing npm start script
+- Installs frontend dependencies and builds the React application with Vite
+- Sets up the backend environment (with Poetry if available, otherwise pip)
+- Validates the database connection and runs migrations
+- Copies the frontend build to the backend static directory
 
-```bash
-./fix-start-script.sh
-```
+#### render-start.sh
 
-Fixes the `npm start` command in the frontend directory by adding or updating the start script in package.json.
+Starts the application in production:
 
-### 2. ENOTEMPTY npm errors
+- Activates the virtual environment
+- Ensures any pending migrations are applied
+- Starts the application with Gunicorn (or falls back to Flask development server)
 
-```bash
-./fix-enotempty.sh
-```
+### Using the Deployment Scripts
 
-Resolves the common ENOTEMPTY errors during npm installations by:
-
-- Killing any hanging npm processes
-- Cleaning up node_modules directories
-- Creating optimal .npmrc configuration
-- Clearing npm cache
-
-### 3. Vite proxy errors
-
-```bash
-./fix-proxy-errors.sh
-```
-
-Resolves the constant proxy error messages when running Vite by:
-
-- Creating an improved Vite configuration
-- Adding middleware to handle API health endpoint
-- Implementing better error handling for proxy connections
-
-### 4. Rollup Linux GNU errors
-
-```bash
-./fix-rollup-linux-gnu.sh
-```
-
-Fixes issues with Rollup on Linux GNU systems by:
-
-- Setting environment variables for native modules
-- Creating configuration to use pure JS implementations
-
-### 5. Comprehensive fixes
-
-```bash
-./fix-all-fixed.sh
-```
-
-A complete fix script that addresses multiple issues:
-
-- Frontend build configuration
-- Backend setup
-- Deployment scripts creation
-
-## Development Scripts
-
-### Start the development environment
-
-```bash
-./start-dev.sh
-```
-
-Starts the frontend with mock API responses for the health endpoint to prevent proxy errors, and attempts to start the backend if available.
-
-## Deployment
-
-### Render.com deployment
+In your Render.com web service configuration:
 
 ```
-Build command: chmod +x render-build-command.sh && ./render-build-command.sh
-Start command: cd backend && gunicorn --workers=2 --timeout=120 --log-level info wsgi:app
+Build command: ./render-build.sh
+Start command: ./render-start.sh
 ```
 
 ## Troubleshooting
 
-If you still encounter issues:
+### Common Issues
 
-1. Try running the individual fix scripts in this order:
+#### Frontend Build Failures
 
-   - `./fix-enotempty.sh`
-   - `./fix-start-script.sh`
-   - `./fix-proxy-errors.sh`
-   - `./fix-rollup-linux-gnu.sh`
+If the frontend build fails:
 
-2. For npm installation issues:
+- Check for Node.js version compatibility (project uses Node 16+)
+- Clear node_modules and reinstall dependencies with `npm ci`
+- Verify all environment variables are correctly set
 
-   - Use yarn instead if available
-   - Try installing with `--no-optional --ignore-scripts --legacy-peer-deps`
+#### Backend Startup Issues
 
-3. For Vite/proxy issues:
-   - Make sure the backend is running on port 5000
-   - Use the mock API configuration in `start-dev.sh`
+If the backend fails to start:
+
+- Check the application logs in Render dashboard
+- Verify database connection using the DATABASE_URL
+- Ensure all required Python packages are installed
+
+#### Database Connection Problems
+
+- Validate the DATABASE_URL format
+- Check if the database server is accessible from the web service
+- Ensure all required database extensions are enabled
+
+### Development Setup Issues
+
+#### npm start errors
+
+If `npm start` fails in development:
+
+- Ensure you have separate terminals running for frontend and backend
+- Check that all environment variables in `.env` files are correctly set
+- Verify the Node.js version (16+ recommended)
+
+#### API Connection Issues
+
+If the frontend cannot connect to the backend:
+
+- Ensure the backend is running on the expected port (default: 5000)
+- Check the VITE_API_BASE_URL environment variable in the frontend
+- Verify the proxy settings in the Vite configuration
+
+## Manual Fixes
+
+If you encounter persistent issues:
+
+1. Clear dependencies and reinstall:
+
+   ```bash
+   rm -rf frontend/node_modules
+   rm -rf backend/.venv
+   npm --prefix frontend ci
+   cd backend && python -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
+   ```
+
+2. Regenerate the database (development only):
+
+   ```bash
+   cd backend
+   source .venv/bin/activate
+   flask db drop
+   flask db create
+   flask db migrate
+   flask db upgrade
+   ```
+
+3. Rebuild the frontend with detailed logging:
+   ```bash
+   cd frontend
+   npm run build -- --debug
+   ```
+
+## Additional Resources
+
+For more detailed deployment information, see the [RENDER_DEPLOYMENT.md](./RENDER_DEPLOYMENT.md) file.
