@@ -6,9 +6,10 @@ import {
   loginFailure,
   loginStart,
   loginSuccess,
+  demoLogin,
 } from "../store/slices/authSlice";
 import { openModal } from "../store/slices/modalSlice";
-import apiClient from "../services/api";
+import api from "../services/api";
 import { AUTH_CONFIG, IS_DEVELOPMENT } from "../utils/config";
 import Button from "../components/common/Button";
 import "../styles/Home.css";
@@ -37,37 +38,18 @@ function Home() {
 
   const handleDemoLogin = async () => {
     try {
-      console.debug("Starting demo login process");
+      console.debug("[Home] Starting demo login process");
       dispatch(loginStart());
 
       // Make demo login request
-      if (IS_DEVELOPMENT) {
-        console.debug(
-          "Making demo login request to:",
-          apiClient.defaults?.baseURL
-        );
-      }
-      const response = await apiClient.demoLogin();
+      const result = await dispatch(demoLogin());
 
       if (IS_DEVELOPMENT) {
-        console.debug("Demo login response:", response);
+        console.debug("[Home] Demo login result:", result);
       }
 
-      if (!response?.data?.token) {
-        throw new Error("Invalid response from demo login endpoint");
-      }
-
-      // Store the token and user data
-      const token = response.data.token;
-      localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, token);
-      localStorage.setItem(
-        AUTH_CONFIG.USER_KEY,
-        JSON.stringify(response.data.user)
-      );
-
-      if (IS_DEVELOPMENT) {
-        console.debug("Token stored:", token.substring(0, 10) + "...");
-        console.debug("User data stored:", response.data.user);
+      if (result.error) {
+        throw new Error(result.error);
       }
 
       // Wait a brief moment to ensure token is set
@@ -76,12 +58,12 @@ function Home() {
       // Fetch user info after successful login
       try {
         if (IS_DEVELOPMENT) {
-          console.debug("Fetching user profile with token");
+          console.debug("[Home] Fetching user profile with token");
         }
-        const userResponse = await apiClient.getUserProfile();
+        const userResponse = await api.user.getProfile();
 
         if (IS_DEVELOPMENT) {
-          console.debug("User profile response:", userResponse);
+          console.debug("[Home] User profile response:", userResponse);
         }
 
         if (!userResponse?.data?.message || !userResponse?.data?.profile) {
@@ -93,20 +75,20 @@ function Home() {
         dispatch(loginSuccess(userResponse.data.profile));
         navigate("/dashboard", { replace: true });
       } catch (error) {
-        console.error("Error fetching user profile:", error);
-        console.error("Error details:", {
+        console.error("[Home] Error fetching user profile:", error);
+        console.error("[Home] Error details:", {
           message: error.message,
           status: error.status,
           data: error.data,
         });
         // Don't throw here, as the login was successful
         // Instead, use the user data from the demo login response
-        dispatch(loginSuccess(response.data.user));
+        dispatch(loginSuccess(result.payload));
         navigate("/dashboard", { replace: true });
       }
     } catch (error) {
-      console.error("Demo login error:", error);
-      console.error("Error details:", {
+      console.error("[Home] Demo login error:", error);
+      console.error("[Home] Error details:", {
         message: error.message,
         status: error.status,
         data: error.data,

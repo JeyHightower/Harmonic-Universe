@@ -48,6 +48,14 @@ def create_app():
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "expose_headers": ["Content-Type", "Authorization"],
             "max_age": 600
+        },
+        r"/auth/*": {
+            "origins": ["http://localhost:5173", "http://localhost:3000", "http://localhost:5001"],
+            "supports_credentials": True,
+            "allow_headers": ["Content-Type", "Authorization", "Accept"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "expose_headers": ["Content-Type", "Authorization"],
+            "max_age": 600
         }
     })
     db.init_app(app)

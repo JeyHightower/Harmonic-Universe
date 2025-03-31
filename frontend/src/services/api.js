@@ -7,7 +7,7 @@ import { CACHE_CONFIG } from "../utils/cacheConfig";
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "http://localhost:5000",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5001/api",
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
@@ -67,7 +67,9 @@ api.interceptors.response.use(
     // Handle token refresh
     if (status === 401 && !url.includes("/auth/login")) {
       try {
-        const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+        const refreshToken = localStorage.getItem(
+          AUTH_CONFIG.REFRESH_TOKEN_KEY
+        );
         if (refreshToken) {
           const response = await api.post(endpoints.auth.refresh, {
             refresh_token: refreshToken,
@@ -98,6 +100,7 @@ export const apiClient = {
   // Auth methods
   login: (credentials) => api.post(endpoints.auth.login, credentials),
   register: (userData) => api.post(endpoints.auth.register, userData),
+  demoLogin: () => api.post(endpoints.auth.demoLogin),
   logout: () => {
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
     return api.post(

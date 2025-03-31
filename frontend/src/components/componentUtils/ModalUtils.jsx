@@ -1,11 +1,11 @@
 import React from "react";
 import { ModalSystem } from "../modals";
 import { MODAL_CONFIG, MODAL_TYPES } from "../../utils/config";
-
-// Import components at the top level
-import NetworkErrorModalContent from "./NetworkErrorModalContent";
-import LoginModal from "./LoginModal";
-import SignupModal from "./SignupModal";
+import AlertModal from "../modals/AlertModal";
+import ConfirmationModal from "../modals/ConfirmationModal";
+import FormModal from "../modals/FormModal";
+import LoginModal from "../auth/LoginModal";
+import SignupModal from "../auth/SignupModal";
 import HarmonyParametersModal from "../features/HarmonyParametersModal";
 
 /**

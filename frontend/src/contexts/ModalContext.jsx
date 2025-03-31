@@ -6,7 +6,7 @@ import React, {
   Suspense,
   useRef,
 } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { MODAL_TYPES } from "../constants/modalTypes";
 import { ensurePortalRoot } from "../utils/portalUtils";
 import {
@@ -23,6 +23,11 @@ import {
   selectModalType,
   selectModalProps,
   selectIsModalTransitioning,
+} from "../store/slices/modalSlice";
+import {
+  openModal,
+  closeModal,
+  updateModalProps,
 } from "../store/slices/modalSlice";
 
 // Create the context
@@ -79,6 +84,7 @@ const ModalProvider = ({ children }) => {
   const type = useSelector(selectModalType);
   const props = useSelector(selectModalProps);
   const isTransitioning = useSelector(selectIsModalTransitioning);
+  const dispatch = useDispatch();
 
   // Ensure portal root exists and store reference
   useEffect(() => {
@@ -95,6 +101,9 @@ const ModalProvider = ({ children }) => {
     modalType: type,
     modalProps: props,
     isTransitioning,
+    openModal: (type, props = {}) => dispatch(openModal({ type, props })),
+    closeModal: () => dispatch(closeModal()),
+    updateModalProps: (props) => dispatch(updateModalProps(props)),
   };
 
   return (

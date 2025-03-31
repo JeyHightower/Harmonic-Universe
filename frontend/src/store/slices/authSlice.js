@@ -1,9 +1,9 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { apiClient } from "../../services/api";
+import api from "../../services/api";
 import { log } from "../../utils/logger";
 import { AUTH_CONFIG } from "../../utils/config";
 import { ROUTES } from "../../utils/routes";
-import { useNavigate } from "react-router-dom";
+import apiClient from "../../services/api";
 
 // Debug logging for all authentication operations
 const logAuthOperation = (operation, data = {}) => {
@@ -80,7 +80,7 @@ export const checkAuthState = createAsyncThunk(
         throw new Error("No token found");
       }
 
-      const response = await apiClient.checkAuth();
+      const response = await api.auth.checkAuth();
       logAuthOperation("Auth state check successful", {
         status: response.status,
       });
@@ -99,7 +99,7 @@ export const login = createAsyncThunk(
     try {
       logAuthOperation("Login attempt", { email: credentials.email });
 
-      const response = await apiClient.login(credentials);
+      const response = await api.auth.login(credentials);
       logAuthOperation("Login successful", { status: response.status });
 
       // Store tokens
@@ -121,7 +121,7 @@ export const signup = createAsyncThunk(
     try {
       logAuthOperation("Signup attempt", { email: userData.email });
 
-      const response = await apiClient.register(userData);
+      const response = await api.auth.register(userData);
       logAuthOperation("Signup successful", { status: response.status });
 
       // Store tokens
@@ -150,7 +150,7 @@ export const logout = createAsyncThunk(
 
       // Call logout endpoint if available
       try {
-        await apiClient.logout();
+        await api.auth.logout();
       } catch (error) {
         console.warn("Logout endpoint failed:", error);
       }
@@ -226,7 +226,9 @@ export const demoLogin = createAsyncThunk(
       return response.data;
     } catch (error) {
       logAuthError("Demo login", error);
-      return rejectWithValue(error.message || "Failed to login");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to demo login"
+      );
     }
   }
 );

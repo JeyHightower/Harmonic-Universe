@@ -1,7 +1,11 @@
 import React from "react";
 
 // Auth Components
-export { LoginModal, SignupModal, DemoLogin } from "./auth";
+import LoginModal from "./auth/LoginModal";
+import SignupModal from "./auth/SignupModal";
+import DemoLogin from "./auth/DemoLogin";
+
+export { LoginModal, SignupModal, DemoLogin };
 
 // Navigation Components
 export { default as Navigation } from "./navigation/Navigation";

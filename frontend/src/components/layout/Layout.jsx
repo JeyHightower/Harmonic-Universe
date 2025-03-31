@@ -238,7 +238,7 @@ function Layout() {
       const demoParam = searchParams.get("demo");
 
       // Handle modal parameter
-      if (modalParam) {
+      if (modalParam && openModal) {
         console.log("[Layout] Detected modal parameter:", modalParam);
         if (modalParam === "login") {
           openModal(MODAL_TYPES.LOGIN);
@@ -299,11 +299,5 @@ function Layout() {
   );
 }
 
-// Wrap the Layout component with ModalProvider
-const LayoutWithModal = () => (
-  <ModalProvider>
-    <Layout />
-  </ModalProvider>
-);
-
-export default LayoutWithModal;
+// Export Layout directly instead of wrapping with ModalProvider
+export default Layout;
