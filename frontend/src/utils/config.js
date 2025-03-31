@@ -79,6 +79,7 @@ export const API_CONFIG = {
   TIMEOUT: 10000,
   HEADERS: {
     "Content-Type": "application/json",
+    "Accept": "application/json",
   },
   CORS: {
     CREDENTIALS: true,
@@ -92,10 +93,10 @@ export const API_CONFIG = {
       validateEnvVar("VITE_CORS_ALLOWED_METHODS", "GET,POST,PUT,DELETE,PATCH")
     ),
     ALLOWED_HEADERS: parseArray(
-      validateEnvVar("VITE_CORS_ALLOWED_HEADERS", "Content-Type,Authorization")
+      validateEnvVar("VITE_CORS_ALLOWED_HEADERS", "Content-Type,Authorization,Accept")
     ),
     EXPOSED_HEADERS: parseArray(
-      validateEnvVar("VITE_CORS_EXPOSE_HEADERS", "Content-Length,Content-Type")
+      validateEnvVar("VITE_CORS_EXPOSE_HEADERS", "Content-Length,Content-Type,Authorization")
     ),
     MAX_AGE: parseInt(validateEnvVar("VITE_CORS_MAX_AGE", "600")),
   },
@@ -133,12 +134,12 @@ export const AUTH_CONFIG = {
   COOKIE_SECURE: parseBool(validateEnvVar("VITE_AUTH_COOKIE_SECURE", "false")),
   COOKIE_SAMESITE: validateEnvVar("VITE_AUTH_COOKIE_SAMESITE", "strict"),
   ENDPOINTS: {
-    LOGIN: "/auth/login",
-    SIGNUP: "/auth/signup",
-    LOGOUT: "/auth/logout",
-    REFRESH: "/auth/refresh",
-    DEMO: "/auth/demo-login",
-    ME: "/auth/me",
+    LOGIN: "/api/auth/login",
+    SIGNUP: "/api/auth/signup",
+    LOGOUT: "/api/auth/logout",
+    REFRESH: "/api/auth/refresh",
+    DEMO: "/api/auth/demo-login",
+    VALIDATE: "/api/auth/validate",
   },
 };
 

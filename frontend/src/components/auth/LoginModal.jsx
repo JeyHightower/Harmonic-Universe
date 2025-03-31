@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Form, Input, Button, message } from "antd";
-import { login } from "../../store/slices/authSlice";
+import { login } from "../../store/thunks/authThunks";
 import { log } from "../../utils/logger";
 import { AUTH_CONFIG } from "../../utils/config";
 import { ModalSystem } from "../modals";

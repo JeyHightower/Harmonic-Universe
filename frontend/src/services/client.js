@@ -1,5 +1,6 @@
 import axios from "axios";
 import { log } from "../utils/logger";
+import { AUTH_CONFIG } from "../utils/config";
 
 // Constants
 export const API_BASE_ENDPOINT = chooseApiEndpoint();
@@ -111,7 +112,7 @@ client.interceptors.request.use(
       };
 
       // Add auth token if available
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
       if (token) {
         config.headers["Authorization"] = `Bearer ${token}`;
       }
@@ -209,8 +210,8 @@ client.interceptors.response.use(
       // If auth token expired
       if (status === 401 && !url.includes("/auth/login")) {
         // Remove token
-        localStorage.removeItem("token");
-        localStorage.removeItem("refreshToken");
+        localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+        localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
 
         // Redirect to login
         log("api", "Unauthorized access, redirecting to login");

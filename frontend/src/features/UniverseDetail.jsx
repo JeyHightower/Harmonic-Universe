@@ -1,22 +1,26 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import Button from '../components/Button';
-import { fetchScenesForUniverse } from '../store/scenesThunks';
-import { fetchUniverseById } from '../store/universeThunks';
-import '../styles/UniverseDetail.css';
-import SceneCard from './SceneCard';
-import SceneFormModal from './SceneFormModal';
-import UniverseDeleteModal from './UniverseDeleteModal';
-import UniverseFormModal from './UniverseFormModal';
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import Button from "../components/common/Button";
+import { fetchScenesForUniverse } from "../store/thunks/scenesThunks";
+import { fetchUniverseById } from "../store/thunks/universeThunks";
+import "../styles/UniverseDetail.css";
+import SceneCard from "./SceneCard";
+import SceneFormModal from "./SceneFormModal";
+import UniverseDeleteModal from "./UniverseDeleteModal";
+import UniverseFormModal from "./UniverseFormModal";
 
 const UniverseDetail = () => {
   const { id } = useParams();
   const location = useLocation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { currentUniverse, loading, error } = useSelector(state => state.universe);
-  const { scenes, loading: scenesLoading } = useSelector(state => state.scenes);
+  const { currentUniverse, loading, error } = useSelector(
+    (state) => state.universe
+  );
+  const { scenes, loading: scenesLoading } = useSelector(
+    (state) => state.scenes
+  );
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -32,7 +36,7 @@ const UniverseDetail = () => {
 
   // Open edit modal automatically if accessed through the edit route
   useEffect(() => {
-    if (location.pathname.endsWith('/edit') && currentUniverse) {
+    if (location.pathname.endsWith("/edit") && currentUniverse) {
       setIsEditModalOpen(true);
     }
   }, [location.pathname, currentUniverse]);
@@ -44,7 +48,7 @@ const UniverseDetail = () => {
   const handleEditSuccess = () => {
     setIsEditModalOpen(false);
     // Redirect to the detail page if we're on the edit route
-    if (location.pathname.endsWith('/edit')) {
+    if (location.pathname.endsWith("/edit")) {
       navigate(`/universes/${id}`);
     } else {
       // Refresh universe data
@@ -59,7 +63,7 @@ const UniverseDetail = () => {
   const handleDeleteSuccess = () => {
     setIsDeleteModalOpen(false);
     // Navigate back to universes list after successful deletion
-    navigate('/universes');
+    navigate("/universes");
   };
 
   const handleCreateSceneClick = () => {
@@ -76,13 +80,15 @@ const UniverseDetail = () => {
   const handleEditModalClose = () => {
     setIsEditModalOpen(false);
     // Redirect to detail page if accessed via edit route
-    if (location.pathname.endsWith('/edit')) {
+    if (location.pathname.endsWith("/edit")) {
       navigate(`/universes/${id}`);
     }
   };
 
   // Filter scenes for this universe
-  const universeScenes = scenes.filter(scene => scene.universe_id === parseInt(id, 10));
+  const universeScenes = scenes.filter(
+    (scene) => scene.universe_id === parseInt(id, 10)
+  );
 
   if (loading && !currentUniverse) {
     return (
@@ -98,7 +104,7 @@ const UniverseDetail = () => {
       <div className="error-container">
         <h2>Error</h2>
         <p>{error}</p>
-        <Button onClick={() => navigate('/universes')}>
+        <Button onClick={() => navigate("/universes")}>
           Back to Universes
         </Button>
       </div>
@@ -109,8 +115,11 @@ const UniverseDetail = () => {
     return (
       <div className="not-found-container">
         <h2>Universe Not Found</h2>
-        <p>The universe you're looking for doesn't exist or you don't have permission to view it.</p>
-        <Button onClick={() => navigate('/universes')}>
+        <p>
+          The universe you're looking for doesn't exist or you don't have
+          permission to view it.
+        </p>
+        <Button onClick={() => navigate("/universes")}>
           Back to Universes
         </Button>
       </div>
@@ -123,8 +132,12 @@ const UniverseDetail = () => {
         <div className="universe-info">
           <h1>{currentUniverse.name}</h1>
           <div className="universe-meta">
-            <span className={`universe-visibility ${currentUniverse.is_public ? 'public' : 'private'}`}>
-              {currentUniverse.is_public ? 'Public' : 'Private'}
+            <span
+              className={`universe-visibility ${
+                currentUniverse.is_public ? "public" : "private"
+              }`}
+            >
+              {currentUniverse.is_public ? "Public" : "Private"}
             </span>
             {currentUniverse.theme && (
               <span className="universe-theme">{currentUniverse.theme}</span>
@@ -135,16 +148,10 @@ const UniverseDetail = () => {
           </div>
         </div>
         <div className="universe-actions">
-          <Button
-            onClick={handleEditClick}
-            variant="secondary"
-          >
+          <Button onClick={handleEditClick} variant="secondary">
             Edit Universe
           </Button>
-          <Button
-            onClick={handleDeleteClick}
-            variant="danger"
-          >
+          <Button onClick={handleDeleteClick} variant="danger">
             Delete Universe
           </Button>
         </div>
@@ -159,10 +166,7 @@ const UniverseDetail = () => {
       <div className="universe-content">
         <div className="universe-scenes-header">
           <h2>Scenes</h2>
-          <Button
-            onClick={handleCreateSceneClick}
-            variant="primary"
-          >
+          <Button onClick={handleCreateSceneClick} variant="primary">
             Create Scene
           </Button>
         </div>
@@ -174,17 +178,14 @@ const UniverseDetail = () => {
           </div>
         ) : universeScenes.length > 0 ? (
           <div className="scene-grid">
-            {universeScenes.map(scene => (
+            {universeScenes.map((scene) => (
               <SceneCard key={scene.id} scene={scene} />
             ))}
           </div>
         ) : (
           <div className="empty-state">
             <p>No scenes found in this universe</p>
-            <Button
-              onClick={handleCreateSceneClick}
-              variant="primary"
-            >
+            <Button onClick={handleCreateSceneClick} variant="primary">
               Create Your First Scene
             </Button>
           </div>

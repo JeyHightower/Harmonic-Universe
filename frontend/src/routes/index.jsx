@@ -9,6 +9,7 @@ import ModalTest from "../components/test/ModalTest";
 const SettingsPage = lazy(() => import("../pages/SettingsPage"));
 const Dashboard = lazy(() => import("../features/Dashboard"));
 const Home = lazy(() => import("../pages/Home"));
+const UniverseDetail = lazy(() => import("../features/UniverseDetail"));
 
 const routes = [
   {
@@ -21,6 +22,22 @@ const routes = [
         element: (
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTES.UNIVERSE_DETAIL,
+        element: (
+          <ProtectedRoute>
+            <UniverseDetail />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTES.UNIVERSE_EDIT,
+        element: (
+          <ProtectedRoute>
+            <UniverseDetail />
           </ProtectedRoute>
         ),
       },

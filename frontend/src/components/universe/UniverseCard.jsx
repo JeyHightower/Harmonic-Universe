@@ -4,11 +4,14 @@ import { Link } from "react-router-dom";
 import "../../styles/UniverseCard.css";
 import { formatDate } from "../../utils/dateUtils";
 
-const UniverseCard = ({ universe }) => {
-  const defaultImage = "/images/default-universe.jpg";
+const UniverseCard = ({ universe, isNew }) => {
+  const defaultImage = "/images/default-universe.svg";
 
   return (
-    <Link to={`/universes/${universe.id}`} className="universe-card">
+    <Link
+      to={`/universes/${universe.id}`}
+      className={`universe-card ${isNew ? "universe-card-new" : ""}`}
+    >
       <div className="universe-card-image">
         <img
           src={universe.image_url || defaultImage}
@@ -63,6 +66,11 @@ UniverseCard.propTypes = {
     theme: PropTypes.string,
     genre: PropTypes.string,
   }).isRequired,
+  isNew: PropTypes.bool,
+};
+
+UniverseCard.defaultProps = {
+  isNew: false,
 };
 
 export default UniverseCard;

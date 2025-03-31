@@ -1,26 +1,32 @@
-import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import Button from '../components/Button';
-import Input from '../components/Input';
-import Modal from '../components/Modal.jsx';
-import { createScene, updateScene } from '../store/scenesThunks.js';
-import '../styles/SceneFormModal.css';
+import PropTypes from "prop-types";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import Button from "../components/common/Button";
+import Input from "../components/common/Input";
+import Modal from "../components/common/Modal";
+import { createScene, updateScene } from "../store/thunks/scenesThunks.js";
+import "../styles/SceneFormModal.css";
 
-const SceneFormModal = ({ isOpen, onClose, onSuccess, initialData, universeId }) => {
+const SceneFormModal = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  initialData,
+  universeId,
+}) => {
   const dispatch = useDispatch();
-  const { loading, error } = useSelector(state => state.scenes);
+  const { loading, error } = useSelector((state) => state.scenes);
   const isEditing = !!initialData;
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    universe_id: universeId || '',
-    scene_type: 'standard',
+    title: "",
+    description: "",
+    universe_id: universeId || "",
+    scene_type: "standard",
     is_active: true,
-    duration: 60
+    duration: 60,
   });
 
   // Form validation
@@ -28,28 +34,28 @@ const SceneFormModal = ({ isOpen, onClose, onSuccess, initialData, universeId })
 
   // Scene types
   const sceneTypes = [
-    { value: 'standard', label: 'Standard' },
-    { value: 'cinematic', label: 'Cinematic' },
-    { value: 'action', label: 'Action' },
-    { value: 'dialogue', label: 'Dialogue' },
-    { value: 'montage', label: 'Montage' }
+    { value: "standard", label: "Standard" },
+    { value: "cinematic", label: "Cinematic" },
+    { value: "action", label: "Action" },
+    { value: "dialogue", label: "Dialogue" },
+    { value: "montage", label: "Montage" },
   ];
 
   // Initialize form with data if editing
   useEffect(() => {
     if (initialData) {
       setFormData({
-        title: initialData.title || '',
-        description: initialData.description || '',
+        title: initialData.title || "",
+        description: initialData.description || "",
         universe_id: initialData.universe_id || universeId,
-        scene_type: initialData.scene_type || 'standard',
+        scene_type: initialData.scene_type || "standard",
         is_active: initialData.is_active !== false,
-        duration: initialData.duration || 60
+        duration: initialData.duration || 60,
       });
     } else if (universeId) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        universe_id: universeId
+        universe_id: universeId,
       }));
     }
   }, [initialData, universeId]);
@@ -58,17 +64,17 @@ const SceneFormModal = ({ isOpen, onClose, onSuccess, initialData, universeId })
     const newErrors = {};
 
     if (!formData.title.trim()) {
-      newErrors.title = 'Title is required';
+      newErrors.title = "Title is required";
     } else if (formData.title.length < 3) {
-      newErrors.title = 'Title must be at least 3 characters';
+      newErrors.title = "Title must be at least 3 characters";
     }
 
     if (formData.description && formData.description.length > 500) {
-      newErrors.description = 'Description must be less than 500 characters';
+      newErrors.description = "Description must be less than 500 characters";
     }
 
     if (!formData.universe_id) {
-      newErrors.universe_id = 'Universe ID is required';
+      newErrors.universe_id = "Universe ID is required";
     }
 
     setErrors(newErrors);
@@ -77,14 +83,14 @@ const SceneFormModal = ({ isOpen, onClose, onSuccess, initialData, universeId })
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
 
     // Clear field-specific error when user types
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: null }));
+      setErrors((prev) => ({ ...prev, [name]: null }));
     }
   };
 
@@ -93,40 +99,42 @@ const SceneFormModal = ({ isOpen, onClose, onSuccess, initialData, universeId })
 
     // Run validation before submission
     if (!validateForm()) {
-      console.log('SceneFormModal - Form validation failed');
+      console.log("SceneFormModal - Form validation failed");
       return; // Stop submission if validation fails
     }
 
     setIsSubmitting(true);
-    console.log('SceneFormModal - Submitting form...', formData);
+    console.log("SceneFormModal - Submitting form...", formData);
 
     try {
       let result;
       if (isEditing) {
         // Update existing scene
-        console.log('SceneFormModal - Updating scene:', initialData.id);
-        result = await dispatch(updateScene({
-          id: initialData.id,
-          ...formData
-        })).unwrap();
+        console.log("SceneFormModal - Updating scene:", initialData.id);
+        result = await dispatch(
+          updateScene({
+            id: initialData.id,
+            ...formData,
+          })
+        ).unwrap();
       } else {
         // Create new scene
-        console.log('SceneFormModal - Creating new scene');
+        console.log("SceneFormModal - Creating new scene");
         result = await dispatch(createScene(formData)).unwrap();
       }
 
-      console.log('SceneFormModal - API call successful:', result);
+      console.log("SceneFormModal - API call successful:", result);
 
       if (onSuccess) {
         // Extract the scene data - handle different possible response formats
         let sceneData;
 
-        if (result && typeof result === 'object') {
+        if (result && typeof result === "object") {
           // Try different possible structures
-          if (result.status === 'success' && result.data && result.data.scene) {
+          if (result.status === "success" && result.data && result.data.scene) {
             // Simple backend format: { status: 'success', data: { scene: {...} } }
             sceneData = result.data.scene;
-          } else if (result.scene && typeof result.scene === 'object') {
+          } else if (result.scene && typeof result.scene === "object") {
             // Case: { scene: {...} }
             sceneData = result.scene;
           } else if (result.data && result.data.scene) {
@@ -137,24 +145,33 @@ const SceneFormModal = ({ isOpen, onClose, onSuccess, initialData, universeId })
             sceneData = result;
           } else {
             // Fallback
-            console.warn('SceneFormModal - Unexpected response format:', result);
+            console.warn(
+              "SceneFormModal - Unexpected response format:",
+              result
+            );
             sceneData = result;
           }
         } else {
           // Unexpected non-object response
-          console.warn('SceneFormModal - Unexpected non-object response:', result);
+          console.warn(
+            "SceneFormModal - Unexpected non-object response:",
+            result
+          );
           sceneData = result;
         }
 
-        console.log('SceneFormModal - Calling onSuccess with extracted data:', sceneData);
+        console.log(
+          "SceneFormModal - Calling onSuccess with extracted data:",
+          sceneData
+        );
         onSuccess(sceneData);
       }
     } catch (err) {
-      console.error('SceneFormModal - Failed to save scene:', err);
+      console.error("SceneFormModal - Failed to save scene:", err);
       // Set form-wide error message
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        form: err.message || 'Failed to save scene. Please try again.'
+        form: err.message || "Failed to save scene. Please try again.",
       }));
     } finally {
       setIsSubmitting(false);
@@ -165,7 +182,7 @@ const SceneFormModal = ({ isOpen, onClose, onSuccess, initialData, universeId })
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? 'Edit Scene' : 'Create Scene'}
+      title={isEditing ? "Edit Scene" : "Create Scene"}
     >
       <form onSubmit={handleSubmit} className="scene-form">
         <Input
@@ -197,7 +214,7 @@ const SceneFormModal = ({ isOpen, onClose, onSuccess, initialData, universeId })
               value={formData.scene_type}
               onChange={handleChange}
             >
-              {sceneTypes.map(type => (
+              {sceneTypes.map((type) => (
                 <option key={type.value} value={type.value}>
                   {type.label}
                 </option>
@@ -228,29 +245,17 @@ const SceneFormModal = ({ isOpen, onClose, onSuccess, initialData, universeId })
         </div>
 
         {/* Hidden field for universe_id */}
-        <input
-          type="hidden"
-          name="universe_id"
-          value={formData.universe_id}
-        />
+        <input type="hidden" name="universe_id" value={formData.universe_id} />
 
         {error && <div className="form-error">{error}</div>}
         {errors.form && <div className="form-error">{errors.form}</div>}
 
         <div className="form-actions">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={onClose}
-          >
+          <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Saving...' : isEditing ? 'Update' : 'Create'}
+          <Button type="submit" variant="primary" disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : isEditing ? "Update" : "Create"}
           </Button>
         </div>
       </form>
@@ -269,12 +274,9 @@ SceneFormModal.propTypes = {
     universe_id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     scene_type: PropTypes.string,
     is_active: PropTypes.bool,
-    duration: PropTypes.number
+    duration: PropTypes.number,
   }),
-  universeId: PropTypes.oneOfType([
-    PropTypes.string,
-    PropTypes.number
-  ])
+  universeId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 };
 
 export default SceneFormModal;

@@ -4,6 +4,7 @@ import { log } from "../../utils/logger";
 import { AUTH_CONFIG } from "../../utils/config";
 import { ROUTES } from "../../utils/routes";
 import apiClient from "../../services/api";
+import { login, register } from "../thunks/authThunks";
 
 // Debug logging for all authentication operations
 const logAuthOperation = (operation, data = {}) => {
@@ -25,140 +26,137 @@ const logAuthError = (operation, error) => {
   }
 };
 
-// Helper function to handle auth tokens
-const handleAuthTokens = (data) => {
-  logAuthOperation("handle-auth-tokens", {
-    dataKeys: Object.keys(data),
-    hasToken: !!data.token,
-    hasAccessToken: !!data.access_token,
-  });
+// Handle auth tokens
+export const handleAuthTokens = createAsyncThunk(
+  "auth/handleTokens",
+  async (tokens, { dispatch }) => {
+    try {
+      console.debug("Handling auth tokens:", tokens);
 
-  // Handle different token formats
-  if (data.token) {
-    localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, data.token);
-    logAuthOperation("token-stored", { source: "token" });
-  } else if (data.access_token) {
-    localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, data.access_token);
-    logAuthOperation("token-stored", { source: "access_token" });
-  } else if (data.tokens?.access_token) {
-    localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, data.tokens.access_token);
-    logAuthOperation("token-stored", { source: "tokens.access_token" });
+      // Store tokens in localStorage
+      if (tokens.token) {
+        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, tokens.token);
+      } else if (tokens.access_token) {
+        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, tokens.access_token);
+      }
+      if (tokens.refresh_token) {
+        localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, tokens.refresh_token);
+      }
+      if (tokens.user) {
+        localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(tokens.user));
+      }
+
+      // Update state
+      dispatch(loginSuccess(tokens));
+      return tokens;
+    } catch (error) {
+      console.error("Error handling auth tokens:", error);
+      dispatch(loginFailure(error.message));
+      return null;
+    }
   }
+);
 
-  // Handle refresh tokens
-  if (data.refresh_token) {
-    localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, data.refresh_token);
-    logAuthOperation("refresh-token-stored", { source: "refresh_token" });
-  } else if (data.tokens?.refresh_token) {
-    localStorage.setItem(
-      AUTH_CONFIG.REFRESH_TOKEN_KEY,
-      data.tokens.refresh_token
-    );
-    logAuthOperation("refresh-token-stored", {
-      source: "tokens.refresh_token",
-    });
-  }
-
-  // Update debug state
-  if (window.authDebug) {
-    window.authDebug.tokens = {
-      hasAccessToken: !!localStorage.getItem(AUTH_CONFIG.TOKEN_KEY),
-      hasRefreshToken: !!localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY),
-    };
-  }
-};
-
-// Async thunks
+// Check auth state
 export const checkAuthState = createAsyncThunk(
-  "auth/checkAuthState",
-  async (_, { rejectWithValue }) => {
+  "auth/checkState",
+  async (_, { dispatch }) => {
     try {
-      logAuthOperation("Check auth state");
+      console.debug("Checking auth state");
 
+      // Get tokens from localStorage
       const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+      const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+      const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+
       if (!token) {
-        throw new Error("No token found");
+        console.debug("No token found in localStorage");
+        dispatch(logout());
+        return null;
       }
 
-      const response = await apiClient.checkAuth();
-      logAuthOperation("Auth state check successful", {
-        status: response.status,
-      });
-
-      return response.data.user;
-    } catch (error) {
-      logAuthError("Check auth state", error);
-      return rejectWithValue(error.message || "Failed to check auth state");
-    }
-  }
-);
-
-export const login = createAsyncThunk(
-  "auth/login",
-  async (credentials, { rejectWithValue }) => {
-    try {
-      logAuthOperation("Login attempt", { email: credentials.email });
-
-      const response = await apiClient.login(credentials);
-      logAuthOperation("Login successful", { status: response.status });
-
-      // Store tokens
-      handleAuthTokens(response.data);
-
-      return response.data.user;
-    } catch (error) {
-      logAuthError("Login", error);
-      // Use the error message from the API response if available
-      const errorMessage = error.response?.data?.message || error.message || "Invalid email or password";
-      return rejectWithValue(errorMessage);
-    }
-  }
-);
-
-export const signup = createAsyncThunk(
-  "auth/signup",
-  async (userData, { rejectWithValue }) => {
-    try {
-      logAuthOperation("Signup attempt", { email: userData.email });
-
-      const response = await apiClient.register(userData);
-      logAuthOperation("Signup successful", { status: response.status });
-
-      // Store tokens
-      handleAuthTokens(response.data);
-
-      return response.data.user;
-    } catch (error) {
-      logAuthError("Signup", error);
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to sign up"
-      );
-    }
-  }
-);
-
-export const logout = createAsyncThunk(
-  "auth/logout",
-  async (_, { rejectWithValue }) => {
-    try {
-      logAuthOperation("Logout attempt");
-
-      // Clear tokens
-      localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-      localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-      logAuthOperation("Tokens cleared");
-
-      // Call logout endpoint if available
+      // Try to validate token
       try {
-        await apiClient.logout();
+        const response = await apiClient.validateToken();
+        console.debug("Token validation successful:", response);
+
+        // Update state with validated user
+        if (response.data.user) {
+          dispatch(loginSuccess(response.data));
+          return response.data;
+        }
       } catch (error) {
-        console.warn("Logout endpoint failed:", error);
+        console.warn("Token validation failed:", error);
+
+        // Try to refresh token
+        if (refreshToken) {
+          try {
+            const response = await apiClient.refreshToken();
+            console.debug("Token refresh successful:", response);
+
+            // Store new tokens
+            if (response.data.token) {
+              localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.token);
+            } else if (response.data.access_token) {
+              localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.access_token);
+            }
+            if (response.data.refresh_token) {
+              localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, response.data.refresh_token);
+            }
+            if (response.data.user) {
+              localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(response.data.user));
+            }
+
+            // Update state with refreshed user
+            dispatch(loginSuccess(response.data));
+            return response.data;
+          } catch (refreshError) {
+            console.error("Token refresh failed:", refreshError);
+          }
+        }
       }
 
+      // If we have a user in localStorage but validation failed
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          dispatch(loginSuccess({ user }));
+          return { user };
+        } catch (error) {
+          console.error("Error parsing user from localStorage:", error);
+        }
+      }
+
+      // If all else fails, logout
+      dispatch(logout());
       return null;
     } catch (error) {
-      logAuthError("Logout", error);
-      return rejectWithValue(error.message || "Failed to logout");
+      console.error("Error checking auth state:", error);
+      dispatch(logout());
+      return null;
+    }
+  }
+);
+
+// Logout
+export const logout = createAsyncThunk(
+  "auth/logout",
+  async (_, { dispatch }) => {
+    try {
+      console.debug("Logging out user");
+
+      // Clear tokens from localStorage
+      localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+      localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+      localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+
+      // Update state
+      dispatch(logoutSuccess());
+      return null;
+    } catch (error) {
+      console.error("Error during logout:", error);
+      dispatch(logoutFailure(error.message));
+      return null;
     }
   }
 );
@@ -320,25 +318,25 @@ const authSlice = createSlice({
         logAuthOperation("login-rejected", { error: state.error });
       })
 
-      // Signup
-      .addCase(signup.pending, (state) => {
+      // Register
+      .addCase(register.pending, (state) => {
         state.isLoading = true;
         state.error = null;
-        logAuthOperation("signup-pending");
+        logAuthOperation("register-pending");
       })
-      .addCase(signup.fulfilled, (state, action) => {
+      .addCase(register.fulfilled, (state, action) => {
         state.isLoading = false;
         state.user = action.payload;
         state.isAuthenticated = true;
         state.error = null;
-        logAuthOperation("signup-fulfilled", {
+        logAuthOperation("register-fulfilled", {
           userId: action.payload?.id,
         });
       })
-      .addCase(signup.rejected, (state, action) => {
+      .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
-        logAuthOperation("signup-rejected", { error: state.error });
+        logAuthOperation("register-rejected", { error: state.error });
       })
 
       // Logout

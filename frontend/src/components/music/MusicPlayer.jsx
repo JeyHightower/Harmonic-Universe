@@ -27,13 +27,14 @@ import {
 import React, { useEffect, useRef, useState } from "react";
 import * as Tone from "tone";
 import { useModal } from "../../contexts/ModalContext";
-import { apiClient } from "../../services/api";
+import apiClient from "../../services/api";
 import { endpoints } from "@services/endpoints";
 import { MODAL_TYPES } from "../../constants/modalTypes";
 import Modal from "../common/Modal";
 import "../../styles/Music.css";
 import "../../styles/MusicPlayer.css";
 import MusicVisualizer3D from "./MusicVisualizer3D";
+import { AUTH_CONFIG } from "../../utils/config";
 
 const { Title, Text } = Typography;
 
@@ -421,7 +422,7 @@ const MusicPlayer = ({ universeId }) => {
       link.download = `universe_${universeId}_music.wav`;
 
       // Add token for authentication
-      const token = localStorage.getItem("accessToken");
+      const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
       if (token) {
         link.href = `${downloadUrl}?token=${token}`;
       }

@@ -1,6 +1,7 @@
 import { useSelector } from "react-redux";
 import { Navigate, useLocation } from "react-router-dom";
 import { ROUTES } from "../../utils/routes";
+import { AUTH_CONFIG } from "../../utils/config";
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useSelector((state) => state.auth);
@@ -10,8 +11,8 @@ function ProtectedRoute({ children }) {
     isAuthenticated,
     loading,
     path: location.pathname,
-    hasAccessToken: !!localStorage.getItem("accessToken"),
-    hasRefreshToken: !!localStorage.getItem("refreshToken"),
+    hasAccessToken: !!localStorage.getItem(AUTH_CONFIG.TOKEN_KEY),
+    hasRefreshToken: !!localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY),
   });
 
   // If still loading, show loading state

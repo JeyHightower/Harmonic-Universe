@@ -1,7 +1,14 @@
 import React, { useState, useEffect, lazy, Suspense } from "react";
-import { Routes, Route, BrowserRouter, Navigate } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  BrowserRouter,
+  Navigate,
+  Outlet,
+} from "react-router-dom";
 import { Provider } from "react-redux";
-import store from "./store/store";
+import { PersistGate } from "redux-persist/integration/react";
+import store, { persistor } from "./store/store";
 import { useSelector } from "react-redux";
 import { Home, Navigation } from "./components";
 import { ModalProvider } from "./contexts/ModalContext";
@@ -110,15 +117,15 @@ function App() {
 
   try {
     return (
-      <BrowserRouter
-        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-      >
-        <Provider store={store}>
-          <ModalProvider>
-            <AppContent />
-          </ModalProvider>
-        </Provider>
-      </BrowserRouter>
+      <Provider store={store}>
+        <PersistGate loading={<LoadingPage />} persistor={persistor}>
+          <BrowserRouter>
+            <ModalProvider>
+              <AppContent />
+            </ModalProvider>
+          </BrowserRouter>
+        </PersistGate>
+      </Provider>
     );
   } catch (error) {
     console.error("Error in App component:", error);

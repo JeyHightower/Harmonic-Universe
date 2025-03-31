@@ -1,6 +1,6 @@
 from .base import BaseModel
 from ..models.database import db
-from sqlalchemy import func
+from sqlalchemy import func, and_, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import Optional, List, Dict, Any, TYPE_CHECKING
 from .character import Character, character_scenes
@@ -56,6 +56,27 @@ class Universe(BaseModel):
             
     def to_dict(self) -> Dict[str, Any]:
         """Convert universe to dictionary."""
+        scenes_count = db.session.execute(
+            select(func.count()).select_from(Scene).where(
+                Scene.universe_id == self.id,
+                Scene.is_deleted == False
+            )
+        ).scalar() or 0
+
+        characters_count = db.session.execute(
+            select(func.count()).select_from(Character).where(
+                Character.universe_id == self.id,
+                Character.is_deleted == False
+            )
+        ).scalar() or 0
+
+        notes_count = db.session.execute(
+            select(func.count()).select_from(Note).where(
+                Note.universe_id == self.id,
+                Note.is_deleted == False
+            )
+        ).scalar() or 0
+
         return {
             'id': self.id,
             'name': self.name,
@@ -66,9 +87,9 @@ class Universe(BaseModel):
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
             'is_deleted': self.is_deleted,
-            'scenes_count': db.session.query(func.count(self.scenes)).scalar(),
-            'characters_count': db.session.query(func.count(self.characters)).scalar(),
-            'notes_count': db.session.query(func.count(self.notes)).scalar()
+            'scenes_count': scenes_count,
+            'characters_count': characters_count,
+            'notes_count': notes_count
         }
         
     def get_scene_by_name(self, name: str) -> Optional['Scene']:

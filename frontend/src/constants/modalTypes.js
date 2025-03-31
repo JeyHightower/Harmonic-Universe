@@ -10,6 +10,9 @@ export const MODAL_TYPES = {
   // Auth modals
   LOGIN: "LOGIN",
   SIGNUP: "SIGNUP",
+
+  // Universe modals
+  UNIVERSE_CREATE: "universe-create",
 };
 
 /**
@@ -24,6 +27,7 @@ export const getModalDisplayName = (type) => {
     [MODAL_TYPES.FORM]: "Form",
     [MODAL_TYPES.LOGIN]: "Login",
     [MODAL_TYPES.SIGNUP]: "Sign Up",
+    [MODAL_TYPES.UNIVERSE_CREATE]: "Create Universe",
   };
 
   return displayNames[type] || type;
@@ -41,6 +45,7 @@ export const getModalIcon = (type) => {
     [MODAL_TYPES.FORM]: "form",
     [MODAL_TYPES.LOGIN]: "login",
     [MODAL_TYPES.SIGNUP]: "user-plus",
+    [MODAL_TYPES.UNIVERSE_CREATE]: "plus-circle",
   };
 
   return icons[type] || "question-circle";
@@ -58,6 +63,7 @@ export const getModalDescription = (type) => {
     [MODAL_TYPES.FORM]: "Display a form for user input",
     [MODAL_TYPES.LOGIN]: "User login form",
     [MODAL_TYPES.SIGNUP]: "User registration form",
+    [MODAL_TYPES.UNIVERSE_CREATE]: "Create a new musical universe",
   };
 
   return descriptions[type] || "";

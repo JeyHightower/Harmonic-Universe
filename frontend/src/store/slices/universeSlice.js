@@ -91,54 +91,74 @@ const universeSlice = createSlice({
     // Fetch universes
     builder
       .addCase(fetchUniverses.pending, (state) => {
-        console.debug("Fetching universes...");
+        console.debug("Fetching universes...", {
+          currentState: {
+            universesCount: state.universes.length,
+            loading: state.loading,
+            error: state.error,
+            authError: state.authError,
+          },
+        });
         state.loading = true;
         state.error = null;
         state.authError = false;
       })
       .addCase(fetchUniverses.fulfilled, (state, action) => {
-        console.debug("Universes fetched successfully:", action.payload);
+        console.debug("Universes fetched successfully:", {
+          payload: action.payload,
+          currentState: {
+            universesCount: state.universes.length,
+            loading: state.loading,
+            error: state.error,
+            authError: state.authError,
+          },
+        });
         state.loading = false;
 
         // Handle different response formats
-        if (
-          action.payload &&
-          action.payload.data &&
-          Array.isArray(action.payload.data.universes)
-        ) {
-          // Format: { data: { universes: [...] } }
-          state.universes = action.payload.data.universes;
-        } else if (action.payload && Array.isArray(action.payload.universes)) {
-          // Format: { universes: [...] }
-          state.universes = action.payload.universes;
-        } else if (
-          action.payload &&
-          typeof action.payload === "object" &&
-          action.payload.status === "success"
-        ) {
-          // Format from simple_app.py: { status: 'success', data: { universes: [...] } }
-          state.universes = action.payload.data?.universes || [];
-        } else if (Array.isArray(action.payload)) {
+        let universes = [];
+        if (Array.isArray(action.payload)) {
           // Direct array format
-          state.universes = action.payload;
+          universes = action.payload;
+        } else if (action.payload.universes && Array.isArray(action.payload.universes)) {
+          // Format: { universes: [...] }
+          universes = action.payload.universes;
+        } else if (action.payload.data && Array.isArray(action.payload.data.universes)) {
+          // Format: { data: { universes: [...] } }
+          universes = action.payload.data.universes;
+        } else if (action.payload.status === "success" && action.payload.data?.universes) {
+          // Format: { status: 'success', data: { universes: [...] } }
+          universes = action.payload.data.universes;
         } else {
-          console.error(
-            "Unexpected universes response format:",
-            action.payload
-          );
-          state.universes = [];
+          console.error("Unexpected universes response format:", action.payload);
+          universes = [];
         }
 
+        console.debug("Processed universes:", {
+          count: universes.length,
+          isArray: Array.isArray(universes),
+          hasData: !!universes,
+          data: universes,
+        });
+
+        state.universes = universes;
         state.lastFetched = Date.now();
         state.error = null;
         state.authError = false;
       })
       .addCase(fetchUniverses.rejected, (state, action) => {
-        console.error("Failed to fetch universes:", action.payload);
+        console.error("Failed to fetch universes:", {
+          payload: action.payload,
+          currentState: {
+            universesCount: state.universes.length,
+            loading: state.loading,
+            error: state.error,
+            authError: state.authError,
+          },
+        });
         state.loading = false;
-        state.error = action.payload || "Failed to fetch universes";
-        state.authError =
-          action.payload?.status === 401 || action.payload?.status === 403;
+        state.error = action.payload?.message || action.payload || "Failed to fetch universes";
+        state.authError = action.payload?.status === 401 || action.payload?.status === 403;
         if (state.authError) {
           state.universes = [];
         }
@@ -198,24 +218,18 @@ const universeSlice = createSlice({
             );
             newUniverse = null;
           }
-        } else {
-          console.error(
-            "Invalid payload in createUniverse.fulfilled:",
-            action.payload
-          );
-          newUniverse = null;
-        }
 
-        if (newUniverse) {
-          // Add the new universe to the state
-          state.universes = [...(state.universes || []), newUniverse];
-          state.currentUniverse = newUniverse;
-          console.debug("New universe added to store:", newUniverse);
-        } else {
-          console.error(
-            "Failed to extract universe data from response:",
-            action.payload
-          );
+          // Add the new universe to the universes array if it exists
+          if (newUniverse) {
+            console.debug("Adding new universe to state:", newUniverse);
+            // Ensure universes is an array
+            if (!Array.isArray(state.universes)) {
+              state.universes = [];
+            }
+            // Add the new universe to the beginning of the array
+            state.universes = [newUniverse, ...state.universes];
+            state.currentUniverse = newUniverse;
+          }
         }
 
         state.error = null;
@@ -224,7 +238,7 @@ const universeSlice = createSlice({
       .addCase(createUniverse.rejected, (state, action) => {
         console.error("Failed to create universe:", action.payload);
         state.loading = false;
-        state.error = action.payload || "Failed to create universe";
+        state.error = action.payload?.message || action.payload || "Failed to create universe";
         state.success = false;
       })
 
@@ -258,7 +272,7 @@ const universeSlice = createSlice({
       .addCase(updateUniverse.rejected, (state, action) => {
         console.error("Failed to update universe:", action.payload);
         state.loading = false;
-        state.error = action.payload || "Failed to update universe";
+        state.error = action.payload?.message || action.payload || "Failed to update universe";
         state.success = false;
       })
 
@@ -283,7 +297,7 @@ const universeSlice = createSlice({
       .addCase(deleteUniverse.rejected, (state, action) => {
         console.error("Failed to delete universe:", action.payload);
         state.loading = false;
-        state.error = action.payload || "Failed to delete universe";
+        state.error = action.payload?.message || action.payload || "Failed to delete universe";
         state.success = false;
       })
 

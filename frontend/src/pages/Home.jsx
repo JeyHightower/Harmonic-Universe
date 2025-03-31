@@ -51,49 +51,30 @@ function Home() {
         throw new Error(result.error);
       }
 
-      // Wait a brief moment to ensure token is set
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // Extract user data from the demo login response
+      let profileData = null;
 
-      // Fetch user info after successful login
-      try {
-        if (IS_DEVELOPMENT) {
-          console.debug("[Home] Fetching user profile with token");
+      if (result.payload?.user) {
+        profileData = result.payload.user;
+      } else if (result.payload && typeof result.payload === "object") {
+        const { token, ...userData } = result.payload;
+        if (userData.id || userData.username || userData.email) {
+          profileData = userData;
         }
-        const userResponse = await api.getUserProfile();
-
-        if (IS_DEVELOPMENT) {
-          console.debug("[Home] User profile response:", userResponse);
-        }
-
-        if (!userResponse?.data?.message || !userResponse?.data?.profile) {
-          throw new Error(
-            "Invalid response structure from user profile endpoint"
-          );
-        }
-
-        dispatch(loginSuccess(userResponse.data.profile));
-        navigate("/dashboard", { replace: true });
-      } catch (error) {
-        console.error("[Home] Error fetching user profile:", error);
-        console.error("[Home] Error details:", {
-          message: error.message,
-          status: error.status,
-          data: error.data,
-        });
-        // Don't throw here, as the login was successful
-        // Instead, use the user data from the demo login response
-        dispatch(loginSuccess(result.payload));
-        navigate("/dashboard", { replace: true });
       }
+
+      if (!profileData) {
+        throw new Error(
+          "Could not extract valid user data from demo login response"
+        );
+      }
+
+      // Dispatch login success with the profile data
+      dispatch(loginSuccess(profileData));
+      navigate("/dashboard", { replace: true });
     } catch (error) {
-      console.error("[Home] Demo login error:", error);
-      console.error("[Home] Error details:", {
-        message: error.message,
-        status: error.status,
-        data: error.data,
-        config: error.config,
-      });
-      dispatch(loginFailure(error.message));
+      console.error("[Home] Demo login failed:", error);
+      dispatch(loginFailure(error.message || "Demo login failed"));
     }
   };
 

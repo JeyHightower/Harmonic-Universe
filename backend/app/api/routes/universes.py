@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.api.models.universe import Universe
 from app import db
@@ -12,9 +12,10 @@ def get_universes():
         # Get query parameters
         public_only = request.args.get('public', 'false').lower() == 'true'
         user_id = get_jwt_identity()
+        current_app.logger.info(f"Fetching universes for user {user_id}, public_only: {public_only}")
 
         # Build query
-        query = Universe.query
+        query = Universe.query.filter_by(is_deleted=False)
 
         if public_only:
             query = query.filter_by(is_public=True)
@@ -26,6 +27,7 @@ def get_universes():
 
         # Execute query
         universes = query.all()
+        current_app.logger.info(f"Found {len(universes)} universes")
 
         # Format response
         return jsonify({
@@ -34,6 +36,8 @@ def get_universes():
         }), 200
 
     except Exception as e:
+        current_app.logger.error(f"Error retrieving universes: {str(e)}")
+        current_app.logger.error(f"Query parameters: public_only={public_only}, user_id={user_id}")
         return jsonify({
             'message': 'Error retrieving universes',
             'error': str(e)
@@ -68,19 +72,54 @@ def get_universe(universe_id):
 def create_universe():
     try:
         data = request.get_json()
-        user_id = get_jwt_identity()
+        if not data:
+            current_app.logger.warning('Create universe attempt with no data')
+            return jsonify({
+                'message': 'No data provided',
+                'error': 'Request body is required'
+            }), 400
 
-        # Create new universe
+        user_id = get_jwt_identity()
+        current_app.logger.info(f'Creating universe for user {user_id}')
+        
+        # Validate required fields
+        name = data.get('name', '').strip()
+        if not name:
+            current_app.logger.warning(f'Create universe attempt with empty name by user {user_id}')
+            return jsonify({
+                'message': 'Name is required',
+                'error': 'Universe name cannot be empty'
+            }), 400
+            
+        if len(name) > 100:
+            current_app.logger.warning(f'Create universe attempt with too long name by user {user_id}')
+            return jsonify({
+                'message': 'Name is too long',
+                'error': 'Universe name cannot exceed 100 characters'
+            }), 400
+
+        # Create new universe with validated data
         universe = Universe(
-            name=data.get('name', 'New Universe'),
-            description=data.get('description', ''),
+            name=name,
+            description=data.get('description', '').strip(),
             is_public=data.get('is_public', False),
             user_id=user_id
         )
 
+        # Validate the universe object
+        try:
+            universe.validate()
+        except ValueError as ve:
+            current_app.logger.warning(f'Universe validation error for user {user_id}: {str(ve)}')
+            return jsonify({
+                'message': 'Validation error',
+                'error': str(ve)
+            }), 400
+
         db.session.add(universe)
         db.session.commit()
-
+        
+        current_app.logger.info(f'Universe {universe.id} created successfully for user {user_id}')
         return jsonify({
             'message': 'Universe created successfully',
             'universe': universe.to_dict()
@@ -88,6 +127,7 @@ def create_universe():
 
     except Exception as e:
         db.session.rollback()
+        current_app.logger.error(f'Error creating universe for user {user_id}: {str(e)}')
         return jsonify({
             'message': 'Error creating universe',
             'error': str(e)

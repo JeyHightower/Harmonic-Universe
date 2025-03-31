@@ -129,22 +129,6 @@ class ContentErrorBoundary extends React.Component {
   }
 }
 
-// Safe wrapper for React Router Outlet
-function SafeOutlet() {
-  try {
-    return <Outlet />;
-  } catch (error) {
-    console.error("[Layout] Error rendering Outlet:", error);
-    return (
-      <div className="outlet-error">
-        <h2>Navigation Error</h2>
-        <p>An error occurred when trying to render the route content.</p>
-        <p>Error: {error.message}</p>
-      </div>
-    );
-  }
-}
-
 // Main Layout component with enhanced error handling
 function Layout() {
   // Use safe versions of hooks
@@ -264,7 +248,7 @@ function Layout() {
     <div className="layout">
       <main className="main-content">
         <ContentErrorBoundary>
-          <SafeOutlet />
+          <Outlet />
         </ContentErrorBoundary>
       </main>
       <Suspense fallback={<FooterFallback />}>

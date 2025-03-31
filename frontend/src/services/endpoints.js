@@ -14,7 +14,6 @@ const authEndpoints = {
   demoLogin: `${API_BASE_URL}/api/auth/demo-login`,
   refresh: `${API_BASE_URL}/api/auth/refresh`,
   logout: `${API_BASE_URL}/api/auth/logout`,
-  me: `${API_BASE_URL}/api/auth/me`,
   resetPassword: `${API_BASE_URL}/api/auth/reset-password`,
   forgotPassword: `${API_BASE_URL}/api/auth/forgot-password`,
   verifyEmail: `${API_BASE_URL}/api/auth/verify-email`,
@@ -22,10 +21,10 @@ const authEndpoints = {
 
 // User endpoints
 const userEndpoints = {
-  profile: `${API_BASE_URL}/api/users/profile`,
-  update: `${API_BASE_URL}/api/users/update`,
-  changePassword: `${API_BASE_URL}/api/users/change-password`,
-  delete: `${API_BASE_URL}/api/users/delete`,
+  profile: `${API_BASE_URL}/api/user/profile`,
+  update: `${API_BASE_URL}/api/user/update`,
+  changePassword: `${API_BASE_URL}/api/user/change-password`,
+  delete: `${API_BASE_URL}/api/user/delete`,
 };
 
 // Universe endpoints

@@ -1,4 +1,5 @@
 import os
+import logging
 
 class Config:
     # Flask settings
@@ -26,4 +27,9 @@ class Config:
     UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'uploads')
     
     # Rate limiting
-    RATELIMIT_DEFAULT = "200 per day" 
+    RATELIMIT_DEFAULT = "200 per day"
+    
+    # Logging configuration
+    LOG_LEVEL = logging.DEBUG if os.getenv('FLASK_ENV') == 'development' else logging.INFO
+    LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    LOG_FILE = 'app.log' 

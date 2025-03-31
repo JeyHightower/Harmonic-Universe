@@ -26,12 +26,12 @@
   bottom: 0;
   z-index: -1;
   background: var(--universe-bg-gradient),
-    url('/images/universe-bg.jpg') center/cover no-repeat;
+    url("/images/default-universe.svg") center/cover no-repeat;
   overflow: hidden;
 }
 
 .universe-background::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -369,6 +369,10 @@
   .scene-grid {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   }
+
+  .universe-card-image {
+    height: 160px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -384,5 +388,32 @@
 
   .filter-buttons {
     flex-wrap: wrap;
+  }
+
+  .universe-card-image {
+    height: 140px;
+  }
+
+  .universe-card-title {
+    font-size: 1.125rem;
+  }
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .universe-card {
+    background-color: var(--bg-color-dark);
+  }
+
+  .universe-card-title {
+    color: var(--text-primary);
+  }
+
+  .universe-card-description {
+    color: var(--text-secondary);
+  }
+
+  .universe-card-footer {
+    color: var(--text-tertiary);
   }
 }

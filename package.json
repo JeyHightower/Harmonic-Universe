@@ -27,5 +27,8 @@
     "url": "git+https://github.com/JeyHightower/Harmonic-Universe.git"
   },
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "redux-persist": "^6.0.0"
+  }
 }

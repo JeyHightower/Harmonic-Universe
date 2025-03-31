@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { apiClient } from "../../services/api";
+import apiClient from "../../services/api";
 import Button from "../common/Button";
 import Icon from "../common/Icon";
 import Input from "../common/Input";

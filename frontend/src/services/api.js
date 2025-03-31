@@ -1,56 +1,51 @@
 import axios from "axios";
-import { AUTH_CONFIG } from "../utils/config";
+import { AUTH_CONFIG, API_CONFIG } from "../utils/config";
 import { log } from "../utils/logger";
 import { endpoints } from "./endpoints";
 import { cache } from "../utils/cache";
 import { CACHE_CONFIG } from "../utils/cacheConfig";
 
-// Create axios instance with base configuration
-const api = axios.create({
-  baseURL: "", // Remove base URL since it's included in endpoints
-  headers: {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  },
-  withCredentials: false, // Disable credentials for now
-  timeout: 15000,
+// Create axios instance with default config
+const axiosInstance = axios.create({
+  baseURL: API_CONFIG.BASE_URL,
+  headers: API_CONFIG.HEADERS,
+  timeout: API_CONFIG.TIMEOUT,
+  withCredentials: API_CONFIG.CORS.CREDENTIALS,
 });
 
 // Request interceptor
-api.interceptors.request.use(
+axiosInstance.interceptors.request.use(
   (config) => {
-    // Log request
-    log("api", "Sending request", {
-      method: config.method.toUpperCase(),
+    // Get token from localStorage
+    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+
+    // Log request details
+    console.debug("API Request:", {
+      method: config.method,
       url: config.url,
       data: config.data,
       headers: config.headers,
+      hasToken: !!token,
     });
 
-    // Add auth token if available
-    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+    // Add token to headers if available
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    // Remove credentials from login request
-    if (config.url.includes("/auth/login")) {
-      config.withCredentials = false;
     }
 
     return config;
   },
   (error) => {
-    log("api", "Request error", { error: error.message });
+    console.error("Request interceptor error:", error);
     return Promise.reject(error);
   }
 );
 
 // Response interceptor
-api.interceptors.response.use(
+axiosInstance.interceptors.response.use(
   (response) => {
-    // Log successful response
-    log("api", "Response received", {
+    // Log response details
+    console.debug("API Response:", {
       status: response.status,
       url: response.config.url,
       data: response.data,
@@ -60,54 +55,52 @@ api.interceptors.response.use(
     return response;
   },
   async (error) => {
-    const status = error.response?.status;
-    const url = error.config?.url;
-    const data = error.response?.data;
+    const originalRequest = error.config;
 
-    // Log error
-    log("api", "Response error", {
-      status,
-      url,
-      message: error.message,
-      response: data,
-      request: error.config?.data,
+    // Log error details
+    console.error("API Error:", {
+      status: error.response?.status,
+      url: originalRequest?.url,
+      data: error.response?.data,
       headers: error.response?.headers,
     });
 
-    // Handle token refresh
-    if (status === 401 && !url.includes("/auth/login")) {
-      try {
-        const refreshToken = localStorage.getItem(
-          AUTH_CONFIG.REFRESH_TOKEN_KEY
-        );
-        if (refreshToken) {
-          const response = await api.post(endpoints.auth.refresh, {
-            refresh_token: refreshToken,
-          });
-          const { access_token } = response.data;
-          localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, access_token);
-          error.config.headers.Authorization = `Bearer ${access_token}`;
-          return api(error.config);
-        }
-      } catch (refreshError) {
-        log("api", "Token refresh failed", { error: refreshError.message });
-      }
-    }
+    // Handle 401 errors
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
 
-    // Handle unauthorized access
-    if (status === 401) {
-      // Only clear tokens if it's not a login attempt
-      if (!url.includes("/auth/login")) {
+      try {
+        // Get refresh token
+        const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+
+        if (!refreshToken) {
+          throw new Error("No refresh token available");
+        }
+
+        // Attempt to refresh token
+        const response = await axiosInstance.post(AUTH_CONFIG.ENDPOINTS.REFRESH, {
+          refresh_token: refreshToken,
+        });
+
+        // Store new tokens
+        if (response.data.token) {
+          localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.token);
+        }
+        if (response.data.refresh_token) {
+          localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, response.data.refresh_token);
+        }
+
+        // Retry original request with new token
+        originalRequest.headers.Authorization = `Bearer ${response.data.token}`;
+        return axiosInstance(originalRequest);
+      } catch (refreshError) {
+        // If refresh fails, clear tokens and redirect to login
         localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
         localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+        localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+        window.location.href = "/login";
+        return Promise.reject(refreshError);
       }
-
-      // Return a more descriptive error
-      return Promise.reject({
-        message: data?.message || "Invalid email or password",
-        status: 401,
-        data: data,
-      });
     }
 
     return Promise.reject(error);
@@ -115,14 +108,14 @@ api.interceptors.response.use(
 );
 
 // API methods
-export const apiClient = {
+const apiClient = {
   // Auth methods
-  login: (credentials) => api.post(endpoints.auth.login, credentials),
-  register: (userData) => api.post(endpoints.auth.register, userData),
-  demoLogin: () => api.post(endpoints.auth.demoLogin),
+  login: (credentials) => axiosInstance.post(endpoints.auth.login, credentials),
+  register: (userData) => axiosInstance.post(endpoints.auth.register, userData),
+  demoLogin: () => axiosInstance.post(endpoints.auth.demoLogin),
   logout: () => {
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-    return api.post(
+    return axiosInstance.post(
       endpoints.auth.logout,
       {},
       {
@@ -132,7 +125,23 @@ export const apiClient = {
       }
     );
   },
-  checkAuth: () => api.get(endpoints.auth.me),
+  checkAuth: async () => {
+    try {
+      const response = await axiosInstance.get(endpoints.user.profile);
+      return {
+        data: {
+          message: "Authentication check successful",
+          user: response.data.profile
+        }
+      };
+    } catch (error) {
+      log("api", "Auth check failed", {
+        error: error.message,
+        response: error.response?.data
+      });
+      throw error;
+    }
+  },
 
   // User methods
   getUserProfile: async () => {
@@ -140,29 +149,35 @@ export const apiClient = {
       // Check cache first
       const cachedProfile = cache.get(CACHE_CONFIG.USER_PROFILE.key);
       if (cachedProfile) {
+        log("api", "Using cached user profile", { profile: cachedProfile });
         return {
           data: {
-            message: "User profile retrieved successfully",
+            message: "User profile retrieved from cache",
             profile: cachedProfile,
           },
         };
       }
 
-      const response = await api.get(endpoints.user.profile);
+      const response = await axiosInstance.get(endpoints.user.profile);
+      log("api", "Raw user profile response", { response });
 
-      // Log the response for debugging
-      log("api", "User profile response", { response: response?.data });
+      // Extract profile data with fallbacks
+      let profileData = null;
 
-      // Handle different response structures
-      let profileData;
       if (response?.data?.profile) {
         profileData = response.data.profile;
       } else if (response?.data?.user) {
         profileData = response.data.user;
-      } else if (response?.data) {
-        profileData = response.data;
-      } else {
-        throw new Error("Invalid response structure from user profile endpoint");
+      } else if (typeof response?.data === 'object' && response.data !== null) {
+        // If response.data is an object and contains user-like properties, use it
+        const { message, error, ...rest } = response.data;
+        if (rest.id || rest.username || rest.email) {
+          profileData = rest;
+        }
+      }
+
+      if (!profileData) {
+        throw new Error("Could not extract valid profile data from response");
       }
 
       // Cache the profile data
@@ -172,7 +187,8 @@ export const apiClient = {
         CACHE_CONFIG.USER_PROFILE.ttl
       );
 
-      // Return the response in the expected format
+      log("api", "Processed user profile data", { profileData });
+
       return {
         data: {
           message: "User profile retrieved successfully",
@@ -182,13 +198,14 @@ export const apiClient = {
     } catch (error) {
       log("api", "Error fetching user profile", {
         error: error.message,
-        response: error.response?.data
+        response: error.response?.data,
+        stack: error.stack,
       });
       throw error;
     }
   },
-  updateUserProfile: (data) => api.put(endpoints.user.profile, data),
-  updateUserSettings: (settings) => api.put(endpoints.user.settings, settings),
+  updateUserProfile: (data) => axiosInstance.put(endpoints.user.profile, data),
+  updateUserSettings: (settings) => axiosInstance.put(endpoints.user.settings, settings),
   clearUserProfileCache: () => cache.clear(CACHE_CONFIG.USER_PROFILE.key),
 
   // Universe methods
@@ -197,26 +214,26 @@ export const apiClient = {
     if (params.includePublic) {
       queryParams.append("public", "true");
     }
-    return api.get(`${endpoints.universes.list}?${queryParams.toString()}`);
+    return axiosInstance.get(`${endpoints.universes.list}?${queryParams.toString()}`);
   },
-  createUniverse: (data) => api.post(endpoints.universes.create, data),
+  createUniverse: (data) => axiosInstance.post(endpoints.universes.create, data),
   getUniverse: (id, params = {}) => {
     const queryParams = new URLSearchParams();
     if (params.includeScenes) {
       queryParams.append("include_scenes", "true");
     }
-    return api.get(`${endpoints.universes.get(id)}?${queryParams.toString()}`);
+    return axiosInstance.get(`${endpoints.universes.get(id)}?${queryParams.toString()}`);
   },
-  updateUniverse: (id, data) => api.put(endpoints.universes.update(id), data),
-  deleteUniverse: (id) => api.delete(endpoints.universes.delete(id)),
+  updateUniverse: (id, data) => axiosInstance.put(endpoints.universes.update(id), data),
+  deleteUniverse: (id) => axiosInstance.delete(endpoints.universes.delete(id)),
   getUniverseScenes: (universeId) =>
-    api.get(endpoints.universes.scenes(universeId)),
+    axiosInstance.get(endpoints.universes.scenes(universeId)),
   updateUniversePhysics: (universeId, physicsParams) =>
-    api.put(`/api/universes/${universeId}/physics`, {
+    axiosInstance.put(`/api/universes/${universeId}/physics`, {
       physics_params: physicsParams,
     }),
   updateUniverseHarmony: (universeId, harmonyParams) =>
-    api.put(`/api/universes/${universeId}/harmony`, {
+    axiosInstance.put(`/api/universes/${universeId}/harmony`, {
       harmony_params: harmonyParams,
     }),
 
@@ -226,44 +243,41 @@ export const apiClient = {
     if (params.universeId) {
       queryParams.append("universe_id", params.universeId);
     }
-    return api.get(`${endpoints.scenes.list}?${queryParams.toString()}`);
+    return axiosInstance.get(`${endpoints.scenes.list}?${queryParams.toString()}`);
   },
-  getScene: (id) => api.get(endpoints.scenes.get(id)),
-  createScene: (data) => api.post(endpoints.scenes.create, data),
-  updateScene: (id, data) => api.put(endpoints.scenes.update(id), data),
-  deleteScene: (id) => api.delete(endpoints.scenes.delete(id)),
-  reorderScenes: (data) => api.post(endpoints.scenes.reorder, data),
+  getScene: (id) => axiosInstance.get(endpoints.scenes.get(id)),
+  createScene: (data) => axiosInstance.post(endpoints.scenes.create, data),
+  updateScene: (id, data) => axiosInstance.put(endpoints.scenes.update(id), data),
+  deleteScene: (id) => axiosInstance.delete(endpoints.scenes.delete(id)),
+  reorderScenes: (data) => axiosInstance.post(endpoints.scenes.reorder, data),
   updateScenePhysicsParams: (sceneId, data) =>
-    api.put(`${endpoints.scenes.get(sceneId)}/physics_parameters`, data),
+    axiosInstance.put(`${endpoints.scenes.get(sceneId)}/physics_parameters`, data),
   updateSceneHarmonyParams: (sceneId, data) =>
-    api.put(`${endpoints.scenes.get(sceneId)}/harmony_parameters`, data),
+    axiosInstance.put(`${endpoints.scenes.get(sceneId)}/harmony_parameters`, data),
 
   // Physics Objects methods
-  getPhysicsObjects: () => api.get(endpoints.physicsObjects.list),
+  getPhysicsObjects: () => axiosInstance.get(endpoints.physicsObjects.list),
   createPhysicsObject: (data) =>
-    api.post(endpoints.physicsObjects.create, data),
-  getPhysicsObject: (id) => api.get(endpoints.physicsObjects.get(id)),
+    axiosInstance.post(endpoints.physicsObjects.create, data),
+  getPhysicsObject: (id) => axiosInstance.get(endpoints.physicsObjects.get(id)),
   updatePhysicsObject: (id, data) =>
-    api.put(endpoints.physicsObjects.update(id), data),
-  deletePhysicsObject: (id) => api.delete(endpoints.physicsObjects.delete(id)),
+    axiosInstance.put(endpoints.physicsObjects.update(id), data),
+  deletePhysicsObject: (id) => axiosInstance.delete(endpoints.physicsObjects.delete(id)),
   getPhysicsObjectsForScene: (sceneId) =>
-    api.get(endpoints.physicsObjects.forScene(sceneId)),
+    axiosInstance.get(endpoints.physicsObjects.forScene(sceneId)),
 
   // Music methods
-  generateMusic: (data) => api.post(endpoints.music.generate, data),
-  saveMusic: (data) => api.post(endpoints.music.save, data),
-  getMusicList: () => api.get(endpoints.music.list),
-  uploadMusic: (data) => api.post(endpoints.music.upload, data),
-  deleteMusic: (id) => api.delete(endpoints.music.delete(id)),
+  generateMusic: (data) => axiosInstance.post(endpoints.music.generate, data),
+  saveMusic: (data) => axiosInstance.post(endpoints.music.save, data),
+  getMusicList: () => axiosInstance.get(endpoints.music.list),
+  uploadMusic: (data) => axiosInstance.post(endpoints.music.upload, data),
+  deleteMusic: (id) => axiosInstance.delete(endpoints.music.delete(id)),
 
   // Physics parameters methods
   updatePhysicsParameters: (params) =>
-    api.post(endpoints.physicsParameters.update, params),
-  getPhysicsParameters: () => api.get(endpoints.physicsParameters.get),
-  resetPhysicsParameters: () => api.post(endpoints.physicsParameters.reset),
+    axiosInstance.post(endpoints.physicsParameters.update, params),
+  getPhysicsParameters: () => axiosInstance.get(endpoints.physicsParameters.get),
+  resetPhysicsParameters: () => axiosInstance.post(endpoints.physicsParameters.reset),
 };
-
-// Export the api instance directly
-export { api };
 
 export default apiClient;

@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Form, Input, Button, message } from "antd";
-import { signup } from "../../store/slices/authSlice";
+import { register } from "../../store/thunks/authThunks";
 import { log } from "../../utils/logger";
 import {
   validateEmail,
@@ -41,8 +41,8 @@ const SignupModal = ({ onClose }) => {
         email: values.email.toLowerCase(),
       };
 
-      const resultAction = await dispatch(signup(signupData));
-      if (signup.fulfilled.match(resultAction)) {
+      const resultAction = await dispatch(register(signupData));
+      if (register.fulfilled.match(resultAction)) {
         log("auth", "Signup successful", { email: values.email });
         message.success("Signup successful! Please log in.");
         onClose();

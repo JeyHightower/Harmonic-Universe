@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { apiClient } from "../../services/api.js";
+import apiClient from "../../services/api.js";
 
 const handleError = (error) => {
   console.error("API Error:", error);
@@ -37,8 +37,14 @@ export const fetchUniverses = createAsyncThunk(
   async (params = {}, { rejectWithValue }) => {
     try {
       console.log("Fetching universes with params:", params);
-      const response = await apiClient.getUniverses();
-      console.log("Got universes response:", response);
+      const response = await apiClient.getUniverses(params);
+      console.log("Got universes response:", {
+        status: response.status,
+        data: response.data,
+        hasUniverses: !!response.data?.universes,
+        universesCount: response.data?.universes?.length || 0,
+        headers: response.headers,
+      });
 
       // Extract and normalize the data
       let universes = [];
@@ -64,9 +70,21 @@ export const fetchUniverses = createAsyncThunk(
         universes = [];
       }
 
+      console.log("Normalized universes:", {
+        count: universes.length,
+        isArray: Array.isArray(universes),
+        hasData: !!universes,
+        data: universes,
+      });
+
       return { ...response, universes };
     } catch (error) {
-      console.error("Error fetching universes:", error);
+      console.error("Error fetching universes:", {
+        error: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        headers: error.response?.headers,
+      });
       return rejectWithValue(handleError(error));
     }
   }

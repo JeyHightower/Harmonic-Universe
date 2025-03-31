@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { MODAL_TYPES } from "../../constants/modalTypes";
 import { useModal } from "../../contexts/ModalContext";
 import "./DebugControls.css";
+import { AUTH_CONFIG } from "../../utils/config";
 
 /**
  * Debug Controls Panel - For testing modal and login functionality
@@ -181,8 +182,8 @@ const DebugControls = () => {
     try {
       const modalState = window.modalDebug?.activeModals || [];
       const hasToken =
-        !!localStorage.getItem("token") ||
-        !!localStorage.getItem("accessToken");
+        !!localStorage.getItem(AUTH_CONFIG.TOKEN_KEY) ||
+        !!localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
 
       addLog(`Auth token exists: ${hasToken}`);
       addLog(`Active modals: ${modalState.length}`);
@@ -278,7 +279,7 @@ const DebugControls = () => {
             checkedChildren="Debug ON"
             unCheckedChildren="Debug OFF"
           />
-          <Tooltip title="Toggle debugging tools">
+          <Tooltip content="Toggle debugging tools">
             <BugOutlined />
           </Tooltip>
         </Space>

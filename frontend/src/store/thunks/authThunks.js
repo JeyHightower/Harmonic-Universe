@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { apiClient } from "../../services/api.js";
+import apiClient from "../../services/api.js";
 import {
   handleOfflineAuthentication,
   shouldUseFallback,
@@ -34,12 +34,16 @@ export const login = createAsyncThunk(
       console.debug("Login successful:", response);
 
       // Store tokens
-      localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.token);
+      if (response.data.token) {
+        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.token);
+      } else if (response.data.access_token) {
+        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.access_token);
+      }
+      if (response.data.refresh_token) {
+        localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, response.data.refresh_token);
+      }
       if (response.data.user) {
-        localStorage.setItem(
-          AUTH_CONFIG.USER_KEY,
-          JSON.stringify(response.data.user)
-        );
+        localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(response.data.user));
       }
 
       dispatch(loginSuccess(response.data));
@@ -54,11 +58,11 @@ export const login = createAsyncThunk(
 
         // Store tokens from fallback
         localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, fallbackData.token);
+        if (fallbackData.refresh_token) {
+          localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, fallbackData.refresh_token);
+        }
         if (fallbackData.user) {
-          localStorage.setItem(
-            AUTH_CONFIG.USER_KEY,
-            JSON.stringify(fallbackData.user)
-          );
+          localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(fallbackData.user));
         }
 
         dispatch(loginSuccess(fallbackData));
@@ -83,12 +87,16 @@ export const register = createAsyncThunk(
       console.debug("Registration successful:", response);
 
       // Store tokens
-      localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.token);
+      if (response.data.token) {
+        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.token);
+      } else if (response.data.access_token) {
+        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.access_token);
+      }
+      if (response.data.refresh_token) {
+        localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, response.data.refresh_token);
+      }
       if (response.data.user) {
-        localStorage.setItem(
-          AUTH_CONFIG.USER_KEY,
-          JSON.stringify(response.data.user)
-        );
+        localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(response.data.user));
       }
 
       dispatch(loginSuccess(response.data));
@@ -116,11 +124,11 @@ export const demoLogin = createAsyncThunk(
 
           // Store tokens from fallback
           localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, fallbackData.token);
+          if (fallbackData.refresh_token) {
+            localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, fallbackData.refresh_token);
+          }
           if (fallbackData.user) {
-            localStorage.setItem(
-              AUTH_CONFIG.USER_KEY,
-              JSON.stringify(fallbackData.user)
-            );
+            localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(fallbackData.user));
           }
 
           dispatch(loginSuccess(fallbackData));
@@ -151,11 +159,11 @@ export const demoLogin = createAsyncThunk(
 
             // Store tokens from fallback
             localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, fallbackData.token);
+            if (fallbackData.refresh_token) {
+              localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, fallbackData.refresh_token);
+            }
             if (fallbackData.user) {
-              localStorage.setItem(
-                AUTH_CONFIG.USER_KEY,
-                JSON.stringify(fallbackData.user)
-              );
+              localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(fallbackData.user));
             }
 
             dispatch(loginSuccess(fallbackData));
@@ -190,11 +198,11 @@ export const demoLogin = createAsyncThunk(
 
               // Store tokens from fallback
               localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, fallbackData.token);
+              if (fallbackData.refresh_token) {
+                localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, fallbackData.refresh_token);
+              }
               if (fallbackData.user) {
-                localStorage.setItem(
-                  AUTH_CONFIG.USER_KEY,
-                  JSON.stringify(fallbackData.user)
-                );
+                localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(fallbackData.user));
               }
 
               dispatch(loginSuccess(fallbackData));
@@ -206,12 +214,16 @@ export const demoLogin = createAsyncThunk(
         }
 
         // Store tokens
-        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.token);
+        if (response.data.token) {
+          localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.token);
+        } else if (response.data.access_token) {
+          localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.access_token);
+        }
+        if (response.data.refresh_token) {
+          localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, response.data.refresh_token);
+        }
         if (response.data.user) {
-          localStorage.setItem(
-            AUTH_CONFIG.USER_KEY,
-            JSON.stringify(response.data.user)
-          );
+          localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(response.data.user));
         }
 
         dispatch(loginSuccess(response.data));
@@ -226,11 +238,11 @@ export const demoLogin = createAsyncThunk(
 
           // Store tokens from fallback
           localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, fallbackData.token);
+          if (fallbackData.refresh_token) {
+            localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, fallbackData.refresh_token);
+          }
           if (fallbackData.user) {
-            localStorage.setItem(
-              AUTH_CONFIG.USER_KEY,
-              JSON.stringify(fallbackData.user)
-            );
+            localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(fallbackData.user));
           }
 
           dispatch(loginSuccess(fallbackData));
@@ -259,15 +271,20 @@ export const registerUser = createAsyncThunk(
       console.debug("Registration successful:", response);
 
       // Store tokens
-      if (response.access_token) {
-        localStorage.setItem("accessToken", response.access_token);
+      if (response.data.token) {
+        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.token);
+      } else if (response.data.access_token) {
+        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.access_token);
       }
-      if (response.refresh_token) {
-        localStorage.setItem("refreshToken", response.refresh_token);
+      if (response.data.refresh_token) {
+        localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, response.data.refresh_token);
+      }
+      if (response.data.user) {
+        localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(response.data.user));
       }
 
       // Dispatch login success with user data
-      dispatch(loginSuccess(response.user || {}));
+      dispatch(loginSuccess(response.data.user || {}));
 
       return response;
     } catch (error) {
@@ -311,15 +328,20 @@ export const loginUser = createAsyncThunk(
       console.debug("Login successful:", response);
 
       // Store tokens
-      if (response.access_token) {
-        localStorage.setItem("accessToken", response.access_token);
+      if (response.data.token) {
+        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.token);
+      } else if (response.data.access_token) {
+        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.access_token);
       }
-      if (response.refresh_token) {
-        localStorage.setItem("refreshToken", response.refresh_token);
+      if (response.data.refresh_token) {
+        localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, response.data.refresh_token);
+      }
+      if (response.data.user) {
+        localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(response.data.user));
       }
 
       // Dispatch login success with user data
-      dispatch(loginSuccess(response.user || {}));
+      dispatch(loginSuccess(response.data.user || {}));
 
       return response;
     } catch (error) {

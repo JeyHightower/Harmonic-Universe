@@ -7,6 +7,7 @@ import FormModal from "../components/modals/FormModal";
 import LoginModal from "../components/auth/LoginModal";
 import SignupModal from "../components/auth/SignupModal";
 import DemoLogin from "../components/auth/DemoLogin";
+import UniverseCreateModal from "../components/modals/UniverseCreateModal";
 
 // Create modal registry
 const modalRegistry = new Map();
@@ -17,6 +18,7 @@ modalRegistry.set(MODAL_TYPES.CONFIRMATION, ConfirmationModal);
 modalRegistry.set(MODAL_TYPES.FORM, FormModal);
 modalRegistry.set(MODAL_TYPES.LOGIN, LoginModal);
 modalRegistry.set(MODAL_TYPES.SIGNUP, SignupModal);
+modalRegistry.set(MODAL_TYPES.UNIVERSE_CREATE, UniverseCreateModal);
 
 /**
  * Get a modal component by type

@@ -1,9 +1,11 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 import os
 import sys
+import logging
+from logging.handlers import RotatingFileHandler
 
 # Add the current directory to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -15,11 +17,18 @@ def create_app():
     # Create Flask application
     app = Flask(__name__, static_folder="static")
 
-    # Configure CORS
-    CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
-
     # Load environment variables
     app.config.from_object('app.config.Config')
+
+    # Configure logging
+    if not os.path.exists('logs'):
+        os.mkdir('logs')
+    file_handler = RotatingFileHandler('logs/app.log', maxBytes=10240, backupCount=10)
+    file_handler.setFormatter(logging.Formatter(app.config['LOG_FORMAT']))
+    file_handler.setLevel(app.config['LOG_LEVEL'])
+    app.logger.addHandler(file_handler)
+    app.logger.setLevel(app.config['LOG_LEVEL'])
+    app.logger.info('Application startup')
 
     # Configure SQLAlchemy
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
@@ -49,7 +58,7 @@ def create_app():
     app.register_blueprint(notes_bp, url_prefix='/api/notes')
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(user_bp, url_prefix='/api/user')
-    app.register_blueprint(universes_bp, url_prefix='/api')
+    app.register_blueprint(universes_bp, url_prefix='/api/universes')
 
     # Create database tables and run migrations
     with app.app_context():
@@ -65,6 +74,7 @@ app = create_app()
 # Error handlers
 @app.errorhandler(404)
 def not_found(error):
+    app.logger.warning(f'Not Found: {request.url}')
     return jsonify({
         'error': 'Not Found',
         'message': 'The requested resource was not found'
@@ -72,6 +82,7 @@ def not_found(error):
 
 @app.errorhandler(500)
 def server_error(error):
+    app.logger.error(f'Server Error: {str(error)}')
     return jsonify({
         'error': 'Internal Server Error',
         'message': 'An unexpected error occurred'

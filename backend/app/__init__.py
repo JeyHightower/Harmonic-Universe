@@ -16,6 +16,9 @@ def create_app():
     app.static_folder = static_folder
     app.static_url_path = ''
     
+    # Disable trailing slash redirects
+    app.url_map.strict_slashes = False
+    
     # Get database URL from environment
     db_dir = os.path.dirname(os.path.dirname(__file__))
     os.makedirs(db_dir, exist_ok=True)
@@ -42,11 +45,14 @@ def create_app():
     CORS(app, resources={
         r"/api/*": {
             "origins": ["http://localhost:5173", "http://localhost:3000", "http://localhost:5000", "http://localhost:5001"],
-            "supports_credentials": False,  # Disable credentials for now
+            "supports_credentials": True,
             "allow_headers": ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
             "expose_headers": ["Content-Type", "Authorization"],
-            "max_age": 600
+            "max_age": 600,
+            "allow_credentials": True,
+            "send_wildcard": False,
+            "automatic_options": True
         },
         r"/auth/*": {
             "origins": ["http://localhost:5173", "http://localhost:3000", "http://localhost:5000", "http://localhost:5001"],
