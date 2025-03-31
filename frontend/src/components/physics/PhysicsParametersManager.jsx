@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { api, endpoints } from "../../services/api";
+import { apiClient } from "../../services/api";
+import { endpoints } from "../../services/endpoints";
 import { Button } from "../common";
 import Icon from "../common/Icon";
 import Modal from "../common/Modal";
@@ -25,7 +26,7 @@ const PhysicsParametersManager = ({ sceneId }) => {
         setLoading(true);
         setError(null);
 
-        const response = await api.get(
+        const response = await apiClient.get(
           endpoints.scenes.physicsParameters.list(sceneId)
         );
         setPhysicsParameters(response.data || []);
@@ -107,7 +108,7 @@ const PhysicsParametersManager = ({ sceneId }) => {
   // Apply physics parameters
   const handleApplyParameters = async (params) => {
     try {
-      await api.post(
+      await apiClient.post(
         `${endpoints.scenes.detail(sceneId)}/physics_parameters/${
           params.id
         }/apply`

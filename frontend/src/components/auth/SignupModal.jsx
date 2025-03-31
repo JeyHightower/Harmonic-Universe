@@ -4,12 +4,20 @@ import { useDispatch, useSelector } from "react-redux";
 import { Form, Input, Button, message } from "antd";
 import { signup } from "../../store/slices/authSlice";
 import { log } from "../../utils/logger";
+import {
+  validateEmail,
+  validatePassword,
+  validateUsername,
+} from "../../utils/validation";
+import { useNavigate } from "react-router-dom";
+import StableModalWrapper from "../modals/StableModalWrapper";
 import "./Auth.css";
 
 const SignupModal = ({ onClose }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { error } = useSelector((state) => state.auth);
 
   const handleSubmit = async (values) => {
@@ -17,11 +25,21 @@ const SignupModal = ({ onClose }) => {
       setLoading(true);
       log("auth", "Attempting signup", { email: values.email });
 
+      // Validate input
+      const emailError = validateEmail(values.email);
+      const passwordError = validatePassword(values.password);
+      const usernameError = validateUsername(values.username);
+
+      if (emailError || passwordError || usernameError) {
+        throw new Error(emailError || passwordError || usernameError);
+      }
+
       const resultAction = await dispatch(signup(values));
       if (signup.fulfilled.match(resultAction)) {
         log("auth", "Signup successful", { email: values.email });
-        message.success("Signup successful!");
+        message.success("Signup successful! Please log in.");
         onClose();
+        navigate("/login");
       } else {
         throw new Error(resultAction.error.message);
       }
@@ -34,90 +52,78 @@ const SignupModal = ({ onClose }) => {
   };
 
   return (
-    <Form
-      form={form}
-      layout="vertical"
-      onFinish={handleSubmit}
-      className="signup-form"
-    >
-      <Form.Item
-        name="username"
-        label="Username"
-        rules={[
-          { required: true, message: "Please enter a username" },
-          { min: 3, message: "Username must be at least 3 characters" },
-          { max: 20, message: "Username must be less than 20 characters" },
-        ]}
+    <StableModalWrapper title="Sign Up" onClose={onClose}>
+      <Form
+        form={form}
+        onFinish={handleSubmit}
+        layout="vertical"
+        className="auth-form"
       >
-        <Input placeholder="Choose a username" />
-      </Form.Item>
+        <Form.Item
+          label="Username"
+          name="username"
+          rules={[
+            { required: true, message: "Please input your username!" },
+            { min: 3, message: "Username must be at least 3 characters!" },
+          ]}
+        >
+          <Input placeholder="Choose a username" />
+        </Form.Item>
 
-      <Form.Item
-        name="email"
-        label="Email"
-        rules={[
-          { required: true, message: "Please enter your email" },
-          { type: "email", message: "Please enter a valid email" },
-        ]}
-      >
-        <Input placeholder="Enter your email" />
-      </Form.Item>
+        <Form.Item
+          label="Email"
+          name="email"
+          rules={[
+            { required: true, message: "Please input your email!" },
+            { type: "email", message: "Please enter a valid email!" },
+          ]}
+        >
+          <Input placeholder="Enter your email" />
+        </Form.Item>
 
-      <Form.Item
-        name="password"
-        label="Password"
-        rules={[
-          { required: true, message: "Please enter a password" },
-          { min: 6, message: "Password must be at least 6 characters" },
-        ]}
-      >
-        <Input.Password placeholder="Choose a password" />
-      </Form.Item>
+        <Form.Item
+          label="Password"
+          name="password"
+          rules={[
+            { required: true, message: "Please input your password!" },
+            { min: 6, message: "Password must be at least 6 characters!" },
+          ]}
+        >
+          <Input.Password placeholder="Choose a password" />
+        </Form.Item>
 
-      <Form.Item
-        name="confirmPassword"
-        label="Confirm Password"
-        dependencies={["password"]}
-        rules={[
-          { required: true, message: "Please confirm your password" },
-          ({ getFieldValue }) => ({
-            validator(_, value) {
-              if (!value || getFieldValue("password") === value) {
-                return Promise.resolve();
-              }
-              return Promise.reject(new Error("Passwords do not match"));
-            },
-          }),
-        ]}
-      >
-        <Input.Password placeholder="Confirm your password" />
-      </Form.Item>
+        <Form.Item
+          label="Confirm Password"
+          name="confirmPassword"
+          dependencies={["password"]}
+          rules={[
+            { required: true, message: "Please confirm your password!" },
+            ({ getFieldValue }) => ({
+              validator(_, value) {
+                if (!value || getFieldValue("password") === value) {
+                  return Promise.resolve();
+                }
+                return Promise.reject(new Error("Passwords do not match!"));
+              },
+            }),
+          ]}
+        >
+          <Input.Password placeholder="Confirm your password" />
+        </Form.Item>
 
-      {error && <div className="error-message">{error}</div>}
-
-      <div className="form-actions">
-        <Button onClick={onClose}>Cancel</Button>
-        <Button type="primary" htmlType="submit" loading={loading}>
-          Sign Up
-        </Button>
-      </div>
-
-      <div className="form-footer">
-        <p>
-          Already have an account?{" "}
-          <button
-            type="button"
-            className="text-button"
-            onClick={() => {
-              onClose();
-              window.location.href = "/#/?modal=login";
-            }}
+        <div className="form-actions">
+          <Button onClick={onClose}>Cancel</Button>
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={loading}
+            className="auth-button"
           >
-            Login
-          </button>
-        </p>
-      </div>
-    </Form>
+            Sign Up
+          </Button>
+        </div>
+      </Form>
+    </StableModalWrapper>
   );
 };
 

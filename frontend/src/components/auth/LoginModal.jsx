@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Form, Input, Button, message } from "antd";
 import { login } from "../../store/slices/authSlice";
 import { log } from "../../utils/logger";
+import { AUTH_CONFIG } from "../../utils/config";
 import "./Auth.css";
 
 const LoginModal = ({ onClose }) => {
@@ -36,53 +37,40 @@ const LoginModal = ({ onClose }) => {
   return (
     <Form
       form={form}
-      layout="vertical"
       onFinish={handleSubmit}
-      className="login-form"
+      layout="vertical"
+      className="auth-form"
     >
       <Form.Item
-        name="email"
         label="Email"
+        name="email"
         rules={[
-          { required: true, message: "Please enter your email" },
-          { type: "email", message: "Please enter a valid email" },
+          { required: true, message: "Please input your email!" },
+          { type: "email", message: "Please enter a valid email!" },
         ]}
       >
-        <Input placeholder="Enter your email" />
+        <Input id="email" placeholder="Enter your email" />
       </Form.Item>
 
       <Form.Item
-        name="password"
         label="Password"
-        rules={[{ required: true, message: "Please enter your password" }]}
+        name="password"
+        rules={[{ required: true, message: "Please input your password!" }]}
       >
-        <Input.Password placeholder="Enter your password" />
+        <Input.Password id="password" placeholder="Enter your password" />
       </Form.Item>
 
-      {error && <div className="error-message">{error}</div>}
-
-      <div className="form-actions">
-        <Button onClick={onClose}>Cancel</Button>
-        <Button type="primary" htmlType="submit" loading={loading}>
+      <Form.Item>
+        <Button
+          type="primary"
+          htmlType="submit"
+          loading={loading}
+          block
+          className="auth-button"
+        >
           Login
         </Button>
-      </div>
-
-      <div className="form-footer">
-        <p>
-          Don't have an account?{" "}
-          <button
-            type="button"
-            className="text-button"
-            onClick={() => {
-              onClose();
-              window.location.href = "/#/?modal=signup";
-            }}
-          >
-            Sign up
-          </button>
-        </p>
-      </div>
+      </Form.Item>
     </Form>
   );
 };

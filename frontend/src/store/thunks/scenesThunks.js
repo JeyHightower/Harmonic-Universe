@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { apiClient } from "../../services/localApi.js";
+import { apiClient } from "../../services/api.js";
 
 const handleError = (error) => {
   console.error("API Error:", error);

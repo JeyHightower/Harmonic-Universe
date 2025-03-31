@@ -1,8 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { client } from "../../services/client";
-import { endpoints } from "../../services/endpoints";
-import { log } from "../../utils/logger";
 import { apiClient } from "../../services/api";
+import { log } from "../../utils/logger";
 import { AUTH_CONFIG } from "../../utils/config";
 import { ROUTES } from "../../utils/routes";
 import { useNavigate } from "react-router-dom";
@@ -24,6 +22,49 @@ const logAuthError = (operation, error) => {
     log("auth", `Auth error in ${operation}`, { error: error.message });
   } catch (logError) {
     console.error("Error logging auth error", logError);
+  }
+};
+
+// Helper function to handle auth tokens
+const handleAuthTokens = (data) => {
+  logAuthOperation("handle-auth-tokens", {
+    dataKeys: Object.keys(data),
+    hasToken: !!data.token,
+    hasAccessToken: !!data.access_token,
+  });
+
+  // Handle different token formats
+  if (data.token) {
+    localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, data.token);
+    logAuthOperation("token-stored", { source: "token" });
+  } else if (data.access_token) {
+    localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, data.access_token);
+    logAuthOperation("token-stored", { source: "access_token" });
+  } else if (data.tokens?.access_token) {
+    localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, data.tokens.access_token);
+    logAuthOperation("token-stored", { source: "tokens.access_token" });
+  }
+
+  // Handle refresh tokens
+  if (data.refresh_token) {
+    localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, data.refresh_token);
+    logAuthOperation("refresh-token-stored", { source: "refresh_token" });
+  } else if (data.tokens?.refresh_token) {
+    localStorage.setItem(
+      AUTH_CONFIG.REFRESH_TOKEN_KEY,
+      data.tokens.refresh_token
+    );
+    logAuthOperation("refresh-token-stored", {
+      source: "tokens.refresh_token",
+    });
+  }
+
+  // Update debug state
+  if (window.authDebug) {
+    window.authDebug.tokens = {
+      hasAccessToken: !!localStorage.getItem(AUTH_CONFIG.TOKEN_KEY),
+      hasRefreshToken: !!localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY),
+    };
   }
 };
 
@@ -58,7 +99,7 @@ export const login = createAsyncThunk(
     try {
       logAuthOperation("Login attempt", { email: credentials.email });
 
-      const response = await client.post(endpoints.auth.login, credentials);
+      const response = await apiClient.login(credentials);
       logAuthOperation("Login successful", { status: response.status });
 
       // Store tokens
@@ -67,7 +108,6 @@ export const login = createAsyncThunk(
       return response.data.user;
     } catch (error) {
       logAuthError("Login", error);
-
       return rejectWithValue(
         error.response?.data?.message || "Failed to login"
       );
@@ -81,7 +121,7 @@ export const signup = createAsyncThunk(
     try {
       logAuthOperation("Signup attempt", { email: userData.email });
 
-      const response = await client.post(endpoints.auth.signup, userData);
+      const response = await apiClient.register(userData);
       logAuthOperation("Signup successful", { status: response.status });
 
       // Store tokens
@@ -90,10 +130,35 @@ export const signup = createAsyncThunk(
       return response.data.user;
     } catch (error) {
       logAuthError("Signup", error);
-
       return rejectWithValue(
         error.response?.data?.message || "Failed to sign up"
       );
+    }
+  }
+);
+
+export const logout = createAsyncThunk(
+  "auth/logout",
+  async (_, { rejectWithValue }) => {
+    try {
+      logAuthOperation("Logout attempt");
+
+      // Clear tokens
+      localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+      localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+      logAuthOperation("Tokens cleared");
+
+      // Call logout endpoint if available
+      try {
+        await apiClient.logout();
+      } catch (error) {
+        console.warn("Logout endpoint failed:", error);
+      }
+
+      return null;
+    } catch (error) {
+      logAuthError("Logout", error);
+      return rejectWithValue(error.message || "Failed to logout");
     }
   }
 );
@@ -166,103 +231,12 @@ export const demoLogin = createAsyncThunk(
   }
 );
 
-export const logout = createAsyncThunk(
-  "auth/logout",
-  async (_, { rejectWithValue }) => {
-    try {
-      logAuthOperation("logout-attempt");
-
-      // Get token before making request
-      const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-      if (!token) {
-        logAuthOperation("logout-no-token");
-        // Still clear storage and navigate
-        localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-        localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-        sessionStorage.removeItem("demoLoginResponse");
-        window.location.href = "/";
-        return null;
-      }
-
-      // Call backend logout endpoint
-      const response = await apiClient.logout();
-      logAuthOperation("logout-success", { status: response.status });
-
-      // Clear local storage tokens after successful API call
-      localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-      localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-
-      // Also clear session cache
-      sessionStorage.removeItem("demoLoginResponse");
-
-      // Navigate to home page
-      window.location.href = "/";
-
-      return null;
-    } catch (error) {
-      logAuthError("logout", error);
-
-      // Still clear tokens even if API call fails
-      localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-      localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-
-      // Still navigate to home even if logout fails
-      window.location.href = "/";
-
-      return rejectWithValue(error.message || "Failed to logout");
-    }
-  }
-);
-
-// Helper function to handle auth tokens
-const handleAuthTokens = (data) => {
-  logAuthOperation("handle-auth-tokens", {
-    dataKeys: Object.keys(data),
-    hasToken: !!data.token,
-    hasAccessToken: !!data.access_token,
-  });
-
-  // Handle different token formats
-  if (data.token) {
-    localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, data.token);
-    logAuthOperation("token-stored", { source: "token" });
-  } else if (data.access_token) {
-    localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, data.access_token);
-    logAuthOperation("token-stored", { source: "access_token" });
-  } else if (data.tokens?.access_token) {
-    localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, data.tokens.access_token);
-    logAuthOperation("token-stored", { source: "tokens.access_token" });
-  }
-
-  // Handle refresh tokens
-  if (data.refresh_token) {
-    localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, data.refresh_token);
-    logAuthOperation("refresh-token-stored", { source: "refresh_token" });
-  } else if (data.tokens?.refresh_token) {
-    localStorage.setItem(
-      AUTH_CONFIG.REFRESH_TOKEN_KEY,
-      data.tokens.refresh_token
-    );
-    logAuthOperation("refresh-token-stored", {
-      source: "tokens.refresh_token",
-    });
-  }
-
-  // Update debug state
-  if (window.authDebug) {
-    window.authDebug.tokens = {
-      hasAccessToken: !!localStorage.getItem(AUTH_CONFIG.TOKEN_KEY),
-      hasRefreshToken: !!localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY),
-    };
-  }
-};
-
 const initialState = {
   user: null,
   isAuthenticated: false,
   isLoading: false,
   error: null,
-  networkError: false,
+  networkError: null,
   offlineMode: false,
 };
 
@@ -270,37 +244,27 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    logoutUser: (state) => {
-      state.user = null;
-      state.token = null;
-      state.isAuthenticated = false;
-      state.error = null;
-      logAuthOperation("logout-user");
-    },
     loginStart: (state) => {
-      state.loading = true;
+      state.isLoading = true;
       state.error = null;
-      logAuthOperation("login-start");
     },
     loginSuccess: (state, action) => {
-      state.loading = false;
+      state.isLoading = false;
+      state.isAuthenticated = true;
       state.user = action.payload.user;
-      state.token = action.payload.token;
       state.error = null;
-      logAuthOperation("login-success", {
-        userId: action.payload?.user?.id,
-      });
     },
     loginFailure: (state, action) => {
-      state.loading = false;
-      state.error = action.payload?.message || "Login failed";
-      logAuthOperation("login-failure", { error: state.error });
+      state.isLoading = false;
+      state.isAuthenticated = false;
+      state.user = null;
+      state.error = action.payload;
     },
     updateUser: (state, action) => {
       state.user = action.payload;
-      logAuthOperation("update-user", {
-        userId: action.payload?.id,
-      });
+    },
+    clearError: (state) => {
+      state.error = null;
     },
     setNetworkError: (state, action) => {
       state.networkError = action.payload;
@@ -335,57 +299,44 @@ const authSlice = createSlice({
 
       // Login
       .addCase(login.pending, (state) => {
-        state.loading = true;
+        state.isLoading = true;
         state.error = null;
         logAuthOperation("login-pending");
       })
       .addCase(login.fulfilled, (state, action) => {
-        state.loading = false;
+        state.isLoading = false;
         state.user = action.payload;
-        state.token = action.payload.token;
+        state.isAuthenticated = true;
+        state.error = null;
         logAuthOperation("login-fulfilled", {
           userId: action.payload?.id,
         });
       })
       .addCase(login.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.message || "Login failed";
+        state.isLoading = false;
+        state.error = action.payload;
         logAuthOperation("login-rejected", { error: state.error });
       })
 
       // Signup
       .addCase(signup.pending, (state) => {
-        state.loading = true;
+        state.isLoading = true;
         state.error = null;
         logAuthOperation("signup-pending");
       })
       .addCase(signup.fulfilled, (state, action) => {
-        state.loading = false;
+        state.isLoading = false;
         state.user = action.payload;
-        state.token = action.payload.token;
+        state.isAuthenticated = true;
+        state.error = null;
         logAuthOperation("signup-fulfilled", {
           userId: action.payload?.id,
         });
       })
       .addCase(signup.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.message || "Sign up failed";
-        logAuthOperation("signup-rejected", { error: state.error });
-      })
-
-      // Demo Login
-      .addCase(demoLogin.pending, (state) => {
-        state.status = "loading";
-      })
-      .addCase(demoLogin.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        state.user = action.payload.user;
-        state.token = action.payload.token;
-        state.error = null;
-      })
-      .addCase(demoLogin.rejected, (state, action) => {
-        state.status = "failed";
+        state.isLoading = false;
         state.error = action.payload;
+        logAuthOperation("signup-rejected", { error: state.error });
       })
 
       // Logout
@@ -397,7 +348,6 @@ const authSlice = createSlice({
       .addCase(logout.fulfilled, (state) => {
         state.isLoading = false;
         state.user = null;
-        state.token = null;
         state.isAuthenticated = false;
         state.error = null;
         logAuthOperation("logout-fulfilled");
@@ -411,12 +361,13 @@ const authSlice = createSlice({
 });
 
 export const {
-  logoutUser,
   loginStart,
   loginSuccess,
   loginFailure,
   updateUser,
+  clearError,
   setNetworkError,
   setOfflineMode,
 } = authSlice.actions;
+
 export default authSlice.reducer;

@@ -1,275 +1,97 @@
 import axios from "axios";
-import { shouldUseFallback } from "../utils/authFallback";
-import {
-  API_CONFIG,
-  AUTH_CONFIG,
-  API_URL,
-  IS_DEVELOPMENT,
-} from "../utils/config";
+import { AUTH_CONFIG } from "../utils/config";
+import { log } from "../utils/logger";
+import { endpoints } from "./endpoints";
+import { cache } from "../utils/cache";
+import { CACHE_CONFIG } from "../utils/cacheConfig";
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: API_URL,
-  timeout: API_CONFIG.TIMEOUT || 10000,
+  baseURL: process.env.REACT_APP_API_URL || "http://localhost:5000",
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
   },
   withCredentials: true,
+  timeout: 15000,
 });
 
-// Test API connection on startup
-const testApiConnection = async () => {
-  try {
-    if (IS_DEVELOPMENT) {
-      console.debug("Testing API connection to:", API_URL);
-    }
-    const response = await api.get("/api/health");
-    if (IS_DEVELOPMENT) {
-      console.debug("API connection successful:", response.data);
-    }
-    return true;
-  } catch (error) {
-    console.error("API connection failed:", {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data,
-      config: {
-        baseURL: error.config?.baseURL,
-        url: error.config?.url,
-        method: error.config?.method,
-      },
-    });
-    return false;
-  }
-};
-
-// Test connection on startup
-testApiConnection();
-
-// Add request interceptor
+// Request interceptor
 api.interceptors.request.use(
   (config) => {
-    // Get token from localStorage
+    // Log request
+    log("api", "Sending request", {
+      method: config.method.toUpperCase(),
+      url: config.url,
+      baseURL: config.baseURL,
+      fullURL: `${config.baseURL}${config.url}`,
+    });
+
+    // Add auth token if available
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      if (IS_DEVELOPMENT) {
-        console.debug(
-          "Adding token to request:",
-          token.substring(0, 10) + "..."
-        );
-        console.debug("Full request config:", {
-          url: config.url,
-          baseURL: config.baseURL,
-          method: config.method,
-          headers: config.headers,
-          withCredentials: config.withCredentials,
-        });
-      }
-    } else {
-      if (IS_DEVELOPMENT) {
-        console.debug("No token found in localStorage");
-      }
     }
 
-    // Log outgoing requests in development
-    if (IS_DEVELOPMENT) {
-      // Remove any leading /api from the URL to prevent duplication
-      const cleanUrl = config.url.replace(/^\/api/, "");
-      console.debug("API Request:", {
-        method: config.method?.toUpperCase(),
-        url: cleanUrl,
-        baseURL: config.baseURL,
-        fullURL: `${config.baseURL}${cleanUrl}`,
-        data: config.data,
-        headers: config.headers,
-        withCredentials: config.withCredentials,
-      });
-    }
     return config;
   },
   (error) => {
-    console.error("Request Error:", error);
+    log("api", "Request error", { error: error.message });
     return Promise.reject(error);
   }
 );
 
-// Add response interceptor
+// Response interceptor
 api.interceptors.response.use(
   (response) => {
-    // Log successful responses in development
-    if (IS_DEVELOPMENT) {
-      console.debug("API Response:", {
-        status: response.status,
-        data: response.data,
-        headers: response.headers,
-        config: {
-          url: response.config.url,
-          baseURL: response.config.baseURL,
-          method: response.config.method,
-          headers: response.config.headers,
-        },
-      });
-    }
-    // Ensure response.data exists but don't modify the response structure
-    if (!response.data) {
-      response.data = {};
-    }
+    // Log successful response
+    log("api", "Response received", {
+      status: response.status,
+      url: response.config.url,
+    });
+
     return response;
   },
   async (error) => {
-    // Log error details in development
-    if (IS_DEVELOPMENT) {
-      console.error("API Error:", {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data,
-        config: {
-          url: error.config?.url,
-          baseURL: error.config?.baseURL,
-          method: error.config?.method,
-          headers: error.config?.headers,
-          withCredentials: error.config?.withCredentials,
-        },
-      });
+    const status = error.response?.status;
+    const url = error.config?.url;
+
+    // Log error
+    log("api", "Response error", {
+      status,
+      url,
+      message: error.message,
+      response: error.response?.data,
+    });
+
+    // Handle token refresh
+    if (status === 401 && !url.includes("/auth/login")) {
+      try {
+        const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+        if (refreshToken) {
+          const response = await api.post(endpoints.auth.refresh, {
+            refresh_token: refreshToken,
+          });
+          const { access_token } = response.data;
+          localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, access_token);
+          error.config.headers.Authorization = `Bearer ${access_token}`;
+          return api(error.config);
+        }
+      } catch (refreshError) {
+        log("api", "Token refresh failed", { error: refreshError.message });
+      }
     }
 
-    // Check if we should use fallback
-    if (await shouldUseFallback(error)) {
-      console.warn("Using fallback mode due to API error");
-      // You can implement fallback logic here
-    }
-
-    // Format the error for better handling
-    const formattedError = {
-      message:
-        error.response?.data?.message ||
-        error.message ||
-        "An unknown error occurred",
-      status: error.response?.status,
-      data: error.response?.data,
-      config: error.config,
-    };
-
-    if (error.response?.status === 401) {
+    // Handle unauthorized access
+    if (status === 401) {
       localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-      window.location.href = "/login";
+      localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+      window.location.href = "/#/?modal=login&authError=true";
     }
 
-    return Promise.reject(formattedError);
+    return Promise.reject(error);
   }
 );
-
-// Test the API connection - but only do it once at startup, not on every import
-// REMOVING this immediate invocation as it causes issues with modal system
-// api.get('/health')
-//   .then(response => {
-//     console.log('API Health Check:', response.data);
-//   })
-//   .catch(error => {
-//     console.error('API Health Check Failed:', error);
-//   });
-
-// Add cache configuration
-const CACHE_CONFIG = {
-  USER_PROFILE: {
-    key: "user_profile",
-    ttl: 5 * 60 * 1000, // 5 minutes
-  },
-};
-
-// Add cache utility functions
-const cache = {
-  set: (key, data, ttl) => {
-    const item = {
-      data,
-      timestamp: Date.now(),
-      ttl,
-    };
-    localStorage.setItem(key, JSON.stringify(item));
-  },
-  get: (key) => {
-    const item = localStorage.getItem(key);
-    if (!item) return null;
-
-    const { data, timestamp, ttl } = JSON.parse(item);
-    if (Date.now() - timestamp > ttl) {
-      localStorage.removeItem(key);
-      return null;
-    }
-    return data;
-  },
-  clear: (key) => {
-    localStorage.removeItem(key);
-  },
-};
-
-// API endpoints
-export const endpoints = {
-  auth: {
-    login: "/api/auth/login",
-    register: "/api/auth/register",
-    logout: "/api/auth/logout",
-    checkAuth: "/api/auth/check-auth",
-    updateProfile: "/api/auth/profile",
-    changePassword: "/api/auth/password",
-    resetPassword: "/api/auth/reset-password",
-    verifyEmail: "/api/auth/verify-email",
-    demo: "/api/auth/demo",
-    demoLogin: "/api/auth/demo-login",
-    me: "/api/auth/me",
-  },
-  user: {
-    profile: "/api/user/profile",
-    settings: "/api/user/settings",
-  },
-  universes: {
-    list: "/universes",
-    create: "/universes",
-    get: (id) => `/universes/${id}`,
-    update: (id) => `/universes/${id}`,
-    delete: (id) => `/universes/${id}`,
-    scenes: (id) => `/universes/${id}/scenes`,
-    duplicate: (id) => `/universes/${id}/duplicate`,
-    export: (id) => `/universes/${id}/export`,
-    import: "/universes/import",
-    generate: "/universes/generate",
-  },
-  scenes: {
-    list: "/scenes",
-    create: "/scenes",
-    get: (id) => `/scenes/${id}`,
-    update: (id) => `/scenes/${id}`,
-    delete: (id) => `/scenes/${id}`,
-    reorder: "/scenes/reorder",
-    duplicate: (id) => `/scenes/${id}/duplicate`,
-    export: (id) => `/scenes/${id}/export`,
-    import: "/scenes/import",
-  },
-  physicsObjects: {
-    list: "/physics-objects",
-    create: "/physics-objects",
-    get: (id) => `/physics-objects/${id}`,
-    update: (id) => `/physics-objects/${id}`,
-    delete: (id) => `/physics-objects/${id}`,
-    forScene: (sceneId) => `/scenes/${sceneId}/physics-objects`,
-    simulate: "/physics-objects/simulate",
-    reset: "/physics-objects/reset",
-  },
-  music: {
-    generate: "/music/generate",
-    save: "/music/save",
-    list: "/music/list",
-    upload: "/music/upload",
-    delete: (id) => `/music/delete/${id}`,
-  },
-  physicsParameters: {
-    get: "/physics-parameters",
-    update: "/physics-parameters",
-    reset: "/physics-parameters/reset",
-  },
-};
 
 // API methods
 export const apiClient = {
@@ -277,26 +99,18 @@ export const apiClient = {
   login: (credentials) => api.post(endpoints.auth.login, credentials),
   register: (userData) => api.post(endpoints.auth.register, userData),
   logout: () => {
-    console.debug(
-      "Making logout request to:",
-      `${API_URL}${endpoints.auth.logout}`
-    );
+    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
     return api.post(
       endpoints.auth.logout,
       {},
       {
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem(
-            AUTH_CONFIG.TOKEN_KEY
-          )}`,
+          Authorization: `Bearer ${token}`,
         },
-        withCredentials: true,
       }
     );
   },
   checkAuth: () => api.get(endpoints.auth.me),
-  demoLogin: () => api.post("/api/auth/demo-login"),
 
   // User methods
   getUserProfile: async () => {
@@ -304,7 +118,6 @@ export const apiClient = {
       // Check cache first
       const cachedProfile = cache.get(CACHE_CONFIG.USER_PROFILE.key);
       if (cachedProfile) {
-        console.debug("Using cached user profile");
         return {
           data: {
             message: "User profile retrieved successfully",
@@ -313,7 +126,6 @@ export const apiClient = {
         };
       }
 
-      console.debug("Fetching fresh user profile");
       const response = await api.get(endpoints.user.profile);
 
       // Cache the response
@@ -327,17 +139,13 @@ export const apiClient = {
 
       return response;
     } catch (error) {
-      console.error("Error fetching user profile:", error);
+      log("api", "Error fetching user profile", { error: error.message });
       throw error;
     }
   },
   updateUserProfile: (data) => api.put(endpoints.user.profile, data),
   updateUserSettings: (settings) => api.put(endpoints.user.settings, settings),
-
-  // Add method to clear user profile cache
-  clearUserProfileCache: () => {
-    cache.clear(CACHE_CONFIG.USER_PROFILE.key);
-  },
+  clearUserProfileCache: () => cache.clear(CACHE_CONFIG.USER_PROFILE.key),
 
   // Universe methods
   getUniverses: (params = {}) => {

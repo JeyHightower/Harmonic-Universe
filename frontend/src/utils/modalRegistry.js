@@ -1,7 +1,9 @@
 import React from "react";
 import { MODAL_TYPES } from "../constants/modalTypes";
 import { MODAL_CONFIG } from "./config";
-import { AlertModal, ConfirmModal, FormModal } from "../components/modals";
+import AlertModal from "../components/modals/AlertModal";
+import ConfirmationModal from "../components/modals/ConfirmationModal";
+import FormModal from "../components/modals/FormModal";
 import LoginModal from "../components/auth/LoginModal";
 import SignupModal from "../components/auth/SignupModal";
 
@@ -10,7 +12,7 @@ const modalRegistry = new Map();
 
 // Register modal components
 modalRegistry.set(MODAL_TYPES.ALERT, AlertModal);
-modalRegistry.set(MODAL_TYPES.CONFIRMATION, ConfirmModal);
+modalRegistry.set(MODAL_TYPES.CONFIRMATION, ConfirmationModal);
 modalRegistry.set(MODAL_TYPES.FORM, FormModal);
 modalRegistry.set(MODAL_TYPES.LOGIN, LoginModal);
 modalRegistry.set(MODAL_TYPES.SIGNUP, SignupModal);

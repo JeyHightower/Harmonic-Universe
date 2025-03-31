@@ -114,6 +114,19 @@ const DebugControls = () => {
     }
   };
 
+  const testSignupModal = () => {
+    openModal(MODAL_TYPES.SIGNUP);
+    addLog("Opening signup modal");
+  };
+
+  const testDirectSignupModal = () => {
+    if (window.openSignupModal) {
+      window.openSignupModal();
+    } else {
+      addLog("window.openSignupModal function not found");
+    }
+  };
+
   // Helper function to add logs
   const addLog = (message) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -277,6 +290,11 @@ const DebugControls = () => {
           disabled={!debug}
         >
           Advanced Settings
+        </Button>
+
+        <Button onClick={testSignupModal}>Test Signup Modal</Button>
+        <Button onClick={testDirectSignupModal}>
+          Test Direct Signup Modal
         </Button>
       </Space>
     </Card>
