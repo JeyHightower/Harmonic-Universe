@@ -1,5 +1,5 @@
+from app.extensions import db
 from .base import BaseModel
-from ..models.database import db
 
 class SoundProfile(BaseModel):
     __tablename__ = 'sound_profiles'

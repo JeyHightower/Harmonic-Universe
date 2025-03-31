@@ -1,5 +1,5 @@
 from datetime import datetime
-from app import db
+from app.extensions import db
 from app.api.models.base import BaseModel
 
 # Association table for character-scene many-to-many relationship

@@ -1,5 +1,5 @@
+from app.extensions import db
 from .base import BaseModel
-from ..models.database import db
 from sqlalchemy import func, and_, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import Optional, List, Dict, Any, TYPE_CHECKING

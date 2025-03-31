@@ -9,8 +9,7 @@ import os
 from pathlib import Path
 from typing import Optional, Union
 from .config import config
-
-from .api.models.database import db
+from .extensions import db
 
 # Initialize extensions
 jwt = JWTManager()

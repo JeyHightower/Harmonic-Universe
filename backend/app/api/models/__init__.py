@@ -1,5 +1,5 @@
 from flask_login import UserMixin
-from ..models.database import db
+from app.extensions import db
 from .base import BaseModel
 from .user import User
 from .universe import Universe, Scene

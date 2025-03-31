@@ -1,8 +1,9 @@
 from flask import Blueprint, jsonify, request, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.api.models.scene import Scene
+from app.api.models.universe import Scene
 from app.api.models.universe import Universe
-from app import db
+from app.api.models.character import Character
+from app.extensions import db
 
 scenes_bp = Blueprint('scenes', __name__)
 
