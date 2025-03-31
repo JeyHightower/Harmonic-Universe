@@ -133,11 +133,12 @@ def logout():
         current_app.logger.error(f'Logout error: {str(e)}')
         return jsonify({'message': 'An error occurred during logout'}), 500
 
-@auth_bp.route('/demo-login', methods=['POST'])
+@auth_bp.route('/demo-login', methods=['GET', 'POST'])
 def demo_login():
     """Login as a demo user."""
     try:
         current_app.logger.info('Starting demo login process')
+        current_app.logger.info(f'Request method: {request.method}')
         
         # Check if demo user exists
         demo_user = User.query.filter_by(email='demo@example.com').first()

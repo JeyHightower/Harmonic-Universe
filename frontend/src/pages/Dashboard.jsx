@@ -1,26 +1,56 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { logout } from "../store/slices/authSlice";
+import { logout, checkAuthState } from "../store/slices/authSlice";
 import { fetchUniverses, createUniverse } from "../store/thunks/universeThunks";
 import { Button } from "../components/common";
 import { useModal } from "../contexts/ModalContext";
 import "../styles/Dashboard.css";
 
 const Dashboard = () => {
-  const { user } = useSelector((state) => state.auth);
-  const { universes, loading, error } = useSelector((state) => state.universe);
+  const {
+    user,
+    isAuthenticated,
+    loading: authLoading,
+    error: authError,
+  } = useSelector((state) => state.auth);
+  const {
+    universes,
+    loading: universesLoading,
+    error: universesError,
+  } = useSelector((state) => state.universe);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { openModal } = useModal();
+  const hasFetched = useRef(false);
+  const authChecked = useRef(false);
+  const isNavigating = useRef(false);
 
   useEffect(() => {
-    dispatch(fetchUniverses());
+    // Check auth state if not already checked
+    if (!authChecked.current) {
+      authChecked.current = true;
+      dispatch(checkAuthState());
+    }
   }, [dispatch]);
+
+  useEffect(() => {
+    // Only fetch if authenticated and haven't fetched yet
+    if (isAuthenticated && !authLoading && !hasFetched.current) {
+      hasFetched.current = true;
+      dispatch(fetchUniverses());
+    } else if (!isAuthenticated && !authLoading && !isNavigating.current) {
+      isNavigating.current = true;
+      navigate("/login", { replace: true });
+    }
+  }, [dispatch, isAuthenticated, authLoading, navigate]);
 
   const handleLogout = async () => {
     try {
       await dispatch(logout()).unwrap();
+      hasFetched.current = false; // Reset the fetch flag on logout
+      authChecked.current = false; // Reset the auth check flag on logout
+      isNavigating.current = false; // Reset the navigation flag on logout
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -29,6 +59,7 @@ const Dashboard = () => {
   const handleCreateUniverse = () => {
     openModal("universe-create", {
       onClose: () => {
+        hasFetched.current = false; // Reset the fetch flag when creating a new universe
         dispatch(fetchUniverses());
       },
     });
@@ -37,6 +68,29 @@ const Dashboard = () => {
   const handleUniverseClick = (universeId) => {
     navigate(`/universe/${universeId}`);
   };
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="dashboard">
+        <div className="loading">Checking authentication...</div>
+      </div>
+    );
+  }
+
+  // Show error state if authentication failed
+  if (authError) {
+    return (
+      <div className="dashboard">
+        <div className="error">
+          <p>Authentication error: {authError}</p>
+          <Button onClick={handleLogout} variant="secondary">
+            Logout
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard">
@@ -54,10 +108,12 @@ const Dashboard = () => {
               Create Universe
             </Button>
           </div>
-          {loading ? (
+          {universesLoading ? (
             <div className="loading">Loading universes...</div>
-          ) : error ? (
-            <div className="error">Error loading universes: {error}</div>
+          ) : universesError ? (
+            <div className="error">
+              Error loading universes: {universesError}
+            </div>
           ) : universes.length === 0 ? (
             <div className="empty-state">
               <p>No universes created yet</p>

@@ -3,71 +3,76 @@
  * This file contains all the API endpoints used by the application.
  */
 
+import { API_CONFIG } from '../utils/config';
+
 // Base API URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+const API_BASE_URL = API_CONFIG.BASE_URL;
+
+// API version prefix
+const API_VERSION = '/api';
 
 // Auth endpoints
 const authEndpoints = {
-  login: `${API_BASE_URL}/api/auth/login`,
-  register: `${API_BASE_URL}/api/auth/signup`,
-  signup: `${API_BASE_URL}/api/auth/signup`,
-  demoLogin: `${API_BASE_URL}/api/auth/demo-login`,
-  refresh: `${API_BASE_URL}/api/auth/refresh`,
-  logout: `${API_BASE_URL}/api/auth/logout`,
-  resetPassword: `${API_BASE_URL}/api/auth/reset-password`,
-  forgotPassword: `${API_BASE_URL}/api/auth/forgot-password`,
-  verifyEmail: `${API_BASE_URL}/api/auth/verify-email`,
+  login: `${API_VERSION}/auth/login`,
+  register: `${API_VERSION}/auth/signup`,
+  signup: `${API_VERSION}/auth/signup`,
+  demoLogin: `${API_VERSION}/auth/demo-login`,
+  refresh: `${API_VERSION}/auth/refresh`,
+  logout: `${API_VERSION}/auth/logout`,
+  resetPassword: `${API_VERSION}/auth/reset-password`,
+  forgotPassword: `${API_VERSION}/auth/forgot-password`,
+  verifyEmail: `${API_VERSION}/auth/verify-email`,
 };
 
 // User endpoints
 const userEndpoints = {
-  profile: `${API_BASE_URL}/api/user/profile`,
-  update: `${API_BASE_URL}/api/user/update`,
-  changePassword: `${API_BASE_URL}/api/user/change-password`,
-  delete: `${API_BASE_URL}/api/user/delete`,
+  profile: `${API_VERSION}/user/profile`,
+  update: `${API_VERSION}/user/update`,
+  changePassword: `${API_VERSION}/user/change-password`,
+  delete: `${API_VERSION}/user/delete`,
 };
 
 // Universe endpoints
 const universeEndpoints = {
-  list: `${API_BASE_URL}/api/universes`,
-  create: `${API_BASE_URL}/api/universes`,
-  get: (id) => `${API_BASE_URL}/api/universes/${id}`,
-  update: (id) => `${API_BASE_URL}/api/universes/${id}`,
-  delete: (id) => `${API_BASE_URL}/api/universes/${id}`,
-  physics: (id) => `${API_BASE_URL}/api/universes/${id}/physics`,
-  audio: (id) => `${API_BASE_URL}/api/universes/${id}/audio`,
-  visualization: (id) => `${API_BASE_URL}/api/universes/${id}/visualization`,
+  list: `${API_VERSION}/universes`,
+  create: `${API_VERSION}/universes`,
+  get: (id) => `${API_VERSION}/universes/${id}`,
+  update: (id) => `${API_VERSION}/universes/${id}`,
+  delete: (id) => `${API_VERSION}/universes/${id}`,
+  physics: (id) => `${API_VERSION}/universes/${id}/physics`,
+  audio: (id) => `${API_VERSION}/universes/${id}/audio`,
+  visualization: (id) => `${API_VERSION}/universes/${id}/visualization`,
 };
 
 // Physics objects endpoints
 const physicsObjectEndpoints = {
-  list: (universeId) => `${API_BASE_URL}/api/universes/${universeId}/objects`,
-  create: (universeId) => `${API_BASE_URL}/api/universes/${universeId}/objects`,
+  list: (universeId) => `${API_VERSION}/universes/${universeId}/objects`,
+  create: (universeId) => `${API_VERSION}/universes/${universeId}/objects`,
   get: (universeId, objectId) =>
-    `${API_BASE_URL}/api/universes/${universeId}/objects/${objectId}`,
+    `${API_VERSION}/universes/${universeId}/objects/${objectId}`,
   update: (universeId, objectId) =>
-    `${API_BASE_URL}/api/universes/${universeId}/objects/${objectId}`,
+    `${API_VERSION}/universes/${universeId}/objects/${objectId}`,
   delete: (universeId, objectId) =>
-    `${API_BASE_URL}/api/universes/${universeId}/objects/${objectId}`,
+    `${API_VERSION}/universes/${universeId}/objects/${objectId}`,
 };
 
 // Audio tracks endpoints
 const audioTrackEndpoints = {
-  list: (universeId) => `${API_BASE_URL}/api/universes/${universeId}/audio-tracks`,
+  list: (universeId) => `${API_VERSION}/universes/${universeId}/audio-tracks`,
   create: (universeId) =>
-    `${API_BASE_URL}/api/universes/${universeId}/audio-tracks`,
+    `${API_VERSION}/universes/${universeId}/audio-tracks`,
   get: (universeId, trackId) =>
-    `${API_BASE_URL}/api/universes/${universeId}/audio-tracks/${trackId}`,
+    `${API_VERSION}/universes/${universeId}/audio-tracks/${trackId}`,
   update: (universeId, trackId) =>
-    `${API_BASE_URL}/api/universes/${universeId}/audio-tracks/${trackId}`,
+    `${API_VERSION}/universes/${universeId}/audio-tracks/${trackId}`,
   delete: (universeId, trackId) =>
-    `${API_BASE_URL}/api/universes/${universeId}/audio-tracks/${trackId}`,
+    `${API_VERSION}/universes/${universeId}/audio-tracks/${trackId}`,
 };
 
 // System endpoints
 const systemEndpoints = {
-  health: `${API_BASE_URL}/api/health`,
-  version: `${API_BASE_URL}/api/version`,
+  health: `${API_VERSION}/health`,
+  version: `${API_VERSION}/version`,
 };
 
 // Export all endpoints
@@ -78,7 +83,6 @@ export const endpoints = {
   physicsObjects: physicsObjectEndpoints,
   audioTracks: audioTrackEndpoints,
   system: systemEndpoints,
-  // Add other endpoint groups as needed
 };
 
 // Export endpoint helper functions
@@ -108,11 +112,6 @@ export const getApiEndpoint = (endpoint) => {
     return endpoint;
   }
 
-  // Check for v1 API prefix
-  if (import.meta.env.VITE_API_VERSION === "v1") {
-    return `/api/v1${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
-  }
-
-  // Default to current API version
-  return `/api${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
+  // Ensure endpoint starts with API version
+  return endpoint.startsWith(API_VERSION) ? endpoint : `${API_VERSION}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
 };

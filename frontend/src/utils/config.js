@@ -86,40 +86,32 @@ export const API_CONFIG = {
     ALLOWED_ORIGINS: parseArray(
       validateEnvVar(
         "VITE_CORS_ALLOWED_ORIGINS",
-        "http://localhost:3000,http://localhost:5173"
+        "http://localhost:5173,http://localhost:3000"
       )
     ),
-    ALLOWED_METHODS: parseArray(
-      validateEnvVar("VITE_CORS_ALLOWED_METHODS", "GET,POST,PUT,DELETE,PATCH")
-    ),
-    ALLOWED_HEADERS: parseArray(
-      validateEnvVar("VITE_CORS_ALLOWED_HEADERS", "Content-Type,Authorization,Accept")
-    ),
-    EXPOSED_HEADERS: parseArray(
-      validateEnvVar("VITE_CORS_EXPOSE_HEADERS", "Content-Length,Content-Type,Authorization")
-    ),
-    MAX_AGE: parseInt(validateEnvVar("VITE_CORS_MAX_AGE", "600")),
+    ALLOWED_METHODS: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    ALLOWED_HEADERS: ["Content-Type", "Authorization", "Accept"],
+    EXPOSED_HEADERS: ["Content-Length", "Content-Type", "Authorization"],
+    MAX_AGE: 600,
   },
   HEALTH_CHECK: {
     ENDPOINT: "/api/health",
-    INTERVAL: parseInt(validateEnvVar("VITE_HEALTH_CHECK_INTERVAL", "30000")),
+    INTERVAL: 30000,
     TIMEOUT: 3000,
     RETRY_ATTEMPTS: 3,
   },
   ERROR_HANDLING: {
-    RETRY_ATTEMPTS: parseInt(validateEnvVar("VITE_API_RETRY_ATTEMPTS", "3")),
-    RETRY_DELAY: parseInt(validateEnvVar("VITE_API_RETRY_DELAY", "1000")),
-    NETWORK_ERROR_THRESHOLD: parseInt(
-      validateEnvVar("VITE_NETWORK_ERROR_THRESHOLD", "5000")
-    ),
+    RETRY_ATTEMPTS: 3,
+    RETRY_DELAY: 1000,
+    NETWORK_ERROR_THRESHOLD: 5000,
   },
   RETRY: {
-    MAX_ATTEMPTS: parseInt(validateEnvVar("VITE_API_RETRY_MAX_ATTEMPTS", "3")),
-    DELAY: parseInt(validateEnvVar("VITE_API_RETRY_DELAY", "1000")),
+    MAX_ATTEMPTS: 3,
+    DELAY: 1000,
   },
   CACHE: {
-    ENABLED: parseBool(validateEnvVar("VITE_API_CACHE_ENABLED", "true")),
-    TTL: parseInt(validateEnvVar("VITE_API_CACHE_TTL", "300000")), // 5 minutes
+    ENABLED: true,
+    TTL: 300000, // 5 minutes
   },
 };
 
@@ -131,8 +123,8 @@ export const AUTH_CONFIG = {
   TOKEN_EXPIRY: 3600, // 1 hour
   REFRESH_TOKEN_EXPIRY: 604800, // 7 days
   COOKIE_DOMAIN: IS_PRODUCTION ? ".harmonic-universe.com" : "localhost",
-  COOKIE_SECURE: parseBool(validateEnvVar("VITE_AUTH_COOKIE_SECURE", "false")),
-  COOKIE_SAMESITE: validateEnvVar("VITE_AUTH_COOKIE_SAMESITE", "strict"),
+  COOKIE_SECURE: IS_PRODUCTION,
+  COOKIE_SAMESITE: "strict",
   ENDPOINTS: {
     LOGIN: "/api/auth/login",
     SIGNUP: "/api/auth/signup",

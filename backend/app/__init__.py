@@ -4,13 +4,20 @@ from flask_migrate import Migrate
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_jwt_extended import JWTManager
+from flask_caching import Cache
 import os
 from pathlib import Path
 from typing import Optional, Union
+from .config import config
 
 from .api.models.database import db
 
-def create_app():
+# Initialize extensions
+jwt = JWTManager()
+limiter = Limiter(key_func=get_remote_address)
+cache = Cache()
+
+def create_app(config_name='default'):
     app = Flask(__name__)
     static_folder = str(Path(__file__).parent.parent / 'frontend' / 'dist')
     app.static_folder = static_folder
@@ -19,52 +26,49 @@ def create_app():
     # Disable trailing slash redirects
     app.url_map.strict_slashes = False
     
-    # Get database URL from environment
-    db_dir = os.path.dirname(os.path.dirname(__file__))
-    os.makedirs(db_dir, exist_ok=True)
-    database_url = 'sqlite:///' + os.path.abspath(os.path.join(db_dir, 'app.db'))
-    print(f"Using SQLite database at: {database_url}")
-    
-    # Default configuration
-    app.config.update(
-        SECRET_KEY=os.environ.get('SECRET_KEY', 'dev'),
-        SQLALCHEMY_DATABASE_URI=database_url,
-        SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        UPLOAD_FOLDER=os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads'),
-        MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16MB max file size
-        RATELIMIT_STORAGE_URL=os.environ.get('REDIS_URL', 'redis://localhost:6379/0'),
-        RATELIMIT_STRATEGY="fixed-window",
-        JWT_SECRET_KEY=os.environ.get('JWT_SECRET_KEY', 'dev-jwt-secret'),
-        JWT_ACCESS_TOKEN_EXPIRES=3600,  # 1 hour
-        JWT_TOKEN_LOCATION=['headers'],
-        JWT_HEADER_NAME='Authorization',
-        JWT_HEADER_TYPE='Bearer'
-    )
+    # Load config
+    app.config.from_object(config[config_name])
     
     # Initialize extensions
+    db.init_app(app)
+    jwt.init_app(app)
+    limiter.init_app(app)
+    cache.init_app(app)
+    
+    # Configure CORS
     CORS(app, resources={
         r"/api/*": {
-            "origins": ["http://localhost:5173", "http://localhost:3000", "http://localhost:5000", "http://localhost:5001"],
-            "supports_credentials": True,
-            "allow_headers": ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-            "expose_headers": ["Content-Type", "Authorization"],
-            "max_age": 600,
-            "allow_credentials": True,
-            "send_wildcard": False,
-            "automatic_options": True
-        },
-        r"/auth/*": {
-            "origins": ["http://localhost:5173", "http://localhost:3000", "http://localhost:5000", "http://localhost:5001"],
-            "supports_credentials": False,  # Disable credentials for now
-            "allow_headers": ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-            "expose_headers": ["Content-Type", "Authorization"],
-            "max_age": 600
+            "origins": app.config['CORS_ORIGINS'],
+            "methods": app.config['CORS_METHODS'],
+            "allow_headers": app.config['CORS_HEADERS'],
+            "expose_headers": app.config['CORS_EXPOSE_HEADERS'],
+            "max_age": app.config['CORS_MAX_AGE'],
+            "supports_credentials": True
         }
     })
-    db.init_app(app)
-    migrate = Migrate(app, db)
+    
+    # Register API blueprint
+    from .api.routes import api_bp
+    app.register_blueprint(api_bp)
+    
+    # Register health check route
+    @app.route(app.config['HEALTH_CHECK_ENDPOINT'])
+    def health_check():
+        return {"status": "healthy"}, 200
+    
+    # Error handlers
+    @app.errorhandler(404)
+    def not_found_error(error):
+        return {"error": "Not found"}, 404
+    
+    @app.errorhandler(500)
+    def internal_error(error):
+        db.session.rollback()
+        return {"error": "Internal server error"}, 500
+    
+    @app.errorhandler(429)
+    def ratelimit_handler(e):
+        return {"error": "Rate limit exceeded"}, 429
     
     # Create database tables
     with app.app_context():
@@ -78,8 +82,6 @@ def create_app():
         except Exception as e:
             print(f"Error creating database tables: {e}")
             raise e
-    
-    jwt = JWTManager(app)
     
     # JWT error handlers
     @jwt.expired_token_loader
@@ -116,33 +118,6 @@ def create_app():
             'message': 'The token has been revoked',
             'error': 'token_revoked'
         }), 401
-    
-    # Initialize rate limiter
-    limiter = Limiter(
-        app=app,
-        key_func=get_remote_address,
-        storage_uri=app.config['RATELIMIT_STORAGE_URL'],
-        strategy=app.config['RATELIMIT_STRATEGY']
-    )
-    
-    # Register blueprints with standardized URL patterns
-    from .api.routes import auth_bp, characters_bp, notes_bp, user_bp, universes_bp, modal_bp
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(characters_bp, url_prefix='/api/characters')
-    app.register_blueprint(notes_bp, url_prefix='/api/notes')
-    app.register_blueprint(user_bp, url_prefix='/api/user')
-    app.register_blueprint(universes_bp, url_prefix='/api/universes')
-    app.register_blueprint(modal_bp, url_prefix='/api/modal')
-    
-    # Health check endpoint
-    @app.route('/api/health')
-    def health_check():
-        return jsonify({
-            'status': 'healthy',
-            'message': 'The Harmonic Universe API is running',
-            'version': app.config.get('VERSION', '1.0.0'),
-            'environment': app.config.get('ENV', 'development')
-        })
     
     # Serve favicon.ico
     @app.route('/favicon.ico')

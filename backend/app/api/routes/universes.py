@@ -3,9 +3,9 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.api.models.universe import Universe
 from app import db
 
-bp = Blueprint('universes', __name__)
+universes_bp = Blueprint('universes', __name__)
 
-@bp.route('/', methods=['GET'])
+@universes_bp.route('/', methods=['GET'])
 @jwt_required()
 def get_universes():
     try:
@@ -43,7 +43,7 @@ def get_universes():
             'error': str(e)
         }), 500
 
-@bp.route('/<int:universe_id>', methods=['GET'])
+@universes_bp.route('/<int:universe_id>', methods=['GET'])
 @jwt_required()
 def get_universe(universe_id):
     try:
@@ -67,7 +67,7 @@ def get_universe(universe_id):
             'error': str(e)
         }), 500
 
-@bp.route('/', methods=['POST'])
+@universes_bp.route('/', methods=['POST'])
 @jwt_required()
 def create_universe():
     try:
@@ -133,7 +133,7 @@ def create_universe():
             'error': str(e)
         }), 500
 
-@bp.route('/<int:universe_id>', methods=['PUT'])
+@universes_bp.route('/<int:universe_id>', methods=['PUT'])
 @jwt_required()
 def update_universe(universe_id):
     try:
@@ -170,7 +170,7 @@ def update_universe(universe_id):
             'error': str(e)
         }), 500
 
-@bp.route('/<int:universe_id>', methods=['DELETE'])
+@universes_bp.route('/<int:universe_id>', methods=['DELETE'])
 @jwt_required()
 def delete_universe(universe_id):
     try:

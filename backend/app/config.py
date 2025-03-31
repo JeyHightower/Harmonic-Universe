@@ -1,35 +1,97 @@
 import os
-import logging
+from datetime import timedelta
 
 class Config:
-    # Flask settings
-    SECRET_KEY = os.getenv('SECRET_KEY', 'dev')
+    # Basic Flask config
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key')
+    DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
     
-    # Database settings
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///app.db'
+    # Database config
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:////Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/app.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_size': 10,
-        'max_overflow': 2,
-        'pool_timeout': 30,
-        'pool_recycle': 1800,
-    }
     
-    # Security settings
-    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'dev')
-    JWT_ACCESS_TOKEN_EXPIRES = 3600  # 1 hour
+    # JWT config
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'jwt-secret-key')
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=7)
+    JWT_TOKEN_LOCATION = ['headers']
+    JWT_HEADER_NAME = 'Authorization'
+    JWT_HEADER_TYPE = 'Bearer'
     
-    # CORS settings
-    CORS_HEADERS = 'Content-Type'
+    # CORS config
+    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://localhost:3000').split(',')
+    CORS_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
+    CORS_HEADERS = ['Content-Type', 'Authorization', 'Accept']
+    CORS_EXPOSE_HEADERS = ['Content-Length', 'Content-Type', 'Authorization']
+    CORS_MAX_AGE = 600
     
-    # File upload settings
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
-    UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'uploads')
+    # Security config
+    SESSION_COOKIE_SECURE = os.environ.get('FLASK_ENV', 'development') == 'production'
+    SESSION_COOKIE_SAMESITE = 'strict'
+    SESSION_COOKIE_HTTPONLY = True
     
     # Rate limiting
-    RATELIMIT_DEFAULT = "200 per day"
+    RATELIMIT_ENABLED = True
+    RATELIMIT_STORAGE_URL = "memory://"
+    RATELIMIT_STRATEGY = "fixed-window"
+    RATELIMIT_DEFAULT = "100 per minute"
     
-    # Logging configuration
-    LOG_LEVEL = logging.DEBUG if os.getenv('FLASK_ENV') == 'development' else logging.INFO
+    # API config
+    API_PREFIX = '/api'
+    API_VERSION = '1'
+    
+    # Error handling
+    ERROR_404_HELP = False
+    ERROR_405_HELP = False
+    
+    # Logging
+    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
     LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    LOG_FILE = 'app.log' 
+    
+    # Cache config
+    CACHE_TYPE = 'simple'
+    CACHE_DEFAULT_TIMEOUT = 300  # 5 minutes
+    
+    # Health check
+    HEALTH_CHECK_ENDPOINT = '/api/health'
+    
+    # Feature flags
+    ENABLE_MFA = os.environ.get('ENABLE_MFA', 'False').lower() == 'true'
+    ENABLE_PASSWORD_RESET = os.environ.get('ENABLE_PASSWORD_RESET', 'True').lower() == 'true'
+    ENABLE_ACCOUNT_LOCKOUT = os.environ.get('ENABLE_ACCOUNT_LOCKOUT', 'True').lower() == 'true'
+    ENABLE_DEBUG_LOGGING = os.environ.get('ENABLE_DEBUG_LOGGING', 'False').lower() == 'true'
+    MOCK_AUTH_IN_DEV = os.environ.get('MOCK_AUTH_IN_DEV', 'False').lower() == 'true'
+    DEMO_MODE = os.environ.get('DEMO_MODE', 'False').lower() == 'true'
+    OFFLINE_MODE = os.environ.get('OFFLINE_MODE', 'True').lower() == 'true'
+    DEBUG_MODE = os.environ.get('DEBUG_MODE', 'False').lower() == 'true'
+    ANALYTICS = os.environ.get('ANALYTICS', 'False').lower() == 'true'
+    PERFORMANCE_MONITORING = os.environ.get('PERFORMANCE_MONITORING', 'False').lower() == 'true'
+
+class DevelopmentConfig(Config):
+    DEBUG = True
+    TESTING = False
+    SQLALCHEMY_ECHO = True
+    LOG_LEVEL = 'DEBUG'
+
+class TestingConfig(Config):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    WTF_CSRF_ENABLED = False
+    LOG_LEVEL = 'DEBUG'
+
+class ProductionConfig(Config):
+    DEBUG = False
+    TESTING = False
+    SQLALCHEMY_ECHO = False
+    LOG_LEVEL = 'INFO'
+    SESSION_COOKIE_SECURE = True
+    REMEMBER_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_HTTPONLY = True
+
+config = {
+    'development': DevelopmentConfig,
+    'testing': TestingConfig,
+    'production': ProductionConfig,
+    'default': DevelopmentConfig
+} 

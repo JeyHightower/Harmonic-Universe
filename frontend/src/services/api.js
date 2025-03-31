@@ -5,6 +5,9 @@ import { endpoints } from "./endpoints";
 import { cache } from "../utils/cache";
 import { CACHE_CONFIG } from "../utils/cacheConfig";
 
+// Request deduplication
+const pendingRequests = new Map();
+
 // Create axios instance with default config
 const axiosInstance = axios.create({
   baseURL: API_CONFIG.BASE_URL,
@@ -33,6 +36,23 @@ axiosInstance.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
+    // Check for pending requests
+    const requestKey = `${config.method}:${config.url}`;
+    if (pendingRequests.has(requestKey)) {
+      console.debug("Request already pending, returning existing promise");
+      return Promise.reject({
+        __deduplication: true,
+        promise: pendingRequests.get(requestKey),
+      });
+    }
+
+    // Store the request promise
+    const promise = new Promise((resolve, reject) => {
+      config.__resolve = resolve;
+      config.__reject = reject;
+    });
+    pendingRequests.set(requestKey, promise);
+
     return config;
   },
   (error) => {
@@ -52,10 +72,20 @@ axiosInstance.interceptors.response.use(
       headers: response.headers,
     });
 
+    // Clean up pending request
+    const requestKey = `${response.config.method}:${response.config.url}`;
+    pendingRequests.delete(requestKey);
+
     return response;
   },
   async (error) => {
     const originalRequest = error.config;
+
+    // Handle deduplication
+    if (error.__deduplication) {
+      console.debug("Request was deduplicated, returning existing promise");
+      return error.promise;
+    }
 
     // Log error details
     console.error("API Error:", {
@@ -64,6 +94,12 @@ axiosInstance.interceptors.response.use(
       data: error.response?.data,
       headers: error.response?.headers,
     });
+
+    // Clean up pending request
+    if (originalRequest) {
+      const requestKey = `${originalRequest.method}:${originalRequest.url}`;
+      pendingRequests.delete(requestKey);
+    }
 
     // Handle 401 errors
     if (error.response?.status === 401 && !originalRequest._retry) {

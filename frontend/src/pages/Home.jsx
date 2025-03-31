@@ -51,26 +51,7 @@ function Home() {
         throw new Error(result.error);
       }
 
-      // Extract user data from the demo login response
-      let profileData = null;
-
-      if (result.payload?.user) {
-        profileData = result.payload.user;
-      } else if (result.payload && typeof result.payload === "object") {
-        const { token, ...userData } = result.payload;
-        if (userData.id || userData.username || userData.email) {
-          profileData = userData;
-        }
-      }
-
-      if (!profileData) {
-        throw new Error(
-          "Could not extract valid user data from demo login response"
-        );
-      }
-
-      // Dispatch login success with the profile data
-      dispatch(loginSuccess(profileData));
+      // The demoLogin thunk already handles token storage and state updates
       navigate("/dashboard", { replace: true });
     } catch (error) {
       console.error("[Home] Demo login failed:", error);

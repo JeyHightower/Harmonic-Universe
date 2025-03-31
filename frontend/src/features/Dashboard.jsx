@@ -208,7 +208,8 @@ const Dashboard = () => {
     return (
       <div className="dashboard-container">
         <div className="error-message">
-          Error loading universes: {error}
+          Error loading universes:{" "}
+          {typeof error === "object" ? JSON.stringify(error) : error}
           <button onClick={loadUniverses}>Retry</button>
         </div>
       </div>

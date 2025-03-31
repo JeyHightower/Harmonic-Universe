@@ -112,22 +112,23 @@ export const checkAuthState = createAsyncThunk(
             return response.data;
           } catch (refreshError) {
             console.error("Token refresh failed:", refreshError);
+            // If refresh fails, clear all auth data and logout
+            localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+            localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+            localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+            dispatch(logout());
+            return null;
           }
+        } else {
+          // No refresh token available, clear auth data and logout
+          localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+          localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+          dispatch(logout());
+          return null;
         }
       }
 
-      // If we have a user in localStorage but validation failed
-      if (userStr) {
-        try {
-          const user = JSON.parse(userStr);
-          dispatch(loginSuccess({ user }));
-          return { user };
-        } catch (error) {
-          console.error("Error parsing user from localStorage:", error);
-        }
-      }
-
-      // If all else fails, logout
+      // If we get here, something went wrong
       dispatch(logout());
       return null;
     } catch (error) {
@@ -211,17 +212,33 @@ const getDemoEndpoints = () => {
 // Demo login thunk
 export const demoLogin = createAsyncThunk(
   "auth/demoLogin",
-  async (_, { rejectWithValue }) => {
+  async (_, { dispatch, rejectWithValue }) => {
     try {
       logAuthOperation("Demo login attempt");
 
       const response = await apiClient.demoLogin();
       logAuthOperation("Demo login successful", { status: response.status });
 
-      // Store tokens
-      handleAuthTokens(response.data);
+      // Extract user data from response
+      const userData = response.data.user || response.data;
+      const token = response.data.token || response.data.access_token;
+      const refreshToken = response.data.refresh_token;
 
-      return response.data;
+      // Store tokens and user data
+      if (token) {
+        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, token);
+      }
+      if (refreshToken) {
+        localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, refreshToken);
+      }
+      if (userData) {
+        localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(userData));
+      }
+
+      // Update state with the correct data structure
+      dispatch(loginSuccess({ user: userData, token, refresh_token: refreshToken }));
+
+      return { user: userData, token, refresh_token: refreshToken };
     } catch (error) {
       logAuthError("Demo login", error);
       return rejectWithValue(
@@ -279,15 +296,24 @@ const authSlice = createSlice({
       .addCase(checkAuthState.pending, (state) => {
         state.isLoading = true;
         state.error = null;
+        state.isAuthenticated = false; // Reset auth state while checking
         logAuthOperation("check-auth-state-pending");
       })
       .addCase(checkAuthState.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload;
-        state.isAuthenticated = true;
-        logAuthOperation("check-auth-state-fulfilled", {
-          userId: action.payload?.id,
-        });
+        if (action.payload) {
+          state.user = action.payload;
+          state.isAuthenticated = true;
+          state.error = null;
+          logAuthOperation("check-auth-state-fulfilled", {
+            userId: action.payload.id,
+          });
+        } else {
+          state.user = null;
+          state.isAuthenticated = false;
+          state.error = "Authentication check failed";
+          logAuthOperation("check-auth-state-fulfilled-no-user");
+        }
       })
       .addCase(checkAuthState.rejected, (state, action) => {
         state.isLoading = false;

@@ -9,10 +9,11 @@ import {
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import store, { persistor } from "./store/store";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { Home, Navigation } from "./components";
 import { ModalProvider } from "./contexts/ModalContext";
 import routes from "./routes";
+import { checkAuthState } from "./store/slices/authSlice";
 import "./styles/App.css";
 
 // Lazy load route components
@@ -64,6 +65,12 @@ const ProtectedRoute = ({ children }) => {
 // Create a separate component for the main app content
 const AppContent = () => {
   const { isAuthenticated } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    // Check auth state when component mounts
+    dispatch(checkAuthState());
+  }, [dispatch]);
 
   try {
     return (

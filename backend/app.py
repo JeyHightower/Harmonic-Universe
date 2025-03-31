@@ -6,9 +6,13 @@ import os
 import sys
 import logging
 from logging.handlers import RotatingFileHandler
+from dotenv import load_dotenv
 
 # Add the current directory to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Load environment variables
+load_dotenv()
 
 # Import db from models
 from app.api.models.database import db
@@ -20,6 +24,12 @@ def create_app():
     # Load environment variables
     app.config.from_object('app.config.Config')
 
+    # Ensure instance directory exists
+    instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
+    if not os.path.exists(instance_path):
+        os.makedirs(instance_path)
+        os.chmod(instance_path, 0o777)
+
     # Configure logging
     if not os.path.exists('logs'):
         os.mkdir('logs')
@@ -29,10 +39,6 @@ def create_app():
     app.logger.addHandler(file_handler)
     app.logger.setLevel(app.config['LOG_LEVEL'])
     app.logger.info('Application startup')
-
-    # Configure SQLAlchemy
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # Initialize extensions
     db.init_app(app)
@@ -51,7 +57,7 @@ def create_app():
     from app.api.routes.notes import notes_bp
     from app.api.routes.auth import auth_bp
     from app.api.routes.user import user_bp
-    from app.api.routes.universes import bp as universes_bp
+    from app.api.routes.universes import universes_bp
 
     # Register blueprints
     app.register_blueprint(characters_bp, url_prefix='/api/characters')
@@ -60,11 +66,14 @@ def create_app():
     app.register_blueprint(user_bp, url_prefix='/api/user')
     app.register_blueprint(universes_bp, url_prefix='/api/universes')
 
-    # Create database tables and run migrations
+    # Create database tables
     with app.app_context():
-        db.create_all()
-        from flask_migrate import upgrade
-        upgrade()
+        try:
+            db.create_all()
+            app.logger.info('Database tables created successfully')
+        except Exception as e:
+            app.logger.error(f'Error creating database tables: {e}')
+            raise e
 
     return app
 

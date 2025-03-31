@@ -1,8 +1,20 @@
-from .characters import characters_bp
-from .notes import notes_bp
-from .auth import auth_bp
-from .user import user_bp
-from .universes import bp as universes_bp
-from .modal import modal_bp
+from flask import Blueprint
 
-__all__ = ['characters_bp', 'notes_bp', 'auth_bp', 'user_bp', 'universes_bp', 'modal_bp']
+# Create API blueprint with version prefix
+api_bp = Blueprint('api', __name__, url_prefix='/api')
+
+# Import route modules
+from .auth import auth_bp
+from .universes import universes_bp
+from .user import user_bp
+from .modal import modal_bp
+from .notes import notes_bp
+from .characters import characters_bp
+
+# Register blueprints with correct prefixes
+api_bp.register_blueprint(auth_bp, url_prefix='/auth')
+api_bp.register_blueprint(universes_bp, url_prefix='/universes')
+api_bp.register_blueprint(user_bp)
+api_bp.register_blueprint(modal_bp)
+api_bp.register_blueprint(notes_bp)
+api_bp.register_blueprint(characters_bp)

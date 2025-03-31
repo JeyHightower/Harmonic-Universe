@@ -12,6 +12,7 @@ python-dotenv==1.0.0
 alembic==1.12.1
 gunicorn==21.2.0
 Werkzeug==2.3.7
+Flask-Caching==2.1.0
 
 # Database
 psycopg2-binary==2.9.9
