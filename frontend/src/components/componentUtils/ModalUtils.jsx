@@ -1,12 +1,12 @@
 import React from "react";
 import { ModalSystem } from "../modals";
-import { MODAL_CONFIG, MODAL_TYPES } from "../../utils/config";
+import { MODAL_CONFIG } from "../../utils/config";
 import AlertModal from "../modals/AlertModal";
 import ConfirmationModal from "../modals/ConfirmationModal";
 import FormModal from "../modals/FormModal";
 import LoginModal from "../auth/LoginModal";
 import SignupModal from "../auth/SignupModal";
-import HarmonyParametersModal from "../features/HarmonyParametersModal";
+import HarmonyParametersModal from "../harmony/HarmonyParametersModal";
 
 /**
  * Helper function to get the modal component by type
@@ -15,13 +15,13 @@ import HarmonyParametersModal from "../features/HarmonyParametersModal";
  */
 export const getModalComponent = (modalType) => {
   // Validate modal type
-  if (!Object.values(MODAL_TYPES).includes(modalType)) {
+  if (!Object.values(MODAL_CONFIG.TYPES).includes(modalType)) {
     console.warn(`Invalid modal type: ${modalType}`);
   }
 
   // Import modal components based on type
   switch (modalType) {
-    case MODAL_TYPES.NETWORK_ERROR:
+    case "NETWORK_ERROR":
       return (props) => {
         return (
           <ModalSystem
@@ -30,7 +30,7 @@ export const getModalComponent = (modalType) => {
             title="Connection Error"
             size={MODAL_CONFIG.SIZES.SMALL}
             type={MODAL_CONFIG.TYPES.ALERT}
-            showCloseButton={MODAL_CONFIG.DEFAULTS.SHOW_CLOSE_BUTTON}
+            showCloseButton={MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape}
             data-modal-type="network-error"
           >
             <NetworkErrorModalContent
@@ -41,7 +41,7 @@ export const getModalComponent = (modalType) => {
         );
       };
 
-    case MODAL_TYPES.LOGIN:
+    case "LOGIN":
       return (props) => {
         return (
           <ModalSystem
@@ -50,7 +50,7 @@ export const getModalComponent = (modalType) => {
             title="Login"
             size={MODAL_CONFIG.SIZES.SMALL}
             type={MODAL_CONFIG.TYPES.FORM}
-            showCloseButton={MODAL_CONFIG.DEFAULTS.SHOW_CLOSE_BUTTON}
+            showCloseButton={MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape}
             data-modal-type="login"
           >
             <LoginModal {...props} />
@@ -58,7 +58,7 @@ export const getModalComponent = (modalType) => {
         );
       };
 
-    case MODAL_TYPES.SIGNUP:
+    case "SIGNUP":
       return (props) => {
         return (
           <ModalSystem
@@ -67,7 +67,7 @@ export const getModalComponent = (modalType) => {
             title="Sign Up"
             size={MODAL_CONFIG.SIZES.SMALL}
             type={MODAL_CONFIG.TYPES.FORM}
-            showCloseButton={MODAL_CONFIG.DEFAULTS.SHOW_CLOSE_BUTTON}
+            showCloseButton={MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape}
             data-modal-type="signup"
           >
             <SignupModal {...props} />
@@ -75,7 +75,7 @@ export const getModalComponent = (modalType) => {
         );
       };
 
-    case MODAL_TYPES.HARMONY_PARAMETERS:
+    case "HARMONY_PARAMETERS":
       return (props) => {
         return (
           <ModalSystem
@@ -88,7 +88,7 @@ export const getModalComponent = (modalType) => {
             }
             size={MODAL_CONFIG.SIZES.MEDIUM}
             type={MODAL_CONFIG.TYPES.FORM}
-            showCloseButton={MODAL_CONFIG.DEFAULTS.SHOW_CLOSE_BUTTON}
+            showCloseButton={MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape}
             data-modal-type="harmony-parameters"
           >
             <HarmonyParametersModal {...props} onClose={props.onClose} />
@@ -107,7 +107,7 @@ export const getModalComponent = (modalType) => {
           title={props.title || "Modal"}
           size={props.size || MODAL_CONFIG.SIZES.MEDIUM}
           type={props.type || MODAL_CONFIG.TYPES.DEFAULT}
-          showCloseButton={MODAL_CONFIG.DEFAULTS.SHOW_CLOSE_BUTTON}
+          showCloseButton={MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape}
           data-modal-type={modalType.toLowerCase()}
         >
           <div className="default-modal-content">
@@ -129,7 +129,7 @@ export const validateModalProps = (props) => {
     return false;
   }
 
-  if (props.type && !Object.values(MODAL_TYPES).includes(props.type)) {
+  if (props.type && !Object.values(MODAL_CONFIG.TYPES).includes(props.type)) {
     console.error(`Invalid modal type: ${props.type}`);
     return false;
   }

@@ -1,14 +1,14 @@
-import PropTypes from 'prop-types';
-import React from 'react';
-import Button from './Button';
+import PropTypes from "prop-types";
+import React from "react";
+import { Button } from "../common";
 
 /**
  * A reusable confirmation modal for delete operations
  */
 const ConfirmDeleteModal = ({
-  entityType = 'item',
+  entityType = "item",
   entityId,
-  entityName = '',
+  entityName = "",
   onConfirm,
   onClose,
   isGlobalModal = false,

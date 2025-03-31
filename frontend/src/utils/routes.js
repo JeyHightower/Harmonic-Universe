@@ -8,6 +8,9 @@ export const ROUTES = {
   UNIVERSES: "/universes",
   UNIVERSE_DETAIL: "/universes/:id",
   UNIVERSE_EDIT: "/universes/:id/edit",
+  SCENES: "/universes/:universeId/scenes",
+  SCENE_DETAIL: "/universes/:universeId/scenes/:sceneId",
+  SCENE_EDIT: "/universes/:universeId/scenes/:sceneId/edit",
   MODAL_EXAMPLES: "/examples/modals",
   SETTINGS: "/settings",
   ICON_TEST: "/test/icons",
@@ -16,6 +19,12 @@ export const ROUTES = {
   STANDALONE_TEST: "/standalone-test",
   MODAL_ACCESSIBILITY_TEST: "/test/modal-accessibility",
   MODAL_ROUTE_TEST: "/test/modal-routes",
+  CHARACTERS: "/scenes/:sceneId/characters",
+  CHARACTER_DETAIL: "/scenes/:sceneId/characters/:characterId",
+  CHARACTER_EDIT: "/scenes/:sceneId/characters/:characterId/edit",
+  NOTES: "/universes/:universeId/notes",
+  NOTE_DETAIL: "/universes/:universeId/notes/:noteId",
+  NOTE_EDIT: "/universes/:universeId/notes/:noteId/edit",
 };
 
 export const API_MODAL_ROUTES = {
@@ -32,6 +41,13 @@ export const API_MODAL_ROUTES = {
   CREATE_SCENE: `${API_CONFIG.API_PREFIX}/scenes/create`,
   EDIT_SCENE: `${API_CONFIG.API_PREFIX}/scenes/:id/edit`,
   DELETE_SCENE: `${API_CONFIG.API_PREFIX}/scenes/:id/delete`,
+
+  // Note routes
+  CREATE_NOTE: `${API_CONFIG.API_PREFIX}/notes/create`,
+  EDIT_NOTE: `${API_CONFIG.API_PREFIX}/notes/:id/edit`,
+  DELETE_NOTE: `${API_CONFIG.API_PREFIX}/notes/:id/delete`,
+  ARCHIVE_NOTE: `${API_CONFIG.API_PREFIX}/notes/:id/archive`,
+  UNARCHIVE_NOTE: `${API_CONFIG.API_PREFIX}/notes/:id/unarchive`,
 
   // Physics objects routes
   CREATE_PHYSICS_OBJECT: `${API_CONFIG.API_PREFIX}/physics-objects/create`,
@@ -75,6 +91,13 @@ export const API_ROUTE_TO_MODAL_TYPE = {
   [API_MODAL_ROUTES.CREATE_SCENE]: "scene-create",
   [API_MODAL_ROUTES.EDIT_SCENE]: "scene-edit",
   [API_MODAL_ROUTES.DELETE_SCENE]: "scene-delete",
+
+  // Note routes
+  [API_MODAL_ROUTES.CREATE_NOTE]: "note-create",
+  [API_MODAL_ROUTES.EDIT_NOTE]: "note-edit",
+  [API_MODAL_ROUTES.DELETE_NOTE]: "note-delete",
+  [API_MODAL_ROUTES.ARCHIVE_NOTE]: "note-archive",
+  [API_MODAL_ROUTES.UNARCHIVE_NOTE]: "note-unarchive",
 
   [API_MODAL_ROUTES.CREATE_PHYSICS_OBJECT]: "physics-object",
   [API_MODAL_ROUTES.EDIT_PHYSICS_OBJECT]: "physics-object",

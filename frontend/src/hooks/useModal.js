@@ -19,7 +19,7 @@ export const useModal = () => {
   const closeTimeoutRef = useRef(null);
 
   const open = useCallback(
-    (type, props = {}) => {
+    async (type, props = {}) => {
       if (!isValidModalType(type)) {
         console.error(`Invalid modal type: ${type}`);
         return;
@@ -30,7 +30,11 @@ export const useModal = () => {
         return;
       }
 
-      dispatch(openModal({ type, props }));
+      try {
+        dispatch(openModal({ type, props }));
+      } catch (error) {
+        console.error("Error opening modal:", error);
+      }
     },
     [dispatch, modalState.isTransitioning]
   );

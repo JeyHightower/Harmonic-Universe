@@ -7,9 +7,8 @@ import React, {
   useRef,
 } from "react";
 import { Outlet } from "react-router-dom";
-import { ModalProvider } from "../../contexts/ModalContext";
-import { MODAL_TYPES } from "../../constants/modalTypes";
 import { useModal } from "../../contexts/ModalContext";
+import { MODAL_TYPES } from "../../constants/modalTypes";
 
 // Import safe versions of hooks
 import {

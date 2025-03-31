@@ -5,6 +5,7 @@ import React, {
   useEffect,
   Suspense,
   useRef,
+  useState,
 } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { MODAL_TYPES } from "../constants/modalTypes";
@@ -23,13 +24,10 @@ import {
   selectModalType,
   selectModalProps,
   selectIsModalTransitioning,
-} from "../store/slices/modalSlice";
-import {
   openModal,
   closeModal,
   updateModalProps,
 } from "../store/slices/modalSlice";
-import { useModal as useModalHook } from "../hooks/useModal";
 
 // Create the context
 const ModalContext = createContext();
@@ -45,7 +43,28 @@ export const useModal = () => {
 
 // Separate component to handle modal rendering
 const ModalRenderer = ({ type, props, onClose }) => {
-  const ModalComponent = getModalComponent(type);
+  const [ModalComponent, setModalComponent] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadModalComponent = async () => {
+      try {
+        const component = await getModalComponent(type);
+        setModalComponent(() => component);
+      } catch (error) {
+        console.error(`Error loading modal component for type ${type}:`, error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadModalComponent();
+  }, [type]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
   if (!ModalComponent) {
     console.error(`Modal component not found for type: ${type}`);
     return null;
@@ -78,67 +97,37 @@ ModalRenderer.propTypes = {
 };
 
 // Provider component
-const ModalProvider = ({ children }) => {
-  const portalRootRef = useRef(null);
+export const ModalProvider = ({ children }) => {
+  const dispatch = useDispatch();
   const modalState = useSelector(selectModalState);
   const isOpen = useSelector(selectIsModalOpen);
-  const type = useSelector(selectModalType);
-  const props = useSelector(selectModalProps);
+  const modalType = useSelector(selectModalType);
+  const modalProps = useSelector(selectModalProps);
   const isTransitioning = useSelector(selectIsModalTransitioning);
-  const dispatch = useDispatch();
-  const { close } = useModalHook();
-
-  // Ensure portal root exists and store reference
-  useEffect(() => {
-    try {
-      portalRootRef.current = ensurePortalRoot();
-      console.log("[ModalContext] Portal root created/verified");
-    } catch (error) {
-      console.error("[ModalContext] Error creating portal root:", error);
-    }
-  }, []);
-
-  // Log modal state changes for debugging
-  useEffect(() => {
-    console.log("[ModalContext] Modal state changed:", {
-      isOpen,
-      type,
-      isTransitioning,
-      hasProps: !!props,
-    });
-  }, [isOpen, type, isTransitioning, props]);
 
   const value = {
-    isModalOpen: isOpen,
-    modalType: type,
-    modalProps: props,
+    open: (type, props = {}) => dispatch(openModal({ type, props })),
+    close: () => dispatch(closeModal()),
+    updateProps: (props) => dispatch(updateModalProps(props)),
+    isOpen,
+    type: modalType,
+    props: modalProps,
     isTransitioning,
-    openModal: (type, props = {}) => {
-      console.log("[ModalContext] Opening modal:", { type, props });
-      dispatch(openModal({ type, props }));
-    },
-    closeModal: () => {
-      console.log("[ModalContext] Closing modal");
-      close();
-    },
-    updateModalProps: (props) => {
-      console.log("[ModalContext] Updating modal props:", props);
-      dispatch(updateModalProps(props));
-    },
   };
+
+  useEffect(() => {
+    ensurePortalRoot();
+  }, []);
 
   return (
     <ModalContext.Provider value={value}>
       {children}
-      {isOpen && portalRootRef.current && (
-        <Suspense fallback={<div>Loading modal...</div>}>
+      {isOpen && (
+        <Suspense fallback={<div>Loading...</div>}>
           <ModalRenderer
-            type={type}
-            props={props}
-            onClose={() => {
-              console.log("[ModalContext] Modal close requested");
-              close();
-            }}
+            type={modalType}
+            props={modalProps}
+            onClose={() => dispatch(closeModal())}
           />
         </Suspense>
       )}
@@ -149,5 +138,3 @@ const ModalProvider = ({ children }) => {
 ModalProvider.propTypes = {
   children: PropTypes.node.isRequired,
 };
-
-export { ModalProvider };

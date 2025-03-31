@@ -1,48 +1,51 @@
 import React from "react";
-import { MODAL_TYPES } from "../constants/modalTypes";
 import { MODAL_CONFIG } from "./config";
-import AlertModal from "../components/modals/AlertModal";
-import ConfirmationModal from "../components/modals/ConfirmationModal";
-import FormModal from "../components/modals/FormModal";
-import LoginModal from "../components/auth/LoginModal";
-import SignupModal from "../components/auth/SignupModal";
-import DemoLogin from "../components/auth/DemoLogin";
-import UniverseCreateModal from "../components/modals/UniverseCreateModal";
 
 // Create modal registry
 const modalRegistry = new Map();
 
-// Register modal components
-modalRegistry.set(MODAL_TYPES.ALERT, AlertModal);
-modalRegistry.set(MODAL_TYPES.CONFIRMATION, ConfirmationModal);
-modalRegistry.set(MODAL_TYPES.FORM, FormModal);
-modalRegistry.set(MODAL_TYPES.LOGIN, LoginModal);
-modalRegistry.set(MODAL_TYPES.SIGNUP, SignupModal);
-modalRegistry.set(MODAL_TYPES.UNIVERSE_CREATE, UniverseCreateModal);
-
-/**
- * Get a modal component by type
- * @param {string} type - The modal type
- * @returns {React.Component} The modal component or null if not found
- */
-export const getModalComponent = (type) => {
+// Dynamic import function for modal components
+const getModalComponent = async (type) => {
   if (!type) {
     console.error("Modal type is required");
     return null;
   }
 
-  if (!Object.values(MODAL_TYPES).includes(type)) {
+  if (!Object.values(MODAL_CONFIG.TYPES).includes(type)) {
     console.error(`Invalid modal type: ${type}`);
     return null;
   }
 
-  const component = modalRegistry.get(type);
-  if (!component) {
-    console.error(`No modal component found for type: ${type}`);
+  try {
+    let component;
+    switch (type) {
+      case "ALERT":
+        component = (await import("../components/modals/AlertModal")).default;
+        break;
+      case "CONFIRMATION":
+        component = (await import("../components/modals/ConfirmationModal")).default;
+        break;
+      case "FORM":
+        component = (await import("../components/modals/FormModal")).default;
+        break;
+      case "LOGIN":
+        component = (await import("../components/auth/LoginModal")).default;
+        break;
+      case "SIGNUP":
+        component = (await import("../components/auth/SignupModal")).default;
+        break;
+      case "UNIVERSE_CREATE":
+        component = (await import("../components/modals/UniverseCreateModal")).default;
+        break;
+      default:
+        console.error(`No modal component found for type: ${type}`);
+        return null;
+    }
+    return component;
+  } catch (error) {
+    console.error(`Error loading modal component for type ${type}:`, error);
     return null;
   }
-
-  return component;
 };
 
 /**
@@ -51,7 +54,7 @@ export const getModalComponent = (type) => {
  * @returns {boolean} Whether the type is valid
  */
 export const isValidModalType = (type) => {
-  return Object.values(MODAL_TYPES).includes(type);
+  return Object.values(MODAL_CONFIG.TYPES).includes(type);
 };
 
 /**
@@ -64,21 +67,15 @@ export const getDefaultModalProps = (type) => {
     return null;
   }
 
-  const component = modalRegistry.get(type);
-  if (!component) {
-    return null;
-  }
-
   return {
-    size: component.defaultProps?.size || MODAL_CONFIG.SIZES.MEDIUM,
-    position: component.defaultProps?.position || MODAL_CONFIG.POSITIONS.CENTER,
-    animation:
-      component.defaultProps?.animation || MODAL_CONFIG.ANIMATIONS.FADE,
-    draggable: component.defaultProps?.draggable || false,
-    closeOnEscape: component.defaultProps?.closeOnEscape ?? true,
-    closeOnBackdrop: component.defaultProps?.closeOnBackdrop ?? true,
-    preventBodyScroll: component.defaultProps?.preventBodyScroll ?? true,
-    showCloseButton: component.defaultProps?.showCloseButton ?? true,
+    size: MODAL_CONFIG.SIZES.MEDIUM,
+    position: MODAL_CONFIG.POSITIONS.CENTER,
+    animation: MODAL_CONFIG.ANIMATIONS.FADE,
+    draggable: false,
+    closeOnEscape: true,
+    closeOnBackdrop: true,
+    preventBodyScroll: true,
+    showCloseButton: true,
   };
 };
 
@@ -141,4 +138,4 @@ export const getRegisteredModalTypes = () => {
   return Array.from(modalRegistry.keys());
 };
 
-export default modalRegistry;
+export { getModalComponent };

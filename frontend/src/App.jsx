@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import {
   Routes,
   Route,
@@ -11,15 +11,10 @@ import { PersistGate } from "redux-persist/integration/react";
 import store, { persistor } from "./store/store";
 import { useSelector, useDispatch } from "react-redux";
 import { Home, Navigation } from "./components";
-import { ModalProvider } from "./contexts/ModalContext";
+import ModalProvider from "./components/modals/ModalProvider";
 import routes from "./routes";
 import { checkAuthState } from "./store/slices/authSlice";
 import "./styles/App.css";
-
-// Lazy load route components
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const Profile = lazy(() => import("./pages/Profile"));
-const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 
 // Loading component for Suspense fallback
 const LoadingPage = () => (
@@ -77,22 +72,20 @@ const AppContent = () => {
       <div className="App">
         <Navigation />
         <main className="App-main">
-          <Suspense fallback={<LoadingPage />}>
-            <Routes>
-              {routes.map((route, index) => (
-                <Route key={index} path={route.path} element={route.element}>
-                  {route.children?.map((child, childIndex) => (
-                    <Route
-                      key={childIndex}
-                      index={child.index}
-                      path={child.path}
-                      element={child.element}
-                    />
-                  ))}
-                </Route>
-              ))}
-            </Routes>
-          </Suspense>
+          <Routes>
+            {routes.map((route, index) => (
+              <Route key={index} path={route.path} element={route.element}>
+                {route.children?.map((child, childIndex) => (
+                  <Route
+                    key={childIndex}
+                    index={child.index}
+                    path={child.path}
+                    element={child.element}
+                  />
+                ))}
+              </Route>
+            ))}
+          </Routes>
         </main>
         <footer className="App-footer">
           <p>&copy; {new Date().getFullYear()} Harmonic Universe</p>

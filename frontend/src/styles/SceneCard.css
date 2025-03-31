@@ -1,25 +1,22 @@
 .scene-card {
-  background-color: var(--background-light);
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
-  position: relative;
-  cursor: pointer;
   display: flex;
   flex-direction: column;
-  min-height: 200px;
-  border: 1px solid var(--border-color);
+  height: 100%;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  background-color: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .scene-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .scene-card-image {
   position: relative;
-  height: 160px;
+  width: 100%;
+  height: 200px;
   overflow: hidden;
 }
 
@@ -27,175 +24,90 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s;
+  transition: transform 0.3s ease-in-out;
 }
 
 .scene-card:hover .scene-card-image img {
   transform: scale(1.05);
 }
 
-.scene-type-badge {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background-color: var(--primary-color);
-  color: white;
-  font-size: 0.75rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-weight: 500;
-}
-
 .scene-card-content {
-  padding: 1.25rem;
   flex: 1;
+  padding: 16px;
   display: flex;
   flex-direction: column;
 }
 
 .scene-card-title {
+  margin: 0 0 8px 0;
   font-size: 1.25rem;
-  margin: 0 0 0.5rem;
-  color: var(--text-primary);
   font-weight: 600;
+  color: #333;
 }
 
 .scene-card-description {
-  color: var(--text-secondary);
+  flex: 1;
+  margin: 0 0 16px 0;
+  color: #666;
   font-size: 0.875rem;
-  margin-bottom: 1rem;
   line-height: 1.5;
-  flex-grow: 1;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
-.scene-card-details {
+.scene-card-meta {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-  font-size: 0.8125rem;
-}
-
-.scene-detail-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--text-secondary);
-}
-
-.scene-detail-item i {
-  font-size: 0.875rem;
-  color: var(--primary-color);
-}
-
-.scene-status {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.8125rem;
-  font-weight: 500;
-}
-
-.scene-status.active {
-  color: var(--success-color);
-}
-
-.scene-status.inactive {
-  color: var(--error-color);
-}
-
-.scene-card-footer {
-  display: flex;
-  justify-content: space-between;
-  color: var(--text-tertiary);
+  flex-direction: column;
+  gap: 4px;
+  color: #999;
   font-size: 0.75rem;
-  margin-top: auto;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--border-color-light);
-}
-
-.scene-date {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-}
-
-.scene-date i {
-  font-size: 0.8125rem;
-  opacity: 0.8;
 }
 
 .scene-card-actions {
-  position: absolute;
-  top: 1rem;
-  left: 1rem;
+  padding: 8px 16px;
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  opacity: 0;
-  transition: opacity 0.2s;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid #eee;
 }
 
-.scene-card:hover .scene-card-actions {
-  opacity: 1;
+.scene-card-actions .MuiIconButton-root {
+  padding: 8px;
+  color: #666;
+  transition: color 0.2s ease-in-out;
 }
 
-.scene-action-btn {
-  width: 2rem;
-  height: 2rem;
-  border-radius: 50%;
-  border: none;
-  background-color: rgba(255, 255, 255, 0.9);
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.2s, transform 0.2s;
+.scene-card-actions .MuiIconButton-root:hover {
+  color: #1976d2;
 }
 
-.scene-action-btn:hover {
-  transform: scale(1.1);
+.scene-card-actions .MuiIconButton-root.MuiIconButton-colorError:hover {
+  color: #d32f2f;
 }
 
-.scene-action-btn.edit-btn:hover {
-  background-color: var(--primary-color);
-  color: white;
-}
-
-.scene-action-btn.delete-btn:hover {
-  background-color: var(--error-color);
-  color: white;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .scene-card-actions {
-    opacity: 1;
-    position: static;
-    flex-direction: row;
-    padding: 0.5rem 1rem;
-    background-color: rgba(0, 0, 0, 0.03);
-    border-top: 1px solid var(--border-color-light);
+/* Responsive Design */
+@media (max-width: 600px) {
+  .scene-card-image {
+    height: 160px;
   }
 
   .scene-card-title {
-    padding-right: 5rem; /* Make space for the type badge */
+    font-size: 1.1rem;
+  }
+
+  .scene-card-description {
+    font-size: 0.8rem;
   }
 }
 
-/* Media Queries */
-@media (max-width: 480px) {
+@media (max-width: 400px) {
   .scene-card-image {
     height: 140px;
   }
 
   .scene-card-content {
-    padding: 1rem;
-    height: calc(100% - 140px);
+    padding: 12px;
+  }
+
+  .scene-card-actions {
+    padding: 6px 12px;
   }
 }

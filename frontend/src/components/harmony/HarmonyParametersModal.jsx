@@ -14,7 +14,7 @@ import PropTypes from "prop-types";
 import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import "../../styles/HarmonyParametersModal.css";
-import { apiClient } from "../../services/api";
+import apiClient from "../../services/api";
 
 const { Option } = Select;
 

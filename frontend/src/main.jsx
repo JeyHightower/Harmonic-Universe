@@ -1,8 +1,16 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
-import "./styles/global.css";
-import "./styles/index.css";
+// CSS imports in correct order to prevent conflicts
+import "./styles/reset.css"; // First: Reset browser defaults
+import "./styles/variables.css"; // Second: Define CSS variables
+import "./styles/theme.css"; // Third: Define theme variables
+import "./styles/global.css"; // Fourth: Global styles
+import "./styles/common.css"; // Fifth: Common component styles
+import "./styles/buttons.css"; // Sixth: Button styles
+import "./styles/modal.css"; // Seventh: Modal styles
+import "./styles/index.css"; // Eighth: Additional global styles
+// App.css comes last so it can override component-specific styles if needed
 import "./styles/App.css";
 import { ensurePortalRoot } from "./utils/portalUtils";
 

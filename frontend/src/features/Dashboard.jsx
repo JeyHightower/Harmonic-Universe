@@ -40,6 +40,7 @@ import {
   Sort as SortIcon,
   FilterList as FilterIcon,
   Logout as LogoutIcon,
+  Refresh as RefreshIcon,
 } from "@mui/icons-material";
 import {
   createUniverse,
@@ -52,7 +53,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { universes, loading, error } = useSelector((state) => state.universe);
-  const { isAuthenticated } = useSelector((state) => state.auth);
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [sortOption, setSortOption] = useState("updated_at");
   const [filterOption, setFilterOption] = useState("all");
@@ -62,7 +63,7 @@ const Dashboard = () => {
   // Enhanced function to load universes with better error handling and logging
   const loadUniverses = useCallback(() => {
     console.log("Dashboard - Loading universes, attempt:", retryCount + 1);
-    return dispatch(fetchUniverses({ includePublic: true }))
+    return dispatch(fetchUniverses({ userId: user?.id })) // Only fetch user's universes
       .then((result) => {
         console.log("Dashboard - Fetch universes result:", {
           payload: result.payload,
@@ -116,7 +117,7 @@ const Dashboard = () => {
         });
         return { error: error.message };
       });
-  }, [dispatch, retryCount]);
+  }, [dispatch, retryCount, user?.id]);
 
   useEffect(() => {
     console.log("Dashboard - Component mounted, loading universes");
@@ -198,7 +199,10 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div className="dashboard-container">
-        <div className="loading-spinner">Loading universes...</div>
+        <div className="loading-spinner">
+          <CircularProgress />
+          <Typography variant="h6">Loading your universes...</Typography>
+        </div>
       </div>
     );
   }
@@ -208,9 +212,18 @@ const Dashboard = () => {
     return (
       <div className="dashboard-container">
         <div className="error-message">
-          Error loading universes:{" "}
-          {typeof error === "object" ? JSON.stringify(error) : error}
-          <button onClick={loadUniverses}>Retry</button>
+          <Alert severity="error">
+            Error loading universes:{" "}
+            {typeof error === "object" ? JSON.stringify(error) : error}
+          </Alert>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={loadUniverses}
+            startIcon={<RefreshIcon />}
+          >
+            Retry
+          </Button>
         </div>
       </div>
     );
@@ -221,9 +234,22 @@ const Dashboard = () => {
     return (
       <div className="dashboard-container">
         <div className="empty-state">
-          <h2>No universes found</h2>
-          <p>Create your first universe to get started!</p>
-          <button onClick={handleCreateClick}>Create Universe</button>
+          <Typography variant="h4" gutterBottom>
+            Welcome to Harmonic Universe!
+          </Typography>
+          <Typography variant="body1" paragraph>
+            Create your first universe to start exploring the connection between
+            music and physics.
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            size="large"
+            onClick={handleCreateClick}
+            startIcon={<AddIcon />}
+          >
+            Create Your First Universe
+          </Button>
         </div>
       </div>
     );
@@ -233,38 +259,41 @@ const Dashboard = () => {
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
-        <h1>Your Universes</h1>
+        <Typography variant="h4" component="h1">
+          Your Universes
+        </Typography>
         <div className="dashboard-actions">
-          <button onClick={handleCreateClick}>Create Universe</button>
-          <button onClick={handleLogout}>Logout</button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleCreateClick}
+            startIcon={<AddIcon />}
+          >
+            Create Universe
+          </Button>
+          <Button
+            variant="outlined"
+            color="secondary"
+            onClick={handleLogout}
+            startIcon={<LogoutIcon />}
+          >
+            Logout
+          </Button>
         </div>
       </div>
       <div className="universes-grid">
         {universes.map((universe) => (
-          <div
+          <UniverseCard
             key={universe.id}
-            className={`universe-card ${
-              universe.id === newUniverseId ? "highlight" : ""
-            }`}
-            onClick={() => navigate(`/universe/${universe.id}`)}
-          >
-            <h3>{universe.name}</h3>
-            <p>{universe.description}</p>
-            <div className="universe-meta">
-              <span>
-                Created: {new Date(universe.created_at).toLocaleDateString()}
-              </span>
-              <span>
-                Updated: {new Date(universe.updated_at).toLocaleDateString()}
-              </span>
-            </div>
-          </div>
+            universe={universe}
+            isNew={universe.id === newUniverseId}
+          />
         ))}
       </div>
       {isCreateModalOpen && (
         <UniverseFormModal
           onClose={() => setIsCreateModalOpen(false)}
-          onSuccess={handleCreateSuccess}
+          onSubmit={handleCreateSuccess}
         />
       )}
     </div>

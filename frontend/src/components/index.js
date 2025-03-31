@@ -24,17 +24,34 @@ export { default as SafeIcon } from "./common/SafeIcon";
 // Essential Pages
 export { default as Home } from "../pages/Home";
 
+// Character Components
+import { CharacterList, CharacterCard, CharacterForm, CharacterDetail } from "./character";
+export { CharacterList, CharacterCard, CharacterForm, CharacterDetail };
+
+// Note Components
+import { NoteList, NoteCard, NoteForm, NoteDetail } from "./note";
+export { NoteList, NoteCard, NoteForm, NoteDetail };
+
 // Modal Components
+// Import from the modals directory for consistency
+import { ModalSystem, DraggableModal, AlertModal, ConfirmModal, FormModal } from "./modals";
+
+// Export ExportModal and ImportModal from common where they're defined
 const ExportModal = React.lazy(() => import("./common/ExportModal"));
 const ImportModal = React.lazy(() => import("./common/ImportModal"));
 
 // Export modal components directly
-export { ExportModal, ImportModal };
+export { ModalSystem, DraggableModal, AlertModal, ConfirmModal, FormModal, ExportModal, ImportModal };
 
 // Also export as an object for backward compatibility
 export const ModalComponents = {
   LoginModal,
   SignupModal,
+  ModalSystem,
+  DraggableModal,
+  AlertModal,
+  ConfirmModal,
+  FormModal,
   ExportModal,
   ImportModal,
 };

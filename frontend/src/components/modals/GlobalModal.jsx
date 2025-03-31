@@ -1,15 +1,14 @@
 import React, { useEffect } from "react";
 import PropTypes from "prop-types";
 import { useSelector } from "react-redux";
-import useModal from "../../hooks/useModal.js";
-import { selectModalProps } from "../../store/modalSlice.js";
-import { getModalComponent } from "../ModalUtils.jsx";
-import { ModalSystem } from "./";
+import { useModal } from "../../contexts/ModalContext";
+import { selectModalProps } from "../../store/slices/modalSlice";
+import { getModalComponent } from "../../utils/modalRegistry";
 import { ensurePortalRoot } from "../../utils/portalUtils";
 
 const GlobalModal = () => {
   const modalProps = useSelector(selectModalProps);
-  const { closeModal } = useModal();
+  const { close } = useModal();
 
   // Add console log to debug modal state
   useEffect(() => {
@@ -24,12 +23,11 @@ const GlobalModal = () => {
   if (modalProps.type) {
     const ModalComponent = getModalComponent(modalProps.type);
     if (ModalComponent) {
-      return <ModalComponent {...modalProps} onClose={closeModal} />;
+      return <ModalComponent {...modalProps} onClose={close} />;
     }
   }
 
-  // Otherwise, use the ModalSystem
-  return <ModalSystem {...modalProps} onClose={closeModal} />;
+  return null;
 };
 
 export default GlobalModal;

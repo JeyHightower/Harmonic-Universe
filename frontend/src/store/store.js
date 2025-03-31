@@ -1,12 +1,21 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { persistStore, persistReducer } from "redux-persist";
+import {
+  persistStore,
+  persistReducer,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+} from "redux-persist";
 import storage from "redux-persist/lib/storage";
+import { combineReducers } from "redux";
 import authReducer from "./slices/authSlice";
-import modalReducer from "./slices/modalSlice";
-import physicsObjectsReducer from "./slices/physicsObjectsSlice";
 import universeReducer from "./slices/universeSlice";
-import scenesReducer from "./slices/scenesSlice";
-import physicsParametersReducer from "./slices/physicsParametersSlice";
+import sceneReducer from "./slices/sceneSlice";
+import characterReducer from "./slices/characterSlice";
+import noteReducer from "./slices/noteSlice";
 
 // Configure persistence for reducers that need to persist
 const authPersistConfig = {
@@ -27,26 +36,29 @@ const scenesPersistConfig = {
   whitelist: ["scenes"], // Only persist the scenes array
 };
 
+const persistConfig = {
+  key: "root",
+  version: 1,
+  storage,
+  whitelist: ["auth", "universes", "scenes", "characters", "notes"],
+};
+
+const rootReducer = combineReducers({
+  auth: persistReducer(authPersistConfig, authReducer),
+  universes: universeReducer,
+  scenes: sceneReducer,
+  characters: characterReducer,
+  notes: noteReducer,
+});
+
+const persistedReducer = persistReducer(persistConfig, rootReducer);
+
 const store = configureStore({
-  reducer: {
-    auth: persistReducer(authPersistConfig, authReducer),
-    modal: modalReducer,
-    physicsObjects: physicsObjectsReducer,
-    universe: persistReducer(universePersistConfig, universeReducer),
-    scenes: persistReducer(scenesPersistConfig, scenesReducer),
-    physicsParameters: physicsParametersReducer,
-  },
+  reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        // Ignore these action types
-        ignoredActions: [
-          "physicsObjects/simulate",
-          "persist/PERSIST",
-          "persist/REHYDRATE",
-        ],
-        // Ignore these field paths in all actions
-        ignoredActionPaths: ["payload.file", "payload.timestamp"],
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
     }),
 });
