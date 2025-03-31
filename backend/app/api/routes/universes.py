@@ -227,4 +227,36 @@ def get_universe_characters(universe_id):
         return jsonify({
             'message': 'Error retrieving characters',
             'error': str(e)
+        }), 500
+
+@universes_bp.route('/<int:universe_id>/notes', methods=['GET'])
+@jwt_required()
+def get_universe_notes_route(universe_id):
+    try:
+        universe = Universe.query.get_or_404(universe_id)
+        user_id = get_jwt_identity()
+
+        # Check if user has access to this universe
+        if not universe.is_public and universe.user_id != user_id:
+            return jsonify({
+                'message': 'Access denied'
+            }), 403
+
+        # Get all notes for the universe
+        from app.api.models.note import Note
+        notes = Note.query.filter_by(
+            universe_id=universe_id,
+            is_deleted=False
+        ).all()
+
+        return jsonify({
+            'message': 'Notes retrieved successfully',
+            'notes': [note.to_dict() for note in notes]
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Error retrieving notes for universe {universe_id}: {str(e)}")
+        return jsonify({
+            'message': 'Error retrieving notes',
+            'error': str(e)
         }), 500 
