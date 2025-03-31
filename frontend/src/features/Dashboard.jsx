@@ -55,6 +55,9 @@ const Dashboard = () => {
   const { universes, loading, error } = useSelector((state) => state.universes);
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedUniverse, setSelectedUniverse] = useState(null);
   const [sortOption, setSortOption] = useState("updated_at");
   const [filterOption, setFilterOption] = useState("all");
   const [newUniverseId, setNewUniverseId] = useState(null);
@@ -63,7 +66,7 @@ const Dashboard = () => {
   // Enhanced function to load universes with better error handling and logging
   const loadUniverses = useCallback(() => {
     console.log("Dashboard - Loading universes, attempt:", retryCount + 1);
-    return dispatch(fetchUniverses({ userId: user?.id })) // Only fetch user's universes
+    return dispatch(fetchUniverses({ userId: user?.id, user_only: true })) // Only fetch user's created universes
       .then((result) => {
         console.log("Dashboard - Fetch universes result:", {
           payload: result.payload,
@@ -192,6 +195,50 @@ const Dashboard = () => {
 
     // Refresh the list immediately
     loadUniverses();
+  };
+
+  // Handle View Universe
+  const handleViewUniverse = (universe) => {
+    console.log("Viewing universe:", universe);
+    navigate(`/universes/${universe.id}`);
+  };
+
+  // Handle Edit Universe
+  const handleEditUniverse = (universe) => {
+    console.log("Editing universe:", universe);
+    setSelectedUniverse(universe);
+    setIsEditModalOpen(true);
+  };
+
+  // Handle Edit Success
+  const handleEditSuccess = (updatedUniverse) => {
+    console.log("Universe updated:", updatedUniverse);
+    setIsEditModalOpen(false);
+    setSelectedUniverse(null);
+    loadUniverses();
+  };
+
+  // Handle Delete Universe
+  const handleDeleteUniverse = (universe) => {
+    console.log("Deleting universe:", universe);
+    setSelectedUniverse(universe);
+    setIsDeleteModalOpen(true);
+  };
+
+  // Handle Confirm Delete
+  const handleConfirmDelete = async () => {
+    if (selectedUniverse) {
+      console.log("Confirming delete for universe:", selectedUniverse);
+      try {
+        await dispatch(deleteUniverse(selectedUniverse.id));
+        console.log("Universe deleted successfully");
+        loadUniverses();
+      } catch (error) {
+        console.error("Error deleting universe:", error);
+      }
+      setIsDeleteModalOpen(false);
+      setSelectedUniverse(null);
+    }
   };
 
   // Render loading state
@@ -359,6 +406,9 @@ const Dashboard = () => {
             key={universe.id}
             universe={universe}
             isNew={universe.id === newUniverseId}
+            onView={() => handleViewUniverse(universe)}
+            onEdit={() => handleEditUniverse(universe)}
+            onDelete={() => handleDeleteUniverse(universe)}
           />
         ))}
       </div>
@@ -368,6 +418,36 @@ const Dashboard = () => {
           onClose={() => setIsCreateModalOpen(false)}
           onSuccess={handleCreateSuccess}
         />
+      )}
+      {isEditModalOpen && selectedUniverse && (
+        <UniverseFormModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          onSuccess={handleEditSuccess}
+          universe={selectedUniverse}
+          isEdit={true}
+        />
+      )}
+      {isDeleteModalOpen && selectedUniverse && (
+        <Dialog
+          open={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+        >
+          <DialogTitle>Confirm Delete</DialogTitle>
+          <DialogContent>
+            <Typography>
+              Are you sure you want to delete the universe "
+              {selectedUniverse.name}"? This action cannot be undone and will
+              delete all associated scenes, characters, and notes.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setIsDeleteModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleConfirmDelete} color="error">
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
       )}
     </div>
   );

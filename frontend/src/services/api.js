@@ -284,11 +284,27 @@ const apiClient = {
 
   // Universe methods
   getUniverses: (params = {}) => {
+    console.log("API - Getting universes with params:", params);
+
+    // Build query parameters
     const queryParams = new URLSearchParams();
-    if (params.includePublic) {
-      queryParams.append("public", "true");
+    if (params.userId) {
+      queryParams.append('user_id', params.userId);
     }
-    return axiosInstance.get(`${endpoints.universes.list}?${queryParams.toString()}`);
+    if (params.public) {
+      queryParams.append('public', params.public);
+    }
+    if (params.user_only) {
+      queryParams.append('user_only', params.user_only);
+    }
+
+    // Construct URL with query parameters
+    const url = queryParams.toString()
+      ? `${endpoints.universes.list}?${queryParams.toString()}`
+      : endpoints.universes.list;
+
+    console.log("API - Fetching universes from URL:", url);
+    return axiosInstance.get(url);
   },
   createUniverse: (data) => axiosInstance.post(endpoints.universes.create, data),
   getUniverse: (id, params = {}) => {

@@ -10,10 +10,15 @@ import {
 } from "../../store/thunks/universeThunks";
 import "../../styles/UniverseFormModal.css";
 
-const UniverseFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
+const UniverseFormModal = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  universe,
+  isEdit,
+}) => {
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.universes);
-  const isEditing = !!initialData;
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state
@@ -28,14 +33,22 @@ const UniverseFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
 
   // Initialize form with data if editing
   useEffect(() => {
-    if (initialData) {
+    console.log("UniverseFormModal - Initializing with universe:", universe);
+    if (universe && isEdit) {
       setFormData({
-        name: initialData.name || "",
-        description: initialData.description || "",
-        is_public: initialData.is_public || false,
+        name: universe.name || "",
+        description: universe.description || "",
+        is_public: universe.is_public || false,
+      });
+    } else {
+      // Reset form when creating new
+      setFormData({
+        name: "",
+        description: "",
+        is_public: false,
       });
     }
-  }, [initialData]);
+  }, [universe, isEdit]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -81,12 +94,12 @@ const UniverseFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
 
     try {
       let result;
-      if (isEditing) {
+      if (isEdit && universe) {
         // Update existing universe
-        console.log("UniverseFormModal - Updating universe:", initialData.id);
+        console.log("UniverseFormModal - Updating universe:", universe.id);
         result = await dispatch(
           updateUniverse({
-            id: initialData.id,
+            id: universe.id,
             ...formData,
           })
         ).unwrap();
@@ -152,7 +165,7 @@ const UniverseFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? "Edit Universe" : "Create Universe"}
+      title={isEdit ? "Edit Universe" : "Create Universe"}
       className="universe-form-modal"
       size="small"
     >
@@ -178,7 +191,7 @@ const UniverseFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
           value={formData.description}
           onChange={handleChange}
           error={errors.description}
-          rows={2}
+          rows={3}
           className="compact-input"
         />
 
@@ -200,8 +213,12 @@ const UniverseFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : isEditing ? "Update" : "Create"}
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={isSubmitting || loading}
+          >
+            {isSubmitting ? "Saving..." : isEdit ? "Update" : "Create"}
           </Button>
         </div>
       </form>
@@ -213,12 +230,13 @@ UniverseFormModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onSuccess: PropTypes.func,
-  initialData: PropTypes.object,
+  universe: PropTypes.object,
+  isEdit: PropTypes.bool,
 };
 
 UniverseFormModal.defaultProps = {
-  onSuccess: null,
-  initialData: null,
+  isOpen: false,
+  isEdit: false,
 };
 
 export default UniverseFormModal;

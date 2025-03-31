@@ -16,7 +16,15 @@ export const fetchUniverses = createAsyncThunk(
   "universe/fetchUniverses",
   async (params = {}, { rejectWithValue }) => {
     try {
+      console.log("Fetching universes with params:", params);
       const response = await apiClient.getUniverses(params);
+      console.log("Got universes response:", {
+        status: response.status,
+        data: response.data,
+        hasUniverses: !!response.data?.universes,
+        universesCount: response.data?.universes?.length || 0,
+        headers: response.headers,
+      });
       // Return just the data to avoid serialization issues with headers
       return response.data;
     } catch (error) {

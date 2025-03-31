@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Form, Input, Button, message } from "antd";
 import { login } from "../../store/thunks/authThunks";
@@ -15,6 +15,19 @@ const LoginModal = ({ onClose }) => {
   const dispatch = useDispatch();
   const { error } = useSelector((state) => state.auth);
 
+  // Force close function to ensure proper cleanup
+  const forceClose = () => {
+    // Reset modal state
+    document.body.classList.remove("modal-open");
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.width = "";
+    document.body.style.overflow = "";
+
+    // Call the provided onClose
+    onClose();
+  };
+
   const handleSubmit = async (values) => {
     try {
       setLoading(true);
@@ -24,12 +37,14 @@ const LoginModal = ({ onClose }) => {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(values.email)) {
         message.error("Please enter a valid email address");
+        setLoading(false);
         return;
       }
 
       // Validate password
       if (!values.password || values.password.length < 6) {
         message.error("Password must be at least 6 characters long");
+        setLoading(false);
         return;
       }
 
@@ -44,7 +59,11 @@ const LoginModal = ({ onClose }) => {
       if (login.fulfilled.match(resultAction)) {
         log("auth", "Login successful", { email: values.email });
         message.success("Login successful!");
-        onClose();
+
+        // Use setTimeout to ensure the success message is shown before closing
+        setTimeout(() => {
+          forceClose();
+        }, 500);
       } else {
         const errorMessage =
           resultAction.error?.message || "Invalid email or password";
@@ -77,10 +96,22 @@ const LoginModal = ({ onClose }) => {
     form.resetFields();
   }, [form]);
 
+  // Add effect to handle cleanup when component unmounts
+  useEffect(() => {
+    return () => {
+      // Ensure body scroll is restored on unmount
+      document.body.classList.remove("modal-open");
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      document.body.style.overflow = "";
+    };
+  }, []);
+
   return (
     <ModalSystem
       isOpen={true}
-      onClose={onClose}
+      onClose={forceClose}
       title="Login"
       size={MODAL_CONFIG.SIZES.MEDIUM}
       type="form"
@@ -129,7 +160,7 @@ const LoginModal = ({ onClose }) => {
         </Form.Item>
 
         <div className="form-actions">
-          <Button onClick={onClose} disabled={loading}>
+          <Button onClick={forceClose} disabled={loading}>
             Cancel
           </Button>
           <Button

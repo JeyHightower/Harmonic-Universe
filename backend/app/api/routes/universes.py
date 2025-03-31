@@ -12,13 +12,17 @@ def get_universes():
     try:
         # Get query parameters
         public_only = request.args.get('public', 'false').lower() == 'true'
+        user_only = request.args.get('user_only', 'false').lower() == 'true'
         user_id = get_jwt_identity()
-        current_app.logger.info(f"Fetching universes for user {user_id}, public_only: {public_only}")
+        current_app.logger.info(f"Fetching universes for user {user_id}, public_only: {public_only}, user_only: {user_only}")
 
         # Build query
         query = Universe.query.filter_by(is_deleted=False)
 
-        if public_only:
+        if user_only:
+            # Only include user's own universes when user_only is true
+            query = query.filter_by(user_id=user_id)
+        elif public_only:
             query = query.filter_by(is_public=True)
         else:
             # Include user's own universes and public universes
@@ -38,7 +42,7 @@ def get_universes():
 
     except Exception as e:
         current_app.logger.error(f"Error retrieving universes: {str(e)}")
-        current_app.logger.error(f"Query parameters: public_only={public_only}, user_id={user_id}")
+        current_app.logger.error(f"Query parameters: public_only={public_only}, user_only={user_only}, user_id={user_id}")
         return jsonify({
             'message': 'Error retrieving universes',
             'error': str(e)
