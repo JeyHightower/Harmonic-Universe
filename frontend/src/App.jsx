@@ -59,17 +59,37 @@ const ProtectedRoute = ({ children }) => {
 
 // Create a separate component for the main app content
 const AppContent = () => {
-  const { isAuthenticated } = useSelector((state) => state.auth);
+  const auth = useSelector((state) => state.auth);
+  const { isAuthenticated, user, isLoading } = auth;
   const dispatch = useDispatch();
 
+  // Check auth state when component mounts
   useEffect(() => {
-    // Check auth state when component mounts
+    console.log("AppContent - Checking auth state");
     dispatch(checkAuthState());
   }, [dispatch]);
 
+  // Listen for storage events (which we might dispatch manually)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      console.log("AppContent - Storage changed, checking auth state");
+      dispatch(checkAuthState());
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [dispatch]);
+
+  // Simplified auth key to avoid excessive re-renders
+  const authKey = isAuthenticated ? "authenticated" : "unauthenticated";
+
+  if (isLoading) {
+    return <LoadingPage />;
+  }
+
   try {
     return (
-      <div className="App">
+      <div className="App" key={authKey}>
         <Navigation />
         <main className="App-main">
           <Routes>

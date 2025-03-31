@@ -18,30 +18,36 @@ import characterReducer from "./slices/characterSlice";
 import noteReducer from "./slices/noteSlice";
 import modalReducer from "./slices/modalSlice";
 
-// Configure persistence for reducers that need to persist
+// Configure persistence for auth state
 const authPersistConfig = {
   key: "auth",
   storage,
-  whitelist: ["user", "isAuthenticated"], // Only persist these fields
+  whitelist: ["user", "isAuthenticated"],
+  blacklist: ["isLoading", "error", "authError"],
 };
 
+// Configure persistence for other reducers
 const universesPersistConfig = {
   key: "universes",
   storage,
-  whitelist: ["universes", "currentUniverse"], // Only persist these fields
+  whitelist: ["universes", "currentUniverse"],
+  blacklist: ["loading", "error", "success"],
 };
 
 const scenesPersistConfig = {
   key: "scenes",
   storage,
-  whitelist: ["scenes"], // Only persist the scenes array
+  whitelist: ["scenes"],
+  blacklist: ["loading", "error", "success", "currentScene"],
 };
 
+// Root persist config
 const persistConfig = {
   key: "root",
   version: 1,
   storage,
-  whitelist: ["auth", "universes", "scenes", "characters", "notes"],
+  whitelist: [], // Don't persist anything at root level
+  blacklist: ["modal"], // Never persist modal state
 };
 
 const rootReducer = combineReducers({
@@ -50,7 +56,7 @@ const rootReducer = combineReducers({
   scenes: persistReducer(scenesPersistConfig, scenesReducer),
   characters: characterReducer,
   notes: noteReducer,
-  modal: modalReducer,
+  modal: modalReducer, // No persisting for modal state
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -63,6 +69,7 @@ const store = configureStore({
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
     }),
+  devTools: process.env.NODE_ENV !== 'production',
 });
 
 export const persistor = persistStore(store);

@@ -50,9 +50,10 @@ const CharacterFormModal = ({
 
       // If no scene_id is selected yet, select the first available scene
       if (!formData.scene_id && availableScenes.length > 0) {
+        console.log("Setting default scene to:", String(availableScenes[0].id));
         setFormData((prev) => ({
           ...prev,
-          scene_id: availableScenes[0].id,
+          scene_id: String(availableScenes[0].id),
         }));
       }
     }
@@ -73,29 +74,58 @@ const CharacterFormModal = ({
       apiClient
         .getUniverseScenes(universeId)
         .then((response) => {
-          console.log("getUniverseScenes API response:", response.data);
+          console.log("getUniverseScenes API raw response:", response);
+          console.log("getUniverseScenes API data:", response.data);
+
+          // Debug the response structure
+          if (response.data) {
+            console.log("Response data keys:", Object.keys(response.data));
+            for (const key in response.data) {
+              console.log(
+                `Key ${key} type:`,
+                typeof response.data[key],
+                Array.isArray(response.data[key])
+              );
+            }
+          }
 
           // Try to extract scenes from different possible response formats
           let scenesData = [];
           if (Array.isArray(response.data)) {
             // If response.data is directly an array of scenes
             scenesData = response.data;
+            console.log("Found scenes in direct array", scenesData);
           } else if (
             response.data.scenes &&
             Array.isArray(response.data.scenes)
           ) {
             // If response.data has a scenes property that is an array
             scenesData = response.data.scenes;
+            console.log("Found scenes in scenes property", scenesData);
           } else if (response.data.universe && response.data.universe.scenes) {
             // If response.data has a universe property with scenes
             scenesData = response.data.universe.scenes;
+            console.log("Found scenes in universe.scenes property", scenesData);
           } else {
             // Try to find any array property that could be scenes
+            console.log("Searching for scenes in any array property");
             for (const key in response.data) {
               if (Array.isArray(response.data[key])) {
-                scenesData = response.data[key];
-                console.log(`Found potential scenes array in property: ${key}`);
-                break;
+                console.log(
+                  `Found array in property: ${key}`,
+                  response.data[key]
+                );
+                if (
+                  response.data[key].length > 0 &&
+                  (response.data[key][0].name || response.data[key][0].title)
+                ) {
+                  scenesData = response.data[key];
+                  console.log(
+                    `Identified scenes array in property: ${key}`,
+                    scenesData
+                  );
+                  break;
+                }
               }
             }
           }
@@ -107,21 +137,55 @@ const CharacterFormModal = ({
           );
 
           if (scenesData.length === 0) {
-            // If no scenes found, try the alternative method
+            // Try the alternative method if no scenes found
             console.log(
               "No scenes found with getUniverseScenes, trying getScenes with universeId parameter"
             );
             return apiClient.getScenes({ universeId }).then((altResponse) => {
-              console.log("getScenes API response:", altResponse.data);
+              console.log("getScenes API raw response:", altResponse);
+              console.log("getScenes API data:", altResponse.data);
 
               let altScenesData = [];
               if (Array.isArray(altResponse.data)) {
                 altScenesData = altResponse.data;
+                console.log(
+                  "Found scenes in direct array (alt method)",
+                  altScenesData
+                );
               } else if (
                 altResponse.data.scenes &&
                 Array.isArray(altResponse.data.scenes)
               ) {
                 altScenesData = altResponse.data.scenes;
+                console.log(
+                  "Found scenes in scenes property (alt method)",
+                  altScenesData
+                );
+              } else {
+                // Try to find any array property that could be scenes
+                console.log(
+                  "Searching for scenes in any array property (alt method)"
+                );
+                for (const key in altResponse.data) {
+                  if (Array.isArray(altResponse.data[key])) {
+                    console.log(
+                      `Found array in property: ${key}`,
+                      altResponse.data[key]
+                    );
+                    if (
+                      altResponse.data[key].length > 0 &&
+                      (altResponse.data[key][0].name ||
+                        altResponse.data[key][0].title)
+                    ) {
+                      altScenesData = altResponse.data[key];
+                      console.log(
+                        `Identified scenes array in property: ${key}`,
+                        altScenesData
+                      );
+                      break;
+                    }
+                  }
+                }
               }
 
               console.log(
@@ -130,24 +194,30 @@ const CharacterFormModal = ({
                 altScenesData
               );
 
-              setScenes(altScenesData);
-              // If scenes exist and no sceneId was provided, default to the first scene
-              if (altScenesData.length > 0 && !formData.scene_id) {
-                setFormData((prev) => ({
-                  ...prev,
-                  scene_id: altScenesData[0].id,
-                }));
+              if (altScenesData.length > 0) {
+                setScenes(altScenesData);
+                // Only set default scene if none is selected
+                if (!formData.scene_id) {
+                  console.log("Setting default scene to:", altScenesData[0].id);
+                  setFormData((prev) => ({
+                    ...prev,
+                    scene_id: altScenesData[0].id,
+                  }));
+                }
               }
             });
           }
 
-          setScenes(scenesData);
-          // If scenes exist and no sceneId was provided, default to the first scene
-          if (scenesData.length > 0 && !formData.scene_id) {
-            setFormData((prev) => ({
-              ...prev,
-              scene_id: scenesData[0].id,
-            }));
+          if (scenesData.length > 0) {
+            setScenes(scenesData);
+            // Only set default scene if none is selected
+            if (!formData.scene_id) {
+              console.log("Setting default scene to:", scenesData[0].id);
+              setFormData((prev) => ({
+                ...prev,
+                scene_id: scenesData[0].id,
+              }));
+            }
           }
         })
         .catch((err) => {
@@ -246,12 +316,20 @@ const CharacterFormModal = ({
   // Reset form data when opening the modal for character creation
   useEffect(() => {
     if (isOpen && type === "create" && !characterId) {
-      console.log("Resetting form data for new character creation");
+      console.log(
+        "Resetting form data for new character creation, current scene_id:",
+        formData.scene_id
+      );
+
+      // Keep the existing scene_id if it's already set
+      const currentSceneId = formData.scene_id;
+
       setFormData({
         name: "",
         description: "",
-        scene_id: scenes.length > 0 ? scenes[0].id : "",
+        scene_id: currentSceneId || (scenes.length > 0 ? scenes[0].id : ""),
       });
+
       setCharacter(null);
       setError(null);
     }
@@ -259,10 +337,24 @@ const CharacterFormModal = ({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+
+    // Special handling for scene_id to ensure it updates correctly
+    if (name === "scene_id") {
+      console.log(`Scene selection changed to ID:`, value);
+      console.log(
+        `Selected scene:`,
+        scenes.find((scene) => scene.id === parseInt(value))
+      );
+    }
+
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        [name]: value,
+      };
+      console.log(`Form data updated for ${name}:`, updated);
+      return updated;
+    });
   };
 
   // Custom close handler to reset form data
@@ -396,26 +488,42 @@ const CharacterFormModal = ({
                           No scenes available - please create a scene first
                         </MenuItem>
                       ) : (
-                        scenes.map((scene) => {
-                          // Create a display name based on available properties
-                          const displayName =
-                            scene.title ||
-                            scene.name ||
-                            (scene.description
-                              ? scene.description.substring(0, 20) + "..."
-                              : `Scene ${scene.id}`);
-                          console.log(
-                            "Rendering scene:",
-                            scene.id,
-                            displayName,
-                            scene
-                          );
-                          return (
-                            <MenuItem key={scene.id} value={scene.id}>
-                              {displayName}
-                            </MenuItem>
-                          );
-                        })
+                        <>
+                          {console.log(
+                            "Available scenes for dropdown:",
+                            scenes
+                          )}
+                          {console.log(
+                            "Current selected scene_id:",
+                            formData.scene_id
+                          )}
+                          {scenes.map((scene) => {
+                            // Ensure scene id is a string for consistent comparison
+                            const sceneId = String(scene.id);
+
+                            // Create a display name based on available properties
+                            const displayName =
+                              scene.title ||
+                              scene.name ||
+                              (scene.description
+                                ? scene.description.substring(0, 20) + "..."
+                                : `Scene ${scene.id}`);
+
+                            console.log(
+                              "Rendering scene option:",
+                              sceneId,
+                              displayName,
+                              "selected:",
+                              formData.scene_id === sceneId
+                            );
+
+                            return (
+                              <MenuItem key={sceneId} value={sceneId}>
+                                {displayName}
+                              </MenuItem>
+                            );
+                          })}
+                        </>
                       )}
                     </Select>
                     {!formData.scene_id &&

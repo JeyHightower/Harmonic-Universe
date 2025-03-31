@@ -28,6 +28,7 @@ import {
 import { formatDate } from "../../utils/dateUtils";
 import "../../styles/SceneDetail.css";
 import SceneForm from "./SceneForm";
+import apiClient from "../../services/api";
 
 const SceneDetail = ({ isEdit = false }) => {
   const dispatch = useDispatch();
@@ -290,25 +291,81 @@ const SceneDetail = ({ isEdit = false }) => {
           <DialogTitle>Edit Scene</DialogTitle>
           <DialogContent>
             <SceneForm
-              open={showEditForm}
-              onClose={() => {
-                setShowEditForm(false);
-                // If we came from the edit route, navigate back to detail
-                if (isEdit) {
-                  navigate(`/universes/${scene.universe_id}/scenes/${sceneId}`);
-                }
-              }}
-              onSuccess={() => {
-                setShowEditForm(false);
-                // Refresh scene data
-                dispatch(fetchSceneById(sceneId));
-                // If we came from the edit route, navigate back to detail
-                if (isEdit) {
-                  navigate(`/universes/${scene.universe_id}/scenes/${sceneId}`);
-                }
-              }}
-              scene={scene}
               universeId={scene.universe_id}
+              sceneId={sceneId}
+              initialData={scene}
+              onSubmit={async (formattedValues) => {
+                try {
+                  console.log(
+                    "SceneDetail - Form submitted with data:",
+                    formattedValues
+                  );
+
+                  // Make sure universeId is included
+                  if (!formattedValues.universe_id) {
+                    console.log(
+                      "SceneDetail - Adding missing universe_id:",
+                      scene.universe_id
+                    );
+                    formattedValues.universe_id = scene.universe_id;
+                  }
+
+                  // Make the update API call
+                  console.log(
+                    "SceneDetail - Calling updateScene API with:",
+                    sceneId,
+                    formattedValues
+                  );
+                  const response = await apiClient.updateScene(
+                    sceneId,
+                    formattedValues
+                  );
+                  console.log("SceneDetail - Update response:", response);
+
+                  // Process the response to get the result
+                  let result;
+                  if (response.data?.scene) {
+                    result = response.data.scene;
+                  } else if (response.data) {
+                    result = response.data;
+                  } else {
+                    console.warn(
+                      "SceneDetail - Unexpected API response format:",
+                      response
+                    );
+                    result = response;
+                  }
+
+                  // Success! Close the form and refresh the data
+                  setShowEditForm(false);
+
+                  // Refresh scene data
+                  dispatch(fetchSceneById(sceneId));
+
+                  // If we came from the edit route, navigate back to detail
+                  if (isEdit) {
+                    navigate(
+                      `/universes/${scene.universe_id}/scenes/${sceneId}`
+                    );
+                  }
+
+                  return result; // Return the result to the SceneForm
+                } catch (error) {
+                  console.error("SceneDetail - Error updating scene:", error);
+                  console.error(
+                    "SceneDetail - Error details:",
+                    error.response?.data || error.message
+                  );
+                  throw error; // Re-throw to let SceneForm handle the error
+                }
+              }}
+              onCancel={() => {
+                setShowEditForm(false);
+                // If we came from the edit route, navigate back to detail
+                if (isEdit) {
+                  navigate(`/universes/${scene.universe_id}/scenes/${sceneId}`);
+                }
+              }}
             />
           </DialogContent>
         </Dialog>

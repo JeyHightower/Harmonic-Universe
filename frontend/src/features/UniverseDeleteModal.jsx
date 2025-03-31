@@ -22,15 +22,50 @@ const UniverseDeleteModal = ({ isOpen, onClose, onSuccess, universe }) => {
 
     try {
       console.log("UniverseDeleteModal - Deleting universe:", universe.id);
-      await dispatch(deleteUniverse(universe.id)).unwrap();
-      console.log("UniverseDeleteModal - Universe deleted successfully");
+
+      // Log more details about what we're deleting
+      console.log("UniverseDeleteModal - Universe details:", {
+        id: universe.id,
+        name: universe.name,
+        scenes_count: universe.scenes_count || "unknown",
+        characters_count: universe.characters_count || "unknown",
+        notes_count: universe.notes_count || "unknown",
+      });
+
+      const result = await dispatch(deleteUniverse(universe.id)).unwrap();
+      console.log(
+        "UniverseDeleteModal - Universe deleted successfully:",
+        result
+      );
 
       if (onSuccess) {
         onSuccess(universe.id);
       }
     } catch (err) {
       console.error("UniverseDeleteModal - Failed to delete universe:", err);
-      setError(err.message || "Failed to delete universe. Please try again.");
+
+      // Provide more detailed error information
+      const errorMessage =
+        err.data?.message ||
+        err.message ||
+        "Failed to delete universe. Please try again.";
+      console.error("UniverseDeleteModal - Error details:", {
+        message: errorMessage,
+        statusCode: err.status,
+        data: err.data,
+      });
+
+      setError(errorMessage);
+
+      // If the error is a 404, the universe might already be deleted
+      if (err.status === 404) {
+        console.log(
+          "UniverseDeleteModal - Universe not found, considering it deleted"
+        );
+        if (onSuccess) {
+          onSuccess(universe.id);
+        }
+      }
     } finally {
       setIsDeleting(false);
     }
@@ -48,9 +83,17 @@ const UniverseDeleteModal = ({ isOpen, onClose, onSuccess, universe }) => {
           Are you sure you want to delete the universe "{universe?.name}"?
         </p>
         <p className="delete-warning">
-          This action cannot be undone and will delete all scenes and data
-          associated with this universe.
+          This action cannot be undone and will delete all scenes, characters,
+          and notes associated with this universe.
         </p>
+
+        {universe?.scenes_count > 0 && (
+          <p className="delete-details">
+            This universe contains {universe.scenes_count} scenes,
+            {universe.characters_count} characters, and {universe.notes_count}{" "}
+            notes that will be permanently deleted.
+          </p>
+        )}
 
         {error && <div className="error-message">{error}</div>}
 
@@ -84,6 +127,9 @@ UniverseDeleteModal.propTypes = {
   universe: PropTypes.shape({
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     name: PropTypes.string.isRequired,
+    scenes_count: PropTypes.number,
+    characters_count: PropTypes.number,
+    notes_count: PropTypes.number,
   }).isRequired,
 };
 

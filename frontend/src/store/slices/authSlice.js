@@ -287,22 +287,52 @@ const authSlice = createSlice({
       state.error = null;
     },
     loginSuccess: (state, action) => {
+      console.debug("Login success:", action.payload);
+
+      // Start with a clean state to avoid stale data
       state.isLoading = false;
-      state.isAuthenticated = true;
-      state.user = action.payload.user;
       state.error = null;
+      state.authError = false;
+
+      // Extract user data from response based on different API response formats
+      if (action.payload?.user) {
+        state.user = action.payload.user;
+      } else if (action.payload?.name || action.payload?.email || action.payload?.id) {
+        state.user = action.payload;
+      } else if (typeof action.payload === 'object') {
+        // If payload is an object but doesn't have explicit user property
+        // try to use the whole payload as user data
+        state.user = action.payload;
+      }
+
+      // Ensure we have user data
+      if (!state.user) {
+        console.warn("Login success but no user data found in payload:", action.payload);
+      }
+
+      state.isAuthenticated = true;
     },
     loginFailure: (state, action) => {
+      console.debug("Login failure:", action.payload);
       state.isLoading = false;
+      state.error = action.payload?.message || action.payload || "Login failed";
+      state.authError = true;
       state.isAuthenticated = false;
-      state.user = null;
-      state.error = action.payload;
     },
     logoutSuccess: (state) => {
-      state.isLoading = false;
-      state.isAuthenticated = false;
+      console.debug("Logout success");
+
+      // Clean up the entire state on logout
       state.user = null;
+      state.isLoading = false;
       state.error = null;
+      state.authError = false;
+      state.isAuthenticated = false;
+
+      // Force clear any cached tokens
+      localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+      localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+      localStorage.removeItem(AUTH_CONFIG.USER_KEY);
     },
     logoutFailure: (state, action) => {
       state.isLoading = false;
@@ -362,11 +392,15 @@ const authSlice = createSlice({
       })
       .addCase(login.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload;
+
+        // Properly extract user data based on API response format
+        const payload = action.payload || {};
+        state.user = payload.user || payload;
+
         state.isAuthenticated = true;
         state.error = null;
         logAuthOperation("login-fulfilled", {
-          userId: action.payload?.id,
+          userId: state.user?.id,
         });
       })
       .addCase(login.rejected, (state, action) => {
@@ -413,6 +447,31 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
         logAuthOperation("logout-rejected", { error: state.error });
+      })
+
+      // Demo Login
+      .addCase(demoLogin.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+        logAuthOperation("demo-login-pending");
+      })
+      .addCase(demoLogin.fulfilled, (state, action) => {
+        state.isLoading = false;
+
+        // Properly extract user data based on API response format
+        const payload = action.payload || {};
+        state.user = payload.user || payload;
+
+        state.isAuthenticated = true;
+        state.error = null;
+        logAuthOperation("demo-login-fulfilled", {
+          userId: state.user?.id,
+        });
+      })
+      .addCase(demoLogin.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+        logAuthOperation("demo-login-rejected", { error: state.error });
       });
   },
 });

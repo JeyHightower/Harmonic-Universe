@@ -283,21 +283,54 @@ const universeSlice = createSlice({
         state.success = false;
       })
       .addCase(deleteUniverse.fulfilled, (state, action) => {
-        console.debug("Universe deleted successfully:", action.meta.arg);
+        console.debug("Universe deleted successfully:", {
+          id: action.meta.arg,
+          payload: action.payload
+        });
+
         state.loading = false;
         state.success = true;
+
         const deletedId = action.meta.arg;
-        state.universes = state.universes.filter((u) => u.id !== deletedId);
-        if (state.currentUniverse?.id === deletedId) {
+
+        // Filter out the deleted universe from the list
+        const previousCount = state.universes.length;
+        state.universes = state.universes.filter((u) => {
+          // Normalize ID types for comparison (string vs number)
+          return String(u.id) !== String(deletedId);
+        });
+        const newCount = state.universes.length;
+
+        console.log(`Universe removal: removed ${previousCount - newCount} universes from state`);
+
+        // Clear current universe if it was the one deleted
+        if (state.currentUniverse && String(state.currentUniverse.id) === String(deletedId)) {
+          console.log(`Clearing current universe (${deletedId}) as it was deleted`);
           state.currentUniverse = null;
         }
+
         state.error = null;
         state.authError = false;
       })
       .addCase(deleteUniverse.rejected, (state, action) => {
-        console.error("Failed to delete universe:", action.payload);
+        console.error("Failed to delete universe:", {
+          error: action.payload,
+          meta: action.meta
+        });
+
         state.loading = false;
-        state.error = action.payload?.message || action.payload || "Failed to delete universe";
+
+        // Detailed error message
+        if (action.payload?.data?.error) {
+          state.error = `Failed to delete universe: ${action.payload.data.error}`;
+        } else if (action.payload?.message) {
+          state.error = `Failed to delete universe: ${action.payload.message}`;
+        } else if (typeof action.payload === 'string') {
+          state.error = `Failed to delete universe: ${action.payload}`;
+        } else {
+          state.error = "Failed to delete universe. Please try again.";
+        }
+
         state.success = false;
       })
 

@@ -1,8 +1,10 @@
 from flask import Blueprint, jsonify, request, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.api.models.universe import Universe
+from app.api.models.universe import Universe, Scene
 from app.api.models.character import Character
+from app.api.models.note import Note
 from app import db
+import traceback
 
 universes_bp = Blueprint('universes', __name__)
 
@@ -188,15 +190,50 @@ def delete_universe(universe_id):
                 'message': 'Access denied'
             }), 403
 
-        db.session.delete(universe)
-        db.session.commit()
+        # Get counts for logging
+        scenes_count = Scene.query.filter_by(universe_id=universe_id, is_deleted=False).count()
+        characters_count = Character.query.filter_by(universe_id=universe_id, is_deleted=False).count()
+        notes_count = Note.query.filter_by(universe_id=universe_id, is_deleted=False).count()
 
-        return jsonify({
-            'message': 'Universe deleted successfully'
-        }), 200
+        current_app.logger.info(f"Deleting universe {universe_id} with {scenes_count} scenes, {characters_count} characters, {notes_count} notes")
+
+        # Explicitly delete related entities
+        try:
+            # Delete scenes first
+            scenes = Scene.query.filter_by(universe_id=universe_id).all()
+            for scene in scenes:
+                current_app.logger.debug(f"Deleting scene {scene.id}")
+                # Clear character associations
+                scene.characters = []
+                # Delete scene notes
+                Note.query.filter_by(scene_id=scene.id).delete()
+                db.session.delete(scene)
+
+            # Delete characters
+            Character.query.filter_by(universe_id=universe_id).delete()
+
+            # Delete notes
+            Note.query.filter_by(universe_id=universe_id).delete()
+
+            # Delete universe
+            db.session.delete(universe)
+            db.session.commit()
+            
+            current_app.logger.info(f"Successfully deleted universe {universe_id} with all related entities")
+
+            return jsonify({
+                'message': 'Universe deleted successfully'
+            }), 200
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error during cascading delete: {str(e)}")
+            current_app.logger.error(f"Traceback: {traceback.format_exc()}")
+            raise e
 
     except Exception as e:
         db.session.rollback()
+        current_app.logger.error(f"Error deleting universe {universe_id}: {str(e)}")
+        current_app.logger.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({
             'message': 'Error deleting universe',
             'error': str(e)
@@ -247,7 +284,6 @@ def get_universe_notes_route(universe_id):
             }), 403
 
         # Get all notes for the universe
-        from app.api.models.note import Note
         notes = Note.query.filter_by(
             universe_id=universe_id,
             is_deleted=False

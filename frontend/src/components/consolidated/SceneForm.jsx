@@ -197,27 +197,75 @@ const SceneForm = ({
       console.log("SceneForm - Formatted values for API:", formattedValues);
 
       let response;
+      let result;
 
       if (isEditMode) {
         // Update existing scene
         console.log("SceneForm - Updating existing scene:", sceneId);
-        response = await apiClient.updateScene(sceneId, formattedValues);
+        try {
+          // If we have an onSubmit handler, let the parent component handle the API call
+          if (onSubmit) {
+            console.log("SceneForm - Using parent onSubmit handler for update");
+            result = await onSubmit(formattedValues);
+            console.log("SceneForm - Parent onSubmit result:", result);
+            message.success("Scene updated successfully");
+            return;
+          }
+
+          // Otherwise handle API call ourselves
+          response = await apiClient.updateScene(sceneId, formattedValues);
+          console.log("SceneForm - Update API response:", response);
+        } catch (updateError) {
+          console.error("SceneForm - Scene update API error:", updateError);
+          console.error("SceneForm - Error response:", updateError.response);
+          throw updateError;
+        }
       } else {
         // Create new scene
         console.log("SceneForm - Creating new scene");
-        response = await apiClient.createScene(formattedValues);
+        try {
+          // If we have an onSubmit handler, let the parent component handle the API call
+          if (onSubmit) {
+            console.log("SceneForm - Using parent onSubmit handler for create");
+            result = await onSubmit(formattedValues);
+            console.log("SceneForm - Parent onSubmit result:", result);
+            message.success("Scene created successfully");
+            return;
+          }
+
+          // Otherwise handle API call ourselves
+          response = await apiClient.createScene(formattedValues);
+          console.log("SceneForm - Create API response:", response);
+        } catch (createError) {
+          console.error("SceneForm - Scene create API error:", createError);
+          console.error("SceneForm - Error response:", createError.response);
+          throw createError;
+        }
       }
 
-      const result = response.data?.scene || response.data;
+      // Handle different response formats
+      if (response) {
+        if (response.data?.scene) {
+          result = response.data.scene;
+        } else if (response.data) {
+          result = response.data;
+        } else {
+          console.warn("SceneForm - Unexpected API response format:", response);
+          result = response;
+        }
 
-      console.log("SceneForm - Scene saved successfully:", result);
-      message.success(
-        `Scene ${isEditMode ? "updated" : "created"} successfully`
-      );
+        console.log("SceneForm - Scene saved successfully:", result);
+        message.success(
+          `Scene ${isEditMode ? "updated" : "created"} successfully`
+        );
 
-      if (onSubmit) {
-        console.log("SceneForm - Calling onSubmit callback");
-        await onSubmit(result);
+        if (onSubmit) {
+          console.log(
+            "SceneForm - Calling onSubmit callback with result:",
+            result
+          );
+          onSubmit(result);
+        }
       }
     } catch (error) {
       console.error("SceneForm - Error submitting scene form:", error);

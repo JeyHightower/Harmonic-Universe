@@ -19,12 +19,33 @@ const Home = () => {
   const handleDemoLogin = async () => {
     console.log("[Home] Demo login button clicked");
     try {
+      console.log("[Home] Dispatching demoLogin action");
       const resultAction = await dispatch(demoLogin());
+      console.log("[Home] demoLogin result:", resultAction);
+
       if (demoLogin.fulfilled.match(resultAction)) {
-        navigate("/dashboard");
+        console.log("[Home] Demo login successful, navigating to dashboard");
+
+        // Use a slight delay to allow state updates to propagate
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 500);
+      } else if (resultAction.error) {
+        console.error("[Home] Demo login failed with error:", {
+          name: resultAction.error.name,
+          message: resultAction.error.message,
+          payload: resultAction.payload,
+          stack: resultAction.error.stack,
+        });
       }
     } catch (error) {
-      console.error("[Home] Demo login failed:", error);
+      // Improved error logging with more details
+      console.error("[Home] Demo login failed:", {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        originalError: error,
+      });
     }
   };
 

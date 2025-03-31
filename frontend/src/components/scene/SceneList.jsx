@@ -21,14 +21,16 @@ import { Add as AddIcon } from "@mui/icons-material";
 import {
   fetchScenes,
   deleteScene,
+  createScene,
 } from "../../store/thunks/consolidated/scenesThunks";
 import { SceneCard } from "../consolidated";
+import SceneFormModal from "../scene/SceneFormModal";
 import "../../styles/SceneList.css";
 
 const SceneList = () => {
   const dispatch = useDispatch();
   const { universeId } = useParams();
-  const { scenes, loading, error } = useSelector((state) => state.scene);
+  const { scenes, loading, error } = useSelector((state) => state.scenes);
   const { user } = useSelector((state) => state.auth);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [sceneToDelete, setSceneToDelete] = useState(null);
@@ -250,6 +252,16 @@ const SceneList = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Scene Creation Modal */}
+      {isCreateModalOpen && (
+        <SceneFormModal
+          open={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSuccess={handleCreateSuccess}
+          universeId={universeId}
+        />
+      )}
     </Container>
   );
 };

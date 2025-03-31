@@ -330,11 +330,19 @@ const apiClient = {
   // Scene methods
   getScenes: (params = {}) => {
     console.log("Getting scenes with params:", params);
-    // Simple implementation - just use the list endpoint with query params
+    // Handle both direct universeId parameter and params object
     const queryParams = new URLSearchParams();
-    if (params.universeId) {
+
+    // If params is a string or number, it's a direct universeId
+    if (typeof params === 'string' || typeof params === 'number') {
+      queryParams.append("universe_id", params);
+      console.log("Direct universeId provided:", params);
+    }
+    // Otherwise treat it as a params object
+    else if (params.universeId) {
       queryParams.append("universe_id", params.universeId);
     }
+
     const url = `${endpoints.scenes.list}?${queryParams.toString()}`;
     console.log("Fetching scenes from URL:", url);
     return axiosInstance.get(url);

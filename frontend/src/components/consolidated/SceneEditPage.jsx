@@ -81,37 +81,68 @@ const SceneEditPage = () => {
   }, [sceneId, universeId]);
 
   // Handle form submission (save changes)
-  const handleSubmit = async (updatedScene) => {
+  const handleSubmit = async (formattedValues) => {
     try {
-      console.log("SceneEditPage - Saving scene changes:", updatedScene);
+      console.log("SceneEditPage - Saving scene changes:", formattedValues);
       setLoading(true);
       setError(null);
 
       // Make sure we have a universe_id
-      if (!updatedScene.universe_id && universeId) {
+      if (!formattedValues.universe_id && universeId) {
         console.log(
           "SceneEditPage - Adding universeId to scene data:",
           universeId
         );
-        updatedScene.universe_id = universeId;
+        formattedValues.universe_id = universeId;
       }
 
-      const response = await apiClient.updateScene(sceneId, updatedScene);
-      const result = response.data?.scene || response.data;
+      // Log what we're about to send to the API
+      console.log("SceneEditPage - Sending to API:", {
+        sceneId,
+        updatedData: formattedValues,
+      });
+
+      const response = await apiClient.updateScene(sceneId, formattedValues);
+      console.log("SceneEditPage - Update response:", response);
+
+      let result;
+      if (response.data?.scene) {
+        result = response.data.scene;
+      } else if (response.data) {
+        result = response.data;
+      } else {
+        console.warn(
+          "SceneEditPage - Unexpected API response format:",
+          response
+        );
+        result = response;
+      }
 
       console.log("SceneEditPage - Scene updated successfully:", result);
       message.success("Scene updated successfully!");
 
-      // Navigate back to the scene details page
-      navigate(`/universes/${universeId}/scenes/${sceneId}`);
+      // Delay navigation slightly to allow success message to be seen
+      setTimeout(() => {
+        // Navigate back to the scene details page
+        navigate(`/universes/${universeId}/scenes/${sceneId}`);
+      }, 500);
+
+      return result; // Return the result to the SceneForm
     } catch (error) {
       console.error("SceneEditPage - Error updating scene:", error);
+      console.error(
+        "SceneEditPage - Error details:",
+        error.response?.data || error.message
+      );
       setError(
         `Failed to update scene: ${
-          error.message || "An unknown error occurred"
+          error.response?.data?.error ||
+          error.message ||
+          "An unknown error occurred"
         }`
       );
       message.error("Failed to update scene. Please try again.");
+      throw error; // Re-throw to let SceneForm handle the error
     } finally {
       setLoading(false);
     }
@@ -171,8 +202,12 @@ const SceneEditPage = () => {
           universeId={universeId}
           sceneId={sceneId}
           initialData={scene}
-          onSubmit={handleSubmit}
-          onCancel={handleCancel}
+          onSubmit={(formattedValues) => {
+            return handleSubmit(formattedValues);
+          }}
+          onCancel={() => {
+            handleCancel();
+          }}
         />
       ) : (
         !loading && (

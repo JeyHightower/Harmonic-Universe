@@ -60,9 +60,15 @@ const LoginModal = ({ onClose }) => {
         log("auth", "Login successful", { email: values.email });
         message.success("Login successful!");
 
+        // Clear any stale form data
+        form.resetFields();
+
         // Use setTimeout to ensure the success message is shown before closing
         setTimeout(() => {
           forceClose();
+
+          // Dispatch a simple storage event to encourage components to refresh
+          window.dispatchEvent(new Event("storage"));
         }, 500);
       } else {
         const errorMessage =
