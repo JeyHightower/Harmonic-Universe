@@ -13,11 +13,8 @@ const Dashboard = () => {
   const handleLogout = async () => {
     try {
       await dispatch(logout()).unwrap();
-      navigate("/");
     } catch (error) {
       console.error("Logout failed:", error);
-      // Still navigate to home even if logout fails
-      navigate("/");
     }
   };
 

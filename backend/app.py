@@ -41,15 +41,21 @@ def create_app():
     from app.api.routes.characters import characters_bp
     from app.api.routes.notes import notes_bp
     from app.api.routes.auth import auth_bp
+    from app.api.routes.user import user_bp
+    from app.api.routes.universes import bp as universes_bp
 
     # Register blueprints
     app.register_blueprint(characters_bp, url_prefix='/api/characters')
     app.register_blueprint(notes_bp, url_prefix='/api/notes')
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(user_bp, url_prefix='/api/user')
+    app.register_blueprint(universes_bp, url_prefix='/api')
 
-    # Create database tables
+    # Create database tables and run migrations
     with app.app_context():
         db.create_all()
+        from flask_migrate import upgrade
+        upgrade()
 
     return app
 

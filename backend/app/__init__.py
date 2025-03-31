@@ -46,7 +46,8 @@ def create_app():
             "supports_credentials": True,
             "allow_headers": ["Content-Type", "Authorization", "Accept"],
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "expose_headers": ["Content-Type", "Authorization"]
+            "expose_headers": ["Content-Type", "Authorization"],
+            "max_age": 600
         }
     })
     db.init_app(app)
@@ -115,18 +116,21 @@ def create_app():
     )
     
     # Register blueprints
-    from .api.routes import auth_bp, characters_bp, notes_bp, user_bp
+    from .api.routes import auth_bp, characters_bp, notes_bp, user_bp, universes_bp
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(characters_bp, url_prefix='/api/characters')
     app.register_blueprint(notes_bp, url_prefix='/api/notes')
     app.register_blueprint(user_bp, url_prefix='/api/user')
+    app.register_blueprint(universes_bp, url_prefix='/api')
     
     # Health check endpoint
     @app.route('/api/health')
     def health_check():
         return jsonify({
             'status': 'healthy',
-            'message': 'The Harmonic Universe API is running'
+            'message': 'The Harmonic Universe API is running',
+            'version': app.config.get('VERSION', '1.0.0'),
+            'environment': app.config.get('ENV', 'development')
         })
     
     # User loader for Flask-Login

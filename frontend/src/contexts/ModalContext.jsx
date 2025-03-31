@@ -1,9 +1,18 @@
 import PropTypes from "prop-types";
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import ModalSystem from "../components/modals";
 
 // Create the context
 const ModalContext = createContext();
+
+// Map our modal types to ModalSystem types
+const MODAL_TYPE_MAP = {
+  LOGIN: "form",
+  REGISTER: "form",
+  ALERT: "alert",
+  CONFIRM: "confirm",
+  DEFAULT: "default",
+};
 
 // Custom hook to use the modal context
 export const useModal = () => {
@@ -14,12 +23,27 @@ export const useModal = () => {
   return context;
 };
 
+// Separate component to handle modal rendering
+const ModalRenderer = ({ modalProps, onClose }) => {
+  if (!modalProps) return null;
+
+  // Map the modal type to the expected type
+  const mappedProps = {
+    ...modalProps,
+    type: MODAL_TYPE_MAP[modalProps.type] || "default",
+    isOpen: true,
+    onClose,
+  };
+
+  return <ModalSystem {...mappedProps} />;
+};
+
 // Provider component
 export const ModalProvider = ({ children }) => {
   const [modalProps, setModalProps] = useState(null);
 
   const openModal = (props) => {
-    setModalProps(props);
+    setModalProps({ ...props, isOpen: true });
   };
 
   const closeModal = () => {
@@ -35,7 +59,7 @@ export const ModalProvider = ({ children }) => {
   return (
     <ModalContext.Provider value={value}>
       {children}
-      {modalProps && <ModalSystem {...modalProps} onClose={closeModal} />}
+      <ModalRenderer modalProps={modalProps} onClose={closeModal} />
     </ModalContext.Provider>
   );
 };

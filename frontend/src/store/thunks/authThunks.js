@@ -338,16 +338,39 @@ export const logout = createAsyncThunk(
     try {
       console.debug("Logging out user");
 
-      // Clear local storage
+      // Get token before making request
+      const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+      if (!token) {
+        console.debug("No token found, clearing state and navigating");
+        // Still clear storage and navigate
+        localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+        localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+        window.location.href = "/";
+        return { message: "Logged out successfully" };
+      }
+
+      // Call backend logout endpoint
+      const response = await apiClient.logout();
+      console.debug("Logout API call successful:", response);
+
+      // Clear local storage after successful API call
       localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
       localStorage.removeItem(AUTH_CONFIG.USER_KEY);
 
       // Clear auth state
       dispatch(loginFailure({ message: "Logged out successfully" }));
 
+      // Navigate to home page
+      window.location.href = "/";
+
       return { message: "Logged out successfully" };
     } catch (error) {
       console.error("Logout failed:", error);
+      // Still clear tokens even if API call fails
+      localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+      localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+      // Still navigate to home even if logout fails
+      window.location.href = "/";
       return rejectWithValue(handleError(error));
     }
   }

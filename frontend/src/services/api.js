@@ -24,7 +24,7 @@ const testApiConnection = async () => {
     if (IS_DEVELOPMENT) {
       console.debug("Testing API connection to:", API_URL);
     }
-    const response = await api.get("/health");
+    const response = await api.get("/api/health");
     if (IS_DEVELOPMENT) {
       console.debug("API connection successful:", response.data);
     }
@@ -208,21 +208,21 @@ const cache = {
 // API endpoints
 export const endpoints = {
   auth: {
-    login: "/auth/login",
-    register: "/auth/register",
-    logout: "/auth/logout",
-    checkAuth: "/auth/check-auth",
-    updateProfile: "/auth/profile",
-    changePassword: "/auth/password",
-    resetPassword: "/auth/reset-password",
-    verifyEmail: "/auth/verify-email",
-    demo: "/auth/demo",
-    demoLogin: "/auth/demo-login",
-    me: "/auth/me",
+    login: "/api/auth/login",
+    register: "/api/auth/register",
+    logout: "/api/auth/logout",
+    checkAuth: "/api/auth/check-auth",
+    updateProfile: "/api/auth/profile",
+    changePassword: "/api/auth/password",
+    resetPassword: "/api/auth/reset-password",
+    verifyEmail: "/api/auth/verify-email",
+    demo: "/api/auth/demo",
+    demoLogin: "/api/auth/demo-login",
+    me: "/api/auth/me",
   },
   user: {
-    profile: "/user/profile",
-    settings: "/user/settings",
+    profile: "/api/user/profile",
+    settings: "/api/user/settings",
   },
   universes: {
     list: "/universes",
@@ -276,9 +276,27 @@ export const apiClient = {
   // Auth methods
   login: (credentials) => api.post(endpoints.auth.login, credentials),
   register: (userData) => api.post(endpoints.auth.register, userData),
-  logout: () => api.post(endpoints.auth.logout),
+  logout: () => {
+    console.debug(
+      "Making logout request to:",
+      `${API_URL}${endpoints.auth.logout}`
+    );
+    return api.post(
+      endpoints.auth.logout,
+      {},
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem(
+            AUTH_CONFIG.TOKEN_KEY
+          )}`,
+        },
+        withCredentials: true,
+      }
+    );
+  },
   checkAuth: () => api.get(endpoints.auth.me),
-  demoLogin: () => api.post(endpoints.auth.demoLogin),
+  demoLogin: () => api.post("/api/auth/demo-login"),
 
   // User methods
   getUserProfile: async () => {

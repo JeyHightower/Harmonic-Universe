@@ -8,6 +8,7 @@ class Universe(BaseModel):
     description = db.Column(db.Text)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
     sound_profile_id = db.Column(db.Integer, db.ForeignKey('sound_profiles.id', ondelete='SET NULL'), index=True)
+    is_public = db.Column(db.Boolean, nullable=False, default=False)
     
     # Relationships
     scenes = db.relationship('Scene', backref='universe', lazy=True, cascade='all, delete-orphan')
@@ -35,6 +36,7 @@ class Universe(BaseModel):
             'description': self.description,
             'user_id': self.user_id,
             'sound_profile_id': self.sound_profile_id,
+            'is_public': self.is_public,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
             'is_deleted': self.is_deleted,

@@ -150,20 +150,17 @@ export const demoLogin = createAsyncThunk(
   "auth/demoLogin",
   async (_, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      logAuthOperation("Demo login attempt");
 
-      // Mock successful login response
-      return {
-        user: {
-          id: "demo-user",
-          name: "Demo User",
-          email: "demo@example.com",
-          role: "user",
-        },
-        token: "mock-jwt-token",
-      };
+      const response = await apiClient.demoLogin();
+      logAuthOperation("Demo login successful", { status: response.status });
+
+      // Store tokens
+      handleAuthTokens(response.data);
+
+      return response.data;
     } catch (error) {
+      logAuthError("Demo login", error);
       return rejectWithValue(error.message || "Failed to login");
     }
   }
@@ -173,33 +170,44 @@ export const logout = createAsyncThunk(
   "auth/logout",
   async (_, { rejectWithValue }) => {
     try {
-      logAuthOperation("Logout attempt");
+      logAuthOperation("logout-attempt");
 
-      // Get the token before clearing it
+      // Get token before making request
       const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
       if (!token) {
-        throw new Error("No token found");
+        logAuthOperation("logout-no-token");
+        // Still clear storage and navigate
+        localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+        localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+        sessionStorage.removeItem("demoLoginResponse");
+        window.location.href = "/";
+        return null;
       }
 
       // Call backend logout endpoint
-      await apiClient.logout();
+      const response = await apiClient.logout();
+      logAuthOperation("logout-success", { status: response.status });
 
-      // Clear local storage tokens
+      // Clear local storage tokens after successful API call
       localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
       localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
 
       // Also clear session cache
       sessionStorage.removeItem("demoLoginResponse");
 
-      logAuthOperation("Logout successful");
+      // Navigate to home page
+      window.location.href = "/";
 
       return null;
     } catch (error) {
-      logAuthError("Logout", error);
+      logAuthError("logout", error);
 
       // Still clear tokens even if API call fails
       localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
       localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+
+      // Still navigate to home even if logout fails
+      window.location.href = "/";
 
       return rejectWithValue(error.message || "Failed to logout");
     }
@@ -214,24 +222,37 @@ const handleAuthTokens = (data) => {
     hasAccessToken: !!data.access_token,
   });
 
+  // Handle different token formats
   if (data.token) {
-    localStorage.setItem("accessToken", data.token);
+    localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, data.token);
     logAuthOperation("token-stored", { source: "token" });
-  }
-  if (data.access_token) {
-    localStorage.setItem("accessToken", data.access_token);
+  } else if (data.access_token) {
+    localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, data.access_token);
     logAuthOperation("token-stored", { source: "access_token" });
+  } else if (data.tokens?.access_token) {
+    localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, data.tokens.access_token);
+    logAuthOperation("token-stored", { source: "tokens.access_token" });
   }
+
+  // Handle refresh tokens
   if (data.refresh_token) {
-    localStorage.setItem("refreshToken", data.refresh_token);
-    logAuthOperation("refresh-token-stored");
+    localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, data.refresh_token);
+    logAuthOperation("refresh-token-stored", { source: "refresh_token" });
+  } else if (data.tokens?.refresh_token) {
+    localStorage.setItem(
+      AUTH_CONFIG.REFRESH_TOKEN_KEY,
+      data.tokens.refresh_token
+    );
+    logAuthOperation("refresh-token-stored", {
+      source: "tokens.refresh_token",
+    });
   }
 
   // Update debug state
   if (window.authDebug) {
     window.authDebug.tokens = {
-      hasAccessToken: !!localStorage.getItem("accessToken"),
-      hasRefreshToken: !!localStorage.getItem("refreshToken"),
+      hasAccessToken: !!localStorage.getItem(AUTH_CONFIG.TOKEN_KEY),
+      hasRefreshToken: !!localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY),
     };
   }
 };
@@ -252,6 +273,9 @@ const authSlice = createSlice({
     logoutUser: (state) => {
       state.user = null;
       state.token = null;
+      state.isAuthenticated = false;
+      state.error = null;
+      logAuthOperation("logout-user");
     },
     loginStart: (state) => {
       state.loading = true;
@@ -365,10 +389,23 @@ const authSlice = createSlice({
       })
 
       // Logout
+      .addCase(logout.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+        logAuthOperation("logout-pending");
+      })
       .addCase(logout.fulfilled, (state) => {
+        state.isLoading = false;
         state.user = null;
         state.token = null;
+        state.isAuthenticated = false;
+        state.error = null;
         logAuthOperation("logout-fulfilled");
+      })
+      .addCase(logout.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+        logAuthOperation("logout-rejected", { error: state.error });
       });
   },
 });

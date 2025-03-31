@@ -4,6 +4,7 @@ import { Provider } from "react-redux";
 import store from "./store/store";
 import { useSelector } from "react-redux";
 import { Home, Login, Register, Modal, Navigation } from "./components";
+import { ModalProvider } from "./contexts/ModalContext";
 import routes from "./routes";
 import "./styles/App.css";
 
@@ -77,43 +78,39 @@ const AppContent = () => {
 
   try {
     return (
-      <BrowserRouter
-        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-      >
-        <div className="App">
-          <Navigation />
-          <main className="App-main">
-            <Suspense fallback={<LoadingPage />}>
-              <Routes>
-                {routes.map((route, index) => (
-                  <Route key={index} path={route.path} element={route.element}>
-                    {route.children?.map((child, childIndex) => (
-                      <Route
-                        key={childIndex}
-                        index={child.index}
-                        path={child.path}
-                        element={child.element}
-                      />
-                    ))}
-                  </Route>
-                ))}
-              </Routes>
-            </Suspense>
-          </main>
-          <footer className="App-footer">
-            <p>&copy; {new Date().getFullYear()} Harmonic Universe</p>
-          </footer>
-          {isOpen && (
-            <Modal
-              isOpen={isOpen}
-              onClose={() => store.dispatch({ type: "modal/closeModal" })}
-              type={type}
-            >
-              {renderModalContent()}
-            </Modal>
-          )}
-        </div>
-      </BrowserRouter>
+      <div className="App">
+        <Navigation />
+        <main className="App-main">
+          <Suspense fallback={<LoadingPage />}>
+            <Routes>
+              {routes.map((route, index) => (
+                <Route key={index} path={route.path} element={route.element}>
+                  {route.children?.map((child, childIndex) => (
+                    <Route
+                      key={childIndex}
+                      index={child.index}
+                      path={child.path}
+                      element={child.element}
+                    />
+                  ))}
+                </Route>
+              ))}
+            </Routes>
+          </Suspense>
+        </main>
+        <footer className="App-footer">
+          <p>&copy; {new Date().getFullYear()} Harmonic Universe</p>
+        </footer>
+        {isOpen && (
+          <Modal
+            isOpen={isOpen}
+            onClose={() => store.dispatch({ type: "modal/closeModal" })}
+            type={type}
+          >
+            {renderModalContent()}
+          </Modal>
+        )}
+      </div>
     );
   } catch (error) {
     console.error("Error rendering AppContent:", error);
@@ -140,9 +137,15 @@ function App() {
 
   try {
     return (
-      <Provider store={store}>
-        <AppContent />
-      </Provider>
+      <BrowserRouter
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Provider store={store}>
+          <ModalProvider>
+            <AppContent />
+          </ModalProvider>
+        </Provider>
+      </BrowserRouter>
     );
   } catch (error) {
     console.error("Error in App component:", error);

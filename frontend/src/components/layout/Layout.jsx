@@ -1,6 +1,13 @@
-import React, { useEffect, useState, useCallback, lazy, Suspense } from "react";
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  lazy,
+  Suspense,
+  useRef,
+} from "react";
 import { Outlet } from "react-router-dom";
-import { ModalProvider } from "../../contexts/ModalContext";
+import { ModalProvider, useModal } from "../../contexts/ModalContext";
 
 // Import safe versions of hooks
 import {
@@ -12,33 +19,19 @@ import { safeImport } from "../../utils/dynamic-import";
 import { ensureRouterProvider } from "../../utils/ensure-router-provider";
 
 // Import with fallbacks using dynamic imports
-let MODAL_TYPES;
-try {
-  // Use dynamic import instead of require
-  import("../../utils/modalRegistry")
-    .then((module) => {
-      MODAL_TYPES = module.MODAL_TYPES;
-    })
-    .catch((error) => {
-      console.warn("MODAL_TYPES not available, using fallback");
-      MODAL_TYPES = {
-        LOGIN: "LOGIN",
-        REGISTER: "REGISTER",
-      };
-    });
+const MODAL_TYPES = {
+  LOGIN: "LOGIN",
+  REGISTER: "REGISTER",
+};
 
-  // Initialize with fallback in case the import hasn't resolved yet
-  MODAL_TYPES = {
-    LOGIN: "LOGIN",
-    REGISTER: "REGISTER",
-  };
-} catch (error) {
-  console.warn("MODAL_TYPES not available, using fallback");
-  MODAL_TYPES = {
-    LOGIN: "LOGIN",
-    REGISTER: "REGISTER",
-  };
-}
+// Load additional modal types if available
+import("../../utils/modalRegistry")
+  .then((module) => {
+    Object.assign(MODAL_TYPES, module.MODAL_TYPES);
+  })
+  .catch((error) => {
+    console.warn("MODAL_TYPES not available, using fallback");
+  });
 
 // Import demoLogin with fallback
 let demoLogin;
@@ -209,6 +202,33 @@ function Layout() {
   const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState(null);
 
+  // Add ref to track if we've handled parameters
+  const hasHandledParams = useRef(false);
+
+  // Handle demo login with error handling
+  const handleDemoLogin = useCallback(async () => {
+    if (!dispatch || typeof demoLogin !== "function") {
+      console.error("[Layout] Redux dispatch or demoLogin not available");
+      return;
+    }
+
+    console.log("[Layout] Executing demo login...");
+
+    try {
+      console.log("[Layout] Dispatching demo login action");
+      const resultAction = await dispatch(demoLogin());
+
+      if (resultAction.meta?.requestStatus === "fulfilled") {
+        console.log("[Layout] Demo login successful, navigating to dashboard");
+        navigate("/dashboard", { replace: true });
+      } else {
+        console.error("[Layout] Demo login failed:", resultAction.error);
+      }
+    } catch (error) {
+      console.error("[Layout] Error during demo login:", error);
+    }
+  }, [dispatch, navigate, demoLogin]);
+
   // Log component mount
   useEffect(() => {
     console.log("[Layout] Component mounted successfully");
@@ -221,6 +241,9 @@ function Layout() {
       modalContext: !!modalContext,
     });
 
+    // Set initialized to true after component mounts
+    setInitialized(true);
+
     return () => {
       console.log("[Layout] Component unmounted");
     };
@@ -228,70 +251,45 @@ function Layout() {
 
   // Handle URL parameters for modals and demo login
   useEffect(() => {
-    if (!openModal || !dispatch) {
-      console.log(
-        "[Layout] Missing openModal or dispatch, skipping URL parameter handling"
-      );
-      return; // Exit early if dependencies aren't available
+    if (!openModal || !dispatch || hasHandledParams.current) {
+      return; // Exit early if dependencies aren't available or we've already handled params
     }
 
     try {
       const searchParams = new URLSearchParams(location.search);
-
-      // Check for modal parameter
       const modalParam = searchParams.get("modal");
+      const demoParam = searchParams.get("demo");
+
+      // Handle modal parameter
       if (modalParam) {
         console.log("[Layout] Detected modal parameter:", modalParam);
-
         if (modalParam === "login") {
-          console.log("[Layout] Opening login modal from URL parameter");
-          openModal(MODAL_TYPES.LOGIN);
+          openModal({ type: MODAL_TYPES.LOGIN });
         } else if (modalParam === "register") {
-          console.log("[Layout] Opening register modal from URL parameter");
-          openModal(MODAL_TYPES.REGISTER);
+          openModal({ type: MODAL_TYPES.REGISTER });
         }
+        // Clear the modal parameter from URL
+        const newSearchParams = new URLSearchParams(location.search);
+        newSearchParams.delete("modal");
+        navigate({ search: newSearchParams.toString() }, { replace: true });
       }
 
-      // Check for demo parameter
-      const demoParam = searchParams.get("demo");
+      // Handle demo parameter
       if (demoParam === "true") {
         console.log("[Layout] Demo login requested via URL parameter");
         handleDemoLogin();
+        // Clear the demo parameter from URL
+        const newSearchParams = new URLSearchParams(location.search);
+        newSearchParams.delete("demo");
+        navigate({ search: newSearchParams.toString() }, { replace: true });
       }
+
+      // Mark that we've handled the parameters
+      hasHandledParams.current = true;
     } catch (error) {
       console.error("[Layout] Error handling URL parameters:", error);
     }
-  }, [location.search, openModal, dispatch]);
-
-  // Handle demo login with error handling
-  const handleDemoLogin = async () => {
-    if (!dispatch || typeof demoLogin !== "function") {
-      console.error("[Layout] Redux dispatch or demoLogin not available");
-      return;
-    }
-
-    console.log("[Layout] Executing demo login...");
-
-    try {
-      console.log("[Layout] Dispatching demo login action");
-      const resultAction = await dispatch(demoLogin());
-
-      if (
-        resultAction.meta &&
-        resultAction.meta.requestStatus === "fulfilled"
-      ) {
-        console.log("[Layout] Demo login successful, navigating to dashboard");
-
-        // Clear URL parameters
-        navigate("/dashboard", { replace: true });
-      } else {
-        console.error("[Layout] Demo login failed:", resultAction.error);
-        // Optionally show error notification here
-      }
-    } catch (error) {
-      console.error("[Layout] Error during demo login:", error);
-    }
-  };
+  }, [location.search, openModal, dispatch, navigate, handleDemoLogin]);
 
   // Show a simplified loading state during initialization
   if (!initialized && !error) {

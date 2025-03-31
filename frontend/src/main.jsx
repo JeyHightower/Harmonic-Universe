@@ -1,30 +1,9 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
-
-// Import potential CSS files
-try {
-  // Try to import global CSS or styles
-  const cssFiles = [
-    "./styles/index.css",
-    "./styles/main.css",
-    "./styles/global.css",
-    "./styles/app.css",
-    "./styles.css",
-    "./index.css",
-  ];
-
-  // Try each possible CSS file
-  cssFiles.forEach((file) => {
-    try {
-      require(file);
-    } catch (e) {
-      // Silently fail if file doesn't exist
-    }
-  });
-} catch (e) {
-  console.warn("Could not import CSS files:", e);
-}
+import "./styles/global.css";
+import "./styles/index.css";
+import "./styles/App.css";
 
 // Function to initialize the application
 const initializeApp = () => {
