@@ -2,25 +2,31 @@ import PropTypes from "prop-types";
 import React, {
   createContext,
   useContext,
-  useState,
   useEffect,
   Suspense,
+  useRef,
 } from "react";
-import { ModalComponents } from "../components";
-import ModalSystem from "../components/modals/ModalSystem";
+import { useSelector } from "react-redux";
 import { MODAL_TYPES } from "../constants/modalTypes";
+import { ensurePortalRoot } from "../utils/portalUtils";
+import {
+  MODAL_CONFIG,
+  getModalSizeStyles,
+  getModalTypeStyles,
+  getModalAnimationStyles,
+  getModalPositionStyles,
+} from "../utils/config";
+import { getModalComponent } from "../utils/modalRegistry";
+import {
+  selectModalState,
+  selectIsModalOpen,
+  selectModalType,
+  selectModalProps,
+  selectIsModalTransitioning,
+} from "../store/slices/modalSlice";
 
 // Create the context
 const ModalContext = createContext();
-
-// Map our modal types to ModalSystem types
-const MODAL_TYPE_MAP = {
-  LOGIN: "form",
-  REGISTER: "form",
-  ALERT: "alert",
-  CONFIRM: "confirm",
-  DEFAULT: "default",
-};
 
 // Custom hook to use the modal context
 export const useModal = () => {
@@ -32,65 +38,87 @@ export const useModal = () => {
 };
 
 // Separate component to handle modal rendering
-const ModalRenderer = ({ modalProps, onClose }) => {
-  if (!modalProps) return null;
-
-  // Get the appropriate modal component
-  let ModalComponent = null;
-  switch (modalProps.type) {
-    case MODAL_TYPES.LOGIN:
-      ModalComponent = ModalComponents.LoginModal;
-      break;
-    case MODAL_TYPES.REGISTER:
-      ModalComponent = ModalComponents.RegisterModal;
-      break;
-    default:
-      ModalComponent = ModalSystem;
+const ModalRenderer = ({ type, props, onClose }) => {
+  const ModalComponent = getModalComponent(type);
+  if (!ModalComponent) {
+    console.error(`Modal component not found for type: ${type}`);
+    return null;
   }
 
-  // Map the modal type to the expected type
-  const mappedProps = {
-    ...modalProps,
-    type: MODAL_TYPE_MAP[modalProps.type] || "default",
-    isOpen: true,
-    onClose,
-  };
-
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <ModalComponent {...mappedProps} />
-    </Suspense>
+    <ModalComponent
+      isOpen={true}
+      onClose={onClose}
+      {...props}
+      style={{
+        ...getModalSizeStyles(props.size || MODAL_CONFIG.SIZES.MEDIUM),
+        ...getModalTypeStyles(type),
+        ...getModalAnimationStyles(
+          props.animation || MODAL_CONFIG.ANIMATIONS.FADE
+        ),
+        ...getModalPositionStyles(
+          props.position || MODAL_CONFIG.POSITIONS.CENTER
+        ),
+        ...props.style,
+      }}
+    />
   );
 };
 
+ModalRenderer.propTypes = {
+  type: PropTypes.string.isRequired,
+  props: PropTypes.object.isRequired,
+  onClose: PropTypes.func.isRequired,
+};
+
 // Provider component
-export const ModalProvider = ({ children }) => {
-  const [modalProps, setModalProps] = useState(null);
+const ModalProvider = ({ children }) => {
+  const portalRootRef = useRef(null);
+  const modalState = useSelector(selectModalState);
+  const isOpen = useSelector(selectIsModalOpen);
+  const type = useSelector(selectModalType);
+  const props = useSelector(selectModalProps);
+  const isTransitioning = useSelector(selectIsModalTransitioning);
 
-  const openModal = (props) => {
-    setModalProps({ ...props, isOpen: true });
-  };
-
-  const closeModal = () => {
-    setModalProps(null);
-  };
+  // Ensure portal root exists and store reference
+  useEffect(() => {
+    try {
+      portalRootRef.current = ensurePortalRoot();
+      console.log("[ModalContext] Portal root created/verified");
+    } catch (error) {
+      console.error("[ModalContext] Error creating portal root:", error);
+    }
+  }, []);
 
   const value = {
-    modalProps,
-    openModal,
-    closeModal,
+    isModalOpen: isOpen,
+    modalType: type,
+    modalProps: props,
+    isTransitioning,
   };
 
   return (
     <ModalContext.Provider value={value}>
       {children}
-      <ModalRenderer modalProps={modalProps} onClose={closeModal} />
+      {isOpen && portalRootRef.current && (
+        <Suspense fallback={<div>Loading modal...</div>}>
+          <ModalRenderer
+            type={type}
+            props={props}
+            onClose={() => {
+              // Close modal through Redux
+              const event = new CustomEvent("modal-close");
+              document.dispatchEvent(event);
+            }}
+          />
+        </Suspense>
+      )}
     </ModalContext.Provider>
   );
 };
 
-export default ModalContext;
-
 ModalProvider.propTypes = {
   children: PropTypes.node.isRequired,
 };
+
+export { ModalProvider };

@@ -1,3 +1,5 @@
+import React from "react";
+
 // Auth Components
 export { default as Login } from "./auth/Login";
 export { default as Register } from "./auth/Register";
@@ -20,11 +22,20 @@ export { default as SafeIcon } from "./common/SafeIcon";
 export { default as Home } from "../pages/Home";
 
 // Modal Components
+const LoginModal = React.lazy(() => import("./auth/LoginModal"));
+const RegisterModal = React.lazy(() => import("./auth/RegisterModal"));
+const ExportModal = React.lazy(() => import("./common/ExportModal"));
+const ImportModal = React.lazy(() => import("./common/ImportModal"));
+
+// Export modal components directly
+export { LoginModal, RegisterModal, ExportModal, ImportModal };
+
+// Also export as an object for backward compatibility
 export const ModalComponents = {
-  LoginModal: React.lazy(() => import("./auth/LoginModal")),
-  RegisterModal: React.lazy(() => import("./auth/RegisterModal")),
-  ExportModal: React.lazy(() => import("./common/ExportModal")),
-  ImportModal: React.lazy(() => import("./common/ImportModal")),
+  LoginModal,
+  RegisterModal,
+  ExportModal,
+  ImportModal,
 };
 
 // Lazy loaded components - these will be imported dynamically where needed

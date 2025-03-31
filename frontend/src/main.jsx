@@ -4,10 +4,19 @@ import App from "./App";
 import "./styles/global.css";
 import "./styles/index.css";
 import "./styles/App.css";
+import { ensurePortalRoot } from "./utils/portalUtils";
 
 // Function to initialize the application
 const initializeApp = () => {
   console.log("Initializing Harmonic Universe application...");
+
+  // Ensure portal root exists before rendering
+  try {
+    const portalRoot = ensurePortalRoot();
+    console.log("Portal root initialized:", portalRoot);
+  } catch (error) {
+    console.error("Error initializing portal root:", error);
+  }
 
   const rootElement = document.getElementById("root");
   if (!rootElement) {

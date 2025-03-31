@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useModal } from "../../contexts/ModalContext";
 import { fetchPhysicsObjects } from "../../store/thunks/physicsObjectsThunks";
-import { MODAL_TYPES } from "../../utils/config";
+import { MODAL_TYPES } from "../../constants/modalTypes";
 import Button from "../common/Button";
 import Icon from "../common/Icon";
 import "./PhysicsObjects.css";

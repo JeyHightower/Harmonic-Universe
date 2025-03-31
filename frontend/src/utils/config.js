@@ -134,7 +134,7 @@ export const AUTH_CONFIG = {
   COOKIE_SAMESITE: validateEnvVar("VITE_AUTH_COOKIE_SAMESITE", "strict"),
   ENDPOINTS: {
     LOGIN: "/auth/login",
-    REGISTER: "/auth/register",
+    SIGNUP: "/auth/signup",
     LOGOUT: "/auth/logout",
     REFRESH: "/auth/refresh",
     DEMO: "/auth/demo-login",
@@ -294,7 +294,7 @@ export default {
 export const ROUTES = {
   HOME: "/",
   LOGIN: "/login",
-  REGISTER: "/register",
+  SIGNUP: "/signup",
   DASHBOARD: "/dashboard",
   UNIVERSE: "/universe/:id",
   SCENE: "/scene/:id",
@@ -302,82 +302,211 @@ export const ROUTES = {
   PROFILE: "/profile",
 };
 
-export const MODAL_TYPES = {
-  // Auth modals
-  LOGIN: "LOGIN",
-  REGISTER: "REGISTER",
-  SETTINGS: "SETTINGS",
-
-  // Universe modals
-  CREATE_UNIVERSE: "CREATE_UNIVERSE",
-  EDIT_UNIVERSE: "EDIT_UNIVERSE",
-  DELETE_UNIVERSE: "DELETE_UNIVERSE",
-
-  // Scene modals
-  CREATE_SCENE: "CREATE_SCENE",
-  EDIT_SCENE: "EDIT_SCENE",
-  DELETE_SCENE: "DELETE_SCENE",
-
-  // Physics modals
-  CREATE_PHYSICS_OBJECT: "CREATE_PHYSICS_OBJECT",
-  EDIT_PHYSICS_OBJECT: "EDIT_PHYSICS_OBJECT",
-  DELETE_PHYSICS_OBJECT: "DELETE_PHYSICS_OBJECT",
-  PHYSICS_PARAMETERS: "PHYSICS_PARAMETERS",
-
-  // Harmony modals
-  HARMONY_PARAMETERS: "HARMONY_PARAMETERS",
-
-  // System modals
-  NETWORK_ERROR: "NETWORK_ERROR",
-  CONFIRM: "CONFIRM",
-  ALERT: "ALERT",
-  FORM: "FORM",
-  DIALOG: "DIALOG",
-  CUSTOM: "CUSTOM",
-};
-
 // Modal configuration
 export const MODAL_CONFIG = {
-  // Default sizes
-  SIZES: {
-    SMALL: "small",
-    MEDIUM: "medium",
-    LARGE: "large",
-    FULL: "full",
-  },
-
-  // Modal types
   TYPES: {
     DEFAULT: "default",
     ALERT: "alert",
-    CONFIRM: "confirm",
+    CONFIRMATION: "confirmation",
     FORM: "form",
+    INFO: "info",
+    ERROR: "error",
+    SUCCESS: "success",
+    WARNING: "warning",
   },
-
-  // Animation types
-  ANIMATIONS: {
-    FADE: "fade",
-    SLIDE: "slide",
-    ZOOM: "zoom",
-    NONE: "none",
+  SIZES: {
+    SMALL: "400px",
+    MEDIUM: "600px",
+    LARGE: "800px",
+    XLARGE: "1000px",
   },
-
-  // Position types
   POSITIONS: {
     CENTER: "center",
     TOP: "top",
     BOTTOM: "bottom",
+    LEFT: "left",
+    RIGHT: "right",
   },
+  ANIMATIONS: {
+    FADE: {
+      duration: 200,
+      timing: "ease-in-out",
+    },
+    SLIDE: {
+      duration: 300,
+      timing: "ease-in-out",
+    },
+    SCALE: {
+      duration: 200,
+      timing: "ease-in-out",
+    },
+  },
+  DEFAULT_SETTINGS: {
+    size: "MEDIUM",
+    position: "CENTER",
+    animation: "FADE",
+    draggable: true,
+    closeOnBackdrop: true,
+    closeOnEscape: true,
+  },
+  STYLES: {
+    backdrop: {
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      backdropFilter: "blur(4px)",
+    },
+    modal: {
+      backgroundColor: "#ffffff",
+      borderRadius: "8px",
+      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+      padding: "24px",
+    },
+    header: {
+      marginBottom: "16px",
+      paddingBottom: "16px",
+      borderBottom: "1px solid #e0e0e0",
+    },
+    content: {
+      marginBottom: "24px",
+    },
+    footer: {
+      display: "flex",
+      justifyContent: "flex-end",
+      gap: "8px",
+      paddingTop: "16px",
+      borderTop: "1px solid #e0e0e0",
+    },
+    button: {
+      padding: "8px 16px",
+      borderRadius: "4px",
+      border: "none",
+      cursor: "pointer",
+      transition: "background-color 0.2s",
+    },
+    primaryButton: {
+      backgroundColor: "#1976d2",
+      color: "#ffffff",
+    },
+    secondaryButton: {
+      backgroundColor: "#e0e0e0",
+      color: "#000000",
+    },
+  },
+  RESPONSIVE: {
+    breakpoints: {
+      mobile: "320px",
+      tablet: "768px",
+      desktop: "1024px",
+    },
+    sizes: {
+      mobile: {
+        SMALL: "90vw",
+        MEDIUM: "95vw",
+        LARGE: "98vw",
+        XLARGE: "100vw",
+      },
+      tablet: {
+        SMALL: "400px",
+        MEDIUM: "600px",
+        LARGE: "800px",
+        XLARGE: "90vw",
+      },
+      desktop: {
+        SMALL: "400px",
+        MEDIUM: "600px",
+        LARGE: "800px",
+        XLARGE: "1000px",
+      },
+    },
+  },
+};
 
-  // Default settings
-  DEFAULTS: {
-    ANIMATION_DURATION: 300,
-    BACKDROP_OPACITY: 0.5,
-    Z_INDEX: 1000,
-    CLOSE_ON_ESCAPE: true,
-    CLOSE_ON_BACKDROP: true,
-    SHOW_CLOSE_BUTTON: true,
-  },
+// Modal style utility functions
+export const getModalSizeStyles = (
+  size = MODAL_CONFIG.DEFAULT_SETTINGS.size
+) => {
+  return {
+    width: MODAL_CONFIG.SIZES[size] || MODAL_CONFIG.SIZES.MEDIUM,
+    maxWidth: "90vw",
+    maxHeight: "90vh",
+    overflow: "auto",
+  };
+};
+
+export const getModalTypeStyles = (type) => {
+  const baseStyles = {
+    ...MODAL_CONFIG.STYLES.modal,
+    ...getModalSizeStyles(),
+  };
+
+  switch (type) {
+    case "ALERT":
+      return {
+        ...baseStyles,
+        ...MODAL_CONFIG.STYLES.alert,
+      };
+    case "CONFIRMATION":
+      return {
+        ...baseStyles,
+        ...MODAL_CONFIG.STYLES.confirmation,
+      };
+    case "FORM":
+      return {
+        ...baseStyles,
+        ...MODAL_CONFIG.STYLES.form,
+      };
+    default:
+      return baseStyles;
+  }
+};
+
+export const getModalAnimationStyles = (
+  animation = MODAL_CONFIG.DEFAULT_SETTINGS.animation
+) => {
+  const { duration, timing } =
+    MODAL_CONFIG.ANIMATIONS[animation] || MODAL_CONFIG.ANIMATIONS.FADE;
+
+  return {
+    transition: `all ${duration}ms ${timing}`,
+    opacity: 1,
+    transform: "translateY(0)",
+  };
+};
+
+export const getModalPositionStyles = (
+  position = MODAL_CONFIG.DEFAULT_SETTINGS.position
+) => {
+  switch (position) {
+    case "TOP":
+      return {
+        top: "20px",
+        left: "50%",
+        transform: "translateX(-50%)",
+      };
+    case "BOTTOM":
+      return {
+        bottom: "20px",
+        left: "50%",
+        transform: "translateX(-50%)",
+      };
+    case "LEFT":
+      return {
+        top: "50%",
+        left: "20px",
+        transform: "translateY(-50%)",
+      };
+    case "RIGHT":
+      return {
+        top: "50%",
+        right: "20px",
+        transform: "translateY(-50%)",
+      };
+    default:
+      return {
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+      };
+  }
 };
 
 export const ERROR_MESSAGES = {

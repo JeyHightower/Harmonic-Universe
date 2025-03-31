@@ -1,42 +1,94 @@
 import { useCallback } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
-  closeModal as closeModalAction,
-  openModal as openModalAction,
-} from "../store/modalSlice";
-import { isValidModalType } from "../utils/modalRegistry";
+  openModal,
+  closeModal,
+  closeModalComplete,
+  updateModalProps,
+} from "../store/slices/modalSlice";
+import { MODAL_CONFIG } from "../utils/config";
+import { validateModalType } from "../utils/modalRegistry";
 
 /**
- * Custom hook for interacting with the modal system
- * @returns {Object} Modal functions and state
+ * Hook for managing modals
+ * @returns {Object} Modal management functions and state
  */
-const useModal = () => {
+export const useModal = () => {
   const dispatch = useDispatch();
+  const modalState = useSelector((state) => state.modal);
 
-  const openModal = useCallback(
-    (props) => {
-      if (!props) {
-        console.error("Modal props are required");
+  const open = useCallback(
+    (type, props = {}) => {
+      if (!validateModalType(type)) {
+        console.error(`Invalid modal type: ${type}`);
         return;
       }
 
-      // If type is provided, validate it
-      if (props.type && !isValidModalType(props.type)) {
-        console.warn(`Unknown modal type: ${props.type}`);
+      if (modalState.isTransitioning) {
+        console.warn("Modal transition in progress, ignoring open request");
+        return;
       }
 
-      dispatch(openModalAction(props));
+      dispatch(openModal({ type, props }));
+    },
+    [dispatch, modalState.isTransitioning]
+  );
+
+  const close = useCallback(() => {
+    if (modalState.isTransitioning) {
+      console.warn("Modal transition in progress, ignoring close request");
+      return;
+    }
+
+    dispatch(closeModal());
+
+    // Complete close after animation
+    setTimeout(() => {
+      dispatch(closeModalComplete());
+    }, MODAL_CONFIG.ANIMATIONS.FADE.duration);
+  }, [dispatch, modalState.isTransitioning]);
+
+  const updateProps = useCallback(
+    (props) => {
+      dispatch(updateModalProps(props));
     },
     [dispatch]
   );
 
-  const closeModal = useCallback(() => {
-    dispatch(closeModalAction());
-  }, [dispatch]);
+  return {
+    open,
+    close,
+    updateProps,
+    isOpen: modalState.isOpen,
+    type: modalState.type,
+    props: modalState.props,
+    isTransitioning: modalState.isTransitioning,
+  };
+};
+
+/**
+ * Hook for using a specific modal type
+ * @param {string} type - The modal type
+ * @returns {Object} Modal management functions and state
+ */
+export const useModalType = (type) => {
+  const { open, close, updateProps, isOpen, props, isTransitioning } =
+    useModal();
+
+  const openWithType = useCallback(
+    (modalProps = {}) => {
+      open(type, modalProps);
+    },
+    [open, type]
+  );
 
   return {
-    openModal,
-    closeModal,
+    open: openWithType,
+    close,
+    updateProps,
+    isOpen: isOpen && props.type === type,
+    props,
+    isTransitioning,
   };
 };
 

@@ -7,7 +7,9 @@ import React, {
   useRef,
 } from "react";
 import { Outlet } from "react-router-dom";
-import { ModalProvider, useModal } from "../../contexts/ModalContext";
+import { ModalProvider } from "../../contexts/ModalContext";
+import { MODAL_TYPES } from "../../constants/modalTypes";
+import { useModal } from "../../contexts/ModalContext";
 
 // Import safe versions of hooks
 import {
@@ -17,21 +19,6 @@ import {
 import { safeUseDispatch } from "../../utils/ensure-redux-provider";
 import { safeImport } from "../../utils/dynamic-import";
 import { ensureRouterProvider } from "../../utils/ensure-router-provider";
-
-// Import with fallbacks using dynamic imports
-const MODAL_TYPES = {
-  LOGIN: "LOGIN",
-  REGISTER: "REGISTER",
-};
-
-// Load additional modal types if available
-import("../../utils/modalRegistry")
-  .then((module) => {
-    Object.assign(MODAL_TYPES, module.MODAL_TYPES);
-  })
-  .catch((error) => {
-    console.warn("MODAL_TYPES not available, using fallback");
-  });
 
 // Import demoLogin with fallback
 let demoLogin;
@@ -186,17 +173,7 @@ function Layout() {
   const location = safeUseLocation();
   const navigate = safeUseNavigate();
   const dispatch = safeUseDispatch();
-
-  // Improve context validation
-  let modalContext;
-  try {
-    modalContext = useModal();
-  } catch (error) {
-    console.error("[Layout] Error accessing modal context:", error);
-    modalContext = null;
-  }
-
-  const openModal = modalContext?.openModal;
+  const { openModal } = useModal();
 
   // Local state for component needs
   const [initialized, setInitialized] = useState(false);
@@ -238,7 +215,7 @@ function Layout() {
       location: !!location,
       navigate: !!navigate,
       dispatch: !!dispatch,
-      modalContext: !!modalContext,
+      openModal: !!openModal,
     });
 
     // Set initialized to true after component mounts
@@ -247,11 +224,11 @@ function Layout() {
     return () => {
       console.log("[Layout] Component unmounted");
     };
-  }, []);
+  }, [openModal]);
 
   // Handle URL parameters for modals and demo login
   useEffect(() => {
-    if (!openModal || !dispatch || hasHandledParams.current) {
+    if (!dispatch || hasHandledParams.current) {
       return; // Exit early if dependencies aren't available or we've already handled params
     }
 
@@ -264,74 +241,69 @@ function Layout() {
       if (modalParam) {
         console.log("[Layout] Detected modal parameter:", modalParam);
         if (modalParam === "login") {
-          openModal({ type: MODAL_TYPES.LOGIN });
-        } else if (modalParam === "register") {
-          openModal({ type: MODAL_TYPES.REGISTER });
+          openModal(MODAL_TYPES.LOGIN);
+        } else if (modalParam === "signup") {
+          openModal(MODAL_TYPES.SIGNUP);
         }
-        // Clear the modal parameter from URL
-        const newSearchParams = new URLSearchParams(location.search);
-        newSearchParams.delete("modal");
-        navigate({ search: newSearchParams.toString() }, { replace: true });
       }
 
       // Handle demo parameter
       if (demoParam === "true") {
-        console.log("[Layout] Demo login requested via URL parameter");
+        console.log("[Layout] Detected demo parameter");
         handleDemoLogin();
-        // Clear the demo parameter from URL
-        const newSearchParams = new URLSearchParams(location.search);
-        newSearchParams.delete("demo");
-        navigate({ search: newSearchParams.toString() }, { replace: true });
       }
 
-      // Mark that we've handled the parameters
+      // Mark parameters as handled
       hasHandledParams.current = true;
     } catch (error) {
       console.error("[Layout] Error handling URL parameters:", error);
+      setError(error);
     }
-  }, [location.search, openModal, dispatch, navigate, handleDemoLogin]);
+  }, [location, dispatch, handleDemoLogin, openModal]);
 
-  // Show a simplified loading state during initialization
-  if (!initialized && !error) {
+  // Render loading state
+  if (!initialized) {
     return (
-      <div style={{ padding: "20px", textAlign: "center" }}>
-        <p>Initializing layout...</p>
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading...</p>
       </div>
     );
   }
 
-  // Show error if initialization failed
+  // Render error state
   if (error) {
     return (
-      <div style={{ padding: "20px", textAlign: "center", color: "#ff4d4f" }}>
-        <h3>Layout Error</h3>
-        <p>Failed to initialize layout: {error.message}</p>
-        <button
-          onClick={() => window.location.reload()}
-          style={{ padding: "5px 10px", marginTop: "10px" }}
-        >
-          Reload Page
-        </button>
+      <div className="error-container">
+        <h2>Something went wrong</h2>
+        <p>Error: {error.message}</p>
+        <button onClick={() => window.location.reload()}>Reload Page</button>
       </div>
     );
   }
 
-  // Standard render with enhanced error protection
   return (
-    <div className="app-layout">
-      <Suspense fallback={<div>Loading Navbar...</div>}>
+    <div className="layout">
+      <Suspense fallback={<NavbarFallback />}>
         <Navbar />
       </Suspense>
-      <main className="app-content">
+      <main className="main-content">
         <ContentErrorBoundary>
           <SafeOutlet />
         </ContentErrorBoundary>
       </main>
-      <Suspense fallback={<div>Loading Footer...</div>}>
+      <Suspense fallback={<FooterFallback />}>
         <Footer />
       </Suspense>
     </div>
   );
 }
 
-export default Layout;
+// Wrap the Layout component with ModalProvider
+const LayoutWithModal = () => (
+  <ModalProvider>
+    <Layout />
+  </ModalProvider>
+);
+
+export default LayoutWithModal;

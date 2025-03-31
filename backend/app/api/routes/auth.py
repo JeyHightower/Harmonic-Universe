@@ -10,9 +10,9 @@ import re
 
 auth_bp = Blueprint('auth', __name__)
 
-@auth_bp.route('/register', methods=['POST'])
-def register():
-    """Register a new user."""
+@auth_bp.route('/signup', methods=['POST'])
+def signup():
+    """Sign up a new user."""
     try:
         data = request.get_json()
         
@@ -78,24 +78,28 @@ def register():
         token = create_access_token(identity=new_user.id)
         
         return jsonify({
-            "message": "User registered successfully",
+            "message": "User signed up successfully",
             "token": token,
             "user": new_user.to_dict(),
         }), 201
         
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Registration error: {str(e)}")
-        return jsonify({"message": "An error occurred during registration"}), 500
+        current_app.logger.error(f"Signup error: {str(e)}")
+        return jsonify({"message": "An error occurred during signup"}), 500
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
     """Login a user."""
     try:
-        data = request.get_json()
+        try:
+            data = request.get_json()
+        except Exception as e:
+            current_app.logger.error(f'JSON decode error: {str(e)}')
+            return jsonify({'message': 'Invalid JSON format'}), 400
         
         # Validate required fields
-        if not data.get('email') or not data.get('password'):
+        if not data or not data.get('email') or not data.get('password'):
             return jsonify({'message': 'Email and password are required'}), 400
         
         # Find user by email

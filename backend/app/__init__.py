@@ -116,12 +116,13 @@ def create_app():
     )
     
     # Register blueprints
-    from .api.routes import auth_bp, characters_bp, notes_bp, user_bp, universes_bp
+    from .api.routes import auth_bp, characters_bp, notes_bp, user_bp, universes_bp, modal_bp
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(characters_bp, url_prefix='/api/characters')
     app.register_blueprint(notes_bp, url_prefix='/api/notes')
     app.register_blueprint(user_bp, url_prefix='/api/user')
     app.register_blueprint(universes_bp, url_prefix='/api')
+    app.register_blueprint(modal_bp, url_prefix='/api/modal')
     
     # Health check endpoint
     @app.route('/api/health')

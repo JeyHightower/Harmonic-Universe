@@ -1,5 +1,5 @@
 import React from "react";
-import { ModalSystem } from "../modals/ModalSystem";
+import { ModalSystem } from "../modals";
 import { MODAL_CONFIG, MODAL_TYPES } from "../../utils/config";
 
 // Import components at the top level
@@ -58,7 +58,7 @@ export const getModalComponent = (modalType) => {
         );
       };
 
-    case MODAL_TYPES.REGISTER:
+    case MODAL_TYPES.SIGNUP:
       return (props) => {
         return (
           <ModalSystem
@@ -139,12 +139,18 @@ export const validateModalProps = (props) => {
     return false;
   }
 
-  if (props.animation && !Object.values(MODAL_CONFIG.ANIMATIONS).includes(props.animation)) {
+  if (
+    props.animation &&
+    !Object.values(MODAL_CONFIG.ANIMATIONS).includes(props.animation)
+  ) {
     console.error(`Invalid modal animation: ${props.animation}`);
     return false;
   }
 
-  if (props.position && !Object.values(MODAL_CONFIG.POSITIONS).includes(props.position)) {
+  if (
+    props.position &&
+    !Object.values(MODAL_CONFIG.POSITIONS).includes(props.position)
+  ) {
     console.error(`Invalid modal position: ${props.position}`);
     return false;
   }

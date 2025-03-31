@@ -125,33 +125,33 @@
 
     <script>
       // Fill in diagnostic information
-      document.getElementById('current-url').textContent = window.location.href;
-      document.getElementById('load-time').textContent = new Date().toString();
-      document.getElementById('user-agent').textContent = navigator.userAgent;
+      document.getElementById("current-url").textContent = window.location.href;
+      document.getElementById("load-time").textContent = new Date().toString();
+      document.getElementById("user-agent").textContent = navigator.userAgent;
       document.getElementById(
-        'screen-size'
+        "screen-size"
       ).textContent = `${window.innerWidth}x${window.innerHeight}`;
 
       // Function to check the main application
       function checkMainApp() {
-        const resultDiv = document.getElementById('app-check-result');
-        resultDiv.innerHTML = '<p>Checking main application...</p>';
+        const resultDiv = document.getElementById("app-check-result");
+        resultDiv.innerHTML = "<p>Checking main application...</p>";
 
         try {
-          fetch('/')
-            .then(response => {
+          fetch("/")
+            .then((response) => {
               if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
               }
               return response.text();
             })
-            .then(html => {
+            .then((html) => {
               // Count script tags in the main HTML
               const parser = new DOMParser();
-              const doc = parser.parseFromString(html, 'text/html');
-              const scriptTags = doc.querySelectorAll('script');
+              const doc = parser.parseFromString(html, "text/html");
+              const scriptTags = doc.querySelectorAll("script");
               const scriptWithSrc = Array.from(scriptTags).filter(
-                s => s.src
+                (s) => s.src
               ).length;
 
               resultDiv.innerHTML = `
@@ -164,17 +164,17 @@
                                   scriptTags.length
                                 } (${scriptWithSrc} with src attribute)</p>
                                 <p>Root element found: ${
-                                  doc.getElementById('root') ? 'Yes' : 'No'
+                                  doc.getElementById("root") ? "Yes" : "No"
                                 }</p>
-                                <p>Modal root element found: ${
-                                  doc.getElementById('modal-root')
-                                    ? 'Yes'
-                                    : 'No'
+                                <p>Portal root element found: ${
+                                  doc.getElementById("portal-root")
+                                    ? "Yes"
+                                    : "No"
                                 }</p>
                             </div>
                         `;
             })
-            .catch(error => {
+            .catch((error) => {
               resultDiv.innerHTML = `
                             <div style="background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 4px;">
                                 <strong>Error checking main application:</strong> ${error.message}

@@ -12,7 +12,7 @@ import { MODAL_CONFIG } from "../../utils/config";
 import "../../styles/Modal.css";
 
 // Animation duration in ms
-const ANIMATION_DURATION = MODAL_CONFIG.DEFAULTS.ANIMATION_DURATION;
+const ANIMATION_DURATION = MODAL_CONFIG.ANIMATIONS.FADE.duration;
 
 // Shared modal stack counter to handle multiple modals
 let modalStackCount = 0;
@@ -39,14 +39,17 @@ const ModalSystem = forwardRef(
       type = MODAL_CONFIG.TYPES.DEFAULT,
       animation = MODAL_CONFIG.ANIMATIONS.FADE,
       position = MODAL_CONFIG.POSITIONS.CENTER,
-      showCloseButton = MODAL_CONFIG.DEFAULTS.SHOW_CLOSE_BUTTON,
+      showCloseButton = MODAL_CONFIG.DEFAULT_SETTINGS.showCloseButton,
       preventBackdropClick = false,
       className = "",
       footerContent = null,
       ariaDescribedBy = "",
       initialFocusRef = null,
       preventAutoClose = false,
-      draggable = false,
+      draggable = MODAL_CONFIG.DEFAULT_SETTINGS.draggable,
+      closeOnEscape = MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape,
+      closeOnBackdrop = MODAL_CONFIG.DEFAULT_SETTINGS.closeOnBackdrop,
+      preventBodyScroll = MODAL_CONFIG.DEFAULT_SETTINGS.preventBodyScroll,
       "data-modal-id": dataModalId,
       "data-modal-type": dataModalType,
     },
@@ -249,19 +252,14 @@ const ModalSystem = forwardRef(
     // Handle ESC key press
     useEffect(() => {
       const handleEscape = (event) => {
-        if (
-          event.key === "Escape" &&
-          isOpen &&
-          !isClosing &&
-          MODAL_CONFIG.DEFAULTS.CLOSE_ON_ESCAPE
-        ) {
+        if (event.key === "Escape" && isOpen && !isClosing && closeOnEscape) {
           handleClose();
         }
       };
 
       document.addEventListener("keydown", handleEscape);
       return () => document.removeEventListener("keydown", handleEscape);
-    }, [isOpen, isClosing, handleClose]);
+    }, [isOpen, isClosing, handleClose, closeOnEscape]);
 
     if (!isOpen) return null;
 
@@ -282,9 +280,7 @@ const ModalSystem = forwardRef(
         <div
           className="modal-backdrop"
           onClick={
-            preventBackdropClick || !MODAL_CONFIG.DEFAULTS.CLOSE_ON_BACKDROP
-              ? undefined
-              : handleClose
+            preventBackdropClick || !closeOnBackdrop ? undefined : handleClose
           }
           data-testid="modal-backdrop"
         />
@@ -353,6 +349,9 @@ ModalSystem.propTypes = {
   initialFocusRef: PropTypes.object,
   preventAutoClose: PropTypes.bool,
   draggable: PropTypes.bool,
+  closeOnEscape: PropTypes.bool,
+  closeOnBackdrop: PropTypes.bool,
+  preventBodyScroll: PropTypes.bool,
   "data-modal-id": PropTypes.string,
   "data-modal-type": PropTypes.string,
 };

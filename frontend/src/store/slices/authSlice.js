@@ -75,24 +75,24 @@ export const login = createAsyncThunk(
   }
 );
 
-export const register = createAsyncThunk(
-  "auth/register",
+export const signup = createAsyncThunk(
+  "auth/signup",
   async (userData, { rejectWithValue }) => {
     try {
-      logAuthOperation("Register attempt", { email: userData.email });
+      logAuthOperation("Signup attempt", { email: userData.email });
 
-      const response = await client.post(endpoints.auth.register, userData);
-      logAuthOperation("Register successful", { status: response.status });
+      const response = await client.post(endpoints.auth.signup, userData);
+      logAuthOperation("Signup successful", { status: response.status });
 
       // Store tokens
       handleAuthTokens(response.data);
 
       return response.data.user;
     } catch (error) {
-      logAuthError("Register", error);
+      logAuthError("Signup", error);
 
       return rejectWithValue(
-        error.response?.data?.message || "Failed to register"
+        error.response?.data?.message || "Failed to sign up"
       );
     }
   }
@@ -353,24 +353,24 @@ const authSlice = createSlice({
         logAuthOperation("login-rejected", { error: state.error });
       })
 
-      // Register
-      .addCase(register.pending, (state) => {
+      // Signup
+      .addCase(signup.pending, (state) => {
         state.loading = true;
         state.error = null;
-        logAuthOperation("register-pending");
+        logAuthOperation("signup-pending");
       })
-      .addCase(register.fulfilled, (state, action) => {
+      .addCase(signup.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload;
         state.token = action.payload.token;
-        logAuthOperation("register-fulfilled", {
+        logAuthOperation("signup-fulfilled", {
           userId: action.payload?.id,
         });
       })
-      .addCase(register.rejected, (state, action) => {
+      .addCase(signup.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || "Registration failed";
-        logAuthOperation("register-rejected", { error: state.error });
+        state.error = action.payload?.message || "Sign up failed";
+        logAuthOperation("signup-rejected", { error: state.error });
       })
 
       // Demo Login

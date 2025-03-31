@@ -130,7 +130,7 @@ const LoginModal = ({ onClose }) => {
                 className="text-button"
                 onClick={() => {
                   onClose();
-                  window.location.href = "/#/?modal=register";
+                  window.location.href = "/#/?modal=signup";
                 }}
               >
                 Sign up

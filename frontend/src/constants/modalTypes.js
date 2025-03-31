@@ -1,40 +1,66 @@
+/**
+ * Modal types for the application
+ */
 export const MODAL_TYPES = {
+  // System modals
+  ALERT: "ALERT",
+  CONFIRMATION: "CONFIRMATION",
+  FORM: "FORM",
+
   // Auth modals
   LOGIN: "LOGIN",
-  REGISTER: "REGISTER",
-  SETTINGS: "SETTINGS",
-
-  // Universe modals
-  CREATE_UNIVERSE: "CREATE_UNIVERSE",
-  EDIT_UNIVERSE: "EDIT_UNIVERSE",
-  DELETE_UNIVERSE: "DELETE_UNIVERSE",
-
-  // Scene modals
-  CREATE_SCENE: "CREATE_SCENE",
-  EDIT_SCENE: "EDIT_SCENE",
-  DELETE_SCENE: "DELETE_SCENE",
-
-  // Physics modals
-  CREATE_PHYSICS_OBJECT: "CREATE_PHYSICS_OBJECT",
-  EDIT_PHYSICS_OBJECT: "EDIT_PHYSICS_OBJECT",
-  DELETE_PHYSICS_OBJECT: "DELETE_PHYSICS_OBJECT",
-  PHYSICS_PARAMETERS: "PHYSICS_PARAMETERS",
-  HARMONY_PARAMETERS: "HARMONY_PARAMETERS",
-
-  // Export/Import modals
-  EXPORT: "EXPORT",
-  IMPORT: "IMPORT",
-
-  // Confirmation modals
-  CONFIRM_DELETE: "CONFIRM_DELETE",
-  CONFIRM_DISCARD: "CONFIRM_DISCARD",
-  CONFIRM_ACTION: "CONFIRM_ACTION",
-
-  // Settings modals
-  USER_SETTINGS: "USER_SETTINGS",
-  APP_SETTINGS: "APP_SETTINGS",
-
-  // Debug modals
-  DEBUG_PANEL: "DEBUG_PANEL",
-  ERROR_DETAILS: "ERROR_DETAILS",
+  SIGNUP: "SIGNUP",
 };
+
+/**
+ * Get display name for modal type
+ * @param {string} type - The modal type
+ * @returns {string} The display name
+ */
+export const getModalDisplayName = (type) => {
+  const displayNames = {
+    [MODAL_TYPES.ALERT]: "Alert",
+    [MODAL_TYPES.CONFIRMATION]: "Confirmation",
+    [MODAL_TYPES.FORM]: "Form",
+    [MODAL_TYPES.LOGIN]: "Login",
+    [MODAL_TYPES.SIGNUP]: "Sign Up",
+  };
+
+  return displayNames[type] || type;
+};
+
+/**
+ * Get icon name for modal type
+ * @param {string} type - The modal type
+ * @returns {string} The icon name
+ */
+export const getModalIcon = (type) => {
+  const icons = {
+    [MODAL_TYPES.ALERT]: "alert-circle",
+    [MODAL_TYPES.CONFIRMATION]: "check-circle",
+    [MODAL_TYPES.FORM]: "form",
+    [MODAL_TYPES.LOGIN]: "login",
+    [MODAL_TYPES.SIGNUP]: "user-plus",
+  };
+
+  return icons[type] || "question-circle";
+};
+
+/**
+ * Get description for modal type
+ * @param {string} type - The modal type
+ * @returns {string} The description
+ */
+export const getModalDescription = (type) => {
+  const descriptions = {
+    [MODAL_TYPES.ALERT]: "Display important messages to the user",
+    [MODAL_TYPES.CONFIRMATION]: "Get user confirmation for important actions",
+    [MODAL_TYPES.FORM]: "Display a form for user input",
+    [MODAL_TYPES.LOGIN]: "User login form",
+    [MODAL_TYPES.SIGNUP]: "User registration form",
+  };
+
+  return descriptions[type] || "";
+};
+
+export default MODAL_TYPES;

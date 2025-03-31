@@ -1,145 +1,89 @@
 import PropTypes from "prop-types";
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import "./Auth.css";
+import { Form, Input, Button, message } from "antd";
 import { login } from "../../store/slices/authSlice";
+import { log } from "../../utils/logger";
+import "./Auth.css";
 
 const LoginModal = ({ onClose }) => {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-  const [errors, setErrors] = useState({});
-
+  const [form] = Form.useForm();
+  const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
-  const { loading, error } = useSelector((state) => state.auth);
+  const { error } = useSelector((state) => state.auth);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-
-    // Clear error when user types
-    if (errors[name]) {
-      setErrors({
-        ...errors,
-        [name]: "",
-      });
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.email) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Email is invalid";
-    }
-
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    console.log("Login form submitted");
-
-    if (!validateForm()) {
-      console.log("Form validation failed");
-      return;
-    }
-
+  const handleSubmit = async (values) => {
     try {
-      console.log("Dispatching login action with:", { email: formData.email });
-      const resultAction = await dispatch(login(formData));
+      setLoading(true);
+      log("auth", "Attempting login", { email: values.email });
 
+      const resultAction = await dispatch(login(values));
       if (login.fulfilled.match(resultAction)) {
-        console.log("Login successful");
+        log("auth", "Login successful", { email: values.email });
+        message.success("Login successful!");
         onClose();
       } else {
-        console.error("Login failed:", resultAction.error);
+        throw new Error(resultAction.error.message);
       }
-    } catch (err) {
-      console.error("Error during login:", err);
+    } catch (error) {
+      log("auth", "Login failed", { error: error.message });
+      message.error(error.message || "Login failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Login</h2>
-          <button className="close-button" onClick={onClose}>
-            ×
-          </button>
-        </div>
+    <Form
+      form={form}
+      layout="vertical"
+      onFinish={handleSubmit}
+      className="login-form"
+    >
+      <Form.Item
+        name="email"
+        label="Email"
+        rules={[
+          { required: true, message: "Please enter your email" },
+          { type: "email", message: "Please enter a valid email" },
+        ]}
+      >
+        <Input placeholder="Enter your email" />
+      </Form.Item>
 
-        <form onSubmit={handleSubmit} className="auth-form">
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Enter your email"
-              className={errors.email ? "input-error" : ""}
-            />
-            {errors.email && (
-              <div className="error-message">{errors.email}</div>
-            )}
-          </div>
+      <Form.Item
+        name="password"
+        label="Password"
+        rules={[{ required: true, message: "Please enter your password" }]}
+      >
+        <Input.Password placeholder="Enter your password" />
+      </Form.Item>
 
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Enter your password"
-              className={errors.password ? "input-error" : ""}
-            />
-            {errors.password && (
-              <div className="error-message">{errors.password}</div>
-            )}
-          </div>
+      {error && <div className="error-message">{error}</div>}
 
-          {error && <div className="error-message">{error}</div>}
-
-          <div className="form-actions">
-            <button type="submit" className="submit-button" disabled={loading}>
-              {loading ? "Logging in..." : "Login"}
-            </button>
-          </div>
-
-          <div className="form-footer">
-            <p>
-              Don't have an account?{" "}
-              <button
-                type="button"
-                className="text-button"
-                onClick={() => {
-                  onClose();
-                  window.location.href = "/#/?modal=register";
-                }}
-              >
-                Sign up
-              </button>
-            </p>
-          </div>
-        </form>
+      <div className="form-actions">
+        <Button onClick={onClose}>Cancel</Button>
+        <Button type="primary" htmlType="submit" loading={loading}>
+          Login
+        </Button>
       </div>
-    </div>
+
+      <div className="form-footer">
+        <p>
+          Don't have an account?{" "}
+          <button
+            type="button"
+            className="text-button"
+            onClick={() => {
+              onClose();
+              window.location.href = "/#/?modal=signup";
+            }}
+          >
+            Sign up
+          </button>
+        </p>
+      </div>
+    </Form>
   );
 };
 

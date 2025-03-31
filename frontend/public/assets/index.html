@@ -28,17 +28,14 @@
 
     <!-- Critical inline styles for modals to prevent flicker and ensure immediate visibility -->
     <style>
-      #modal-root {
+      #portal-root {
         position: fixed;
         top: 0;
         left: 0;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 1000;
+        right: 0;
+        bottom: 0;
         pointer-events: none;
+        z-index: 9999;
       }
 
       .modal-backdrop {
@@ -113,7 +110,7 @@
           component,
           message,
           data: data || {},
-          type: 'log',
+          type: "log",
         };
 
         // Store for later access
@@ -126,7 +123,7 @@
 
         // Log to console in development or if debug mode is on
         if (window.debugMode) {
-          console.log(`[${timestamp}] [${component}] ${message}`, data || '');
+          console.log(`[${timestamp}] [${component}] ${message}`, data || "");
         }
 
         // Update debug panel if it exists
@@ -141,9 +138,9 @@
           timestamp,
           component,
           message,
-          error: error ? error.message || error : 'Unknown error',
+          error: error ? error.message || error : "Unknown error",
           stack: error && error.stack,
-          type: 'error',
+          type: "error",
         };
 
         // Store for later access
@@ -155,7 +152,7 @@
         }
 
         // Always log errors to console
-        console.error(`[${timestamp}] [${component}] ${message}`, error || '');
+        console.error(`[${timestamp}] [${component}] ${message}`, error || "");
 
         // Update debug panel if it exists
         updateDebugPanel();
@@ -167,27 +164,27 @@
       function createModalRoot() {
         try {
           // Check if modal root already exists
-          let modalRoot = document.getElementById('modal-root');
+          let portalRoot = document.getElementById("portal-root");
 
-          if (!modalRoot) {
-            window.debugLog('INIT', 'Creating modal root element');
-            modalRoot = document.createElement('div');
-            modalRoot.id = 'modal-root';
-            document.body.appendChild(modalRoot);
+          if (!portalRoot) {
+            window.debugLog("INIT", "Creating portal root element");
+            portalRoot = document.createElement("div");
+            portalRoot.id = "portal-root";
+            document.body.appendChild(portalRoot);
           } else {
-            window.debugLog('INIT', 'Modal root already exists');
+            window.debugLog("INIT", "Portal root already exists");
           }
 
-          return modalRoot;
+          return portalRoot;
         } catch (error) {
-          window.debugError('INIT', 'Error creating modal root', error);
+          window.debugError("INIT", "Error creating portal root", error);
 
           // Create a simple debug panel to show error
-          const debugPanel = document.createElement('div');
-          debugPanel.id = 'debug-panel';
-          debugPanel.classList.add('visible');
+          const debugPanel = document.createElement("div");
+          debugPanel.id = "debug-panel";
+          debugPanel.classList.add("visible");
           debugPanel.textContent =
-            'Error creating modal root: ' + (error.message || 'Unknown error');
+            "Error creating portal root: " + (error.message || "Unknown error");
           document.body.appendChild(debugPanel);
 
           return null;
@@ -196,13 +193,13 @@
 
       // Update debug panel with latest logs
       function updateDebugPanel() {
-        const panel = document.getElementById('debug-panel');
+        const panel = document.getElementById("debug-panel");
         if (panel) {
           // Get the last 5 logs
           const recentLogs = window.debugLogs.slice(-5);
           panel.innerHTML = recentLogs
-            .map(log => `<div>[${log.component}] ${log.message}</div>`)
-            .join('');
+            .map((log) => `<div>[${log.component}] ${log.message}</div>`)
+            .join("");
         }
       }
 
@@ -210,10 +207,10 @@
       function createDebugPanel() {
         try {
           // Create debug panel if it doesn't exist
-          let panel = document.getElementById('debug-panel');
+          let panel = document.getElementById("debug-panel");
           if (!panel) {
-            panel = document.createElement('div');
-            panel.id = 'debug-panel';
+            panel = document.createElement("div");
+            panel.id = "debug-panel";
             document.body.appendChild(panel);
 
             // Update with any existing logs
@@ -221,44 +218,44 @@
           }
 
           // Create debug button if it doesn't exist
-          let button = document.getElementById('debug-button');
+          let button = document.getElementById("debug-button");
           if (!button) {
-            button = document.createElement('button');
-            button.id = 'debug-button';
-            button.textContent = 'Debug';
+            button = document.createElement("button");
+            button.id = "debug-button";
+            button.textContent = "Debug";
             button.onclick = function () {
-              panel.classList.toggle('visible');
+              panel.classList.toggle("visible");
 
               // Also log debug info to console and alert
-              console.log('Debug Info:', {
+              console.log("Debug Info:", {
                 url: window.location.href,
                 logs: window.debugLogs.slice(-10),
-                modalRoot: document.getElementById('modal-root'),
+                portalRoot: document.getElementById("portal-root"),
                 apiEndpoint: window.apiDebug?.baseEndpoint,
                 modalState: window.modalDebug?.activeModals,
               });
 
               // Alert with basic info
               alert(
-                'Debug Mode Active\n' +
-                  'URL: ' +
+                "Debug Mode Active\n" +
+                  "URL: " +
                   window.location.href +
-                  '\n' +
-                  'Modal Root: ' +
-                  (document.getElementById('modal-root')
-                    ? 'Present'
-                    : 'Missing') +
-                  '\n' +
-                  'API Endpoint: ' +
-                  (window.apiDebug?.baseEndpoint || 'Not set') +
-                  '\n' +
-                  'Check console for more details'
+                  "\n" +
+                  "Portal Root: " +
+                  (document.getElementById("portal-root")
+                    ? "Present"
+                    : "Missing") +
+                  "\n" +
+                  "API Endpoint: " +
+                  (window.apiDebug?.baseEndpoint || "Not set") +
+                  "\n" +
+                  "Check console for more details"
               );
             };
             document.body.appendChild(button);
           }
         } catch (error) {
-          console.error('Error creating debug panel', error);
+          console.error("Error creating debug panel", error);
         }
       }
 
@@ -266,35 +263,35 @@
       function processUrlParameters() {
         try {
           const url = new URL(window.location.href);
-          const hash = url.hash || '';
-          const search = url.search || '';
+          const hash = url.hash || "";
+          const search = url.search || "";
 
-          window.debugLog('INIT', 'Processing URL parameters', {
+          window.debugLog("INIT", "Processing URL parameters", {
             url: url.toString(),
             hash,
             search,
           });
 
           // Check for modal parameter
-          const modalParam = new URLSearchParams(search).get('modal');
+          const modalParam = new URLSearchParams(search).get("modal");
           if (modalParam) {
-            window.debugLog('INIT', 'Modal parameter detected', { modalParam });
+            window.debugLog("INIT", "Modal parameter detected", { modalParam });
           }
 
           // Check for demo login parameter
-          const demoParam = new URLSearchParams(search).get('demo');
-          if (demoParam === 'true') {
-            window.debugLog('INIT', 'Demo login parameter detected');
+          const demoParam = new URLSearchParams(search).get("demo");
+          if (demoParam === "true") {
+            window.debugLog("INIT", "Demo login parameter detected");
           }
 
           // Check for hash parameters for HashRouter
           if (hash) {
-            if (hash.includes('modal=login')) {
-              window.debugLog('INIT', 'Hash login modal parameter detected');
-            } else if (hash.includes('modal=register')) {
-              window.debugLog('INIT', 'Hash register modal parameter detected');
-            } else if (hash.includes('demo=true')) {
-              window.debugLog('INIT', 'Hash demo parameter detected');
+            if (hash.includes("modal=login")) {
+              window.debugLog("INIT", "Hash login modal parameter detected");
+            } else if (hash.includes("modal=register")) {
+              window.debugLog("INIT", "Hash register modal parameter detected");
+            } else if (hash.includes("demo=true")) {
+              window.debugLog("INIT", "Hash demo parameter detected");
             }
           }
 
@@ -305,17 +302,17 @@
             search,
             hash,
             modal: modalParam,
-            demo: demoParam === 'true',
+            demo: demoParam === "true",
           };
         } catch (error) {
-          window.debugError('INIT', 'Error processing URL parameters', error);
+          window.debugError("INIT", "Error processing URL parameters", error);
         }
       }
 
       // Execute as soon as possible
-      document.addEventListener('DOMContentLoaded', function () {
+      document.addEventListener("DOMContentLoaded", function () {
         // Create modal root as soon as DOM is ready
-        const modalRoot = createModalRoot();
+        const portalRoot = createModalRoot();
 
         // Process URL parameters
         processUrlParameters();
@@ -325,8 +322,8 @@
           createDebugPanel();
         }
 
-        window.debugLog('INIT', 'DOM content loaded, initialization complete', {
-          modalRoot: !!modalRoot,
+        window.debugLog("INIT", "DOM content loaded, initialization complete", {
+          portalRoot: !!portalRoot,
           timestamp: new Date().toISOString(),
         });
       });
@@ -335,22 +332,22 @@
       // This helps ensure modal root exists even earlier
       (function () {
         try {
-          window.debugLog('INIT', 'Early initialization starting');
+          window.debugLog("INIT", "Early initialization starting");
 
           // Early creation of modal root
           if (document.body) {
             createModalRoot();
           } else {
             window.debugLog(
-              'INIT',
-              'Body not available for early init, will retry on DOMContentLoaded'
+              "INIT",
+              "Body not available for early init, will retry on DOMContentLoaded"
             );
           }
 
           // Process URL parameters early
           processUrlParameters();
         } catch (error) {
-          console.error('Error in early initialization', error);
+          console.error("Error in early initialization", error);
         }
       })();
     </script>
@@ -359,7 +356,7 @@
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
     <!-- Ensure modal root exists if not created by script -->
-    <div id="modal-root"></div>
+    <div id="portal-root"></div>
     <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.
@@ -387,66 +384,66 @@
         font-weight: bold;
         z-index: 9999;
       "
-      onclick="alert('Fallback Debug Button\nURL: ' + window.location.href + '\nCheck console for details'); console.log('Debug Info:', { url: window.location.href, debugMode: window.debugMode, logs: window.debugLogs, modalRoot: document.getElementById('modal-root') });"
+      onclick="alert('Fallback Debug Button\nURL: ' + window.location.href + '\nCheck console for details'); console.log('Debug Info:', { url: window.location.href, debugMode: window.debugMode, logs: window.debugLogs, portalRoot: document.getElementById('portal-root') });"
     >
       Debug
     </button>
     <script>
       // Show fallback debug button in case of initialization failure
       setTimeout(function () {
-        if (window.debugMode && !document.getElementById('debug-button')) {
-          document.getElementById('fallback-debug-button').style.display =
-            'block';
+        if (window.debugMode && !document.getElementById("debug-button")) {
+          document.getElementById("fallback-debug-button").style.display =
+            "block";
         }
       }, 3000);
     </script>
 
     <!-- Add React loading check script -->
     <script>
-      console.log('Page loaded at:', window.location.pathname);
-      console.log('Root element exists:', !!document.getElementById('root'));
+      console.log("Page loaded at:", window.location.pathname);
+      console.log("Root element exists:", !!document.getElementById("root"));
       console.log(
-        'Modal root exists:',
-        !!document.getElementById('modal-root')
+        "Portal root exists:",
+        !!document.getElementById("portal-root")
       );
 
       // Check for script tags
-      const scriptTags = document.querySelectorAll('script');
-      console.log('Number of script tags:', scriptTags.length);
+      const scriptTags = document.querySelectorAll("script");
+      console.log("Number of script tags:", scriptTags.length);
 
       // List all script sources for debugging
       const scriptSources = Array.from(scriptTags)
-        .filter(script => script.src)
-        .map(script => script.src);
-      console.log('Script sources:', scriptSources);
+        .filter((script) => script.src)
+        .map((script) => script.src);
+      console.log("Script sources:", scriptSources);
 
       // Check React initialization
-      window.addEventListener('load', function () {
+      window.addEventListener("load", function () {
         setTimeout(function () {
-          const rootElement = document.getElementById('root');
-          const rootContent = rootElement ? rootElement.innerHTML : '';
-          console.log('Root content length:', rootContent.length);
-          console.log('React appears to be loaded:', rootContent.length > 100);
+          const rootElement = document.getElementById("root");
+          const rootContent = rootElement ? rootElement.innerHTML : "";
+          console.log("Root content length:", rootContent.length);
+          console.log("React appears to be loaded:", rootContent.length > 100);
 
           // Check for React devtools
           console.log(
-            'React DevTools available:',
-            typeof window.__REACT_DEVTOOLS_GLOBAL_HOOK__ !== 'undefined'
+            "React DevTools available:",
+            typeof window.__REACT_DEVTOOLS_GLOBAL_HOOK__ !== "undefined"
           );
 
           // Try to detect React in other ways
           console.log(
-            'Root has React properties:',
+            "Root has React properties:",
             rootElement && rootElement._reactRootContainer !== undefined
           );
 
           // Add debug info to page if React failed to load
           if (rootContent.length < 100) {
-            const debugInfo = document.createElement('div');
-            debugInfo.style.padding = '20px';
-            debugInfo.style.backgroundColor = '#ffdddd';
-            debugInfo.style.margin = '20px';
-            debugInfo.style.borderRadius = '5px';
+            const debugInfo = document.createElement("div");
+            debugInfo.style.padding = "20px";
+            debugInfo.style.backgroundColor = "#ffdddd";
+            debugInfo.style.margin = "20px";
+            debugInfo.style.borderRadius = "5px";
             debugInfo.innerHTML = `
               <h2>React App Failed to Load</h2>
               <p>The React application bundle may not be loading correctly.</p>

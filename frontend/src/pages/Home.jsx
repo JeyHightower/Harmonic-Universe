@@ -120,8 +120,8 @@ function Home() {
     dispatch(openModal({ type: "LOGIN" }));
   };
 
-  const handleRegister = () => {
-    dispatch(openModal({ type: "REGISTER" }));
+  const handleSignup = () => {
+    dispatch(openModal({ type: "SIGNUP" }));
   };
 
   console.debug("Rendering Home component:", { isAuthenticated, loading });
@@ -165,8 +165,8 @@ function Home() {
           <Button onClick={handleLogin} variant="secondary">
             Login
           </Button>
-          <Button onClick={handleRegister} variant="secondary">
-            Register
+          <Button onClick={handleSignup} variant="secondary">
+            Sign Up
           </Button>
         </div>
       </div>

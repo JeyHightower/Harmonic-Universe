@@ -175,7 +175,7 @@ const DebugControls = () => {
       addLog(`Active modals: ${modalState.length}`);
 
       // Check modal DOM elements
-      const modalRoot = document.getElementById("modal-root");
+      const modalRoot = document.getElementById("portal-root");
       const modalElements = document.querySelectorAll(
         ".modal-content, .modal-backdrop"
       );
@@ -204,7 +204,7 @@ const DebugControls = () => {
 
       const elements = [
         { name: "Root", selector: "#root" },
-        { name: "Modal Root", selector: "#modal-root" },
+        { name: "Portal Root", selector: "#portal-root" },
         { name: "Login Button", selector: "#login-button, .button-primary" },
         {
           name: "Register Button",

@@ -1,0 +1,62 @@
+.signup-form {
+  padding: 24px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.ant-form-item {
+  margin-bottom: 16px;
+}
+
+.ant-form-item-label {
+  font-weight: 500;
+}
+
+.ant-input-password {
+  width: 100%;
+}
+
+.ant-form-item-explain-error {
+  color: #ff4d4f;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.ant-btn {
+  height: 40px;
+  padding: 6.4px 20px;
+  font-size: 16px;
+  border-radius: 4px;
+}
+
+.ant-btn-primary {
+  background-color: #1890ff;
+  border-color: #1890ff;
+}
+
+.ant-btn-primary:hover {
+  background-color: #40a9ff;
+  border-color: #40a9ff;
+}
+
+@media (max-width: 480px) {
+  .signup-form {
+    padding: 16px;
+  }
+
+  .ant-btn {
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+}

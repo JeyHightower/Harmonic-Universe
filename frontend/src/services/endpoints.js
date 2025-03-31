@@ -10,7 +10,7 @@ const API_V1_URL = `${API_BASE_URL}/v1`;
 // Auth endpoints
 const authEndpoints = {
   login: `${API_BASE_URL}/auth/login`,
-  register: `${API_BASE_URL}/auth/register`,
+  signup: `${API_BASE_URL}/auth/signup`,
   demoLogin: `${API_BASE_URL}/auth/demo-login`,
   refresh: `${API_BASE_URL}/auth/refresh`,
   logout: `/api/auth/logout`,
@@ -23,7 +23,7 @@ const authEndpoints = {
 // Versioned auth endpoints (for fallback)
 const authV1Endpoints = {
   login: `${API_V1_URL}/auth/login`,
-  register: `${API_V1_URL}/auth/register`,
+  signup: `${API_V1_URL}/auth/signup`,
   demoLogin: `${API_V1_URL}/auth/demo-login`,
   refresh: `${API_V1_URL}/auth/refresh`,
   logout: `${API_V1_URL}/auth/logout`,

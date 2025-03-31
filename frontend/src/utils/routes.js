@@ -3,7 +3,7 @@ import { API_CONFIG } from "./config";
 export const ROUTES = {
   HOME: "/",
   LOGIN: "/login",
-  REGISTER: "/register",
+  SIGNUP: "/signup",
   DASHBOARD: "/dashboard",
   UNIVERSES: "/universes",
   UNIVERSE_DETAIL: "/universes/:id",
