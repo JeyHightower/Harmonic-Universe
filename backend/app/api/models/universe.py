@@ -1,34 +1,60 @@
 from .base import BaseModel
 from ..models.database import db
+from sqlalchemy import func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import Optional, List, Dict, Any, TYPE_CHECKING
+from .character import Character, character_scenes
+from .note import Note
+from .audio import SoundProfile, AudioSample, MusicPiece
+from .physics import PhysicsObject, Physics2D, Physics3D
+
+if TYPE_CHECKING:
+    from .universe import Universe
 
 class Universe(BaseModel):
     __tablename__ = 'universes'
     
-    name = db.Column(db.String(100), nullable=False, index=True)
-    description = db.Column(db.Text)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
-    sound_profile_id = db.Column(db.Integer, db.ForeignKey('sound_profiles.id', ondelete='SET NULL'), index=True)
-    is_public = db.Column(db.Boolean, nullable=False, default=False)
+    name: Mapped[str] = mapped_column(db.String(100), nullable=False, index=True)
+    description: Mapped[Optional[str]] = mapped_column(db.Text)
+    user_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    sound_profile_id: Mapped[Optional[int]] = mapped_column(db.Integer, db.ForeignKey('sound_profiles.id', ondelete='SET NULL'), index=True)
+    is_public: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=False)
     
     # Relationships
-    scenes = db.relationship('Scene', backref='universe', lazy=True, cascade='all, delete-orphan')
-    notes = db.relationship('Note', backref='universe', lazy=True, cascade='all, delete-orphan')
-    characters = db.relationship('Character', backref='universe', lazy=True, cascade='all, delete-orphan')
-    physics_objects = db.relationship('PhysicsObject', backref='universe', lazy=True, cascade='all, delete-orphan')
-    physics_2d = db.relationship('Physics2D', backref='universe', lazy=True, cascade='all, delete-orphan')
-    physics_3d = db.relationship('Physics3D', backref='universe', lazy=True, cascade='all, delete-orphan')
-    audio_samples = db.relationship('AudioSample', backref='universe', lazy=True, cascade='all, delete-orphan')
-    music_pieces = db.relationship('MusicPiece', backref='universe', lazy=True, cascade='all, delete-orphan')
-    sound_profile = db.relationship('SoundProfile', foreign_keys=[sound_profile_id], backref=db.backref('parent_universe', uselist=False), uselist=False, lazy=True)
+    scenes: Mapped[List['Scene']] = relationship('Scene', lazy=True, cascade='all, delete-orphan')
+    notes: Mapped[List[Note]] = relationship('Note', backref='universe', lazy=True, cascade='all, delete-orphan')
+    characters: Mapped[List[Character]] = relationship('Character', backref='universe', lazy=True, cascade='all, delete-orphan')
+    physics_objects: Mapped[List[PhysicsObject]] = relationship('PhysicsObject', backref='universe', lazy=True, cascade='all, delete-orphan')
+    physics_2d: Mapped[List[Physics2D]] = relationship('Physics2D', backref='universe', lazy=True, cascade='all, delete-orphan')
+    physics_3d: Mapped[List[Physics3D]] = relationship('Physics3D', backref='universe', lazy=True, cascade='all, delete-orphan')
+    audio_samples: Mapped[List[AudioSample]] = relationship('AudioSample', backref='universe', lazy=True, cascade='all, delete-orphan')
+    music_pieces: Mapped[List[MusicPiece]] = relationship('MusicPiece', backref='universe', lazy=True, cascade='all, delete-orphan')
+    sound_profile: Mapped[Optional[SoundProfile]] = relationship('SoundProfile', foreign_keys=[sound_profile_id], backref=db.backref('parent_universe', uselist=False), uselist=False, lazy=True)
     
-    def validate(self):
+    def __init__(self, name: str, user_id: int, description: Optional[str] = None, sound_profile_id: Optional[int] = None, is_public: bool = False) -> None:
+        super().__init__()
+        if not name or len(name.strip()) == 0:
+            raise ValueError("Name is required and cannot be empty")
+        if not user_id:
+            raise ValueError("User ID is required")
+        self.name = name
+        self.description = description
+        self.user_id = user_id
+        self.sound_profile_id = sound_profile_id
+        self.is_public = is_public
+    
+    def validate(self) -> None:
         """Validate universe data."""
-        if not self.name:
-            raise ValueError("Universe name is required")
+        if not self.name or len(self.name.strip()) == 0:
+            raise ValueError("Universe name is required and cannot be empty")
+        if len(self.name) > 100:
+            raise ValueError("Universe name cannot exceed 100 characters")
         if not self.user_id:
             raise ValueError("User ID is required")
+        if self.description and len(self.description) > 5000:
+            raise ValueError("Description cannot exceed 5000 characters")
             
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         """Convert universe to dictionary."""
         return {
             'id': self.id,
@@ -40,36 +66,142 @@ class Universe(BaseModel):
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
             'is_deleted': self.is_deleted,
-            'scenes_count': len(self.scenes),
-            'characters_count': len(self.characters),
-            'notes_count': len(self.notes)
+            'scenes_count': db.session.query(func.count(self.scenes)).scalar(),
+            'characters_count': db.session.query(func.count(self.characters)).scalar(),
+            'notes_count': db.session.query(func.count(self.notes)).scalar()
         }
+        
+    def get_scene_by_name(self, name: str) -> Optional['Scene']:
+        """Get a scene by name."""
+        return Scene.query.filter_by(universe_id=self.id, name=name, is_deleted=False).first()
+        
+    def add_scene(self, scene: 'Scene') -> None:
+        """Add a scene to the universe."""
+        if scene.universe_id != self.id:
+            raise ValueError("Scene must belong to this universe")
+        if not db.session.query(Scene).filter_by(id=scene.id, universe_id=self.id).first():
+            self.scenes.append(scene)
+            self.save()
+        
+    def remove_scene(self, scene: 'Scene') -> None:
+        """Remove a scene from the universe."""
+        if db.session.query(Scene).filter_by(id=scene.id, universe_id=self.id).first():
+            self.scenes.remove(scene)
+            self.save()
+            
+    def get_public_scenes(self) -> List['Scene']:
+        """Get all public scenes in the universe."""
+        return Scene.query.filter_by(universe_id=self.id, is_public=True, is_deleted=False).all()
+        
+    def get_character_by_name(self, name: str) -> Optional[Character]:
+        """Get a character by name."""
+        return Character.query.filter_by(universe_id=self.id, name=name, is_deleted=False).first()
+        
+    def add_character(self, character: Character) -> None:
+        """Add a character to the universe."""
+        if character.universe_id != self.id:
+            raise ValueError("Character must belong to this universe")
+        if not db.session.query(Character).filter_by(id=character.id, universe_id=self.id).first():
+            self.characters.append(character)
+            self.save()
+        
+    def remove_character(self, character: Character) -> None:
+        """Remove a character from the universe."""
+        if db.session.query(Character).filter_by(id=character.id, universe_id=self.id).first():
+            self.characters.remove(character)
+            self.save()
+            
+    def get_public_characters(self) -> List[Character]:
+        """Get all public characters in the universe."""
+        return Character.query.filter_by(universe_id=self.id, is_public=True, is_deleted=False).all()
+        
+    def get_note_by_title(self, title: str) -> Optional[Note]:
+        """Get a note by title."""
+        return Note.query.filter_by(universe_id=self.id, title=title, is_deleted=False).first()
+        
+    def add_note(self, note: Note) -> None:
+        """Add a note to the universe."""
+        if note.universe_id != self.id:
+            raise ValueError("Note must belong to this universe")
+        if not db.session.query(Note).filter_by(id=note.id, universe_id=self.id).first():
+            self.notes.append(note)
+            self.save()
+        
+    def remove_note(self, note: Note) -> None:
+        """Remove a note from the universe."""
+        if db.session.query(Note).filter_by(id=note.id, universe_id=self.id).first():
+            self.notes.remove(note)
+            self.save()
+            
+    def get_public_notes(self) -> List[Note]:
+        """Get all public notes in the universe."""
+        return Note.query.filter_by(universe_id=self.id, is_public=True, is_deleted=False).all()
+        
+    def set_sound_profile(self, sound_profile: Optional[SoundProfile]) -> None:
+        """Set the sound profile for the universe."""
+        if sound_profile and sound_profile.user_id != self.user_id:
+            raise ValueError("Sound profile must belong to the same user")
+        self.sound_profile_id = sound_profile.id if sound_profile else None
+        self.save()
+        
+    def remove_sound_profile(self) -> None:
+        """Remove the sound profile from the universe."""
+        self.sound_profile_id = None
+        self.save()
+        
+    def make_public(self) -> None:
+        """Make the universe public."""
+        self.is_public = True
+        self.save()
+        
+    def make_private(self) -> None:
+        """Make the universe private."""
+        self.is_public = False
+        self.save()
 
 class Scene(BaseModel):
     __tablename__ = 'scenes'
     
-    name = db.Column(db.String(100), nullable=False, index=True)
-    description = db.Column(db.Text)
-    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), nullable=False, index=True)
-    sound_profile_id = db.Column(db.Integer, db.ForeignKey('sound_profiles.id', ondelete='SET NULL'), index=True)
+    name: Mapped[str] = mapped_column(db.String(100), nullable=False, index=True)
+    description: Mapped[Optional[str]] = mapped_column(db.Text)
+    universe_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), nullable=False, index=True)
+    sound_profile_id: Mapped[Optional[int]] = mapped_column(db.Integer, db.ForeignKey('sound_profiles.id', ondelete='SET NULL'), index=True)
+    is_public: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=False)
     
     # Relationships
-    notes = db.relationship('Note', backref='scene', lazy=True, cascade='all, delete-orphan')
-    characters = db.relationship('Character', secondary='character_scenes', backref='scenes', lazy=True)
-    physics_objects = db.relationship('PhysicsObject', backref='scene', lazy=True, cascade='all, delete-orphan')
-    physics_2d = db.relationship('Physics2D', backref='scene', lazy=True, cascade='all, delete-orphan')
-    physics_3d = db.relationship('Physics3D', backref='scene', lazy=True, cascade='all, delete-orphan')
-    audio_samples = db.relationship('AudioSample', backref='scene', lazy=True, cascade='all, delete-orphan')
-    music_pieces = db.relationship('MusicPiece', backref='scene', lazy=True, cascade='all, delete-orphan')
+    universe: Mapped[Optional[Universe]] = relationship('Universe', foreign_keys=[universe_id], lazy=True)
+    notes: Mapped[List[Note]] = relationship('Note', backref='scene', lazy=True, cascade='all, delete-orphan')
+    characters: Mapped[List[Character]] = relationship('Character', secondary=character_scenes, backref='scenes', lazy=True)
+    physics_objects: Mapped[List[PhysicsObject]] = relationship('PhysicsObject', backref='scene', lazy=True, cascade='all, delete-orphan')
+    physics_2d: Mapped[List[Physics2D]] = relationship('Physics2D', backref='scene', lazy=True, cascade='all, delete-orphan')
+    physics_3d: Mapped[List[Physics3D]] = relationship('Physics3D', backref='scene', lazy=True, cascade='all, delete-orphan')
+    audio_samples: Mapped[List[AudioSample]] = relationship('AudioSample', backref='scene', lazy=True, cascade='all, delete-orphan')
+    music_pieces: Mapped[List[MusicPiece]] = relationship('MusicPiece', backref='scene', lazy=True, cascade='all, delete-orphan')
     
-    def validate(self):
+    def __init__(self, name: str, universe_id: int, description: Optional[str] = None, sound_profile_id: Optional[int] = None, is_public: bool = False) -> None:
+        super().__init__()
+        if not name or len(name.strip()) == 0:
+            raise ValueError("Name is required and cannot be empty")
+        if not universe_id:
+            raise ValueError("Universe ID is required")
+        self.name = name
+        self.description = description
+        self.universe_id = universe_id
+        self.sound_profile_id = sound_profile_id
+        self.is_public = is_public
+    
+    def validate(self) -> None:
         """Validate scene data."""
-        if not self.name:
-            raise ValueError("Scene name is required")
+        if not self.name or len(self.name.strip()) == 0:
+            raise ValueError("Scene name is required and cannot be empty")
+        if len(self.name) > 100:
+            raise ValueError("Scene name cannot exceed 100 characters")
         if not self.universe_id:
             raise ValueError("Universe ID is required")
+        if self.description and len(self.description) > 5000:
+            raise ValueError("Description cannot exceed 5000 characters")
             
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         """Convert scene to dictionary."""
         return {
             'id': self.id,
@@ -77,9 +209,66 @@ class Scene(BaseModel):
             'description': self.description,
             'universe_id': self.universe_id,
             'sound_profile_id': self.sound_profile_id,
+            'is_public': self.is_public,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
             'is_deleted': self.is_deleted,
-            'characters_count': len(self.characters),
-            'notes_count': len(self.notes)
-        } 
+            'characters_count': db.session.query(func.count(self.characters)).scalar(),
+            'notes_count': db.session.query(func.count(self.notes)).scalar()
+        }
+        
+    def get_character_by_name(self, name: str) -> Optional[Character]:
+        """Get a character by name."""
+        return Character.query.join(character_scenes).filter_by(scene_id=self.id, name=name, is_deleted=False).first()
+        
+    def add_character(self, character: Character) -> None:
+        """Add a character to the scene."""
+        if not db.session.query(Character).join(character_scenes).filter_by(scene_id=self.id, character_id=character.id).first():
+            self.characters.append(character)
+            self.save()
+            
+    def remove_character(self, character: Character) -> None:
+        """Remove a character from the scene."""
+        if db.session.query(Character).join(character_scenes).filter_by(scene_id=self.id, character_id=character.id).first():
+            self.characters.remove(character)
+            self.save()
+            
+    def get_note_by_title(self, title: str) -> Optional[Note]:
+        """Get a note by title."""
+        return Note.query.filter_by(scene_id=self.id, title=title, is_deleted=False).first()
+        
+    def add_note(self, note: Note) -> None:
+        """Add a note to the scene."""
+        if note.scene_id != self.id:
+            raise ValueError("Note must belong to this scene")
+        if not db.session.query(Note).filter_by(id=note.id, scene_id=self.id).first():
+            self.notes.append(note)
+            self.save()
+        
+    def remove_note(self, note: Note) -> None:
+        """Remove a note from the scene."""
+        if db.session.query(Note).filter_by(id=note.id, scene_id=self.id).first():
+            self.notes.remove(note)
+            self.save()
+            
+    def set_sound_profile(self, sound_profile: Optional[SoundProfile]) -> None:
+        """Set the sound profile for the scene."""
+        if sound_profile and self.universe and sound_profile.user_id != self.universe.user_id:
+            raise ValueError("Sound profile must belong to the same user as the universe")
+        self.sound_profile_id = sound_profile.id if sound_profile else None
+        self.save()
+        
+    def remove_sound_profile(self) -> None:
+        """Remove the sound profile from the scene."""
+        self.sound_profile_id = None
+        self.save()
+        
+    def make_public(self) -> None:
+        """Make the scene public."""
+        self.is_public = True
+        self.save()
+        
+    def make_private(self) -> None:
+        """Make the scene private."""
+        self.is_public = False
+        self.save() 

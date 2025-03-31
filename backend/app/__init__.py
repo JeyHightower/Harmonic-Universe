@@ -1,7 +1,6 @@
 from flask import Flask, jsonify, send_from_directory, Response
 from flask_cors import CORS
 from flask_migrate import Migrate
-from flask_login import LoginManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_jwt_extended import JWTManager
@@ -42,7 +41,7 @@ def create_app():
     # Initialize extensions
     CORS(app, resources={
         r"/api/*": {
-            "origins": ["http://localhost:5173", "http://localhost:3000", "http://localhost:5001"],
+            "origins": ["http://localhost:5173", "http://localhost:3000", "http://localhost:5000", "http://localhost:5001"],
             "supports_credentials": False,  # Disable credentials for now
             "allow_headers": ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
@@ -50,7 +49,7 @@ def create_app():
             "max_age": 600
         },
         r"/auth/*": {
-            "origins": ["http://localhost:5173", "http://localhost:3000", "http://localhost:5001"],
+            "origins": ["http://localhost:5173", "http://localhost:3000", "http://localhost:5000", "http://localhost:5001"],
             "supports_credentials": False,  # Disable credentials for now
             "allow_headers": ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
@@ -74,9 +73,6 @@ def create_app():
             print(f"Error creating database tables: {e}")
             raise e
     
-    login_manager = LoginManager()
-    login_manager.init_app(app)
-    login_manager.login_view = None  # Disable redirect
     jwt = JWTManager(app)
     
     # JWT error handlers
@@ -123,13 +119,13 @@ def create_app():
         strategy=app.config['RATELIMIT_STRATEGY']
     )
     
-    # Register blueprints
+    # Register blueprints with standardized URL patterns
     from .api.routes import auth_bp, characters_bp, notes_bp, user_bp, universes_bp, modal_bp
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(characters_bp, url_prefix='/api/characters')
     app.register_blueprint(notes_bp, url_prefix='/api/notes')
     app.register_blueprint(user_bp, url_prefix='/api/user')
-    app.register_blueprint(universes_bp, url_prefix='/api')
+    app.register_blueprint(universes_bp, url_prefix='/api/universes')
     app.register_blueprint(modal_bp, url_prefix='/api/modal')
     
     # Health check endpoint
@@ -141,16 +137,6 @@ def create_app():
             'version': app.config.get('VERSION', '1.0.0'),
             'environment': app.config.get('ENV', 'development')
         })
-    
-    # User loader for Flask-Login
-    from .api.models import User
-    @login_manager.user_loader
-    def load_user(user_id):
-        return User.query.get(int(user_id))
-    
-    @login_manager.unauthorized_handler
-    def unauthorized():
-        return jsonify({'error': 'Unauthorized'}), 401
     
     # Serve favicon.ico
     @app.route('/favicon.ico')

@@ -5,7 +5,7 @@ from app import db
 
 bp = Blueprint('universes', __name__)
 
-@bp.route('/universes', methods=['GET'])
+@bp.route('/', methods=['GET'])
 @jwt_required()
 def get_universes():
     try:
@@ -39,7 +39,7 @@ def get_universes():
             'error': str(e)
         }), 500
 
-@bp.route('/universes/<int:universe_id>', methods=['GET'])
+@bp.route('/<int:universe_id>', methods=['GET'])
 @jwt_required()
 def get_universe(universe_id):
     try:
@@ -63,7 +63,7 @@ def get_universe(universe_id):
             'error': str(e)
         }), 500
 
-@bp.route('/universes', methods=['POST'])
+@bp.route('/', methods=['POST'])
 @jwt_required()
 def create_universe():
     try:
@@ -93,7 +93,7 @@ def create_universe():
             'error': str(e)
         }), 500
 
-@bp.route('/universes/<int:universe_id>', methods=['PUT'])
+@bp.route('/<int:universe_id>', methods=['PUT'])
 @jwt_required()
 def update_universe(universe_id):
     try:
@@ -130,7 +130,7 @@ def update_universe(universe_id):
             'error': str(e)
         }), 500
 
-@bp.route('/universes/<int:universe_id>', methods=['DELETE'])
+@bp.route('/<int:universe_id>', methods=['DELETE'])
 @jwt_required()
 def delete_universe(universe_id):
     try:

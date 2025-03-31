@@ -42,13 +42,7 @@ def get_user_profile():
             'created_at': user_data['created_at'],
             'updated_at': user_data['updated_at'],
             'version': user.version,
-            'stats': {
-                'universes_count': len(user.universes),
-                'notes_count': len(user.notes),
-                'sound_profiles_count': len(user.sound_profiles),
-                'audio_samples_count': len(user.audio_samples),
-                'music_pieces_count': len(user.music_pieces)
-            }
+            'stats': user.get_stats()
         }
         
         current_app.logger.info('Profile data prepared successfully')

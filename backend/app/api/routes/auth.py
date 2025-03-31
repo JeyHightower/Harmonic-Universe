@@ -191,21 +191,4 @@ def demo_login():
         return jsonify({
             'message': 'An error occurred during demo login',
             'error': str(e)
-        }), 500
-
-@auth_bp.route('/me', methods=['GET'])
-@jwt_required()
-def get_current_user():
-    """Get the current user's information."""
-    try:
-        user_id = get_jwt_identity()
-        user = User.query.get(user_id)
-        if not user:
-            return jsonify({'message': 'User not found'}), 404
-            
-        return jsonify({
-            'user': user.to_dict()
-        }), 200
-    except Exception as e:
-        current_app.logger.error(f'Get current user error: {str(e)}')
-        return jsonify({'message': 'An error occurred while fetching user information'}), 500 
+        }), 500 
