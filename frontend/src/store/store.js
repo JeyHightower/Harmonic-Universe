@@ -16,6 +16,7 @@ import universeReducer from "./slices/universeSlice";
 import sceneReducer from "./slices/sceneSlice";
 import characterReducer from "./slices/characterSlice";
 import noteReducer from "./slices/noteSlice";
+import modalReducer from "./slices/modalSlice";
 
 // Configure persistence for reducers that need to persist
 const authPersistConfig = {
@@ -49,6 +50,7 @@ const rootReducer = combineReducers({
   scenes: sceneReducer,
   characters: characterReducer,
   notes: noteReducer,
+  modal: modalReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
