@@ -1,20 +1,21 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import Logo from "./Logo";
-import { openModal } from "../../store/slices/modalSlice";
+import { useModal } from "../../contexts/ModalContext";
+import { MODAL_TYPES } from "../../constants/modalTypes";
 import "./Navigation.css";
 
 function Navigation() {
-  const dispatch = useDispatch();
+  const { openModal } = useModal();
   const { isAuthenticated } = useSelector((state) => state.auth);
 
   const handleLoginClick = () => {
-    dispatch(openModal({ type: "LOGIN" }));
+    openModal(MODAL_TYPES.LOGIN);
   };
 
   const handleRegisterClick = () => {
-    dispatch(openModal({ type: "REGISTER" }));
+    openModal(MODAL_TYPES.REGISTER);
   };
 
   return (

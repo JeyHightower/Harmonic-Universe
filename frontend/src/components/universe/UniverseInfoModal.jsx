@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "../common";
 import { useModal } from "../../contexts/ModalContext";
-import { MODAL_TYPES } from "../../utils/modalRegistry";
+import { MODAL_TYPES } from "../../constants/modalTypes";
 import "./UniverseInfoModal.css";
 
 // Global state to prevent modal from unmounting

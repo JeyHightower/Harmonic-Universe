@@ -3,6 +3,11 @@ import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import "./Auth.css";
 import { register } from "../../store/slices/authSlice";
+import {
+  validateEmail,
+  validatePassword,
+  validateUsername,
+} from "../../utils/validation";
 
 const RegisterModal = ({ onClose }) => {
   const [formData, setFormData] = useState({
@@ -12,6 +17,7 @@ const RegisterModal = ({ onClose }) => {
     confirmPassword: "",
   });
   const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
 
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.auth);
@@ -32,27 +38,30 @@ const RegisterModal = ({ onClose }) => {
     }
   };
 
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    setTouched({
+      ...touched,
+      [name]: true,
+    });
+  };
+
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.username) {
-      newErrors.username = "Username is required";
-    } else if (formData.username.length < 3) {
-      newErrors.username = "Username must be at least 3 characters";
-    }
+    // Validate username
+    const usernameError = validateUsername(formData.username);
+    if (usernameError) newErrors.username = usernameError;
 
-    if (!formData.email) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Email is invalid";
-    }
+    // Validate email
+    const emailError = validateEmail(formData.email);
+    if (emailError) newErrors.email = emailError;
 
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
-    }
+    // Validate password
+    const passwordError = validatePassword(formData.password);
+    if (passwordError) newErrors.password = passwordError;
 
+    // Validate password confirmation
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match";
     }
@@ -85,9 +94,19 @@ const RegisterModal = ({ onClose }) => {
         onClose();
       } else {
         console.error("Registration failed:", resultAction.error);
+        setErrors({
+          ...errors,
+          submit:
+            resultAction.error.message ||
+            "Registration failed. Please try again.",
+        });
       }
     } catch (err) {
       console.error("Error during registration:", err);
+      setErrors({
+        ...errors,
+        submit: "An unexpected error occurred. Please try again.",
+      });
     }
   };
 
@@ -95,7 +114,7 @@ const RegisterModal = ({ onClose }) => {
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-container" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Sign Up</h2>
+          <h2>Create Your Account</h2>
           <button className="close-button" onClick={onClose}>
             ×
           </button>
@@ -110,10 +129,13 @@ const RegisterModal = ({ onClose }) => {
               name="username"
               value={formData.username}
               onChange={handleChange}
+              onBlur={handleBlur}
               placeholder="Choose a username"
-              className={errors.username ? "input-error" : ""}
+              className={`form-input ${
+                errors.username && touched.username ? "input-error" : ""
+              }`}
             />
-            {errors.username && (
+            {errors.username && touched.username && (
               <div className="error-message">{errors.username}</div>
             )}
           </div>
@@ -126,10 +148,13 @@ const RegisterModal = ({ onClose }) => {
               name="email"
               value={formData.email}
               onChange={handleChange}
+              onBlur={handleBlur}
               placeholder="Enter your email"
-              className={errors.email ? "input-error" : ""}
+              className={`form-input ${
+                errors.email && touched.email ? "input-error" : ""
+              }`}
             />
-            {errors.email && (
+            {errors.email && touched.email && (
               <div className="error-message">{errors.email}</div>
             )}
           </div>
@@ -142,12 +167,57 @@ const RegisterModal = ({ onClose }) => {
               name="password"
               value={formData.password}
               onChange={handleChange}
+              onBlur={handleBlur}
               placeholder="Create a password"
-              className={errors.password ? "input-error" : ""}
+              className={`form-input ${
+                errors.password && touched.password ? "input-error" : ""
+              }`}
             />
-            {errors.password && (
+            {errors.password && touched.password && (
               <div className="error-message">{errors.password}</div>
             )}
+            <div className="password-requirements">
+              <p>Password must contain:</p>
+              <ul>
+                <li
+                  className={
+                    formData.password.length >= 8 ? "requirement-met" : ""
+                  }
+                >
+                  At least 8 characters
+                </li>
+                <li
+                  className={
+                    /[A-Z]/.test(formData.password) ? "requirement-met" : ""
+                  }
+                >
+                  One uppercase letter
+                </li>
+                <li
+                  className={
+                    /[a-z]/.test(formData.password) ? "requirement-met" : ""
+                  }
+                >
+                  One lowercase letter
+                </li>
+                <li
+                  className={
+                    /[0-9]/.test(formData.password) ? "requirement-met" : ""
+                  }
+                >
+                  One number
+                </li>
+                <li
+                  className={
+                    /[!@#$%^&*]/.test(formData.password)
+                      ? "requirement-met"
+                      : ""
+                  }
+                >
+                  One special character (!@#$%^&*)
+                </li>
+              </ul>
+            </div>
           </div>
 
           <div className="form-group">
@@ -158,19 +228,30 @@ const RegisterModal = ({ onClose }) => {
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
+              onBlur={handleBlur}
               placeholder="Confirm your password"
-              className={errors.confirmPassword ? "input-error" : ""}
+              className={`form-input ${
+                errors.confirmPassword && touched.confirmPassword
+                  ? "input-error"
+                  : ""
+              }`}
             />
-            {errors.confirmPassword && (
+            {errors.confirmPassword && touched.confirmPassword && (
               <div className="error-message">{errors.confirmPassword}</div>
             )}
           </div>
 
-          {error && <div className="error-message">{error}</div>}
+          {errors.submit && (
+            <div className="error-message submit-error">{errors.submit}</div>
+          )}
 
           <div className="form-actions">
-            <button type="submit" className="submit-button" disabled={loading}>
-              {loading ? "Creating Account..." : "Sign Up"}
+            <button
+              type="submit"
+              className="submit-button"
+              disabled={loading || Object.keys(errors).length > 0}
+            >
+              {loading ? "Creating Account..." : "Create Account"}
             </button>
           </div>
 

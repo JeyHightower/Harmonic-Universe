@@ -1,5 +1,5 @@
 import React from "react";
-import { MODAL_TYPES } from "./config";
+import { MODAL_TYPES } from "../constants/modalTypes";
 import ModalSystem from "../components/modals";
 
 // Lazy load modal components

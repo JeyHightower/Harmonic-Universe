@@ -10,9 +10,9 @@ import {
   Switch,
   Typography,
   message,
-} from 'antd';
-import React, { useEffect, useRef, useState } from 'react';
-import * as Tone from 'tone';
+} from "antd";
+import React, { useEffect, useRef, useState } from "react";
+import * as Tone from "tone";
 import {
   CaretRightOutlined,
   DownloadOutlined,
@@ -22,14 +22,13 @@ import {
   RobotOutlined,
   SettingOutlined,
   SyncOutlined,
-} from '../../../components/common/Icons';
-import { useModal } from '../../../contexts/ModalContext';
-import { api, endpoints } from '../../../utils/api';
-import { MODAL_TYPES } from '../../../utils/modalRegistry';
-import Modal from '../../common/Modal';
-import './Music.css';
-import './MusicPlayer.css';
-import MusicVisualizer3D from './MusicVisualizer3D';
+} from "../../../components/common/Icons";
+import { useModal } from "../../contexts/ModalContext";
+import { MODAL_TYPES } from "../../constants/modalTypes";
+import Modal from "../../common/Modal";
+import "./Music.css";
+import "./MusicPlayer.css";
+import MusicVisualizer3D from "./MusicVisualizer3D";
 
 const { Title, Text } = Typography;
 
@@ -43,15 +42,15 @@ const MusicPlayer = ({ universeId }) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [customizationEnabled, setCustomizationEnabled] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(false);
-  const [aiStyle, setAiStyle] = useState('default');
+  const [aiStyle, setAiStyle] = useState("default");
   const [audioContextInitialized, setAudioContextInitialized] = useState(false);
   const [customParams, setCustomParams] = useState({
     tempo: 120,
-    scale_type: 'major',
-    root_note: 'C',
+    scale_type: "major",
+    root_note: "C",
     melody_complexity: 0.5,
   });
-  const [visualizationType, setVisualizationType] = useState('2D'); // '2D' or '3D'
+  const [visualizationType, setVisualizationType] = useState("2D"); // '2D' or '3D'
   const [showMusicInfoModal, setShowMusicInfoModal] = useState(false);
 
   // References for Tone.js instruments and sequences
@@ -65,11 +64,11 @@ const MusicPlayer = ({ universeId }) => {
   // Initialize Tone.js on user interaction
   const initializeTone = async () => {
     try {
-      console.log('Initializing Tone.js...');
+      console.log("Initializing Tone.js...");
       // Only start AudioContext after user interaction
-      if (Tone.context.state !== 'running') {
+      if (Tone.context.state !== "running") {
         await Tone.start();
-        console.log('Tone.js AudioContext started successfully');
+        console.log("Tone.js AudioContext started successfully");
       }
 
       // Initialize instruments
@@ -79,12 +78,12 @@ const MusicPlayer = ({ universeId }) => {
       synthRef.current.volume.value = Tone.gainToDb(volume / 100);
 
       // Set up analyzer for visualizations
-      analyzerRef.current = new Tone.Analyser('waveform', 128);
+      analyzerRef.current = new Tone.Analyser("waveform", 128);
       synthRef.current.connect(analyzerRef.current);
 
       return true;
     } catch (error) {
-      console.error('Error initializing Tone.js:', error);
+      console.error("Error initializing Tone.js:", error);
       return false;
     }
   };
@@ -98,7 +97,7 @@ const MusicPlayer = ({ universeId }) => {
     synthRef.current.volume.value = Tone.gainToDb(volume / 100);
 
     // Setup analyzer for visualization
-    analyzerRef.current = new Tone.Analyser('waveform', 128);
+    analyzerRef.current = new Tone.Analyser("waveform", 128);
     synthRef.current.connect(analyzerRef.current);
 
     // Clean up on unmount
@@ -130,15 +129,15 @@ const MusicPlayer = ({ universeId }) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
 
     // Colors for visualization
     const colors = {
-      background: 'rgba(25, 31, 45, 0.9)',
-      primary: '#1890ff',
-      secondary: '#722ed1',
-      accent: '#13c2c2',
-      highlight: '#eb2f96',
+      background: "rgba(25, 31, 45, 0.9)",
+      primary: "#1890ff",
+      secondary: "#722ed1",
+      accent: "#13c2c2",
+      highlight: "#eb2f96",
     };
 
     // Animation variables
@@ -189,21 +188,21 @@ const MusicPlayer = ({ universeId }) => {
 
       // Draw background with gradient
       const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      gradient.addColorStop(0, 'rgba(26, 32, 53, 0.9)');
-      gradient.addColorStop(1, 'rgba(13, 17, 38, 0.95)');
+      gradient.addColorStop(0, "rgba(26, 32, 53, 0.9)");
+      gradient.addColorStop(1, "rgba(13, 17, 38, 0.95)");
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Draw center line
       ctx.beginPath();
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
       ctx.moveTo(0, canvas.height / 2);
       ctx.lineTo(canvas.width, canvas.height / 2);
       ctx.stroke();
 
       // Draw grid lines
       ctx.beginPath();
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
       for (let i = 0; i < canvas.height; i += 10) {
         ctx.moveTo(0, i);
         ctx.lineTo(canvas.width, i);
@@ -259,9 +258,9 @@ const MusicPlayer = ({ universeId }) => {
 
         // Update and draw particles
         particleArray = particleArray.filter(
-          particle => particle.alpha > 0 && particle.size > 0
+          (particle) => particle.alpha > 0 && particle.size > 0
         );
-        particleArray.forEach(particle => {
+        particleArray.forEach((particle) => {
           particle.update();
           particle.draw();
         });
@@ -318,17 +317,17 @@ const MusicPlayer = ({ universeId }) => {
       // Clear canvas when not playing
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      gradient.addColorStop(0, 'rgba(26, 32, 53, 0.9)');
-      gradient.addColorStop(1, 'rgba(13, 17, 38, 0.95)');
+      gradient.addColorStop(0, "rgba(26, 32, 53, 0.9)");
+      gradient.addColorStop(1, "rgba(13, 17, 38, 0.95)");
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Draw placeholder text
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-      ctx.font = '16px Arial';
-      ctx.textAlign = 'center';
+      ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+      ctx.font = "16px Arial";
+      ctx.textAlign = "center";
       ctx.fillText(
-        'Click play to start visualization',
+        "Click play to start visualization",
         canvas.width / 2,
         canvas.height / 2
       );
@@ -358,7 +357,7 @@ const MusicPlayer = ({ universeId }) => {
         params || (customizationEnabled ? customParams : null);
 
       // Build query parameters
-      let queryParams = '';
+      let queryParams = "";
       if (musicParams && customizationEnabled) {
         queryParams = `?custom_params=${encodeURIComponent(
           JSON.stringify(musicParams)
@@ -367,7 +366,7 @@ const MusicPlayer = ({ universeId }) => {
 
       // Add AI parameters if enabled
       if (aiEnabled) {
-        const aiParams = queryParams ? '&' : '?';
+        const aiParams = queryParams ? "&" : "?";
         queryParams += `${aiParams}ai_style=${aiStyle}`;
       }
 
@@ -378,19 +377,19 @@ const MusicPlayer = ({ universeId }) => {
 
       if (response.music_data) {
         setMusicData(response.music_data);
-        message.success('Music generated successfully');
+        message.success("Music generated successfully");
 
         // Auto-play the generated music
         setTimeout(() => {
           togglePlayback();
         }, 500);
       } else {
-        throw new Error('No music data received from the server');
+        throw new Error("No music data received from the server");
       }
     } catch (err) {
-      console.error('Failed to generate music:', err);
-      setError(err.message || 'Failed to generate music');
-      message.error('Failed to generate music');
+      console.error("Failed to generate music:", err);
+      setError(err.message || "Failed to generate music");
+      message.error("Failed to generate music");
     } finally {
       setIsLoading(false);
     }
@@ -401,7 +400,7 @@ const MusicPlayer = ({ universeId }) => {
     await initializeTone();
 
     if (!musicData) {
-      message.warning('Please generate music first');
+      message.warning("Please generate music first");
       return;
     }
 
@@ -412,12 +411,12 @@ const MusicPlayer = ({ universeId }) => {
       const downloadUrl = endpoints.music.download(universeId);
 
       // Create a link element and trigger download
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = downloadUrl;
       link.download = `universe_${universeId}_music.wav`;
 
       // Add token for authentication
-      const token = localStorage.getItem('accessToken');
+      const token = localStorage.getItem("accessToken");
       if (token) {
         link.href = `${downloadUrl}?token=${token}`;
       }
@@ -426,17 +425,17 @@ const MusicPlayer = ({ universeId }) => {
       link.click();
       document.body.removeChild(link);
 
-      message.success('Download started');
+      message.success("Download started");
     } catch (err) {
-      console.error('Failed to download music:', err);
-      message.error('Failed to download music');
+      console.error("Failed to download music:", err);
+      message.error("Failed to download music");
     } finally {
       setIsDownloading(false);
     }
   };
 
   // Create a Tone.js sequence from the music data
-  const createMusicSequence = data => {
+  const createMusicSequence = (data) => {
     if (!data || !data.melody || !synthRef.current) return;
 
     // Clean up existing sequence
@@ -451,9 +450,9 @@ const MusicPlayer = ({ universeId }) => {
     const notes = [];
     const durations = [];
 
-    data.melody.forEach(note => {
+    data.melody.forEach((note) => {
       // Convert MIDI note to frequency
-      const freq = Tone.Frequency(note.note, 'midi');
+      const freq = Tone.Frequency(note.note, "midi");
       notes.push(freq);
       durations.push(note.duration);
     });
@@ -464,13 +463,13 @@ const MusicPlayer = ({ universeId }) => {
       (time, note) => {
         synthRef.current.triggerAttackRelease(
           note,
-          durations[index] + 'n',
+          durations[index] + "n",
           time
         );
         index = (index + 1) % notes.length;
       },
       notes,
-      '8n'
+      "8n"
     );
 
     // Start the sequence (but don't play yet)
@@ -499,7 +498,7 @@ const MusicPlayer = ({ universeId }) => {
 
   // Handle parameter changes
   const handleParamChange = (param, value) => {
-    setCustomParams(prev => ({
+    setCustomParams((prev) => ({
       ...prev,
       [param]: value,
     }));
@@ -507,7 +506,7 @@ const MusicPlayer = ({ universeId }) => {
 
   // Toggle visualization type between 2D and 3D
   const toggleVisualizationType = () => {
-    setVisualizationType(prev => (prev === '2D' ? '3D' : '2D'));
+    setVisualizationType((prev) => (prev === "2D" ? "3D" : "2D"));
   };
 
   // Show music info modal
@@ -516,20 +515,20 @@ const MusicPlayer = ({ universeId }) => {
   };
 
   // Get note name from MIDI note number
-  const getNoteNameFromMidi = midiNote => {
+  const getNoteNameFromMidi = (midiNote) => {
     const noteNames = [
-      'C',
-      'C#',
-      'D',
-      'D#',
-      'E',
-      'F',
-      'F#',
-      'G',
-      'G#',
-      'A',
-      'A#',
-      'B',
+      "C",
+      "C#",
+      "D",
+      "D#",
+      "E",
+      "F",
+      "F#",
+      "G",
+      "G#",
+      "A",
+      "A#",
+      "B",
     ];
     const octave = Math.floor(midiNote / 12) - 1;
     const noteName = noteNames[midiNote % 12];
@@ -541,7 +540,7 @@ const MusicPlayer = ({ universeId }) => {
     openModalByType(MODAL_TYPES.AUDIO_GENERATE, {
       universeId,
       initialParams: customParams,
-      onSubmit: params => {
+      onSubmit: (params) => {
         setCustomParams(params);
         setCustomizationEnabled(true);
         generateMusic(params);
@@ -570,7 +569,7 @@ const MusicPlayer = ({ universeId }) => {
             loading={isLoading}
             disabled={!musicData && !isLoading}
           >
-            {isPlaying ? 'Pause' : 'Play'}
+            {isPlaying ? "Pause" : "Play"}
           </Button>
           <Button
             type="default"
@@ -599,7 +598,7 @@ const MusicPlayer = ({ universeId }) => {
             icon={<EyeOutlined />}
             onClick={toggleVisualizationType}
             title={`Switch to ${
-              visualizationType === '2D' ? '3D' : '2D'
+              visualizationType === "2D" ? "3D" : "2D"
             } visualization`}
           />
         </Space>
@@ -607,10 +606,10 @@ const MusicPlayer = ({ universeId }) => {
     >
       <div
         className={`visualization-container ${
-          visualizationType === '3D' ? 'visualization-3d' : ''
+          visualizationType === "3D" ? "visualization-3d" : ""
         }`}
       >
-        {visualizationType === '2D' ? (
+        {visualizationType === "2D" ? (
           <canvas
             ref={canvasRef}
             width="500"
@@ -638,7 +637,7 @@ const MusicPlayer = ({ universeId }) => {
       </div>
 
       <div className="music-controls">
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Space direction="vertical" size="large" style={{ width: "100%" }}>
           {error && <Text type="danger">{error}</Text>}
 
           <div className="control-buttons">
@@ -671,15 +670,15 @@ const MusicPlayer = ({ universeId }) => {
             />
 
             <Button
-              type={aiEnabled ? 'primary' : 'default'}
+              type={aiEnabled ? "primary" : "default"}
               shape="circle"
               icon={<RobotOutlined />}
               size="large"
               onClick={() => setAiEnabled(!aiEnabled)}
               title={
                 aiEnabled
-                  ? 'AI-assisted mode enabled'
-                  : 'Enable AI-assisted mode'
+                  ? "AI-assisted mode enabled"
+                  : "Enable AI-assisted mode"
               }
             />
           </div>
@@ -694,7 +693,7 @@ const MusicPlayer = ({ universeId }) => {
             className="customization-panel"
             items={[
               {
-                key: '1',
+                key: "1",
                 label: <Text strong>Music Customization</Text>,
                 extra: <SettingOutlined />,
                 children: (
@@ -708,11 +707,11 @@ const MusicPlayer = ({ universeId }) => {
                         />
                       </Form.Item>
 
-                      <Divider style={{ margin: '8px 0' }} />
+                      <Divider style={{ margin: "8px 0" }} />
 
                       <div
                         className={
-                          customizationEnabled ? '' : 'disabled-controls'
+                          customizationEnabled ? "" : "disabled-controls"
                         }
                       >
                         <Form.Item label={<Text>Tempo (BPM)</Text>}>
@@ -720,8 +719,8 @@ const MusicPlayer = ({ universeId }) => {
                             value={customParams.tempo}
                             min={60}
                             max={180}
-                            onChange={value =>
-                              handleParamChange('tempo', value)
+                            onChange={(value) =>
+                              handleParamChange("tempo", value)
                             }
                             disabled={!customizationEnabled || isLoading}
                           />
@@ -730,11 +729,11 @@ const MusicPlayer = ({ universeId }) => {
                         <Form.Item label={<Text>Scale Type</Text>}>
                           <Select
                             value={customParams.scale_type}
-                            onChange={value =>
-                              handleParamChange('scale_type', value)
+                            onChange={(value) =>
+                              handleParamChange("scale_type", value)
                             }
                             disabled={!customizationEnabled || isLoading}
-                            style={{ width: '100%' }}
+                            style={{ width: "100%" }}
                           >
                             <Select.Option value="major">Major</Select.Option>
                             <Select.Option value="minor">Minor</Select.Option>
@@ -751,11 +750,11 @@ const MusicPlayer = ({ universeId }) => {
                         <Form.Item label={<Text>Root Note</Text>}>
                           <Select
                             value={customParams.root_note}
-                            onChange={value =>
-                              handleParamChange('root_note', value)
+                            onChange={(value) =>
+                              handleParamChange("root_note", value)
                             }
                             disabled={!customizationEnabled || isLoading}
-                            style={{ width: '100%' }}
+                            style={{ width: "100%" }}
                           >
                             <Select.Option value={60}>
                               C (Middle C)
@@ -775,20 +774,20 @@ const MusicPlayer = ({ universeId }) => {
                             min={0.1}
                             max={1.0}
                             step={0.1}
-                            onChange={value =>
-                              handleParamChange('melody_complexity', value)
+                            onChange={(value) =>
+                              handleParamChange("melody_complexity", value)
                             }
                             disabled={!customizationEnabled || isLoading}
                             marks={{
-                              0.1: 'Simple',
-                              0.5: 'Medium',
-                              1.0: 'Complex',
+                              0.1: "Simple",
+                              0.5: "Medium",
+                              1.0: "Complex",
                             }}
                           />
                         </Form.Item>
                       </div>
 
-                      <Divider style={{ margin: '16px 0 8px 0' }} />
+                      <Divider style={{ margin: "16px 0 8px 0" }} />
 
                       <Form.Item
                         label={<Text>Use AI-Assisted Generation</Text>}
@@ -800,13 +799,13 @@ const MusicPlayer = ({ universeId }) => {
                         />
                       </Form.Item>
 
-                      <div className={aiEnabled ? '' : 'disabled-controls'}>
+                      <div className={aiEnabled ? "" : "disabled-controls"}>
                         <Form.Item label={<Text>AI Music Style</Text>}>
                           <Select
                             value={aiStyle}
                             onChange={setAiStyle}
                             disabled={!aiEnabled || isLoading}
-                            style={{ width: '100%' }}
+                            style={{ width: "100%" }}
                           >
                             <Select.Option value="default">
                               Default Enhancements
@@ -840,16 +839,16 @@ const MusicPlayer = ({ universeId }) => {
               <Text type="secondary">Tempo: {musicData.tempo} BPM</Text>
               <Text type="secondary">Scale: {musicData.scale_type}</Text>
               <Text type="secondary">
-                Physics Influence: Gravity{' '}
-                {musicData.physics_influence.gravity.toFixed(2)}, Temperature{' '}
+                Physics Influence: Gravity{" "}
+                {musicData.physics_influence.gravity.toFixed(2)}, Temperature{" "}
                 {musicData.physics_influence.temperature.toFixed(2)}
               </Text>
               {musicData.ai_metadata && (
                 <>
                   <Divider
                     style={{
-                      margin: '8px 0',
-                      borderColor: 'rgba(255, 255, 255, 0.1)',
+                      margin: "8px 0",
+                      borderColor: "rgba(255, 255, 255, 0.1)",
                     }}
                   />
                   <Text type="secondary">
@@ -859,7 +858,7 @@ const MusicPlayer = ({ universeId }) => {
                     Mood: {musicData.ai_metadata.mood}
                   </Text>
                   <Text type="secondary">
-                    Complexity:{' '}
+                    Complexity:{" "}
                     {(musicData.ai_metadata.complexity * 100).toFixed(0)}%
                   </Text>
                 </>
@@ -899,7 +898,7 @@ const MusicPlayer = ({ universeId }) => {
                   <span className="info-value">
                     {((musicData.melody.length * 60) / musicData.tempo).toFixed(
                       1
-                    )}{' '}
+                    )}{" "}
                     seconds
                   </span>
                 </div>

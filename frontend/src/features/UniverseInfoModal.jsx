@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
-import Button from '../../components/common/Button';
-import { useModal } from '../../contexts/ModalContext';
-import { MODAL_TYPES } from '../../utils/modalRegistry';
-import './UniverseInfoModal.css';
+import React, { useEffect, useRef, useState } from "react";
+import Button from "../../components/common/Button";
+import { useModal } from "../../contexts/ModalContext";
+import { MODAL_TYPES } from "../../constants/modalTypes";
+import "./UniverseInfoModal.css";
 
 // Global state to prevent modal from unmounting
 let modalVisible = false;
@@ -15,9 +15,9 @@ const UniverseInfoModal = ({ universe, onClose, isGlobalModal = true }) => {
   const onCloseRef = useRef(onClose);
   const universeRef = useRef(universe);
 
-  console.log('UniverseInfoModal rendering with universe:', universe);
-  console.log('Global modalVisible:', modalVisible);
-  console.log('Global savedUniverse:', savedUniverse);
+  console.log("UniverseInfoModal rendering with universe:", universe);
+  console.log("Global modalVisible:", modalVisible);
+  console.log("Global savedUniverse:", savedUniverse);
 
   // Update refs when props change
   useEffect(() => {
@@ -27,14 +27,14 @@ const UniverseInfoModal = ({ universe, onClose, isGlobalModal = true }) => {
 
   // Set up visibility
   useEffect(() => {
-    console.log('UniverseInfoModal useEffect running with universe:', universe);
+    console.log("UniverseInfoModal useEffect running with universe:", universe);
 
     // Save the universe data and close function globally to persist across mounts
     if (universe) {
       savedUniverse = universe;
       currentOnCloseFn = onClose;
       modalVisible = true;
-      console.log('Setting modalVisible to true');
+      console.log("Setting modalVisible to true");
     }
 
     // Set local state
@@ -42,14 +42,14 @@ const UniverseInfoModal = ({ universe, onClose, isGlobalModal = true }) => {
 
     // Clean up function
     return () => {
-      console.log('UniverseInfoModal cleanup function running');
+      console.log("UniverseInfoModal cleanup function running");
       // Don't reset the global state on unmount - that's the key to our fix
     };
   }, [universe, onClose]);
 
   // Function to safely close the modal
   const handleModalClose = () => {
-    console.log('handleModalClose called');
+    console.log("handleModalClose called");
     modalVisible = false;
     savedUniverse = null;
 
@@ -65,14 +65,16 @@ const UniverseInfoModal = ({ universe, onClose, isGlobalModal = true }) => {
 
   // Only render when we have universe data
   if (!displayUniverse || !modalVisible) {
-    console.log('UniverseInfoModal returning null - no displayUniverse or not visible');
+    console.log(
+      "UniverseInfoModal returning null - no displayUniverse or not visible"
+    );
     return null;
   }
 
-  console.log('UniverseInfoModal rendering content');
+  console.log("UniverseInfoModal rendering content");
 
   // Check if user has permission to modify this universe
-  const canModifyUniverse = displayUniverse?.user_role === 'owner';
+  const canModifyUniverse = displayUniverse?.user_role === "owner";
 
   const handleEdit = () => {
     if (!canModifyUniverse) return;
@@ -90,17 +92,17 @@ const UniverseInfoModal = ({ universe, onClose, isGlobalModal = true }) => {
     <div
       className="universe-info-modal-backdrop"
       style={{
-        position: 'fixed',
+        position: "fixed",
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
         zIndex: 1000,
-        pointerEvents: 'auto'
+        pointerEvents: "auto",
       }}
       onClick={(e) => {
         // Only close if the backdrop itself was clicked
@@ -112,16 +114,16 @@ const UniverseInfoModal = ({ universe, onClose, isGlobalModal = true }) => {
       <div
         className="universe-info-modal"
         style={{
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          padding: '20px',
-          maxWidth: '800px',
-          width: '90%',
-          maxHeight: '80vh',
-          overflowY: 'auto',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-          pointerEvents: 'auto',
-          zIndex: 1001
+          backgroundColor: "white",
+          borderRadius: "8px",
+          padding: "20px",
+          maxWidth: "800px",
+          width: "90%",
+          maxHeight: "80vh",
+          overflowY: "auto",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+          pointerEvents: "auto",
+          zIndex: 1001,
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -138,7 +140,7 @@ const UniverseInfoModal = ({ universe, onClose, isGlobalModal = true }) => {
           <div className="info-row">
             <span className="info-label">Visibility:</span>
             <span className="info-value">
-              {displayUniverse.is_public ? 'Public' : 'Private'}
+              {displayUniverse.is_public ? "Public" : "Private"}
             </span>
           </div>
           <div className="info-row">
@@ -160,17 +162,19 @@ const UniverseInfoModal = ({ universe, onClose, isGlobalModal = true }) => {
           <div className="info-row">
             <span className="info-label">Physics Objects:</span>
             <span className="info-value">
-              {displayUniverse.physics_objects_count || 'N/A'}
+              {displayUniverse.physics_objects_count || "N/A"}
             </span>
           </div>
           <div className="info-row">
             <span className="info-label">Scenes:</span>
-            <span className="info-value">{displayUniverse.scenes_count || 'N/A'}</span>
+            <span className="info-value">
+              {displayUniverse.scenes_count || "N/A"}
+            </span>
           </div>
           <div className="info-row">
             <span className="info-label">Simulations Run:</span>
             <span className="info-value">
-              {displayUniverse.simulations_count || 'N/A'}
+              {displayUniverse.simulations_count || "N/A"}
             </span>
           </div>
         </div>
@@ -178,18 +182,23 @@ const UniverseInfoModal = ({ universe, onClose, isGlobalModal = true }) => {
         <div className="universe-info-section">
           <h3>Physics Parameters</h3>
           {displayUniverse.physics_params ? (
-            Object.entries(displayUniverse.physics_params).map(([key, value]) => (
-              <div className="info-row" key={key}>
-                <span className="info-label">
-                  {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:
-                </span>
-                <span className="info-value">
-                  {typeof value === 'object'
-                    ? JSON.stringify(value)
-                    : String(value)}
-                </span>
-              </div>
-            ))
+            Object.entries(displayUniverse.physics_params).map(
+              ([key, value]) => (
+                <div className="info-row" key={key}>
+                  <span className="info-label">
+                    {key
+                      .replace(/_/g, " ")
+                      .replace(/\b\w/g, (l) => l.toUpperCase())}
+                    :
+                  </span>
+                  <span className="info-value">
+                    {typeof value === "object"
+                      ? JSON.stringify(value)
+                      : String(value)}
+                  </span>
+                </div>
+              )
+            )
           ) : (
             <div className="info-row">
               <span className="info-value">No physics parameters defined</span>
@@ -200,14 +209,19 @@ const UniverseInfoModal = ({ universe, onClose, isGlobalModal = true }) => {
         <div className="universe-info-section">
           <h3>Harmony Parameters</h3>
           {displayUniverse.harmony_params ? (
-            Object.entries(displayUniverse.harmony_params).map(([key, value]) => (
-              <div className="info-row" key={key}>
-                <span className="info-label">
-                  {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:
-                </span>
-                <span className="info-value">{String(value)}</span>
-              </div>
-            ))
+            Object.entries(displayUniverse.harmony_params).map(
+              ([key, value]) => (
+                <div className="info-row" key={key}>
+                  <span className="info-label">
+                    {key
+                      .replace(/_/g, " ")
+                      .replace(/\b\w/g, (l) => l.toUpperCase())}
+                    :
+                  </span>
+                  <span className="info-value">{String(value)}</span>
+                </div>
+              )
+            )
           ) : (
             <div className="info-row">
               <span className="info-value">No harmony parameters defined</span>
@@ -216,7 +230,15 @@ const UniverseInfoModal = ({ universe, onClose, isGlobalModal = true }) => {
         </div>
 
         {/* Add modal footer with buttons */}
-        <div className="modal-footer" style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+        <div
+          className="modal-footer"
+          style={{
+            marginTop: "20px",
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: "10px",
+          }}
+        >
           <Button onClick={handleModalClose}>Close</Button>
           {canModifyUniverse && (
             <Button onClick={handleEdit} variant="primary">

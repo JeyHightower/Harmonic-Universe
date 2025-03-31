@@ -3,7 +3,7 @@ import { Routes, Route, BrowserRouter, Navigate } from "react-router-dom";
 import { Provider } from "react-redux";
 import store from "./store/store";
 import { useSelector } from "react-redux";
-import { Home, Login, Register, Modal, Navigation } from "./components";
+import { Home, Navigation } from "./components";
 import { ModalProvider } from "./contexts/ModalContext";
 import routes from "./routes";
 import "./styles/App.css";
@@ -57,24 +57,6 @@ const ProtectedRoute = ({ children }) => {
 // Create a separate component for the main app content
 const AppContent = () => {
   const { isAuthenticated } = useSelector((state) => state.auth);
-  const { isOpen, type } = useSelector((state) => state.modal);
-
-  const renderModalContent = () => {
-    switch (type) {
-      case "LOGIN":
-        return (
-          <Login onClose={() => store.dispatch({ type: "modal/closeModal" })} />
-        );
-      case "REGISTER":
-        return (
-          <Register
-            onClose={() => store.dispatch({ type: "modal/closeModal" })}
-          />
-        );
-      default:
-        return null;
-    }
-  };
 
   try {
     return (
@@ -101,15 +83,6 @@ const AppContent = () => {
         <footer className="App-footer">
           <p>&copy; {new Date().getFullYear()} Harmonic Universe</p>
         </footer>
-        {isOpen && (
-          <Modal
-            isOpen={isOpen}
-            onClose={() => store.dispatch({ type: "modal/closeModal" })}
-            type={type}
-          >
-            {renderModalContent()}
-          </Modal>
-        )}
       </div>
     );
   } catch (error) {

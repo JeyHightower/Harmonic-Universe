@@ -1,6 +1,14 @@
 import PropTypes from "prop-types";
-import React, { createContext, useContext, useState, useEffect } from "react";
-import ModalSystem from "../components/modals";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  Suspense,
+} from "react";
+import { ModalComponents } from "../components";
+import ModalSystem from "../components/modals/ModalSystem";
+import { MODAL_TYPES } from "../constants/modalTypes";
 
 // Create the context
 const ModalContext = createContext();
@@ -27,6 +35,19 @@ export const useModal = () => {
 const ModalRenderer = ({ modalProps, onClose }) => {
   if (!modalProps) return null;
 
+  // Get the appropriate modal component
+  let ModalComponent = null;
+  switch (modalProps.type) {
+    case MODAL_TYPES.LOGIN:
+      ModalComponent = ModalComponents.LoginModal;
+      break;
+    case MODAL_TYPES.REGISTER:
+      ModalComponent = ModalComponents.RegisterModal;
+      break;
+    default:
+      ModalComponent = ModalSystem;
+  }
+
   // Map the modal type to the expected type
   const mappedProps = {
     ...modalProps,
@@ -35,7 +56,11 @@ const ModalRenderer = ({ modalProps, onClose }) => {
     onClose,
   };
 
-  return <ModalSystem {...mappedProps} />;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ModalComponent {...mappedProps} />
+    </Suspense>
+  );
 };
 
 // Provider component

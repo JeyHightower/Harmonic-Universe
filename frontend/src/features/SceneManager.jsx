@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { useModal } from '../../../contexts/ModalContext';
-import { api } from '../../../utils/api';
-import { API_CONFIG } from '../../../utils/config';
-import { MODAL_TYPES } from '../../../utils/modalRegistry';
-import Button from '../../common/Button';
-import Icon from '../../common/Icon';
-import Spinner from '../../common/Spinner';
-import PhysicsObjectsManager from '../physicsObjects/PhysicsObjectsManager';
-import PhysicsParametersManager from '../physicsParameters/PhysicsParametersManager';
-import './Scenes.css';
+import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { useModal } from "../../contexts/ModalContext";
+import { api } from "../../../utils/api";
+import { API_CONFIG } from "../../../utils/config";
+import { MODAL_TYPES } from "../../constants/modalTypes";
+import Button from "../../common/Button";
+import Icon from "../../common/Icon";
+import Spinner from "../../common/Spinner";
+import PhysicsObjectsManager from "../physicsObjects/PhysicsObjectsManager";
+import PhysicsParametersManager from "../physicsParameters/PhysicsParametersManager";
+import "./Scenes.css";
 
 const SceneManager = () => {
   const { id: universeId } = useParams();
@@ -18,7 +18,7 @@ const SceneManager = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeSceneId, setActiveSceneId] = useState(null);
-  const [activeTab, setActiveTab] = useState('objects');
+  const [activeTab, setActiveTab] = useState("objects");
 
   // Fetch scenes when component mounts or universeId changes
   useEffect(() => {
@@ -41,15 +41,15 @@ const SceneManager = () => {
 
       setError(null);
     } catch (err) {
-      console.error('Failed to fetch scenes:', err);
-      setError('Failed to load scenes. Please try again later.');
+      console.error("Failed to fetch scenes:", err);
+      setError("Failed to load scenes. Please try again later.");
     } finally {
       setLoading(false);
     }
   };
 
   // Handle tab change (scene selection)
-  const handleTabChange = sceneId => {
+  const handleTabChange = (sceneId) => {
     setActiveSceneId(sceneId);
   };
 
@@ -57,7 +57,7 @@ const SceneManager = () => {
   const handleAddScene = () => {
     openModalByType(MODAL_TYPES.SCENE_CREATE, {
       universeId,
-      onSuccess: data => {
+      onSuccess: (data) => {
         // Add the new scene to the list
         setScenes([...scenes, data]);
         setActiveSceneId(data.id);
@@ -66,7 +66,7 @@ const SceneManager = () => {
   };
 
   // Open modal for viewing a scene
-  const handleViewScene = scene => {
+  const handleViewScene = (scene) => {
     openModalByType(MODAL_TYPES.SCENE_EDIT, {
       universeId,
       sceneId: scene.id,
@@ -76,31 +76,33 @@ const SceneManager = () => {
   };
 
   // Open modal for editing a scene
-  const handleEditScene = scene => {
+  const handleEditScene = (scene) => {
     openModalByType(MODAL_TYPES.SCENE_EDIT, {
       universeId,
       sceneId: scene.id,
       initialData: scene,
-      onSuccess: data => {
+      onSuccess: (data) => {
         // Update the scene in the list
-        setScenes(scenes.map(s => (s.id === data.id ? { ...s, ...data } : s)));
+        setScenes(
+          scenes.map((s) => (s.id === data.id ? { ...s, ...data } : s))
+        );
       },
     });
   };
 
   // Open modal for deleting a scene
-  const handleDeleteScene = scene => {
+  const handleDeleteScene = (scene) => {
     openModalByType(MODAL_TYPES.CONFIRM_DELETE, {
-      entityType: 'scene',
+      entityType: "scene",
       entityId: scene.id,
       entityName: scene.name,
       onConfirm: () => {
         // Remove the deleted scene from the list
-        setScenes(scenes.filter(s => s.id !== scene.id));
+        setScenes(scenes.filter((s) => s.id !== scene.id));
 
         // If the active scene was deleted, set the first available scene as active
         if (activeSceneId === scene.id) {
-          const remainingScenes = scenes.filter(s => s.id !== scene.id);
+          const remainingScenes = scenes.filter((s) => s.id !== scene.id);
           if (remainingScenes.length > 0) {
             setActiveSceneId(remainingScenes[0].id);
           } else {
@@ -151,11 +153,11 @@ const SceneManager = () => {
     return (
       <div className="scenes-tabs">
         <div className="tab-headers">
-          {scenes.map(scene => (
+          {scenes.map((scene) => (
             <div
               key={scene.id}
               className={`tab-header ${
-                activeSceneId === scene.id ? 'active' : ''
+                activeSceneId === scene.id ? "active" : ""
               }`}
               onClick={() => handleTabChange(scene.id)}
             >
@@ -163,7 +165,7 @@ const SceneManager = () => {
               <div className="tab-header-actions">
                 <button
                   className="action-button"
-                  onClick={e => {
+                  onClick={(e) => {
                     e.stopPropagation();
                     handleViewScene(scene);
                   }}
@@ -172,7 +174,7 @@ const SceneManager = () => {
                 </button>
                 <button
                   className="action-button"
-                  onClick={e => {
+                  onClick={(e) => {
                     e.stopPropagation();
                     handleEditScene(scene);
                   }}
@@ -181,7 +183,7 @@ const SceneManager = () => {
                 </button>
                 <button
                   className="action-button danger"
-                  onClick={e => {
+                  onClick={(e) => {
                     e.stopPropagation();
                     handleDeleteScene(scene);
                   }}
@@ -193,11 +195,11 @@ const SceneManager = () => {
           ))}
         </div>
 
-        {scenes.map(scene => (
+        {scenes.map((scene) => (
           <div
             key={scene.id}
             className={`tab-content ${
-              activeSceneId === scene.id ? 'active' : ''
+              activeSceneId === scene.id ? "active" : ""
             }`}
           >
             <div className="scene-details">
@@ -211,14 +213,14 @@ const SceneManager = () => {
             <div className="scene-tabs">
               <div className="scene-tabs-header">
                 <button
-                  className={activeTab === 'objects' ? 'active' : ''}
-                  onClick={() => setActiveTab('objects')}
+                  className={activeTab === "objects" ? "active" : ""}
+                  onClick={() => setActiveTab("objects")}
                 >
                   <Icon name="objects" size="small" /> Physics Objects
                 </button>
                 <button
-                  className={activeTab === 'parameters' ? 'active' : ''}
-                  onClick={() => setActiveTab('parameters')}
+                  className={activeTab === "parameters" ? "active" : ""}
+                  onClick={() => setActiveTab("parameters")}
                 >
                   <Icon name="physics" size="small" /> Physics Parameters
                 </button>
@@ -228,7 +230,7 @@ const SceneManager = () => {
                 {/* Physics Objects Tab */}
                 <div
                   className={`tab-panel ${
-                    activeTab === 'objects' ? 'active' : ''
+                    activeTab === "objects" ? "active" : ""
                   }`}
                 >
                   <PhysicsObjectsManager sceneId={scene.id} />
@@ -237,7 +239,7 @@ const SceneManager = () => {
                 {/* Physics Parameters Tab */}
                 <div
                   className={`tab-panel ${
-                    activeTab === 'parameters' ? 'active' : ''
+                    activeTab === "parameters" ? "active" : ""
                   }`}
                 >
                   <PhysicsParametersManager sceneId={scene.id} />

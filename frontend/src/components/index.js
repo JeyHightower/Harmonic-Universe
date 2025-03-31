@@ -19,6 +19,14 @@ export { default as SafeIcon } from "./common/SafeIcon";
 // Essential Pages
 export { default as Home } from "../pages/Home";
 
+// Modal Components
+export const ModalComponents = {
+  LoginModal: React.lazy(() => import("./auth/LoginModal")),
+  RegisterModal: React.lazy(() => import("./auth/RegisterModal")),
+  ExportModal: React.lazy(() => import("./common/ExportModal")),
+  ImportModal: React.lazy(() => import("./common/ImportModal")),
+};
+
 // Lazy loaded components - these will be imported dynamically where needed
 export const MusicComponents = {
   MusicPlayer: () => import("./music/MusicPlayer"),
@@ -38,13 +46,6 @@ export const PhysicsComponents = {
   PhysicsObjectsList: () => import("./physics/PhysicsObjectsList"),
   PhysicsSettingsModal: () => import("./physics/PhysicsSettingsModal"),
   PhysicsParametersManager: () => import("./physics/PhysicsParametersManager"),
-};
-
-export const ModalComponents = {
-  ExportModal: () => import("./common/ExportModal"),
-  ImportModal: () => import("./common/ImportModal"),
-  LoginModal: () => import("./auth/LoginModal"),
-  RegisterModal: () => import("./auth/RegisterModal"),
 };
 
 export const DebugComponents = {

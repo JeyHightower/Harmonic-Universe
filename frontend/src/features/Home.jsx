@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import useModal from "../hooks/useModal.js";
 import { demoLogin } from "../store/thunks/authThunks";
 import "../styles/Home.css";
-import { MODAL_TYPES } from "../utils/modalRegistry.js";
+import { MODAL_TYPES } from "../constants/modalTypes";
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -27,7 +27,7 @@ const Home = () => {
   };
 
   const handleSignup = () => {
-    openModal(MODAL_TYPES.SIGNUP);
+    openModal(MODAL_TYPES.REGISTER);
   };
 
   return (

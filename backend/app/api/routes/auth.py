@@ -6,6 +6,7 @@ from ..models.database import db
 from datetime import datetime, timedelta
 import jwt
 import os
+import re
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -16,44 +17,76 @@ def register():
         data = request.get_json()
         
         # Validate required fields
-        required_fields = ['username', 'email', 'password']
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({'message': f'{field} is required'}), 400
+        if not all(key in data for key in ["username", "email", "password"]):
+            return jsonify({"message": "Missing required fields"}), 400
+            
+        username = data.get("username", "").strip()
+        email = data.get("email", "").strip().lower()
+        password = data.get("password", "")
         
-        # Check if username or email already exists
-        if User.query.filter_by(username=data['username']).first():
-            return jsonify({'message': 'Username already exists'}), 409
-        if User.query.filter_by(email=data['email']).first():
-            return jsonify({'message': 'Email already exists'}), 409
-        
+        # Username validation
+        if not username:
+            return jsonify({"message": "Username is required"}), 400
+        if not (3 <= len(username) <= 30):
+            return jsonify({"message": "Username must be between 3 and 30 characters"}), 400
+        if not username[0].isalpha():
+            return jsonify({"message": "Username must start with a letter"}), 400
+        if not all(c.isalnum() or c in "_-" for c in username):
+            return jsonify({"message": "Username can only contain letters, numbers, underscores, and hyphens"}), 400
+            
+        # Email validation
+        if not email:
+            return jsonify({"message": "Email is required"}), 400
+        if len(email) > 254:
+            return jsonify({"message": "Email address is too long"}), 400
+        if not re.match(r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$", email):
+            return jsonify({"message": "Please enter a valid email address"}), 400
+            
+        # Password validation
+        if not password:
+            return jsonify({"message": "Password is required"}), 400
+        if len(password) < 8:
+            return jsonify({"message": "Password must be at least 8 characters long"}), 400
+        if len(password) > 128:
+            return jsonify({"message": "Password is too long"}), 400
+        if not re.search(r"[A-Z]", password):
+            return jsonify({"message": "Password must contain at least one uppercase letter"}), 400
+        if not re.search(r"[a-z]", password):
+            return jsonify({"message": "Password must contain at least one lowercase letter"}), 400
+        if not re.search(r"\d", password):
+            return jsonify({"message": "Password must contain at least one number"}), 400
+        if not re.search(r"[@$!%*?&]", password):
+            return jsonify({"message": "Password must contain at least one special character (@$!%*?&)"}), 400
+            
+        # Check if user already exists
+        if User.query.filter_by(email=email).first():
+            return jsonify({"message": "Email already exists"}), 409
+        if User.query.filter_by(username=username).first():
+            return jsonify({"message": "Username already exists"}), 409
+            
         # Create new user
-        user = User(
-            username=data['username'],
-            email=data['email']
+        new_user = User(
+            username=username,
+            email=email,
         )
-        user.set_password(data['password'])
+        new_user.set_password(password)
         
-        # Add user to session and commit
-        db.session.add(user)
+        db.session.add(new_user)
         db.session.commit()
         
         # Generate token
-        access_token = create_access_token(identity=user.id)
+        token = create_access_token(identity=new_user.id)
         
         return jsonify({
-            'message': 'User registered successfully',
-            'user': user.to_dict(),
-            'token': access_token
+            "message": "User registered successfully",
+            "token": token,
+            "user": new_user.to_dict(),
         }), 201
         
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f'Registration error: {str(e)}')
-        return jsonify({
-            'message': 'An error occurred during registration',
-            'error': str(e)
-        }), 500
+        current_app.logger.error(f"Registration error: {str(e)}")
+        return jsonify({"message": "An error occurred during registration"}), 500
 
 @auth_bp.route('/login', methods=['POST'])
 def login():

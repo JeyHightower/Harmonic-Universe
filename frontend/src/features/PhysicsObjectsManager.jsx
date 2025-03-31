@@ -1,18 +1,18 @@
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useModal } from '../../../contexts/ModalContext';
-import { fetchPhysicsObjects } from '../../../store/thunks/physicsObjectsThunks';
-import { MODAL_TYPES } from '../../../utils/modalRegistry';
-import Button from '../../common/Button';
-import Icon from '../../common/Icon';
-import './PhysicsObjects.css';
-import PhysicsObjectsList from './PhysicsObjectsList';
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useModal } from "../../contexts/ModalContext";
+import { fetchPhysicsObjects } from "../../../store/thunks/physicsObjectsThunks";
+import { MODAL_TYPES } from "../../constants/modalTypes";
+import Button from "../../common/Button";
+import Icon from "../../common/Icon";
+import "./PhysicsObjects.css";
+import PhysicsObjectsList from "./PhysicsObjectsList";
 
 const PhysicsObjectsManager = ({ sceneId }) => {
   const dispatch = useDispatch();
   const { openModalByType } = useModal();
   const { physicsObjects, loading, error } = useSelector(
-    state => state.physicsObjects
+    (state) => state.physicsObjects
   );
 
   useEffect(() => {
@@ -30,8 +30,8 @@ const PhysicsObjectsManager = ({ sceneId }) => {
     });
   };
 
-  const handleEditObject = objectId => {
-    const objectToEdit = physicsObjects.find(obj => obj.id === objectId);
+  const handleEditObject = (objectId) => {
+    const objectToEdit = physicsObjects.find((obj) => obj.id === objectId);
 
     openModalByType(MODAL_TYPES.PHYSICS_OBJECT, {
       sceneId,
@@ -43,8 +43,8 @@ const PhysicsObjectsManager = ({ sceneId }) => {
     });
   };
 
-  const handleViewObject = objectId => {
-    const objectToView = physicsObjects.find(obj => obj.id === objectId);
+  const handleViewObject = (objectId) => {
+    const objectToView = physicsObjects.find((obj) => obj.id === objectId);
 
     openModalByType(MODAL_TYPES.PHYSICS_OBJECT, {
       sceneId,
@@ -54,8 +54,8 @@ const PhysicsObjectsManager = ({ sceneId }) => {
     });
   };
 
-  const handleDeleteObject = objectId => {
-    const objectToDelete = physicsObjects.find(obj => obj.id === objectId);
+  const handleDeleteObject = (objectId) => {
+    const objectToDelete = physicsObjects.find((obj) => obj.id === objectId);
 
     if (!objectToDelete) {
       console.error(`Physics object with ID ${objectId} not found`);
@@ -63,7 +63,7 @@ const PhysicsObjectsManager = ({ sceneId }) => {
     }
 
     openModalByType(MODAL_TYPES.CONFIRM_DELETE, {
-      entityType: 'physics object',
+      entityType: "physics object",
       entityId: objectId,
       entityName: objectToDelete.name,
       onConfirm: () => {
