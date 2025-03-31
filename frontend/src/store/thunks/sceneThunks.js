@@ -48,7 +48,7 @@ export const createScene = createAsyncThunk(
 );
 
 // Update an existing scene
-export const updateScene = createAsyncThunk(
+export const updateSceneById = createAsyncThunk(
   'scene/updateScene',
   async ({ id, ...updateData }, { dispatch, rejectWithValue }) => {
     try {
@@ -63,7 +63,7 @@ export const updateScene = createAsyncThunk(
 );
 
 // Delete a scene
-export const deleteScene = createAsyncThunk(
+export const deleteSceneById = createAsyncThunk(
   'scene/deleteScene',
   async (sceneId, { dispatch, rejectWithValue }) => {
     try {

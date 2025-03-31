@@ -21,7 +21,10 @@ import {
   Delete as DeleteIcon,
   ArrowBack as ArrowBackIcon,
 } from "@mui/icons-material";
-import { fetchSceneById, deleteScene } from "../../store/thunks/sceneThunks";
+import {
+  fetchSceneById,
+  deleteSceneById,
+} from "../../store/thunks/sceneThunks";
 import { formatDate } from "../../utils/dateUtils";
 import "../../styles/SceneDetail.css";
 
@@ -49,7 +52,7 @@ const SceneDetail = () => {
 
   const handleDelete = async () => {
     try {
-      await dispatch(deleteScene(sceneId));
+      await dispatch(deleteSceneById(sceneId));
       navigate(`/universes/${scene?.universe_id}/scenes`);
     } catch (error) {
       console.error("Error deleting scene:", error);

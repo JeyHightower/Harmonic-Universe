@@ -1,4 +1,5 @@
-import { api } from '../../utils/api';
+import { createAsyncThunk } from '@reduxjs/toolkit';
+import apiClient from '../../services/api';
 import {
   setCharacters,
   setCurrentCharacter,
@@ -13,7 +14,7 @@ import {
 export const fetchCharacters = (sceneId) => async (dispatch) => {
   try {
     dispatch(setLoading(true));
-    const response = await api.get(`/characters/scene/${sceneId}`);
+    const response = await apiClient.get(`/characters/scene/${sceneId}`);
     dispatch(setCharacters(response.data.characters));
   } catch (error) {
     dispatch(setError(error.response?.data?.message || 'Error fetching characters'));
@@ -26,7 +27,7 @@ export const fetchCharacters = (sceneId) => async (dispatch) => {
 export const fetchCharacter = (characterId) => async (dispatch) => {
   try {
     dispatch(setLoading(true));
-    const response = await api.get(`/characters/${characterId}`);
+    const response = await apiClient.get(`/characters/${characterId}`);
     dispatch(setCurrentCharacter(response.data.character));
   } catch (error) {
     dispatch(setError(error.response?.data?.message || 'Error fetching character'));
@@ -39,7 +40,7 @@ export const fetchCharacter = (characterId) => async (dispatch) => {
 export const createCharacter = (characterData) => async (dispatch) => {
   try {
     dispatch(setLoading(true));
-    const response = await api.post('/characters', characterData);
+    const response = await apiClient.post('/characters', characterData);
     dispatch(addCharacter(response.data.character));
     return response.data.character;
   } catch (error) {
@@ -54,7 +55,7 @@ export const createCharacter = (characterData) => async (dispatch) => {
 export const updateCharacterById = (characterId, characterData) => async (dispatch) => {
   try {
     dispatch(setLoading(true));
-    const response = await api.put(`/characters/${characterId}`, characterData);
+    const response = await apiClient.put(`/characters/${characterId}`, characterData);
     dispatch(updateCharacter(response.data.character));
     return response.data.character;
   } catch (error) {
@@ -69,7 +70,7 @@ export const updateCharacterById = (characterId, characterData) => async (dispat
 export const deleteCharacterById = (characterId) => async (dispatch) => {
   try {
     dispatch(setLoading(true));
-    await api.delete(`/characters/${characterId}`);
+    await apiClient.delete(`/characters/${characterId}`);
     dispatch(deleteCharacter(characterId));
   } catch (error) {
     dispatch(setError(error.response?.data?.message || 'Error deleting character'));

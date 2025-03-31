@@ -12,11 +12,11 @@ import {
 } from "@mui/material";
 import {
   createCharacter,
-  updateCharacter,
+  updateCharacterById,
   deleteCharacterById,
-  closeModal,
   fetchCharacter,
 } from "../../store/thunks/characterThunks";
+import { closeModal } from "../../store/slices/characterSlice";
 import "./Characters.css";
 
 const CharacterForm = ({ open, type, sceneId, characterId }) => {
@@ -63,7 +63,7 @@ const CharacterForm = ({ open, type, sceneId, characterId }) => {
           })
         );
       } else if (type === "edit") {
-        await dispatch(updateCharacter({ id: characterId, ...formData }));
+        await dispatch(updateCharacterById({ id: characterId, ...formData }));
       } else if (type === "delete") {
         await dispatch(deleteCharacterById(characterId));
       }

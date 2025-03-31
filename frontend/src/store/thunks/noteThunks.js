@@ -10,13 +10,13 @@ import {
   openModal,
   closeModal,
 } from "../slices/noteSlice";
-import { api } from "../../utils/api";
+import apiClient from '../../services/api';
 
 // Fetch all notes for a universe
 export const fetchUniverseNotes = (universeId) => async (dispatch) => {
   try {
     dispatch(setLoading(true));
-    const response = await api.get(`/notes/universe/${universeId}`);
+    const response = await apiClient.get(`/notes/universe/${universeId}`);
     dispatch(setNotes(response.data));
   } catch (error) {
     dispatch(setError(error.response?.data?.message || "Failed to fetch notes"));
@@ -29,7 +29,7 @@ export const fetchUniverseNotes = (universeId) => async (dispatch) => {
 export const fetchSceneNotes = (sceneId) => async (dispatch) => {
   try {
     dispatch(setLoading(true));
-    const response = await api.get(`/notes/scene/${sceneId}`);
+    const response = await apiClient.get(`/notes/scene/${sceneId}`);
     dispatch(setNotes(response.data));
   } catch (error) {
     dispatch(setError(error.response?.data?.message || "Failed to fetch notes"));
@@ -42,7 +42,7 @@ export const fetchSceneNotes = (sceneId) => async (dispatch) => {
 export const fetchCharacterNotes = (characterId) => async (dispatch) => {
   try {
     dispatch(setLoading(true));
-    const response = await api.get(`/notes/character/${characterId}`);
+    const response = await apiClient.get(`/notes/character/${characterId}`);
     dispatch(setNotes(response.data));
   } catch (error) {
     dispatch(setError(error.response?.data?.message || "Failed to fetch notes"));
@@ -55,7 +55,7 @@ export const fetchCharacterNotes = (characterId) => async (dispatch) => {
 export const fetchNote = (noteId) => async (dispatch) => {
   try {
     dispatch(setLoading(true));
-    const response = await api.get(`/notes/${noteId}`);
+    const response = await apiClient.get(`/notes/${noteId}`);
     dispatch(setCurrentNote(response.data));
   } catch (error) {
     dispatch(setError(error.response?.data?.message || "Failed to fetch note"));
@@ -68,7 +68,7 @@ export const fetchNote = (noteId) => async (dispatch) => {
 export const createNote = (noteData) => async (dispatch) => {
   try {
     dispatch(setLoading(true));
-    const response = await api.post(API_MODAL_ROUTES.CREATE_NOTE, noteData);
+    const response = await apiClient.post(API_MODAL_ROUTES.CREATE_NOTE, noteData);
     dispatch(addNote(response.data));
     dispatch(closeModal());
     return response.data;
@@ -84,7 +84,7 @@ export const createNote = (noteData) => async (dispatch) => {
 export const updateNoteById = (noteId, noteData) => async (dispatch) => {
   try {
     dispatch(setLoading(true));
-    const response = await api.put(API_MODAL_ROUTES.EDIT_NOTE.replace(":id", noteId), noteData);
+    const response = await apiClient.put(API_MODAL_ROUTES.EDIT_NOTE.replace(":id", noteId), noteData);
     dispatch(updateNote(response.data));
     dispatch(closeModal());
     return response.data;
@@ -100,7 +100,7 @@ export const updateNoteById = (noteId, noteData) => async (dispatch) => {
 export const deleteNoteById = (noteId) => async (dispatch) => {
   try {
     dispatch(setLoading(true));
-    await api.delete(API_MODAL_ROUTES.DELETE_NOTE.replace(":id", noteId));
+    await apiClient.delete(API_MODAL_ROUTES.DELETE_NOTE.replace(":id", noteId));
     dispatch(deleteNote(noteId));
   } catch (error) {
     dispatch(setError(error.response?.data?.message || "Failed to delete note"));
@@ -113,7 +113,7 @@ export const deleteNoteById = (noteId) => async (dispatch) => {
 export const archiveNote = (noteId) => async (dispatch) => {
   try {
     dispatch(setLoading(true));
-    const response = await api.post(API_MODAL_ROUTES.ARCHIVE_NOTE.replace(":id", noteId));
+    const response = await apiClient.post(API_MODAL_ROUTES.ARCHIVE_NOTE.replace(":id", noteId));
     dispatch(updateNote(response.data));
     return response.data;
   } catch (error) {
@@ -128,7 +128,7 @@ export const archiveNote = (noteId) => async (dispatch) => {
 export const unarchiveNote = (noteId) => async (dispatch) => {
   try {
     dispatch(setLoading(true));
-    const response = await api.post(API_MODAL_ROUTES.UNARCHIVE_NOTE.replace(":id", noteId));
+    const response = await apiClient.post(API_MODAL_ROUTES.UNARCHIVE_NOTE.replace(":id", noteId));
     dispatch(updateNote(response.data));
     return response.data;
   } catch (error) {

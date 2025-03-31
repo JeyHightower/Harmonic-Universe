@@ -8,8 +8,8 @@ import {
   fetchUniverseNotes,
   fetchSceneNotes,
   fetchCharacterNotes,
-  openModal,
 } from "../../store/thunks/noteThunks";
+import { openModal } from "../../store/slices/noteSlice";
 import "./Notes.css";
 
 const NoteList = () => {

@@ -18,7 +18,7 @@ import {
   Switch,
 } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
-import { fetchScenes, deleteScene } from "../../store/thunks/sceneThunks";
+import { fetchScenes, deleteSceneById } from "../../store/thunks/sceneThunks";
 import SceneCard from "./SceneCard";
 import "../../styles/SceneList.css";
 
@@ -54,7 +54,7 @@ const SceneList = () => {
 
   const handleDeleteConfirm = async () => {
     if (sceneToDelete) {
-      await dispatch(deleteScene(sceneToDelete.id));
+      await dispatch(deleteSceneById(sceneToDelete.id));
       setSceneToDelete(null);
       dispatch(fetchScenes(universeId));
     }
