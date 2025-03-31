@@ -22,6 +22,7 @@
   color: inherit;
   background-color: #ffffff;
   height: 100%;
+  cursor: pointer;
 }
 
 .scene-card-image {
@@ -74,8 +75,8 @@
 
 .scene-card-actions {
   display: flex;
-  justify-content: flex-end;
-  padding: 8px 12px;
+  justify-content: space-between;
+  padding: 12px;
   background-color: #f8f9fa;
   border-top: 1px solid #e9ecef;
 }
@@ -84,12 +85,24 @@
   border: none;
   background-color: transparent;
   cursor: pointer;
-  padding: 6px 12px;
+  padding: 8px 16px;
   border-radius: 4px;
-  margin-left: 6px;
   transition: all 0.2s;
   font-size: 0.9rem;
   font-weight: 500;
+  flex: 1;
+  margin: 0 4px;
+  text-align: center;
+}
+
+.scene-card-actions .btn-view {
+  color: #34a853;
+  border: 1px solid #34a853;
+}
+
+.scene-card-actions .btn-view:hover {
+  background-color: #34a853;
+  color: white;
 }
 
 .scene-card-actions .btn-edit {
@@ -112,10 +125,27 @@
   color: white;
 }
 
+.scene-type-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  z-index: 1;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
+  .scene-card-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
   .scene-card-actions button {
-    padding: 5px 8px;
+    margin: 4px 0;
   }
 }
 

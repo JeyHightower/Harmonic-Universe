@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -32,14 +32,34 @@ import SceneForm from "./SceneForm";
 const SceneDetail = ({ isEdit = false }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { sceneId } = useParams();
+  const { sceneId, universeId } = useParams();
 
-  // Fix: Add a fallback empty object for the state.scene to prevent destructuring errors
-  const sceneState = useSelector((state) => state.scene || {});
-  const { currentScene: scene, loading = false, error = null } = sceneState;
+  // Memoize selectors to prevent unnecessary rerenders
+  const sceneState = useSelector((state) => state.scenes || {});
 
+  // Use useMemo to memoize derived state from the selector
+  const {
+    currentScene: scene,
+    loading,
+    error,
+  } = useMemo(
+    () => ({
+      currentScene: sceneState.currentScene || null,
+      loading: sceneState.loading || false,
+      error: sceneState.error || null,
+    }),
+    [sceneState]
+  );
+
+  // Memoize auth state selector
   const authState = useSelector((state) => state.auth || {});
-  const { user, isAuthenticated } = authState;
+  const { user } = useMemo(
+    () => ({
+      user: authState.user || null,
+      isAuthenticated: authState.isAuthenticated || false,
+    }),
+    [authState]
+  );
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
@@ -78,13 +98,16 @@ const SceneDetail = ({ isEdit = false }) => {
         sceneId
       );
 
-      // Navigate to the dedicated edit page
-      if (scene?.universe_id) {
-        navigate(`/universes/${scene.universe_id}/scenes/${sceneId}/edit`);
+      // Make sure we have the universeId
+      const targetUniverseId = universeId || scene?.universe_id;
+
+      if (targetUniverseId) {
+        // Use the correct route format with universeId included
+        navigate(`/universes/${targetUniverseId}/scenes/${sceneId}/edit`);
       } else {
-        console.warn(
-          "No universe_id found for scene, cannot navigate to edit page"
-        );
+        console.warn("Missing universeId, cannot navigate to edit scene page");
+        // Fallback - try to navigate using just the sceneId
+        navigate(`/scenes/${sceneId}/edit`);
       }
     } catch (error) {
       console.error("Error navigating to edit page:", error);
@@ -96,12 +119,15 @@ const SceneDetail = ({ isEdit = false }) => {
       console.log("Deleting scene with ID:", sceneId);
       await dispatch(deleteScene(sceneId));
 
-      if (scene?.universe_id) {
-        navigate(`/universes/${scene.universe_id}/scenes`);
+      // Determine where to navigate after deletion
+      const targetUniverseId = universeId || scene?.universe_id;
+
+      if (targetUniverseId) {
+        navigate(`/universes/${targetUniverseId}`);
       } else {
-        // Fallback to universes list if we don't have a universe_id
-        console.warn("No universe_id found for scene, navigating to universes");
-        navigate("/universes");
+        // Fallback to dashboard if we don't have a universe_id
+        console.warn("No universe_id found for scene, navigating to dashboard");
+        navigate("/dashboard");
       }
     } catch (error) {
       console.error("Error deleting scene:", error);
@@ -112,17 +138,20 @@ const SceneDetail = ({ isEdit = false }) => {
 
   const handleBack = () => {
     try {
-      if (scene?.universe_id) {
-        navigate(`/universes/${scene.universe_id}/scenes`);
+      // Determine where to navigate back to
+      const targetUniverseId = universeId || scene?.universe_id;
+
+      if (targetUniverseId) {
+        navigate(`/universes/${targetUniverseId}`);
       } else {
         // Fallback to universes list if we don't have a universe_id
-        console.warn("No universe_id found for scene, navigating to universes");
-        navigate("/universes");
+        console.warn("No universe_id found for scene, navigating to dashboard");
+        navigate("/dashboard");
       }
     } catch (error) {
       console.error("Error navigating back:", error);
       // Ultimate fallback
-      navigate("/");
+      navigate("/dashboard");
     }
   };
 

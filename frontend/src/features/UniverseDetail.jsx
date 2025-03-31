@@ -29,6 +29,10 @@ const UniverseDetail = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isCreateSceneModalOpen, setIsCreateSceneModalOpen] = useState(false);
 
+  // Add state for scene editing
+  const [isEditSceneModalOpen, setIsEditSceneModalOpen] = useState(false);
+  const [sceneToEdit, setSceneToEdit] = useState(null);
+
   // Fetch universe data when component mounts or id changes
   useEffect(() => {
     if (id) {
@@ -79,8 +83,22 @@ const UniverseDetail = () => {
   };
 
   const handleEditScene = (scene) => {
-    // Navigate to the scene edit page
-    navigate(`/scenes/${scene.id}/edit`);
+    // Open modal for editing instead of navigating
+    console.log(`Opening edit modal for scene ${scene.id} in universe ${id}`);
+    setSceneToEdit(scene);
+    setIsEditSceneModalOpen(true);
+  };
+
+  const handleEditSceneSuccess = () => {
+    setIsEditSceneModalOpen(false);
+    setSceneToEdit(null);
+    // Refresh scenes data
+    dispatch(fetchScenesForUniverse(id));
+  };
+
+  const handleEditSceneClose = () => {
+    setIsEditSceneModalOpen(false);
+    setSceneToEdit(null);
   };
 
   const handleDeleteScene = (scene) => {
@@ -245,6 +263,17 @@ const UniverseDetail = () => {
           isOpen={isCreateSceneModalOpen}
           onClose={() => setIsCreateSceneModalOpen(false)}
           onSuccess={handleCreateSceneSuccess}
+          universeId={id}
+        />
+      )}
+
+      {/* Add Scene Edit Modal */}
+      {isEditSceneModalOpen && sceneToEdit && (
+        <SceneFormModal
+          isOpen={isEditSceneModalOpen}
+          onClose={handleEditSceneClose}
+          onSuccess={handleEditSceneSuccess}
+          initialData={sceneToEdit}
           universeId={id}
         />
       )}

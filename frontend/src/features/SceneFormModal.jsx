@@ -48,7 +48,7 @@ const SceneFormModal = ({
   useEffect(() => {
     if (initialData) {
       setFormData({
-        title: initialData.title || "",
+        title: initialData.title || initialData.name || "",
         description: initialData.description || "",
         universe_id: initialData.universe_id || universeId,
         scene_type: initialData.scene_type || "standard",
@@ -110,6 +110,13 @@ const SceneFormModal = ({
     console.log("SceneFormModal - Submitting form...", formData);
 
     try {
+      // Create a copy of the form data with the correct field names for the API
+      const apiData = {
+        ...formData,
+        // The backend expects 'name' not 'title'
+        name: formData.title,
+      };
+
       let result;
       if (isEditing) {
         // Update existing scene
@@ -117,13 +124,13 @@ const SceneFormModal = ({
         result = await dispatch(
           updateScene({
             id: initialData.id,
-            ...formData,
+            data: apiData,
           })
         ).unwrap();
       } else {
         // Create new scene
         console.log("SceneFormModal - Creating new scene");
-        result = await dispatch(createScene(formData)).unwrap();
+        result = await dispatch(createScene(apiData)).unwrap();
       }
 
       console.log("SceneFormModal - API call successful:", result);
@@ -170,7 +177,11 @@ const SceneFormModal = ({
         onSuccess(sceneData);
       }
     } catch (err) {
-      console.error("SceneFormModal - Failed to save scene:", err);
+      console.error(
+        "SceneFormModal - Failed to save scene:",
+        err,
+        "and no communication with backend"
+      );
       // Set form-wide error message
       setErrors((prev) => ({
         ...prev,
@@ -273,6 +284,7 @@ SceneFormModal.propTypes = {
   initialData: PropTypes.shape({
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     title: PropTypes.string,
+    name: PropTypes.string,
     description: PropTypes.string,
     universe_id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     scene_type: PropTypes.string,
