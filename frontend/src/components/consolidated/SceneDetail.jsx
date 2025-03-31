@@ -23,37 +23,86 @@ import {
 } from "@mui/icons-material";
 import {
   fetchSceneById,
-  deleteSceneById,
-} from "../../store/thunks/sceneThunks";
+  deleteScene,
+} from "../../store/thunks/consolidated/scenesThunks";
 import { formatDate } from "../../utils/dateUtils";
 import "../../styles/SceneDetail.css";
+import SceneForm from "./SceneForm";
 
-const SceneDetail = () => {
+const SceneDetail = ({ isEdit = false }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { sceneId } = useParams();
-  const {
-    currentScene: scene,
-    loading,
-    error,
-  } = useSelector((state) => state.scene);
-  const { user } = useSelector((state) => state.auth);
+
+  // Fix: Add a fallback empty object for the state.scene to prevent destructuring errors
+  const sceneState = useSelector((state) => state.scene || {});
+  const { currentScene: scene, loading = false, error = null } = sceneState;
+
+  const authState = useSelector((state) => state.auth || {});
+  const { user, isAuthenticated } = authState;
+
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+
+  // If isEdit is true, automatically show the edit form
+  useEffect(() => {
+    if (isEdit && scene) {
+      console.log("Opening edit form automatically from route prop");
+      setShowEditForm(true);
+    }
+  }, [isEdit, scene]);
 
   useEffect(() => {
     if (sceneId) {
-      dispatch(fetchSceneById(sceneId));
+      try {
+        console.log("Fetching scene with ID:", sceneId);
+        dispatch(fetchSceneById(sceneId)).catch((error) => {
+          console.error("Error fetching scene:", error);
+          if (error.response?.status === 401) {
+            // Token issue - this will be handled by the API interceptor
+            console.warn(
+              "Authentication issue detected, might redirect to login"
+            );
+          }
+        });
+      } catch (error) {
+        console.error("Error in scene fetch effect:", error);
+      }
     }
   }, [dispatch, sceneId]);
 
   const handleEdit = () => {
-    navigate(`/scenes/${sceneId}/edit`);
+    try {
+      console.log(
+        "SceneDetail: Navigating to edit page for scene ID:",
+        sceneId
+      );
+
+      // Navigate to the dedicated edit page
+      if (scene?.universe_id) {
+        navigate(`/universes/${scene.universe_id}/scenes/${sceneId}/edit`);
+      } else {
+        console.warn(
+          "No universe_id found for scene, cannot navigate to edit page"
+        );
+      }
+    } catch (error) {
+      console.error("Error navigating to edit page:", error);
+    }
   };
 
   const handleDelete = async () => {
     try {
-      await dispatch(deleteSceneById(sceneId));
-      navigate(`/universes/${scene?.universe_id}/scenes`);
+      console.log("Deleting scene with ID:", sceneId);
+      await dispatch(deleteScene(sceneId));
+
+      if (scene?.universe_id) {
+        navigate(`/universes/${scene.universe_id}/scenes`);
+      } else {
+        // Fallback to universes list if we don't have a universe_id
+        console.warn("No universe_id found for scene, navigating to universes");
+        navigate("/universes");
+      }
     } catch (error) {
       console.error("Error deleting scene:", error);
     } finally {
@@ -62,7 +111,19 @@ const SceneDetail = () => {
   };
 
   const handleBack = () => {
-    navigate(`/universes/${scene?.universe_id}/scenes`);
+    try {
+      if (scene?.universe_id) {
+        navigate(`/universes/${scene.universe_id}/scenes`);
+      } else {
+        // Fallback to universes list if we don't have a universe_id
+        console.warn("No universe_id found for scene, navigating to universes");
+        navigate("/universes");
+      }
+    } catch (error) {
+      console.error("Error navigating back:", error);
+      // Ultimate fallback
+      navigate("/");
+    }
   };
 
   if (loading) {
@@ -189,6 +250,40 @@ const SceneDetail = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {showEditForm && scene && (
+        <Dialog
+          open={showEditForm}
+          onClose={() => setShowEditForm(false)}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>Edit Scene</DialogTitle>
+          <DialogContent>
+            <SceneForm
+              open={showEditForm}
+              onClose={() => {
+                setShowEditForm(false);
+                // If we came from the edit route, navigate back to detail
+                if (isEdit) {
+                  navigate(`/universes/${scene.universe_id}/scenes/${sceneId}`);
+                }
+              }}
+              onSuccess={() => {
+                setShowEditForm(false);
+                // Refresh scene data
+                dispatch(fetchSceneById(sceneId));
+                // If we came from the edit route, navigate back to detail
+                if (isEdit) {
+                  navigate(`/universes/${scene.universe_id}/scenes/${sceneId}`);
+                }
+              }}
+              scene={scene}
+              universeId={scene.universe_id}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </Container>
   );
 };

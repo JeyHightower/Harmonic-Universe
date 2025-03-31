@@ -14,7 +14,7 @@ import { Button } from "../components/common";
 import Input from "../../common/Input";
 import Modal from "../../common/Modal";
 import Spinner from "../../common/Spinner";
-import PhysicsPanel from "./PhysicsPanel";
+import PhysicsPanel from "../components/physics/PhysicsPanel";
 import "./Universe.css";
 
 function UniverseEdit() {

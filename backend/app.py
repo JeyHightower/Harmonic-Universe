@@ -24,6 +24,9 @@ def create_app():
     # Load environment variables
     app.config.from_object('app.config.Config')
 
+    # Configure CORS
+    CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "http://localhost:3000", "http://localhost:5174", "http://localhost:5175", "http://127.0.0.1:5173", "http://127.0.0.1:3000"], "supports_credentials": True}})
+
     # Ensure instance directory exists
     instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
     if not os.path.exists(instance_path):
@@ -97,5 +100,6 @@ def server_error(error):
         'message': 'An unexpected error occurred'
     }), 500
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=True)
+# Run the application
+if __name__ == "__main__":
+    app.run(debug=True, host='0.0.0.0', port=5001)

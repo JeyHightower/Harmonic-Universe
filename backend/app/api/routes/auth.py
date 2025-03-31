@@ -194,4 +194,27 @@ def demo_login():
         return jsonify({
             'message': 'An error occurred during demo login',
             'error': str(e)
-        }), 500 
+        }), 500
+
+@auth_bp.route('/validate', methods=['GET'])
+@jwt_required()
+def validate_token():
+    """Validate the JWT token and return user data."""
+    try:
+        # Get user ID from JWT token
+        user_id = get_jwt_identity()
+        
+        # Get user from database
+        user = User.query.get(user_id)
+        
+        if not user:
+            return jsonify({'message': 'User not found'}), 404
+            
+        return jsonify({
+            'message': 'Token is valid',
+            'user': user.to_dict()
+        }), 200
+        
+    except Exception as e:
+        current_app.logger.error(f'Token validation error: {str(e)}')
+        return jsonify({'message': 'An error occurred during token validation'}), 500 

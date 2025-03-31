@@ -2,10 +2,13 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Button from "../components/common/Button";
-import { fetchScenesForUniverse } from "../store/thunks/scenesThunks";
+import {
+  fetchScenesForUniverse,
+  deleteScene,
+} from "../store/thunks/consolidated/scenesThunks";
 import { fetchUniverseById } from "../store/thunks/universeThunks";
 import "../styles/UniverseDetail.css";
-import SceneCard from "./SceneCard";
+import { SceneCard } from "../components/consolidated";
 import SceneFormModal from "./SceneFormModal";
 import UniverseDeleteModal from "./UniverseDeleteModal";
 import UniverseFormModal from "./UniverseFormModal";
@@ -72,8 +75,30 @@ const UniverseDetail = () => {
 
   const handleCreateSceneSuccess = () => {
     setIsCreateSceneModalOpen(false);
-    // Refresh scenes data
     dispatch(fetchScenesForUniverse(id));
+  };
+
+  const handleEditScene = (scene) => {
+    // Navigate to the scene edit page
+    navigate(`/scenes/${scene.id}/edit`);
+  };
+
+  const handleDeleteScene = (scene) => {
+    if (
+      window.confirm(
+        `Are you sure you want to delete "${
+          scene.title || scene.name
+        }"? This cannot be undone.`
+      )
+    ) {
+      dispatch(deleteScene(scene.id))
+        .then(() => {
+          dispatch(fetchScenesForUniverse(id));
+        })
+        .catch((error) => {
+          console.error("Error deleting scene:", error);
+        });
+    }
   };
 
   // Modal close handlers
@@ -179,7 +204,12 @@ const UniverseDetail = () => {
         ) : universeScenes.length > 0 ? (
           <div className="scene-grid">
             {universeScenes.map((scene) => (
-              <SceneCard key={scene.id} scene={scene} />
+              <SceneCard
+                key={scene.id}
+                scene={scene}
+                onEdit={handleEditScene}
+                onDelete={handleDeleteScene}
+              />
             ))}
           </div>
         ) : (

@@ -18,8 +18,11 @@ import {
   Switch,
 } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
-import { fetchScenes, deleteSceneById } from "../../store/thunks/sceneThunks";
-import SceneCard from "./SceneCard";
+import {
+  fetchScenes,
+  deleteScene,
+} from "../../store/thunks/consolidated/scenesThunks";
+import { SceneCard } from "../consolidated";
 import "../../styles/SceneList.css";
 
 const SceneList = () => {
@@ -29,6 +32,7 @@ const SceneList = () => {
   const { user } = useSelector((state) => state.auth);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [sceneToDelete, setSceneToDelete] = useState(null);
+  const [sceneToEdit, setSceneToEdit] = useState(null);
   const [filter, setFilter] = useState("all");
   const [sortBy, setSortBy] = useState("updated_at");
   const [sortOrder, setSortOrder] = useState("desc");
@@ -54,7 +58,7 @@ const SceneList = () => {
 
   const handleDeleteConfirm = async () => {
     if (sceneToDelete) {
-      await dispatch(deleteSceneById(sceneToDelete.id));
+      await dispatch(deleteScene(sceneToDelete.id));
       setSceneToDelete(null);
       dispatch(fetchScenes(universeId));
     }
@@ -70,6 +74,11 @@ const SceneList = () => {
 
   const handleSortOrderToggle = () => {
     setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+  };
+
+  const handleEditClick = (scene) => {
+    // Navigate to edit page or open edit modal
+    window.location.href = `/scenes/${scene.id}/edit`;
   };
 
   // Filter and sort scenes
@@ -200,6 +209,7 @@ const SceneList = () => {
               <SceneCard
                 scene={scene}
                 onDelete={handleDeleteClick}
+                onEdit={handleEditClick}
                 isOwner={user?.id === scene.universe?.user_id}
               />
             </Grid>

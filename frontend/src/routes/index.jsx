@@ -11,7 +11,10 @@ const Dashboard = lazy(() => import("../features/Dashboard"));
 const Home = lazy(() => import("../pages/Home"));
 const UniverseDetail = lazy(() => import("../features/UniverseDetail"));
 const SceneList = lazy(() => import("../components/scene/SceneList"));
-const SceneDetail = lazy(() => import("../components/scene/SceneDetail"));
+const SceneDetail = lazy(() => import("../components/consolidated/SceneDetail"));
+const SceneEditPage = lazy(() =>
+  import("../components/consolidated/SceneEditPage")
+);
 const CharacterList = lazy(() =>
   import("../components/character/CharacterList")
 );
@@ -74,7 +77,7 @@ const routes = [
         path: ROUTES.SCENE_EDIT,
         element: (
           <ProtectedRoute>
-            <SceneDetail />
+            <SceneEditPage />
           </ProtectedRoute>
         ),
       },

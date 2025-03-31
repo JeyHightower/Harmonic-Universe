@@ -77,20 +77,28 @@ export const checkAuthState = createAsyncThunk(
 
       // Try to validate token
       try {
+        console.debug("Attempting to validate token");
         const response = await apiClient.validateToken();
         console.debug("Token validation successful:", response);
 
         // Update state with validated user
         if (response.data.user) {
-          dispatch(loginSuccess(response.data));
+          dispatch(loginSuccess({ user: response.data.user, token }));
           return response.data;
         }
       } catch (error) {
         console.warn("Token validation failed:", error);
+        console.error("Validation error details:", {
+          message: error.message,
+          status: error.response?.status,
+          data: error.response?.data,
+          url: error.config?.url
+        });
 
         // Try to refresh token
         if (refreshToken) {
           try {
+            console.debug("Attempting to refresh token");
             const response = await apiClient.refreshToken();
             console.debug("Token refresh successful:", response);
 
@@ -108,7 +116,7 @@ export const checkAuthState = createAsyncThunk(
             }
 
             // Update state with refreshed user
-            dispatch(loginSuccess(response.data));
+            dispatch(loginSuccess({ user: response.data.user, token: response.data.token || response.data.access_token }));
             return response.data;
           } catch (refreshError) {
             console.error("Token refresh failed:", refreshError);
@@ -128,11 +136,24 @@ export const checkAuthState = createAsyncThunk(
         }
       }
 
-      // If we get here, something went wrong
+      // If we got here without valid user data, try using localStorage as fallback
+      if (userStr) {
+        try {
+          const userData = JSON.parse(userStr);
+          console.debug("Using cached user data from localStorage:", userData);
+          dispatch(loginSuccess({ user: userData, token }));
+          return { user: userData };
+        } catch (e) {
+          console.error("Failed to parse stored user data", e);
+        }
+      }
+
+      // If all else fails, logout
+      console.warn("No valid user data found, logging out");
       dispatch(logout());
       return null;
     } catch (error) {
-      console.error("Error checking auth state:", error);
+      console.error("Auth state check failed:", error);
       dispatch(logout());
       return null;
     }

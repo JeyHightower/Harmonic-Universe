@@ -148,10 +148,6 @@ class Universe(BaseModel):
             self.notes.remove(note)
             self.save()
             
-    def get_public_notes(self) -> List[Note]:
-        """Get all public notes in the universe."""
-        return Note.query.filter_by(universe_id=self.id, is_public=True, is_deleted=False).all()
-        
     def set_sound_profile(self, sound_profile: Optional[SoundProfile]) -> None:
         """Set the sound profile for the universe."""
         if sound_profile and sound_profile.user_id != self.user_id:
@@ -179,6 +175,16 @@ class Scene(BaseModel):
     
     name: Mapped[str] = mapped_column(db.String(100), nullable=False, index=True)
     description: Mapped[Optional[str]] = mapped_column(db.Text)
+    summary: Mapped[Optional[str]] = mapped_column(db.Text)
+    content: Mapped[Optional[str]] = mapped_column(db.Text)
+    notes_text: Mapped[Optional[str]] = mapped_column(db.Text)
+    location: Mapped[Optional[str]] = mapped_column(db.String(200))
+    scene_type: Mapped[Optional[str]] = mapped_column(db.String(50), default='default')
+    time_of_day: Mapped[Optional[str]] = mapped_column(db.String(50))
+    status: Mapped[Optional[str]] = mapped_column(db.String(50), default='draft')
+    significance: Mapped[Optional[str]] = mapped_column(db.String(50), default='minor')
+    date_of_scene: Mapped[Optional[str]] = mapped_column(db.String(50))
+    order: Mapped[Optional[int]] = mapped_column(db.Integer, default=0)
     universe_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), nullable=False, index=True)
     sound_profile_id: Mapped[Optional[int]] = mapped_column(db.Integer, db.ForeignKey('sound_profiles.id', ondelete='SET NULL'), index=True)
     is_public: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=False)
@@ -218,18 +224,43 @@ class Scene(BaseModel):
             
     def to_dict(self) -> Dict[str, Any]:
         """Convert scene to dictionary."""
+        # Count related records using proper SQL syntax
+        characters_count = 0
+        notes_count = 0
+        
+        try:
+            # Try to safely get counts
+            if self.id is not None:  # Only try counting if we have an ID (saved record)
+                characters_count = db.session.query(func.count()).select_from(Character).join(
+                    character_scenes).filter(character_scenes.c.scene_id == self.id).scalar() or 0
+                notes_count = db.session.query(func.count()).select_from(Note).filter(
+                    Note.scene_id == self.id).filter(Note.is_deleted == False).scalar() or 0
+        except Exception as e:
+            # Fail gracefully if counts can't be retrieved
+            print(f"Error getting counts for scene {self.id}: {str(e)}")
+        
         return {
             'id': self.id,
             'name': self.name,
             'description': self.description,
+            'summary': self.summary,
+            'content': self.content,
+            'notes': self.notes_text,  # Map notes_text back to notes for API consistency
+            'location': self.location,
+            'scene_type': self.scene_type,
+            'time_of_day': self.time_of_day,
+            'status': self.status,
+            'significance': self.significance,
+            'date_of_scene': self.date_of_scene,
+            'order': self.order,
             'universe_id': self.universe_id,
             'sound_profile_id': self.sound_profile_id,
             'is_public': self.is_public,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
             'is_deleted': self.is_deleted,
-            'characters_count': db.session.query(func.count(self.characters)).scalar(),
-            'notes_count': db.session.query(func.count(self.notes)).scalar()
+            'characters_count': characters_count,
+            'notes_count': notes_count
         }
         
     def get_character_by_name(self, name: str) -> Optional[Character]:

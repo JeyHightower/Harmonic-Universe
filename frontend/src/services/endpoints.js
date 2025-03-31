@@ -22,6 +22,7 @@ const authEndpoints = {
   resetPassword: `${API_VERSION}/auth/reset-password`,
   forgotPassword: `${API_VERSION}/auth/forgot-password`,
   verifyEmail: `${API_VERSION}/auth/verify-email`,
+  validate: `${API_VERSION}/auth/validate`,
 };
 
 // User endpoints
@@ -42,6 +43,18 @@ const universeEndpoints = {
   physics: (id) => `${API_VERSION}/universes/${id}/physics`,
   audio: (id) => `${API_VERSION}/universes/${id}/audio`,
   visualization: (id) => `${API_VERSION}/universes/${id}/visualization`,
+  scenes: (id) => `${API_VERSION}/universes/${id}/scenes`,
+};
+
+// Scene endpoints
+const sceneEndpoints = {
+  list: `${API_VERSION}/scenes`,
+  create: `${API_VERSION}/scenes`,
+  get: (id) => `${API_VERSION}/scenes/${id}`,
+  update: (id) => `${API_VERSION}/scenes/${id}`,
+  delete: (id) => `${API_VERSION}/scenes/${id}`,
+  forUniverse: (universeId) => `${API_VERSION}/universes/${universeId}/scenes`,
+  reorder: `${API_VERSION}/scenes/reorder`,
 };
 
 // Physics objects endpoints
@@ -78,8 +91,9 @@ const systemEndpoints = {
 // Export all endpoints
 export const endpoints = {
   auth: authEndpoints,
-  users: userEndpoints,
+  user: userEndpoints,
   universes: universeEndpoints,
+  scenes: sceneEndpoints,
   physicsObjects: physicsObjectEndpoints,
   audioTracks: audioTrackEndpoints,
   system: systemEndpoints,

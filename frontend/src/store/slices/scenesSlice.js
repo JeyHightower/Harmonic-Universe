@@ -41,48 +41,10 @@ const scenesSlice = createSlice({
       .addCase(fetchScenes.fulfilled, (state, action) => {
         state.loading = false;
 
-        // Handle different response formats
-        let scenesData = [];
-        if (
-          action.payload &&
-          action.payload.data &&
-          Array.isArray(action.payload.data.scenes)
-        ) {
-          // Format: { data: { scenes: [...] } }
-          scenesData = action.payload.data.scenes;
-        } else if (action.payload && Array.isArray(action.payload.scenes)) {
-          // Format: { scenes: [...] }
-          scenesData = action.payload.scenes;
-        } else if (
-          action.payload &&
-          typeof action.payload === "object" &&
-          action.payload.status === "success"
-        ) {
-          // Format from simple_app.py: { status: 'success', data: { scenes: [...] } }
-          scenesData = action.payload.data?.scenes || [];
-        } else if (Array.isArray(action.payload)) {
-          // Direct array format
-          scenesData = action.payload;
-        } else {
-          console.error("Unexpected scenes response format:", action.payload);
-          scenesData = [];
+        // Use scenes array directly from serialized response
+        if (action.payload && action.payload.scenes) {
+          state.scenes = action.payload.scenes;
         }
-
-        state.scenes = scenesData;
-
-        // Organize scenes by universe for easy access
-        scenesData.forEach((scene) => {
-          const universeId = scene.universe_id;
-          if (!state.universeScenes[universeId]) {
-            state.universeScenes[universeId] = [];
-          }
-          // Only add if not already in the array
-          if (
-            !state.universeScenes[universeId].some((s) => s.id === scene.id)
-          ) {
-            state.universeScenes[universeId].push(scene);
-          }
-        });
       })
       .addCase(fetchScenes.rejected, (state, action) => {
         state.loading = false;
@@ -96,7 +58,10 @@ const scenesSlice = createSlice({
       })
       .addCase(fetchSceneById.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentScene = action.payload.scene;
+        // Set current scene from serialized response
+        if (action.payload && action.payload.scene) {
+          state.currentScene = action.payload.scene;
+        }
       })
       .addCase(fetchSceneById.rejected, (state, action) => {
         state.loading = false;
@@ -113,62 +78,10 @@ const scenesSlice = createSlice({
         state.loading = false;
         state.success = true;
 
-        // Handle different possible response formats
-        let newScene;
-        if (action.payload && typeof action.payload === "object") {
-          if (
-            action.payload.status === "success" &&
-            action.payload.data &&
-            action.payload.data.scene
-          ) {
-            // Simple backend format: { status: 'success', data: { scene: {...} } }
-            newScene = action.payload.data.scene;
-          } else if (
-            action.payload.scene &&
-            typeof action.payload.scene === "object"
-          ) {
-            // Response format: { scene: {...} }
-            newScene = action.payload.scene;
-          } else if (action.payload.data && action.payload.data.scene) {
-            // Response format: { data: { scene: {...} } }
-            newScene = action.payload.data.scene;
-          } else if (action.payload.id) {
-            // Response format: The payload itself is the scene
-            newScene = action.payload;
-          } else {
-            console.error(
-              "Unexpected response format in createScene.fulfilled:",
-              action.payload
-            );
-            newScene = null;
-          }
-        } else {
-          console.error(
-            "Invalid payload in createScene.fulfilled:",
-            action.payload
-          );
-          newScene = null;
+        // Add the new scene to the scenes array if it exists
+        if (action.payload && action.payload.scene) {
+          state.scenes.push(action.payload.scene);
         }
-
-        if (newScene) {
-          // Add the new scene to the scenes array
-          state.scenes.push(newScene);
-          state.currentScene = newScene;
-
-          // Also add to the universeScenes mapping
-          const universeId = newScene.universe_id;
-          if (!state.universeScenes[universeId]) {
-            state.universeScenes[universeId] = [];
-          }
-          state.universeScenes[universeId].push(newScene);
-        } else {
-          console.error(
-            "Failed to extract scene data from response:",
-            action.payload
-          );
-        }
-
-        state.error = null;
       })
       .addCase(createScene.rejected, (state, action) => {
         state.loading = false;
@@ -185,28 +98,19 @@ const scenesSlice = createSlice({
       .addCase(updateScene.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
-        const updatedScene = action.payload.scene;
 
-        // Update in general scenes array
-        const index = state.scenes.findIndex((s) => s.id === updatedScene.id);
-        if (index !== -1) {
-          state.scenes[index] = updatedScene;
-        }
-
-        // Update in universe-specific array
-        const universeId = updatedScene.universe_id;
-        if (state.universeScenes[universeId]) {
-          const uIndex = state.universeScenes[universeId].findIndex(
-            (s) => s.id === updatedScene.id
-          );
-          if (uIndex !== -1) {
-            state.universeScenes[universeId][uIndex] = updatedScene;
+        // Update the scene in the scenes array
+        if (action.payload && action.payload.scene) {
+          const updatedScene = action.payload.scene;
+          const index = state.scenes.findIndex((scene) => scene.id === updatedScene.id);
+          if (index !== -1) {
+            state.scenes[index] = updatedScene;
           }
-        }
 
-        // Update current scene if it's the one being updated
-        if (state.currentScene && state.currentScene.id === updatedScene.id) {
-          state.currentScene = updatedScene;
+          // Update currentScene if it's the same one
+          if (state.currentScene && state.currentScene.id === updatedScene.id) {
+            state.currentScene = updatedScene;
+          }
         }
       })
       .addCase(updateScene.rejected, (state, action) => {
@@ -224,25 +128,16 @@ const scenesSlice = createSlice({
       .addCase(deleteScene.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
-        const deletedId = action.meta.arg;
 
-        // Find the universe_id before removing from scenes array
-        const deletedScene = state.scenes.find((s) => s.id === deletedId);
-        const universeId = deletedScene?.universe_id;
+        // Remove the deleted scene from the scenes array
+        if (action.payload && action.payload.id) {
+          const sceneId = action.payload.id;
+          state.scenes = state.scenes.filter((scene) => scene.id !== sceneId);
 
-        // Remove from general scenes array
-        state.scenes = state.scenes.filter((s) => s.id !== deletedId);
-
-        // Remove from universe-specific array
-        if (universeId && state.universeScenes[universeId]) {
-          state.universeScenes[universeId] = state.universeScenes[
-            universeId
-          ].filter((s) => s.id !== deletedId);
-        }
-
-        // Clear current scene if it's the one being deleted
-        if (state.currentScene && state.currentScene.id === deletedId) {
-          state.currentScene = null;
+          // Clear currentScene if it's the deleted one
+          if (state.currentScene && state.currentScene.id === sceneId) {
+            state.currentScene = null;
+          }
         }
       })
       .addCase(deleteScene.rejected, (state, action) => {

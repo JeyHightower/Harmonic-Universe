@@ -13,7 +13,7 @@ import storage from "redux-persist/lib/storage";
 import { combineReducers } from "redux";
 import authReducer from "./slices/authSlice";
 import universeReducer from "./slices/universeSlice";
-import sceneReducer from "./slices/sceneSlice";
+import scenesReducer from "./slices/scenesSlice";
 import characterReducer from "./slices/characterSlice";
 import noteReducer from "./slices/noteSlice";
 import modalReducer from "./slices/modalSlice";
@@ -47,7 +47,7 @@ const persistConfig = {
 const rootReducer = combineReducers({
   auth: persistReducer(authPersistConfig, authReducer),
   universes: persistReducer(universesPersistConfig, universeReducer),
-  scenes: persistReducer(scenesPersistConfig, sceneReducer),
+  scenes: persistReducer(scenesPersistConfig, scenesReducer),
   characters: characterReducer,
   notes: noteReducer,
   modal: modalReducer,

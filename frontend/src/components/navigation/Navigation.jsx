@@ -1,19 +1,21 @@
 import React, { useCallback } from "react";
 import { Link } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useModal } from "../../contexts/ModalContext";
 import { MODAL_TYPES } from "../../constants/modalTypes";
+import { logout } from "../../store/thunks/authThunks";
 import logoSvg from "../../assets/logo.svg";
 import "./Navigation.css";
 
 function Navigation() {
-  const { openModal } = useModal();
+  const { open } = useModal();
+  const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state) => state.auth);
 
   const handleLoginClick = useCallback(() => {
     try {
       console.log("[Navigation] Opening login modal");
-      openModal(MODAL_TYPES.LOGIN, {
+      open(MODAL_TYPES.LOGIN, {
         title: "Login",
         size: "medium",
         position: "center",
@@ -26,12 +28,12 @@ function Navigation() {
     } catch (error) {
       console.error("[Navigation] Error opening login modal:", error);
     }
-  }, [openModal]);
+  }, [open]);
 
   const handleSignupClick = useCallback(() => {
     try {
       console.log("[Navigation] Opening signup modal");
-      openModal(MODAL_TYPES.SIGNUP, {
+      open(MODAL_TYPES.SIGNUP, {
         title: "Sign Up",
         size: "medium",
         position: "center",
@@ -44,7 +46,11 @@ function Navigation() {
     } catch (error) {
       console.error("[Navigation] Error opening signup modal:", error);
     }
-  }, [openModal]);
+  }, [open]);
+
+  const handleLogout = useCallback(() => {
+    dispatch(logout());
+  }, [dispatch]);
 
   return (
     <nav className="navigation">
@@ -69,9 +75,14 @@ function Navigation() {
             </button>
           </>
         ) : (
-          <Link to="/dashboard" className="nav-button">
-            Dashboard
-          </Link>
+          <>
+            <Link to="/dashboard" className="nav-button">
+              Dashboard
+            </Link>
+            <button onClick={handleLogout} className="nav-button">
+              Logout
+            </button>
+          </>
         )}
       </div>
     </nav>

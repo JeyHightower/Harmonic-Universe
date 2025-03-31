@@ -11,7 +11,11 @@ import {
   CircularProgress,
   Alert,
 } from "@mui/material";
-import { createScene, updateScene } from "../../store/thunks/sceneThunks";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import {
+  createScene,
+  updateScene,
+} from "../../store/thunks/consolidated/scenesThunks";
 
 const SceneForm = ({ open, onClose, onSuccess, scene, universeId }) => {
   const [formData, setFormData] = useState({

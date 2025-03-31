@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.api.models.universe import Universe
+from app.api.models.character import Character
 from app import db
 
 universes_bp = Blueprint('universes', __name__)
@@ -194,5 +195,36 @@ def delete_universe(universe_id):
         db.session.rollback()
         return jsonify({
             'message': 'Error deleting universe',
+            'error': str(e)
+        }), 500
+
+@universes_bp.route('/<int:universe_id>/characters', methods=['GET'])
+@jwt_required()
+def get_universe_characters(universe_id):
+    try:
+        universe = Universe.query.get_or_404(universe_id)
+        user_id = get_jwt_identity()
+
+        # Check if user has access to this universe
+        if not universe.is_public and universe.user_id != user_id:
+            return jsonify({
+                'message': 'Access denied'
+            }), 403
+
+        # Get all characters for the universe
+        characters = Character.query.filter_by(
+            universe_id=universe_id,
+            is_deleted=False
+        ).all()
+
+        return jsonify({
+            'message': 'Characters retrieved successfully',
+            'characters': [character.to_dict() for character in characters]
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Error retrieving characters for universe {universe_id}: {str(e)}")
+        return jsonify({
+            'message': 'Error retrieving characters',
             'error': str(e)
         }), 500 

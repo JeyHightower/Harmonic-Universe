@@ -55,6 +55,10 @@ const ModalSystem = forwardRef(
     },
     ref
   ) => {
+    console.log(
+      `ModalSystem - Component called with isOpen=${isOpen}, title=${title}`
+    );
+
     const modalRef = useRef(null);
     const contentRef = useRef(null);
     const previousFocus = useRef(null);
@@ -140,7 +144,12 @@ const ModalSystem = forwardRef(
 
     // Handle modal open/close state
     useEffect(() => {
+      console.log(
+        `ModalSystem - useEffect triggered with isOpen=${isOpen}, title=${title}`
+      );
+
       if (isOpen) {
+        console.log(`ModalSystem - Opening modal: ${title}`);
         mountedRef.current = true;
         openedAtRef.current = Date.now();
         modalRef.current?.setAttribute(

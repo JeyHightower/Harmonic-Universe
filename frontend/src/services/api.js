@@ -150,6 +150,43 @@ const apiClient = {
   login: (credentials) => axiosInstance.post(endpoints.auth.login, credentials),
   register: (userData) => axiosInstance.post(endpoints.auth.register, userData),
   demoLogin: () => axiosInstance.post(endpoints.auth.demoLogin),
+  validateToken: async () => {
+    try {
+      console.log("Attempting to validate token");
+      const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+
+      if (!token) {
+        console.log("No token found in localStorage");
+        throw new Error("No token available");
+      }
+
+      // Try the auth validate endpoint - this now exists so we don't need fallbacks
+      console.log("Trying auth validate endpoint:", endpoints.auth.validate);
+      const response = await axiosInstance.get(endpoints.auth.validate);
+      console.log("Validate endpoint response:", response.data);
+
+      return {
+        data: {
+          message: "Token validation successful",
+          user: response.data.user || response.data
+        }
+      };
+    } catch (error) {
+      log("api", "Token validation failed", {
+        error: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      throw error;
+    }
+  },
+  refreshToken: async () => {
+    const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+    if (!refreshToken) {
+      throw new Error("No refresh token available");
+    }
+    return axiosInstance.post(endpoints.auth.refresh, { refresh_token: refreshToken });
+  },
   logout: () => {
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
     return axiosInstance.post(
@@ -276,15 +313,81 @@ const apiClient = {
 
   // Scene methods
   getScenes: (params = {}) => {
+    console.log("Getting scenes with params:", params);
+    // Simple implementation - just use the list endpoint with query params
     const queryParams = new URLSearchParams();
     if (params.universeId) {
       queryParams.append("universe_id", params.universeId);
     }
-    return axiosInstance.get(`${endpoints.scenes.list}?${queryParams.toString()}`);
+    const url = `${endpoints.scenes.list}?${queryParams.toString()}`;
+    console.log("Fetching scenes from URL:", url);
+    return axiosInstance.get(url);
   },
   getScene: (id) => axiosInstance.get(endpoints.scenes.get(id)),
-  createScene: (data) => axiosInstance.post(endpoints.scenes.create, data),
-  updateScene: (id, data) => axiosInstance.put(endpoints.scenes.update(id), data),
+  createScene: (data) => {
+    // Ensure universe_id is present
+    if (!data.universe_id) {
+      throw new Error("universe_id is required to create a scene");
+    }
+
+    // Clone data and transform field names if needed
+    const transformedData = { ...data };
+
+    // Backend expects 'name' not 'title'
+    if (transformedData.title && !transformedData.name) {
+      transformedData.name = transformedData.title;
+      delete transformedData.title;
+    }
+
+    console.log("Sending createScene request with data:", transformedData);
+
+    // Use the base scenes endpoint
+    return axiosInstance.post(endpoints.scenes.list, transformedData);
+  },
+  updateScene: async (id, data) => {
+    console.log(`API - updateScene - Updating scene ${id} with data:`, data);
+    try {
+      // Ensure we have all required fields
+      if (!data.name) {
+        throw new Error("Scene name is required");
+      }
+
+      if (!data.universe_id) {
+        console.warn("API - updateScene - universe_id missing, adding from scene data");
+        // Try to get universe_id from get scene if not provided
+        const sceneResponse = await axiosInstance.get(endpoints.scenes.get(id));
+        data.universe_id = sceneResponse.data?.scene?.universe_id || sceneResponse.data?.universe_id;
+
+        if (!data.universe_id) {
+          throw new Error("universe_id is required to update a scene");
+        }
+      }
+
+      // Normalize data for API consistency
+      const normalizedData = { ...data };
+
+      // Ensure correct field names for API
+      if (data.timeOfDay && !data.time_of_day) {
+        normalizedData.time_of_day = data.timeOfDay;
+      }
+
+      if (data.characterIds && !data.character_ids) {
+        normalizedData.character_ids = data.characterIds;
+      }
+
+      if (data.dateOfScene && !data.date_of_scene) {
+        normalizedData.date_of_scene = data.dateOfScene;
+      }
+
+      console.log(`API - updateScene - Sending normalized data:`, normalizedData);
+      const response = await axiosInstance.put(endpoints.scenes.update(id), normalizedData);
+      console.log(`API - updateScene - Response:`, response.data);
+      return response;
+    } catch (error) {
+      console.error(`API - updateScene - Error updating scene ${id}:`, error.response?.data || error.message);
+      throw error;
+    }
+  },
   deleteScene: (id) => axiosInstance.delete(endpoints.scenes.delete(id)),
   reorderScenes: (data) => axiosInstance.post(endpoints.scenes.reorder, data),
   updateScenePhysicsParams: (sceneId, data) =>
@@ -315,6 +418,11 @@ const apiClient = {
     axiosInstance.post(endpoints.physicsParameters.update, params),
   getPhysicsParameters: () => axiosInstance.get(endpoints.physicsParameters.get),
   resetPhysicsParameters: () => axiosInstance.post(endpoints.physicsParameters.reset),
+
+  // Character methods
+  getCharactersByUniverse: (universeId) => {
+    return axiosInstance.get(`/api/universes/${universeId}/characters`);
+  },
 };
 
 export default apiClient;

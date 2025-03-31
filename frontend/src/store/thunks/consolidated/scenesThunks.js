@@ -1,6 +1,10 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import apiClient from "../../services/api.js";
+import apiClient from "../../../services/api";
+import { setScenes, setCurrentScene, addScene, updateScene as updateSceneInStore, deleteScene as deleteSceneFromStore, setError } from "../../slices/sceneSlice";
 
+/**
+ * Error handler function for API errors
+ */
 const handleError = (error) => {
   console.error("API Error:", error);
   return {
@@ -11,7 +15,9 @@ const handleError = (error) => {
   };
 };
 
-// Helper function to normalize scene data (especially date fields)
+/**
+ * Helper function to normalize scene data (especially date fields)
+ */
 const normalizeSceneData = (scene) => {
   if (!scene) return null;
 
@@ -25,7 +31,9 @@ const normalizeSceneData = (scene) => {
   return normalized;
 };
 
-// Helper function to normalize scenes array
+/**
+ * Helper function to normalize scenes array
+ */
 const normalizeScenes = (scenes) => {
   if (!scenes || !Array.isArray(scenes)) return [];
   return scenes.map(normalizeSceneData);
@@ -36,28 +44,34 @@ const normalizeScenes = (scenes) => {
  */
 export const fetchScenes = createAsyncThunk(
   "scenes/fetchScenes",
-  async (universeId, { rejectWithValue }) => {
+  async (universeId, { dispatch, rejectWithValue }) => {
     try {
       console.log("Fetching scenes for universe", universeId);
       const response = await apiClient.getScenes(universeId);
       console.log("Got scenes response:", response);
 
-      // Return only serializable data
-      const serializedResponse = {
+      // Update direct store if needed
+      if (dispatch) {
+        dispatch(setScenes(response.data?.scenes || []));
+      }
+
+      // Return serializable data
+      return {
         message: response.data?.message,
         scenes: response.data?.scenes || [],
         status: response.status
       };
-
-      return serializedResponse;
     } catch (error) {
+      if (dispatch) {
+        dispatch(setError(error.response?.data?.message || error.message));
+      }
       console.error(`Error fetching scenes for universe ${universeId}:`, error);
       return rejectWithValue(handleError(error));
     }
   }
 );
 
-// Create an alias for fetchScenes to match the import in UniverseDetail.jsx
+// Create an alias for fetchScenes to match existing imports
 export const fetchScenesForUniverse = fetchScenes;
 
 /**
@@ -65,16 +79,24 @@ export const fetchScenesForUniverse = fetchScenes;
  */
 export const fetchSceneById = createAsyncThunk(
   "scenes/fetchSceneById",
-  async (sceneId, { rejectWithValue }) => {
+  async (sceneId, { dispatch, rejectWithValue }) => {
     try {
       const response = await apiClient.getScene(sceneId);
 
-      // Return only serializable data
+      // Update direct store if needed
+      if (dispatch) {
+        dispatch(setCurrentScene(response.data?.scene || response.data));
+      }
+
+      // Return serializable data
       return {
         scene: response.data?.scene || response.data,
         message: response.data?.message
       };
     } catch (error) {
+      if (dispatch) {
+        dispatch(setError(error.response?.data?.message || error.message));
+      }
       return rejectWithValue(handleError(error));
     }
   }
@@ -85,13 +107,18 @@ export const fetchSceneById = createAsyncThunk(
  */
 export const createScene = createAsyncThunk(
   "scenes/createScene",
-  async (sceneData, { rejectWithValue }) => {
+  async (sceneData, { dispatch, rejectWithValue }) => {
     try {
       console.log("Creating scene with data:", sceneData);
       const response = await apiClient.createScene(sceneData);
       console.log("Created scene response:", response);
 
-      // Return only serializable data
+      // Update direct store if needed
+      if (dispatch) {
+        dispatch(addScene(response.data?.scene));
+      }
+
+      // Return serializable data
       const serializedResponse = {
         message: response.data?.message,
         scene: response.data?.scene,
@@ -105,6 +132,9 @@ export const createScene = createAsyncThunk(
 
       return serializedResponse;
     } catch (error) {
+      if (dispatch) {
+        dispatch(setError(error.response?.data?.message || error.message));
+      }
       console.error("Error creating scene:", error);
       return rejectWithValue(handleError(error));
     }
@@ -116,42 +146,64 @@ export const createScene = createAsyncThunk(
  */
 export const updateScene = createAsyncThunk(
   "scenes/updateScene",
-  async ({ id, data }, { rejectWithValue }) => {
+  async ({ id, data }, { dispatch, rejectWithValue }) => {
     try {
       const response = await apiClient.updateScene(id, data);
 
-      // Return only serializable data
+      // Update direct store if needed
+      if (dispatch) {
+        dispatch(updateSceneInStore(response.data?.scene || response.data));
+      }
+
+      // Return serializable data
       return {
         scene: response.data?.scene || response.data,
         message: response.data?.message
       };
     } catch (error) {
+      if (dispatch) {
+        dispatch(setError(error.response?.data?.message || error.message));
+      }
       console.error(`Error updating scene ${id}:`, error);
       return rejectWithValue(handleError(error));
     }
   }
 );
 
+// Alias for updateScene to maintain backward compatibility
+export const updateSceneById = updateScene;
+
 /**
  * Delete a scene
  */
 export const deleteScene = createAsyncThunk(
   "scenes/deleteScene",
-  async (sceneId, { rejectWithValue }) => {
+  async (sceneId, { dispatch, rejectWithValue }) => {
     try {
       const response = await apiClient.deleteScene(sceneId);
 
-      // Return only serializable data with the ID for the reducer
+      // Update direct store if needed
+      if (dispatch) {
+        dispatch(deleteSceneFromStore(sceneId));
+      }
+
+      // Return serializable data with the ID for the reducer
       return {
         id: sceneId,
         message: response.data?.message
       };
     } catch (error) {
+      if (dispatch) {
+        dispatch(setError(error.response?.data?.message || error.message));
+      }
       console.error(`Error deleting scene ${sceneId}:`, error);
       return rejectWithValue(handleError(error));
     }
   }
 );
+
+// Alias for deleteScene to maintain backward compatibility
+export const deleteSceneById = deleteScene;
 
 /**
  * Reorder scenes
@@ -205,60 +257,4 @@ export const reorderScenes = createAsyncThunk(
       return rejectWithValue(handleError(error));
     }
   }
-);
-
-/**
- * Update physics parameters for a scene
- */
-export const updateScenePhysicsParams = createAsyncThunk(
-  "scenes/updatePhysicsParams",
-  async ({ sceneId, physicsParams }, { rejectWithValue }) => {
-    try {
-      const response = await apiClient.updateScenePhysicsParams(
-        sceneId,
-        physicsParams
-      );
-
-      // Normalize the scene data if present
-      if (response && response.data && response.data.scene) {
-        response.data.scene = normalizeSceneData(response.data.scene);
-      } else if (response && response.scene) {
-        response.scene = normalizeSceneData(response.scene);
-      } else if (response && response.id) {
-        return normalizeSceneData(response);
-      }
-
-      return response;
-    } catch (error) {
-      return rejectWithValue(error);
-    }
-  }
-);
-
-/**
- * Update harmony parameters for a scene
- */
-export const updateSceneHarmonyParams = createAsyncThunk(
-  "scenes/updateHarmonyParams",
-  async ({ sceneId, harmonyParams }, { rejectWithValue }) => {
-    try {
-      const response = await apiClient.updateSceneHarmonyParams(
-        sceneId,
-        harmonyParams
-      );
-
-      // Normalize the scene data if present
-      if (response && response.data && response.data.scene) {
-        response.data.scene = normalizeSceneData(response.data.scene);
-      } else if (response && response.scene) {
-        response.scene = normalizeSceneData(response.scene);
-      } else if (response && response.id) {
-        return normalizeSceneData(response);
-      }
-
-      return response;
-    } catch (error) {
-      return rejectWithValue(error);
-    }
-  }
-);
+); 

@@ -83,7 +83,7 @@
 }
 
 .universe-content {
-  margin-top: 32px;
+  margin-top: 30px;
 }
 
 .universe-scenes-header {
@@ -105,6 +105,43 @@
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 24px;
   margin-bottom: 32px;
+}
+
+/* Add explicit styling for SceneCardSimple in the UniverseDetail view */
+.scene-grid .scene-card-simple {
+  border: 3px solid #4285f4 !important;
+  padding: 15px !important;
+  background-color: white !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.scene-grid .scene-card-buttons {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  padding: 10px 0 !important;
+}
+
+.scene-grid .scene-card-buttons button {
+  width: 100% !important;
+  padding: 12px !important;
+  font-size: 16px !important;
+  font-weight: bold !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  text-align: center !important;
+}
+
+.scene-grid .edit-button {
+  background-color: #4285f4 !important;
+  color: white !important;
+  border: none !important;
+}
+
+.scene-grid .delete-button {
+  background-color: #ea4335 !important;
+  color: white !important;
+  border: none !important;
 }
 
 .loading-container {
@@ -258,4 +295,43 @@
     border-color: rgba(255, 255, 255, 0.1);
     border-top-color: var(--primary-color);
   }
+}
+
+/* Delete Scene Modal */
+.delete-scene-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.delete-scene-modal .modal-content {
+  background-color: white;
+  border-radius: 8px;
+  padding: 24px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.delete-scene-modal h2 {
+  color: #d32f2f;
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.delete-scene-modal p {
+  margin-bottom: 24px;
+}
+
+.delete-scene-modal .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
 }

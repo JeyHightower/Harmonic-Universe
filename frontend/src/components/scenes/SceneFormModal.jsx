@@ -4,7 +4,10 @@ import { useDispatch, useSelector } from "react-redux";
 import Button from "../common/Button";
 import Input from "../common/Input";
 import Modal from "../common/Modal.jsx";
-import { createScene, updateScene } from "../../store/thunks/scenesThunks.js";
+import {
+  createScene,
+  updateScene,
+} from "../../store/thunks/consolidated/scenesThunks.js";
 import "../../styles/SceneFormModal.css";
 
 const SceneFormModal = ({
@@ -18,6 +21,7 @@ const SceneFormModal = ({
   const { loading, error } = useSelector((state) => state.scenes);
   const isEditing = !!initialData;
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -43,9 +47,17 @@ const SceneFormModal = ({
 
   // Initialize form with data if editing
   useEffect(() => {
+    console.log("SceneFormModal - isOpen state changed:", isOpen);
+    console.log("SceneFormModal - initialData:", initialData);
+    console.log(
+      "SceneFormModal - Modal should be:",
+      isOpen ? "OPENING" : "CLOSING"
+    );
+
     if (initialData) {
+      console.log("SceneFormModal - Setting form data with initialData");
       setFormData({
-        title: initialData.title || "",
+        title: initialData.title || initialData.name || "",
         description: initialData.description || "",
         universe_id: initialData.universe_id || universeId,
         scene_type: initialData.scene_type || "standard",
@@ -53,12 +65,16 @@ const SceneFormModal = ({
         duration: initialData.duration || 60,
       });
     } else if (universeId) {
+      console.log(
+        "SceneFormModal - Setting universe_id from prop:",
+        universeId
+      );
       setFormData((prev) => ({
         ...prev,
         universe_id: universeId,
       }));
     }
-  }, [initialData, universeId]);
+  }, [initialData, universeId, isOpen]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -94,85 +110,95 @@ const SceneFormModal = ({
     }
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (isSubmitting) return;
 
-    // Run validation before submission
-    if (!validateForm()) {
-      console.log("SceneFormModal - Form validation failed");
-      return; // Stop submission if validation fails
+    // Reset errors
+    setErrors({});
+
+    // Validate form
+    const formErrors = {};
+    if (!formData.title?.trim()) {
+      formErrors.title = "Title is required";
     }
 
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors);
+      return;
+    }
+
+    // Submit form
     setIsSubmitting(true);
     console.log("SceneFormModal - Submitting form...", formData);
 
     try {
-      let result;
       if (isEditing) {
-        // Update existing scene
-        console.log("SceneFormModal - Updating scene:", initialData.id);
-        result = await dispatch(
+        console.log("SceneFormModal - Updating scene", initialData.id);
+
+        // Update scene using Redux action
+        const resultAction = await dispatch(
           updateScene({
             id: initialData.id,
-            ...formData,
+            data: formData,
           })
-        ).unwrap();
-      } else {
-        // Create new scene
-        console.log("SceneFormModal - Creating new scene");
-        result = await dispatch(createScene(formData)).unwrap();
-      }
-
-      console.log("SceneFormModal - API call successful:", result);
-
-      if (onSuccess) {
-        // Extract the scene data - handle different possible response formats
-        let sceneData;
-
-        if (result && typeof result === "object") {
-          // Try different possible structures
-          if (result.status === "success" && result.data && result.data.scene) {
-            // Simple backend format: { status: 'success', data: { scene: {...} } }
-            sceneData = result.data.scene;
-          } else if (result.scene && typeof result.scene === "object") {
-            // Case: { scene: {...} }
-            sceneData = result.scene;
-          } else if (result.data && result.data.scene) {
-            // Case: { data: { scene: {...} } }
-            sceneData = result.data.scene;
-          } else if (result.id) {
-            // Case: The result itself is the scene object
-            sceneData = result;
-          } else {
-            // Fallback
-            console.warn(
-              "SceneFormModal - Unexpected response format:",
-              result
-            );
-            sceneData = result;
-          }
-        } else {
-          // Unexpected non-object response
-          console.warn(
-            "SceneFormModal - Unexpected non-object response:",
-            result
-          );
-          sceneData = result;
-        }
-
-        console.log(
-          "SceneFormModal - Calling onSuccess with extracted data:",
-          sceneData
         );
-        onSuccess(sceneData);
+
+        if (updateScene.fulfilled.match(resultAction)) {
+          setShowSuccessMessage(true);
+
+          // Extract scene from the standardized response format
+          const sceneData = resultAction.payload.scene;
+
+          setTimeout(() => {
+            onSuccess?.("update", sceneData);
+            onClose();
+          }, 1500);
+        } else if (updateScene.rejected.match(resultAction)) {
+          const errorMessage =
+            resultAction.payload?.message || "Failed to update scene";
+          setErrors({ form: errorMessage });
+        }
+      } else {
+        console.log("SceneFormModal - Creating new scene");
+
+        // Log details about the request
+        console.log("API base URL:", import.meta.env.VITE_API_BASE_URL);
+        console.log("Using createScene method from scenes thunk");
+
+        // Create scene using Redux action
+        const resultAction = await dispatch(
+          createScene({
+            ...formData,
+            universe_id: universeId,
+          })
+        );
+
+        console.log("Scene creation result:", resultAction);
+
+        if (createScene.fulfilled.match(resultAction)) {
+          console.log("Scene created successfully:", resultAction.payload);
+          setShowSuccessMessage(true);
+
+          // Extract scene from the standardized response format
+          const sceneData = resultAction.payload.scene;
+
+          setTimeout(() => {
+            onSuccess?.("create", sceneData);
+            onClose();
+          }, 1500);
+        } else if (createScene.rejected.match(resultAction)) {
+          console.error("Scene creation failed:", resultAction.payload);
+          const errorMessage =
+            resultAction.payload?.message || "Failed to create scene";
+          setErrors({ form: errorMessage });
+        }
       }
-    } catch (err) {
-      console.error("SceneFormModal - Failed to save scene:", err);
-      // Set form-wide error message
-      setErrors((prev) => ({
-        ...prev,
-        form: err.message || "Failed to save scene. Please try again.",
-      }));
+    } catch (error) {
+      console.error("SceneFormModal - Failed to save scene:", error);
+      setErrors({
+        form: error.message || "An unexpected error occurred",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -183,7 +209,9 @@ const SceneFormModal = ({
       isOpen={isOpen}
       onClose={onClose}
       title={isEditing ? "Edit Scene" : "Create Scene"}
+      data-testid="scene-form-modal"
     >
+      {console.log("SceneFormModal - Rendering modal with isOpen:", isOpen)}
       <form onSubmit={handleSubmit} className="scene-form">
         <Input
           label="Scene Title"

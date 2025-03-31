@@ -1,5 +1,6 @@
 import React from "react";
 import { MODAL_CONFIG } from "./config";
+import { MODAL_TYPES } from "../constants/modalTypes";
 
 // Create modal registry
 const modalRegistry = new Map();
@@ -11,7 +12,15 @@ const getModalComponent = async (type) => {
     return null;
   }
 
-  if (!Object.values(MODAL_CONFIG.TYPES).includes(type)) {
+  // Create a combined list of valid types
+  const validTypes = [
+    ...Object.values(MODAL_CONFIG.TYPES),
+    MODAL_TYPES.LOGIN,
+    MODAL_TYPES.SIGNUP,
+    MODAL_TYPES.UNIVERSE_CREATE
+  ];
+
+  if (!validTypes.includes(type)) {
     console.error(`Invalid modal type: ${type}`);
     return null;
   }
@@ -20,21 +29,27 @@ const getModalComponent = async (type) => {
     let component;
     switch (type) {
       case "ALERT":
+      case MODAL_TYPES.ALERT:
         component = (await import("../components/modals/AlertModal")).default;
         break;
       case "CONFIRMATION":
+      case MODAL_TYPES.CONFIRMATION:
         component = (await import("../components/modals/ConfirmationModal")).default;
         break;
       case "FORM":
+      case MODAL_TYPES.FORM:
         component = (await import("../components/modals/FormModal")).default;
         break;
       case "LOGIN":
+      case MODAL_TYPES.LOGIN:
         component = (await import("../components/auth/LoginModal")).default;
         break;
       case "SIGNUP":
+      case MODAL_TYPES.SIGNUP:
         component = (await import("../components/auth/SignupModal")).default;
         break;
-      case "UNIVERSE_CREATE":
+      case "universe-create":
+      case MODAL_TYPES.UNIVERSE_CREATE:
         component = (await import("../components/modals/UniverseCreateModal")).default;
         break;
       default:
@@ -54,7 +69,9 @@ const getModalComponent = async (type) => {
  * @returns {boolean} Whether the type is valid
  */
 export const isValidModalType = (type) => {
-  return Object.values(MODAL_CONFIG.TYPES).includes(type);
+  // Check both MODAL_CONFIG.TYPES and MODAL_TYPES
+  return Object.values(MODAL_CONFIG.TYPES).includes(type) ||
+    Object.values(MODAL_TYPES).includes(type);
 };
 
 /**

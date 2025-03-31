@@ -5,15 +5,24 @@ import { AUTH_CONFIG } from "../../utils/config";
 import { Suspense } from "react";
 
 function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useSelector((state) => state.auth);
+  const { isAuthenticated, loading, user } = useSelector((state) => state.auth);
   const location = useLocation();
+
+  // Get tokens directly from localStorage for comparison
+  const hasAccessToken = !!localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+  const hasRefreshToken = !!localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+  const hasStoredUser = !!localStorage.getItem(AUTH_CONFIG.USER_KEY);
 
   console.debug("ProtectedRoute check:", {
     isAuthenticated,
     loading,
     path: location.pathname,
-    hasAccessToken: !!localStorage.getItem(AUTH_CONFIG.TOKEN_KEY),
-    hasRefreshToken: !!localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY),
+    query: location.search,
+    hasAccessToken,
+    hasRefreshToken,
+    hasStoredUser,
+    hasUser: !!user,
+    userId: user?.id,
   });
 
   // If still loading, show loading state
@@ -25,6 +34,22 @@ function ProtectedRoute({ children }) {
   // If not authenticated, redirect to login
   if (!isAuthenticated) {
     console.debug("User is not authenticated, redirecting to login");
+
+    // Try to log more debug info
+    try {
+      const storedToken = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+      const storedUser = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+      console.debug("Auth failed details:", {
+        tokenLength: storedToken ? storedToken.length : 0,
+        userDataExists: !!storedUser,
+        currentPath: location.pathname,
+        searchParams: location.search,
+      });
+    } catch (e) {
+      console.error("Error logging auth details:", e);
+    }
+
+    // Save the current location they're trying to access
     return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
   }
 

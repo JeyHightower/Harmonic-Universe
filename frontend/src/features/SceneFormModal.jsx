@@ -4,7 +4,10 @@ import { useDispatch, useSelector } from "react-redux";
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
 import Modal from "../components/common/Modal";
-import { createScene, updateScene } from "../store/thunks/scenesThunks.js";
+import {
+  createScene,
+  updateScene,
+} from "../store/thunks/consolidated/scenesThunks.js";
 import "../styles/SceneFormModal.css";
 
 const SceneFormModal = ({

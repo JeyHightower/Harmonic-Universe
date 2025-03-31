@@ -1,16 +1,27 @@
-.scene-card {
+.scene-card-container {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  background-color: #ffffff;
   border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
-.scene-card:hover {
+.scene-card-container:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.scene-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  text-decoration: none;
+  color: inherit;
+  background-color: #ffffff;
+  height: 100%;
 }
 
 .scene-card-image {
@@ -62,25 +73,50 @@
 }
 
 .scene-card-actions {
-  padding: 8px 16px;
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  border-top: 1px solid #eee;
+  padding: 8px 12px;
+  background-color: #f8f9fa;
+  border-top: 1px solid #e9ecef;
 }
 
-.scene-card-actions .MuiIconButton-root {
-  padding: 8px;
-  color: #666;
-  transition: color 0.2s ease-in-out;
+.scene-card-actions button {
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 4px;
+  margin-left: 6px;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
-.scene-card-actions .MuiIconButton-root:hover {
-  color: #1976d2;
+.scene-card-actions .btn-edit {
+  color: #4285f4;
+  border: 1px solid #4285f4;
 }
 
-.scene-card-actions .MuiIconButton-root.MuiIconButton-colorError:hover {
-  color: #d32f2f;
+.scene-card-actions .btn-edit:hover {
+  background-color: #4285f4;
+  color: white;
+}
+
+.scene-card-actions .btn-delete {
+  color: #ea4335;
+  border: 1px solid #ea4335;
+}
+
+.scene-card-actions .btn-delete:hover {
+  background-color: #ea4335;
+  color: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .scene-card-actions button {
+    padding: 5px 8px;
+  }
 }
 
 /* Responsive Design */
