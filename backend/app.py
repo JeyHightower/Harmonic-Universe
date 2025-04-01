@@ -10,6 +10,7 @@ import platform
 from logging.handlers import RotatingFileHandler
 from dotenv import load_dotenv
 from typing import Optional, Dict, List, Any, Union
+import mimetypes
 
 # Add the current directory to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -19,6 +20,14 @@ load_dotenv()
 
 # Global error counter
 startup_errors = []
+
+# Ensure proper MIME types for JavaScript files
+mimetypes.add_type('application/javascript', '.js')
+mimetypes.add_type('application/javascript', '.mjs')
+mimetypes.add_type('application/javascript', '.jsx')
+mimetypes.add_type('text/css', '.css')
+mimetypes.add_type('image/svg+xml', '.svg')
+mimetypes.add_type('application/json', '.json')
 
 def create_app():
     # Create Flask application with absolute path to static folder
@@ -370,6 +379,32 @@ def create_app():
                 "message": str(e),
                 "traceback": traceback.format_exc()
             }), 500
+
+    # Find the section for serving static files
+    @app.route('/static/<path:filename>')
+    def serve_static(filename):
+        """Serve static files with proper MIME types."""
+        # Determine correct MIME type based on file extension
+        mime_type = None
+        if filename.endswith('.js'):
+            mime_type = 'application/javascript'
+        elif filename.endswith('.mjs'):
+            mime_type = 'application/javascript'
+        elif filename.endswith('.jsx'):
+            mime_type = 'application/javascript'
+        elif filename.endswith('.css'):
+            mime_type = 'text/css'
+        elif filename.endswith('.svg'):
+            mime_type = 'image/svg+xml'
+        elif filename.endswith('.json'):
+            mime_type = 'application/json'
+        
+        # Serve the file with the determined MIME type
+        if app.static_folder is not None:
+            return send_from_directory(app.static_folder, filename, mimetype=mime_type)
+        
+        app.logger.error(f"Static folder not configured, cannot serve {filename}")
+        return jsonify({"error": "Static folder not configured"}), 500
 
     return app
 

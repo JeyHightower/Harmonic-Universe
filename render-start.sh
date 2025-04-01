@@ -29,6 +29,23 @@ if [ -d "static" ]; then
     echo "Static directory contents:"
     ls -la static
     
+    # Ensure React fixes directory exists
+    if [ ! -d "static/static/react-fixes" ]; then
+        echo "Creating React fixes directory..."
+        mkdir -p static/static/react-fixes
+        
+        # Copy React fixes if available
+        if [ -f "../backend/fixes/react-fix-loader.js" ]; then
+            echo "Copying React fixes from backend/fixes..."
+            cp ../backend/fixes/react-fix-loader.js static/static/react-fixes/
+        else
+            # Create a basic React fix loader if not available
+            echo "Creating basic React fix loader..."
+            echo "/* Basic React fix loader */" > static/static/react-fixes/react-fix-loader.js
+            echo "console.log('React fix loader applied');" >> static/static/react-fixes/react-fix-loader.js
+        fi
+    fi
+    
     if [ -f "static/index.html" ]; then
         echo "index.html exists in static directory"
         echo "First 10 lines of index.html:"

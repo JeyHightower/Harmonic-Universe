@@ -404,6 +404,13 @@ echo "Copying frontend build to backend static directory..."
 echo "Copying main files from frontend/dist to backend/static..."
 cp -r frontend/dist/* backend/static/
 
+# Copy React fixes to static directory
+echo "Copying React fixes to static directory..."
+mkdir -p backend/static/static/react-fixes
+cp backend/fixes/react-fix-loader.js backend/static/static/react-fixes/
+cp backend/fixes/mimetype.ini backend/static/mimetype.ini
+cp backend/fixes/htaccess backend/static/.htaccess
+
 # Verify static files were copied
 echo "Frontend build files copied successfully"
 echo "Static directory contents:"
