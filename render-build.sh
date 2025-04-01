@@ -26,7 +26,8 @@ npm install --no-audit --no-fund
 rm -rf node_modules/.cache
 
 echo "Building frontend production assets..."
-npm run build
+# Directly call vite build instead of npm run build to avoid infinite recursion
+npx vite build
 
 # Clean up node_modules after build to free memory
 rm -rf node_modules
