@@ -18,15 +18,22 @@ cd backend
 # Ensure log directory exists
 mkdir -p logs
 
+# Make sure virtual environment exists and is activated
+if [ ! -d ".venv" ]; then
+    echo "Creating virtual environment..."
+    python -m venv .venv
+fi
+
+# Activate virtual environment
+source .venv/bin/activate
+
+# Ensure Flask-Caching is installed
+echo "Checking Flask-Caching installation..."
+pip install --no-cache-dir Flask-Caching==2.1.0
+
 # Attempt to run any pending migrations
 echo "Checking for pending database migrations..."
-if [ -d ".venv" ]; then
-    source .venv/bin/activate
-    python -m flask db upgrade || echo "Warning: Database migrations failed, but continuing startup"
-else
-    echo "Virtual environment not found, using system Python"
-    python -m flask db upgrade || echo "Warning: Database migrations failed, but continuing startup"
-fi
+python -m flask db upgrade || echo "Warning: Database migrations failed, but continuing startup"
 
 # Set up environment variables
 export FLASK_APP=app.py
@@ -34,8 +41,8 @@ export FLASK_ENV=production
 export FLASK_DEBUG=0
 export PYTHONPATH=$PYTHONPATH:$(pwd)
 
-# Determine port - default to 8000 if PORT env var is not set
-PORT="${PORT:-8000}"
+# Determine port - default to 10000 if PORT env var is not set
+PORT="${PORT:-10000}"
 echo "Application will listen on port $PORT"
 
 # Check if gunicorn is available

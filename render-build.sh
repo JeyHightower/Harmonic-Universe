@@ -183,6 +183,11 @@ else
     echo "Installing dependencies with pip..."
     pip install --upgrade pip
     pip install --no-cache-dir -r requirements.txt
+    
+    # Explicitly install Flask-Caching
+    echo "Explicitly installing Flask-Caching..."
+    pip install --no-cache-dir Flask-Caching==2.1.0
+    
     pip install --no-cache-dir gunicorn eventlet
 fi
 
