@@ -147,9 +147,19 @@ EOF
 echo "Running manual build script..."
 node manual-build.js
 
-# Try to run the regular build if it exists (fallback to manual if it fails)
-echo "Attempting to run regular Vite build..."
-npm run build || echo "Regular build failed, using manual build only"
+# Try to run the regular Vite build directly to avoid npm script recursion
+echo "Attempting to run Vite build directly..."
+if command -v npx &> /dev/null; then
+    echo "Using npx to run vite build directly..."
+    npx vite build || echo "Vite build failed, using manual build only"
+else
+    echo "npx not available, using node_modules directly..."
+    if [ -f "./node_modules/.bin/vite" ]; then
+        ./node_modules/.bin/vite build || echo "Vite build failed, using manual build only"
+    else
+        echo "Vite not found in node_modules, using manual build only"
+    fi
+fi
 
 # Clean up artifacts and node_modules to free memory
 echo "Cleaning up build artifacts..."
