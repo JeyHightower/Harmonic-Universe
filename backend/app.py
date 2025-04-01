@@ -168,20 +168,35 @@ def create_app():
         """Simple after_request hook to ensure JavaScript MIME types are set correctly."""
         path = request.path
         
+        # Debug: Log all headers for JavaScript requests to understand how browsers are requesting them
+        if path.endswith('.js') or path.endswith('.mjs') or '.js?' in path or '.mjs?' in path:
+            app.logger.info(f"JS request headers for {path}:")
+            for name, value in request.headers:
+                app.logger.info(f"  {name}: {value}")
+        
         # Handle JavaScript files with detailed logging
         if path.endswith('.js') or path.endswith('.mjs') or '.js?' in path or '.mjs?' in path:
             current_type = response.headers.get('Content-Type', 'undefined')
             
-            # Only change MIME type if it's not already set correctly
-            if 'application/javascript' not in current_type:
-                app.logger.info(f"Correcting MIME type for {path} from {current_type} to application/javascript")
-                response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
-                
-                # Log details about this request for debugging
-                app.logger.info(f"JS file request: {path}, Referrer: {request.headers.get('Referer', 'none')}")
+            # ALWAYS set JavaScript MIME type for any .js files, regardless of current type
+            app.logger.info(f"Forcing MIME type for {path} from {current_type} to application/javascript")
+            response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
+            
+            # Log details about this request for debugging
+            app.logger.info(f"JS file request: {path}, Referrer: {request.headers.get('Referer', 'none')}")
         
-        # ALWAYS force the correct MIME type for any module scripts
-        if path.endswith('.js') and request.headers.get('Sec-Fetch-Dest') == 'script' and request.headers.get('Sec-Fetch-Mode') == 'cors':
+        # Check for module script request markers - multiple ways a browser might indicate it
+        is_module = False
+        if request.headers.get('Sec-Fetch-Dest') == 'script':
+            is_module = True
+        accept_header = request.headers.get('Accept', '')
+        if accept_header and 'application/javascript' in accept_header:
+            is_module = True
+        if request.headers.get('X-Requested-With') == 'ModuleLoader':
+            is_module = True
+            
+        # Handle module scripts specially
+        if path.endswith('.js') and is_module:
             app.logger.info(f"Forcing application/javascript MIME type for module script: {path}")
             response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
 
@@ -189,6 +204,12 @@ def create_app():
         if '/src/index.js' in path or '/index.js' in path:
             app.logger.info(f"Setting MIME type for {path} to application/javascript (special handling)")
             response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
+        
+        # Add CORS headers for JavaScript files to help with module loading
+        if path.endswith('.js') or path.endswith('.mjs'):
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
         
         return response
 
@@ -720,6 +741,70 @@ console.log('React fixes applied successfully at:', new Date().toISOString());
                 'traceback': traceback.format_exc()
             }), 500
 
+    # Add a special route for jsx-runtime to enable React compatibility
+    @app.route('/jsx-runtime')
+    @app.route('/jsx-runtime.js')
+    @app.route('/jsx-runtime/index.js')
+    @app.route('/node_modules/react/jsx-runtime.js')
+    @app.route('/node_modules/react/jsx-dev-runtime.js')
+    def serve_jsx_runtime_module():
+        """Serve a React JSX compatibility layer."""
+        app.logger.info(f"JSX Runtime requested via {request.path}")
+        
+        jsx_content = """
+        // JSX Runtime Compatibility Layer
+        console.log('Loading server-generated JSX runtime');
+        
+        // Create the JSX runtime functions that match React's implementation
+        export function jsx(type, props, key) {
+          const config = {};
+          for (const prop in props) {
+            if (prop !== 'children' && props.hasOwnProperty(prop)) {
+              config[prop] = props[prop];
+            }
+          }
+          
+          if (key !== undefined) {
+            config.key = key;
+          }
+          
+          if (props && props.children !== undefined) {
+            config.children = props.children;
+          }
+          
+          // Use React.createElement if available, otherwise return a representation
+          return window.React ? 
+            window.React.createElement(type, config) : 
+            { $$typeof: Symbol.for('react.element'), type, props: config };
+        }
+        
+        // jsxs is the same implementation
+        export const jsxs = jsx;
+        
+        // Export Fragment
+        export const Fragment = window.React ? 
+          window.React.Fragment : 
+          Symbol.for('react.fragment');
+        
+        // Default export
+        export default {
+          jsx,
+          jsxs,
+          Fragment
+        };
+        """
+        
+        response = app.response_class(
+            response=jsx_content,
+            status=200,
+            mimetype='application/javascript; charset=utf-8'
+        )
+        
+        # Add CORS headers
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        
+        return response
+
     # Add special handlers for JSX runtime modules
     @app.route('/jsx-runtime/jsx-runtime.js')
     @app.route('/node_modules/react/jsx-runtime.js')
@@ -952,6 +1037,54 @@ console.log('React fixes applied successfully at:', new Date().toISOString());
         
         return response
 
+    # Add special route for module scripts to ensure correct MIME type
+    @app.route('/index.js')
+    @app.route('/src/index.js')
+    def serve_index_js():
+        """Serve index.js with proper MIME type."""
+        app.logger.info(f"index.js requested via {request.path}")
+        
+        # Log all request headers to understand how the browser is requesting this
+        app.logger.info("Request headers:")
+        for name, value in request.headers:
+            app.logger.info(f"  {name}: {value}")
+        
+        # Create a minimal index.js that includes the necessary exports
+        js_content = """
+        // Server-generated index.js
+        console.log('Loading server-generated index.js for path: %s', window.location.pathname);
+        
+        // Provide React JSX compatibility exports
+        export const jsx = window.React ? window.React.createElement : (type, props) => ({ type, props });
+        export const jsxs = window.React ? window.React.createElement : (type, props) => ({ type, props });
+        export const Fragment = window.React ? window.React.Fragment : Symbol('Fragment');
+        
+        // Default export
+        export default { version: '1.0.0' };
+        
+        // Try to load the actual app
+        try {
+            const mainScript = document.createElement('script');
+            mainScript.src = '/assets/index.js';
+            mainScript.type = 'module';
+            document.head.appendChild(mainScript);
+            console.log('Injected main app script');
+        } catch (e) {
+            console.error('Error loading app:', e);
+        }
+        """
+        
+        response = app.response_class(
+            response=js_content,
+            status=200,
+            mimetype='application/javascript; charset=utf-8'
+        )
+        
+        # Add CORS headers to allow module loading
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        
+        return response
+
     return app
 
 try:
@@ -963,17 +1096,22 @@ try:
     def not_found(error):
         app.logger.warning(f'Not Found: {request.url}')
         
-        # Don't serve index.html for JavaScript requests, return a JavaScript 404 instead
-        if request.path.endswith('.js') or request.path.endswith('.mjs') or '.js?' in request.path:
+        # Always serve JavaScript for any JS-related requests to prevent MIME type issues
+        if request.path.endswith('.js') or request.path.endswith('.mjs') or request.path.endswith('.jsx') or '.js?' in request.path:
             app.logger.info(f'Serving JavaScript 404 for path: {request.path}')
             js_404 = """
             // 404 - JavaScript file not found
-            console.error('JavaScript file not found');
+            console.error('JavaScript file not found: %s', window.location.pathname);
+            // Provide empty exports to prevent module errors
+            export const Fragment = Symbol('Fragment');
+            export const jsx = (type, props) => ({ type, props });
+            export const jsxs = (type, props) => ({ type, props });
             export default { error: '404 Not Found' };
             """
             response = app.response_class(
                 response=js_404,
-                mimetype='application/javascript'
+                status=200,  # Return 200 to prevent cascading errors
+                mimetype='application/javascript; charset=utf-8'
             )
             return response
             

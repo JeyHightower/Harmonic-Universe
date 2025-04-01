@@ -22,14 +22,14 @@ mimetypes.add_type('application/json', '.json')
 
 def patched_send_file(path_or_file, *args, **kwargs):
     """Patched version of Flask's send_file function to ensure proper MIME types."""
-    # Check if this is a JavaScript file and set mimetype if not provided
-    if isinstance(path_or_file, str) and path_or_file.endswith(('.js', '.mjs', '.jsx')) and 'mimetype' not in kwargs:
+    # Check if this is a JavaScript file and ALWAYS set mimetype regardless of whether it was provided
+    if isinstance(path_or_file, str) and path_or_file.endswith(('.js', '.mjs', '.jsx')):
         kwargs['mimetype'] = 'application/javascript'
-    elif isinstance(path_or_file, str) and path_or_file.endswith('.css') and 'mimetype' not in kwargs:
+    elif isinstance(path_or_file, str) and path_or_file.endswith('.css'):
         kwargs['mimetype'] = 'text/css'
-    elif isinstance(path_or_file, str) and path_or_file.endswith('.svg') and 'mimetype' not in kwargs:
+    elif isinstance(path_or_file, str) and path_or_file.endswith('.svg'):
         kwargs['mimetype'] = 'image/svg+xml'
-    elif isinstance(path_or_file, str) and path_or_file.endswith('.json') and 'mimetype' not in kwargs:
+    elif isinstance(path_or_file, str) and path_or_file.endswith('.json'):
         kwargs['mimetype'] = 'application/json'
     
     return send_file(path_or_file, *args, **kwargs)
@@ -37,14 +37,14 @@ def patched_send_file(path_or_file, *args, **kwargs):
 
 def patched_send_from_directory(directory, filename, *args, **kwargs):
     """Patched version of Flask's send_from_directory function to ensure proper MIME types."""
-    # Check if this is a JavaScript file and set mimetype if not provided
-    if filename.endswith(('.js', '.mjs', '.jsx')) and 'mimetype' not in kwargs:
+    # Check if this is a JavaScript file and ALWAYS set mimetype regardless of whether it was provided
+    if filename.endswith(('.js', '.mjs', '.jsx')):
         kwargs['mimetype'] = 'application/javascript'
-    elif filename.endswith('.css') and 'mimetype' not in kwargs:
+    elif filename.endswith('.css'):
         kwargs['mimetype'] = 'text/css'
-    elif filename.endswith('.svg') and 'mimetype' not in kwargs:
+    elif filename.endswith('.svg'):
         kwargs['mimetype'] = 'image/svg+xml'
-    elif filename.endswith('.json') and 'mimetype' not in kwargs:
+    elif filename.endswith('.json'):
         kwargs['mimetype'] = 'application/json'
     
     return send_from_directory(directory, filename, *args, **kwargs)
