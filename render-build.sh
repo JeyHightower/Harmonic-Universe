@@ -27,151 +27,93 @@ cd frontend
 echo "Installing frontend dependencies..."
 npm install --no-audit --no-fund
 
-# Create Vite build script with fallback options
-echo "Creating Vite build script..."
-cat > build-frontend.js << 'EOF'
-const { spawn } = require('child_process');
-const path = require('path');
-const fs = require('fs');
+# Create a simplified direct Vite build script
+echo "Creating direct Vite build script..."
+cat > build-direct.cjs << 'EOF'
+console.log('Starting direct Vite build...');
 
 // Polyfill crypto if needed
-if (typeof global.crypto === 'undefined' || !global.crypto.getRandomValues) {
-  global.crypto = global.crypto || {};
-  global.crypto.getRandomValues = function(arr) {
-    for (let i = 0; i < arr.length; i++) {
-      arr[i] = Math.floor(Math.random() * 256);
+if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+  global.crypto = {
+    getRandomValues: function(arr) {
+      for (let i = 0; i < arr.length; i++) {
+        arr[i] = Math.floor(Math.random() * 256);
+      }
+      return arr;
     }
-    return arr;
   };
   console.log('Added crypto.getRandomValues polyfill');
 }
 
-const options = { stdio: 'inherit', shell: true };
+// Direct execution without npm scripts
+const { execSync } = require('child_process');
 
-// Try multiple methods to build the frontend
-async function buildWithNpm() {
-  return new Promise((resolve, reject) => {
-    console.log('Attempting to build with npm run build...');
-    const build = spawn('npm', ['run', 'build'], options);
-    
-    build.on('close', code => {
-      if (code === 0) {
-        console.log('Build successful with npm run build');
-        resolve(true);
-      } else {
-        console.log(`Build with npm run build failed with code ${code}`);
-        resolve(false);
-      }
-    });
-    
-    build.on('error', err => {
-      console.error('Error running npm build:', err);
-      resolve(false);
-    });
-  });
-}
-
-async function buildWithNpx() {
-  return new Promise((resolve, reject) => {
-    console.log('Attempting to build with npx vite build...');
-    const build = spawn('npx', ['vite', 'build'], options);
-    
-    build.on('close', code => {
-      if (code === 0) {
-        console.log('Build successful with npx vite build');
-        resolve(true);
-      } else {
-        console.log(`Build with npx vite build failed with code ${code}`);
-        resolve(false);
-      }
-    });
-    
-    build.on('error', err => {
-      console.error('Error running npx build:', err);
-      resolve(false);
-    });
-  });
-}
-
-async function buildWithGlobal() {
-  return new Promise((resolve, reject) => {
-    console.log('Attempting to build with global vite...');
-    spawn('npm', ['install', '-g', 'vite@4.0.0'], options).on('close', () => {
-      const build = spawn('vite', ['build'], options);
-      
-      build.on('close', code => {
-        if (code === 0) {
-          console.log('Build successful with global vite');
-          resolve(true);
-        } else {
-          console.log(`Build with global vite failed with code ${code}`);
-          resolve(false);
-        }
-      });
-      
-      build.on('error', err => {
-        console.error('Error running global vite build:', err);
-        resolve(false);
-      });
-    });
-  });
-}
-
-// Run all build methods in sequence until one succeeds
-async function run() {
-  // List files in node_modules to debug
+try {
+  // First attempt - try installing vite globally and running it
+  console.log('Attempting direct vite build...');
+  
+  // Log current directory and available files
+  console.log('Current directory:', process.cwd());
+  console.log('Loading vite.config.js file...');
+  
+  // Try a completely different approach using direct command line
+  console.log('Executing vite directly via command line...');
+  execSync('npm install -g vite@4.0.0 @vitejs/plugin-react@3.0.0', {stdio: 'inherit'});
+  execSync('vite build', {stdio: 'inherit'});
+  
+  console.log('Build completed successfully!');
+  process.exit(0);
+} catch (error) {
+  console.error('Direct build failed:', error.message);
+  console.error('Trying fallback method...');
+  
   try {
-    console.log('Checking vite installation path...');
-    if (fs.existsSync('node_modules/vite')) {
-      console.log('Vite directory found. Contents:');
-      fs.readdirSync('node_modules/vite').forEach(file => {
-        console.log(` - ${file}`);
-      });
-      
-      if (fs.existsSync('node_modules/vite/bin')) {
-        console.log('Vite bin directory found. Contents:');
-        fs.readdirSync('node_modules/vite/bin').forEach(file => {
-          console.log(` - ${file}`);
-        });
-      } else {
-        console.log('No bin directory found in vite module');
-      }
-    } else {
-      console.log('Vite directory not found in node_modules');
+    // Fallback method - create a minimal vite config and build
+    console.log('Creating minimal vite.config.js...');
+    const fs = require('fs');
+    
+    // Create backup of original config
+    if (fs.existsSync('./vite.config.js')) {
+      fs.copyFileSync('./vite.config.js', './vite.config.js.bak');
     }
-  } catch (err) {
-    console.error('Error listing vite files:', err);
+    
+    // Create simple config file
+    fs.writeFileSync('./minimal-vite.config.js', `
+      import { defineConfig } from 'vite';
+      export default defineConfig({
+        root: '.',
+        build: {
+          outDir: 'dist',
+          emptyOutDir: true,
+        },
+      });
+    `);
+    
+    console.log('Using simplified config with npx...');
+    execSync('npx vite build --config minimal-vite.config.js', {stdio: 'inherit'});
+    
+    // Restore original config
+    if (fs.existsSync('./vite.config.js.bak')) {
+      fs.copyFileSync('./vite.config.js.bak', './vite.config.js');
+      fs.unlinkSync('./vite.config.js.bak');
+    }
+    
+    console.log('Fallback build completed successfully!');
+    process.exit(0);
+  } catch (fallbackError) {
+    console.error('All build methods failed:', fallbackError.message);
+    process.exit(1);
   }
-  
-  let success = false;
-  
-  // Try npm run build first
-  success = await buildWithNpm();
-  if (success) return 0;
-  
-  // Try npx vite build next
-  success = await buildWithNpx();
-  if (success) return 0;
-  
-  // Last resort, try global vite
-  success = await buildWithGlobal();
-  if (success) return 0;
-  
-  console.error('All build methods failed');
-  return 1;
 }
-
-run().then(exitCode => process.exit(exitCode));
 EOF
 
-# Run the build script
-echo "Running the build script..."
-node build-frontend.js
+# Run the build script with Node's CommonJS mode
+echo "Running the direct build script with CommonJS..."
+node build-direct.cjs
 
-# Clean up build artifacts
-rm -f build-frontend.js
-
-# Clean up node_modules AFTER build to free memory
+# Clean up artifacts and node_modules to free memory
+echo "Cleaning up build artifacts..."
+rm -f build-direct.cjs minimal-vite.config.js vite.config.js.bak
 rm -rf node_modules
 cd ..
 
