@@ -678,111 +678,94 @@ EOF
 echo "Assets directory contents:"
 ls -la backend/static/assets || echo "Assets directory not found"
 
-# Create dedicated JSX runtime module script
-echo "Creating JSX runtime module script..."
-mkdir -p backend/static/jsx-runtime
-cat > backend/static/jsx-runtime/jsx-runtime.js << 'EOF'
-/**
- * JSX Runtime module
- * This provides the jsx and jsxs functions for modern React builds
- */
+# Create direct JSX runtime module for easier imports
+echo "Creating simplified direct JSX runtime modules..."
 
-// Use the React global if available
-const React = window.React;
+# Create the main jsx-runtime.js file
+mkdir -p backend/static/node_modules/react
+cat > backend/static/node_modules/react/jsx-runtime.js << 'EOF'
+// Direct JSX runtime module
+console.log('Direct jsx-runtime.js module loaded');
 
-// Implementation of jsx/jsxs functions
-export function jsx(type, props, key) {
-  const config = {};
-  
-  // Copy all props except children
-  for (const propName in props) {
-    if (propName !== 'children' && Object.prototype.hasOwnProperty.call(props, propName)) {
-      config[propName] = props[propName];
-    }
-  }
-  
-  // Set children
-  config.children = props?.children;
-  
-  // Set key if provided
-  if (key !== undefined) {
-    config.key = key;
-  }
-  
-  console.log(`jsx called for type: ${typeof type === 'string' ? type : 'component'}`);
-  
-  return React.createElement(type, config, config.children);
-}
+// Export the functions from the global scope
+export const jsx = window.jsx || window.React.createElement;
+export const jsxs = window.jsxs || window.React.createElement;
+export const Fragment = window.Fragment || window.React.Fragment;
 
-// jsxs is the same but optimized for static children
-export function jsxs(type, props, key) {
-  return jsx(type, props, key);
-}
-
-// Export Fragment
-export const Fragment = React?.Fragment || Symbol('Fragment');
-
-// Default export for compatibility
+// Default export
 export default {
   jsx,
   jsxs,
   Fragment
 };
-
-// Log successful loading
-console.log('JSX runtime module loaded successfully');
 EOF
 
-# Create JSX dev runtime module script
-cat > backend/static/jsx-runtime/jsx-dev-runtime.js << 'EOF'
-/**
- * JSX Dev Runtime module
- * This provides the jsxDEV function for development builds
- */
+# Create dev version as well
+cat > backend/static/node_modules/react/jsx-dev-runtime.js << 'EOF'
+// Direct JSX dev runtime module
+console.log('Direct jsx-dev-runtime.js module loaded');
 
-// Re-export everything from jsx-runtime
-export * from './jsx-runtime.js';
+// Re-export from the global scope
+export const jsx = window.jsx || window.React.createElement;
+export const jsxs = window.jsxs || window.React.createElement;
+export const jsxDEV = window.jsx || window.React.createElement;
+export const Fragment = window.Fragment || window.React.Fragment;
 
-// Implementation of jsxDEV function with source info
-export function jsxDEV(type, props, key, isStaticChildren, source, self) {
-  const config = {};
-  
-  // Copy all props except children
-  for (const propName in props) {
-    if (propName !== 'children' && Object.prototype.hasOwnProperty.call(props, propName)) {
-      config[propName] = props[propName];
-    }
-  }
-  
-  // Set children
-  config.children = props?.children;
-  
-  // Set key if provided
-  if (key !== undefined) {
-    config.key = key;
-  }
-  
-  // Add source info in dev mode
-  if (source) {
-    config.__source = source;
-    config.__self = self;
-  }
-  
-  console.log(`jsxDEV called for type: ${typeof type === 'string' ? type : 'component'}`);
-  
-  return window.React.createElement(type, config, config.children);
-}
-
-// Default export for compatibility
+// Default export
 export default {
-  jsxDEV
+  jsx,
+  jsxs,
+  jsxDEV,
+  Fragment
 };
-
-// Log successful loading
-console.log('JSX dev runtime module loaded successfully');
 EOF
 
-echo "JSX runtime module scripts created"
+# Create a bare React module for direct imports
+cat > backend/static/node_modules/react/index.js << 'EOF'
+// Direct React module for fallback imports
+console.log('Direct React module loaded');
+
+// Simply export the global React object
+const React = window.React;
+
+// Export all React properties
+export const {
+  Children,
+  Component,
+  Fragment,
+  Profiler,
+  PureComponent,
+  StrictMode,
+  Suspense,
+  cloneElement,
+  createContext,
+  createElement,
+  createFactory,
+  createRef,
+  forwardRef,
+  isValidElement,
+  lazy,
+  memo,
+  useCallback,
+  useContext,
+  useDebugValue,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState
+} = React;
+
+// Version info
+export const version = React.version;
+
+// Default export
+export default React;
+EOF
+
+echo "Created simplified JSX runtime modules"
 
 echo "Build completed successfully at $(date)"
 exit 0 

@@ -31,73 +31,99 @@ if (html.includes('react-fix-loader.js')) {
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 
-<!-- JSX Runtime Fix - CRITICAL -->
+<!-- CRITICAL: Immediate JSX Runtime Implementation -->
 <script>
-  // Explicitly create JSX runtime functions that modern React apps expect
-  window.jsx = function(type, props, key, source, self) {
-    var config = {};
-    for (var propName in props) {
-      if (props.hasOwnProperty(propName) && propName !== 'children') {
-        config[propName] = props[propName];
-      }
-    }
-    
-    config.children = props && props.children ? props.children : arguments.length > 2 ? 
-      Array.prototype.slice.call(arguments, 2) : null;
-    
-    // Set key and ref if provided
-    if (key !== undefined) config.key = key;
-    if (source !== undefined && self !== undefined) config.__source = source;
-    
-    return React.createElement(type, config, config.children);
+  console.log('Immediate JSX runtime implementation executing');
+  
+  // CRITICAL: Define jsx/jsxs functions in the global scope IMMEDIATELY
+  window.jsx = function jsx(type, props, key) {
+    // Basic implementation that matches React's jsx function
+    return window.React.createElement(
+      type,
+      Object.assign(key !== undefined ? {key: key} : {}, props || {}),
+      props && props.children
+    );
   };
-
-  // jsxs is used for static children, but we'll just use the same implementation
+  
+  // jsxs is the same function in practice
   window.jsxs = window.jsx;
   
-  // Export jsx functions to mimic ESM behavior
-  window._jsx_runtime = { jsx: window.jsx, jsxs: window.jsxs, Fragment: React.Fragment };
+  // Define Fragment
+  window.Fragment = window.React ? window.React.Fragment : Symbol('Fragment');
   
-  // Ensure module.exports is defined to prevent errors
+  // Verify the functions are defined
+  console.log('JSX runtime functions defined:', {
+    jsx: typeof window.jsx === 'function',
+    jsxs: typeof window.jsxs === 'function',
+    Fragment: window.Fragment ? 'defined' : 'undefined'
+  });
+  
+  // Expose as a module-like object
+  window._jsx_runtime = {
+    jsx: window.jsx,
+    jsxs: window.jsxs,
+    Fragment: window.Fragment
+  };
+  
+  // Create mock module.exports for CommonJS-like environments
   if (typeof module === 'undefined') {
-    window.module = { exports: {} };
+    window.module = { exports: window._jsx_runtime };
+  } else {
+    module.exports = window._jsx_runtime;
   }
-  
-  // Attach to module.exports like React JSX runtime does
-  module.exports = window._jsx_runtime;
-  
-  console.log('JSX runtime functions explicitly defined');
 </script>
 
-<!-- Alternative ESM-based JSX runtime solution -->
+<!-- Import override for jsx-runtime -->
 <script type="module">
-  try {
-    // Modern approach using ESM
-    import React from 'https://esm.sh/react@18.3.0?dev';
+  // Intercept imports for jsx-runtime
+  window.__originalImport = window.import || (() => Promise.reject(new Error('import not available')));
+  
+  window.import = function(specifier) {
+    console.log('Import intercepted:', specifier);
     
-    // Define JSX runtime functions using imported React
-    window.jsx = React.createElement;
-    window.jsxs = React.createElement;
-    window.Fragment = React.Fragment;
+    // Handle jsx runtime imports specifically
+    if (specifier.includes('jsx-runtime') || specifier.includes('jsx-dev-runtime')) {
+      console.log('Providing synthetic JSX runtime for:', specifier);
+      return Promise.resolve({
+        jsx: window.jsx,
+        jsxs: window.jsxs,
+        Fragment: window.Fragment,
+        jsxDEV: window.jsx
+      });
+    }
     
-    // Create a proper JSX runtime module that can be imported
-    const jsxRuntime = {
-      jsx: window.jsx,
-      jsxs: window.jsxs,
-      Fragment: window.Fragment
+    // Fall back to original import
+    return window.__originalImport(specifier);
+  };
+  
+  // Pre-define paths that might be used by bundlers
+  const jsxRuntimePaths = [
+    '/jsx-runtime/jsx-runtime.js',
+    '/node_modules/react/jsx-runtime.js',
+    'react/jsx-runtime',
+    '/jsx-runtime.js',
+    'jsx-runtime'
+  ];
+  
+  // Create import maps for these paths if supported
+  if (document.createElement('script').importMap !== undefined) {
+    const importMap = {
+      imports: {}
     };
     
-    // Make it available for dynamic imports
-    window._jsx_runtime_esm = jsxRuntime;
+    jsxRuntimePaths.forEach(path => {
+      importMap.imports[path] = 'data:application/javascript;charset=utf-8,export const jsx = window.jsx; export const jsxs = window.jsxs; export const Fragment = window.Fragment; export default { jsx, jsxs, Fragment };';
+    });
     
-    console.log('ESM-based JSX runtime loaded successfully');
-  } catch (error) {
-    console.error('Error loading ESM-based JSX runtime:', error);
-    // Fallback to the global version is already in place
+    const importMapScript = document.createElement('script');
+    importMapScript.type = 'importmap';
+    importMapScript.textContent = JSON.stringify(importMap);
+    document.head.appendChild(importMapScript);
+    console.log('Added import map for JSX runtime paths');
   }
 </script>
 
-<!-- React fixes loader with multiple fallbacks -->
+<!-- Error monitoring for resource loading failures -->
 <script>
   // Error monitoring for resource loading failures
   window.addEventListener('error', function(e) {
@@ -119,40 +145,15 @@ if (html.includes('react-fix-loader.js')) {
     Fragment: Symbol('React.Fragment')
   };
   
-  // Ensure JSX runtime compatibility
+  // Double-check JSX runtime compatibility
   window.jsx = window.jsx || window.React.createElement;
   window.jsxs = window.jsxs || window.React.createElement;
   
-  // Log for diagnostic purposes
-  console.log('React globals initialized from inline script');
-  
-  // Load react-fix-loader.js with error handling
-  const loadReactFixes = function() {
-    const script = document.createElement('script');
-    script.src = '/static/react-fixes/react-fix-loader.js';
-    script.onerror = function() {
-      console.warn('Failed to load react-fix-loader.js, falling back to inline fix');
-      // Apply fixes directly if script fails to load
-      if (typeof React === 'undefined') {
-        console.warn('React still not found after fallback, applying emergency polyfill');
-        window.React = {
-          createElement: function(type, props, ...children) { return { type, props: props || {}, children }; },
-          createContext: function() { return { Provider: function(props) { return props.children; } }; },
-          Fragment: Symbol('React.Fragment')
-        };
-        window.jsx = window.React.createElement;
-        window.jsxs = window.React.createElement;
-      }
-    };
-    document.head.appendChild(script);
-  };
-  
-  // Wait for document to be ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', loadReactFixes);
-  } else {
-    loadReactFixes();
-  }
+  console.log('React and JSX runtime available:', {
+    React: !!window.React,
+    jsx: !!window.jsx,
+    jsxs: !!window.jsxs
+  });
 </script>`;
 
   // Find the closing head tag to insert our scripts right before it
@@ -190,6 +191,21 @@ const baseHtml = `
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Harmonic Universe</title>
   <meta http-equiv="Content-Type" content="text/javascript; charset=utf-8">
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script>
+    // CRITICAL: Define jsx/jsxs immediately
+    window.jsx = function(type, props, key) {
+      return window.React.createElement(
+        type,
+        Object.assign(key !== undefined ? {key: key} : {}, props || {}),
+        props && props.children
+      );
+    };
+    window.jsxs = window.jsx;
+    window.Fragment = window.React.Fragment;
+    console.log('JSX runtime implemented in base.html');
+  </script>
   <script src="/static/react-fixes/react-fix-loader.js"></script>
 </head>
 <body>
@@ -200,7 +216,12 @@ const baseHtml = `
   <script>
     // Check if React fixes are working
     document.addEventListener('DOMContentLoaded', function() {
-      console.log('React fixes loaded:', typeof window.React !== 'undefined');
+      console.log('React availability:', {
+        React: typeof window.React !== 'undefined',
+        jsx: typeof window.jsx !== 'undefined',
+        jsxs: typeof window.jsxs !== 'undefined',
+        Fragment: typeof window.Fragment !== 'undefined'
+      });
     });
   </script>
 </body>
