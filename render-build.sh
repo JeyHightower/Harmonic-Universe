@@ -27,19 +27,15 @@ cd frontend
 echo "Installing frontend dependencies..."
 npm install --no-audit --no-fund
 
-# Ensure @vitejs/plugin-react is installed
-echo "Making sure @vitejs/plugin-react is installed..."
-npm install --no-audit --no-fund @vitejs/plugin-react@3.0.0
+# Create Vite build script with fallback options
+echo "Creating Vite build script..."
+cat > build-frontend.js << 'EOF'
+const { spawn } = require('child_process');
+const path = require('path');
+const fs = require('fs');
 
-# Install a specific version of Vite known to work
-echo "Installing specific version of Vite..."
-npm uninstall vite
-npm install --no-audit --no-fund vite@4.0.0
-
-# Attempt to provide a polyfill for crypto.getRandomValues
-echo "Creating a polyfill for crypto.getRandomValues..."
-cat > crypto-polyfill.js << 'EOF'
-if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+// Polyfill crypto if needed
+if (typeof global.crypto === 'undefined' || !global.crypto.getRandomValues) {
   global.crypto = global.crypto || {};
   global.crypto.getRandomValues = function(arr) {
     for (let i = 0; i < arr.length; i++) {
@@ -47,15 +43,136 @@ if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
     }
     return arr;
   };
+  console.log('Added crypto.getRandomValues polyfill');
 }
+
+const options = { stdio: 'inherit', shell: true };
+
+// Try multiple methods to build the frontend
+async function buildWithNpm() {
+  return new Promise((resolve, reject) => {
+    console.log('Attempting to build with npm run build...');
+    const build = spawn('npm', ['run', 'build'], options);
+    
+    build.on('close', code => {
+      if (code === 0) {
+        console.log('Build successful with npm run build');
+        resolve(true);
+      } else {
+        console.log(`Build with npm run build failed with code ${code}`);
+        resolve(false);
+      }
+    });
+    
+    build.on('error', err => {
+      console.error('Error running npm build:', err);
+      resolve(false);
+    });
+  });
+}
+
+async function buildWithNpx() {
+  return new Promise((resolve, reject) => {
+    console.log('Attempting to build with npx vite build...');
+    const build = spawn('npx', ['vite', 'build'], options);
+    
+    build.on('close', code => {
+      if (code === 0) {
+        console.log('Build successful with npx vite build');
+        resolve(true);
+      } else {
+        console.log(`Build with npx vite build failed with code ${code}`);
+        resolve(false);
+      }
+    });
+    
+    build.on('error', err => {
+      console.error('Error running npx build:', err);
+      resolve(false);
+    });
+  });
+}
+
+async function buildWithGlobal() {
+  return new Promise((resolve, reject) => {
+    console.log('Attempting to build with global vite...');
+    spawn('npm', ['install', '-g', 'vite@4.0.0'], options).on('close', () => {
+      const build = spawn('vite', ['build'], options);
+      
+      build.on('close', code => {
+        if (code === 0) {
+          console.log('Build successful with global vite');
+          resolve(true);
+        } else {
+          console.log(`Build with global vite failed with code ${code}`);
+          resolve(false);
+        }
+      });
+      
+      build.on('error', err => {
+        console.error('Error running global vite build:', err);
+        resolve(false);
+      });
+    });
+  });
+}
+
+// Run all build methods in sequence until one succeeds
+async function run() {
+  // List files in node_modules to debug
+  try {
+    console.log('Checking vite installation path...');
+    if (fs.existsSync('node_modules/vite')) {
+      console.log('Vite directory found. Contents:');
+      fs.readdirSync('node_modules/vite').forEach(file => {
+        console.log(` - ${file}`);
+      });
+      
+      if (fs.existsSync('node_modules/vite/bin')) {
+        console.log('Vite bin directory found. Contents:');
+        fs.readdirSync('node_modules/vite/bin').forEach(file => {
+          console.log(` - ${file}`);
+        });
+      } else {
+        console.log('No bin directory found in vite module');
+      }
+    } else {
+      console.log('Vite directory not found in node_modules');
+    }
+  } catch (err) {
+    console.error('Error listing vite files:', err);
+  }
+  
+  let success = false;
+  
+  // Try npm run build first
+  success = await buildWithNpm();
+  if (success) return 0;
+  
+  // Try npx vite build next
+  success = await buildWithNpx();
+  if (success) return 0;
+  
+  // Last resort, try global vite
+  success = await buildWithGlobal();
+  if (success) return 0;
+  
+  console.error('All build methods failed');
+  return 1;
+}
+
+run().then(exitCode => process.exit(exitCode));
 EOF
 
-echo "Building frontend production assets..."
-# Use node with crypto polyfill
-node -r ./crypto-polyfill.js ./node_modules/vite/bin/vite.js build
+# Run the build script
+echo "Running the build script..."
+node build-frontend.js
 
-# Clean up node_modules AFTER build to free memory (moved after build)
-rm -rf node_modules crypto-polyfill.js
+# Clean up build artifacts
+rm -f build-frontend.js
+
+# Clean up node_modules AFTER build to free memory
+rm -rf node_modules
 cd ..
 
 # Build Backend
