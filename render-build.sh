@@ -22,14 +22,15 @@ cd frontend
 echo "Installing frontend dependencies..."
 npm install --no-audit --no-fund
 
-# Clean up unnecessary files to reduce memory usage
-rm -rf node_modules/.cache
+# Ensure @vitejs/plugin-react is installed
+echo "Making sure @vitejs/plugin-react is installed..."
+npm install --no-audit --no-fund @vitejs/plugin-react
 
 echo "Building frontend production assets..."
 # Directly call vite build instead of npm run build to avoid infinite recursion
 npx vite build
 
-# Clean up node_modules after build to free memory
+# Clean up node_modules AFTER build to free memory (moved after build)
 rm -rf node_modules
 cd ..
 
