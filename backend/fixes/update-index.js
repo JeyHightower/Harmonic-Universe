@@ -69,8 +69,49 @@ if (html.includes('react-fix-loader.js')) {
   console.log('JSX runtime functions explicitly defined');
 </script>
 
+<!-- Alternative ESM-based JSX runtime solution -->
+<script type="module">
+  try {
+    // Modern approach using ESM
+    import React from 'https://esm.sh/react@18.3.0?dev';
+    
+    // Define JSX runtime functions using imported React
+    window.jsx = React.createElement;
+    window.jsxs = React.createElement;
+    window.Fragment = React.Fragment;
+    
+    // Create a proper JSX runtime module that can be imported
+    const jsxRuntime = {
+      jsx: window.jsx,
+      jsxs: window.jsxs,
+      Fragment: window.Fragment
+    };
+    
+    // Make it available for dynamic imports
+    window._jsx_runtime_esm = jsxRuntime;
+    
+    console.log('ESM-based JSX runtime loaded successfully');
+  } catch (error) {
+    console.error('Error loading ESM-based JSX runtime:', error);
+    // Fallback to the global version is already in place
+  }
+</script>
+
 <!-- React fixes loader with multiple fallbacks -->
 <script>
+  // Error monitoring for resource loading failures
+  window.addEventListener('error', function(e) {
+    if (e.target && (e.target.src || e.target.href)) {
+      console.error('Resource failed to load:', e.target.src || e.target.href);
+      
+      // Log additional details that might help troubleshooting
+      console.error('Resource type:', e.target.tagName);
+      console.error('Resource attributes:', Object.fromEntries(
+        [...e.target.attributes].map(attr => [attr.name, attr.value])
+      ));
+    }
+  }, true);
+
   // Ensure React global availability
   window.React = window.React || {
     createElement: function(type, props, ...children) { return { type, props: props || {}, children }; },
