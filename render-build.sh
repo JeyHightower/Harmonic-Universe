@@ -23,6 +23,10 @@ export NODE_ENV=production
 echo "==== Building frontend ===="
 cd frontend
 
+# Explicitly install React and related dependencies first
+echo "Installing React and related dependencies..."
+npm install react react-dom @vitejs/plugin-react --no-save
+
 echo "Creating manual static build instead of using Vite..."
 # Create a manual build script that doesn't rely on Vite
 cat > manual-build.js << 'EOF'
@@ -149,7 +153,44 @@ node manual-build.js
 
 # Install Vite and React plugin explicitly before attempting to build
 echo "Installing required Vite plugins..."
-npm install --no-save @vitejs/plugin-react vite
+npm install --no-save @vitejs/plugin-react vite react react-dom
+
+# Create a temporary vite config file with proper external dependencies
+echo "Creating temporary Vite config with JSX runtime configuration..."
+cat > temp-vite.config.js << 'EOF'
+import react from "@vitejs/plugin-react";
+import { fileURLToPath, URL } from 'node:url';
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL('./src', import.meta.url)),
+      "react/jsx-runtime": require.resolve("react/jsx-runtime"),
+      "react/jsx-dev-runtime": require.resolve("react/jsx-dev-runtime")
+    },
+    extensions: ['.js', '.jsx', '.ts', '.tsx', '.json']
+  },
+  build: {
+    outDir: "dist",
+    emptyOutDir: true,
+    sourcemap: false,
+    rollupOptions: {
+      external: [],
+      output: {
+        manualChunks: {
+          vendor: [
+            'react',
+            'react-dom',
+            'react-router-dom'
+          ]
+        }
+      }
+    }
+  }
+});
+EOF
 
 # Create a path-fixing script
 cat > fix-paths.js << 'EOF'
@@ -219,11 +260,11 @@ if (fs.existsSync(assetsDir)) {
 }
 EOF
 
-# Try to run the regular Vite build directly to avoid npm script recursion
-echo "Attempting to run Vite build directly..."
+# Try to run the Vite build with the temporary config
+echo "Attempting to run Vite build with temporary config..."
 if command -v npx &> /dev/null; then
-    echo "Using npx to run vite build directly..."
-    npx vite build || echo "Vite build failed, using manual build only"
+    echo "Using npx to run vite build with temporary config..."
+    npx vite build --config temp-vite.config.js || echo "Vite build failed, using manual build only"
     
     # Run the path-fixing script
     echo "Fixing asset paths in build output..."
@@ -231,7 +272,7 @@ if command -v npx &> /dev/null; then
 else
     echo "npx not available, using node_modules directly..."
     if [ -f "./node_modules/.bin/vite" ]; then
-        ./node_modules/.bin/vite build || echo "Vite build failed, using manual build only"
+        ./node_modules/.bin/vite build --config temp-vite.config.js || echo "Vite build failed, using manual build only"
         
         # Run the path-fixing script
         echo "Fixing asset paths in build output..."
@@ -258,7 +299,7 @@ fi
 
 # Clean up artifacts and node_modules to free memory
 echo "Cleaning up build artifacts..."
-rm -f manual-build.js fix-paths.js
+rm -f manual-build.js fix-paths.js temp-vite.config.js
 rm -rf node_modules
 cd ..
 
@@ -330,7 +371,6 @@ pip install --no-cache-dir Flask-Caching==2.1.0
 
 # Initialize migrations properly first
 echo "Initializing migrations..."
-cd backend
 python init_migrations.py
 
 # Run migrations with error handling
@@ -340,7 +380,6 @@ if FLASK_APP=init_migrations.py python -m flask db upgrade; then
 else
     echo "Warning: Database migrations failed. Will attempt to initialize DB on startup."
 fi
-cd ..
 
 # Set up environment variables
 echo "Setting up environment variables..."
