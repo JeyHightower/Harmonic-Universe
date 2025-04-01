@@ -29,8 +29,26 @@ if (html.includes('react-fix-loader.js')) {
 
   // Create the script tag to add
   const reactFixScript = `
-  <!-- React fixes for module loading and MIME types -->
-  <script src="/static/react-fixes/react-fix-loader.js"></script>`;
+  <!-- React fixes for module loading and MIME types - Multiple paths for redundancy -->
+  <script src="/static/react-fixes/react-fix-loader.js"></script>
+  <script src="/react-fix-loader.js"></script>
+  <script src="react-fix-loader.js"></script>
+  <script src="/direct-fix.js"></script>
+  <script src="/static/direct-fix.js"></script>
+  <!-- Fallback script tag with inline fix -->
+  <script>
+    // Inline React fix (minimal version)
+    console.log('Inline React fix applied');
+    if (typeof React === 'undefined') {
+      window.React = {
+        createElement: function(type, props) { return { type, props: props || {} }; },
+        createContext: function() { return { Provider: function(p) { return p.children; } }; },
+        Fragment: Symbol('React.Fragment')
+      };
+      window.jsx = window.React.createElement;
+      window.jsxs = window.React.createElement;
+    }
+  </script>`;
 
   // Insert after the first head tag
   html = html.replace('<head>', '<head>' + reactFixScript);

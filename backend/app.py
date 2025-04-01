@@ -493,6 +493,27 @@ console.log('React fixes applied successfully');
         return send_from_directory(os.path.dirname(file_path), os.path.basename(file_path), 
                                    mimetype='application/javascript')
 
+    # Add this right after creating the Flask app
+    @app.after_request
+    def set_correct_mime_types(response):
+        """Ensure JavaScript files are served with the correct MIME type."""
+        path = request.path
+        if path.endswith('.js') and response.mimetype == 'text/html':
+            app.logger.info(f"Correcting MIME type for {path} from {response.mimetype} to application/javascript")
+            response.mimetype = 'application/javascript'
+        elif path.endswith('.mjs') and response.mimetype == 'text/html':
+            app.logger.info(f"Correcting MIME type for {path} from {response.mimetype} to application/javascript")
+            response.mimetype = 'application/javascript'
+        elif path.endswith('.css') and response.mimetype == 'text/html':
+            app.logger.info(f"Correcting MIME type for {path} from {response.mimetype} to text/css")
+            response.mimetype = 'text/css'
+        
+        # Add CORS headers for JavaScript and CSS files
+        if path.endswith(('.js', '.mjs', '.css')):
+            response.headers['Access-Control-Allow-Origin'] = '*'
+        
+        return response
+
     return app
 
 try:

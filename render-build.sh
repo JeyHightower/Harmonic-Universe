@@ -408,6 +408,11 @@ cp -r frontend/dist/* backend/static/
 echo "Copying React fixes to static directory..."
 mkdir -p backend/static/static/react-fixes
 cp backend/fixes/react-fix-loader.js backend/static/static/react-fixes/
+cp backend/fixes/direct-fix.js backend/static/static/react-fixes/
+
+# Also copy to root static directory for direct access
+cp backend/fixes/react-fix-loader.js backend/static/
+cp backend/fixes/direct-fix.js backend/static/
 cp backend/fixes/mimetype.ini backend/static/mimetype.ini
 cp backend/fixes/htaccess backend/static/.htaccess
 
