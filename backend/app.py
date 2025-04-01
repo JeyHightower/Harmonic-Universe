@@ -21,6 +21,18 @@ load_dotenv()
 # Global error counter
 startup_errors = []
 
+# Add this after the startup_errors declaration
+try:
+    # Import and apply MIME type overrides
+    from fixes.mime_override import apply_mime_overrides
+    apply_mime_overrides()
+    print("MIME type overrides successfully applied")
+except ImportError:
+    print("MIME override module not found, continuing without MIME patches")
+except Exception as e:
+    print(f"Error applying MIME overrides: {str(e)}")
+    startup_errors.append(f"MIME override error: {str(e)}")
+
 # Ensure proper MIME types for JavaScript files
 mimetypes.add_type('application/javascript', '.js')
 mimetypes.add_type('application/javascript', '.mjs')
@@ -405,6 +417,81 @@ def create_app():
         
         app.logger.error(f"Static folder not configured, cannot serve {filename}")
         return jsonify({"error": "Static folder not configured"}), 500
+
+    # Add after the existing route for serving static files
+    @app.route('/static/react-fixes/<path:filename>')
+    def serve_react_fixes(filename):
+        """Serve React fixes with the correct MIME type."""
+        app.logger.info(f"Serving React fix: {filename}")
+        
+        # Ensure static folder is configured
+        if app.static_folder is None:
+            app.logger.error("Static folder not configured, cannot serve React fixes")
+            return jsonify({"error": "Static folder not configured"}), 500
+        
+        # Define the path to the react-fixes directory
+        react_fixes_dir = os.path.join(app.static_folder, 'static', 'react-fixes')
+        
+        # If the directory doesn't exist, try to create it
+        if not os.path.exists(react_fixes_dir):
+            app.logger.warning(f"React fixes directory not found at {react_fixes_dir}, creating it")
+            try:
+                os.makedirs(react_fixes_dir, exist_ok=True)
+            except Exception as e:
+                app.logger.error(f"Failed to create React fixes directory: {str(e)}")
+                return jsonify({"error": f"Failed to create React fixes directory: {str(e)}"}), 500
+        
+        # Check if the requested file exists
+        file_path = os.path.join(react_fixes_dir, filename)
+        if not os.path.exists(file_path):
+            app.logger.warning(f"React fix file not found: {file_path}")
+            
+            # If react-fix-loader.js is requested but not found, create a simple version
+            if filename == 'react-fix-loader.js':
+                app.logger.info("Creating minimal react-fix-loader.js")
+                try:
+                    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                    with open(file_path, 'w') as f:
+                        f.write("""
+/**
+ * React Fix Loader (Minimal Version)
+ */
+console.log('Loading React fixes...');
+
+// Check if React is already available globally
+if (typeof React === 'undefined') {
+  console.warn('React not found, implementing basic polyfill');
+  
+  // Basic React polyfill
+  window.React = {
+    createElement: function() { 
+      return { type: arguments[0], props: arguments[1] || {} };
+    },
+    createContext: function() {
+      return {
+        Provider: function(props) { return props.children; },
+        Consumer: function(props) { return props.children; }
+      };
+    },
+    Fragment: Symbol('React.Fragment')
+  };
+  
+  // Add JSX runtime compatibility
+  window.jsx = window.React.createElement;
+  window.jsxs = window.React.createElement;
+}
+
+console.log('React fixes applied successfully');
+                        """)
+                except Exception as e:
+                    app.logger.error(f"Failed to create minimal react-fix-loader.js: {str(e)}")
+                    return jsonify({"error": f"Failed to create React fix file: {str(e)}"}), 500
+            else:
+                return jsonify({"error": f"React fix file not found: {filename}"}), 404
+        
+        # Serve the file with the correct MIME type
+        return send_from_directory(os.path.dirname(file_path), os.path.basename(file_path), 
+                                   mimetype='application/javascript')
 
     return app
 

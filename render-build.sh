@@ -411,6 +411,12 @@ cp backend/fixes/react-fix-loader.js backend/static/static/react-fixes/
 cp backend/fixes/mimetype.ini backend/static/mimetype.ini
 cp backend/fixes/htaccess backend/static/.htaccess
 
+# Run the update-index script to ensure React fixes are included in HTML
+echo "Updating index.html to include React fixes..."
+cd backend/fixes
+node update-index.js ../static
+cd ../..
+
 # Verify static files were copied
 echo "Frontend build files copied successfully"
 echo "Static directory contents:"
