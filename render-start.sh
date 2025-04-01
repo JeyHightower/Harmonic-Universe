@@ -147,9 +147,16 @@ EOF
 
 echo "Created test script to verify static file serving"
 
-# Attempt to run any pending migrations
+# Attempt to run any pending migrations properly
 echo "Checking for pending database migrations..."
-python -m flask db upgrade || echo "Warning: Database migrations failed, but continuing startup"
+if [ -f "init_migrations.py" ]; then
+    echo "Using init_migrations.py for migration setup..."
+    export FLASK_APP=init_migrations.py
+    python -m flask db upgrade || echo "Warning: Database migrations failed, but continuing startup"
+else
+    echo "init_migrations.py not found, trying standard migration approach..."
+    python -m flask db upgrade || echo "Warning: Database migrations failed, but continuing startup"
+fi
 
 # Set up environment variables
 export FLASK_APP=app.py

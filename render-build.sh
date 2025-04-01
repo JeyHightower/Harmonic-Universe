@@ -328,13 +328,19 @@ fi
 echo "Ensuring Flask-Caching is installed..."
 pip install --no-cache-dir Flask-Caching==2.1.0
 
+# Initialize migrations properly first
+echo "Initializing migrations..."
+cd backend
+python init_migrations.py
+
 # Run migrations with error handling
 echo "Running database migrations..."
-if python -m flask db upgrade; then
+if FLASK_APP=init_migrations.py python -m flask db upgrade; then
     echo "Database migrations completed successfully"
 else
     echo "Warning: Database migrations failed. Will attempt to initialize DB on startup."
 fi
+cd ..
 
 # Set up environment variables
 echo "Setting up environment variables..."
