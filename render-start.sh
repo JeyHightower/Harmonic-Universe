@@ -68,6 +68,9 @@ pip install --no-cache-dir flask-jwt-extended==4.6.0 flask-bcrypt==1.0.1
 pip install --no-cache-dir flask-login==0.6.3 flask-socketio==5.3.6
 pip install --no-cache-dir python-dotenv==1.0.0 alembic==1.12.1
 pip install --no-cache-dir gunicorn==21.2.0 eventlet==0.33.3
+
+# Install Flask-Caching early to ensure it's available before app import
+echo "Installing Flask-Caching dependency..."
 pip install --no-cache-dir flask-caching==2.1.0
 
 # Install security related packages
@@ -148,16 +151,34 @@ echo "Application will listen on port $PORT"
 if command -v gunicorn &> /dev/null; then
     # Start the application with gunicorn
     echo "Starting Gunicorn server..."
-    gunicorn \
-        --bind 0.0.0.0:$PORT \
-        'app:create_app()' \
-        --worker-class eventlet \
-        --workers 4 \
-        --threads 2 \
-        --timeout 120 \
-        --access-logfile - \
-        --error-logfile - \
-        --log-level info
+    
+    # Check which app function exists
+    echo "Checking for the create_app function in app.py..."
+    if grep -q "def create_app" app.py; then
+        echo "Using 'app:create_app()' for Gunicorn"
+        gunicorn \
+            --bind 0.0.0.0:$PORT \
+            'app:create_app()' \
+            --worker-class eventlet \
+            --workers 4 \
+            --threads 2 \
+            --timeout 120 \
+            --access-logfile - \
+            --error-logfile - \
+            --log-level info
+    else
+        echo "Using 'app:app' for Gunicorn (app already imported)"
+        gunicorn \
+            --bind 0.0.0.0:$PORT \
+            'app:app' \
+            --worker-class eventlet \
+            --workers 4 \
+            --threads 2 \
+            --timeout 120 \
+            --access-logfile - \
+            --error-logfile - \
+            --log-level info
+    fi
 else
     # Fallback to Flask development server
     echo "Gunicorn not found, starting Flask development server (NOT RECOMMENDED FOR PRODUCTION)"

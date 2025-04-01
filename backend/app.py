@@ -109,6 +109,7 @@ def create_app():
             try:
                 db.create_all()
                 app.logger.info('Database tables created successfully')
+                print("Database tables created successfully")
             except Exception as e:
                 app.logger.error(f'Error creating database tables: {e}')
                 print(f"Error creating database tables: {e}")
@@ -130,7 +131,8 @@ def create_app():
         index_content = ""
         if os.path.exists(os.path.join(static_folder, 'index.html')):
             with open(os.path.join(static_folder, 'index.html'), 'r') as f:
-                index_content = f.read()[:100] + "..." if len(f.read()) > 100 else f.read()
+                content = f.read()
+                index_content = content[:100] + "..." if len(content) > 100 else content
         
         return jsonify({
             "static_folder": static_folder,
@@ -194,6 +196,27 @@ def create_app():
                 "message": str(e)
             }), 500
 
+    # Add a file lister endpoint for debugging
+    @app.route('/api/debug/files')
+    def list_files():
+        static_files = []
+        if os.path.exists(app.static_folder):
+            for root, dirs, files in os.walk(app.static_folder):
+                for file in files:
+                    full_path = os.path.join(root, file)
+                    rel_path = os.path.relpath(full_path, app.static_folder)
+                    static_files.append({
+                        'path': rel_path,
+                        'exists': os.path.exists(full_path),
+                        'size': os.path.getsize(full_path) if os.path.exists(full_path) else 0
+                    })
+        
+        return jsonify({
+            'static_folder': app.static_folder,
+            'static_url_path': app.static_url_path,
+            'files': static_files
+        })
+
     return app
 
 # Create the application instance
@@ -230,4 +253,5 @@ def server_error(error):
 
 # Run the application
 if __name__ == "__main__":
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    port = int(os.environ.get('PORT', 5001))
+    app.run(debug=True, host='0.0.0.0', port=port)

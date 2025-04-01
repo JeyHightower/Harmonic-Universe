@@ -229,6 +229,10 @@ if [ -d ".venv" ]; then
     source .venv/bin/activate
 fi
 
+# Make sure Flask-Caching is installed before any imports that might use it
+echo "Ensuring Flask-Caching is installed..."
+pip install --no-cache-dir Flask-Caching==2.1.0
+
 # Run migrations with error handling
 echo "Running database migrations..."
 if python -m flask db upgrade; then
@@ -249,116 +253,42 @@ cd ..
 
 # Remove previous static folder content to avoid old files
 echo "Cleaning up backend static directory..."
-rm -rf backend/static
-mkdir -p backend/static
-mkdir -p backend/static/assets
+if [ -d "backend/static" ]; then
+    rm -rf backend/static/*
+else
+    mkdir -p backend/static
+fi
 
 # Copy frontend build to backend static directory
 echo "Copying frontend build to backend static directory..."
-if [ -d "frontend/dist" ]; then
-    echo "Copying main files from frontend/dist to backend/static..."
-    
-    # First copy all files at the root level
-    cp -f frontend/dist/*.html backend/static/ 2>/dev/null || true
-    cp -f frontend/dist/*.js backend/static/ 2>/dev/null || true
-    cp -f frontend/dist/*.css backend/static/ 2>/dev/null || true
-    cp -f frontend/dist/*.ico backend/static/ 2>/dev/null || true
-    cp -f frontend/dist/*.svg backend/static/ 2>/dev/null || true
-    cp -f frontend/dist/*.txt backend/static/ 2>/dev/null || true
-    cp -f frontend/dist/*.json backend/static/ 2>/dev/null || true
-    cp -f frontend/dist/*.toml backend/static/ 2>/dev/null || true
-    
-    # Ensure index.html is there
-    if [ ! -f "backend/static/index.html" ] && [ -f "frontend/dist/index.html" ]; then
-        echo "Copying index.html file..."
-        cp -f frontend/dist/index.html backend/static/
-    fi
-    
-    # Copy directories
-    if [ -d "frontend/dist/assets" ]; then
-        echo "Copying assets directory..."
-        cp -r frontend/dist/assets backend/static/
-    fi
-    
-    if [ -d "frontend/dist/static" ]; then
-        echo "Copying static directory..."
-        cp -r frontend/dist/static/* backend/static/ 2>/dev/null || true
-    fi
-    
-    if [ -d "frontend/dist/images" ]; then
-        echo "Copying images directory..."
-        mkdir -p backend/static/images
-        cp -r frontend/dist/images/* backend/static/images/ 2>/dev/null || true
-    fi
-    
-    echo "Frontend build files copied successfully"
-    
-    # Create a simple test file to verify static files are being served
-    echo "<html><body><h1>Static files test</h1><p>If you see this, static files are being served correctly.</p></body></html>" > backend/static/test.html
-    
-    # List the static directory content for debugging
-    echo "Static directory contents:"
-    ls -la backend/static
-    
-    if [ -d "backend/static/assets" ]; then
-        echo "Assets directory contents:"
-        ls -la backend/static/assets
-    fi
-else
-    echo "WARNING: Frontend dist directory not found. Creating fallback files..."
-    
-    # Create a fallback index.html
-    cat > backend/static/index.html << 'EOF'
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Harmonic Universe</title>
-    <style>
-      body { 
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 30px;
-        background-color: #f0f2f5;
-      }
-      h1 { color: #1a73e8; }
-      .container {
-        max-width: 800px;
-        margin: 0 auto;
-        background: white;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h1>Harmonic Universe</h1>
-      <p>The application is running but the static files could not be found.</p>
-      <p>Please try accessing the API directly at <a href="/api/health">/api/health</a>.</p>
-    </div>
-  </body>
-</html>
-EOF
+echo "Copying main files from frontend/dist to backend/static..."
+cp -r frontend/dist/* backend/static/
 
-    # Create a test file
-    cat > backend/static/test.html << 'EOF'
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Test Page</title>
-  </head>
-  <body>
-    <h1>Test Page</h1>
-    <p>If you can see this, static files are being served correctly.</p>
-  </body>
-</html>
-EOF
+# Verify static files were copied
+echo "Frontend build files copied successfully"
+echo "Static directory contents:"
+ls -la backend/static
+
+# Check if assets directory exists, otherwise create it
+if [ -d "frontend/dist/assets" ]; then
+    echo "Copying assets directory..."
+    cp -r frontend/dist/assets backend/static/
+else
+    echo "Assets directory not found in frontend build"
+    mkdir -p backend/static/assets
 fi
+
+# Check if images directory exists, otherwise create it
+if [ -d "frontend/dist/images" ]; then
+    echo "Copying images directory..."
+    cp -r frontend/dist/images backend/static/
+else
+    echo "Images directory not found in frontend build"
+    mkdir -p backend/static/images
+fi
+
+echo "Assets directory contents:"
+ls -la backend/static/assets || echo "Assets directory not found"
 
 echo "Build completed successfully at $(date)"
 exit 0 
