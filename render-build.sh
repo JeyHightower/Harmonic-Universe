@@ -20,7 +20,7 @@ export NODE_OPTIONS="--max-old-space-size=2048"
 echo "==== Building frontend ===="
 cd frontend
 echo "Installing frontend dependencies..."
-npm ci --no-audit --no-fund --prefer-offline
+npm install --no-audit --no-fund
 
 # Clean up unnecessary files to reduce memory usage
 rm -rf node_modules/.cache
