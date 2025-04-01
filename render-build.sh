@@ -16,8 +16,10 @@ export PYTHON_VERSION=3.11.0
 # Set Node memory limit to prevent OOM issues
 export NODE_OPTIONS="--max-old-space-size=2048"
 
-# Set Node environment
+# Set Node environment and enable crypto polyfill
 export NODE_ENV=production
+export NODE_POLYFILL_CRYPTO=true
+export VITE_SKIP_GET_RANDOM_VALUES=true
 
 # Build Frontend
 echo "==== Building frontend ===="
@@ -27,18 +29,33 @@ npm install --no-audit --no-fund
 
 # Ensure @vitejs/plugin-react is installed
 echo "Making sure @vitejs/plugin-react is installed..."
-npm install --no-audit --no-fund @vitejs/plugin-react
+npm install --no-audit --no-fund @vitejs/plugin-react@3.0.0
 
-# Ensure vite is installed
-echo "Making sure vite is installed correctly..."
-npm install --no-audit --no-fund vite
+# Install a specific version of Vite known to work
+echo "Installing specific version of Vite..."
+npm uninstall vite
+npm install --no-audit --no-fund vite@4.0.0
+
+# Attempt to provide a polyfill for crypto.getRandomValues
+echo "Creating a polyfill for crypto.getRandomValues..."
+cat > crypto-polyfill.js << 'EOF'
+if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+  global.crypto = global.crypto || {};
+  global.crypto.getRandomValues = function(arr) {
+    for (let i = 0; i < arr.length; i++) {
+      arr[i] = Math.floor(Math.random() * 256);
+    }
+    return arr;
+  };
+}
+EOF
 
 echo "Building frontend production assets..."
-# Use npx to run vite directly
-npx --no-install vite build
+# Use node with crypto polyfill
+node -r ./crypto-polyfill.js ./node_modules/vite/bin/vite.js build
 
 # Clean up node_modules AFTER build to free memory (moved after build)
-rm -rf node_modules
+rm -rf node_modules crypto-polyfill.js
 cd ..
 
 # Build Backend
