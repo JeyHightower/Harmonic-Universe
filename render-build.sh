@@ -453,7 +453,11 @@ cat > backend/static/react-diagnostic.html << 'EOF'
     body { font-family: Arial, sans-serif; padding: 20px; }
     .success { color: green; }
     .error { color: red; }
-    pre { background: #f5f5f5; padding: 10px; border-radius: 5px; }
+    pre { background: #f5f5f5; padding: 10px; border-radius: 5px; overflow: auto; max-height: 300px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
   </style>
 </head>
 <body>
@@ -465,6 +469,14 @@ cat > backend/static/react-diagnostic.html << 'EOF'
   
   <h2>JSX Runtime Status</h2>
   <div id="jsx-status"></div>
+  
+  <h2>Script Loading Order</h2>
+  <div id="script-order">
+    <p>Analyzing scripts...</p>
+  </div>
+  
+  <h2>Module Script Test</h2>
+  <div id="module-test"></div>
   
   <script>
     // Check React presence
@@ -497,6 +509,114 @@ cat > backend/static/react-diagnostic.html << 'EOF'
       console.error('React rendering failed:', error);
       document.getElementById('root').innerHTML = 
         `<p class="error">React rendering failed: ${error.message}</p>`;
+    }
+    
+    // Log script loading order
+    function analyzeScripts() {
+      const scriptOrder = document.getElementById('script-order');
+      const scripts = document.querySelectorAll('script');
+      
+      // Create a table for scripts
+      let html = `
+        <p>Found ${scripts.length} script elements</p>
+        <table>
+          <tr>
+            <th>#</th>
+            <th>Source/Content</th>
+            <th>Type</th>
+            <th>Async/Defer</th>
+            <th>Position</th>
+          </tr>
+      `;
+      
+      scripts.forEach((script, index) => {
+        const source = script.src ? script.src : 'Inline script';
+        const type = script.type || 'text/javascript (default)';
+        const asyncAttr = script.async ? 'async' : ''; 
+        const deferAttr = script.defer ? 'defer' : '';
+        const loadingAttrs = asyncAttr || deferAttr ? `${asyncAttr} ${deferAttr}`.trim() : 'none';
+        const position = script.parentNode.tagName.toLowerCase() === 'head' ? 'head' : 'body';
+        
+        // Log to console too for debugging
+        console.log(`Script ${index + 1}:`, { 
+          src: source, 
+          type, 
+          async: script.async, 
+          defer: script.defer,
+          position
+        });
+        
+        html += `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${source}</td>
+            <td>${type}</td>
+            <td>${loadingAttrs}</td>
+            <td>${position}</td>
+          </tr>
+        `;
+      });
+      
+      html += '</table>';
+      
+      // Add info about document readiness
+      html += `
+        <h3>Document State</h3>
+        <p>Document readyState: ${document.readyState}</p>
+        <p>DOMContentLoaded fired: ${window._domLoaded ? 'Yes' : 'No'}</p>
+        <p>Window load fired: ${window._windowLoaded ? 'Yes' : 'No'}</p>
+      `;
+      
+      scriptOrder.innerHTML = html;
+    }
+    
+    // Test module script loading
+    function testModuleLoading() {
+      const moduleTest = document.getElementById('module-test');
+      
+      // Create a test module script
+      const moduleScript = document.createElement('script');
+      moduleScript.type = 'module';
+      moduleScript.textContent = `
+        console.log('Module script executed');
+        document.getElementById('module-test').innerHTML += '<p class="success">✅ Module script executed successfully</p>';
+      `;
+      
+      // Add error handler
+      moduleScript.onerror = (error) => {
+        console.error('Module script failed to load:', error);
+        moduleTest.innerHTML += `
+          <p class="error">❌ Module script failed to load</p>
+          <pre>${error ? JSON.stringify(error) : 'No error details available'}</pre>
+        `;
+      };
+      
+      // Add the module script
+      moduleTest.innerHTML = '<p>Testing module script loading...</p>';
+      document.body.appendChild(moduleScript);
+    }
+    
+    // Track document load events
+    window._domLoaded = false;
+    window._windowLoaded = false;
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      window._domLoaded = true;
+      analyzeScripts();
+      testModuleLoading();
+    });
+    
+    window.addEventListener('load', () => {
+      window._windowLoaded = true;
+      // Update again after window load
+      setTimeout(analyzeScripts, 100);
+    });
+    
+    // Initial analysis in case DOMContentLoaded already fired
+    if (document.readyState !== 'loading') {
+      window._domLoaded = true;
+      analyzeScripts();
+      testModuleLoading();
     }
   </script>
 </body>
