@@ -27,9 +27,20 @@ fi
 # Activate virtual environment
 source .venv/bin/activate
 
-# Ensure Flask-Caching is installed
-echo "Checking Flask-Caching installation..."
-pip install --no-cache-dir Flask-Caching==2.1.0
+# Explicitly install all required dependencies
+echo "Installing all required Flask extensions..."
+pip install --no-cache-dir flask==2.3.3 werkzeug==2.3.7
+pip install --no-cache-dir flask-sqlalchemy==3.1.1 sqlalchemy==2.0.23
+pip install --no-cache-dir flask-migrate==4.0.5 flask-cors==4.0.0 
+pip install --no-cache-dir flask-jwt-extended==4.6.0 flask-bcrypt==1.0.1
+pip install --no-cache-dir flask-login==0.6.3 flask-socketio==5.3.6
+pip install --no-cache-dir python-dotenv==1.0.0 alembic==1.12.1
+pip install --no-cache-dir gunicorn==21.2.0 eventlet==0.33.3
+pip install --no-cache-dir flask-caching==2.1.0
+
+# Install other essential dependencies
+echo "Installing database dependencies..."
+pip install --no-cache-dir psycopg2-binary==2.9.9 redis==5.0.1
 
 # Attempt to run any pending migrations
 echo "Checking for pending database migrations..."
