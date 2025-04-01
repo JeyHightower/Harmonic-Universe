@@ -147,6 +147,10 @@ EOF
 echo "Running manual build script..."
 node manual-build.js
 
+# Install Vite and React plugin explicitly before attempting to build
+echo "Installing required Vite plugins..."
+npm install --no-save @vitejs/plugin-react vite
+
 # Try to run the regular Vite build directly to avoid npm script recursion
 echo "Attempting to run Vite build directly..."
 if command -v npx &> /dev/null; then
