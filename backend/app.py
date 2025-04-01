@@ -707,6 +707,66 @@ console.log('React fixes applied successfully at:', new Date().toISOString());
                 'traceback': traceback.format_exc()
             }), 500
 
+    # Add special handlers for JSX runtime modules
+    @app.route('/jsx-runtime/jsx-runtime.js')
+    @app.route('/node_modules/react/jsx-runtime.js')
+    @app.route('/node_modules/react/jsx-dev-runtime.js') 
+    def serve_jsx_runtime():
+        """Serve the JSX runtime module with proper MIME type."""
+        app.logger.info(f"JSX runtime requested: {request.path}")
+        
+        # Map the requested path to our implementation
+        if 'jsx-dev-runtime' in request.path:
+            target_file = 'jsx-runtime/jsx-dev-runtime.js'
+        else:
+            target_file = 'jsx-runtime/jsx-runtime.js'
+        
+        # Serve from our static directory
+        if app.static_folder and os.path.exists(os.path.join(app.static_folder, target_file)):
+            response = send_from_directory(app.static_folder, target_file)
+            response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
+            return response
+        
+        # Fallback: generate content on the fly
+        jsx_runtime_content = """
+        /**
+         * JSX Runtime - Dynamically generated
+         */
+        
+        // Use the React global
+        const React = window.React;
+        
+        // Implementation of jsx function
+        export function jsx(type, props, key) {
+          console.log('Dynamic JSX runtime called:', type);
+          return React.createElement(type, props);
+        }
+        
+        // jsxs is the same for our purposes
+        export function jsxs(type, props, key) {
+          return jsx(type, props, key);
+        }
+        
+        // Export Fragment
+        export const Fragment = React.Fragment || Symbol('Fragment');
+        
+        // Default export
+        export default {
+          jsx,
+          jsxs,
+          Fragment
+        };
+        
+        console.log('Dynamic JSX runtime module loaded');
+        """
+        
+        response = app.response_class(
+            response=jsx_runtime_content,
+            mimetype='application/javascript'
+        )
+        
+        return response
+
     return app
 
 try:

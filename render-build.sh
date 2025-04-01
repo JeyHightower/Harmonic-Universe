@@ -678,5 +678,111 @@ EOF
 echo "Assets directory contents:"
 ls -la backend/static/assets || echo "Assets directory not found"
 
+# Create dedicated JSX runtime module script
+echo "Creating JSX runtime module script..."
+mkdir -p backend/static/jsx-runtime
+cat > backend/static/jsx-runtime/jsx-runtime.js << 'EOF'
+/**
+ * JSX Runtime module
+ * This provides the jsx and jsxs functions for modern React builds
+ */
+
+// Use the React global if available
+const React = window.React;
+
+// Implementation of jsx/jsxs functions
+export function jsx(type, props, key) {
+  const config = {};
+  
+  // Copy all props except children
+  for (const propName in props) {
+    if (propName !== 'children' && Object.prototype.hasOwnProperty.call(props, propName)) {
+      config[propName] = props[propName];
+    }
+  }
+  
+  // Set children
+  config.children = props?.children;
+  
+  // Set key if provided
+  if (key !== undefined) {
+    config.key = key;
+  }
+  
+  console.log(`jsx called for type: ${typeof type === 'string' ? type : 'component'}`);
+  
+  return React.createElement(type, config, config.children);
+}
+
+// jsxs is the same but optimized for static children
+export function jsxs(type, props, key) {
+  return jsx(type, props, key);
+}
+
+// Export Fragment
+export const Fragment = React?.Fragment || Symbol('Fragment');
+
+// Default export for compatibility
+export default {
+  jsx,
+  jsxs,
+  Fragment
+};
+
+// Log successful loading
+console.log('JSX runtime module loaded successfully');
+EOF
+
+# Create JSX dev runtime module script
+cat > backend/static/jsx-runtime/jsx-dev-runtime.js << 'EOF'
+/**
+ * JSX Dev Runtime module
+ * This provides the jsxDEV function for development builds
+ */
+
+// Re-export everything from jsx-runtime
+export * from './jsx-runtime.js';
+
+// Implementation of jsxDEV function with source info
+export function jsxDEV(type, props, key, isStaticChildren, source, self) {
+  const config = {};
+  
+  // Copy all props except children
+  for (const propName in props) {
+    if (propName !== 'children' && Object.prototype.hasOwnProperty.call(props, propName)) {
+      config[propName] = props[propName];
+    }
+  }
+  
+  // Set children
+  config.children = props?.children;
+  
+  // Set key if provided
+  if (key !== undefined) {
+    config.key = key;
+  }
+  
+  // Add source info in dev mode
+  if (source) {
+    config.__source = source;
+    config.__self = self;
+  }
+  
+  console.log(`jsxDEV called for type: ${typeof type === 'string' ? type : 'component'}`);
+  
+  return window.React.createElement(type, config, config.children);
+}
+
+// Default export for compatibility
+export default {
+  jsxDEV
+};
+
+// Log successful loading
+console.log('JSX dev runtime module loaded successfully');
+EOF
+
+echo "JSX runtime module scripts created"
+
 echo "Build completed successfully at $(date)"
 exit 0 

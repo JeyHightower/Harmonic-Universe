@@ -31,6 +31,44 @@ if (html.includes('react-fix-loader.js')) {
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 
+<!-- JSX Runtime Fix - CRITICAL -->
+<script>
+  // Explicitly create JSX runtime functions that modern React apps expect
+  window.jsx = function(type, props, key, source, self) {
+    var config = {};
+    for (var propName in props) {
+      if (props.hasOwnProperty(propName) && propName !== 'children') {
+        config[propName] = props[propName];
+      }
+    }
+    
+    config.children = props && props.children ? props.children : arguments.length > 2 ? 
+      Array.prototype.slice.call(arguments, 2) : null;
+    
+    // Set key and ref if provided
+    if (key !== undefined) config.key = key;
+    if (source !== undefined && self !== undefined) config.__source = source;
+    
+    return React.createElement(type, config, config.children);
+  };
+
+  // jsxs is used for static children, but we'll just use the same implementation
+  window.jsxs = window.jsx;
+  
+  // Export jsx functions to mimic ESM behavior
+  window._jsx_runtime = { jsx: window.jsx, jsxs: window.jsxs, Fragment: React.Fragment };
+  
+  // Ensure module.exports is defined to prevent errors
+  if (typeof module === 'undefined') {
+    window.module = { exports: {} };
+  }
+  
+  // Attach to module.exports like React JSX runtime does
+  module.exports = window._jsx_runtime;
+  
+  console.log('JSX runtime functions explicitly defined');
+</script>
+
 <!-- React fixes loader with multiple fallbacks -->
 <script>
   // Ensure React global availability
