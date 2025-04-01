@@ -144,7 +144,23 @@ def create_app():
         white_noise = WhiteNoise(app.wsgi_app)
         # Add the static folder to the whitenoise application
         white_noise.add_files(static_folder_path, prefix='')
-        # Configure WhiteNoise to handle MIME types
+        
+        # Explicitly add react-fixes directory (this is needed if nested in static folder)
+        react_fixes_path = os.path.join(static_folder_path, 'react-fixes')
+        if os.path.exists(react_fixes_path):
+            app.logger.info(f"Adding React fixes directory to WhiteNoise: {react_fixes_path}")
+            white_noise.add_files(react_fixes_path, prefix='react-fixes')
+            white_noise.add_files(react_fixes_path, prefix='static/react-fixes')
+        else:
+            app.logger.warning(f"React fixes directory not found at: {react_fixes_path}")
+        
+        # Also explicitly add the static/react-fixes directory (for double-nesting scenarios)
+        static_react_fixes_path = os.path.join(static_folder_path, 'static', 'react-fixes')
+        if os.path.exists(static_react_fixes_path):
+            app.logger.info(f"Adding static/react-fixes directory to WhiteNoise: {static_react_fixes_path}")
+            white_noise.add_files(static_react_fixes_path, prefix='static/react-fixes')
+        else:
+            app.logger.warning(f"Static/react-fixes directory not found at: {static_react_fixes_path}")
         
         # Configure WhiteNoise to add proper MIME types
         # Explicitly register MIME types for specific file extensions
@@ -466,6 +482,81 @@ def create_app():
                 "message": str(e),
                 "traceback": traceback.format_exc()
             }), 500
+
+    # Add a special fallback route for react-fix-loader.js
+    @app.route('/static/react-fixes/react-fix-loader.js')
+    def serve_react_fix_loader():
+        """Serve the React fix loader file with the correct MIME type."""
+        app.logger.info("Fallback route for react-fix-loader.js accessed")
+        
+        # Look in multiple possible locations
+        possible_paths = [
+            os.path.join(app.static_folder, 'react-fixes/react-fix-loader.js') if app.static_folder else None,
+            os.path.join(app.static_folder, 'static/react-fixes/react-fix-loader.js') if app.static_folder else None,
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixes/react-fix-loader.js'),
+            './backend/fixes/react-fix-loader.js',
+            './fixes/react-fix-loader.js'
+        ]
+        
+        # Try to find the file in one of the possible locations
+        for path in possible_paths:
+            if path and os.path.exists(path):
+                app.logger.info(f"Found react-fix-loader.js at: {path}")
+                
+                try:
+                    # Get the directory and filename
+                    directory = os.path.dirname(path)
+                    filename = os.path.basename(path)
+                    
+                    # Serve the file with the correct MIME type
+                    response = send_from_directory(directory, filename)
+                    response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
+                    return response
+                except Exception as e:
+                    app.logger.error(f"Error serving react-fix-loader.js: {str(e)}")
+        
+        # If file not found in any location, generate it on the fly
+        app.logger.warning("react-fix-loader.js not found, generating on the fly")
+        
+        # Create a minimal version of the file
+        js_content = """
+/**
+ * React Fix Loader - Minimal inline version
+ */
+console.log('React fix loader - inline version');
+
+// Check if React is already available globally
+if (typeof React === 'undefined') {
+  console.warn('React not found, implementing basic polyfill');
+  
+  // Basic React polyfill
+  window.React = {
+    createElement: function(type, props) { 
+      return { type, props: props || {} };
+    },
+    createContext: function() {
+      return {
+        Provider: function(props) { return props.children; },
+        Consumer: function(props) { return props.children; }
+      };
+    },
+    Fragment: Symbol('React.Fragment')
+  };
+  
+  // Add JSX runtime compatibility
+  window.jsx = window.React.createElement;
+  window.jsxs = window.React.createElement;
+}
+
+console.log('React fixes applied successfully');
+        """
+        
+        # Return the inline JavaScript with the correct MIME type
+        response = app.response_class(
+            response=js_content,
+            mimetype='application/javascript'
+        )
+        return response
 
     return app
 

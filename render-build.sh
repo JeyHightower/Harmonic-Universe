@@ -406,15 +406,32 @@ cp -r frontend/dist/* backend/static/
 
 # Copy React fixes to static directory
 echo "Copying React fixes to static directory..."
+mkdir -p backend/static/react-fixes
+cp backend/fixes/react-fix-loader.js backend/static/react-fixes/
+
+# Ensure the file is also in the nested static directory (for compatibility)
 mkdir -p backend/static/static/react-fixes
 cp backend/fixes/react-fix-loader.js backend/static/static/react-fixes/
-cp backend/fixes/direct-fix.js backend/static/static/react-fixes/
 
-# Also copy to root static directory for direct access
-cp backend/fixes/react-fix-loader.js backend/static/
-cp backend/fixes/direct-fix.js backend/static/
-cp backend/fixes/mimetype.ini backend/static/mimetype.ini
-cp backend/fixes/htaccess backend/static/.htaccess
+# If direct-fix.js exists, copy it too
+if [ -f "backend/fixes/direct-fix.js" ]; then
+  cp backend/fixes/direct-fix.js backend/static/react-fixes/
+  cp backend/fixes/direct-fix.js backend/static/static/react-fixes/
+fi
+
+# Create a simple .htaccess file to ensure proper MIME types
+cat > backend/static/react-fixes/.htaccess << 'EOF'
+<FilesMatch "\.js$">
+    ForceType application/javascript
+</FilesMatch>
+EOF
+
+# Create a simple mimetype.ini file as an alternative way to set MIME types
+cat > backend/static/react-fixes/mimetype.ini << 'EOF'
+[MIME Types]
+.js=application/javascript
+.mjs=application/javascript
+EOF
 
 # Run the update-index script to ensure React fixes are included in HTML
 echo "Updating index.html to include React fixes..."
