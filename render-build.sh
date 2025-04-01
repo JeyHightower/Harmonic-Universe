@@ -29,9 +29,13 @@ npm install --no-audit --no-fund
 echo "Making sure @vitejs/plugin-react is installed..."
 npm install --no-audit --no-fund @vitejs/plugin-react
 
+# Ensure vite is installed
+echo "Making sure vite is installed correctly..."
+npm install --no-audit --no-fund vite
+
 echo "Building frontend production assets..."
-# Use node to run vite from node_modules directly
-node ./node_modules/vite/bin/vite.js build
+# Use npx to run vite directly
+npx --no-install vite build
 
 # Clean up node_modules AFTER build to free memory (moved after build)
 rm -rf node_modules
