@@ -487,7 +487,31 @@ def create_app():
     @app.route('/static/react-fixes/react-fix-loader.js')
     def serve_react_fix_loader():
         """Serve the React fix loader file with the correct MIME type."""
-        app.logger.info("Fallback route for react-fix-loader.js accessed")
+        # Enhanced logging to track the root cause of requests
+        referrer = request.headers.get('Referer', 'Unknown')
+        user_agent = request.headers.get('User-Agent', 'Unknown')
+        request_args = dict(request.args)
+        app.logger.info(f"react-fix-loader.js requested: Referrer={referrer}, UA={user_agent}, Args={request_args}")
+        
+        # Track which HTML page is requesting this file
+        if app.static_folder and os.path.exists(os.path.join(app.static_folder, 'index.html')):
+            try:
+                with open(os.path.join(app.static_folder, 'index.html'), 'r') as f:
+                    html_content = f.read()
+                    # Check if the file is explicitly referenced in index.html
+                    if 'react-fix-loader.js' in html_content:
+                        app.logger.info(f"react-fix-loader.js is explicitly referenced in index.html")
+                        # Try to get context of the reference (10 chars before and after)
+                        try:
+                            pos = html_content.find('react-fix-loader.js')
+                            context_start = max(0, pos - 50)
+                            context_end = min(len(html_content), pos + 50)
+                            context = html_content[context_start:context_end]
+                            app.logger.info(f"Reference context: {context}")
+                        except Exception as e:
+                            app.logger.warning(f"Error getting reference context: {str(e)}")
+            except Exception as e:
+                app.logger.warning(f"Error checking index.html: {str(e)}")
         
         # Look in multiple possible locations
         possible_paths = [
@@ -497,6 +521,25 @@ def create_app():
             './backend/fixes/react-fix-loader.js',
             './fixes/react-fix-loader.js'
         ]
+        
+        # Log request details to a separate file for analysis
+        try:
+            react_fix_log_dir = os.path.join('logs', 'react-fixes')
+            os.makedirs(react_fix_log_dir, exist_ok=True)
+            log_file = os.path.join(react_fix_log_dir, 'requests.log')
+            
+            with open(log_file, 'a') as f:
+                log_entry = {
+                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'referrer': referrer,
+                    'user_agent': user_agent,
+                    'request_args': request_args,
+                    'path': request.path,
+                    'headers': dict(request.headers),
+                }
+                f.write(json.dumps(log_entry) + '\n')
+        except Exception as e:
+            app.logger.warning(f"Error logging react-fix request: {str(e)}")
         
         # Try to find the file in one of the possible locations
         for path in possible_paths:
@@ -525,6 +568,11 @@ def create_app():
  */
 console.log('React fix loader - inline version');
 
+// Add diagnostic logging to help identify why this is being loaded
+console.log('React fix loader requested from URL:', window.location.href);
+console.log('Loader script element:', document.currentScript);
+console.log('Document referrer:', document.referrer);
+
 // Check if React is already available globally
 if (typeof React === 'undefined') {
   console.warn('React not found, implementing basic polyfill');
@@ -548,7 +596,8 @@ if (typeof React === 'undefined') {
   window.jsxs = window.React.createElement;
 }
 
-console.log('React fixes applied successfully');
+// Log diagnostic information to help track usage patterns
+console.log('React fixes applied successfully at:', new Date().toISOString());
         """
         
         # Return the inline JavaScript with the correct MIME type
