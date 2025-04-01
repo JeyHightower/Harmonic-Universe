@@ -1,12 +1,15 @@
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-from flask_migrate import Migrate
-from flask_jwt_extended import JWTManager
 import os
 import sys
+import json
+import traceback
 import logging
+import time
+import platform
 from logging.handlers import RotatingFileHandler
 from dotenv import load_dotenv
+from typing import Optional, Dict, List, Any, Union
 
 # Add the current directory to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -14,13 +17,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # Load environment variables
 load_dotenv()
 
-# Import db from models
-try:
-    from app.api.models.database import db
-except ImportError:
-    print("WARNING: Could not import database module. Will continue without it.")
-    from flask_sqlalchemy import SQLAlchemy
-    db = SQLAlchemy()
+# Global error counter
+startup_errors = []
 
 def create_app():
     # Create Flask application with absolute path to static folder
@@ -30,133 +28,257 @@ def create_app():
     # Print debugging information about static folder
     print(f"Static folder absolute path: {static_folder_path}")
     print(f"Static folder exists: {os.path.exists(static_folder_path)}")
+    
+    # Detailed static folder inspection
     if os.path.exists(static_folder_path):
-        print(f"Static folder contents: {os.listdir(static_folder_path)}")
+        static_contents = os.listdir(static_folder_path)
+        print(f"Static folder contains {len(static_contents)} items")
+        
+        # Log all entries in static folder
+        for item in static_contents:
+            item_path = os.path.join(static_folder_path, item)
+            if os.path.isdir(item_path):
+                try:
+                    subcontents = os.listdir(item_path)
+                    print(f"  - Directory '{item}/' ({len(subcontents)} items)")
+                except Exception as e:
+                    print(f"  - Directory '{item}/' (error listing: {str(e)})")
+            else:
+                try:
+                    size = os.path.getsize(item_path)
+                    print(f"  - File '{item}' ({size} bytes)")
+                except Exception as e:
+                    print(f"  - File '{item}' (error getting size: {str(e)})")
+        
+        # Specifically check for index.html
         index_path = os.path.join(static_folder_path, 'index.html')
         if os.path.exists(index_path):
-            print(f"index.html exists in static folder (size: {os.path.getsize(index_path)} bytes)")
+            try:
+                size = os.path.getsize(index_path)
+                print(f"index.html exists in static folder (size: {size} bytes)")
+                # Read first few lines of index.html
+                with open(index_path, 'r') as f:
+                    content = f.read(200)
+                    print(f"index.html first 200 chars: {content}")
+            except Exception as e:
+                print(f"Error reading index.html: {str(e)}")
         else:
             print(f"index.html does NOT exist in static folder")
+            startup_errors.append("Missing index.html in static folder")
+    else:
+        print(f"Static folder does not exist, attempting to create it")
+        try:
+            os.makedirs(static_folder_path)
+            print(f"Created static folder: {static_folder_path}")
+        except Exception as e:
+            print(f"Failed to create static folder: {str(e)}")
+            startup_errors.append(f"Failed to create static folder: {str(e)}")
 
-    # Load environment variables
-    try:
-        app.config.from_object('app.config.Config')
-    except Exception as e:
-        print(f"Error loading config: {e}")
-        # Set minimal default configuration
-        app.config.update({
-            'SECRET_KEY': os.environ.get('SECRET_KEY', 'dev-key-please-change'),
-            'SQLALCHEMY_DATABASE_URI': os.environ.get('DATABASE_URL', 'sqlite:///app.db'),
-            'SQLALCHEMY_TRACK_MODIFICATIONS': False,
-            'JWT_SECRET_KEY': os.environ.get('JWT_SECRET_KEY', 'jwt-dev-key'),
-            'LOG_LEVEL': logging.INFO,
-            'LOG_FORMAT': '%(asctime)s %(levelname)s: %(message)s',
-            'CORS_ORIGINS': ['*'],
-            'CORS_METHODS': ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-            'CORS_HEADERS': ['Content-Type', 'Authorization'],
-            'CORS_EXPOSE_HEADERS': ['Content-Type', 'Authorization'],
-            'CORS_MAX_AGE': 86400,
-        })
+    # Load minimal configuration
+    app.config.update({
+        'SECRET_KEY': os.environ.get('SECRET_KEY', 'dev-key-please-change'),
+        'SQLALCHEMY_DATABASE_URI': os.environ.get('DATABASE_URL', 'sqlite:///app.db'),
+        'SQLALCHEMY_TRACK_MODIFICATIONS': False,
+        'LOG_LEVEL': logging.INFO,
+        'LOG_FORMAT': '%(asctime)s %(levelname)s: %(message)s',
+    })
 
     # Configure CORS - allow all origins for testing
     CORS(app, resources={r"/*": {"origins": "*", "supports_credentials": True}})
 
-    # Ensure instance directory exists
-    instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
-    if not os.path.exists(instance_path):
-        os.makedirs(instance_path)
-        os.chmod(instance_path, 0o777)
-
     # Configure logging
-    if not os.path.exists('logs'):
-        os.mkdir('logs')
-    file_handler = RotatingFileHandler('logs/app.log', maxBytes=10240, backupCount=10)
-    file_handler.setFormatter(logging.Formatter(app.config['LOG_FORMAT']))
-    file_handler.setLevel(app.config['LOG_LEVEL'])
-    app.logger.addHandler(file_handler)
-    app.logger.setLevel(app.config['LOG_LEVEL'])
-    app.logger.info('Application startup')
-
-    # Initialize extensions
-    db.init_app(app)
+    log_dir = 'logs'
+    if not os.path.exists(log_dir):
+        try:
+            os.mkdir(log_dir)
+        except Exception as e:
+            print(f"Failed to create logs directory: {str(e)}")
+            startup_errors.append(f"Failed to create logs directory: {str(e)}")
+    
     try:
-        migrate = Migrate(app, db)
-        jwt = JWTManager(app)
-    
-        # Import models (after db initialization)
-        from app.api.models import (
-            AudioSample, Character, Harmony, MusicPiece, MusicalTheme,
-            Note, Physics2D, Physics3D, PhysicsConstraint, PhysicsObject,
-            Scene, SoundProfile, Universe, User
-        )
-    
-        # Import routes (after model imports)
-        from app.api.routes.characters import characters_bp
-        from app.api.routes.notes import notes_bp
-        from app.api.routes.auth import auth_bp
-        from app.api.routes.user import user_bp
-        from app.api.routes.universes import universes_bp
-    
-        # Register blueprints
-        app.register_blueprint(characters_bp, url_prefix='/api/characters')
-        app.register_blueprint(notes_bp, url_prefix='/api/notes')
-        app.register_blueprint(auth_bp, url_prefix='/api/auth')
-        app.register_blueprint(user_bp, url_prefix='/api/user')
-        app.register_blueprint(universes_bp, url_prefix='/api/universes')
-    
-        # Create database tables
-        with app.app_context():
-            try:
-                db.create_all()
-                app.logger.info('Database tables created successfully')
-                print("Database tables created successfully")
-            except Exception as e:
-                app.logger.error(f'Error creating database tables: {e}')
-                print(f"Error creating database tables: {e}")
+        file_handler = RotatingFileHandler(os.path.join(log_dir, 'app.log'), maxBytes=10240, backupCount=10)
+        file_handler.setFormatter(logging.Formatter(app.config['LOG_FORMAT']))
+        file_handler.setLevel(app.config['LOG_LEVEL'])
+        app.logger.addHandler(file_handler)
+        app.logger.setLevel(app.config['LOG_LEVEL'])
     except Exception as e:
-        app.logger.error(f"Error setting up database and routes: {e}")
-        print(f"Error setting up database and routes: {e}")
+        print(f"Failed to configure logging: {str(e)}")
+        startup_errors.append(f"Failed to configure logging: {str(e)}")
+
+    # Configure console logging as well
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(logging.Formatter(app.config['LOG_FORMAT']))
+    console_handler.setLevel(app.config['LOG_LEVEL'])
+    app.logger.addHandler(console_handler)
+    
+    app.logger.info('Application startup')
+    for error in startup_errors:
+        app.logger.error(f"Startup error: {error}")
 
     # Add health check endpoint
     @app.route('/api/health')
     def health_check():
-        return jsonify({"status": "healthy", "message": "API is running"}), 200
+        health_data = {
+            "status": "healthy" if not startup_errors else "degraded",
+            "timestamp": time.time(),
+            "message": "API is running",
+            "startup_errors": startup_errors,
+            "python_version": sys.version,
+            "platform": platform.platform(),
+        }
+        
+        # Check if static folder and index.html exist
+        static_folder = app.static_folder
+        if static_folder is not None:
+            health_data["static_folder_exists"] = os.path.exists(static_folder)
+            
+            if health_data["static_folder_exists"]:
+                index_path = os.path.join(static_folder, 'index.html')
+                health_data["index_exists"] = os.path.exists(index_path)
+        else:
+            health_data["static_folder_exists"] = False
+        
+        return jsonify(health_data), 200
 
     # Debug endpoint to check static files
     @app.route('/api/debug/static')
     def debug_static():
         static_folder = app.static_folder
-        files = os.listdir(static_folder) if os.path.exists(static_folder) else []
+        files = []
+        mime_types = {
+            '.js': 'application/javascript',
+            '.mjs': 'application/javascript',
+            '.css': 'text/css',
+            '.html': 'text/html',
+            '.json': 'application/json',
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.svg': 'image/svg+xml',
+        }
+        
+        try:
+            if static_folder is not None and os.path.exists(static_folder):
+                for root, dirs, root_files in os.walk(static_folder):
+                    rel_path = os.path.relpath(root, static_folder)
+                    if rel_path == '.':
+                        rel_path = ''
+                    
+                    for file in root_files:
+                        file_path = os.path.join(root, file)
+                        rel_file_path = os.path.join(rel_path, file) if rel_path else file
+                        
+                        try:
+                            size = os.path.getsize(file_path)
+                            ext = os.path.splitext(file)[1].lower()
+                            mime_type = mime_types.get(ext, 'application/octet-stream')
+                            
+                            files.append({
+                                'path': rel_file_path,
+                                'size': size,
+                                'mime_type': mime_type
+                            })
+                        except Exception as e:
+                            files.append({
+                                'path': rel_file_path,
+                                'error': str(e)
+                            })
+        except Exception as e:
+            return jsonify({
+                "error": str(e),
+                "traceback": traceback.format_exc()
+            }), 500
         
         index_content = ""
-        if os.path.exists(os.path.join(static_folder, 'index.html')):
-            with open(os.path.join(static_folder, 'index.html'), 'r') as f:
-                content = f.read()
-                index_content = content[:100] + "..." if len(content) > 100 else content
+        if static_folder is not None and os.path.exists(os.path.join(static_folder, 'index.html')):
+            try:
+                with open(os.path.join(static_folder, 'index.html'), 'r') as f:
+                    content = f.read()
+                    index_content = content[:200] + "..." if len(content) > 200 else content
+            except Exception as e:
+                index_content = f"Error reading file: {str(e)}"
         
-        return jsonify({
+        response_data = {
             "static_folder": static_folder,
             "static_url_path": app.static_url_path,
-            "static_folder_exists": os.path.exists(static_folder),
+            "static_folder_exists": static_folder is not None and os.path.exists(static_folder),
             "files": files,
-            "index_exists": "index.html" in files,
-            "index_preview": index_content
-        }), 200
-
-    # Explicitly serve test.html for testing static file serving
-    @app.route('/test')
-    def test_page():
+            "file_count": len(files),
+            "index_exists": static_folder is not None and os.path.exists(os.path.join(static_folder, 'index.html')),
+            "index_preview": index_content,
+            "startup_errors": startup_errors
+        }
+        
+        return jsonify(response_data), 200
+    
+    # Add system diagnostics endpoint
+    @app.route('/api/debug/system')
+    def debug_system():
         try:
-            app.logger.info('Serving test.html from static folder')
-            return send_from_directory(app.static_folder, 'test.html')
+            # Collect system information
+            system_info = {
+                "platform": platform.platform(),
+                "python_version": sys.version,
+                "python_path": sys.executable,
+                "cwd": os.getcwd(),
+                "env_vars": {
+                    k: v for k, v in os.environ.items() 
+                    if not k.lower().startswith(('secret', 'password', 'key'))
+                },
+                "path": sys.path,
+                "startup_errors": startup_errors
+            }
+            
+            # Check disk space
+            try:
+                import shutil
+                total, used, free = shutil.disk_usage("/")
+                system_info["disk"] = {
+                    "total_gb": total / (1024**3),
+                    "used_gb": used / (1024**3),
+                    "free_gb": free / (1024**3),
+                    "percent_used": (used / total) * 100
+                }
+            except Exception as e:
+                system_info["disk_error"] = str(e)
+            
+            # Check memory usage
+            try:
+                import psutil
+                mem = psutil.virtual_memory()
+                system_info["memory"] = {
+                    "total_mb": mem.total / (1024**2),
+                    "available_mb": mem.available / (1024**2),
+                    "percent_used": mem.percent
+                }
+                
+                # Process info
+                process = psutil.Process()
+                proc_info = process.memory_info()
+                system_info["process"] = {
+                    "pid": process.pid,
+                    "memory_rss_mb": proc_info.rss / (1024**2),
+                    "memory_vms_mb": proc_info.vms / (1024**2),
+                    "cpu_percent": process.cpu_percent(interval=0.1),
+                    "threads": process.num_threads()
+                }
+            except Exception as e:
+                system_info["memory_error"] = str(e)
+            
+            return jsonify(system_info), 200
         except Exception as e:
-            app.logger.error(f'Error serving test.html: {e}')
-            return f"Error: {str(e)}", 500
+            app.logger.error(f"Error in system diagnostics: {str(e)}")
+            return jsonify({
+                "error": str(e),
+                "traceback": traceback.format_exc()
+            }), 500
 
     # Direct serve function for any file in static
     @app.route('/staticfile/<path:filename>')
     def send_file(filename):
-        return send_from_directory(app.static_folder, filename)
+        app.logger.info(f"Explicit request for static file: {filename}")
+        if app.static_folder is not None:
+            return send_from_directory(app.static_folder, filename)
+        return jsonify({"error": "Static folder not configured"}), 500
 
     # Serve static files from the root URL
     @app.route('/', defaults={'path': ''})
@@ -187,6 +309,14 @@ def create_app():
             '.ico': 'image/x-icon',
         }
         
+        # Check for static folder
+        if app.static_folder is None:
+            app.logger.error('Static folder is not configured')
+            return jsonify({
+                "error": "Configuration Error",
+                "message": "Static folder is not configured"
+            }), 500
+        
         # Try to serve as a static file first
         try:
             if path and os.path.exists(os.path.join(app.static_folder, path)):
@@ -195,6 +325,11 @@ def create_app():
                 # Get file extension and determine content type
                 ext = os.path.splitext(path)[1].lower()
                 mimetype = content_types.get(ext)
+                
+                # Log detailed information about the file
+                file_path = os.path.join(app.static_folder, path)
+                file_size = os.path.getsize(file_path)
+                app.logger.info(f'File details: path={file_path}, size={file_size}, mimetype={mimetype}')
                 
                 return send_from_directory(app.static_folder, path, mimetype=mimetype)
                 
@@ -214,75 +349,109 @@ def create_app():
             
             # If path is empty or file doesn't exist, serve index.html
             app.logger.info(f'Static file not found, serving index.html instead')
-            if os.path.exists(os.path.join(app.static_folder, 'index.html')):
+            index_path = os.path.join(app.static_folder, 'index.html')
+            if os.path.exists(index_path):
+                index_size = os.path.getsize(index_path)
+                app.logger.info(f'Serving index.html (size: {index_size} bytes)')
                 return send_from_directory(app.static_folder, 'index.html')
             else:
                 app.logger.error('index.html not found in static folder')
                 return jsonify({
                     "error": "Missing index.html",
-                    "message": "The index.html file could not be found in the static folder"
+                    "message": "The index.html file could not be found in the static folder",
+                    "static_folder": app.static_folder,
+                    "static_contents": os.listdir(app.static_folder) if os.path.exists(app.static_folder) else []
                 }), 500
         except Exception as e:
-            app.logger.error(f'Error in catch_all route: {e}')
+            app.logger.error(f'Error in catch_all route: {str(e)}')
+            app.logger.error(traceback.format_exc())
             return jsonify({
                 "error": "Server Error",
-                "message": str(e)
+                "message": str(e),
+                "traceback": traceback.format_exc()
             }), 500
-
-    # Add a file lister endpoint for debugging
-    @app.route('/api/debug/files')
-    def list_files():
-        static_files = []
-        if os.path.exists(app.static_folder):
-            for root, dirs, files in os.walk(app.static_folder):
-                for file in files:
-                    full_path = os.path.join(root, file)
-                    rel_path = os.path.relpath(full_path, app.static_folder)
-                    static_files.append({
-                        'path': rel_path,
-                        'exists': os.path.exists(full_path),
-                        'size': os.path.getsize(full_path) if os.path.exists(full_path) else 0
-                    })
-        
-        return jsonify({
-            'static_folder': app.static_folder,
-            'static_url_path': app.static_url_path,
-            'files': static_files
-        })
 
     return app
 
-# Create the application instance
-app = create_app()
+try:
+    # Create the application instance
+    app = create_app()
 
-# Error handlers
-@app.errorhandler(404)
-def not_found(error):
-    app.logger.warning(f'Not Found: {request.url}')
-    # Return index.html for non-API routes to support client-side routing
-    if not request.path.startswith('/api/'):
-        try:
-            app.logger.info(f'Serving index.html for 404 path: {request.path}')
-            return send_from_directory(app.static_folder, 'index.html')
-        except Exception as e:
-            app.logger.error(f'Error serving index.html for 404: {e}')
-            return jsonify({
-                "error": "Not Found",
-                "message": f"Path not found and could not serve index.html: {str(e)}"
-            }), 500
+    # Error handlers
+    @app.errorhandler(404)
+    def not_found(error):
+        app.logger.warning(f'Not Found: {request.url}')
+        # Return index.html for non-API routes to support client-side routing
+        if not request.path.startswith('/api/'):
+            try:
+                app.logger.info(f'Serving index.html for 404 path: {request.path}')
+                if app.static_folder is not None and os.path.exists(os.path.join(app.static_folder, 'index.html')):
+                    return send_from_directory(app.static_folder, 'index.html')
+                else:
+                    app.logger.error(f'Static folder missing or index.html not found')
+                    return jsonify({
+                        "error": "Not Found",
+                        "message": "Path not found and index.html not available"
+                    }), 404
+            except Exception as e:
+                app.logger.error(f'Error serving index.html for 404: {e}')
+                return jsonify({
+                    "error": "Not Found",
+                    "message": f"Path not found and could not serve index.html: {str(e)}"
+                }), 500
+        
+        return jsonify({
+            'error': 'Not Found',
+            'message': 'The requested resource was not found'
+        }), 404
+
+    @app.errorhandler(500)
+    def server_error(error):
+        app.logger.error(f'Server Error: {str(error)}')
+        app.logger.error(traceback.format_exc())
+        return jsonify({
+            'error': 'Internal Server Error',
+            'message': 'An unexpected error occurred',
+            'details': str(error) if app.debug else None
+        }), 500
+
+except Exception as e:
+    print(f"CRITICAL ERROR during app initialization: {str(e)}")
+    print(traceback.format_exc())
+    startup_errors.append(f"Critical initialization error: {str(e)}")
     
-    return jsonify({
-        'error': 'Not Found',
-        'message': 'The requested resource was not found'
-    }), 404
-
-@app.errorhandler(500)
-def server_error(error):
-    app.logger.error(f'Server Error: {str(error)}')
-    return jsonify({
-        'error': 'Internal Server Error',
-        'message': 'An unexpected error occurred'
-    }), 500
+    # Create a minimal fallback app
+    app = Flask(__name__)
+    
+    @app.route('/')
+    def fallback_root():
+        error_info = {
+            "error": "Application initialization failed",
+            "message": f"The server encountered an error during initialization: {str(e)}",
+            "startup_errors": startup_errors,
+            "traceback": traceback.format_exc()
+        }
+        return jsonify(error_info), 500
+    
+    @app.route('/api/health')
+    def fallback_health():
+        return jsonify({
+            "status": "error", 
+            "message": f"Error during initialization: {str(e)}",
+            "startup_errors": startup_errors,
+            "traceback": traceback.format_exc()
+        }), 500
+    
+    @app.route('/api/debug/error')
+    def fallback_debug():
+        return jsonify({
+            "initialization_error": str(e),
+            "startup_errors": startup_errors,
+            "traceback": traceback.format_exc(),
+            "python_version": sys.version,
+            "platform": platform.platform(),
+            "cwd": os.getcwd(),
+        }), 500
 
 # Run the application
 if __name__ == "__main__":

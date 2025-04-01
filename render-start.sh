@@ -15,6 +15,13 @@ export PYTHON_VERSION=3.11.0
 # Navigate to backend directory
 cd backend
 
+# Run diagnostics early to capture environment state
+echo "Installing diagnostic packages..."
+pip install --no-cache-dir psutil requests
+
+echo "Running diagnostics..."
+python diagnose.py || echo "Diagnostics failed, but continuing startup"
+
 # Print debugging information about the static directory
 echo "Checking static directory..."
 if [ -d "static" ]; then
