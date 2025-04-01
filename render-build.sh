@@ -44,8 +44,9 @@ if (fs.existsSync('index.html')) {
   let htmlContent = fs.readFileSync('index.html', 'utf8');
   
   // Update paths in the HTML to use relative paths
-  htmlContent = htmlContent.replace(/src="\/src\//g, 'src="./');
-  htmlContent = htmlContent.replace(/href="\/src\//g, 'href="./');
+  htmlContent = htmlContent.replace(/src="\/assets\//g, 'src="./assets/');
+  htmlContent = htmlContent.replace(/href="\/assets\//g, 'href="./assets/');
+  htmlContent = htmlContent.replace(/href="\/vite.svg/g, 'href="./favicon.svg');
   
   fs.writeFileSync(path.join(distDir, 'index.html'), htmlContent);
 } else {
@@ -62,6 +63,7 @@ if (fs.existsSync('index.html')) {
       </head>
       <body>
         <div id="root">Loading...</div>
+        <div id="portal-root"></div>
       </body>
     </html>
   `);
@@ -144,6 +146,10 @@ EOF
 # Execute the manual build script
 echo "Running manual build script..."
 node manual-build.js
+
+# Try to run the regular build if it exists (fallback to manual if it fails)
+echo "Attempting to run regular Vite build..."
+npm run build || echo "Regular build failed, using manual build only"
 
 # Clean up artifacts and node_modules to free memory
 echo "Cleaning up build artifacts..."
@@ -228,10 +234,76 @@ export FLASK_ENV=production
 export FLASK_DEBUG=0
 export PYTHONPATH=$PYTHONPATH:$(pwd)
 
-# Copy frontend build to backend static directory if necessary
-echo "Copying frontend build to backend static directory..."
+# Create static directory if it doesn't exist
+echo "Setting up static directory for frontend files..."
 mkdir -p static
-cp -r ../frontend/dist/* static/
+mkdir -p static/assets
+
+# Copy frontend build to backend static directory
+echo "Copying frontend build to backend static directory..."
+if [ -d "../frontend/dist" ]; then
+    echo "Copying main files from frontend/dist to static..."
+    cp -f ../frontend/dist/index.html static/
+    cp -f ../frontend/dist/*.html static/ 2>/dev/null || true
+    cp -f ../frontend/dist/*.css static/ 2>/dev/null || true
+    cp -f ../frontend/dist/*.js static/ 2>/dev/null || true
+    cp -f ../frontend/dist/*.ico static/ 2>/dev/null || true
+    cp -f ../frontend/dist/*.svg static/ 2>/dev/null || true
+    
+    # Create assets directory and copy all assets
+    if [ -d "../frontend/dist/assets" ]; then
+        echo "Copying assets from frontend/dist/assets to static/assets..."
+        cp -rf ../frontend/dist/assets/* static/assets/
+    fi
+    
+    # Copy other directories if they exist
+    for dir in images static fonts; do
+        if [ -d "../frontend/dist/$dir" ]; then
+            echo "Copying $dir directory..."
+            mkdir -p static/$dir
+            cp -rf ../frontend/dist/$dir/* static/$dir/
+        fi
+    done
+    
+    echo "Frontend build files copied successfully"
+else
+    echo "WARNING: Frontend dist directory not found. Static files may not be available."
+    echo "Creating fallback index.html..."
+    cat > static/index.html << 'EOF'
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Harmonic Universe</title>
+    <style>
+      body { 
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 30px;
+        background-color: #f0f2f5;
+      }
+      h1 { color: #1a73e8; }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Harmonic Universe</h1>
+      <p>The application is running but the static files could not be found.</p>
+      <p>Please try accessing the API directly at <a href="/api/health">/api/health</a>.</p>
+    </div>
+  </body>
+</html>
+EOF
+fi
 
 echo "Build completed successfully at $(date)"
 exit 0 
