@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
@@ -19,13 +19,13 @@ from app.api.models.database import db
 
 def create_app():
     # Create Flask application
-    app = Flask(__name__, static_folder="static")
+    app = Flask(__name__, static_folder="static", static_url_path="")
 
     # Load environment variables
     app.config.from_object('app.config.Config')
 
     # Configure CORS
-    CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "http://localhost:3000", "http://localhost:5174", "http://localhost:5175", "http://127.0.0.1:5173", "http://127.0.0.1:3000"], "supports_credentials": True}})
+    CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "http://localhost:3000", "http://localhost:5174", "http://localhost:5175", "http://127.0.0.1:5173", "http://127.0.0.1:3000", "https://harmonic-universe-v682.onrender.com"], "supports_credentials": True}})
 
     # Ensure instance directory exists
     instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
@@ -78,6 +78,33 @@ def create_app():
             app.logger.error(f'Error creating database tables: {e}')
             raise e
 
+    # Add health check endpoint
+    @app.route('/api/health')
+    def health_check():
+        return jsonify({"status": "healthy", "message": "API is running"}), 200
+
+    # Serve static files from the root URL
+    @app.route('/')
+    def index():
+        return app.send_static_file('index.html')
+
+    # Catch-all route for client-side routing to return index.html
+    @app.route('/<path:path>')
+    def catch_all(path):
+        # Exclude API routes from this handling
+        if path.startswith('api/'):
+            return jsonify({
+                'error': 'Not Found',
+                'message': f'API endpoint /{path} not found'
+            }), 404
+        
+        # Try to serve as a static file first
+        try:
+            return app.send_static_file(path)
+        except:
+            # If not a static file, return index.html to support client-side routing
+            return app.send_static_file('index.html')
+
     return app
 
 # Create the application instance
@@ -87,6 +114,9 @@ app = create_app()
 @app.errorhandler(404)
 def not_found(error):
     app.logger.warning(f'Not Found: {request.url}')
+    # Return index.html for non-API routes to support client-side routing
+    if not request.path.startswith('/api/'):
+        return app.send_static_file('index.html')
     return jsonify({
         'error': 'Not Found',
         'message': 'The requested resource was not found'
