@@ -24,153 +24,39 @@ console.log('Reading index.html...');
 if (html.includes('react-fix-loader.js')) {
   console.log('React fixes already present in index.html');
 } else {
-  // Create the script tags to add - place these BEFORE any module scripts
-  const reactFixesScripts = `
-<!-- React fixes for module loading and MIME types -->
-<!-- Preload React to ensure it's available before module scripts -->
+  // Simple script that loads React and defines JSX runtime functions
+  const reactFixesScript = `
+<!-- React fixes -->
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-
-<!-- CRITICAL: Immediate JSX Runtime Implementation -->
 <script>
-  console.log('Immediate JSX runtime implementation executing');
+  // Define JSX runtime functions
+  window.jsx = window.jsxs = React.createElement;
+  window.Fragment = React.Fragment;
+  console.log('JSX runtime functions defined');
   
-  // CRITICAL: Define jsx/jsxs functions in the global scope IMMEDIATELY
-  window.jsx = function jsx(type, props, key) {
-    // Basic implementation that matches React's jsx function
-    return window.React.createElement(
-      type,
-      Object.assign(key !== undefined ? {key: key} : {}, props || {}),
-      props && props.children
-    );
-  };
-  
-  // jsxs is the same function in practice
-  window.jsxs = window.jsx;
-  
-  // Define Fragment
-  window.Fragment = window.React ? window.React.Fragment : Symbol('Fragment');
-  
-  // Verify the functions are defined
-  console.log('JSX runtime functions defined:', {
-    jsx: typeof window.jsx === 'function',
-    jsxs: typeof window.jsxs === 'function',
-    Fragment: window.Fragment ? 'defined' : 'undefined'
-  });
-  
-  // Expose as a module-like object
-  window._jsx_runtime = {
-    jsx: window.jsx,
-    jsxs: window.jsxs,
-    Fragment: window.Fragment
-  };
-  
-  // Create mock module.exports for CommonJS-like environments
-  if (typeof module === 'undefined') {
-    window.module = { exports: window._jsx_runtime };
-  } else {
-    module.exports = window._jsx_runtime;
-  }
-</script>
-
-<!-- Import override for jsx-runtime -->
-<script type="module">
-  // Intercept imports for jsx-runtime
-  window.__originalImport = window.import || (() => Promise.reject(new Error('import not available')));
-  
-  window.import = function(specifier) {
-    console.log('Import intercepted:', specifier);
-    
-    // Handle jsx runtime imports specifically
-    if (specifier.includes('jsx-runtime') || specifier.includes('jsx-dev-runtime')) {
-      console.log('Providing synthetic JSX runtime for:', specifier);
-      return Promise.resolve({
-        jsx: window.jsx,
-        jsxs: window.jsxs,
-        Fragment: window.Fragment,
-        jsxDEV: window.jsx
-      });
-    }
-    
-    // Fall back to original import
-    return window.__originalImport(specifier);
-  };
-  
-  // Pre-define paths that might be used by bundlers
-  const jsxRuntimePaths = [
-    '/jsx-runtime/jsx-runtime.js',
-    '/node_modules/react/jsx-runtime.js',
-    'react/jsx-runtime',
-    '/jsx-runtime.js',
-    'jsx-runtime'
-  ];
-  
-  // Create import maps for these paths if supported
-  if (document.createElement('script').importMap !== undefined) {
-    const importMap = {
-      imports: {}
-    };
-    
-    jsxRuntimePaths.forEach(path => {
-      importMap.imports[path] = 'data:application/javascript;charset=utf-8,export const jsx = window.jsx; export const jsxs = window.jsxs; export const Fragment = window.Fragment; export default { jsx, jsxs, Fragment };';
-    });
-    
-    const importMapScript = document.createElement('script');
-    importMapScript.type = 'importmap';
-    importMapScript.textContent = JSON.stringify(importMap);
-    document.head.appendChild(importMapScript);
-    console.log('Added import map for JSX runtime paths');
-  }
-</script>
-
-<!-- Error monitoring for resource loading failures -->
-<script>
   // Error monitoring for resource loading failures
   window.addEventListener('error', function(e) {
     if (e.target && (e.target.src || e.target.href)) {
       console.error('Resource failed to load:', e.target.src || e.target.href);
-      
-      // Log additional details that might help troubleshooting
-      console.error('Resource type:', e.target.tagName);
-      console.error('Resource attributes:', Object.fromEntries(
-        [...e.target.attributes].map(attr => [attr.name, attr.value])
-      ));
     }
   }, true);
-
-  // Ensure React global availability
-  window.React = window.React || {
-    createElement: function(type, props, ...children) { return { type, props: props || {}, children }; },
-    createContext: function() { return { Provider: function(props) { return props.children; } }; },
-    Fragment: Symbol('React.Fragment')
-  };
-  
-  // Double-check JSX runtime compatibility
-  window.jsx = window.jsx || window.React.createElement;
-  window.jsxs = window.jsxs || window.React.createElement;
-  
-  console.log('React and JSX runtime available:', {
-    React: !!window.React,
-    jsx: !!window.jsx,
-    jsxs: !!window.jsxs
-  });
 </script>`;
 
   // Find the closing head tag to insert our scripts right before it
-  // This ensures they're loaded before any module scripts in the body
   if (html.includes('</head>')) {
-    html = html.replace('</head>', `${reactFixesScripts}\n</head>`);
+    html = html.replace('</head>', `${reactFixesScript}\n</head>`);
   }
   // If no head tag found, add after opening html tag
   else if (html.includes('<html')) {
     const htmlTagEnd = html.indexOf('>', html.indexOf('<html')) + 1;
     html = html.slice(0, htmlTagEnd) +
-      `\n<head>${reactFixesScripts}\n</head>\n` +
+      `\n<head>${reactFixesScript}\n</head>\n` +
       html.slice(htmlTagEnd);
   }
   // Last resort: add at the beginning of the file
   else {
-    html = `<!DOCTYPE html>\n<html>\n<head>${reactFixesScripts}\n</head>\n<body>\n` + html + '\n</body>\n</html>';
+    html = `<!DOCTYPE html>\n<html>\n<head>${reactFixesScript}\n</head>\n<body>\n` + html + '\n</body>\n</html>';
   }
 
   // Write the updated HTML back to the file

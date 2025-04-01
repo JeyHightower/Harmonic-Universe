@@ -145,23 +145,6 @@ def create_app():
         # Add the static folder to the whitenoise application
         white_noise.add_files(static_folder_path, prefix='')
         
-        # Explicitly add react-fixes directory (this is needed if nested in static folder)
-        react_fixes_path = os.path.join(static_folder_path, 'react-fixes')
-        if os.path.exists(react_fixes_path):
-            app.logger.info(f"Adding React fixes directory to WhiteNoise: {react_fixes_path}")
-            white_noise.add_files(react_fixes_path, prefix='react-fixes')
-            white_noise.add_files(react_fixes_path, prefix='static/react-fixes')
-        else:
-            app.logger.warning(f"React fixes directory not found at: {react_fixes_path}")
-        
-        # Also explicitly add the static/react-fixes directory (for double-nesting scenarios)
-        static_react_fixes_path = os.path.join(static_folder_path, 'static', 'react-fixes')
-        if os.path.exists(static_react_fixes_path):
-            app.logger.info(f"Adding static/react-fixes directory to WhiteNoise: {static_react_fixes_path}")
-            white_noise.add_files(static_react_fixes_path, prefix='static/react-fixes')
-        else:
-            app.logger.warning(f"Static/react-fixes directory not found at: {static_react_fixes_path}")
-        
         # Configure WhiteNoise to add proper MIME types
         # Explicitly register MIME types for specific file extensions
         mimetypes.add_type('application/javascript', '.js')
@@ -178,6 +161,19 @@ def create_app():
     else:
         app.logger.error(f"Cannot configure WhiteNoise: static folder not available")
         startup_errors.append("WhiteNoise configuration failed: static folder not available")
+    
+    # Add a simple after_request hook to ensure JavaScript files are served with proper MIME type
+    @app.after_request
+    def add_header(response):
+        """Simple after_request hook to ensure JavaScript MIME types are set correctly."""
+        path = request.path
+        if path.endswith('.js') or '.js?' in path:
+            app.logger.info(f"Setting MIME type for {path} to application/javascript")
+            response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
+        elif path.endswith('.mjs') or '.mjs?' in path:
+            app.logger.info(f"Setting MIME type for {path} to application/javascript")
+            response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
+        return response
 
     # Add health check endpoint
     @app.route('/api/health')

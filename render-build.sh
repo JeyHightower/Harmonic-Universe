@@ -438,69 +438,54 @@ echo "Updating index.html with React fixes..."
 chmod +x backend/fixes/update-index.js
 cd backend && node fixes/update-index.js && cd ..
 
-# Create a diagnostic HTML file that directly includes React
-echo "Creating diagnostic HTML file..."
+# Create a simple diagnostic HTML file
+echo "Creating simplified diagnostic HTML file..."
 cat > backend/static/react-diagnostic.html << 'EOF'
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>React Diagnostic Page</title>
-  <!-- Load React directly from CDN -->
+  <title>Simple React Diagnostic</title>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script>
+    // Define JSX runtime functions
+    window.jsx = window.jsxs = React.createElement;
+    window.Fragment = React.Fragment;
+  </script>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
     .success { color: green; }
     .error { color: red; }
-    pre { background: #f5f5f5; padding: 10px; border-radius: 5px; overflow: auto; max-height: 300px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-    th { background-color: #f2f2f2; }
-    tr:nth-child(even) { background-color: #f9f9f9; }
+    pre { background: #f5f5f5; padding: 10px; }
   </style>
 </head>
 <body>
-  <h1>React Diagnostic Page</h1>
+  <h1>Simple React Diagnostic</h1>
   <div id="root"></div>
   
-  <h2>React Status</h2>
-  <div id="react-status"></div>
-  
-  <h2>JSX Runtime Status</h2>
-  <div id="jsx-status"></div>
-  
-  <h2>Script Loading Order</h2>
-  <div id="script-order">
-    <p>Analyzing scripts...</p>
-  </div>
-  
-  <h2>Module Script Test</h2>
-  <div id="module-test"></div>
+  <h2>Status:</h2>
+  <div id="status"></div>
   
   <script>
-    // Check React presence
-    const reactStatus = document.getElementById('react-status');
-    if (typeof React !== 'undefined') {
-      reactStatus.innerHTML = `<p class="success">✅ React is available (version: ${React.version || 'unknown'})</p>
-      <pre>${JSON.stringify(Object.keys(React), null, 2)}</pre>`;
-    } else {
-      reactStatus.innerHTML = '<p class="error">❌ React is NOT available</p>';
-    }
+    // Display status
+    const status = document.getElementById('status');
+    const statusData = {
+      React: typeof React !== 'undefined',
+      jsx: typeof jsx !== 'undefined',
+      jsxs: typeof jsxs !== 'undefined',
+      Fragment: typeof Fragment !== 'undefined'
+    };
     
-    // Check JSX runtime
-    const jsxStatus = document.getElementById('jsx-status');
-    if (typeof jsx !== 'undefined' && typeof jsxs !== 'undefined') {
-      jsxStatus.innerHTML = '<p class="success">✅ JSX runtime functions are available</p>';
-    } else {
-      jsxStatus.innerHTML = '<p class="error">❌ JSX runtime functions are NOT available</p>';
-      // Create them if missing
-      window.jsx = window.jsx || (window.React ? window.React.createElement : function(){});
-      window.jsxs = window.jsxs || window.jsx;
-      jsxStatus.innerHTML += '<p>→ Created fallback JSX runtime functions</p>';
+    let html = '<ul>';
+    for (const [key, value] of Object.entries(statusData)) {
+      html += `<li>${key}: <span class="${value ? 'success' : 'error'}">${value ? '✅ Available' : '❌ Missing'}</span></li>`;
     }
+    html += '</ul>';
     
-    // Try to render a simple React component
+    status.innerHTML = html;
+    
+    // Try to render a React component
     try {
       const root = ReactDOM.createRoot(document.getElementById('root'));
       root.render(React.createElement('div', null, 'If you can see this, React is working!'));
@@ -510,120 +495,12 @@ cat > backend/static/react-diagnostic.html << 'EOF'
       document.getElementById('root').innerHTML = 
         `<p class="error">React rendering failed: ${error.message}</p>`;
     }
-    
-    // Log script loading order
-    function analyzeScripts() {
-      const scriptOrder = document.getElementById('script-order');
-      const scripts = document.querySelectorAll('script');
-      
-      // Create a table for scripts
-      let html = `
-        <p>Found ${scripts.length} script elements</p>
-        <table>
-          <tr>
-            <th>#</th>
-            <th>Source/Content</th>
-            <th>Type</th>
-            <th>Async/Defer</th>
-            <th>Position</th>
-          </tr>
-      `;
-      
-      scripts.forEach((script, index) => {
-        const source = script.src ? script.src : 'Inline script';
-        const type = script.type || 'text/javascript (default)';
-        const asyncAttr = script.async ? 'async' : ''; 
-        const deferAttr = script.defer ? 'defer' : '';
-        const loadingAttrs = asyncAttr || deferAttr ? `${asyncAttr} ${deferAttr}`.trim() : 'none';
-        const position = script.parentNode.tagName.toLowerCase() === 'head' ? 'head' : 'body';
-        
-        // Log to console too for debugging
-        console.log(`Script ${index + 1}:`, { 
-          src: source, 
-          type, 
-          async: script.async, 
-          defer: script.defer,
-          position
-        });
-        
-        html += `
-          <tr>
-            <td>${index + 1}</td>
-            <td>${source}</td>
-            <td>${type}</td>
-            <td>${loadingAttrs}</td>
-            <td>${position}</td>
-          </tr>
-        `;
-      });
-      
-      html += '</table>';
-      
-      // Add info about document readiness
-      html += `
-        <h3>Document State</h3>
-        <p>Document readyState: ${document.readyState}</p>
-        <p>DOMContentLoaded fired: ${window._domLoaded ? 'Yes' : 'No'}</p>
-        <p>Window load fired: ${window._windowLoaded ? 'Yes' : 'No'}</p>
-      `;
-      
-      scriptOrder.innerHTML = html;
-    }
-    
-    // Test module script loading
-    function testModuleLoading() {
-      const moduleTest = document.getElementById('module-test');
-      
-      // Create a test module script
-      const moduleScript = document.createElement('script');
-      moduleScript.type = 'module';
-      moduleScript.textContent = `
-        console.log('Module script executed');
-        document.getElementById('module-test').innerHTML += '<p class="success">✅ Module script executed successfully</p>';
-      `;
-      
-      // Add error handler
-      moduleScript.onerror = (error) => {
-        console.error('Module script failed to load:', error);
-        moduleTest.innerHTML += `
-          <p class="error">❌ Module script failed to load</p>
-          <pre>${error ? JSON.stringify(error) : 'No error details available'}</pre>
-        `;
-      };
-      
-      // Add the module script
-      moduleTest.innerHTML = '<p>Testing module script loading...</p>';
-      document.body.appendChild(moduleScript);
-    }
-    
-    // Track document load events
-    window._domLoaded = false;
-    window._windowLoaded = false;
-    
-    document.addEventListener('DOMContentLoaded', () => {
-      window._domLoaded = true;
-      analyzeScripts();
-      testModuleLoading();
-    });
-    
-    window.addEventListener('load', () => {
-      window._windowLoaded = true;
-      // Update again after window load
-      setTimeout(analyzeScripts, 100);
-    });
-    
-    // Initial analysis in case DOMContentLoaded already fired
-    if (document.readyState !== 'loading') {
-      window._domLoaded = true;
-      analyzeScripts();
-      testModuleLoading();
-    }
   </script>
 </body>
 </html>
 EOF
 
-echo "Completed React fixes setup"
+echo "Created simple diagnostic HTML file"
 
 # Verify static files were copied
 echo "Frontend build files copied successfully"
@@ -681,88 +558,27 @@ ls -la backend/static/assets || echo "Assets directory not found"
 # Create direct JSX runtime module for easier imports
 echo "Creating simplified direct JSX runtime modules..."
 
-# Create the main jsx-runtime.js file
+# Create a simple JSX runtime module
 mkdir -p backend/static/node_modules/react
 cat > backend/static/node_modules/react/jsx-runtime.js << 'EOF'
-// Direct JSX runtime module
-console.log('Direct jsx-runtime.js module loaded');
+// Simple JSX runtime module
+console.log('JSX runtime module loaded');
 
-// Export the functions from the global scope
+// Export the JSX functions from the global scope
 export const jsx = window.jsx || window.React.createElement;
 export const jsxs = window.jsxs || window.React.createElement;
 export const Fragment = window.Fragment || window.React.Fragment;
 
-// Default export
-export default {
-  jsx,
-  jsxs,
-  Fragment
-};
+export default { jsx, jsxs, Fragment };
 EOF
 
-# Create dev version as well
+# Create dev version too for completeness
 cat > backend/static/node_modules/react/jsx-dev-runtime.js << 'EOF'
-// Direct JSX dev runtime module
-console.log('Direct jsx-dev-runtime.js module loaded');
-
-// Re-export from the global scope
-export const jsx = window.jsx || window.React.createElement;
-export const jsxs = window.jsxs || window.React.createElement;
-export const jsxDEV = window.jsx || window.React.createElement;
-export const Fragment = window.Fragment || window.React.Fragment;
-
-// Default export
-export default {
-  jsx,
-  jsxs,
-  jsxDEV,
-  Fragment
-};
-EOF
-
-# Create a bare React module for direct imports
-cat > backend/static/node_modules/react/index.js << 'EOF'
-// Direct React module for fallback imports
-console.log('Direct React module loaded');
-
-// Simply export the global React object
-const React = window.React;
-
-// Export all React properties
-export const {
-  Children,
-  Component,
-  Fragment,
-  Profiler,
-  PureComponent,
-  StrictMode,
-  Suspense,
-  cloneElement,
-  createContext,
-  createElement,
-  createFactory,
-  createRef,
-  forwardRef,
-  isValidElement,
-  lazy,
-  memo,
-  useCallback,
-  useContext,
-  useDebugValue,
-  useEffect,
-  useImperativeHandle,
-  useLayoutEffect,
-  useMemo,
-  useReducer,
-  useRef,
-  useState
-} = React;
-
-// Version info
-export const version = React.version;
-
-// Default export
-export default React;
+// Simple JSX dev runtime module
+import { jsx, jsxs, Fragment } from './jsx-runtime.js';
+export { jsx, jsxs, Fragment };
+export const jsxDEV = jsx;
+export default { jsx, jsxs, jsxDEV, Fragment };
 EOF
 
 echo "Created simplified JSX runtime modules"
