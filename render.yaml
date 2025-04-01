@@ -11,7 +11,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: NODE_VERSION
-        value: 16.20.0
+        value: 18.18.0
       - key: FLASK_ENV
         value: production
       - key: FLASK_DEBUG

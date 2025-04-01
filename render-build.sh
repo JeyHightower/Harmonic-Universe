@@ -16,6 +16,9 @@ export PYTHON_VERSION=3.11.0
 # Set Node memory limit to prevent OOM issues
 export NODE_OPTIONS="--max-old-space-size=2048"
 
+# Set Node environment
+export NODE_ENV=production
+
 # Build Frontend
 echo "==== Building frontend ===="
 cd frontend
@@ -27,8 +30,8 @@ echo "Making sure @vitejs/plugin-react is installed..."
 npm install --no-audit --no-fund @vitejs/plugin-react
 
 echo "Building frontend production assets..."
-# Directly call vite build instead of npm run build to avoid infinite recursion
-npx vite build
+# Use node to run vite from node_modules directly
+node ./node_modules/vite/bin/vite.js build
 
 # Clean up node_modules AFTER build to free memory (moved after build)
 rm -rf node_modules

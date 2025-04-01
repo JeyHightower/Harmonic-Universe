@@ -1,21 +1,21 @@
 import react from "@vitejs/plugin-react";
-import path from "path";
+import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "src"),
-      "@components": path.resolve(__dirname, "src/components"),
-      "@pages": path.resolve(__dirname, "src/pages"),
-      "@store": path.resolve(__dirname, "src/store"),
-      "@styles": path.resolve(__dirname, "src/styles"),
-      "@assets": path.resolve(__dirname, "src/assets"),
-      "@utils": path.resolve(__dirname, "src/utils"),
-      "@hooks": path.resolve(__dirname, "src/hooks"),
-      "@contexts": path.resolve(__dirname, "src/contexts"),
-      "@services": path.resolve(__dirname, "src/services"),
+      "@": fileURLToPath(new URL('./src', import.meta.url)),
+      "@components": fileURLToPath(new URL('./src/components', import.meta.url)),
+      "@pages": fileURLToPath(new URL('./src/pages', import.meta.url)),
+      "@store": fileURLToPath(new URL('./src/store', import.meta.url)),
+      "@styles": fileURLToPath(new URL('./src/styles', import.meta.url)),
+      "@assets": fileURLToPath(new URL('./src/assets', import.meta.url)),
+      "@utils": fileURLToPath(new URL('./src/utils', import.meta.url)),
+      "@hooks": fileURLToPath(new URL('./src/hooks', import.meta.url)),
+      "@contexts": fileURLToPath(new URL('./src/contexts', import.meta.url)),
+      "@services": fileURLToPath(new URL('./src/services', import.meta.url)),
     },
     extensions: ['.js', '.jsx', '.ts', '.tsx', '.json']
   },
@@ -26,7 +26,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       input: {
-        main: path.resolve(__dirname, "index.html"),
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
       },
       output: {
         manualChunks: {
