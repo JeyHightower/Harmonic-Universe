@@ -1085,6 +1085,67 @@ console.log('React fixes applied successfully at:', new Date().toISOString());
         
         return response
 
+    # Add a comprehensive debug endpoint for server configuration information
+    @app.route('/debug/server-info')
+    def debug_server_info():
+        """Return detailed information about the server configuration."""
+        # Build a detailed information dictionary, but be careful not to expose sensitive info
+        safe_env = {k: v for k, v in os.environ.items() 
+                   if not any(secret in k.lower() for secret in 
+                             ['key', 'pass', 'secret', 'token', 'auth'])}
+        
+        # Get registered MIME types
+        mime_types = {
+            '.js': mimetypes.types_map.get('.js', 'unknown'),
+            '.mjs': mimetypes.types_map.get('.mjs', 'unknown'),
+            '.jsx': mimetypes.types_map.get('.jsx', 'unknown'),
+            '.html': mimetypes.types_map.get('.html', 'unknown'),
+            '.css': mimetypes.types_map.get('.css', 'unknown')
+        }
+        
+        # Get static folder contents
+        static_contents = []
+        if app.static_folder and os.path.exists(app.static_folder):
+            try:
+                for root, dirs, files in os.walk(app.static_folder):
+                    rel_path = os.path.relpath(root, app.static_folder)
+                    if rel_path == '.':
+                        rel_path = ''
+                    for file in files:
+                        static_contents.append(os.path.join(rel_path, file))
+            except Exception as e:
+                static_contents = [f"Error listing static files: {str(e)}"]
+        
+        # Compile information
+        info = {
+            'server': {
+                'platform': platform.platform(),
+                'python_version': platform.python_version(),
+                'hostname': platform.node()
+            },
+            'flask_app': {
+                'static_folder': app.static_folder,
+                'static_exists': bool(app.static_folder and os.path.exists(app.static_folder)),
+                'static_url_path': app.static_url_path,
+                'instance_path': app.instance_path,
+                'debug_mode': app.debug,
+                'environment': os.environ.get('FLASK_ENV', 'production')
+            },
+            'mime_types': mime_types,
+            'static_contents': static_contents[:50],  # Limit to first 50 files
+            'request': {
+                'path': request.path,
+                'url': request.url,
+                'headers': dict(request.headers),
+                'host': request.host,
+                'host_url': request.host_url
+            },
+            'environment': safe_env
+        }
+        
+        # Return as JSON
+        return jsonify(info)
+
     return app
 
 try:
