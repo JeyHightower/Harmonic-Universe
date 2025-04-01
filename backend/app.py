@@ -167,12 +167,24 @@ def create_app():
     def add_header(response):
         """Simple after_request hook to ensure JavaScript MIME types are set correctly."""
         path = request.path
-        if path.endswith('.js') or '.js?' in path:
-            app.logger.info(f"Setting MIME type for {path} to application/javascript")
+        
+        # Handle JavaScript files with detailed logging
+        if path.endswith('.js') or path.endswith('.mjs') or '.js?' in path or '.mjs?' in path:
+            current_type = response.headers.get('Content-Type', 'undefined')
+            
+            # Only change MIME type if it's not already set correctly
+            if 'application/javascript' not in current_type:
+                app.logger.info(f"Correcting MIME type for {path} from {current_type} to application/javascript")
+                response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
+                
+                # Log details about this request for debugging
+                app.logger.info(f"JS file request: {path}, Referrer: {request.headers.get('Referer', 'none')}")
+
+        # Optimize module index.js files specifically
+        if '/src/index.js' in path or '/index.js' in path:
+            app.logger.info(f"Setting MIME type for {path} to application/javascript (special handling)")
             response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
-        elif path.endswith('.mjs') or '.mjs?' in path:
-            app.logger.info(f"Setting MIME type for {path} to application/javascript")
-            response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
+        
         return response
 
     # Add health check endpoint
@@ -758,6 +770,89 @@ console.log('React fixes applied successfully at:', new Date().toISOString());
         
         response = app.response_class(
             response=jsx_runtime_content,
+            mimetype='application/javascript'
+        )
+        
+        return response
+        
+    # Add special route for src/index.js to ensure correct MIME type
+    @app.route('/src/index.js')
+    def serve_src_index_js():
+        """Serve src/index.js with proper MIME type."""
+        app.logger.info(f"src/index.js requested")
+        
+        # Look for the file in various locations
+        possible_locations = [
+            os.path.join(app.static_folder, 'src/index.js') if app.static_folder else None,
+            os.path.join(app.static_folder, 'assets/index.js') if app.static_folder else None,
+            os.path.join(app.static_folder, 'index.js') if app.static_folder else None
+        ]
+        
+        # Try to find and serve the actual file
+        for location in possible_locations:
+            if location and os.path.exists(location):
+                app.logger.info(f"Found src/index.js at: {location}")
+                directory = os.path.dirname(location)
+                filename = os.path.basename(location)
+                response = send_from_directory(directory, filename)
+                response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
+                return response
+        
+        # If file not found, generate a minimal index.js that loads the main app safely
+        app.logger.warning("src/index.js not found, generating fallback")
+        
+        fallback_js = """
+        // Fallback index.js generated on-demand
+        console.log('Loading fallback index.js');
+        
+        // Make sure React is available
+        if (typeof React === 'undefined') {
+          console.error('React not found. Loading from CDN...');
+          // Load React dynamically
+          const reactScript = document.createElement('script');
+          reactScript.src = 'https://unpkg.com/react@18/umd/react.production.min.js';
+          document.head.appendChild(reactScript);
+          
+          const reactDomScript = document.createElement('script');
+          reactDomScript.src = 'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js';
+          document.head.appendChild(reactDomScript);
+        }
+        
+        // Ensure JSX runtime functions exist
+        window.jsx = window.jsxs = window.React ? window.React.createElement : (type, props) => ({ type, props });
+        window.Fragment = window.React ? window.React.Fragment : Symbol('Fragment');
+        
+        // Wait for the DOM to be ready, then try to load the actual app
+        document.addEventListener('DOMContentLoaded', function() {
+          console.log('Fallback index.js attempting to load the main app...');
+          
+          // Try to find and load the main app script
+          const possibleAppFiles = [
+            '/assets/index.js',
+            '/app.js',
+            '/main.js',
+            '/bundle.js'
+          ];
+          
+          // Try each possible file
+          let loaded = false;
+          possibleAppFiles.forEach(file => {
+            if (!loaded) {
+              const script = document.createElement('script');
+              script.src = file;
+              script.onerror = () => console.error(`Failed to load ${file}`);
+              script.onload = () => {
+                console.log(`Successfully loaded ${file}`);
+                loaded = true;
+              };
+              document.head.appendChild(script);
+            }
+          });
+        });
+        """
+        
+        response = app.response_class(
+            response=fallback_js,
             mimetype='application/javascript'
         )
         

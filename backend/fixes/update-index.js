@@ -30,15 +30,40 @@ if (html.includes('react-fix-loader.js')) {
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script>
-  // Define JSX runtime functions
+  // CRITICAL: Define JSX runtime functions immediately
   window.jsx = window.jsxs = React.createElement;
   window.Fragment = React.Fragment;
   console.log('JSX runtime functions defined');
+  
+  // Ensure all module scripts are served with correct MIME type
+  const originalFetch = window.fetch;
+  window.fetch = function(url, options) {
+    if (typeof url === 'string' && url.endsWith('.js')) {
+      console.log('Fetch intercepted for JS file:', url);
+      // Add timestamp to bypass cache if needed
+      const cacheBuster = url.includes('?') ? '&t=' + Date.now() : '?t=' + Date.now();
+      return originalFetch(url + cacheBuster, options);
+    }
+    return originalFetch.apply(this, arguments);
+  };
   
   // Error monitoring for resource loading failures
   window.addEventListener('error', function(e) {
     if (e.target && (e.target.src || e.target.href)) {
       console.error('Resource failed to load:', e.target.src || e.target.href);
+      
+      // For module scripts specifically, try to fix and reload
+      if (e.target.type === 'module' && e.target.src) {
+        console.log('Attempting to reload failed module script:', e.target.src);
+        
+        // Create a new script element with same src but non-module type
+        const fixScript = document.createElement('script');
+        fixScript.src = e.target.src;
+        fixScript.onerror = function() {
+          console.error('Failed to load script even after MIME type fix:', e.target.src);
+        };
+        document.head.appendChild(fixScript);
+      }
     }
   }, true);
 </script>`;
