@@ -24,43 +24,82 @@ console.log('Reading index.html...');
 if (html.includes('react-fix-loader.js')) {
   console.log('React fixes already present in index.html');
 } else {
-  // Add React fixes script to the head
-  console.log('Adding React fixes to index.html');
+  // Create the script tags to add - place these BEFORE any module scripts
+  const reactFixesScripts = `
+<!-- React fixes for module loading and MIME types -->
+<!-- Preload React to ensure it's available before module scripts -->
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 
-  // Create the script tag to add
-  const reactFixScript = `
-  <!-- React fixes for module loading and MIME types - Multiple paths for redundancy -->
-  <script src="/static/react-fixes/react-fix-loader.js"></script>
-  <script src="/react-fix-loader.js"></script>
-  <script src="react-fix-loader.js"></script>
-  <script src="/direct-fix.js"></script>
-  <script src="/static/direct-fix.js"></script>
-  <!-- Fallback script tag with inline fix -->
-  <script>
-    // Inline React fix (minimal version)
-    console.log('Inline React fix applied');
-    if (typeof React === 'undefined') {
-      window.React = {
-        createElement: function(type, props) { return { type, props: props || {} }; },
-        createContext: function() { return { Provider: function(p) { return p.children; } }; },
-        Fragment: Symbol('React.Fragment')
-      };
-      window.jsx = window.React.createElement;
-      window.jsxs = window.React.createElement;
-    }
-  </script>`;
+<!-- React fixes loader with multiple fallbacks -->
+<script>
+  // Ensure React global availability
+  window.React = window.React || {
+    createElement: function(type, props, ...children) { return { type, props: props || {}, children }; },
+    createContext: function() { return { Provider: function(props) { return props.children; } }; },
+    Fragment: Symbol('React.Fragment')
+  };
+  
+  // Ensure JSX runtime compatibility
+  window.jsx = window.jsx || window.React.createElement;
+  window.jsxs = window.jsxs || window.React.createElement;
+  
+  // Log for diagnostic purposes
+  console.log('React globals initialized from inline script');
+  
+  // Load react-fix-loader.js with error handling
+  const loadReactFixes = function() {
+    const script = document.createElement('script');
+    script.src = '/static/react-fixes/react-fix-loader.js';
+    script.onerror = function() {
+      console.warn('Failed to load react-fix-loader.js, falling back to inline fix');
+      // Apply fixes directly if script fails to load
+      if (typeof React === 'undefined') {
+        console.warn('React still not found after fallback, applying emergency polyfill');
+        window.React = {
+          createElement: function(type, props, ...children) { return { type, props: props || {}, children }; },
+          createContext: function() { return { Provider: function(props) { return props.children; } }; },
+          Fragment: Symbol('React.Fragment')
+        };
+        window.jsx = window.React.createElement;
+        window.jsxs = window.React.createElement;
+      }
+    };
+    document.head.appendChild(script);
+  };
+  
+  // Wait for document to be ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadReactFixes);
+  } else {
+    loadReactFixes();
+  }
+</script>`;
 
-  // Insert after the first head tag
-  html = html.replace('<head>', '<head>' + reactFixScript);
-
-  // Add MIME type meta tag
-  if (!html.includes('content="text/javascript"')) {
-    html = html.replace('<head>', '<head>\n  <meta http-equiv="Content-Type" content="text/javascript; charset=utf-8">');
+  // Find the closing head tag to insert our scripts right before it
+  // This ensures they're loaded before any module scripts in the body
+  if (html.includes('</head>')) {
+    html = html.replace('</head>', `${reactFixesScripts}\n</head>`);
+  }
+  // If no head tag found, add after opening html tag
+  else if (html.includes('<html')) {
+    const htmlTagEnd = html.indexOf('>', html.indexOf('<html')) + 1;
+    html = html.slice(0, htmlTagEnd) +
+      `\n<head>${reactFixesScripts}\n</head>\n` +
+      html.slice(htmlTagEnd);
+  }
+  // Last resort: add at the beginning of the file
+  else {
+    html = `<!DOCTYPE html>\n<html>\n<head>${reactFixesScripts}\n</head>\n<body>\n` + html + '\n</body>\n</html>';
   }
 
   // Write the updated HTML back to the file
   fs.writeFileSync(indexPath, html);
-  console.log('Updated index.html with React fixes');
+  console.log(`Updated index.html (${html.length} bytes) with React fixes`);
+
+  // Log success and exit
+  console.log('Successfully updated index.html with React fixes');
+  process.exit(0);
 }
 
 // Also create a base.html with the fixes for fallback

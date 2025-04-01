@@ -433,11 +433,77 @@ cat > backend/static/react-fixes/mimetype.ini << 'EOF'
 .mjs=application/javascript
 EOF
 
-# Run the update-index script to ensure React fixes are included in HTML
-echo "Updating index.html to include React fixes..."
-cd backend/fixes
-node update-index.js ../static
-cd ../..
+# Ensure update-index.js is executable and run it
+echo "Updating index.html with React fixes..."
+chmod +x backend/fixes/update-index.js
+cd backend && node fixes/update-index.js && cd ..
+
+# Create a diagnostic HTML file that directly includes React
+echo "Creating diagnostic HTML file..."
+cat > backend/static/react-diagnostic.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>React Diagnostic Page</title>
+  <!-- Load React directly from CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .success { color: green; }
+    .error { color: red; }
+    pre { background: #f5f5f5; padding: 10px; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <h1>React Diagnostic Page</h1>
+  <div id="root"></div>
+  
+  <h2>React Status</h2>
+  <div id="react-status"></div>
+  
+  <h2>JSX Runtime Status</h2>
+  <div id="jsx-status"></div>
+  
+  <script>
+    // Check React presence
+    const reactStatus = document.getElementById('react-status');
+    if (typeof React !== 'undefined') {
+      reactStatus.innerHTML = `<p class="success">✅ React is available (version: ${React.version || 'unknown'})</p>
+      <pre>${JSON.stringify(Object.keys(React), null, 2)}</pre>`;
+    } else {
+      reactStatus.innerHTML = '<p class="error">❌ React is NOT available</p>';
+    }
+    
+    // Check JSX runtime
+    const jsxStatus = document.getElementById('jsx-status');
+    if (typeof jsx !== 'undefined' && typeof jsxs !== 'undefined') {
+      jsxStatus.innerHTML = '<p class="success">✅ JSX runtime functions are available</p>';
+    } else {
+      jsxStatus.innerHTML = '<p class="error">❌ JSX runtime functions are NOT available</p>';
+      // Create them if missing
+      window.jsx = window.jsx || (window.React ? window.React.createElement : function(){});
+      window.jsxs = window.jsxs || window.jsx;
+      jsxStatus.innerHTML += '<p>→ Created fallback JSX runtime functions</p>';
+    }
+    
+    // Try to render a simple React component
+    try {
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(React.createElement('div', null, 'If you can see this, React is working!'));
+      console.log('React rendering successful');
+    } catch (error) {
+      console.error('React rendering failed:', error);
+      document.getElementById('root').innerHTML = 
+        `<p class="error">React rendering failed: ${error.message}</p>`;
+    }
+  </script>
+</body>
+</html>
+EOF
+
+echo "Completed React fixes setup"
 
 # Verify static files were copied
 echo "Frontend build files copied successfully"

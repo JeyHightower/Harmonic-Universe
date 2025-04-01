@@ -607,6 +607,106 @@ console.log('React fixes applied successfully at:', new Date().toISOString());
         )
         return response
 
+    # Add a React diagnostics endpoint
+    @app.route('/api/debug/react')
+    def debug_react():
+        """Diagnostic endpoint for React loading issues."""
+        try:
+            # Check for React files in the static folder
+            react_files = []
+            react_related_paths = [
+                'static/react-fixes',
+                'react-fixes',
+                'assets/react',
+                'assets/vendor'
+            ]
+            
+            if app.static_folder:
+                for base_path in react_related_paths:
+                    full_path = os.path.join(app.static_folder, base_path)
+                    if os.path.exists(full_path) and os.path.isdir(full_path):
+                        for root, _, files in os.walk(full_path):
+                            for file in files:
+                                rel_path = os.path.relpath(
+                                    os.path.join(root, file), 
+                                    app.static_folder
+                                )
+                                file_size = os.path.getsize(os.path.join(root, file))
+                                react_files.append({
+                                    'path': rel_path,
+                                    'size': file_size
+                                })
+            
+            # Check index.html for React references
+            index_references = []
+            if app.static_folder and os.path.exists(os.path.join(app.static_folder, 'index.html')):
+                try:
+                    with open(os.path.join(app.static_folder, 'index.html'), 'r') as f:
+                        html_content = f.read()
+                        
+                        # Look for common React-related patterns
+                        patterns = [
+                            'react', 'React', 'jsx', 'createRoot', 'ReactDOM',
+                            'react-dom', 'react.production', 'react.development',
+                            'react-fix', 'jsx-runtime'
+                        ]
+                        
+                        for pattern in patterns:
+                            pos = 0
+                            while True:
+                                pos = html_content.find(pattern, pos)
+                                if pos == -1:
+                                    break
+                                
+                                # Get some context around the match
+                                start = max(0, pos - 40)
+                                end = min(len(html_content), pos + len(pattern) + 40)
+                                context = html_content[start:end]
+                                
+                                # Add to references
+                                index_references.append({
+                                    'pattern': pattern,
+                                    'position': pos,
+                                    'context': context
+                                })
+                                
+                                # Move past this occurrence
+                                pos += len(pattern)
+                except Exception as e:
+                    app.logger.warning(f"Error analyzing index.html: {str(e)}")
+            
+            # Check the diagnostic page
+            diagnostic_page_exists = (
+                app.static_folder and 
+                os.path.exists(os.path.join(app.static_folder, 'react-diagnostic.html'))
+            )
+            
+            # Build response data
+            response_data = {
+                'react_files': react_files,
+                'react_files_count': len(react_files),
+                'index_references': index_references,
+                'index_references_count': len(index_references),
+                'react_diagnostic_page': {
+                    'exists': diagnostic_page_exists,
+                    'url': '/react-diagnostic.html'
+                },
+                'potential_fixes': [
+                    'Visit /react-diagnostic.html to test React loading directly',
+                    'Ensure React is loaded before any module scripts',
+                    'Try loading React from a CDN (already added in the latest update)',
+                    'Check browser console for more specific error messages'
+                ]
+            }
+            
+            return jsonify(response_data), 200
+        except Exception as e:
+            app.logger.error(f"Error in React diagnostics: {str(e)}")
+            return jsonify({
+                'error': str(e),
+                'traceback': traceback.format_exc()
+            }), 500
+
     return app
 
 try:
