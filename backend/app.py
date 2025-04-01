@@ -301,6 +301,36 @@ def create_app():
             return send_from_directory(app.static_folder, filename)
         return jsonify({"error": "Static folder not configured"}), 500
 
+    # Add a route specifically for JavaScript modules
+    @app.route('/<path:filename>.js')
+    def serve_js_module(filename):
+        """Serve JavaScript modules with the correct MIME type."""
+        app.logger.info(f"JavaScript module requested: {filename}.js")
+        
+        # Try different possible locations
+        possible_paths = [
+            f"{filename}.js",  # Direct path
+            f"assets/{filename}.js",  # In assets directory
+            f"static/{filename}.js",  # In static directory
+            f"js/{filename}.js"  # In js directory
+        ]
+        
+        # Look for the file in possible locations
+        for js_path in possible_paths:
+            if app.static_folder is not None and os.path.exists(os.path.join(app.static_folder, js_path)):
+                app.logger.info(f"Found JavaScript module at: {js_path}")
+                response = send_from_directory(app.static_folder, js_path)
+                response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
+                return response
+        
+        # If not found, log an error and return 404
+        app.logger.error(f"JavaScript module not found: {filename}.js")
+        return jsonify({
+            "error": "JavaScript module not found",
+            "requested_file": f"{filename}.js",
+            "searched_paths": possible_paths
+        }), 404
+
     # Serve static files from the root URL
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
@@ -498,21 +528,108 @@ console.log('React fixes applied successfully');
     def set_correct_mime_types(response):
         """Ensure JavaScript files are served with the correct MIME type."""
         path = request.path
-        if path.endswith('.js') and response.mimetype == 'text/html':
-            app.logger.info(f"Correcting MIME type for {path} from {response.mimetype} to application/javascript")
-            response.mimetype = 'application/javascript'
-        elif path.endswith('.mjs') and response.mimetype == 'text/html':
-            app.logger.info(f"Correcting MIME type for {path} from {response.mimetype} to application/javascript")
-            response.mimetype = 'application/javascript'
-        elif path.endswith('.css') and response.mimetype == 'text/html':
-            app.logger.info(f"Correcting MIME type for {path} from {response.mimetype} to text/css")
-            response.mimetype = 'text/css'
         
-        # Add CORS headers for JavaScript and CSS files
-        if path.endswith(('.js', '.mjs', '.css')):
-            response.headers['Access-Control-Allow-Origin'] = '*'
+        # Force correct MIME type for JavaScript files
+        if path.endswith('.js') or '.js?' in path:
+            app.logger.info(f"Setting MIME type for {path} to application/javascript (was: {response.mimetype})")
+            response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
+        elif path.endswith('.mjs') or '.mjs?' in path:
+            app.logger.info(f"Setting MIME type for {path} to application/javascript (was: {response.mimetype})")
+            response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
+        elif path.endswith('.css') or '.css?' in path:
+            app.logger.info(f"Setting MIME type for {path} to text/css (was: {response.mimetype})")
+            response.headers['Content-Type'] = 'text/css; charset=utf-8'
+        
+        # Add CORS headers for all files
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['X-Content-Type-Options'] = 'nosniff'
         
         return response
+
+    # Add module debug endpoint
+    @app.route('/api/debug/module/<path:filename>')
+    def debug_module(filename):
+        """Debug endpoint to help track down module loading issues."""
+        # Clean up filename if it has query parameters
+        if '?' in filename:
+            filename = filename.split('?')[0]
+        
+        # Add .js extension if not present
+        if not filename.endswith('.js') and not filename.endswith('.mjs'):
+            filename = f"{filename}.js"
+        
+        # Track all possible locations where the file might be
+        possible_locations = []
+        
+        # Direct paths to check
+        paths_to_check = [
+            filename,
+            f"assets/{filename}",
+            f"static/{filename}",
+            f"js/{filename}",
+            f"static/assets/{filename}",
+            f"assets/js/{filename}"
+        ]
+        
+        file_content = None
+        found_path = None
+        
+        # Check all possible paths
+        for path in paths_to_check:
+            if app.static_folder is None:
+                full_path = None
+                exists = False
+                size = None
+            else:
+                full_path = os.path.join(app.static_folder, path)
+                exists = os.path.exists(full_path)
+                size = os.path.getsize(full_path) if exists else None
+            
+            location_info = {
+                "path": path,
+                "full_path": full_path,
+                "exists": exists,
+                "size": size
+            }
+            
+            possible_locations.append(location_info)
+            
+            # If file exists, read its content
+            if exists and full_path is not None and not found_path:
+                found_path = path
+                try:
+                    with open(full_path, 'r') as f:
+                        file_content = f.read(500)  # Read first 500 chars
+                except Exception as e:
+                    file_content = f"Error reading file: {str(e)}"
+        
+        # Build the response
+        response_data = {
+            "requested_file": filename,
+            "possible_locations": possible_locations,
+            "file_found": found_path is not None,
+            "found_at": found_path,
+            "content_preview": file_content
+        }
+        
+        # If file was found, offer to serve it with correct MIME type
+        if found_path:
+            response_data["serve_url"] = f"/debug/serve/{found_path}"
+        
+        return jsonify(response_data)
+
+    # Add endpoint to serve a file with explicit MIME type
+    @app.route('/debug/serve/<path:filename>')
+    def debug_serve_file(filename):
+        """Serve a file with explicit application/javascript MIME type."""
+        if app.static_folder and os.path.exists(os.path.join(app.static_folder, filename)):
+            response = send_from_directory(app.static_folder, filename)
+            response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
+            response.headers['X-Content-Type-Options'] = 'nosniff'
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            return response
+        
+        return jsonify({"error": "File not found"}), 404
 
     return app
 
