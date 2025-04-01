@@ -11,6 +11,7 @@ from logging.handlers import RotatingFileHandler
 from dotenv import load_dotenv
 from typing import Optional, Dict, List, Any, Union
 import mimetypes
+from whitenoise import WhiteNoise
 
 # Add the current directory to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -136,6 +137,32 @@ def create_app():
     for error in startup_errors:
         app.logger.error(f"Startup error: {error}")
 
+    # Configure WhiteNoise for static files with proper MIME types
+    if static_folder_path and os.path.exists(static_folder_path):
+        app.logger.info(f"Configuring WhiteNoise with static folder: {static_folder_path}")
+        # Wrap the WSGI app with WhiteNoise
+        white_noise = WhiteNoise(app.wsgi_app)
+        # Add the static folder to the whitenoise application
+        white_noise.add_files(static_folder_path, prefix='')
+        # Configure WhiteNoise to handle MIME types
+        
+        # Configure WhiteNoise to add proper MIME types
+        # Explicitly register MIME types for specific file extensions
+        mimetypes.add_type('application/javascript', '.js')
+        mimetypes.add_type('application/javascript', '.mjs')
+        mimetypes.add_type('application/javascript', '.jsx')
+        mimetypes.add_type('text/css', '.css')
+        mimetypes.add_type('image/svg+xml', '.svg')
+        mimetypes.add_type('text/html', '.html')
+        mimetypes.add_type('application/json', '.json')
+        
+        # Set the updated app.wsgi_app
+        app.wsgi_app = white_noise
+        app.logger.info("WhiteNoise configured successfully")
+    else:
+        app.logger.error(f"Cannot configure WhiteNoise: static folder not available")
+        startup_errors.append("WhiteNoise configuration failed: static folder not available")
+
     # Add health check endpoint
     @app.route('/api/health')
     def health_check():
@@ -166,16 +193,6 @@ def create_app():
     def debug_static():
         static_folder = app.static_folder
         files = []
-        mime_types = {
-            '.js': 'application/javascript',
-            '.mjs': 'application/javascript',
-            '.css': 'text/css',
-            '.html': 'text/html',
-            '.json': 'application/json',
-            '.png': 'image/png',
-            '.jpg': 'image/jpeg',
-            '.svg': 'image/svg+xml',
-        }
         
         try:
             if static_folder is not None and os.path.exists(static_folder):
@@ -191,7 +208,7 @@ def create_app():
                         try:
                             size = os.path.getsize(file_path)
                             ext = os.path.splitext(file)[1].lower()
-                            mime_type = mime_types.get(ext, 'application/octet-stream')
+                            mime_type = mimetypes.guess_type(file_path)[0] or 'application/octet-stream'
                             
                             files.append({
                                 'path': rel_file_path,
@@ -293,258 +310,43 @@ def create_app():
                 "traceback": traceback.format_exc()
             }), 500
 
-    # Direct serve function for any file in static
-    @app.route('/staticfile/<path:filename>')
-    def send_file(filename):
-        app.logger.info(f"Explicit request for static file: {filename}")
-        if app.static_folder is not None:
-            return send_from_directory(app.static_folder, filename)
-        return jsonify({"error": "Static folder not configured"}), 500
-
-    # Add a route specifically for JavaScript modules
-    @app.route('/<path:filename>.js')
-    def serve_js_module(filename):
-        """Serve JavaScript modules with the correct MIME type."""
-        app.logger.info(f"JavaScript module requested: {filename}.js")
-        
-        # Try different possible locations
-        possible_paths = [
-            f"{filename}.js",  # Direct path
-            f"assets/{filename}.js",  # In assets directory
-            f"static/{filename}.js",  # In static directory
-            f"js/{filename}.js"  # In js directory
-        ]
-        
-        # Look for the file in possible locations
-        for js_path in possible_paths:
-            if app.static_folder is not None and os.path.exists(os.path.join(app.static_folder, js_path)):
-                app.logger.info(f"Found JavaScript module at: {js_path}")
-                response = send_from_directory(app.static_folder, js_path)
-                response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
-                return response
-        
-        # If not found, log an error and return 404
-        app.logger.error(f"JavaScript module not found: {filename}.js")
-        return jsonify({
-            "error": "JavaScript module not found",
-            "requested_file": f"{filename}.js",
-            "searched_paths": possible_paths
-        }), 404
-
-    # Serve static files from the root URL
-    @app.route('/', defaults={'path': ''})
-    @app.route('/<path:path>')
-    def catch_all(path):
-        # Log the requested path
-        app.logger.info(f'Catch-all route accessed with path: {path}')
-        
-        # Exclude API routes from this handling
-        if path.startswith('api/'):
-            app.logger.info(f'API path detected: {path}')
-            return jsonify({
-                'error': 'Not Found',
-                'message': f'API endpoint /{path} not found'
-            }), 404
-        
-        # Define content types for common extensions to ensure proper MIME types
-        content_types = {
-            '.js': 'application/javascript',
-            '.mjs': 'application/javascript',
-            '.css': 'text/css',
-            '.html': 'text/html',
-            '.json': 'application/json',
-            '.png': 'image/png',
-            '.jpg': 'image/jpeg',
-            '.jpeg': 'image/jpeg',
-            '.svg': 'image/svg+xml',
-            '.ico': 'image/x-icon',
-        }
-        
-        # Check for static folder
-        if app.static_folder is None:
-            app.logger.error('Static folder is not configured')
-            return jsonify({
-                "error": "Configuration Error",
-                "message": "Static folder is not configured"
-            }), 500
-        
-        # Try to serve as a static file first
+    # Debug endpoint for WhiteNoise
+    @app.route('/api/debug/whitenoise')
+    def debug_whitenoise():
+        """Debug endpoint to report on WhiteNoise configuration"""
         try:
-            if path and os.path.exists(os.path.join(app.static_folder, path)):
-                app.logger.info(f'Serving static file: {path}')
-                
-                # Get file extension and determine content type
-                ext = os.path.splitext(path)[1].lower()
-                mimetype = content_types.get(ext)
-                
-                # Log detailed information about the file
-                file_path = os.path.join(app.static_folder, path)
-                file_size = os.path.getsize(file_path)
-                app.logger.info(f'File details: path={file_path}, size={file_size}, mimetype={mimetype}')
-                
-                return send_from_directory(app.static_folder, path, mimetype=mimetype)
-                
-            # Special handling for JavaScript module files that might have different paths
-            if path.endswith('.js') or path.endswith('.mjs'):
-                # Try alternative paths where the file might be located
-                possible_js_paths = [
-                    f"assets/{path}",
-                    f"assets/js/{path}",
-                    f"js/{path}"
-                ]
-                
-                for js_path in possible_js_paths:
-                    if os.path.exists(os.path.join(app.static_folder, js_path)):
-                        app.logger.info(f'Serving JS file from alternative path: {js_path}')
-                        return send_from_directory(app.static_folder, js_path, mimetype='application/javascript')
+            whitenoise_info = {
+                "configured": hasattr(app, 'wsgi_app') and isinstance(app.wsgi_app, WhiteNoise),
+                "static_folder": app.static_folder,
+                "files_count": len(getattr(app.wsgi_app, 'files', {})) if hasattr(app.wsgi_app, 'files') else 0,
+            }
             
-            # If path is empty or file doesn't exist, serve index.html
-            app.logger.info(f'Static file not found, serving index.html instead')
-            index_path = os.path.join(app.static_folder, 'index.html')
-            if os.path.exists(index_path):
-                index_size = os.path.getsize(index_path)
-                app.logger.info(f'Serving index.html (size: {index_size} bytes)')
-                return send_from_directory(app.static_folder, 'index.html')
-            else:
-                app.logger.error('index.html not found in static folder')
-                return jsonify({
-                    "error": "Missing index.html",
-                    "message": "The index.html file could not be found in the static folder",
-                    "static_folder": app.static_folder,
-                    "static_contents": os.listdir(app.static_folder) if os.path.exists(app.static_folder) else []
-                }), 500
+            # Get a sample of files being served by WhiteNoise
+            if hasattr(app.wsgi_app, 'files') and app.wsgi_app.files:
+                sample_files = list(app.wsgi_app.files.keys())[:10]  # Get first 10 files
+                whitenoise_info["sample_files"] = sample_files
+                
+                # Get MIME types for sample files using Python's mimetypes module
+                mime_types = {}
+                for file in sample_files:
+                    mime_types[file] = mimetypes.guess_type(file)[0] or 'unknown'
+                
+                whitenoise_info["mime_types"] = mime_types
+            
+            # Report global mimetypes configuration
+            whitenoise_info["global_mimetypes"] = {
+                ".js": mimetypes.guess_type("example.js")[0],
+                ".mjs": mimetypes.guess_type("example.mjs")[0],
+                ".css": mimetypes.guess_type("example.css")[0]
+            }
+            
+            return jsonify(whitenoise_info), 200
         except Exception as e:
-            app.logger.error(f'Error in catch_all route: {str(e)}')
-            app.logger.error(traceback.format_exc())
+            app.logger.error(f"Error in WhiteNoise diagnostics: {str(e)}")
             return jsonify({
-                "error": "Server Error",
-                "message": str(e),
+                "error": str(e),
                 "traceback": traceback.format_exc()
             }), 500
-
-    # Find the section for serving static files
-    @app.route('/static/<path:filename>')
-    def serve_static(filename):
-        """Serve static files with proper MIME types."""
-        # Determine correct MIME type based on file extension
-        mime_type = None
-        if filename.endswith('.js'):
-            mime_type = 'application/javascript'
-        elif filename.endswith('.mjs'):
-            mime_type = 'application/javascript'
-        elif filename.endswith('.jsx'):
-            mime_type = 'application/javascript'
-        elif filename.endswith('.css'):
-            mime_type = 'text/css'
-        elif filename.endswith('.svg'):
-            mime_type = 'image/svg+xml'
-        elif filename.endswith('.json'):
-            mime_type = 'application/json'
-        
-        # Serve the file with the determined MIME type
-        if app.static_folder is not None:
-            return send_from_directory(app.static_folder, filename, mimetype=mime_type)
-        
-        app.logger.error(f"Static folder not configured, cannot serve {filename}")
-        return jsonify({"error": "Static folder not configured"}), 500
-
-    # Add after the existing route for serving static files
-    @app.route('/static/react-fixes/<path:filename>')
-    def serve_react_fixes(filename):
-        """Serve React fixes with the correct MIME type."""
-        app.logger.info(f"Serving React fix: {filename}")
-        
-        # Ensure static folder is configured
-        if app.static_folder is None:
-            app.logger.error("Static folder not configured, cannot serve React fixes")
-            return jsonify({"error": "Static folder not configured"}), 500
-        
-        # Define the path to the react-fixes directory
-        react_fixes_dir = os.path.join(app.static_folder, 'static', 'react-fixes')
-        
-        # If the directory doesn't exist, try to create it
-        if not os.path.exists(react_fixes_dir):
-            app.logger.warning(f"React fixes directory not found at {react_fixes_dir}, creating it")
-            try:
-                os.makedirs(react_fixes_dir, exist_ok=True)
-            except Exception as e:
-                app.logger.error(f"Failed to create React fixes directory: {str(e)}")
-                return jsonify({"error": f"Failed to create React fixes directory: {str(e)}"}), 500
-        
-        # Check if the requested file exists
-        file_path = os.path.join(react_fixes_dir, filename)
-        if not os.path.exists(file_path):
-            app.logger.warning(f"React fix file not found: {file_path}")
-            
-            # If react-fix-loader.js is requested but not found, create a simple version
-            if filename == 'react-fix-loader.js':
-                app.logger.info("Creating minimal react-fix-loader.js")
-                try:
-                    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-                    with open(file_path, 'w') as f:
-                        f.write("""
-/**
- * React Fix Loader (Minimal Version)
- */
-console.log('Loading React fixes...');
-
-// Check if React is already available globally
-if (typeof React === 'undefined') {
-  console.warn('React not found, implementing basic polyfill');
-  
-  // Basic React polyfill
-  window.React = {
-    createElement: function() { 
-      return { type: arguments[0], props: arguments[1] || {} };
-    },
-    createContext: function() {
-      return {
-        Provider: function(props) { return props.children; },
-        Consumer: function(props) { return props.children; }
-      };
-    },
-    Fragment: Symbol('React.Fragment')
-  };
-  
-  // Add JSX runtime compatibility
-  window.jsx = window.React.createElement;
-  window.jsxs = window.React.createElement;
-}
-
-console.log('React fixes applied successfully');
-                        """)
-                except Exception as e:
-                    app.logger.error(f"Failed to create minimal react-fix-loader.js: {str(e)}")
-                    return jsonify({"error": f"Failed to create React fix file: {str(e)}"}), 500
-            else:
-                return jsonify({"error": f"React fix file not found: {filename}"}), 404
-        
-        # Serve the file with the correct MIME type
-        return send_from_directory(os.path.dirname(file_path), os.path.basename(file_path), 
-                                   mimetype='application/javascript')
-
-    # Add this right after creating the Flask app
-    @app.after_request
-    def set_correct_mime_types(response):
-        """Ensure JavaScript files are served with the correct MIME type."""
-        path = request.path
-        
-        # Force correct MIME type for JavaScript files
-        if path.endswith('.js') or '.js?' in path:
-            app.logger.info(f"Setting MIME type for {path} to application/javascript (was: {response.mimetype})")
-            response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
-        elif path.endswith('.mjs') or '.mjs?' in path:
-            app.logger.info(f"Setting MIME type for {path} to application/javascript (was: {response.mimetype})")
-            response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
-        elif path.endswith('.css') or '.css?' in path:
-            app.logger.info(f"Setting MIME type for {path} to text/css (was: {response.mimetype})")
-            response.headers['Content-Type'] = 'text/css; charset=utf-8'
-        
-        # Add CORS headers for all files
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['X-Content-Type-Options'] = 'nosniff'
-        
-        return response
 
     # Add module debug endpoint
     @app.route('/api/debug/module/<path:filename>')
@@ -603,33 +405,67 @@ console.log('React fixes applied successfully');
                 except Exception as e:
                     file_content = f"Error reading file: {str(e)}"
         
+        # Also check if WhiteNoise would serve this file
+        whitenoise_would_serve = False
+        whitenoise_path = None
+        if hasattr(app.wsgi_app, 'files'):
+            # Check all possible variations of the path that WhiteNoise might use
+            for test_path in [f"/{filename}", filename, f"/static/{filename}"]:
+                if test_path in app.wsgi_app.files:
+                    whitenoise_would_serve = True
+                    whitenoise_path = test_path
+                    break
+        
         # Build the response
         response_data = {
             "requested_file": filename,
             "possible_locations": possible_locations,
             "file_found": found_path is not None,
             "found_at": found_path,
-            "content_preview": file_content
+            "content_preview": file_content,
+            "whitenoise_would_serve": whitenoise_would_serve,
+            "whitenoise_path": whitenoise_path
         }
         
-        # If file was found, offer to serve it with correct MIME type
-        if found_path:
-            response_data["serve_url"] = f"/debug/serve/{found_path}"
-        
         return jsonify(response_data)
-
-    # Add endpoint to serve a file with explicit MIME type
-    @app.route('/debug/serve/<path:filename>')
-    def debug_serve_file(filename):
-        """Serve a file with explicit application/javascript MIME type."""
-        if app.static_folder and os.path.exists(os.path.join(app.static_folder, filename)):
-            response = send_from_directory(app.static_folder, filename)
-            response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
-            response.headers['X-Content-Type-Options'] = 'nosniff'
-            response.headers['Access-Control-Allow-Origin'] = '*'
-            return response
+    
+    # Remove the old after_request hook as WhiteNoise handles this now
+    # Serve static files from the root URL - also handled by WhiteNoise now
+    # But keep the catch-all route for SPA routing
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def catch_all(path):
+        # Log the requested path
+        app.logger.info(f'Catch-all route accessed with path: {path}')
         
-        return jsonify({"error": "File not found"}), 404
+        # Exclude API routes from this handling
+        if path.startswith('api/'):
+            app.logger.info(f'API path detected: {path}')
+            return jsonify({
+                'error': 'Not Found',
+                'message': f'API endpoint /{path} not found'
+            }), 404
+        
+        # For non-API routes, serve index.html for SPA routing
+        # WhiteNoise should handle this, but keep as fallback
+        try:
+            app.logger.info('Serving index.html for client-side routing')
+            if app.static_folder is not None and os.path.exists(os.path.join(app.static_folder, 'index.html')):
+                return send_from_directory(app.static_folder, 'index.html')
+            else:
+                app.logger.error('index.html not found in static folder')
+                return jsonify({
+                    "error": "Missing index.html",
+                    "message": "The index.html file could not be found in the static folder",
+                }), 500
+        except Exception as e:
+            app.logger.error(f'Error in catch_all route: {str(e)}')
+            app.logger.error(traceback.format_exc())
+            return jsonify({
+                "error": "Server Error",
+                "message": str(e),
+                "traceback": traceback.format_exc()
+            }), 500
 
     return app
 
