@@ -28,6 +28,12 @@ if (typeof React === 'undefined') {
   // Add JSX runtime compatibility
   window.jsx = window.React.createElement;
   window.jsxs = window.React.createElement;
+
+  // Detect environment
+  console.log('Environment details:');
+  console.log('- URL:', window.location.href);
+  console.log('- User Agent:', navigator.userAgent);
+  console.log('- Protocol:', window.location.protocol);
 }
 
 // Fix JSX runtime issues
@@ -49,6 +55,8 @@ if (!window.jsx || !window.jsxs) {
 document.addEventListener('DOMContentLoaded', function () {
   // Fix module script MIME type issues
   const moduleScripts = document.querySelectorAll('script[type="module"]');
+  console.log(`Found ${moduleScripts.length} module scripts to fix`);
+
   moduleScripts.forEach(script => {
     if (script.src && !script.getAttribute('data-fixed')) {
       console.log('Applying MIME type fix for module script:', script.src);
@@ -60,10 +68,33 @@ document.addEventListener('DOMContentLoaded', function () {
       fixedScript.setAttribute('data-fixed', 'true');
       fixedScript.crossOrigin = 'anonymous';
 
+      // Add error handling
+      fixedScript.onerror = function (error) {
+        console.error('Error loading fixed module script:', error);
+        console.log('Trying to load as regular script...');
+
+        // Fallback to regular script
+        const fallbackScript = document.createElement('script');
+        fallbackScript.src = script.src;
+        fallbackScript.setAttribute('data-fallback', 'true');
+        document.head.appendChild(fallbackScript);
+      };
+
       // Replace the original script
       script.parentNode.replaceChild(fixedScript, script);
     }
   });
+
+  // Try to directly load index.js if needed
+  if (document.querySelector('script[src="/src/index.js"]') === null) {
+    console.log('Attempting to manually load index.js');
+    const indexScript = document.createElement('script');
+    indexScript.type = 'module';
+    indexScript.src = '/src/index.js';
+    indexScript.setAttribute('data-manual-fix', 'true');
+    indexScript.crossOrigin = 'anonymous';
+    document.head.appendChild(indexScript);
+  }
 
   console.log('React fixes applied successfully');
 }); 
