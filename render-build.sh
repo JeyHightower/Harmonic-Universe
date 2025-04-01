@@ -151,23 +151,114 @@ node manual-build.js
 echo "Installing required Vite plugins..."
 npm install --no-save @vitejs/plugin-react vite
 
+# Create a path-fixing script
+cat > fix-paths.js << 'EOF'
+/**
+ * This script updates paths in the built HTML file to use relative paths
+ * instead of absolute paths to resolve asset loading issues.
+ */
+const fs = require('fs');
+const path = require('path');
+
+// Path to the dist directory
+const distDir = path.join(__dirname, 'dist');
+const indexPath = path.join(distDir, 'index.html');
+
+console.log(`Checking for index.html at ${indexPath}`);
+
+if (!fs.existsSync(indexPath)) {
+  console.error('Error: index.html not found in dist directory');
+  process.exit(1);
+}
+
+// Read the HTML file
+let html = fs.readFileSync(indexPath, 'utf8');
+console.log('Original HTML content (first 300 chars):');
+console.log(html.substring(0, 300));
+
+// Replace absolute paths with relative paths
+// - Replace /assets/ with ./assets/
+// - Replace src="/ with src="./ 
+// - Replace href="/ with href="./ (but not for http/https links)
+html = html
+  .replace(/(src|href)=["']\/assets\//g, '$1="./assets/')
+  .replace(/src=["']\/(?!http|https)/g, 'src="./')
+  .replace(/href=["']\/(?!http|https)/g, 'href="./');
+
+console.log('Updated HTML content (first 300 chars):');
+console.log(html.substring(0, 300));
+
+// Write the updated HTML back to the file
+fs.writeFileSync(indexPath, html);
+
+console.log('Updated paths in index.html to use relative paths');
+
+// Now scan the assets directory for any JS files that might have absolute path references
+const assetsDir = path.join(distDir, 'assets');
+if (fs.existsSync(assetsDir)) {
+  const jsFiles = fs.readdirSync(assetsDir).filter(file => file.endsWith('.js'));
+  console.log(`Found ${jsFiles.length} JS files in assets directory`);
+  
+  jsFiles.forEach(file => {
+    const filePath = path.join(assetsDir, file);
+    let content = fs.readFileSync(filePath, 'utf8');
+    
+    // Convert URL references from /assets/ to ./assets/
+    content = content.replace(/["']\/assets\//g, '"./assets/');
+    
+    // Handle other asset references that might be using absolute paths
+    content = content.replace(/["']\/images\//g, '"./images/');
+    
+    fs.writeFileSync(filePath, content);
+    console.log(`Updated paths in ${file}`);
+  });
+  
+  console.log(`Updated paths in ${jsFiles.length} JS files`);
+} else {
+  console.log('Assets directory not found');
+}
+EOF
+
 # Try to run the regular Vite build directly to avoid npm script recursion
 echo "Attempting to run Vite build directly..."
 if command -v npx &> /dev/null; then
     echo "Using npx to run vite build directly..."
     npx vite build || echo "Vite build failed, using manual build only"
+    
+    # Run the path-fixing script
+    echo "Fixing asset paths in build output..."
+    node fix-paths.js
 else
     echo "npx not available, using node_modules directly..."
     if [ -f "./node_modules/.bin/vite" ]; then
         ./node_modules/.bin/vite build || echo "Vite build failed, using manual build only"
+        
+        # Run the path-fixing script
+        echo "Fixing asset paths in build output..."
+        node fix-paths.js
     else
         echo "Vite not found in node_modules, using manual build only"
     fi
 fi
 
+# Ensure all paths in index.html are using relative paths
+echo "Ensuring all paths are relative in index.html..."
+if [ -f "dist/index.html" ]; then
+    # Use sed to replace all absolute paths with relative paths
+    sed -i 's/src="\/assets/src=".\/assets/g' dist/index.html
+    sed -i 's/href="\/assets/href=".\/assets/g' dist/index.html
+    sed -i 's/src="\//src=".\//g' dist/index.html
+    sed -i 's/href="\//href=".\//g' dist/index.html
+    echo "Paths fixed in index.html"
+
+    # Add base tag to the HTML
+    sed -i 's/<head>/<head>\n    <base href="\/">/' dist/index.html
+    echo "Added base tag to index.html"
+fi
+
 # Clean up artifacts and node_modules to free memory
 echo "Cleaning up build artifacts..."
-rm -f manual-build.js
+rm -f manual-build.js fix-paths.js
 rm -rf node_modules
 cd ..
 
@@ -290,6 +381,33 @@ else
     echo "Images directory not found in frontend build"
     mkdir -p backend/static/images
 fi
+
+# Create .htaccess file for proper MIME types
+echo "Creating .htaccess for proper MIME types..."
+cat > backend/static/.htaccess << 'EOF'
+# Set proper MIME types for modern web assets
+AddType application/javascript .js
+AddType application/javascript .mjs
+AddType text/css .css
+AddType image/svg+xml .svg
+AddType application/json .json
+
+# Serve files with correct MIME types
+<IfModule mod_mime.c>
+    AddType application/javascript .js
+    AddType application/javascript .mjs
+</IfModule>
+
+# For all JavaScript files, ensure correct MIME type
+<FilesMatch "\.js$">
+    ForceType application/javascript
+</FilesMatch>
+
+# For all JavaScript module files, ensure correct MIME type
+<FilesMatch "\.mjs$">
+    ForceType application/javascript
+</FilesMatch>
+EOF
 
 echo "Assets directory contents:"
 ls -la backend/static/assets || echo "Assets directory not found"

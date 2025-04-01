@@ -173,12 +173,45 @@ def create_app():
                 'message': f'API endpoint /{path} not found'
             }), 404
         
+        # Define content types for common extensions to ensure proper MIME types
+        content_types = {
+            '.js': 'application/javascript',
+            '.mjs': 'application/javascript',
+            '.css': 'text/css',
+            '.html': 'text/html',
+            '.json': 'application/json',
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.svg': 'image/svg+xml',
+            '.ico': 'image/x-icon',
+        }
+        
         # Try to serve as a static file first
         try:
             if path and os.path.exists(os.path.join(app.static_folder, path)):
                 app.logger.info(f'Serving static file: {path}')
-                return send_from_directory(app.static_folder, path)
                 
+                # Get file extension and determine content type
+                ext = os.path.splitext(path)[1].lower()
+                mimetype = content_types.get(ext)
+                
+                return send_from_directory(app.static_folder, path, mimetype=mimetype)
+                
+            # Special handling for JavaScript module files that might have different paths
+            if path.endswith('.js') or path.endswith('.mjs'):
+                # Try alternative paths where the file might be located
+                possible_js_paths = [
+                    f"assets/{path}",
+                    f"assets/js/{path}",
+                    f"js/{path}"
+                ]
+                
+                for js_path in possible_js_paths:
+                    if os.path.exists(os.path.join(app.static_folder, js_path)):
+                        app.logger.info(f'Serving JS file from alternative path: {js_path}')
+                        return send_from_directory(app.static_folder, js_path, mimetype='application/javascript')
+            
             # If path is empty or file doesn't exist, serve index.html
             app.logger.info(f'Static file not found, serving index.html instead')
             if os.path.exists(os.path.join(app.static_folder, 'index.html')):

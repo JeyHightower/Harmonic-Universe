@@ -47,6 +47,17 @@ else
     echo "Created basic static files"
 fi
 
+# Create a whitenoise config file to set MIME types
+echo "Creating whitenoise config file for MIME types..."
+cat > static/mimetype.ini << 'EOF'
+[mimetypes]
+.js=application/javascript
+.mjs=application/javascript
+.css=text/css
+.svg=image/svg+xml
+.json=application/json
+EOF
+
 # Ensure log directory exists
 mkdir -p logs
 
