@@ -244,42 +244,71 @@ export FLASK_ENV=production
 export FLASK_DEBUG=0
 export PYTHONPATH=$PYTHONPATH:$(pwd)
 
-# Create static directory if it doesn't exist
-echo "Setting up static directory for frontend files..."
-mkdir -p static
-mkdir -p static/assets
+# Return to root directory
+cd ..
+
+# Remove previous static folder content to avoid old files
+echo "Cleaning up backend static directory..."
+rm -rf backend/static
+mkdir -p backend/static
+mkdir -p backend/static/assets
 
 # Copy frontend build to backend static directory
 echo "Copying frontend build to backend static directory..."
-if [ -d "../frontend/dist" ]; then
-    echo "Copying main files from frontend/dist to static..."
-    cp -f ../frontend/dist/index.html static/
-    cp -f ../frontend/dist/*.html static/ 2>/dev/null || true
-    cp -f ../frontend/dist/*.css static/ 2>/dev/null || true
-    cp -f ../frontend/dist/*.js static/ 2>/dev/null || true
-    cp -f ../frontend/dist/*.ico static/ 2>/dev/null || true
-    cp -f ../frontend/dist/*.svg static/ 2>/dev/null || true
+if [ -d "frontend/dist" ]; then
+    echo "Copying main files from frontend/dist to backend/static..."
     
-    # Create assets directory and copy all assets
-    if [ -d "../frontend/dist/assets" ]; then
-        echo "Copying assets from frontend/dist/assets to static/assets..."
-        cp -rf ../frontend/dist/assets/* static/assets/
+    # First copy all files at the root level
+    cp -f frontend/dist/*.html backend/static/ 2>/dev/null || true
+    cp -f frontend/dist/*.js backend/static/ 2>/dev/null || true
+    cp -f frontend/dist/*.css backend/static/ 2>/dev/null || true
+    cp -f frontend/dist/*.ico backend/static/ 2>/dev/null || true
+    cp -f frontend/dist/*.svg backend/static/ 2>/dev/null || true
+    cp -f frontend/dist/*.txt backend/static/ 2>/dev/null || true
+    cp -f frontend/dist/*.json backend/static/ 2>/dev/null || true
+    cp -f frontend/dist/*.toml backend/static/ 2>/dev/null || true
+    
+    # Ensure index.html is there
+    if [ ! -f "backend/static/index.html" ] && [ -f "frontend/dist/index.html" ]; then
+        echo "Copying index.html file..."
+        cp -f frontend/dist/index.html backend/static/
     fi
     
-    # Copy other directories if they exist
-    for dir in images static fonts; do
-        if [ -d "../frontend/dist/$dir" ]; then
-            echo "Copying $dir directory..."
-            mkdir -p static/$dir
-            cp -rf ../frontend/dist/$dir/* static/$dir/
-        fi
-    done
+    # Copy directories
+    if [ -d "frontend/dist/assets" ]; then
+        echo "Copying assets directory..."
+        cp -r frontend/dist/assets backend/static/
+    fi
+    
+    if [ -d "frontend/dist/static" ]; then
+        echo "Copying static directory..."
+        cp -r frontend/dist/static/* backend/static/ 2>/dev/null || true
+    fi
+    
+    if [ -d "frontend/dist/images" ]; then
+        echo "Copying images directory..."
+        mkdir -p backend/static/images
+        cp -r frontend/dist/images/* backend/static/images/ 2>/dev/null || true
+    fi
     
     echo "Frontend build files copied successfully"
+    
+    # Create a simple test file to verify static files are being served
+    echo "<html><body><h1>Static files test</h1><p>If you see this, static files are being served correctly.</p></body></html>" > backend/static/test.html
+    
+    # List the static directory content for debugging
+    echo "Static directory contents:"
+    ls -la backend/static
+    
+    if [ -d "backend/static/assets" ]; then
+        echo "Assets directory contents:"
+        ls -la backend/static/assets
+    fi
 else
-    echo "WARNING: Frontend dist directory not found. Static files may not be available."
-    echo "Creating fallback index.html..."
-    cat > static/index.html << 'EOF'
+    echo "WARNING: Frontend dist directory not found. Creating fallback files..."
+    
+    # Create a fallback index.html
+    cat > backend/static/index.html << 'EOF'
 <!DOCTYPE html>
 <html>
   <head>
@@ -310,6 +339,22 @@ else
       <p>The application is running but the static files could not be found.</p>
       <p>Please try accessing the API directly at <a href="/api/health">/api/health</a>.</p>
     </div>
+  </body>
+</html>
+EOF
+
+    # Create a test file
+    cat > backend/static/test.html << 'EOF'
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Page</title>
+  </head>
+  <body>
+    <h1>Test Page</h1>
+    <p>If you can see this, static files are being served correctly.</p>
   </body>
 </html>
 EOF
