@@ -38,9 +38,19 @@ pip install --no-cache-dir python-dotenv==1.0.0 alembic==1.12.1
 pip install --no-cache-dir gunicorn==21.2.0 eventlet==0.33.3
 pip install --no-cache-dir flask-caching==2.1.0
 
+# Install security related packages
+echo "Installing security dependencies..."
+pip install --no-cache-dir flask-limiter==3.5.0 limits==3.7.0
+pip install --no-cache-dir flask-talisman==1.1.0
+pip install --no-cache-dir bcrypt==4.0.1 pyjwt==2.8.0 passlib==1.7.4 cryptography==41.0.7
+
 # Install other essential dependencies
 echo "Installing database dependencies..."
 pip install --no-cache-dir psycopg2-binary==2.9.9 redis==5.0.1
+
+# Install utility packages
+echo "Installing utility packages..."
+pip install --no-cache-dir python-magic==0.4.27 requests==2.31.0 structlog==24.1.0 psutil==5.9.8
 
 # Attempt to run any pending migrations
 echo "Checking for pending database migrations..."
