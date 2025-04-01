@@ -13,13 +13,23 @@ python --version
 # Set Python version explicitly
 export PYTHON_VERSION=3.11.0
 
+# Set Node memory limit to prevent OOM issues
+export NODE_OPTIONS="--max-old-space-size=2048"
+
 # Build Frontend
 echo "==== Building frontend ===="
 cd frontend
 echo "Installing frontend dependencies..."
-npm install
+npm ci --no-audit --no-fund --prefer-offline
+
+# Clean up unnecessary files to reduce memory usage
+rm -rf node_modules/.cache
+
 echo "Building frontend production assets..."
 npm run build
+
+# Clean up node_modules after build to free memory
+rm -rf node_modules
 cd ..
 
 # Build Backend
@@ -53,8 +63,8 @@ else
     # Install dependencies
     echo "Installing dependencies with pip..."
     pip install --upgrade pip
-    pip install -r requirements.txt
-    pip install gunicorn eventlet
+    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir gunicorn eventlet
 fi
 
 # Validate DATABASE_URL

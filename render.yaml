@@ -4,6 +4,7 @@ services:
     env: python
     buildCommand: ./render-build.sh
     startCommand: ./render-start.sh
+    plan: starter
     envVars:
       - key: FLASK_APP
         value: app.py
@@ -17,6 +18,8 @@ services:
         value: 0
       - key: VITE_API_BASE_URL
         value: https://harmonic-universe.onrender.com
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=2048
       - fromGroup: harmonic-universe-env
     healthCheckPath: /api/health
     autoDeploy: true
