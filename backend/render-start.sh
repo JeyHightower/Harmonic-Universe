@@ -409,3 +409,81 @@ gunicorn $APP_PATH \
     --forwarded-allow-ips="*" \
     --access-logformat='%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s %(D)s "%(f)s" "%(a)s"' \
     --preload 
+
+# Debug environment to understand where we are
+echo "==============================="
+echo "ULTRA-MINIMAL DEBUGGING SETUP"
+echo "==============================="
+echo "Current directory: $(pwd)"
+echo "Directory contents:"
+ls -la
+echo "Environment variables:"
+env | sort
+echo "==============================="
+
+# Create a diagnostic file to help troubleshoot
+echo "Creating diagnostic HTML file..."
+mkdir -p static
+cat > static/test.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Render Test Page</title>
+</head>
+<body>
+    <h1>Render Test Page</h1>
+    <p>If you can see this page, static file serving is working correctly!</p>
+    <p>Time: <script>document.write(new Date().toISOString())</script></p>
+</body>
+</html>
+EOF
+
+# Ensure we have the latest pip and required packages
+echo "Installing minimal required packages..."
+pip install --upgrade pip
+pip install gunicorn
+
+# Run directly with Gunicorn using our ultra-minimal WSGI file
+echo "Starting ultra-minimal WSGI application..."
+export PYTHONUNBUFFERED=1
+echo "Setting port to: $PORT"
+
+if [ -f "wsgi.py" ]; then
+    echo "Found wsgi.py in current directory"
+    APP_PATH="wsgi:application"
+elif [ -f "backend/wsgi.py" ]; then
+    echo "Found wsgi.py in backend directory"
+    APP_PATH="backend.wsgi:application"
+else
+    echo "ERROR: wsgi.py not found. Creating it..."
+    
+    # Create a minimal WSGI app on the fly if the file doesn't exist
+    cat > wsgi.py << 'EOL'
+def application(environ, start_response):
+    """Absolute minimal WSGI application"""
+    status = '200 OK'
+    response_headers = [
+        ('Content-type', 'text/plain'),
+        ('Content-Length', '73')
+    ]
+    start_response(status, response_headers)
+    return [b'This is a minimal response from an emergency WSGI application created on-the-fly']
+EOL
+
+    echo "Created emergency wsgi.py file"
+    APP_PATH="wsgi:application"
+fi
+
+echo "Starting Gunicorn with APP_PATH=$APP_PATH on port=$PORT"
+echo "==============================="
+
+# Run Gunicorn with the most minimal configuration possible
+exec gunicorn "$APP_PATH" \
+    --bind=0.0.0.0:$PORT \
+    --workers=1 \
+    --worker-class=sync \
+    --timeout=120 \
+    --log-level=debug \
+    --access-logfile=- \
+    --error-logfile=- \
+    --capture-output 
