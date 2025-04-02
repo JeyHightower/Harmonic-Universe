@@ -42,6 +42,11 @@ export const fetchScenes = createAsyncThunk(
       const response = await apiClient.getScenes(universeId);
       console.log("Got scenes response:", response);
 
+      // Extra debugging for problematic universe IDs like 6
+      if (universeId == 6) {
+        console.log("DETAILED DEBUG - Universe 6 response:", JSON.stringify(response));
+      }
+
       // Check if we received an error response that was wrapped in a success response
       if (response.data?.error) {
         console.warn("API returned an error in a success response:", response.data.error);
@@ -50,7 +55,8 @@ export const fetchScenes = createAsyncThunk(
           message: response.data.message || "Error fetching scenes",
           scenes: response.data.scenes || [],
           status: response.status || 200,
-          error: response.data.error
+          error: response.data.error,
+          universeId // Include the universeId for easier debugging
         };
       }
 
@@ -58,7 +64,8 @@ export const fetchScenes = createAsyncThunk(
       const serializedResponse = {
         message: response.data?.message,
         scenes: response.data?.scenes || [],
-        status: response.status
+        status: response.status,
+        universeId // Include the universeId for easier debugging
       };
 
       return serializedResponse;
@@ -71,7 +78,8 @@ export const fetchScenes = createAsyncThunk(
         message: error.response?.data?.message || "Error fetching scenes",
         scenes: [],
         status: error.response?.status || 500,
-        error: handleError(error)
+        error: handleError(error),
+        universeId // Include the universeId for easier debugging
       };
     }
   }

@@ -583,10 +583,20 @@ const apiClient = {
     if (typeof params === 'string' || typeof params === 'number') {
       queryParams.append("universe_id", params);
       console.log("Direct universeId provided:", params);
+
+      // Extra logging for problematic universes
+      if (params == 6) {
+        console.log("DETAILED DEBUG - Processing request for universe 6");
+      }
     }
     // Otherwise treat it as a params object
     else if (params.universeId) {
       queryParams.append("universe_id", params.universeId);
+
+      // Extra logging for problematic universes
+      if (params.universeId == 6) {
+        console.log("DETAILED DEBUG - Processing request for universe 6");
+      }
     }
 
     // Get the base endpoint
@@ -601,10 +611,33 @@ const apiClient = {
       axiosInstance.get(url)
         .then(response => {
           console.log("Scenes API response:", response);
+
+          // Extra logging for problematic universes
+          const universeId = typeof params === 'string' || typeof params === 'number' ? params : params.universeId;
+          if (universeId == 6) {
+            console.log("DETAILED DEBUG - Universe 6 successful response:", JSON.stringify(response.data));
+          }
+
           resolve(response);
         })
         .catch(error => {
           console.error("Error fetching scenes:", error);
+
+          // Extra logging for problematic universes
+          const universeId = typeof params === 'string' || typeof params === 'number' ? params : params.universeId;
+          if (universeId == 6) {
+            console.error("DETAILED DEBUG - Universe 6 error details:", {
+              message: error.message,
+              stack: error.stack,
+              response: error.response,
+              request: error.request ? {
+                url: error.request.url,
+                status: error.request.status,
+                responseType: error.request.responseType
+              } : null
+            });
+          }
+
           // Instead of rejecting, resolve with a well-formed error response
           resolve({
             status: error.response?.status || 500,
