@@ -1,10 +1,10 @@
 services:
   - type: web
     name: harmonic-universe
-    env: python
-    buildCommand: ./render-build.sh
-    startCommand: ./render-start.sh
+    env: docker
     plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     envVars:
       - key: FLASK_APP
         value: app.py
@@ -45,6 +45,11 @@ services:
       - path: "/**/*.js"
         name: "Access-Control-Allow-Origin"
         value: "*"
+    scaling:
+      minInstances: 1
+      maxInstances: 2
+      targetMemoryPercent: 80
+      targetCPUPercent: 80
 
 databases:
   - name: harmonic_universe_db
