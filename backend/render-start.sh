@@ -6,20 +6,19 @@ set -e
 echo "Starting Harmonic Universe server at $(date)"
 echo "Current directory: $(pwd)"
 
-# Make sure we're in the correct directory
+# Navigate to the backend directory if needed
 if [ ! -f "app.py" ]; then
-  echo "Error: app.py not found, navigating to backend directory"
-  if [ -d "backend" ]; then
+    echo "app.py not found, navigating to backend directory"
     cd backend
-  else
-    echo "Checking if we're already in backend..."
-    pwd
+fi
+
+# Check if we found app.py
+if [ ! -f "app.py" ]; then
+    echo "ERROR: app.py not found in current or backend directory"
+    echo "Current directory: $(pwd)"
+    echo "Directory contents:"
     ls -la
-    if [ ! -f "app.py" ]; then
-      echo "Error: Could not find app.py in backend directory"
-      exit 1
-    fi
-  fi
+    exit 1
 fi
 
 # Ensure Python virtual environment is activated
@@ -34,6 +33,78 @@ pip install --no-cache-dir gunicorn flask flask-cors whitenoise
 
 # Apply any additional fixes before starting
 echo "Applying additional fixes..."
+
+# Ensure static directory exists
+mkdir -p static
+
+# Copy diagnostic files if they don't exist
+if [ ! -f "static/diagnostic.html" ]; then
+    echo "Creating diagnostic files..."
+    
+    # Create diagnostic HTML
+    cat > static/diagnostic.html << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harmonic Universe Diagnostics</title>
+  <script src="/js/react.production.min.js"></script>
+  <script src="/js/react-dom.production.min.js"></script>
+</head>
+<body>
+  <div id="root">Loading diagnostics...</div>
+  <script src="/diagnostic.js"></script>
+</body>
+</html>
+EOF
+
+    # Create diagnostic JS
+    cat > static/diagnostic.js << 'EOF'
+document.addEventListener('DOMContentLoaded', function() {
+  const root = document.getElementById('root');
+  
+  // Create diagnostic content
+  const content = document.createElement('div');
+  content.innerHTML = `
+    <h1>Harmonic Universe Diagnostics</h1>
+    <div>
+      <h2>Environment</h2>
+      <ul>
+        <li>URL: ${window.location.href}</li>
+        <li>React Loaded: ${!!window.React}</li>
+        <li>ReactDOM Loaded: ${!!window.ReactDOM}</li>
+      </ul>
+      <h2>API Tests</h2>
+      <div id="api-results">Running tests...</div>
+    </div>
+  `;
+  
+  root.appendChild(content);
+  
+  // Run API tests
+  const endpoints = ['/api/health', '/api/debug/whitenoise', '/api/debug/mime-test'];
+  const results = document.getElementById('api-results');
+  
+  endpoints.forEach(url => {
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        const div = document.createElement('div');
+        div.innerHTML = `<h3>${url}: <span style="color:green">Success</span></h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`;
+        results.appendChild(div);
+      })
+      .catch(error => {
+        const div = document.createElement('div');
+        div.innerHTML = `<h3>${url}: <span style="color:red">Failed</span></h3>
+                        <pre>${error.message}</pre>`;
+        results.appendChild(div);
+      });
+  });
+});
+EOF
+fi
 
 # Make sure the special_loader.js file exists
 mkdir -p fixes
@@ -264,35 +335,22 @@ export DEPLOYMENT_PLATFORM="render"
 
 # Start the server
 echo "Starting server..."
-# Print the app.py file structure to debug the Flask app object
 echo "Checking app.py structure..."
-grep -n "app = " app.py || echo "No direct app assignments found"
-grep -n "create_app" app.py || echo "No create_app function found"
+grep -n "app =" app.py
+grep -n "def create_app" app.py
 
-# Check if run.py exists, if not create it
-if [ ! -f "run.py" ]; then
-  echo "Creating run.py file..."
-  cat > run.py << 'EOF'
-"""
-Simple runner module for Gunicorn.
-
-This module imports and creates the Flask application,
-making it easier for Gunicorn to find and load.
-"""
-
-# Import the app factory function and create the app
-from app import create_app
-
-# Create the Flask application
-app = create_app()
-
-# This is what Gunicorn will import
-application = app
-
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5001, debug=False)
-EOF
+# Determine the right WSGI application path
+if grep -q "app = create_app()" app.py; then
+    echo "Found 'app = create_app()' in app.py, using 'app:app'"
+    WSGI_APP="app:app"
+elif grep -q "def create_app" app.py; then
+    echo "Found 'create_app' function in app.py, using 'app:create_app()'"
+    WSGI_APP="app:create_app()"
+else
+    echo "Using default WSGI path 'app:app'"
+    WSGI_APP="app:app"
 fi
 
-echo "Using run.py module..."
-gunicorn --bind=0.0.0.0:$PORT --workers=2 --timeout=120 --log-level=info run:application 
+# Use the correct WSGI application path with explicit port binding
+echo "Starting Gunicorn with $WSGI_APP"
+exec gunicorn "$WSGI_APP" --bind 0.0.0.0:10000 --log-level debug 

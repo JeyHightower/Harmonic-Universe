@@ -151,70 +151,49 @@
           Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
         margin: 0;
         padding: 0;
-        background-color: #f5f5f5;
-        color: #333;
-        display: flex;
-        flex-direction: column;
+        background-color: #f7f9fc;
+      }
+      #root {
         min-height: 100vh;
       }
-      header {
-        background-color: #2c3e50;
-        color: white;
-        padding: 20px;
-        text-align: center;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      }
-      main {
-        flex: 1;
-        padding: 40px;
-        max-width: 800px;
-        margin: 0 auto;
-        background-color: white;
-        box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
-      }
-      h1 {
-        margin-top: 0;
-        margin-bottom: 10px;
-        font-size: 2.5em;
-      }
-      h2 {
-        font-size: 1.8em;
-        color: #2c3e50;
-        margin-top: 30px;
-      }
-      p {
-        line-height: 1.6;
-        margin-bottom: 20px;
-      }
-      .status-box {
+      #debug-panel {
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        background-color: rgba(255, 255, 255, 0.9);
         border: 1px solid #ddd;
-        padding: 20px;
-        border-radius: 8px;
-        margin-top: 30px;
-        background-color: #f9f9f9;
+        border-radius: 4px 0 0 0;
+        padding: 10px;
+        font-family: monospace;
+        font-size: 12px;
+        max-width: 300px;
+        max-height: 200px;
+        overflow: auto;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
       }
-      .status-indicator {
-        display: inline-block;
-        width: 12px;
-        height: 12px;
+      .loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        flex-direction: column;
+      }
+      .spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
-        margin-right: 8px;
+        border-left-color: #09f;
+        animation: spin 1s linear infinite;
+        margin-bottom: 16px;
       }
-      .status-loading {
-        background-color: #f1c40f;
-      }
-      .status-success {
-        background-color: #2ecc71;
-      }
-      .status-error {
-        background-color: #e74c3c;
-      }
-      footer {
-        background-color: #34495e;
-        color: white;
-        text-align: center;
-        padding: 15px;
-        font-size: 0.9em;
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
       }
     </style>
   </head>
@@ -222,7 +201,13 @@
     <!-- React Fix Loader - ensures proper module loading -->
     <script src="/static/react-fixes/react-fix-loader.js"></script>
 
-    <div id="root"></div>
+    <div id="root">
+      <!-- Loading state before React renders -->
+      <div class="loading">
+        <div class="spinner"></div>
+        <p>Loading Harmonic Universe...</p>
+      </div>
+    </div>
 
     <header>
       <h1>Harmonic Universe</h1>
@@ -293,5 +278,38 @@
           `;
         });
     </script>
+
+    <!-- Debug panel -->
+    <div id="debug-panel" style="display: none">
+      <h4>Debug Info</h4>
+      <div id="debug-content"></div>
+    </div>
+
+    <script>
+      // Simple debug helper
+      window.HU_DEBUG = {
+        log: function (msg) {
+          console.log("[HU_DEBUG]", msg);
+          const panel = document.getElementById("debug-panel");
+          const content = document.getElementById("debug-content");
+          if (panel && content) {
+            panel.style.display = "block";
+            const logLine = document.createElement("div");
+            logLine.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            content.appendChild(logLine);
+          }
+        },
+      };
+
+      // Log page load
+      document.addEventListener("DOMContentLoaded", function () {
+        window.HU_DEBUG.log("DOM loaded");
+        window.HU_DEBUG.log(`React available: ${!!window.React}`);
+        window.HU_DEBUG.log(`ReactDOM available: ${!!window.ReactDOM}`);
+      });
+    </script>
+
+    <!-- Load main application script -->
+    <script type="module" src="/index.js"></script>
   </body>
 </html>

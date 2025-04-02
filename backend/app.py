@@ -362,7 +362,7 @@ def create_app():
 
     # Debug endpoint for WhiteNoise configuration
     @app.route('/api/debug/whitenoise')
-    def debug_whitenoise():
+    def whitenoise_debug():
         """Debug endpoint for WhiteNoise configuration"""
         # Check if WhiteNoise is configured
         has_whitenoise = hasattr(app, 'wsgi_app') and isinstance(app.wsgi_app, WhiteNoise)
@@ -374,32 +374,27 @@ def create_app():
         
         if static_exists:
             try:
-                # List only the top-level files/folders for brevity
+                # Get all top-level files for brevity
                 static_files = os.listdir(static_folder)
             except Exception as e:
                 app.logger.error(f"Error listing static files: {str(e)}")
         
         # Compile WhiteNoise configuration data
         whitenoise_data = {
-            "status": "configured" if has_whitenoise else "not_configured",
-            "static_folder": static_folder,
-            "static_url_path": app.static_url_path,
-            "static_folder_exists": static_exists,
-            "static_top_items": static_files[:20] if static_files else [],  # Limit to first 20 for brevity
-            "mime_types": {
-                ".js": mimetypes.types_map.get('.js', 'unknown'),
-                ".mjs": mimetypes.types_map.get('.mjs', 'unknown'),
-                ".jsx": mimetypes.types_map.get('.jsx', 'unknown'),
-                ".css": mimetypes.types_map.get('.css', 'unknown'),
-                ".html": mimetypes.types_map.get('.html', 'unknown'),
-            }
+            'status': 'success',
+            'message': 'WhiteNoise is configured' if has_whitenoise else 'WhiteNoise is not configured',
+            'static_folder': static_folder,
+            'static_url_path': app.static_url_path,
+            'whitenoise_root': static_folder,
+            'files_exist': static_exists,
+            'directory_contents': static_files[:20] if static_files else []  # Limited to first 20 items
         }
         
         return jsonify(whitenoise_data)
 
     # Debug endpoint for MIME type testing
     @app.route('/api/debug/mime-test')
-    def debug_mime_test():
+    def mime_test():
         """Debug endpoint to test MIME type handling"""
         # Get request details
         headers = {k: v for k, v in request.headers.items()}
@@ -407,78 +402,50 @@ def create_app():
         # Get MIME type settings
         js_mime = mimetypes.types_map.get('.js', 'not set')
         mjs_mime = mimetypes.types_map.get('.mjs', 'not set')
-        jsx_mime = mimetypes.types_map.get('.jsx', 'not set')
         
         # Test data to return
         mime_data = {
-            "status": "success",
-            "message": "MIME type test endpoint",
-            "content_type": "application/json",
-            "request": {
-                "path": request.path,
-                "method": request.method,
-                "headers": headers,
-                "url": request.url,
-                "referrer": request.referrer,
-            },
-            "mime_types": {
-                "javascript": js_mime,
-                "module_js": mjs_mime,
-                "jsx": jsx_mime,
-            },
-            "server_info": {
-                "python_version": sys.version,
-                "platform": platform.platform(),
-                "flask_version": getattr(Flask, '__version__', 'unknown'),
-                "whitenoise_configured": hasattr(app, 'wsgi_app') and isinstance(app.wsgi_app, WhiteNoise),
-            }
+            'status': 'success',
+            'message': 'MIME type test endpoint',
+            'content_type': 'application/json',
+            'request_path': request.path,
+            'request_headers': headers,
+            'javascript_mime_type': js_mime,
+            'module_js_mime_type': mjs_mime,
+            'mimetypes_js': mimetypes.types_map.get('.js', 'not set')
         }
         
-        response = jsonify(mime_data)
-        
-        # Set specific headers to help with debugging
-        response.headers['X-Harmonic-Debug'] = 'True'
-        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-        
-        return response
+        return jsonify(mime_data)
 
-    # Remove the old after_request hook as WhiteNoise handles this now
-    # Serve static files from the root URL - also handled by WhiteNoise now
-    # But keep the catch-all route for SPA routing
-    @app.route('/', defaults={'path': ''})
+    # Add a route to explicitly serve index.html
+    @app.route('/')
+    def serve_index():
+        """Serve index.html from root route"""
+        app.logger.debug("Serving index.html from root route")
+        if app.static_folder is None:
+            return jsonify({"error": "Static folder not configured"}), 500
+        return send_from_directory(app.static_folder, 'index.html')
+
+    # Catch-all route for client-side routing
     @app.route('/<path:path>')
     def catch_all(path):
-        # Log the requested path
-        app.logger.info(f'Catch-all route accessed with path: {path}')
+        """Catch-all route to support client-side routing"""
+        app.logger.debug(f"Catch-all route handling: {path}")
         
-        # Exclude API routes from this handling
-        if path.startswith('api/'):
-            app.logger.info(f'API path detected: {path}')
-            return jsonify({
-                'error': 'Not Found',
-                'message': f'API endpoint /{path} not found'
-            }), 404
-        
-        # For non-API routes, serve index.html for SPA routing
-        # WhiteNoise should handle this, but keep as fallback
-        try:
-            app.logger.info('Serving index.html for client-side routing')
-            if app.static_folder is not None and os.path.exists(os.path.join(app.static_folder, 'index.html')):
-                return send_from_directory(app.static_folder, 'index.html')
+        # Don't handle API routes or static files with the catch-all
+        if path.startswith('api/') or '.' in path:
+            app.logger.debug(f"Not handling {path} with catch-all")
+            # Check if the file exists in static folder
+            if app.static_folder is not None and os.path.exists(os.path.join(app.static_folder, path)):
+                return app.send_static_file(path)
             else:
-                app.logger.error('index.html not found in static folder')
-                return jsonify({
-                    "error": "Missing index.html",
-                    "message": "The index.html file could not be found in the static folder",
-                }), 500
-        except Exception as e:
-            app.logger.error(f'Error in catch_all route: {str(e)}')
-            app.logger.error(traceback.format_exc())
-            return jsonify({
-                "error": "Server Error",
-                "message": str(e),
-                "traceback": traceback.format_exc()
-            }), 500
+                return jsonify({'error': 'Not found', 'path': path}), 404
+        
+        # Return the SPA's index.html for all other routes
+        app.logger.debug(f"Serving index.html for path: {path}")
+        if app.static_folder is None:
+            return jsonify({"error": "Static folder not configured"}), 500
+        return send_from_directory(app.static_folder, 'index.html')
 
     # Add a special fallback route for react-fix-loader.js
     @app.route('/static/react-fixes/react-fix-loader.js')

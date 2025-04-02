@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Harmonic Universe Diagnostics</title>
+    <script src="/js/react.production.min.js"></script>
+    <script src="/js/react-dom.production.min.js"></script>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+        line-height: 1.6;
+        color: #333;
+        margin: 0;
+        padding: 20px;
+        background-color: #f7f9fc;
+      }
+      header {
+        background-color: #2c3e50;
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+      h1,
+      h2,
+      h3 {
+        margin-top: 0;
+      }
+      pre {
+        background-color: #f1f1f1;
+        padding: 10px;
+        border-radius: 4px;
+        overflow-x: auto;
+        border: 1px solid #ddd;
+      }
+      .success {
+        color: #2ecc71;
+      }
+      .error {
+        color: #e74c3c;
+      }
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Harmonic Universe Diagnostics</h1>
+        <p>This page helps troubleshoot the application</p>
+      </header>
+
+      <div id="root">Loading diagnostics...</div>
+    </div>
+
+    <script src="/diagnostic.js"></script>
+  </body>
+</html>
