@@ -59,13 +59,55 @@ fi
 # Start the application with Gunicorn
 echo "Starting Gunicorn server..."
 
-# Determine the app path
-if grep -q "def create_app" app.py; then
-    echo "Using app:create_app() for Gunicorn"
-    APP_PATH="app:create_app()"
+# Determine the app path and check if the module exists
+echo "Checking for Flask application module..."
+
+# Try different module paths in order of likelihood
+if [ -f "app.py" ]; then
+    echo "Found app.py in current directory"
+    
+    # Detect if this module has create_app or app
+    if grep -q "def create_app" app.py; then
+        echo "Using app:create_app() for Gunicorn"
+        APP_PATH="app:create_app()"
+    else
+        echo "Using app:app for Gunicorn"
+        APP_PATH="app:app"
+    fi
+elif [ -f "__init__.py" ]; then
+    echo "Found __init__.py, trying current directory as a module"
+    CURRENT_DIR=$(basename $(pwd))
+    if grep -q "def create_app" __init__.py; then
+        echo "Using ${CURRENT_DIR}:create_app() for Gunicorn"
+        APP_PATH="${CURRENT_DIR}:create_app()"
+    else
+        echo "Using ${CURRENT_DIR}:app for Gunicorn"
+        APP_PATH="${CURRENT_DIR}:app"
+    fi
 else
-    echo "Using app:app for Gunicorn"
-    APP_PATH="app:app"
+    echo "WARNING: Could not find app.py or __init__.py"
+    echo "Looking for other app entry points..."
+    FLASK_FILES=$(find . -maxdepth 2 -name "*.py" | xargs grep -l "from flask import")
+    
+    if [ -n "$FLASK_FILES" ]; then
+        echo "Found potential Flask files: $FLASK_FILES"
+        FIRST_FILE=$(echo $FLASK_FILES | awk '{print $1}' | sed 's/^\.\///')
+        echo "Using first found file: $FIRST_FILE"
+        
+        # Get module name without .py extension
+        MODULE_NAME=$(basename $FIRST_FILE .py)
+        
+        if grep -q "def create_app" $FIRST_FILE; then
+            echo "Using ${MODULE_NAME}:create_app() for Gunicorn"
+            APP_PATH="${MODULE_NAME}:create_app()"
+        else
+            echo "Using ${MODULE_NAME}:app for Gunicorn"
+            APP_PATH="${MODULE_NAME}:app"
+        fi
+    else
+        echo "No Flask files found, using app:app as a last resort"
+        APP_PATH="app:app"
+    fi
 fi
 
 # Start Gunicorn

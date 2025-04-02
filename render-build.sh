@@ -146,7 +146,8 @@ if [ ! -f "package.json" ]; then
     "react-dom": "18.2.0",
     "react-redux": "8.0.5",
     "react-router-dom": "6.10.0",
-    "@reduxjs/toolkit": "1.9.5"
+    "@reduxjs/toolkit": "1.9.5",
+    "redux-persist": "6.0.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "3.1.0",
@@ -192,7 +193,8 @@ cat > package.json << 'EOF'
     "react-dom": "18.2.0",
     "react-redux": "8.0.5",
     "react-router-dom": "6.10.0",
-    "@reduxjs/toolkit": "1.9.5"
+    "@reduxjs/toolkit": "1.9.5",
+    "redux-persist": "6.0.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "3.1.0",
