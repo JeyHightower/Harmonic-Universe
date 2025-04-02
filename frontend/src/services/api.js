@@ -542,7 +542,27 @@ const apiClient = {
   getUniverseScenes: (universeId) => {
     const endpoint = getEndpoint('universes', 'scenes', `/api/universes/${universeId}/scenes`);
     const url = typeof endpoint === 'function' ? endpoint(universeId) : endpoint;
-    return axiosInstance.get(url);
+
+    // Return a promise that handles errors more gracefully
+    return new Promise((resolve, reject) => {
+      axiosInstance.get(url)
+        .then(response => {
+          console.log("Universe scenes API response:", response);
+          resolve(response);
+        })
+        .catch(error => {
+          console.error(`Error fetching scenes for universe ${universeId}:`, error);
+          // Instead of rejecting, resolve with a well-formed error response
+          resolve({
+            status: error.response?.status || 500,
+            data: {
+              scenes: [], // Always provide empty scenes array to prevent UI breakage
+              message: error.response?.data?.message || `Error fetching scenes for universe ${universeId}`,
+              error: error.response?.data?.error || error.message || "Unknown error"
+            }
+          });
+        });
+    });
   },
   updateUniversePhysics: (universeId, physicsParams) =>
     axiosInstance.put(`/api/universes/${universeId}/physics`, {
@@ -575,7 +595,27 @@ const apiClient = {
     const url = `${baseEndpoint}?${queryParams.toString()}`;
 
     console.log("Fetching scenes from URL:", url);
-    return axiosInstance.get(url);
+
+    // Return a promise that handles errors more gracefully
+    return new Promise((resolve, reject) => {
+      axiosInstance.get(url)
+        .then(response => {
+          console.log("Scenes API response:", response);
+          resolve(response);
+        })
+        .catch(error => {
+          console.error("Error fetching scenes:", error);
+          // Instead of rejecting, resolve with a well-formed error response
+          resolve({
+            status: error.response?.status || 500,
+            data: {
+              scenes: [], // Always provide empty scenes array to prevent UI breakage
+              message: error.response?.data?.message || "Error fetching scenes",
+              error: error.response?.data?.error || error.message || "Unknown error"
+            }
+          });
+        });
+    });
   },
   getScene: (id) => {
     const endpoint = getEndpoint('scenes', 'get', `/api/scenes/${id}`);

@@ -42,6 +42,18 @@ export const fetchScenes = createAsyncThunk(
       const response = await apiClient.getScenes(universeId);
       console.log("Got scenes response:", response);
 
+      // Check if we received an error response that was wrapped in a success response
+      if (response.data?.error) {
+        console.warn("API returned an error in a success response:", response.data.error);
+        // Return a valid response with empty scenes array even on error
+        return {
+          message: response.data.message || "Error fetching scenes",
+          scenes: response.data.scenes || [],
+          status: response.status || 200,
+          error: response.data.error
+        };
+      }
+
       // Return only serializable data
       const serializedResponse = {
         message: response.data?.message,
@@ -77,6 +89,16 @@ export const fetchScenesForUniverse = createAsyncThunk(
         const response = await apiClient.getScenes(universeId);
         console.log("Thunk - Got scenes response:", response);
 
+        // Check if response has an error but was wrapped in a success response
+        if (response.data?.error) {
+          console.warn("API returned an error in success response:", response.data.error);
+          return {
+            scenes: response.data?.scenes || [],
+            error: response.data.error,
+            message: response.data.message || "API error occurred"
+          };
+        }
+
         // Check if response has valid data
         if (!response.data) {
           console.warn("Thunk - No data in response:", response);
@@ -96,26 +118,21 @@ export const fetchScenesForUniverse = createAsyncThunk(
       } catch (apiError) {
         console.error(`Thunk - API error fetching scenes for universe ${universeId}:`, apiError);
 
-        // Check for specific status codes
-        if (apiError.response?.status === 404) {
-          return rejectWithValue({ message: "Universe not found" });
-        } else if (apiError.response?.status === 403) {
-          return rejectWithValue({ message: "Access denied to this universe" });
-        } else if (apiError.response?.status === 500) {
-          // For server errors, return empty scenes but don't fail completely
-          console.warn("Thunk - Server error, returning empty scenes array");
-          return { scenes: [], error: "Server error, but continuing with empty scenes" };
-        }
-
-        throw apiError; // re-throw for general error handling below
+        // Always return a valid object with an empty scenes array instead of rejecting
+        return {
+          scenes: [],
+          error: apiError.message || "Error fetching scenes",
+          message: "Error occurred, but continuing with empty scenes"
+        };
       }
     } catch (error) {
-      console.error(`Thunk - Error fetching scenes for universe ${universeId}:`, error);
-      // Return an empty scenes array in case of error to avoid breaking the UI
-      return rejectWithValue({
-        message: error.response?.data?.message || error.message || "Failed to fetch scenes",
-        scenes: [] // Include empty scenes array for graceful UI handling
-      });
+      console.error(`Thunk - Unexpected error in scenes thunk:`, error);
+      // Even for unexpected errors, return an object with empty scenes
+      return {
+        scenes: [],
+        error: error.message || "Unexpected error",
+        message: "Unexpected error occurred"
+      };
     }
   }
 );
