@@ -40,30 +40,17 @@ const SceneCard = ({ scene, onEdit, onDelete }) => {
       return;
     }
 
-    // If no custom handler is provided, navigate to the edit page as fallback
-    // Make sure we have a valid universe_id
-    if (!scene.universe_id) {
-      console.error(
-        "SceneCard - Cannot navigate to scene edit: missing universe_id"
-      );
-      return;
-    }
-
-    // Navigate to the scene edit page with the correct path format
-    const universeId = scene.universe_id;
+    // If no custom handler is provided, navigate to the simplified direct edit route
     console.log(
-      `SceneCard - No onEdit handler provided, falling back to direct navigation to edit scene with ID: ${scene.id} in universe: ${universeId}`
+      `SceneCard - No onEdit handler provided, navigating to direct scene edit route for scene ID: ${scene.id}`
     );
 
-    // Ensure both IDs are properly formatted
-    const formattedUniverseId = parseInt(universeId, 10);
-    const formattedSceneId = parseInt(scene.id, 10);
+    // Use the direct scene edit route which doesn't require universe_id in the URL
+    // This will use our SceneEditRedirect component which handles fetching all necessary data
+    const editPath = `/scenes/${scene.id}/edit`;
+    console.log(`SceneCard - Navigating to simplified route: ${editPath}`);
 
-    // Use the proper route path and log it for debugging
-    const editPath = `/universes/${formattedUniverseId}/scenes/${formattedSceneId}/edit`;
-    console.log(`SceneCard - Navigating to: ${editPath}`);
-
-    // Use navigate function with replace to force a clean navigation
+    // Use navigate function to go to the edit route
     navigate(editPath, { replace: true });
   };
 
