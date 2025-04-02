@@ -20,23 +20,37 @@ cd frontend
 echo "Cleaning up node_modules and dist..."
 rm -rf node_modules dist
 
-# Ensure package.json exists and has proper configuration
-if [ ! -f "package.json" ]; then
-    echo "Missing package.json, initializing..."
-    npm init -y
-fi
+# Create a proper package.json with build scripts
+echo "Creating package.json with proper build scripts..."
+cat > package.json << 'EOF'
+{
+  "name": "frontend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "prop-types": "^15.8.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-redux": "^8.1.3",
+    "react-router-dom": "^6.18.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@vitejs/plugin-react": "^4.0.3",
+    "vite": "^4.5.1"
+  }
+}
+EOF
 
-# Install frontend dependencies explicitly
-echo "Installing frontend dependencies..."
-npm install --legacy-peer-deps
-
-# Make sure all required dependencies are installed
-echo "Installing critical dependencies directly..."
-npm install prop-types react-redux react-router-dom --save --legacy-peer-deps
-
-# Create a simpler Vite config that bundles everything
-echo "Creating optimized Vite config..."
-cat > vite.config.js << 'EOL'
+# Create a Vite configuration file
+echo "Creating vite.config.js..."
+cat > vite.config.js << 'EOF'
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
@@ -51,19 +65,74 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    sourcemap: false,
-    minify: true,
-    // Ensure all dependencies are bundled, not externalized
+    sourcemap: true,
     rollupOptions: {
       external: []
     }
   },
-  // Ensure node_modules are properly scanned
   optimizeDeps: {
     include: ['react-redux', 'react-router-dom', 'prop-types']
   }
 });
-EOL
+EOF
+
+# Create an index.html file
+echo "Creating index.html..."
+cat > index.html << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Harmonic Universe</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+EOF
+
+# Create main.jsx file
+echo "Creating src/main.jsx..."
+mkdir -p src
+cat > src/main.jsx << 'EOF'
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.jsx'
+import './index.css'
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)
+EOF
+
+# Create a basic CSS file
+echo "Creating src/index.css..."
+cat > src/index.css << 'EOF'
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+#root {
+  width: 100%;
+}
+EOF
+
+# Install dependencies
+echo "Installing dependencies..."
+npm install
 
 # Run the build with increased memory limit
 echo "Building frontend with Vite..."
