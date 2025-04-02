@@ -34,14 +34,23 @@ export { NoteList, NoteCard, NoteForm, NoteDetail };
 
 // Modal Components
 // Import from the modals directory for consistency
-import { ModalSystem, DraggableModal, AlertModal, ConfirmModal, FormModal } from "./modals";
+import {
+  ModalSystem,
+  DraggableModal,
+  AlertModal,
+  ConfirmationModal as ConfirmModal,
+  FormModal
+} from "./modals";
 
-// Export ExportModal and ImportModal from common where they're defined
+// Export modal components directly
+export { ModalSystem, DraggableModal, AlertModal, ConfirmModal, FormModal };
+
+// Lazily loaded components
 const ExportModal = React.lazy(() => import("./common/ExportModal"));
 const ImportModal = React.lazy(() => import("./common/ImportModal"));
 
-// Export modal components directly
-export { ModalSystem, DraggableModal, AlertModal, ConfirmModal, FormModal, ExportModal, ImportModal };
+// Export these as well
+export { ExportModal, ImportModal };
 
 // Also export as an object for backward compatibility
 export const ModalComponents = {
@@ -56,29 +65,29 @@ export const ModalComponents = {
   ImportModal,
 };
 
-// Lazy loaded components - these will be imported dynamically where needed
+// Lazy loaded component groups - these will only be loaded when needed
 export const MusicComponents = {
-  MusicPlayer: () => import("./music/MusicPlayer"),
-  MusicGenerationModal: () => import("./music/MusicGenerationModal"),
-  MusicVisualizer3D: () => import("./music/MusicVisualizer3D"),
-  MusicModal: () => import("./music/MusicModal"),
-  AudioDetailsModal: () => import("./music/AudioDetailsModal"),
-  AudioGenerationModal: () => import("./music/AudioGenerationModal"),
+  MusicPlayer: React.lazy(() => import("./music/MusicPlayer")),
+  MusicGenerationModal: React.lazy(() => import("./music/MusicGenerationModal")),
+  MusicVisualizer3D: React.lazy(() => import("./music/MusicVisualizer3D")),
+  MusicModal: React.lazy(() => import("./music/MusicModal")),
+  AudioDetailsModal: React.lazy(() => import("./music/AudioDetailsModal")),
+  AudioGenerationModal: React.lazy(() => import("./music/AudioGenerationModal")),
 };
 
 export const PhysicsComponents = {
-  PhysicsPanel: () => import("./physics/PhysicsPanel"),
-  PhysicsEditor: () => import("./physics/PhysicsEditor"),
-  PhysicsParametersModal: () => import("./physics/PhysicsParametersModal"),
-  PhysicsObjectsManager: () => import("./physics/PhysicsObjectsManager"),
-  PhysicsObjectForm: () => import("./physics/PhysicsObjectForm"),
-  PhysicsObjectsList: () => import("./physics/PhysicsObjectsList"),
-  PhysicsSettingsModal: () => import("./physics/PhysicsSettingsModal"),
-  PhysicsParametersManager: () => import("./physics/PhysicsParametersManager"),
+  PhysicsPanel: React.lazy(() => import("./physics/PhysicsPanel")),
+  PhysicsEditor: React.lazy(() => import("./physics/PhysicsEditor")),
+  PhysicsParametersModal: React.lazy(() => import("./physics/PhysicsParametersModal")),
+  PhysicsObjectsManager: React.lazy(() => import("./physics/PhysicsObjectsManager")),
+  PhysicsObjectForm: React.lazy(() => import("./physics/PhysicsObjectForm")),
+  PhysicsObjectsList: React.lazy(() => import("./physics/PhysicsObjectsList")),
+  PhysicsSettingsModal: React.lazy(() => import("./physics/PhysicsSettingsModal")),
+  PhysicsParametersManager: React.lazy(() => import("./physics/PhysicsParametersManager")),
 };
 
 export const DebugComponents = {
-  Debug: () => import("./debug/Debug"),
-  DebugControls: () => import("./debug/DebugControls"),
-  IconTest: () => import("./debug/IconTest"),
+  Debug: React.lazy(() => import("./debug/Debug")),
+  DebugControls: React.lazy(() => import("./debug/DebugControls")),
+  IconTest: React.lazy(() => import("./debug/IconTest")),
 };

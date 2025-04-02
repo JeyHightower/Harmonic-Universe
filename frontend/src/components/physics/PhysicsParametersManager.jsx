@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import apiClient from "../../services/api";
-import { endpoints } from "@services/endpoints";
+import { endpoints } from "../../services/endpoints";
 import { Button } from "../common";
 import Icon from "../common/Icon";
 import Modal from "../common/Modal";

@@ -28,7 +28,7 @@ import React, { useEffect, useRef, useState } from "react";
 import * as Tone from "tone";
 import { useModal } from "../../contexts/ModalContext";
 import apiClient from "../../services/api";
-import { endpoints } from "@services/endpoints";
+import { endpoints } from "../../services/endpoints";
 import { MODAL_TYPES } from "../../constants/modalTypes";
 import Modal from "../common/Modal";
 import "../../styles/Music.css";

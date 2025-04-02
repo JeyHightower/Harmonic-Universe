@@ -2,10 +2,18 @@ import React from "react";
 import { MODAL_CONFIG } from "./config";
 import { MODAL_TYPES } from "../constants/modalTypes";
 
+// Import components statically instead of dynamically
+import AlertModal from "../components/modals/AlertModal";
+import ConfirmationModal from "../components/modals/ConfirmationModal";
+import FormModal from "../components/modals/FormModal";
+import LoginModal from "../components/auth/LoginModal";
+import SignupModal from "../components/auth/SignupModal";
+import UniverseCreateModal from "../components/modals/UniverseCreateModal";
+
 // Create modal registry
 const modalRegistry = new Map();
 
-// Dynamic import function for modal components
+// Component lookup function
 const getModalComponent = async (type) => {
   if (!type) {
     console.error("Modal type is required");
@@ -30,27 +38,27 @@ const getModalComponent = async (type) => {
     switch (type) {
       case "ALERT":
       case MODAL_TYPES.ALERT:
-        component = (await import("../components/modals/AlertModal")).default;
+        component = AlertModal;
         break;
       case "CONFIRMATION":
       case MODAL_TYPES.CONFIRMATION:
-        component = (await import("../components/modals/ConfirmationModal")).default;
+        component = ConfirmationModal;
         break;
       case "FORM":
       case MODAL_TYPES.FORM:
-        component = (await import("../components/modals/FormModal")).default;
+        component = FormModal;
         break;
       case "LOGIN":
       case MODAL_TYPES.LOGIN:
-        component = (await import("../components/auth/LoginModal")).default;
+        component = LoginModal;
         break;
       case "SIGNUP":
       case MODAL_TYPES.SIGNUP:
-        component = (await import("../components/auth/SignupModal")).default;
+        component = SignupModal;
         break;
       case "universe-create":
       case MODAL_TYPES.UNIVERSE_CREATE:
-        component = (await import("../components/modals/UniverseCreateModal")).default;
+        component = UniverseCreateModal;
         break;
       default:
         console.error(`No modal component found for type: ${type}`);

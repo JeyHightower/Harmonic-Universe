@@ -19,34 +19,8 @@ import { safeUseDispatch } from "../../utils/ensure-redux-provider";
 import { safeImport } from "../../utils/dynamic-import";
 import { ensureRouterProvider } from "../../utils/ensure-router-provider";
 
-// Import demoLogin with fallback
-let demoLogin;
-try {
-  // Use dynamic import instead of require
-  import("../../store/slices/authSlice")
-    .then((module) => {
-      demoLogin = module.demoLogin;
-    })
-    .catch((error) => {
-      console.warn("demoLogin not available, using fallback");
-      demoLogin = () => {
-        console.error("Demo login not implemented");
-        return { type: "auth/demoLogin/rejected", error: "Not implemented" };
-      };
-    });
-
-  // Initialize with fallback in case the import hasn't resolved yet
-  demoLogin = () => {
-    console.error("Demo login not implemented");
-    return { type: "auth/demoLogin/rejected", error: "Not implemented" };
-  };
-} catch (error) {
-  console.warn("demoLogin not available, using fallback");
-  demoLogin = () => {
-    console.error("Demo login not implemented");
-    return { type: "auth/demoLogin/rejected", error: "Not implemented" };
-  };
-}
+// Import authSlice directly instead of using dynamic import
+import { demoLogin } from "../../store/slices/authSlice";
 
 // Footer with React.lazy for code splitting
 const FooterFallback = () => (
@@ -165,7 +139,7 @@ function Layout() {
     } catch (error) {
       console.error("[Layout] Error during demo login:", error);
     }
-  }, [dispatch, navigate, demoLogin]);
+  }, [dispatch, navigate]);
 
   // Log component mount
   useEffect(() => {

@@ -2,7 +2,7 @@ import axios from "axios";
 import { AUTH_CONFIG, API_CONFIG } from "../utils/config";
 import { log } from "../utils/logger";
 // Import each endpoint directly
-import { endpoints, universeEndpoints } from "./endpoints";
+import { endpoints, universesEndpoints } from "./endpoints";
 import { cache } from "../utils/cache";
 import { CACHE_CONFIG } from "../utils/cacheConfig";
 
@@ -29,16 +29,16 @@ const FALLBACK_ENDPOINTS = {
 
 // Debug logs for endpoints
 console.log("Endpoints loaded:", {
-  universeEndpoints: universeEndpoints,
+  universesEndpoints: universesEndpoints,
   endpoints,
   auth: endpoints?.auth,
-  universes: endpoints?.universes || universeEndpoints,
-  hasCreateUniverse: !!(endpoints?.universes?.create || universeEndpoints?.create),
+  universes: endpoints?.universes || universesEndpoints,
+  hasCreateUniverse: !!(endpoints?.universes?.create || universesEndpoints?.create),
   fallbacks: FALLBACK_ENDPOINTS
 });
 
 // Use a direct universes object that combines all sources
-const universes = endpoints?.universes || universeEndpoints || FALLBACK_ENDPOINTS.universes;
+const universes = endpoints?.universes || universesEndpoints || FALLBACK_ENDPOINTS.universes;
 
 // Helper function to safely get endpoints with fallbacks
 const getEndpoint = (group, name, fallback) => {
