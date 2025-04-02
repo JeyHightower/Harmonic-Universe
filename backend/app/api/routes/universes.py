@@ -222,44 +222,69 @@ def delete_universe(universe_id):
             }), 403
 
         # Get counts for logging
-        scenes_count = Scene.query.filter_by(universe_id=universe_id, is_deleted=False).count()
-        characters_count = Character.query.filter_by(universe_id=universe_id, is_deleted=False).count()
-        notes_count = Note.query.filter_by(universe_id=universe_id, is_deleted=False).count()
-
-        current_app.logger.info(f"Deleting universe {universe_id} with {scenes_count} scenes, {characters_count} characters, {notes_count} notes")
-
-        # Explicitly delete related entities
         try:
-            # Delete scenes first
-            scenes = Scene.query.filter_by(universe_id=universe_id).all()
-            for scene in scenes:
-                current_app.logger.debug(f"Deleting scene {scene.id}")
-                # Clear character associations
-                scene.characters = []
-                # Delete scene notes
-                Note.query.filter_by(scene_id=scene.id).delete()
-                db.session.delete(scene)
+            scenes_count = Scene.query.filter_by(universe_id=universe_id, is_deleted=False).count()
+            characters_count = Character.query.filter_by(universe_id=universe_id, is_deleted=False).count()
+            notes_count = Note.query.filter_by(universe_id=universe_id, is_deleted=False).count()
+            current_app.logger.info(f"Deleting universe {universe_id} with {scenes_count} scenes, {characters_count} characters, {notes_count} notes")
+        except Exception as e:
+            current_app.logger.warning(f"Error counting related entities for universe {universe_id}: {str(e)}")
+            # Continue with deletion anyway
 
-            # Delete characters
-            Character.query.filter_by(universe_id=universe_id).delete()
+        # Using a transaction to ensure all or nothing deletion
+        try:
+            # Start a nested transaction that can be rolled back without affecting outer transaction
+            with db.session.begin_nested():
+                try:
+                    # First, handle character-scene associations
+                    scenes = Scene.query.filter_by(universe_id=universe_id).all()
+                    for scene in scenes:
+                        try:
+                            current_app.logger.debug(f"Clearing character associations for scene {scene.id}")
+                            scene.characters = []
+                        except Exception as scene_e:
+                            current_app.logger.error(f"Error clearing character associations for scene {scene.id}: {str(scene_e)}")
+                            # Continue with other scenes
 
-            # Delete notes
-            Note.query.filter_by(universe_id=universe_id).delete()
-
-            # Delete universe
-            db.session.delete(universe)
-            db.session.commit()
-            
-            current_app.logger.info(f"Successfully deleted universe {universe_id} with all related entities")
-
-            return jsonify({
-                'message': 'Universe deleted successfully'
-            }), 200
+                    # Mark universe as deleted but don't actually delete
+                    universe.is_deleted = True
+                    # Also mark all related entities as deleted
+                    Scene.query.filter_by(universe_id=universe_id).update({"is_deleted": True})
+                    Character.query.filter_by(universe_id=universe_id).update({"is_deleted": True})
+                    Note.query.filter_by(universe_id=universe_id).update({"is_deleted": True})
+                    
+                    # Commit the changes to mark everything as deleted
+                    db.session.commit()
+                    
+                    current_app.logger.info(f"Successfully marked universe {universe_id} and all related entities as deleted")
+                    
+                    return jsonify({
+                        'message': 'Universe deleted successfully'
+                    }), 200
+                    
+                except Exception as inner_e:
+                    # This will trigger the outer exception handler
+                    current_app.logger.error(f"Error during soft delete: {str(inner_e)}")
+                    current_app.logger.error(f"Traceback: {traceback.format_exc()}")
+                    raise inner_e
+        
         except Exception as e:
             db.session.rollback()
-            current_app.logger.error(f"Error during cascading delete: {str(e)}")
+            current_app.logger.error(f"Database error during universe deletion: {str(e)}")
             current_app.logger.error(f"Traceback: {traceback.format_exc()}")
-            raise e
+            
+            # Provide a more user-friendly error message
+            error_message = "Database error while deleting universe"
+            if "violates foreign key constraint" in str(e):
+                error_message = "Cannot delete universe because it has related data that depends on it"
+            elif "transaction has been rolled back" in str(e):
+                error_message = "Database transaction failed, please try again"
+            
+            return jsonify({
+                'message': 'Error deleting universe',
+                'error': error_message,
+                'details': str(e)
+            }), 500
 
     except Exception as e:
         db.session.rollback()
