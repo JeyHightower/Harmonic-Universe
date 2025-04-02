@@ -6,6 +6,15 @@
  */
 
 (function () {
+  // Check if already initialized to prevent multiple initializations
+  if (window.__HU_MODULE_LOADER_INITIALIZED__) {
+    console.log("🔄 Special module loader already initialized, skipping");
+    return;
+  }
+
+  // Set initialization flag
+  window.__HU_MODULE_LOADER_INITIALIZED__ = true;
+
   console.log("🔧 Special module loader initialized");
 
   // Store information about script errors
@@ -35,6 +44,27 @@
       loadFallbackScript(src);
     }
   }, true);
+
+  // Function to safely make API requests with error handling
+  function safeApiFetch(url, options = {}) {
+    return fetch(url, options)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .catch(error => {
+        console.warn(`⚠️ API request to ${url} failed:`, error.message);
+        // Return a default response object to prevent cascading errors
+        return {
+          error: true,
+          message: error.message,
+          endpoint: url,
+          fallback: true
+        };
+      });
+  }
 
   // Function to load a script as a regular script when module loading fails
   function loadFallbackScript(src) {
@@ -157,15 +187,44 @@
     });
   }
 
+  // Function to initialize diagnostic tests
+  function runDiagnostics() {
+    console.log("🔍 Running diagnostics...");
+
+    // Check whitenoise configuration 
+    safeApiFetch('/api/debug/whitenoise')
+      .then(data => {
+        if (!data.error) {
+          console.log("✅ WhiteNoise diagnostic:", data);
+        }
+      });
+
+    // Check MIME type handling
+    safeApiFetch('/api/debug/mime-test')
+      .then(data => {
+        if (!data.error) {
+          console.log("✅ MIME type diagnostic:", data);
+        }
+      });
+  }
+
   // Ensure React is available
   ensureReact().then(() => {
     // Add global access to the module loader
     window.__HU_MODULE_LOADER__ = {
       loadFallbackScript,
       generateFakeModule,
-      ensureReact
+      ensureReact,
+      safeApiFetch,
+      runDiagnostics
     };
 
     console.log("✅ Special module loader ready");
+
+    // Run diagnostics if we're in a browser environment with a DOM
+    if (typeof document !== 'undefined') {
+      // Run diagnostics after a short delay to allow other scripts to load
+      setTimeout(runDiagnostics, 1000);
+    }
   });
 })(); 

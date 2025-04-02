@@ -360,125 +360,88 @@ def create_app():
                 "traceback": traceback.format_exc()
             }), 500
 
-    # Debug endpoint for WhiteNoise
+    # Debug endpoint for WhiteNoise configuration
     @app.route('/api/debug/whitenoise')
     def debug_whitenoise():
-        """Debug endpoint to report on WhiteNoise configuration"""
-        try:
-            whitenoise_info = {
-                "configured": hasattr(app, 'wsgi_app') and isinstance(app.wsgi_app, WhiteNoise),
-                "static_folder": app.static_folder,
-                "files_count": len(getattr(app.wsgi_app, 'files', {})) if hasattr(app.wsgi_app, 'files') else 0,
+        """Debug endpoint for WhiteNoise configuration"""
+        # Check if WhiteNoise is configured
+        has_whitenoise = hasattr(app, 'wsgi_app') and isinstance(app.wsgi_app, WhiteNoise)
+        
+        # Get static folder details
+        static_folder = app.static_folder
+        static_exists = static_folder and os.path.exists(static_folder)
+        static_files = []
+        
+        if static_exists:
+            try:
+                # List only the top-level files/folders for brevity
+                static_files = os.listdir(static_folder)
+            except Exception as e:
+                app.logger.error(f"Error listing static files: {str(e)}")
+        
+        # Compile WhiteNoise configuration data
+        whitenoise_data = {
+            "status": "configured" if has_whitenoise else "not_configured",
+            "static_folder": static_folder,
+            "static_url_path": app.static_url_path,
+            "static_folder_exists": static_exists,
+            "static_top_items": static_files[:20] if static_files else [],  # Limit to first 20 for brevity
+            "mime_types": {
+                ".js": mimetypes.types_map.get('.js', 'unknown'),
+                ".mjs": mimetypes.types_map.get('.mjs', 'unknown'),
+                ".jsx": mimetypes.types_map.get('.jsx', 'unknown'),
+                ".css": mimetypes.types_map.get('.css', 'unknown'),
+                ".html": mimetypes.types_map.get('.html', 'unknown'),
             }
-            
-            # Get a sample of files being served by WhiteNoise
-            if hasattr(app.wsgi_app, 'files') and app.wsgi_app.files:
-                sample_files = list(app.wsgi_app.files.keys())[:10]  # Get first 10 files
-                whitenoise_info["sample_files"] = sample_files
-                
-                # Get MIME types for sample files using Python's mimetypes module
-                mime_types = {}
-                for file in sample_files:
-                    mime_types[file] = mimetypes.guess_type(file)[0] or 'unknown'
-                
-                whitenoise_info["mime_types"] = mime_types
-            
-            # Report global mimetypes configuration
-            whitenoise_info["global_mimetypes"] = {
-                ".js": mimetypes.guess_type("example.js")[0],
-                ".mjs": mimetypes.guess_type("example.mjs")[0],
-                ".css": mimetypes.guess_type("example.css")[0]
-            }
-            
-            return jsonify(whitenoise_info), 200
-        except Exception as e:
-            app.logger.error(f"Error in WhiteNoise diagnostics: {str(e)}")
-            return jsonify({
-                "error": str(e),
-                "traceback": traceback.format_exc()
-            }), 500
-
-    # Add module debug endpoint
-    @app.route('/api/debug/module/<path:filename>')
-    def debug_module(filename):
-        """Debug endpoint to help track down module loading issues."""
-        # Clean up filename if it has query parameters
-        if '?' in filename:
-            filename = filename.split('?')[0]
-        
-        # Add .js extension if not present
-        if not filename.endswith('.js') and not filename.endswith('.mjs'):
-            filename = f"{filename}.js"
-        
-        # Track all possible locations where the file might be
-        possible_locations = []
-        
-        # Direct paths to check
-        paths_to_check = [
-            filename,
-            f"assets/{filename}",
-            f"static/{filename}",
-            f"js/{filename}",
-            f"static/assets/{filename}",
-            f"assets/js/{filename}"
-        ]
-        
-        file_content = None
-        found_path = None
-        
-        # Check all possible paths
-        for path in paths_to_check:
-            if app.static_folder is None:
-                full_path = None
-                exists = False
-                size = None
-            else:
-                full_path = os.path.join(app.static_folder, path)
-                exists = os.path.exists(full_path)
-                size = os.path.getsize(full_path) if exists else None
-            
-            location_info = {
-                "path": path,
-                "full_path": full_path,
-                "exists": exists,
-                "size": size
-            }
-            
-            possible_locations.append(location_info)
-            
-            # If file exists, read its content
-            if exists and full_path is not None and not found_path:
-                found_path = path
-                try:
-                    with open(full_path, 'r') as f:
-                        file_content = f.read(500)  # Read first 500 chars
-                except Exception as e:
-                    file_content = f"Error reading file: {str(e)}"
-        
-        # Also check if WhiteNoise would serve this file
-        whitenoise_would_serve = False
-        whitenoise_path = None
-        if hasattr(app.wsgi_app, 'files'):
-            # Check all possible variations of the path that WhiteNoise might use
-            for test_path in [f"/{filename}", filename, f"/static/{filename}"]:
-                if test_path in app.wsgi_app.files:
-                    whitenoise_would_serve = True
-                    whitenoise_path = test_path
-                    break
-        
-        # Build the response
-        response_data = {
-            "requested_file": filename,
-            "possible_locations": possible_locations,
-            "file_found": found_path is not None,
-            "found_at": found_path,
-            "content_preview": file_content,
-            "whitenoise_would_serve": whitenoise_would_serve,
-            "whitenoise_path": whitenoise_path
         }
         
-        return jsonify(response_data)
-    
+        return jsonify(whitenoise_data)
+
+    # Debug endpoint for MIME type testing
+    @app.route('/api/debug/mime-test')
+    def debug_mime_test():
+        """Debug endpoint to test MIME type handling"""
+        # Get request details
+        headers = {k: v for k, v in request.headers.items()}
+        
+        # Get MIME type settings
+        js_mime = mimetypes.types_map.get('.js', 'not set')
+        mjs_mime = mimetypes.types_map.get('.mjs', 'not set')
+        jsx_mime = mimetypes.types_map.get('.jsx', 'not set')
+        
+        # Test data to return
+        mime_data = {
+            "status": "success",
+            "message": "MIME type test endpoint",
+            "content_type": "application/json",
+            "request": {
+                "path": request.path,
+                "method": request.method,
+                "headers": headers,
+                "url": request.url,
+                "referrer": request.referrer,
+            },
+            "mime_types": {
+                "javascript": js_mime,
+                "module_js": mjs_mime,
+                "jsx": jsx_mime,
+            },
+            "server_info": {
+                "python_version": sys.version,
+                "platform": platform.platform(),
+                "flask_version": getattr(Flask, '__version__', 'unknown'),
+                "whitenoise_configured": hasattr(app, 'wsgi_app') and isinstance(app.wsgi_app, WhiteNoise),
+            }
+        }
+        
+        response = jsonify(mime_data)
+        
+        # Set specific headers to help with debugging
+        response.headers['X-Harmonic-Debug'] = 'True'
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        
+        return response
+
     # Remove the old after_request hook as WhiteNoise handles this now
     # Serve static files from the root URL - also handled by WhiteNoise now
     # But keep the catch-all route for SPA routing
@@ -956,22 +919,6 @@ console.log('React fixes applied successfully at:', new Date().toISOString());
             mimetype='application/javascript'
         )
         
-        return response
-
-    # Add a debug endpoint to test MIME types
-    @app.route('/api/debug/mime-test')
-    def debug_mime_test():
-        """Debug endpoint to test MIME type handling."""
-        javascript_content = """
-        // This is a test JavaScript file
-        console.log('MIME type test successful!');
-        export default { success: true };
-        """
-        response = app.response_class(
-            response=javascript_content,
-            mimetype='application/javascript'
-        )
-        app.logger.info(f"Serving MIME test with Content-Type: {response.headers.get('Content-Type')}")
         return response
 
     # Modify the src files route to always send JavaScript with the correct MIME type 
