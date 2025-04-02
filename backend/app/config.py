@@ -5,6 +5,7 @@ class Config:
     # Basic Flask config
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key')
     DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    PORT = int(os.environ.get('PORT', 5001))
     
     # Database config
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:////Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/app.db')

@@ -12,7 +12,7 @@ const NetworkErrorModal = ({ isOpen, onClose, message }) => {
       isOpen={isOpen}
       onClose={onClose}
       title="Connection Error"
-      size="small"
+      size="SMALL"
       type="alert"
       showCloseButton={true}
       data-modal-type="network-error"

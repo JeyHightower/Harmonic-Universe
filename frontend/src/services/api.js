@@ -503,7 +503,12 @@ const apiClient = {
     if (params.includeScenes) {
       queryParams.append("include_scenes", "true");
     }
-    return axiosInstance.get(`${getEndpoint('universes', 'get', `/api/universes/${id}`)}?${queryParams.toString()}`);
+
+    // Get endpoint and ensure it's called if it's a function
+    const endpoint = getEndpoint('universes', 'get', `/api/universes/${id}`);
+    const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
+
+    return axiosInstance.get(`${url}?${queryParams.toString()}`);
   },
   updateUniverse: async (id, data) => {
     console.log(`API - updateUniverse - Updating universe ${id} with data:`, data);
@@ -529,8 +534,11 @@ const apiClient = {
       throw error;
     }
   },
-  getUniverseScenes: (universeId) =>
-    axiosInstance.get(getEndpoint('universes', 'scenes', `/api/universes/${universeId}/scenes`)),
+  getUniverseScenes: (universeId) => {
+    const endpoint = getEndpoint('universes', 'scenes', `/api/universes/${universeId}/scenes`);
+    const url = typeof endpoint === 'function' ? endpoint(universeId) : endpoint;
+    return axiosInstance.get(url);
+  },
   updateUniversePhysics: (universeId, physicsParams) =>
     axiosInstance.put(`/api/universes/${universeId}/physics`, {
       physics_params: physicsParams,
@@ -564,7 +572,11 @@ const apiClient = {
     console.log("Fetching scenes from URL:", url);
     return axiosInstance.get(url);
   },
-  getScene: (id) => axiosInstance.get(getEndpoint('scenes', 'get', `/api/scenes/${id}`)),
+  getScene: (id) => {
+    const endpoint = getEndpoint('scenes', 'get', `/api/scenes/${id}`);
+    const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
+    return axiosInstance.get(url);
+  },
   createScene: (data) => {
     // Ensure universe_id is present
     if (!data.universe_id) {
@@ -623,88 +635,231 @@ const apiClient = {
 
       console.log(`API - updateScene - Sending normalized data:`, normalizedData);
       const updateEndpoint = getEndpoint('scenes', 'update', `/api/scenes/${id}`);
-      const response = await axiosInstance.put(updateEndpoint, normalizedData);
-      console.log(`API - updateScene - Response:`, response.data);
+      const updateUrl = typeof updateEndpoint === 'function' ? updateEndpoint(id) : updateEndpoint;
+      const response = await axiosInstance.put(updateUrl, normalizedData);
+      console.log(`API - updateScene - Successfully updated scene ${id}:`, response);
       return response;
     } catch (error) {
-      console.error(`API - updateScene - Error updating scene ${id}:`, error.response?.data || error.message);
+      console.error(`API - updateScene - Error updating scene ${id}:`, error.response || error);
+      // Re-throw the error to be handled by the calling code
       throw error;
     }
   },
-  deleteScene: (id) => axiosInstance.delete(getEndpoint('scenes', 'delete', `/api/scenes/${id}`)),
-  reorderScenes: (data) => axiosInstance.post(getEndpoint('scenes', 'reorder', '/api/scenes/reorder'), data),
-  updateScenePhysicsParams: (sceneId, data) => {
-    const endpoint = getEndpoint('scenes', 'get', `/api/scenes/${sceneId}`);
-    return axiosInstance.put(`${endpoint}/physics_parameters`, data);
+  deleteScene: async (id) => {
+    console.log(`API - deleteScene - Deleting scene ${id}`);
+    try {
+      const endpoint = getEndpoint('scenes', 'delete', `/api/scenes/${id}`);
+      const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
+      const response = await axiosInstance.delete(url);
+      console.log(`API - deleteScene - Successfully deleted scene ${id}:`, response);
+      return response;
+    } catch (error) {
+      console.error(`API - deleteScene - Error deleting scene ${id}:`, error.response || error);
+      // Re-throw the error to be handled by the calling code
+      throw error;
+    }
   },
-  updateSceneHarmonyParams: (sceneId, data) => {
-    const endpoint = getEndpoint('scenes', 'get', `/api/scenes/${sceneId}`);
-    return axiosInstance.put(`${endpoint}/harmony_parameters`, data);
-  },
-
-  // Physics Objects methods
-  getPhysicsObjects: () => axiosInstance.get(getEndpoint('physicsObjects', 'list', '/api/physics-objects')),
-  createPhysicsObject: (data) =>
-    axiosInstance.post(getEndpoint('physicsObjects', 'create', '/api/physics-objects'), data),
-  getPhysicsObject: (id) => axiosInstance.get(getEndpoint('physicsObjects', 'get', '/api/physics-objects/' + id)),
-  updatePhysicsObject: (id, data) =>
-    axiosInstance.put(getEndpoint('physicsObjects', 'update', '/api/physics-objects/' + id), data),
-  deletePhysicsObject: (id) => axiosInstance.delete(getEndpoint('physicsObjects', 'delete', '/api/physics-objects/' + id)),
-  getPhysicsObjectsForScene: (sceneId) =>
-    axiosInstance.get(getEndpoint('physicsObjects', 'forScene', `/api/scenes/${sceneId}/physics-objects`)),
-
-  // Music methods
-  generateMusic: (data) => axiosInstance.post(getEndpoint('music', 'generate', '/api/music/generate'), data),
-  saveMusic: (data) => axiosInstance.post(getEndpoint('music', 'save', '/api/music/save'), data),
-  getMusicList: () => axiosInstance.get(getEndpoint('music', 'list', '/api/music')),
-  uploadMusic: (data) => axiosInstance.post(getEndpoint('music', 'upload', '/api/music/upload'), data),
-  deleteMusic: (id) => axiosInstance.delete(getEndpoint('music', 'delete', '/api/music/' + id)),
-
-  // Physics parameters methods
-  updatePhysicsParameters: (params) =>
-    axiosInstance.post(getEndpoint('physicsParameters', 'update', '/api/physics/parameters'), params),
-  getPhysicsParameters: () => axiosInstance.get(getEndpoint('physicsParameters', 'get', '/api/physics/parameters')),
-  resetPhysicsParameters: () => axiosInstance.post(getEndpoint('physicsParameters', 'reset', '/api/physics/parameters/reset')),
+  updateSceneHarmony: (sceneId, harmonyParams) =>
+    axiosInstance.put(`/api/scenes/${sceneId}/harmony`, {
+      harmony_params: harmonyParams,
+    }),
 
   // Character methods
-  getCharacters: () => axiosInstance.get(getEndpoint('characters', 'list', '/api/characters')),
-  getCharacter: (id) => axiosInstance.get(getEndpoint('characters', 'get', '/api/characters/' + id)),
-  createCharacter: (data) => {
-    const normalizedData = { ...data };
-    if (data.universeId && !data.universe_id) {
-      normalizedData.universe_id = data.universeId;
+  getCharacters: (params = {}) => {
+    console.log("Getting characters with params:", params);
+    const queryParams = new URLSearchParams();
+
+    // If params is a string or number, it's a direct universeId
+    if (typeof params === 'string' || typeof params === 'number') {
+      queryParams.append("universe_id", params);
     }
-    if (data.sceneId && !data.scene_id) {
-      normalizedData.scene_id = data.sceneId;
+    // Otherwise treat it as a params object
+    else if (params.universeId) {
+      queryParams.append("universe_id", params.universeId);
     }
-    return axiosInstance.post(getEndpoint('characters', 'create', '/api/characters'), normalizedData);
+
+    // Get the base endpoint
+    const baseEndpoint = getEndpoint('characters', 'list', '/api/characters');
+    // Form the complete URL
+    const url = `${baseEndpoint}?${queryParams.toString()}`;
+
+    console.log("Fetching characters from URL:", url);
+    return axiosInstance.get(url);
   },
-  updateCharacter: (id, data) => axiosInstance.put(getEndpoint('characters', 'update', '/api/characters/' + id), data),
-  deleteCharacter: (id) => axiosInstance.delete(getEndpoint('characters', 'delete', '/api/characters/' + id)),
-  getCharactersByUniverse: (universeId) => axiosInstance.get(getEndpoint('characters', 'forUniverse', `/api/universes/${universeId}/characters`)),
-  getCharactersByScene: (sceneId) => axiosInstance.get(getEndpoint('characters', 'forScene', `/api/scenes/${sceneId}/characters`)),
+  getCharactersByUniverse: (universeId) => {
+    const endpoint = getEndpoint('universes', 'characters', `/api/universes/${universeId}/characters`);
+    const url = typeof endpoint === 'function' ? endpoint(universeId) : endpoint;
+    return axiosInstance.get(url);
+  },
+  getCharacter: (id) => {
+    const endpoint = getEndpoint('characters', 'get', `/api/characters/${id}`);
+    const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
+    return axiosInstance.get(url);
+  },
+  createCharacter: (data) => {
+    // Ensure universe_id is present
+    if (!data.universe_id) {
+      throw new Error("universe_id is required to create a character");
+    }
+
+    // Clone data and transform field names if needed
+    const transformedData = { ...data };
+
+    console.log("Sending createCharacter request with data:", transformedData);
+
+    // Use the base characters endpoint
+    const endpoint = getEndpoint('characters', 'create', '/api/characters');
+    return axiosInstance.post(endpoint, transformedData);
+  },
+  updateCharacter: async (id, data) => {
+    console.log(`API - updateCharacter - Updating character ${id} with data:`, data);
+    try {
+      // Ensure we have all required fields
+      if (!data.name) {
+        throw new Error("Character name is required");
+      }
+
+      if (!data.universe_id) {
+        console.warn("API - updateCharacter - universe_id missing, adding from character data");
+        // Try to get universe_id from get character if not provided
+        const characterEndpoint = getEndpoint('characters', 'get', `/api/characters/${id}`);
+        const characterUrl = typeof characterEndpoint === 'function' ? characterEndpoint(id) : characterEndpoint;
+        const characterResponse = await axiosInstance.get(characterUrl);
+        data.universe_id = characterResponse.data?.character?.universe_id || characterResponse.data?.universe_id;
+
+        if (!data.universe_id) {
+          throw new Error("universe_id is required to update a character");
+        }
+      }
+
+      // Normalize data for API consistency
+      const normalizedData = { ...data };
+
+      console.log(`API - updateCharacter - Sending normalized data:`, normalizedData);
+      const updateEndpoint = getEndpoint('characters', 'update', `/api/characters/${id}`);
+      const updateUrl = typeof updateEndpoint === 'function' ? updateEndpoint(id) : updateEndpoint;
+      const response = await axiosInstance.put(updateUrl, normalizedData);
+      console.log(`API - updateCharacter - Successfully updated character ${id}:`, response);
+      return response;
+    } catch (error) {
+      console.error(`API - updateCharacter - Error updating character ${id}:`, error.response || error);
+      // Re-throw the error to be handled by the calling code
+      throw error;
+    }
+  },
+  deleteCharacter: async (id) => {
+    console.log(`API - deleteCharacter - Deleting character ${id}`);
+    try {
+      const endpoint = getEndpoint('characters', 'delete', `/api/characters/${id}`);
+      const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
+      const response = await axiosInstance.delete(url);
+      console.log(`API - deleteCharacter - Successfully deleted character ${id}:`, response);
+      return response;
+    } catch (error) {
+      console.error(`API - deleteCharacter - Error deleting character ${id}:`, error.response || error);
+      // Re-throw the error to be handled by the calling code
+      throw error;
+    }
+  },
 
   // Note methods
-  getNotes: () => axiosInstance.get(getEndpoint('notes', 'list', '/api/notes')),
-  getNote: (id) => axiosInstance.get(getEndpoint('notes', 'get', '/api/notes/' + id)),
-  createNote: (data) => {
-    const normalizedData = { ...data };
-    if (data.universeId && !data.universe_id) {
-      normalizedData.universe_id = data.universeId;
+  getNotes: (params = {}) => {
+    console.log("Getting notes with params:", params);
+    const queryParams = new URLSearchParams();
+
+    // If params is a string or number, it's a direct universeId
+    if (typeof params === 'string' || typeof params === 'number') {
+      queryParams.append("universe_id", params);
     }
-    if (data.sceneId && !data.scene_id) {
-      normalizedData.scene_id = data.sceneId;
+    // Otherwise treat it as a params object
+    else if (params.universeId) {
+      queryParams.append("universe_id", params.universeId);
+    } else if (params.sceneId) {
+      queryParams.append("scene_id", params.sceneId);
+    } else if (params.characterId) {
+      queryParams.append("character_id", params.characterId);
     }
-    if (data.characterId && !data.character_id) {
-      normalizedData.character_id = data.characterId;
-    }
-    return axiosInstance.post(getEndpoint('notes', 'create', '/api/notes'), normalizedData);
+
+    // Get the base endpoint
+    const baseEndpoint = getEndpoint('notes', 'list', '/api/notes');
+    // Form the complete URL
+    const url = `${baseEndpoint}?${queryParams.toString()}`;
+
+    console.log("Fetching notes from URL:", url);
+    return axiosInstance.get(url);
   },
-  updateNote: (id, data) => axiosInstance.put(getEndpoint('notes', 'update', '/api/notes/' + id), data),
-  deleteNote: (id) => axiosInstance.delete(getEndpoint('notes', 'delete', '/api/notes/' + id)),
-  getNotesByUniverse: (universeId) => axiosInstance.get(getEndpoint('notes', 'forUniverse', `/api/universes/${universeId}/notes`)),
-  getNotesByScene: (sceneId) => axiosInstance.get(getEndpoint('notes', 'forScene', `/api/scenes/${sceneId}/notes`)),
-  getNotesByCharacter: (characterId) => axiosInstance.get(getEndpoint('notes', 'forCharacter', `/api/characters/${characterId}/notes`)),
+  getNotesByUniverse: (universeId) => {
+    const endpoint = getEndpoint('notes', 'forUniverse', `/api/universes/${universeId}/notes`);
+    const url = typeof endpoint === 'function' ? endpoint(universeId) : endpoint;
+    return axiosInstance.get(url);
+  },
+  getNotesByScene: (sceneId) => {
+    const endpoint = getEndpoint('notes', 'forScene', `/api/scenes/${sceneId}/notes`);
+    const url = typeof endpoint === 'function' ? endpoint(sceneId) : endpoint;
+    return axiosInstance.get(url);
+  },
+  getNotesByCharacter: (characterId) => {
+    const endpoint = getEndpoint('notes', 'forCharacter', `/api/characters/${characterId}/notes`);
+    const url = typeof endpoint === 'function' ? endpoint(characterId) : endpoint;
+    return axiosInstance.get(url);
+  },
+  getNote: (id) => {
+    const endpoint = getEndpoint('notes', 'get', `/api/notes/${id}`);
+    const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
+    return axiosInstance.get(url);
+  },
+  createNote: (data) => {
+    // Clone data and transform field names if needed
+    const transformedData = { ...data };
+
+    // Ensure we have the appropriate parent ID
+    if (!transformedData.universe_id && !transformedData.scene_id && !transformedData.character_id) {
+      throw new Error("At least one parent ID (universe_id, scene_id, or character_id) is required to create a note");
+    }
+
+    console.log("Sending createNote request with data:", transformedData);
+
+    // Use the base notes endpoint
+    const endpoint = getEndpoint('notes', 'create', '/api/notes');
+    return axiosInstance.post(endpoint, transformedData);
+  },
+  updateNote: async (id, data) => {
+    console.log(`API - updateNote - Updating note ${id} with data:`, data);
+    try {
+      // Ensure we have all required fields
+      if (!data.title) {
+        throw new Error("Note title is required");
+      }
+
+      // Normalize data for API consistency
+      const normalizedData = { ...data };
+
+      console.log(`API - updateNote - Sending normalized data:`, normalizedData);
+      const updateEndpoint = getEndpoint('notes', 'update', `/api/notes/${id}`);
+      const updateUrl = typeof updateEndpoint === 'function' ? updateEndpoint(id) : updateEndpoint;
+      const response = await axiosInstance.put(updateUrl, normalizedData);
+      console.log(`API - updateNote - Successfully updated note ${id}:`, response);
+      return response;
+    } catch (error) {
+      console.error(`API - updateNote - Error updating note ${id}:`, error.response || error);
+      // Re-throw the error to be handled by the calling code
+      throw error;
+    }
+  },
+  deleteNote: async (id) => {
+    console.log(`API - deleteNote - Deleting note ${id}`);
+    try {
+      const endpoint = getEndpoint('notes', 'delete', `/api/notes/${id}`);
+      const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
+      const response = await axiosInstance.delete(url);
+      console.log(`API - deleteNote - Successfully deleted note ${id}:`, response);
+      return response;
+    } catch (error) {
+      console.error(`API - deleteNote - Error deleting note ${id}:`, error.response || error);
+      // Re-throw the error to be handled by the calling code
+      throw error;
+    }
+  },
 };
 
 export default apiClient;

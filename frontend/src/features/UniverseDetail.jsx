@@ -143,10 +143,23 @@ const UniverseDetail = () => {
   }
 
   if (error) {
+    // Format error message based on different possible error formats
+    let errorMessage = "Unknown error occurred";
+
+    if (typeof error === "string") {
+      errorMessage = error;
+    } else if (typeof error === "object") {
+      errorMessage =
+        error.message ||
+        error.error ||
+        (error.data ? error.data.message || error.data.error : null) ||
+        JSON.stringify(error);
+    }
+
     return (
       <div className="error-container">
         <h2>Error</h2>
-        <p>{error}</p>
+        <p>{errorMessage}</p>
         <Button onClick={() => navigate("/universes")}>
           Back to Universes
         </Button>

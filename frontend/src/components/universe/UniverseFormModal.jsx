@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Button } from "../common";
 import Input from "../common/Input";
 import Modal from "../common/Modal";
+import { MODAL_CONFIG } from "../../utils/config";
 import {
   createUniverse,
   updateUniverse,
@@ -167,7 +168,7 @@ const UniverseFormModal = ({
       onClose={onClose}
       title={isEdit ? "Edit Universe" : "Create Universe"}
       className="universe-form-modal"
-      size="small"
+      size={MODAL_CONFIG.SIZES.SMALL}
     >
       <form
         onSubmit={handleSubmit}

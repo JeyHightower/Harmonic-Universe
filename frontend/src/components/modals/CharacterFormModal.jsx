@@ -34,7 +34,7 @@ const CharacterFormModal = ({
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    scene_id: sceneId || "",
+    scene_id: "", // Initialize as empty string to avoid undefined issues
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -42,22 +42,66 @@ const CharacterFormModal = ({
   const [scenes, setScenes] = useState(availableScenes);
   const [loadingScenes, setLoadingScenes] = useState(false);
 
+  // Helper function to validate scene_id against available scenes
+  const getValidSceneId = (sceneIdToValidate, availableScenesList) => {
+    if (
+      !sceneIdToValidate ||
+      !availableScenesList ||
+      availableScenesList.length === 0
+    ) {
+      return "";
+    }
+
+    const sceneIdStr = String(sceneIdToValidate);
+    const sceneExists = availableScenesList.some(
+      (scene) => String(scene.id) === sceneIdStr
+    );
+
+    if (sceneExists) {
+      return sceneIdStr;
+    } else {
+      console.log(
+        `Scene ID ${sceneIdStr} not found in available scenes, using first available scene`
+      );
+      return availableScenesList.length > 0
+        ? String(availableScenesList[0].id)
+        : "";
+    }
+  };
+
+  // Initialize sceneId from props when component mounts - do this only once
+  useEffect(() => {
+    if (sceneId && !formData.scene_id) {
+      const validSceneId = getValidSceneId(sceneId, scenes);
+      if (validSceneId) {
+        console.log("Setting initial scene_id from props:", validSceneId);
+        setFormData((prev) => ({
+          ...prev,
+          scene_id: validSceneId,
+        }));
+      }
+    }
+  }, [sceneId, scenes, formData.scene_id]);
+
   // Use availableScenes when provided
   useEffect(() => {
     if (availableScenes.length > 0) {
       console.log("Using provided scenes:", availableScenes);
       setScenes(availableScenes);
 
-      // If no scene_id is selected yet, select the first available scene
-      if (!formData.scene_id && availableScenes.length > 0) {
-        console.log("Setting default scene to:", String(availableScenes[0].id));
+      // Validate the current scene_id against the updated scenes list
+      const validSceneId = getValidSceneId(formData.scene_id, availableScenes);
+
+      // Only update if it's different to avoid infinite loops
+      if (validSceneId !== formData.scene_id) {
+        console.log("Updating scene_id after validation:", validSceneId);
         setFormData((prev) => ({
           ...prev,
-          scene_id: String(availableScenes[0].id),
+          scene_id: validSceneId,
         }));
       }
     }
-  }, [availableScenes, formData.scene_id]);
+  }, [availableScenes]);
 
   // Fetch scenes for the universe when the modal opens if availableScenes is empty
   useEffect(() => {
@@ -196,12 +240,19 @@ const CharacterFormModal = ({
 
               if (altScenesData.length > 0) {
                 setScenes(altScenesData);
-                // Only set default scene if none is selected
-                if (!formData.scene_id) {
-                  console.log("Setting default scene to:", altScenesData[0].id);
+                // Validate and update scene_id
+                const validSceneId = getValidSceneId(
+                  formData.scene_id,
+                  altScenesData
+                );
+                if (validSceneId !== formData.scene_id) {
+                  console.log(
+                    "Setting valid scene_id from alt source:",
+                    validSceneId
+                  );
                   setFormData((prev) => ({
                     ...prev,
-                    scene_id: altScenesData[0].id,
+                    scene_id: validSceneId,
                   }));
                 }
               }
@@ -210,12 +261,13 @@ const CharacterFormModal = ({
 
           if (scenesData.length > 0) {
             setScenes(scenesData);
-            // Only set default scene if none is selected
-            if (!formData.scene_id) {
-              console.log("Setting default scene to:", scenesData[0].id);
+            // Validate and update scene_id
+            const validSceneId = getValidSceneId(formData.scene_id, scenesData);
+            if (validSceneId !== formData.scene_id) {
+              console.log("Setting valid scene_id:", validSceneId);
               setFormData((prev) => ({
                 ...prev,
-                scene_id: scenesData[0].id,
+                scene_id: validSceneId,
               }));
             }
           }
@@ -247,11 +299,19 @@ const CharacterFormModal = ({
               );
 
               setScenes(altScenesData);
-              // If scenes exist and no sceneId was provided, default to the first scene
-              if (altScenesData.length > 0 && !formData.scene_id) {
+              // Validate and update scene_id
+              const validSceneId = getValidSceneId(
+                formData.scene_id,
+                altScenesData
+              );
+              if (validSceneId !== formData.scene_id) {
+                console.log(
+                  "Setting valid scene_id from alt source:",
+                  validSceneId
+                );
                 setFormData((prev) => ({
                   ...prev,
-                  scene_id: altScenesData[0].id,
+                  scene_id: validSceneId,
                 }));
               }
             })
@@ -269,7 +329,7 @@ const CharacterFormModal = ({
           setLoadingScenes(false);
         });
     }
-  }, [isOpen, universeId, type, formData.scene_id, availableScenes.length]);
+  }, [isOpen, universeId, type, availableScenes.length]);
 
   useEffect(() => {
     if (isOpen && characterId && (type === "edit" || type === "view")) {
@@ -283,13 +343,18 @@ const CharacterFormModal = ({
           const characterData = response.data.character;
           setCharacter(characterData);
 
+          // Get scene_id from character data or validate against available scenes
+          const characterSceneId = characterData?.scene_id
+            ? String(characterData.scene_id)
+            : "";
+
+          const validSceneId = getValidSceneId(characterSceneId, scenes);
+
           // Use default empty values if data is missing
           setFormData({
             name: characterData?.name || "",
             description: characterData?.description || "",
-            scene_id:
-              characterData?.scene_id ||
-              (scenes.length > 0 ? scenes[0].id : ""),
+            scene_id: validSceneId,
           });
 
           setLoading(false);
@@ -305,7 +370,7 @@ const CharacterFormModal = ({
           setFormData({
             name: "",
             description: "",
-            scene_id: scenes.length > 0 ? scenes[0].id : "",
+            scene_id: getValidSceneId("", scenes),
           });
 
           setLoading(false);
@@ -321,13 +386,13 @@ const CharacterFormModal = ({
         formData.scene_id
       );
 
-      // Keep the existing scene_id if it's already set
-      const currentSceneId = formData.scene_id;
+      // Keep the existing scene_id if it's already set and valid
+      const validSceneId = getValidSceneId(formData.scene_id, scenes);
 
       setFormData({
         name: "",
         description: "",
-        scene_id: currentSceneId || (scenes.length > 0 ? scenes[0].id : ""),
+        scene_id: validSceneId,
       });
 
       setCharacter(null);
@@ -341,10 +406,18 @@ const CharacterFormModal = ({
     // Special handling for scene_id to ensure it updates correctly
     if (name === "scene_id") {
       console.log(`Scene selection changed to ID:`, value);
-      console.log(
-        `Selected scene:`,
-        scenes.find((scene) => scene.id === parseInt(value))
-      );
+
+      // For MUI Select, the value is already what was selected in the dropdown
+      // No need for additional validation here as the dropdown only contains valid options
+      setFormData((prev) => {
+        const updated = {
+          ...prev,
+          scene_id: value,
+        };
+        console.log(`Form data updated for ${name}:`, updated);
+        return updated;
+      });
+      return;
     }
 
     setFormData((prev) => {
@@ -363,7 +436,7 @@ const CharacterFormModal = ({
     setFormData({
       name: "",
       description: "",
-      scene_id: scenes.length > 0 ? scenes[0].id : "",
+      scene_id: getValidSceneId("", scenes),
     });
     setError(null);
     onClose();
@@ -480,6 +553,7 @@ const CharacterFormModal = ({
                       value={formData.scene_id}
                       onChange={handleChange}
                       label="Scene"
+                      displayEmpty
                     >
                       {loadingScenes ? (
                         <MenuItem disabled>Loading scenes...</MenuItem>
@@ -488,42 +562,21 @@ const CharacterFormModal = ({
                           No scenes available - please create a scene first
                         </MenuItem>
                       ) : (
-                        <>
-                          {console.log(
-                            "Available scenes for dropdown:",
-                            scenes
-                          )}
-                          {console.log(
-                            "Current selected scene_id:",
-                            formData.scene_id
-                          )}
-                          {scenes.map((scene) => {
-                            // Ensure scene id is a string for consistent comparison
-                            const sceneId = String(scene.id);
+                        scenes.map((scene) => {
+                          const sceneId = String(scene.id);
+                          const displayName =
+                            scene.title ||
+                            scene.name ||
+                            (scene.description
+                              ? scene.description.substring(0, 20) + "..."
+                              : `Scene ${scene.id}`);
 
-                            // Create a display name based on available properties
-                            const displayName =
-                              scene.title ||
-                              scene.name ||
-                              (scene.description
-                                ? scene.description.substring(0, 20) + "..."
-                                : `Scene ${scene.id}`);
-
-                            console.log(
-                              "Rendering scene option:",
-                              sceneId,
-                              displayName,
-                              "selected:",
-                              formData.scene_id === sceneId
-                            );
-
-                            return (
-                              <MenuItem key={sceneId} value={sceneId}>
-                                {displayName}
-                              </MenuItem>
-                            );
-                          })}
-                        </>
+                          return (
+                            <MenuItem key={sceneId} value={sceneId}>
+                              {displayName}
+                            </MenuItem>
+                          );
+                        })
                       )}
                     </Select>
                     {!formData.scene_id &&
@@ -591,9 +644,9 @@ const CharacterFormModal = ({
 CharacterFormModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
-  characterId: PropTypes.number,
-  universeId: PropTypes.number,
-  sceneId: PropTypes.number,
+  characterId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  universeId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  sceneId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   type: PropTypes.oneOf(["create", "edit", "view", "delete"]),
   onSuccess: PropTypes.func,
   availableScenes: PropTypes.array,

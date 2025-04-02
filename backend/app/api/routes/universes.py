@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.api.models.universe import Universe, Scene
 from app.api.models.character import Character
 from app.api.models.note import Note
-from app import db
+from app.extensions import db
 from sqlalchemy import update
 import traceback
 
@@ -297,9 +297,65 @@ def get_universe_characters(universe_id):
         }), 200
 
     except Exception as e:
-        current_app.logger.error(f"Error retrieving characters for universe {universe_id}: {str(e)}")
         return jsonify({
             'message': 'Error retrieving characters',
+            'error': str(e)
+        }), 500
+
+@universes_bp.route('/<int:universe_id>/scenes', methods=['GET'])
+@jwt_required()
+def get_universe_scenes(universe_id):
+    try:
+        current_app.logger.info(f"Fetching scenes for universe {universe_id}")
+        universe = Universe.query.get_or_404(universe_id)
+        user_id = get_jwt_identity()
+
+        # Check if user has access to this universe
+        if not universe.is_public and universe.user_id != user_id:
+            current_app.logger.warning(f"Access denied: User {user_id} trying to access scenes for universe {universe_id}")
+            return jsonify({
+                'message': 'Access denied'
+            }), 403
+
+        # Get all scenes for the universe
+        scenes = Scene.query.filter_by(
+            universe_id=universe_id,
+            is_deleted=False
+        ).all()
+
+        current_app.logger.info(f"Found {len(scenes)} scenes for universe {universe_id}")
+        
+        # Convert scenes to dictionaries with error handling
+        scene_dicts = []
+        conversion_errors = 0
+        for scene in scenes:
+            try:
+                scene_dict = scene.to_dict()
+                scene_dicts.append(scene_dict)
+            except Exception as dict_error:
+                conversion_errors += 1
+                current_app.logger.error(f"Error converting scene {scene.id} to dict: {str(dict_error)}")
+                # Add minimal information for this scene
+                scene_dicts.append({
+                    'id': scene.id,
+                    'name': str(scene.name) if hasattr(scene, 'name') and scene.name is not None else "Unknown",
+                    'universe_id': scene.universe_id,
+                    'error': 'Error generating complete scene data'
+                })
+        
+        if conversion_errors > 0:
+            current_app.logger.warning(f"Encountered {conversion_errors} errors while converting scenes to dictionaries")
+
+        return jsonify({
+            'message': 'Scenes retrieved successfully',
+            'scenes': scene_dicts
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Error retrieving scenes for universe {universe_id}: {str(e)}")
+        current_app.logger.error(traceback.format_exc())
+        return jsonify({
+            'message': 'Error retrieving scenes',
             'error': str(e)
         }), 500
 

@@ -132,7 +132,9 @@ const SceneList = () => {
     return (
       <Container className="scene-list-container">
         <Alert severity="error" sx={{ mt: 2 }}>
-          {error}
+          {typeof error === "object"
+            ? error.message || "An unknown error occurred"
+            : error}
         </Alert>
       </Container>
     );
