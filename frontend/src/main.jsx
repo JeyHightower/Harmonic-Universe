@@ -105,8 +105,42 @@ const renderApp = () => {
 };
 
 // Initialize the application
+const init = async () => {
+  try {
+    console.log("Initializing Harmonic Universe application...");
+
+    // Log the current location for debugging routing issues
+    console.log(`Current location: ${window.location.pathname}`);
+
+    // Check for scenes edit path specifically
+    if (
+      window.location.pathname.includes("/scenes/") &&
+      window.location.pathname.includes("/edit")
+    ) {
+      console.log("Scene edit path detected. Ensuring proper routing...");
+    }
+
+    // Initialize portal root
+    const portalRoot = document.getElementById("portal-root");
+    if (!portalRoot) {
+      const newPortalRoot = document.createElement("div");
+      newPortalRoot.id = "portal-root";
+      document.body.appendChild(newPortalRoot);
+      console.log("Portal root created dynamically");
+    } else {
+      console.log("Portal root initialized:", portalRoot);
+    }
+
+    // Render the application
+    renderApp();
+  } catch (error) {
+    console.error("Error initializing application:", error);
+  }
+};
+
+// Initialize the application
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", renderApp);
+  document.addEventListener("DOMContentLoaded", init);
 } else {
-  renderApp();
+  init();
 }

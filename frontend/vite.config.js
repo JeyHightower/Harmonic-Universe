@@ -161,7 +161,8 @@ export default defineConfig(({ command, mode }) => {
           },
           manualChunks: {
             'three-bundle': ['three'],
-            'vendor': ['react', 'react-dom', 'react-router-dom', 'redux-persist']
+            'vendor': ['react', 'react-dom', 'react-router-dom', 'redux-persist'],
+            'vendor-chunk': ['prop-types', '@reduxjs/toolkit', 'antd', 'redux']
           },
           // Generate predictable filenames without hashes for easier debugging
           entryFileNames: 'assets/[name].js',

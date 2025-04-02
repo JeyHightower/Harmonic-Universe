@@ -35,6 +35,7 @@ const SceneCard = ({ scene, onEdit, onDelete }) => {
 
     // Check if we have a custom edit handler
     if (onEdit) {
+      console.log("SceneCard - Using provided onEdit handler");
       onEdit(scene);
       return;
     }
@@ -49,7 +50,20 @@ const SceneCard = ({ scene, onEdit, onDelete }) => {
 
     // Navigate to the scene edit page with the correct path format
     const universeId = scene.universe_id;
-    navigate(`/universes/${universeId}/scenes/${scene.id}/edit`);
+    console.log(
+      `SceneCard - Navigating to edit scene with ID: ${scene.id} in universe: ${universeId}`
+    );
+
+    // Ensure both IDs are properly formatted
+    const formattedUniverseId = parseInt(universeId, 10);
+    const formattedSceneId = parseInt(scene.id, 10);
+
+    // Use the proper route path and log it for debugging
+    const editPath = `/universes/${formattedUniverseId}/scenes/${formattedSceneId}/edit`;
+    console.log(`SceneCard - Navigating to: ${editPath}`);
+
+    // Use navigate function with replace to force a clean navigation
+    navigate(editPath, { replace: true });
   };
 
   const handleDelete = (e) => {
