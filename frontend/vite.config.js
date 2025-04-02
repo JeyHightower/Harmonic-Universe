@@ -132,9 +132,6 @@ export default defineConfig(({ command, mode }) => {
         "@hooks": fileURLToPath(new URL('./src/hooks', import.meta.url)),
         "@contexts": fileURLToPath(new URL('./src/contexts', import.meta.url)),
         "@services": fileURLToPath(new URL('./src/services', import.meta.url)),
-        // Explicitly alias JSX runtime paths to ensure they're found
-        'react/jsx-runtime': resolve(__dirname, './src/jsx-runtime-polyfill.js'),
-        'react/jsx-dev-runtime': resolve(__dirname, './src/jsx-runtime-polyfill.js'),
         // Add fallback for problematic packages when in production
         ...(isProd || forceIncludeAll ? {
           "react-router-dom": fileURLToPath(new URL('./src/vite-fallback.js', import.meta.url)),
