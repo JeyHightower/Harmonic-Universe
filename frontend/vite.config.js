@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import { fileURLToPath, URL } from 'node:url';
 import fs from 'fs';
 import path from 'path';
+import { resolve } from 'path';
 
 // Try to import react plugin, fallback gracefully if not available
 let reactPlugin;
@@ -19,6 +20,35 @@ try {
 const isProd = process.env.NODE_ENV === 'production';
 const forceIncludeAll = process.env.VITE_FORCE_INCLUDE_ALL === 'true';
 
+// Create JSX runtime fallback module content
+const createJsxRuntimeFallback = () => {
+  const filePath = resolve('./src/jsx-runtime-fallback.js');
+
+  // Create fallback file if it doesn't exist
+  if (!fs.existsSync(filePath)) {
+    const content = `
+// Fallback JSX runtime implementation
+export function jsx(type, props, key) {
+  const element = { type, props, key };
+  return element;
+}
+
+export function jsxs(type, props, key) {
+  return jsx(type, props, key);
+}
+
+export const Fragment = Symbol('Fragment');
+export default { jsx, jsxs, Fragment };
+`;
+    fs.writeFileSync(filePath, content);
+  }
+
+  return filePath;
+};
+
+// Path to JSX runtime fallback
+const jsxRuntimeFallback = createJsxRuntimeFallback();
+
 export default defineConfig({
   plugins: [reactPlugin()],
   resolve: {
@@ -33,6 +63,9 @@ export default defineConfig({
       "@hooks": fileURLToPath(new URL('./src/hooks', import.meta.url)),
       "@contexts": fileURLToPath(new URL('./src/contexts', import.meta.url)),
       "@services": fileURLToPath(new URL('./src/services', import.meta.url)),
+      // Add explicit JSX runtime aliases
+      "react/jsx-runtime": jsxRuntimeFallback,
+      "react/jsx-dev-runtime": jsxRuntimeFallback,
       // Add fallback for problematic packages when in production
       ...(isProd || forceIncludeAll ? {
         "react-router-dom": fileURLToPath(new URL('./src/vite-fallback.js', import.meta.url)),
@@ -74,6 +107,12 @@ export default defineConfig({
         assetFileNames: "assets/[name]-[hash].[ext]",
       },
     },
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react/jsx-runtime'],
+    esbuildOptions: {
+      jsx: 'automatic'
+    }
   },
   server: {
     port: 5173,

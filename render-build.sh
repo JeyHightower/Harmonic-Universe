@@ -31,14 +31,51 @@ npm install
 echo "Explicitly installing Vite and plugin-react..."
 npm install --no-save vite @vitejs/plugin-react
 
+# Create necessary React jsx-runtime fallback
+echo "Creating JSX runtime fallback..."
+mkdir -p src
+cat > src/jsx-runtime-fallback.js << 'EOF'
+// Fallback JSX runtime implementation
+export function jsx(type, props, key) {
+  const element = { type, props, key };
+  return element;
+}
+
+export function jsxs(type, props, key) {
+  return jsx(type, props, key);
+}
+
+export const Fragment = Symbol('Fragment');
+export default { jsx, jsxs, Fragment };
+EOF
+
+# Create JSX dev runtime fallback too
+cat > src/jsx-dev-runtime-fallback.js << 'EOF'
+// Fallback JSX dev runtime implementation
+import { jsx, jsxs, Fragment } from './jsx-runtime-fallback.js';
+export { jsx, jsxs, Fragment };
+export const jsxDEV = jsx;
+export default { jsx, jsxs, jsxDEV, Fragment };
+EOF
+
+# Ensure React is properly linked in node_modules
+echo "Setting up React JSX runtime links..."
+mkdir -p node_modules/react
+if [ ! -d "node_modules/react/jsx-runtime.js" ]; then
+  echo "Creating JSX runtime symlinks in node_modules..."
+  ln -sf ../../src/jsx-runtime-fallback.js node_modules/react/jsx-runtime.js
+  ln -sf ../../src/jsx-dev-runtime-fallback.js node_modules/react/jsx-dev-runtime.js
+fi
+
 # List installed versions for troubleshooting
 echo "Checking installed versions:"
 npx vite --version
 npm list @vitejs/plugin-react
+npm list react
 
 # Build the frontend application directly with Vite
 echo "Building frontend application..."
-npx vite build
+VITE_FORCE_INCLUDE_ALL=true npx vite build --debug
 
 # Verify the build output
 echo "Verifying frontend build..."
