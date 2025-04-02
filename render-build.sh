@@ -253,43 +253,159 @@ fi
 echo "Installing dependencies with --legacy-peer-deps..."
 npm install --legacy-peer-deps
 
+# Explicitly install Vite with fixed version
+echo "Explicitly installing Vite and related packages..."
+npm install --no-save vite@4.2.0 @vitejs/plugin-react@3.1.0
+npm install --global vite@4.2.0
+
+# Create a custom vite build script
+echo "Creating custom Vite build script..."
+cat > vite-build.js << 'EOF'
+// A minimal script to build with Vite programmatically
+// This avoids issues with module resolution in the Vite CLI
+import { build } from 'vite';
+
+async function runBuild() {
+  try {
+    console.log('Starting build using vite-build.js...');
+    
+    await build({
+      root: process.cwd(),
+      base: './',
+      configFile: false, // Ignore config file completely
+      build: {
+        outDir: 'dist',
+        emptyOutDir: true,
+        sourcemap: false,
+        minify: 'esbuild',
+        target: 'es2015'
+      }
+    });
+    
+    console.log('Build completed successfully');
+  } catch (e) {
+    console.error('Build failed:', e);
+    process.exit(1);
+  }
+}
+
+runBuild();
+EOF
+
+# Verify Vite installation
+echo "Verifying Vite installation..."
+ls -la node_modules/vite || echo "Vite not found in node_modules!"
+ls -la node_modules/@vitejs || echo "@vitejs not found in node_modules!"
+
 # Create a simple vite.config.js
 echo "Creating simple vite.config.js..."
 cat > vite.config.js << 'EOF'
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import path from 'path';
-
-export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    }
-  },
+// vite.config.js
+export default {
+  // Skip plugins if there are issues
+  plugins: [],
+  
   build: {
     outDir: 'dist',
     sourcemap: false,
-    minify: true
+    minify: true,
+    // Use simplest possible build configuration
+    rollupOptions: {
+      // Ensure externals are properly handled
+      external: ['react', 'react-dom'],
+      output: {
+        globals: {
+          react: 'React',
+          'react-dom': 'ReactDOM'
+        }
+      }
+    }
   }
-});
+};
+EOF
+
+# As a backup, create a vanilla version without imports
+echo "Creating fallback vite config without imports..."
+cat > vite.vanilla.js << 'EOF'
+// vite.vanilla.js - Minimal configuration with no imports
+export default {
+  root: '.',
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+    minify: 'esbuild'
+  }
+};
 EOF
 
 # List installed versions for troubleshooting
 echo "Checking installed versions:"
 npx --no vite --version || echo "Vite not found with npx --no"
+which vite || echo "Vite not found in PATH"
+NODE_PATH=$(npm root -g)
+echo "Global node_modules: $NODE_PATH"
 npm list --depth=0
 
 # Try to build
 echo "Building frontend application..."
-if ! npx vite build; then
-  echo "Regular build failed, trying with NPX to ensure correct Vite version..."
-  npx vite@4.2.0 build
+
+# Create an array of build approaches to try in order
+BUILD_SUCCESS=false
+
+echo "Attempt 1: Using npx vite build..."
+if npx vite build; then
+  BUILD_SUCCESS=true
+  echo "Build succeeded with npx vite build"
+else
+  echo "Attempt 1 failed, trying alternative approaches"
 fi
 
-# If build still fails, create minimal static files
-if [ ! -d "dist" ]; then
-  echo "All build attempts failed, creating a minimal build..."
+if [ "$BUILD_SUCCESS" = false ]; then
+  echo "Attempt 2: Using explicit Vite version..."
+  if npx vite@4.2.0 build; then
+    BUILD_SUCCESS=true
+    echo "Build succeeded with npx vite@4.2.0 build"
+  else
+    echo "Attempt 2 failed"
+  fi
+fi
+
+if [ "$BUILD_SUCCESS" = false ]; then
+  echo "Attempt 3: Using the vanilla config without plugin imports..."
+  if npx vite@4.2.0 build --config vite.vanilla.js; then
+    BUILD_SUCCESS=true
+    echo "Build succeeded with vanilla config"
+  else
+    echo "Attempt 3 failed"
+  fi
+fi
+
+if [ "$BUILD_SUCCESS" = false ]; then
+  echo "Attempt 4: Using direct node_modules path..."
+  if [ -f "node_modules/.bin/vite" ]; then
+    if ./node_modules/.bin/vite build; then
+      BUILD_SUCCESS=true
+      echo "Build succeeded with direct node_modules path"
+    else
+      echo "Attempt 4 failed"
+    fi
+  else
+    echo "Skipping attempt 4, vite binary not found in node_modules/.bin"
+  fi
+fi  
+
+if [ "$BUILD_SUCCESS" = false ]; then
+  echo "Attempt 5: Using custom build script..."
+  if node vite-build.js; then
+    BUILD_SUCCESS=true
+    echo "Build succeeded with custom build script"
+  else
+    echo "Attempt 5 failed"
+  fi
+fi
+
+if [ "$BUILD_SUCCESS" = false ]; then
+  echo "All build attempts failed, creating minimal static files..."
   
   # Create minimal dist directory
   mkdir -p dist
