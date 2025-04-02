@@ -1,15 +1,26 @@
-import react from "@vitejs/plugin-react";
-import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from "vite";
+import { fileURLToPath, URL } from 'node:url';
 import fs from 'fs';
 import path from 'path';
+
+// Try to import react plugin, fallback gracefully if not available
+let reactPlugin;
+try {
+  reactPlugin = require('@vitejs/plugin-react').default;
+} catch (e) {
+  console.warn('Warning: @vitejs/plugin-react not found, using empty plugin fallback');
+  reactPlugin = () => ({
+    name: 'react-plugin-fallback',
+    // Empty plugin with minimal implementation
+  });
+}
 
 // Check if running in production mode
 const isProd = process.env.NODE_ENV === 'production';
 const forceIncludeAll = process.env.VITE_FORCE_INCLUDE_ALL === 'true';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [reactPlugin()],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL('./src', import.meta.url)),

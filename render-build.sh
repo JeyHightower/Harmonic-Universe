@@ -27,6 +27,15 @@ cd frontend
 echo "Installing frontend dependencies..."
 npm install
 
+# Explicitly install vite and @vitejs/plugin-react to ensure they're available
+echo "Explicitly installing Vite and plugin-react..."
+npm install --no-save vite @vitejs/plugin-react
+
+# List installed versions for troubleshooting
+echo "Checking installed versions:"
+npx vite --version
+npm list @vitejs/plugin-react
+
 # Build the frontend application directly with Vite
 echo "Building frontend application..."
 npx vite build

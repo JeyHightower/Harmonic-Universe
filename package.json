@@ -10,7 +10,7 @@
     "backend:prod": "cd backend && gunicorn app.app:create_app() -b 0.0.0.0:5001",
     "frontend": "cd frontend && npm run dev",
     "frontend:prod": "cd frontend && npm run build && npm run preview",
-    "build": "echo \"Building root project\" && cd frontend && npx vite build",
+    "build": "echo \"Building root project\" && cd frontend && npm install --no-save vite @vitejs/plugin-react && npx vite build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "engines": {
