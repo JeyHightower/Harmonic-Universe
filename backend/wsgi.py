@@ -27,6 +27,86 @@ print(f"Environment: {os.environ.get('FLASK_ENV', 'not set')}")
 print(f"Modules in backend/: {[f for f in os.listdir(backend_dir) if f.endswith('.py')]}")
 print("================================")
 
+# Set up the app module wrapper to handle app.extensions
+app_module_wrapper_path = os.path.join(project_root, 'app_module_wrapper.py')
+if os.path.exists(app_module_wrapper_path):
+    print(f"Running app module wrapper: {app_module_wrapper_path}")
+    try:
+        import app_module_wrapper
+        app_module_wrapper.setup_app_package()
+        app_module_wrapper.install_import_hook()
+        print("Successfully initialized app module wrapper")
+    except Exception as e:
+        print(f"Error initializing app module wrapper: {e}")
+
+# Check for the existence of app/extensions/__init__.py
+extensions_dir = os.path.join(project_root, 'app', 'extensions')
+if not os.path.exists(extensions_dir):
+    print(f"Creating app/extensions directory: {extensions_dir}")
+    try:
+        os.makedirs(extensions_dir, exist_ok=True)
+    except Exception as e:
+        print(f"Error creating app/extensions directory: {e}")
+
+extensions_init = os.path.join(extensions_dir, '__init__.py')
+if not os.path.exists(extensions_init):
+    print(f"Creating app/extensions/__init__.py: {extensions_init}")
+    try:
+        with open(extensions_init, 'w') as f:
+            f.write("""# This file redirects imports to backend.app.extensions
+import sys
+from importlib import import_module
+
+# Import everything from backend.app.extensions
+try:
+    backend_extensions = import_module('backend.app.extensions')
+    for attr_name in dir(backend_extensions):
+        if not attr_name.startswith('__'):
+            globals()[attr_name] = getattr(backend_extensions, attr_name)
+except ImportError as e:
+    print(f"Error importing backend.app.extensions: {e}")
+""")
+    except Exception as e:
+        print(f"Error creating app/extensions/__init__.py: {e}")
+
+# Check for backend/app/extensions directory
+backend_extensions_dir = os.path.join(backend_dir, 'app', 'extensions')
+if not os.path.exists(backend_extensions_dir):
+    print(f"Creating backend/app/extensions directory: {backend_extensions_dir}")
+    try:
+        os.makedirs(backend_extensions_dir, exist_ok=True)
+    except Exception as e:
+        print(f"Error creating backend/app/extensions directory: {e}")
+
+backend_extensions_init = os.path.join(backend_extensions_dir, '__init__.py')
+if not os.path.exists(backend_extensions_init):
+    print(f"Creating backend/app/extensions/__init__.py: {backend_extensions_init}")
+    try:
+        with open(backend_extensions_init, 'w') as f:
+            f.write("""# Extensions module for the Flask application
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_bcrypt import Bcrypt
+from flask_jwt_extended import JWTManager
+
+# Initialize extensions
+db = SQLAlchemy()
+migrate = Migrate()
+bcrypt = Bcrypt()
+jwt = JWTManager()
+
+def init_app(app):
+    \"\"\"Initialize all extensions with the app\"\"\"
+    db.init_app(app)
+    migrate.init_app(app, db)
+    bcrypt.init_app(app)
+    jwt.init_app(app)
+    
+    return app
+""")
+    except Exception as e:
+        print(f"Error creating backend/app/extensions/__init__.py: {e}")
+
 # Create a symlink or copy of backend/app.py to app.py in the root directory if needed
 app_py_path = os.path.join(project_root, 'app.py')
 backend_app_py_path = os.path.join(backend_dir, 'app.py')
