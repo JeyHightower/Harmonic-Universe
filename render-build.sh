@@ -583,5 +583,177 @@ EOF
 
 echo "Created simplified JSX runtime modules"
 
+# Create MIME type fix script if needed
+echo "==== Adding MIME type fixes ===="
+cd ../backend
+mkdir -p fixes/render
+
+# Create __init__.py if it doesn't exist
+if [ ! -f "fixes/render/__init__.py" ]; then
+  echo "Creating fixes/render/__init__.py"
+  cat > fixes/render/__init__.py << 'EOF'
+"""
+Render Platform Specific Fixes
+
+This module contains fixes and workarounds specific to the Render platform.
+These are applied at runtime to ensure proper functionality in the Render environment.
+"""
+
+def apply_render_fixes():
+    """Apply all Render-specific fixes."""
+    print("Applying Render-specific fixes...")
+    return True
+EOF
+fi
+
+# Create mime_types.py if it doesn't exist
+if [ ! -f "fixes/render/mime_types.py" ]; then
+  echo "Creating fixes/render/mime_types.py"
+  cat > fixes/render/mime_types.py << 'EOF'
+"""
+Render MIME Type Fixes
+
+This module provides fixes for MIME type issues specific to Render.
+It works by patching response headers at the WSGI level.
+"""
+
+import mimetypes
+import re
+from functools import wraps
+
+def apply_mime_fixes(app):
+    """Apply Render-specific MIME type fixes to the Flask app."""
+    # Ensure all JavaScript MIME types are registered
+    mimetypes.add_type('application/javascript', '.js')
+    mimetypes.add_type('application/javascript', '.mjs')
+    mimetypes.add_type('application/javascript', '.jsx')
+    
+    # Create WSGI middleware to handle MIME types
+    original_wsgi_app = app.wsgi_app
+    
+    @wraps(original_wsgi_app)
+    def mime_type_middleware(environ, start_response):
+        # Original response function
+        original_start_response = start_response
+        
+        # Intercept the response headers
+        def new_start_response(status, headers, exc_info=None):
+            # Get the path from the environ
+            path = environ.get('PATH_INFO', '')
+            
+            # Check if this is a JavaScript file
+            if re.search(r'\.(js|mjs|jsx)$', path) or '/src/index.js' in path or '/jsx-runtime' in path:
+                # Replace Content-Type header or add it if not present
+                new_headers = []
+                content_type_added = False
+                
+                for name, value in headers:
+                    if name.lower() == 'content-type':
+                        new_headers.append(('Content-Type', 'application/javascript; charset=utf-8'))
+                        content_type_added = True
+                    else:
+                        new_headers.append((name, value))
+                
+                if not content_type_added:
+                    new_headers.append(('Content-Type', 'application/javascript; charset=utf-8'))
+                
+                # Add CORS headers for JavaScript
+                new_headers.append(('Access-Control-Allow-Origin', '*'))
+                new_headers.append(('Access-Control-Allow-Methods', 'GET, OPTIONS'))
+                
+                return original_start_response(status, new_headers, exc_info)
+            
+            # For non-JS files, just pass through
+            return original_start_response(status, headers, exc_info)
+        
+        # Call the original app with our modified start_response
+        return original_wsgi_app(environ, new_start_response)
+    
+    # Replace the WSGI app with our middleware
+    app.wsgi_app = mime_type_middleware
+    
+    print("Render MIME type fixes applied at WSGI level")
+    return True
+EOF
+fi
+
+# Create routes.py if it doesn't exist
+if [ ! -f "fixes/render/routes.py" ]; then
+  echo "Creating fixes/render/routes.py"
+  cat > fixes/render/routes.py << 'EOF'
+"""
+Render Route Fixes
+
+This module adds special routes to handle specific paths on Render's platform.
+"""
+
+def register_render_routes(app):
+    """Register special routes for Render platform compatibility."""
+    from flask import request, jsonify, send_file
+    import io
+    
+    @app.route('/render-static-js/<path:filename>')
+    def render_static_js(filename):
+        """Serve JS files from a special path with forced JS MIME type."""
+        # Log the request
+        app.logger.info(f"Render static JS requested: {filename}")
+        
+        # Generate a simple JavaScript file with the filename
+        js_content = f"""
+        // Render static JS file: {filename}
+        console.log('Loading {filename} from Render static route');
+        
+        // Export necessary functions for compatibility
+        export const jsx = (type, props) => ({{ type, props }});
+        export const jsxs = (type, props) => ({{ type, props }});
+        export const Fragment = Symbol('Fragment');
+        
+        // Default export
+        export default {{ 
+            filename: '{filename}',
+            render_static: true,
+            timestamp: {{}}.valueOf()
+        }};
+        """
+        
+        # Create a file-like object
+        js_file = io.BytesIO(js_content.encode('utf-8'))
+        
+        # Return the file with explicit JavaScript MIME type
+        return send_file(
+            js_file, 
+            mimetype='application/javascript; charset=utf-8',
+            as_attachment=False,
+            download_name=filename
+        )
+    
+    @app.route('/render-debug')
+    def render_debug():
+        """Render platform debug endpoint."""
+        debug_info = {
+            'request': {
+                'path': request.path,
+                'method': request.method,
+                'headers': dict(request.headers),
+                'args': dict(request.args)
+            },
+            'render_specific': {
+                'render_instance_id': request.headers.get('X-Render-Instance-ID', 'unknown'),
+                'host_headers': request.headers.get('Host', 'unknown'),
+                'forwarded_host': request.headers.get('X-Forwarded-Host', 'unknown'),
+                'forwarded_proto': request.headers.get('X-Forwarded-Proto', 'unknown')
+            }
+        }
+        
+        return jsonify(debug_info)
+    
+    print("Render-specific routes registered")
+    return True
+EOF
+fi
+
+# Go back to the main directory
+cd ..
+
 echo "Build completed successfully at $(date)"
 exit 0 

@@ -1,10 +1,10 @@
 services:
   - type: web
     name: harmonic-universe
-    env: docker
+    env: python
+    buildCommand: ./render-build.sh
+    startCommand: ./render-start.sh
     plan: starter
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
     envVars:
       - key: FLASK_APP
         value: app.py
@@ -16,6 +16,8 @@ services:
         value: production
       - key: FLASK_DEBUG
         value: 0
+      - key: DEPLOYMENT_PLATFORM
+        value: render
       - key: VITE_API_BASE_URL
         value: https://harmonic-universe.onrender.com
       - key: NODE_OPTIONS
@@ -23,11 +25,6 @@ services:
       - fromGroup: harmonic-universe-env
     healthCheckPath: /api/health
     autoDeploy: true
-    scaling:
-      minInstances: 1
-      maxInstances: 2
-      targetMemoryPercent: 80
-      targetCPUPercent: 80
 
 databases:
   - name: harmonic_universe_db
