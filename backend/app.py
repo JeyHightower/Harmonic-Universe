@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, send_from_directory, Response
+from flask import Flask, jsonify, request, send_from_directory, Response, redirect
 from flask_cors import CORS
 import os
 import sys
@@ -433,7 +433,7 @@ def create_app():
     @app.route('/')
     def serve_index():
         """Serve index.html from root route"""
-        app.logger.debug("Serving index.html from root route")
+        app.logger.info("Serving index.html from root route (enhanced logging)")
         
         # Check if the file exists
         if app.static_folder is None:
@@ -441,15 +441,63 @@ def create_app():
             return jsonify({"error": "Static folder not configured"}), 500
         
         index_path = os.path.join(app.static_folder, 'index.html')
+        app.logger.info(f"Looking for index.html at: {index_path}")
+        
         if not os.path.exists(index_path):
             app.logger.error(f"index.html not found at {index_path}")
-            return "Error: index.html not found", 500
+            # Create a minimal fallback HTML
+            fallback_html = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Harmonic Universe</title>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <script src="/js/react.production.min.js"></script>
+                <script src="/js/react-dom.production.min.js"></script>
+            </head>
+            <body>
+                <div id="root">Loading Harmonic Universe...</div>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const root = document.getElementById('root');
+                        root.innerHTML = '<h1>Harmonic Universe</h1><p>Server is running, but the main index.html file was not found.</p>';
+                    });
+                </script>
+            </body>
+            </html>
+            """
+            response = app.response_class(
+                response=fallback_html,
+                status=200,
+                mimetype='text/html'
+            )
+            app.logger.info(f"Serving fallback HTML ({len(fallback_html)} bytes)")
+            return response
         
-        # Return the file with explicit content type
-        response = send_from_directory(app.static_folder, 'index.html')
-        response.headers['Content-Type'] = 'text/html'
-        app.logger.debug(f"Serving index.html with content type: {response.headers.get('Content-Type')}")
-        return response
+        try:
+            app.logger.info(f"index.html exists, size: {os.path.getsize(index_path)} bytes")
+            
+            # Read the file content directly instead of using send_from_directory
+            with open(index_path, 'r') as f:
+                content = f.read()
+                
+            app.logger.info(f"Read index.html content: {len(content)} bytes")
+            
+            # Return the content directly with explicit content type
+            response = app.response_class(
+                response=content,
+                status=200,
+                mimetype='text/html'
+            )
+            
+            app.logger.info(f"Returning index.html with content length: {len(content)} bytes")
+            return response
+            
+        except Exception as e:
+            app.logger.error(f"Error serving index.html: {str(e)}")
+            app.logger.error(traceback.format_exc())
+            return f"Error serving index.html: {str(e)}", 500
 
     # Diagnostic endpoint to check static files
     @app.route('/api/debug/static-files')
@@ -500,468 +548,6 @@ def create_app():
             'index_html_exists': os.path.exists(os.path.join(static_folder, 'index.html')) if static_folder else False
         })
 
-    # Catch-all route for client-side routing
-    @app.route('/<path:path>')
-    def catch_all(path):
-        """Catch-all route to support client-side routing"""
-        app.logger.debug(f"Catch-all route handling: {path}")
-        
-        # Don't handle API routes or static files with the catch-all
-        if path.startswith('api/') or '.' in path:
-            app.logger.debug(f"Not handling {path} with catch-all")
-            # Check if the file exists in static folder
-            if app.static_folder is not None and os.path.exists(os.path.join(app.static_folder, path)):
-                return app.send_static_file(path)
-            else:
-                return jsonify({'error': 'Not found', 'path': path}), 404
-        
-        # Return the SPA's index.html for all other routes
-        app.logger.debug(f"Serving index.html for path: {path}")
-        if app.static_folder is None:
-            return jsonify({"error": "Static folder not configured"}), 500
-        return send_from_directory(app.static_folder, 'index.html')
-
-    # Add a special fallback route for react-fix-loader.js
-    @app.route('/static/react-fixes/react-fix-loader.js')
-    def serve_react_fix_loader():
-        """Serve the React fix loader file with the correct MIME type."""
-        # Enhanced logging to track the root cause of requests
-        referrer = request.headers.get('Referer', 'Unknown')
-        user_agent = request.headers.get('User-Agent', 'Unknown')
-        request_args = dict(request.args)
-        app.logger.info(f"react-fix-loader.js requested: Referrer={referrer}, UA={user_agent}, Args={request_args}")
-        
-        # Track which HTML page is requesting this file
-        if app.static_folder and os.path.exists(os.path.join(app.static_folder, 'index.html')):
-            try:
-                with open(os.path.join(app.static_folder, 'index.html'), 'r') as f:
-                    html_content = f.read()
-                    # Check if the file is explicitly referenced in index.html
-                    if 'react-fix-loader.js' in html_content:
-                        app.logger.info(f"react-fix-loader.js is explicitly referenced in index.html")
-                        # Try to get context of the reference (10 chars before and after)
-                        try:
-                            pos = html_content.find('react-fix-loader.js')
-                            context_start = max(0, pos - 50)
-                            context_end = min(len(html_content), pos + 50)
-                            context = html_content[context_start:context_end]
-                            app.logger.info(f"Reference context: {context}")
-                        except Exception as e:
-                            app.logger.warning(f"Error getting reference context: {str(e)}")
-            except Exception as e:
-                app.logger.warning(f"Error checking index.html: {str(e)}")
-        
-        # Look in multiple possible locations
-        possible_paths = [
-            os.path.join(app.static_folder, 'react-fixes/react-fix-loader.js') if app.static_folder else None,
-            os.path.join(app.static_folder, 'static/react-fixes/react-fix-loader.js') if app.static_folder else None,
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixes/react-fix-loader.js'),
-            './backend/fixes/react-fix-loader.js',
-            './fixes/react-fix-loader.js'
-        ]
-        
-        # Log request details to a separate file for analysis
-        try:
-            react_fix_log_dir = os.path.join('logs', 'react-fixes')
-            os.makedirs(react_fix_log_dir, exist_ok=True)
-            log_file = os.path.join(react_fix_log_dir, 'requests.log')
-            
-            with open(log_file, 'a') as f:
-                log_entry = {
-                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
-                    'referrer': referrer,
-                    'user_agent': user_agent,
-                    'request_args': request_args,
-                    'path': request.path,
-                    'headers': dict(request.headers),
-                }
-                f.write(json.dumps(log_entry) + '\n')
-        except Exception as e:
-            app.logger.warning(f"Error logging react-fix request: {str(e)}")
-        
-        # Try to find the file in one of the possible locations
-        for path in possible_paths:
-            if path and os.path.exists(path):
-                app.logger.info(f"Found react-fix-loader.js at: {path}")
-                
-                try:
-                    # Get the directory and filename
-                    directory = os.path.dirname(path)
-                    filename = os.path.basename(path)
-                    
-                    # Serve the file with the correct MIME type
-                    response = send_from_directory(directory, filename)
-                    response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
-                    return response
-                except Exception as e:
-                    app.logger.error(f"Error serving react-fix-loader.js: {str(e)}")
-        
-        # If file not found in any location, generate it on the fly
-        app.logger.warning("react-fix-loader.js not found, generating on the fly")
-        
-        # Create a minimal version of the file
-        js_content = """
-/**
- * React Fix Loader - Minimal inline version
- */
-console.log('React fix loader - inline version');
-
-// Add diagnostic logging to help identify why this is being loaded
-console.log('React fix loader requested from URL:', window.location.href);
-console.log('Loader script element:', document.currentScript);
-console.log('Document referrer:', document.referrer);
-
-// Check if React is already available globally
-if (typeof React === 'undefined') {
-  console.warn('React not found, implementing basic polyfill');
-  
-  // Basic React polyfill
-  window.React = {
-    createElement: function(type, props) { 
-      return { type, props: props || {} };
-    },
-    createContext: function() {
-      return {
-        Provider: function(props) { return props.children; },
-        Consumer: function(props) { return props.children; }
-      };
-    },
-    Fragment: Symbol('React.Fragment')
-  };
-  
-  // Add JSX runtime compatibility
-  window.jsx = window.React.createElement;
-  window.jsxs = window.React.createElement;
-}
-
-// Log diagnostic information to help track usage patterns
-console.log('React fixes applied successfully at:', new Date().toISOString());
-        """
-        
-        # Return the inline JavaScript with the correct MIME type
-        response = app.response_class(
-            response=js_content,
-            mimetype='application/javascript'
-        )
-        return response
-
-    # Add a React diagnostics endpoint
-    @app.route('/api/debug/react')
-    def debug_react():
-        """Diagnostic endpoint for React loading issues."""
-        try:
-            # Check for React files in the static folder
-            react_files = []
-            react_related_paths = [
-                'static/react-fixes',
-                'react-fixes',
-                'assets/react',
-                'assets/vendor'
-            ]
-            
-            if app.static_folder:
-                for base_path in react_related_paths:
-                    full_path = os.path.join(app.static_folder, base_path)
-                    if os.path.exists(full_path) and os.path.isdir(full_path):
-                        for root, _, files in os.walk(full_path):
-                            for file in files:
-                                rel_path = os.path.relpath(
-                                    os.path.join(root, file), 
-                                    app.static_folder
-                                )
-                                file_size = os.path.getsize(os.path.join(root, file))
-                                react_files.append({
-                                    'path': rel_path,
-                                    'size': file_size
-                                })
-            
-            # Check index.html for React references
-            index_references = []
-            if app.static_folder and os.path.exists(os.path.join(app.static_folder, 'index.html')):
-                try:
-                    with open(os.path.join(app.static_folder, 'index.html'), 'r') as f:
-                        html_content = f.read()
-                        
-                        # Look for common React-related patterns
-                        patterns = [
-                            'react', 'React', 'jsx', 'createRoot', 'ReactDOM',
-                            'react-dom', 'react.production', 'react.development',
-                            'react-fix', 'jsx-runtime'
-                        ]
-                        
-                        for pattern in patterns:
-                            pos = 0
-                            while True:
-                                pos = html_content.find(pattern, pos)
-                                if pos == -1:
-                                    break
-                                
-                                # Get some context around the match
-                                start = max(0, pos - 40)
-                                end = min(len(html_content), pos + len(pattern) + 40)
-                                context = html_content[start:end]
-                                
-                                # Add to references
-                                index_references.append({
-                                    'pattern': pattern,
-                                    'position': pos,
-                                    'context': context
-                                })
-                                
-                                # Move past this occurrence
-                                pos += len(pattern)
-                except Exception as e:
-                    app.logger.warning(f"Error analyzing index.html: {str(e)}")
-            
-            # Check the diagnostic page
-            diagnostic_page_exists = (
-                app.static_folder and 
-                os.path.exists(os.path.join(app.static_folder, 'react-diagnostic.html'))
-            )
-            
-            # Build response data
-            response_data = {
-                'react_files': react_files,
-                'react_files_count': len(react_files),
-                'index_references': index_references,
-                'index_references_count': len(index_references),
-                'react_diagnostic_page': {
-                    'exists': diagnostic_page_exists,
-                    'url': '/react-diagnostic.html'
-                },
-                'potential_fixes': [
-                    'Visit /react-diagnostic.html to test React loading directly',
-                    'Ensure React is loaded before any module scripts',
-                    'Try loading React from a CDN (already added in the latest update)',
-                    'Check browser console for more specific error messages'
-                ]
-            }
-            
-            return jsonify(response_data), 200
-        except Exception as e:
-            app.logger.error(f"Error in React diagnostics: {str(e)}")
-            return jsonify({
-                'error': str(e),
-                'traceback': traceback.format_exc()
-            }), 500
-
-    # Add a special route for jsx-runtime to enable React compatibility
-    @app.route('/jsx-runtime')
-    @app.route('/jsx-runtime.js')
-    @app.route('/jsx-runtime/index.js')
-    @app.route('/node_modules/react/jsx-runtime.js')
-    @app.route('/node_modules/react/jsx-dev-runtime.js')
-    def serve_jsx_runtime_module():
-        """Serve a React JSX compatibility layer."""
-        app.logger.info(f"JSX Runtime requested via {request.path}")
-        
-        jsx_content = """
-        // JSX Runtime Compatibility Layer
-        console.log('Loading server-generated JSX runtime');
-        
-        // Create the JSX runtime functions that match React's implementation
-        export function jsx(type, props, key) {
-          const config = {};
-          for (const prop in props) {
-            if (prop !== 'children' && props.hasOwnProperty(prop)) {
-              config[prop] = props[prop];
-            }
-          }
-          
-          if (key !== undefined) {
-            config.key = key;
-          }
-          
-          if (props && props.children !== undefined) {
-            config.children = props.children;
-          }
-          
-          // Use React.createElement if available, otherwise return a representation
-          return window.React ? 
-            window.React.createElement(type, config) : 
-            { $$typeof: Symbol.for('react.element'), type, props: config };
-        }
-        
-        // jsxs is the same implementation
-        export const jsxs = jsx;
-        
-        // Export Fragment
-        export const Fragment = window.React ? 
-          window.React.Fragment : 
-          Symbol.for('react.fragment');
-        
-        // Default export
-        export default {
-          jsx,
-          jsxs,
-          Fragment
-        };
-        """
-        
-        response = app.response_class(
-            response=jsx_content,
-            status=200,
-            mimetype='application/javascript; charset=utf-8'
-        )
-        
-        # Add CORS headers
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        
-        return response
-
-    # Add special handlers for JSX runtime modules
-    @app.route('/jsx-runtime/jsx-runtime.js')
-    @app.route('/node_modules/react/jsx-runtime.js')
-    @app.route('/node_modules/react/jsx-dev-runtime.js') 
-    def serve_jsx_runtime():
-        """Serve the JSX runtime module with proper MIME type."""
-        app.logger.info(f"JSX runtime requested: {request.path}")
-        
-        # Map the requested path to our implementation
-        if 'jsx-dev-runtime' in request.path:
-            target_file = 'jsx-runtime/jsx-dev-runtime.js'
-        else:
-            target_file = 'jsx-runtime/jsx-runtime.js'
-        
-        # Serve from our static directory
-        if app.static_folder and os.path.exists(os.path.join(app.static_folder, target_file)):
-            response = send_from_directory(app.static_folder, target_file)
-            response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
-            return response
-        
-        # Fallback: generate content on the fly
-        jsx_runtime_content = """
-        /**
-         * JSX Runtime - Dynamically generated
-         */
-        
-        // Use the React global
-        const React = window.React;
-        
-        // Implementation of jsx function
-        export function jsx(type, props, key) {
-          console.log('Dynamic JSX runtime called:', type);
-          return React.createElement(type, props);
-        }
-        
-        // jsxs is the same for our purposes
-        export function jsxs(type, props, key) {
-          return jsx(type, props, key);
-        }
-        
-        // Export Fragment
-        export const Fragment = React.Fragment || Symbol('Fragment');
-        
-        // Default export
-        export default {
-          jsx,
-          jsxs,
-          Fragment
-        };
-        
-        console.log('Dynamic JSX runtime module loaded');
-        """
-        
-        response = app.response_class(
-            response=jsx_runtime_content,
-            mimetype='application/javascript'
-        )
-        
-        return response
-        
-    # Add special route for src/index.js to ensure correct MIME type
-    @app.route('/src/index.js')
-    def serve_src_index_js():
-        """Serve src/index.js with proper MIME type."""
-        app.logger.info(f"src/index.js requested")
-        
-        # Look for the file in various locations
-        possible_locations = [
-            os.path.join(app.static_folder, 'src/index.js') if app.static_folder else None,
-            os.path.join(app.static_folder, 'assets/index.js') if app.static_folder else None,
-            os.path.join(app.static_folder, 'index.js') if app.static_folder else None,
-        ]
-        
-        # Add additional locations if static_folder is defined
-        if app.static_folder:
-            static_parent = os.path.dirname(app.static_folder)
-            possible_locations.extend([
-                os.path.join(static_parent, 'frontend/src/index.js'),
-                os.path.join(static_parent, 'frontend/dist/src/index.js')
-            ])
-        
-        # Try to find and serve the actual file
-        for location in possible_locations:
-            if location and os.path.exists(location):
-                app.logger.info(f"Found src/index.js at: {location}")
-                directory = os.path.dirname(location)
-                filename = os.path.basename(location)
-                response = send_from_directory(directory, filename)
-                # Force the correct MIME type regardless of content
-                response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
-                app.logger.info(f"Serving {location} with Content-Type: {response.headers.get('Content-Type')}")
-                return response
-        
-        # If file not found, generate a minimal index.js that loads the main app safely
-        app.logger.warning("src/index.js not found, generating fallback")
-        
-        fallback_js = """
-        // Fallback index.js generated on-demand
-        console.log('Loading fallback index.js');
-        
-        // Make sure React is available
-        if (typeof React === 'undefined') {
-          console.error('React not found. Loading from CDN...');
-          // Load React dynamically
-          const reactScript = document.createElement('script');
-          reactScript.src = 'https://unpkg.com/react@18/umd/react.production.min.js';
-          document.head.appendChild(reactScript);
-          
-          const reactDomScript = document.createElement('script');
-          reactDomScript.src = 'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js';
-          document.head.appendChild(reactDomScript);
-        }
-        
-        // Ensure JSX runtime functions exist
-        window.jsx = window.jsxs = window.React ? window.React.createElement : (type, props) => ({ type, props });
-        window.Fragment = window.React ? window.React.Fragment : Symbol('Fragment');
-        
-        // Wait for the DOM to be ready, then try to load the actual app
-        document.addEventListener('DOMContentLoaded', function() {
-          console.log('Fallback index.js attempting to load the main app...');
-          
-          // Try to find and load the main app script
-          const possibleAppFiles = [
-            '/assets/index.js',
-            '/app.js',
-            '/main.js',
-            '/bundle.js'
-          ];
-          
-          // Try each possible file
-          let loaded = false;
-          possibleAppFiles.forEach(file => {
-            if (!loaded) {
-              const script = document.createElement('script');
-              script.src = file;
-              script.onerror = () => console.error(`Failed to load ${file}`);
-              script.onload = () => {
-                console.log(`Successfully loaded ${file}`);
-                loaded = true;
-              };
-              document.head.appendChild(script);
-            }
-          });
-        });
-        """
-        
-        response = app.response_class(
-            response=fallback_js,
-            mimetype='application/javascript'
-        )
-        
-        return response
-
     # Modify the src files route to always send JavaScript with the correct MIME type 
     # and never return HTML content
     @app.route('/src/<path:filename>')
@@ -994,20 +580,30 @@ console.log('React fixes applied successfully at:', new Date().toISOString());
         for location in possible_locations:
             if os.path.exists(location):
                 app.logger.info(f"Found src file at: {location}")
-                directory = os.path.dirname(location)
-                basename = os.path.basename(location)
                 
-                response = send_from_directory(directory, basename)
-                
-                # Force JavaScript MIME type for all JavaScript files
-                if filename.endswith('.js') or filename.endswith('.mjs') or filename.endswith('.jsx'):
-                    response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
-                
-                app.logger.info(f"Serving {location} with Content-Type: {response.headers.get('Content-Type')}")
-                return response
+                try:
+                    # Read file content directly
+                    with open(location, 'rb') as f:
+                        content = f.read()
+                    
+                    app.logger.info(f"Read {len(content)} bytes from {location}")
+                    
+                    # Create response with proper MIME type
+                    mime_type = 'application/javascript; charset=utf-8' if filename.endswith(('.js', '.mjs', '.jsx')) else mimetypes.guess_type(filename)[0]
+                    
+                    response = app.response_class(
+                        response=content,
+                        status=200,
+                        mimetype=mime_type
+                    )
+                    
+                    app.logger.info(f"Serving {location} with Content-Type: {mime_type} and {len(content)} bytes")
+                    return response
+                except Exception as e:
+                    app.logger.error(f"Error reading {location}: {str(e)}")
+                    continue
         
         # If file not found, generate a minimal fallback JavaScript that doesn't break the app
-        # IMPORTANT: Never return HTML here
         app.logger.warning(f"src/{filename} not found, generating JavaScript fallback")
         
         fallback_js = f"""
@@ -1025,114 +621,288 @@ console.log('React fixes applied successfully at:', new Date().toISOString());
         
         return response
 
-    # Add special route for module scripts to ensure correct MIME type
-    @app.route('/index.js')
-    @app.route('/src/index.js')
-    def serve_index_js():
-        """Serve index.js with proper MIME type."""
-        app.logger.info(f"index.js requested via {request.path}")
+    # Add special route for JavaScript files
+    @app.route('/js/<path:filename>')
+    def serve_js_files(filename):
+        """Serve JavaScript files from the js directory."""
+        app.logger.info(f"Requested JavaScript file: {filename}")
         
-        # Log all request headers to understand how the browser is requesting this
-        app.logger.info("Request headers:")
-        for name, value in request.headers:
-            app.logger.info(f"  {name}: {value}")
+        # Look in various locations
+        possible_locations = []
         
-        # Create a minimal index.js that includes the necessary exports
-        js_content = """
-        // Server-generated index.js
-        console.log('Loading server-generated index.js for path: %s', window.location.pathname);
+        # Check static folder
+        if app.static_folder:
+            possible_locations.append(os.path.join(app.static_folder, 'js', filename))
+            possible_locations.append(os.path.join(app.static_folder, 'assets/js', filename))
+            
+        # Check static parent directories
+        if app.static_folder:
+            static_parent = os.path.dirname(app.static_folder)
+            possible_locations.append(os.path.join(static_parent, 'frontend/src/js', filename))
+            possible_locations.append(os.path.join(static_parent, 'frontend/public/js', filename))
+            possible_locations.append(os.path.join(static_parent, 'frontend/dist/js', filename))
         
-        // Provide React JSX compatibility exports
-        export const jsx = window.React ? window.React.createElement : (type, props) => ({ type, props });
-        export const jsxs = window.React ? window.React.createElement : (type, props) => ({ type, props });
-        export const Fragment = window.React ? window.React.Fragment : Symbol('Fragment');
+        # Try to find and serve the file
+        for location in possible_locations:
+            app.logger.info(f"Checking for {filename} at: {location}")
+            
+            if os.path.exists(location):
+                app.logger.info(f"Found JavaScript file at: {location}")
+                
+                try:
+                    # Read file content directly
+                    with open(location, 'rb') as f:
+                        content = f.read()
+                    
+                    app.logger.info(f"Read {len(content)} bytes from {location}")
+                    
+                    # Create response with proper MIME type
+                    response = app.response_class(
+                        response=content,
+                        status=200,
+                        mimetype='application/javascript; charset=utf-8'
+                    )
+                    
+                    app.logger.info(f"Serving {location} with {len(content)} bytes")
+                    return response
+                except Exception as e:
+                    app.logger.error(f"Error reading {location}: {str(e)}")
+                    continue
         
-        // Default export
-        export default { version: '1.0.0' };
+        # If we're looking for React libraries, serve from CDN as fallback
+        if 'react.' in filename or 'react-dom.' in filename:
+            app.logger.warning(f"{filename} not found locally, creating a proxy to CDN")
+            
+            # Determine the CDN URL based on the requested file
+            cdn_url = None
+            if 'react.production' in filename:
+                cdn_url = "https://unpkg.com/react@18/umd/react.production.min.js"
+            elif 'react.development' in filename:
+                cdn_url = "https://unpkg.com/react@18/umd/react.development.js"
+            elif 'react-dom.production' in filename:
+                cdn_url = "https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
+            elif 'react-dom.development' in filename:
+                cdn_url = "https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+            
+            if cdn_url:
+                app.logger.info(f"Redirecting to CDN: {cdn_url}")
+                return redirect(cdn_url)
         
-        // Try to load the actual app
-        try {
-            const mainScript = document.createElement('script');
-            mainScript.src = '/assets/index.js';
-            mainScript.type = 'module';
-            document.head.appendChild(mainScript);
-            console.log('Injected main app script');
-        } catch (e) {
-            console.error('Error loading app:', e);
-        }
+        # For all other JS files, create a minimal fallback
+        fallback_js = f"""
+        // Fallback for {filename} generated by server
+        console.log('Loading fallback for {filename}');
+        
+        // Provide empty implementations to prevent errors
+        if ('{filename}'.includes('react')) {{
+            window.React = window.React || {{
+                createElement: function(type, props, ...children) {{ 
+                    return {{ type, props, children }}; 
+                }},
+                Fragment: Symbol('Fragment')
+            }};
+            console.warn('Using fallback React implementation');
+        }}
         """
         
         response = app.response_class(
-            response=js_content,
+            response=fallback_js,
             status=200,
             mimetype='application/javascript; charset=utf-8'
         )
         
-        # Add CORS headers to allow module loading
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        
+        app.logger.info(f"Serving fallback JavaScript for {filename}")
         return response
 
-    # Add a comprehensive debug endpoint for server configuration information
-    @app.route('/debug/server-info')
-    def debug_server_info():
-        """Return detailed information about the server configuration."""
-        # Build a detailed information dictionary, but be careful not to expose sensitive info
-        safe_env = {k: v for k, v in os.environ.items() 
-                   if not any(secret in k.lower() for secret in 
-                             ['key', 'pass', 'secret', 'token', 'auth'])}
+    # Add a special route to serve special_loader.js
+    @app.route('/special_loader.js')
+    def serve_special_loader():
+        """Serve the special loader JavaScript file."""
+        app.logger.info("Requested special_loader.js")
         
-        # Get registered MIME types
-        mime_types = {
-            '.js': mimetypes.types_map.get('.js', 'unknown'),
-            '.mjs': mimetypes.types_map.get('.mjs', 'unknown'),
-            '.jsx': mimetypes.types_map.get('.jsx', 'unknown'),
-            '.html': mimetypes.types_map.get('.html', 'unknown'),
-            '.css': mimetypes.types_map.get('.css', 'unknown')
+        # Check possible locations
+        possible_locations = []
+        
+        if app.static_folder:
+            possible_locations.append(os.path.join(app.static_folder, 'special_loader.js'))
+        
+        # Check in backend/fixes
+        backend_dir = os.path.dirname(os.path.abspath(__file__))
+        possible_locations.append(os.path.join(backend_dir, 'fixes', 'special_loader.js'))
+        possible_locations.append('./backend/fixes/special_loader.js')
+        possible_locations.append('./fixes/special_loader.js')
+        
+        # Try to find and serve the file
+        for location in possible_locations:
+            app.logger.info(f"Checking for special_loader.js at: {location}")
+            
+            if os.path.exists(location):
+                app.logger.info(f"Found special_loader.js at: {location}")
+                
+                try:
+                    # Read file content directly
+                    with open(location, 'rb') as f:
+                        content = f.read()
+                    
+                    app.logger.info(f"Read {len(content)} bytes from {location}")
+                    
+                    # Create response with proper MIME type
+                    response = app.response_class(
+                        response=content,
+                        status=200,
+                        mimetype='application/javascript; charset=utf-8'
+                    )
+                    
+                    app.logger.info(f"Serving special_loader.js with {len(content)} bytes")
+                    return response
+                except Exception as e:
+                    app.logger.error(f"Error reading {location}: {str(e)}")
+                    continue
+        
+        # If file not found, generate it on the fly
+        app.logger.warning("special_loader.js not found, generating on the fly")
+        
+        loader_js = """
+        // Special loader generated on the fly
+        console.log('Special loader activated');
+        
+        // Check if the page is already loaded
+        if (document.readyState === 'complete') {
+            initializeLoader();
+        } else {
+            window.addEventListener('load', initializeLoader);
         }
         
-        # Get static folder contents
-        static_contents = []
-        if app.static_folder and os.path.exists(app.static_folder):
-            try:
-                for root, dirs, files in os.walk(app.static_folder):
-                    rel_path = os.path.relpath(root, app.static_folder)
-                    if rel_path == '.':
-                        rel_path = ''
-                    for file in files:
-                        static_contents.append(os.path.join(rel_path, file))
-            except Exception as e:
-                static_contents = [f"Error listing static files: {str(e)}"]
-        
-        # Compile information
-        info = {
-            'server': {
-                'platform': platform.platform(),
-                'python_version': platform.python_version(),
-                'hostname': platform.node()
-            },
-            'flask_app': {
-                'static_folder': app.static_folder,
-                'static_exists': bool(app.static_folder and os.path.exists(app.static_folder)),
-                'static_url_path': app.static_url_path,
-                'instance_path': app.instance_path,
-                'debug_mode': app.debug,
-                'environment': os.environ.get('FLASK_ENV', 'production')
-            },
-            'mime_types': mime_types,
-            'static_contents': static_contents[:50],  # Limit to first 50 files
-            'request': {
-                'path': request.path,
-                'url': request.url,
-                'headers': dict(request.headers),
-                'host': request.host,
-                'host_url': request.host_url
-            },
-            'environment': safe_env
+        function initializeLoader() {
+            console.log('Initializing special loader');
+            
+            // Check if React is available
+            if (typeof React === 'undefined') {
+                console.warn('React not found, loading from CDN');
+                loadScript('https://unpkg.com/react@18/umd/react.production.min.js', function() {
+                    loadScript('https://unpkg.com/react-dom@18/umd/react-dom.production.min.js', function() {
+                        console.log('React loaded from CDN');
+                    });
+                });
+            }
         }
         
-        # Return as JSON
-        return jsonify(info)
+        function loadScript(src, callback) {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = callback;
+            document.head.appendChild(script);
+        }
+        """
+        
+        response = app.response_class(
+            response=loader_js,
+            status=200,
+            mimetype='application/javascript; charset=utf-8'
+        )
+        
+        app.logger.info(f"Serving generated special_loader.js with {len(loader_js)} bytes")
+        return response
+
+    # Catch-all route for client-side routing
+    @app.route('/<path:path>')
+    def catch_all(path):
+        """Catch-all route to support client-side routing"""
+        app.logger.info(f"Catch-all route handling: {path}")
+        
+        # Don't handle API routes with the catch-all
+        if path.startswith('api/'):
+            app.logger.info(f"Not handling API path {path} with catch-all")
+            return jsonify({'error': 'Not found', 'path': path}), 404
+        
+        # Check if it's a static file request
+        if '.' in path:
+            # Check if the file exists in static folder
+            if app.static_folder is not None and os.path.exists(os.path.join(app.static_folder, path)):
+                file_path = os.path.join(app.static_folder, path)
+                app.logger.info(f"Found static file: {file_path}")
+                
+                try:
+                    # Read file content directly
+                    with open(file_path, 'rb') as f:
+                        content = f.read()
+                    
+                    app.logger.info(f"Read {len(content)} bytes from {file_path}")
+                    
+                    # Determine MIME type
+                    mime_type = mimetypes.guess_type(path)[0]
+                    if path.endswith(('.js', '.mjs', '.jsx')):
+                        mime_type = 'application/javascript; charset=utf-8'
+                    elif path.endswith('.css'):
+                        mime_type = 'text/css; charset=utf-8'
+                    elif path.endswith('.html'):
+                        mime_type = 'text/html; charset=utf-8'
+                    
+                    response = app.response_class(
+                        response=content,
+                        status=200,
+                        mimetype=mime_type or 'application/octet-stream'
+                    )
+                    
+                    app.logger.info(f"Serving {path} with MIME type {mime_type} and {len(content)} bytes")
+                    return response
+                except Exception as e:
+                    app.logger.error(f"Error reading {file_path}: {str(e)}")
+            
+            # If it's a JavaScript file that doesn't exist, generate a fallback
+            if path.endswith(('.js', '.mjs', '.jsx')):
+                app.logger.warning(f"{path} not found, generating JavaScript fallback")
+                
+                fallback_js = f"""
+                // Fallback for {path} generated by server
+                console.log('Loading fallback for {path}');
+                
+                // Export empty module to prevent errors
+                export default {{}};
+                """
+                
+                response = app.response_class(
+                    response=fallback_js,
+                    status=200,
+                    mimetype='application/javascript; charset=utf-8'
+                )
+                
+                app.logger.info(f"Serving fallback JavaScript for {path}")
+                return response
+            
+            return jsonify({'error': 'Not found', 'path': path}), 404
+        
+        # Return the SPA's index.html for client-side routing paths
+        app.logger.info(f"Serving index.html for client-side route: {path}")
+        
+        if app.static_folder is None:
+            return jsonify({"error": "Static folder not configured"}), 500
+        
+        index_path = os.path.join(app.static_folder, 'index.html')
+        
+        if not os.path.exists(index_path):
+            app.logger.error(f"index.html not found at {index_path}")
+            return "Error: index.html not found", 500
+        
+        try:
+            # Read file content directly
+            with open(index_path, 'r') as f:
+                content = f.read()
+                
+            app.logger.info(f"Read index.html content for route {path}: {len(content)} bytes")
+            
+            # Return the content directly with explicit content type
+            response = app.response_class(
+                response=content,
+                status=200,
+                mimetype='text/html'
+            )
+            
+            app.logger.info(f"Returning index.html for route {path} with content length: {len(content)} bytes")
+            return response
+        except Exception as e:
+            app.logger.error(f"Error serving index.html for route {path}: {str(e)}")
+            return f"Error serving index.html: {str(e)}", 500
 
     return app
 
