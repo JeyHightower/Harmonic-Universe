@@ -16,98 +16,58 @@ pip install -r backend/requirements.txt
 echo "Building frontend application..."
 cd frontend
 
-# Clean npm cache and node_modules to ensure fresh installation
-echo "Cleaning up npm cache and node_modules..."
-npm cache clean --force || true
-rm -rf node_modules || true
-rm -rf dist || true
+# Clean node_modules and dist to ensure a fresh install
+echo "Cleaning up node_modules and dist..."
+rm -rf node_modules dist
 
-# Install all required dependencies with exact versions
+# Ensure package.json exists and has proper configuration
+if [ ! -f "package.json" ]; then
+    echo "Missing package.json, initializing..."
+    npm init -y
+fi
+
+# Install frontend dependencies explicitly
 echo "Installing frontend dependencies..."
 npm install --legacy-peer-deps
 
-# Make sure react-router-dom is installed specifically
-echo "Ensuring react-router-dom is installed..."
-npm install --save react-router-dom@6.10.0 --legacy-peer-deps
+# Make sure all required dependencies are installed
+echo "Installing critical dependencies directly..."
+npm install prop-types react-redux react-router-dom --save --legacy-peer-deps
 
-# Create simplified Vite config that bundles everything
+# Create a simpler Vite config that bundles everything
 echo "Creating optimized Vite config..."
 cat > vite.config.js << 'EOL'
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { resolve } from 'path';
+import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
-  build: {
-    outDir: 'dist',
-    sourcemap: false,
-    minify: true,
-    emptyOutDir: true,
-    target: 'es2018',
-    cssCodeSplit: true,
-    chunkSizeWarningLimit: 2000,
-    rollupOptions: {
-      external: ['react-router-dom', 'react-redux', '@reduxjs/toolkit', 'redux-persist'],
-      output: {
-        globals: {
-          'react-router-dom': 'ReactRouterDOM',
-          'react-redux': 'ReactRedux',
-          '@reduxjs/toolkit': 'RTK',
-          'redux-persist': 'ReduxPersist'
-        },
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            return 'vendor';
-          }
-        }
-      }
-    }
-  },
   resolve: {
     alias: {
-      '@': resolve(__dirname, './src'),
-      'react-router-dom': resolve(__dirname, 'node_modules/react-router-dom'),
-      'react-redux': resolve(__dirname, 'node_modules/react-redux'),
-      '@reduxjs/toolkit': resolve(__dirname, 'node_modules/@reduxjs/toolkit'),
-      'redux-persist': resolve(__dirname, 'node_modules/redux-persist')
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+    sourcemap: false,
+    minify: true,
+    // Ensure all dependencies are bundled, not externalized
+    rollupOptions: {
+      external: []
     }
   },
+  // Ensure node_modules are properly scanned
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom', 'react-redux', '@reduxjs/toolkit', 'redux-persist']
+    include: ['react-redux', 'react-router-dom', 'prop-types']
   }
 });
 EOL
 
-# Create an HTML file that includes the external dependencies
-echo "Creating an HTML file with external dependencies..."
-cat > public/index.html << 'EOL'
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Harmonic Universe</title>
-  <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/react-router-dom@6.10.0/dist/umd/react-router-dom.production.min.js"></script>
-  <script src="https://unpkg.com/react-redux@8.0.5/dist/react-redux.min.js"></script>
-  <script src="https://unpkg.com/@reduxjs/toolkit@1.9.5/dist/redux-toolkit.umd.min.js"></script>
-  <script src="https://unpkg.com/redux-persist@6.0.0/dist/redux-persist.min.js"></script>
-</head>
-<body>
-  <div id="root"></div>
-  <script type="module" src="/src/main.jsx"></script>
-</body>
-</html>
-EOL
-
-# Run the build
+# Run the build with increased memory limit
 echo "Building frontend with Vite..."
-NODE_OPTIONS=--max-old-space-size=4096 npm run build || {
-  echo "Build failed with normal Vite config, trying with direct CLI..."
-  NODE_OPTIONS=--max-old-space-size=4096 npx vite build
-}
+NODE_OPTIONS=--max-old-space-size=4096 npm run build
 
 cd ..
 
