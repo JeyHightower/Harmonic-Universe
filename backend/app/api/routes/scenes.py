@@ -69,35 +69,112 @@ def get_scene(scene_id):
 @scenes_bp.route('/', methods=['GET'])
 @jwt_required()
 def list_scenes():
+    """List scenes with filtering by universe ID"""
     try:
         # Get filter parameters
         universe_id = request.args.get('universe_id')
         user_id = get_jwt_identity()
         
+        current_app.logger.info(f"Listing scenes with params: universe_id={universe_id}, user_id={user_id}")
+        
         if universe_id:
-            # Get universe and check access
-            universe = Universe.query.get_or_404(int(universe_id))
-            if not universe.is_public and universe.user_id != user_id:
-                return jsonify({
-                    'message': 'Access denied'
-                }), 403
+            try:
+                # Safely convert universe_id to int
+                universe_id_int = int(universe_id)
+                current_app.logger.debug(f"Looking up universe with ID: {universe_id_int}")
                 
-            # Get scenes for the specified universe
-            scenes = Scene.query.filter_by(
-                universe_id=int(universe_id),
-                is_deleted=False
-            ).all()
+                # Get universe and check access
+                universe = Universe.query.get(universe_id_int)
+                
+                if not universe:
+                    current_app.logger.warning(f"Universe with ID {universe_id_int} not found")
+                    return jsonify({
+                        'message': 'Universe not found',
+                        'error': f'No universe found with ID {universe_id_int}',
+                        'scenes': []  # Return empty array instead of error
+                    }), 404
+                
+                current_app.logger.debug(f"Found universe: {universe.name} (owner: {universe.user_id})")
+                
+                if not universe.is_public and universe.user_id != user_id:
+                    current_app.logger.warning(f"Access denied: User {user_id} attempting to access universe {universe_id_int} owned by {universe.user_id}")
+                    return jsonify({
+                        'message': 'Access denied',
+                        'scenes': []  # Return empty array instead of error
+                    }), 403
+                
+                # Get scenes for the specified universe - use a try/except block for the query itself
+                try:
+                    # Use SQLAlchemy comparison operators for boolean fields
+                    scenes = Scene.query.filter(
+                        Scene.universe_id == universe_id_int,
+                        Scene.is_deleted == False
+                    ).all()
+                    current_app.logger.info(f"Found {len(scenes)} scenes for universe {universe_id_int}")
+                except Exception as query_error:
+                    current_app.logger.error(f"Database error querying scenes: {str(query_error)}")
+                    current_app.logger.error(traceback.format_exc())
+                    return jsonify({
+                        'message': 'Database error retrieving scenes',
+                        'error': str(query_error),
+                        'scenes': []  # Return empty array instead of error
+                    }), 500
+            except ValueError:
+                current_app.logger.error(f"Invalid universe_id format: {universe_id}")
+                return jsonify({
+                    'message': 'Invalid universe ID',
+                    'error': 'Universe ID must be an integer',
+                    'scenes': []  # Return empty array instead of error
+                }), 400
         else:
             # Get all scenes the user has access to
-            # This is a simple implementation - in a real app you might want to join with Universe
-            scenes = Scene.query.join(Universe).filter(
-                ((Universe.user_id == user_id) | (Universe.is_public == True)),
-                Scene.is_deleted == False
-            ).all()
-            
+            try:
+                # Use explicit joins and filters to avoid SQLAlchemy errors
+                scenes = Scene.query.join(
+                    Universe, Scene.universe_id == Universe.id
+                ).filter(
+                    db.or_(
+                        Universe.user_id == user_id,
+                        Universe.is_public == True
+                    ),
+                    Scene.is_deleted == False
+                ).all()
+                current_app.logger.info(f"Found {len(scenes)} scenes across all accessible universes")
+            except Exception as query_error:
+                current_app.logger.error(f"Database error querying all scenes: {str(query_error)}")
+                current_app.logger.error(traceback.format_exc())
+                return jsonify({
+                    'message': 'Database error retrieving scenes',
+                    'error': str(query_error),
+                    'scenes': []  # Return empty array instead of error
+                }), 500
+        
+        # Convert scenes to dictionaries with error handling
+        scene_dicts = []
+        conversion_errors = 0
+        for scene in scenes:
+            try:
+                scene_dict = scene.to_dict()
+                scene_dicts.append(scene_dict)
+            except Exception as dict_error:
+                conversion_errors += 1
+                current_app.logger.error(f"Error converting scene {scene.id} to dict: {str(dict_error)}")
+                current_app.logger.error(traceback.format_exc())
+                # Add minimal information for this scene
+                scene_dicts.append({
+                    'id': scene.id,
+                    'name': str(scene.name) if hasattr(scene, 'name') and scene.name is not None else "Unknown",
+                    'universe_id': scene.universe_id,
+                    'error': 'Error generating complete scene data'
+                })
+        
+        if conversion_errors > 0:
+            current_app.logger.warning(f"Encountered {conversion_errors} errors while converting scenes to dictionaries")
+        
         return jsonify({
             'message': 'Scenes retrieved successfully',
-            'scenes': [scene.to_dict() for scene in scenes]
+            'scenes': scene_dicts,
+            'count': len(scene_dicts)
         }), 200
         
     except Exception as e:
@@ -105,7 +182,8 @@ def list_scenes():
         current_app.logger.error(traceback.format_exc())
         return jsonify({
             'message': 'Error listing scenes',
-            'error': str(e)
+            'error': str(e),
+            'scenes': []  # Return empty array instead of error
         }), 500
 
 @scenes_bp.route('/', methods=['POST'])

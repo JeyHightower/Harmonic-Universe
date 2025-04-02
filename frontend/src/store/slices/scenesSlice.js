@@ -6,6 +6,7 @@ import {
   deleteScene,
   fetchSceneById,
   reorderScenes,
+  fetchScenesForUniverse,
 } from "../thunks/scenesThunks";
 
 const initialState = {
@@ -15,6 +16,7 @@ const initialState = {
   error: null,
   success: false,
   universeScenes: {}, // Stores scenes by universeId
+  message: "",
 };
 
 const scenesSlice = createSlice({
@@ -184,6 +186,41 @@ const scenesSlice = createSlice({
       .addCase(reorderScenes.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to reorder scenes";
+      })
+
+      // fetchScenesForUniverse
+      .addCase(fetchScenesForUniverse.fulfilled, (state, action) => {
+        console.log("Reducer - fetchScenesForUniverse.fulfilled with payload:", action.payload);
+
+        state.loading = false;
+        state.error = action.payload.error || null;
+
+        // Ensure we have a valid scenes array
+        if (Array.isArray(action.payload.scenes)) {
+          state.scenes = action.payload.scenes;
+        } else if (action.payload.scenes === null || action.payload.scenes === undefined) {
+          // If no scenes array was provided, keep the current array or use empty array
+          console.warn("Reducer - No scenes array in payload, using empty array");
+          state.scenes = [];
+        }
+
+        // Set message from payload or default
+        state.message = action.payload.message || "Scenes loaded";
+      })
+
+      // Handle failed fetch of scenes
+      .addCase(fetchScenesForUniverse.rejected, (state, action) => {
+        console.error("Reducer - fetchScenesForUniverse.rejected with error:", action.error, "payload:", action.payload);
+
+        state.loading = false;
+        state.error = action.payload?.message || action.error.message || "Failed to fetch scenes";
+
+        // Don't clear the scenes array on error - keep any existing data
+        if (action.payload?.scenes) {
+          state.scenes = action.payload.scenes;
+        }
+
+        state.message = "Error loading scenes";
       });
   },
 });

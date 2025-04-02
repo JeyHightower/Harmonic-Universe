@@ -57,8 +57,60 @@ export const fetchScenes = createAsyncThunk(
   }
 );
 
-// Create an alias for fetchScenes to match the import in UniverseDetail.jsx
-export const fetchScenesForUniverse = fetchScenes;
+// Fetch scenes for a specific universe
+export const fetchScenesForUniverse = createAsyncThunk(
+  "scenes/fetchScenesForUniverse",
+  async (universeId, { rejectWithValue }) => {
+    try {
+      console.log(`Thunk - Fetching scenes for universe ${universeId}`);
+
+      // Handle API errors more gracefully
+      try {
+        const response = await apiClient.getScenes(universeId);
+        console.log("Thunk - Got scenes response:", response);
+
+        // Check if response has valid data
+        if (!response.data) {
+          console.warn("Thunk - No data in response:", response);
+          return { scenes: [], error: "No data returned from API" };
+        }
+
+        // Extract scenes array, providing fallbacks
+        let scenes = [];
+        if (Array.isArray(response.data?.scenes)) {
+          scenes = response.data.scenes;
+        } else if (Array.isArray(response.data)) {
+          scenes = response.data;
+        }
+
+        console.log(`Thunk - Successfully retrieved ${scenes.length} scenes`);
+        return { scenes, message: response.data?.message || "Scenes retrieved successfully" };
+      } catch (apiError) {
+        console.error(`Thunk - API error fetching scenes for universe ${universeId}:`, apiError);
+
+        // Check for specific status codes
+        if (apiError.response?.status === 404) {
+          return rejectWithValue({ message: "Universe not found" });
+        } else if (apiError.response?.status === 403) {
+          return rejectWithValue({ message: "Access denied to this universe" });
+        } else if (apiError.response?.status === 500) {
+          // For server errors, return empty scenes but don't fail completely
+          console.warn("Thunk - Server error, returning empty scenes array");
+          return { scenes: [], error: "Server error, but continuing with empty scenes" };
+        }
+
+        throw apiError; // re-throw for general error handling below
+      }
+    } catch (error) {
+      console.error(`Thunk - Error fetching scenes for universe ${universeId}:`, error);
+      // Return an empty scenes array in case of error to avoid breaking the UI
+      return rejectWithValue({
+        message: error.response?.data?.message || error.message || "Failed to fetch scenes",
+        scenes: [] // Include empty scenes array for graceful UI handling
+      });
+    }
+  }
+);
 
 /**
  * Fetch a single scene by ID
