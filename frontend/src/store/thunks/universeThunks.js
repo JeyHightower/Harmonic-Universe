@@ -49,23 +49,29 @@ export const fetchUniverses = createAsyncThunk(
       // Extract and normalize the data
       let universes = [];
 
-      if (response && response.data && Array.isArray(response.data.universes)) {
-        // Format: { data: { universes: [...] } }
+      // Handle our mock response from development mode
+      if (response.data && Array.isArray(response.data.universes)) {
+        console.log("Found universes array in response.data.universes");
         universes = normalizeUniverses(response.data.universes);
-      } else if (response && Array.isArray(response.universes)) {
-        // Format: { universes: [...] }
+      }
+      // Handle other response formats
+      else if (Array.isArray(response.data)) {
+        console.log("Response.data is an array of universes");
+        universes = normalizeUniverses(response.data);
+      }
+      else if (response.universes && Array.isArray(response.universes)) {
+        console.log("Found universes array in response.universes");
         universes = normalizeUniverses(response.universes);
-      } else if (
-        response &&
-        typeof response === "object" &&
-        response.status === "success"
-      ) {
-        // Format from simple_app.py: { status: 'success', data: { universes: [...] } }
-        universes = normalizeUniverses(response.data?.universes || []);
-      } else if (Array.isArray(response)) {
-        // Direct array format
+      }
+      else if (response.data && response.data.data && Array.isArray(response.data.data.universes)) {
+        console.log("Found universes array in response.data.data.universes");
+        universes = normalizeUniverses(response.data.data.universes);
+      }
+      else if (Array.isArray(response)) {
+        console.log("Response itself is an array of universes");
         universes = normalizeUniverses(response);
-      } else {
+      }
+      else {
         console.error("Unexpected universes response format:", response);
         universes = [];
       }
@@ -77,7 +83,7 @@ export const fetchUniverses = createAsyncThunk(
         data: universes,
       });
 
-      return { ...response, universes };
+      return { universes };
     } catch (error) {
       console.error("Error fetching universes:", {
         error: error.message,
@@ -145,19 +151,29 @@ export const createUniverse = createAsyncThunk(
       const response = await apiClient.createUniverse(formattedData);
       console.log("Created universe response:", response);
 
-      // Normalize the universe data if present
-      if (response && response.data && response.data.universe) {
-        response.data.universe = normalizeUniverseData(response.data.universe);
-      } else if (response && response.universe) {
-        response.universe = normalizeUniverseData(response.universe);
-      } else if (response && response.id) {
-        // If the response itself is the universe
+      // Handle our mock response from development mode
+      if (response.data && response.data.universe) {
+        console.log("Found universe object in response.data.universe");
+        return response.data.universe;
+      }
+
+      // Other response formats
+      if (response.universe) {
+        console.log("Found universe object in response.universe");
+        return normalizeUniverseData(response.universe);
+      }
+
+      if (response.id) {
+        console.log("Response itself is the universe object");
         return normalizeUniverseData(response);
-      } else if (response && response.data && response.data.id) {
-        // If the response.data itself is the universe
+      }
+
+      if (response.data && response.data.id) {
+        console.log("Response.data itself is the universe object");
         return normalizeUniverseData(response.data);
       }
 
+      console.warn("Unknown response format, returning full response:", response);
       return response.data || response;
     } catch (error) {
       console.error("Error creating universe:", error);
