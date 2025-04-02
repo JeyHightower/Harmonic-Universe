@@ -29,6 +29,8 @@ rm -rf node_modules/.vite
 rm -rf node_modules/react
 rm -rf node_modules/react-dom
 rm -rf node_modules/@vitejs
+rm -rf node_modules/react-router-dom
+rm -rf node_modules/react-redux
 
 # Clean any JSX runtime polyfills that might cause conflicts
 echo "Cleaning any existing JSX runtime polyfills..."
@@ -40,17 +42,12 @@ rm -f vite.config.minimal.js
 
 # Install frontend dependencies
 echo "Installing frontend dependencies..."
-npm install
+npm install --legacy-peer-deps
 
 # Explicitly install specific versions of critical dependencies
 echo "Installing critical dependencies with specific versions..."
-npm install --no-save vite@4.5.1 @vitejs/plugin-react@4.2.1 react@18.2.0 react-dom@18.2.0
-npm install --no-save react-redux@8.1.3 redux@4.2.1 react-router-dom@6.20.0 redux-thunk@2.4.2 @reduxjs/toolkit@1.9.7
-npm install --no-save @mui/material@5.14.18 @mui/icons-material@5.14.18 @emotion/react@11.11.1 @emotion/styled@11.11.0
-
-# List all explicitly installed dependencies for verification
-echo "Installed dependencies:"
-npm list --depth=0
+npm install --legacy-peer-deps --no-save vite@4.2.0 @vitejs/plugin-react@3.1.0 react@18.2.0 react-dom@18.2.0
+npm install --legacy-peer-deps --no-save react-redux@8.0.5 redux@4.2.1 react-router-dom@6.10.0 @reduxjs/toolkit@1.9.5
 
 # Create a more comprehensive vite.config.temp.js for the build
 echo "Creating temporary Vite configuration that prevents React duplication..."
@@ -84,7 +81,7 @@ export default defineConfig({
       external: [],
       output: {
         manualChunks: {
-          'vendor': ['react', 'react-dom', 'react-redux', 'redux', 'react-router-dom'],
+          'vendor': ['react', 'react-dom', 'react-redux', 'react-router-dom'],
         }
       }
     }
@@ -98,7 +95,6 @@ export default defineConfig({
       'react', 
       'react-dom', 
       'react-redux', 
-      'redux', 
       'react-router-dom',
       '@reduxjs/toolkit'
     ]
@@ -133,19 +129,24 @@ fi
 
 # If both build attempts fail, try a minimal build with just essential files
 if [ ! -d "dist" ]; then
-  echo "Both build attempts failed, creating a minimal build..."
+  echo "Both build attempts failed, trying with force flag..."
+  VITE_FORCE_BUILD=true npx vite build --config vite.config.temp.js
   
-  # Create minimal dist directory
-  mkdir -p dist
-  
-  # Copy any existing static assets
-  if [ -d "public" ]; then
-    echo "Copying public assets to dist directory..."
-    cp -r public/* dist/ || echo "Warning: Could not copy all public assets"
-  fi
-  
-  # Create a minimal index.html
-  cat > dist/index.html << 'EOF'
+  # If still failing, create a minimal build
+  if [ ! -d "dist" ]; then
+    echo "All build attempts failed, creating a minimal build..."
+    
+    # Create minimal dist directory
+    mkdir -p dist
+    
+    # Copy any existing static assets
+    if [ -d "public" ]; then
+      echo "Copying public assets to dist directory..."
+      cp -r public/* dist/ || echo "Warning: Could not copy all public assets"
+    fi
+    
+    # Create a minimal index.html
+    cat > dist/index.html << 'EOF'
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -183,8 +184,9 @@ if [ ! -d "dist" ]; then
 </body>
 </html>
 EOF
-  
-  echo "Created minimal build files"
+    
+    echo "Created minimal build files"
+  fi
 fi
 
 # Verify the build output
