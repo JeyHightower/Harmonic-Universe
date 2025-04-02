@@ -9,10 +9,16 @@ echo "Current directory: $(pwd)"
 # Make sure we're in the correct directory
 if [ ! -f "app.py" ]; then
   echo "Error: app.py not found, navigating to backend directory"
-  cd ../backend
-  if [ ! -f "app.py" ]; then
-    echo "Error: Could not find app.py in backend directory"
-    exit 1
+  if [ -d "backend" ]; then
+    cd backend
+  else
+    echo "Checking if we're already in backend..."
+    pwd
+    ls -la
+    if [ ! -f "app.py" ]; then
+      echo "Error: Could not find app.py in backend directory"
+      exit 1
+    fi
   fi
 fi
 
