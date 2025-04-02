@@ -65,6 +65,10 @@
     ></script>
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Explore the fascinating connection between music and physics with Harmonic Universe"
+    />
     <title>Harmonic Universe</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -86,106 +90,44 @@
     />
     <link rel="stylesheet" crossorigin href="./assets/index-YhiCDp85.css" />
 
-    <script>
-      // Ant Design Icons fallback handler
-      window.__ANT_ICONS_VERSION__ = "5.6.1";
-      window.__ANT_ICONS_FALLBACK_HANDLER__ = function () {
-        console.log("Running Ant Icons fallback handler");
-
-        // Create basic icon component factory
-        function createIconComponent(name) {
-          return function (props) {
-            return {
-              $typeof: Symbol.for("react.element"),
-              type: "span",
-              props: {
-                className:
-                  "anticon anticon-" +
-                  name +
-                  (props && props.className ? " " + props.className : ""),
-                style: props && props.style ? props.style : {},
-                children: [],
-              },
-            };
-          };
-        }
-
-        // Create basic icons
-        window.AntDesignIcons = {
-          // Common icons
-          CloseOutlined: createIconComponent("close"),
-          CheckOutlined: createIconComponent("check"),
-          LoadingOutlined: createIconComponent("loading"),
-          DownOutlined: createIconComponent("down"),
-          UpOutlined: createIconComponent("up"),
-          LeftOutlined: createIconComponent("left"),
-          RightOutlined: createIconComponent("right"),
-
-          // API functions
-          createFromIconfontCN: function () {
-            return function () {
-              return null;
-            };
-          },
-          getTwoToneColor: function () {
-            return "#1890ff";
-          },
-          setTwoToneColor: function () {},
-        };
-      };
-
-      // Set timeout to check if icons loaded correctly
-      setTimeout(function () {
-        if (!window.AntDesignIcons) {
-          console.warn(
-            "Ant Design Icons not loaded correctly, applying fallback"
-          );
-          window.__ANT_ICONS_FALLBACK_HANDLER__();
-        }
-      }, 1000);
-    </script>
-
     <style>
       body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
         margin: 0;
         padding: 0;
-        background-color: #f7f9fc;
+        background-color: #f5f5f5;
+        color: #333;
       }
       #root {
         min-height: 100vh;
       }
-      #debug-panel {
-        position: fixed;
-        bottom: 0;
-        right: 0;
-        background-color: rgba(255, 255, 255, 0.9);
-        border: 1px solid #ddd;
-        border-radius: 4px 0 0 0;
-        padding: 10px;
-        font-family: monospace;
-        font-size: 12px;
-        max-width: 300px;
-        max-height: 200px;
-        overflow: auto;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      }
-      .loading {
+      .loading-container {
         display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
         flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        text-align: center;
       }
-      .spinner {
-        border: 4px solid rgba(0, 0, 0, 0.1);
-        width: 36px;
-        height: 36px;
+      .error-container {
+        display: none;
+        margin-top: 2rem;
+        padding: 1rem;
+        background-color: #fff8f8;
+        border-left: 4px solid #e74c3c;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .loading-animation {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #3498db;
         border-radius: 50%;
-        border-left-color: #09f;
         animation: spin 1s linear infinite;
-        margin-bottom: 16px;
+        margin-bottom: 1rem;
       }
       @keyframes spin {
         0% {
@@ -198,14 +140,23 @@
     </style>
   </head>
   <body>
+    <noscript>
+      <div style="text-align: center; padding: 2rem">
+        <h1>JavaScript Required</h1>
+        <p>You need to enable JavaScript to run this application.</p>
+      </div>
+    </noscript>
+
     <!-- React Fix Loader - ensures proper module loading -->
     <script src="/static/react-fixes/react-fix-loader.js"></script>
 
     <div id="root">
-      <!-- Loading state before React renders -->
-      <div class="loading">
-        <div class="spinner"></div>
-        <p>Loading Harmonic Universe...</p>
+      <!-- Initial loading state that will be replaced by React -->
+      <div class="loading-container">
+        <div class="loading-animation"></div>
+        <h1>Harmonic Universe</h1>
+        <p>Loading application...</p>
+        <div id="error-message" class="error-container"></div>
       </div>
     </div>
 
@@ -279,37 +230,88 @@
         });
     </script>
 
-    <!-- Debug panel -->
-    <div id="debug-panel" style="display: none">
-      <h4>Debug Info</h4>
-      <div id="debug-content"></div>
-    </div>
+    <!-- Debug container to track loading status -->
+    <div id="debug-status" style="display: none"></div>
 
     <script>
-      // Simple debug helper
-      window.HU_DEBUG = {
-        log: function (msg) {
-          console.log("[HU_DEBUG]", msg);
-          const panel = document.getElementById("debug-panel");
-          const content = document.getElementById("debug-content");
-          if (panel && content) {
-            panel.style.display = "block";
-            const logLine = document.createElement("div");
-            logLine.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-            content.appendChild(logLine);
-          }
-        },
-      };
+      // Track loading process
+      const debug = document.getElementById("debug-status");
 
-      // Log page load
+      function logStatus(message) {
+        if (debug) {
+          debug.innerHTML += `<div>${new Date()
+            .toISOString()
+            .slice(11, 19)} - ${message}</div>`;
+          console.log(message);
+        }
+      }
+
+      logStatus("Page loaded");
+
+      // Track asset loading
       document.addEventListener("DOMContentLoaded", function () {
-        window.HU_DEBUG.log("DOM loaded");
-        window.HU_DEBUG.log(`React available: ${!!window.React}`);
-        window.HU_DEBUG.log(`ReactDOM available: ${!!window.ReactDOM}`);
+        logStatus("DOMContentLoaded fired");
+
+        // Check if the main script has loaded correctly
+        setTimeout(function () {
+          const rootEl = document.getElementById("root");
+          const errorEl = document.getElementById("error-message");
+
+          // If the root still only contains the loading container, we likely have an issue
+          if (rootEl && rootEl.innerHTML.includes("Loading application")) {
+            logStatus("Application failed to load after timeout");
+
+            if (errorEl) {
+              errorEl.style.display = "block";
+              errorEl.innerHTML = `
+                <h3>Application Load Timeout</h3>
+                <p>The application hasn't loaded properly. This might be due to:</p>
+                <ul>
+                  <li>JavaScript files not loading correctly</li>
+                  <li>Network connectivity issues</li>
+                  <li>Application initialization errors</li>
+                </ul>
+                <p>You can try:</p>
+                <button onclick="window.location.reload()">Reload Page</button>
+                <button onclick="window.location.href='/diagnostic.html'">Go to Diagnostics</button>
+              `;
+            }
+
+            // Try to fetch the health API to see if backend is working
+            fetch("/api/health")
+              .then((response) => response.json())
+              .then((data) => {
+                logStatus(`API health check: ${JSON.stringify(data)}`);
+              })
+              .catch((err) => {
+                logStatus(`API health check failed: ${err.message}`);
+              });
+          } else {
+            logStatus("Application appears to be loading");
+          }
+        }, 5000);
+      });
+
+      // Global error handler
+      window.addEventListener("error", function (e) {
+        logStatus(`Error: ${e.message} (${e.filename}:${e.lineno})`);
+
+        const errorEl = document.getElementById("error-message");
+        if (errorEl) {
+          errorEl.style.display = "block";
+          errorEl.innerHTML = `
+            <h3>JavaScript Error</h3>
+            <p>An error occurred while loading the application:</p>
+            <pre style="background:#f7f7f7;padding:10px;overflow:auto;max-width:100%;">${e.message}</pre>
+            <p>You can try:</p>
+            <button onclick="window.location.reload()">Reload Page</button>
+            <button onclick="window.location.href='/diagnostic.html'">Go to Diagnostics</button>
+          `;
+        }
       });
     </script>
 
     <!-- Load main application script -->
-    <script type="module" src="/index.js"></script>
+    <script type="module" src="/assets/index.js"></script>
   </body>
 </html>

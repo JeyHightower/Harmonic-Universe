@@ -117,6 +117,7 @@ export default defineConfig(({ command, mode }) => {
   // Base configuration
   const config = {
     root: './',
+    // Use absolute path for assets
     base: '/',
     plugins: [reactPlugin(), propTypesResolver()],
     resolve: {
@@ -140,8 +141,6 @@ export default defineConfig(({ command, mode }) => {
           "prop-types": fileURLToPath(new URL('./src/fallbacks/prop-types.js', import.meta.url)),
         } : {}),
         // Provide fallbacks for common imports
-        'three': 'three',
-        'tone': 'tone',
         'prop-types': 'prop-types',
       },
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
@@ -167,9 +166,10 @@ export default defineConfig(({ command, mode }) => {
             'three-bundle': ['three'],
             'vendor': ['react', 'react-dom', 'react-router-dom', 'redux-persist']
           },
-          entryFileNames: 'assets/[name]-[hash].js',
-          chunkFileNames: 'assets/[name]-[hash].js',
-          assetFileNames: 'assets/[name]-[hash].[ext]'
+          // Generate predictable filenames without hashes for easier debugging
+          entryFileNames: 'assets/[name].js',
+          chunkFileNames: 'assets/[name].js',
+          assetFileNames: 'assets/[name].[ext]'
         },
       },
       commonjsOptions: {

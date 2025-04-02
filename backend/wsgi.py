@@ -59,7 +59,42 @@ def serve(path):
     logger.info(f"Received request for path: {path}")
     static_dir = app.static_folder or 'static'  # Default to 'static' if None
     logger.info(f"Static directory is: {static_dir}")
-    logger.info(f"Static directory contents: {os.listdir(static_dir) if os.path.exists(static_dir) else 'Not found'}")
+    
+    # Log static directory contents for debugging
+    try:
+        static_files = os.listdir(static_dir)
+        logger.info(f"Static directory contains {len(static_files)} files")
+        if 'index.html' in static_files:
+            logger.info("index.html exists in static directory")
+        else:
+            logger.error("index.html NOT FOUND in static directory")
+            
+        # Check for main JS files
+        js_files = [f for f in static_files if f.endswith('.js') or 'assets' in static_files]
+        logger.info(f"Found {len(js_files)} JS files or asset directories")
+    except Exception as e:
+        logger.error(f"Error reading static directory: {e}")
+    
+    # If path has an extension, try to serve it directly
+    if '.' in path:
+        file_path = os.path.join(static_dir, path)
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            logger.info(f"Serving file directly: {path}")
+            return send_from_directory(static_dir, path)
+        else:
+            logger.warning(f"File not found: {path}")
+            # Try different paths before giving up
+            # Remove leading slash if it exists
+            alt_path = path[1:] if path.startswith('/') else path
+            if os.path.exists(os.path.join(static_dir, alt_path)):
+                logger.info(f"Serving alternate path: {alt_path}")
+                return send_from_directory(static_dir, alt_path)
+                
+            # Check if the file exists in assets directory
+            assets_path = os.path.join('assets', path)
+            if os.path.exists(os.path.join(static_dir, assets_path)):
+                logger.info(f"Serving from assets: {assets_path}")
+                return send_from_directory(static_dir, assets_path)
     
     # If path is empty or doesn't exist, serve index.html
     if not path or not os.path.exists(os.path.join(static_dir, path)):

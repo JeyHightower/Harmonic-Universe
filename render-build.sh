@@ -593,8 +593,37 @@ cd - > /dev/null
 
 # Copy frontend build to backend static directory
 echo "Copying frontend build to backend static directory..."
+
+# First, save diagnostic tools if they exist
+if [ -d "$BACKEND_DIR/static" ] && [ -f "$BACKEND_DIR/static/diagnostic.html" ]; then
+  echo "Saving diagnostic tools..."
+  mkdir -p "$BACKEND_DIR/static/diagnostic-tools"
+  cp "$BACKEND_DIR/static/diagnostic.html" "$BACKEND_DIR/static/diagnostic-tools/" || echo "Warning: Could not copy diagnostic.html"
+  
+  if [ -f "$BACKEND_DIR/static/diagnostic.js" ]; then
+    cp "$BACKEND_DIR/static/diagnostic.js" "$BACKEND_DIR/static/diagnostic-tools/" || echo "Warning: Could not copy diagnostic.js"
+  fi
+fi
+
+# Clean existing files and copy frontend build
 rm -rf "$BACKEND_DIR/static/"* # Clean existing files
 cp -r "$FRONTEND_DIR/dist/"* "$BACKEND_DIR/static/"
+
+# Restore diagnostic tools if they were saved
+if [ -d "$BACKEND_DIR/static/diagnostic-tools" ]; then
+  echo "Restoring diagnostic tools..."
+  
+  if [ -f "$BACKEND_DIR/static/diagnostic-tools/diagnostic.html" ]; then
+    cp "$BACKEND_DIR/static/diagnostic-tools/diagnostic.html" "$BACKEND_DIR/static/" || echo "Warning: Could not restore diagnostic.html"
+  fi
+  
+  if [ -f "$BACKEND_DIR/static/diagnostic-tools/diagnostic.js" ]; then
+    cp "$BACKEND_DIR/static/diagnostic-tools/diagnostic.js" "$BACKEND_DIR/static/" || echo "Warning: Could not restore diagnostic.js"
+  fi
+  
+  # Clean up temporary directory
+  rm -rf "$BACKEND_DIR/static/diagnostic-tools"
+fi
 
 # Ensure the static directory has proper permissions
 echo "Setting permissions for static directory..."
