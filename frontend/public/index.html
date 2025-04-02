@@ -10,6 +10,11 @@
       content="Explore the fascinating connection between music and physics with Harmonic Universe"
     />
     <title>Harmonic Universe</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 0; padding: 20px; text-align: center; }
+      h1 { color: #333; }
+      .container { max-width: 800px; margin: 0 auto; }
+    </style>
 
     <!-- React Fixes Loader - Must be first -->
     <script src="/static/react-fixes/react-fix-loader.js"></script>
@@ -33,11 +38,28 @@
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
+    <div class="container">
+      <h1>Harmonic Universe</h1>
+      <p>Loading application...</p>
+      <div id="root"></div>
+    </div>
     <!-- Portal root for modals -->
     <div id="portal-root"></div>
 
     <!-- Load app bundle last -->
     <script type="module" src="/src/index.js"></script>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // Check if the application is still loading after 3 seconds
+        setTimeout(function() {
+          const root = document.getElementById('root');
+          if (root && (!root.childNodes.length || root.innerHTML === '')) {
+            console.log('Application failed to load, redirecting to diagnostic page');
+            window.location.href = '/diagnostic.html';
+          }
+        }, 3000);
+      });
+    </script>
   </body>
 </html>

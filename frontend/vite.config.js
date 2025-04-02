@@ -148,10 +148,11 @@ export default defineConfig(({ command, mode }) => {
       dedupe: ['three', 'react', 'react-dom', 'prop-types']
     },
     build: {
-      outDir: "dist",
-      emptyOutDir: true,
+      outDir: 'dist',
       sourcemap: false,
       minify: true,
+      assetsInlineLimit: 4096,
+      emptyOutDir: true,
       target: 'es2018',
       cssCodeSplit: true,
       chunkSizeWarningLimit: 2000,
@@ -166,9 +167,9 @@ export default defineConfig(({ command, mode }) => {
             'three-bundle': ['three'],
             'vendor': ['react', 'react-dom', 'react-router-dom', 'redux-persist']
           },
-          chunkFileNames: "assets/[name]-[hash].js",
-          entryFileNames: "assets/[name]-[hash].js",
-          assetFileNames: "assets/[name]-[hash].[ext]",
+          entryFileNames: 'assets/[name]-[hash].js',
+          chunkFileNames: 'assets/[name]-[hash].js',
+          assetFileNames: 'assets/[name]-[hash].[ext]'
         },
       },
       commonjsOptions: {
@@ -205,7 +206,9 @@ export default defineConfig(({ command, mode }) => {
       jsx: 'automatic',
       // Don't inject React import
       jsxInject: false
-    }
+    },
+    // Configure public directory
+    publicDir: 'public',
   };
 
   // Add production-specific configurations
