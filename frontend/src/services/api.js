@@ -506,7 +506,7 @@ const apiClient = {
     return axiosInstance.get(`${getEndpoint('universes', 'get', `/api/universes/${id}`)}?${queryParams.toString()}`);
   },
   updateUniverse: (id, data) => axiosInstance.put(getEndpoint('universes', 'update', `/api/universes/${id}`), data),
-  deleteUniverse: (id) => axiosInstance.delete(getEndpoint('universes', 'delete', `/api/universes/${id}`)),
+  deleteUniverse: (id) => axiosInstance.delete(`/api/universes/${id}`),
   getUniverseScenes: (universeId) =>
     axiosInstance.get(getEndpoint('universes', 'scenes', `/api/universes/${universeId}/scenes`)),
   updateUniversePhysics: (universeId, physicsParams) =>
