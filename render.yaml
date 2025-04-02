@@ -23,28 +23,6 @@ services:
       - fromGroup: harmonic-universe-env
     healthCheckPath: /api/health
     autoDeploy: true
-    headers:
-      - path: "/*.js"
-        name: "Content-Type"
-        value: "application/javascript; charset=utf-8"
-      - path: "/*.mjs"
-        name: "Content-Type"
-        value: "application/javascript; charset=utf-8"
-      - path: "/*.jsx"
-        name: "Content-Type"
-        value: "application/javascript; charset=utf-8"
-      - path: "/src/*.js"
-        name: "Content-Type"
-        value: "application/javascript; charset=utf-8"
-      - path: "/jsx-runtime"
-        name: "Content-Type"
-        value: "application/javascript; charset=utf-8"
-      - path: "/jsx-runtime.js"
-        name: "Content-Type"
-        value: "application/javascript; charset=utf-8"
-      - path: "/**/*.js"
-        name: "Access-Control-Allow-Origin"
-        value: "*"
     scaling:
       minInstances: 1
       maxInstances: 2
