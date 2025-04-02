@@ -260,6 +260,10 @@ echo "Explicitly installing Vite and related packages..."
 npm install --no-save vite@4.2.0 @vitejs/plugin-react@3.1.0
 npm install --global vite@4.2.0
 
+# Ensure prop-types is installed
+echo "Ensuring prop-types is installed..."
+npm install --no-save prop-types@15.8.1
+
 # Create a custom vite build script
 echo "Creating custom Vite build script..."
 cat > vite-build.js << 'EOF'
