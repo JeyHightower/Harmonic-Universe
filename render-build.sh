@@ -23,14 +23,14 @@ export NODE_ENV=production
 echo "==== Building frontend ===="
 cd frontend
 
-# Clean any problematic node_modules
-echo "Cleaning node_modules..."
-rm -rf node_modules/.vite
-rm -rf node_modules/react
-rm -rf node_modules/react-dom
-rm -rf node_modules/@vitejs
-rm -rf node_modules/react-router-dom
-rm -rf node_modules/react-redux
+# Display package.json
+echo "Current package.json:"
+cat package.json
+
+# Clean out node_modules completely
+echo "Completely removing node_modules directory..."
+rm -rf node_modules
+rm -rf package-lock.json
 
 # Clean any JSX runtime polyfills that might cause conflicts
 echo "Cleaning any existing JSX runtime polyfills..."
@@ -40,113 +40,106 @@ rm -f src/jsx-runtime-polyfill.js
 rm -f vite-plugin-react-shim.js
 rm -f vite.config.minimal.js
 
-# Install frontend dependencies
-echo "Installing frontend dependencies..."
-npm install --legacy-peer-deps
+# Create temporary package.json with exact versions
+echo "Creating temporary package.json with exact versions..."
+cp package.json package.json.bak
+cat > package.json << EOF
+{
+  "name": "harmonic-universe-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@ant-design/icons": "4.8.0",
+    "@emotion/react": "11.11.0",
+    "@emotion/styled": "11.11.0",
+    "@mui/icons-material": "5.14.11",
+    "@mui/material": "5.14.11",
+    "@reduxjs/toolkit": "1.9.5",
+    "antd": "4.24.10",
+    "axios": "1.6.0",
+    "moment": "2.29.4",
+    "prop-types": "15.8.1",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-redux": "8.0.5",
+    "react-router-dom": "6.10.0",
+    "redux-persist": "6.0.0",
+    "three": "0.155.0",
+    "tone": "14.7.77"
+  },
+  "devDependencies": {
+    "@babel/core": "7.22.5",
+    "@babel/plugin-transform-runtime": "7.22.5",
+    "@babel/preset-env": "7.22.5",
+    "@babel/preset-react": "7.22.5",
+    "@types/node": "20.8.0",
+    "@types/react": "18.0.28",
+    "@types/react-dom": "18.0.11",
+    "@vitejs/plugin-react": "3.1.0",
+    "vite": "4.2.0"
+  }
+}
+EOF
 
-# Explicitly install specific versions of critical dependencies
-echo "Installing critical dependencies with specific versions..."
-npm install --legacy-peer-deps --no-save vite@4.2.0 @vitejs/plugin-react@3.1.0 react@18.2.0 react-dom@18.2.0
-npm install --legacy-peer-deps --no-save react-redux@8.0.5 redux@4.2.1 react-router-dom@6.10.0 @reduxjs/toolkit@1.9.5
+# Install dependencies
+echo "Installing dependencies with --legacy-peer-deps and --verbose..."
+npm install --legacy-peer-deps --verbose
 
-# Create a more comprehensive vite.config.temp.js for the build
-echo "Creating temporary Vite configuration that prevents React duplication..."
-cat > vite.config.temp.js << 'EOF'
+# Create a simple vite.config.js
+echo "Creating simple vite.config.js..."
+cat > vite.config.js << 'EOF'
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { fileURLToPath, URL } from 'node:url';
 import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": fileURLToPath(new URL('./src', import.meta.url)),
-      "@components": "./src/components",
-      "@pages": "./src/pages",
-      "@store": "./src/store",
-      "@styles": "./src/styles",
-      "@assets": "./src/assets",
-      "@utils": "./src/utils",
-      "@hooks": "./src/hooks",
-      "@contexts": "./src/contexts",
-      "@services": "./src/services"
+      '@': path.resolve(__dirname, './src'),
     }
   },
   build: {
     outDir: 'dist',
     sourcemap: false,
-    minify: true,
-    rollupOptions: {
-      external: [],
-      output: {
-        manualChunks: {
-          'vendor': ['react', 'react-dom', 'react-redux', 'react-router-dom'],
-        }
-      }
-    }
-  },
-  esbuild: {
-    jsx: 'automatic',
-    jsxInject: null // Disable automatic React import to prevent duplication
-  },
-  optimizeDeps: {
-    include: [
-      'react', 
-      'react-dom', 
-      'react-redux', 
-      'react-router-dom',
-      '@reduxjs/toolkit'
-    ]
+    minify: true
   }
 });
 EOF
 
-# Check for main.jsx file and clean up any potential React duplication there
-if [ -f "src/main.jsx" ]; then
-  echo "Checking main.jsx for potential React duplication..."
-  # Remove any JSX runtime polyfill import if present
-  sed -i.bak '/import.*jsx-runtime-polyfill/d' src/main.jsx
-  # Ensure there's only one React import
-  echo "Cleaned main.jsx file"
-fi
-
 # List installed versions for troubleshooting
 echo "Checking installed versions:"
-npx vite --version
-npm list react
-npm list react-dom
-npm list react-redux
-npm list react-router-dom
-npm list @vitejs/plugin-react
+npx --no vite --version
+npm list --depth=0
 
-# Try to build with the regular config first, fallback to temporary config
+# Try to build
 echo "Building frontend application..."
-if ! npx vite build --debug; then
-  echo "Regular build failed, trying with temporary config..."
-  npx vite build --config vite.config.temp.js
+if ! npx vite build; then
+  echo "Regular build failed, trying with NPX to ensure correct Vite version..."
+  npx vite@4.2.0 build
 fi
 
-# If both build attempts fail, try a minimal build with just essential files
+# If build still fails, create minimal static files
 if [ ! -d "dist" ]; then
-  echo "Both build attempts failed, trying with force flag..."
-  VITE_FORCE_BUILD=true npx vite build --config vite.config.temp.js
+  echo "All build attempts failed, creating a minimal build..."
   
-  # If still failing, create a minimal build
-  if [ ! -d "dist" ]; then
-    echo "All build attempts failed, creating a minimal build..."
-    
-    # Create minimal dist directory
-    mkdir -p dist
-    
-    # Copy any existing static assets
-    if [ -d "public" ]; then
-      echo "Copying public assets to dist directory..."
-      cp -r public/* dist/ || echo "Warning: Could not copy all public assets"
-    fi
-    
-    # Create a minimal index.html
-    cat > dist/index.html << 'EOF'
+  # Create minimal dist directory
+  mkdir -p dist
+  
+  # Copy any existing static assets
+  if [ -d "public" ]; then
+    echo "Copying public assets to dist directory..."
+    cp -r public/* dist/ || echo "Warning: Could not copy all public assets"
+  fi
+  
+  # Create a minimal index.html
+  cat > dist/index.html << 'EOF'
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -184,9 +177,8 @@ if [ ! -d "dist" ]; then
 </body>
 </html>
 EOF
-    
-    echo "Created minimal build files"
-  fi
+  
+  echo "Created minimal build files"
 fi
 
 # Verify the build output
@@ -194,6 +186,12 @@ echo "Verifying frontend build..."
 if [ -d "dist" ]; then
   echo "Frontend build directory exists. Contents of dist directory:"
   ls -la dist
+  
+  # Restore original package.json
+  if [ -f "package.json.bak" ]; then
+    echo "Restoring original package.json..."
+    mv package.json.bak package.json
+  fi
 else
   echo "ERROR: Frontend build failed! No dist directory found."
   exit 1
