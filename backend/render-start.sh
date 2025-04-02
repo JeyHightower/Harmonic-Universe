@@ -228,4 +228,19 @@ export DEPLOYMENT_PLATFORM="render"
 
 # Start the server
 echo "Starting server..."
-gunicorn --bind=0.0.0.0:$PORT --workers=2 --timeout=120 --log-level=info app:app 
+# Print the app.py file structure to debug the Flask app object
+echo "Checking app.py structure..."
+grep -n "app = " app.py
+grep -n "create_app" app.py
+
+# Use the correct application object - try different formats that might work
+if grep -q "app = create_app()" app.py; then
+  echo "Using 'app:app' format..."
+  gunicorn --bind=0.0.0.0:$PORT --workers=2 --timeout=120 --log-level=info app:app
+elif grep -q "def create_app" app.py; then
+  echo "Using 'app:create_app()' format..."
+  gunicorn --bind=0.0.0.0:$PORT --workers=2 --timeout=120 --log-level=info "app:create_app()"
+else
+  echo "Using module name only format..."
+  gunicorn --bind=0.0.0.0:$PORT --workers=2 --timeout=120 --log-level=info app
+fi 
