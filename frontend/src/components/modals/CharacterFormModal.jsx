@@ -19,6 +19,8 @@ import apiClient from "../../services/api";
 import { useDispatch } from "react-redux";
 import "../character/Characters.css";
 import PropTypes from "prop-types";
+import { fetchScenes } from "../../store/thunks/scenesThunks";
+import { openModal } from "../../store/slices/modalSlice";
 
 const CharacterFormModal = ({
   isOpen,
@@ -41,6 +43,9 @@ const CharacterFormModal = ({
   const [character, setCharacter] = useState(null);
   const [scenes, setScenes] = useState(availableScenes);
   const [loadingScenes, setLoadingScenes] = useState(false);
+  const [sceneOptions, setSceneOptions] = useState([]);
+  const [formErrors, setFormErrors] = useState({});
+  const [scenesLoading, setScenesLoading] = useState(false);
 
   // Helper function to validate scene_id against available scenes
   const getValidSceneId = (sceneIdToValidate, availableScenesList) => {
@@ -328,6 +333,32 @@ const CharacterFormModal = ({
     }
   }, [isOpen, type, characterId, scenes]);
 
+  useEffect(() => {
+    if (universeId) {
+      // Fetch scenes for the selected universe
+      setScenesLoading(true);
+      dispatch(fetchScenes(universeId))
+        .unwrap()
+        .then((result) => {
+          console.log("Scenes loaded:", result.scenes);
+          setSceneOptions(result.scenes || []);
+          setScenesLoading(false);
+        })
+        .catch((error) => {
+          console.error("Error loading scenes:", error);
+          setSceneOptions([]);
+          setScenesLoading(false);
+          setFormErrors({
+            ...formErrors,
+            scene_id:
+              "Could not load scenes. Please try again or create a new scene.",
+          });
+        });
+    } else {
+      setSceneOptions([]);
+    }
+  }, [universeId, dispatch, formErrors]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -468,67 +499,66 @@ const CharacterFormModal = ({
                 {type === "create" && (
                   <FormControl
                     fullWidth
-                    margin="dense"
-                    required
-                    error={!formData.scene_id && !loadingScenes}
-                    disabled={loadingScenes || type === "view" || loading}
+                    error={!!formErrors.scene_id}
+                    sx={{ mt: 2 }}
                   >
                     <InputLabel id="scene-select-label">Scene</InputLabel>
                     <Select
                       labelId="scene-select-label"
-                      id="scene-select"
+                      id="scene_id"
                       name="scene_id"
-                      value={formData.scene_id}
+                      value={formData.scene_id || ""}
                       onChange={handleChange}
                       label="Scene"
                       displayEmpty
+                      disabled={!universeId || scenesLoading}
                     >
-                      {loadingScenes ? (
-                        <MenuItem disabled>Loading scenes...</MenuItem>
-                      ) : scenes.length === 0 ? (
-                        <MenuItem disabled>
-                          No scenes available - please create a scene first
-                        </MenuItem>
-                      ) : (
-                        scenes.map((scene) => {
-                          if (!scene || scene.error) {
-                            return null; // Skip invalid scenes
-                          }
+                      <MenuItem value="" disabled>
+                        {scenesLoading ? "Loading scenes..." : "Select a scene"}
+                      </MenuItem>
 
-                          const sceneId = String(scene.id);
-                          const displayName =
-                            scene.title ||
-                            scene.name ||
-                            (scene.description
-                              ? scene.description.substring(0, 20) + "..."
-                              : `Scene ${scene.id}`);
-
-                          return (
-                            <MenuItem key={sceneId} value={sceneId}>
-                              {displayName}
+                      {Array.isArray(sceneOptions) &&
+                      sceneOptions.length > 0 ? (
+                        sceneOptions.map((scene) =>
+                          scene && scene.id ? (
+                            <MenuItem key={scene.id} value={scene.id}>
+                              {scene.name || "Unnamed scene"}
                             </MenuItem>
-                          );
-                        })
+                          ) : null
+                        )
+                      ) : (
+                        <MenuItem value="" disabled>
+                          No scenes available. Please create a scene first.
+                        </MenuItem>
                       )}
                     </Select>
-                    {!formData.scene_id &&
-                      !loadingScenes &&
-                      scenes.length === 0 && (
-                        <FormHelperText error>
-                          Please create a scene in this universe first
-                        </FormHelperText>
-                      )}
-                    {!loadingScenes && scenes.length === 0 && (
-                      <Button
-                        size="small"
-                        onClick={() =>
-                          window.open(`/universes/${universeId}`, "_blank")
-                        }
-                        style={{ marginTop: 8 }}
-                      >
-                        Go to Universe to Create Scenes
-                      </Button>
+                    {!!formErrors.scene_id && (
+                      <FormHelperText error>
+                        {formErrors.scene_id}
+                      </FormHelperText>
                     )}
+                    {!formErrors.scene_id &&
+                      sceneOptions.length === 0 &&
+                      universeId &&
+                      !scenesLoading && (
+                        <Button
+                          size="small"
+                          sx={{ mt: 1 }}
+                          onClick={() => {
+                            // Navigate to scene creation or open a scene creation modal
+                            onClose(); // Close current modal
+                            // Open scene form modal
+                            dispatch(
+                              openModal({
+                                type: "SCENE_FORM",
+                                props: { universeId },
+                              })
+                            );
+                          }}
+                        >
+                          Create a new scene
+                        </Button>
+                      )}
                   </FormControl>
                 )}
 

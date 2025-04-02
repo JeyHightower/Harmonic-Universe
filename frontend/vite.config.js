@@ -29,6 +29,19 @@ export default defineConfig({
             return 'vendor-react';
           }
 
+          // MUI Libraries
+          if (id.includes('node_modules/@mui/material')) {
+            // Split MUI components more granularly
+            if (id.includes('Alert')) {
+              return 'mui-feedback';
+            }
+            return 'mui-core';
+          }
+
+          if (id.includes('node_modules/@mui/icons-material')) {
+            return 'mui-icons';
+          }
+
           // Redux and related packages
           if (id.includes('node_modules/react-redux') ||
             id.includes('node_modules/@reduxjs/toolkit') ||
@@ -171,6 +184,8 @@ export default defineConfig({
       'redux-persist/integration/react',
       'antd',
       '@ant-design/icons',
+      '@mui/material',
+      '@mui/icons-material',
       'tone'
     ],
     esbuildOptions: {

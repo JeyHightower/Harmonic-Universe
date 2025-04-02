@@ -95,7 +95,7 @@ def list_scenes():
                     }), 404
                 
                 # Check if universe is deleted
-                if universe.is_deleted:
+                if getattr(universe, 'is_deleted', False):
                     current_app.logger.warning(f"Universe with ID {universe_id_int} has been deleted")
                     return jsonify({
                         'message': 'Universe has been deleted',
@@ -104,7 +104,7 @@ def list_scenes():
                 
                 current_app.logger.debug(f"Found universe: {universe.name} (owner: {universe.user_id})")
                 
-                if not universe.is_public and universe.user_id != user_id:
+                if not getattr(universe, 'is_public', False) and universe.user_id != user_id:
                     current_app.logger.warning(f"Access denied: User {user_id} attempting to access universe {universe_id_int} owned by {universe.user_id}")
                     return jsonify({
                         'message': 'Access denied',
@@ -113,7 +113,7 @@ def list_scenes():
                 
                 # Get scenes for the specified universe - use a try/except block for the query itself
                 try:
-                    # Use SQLAlchemy comparison operators for boolean fields
+                    # Direct serialization instead of using the complex to_dict method
                     scenes = Scene.query.filter(
                         Scene.universe_id == universe_id_int,
                         Scene.is_deleted == False
@@ -124,15 +124,16 @@ def list_scenes():
                     scene_dicts = []
                     for scene in scenes:
                         try:
+                            # Directly serialize instead of using to_dict() which has complex logic
                             scene_dict = {
                                 'id': scene.id,
                                 'name': str(scene.name) if hasattr(scene, 'name') and scene.name is not None else "Unknown",
                                 'universe_id': scene.universe_id,
-                                'description': scene.description or "",
-                                'created_at': scene.created_at.isoformat() if scene.created_at else None,
-                                'updated_at': scene.updated_at.isoformat() if scene.updated_at else None,
-                                'is_deleted': bool(scene.is_deleted),
-                                'is_public': bool(scene.is_public),
+                                'description': scene.description if hasattr(scene, 'description') else "",
+                                'created_at': scene.created_at.isoformat() if hasattr(scene, 'created_at') and scene.created_at else None,
+                                'updated_at': scene.updated_at.isoformat() if hasattr(scene, 'updated_at') and scene.updated_at else None,
+                                'is_deleted': bool(scene.is_deleted) if hasattr(scene, 'is_deleted') else False,
+                                'is_public': bool(scene.is_public) if hasattr(scene, 'is_public') else False,
                             }
                             scene_dicts.append(scene_dict)
                         except Exception as scene_error:
@@ -174,7 +175,7 @@ def list_scenes():
                 public_scenes = Scene.query.join(
                     Universe, Scene.universe_id == Universe.id
                 ).filter(
-                    Universe.is_public == True,
+                    Universe.is_public == True,  # Use actual boolean for SQLAlchemy
                     Scene.is_deleted == False
                 ).all()
                 
@@ -205,15 +206,16 @@ def list_scenes():
                 scene_dicts = []
                 for scene in scenes:
                     try:
+                        # Directly serialize instead of using to_dict() which has complex logic
                         scene_dict = {
                             'id': scene.id,
                             'name': str(scene.name) if hasattr(scene, 'name') and scene.name is not None else "Unknown",
                             'universe_id': scene.universe_id,
-                            'description': scene.description or "",
-                            'created_at': scene.created_at.isoformat() if scene.created_at else None,
-                            'updated_at': scene.updated_at.isoformat() if scene.updated_at else None,
-                            'is_deleted': bool(scene.is_deleted),
-                            'is_public': bool(scene.is_public),
+                            'description': scene.description if hasattr(scene, 'description') else "",
+                            'created_at': scene.created_at.isoformat() if hasattr(scene, 'created_at') and scene.created_at else None,
+                            'updated_at': scene.updated_at.isoformat() if hasattr(scene, 'updated_at') and scene.updated_at else None,
+                            'is_deleted': bool(scene.is_deleted) if hasattr(scene, 'is_deleted') else False,
+                            'is_public': bool(scene.is_public) if hasattr(scene, 'is_public') else False,
                         }
                         scene_dicts.append(scene_dict)
                     except Exception as scene_error:
