@@ -6,6 +6,12 @@ set -e
 echo "Starting Harmonic Universe application at $(date -u)"
 echo "Current directory: $(pwd)"
 echo "Python version: $(python --version)"
+echo "Node version: $(node -v || echo 'Node.js not found')"
+echo "NPM version: $(npm -v || echo 'NPM not found')"
+
+# Navigate to the project root
+cd /opt/render/project/src
+echo "Now in project root: $(pwd)"
 
 # Activate virtual environment if it exists
 if [ -d ".venv" ]; then
@@ -23,19 +29,62 @@ export PYTHONPATH=$PYTHONPATH:$(pwd):/opt/render/project/src
 PORT="${PORT:-10000}"
 echo "Application will listen on port $PORT"
 
-# Ensure log directory exists
+# Ensure needed directories exist
 mkdir -p logs
+mkdir -p static
 
-# Verify static directory
+# Check for and build frontend
+if [ -d "frontend" ]; then
+    echo "===== Building Frontend ====="
+    cd frontend
+    
+    # Install frontend dependencies
+    echo "Installing frontend dependencies..."
+    if [ -f "package.json" ]; then
+        echo "Found package.json, installing dependencies..."
+        npm install --no-save || echo "Warning: npm install failed, continuing anyway"
+        
+        # Install specific dependencies that might be missing
+        echo "Installing additional dependencies..."
+        npm install --no-save antd prop-types redux-persist @ant-design/icons || echo "Warning: Installing additional dependencies failed"
+        
+        # Build frontend
+        echo "Building frontend application..."
+        npm run build || echo "Warning: Frontend build failed, continuing anyway"
+        
+        # Check if build was successful
+        if [ -d "dist" ]; then
+            echo "Frontend build successful."
+            
+            # Go back to root and copy frontend build to static directory
+            cd /opt/render/project/src
+            echo "Copying frontend build to backend/static..."
+            mkdir -p backend/static
+            cp -r frontend/dist/* backend/static/ || echo "Warning: Failed to copy frontend build to static directory"
+            
+            echo "Frontend build deployed to static directory."
+        else
+            echo "WARNING: Frontend build directory not found."
+            cd /opt/render/project/src
+        fi
+    else
+        echo "WARNING: No package.json found in frontend directory."
+        cd /opt/render/project/src
+    fi
+else
+    echo "WARNING: No frontend directory found."
+fi
+
+# Verify backend static directory
 echo "Checking static directory..."
-if [ -d "static" ]; then
+if [ -d "backend/static" ]; then
     echo "Static directory exists"
     echo "Contents:"
-    ls -la static | head -n 10
+    ls -la backend/static | head -n 10
 else
-    echo "WARNING: Static directory not found, creating it"
-    mkdir -p static
-    echo "<html><body><h1>Harmonic Universe</h1><p>Static files not found.</p></body></html>" > static/index.html
+    echo "WARNING: Static directory not found in backend, creating it"
+    mkdir -p backend/static
+    echo "<html><body><h1>Harmonic Universe</h1><p>Static files not found.</p></body></html>" > backend/static/index.html
 fi
 
 # Verify database connection
@@ -45,22 +94,19 @@ if [ -n "$DATABASE_URL" ]; then
     
     # Run any pending migrations
     echo "Running any pending database migrations..."
+    cd backend
     if [ -f "init_migrations.py" ]; then
         export FLASK_APP=init_migrations.py
         python -m flask db upgrade || echo "Warning: Migrations failed, but continuing"
     fi
+    cd ..
 else
     echo "WARNING: No DATABASE_URL found. Using SQLite."
 fi
 
-# Navigate to the project root directory
-cd /opt/render/project/src
-echo "Now in project root: $(pwd)"
-
-# Create a wsgi.py file if it doesn't exist
-if [ ! -f "backend/wsgi.py" ]; then
-    echo "Creating wsgi.py file..."
-    cat > backend/wsgi.py << 'EOF'
+# Create/update wsgi.py file
+echo "Updating WSGI entry point..."
+cat > backend/wsgi.py << 'EOF'
 import os
 import sys
 
@@ -73,6 +119,7 @@ print(f"Python version: {sys.version}")
 print(f"Current directory: {os.getcwd()}")
 print(f"File location: {__file__}")
 print(f"Python path: {sys.path}")
+print(f"Environment: {os.environ.get('FLASK_ENV', 'not set')}")
 print("================================")
 
 # Import your Flask app
@@ -119,12 +166,48 @@ except ImportError as e:
                 def index():
                     return "Harmonic Universe API - Minimal Fallback App"
 
+# Configure Flask to serve the React app
+from flask import send_from_directory
+
+# Path to the React build directory
+react_build_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend', 'dist')
+static_path = os.path.join(os.path.dirname(__file__), 'static')
+
+print(f"React build path: {react_build_path}")
+print(f"Static path: {static_path}")
+print(f"React build exists: {os.path.exists(react_build_path)}")
+print(f"Static exists: {os.path.exists(static_path)}")
+
+# Override any existing routes for the root URL
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_react_app(path):
+    # First try the path in the React build directory
+    if path and os.path.exists(os.path.join(react_build_path, path)):
+        print(f"Serving file from React build: {path}")
+        return send_from_directory(react_build_path, path)
+    # Then try the static directory
+    elif path and os.path.exists(os.path.join(static_path, path)):
+        print(f"Serving file from static: {path}")
+        return send_from_directory(static_path, path)
+    # Finally, serve index.html from React build or static
+    else:
+        if os.path.exists(os.path.join(react_build_path, 'index.html')):
+            print(f"Serving index.html from React build")
+            return send_from_directory(react_build_path, 'index.html')
+        elif os.path.exists(os.path.join(static_path, 'index.html')):
+            print(f"Serving index.html from static")
+            return send_from_directory(static_path, 'index.html')
+        else:
+            print(f"No index.html found, serving minimal response")
+            return "Harmonic Universe - No frontend files found"
+
 # For gunicorn
 application = app
 EOF
-fi
 
 # Start the application with Gunicorn
 echo "Starting Gunicorn server..."
 echo "Using backend.wsgi:application for Gunicorn"
+cd /opt/render/project/src
 exec gunicorn --bind 0.0.0.0:$PORT backend.wsgi:application 

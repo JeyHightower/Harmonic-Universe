@@ -22,7 +22,9 @@ export const BASE_URL = import.meta.env.BASE_URL || "/";
 export const PUBLIC_URL = import.meta.env.PUBLIC_URL || "/";
 
 // Export the API URL
-export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+export const API_URL = IS_PRODUCTION
+  ? '' // Empty string means same origin in production
+  : (import.meta.env.VITE_API_URL || "http://localhost:5001");
 
 // Export the CDN URL
 export const CDN_URL = import.meta.env.VITE_CDN_URL || "";
@@ -75,7 +77,9 @@ const parseInt = (value, defaultValue = undefined) => {
 
 // API configuration
 export const API_CONFIG = {
-  BASE_URL: import.meta.env.VITE_API_URL || "http://localhost:5001",
+  BASE_URL: IS_PRODUCTION
+    ? '' // Empty string means same origin in production
+    : (import.meta.env.VITE_API_URL || "http://localhost:5001"),
   TIMEOUT: 10000,
   HEADERS: {
     "Content-Type": "application/json",

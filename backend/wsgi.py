@@ -65,6 +65,42 @@ except ImportError as e:
                 def index():
                     return "Harmonic Universe API - Minimal Fallback App"
 
+# Configure Flask to serve the React app
+from flask import send_from_directory
+
+# Path to the React build directory
+react_build_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend', 'dist')
+static_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'backend', 'static')
+
+print(f"React build path: {react_build_path}")
+print(f"Static path: {static_path}")
+print(f"React build exists: {os.path.exists(react_build_path)}")
+print(f"Static exists: {os.path.exists(static_path)}")
+
+# Override any existing routes for the root URL
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_react_app(path):
+    # First try the path in the React build directory
+    if path and os.path.exists(os.path.join(react_build_path, path)):
+        print(f"Serving file from React build: {path}")
+        return send_from_directory(react_build_path, path)
+    # Then try the static directory
+    elif path and os.path.exists(os.path.join(static_path, path)):
+        print(f"Serving file from static: {path}")
+        return send_from_directory(static_path, path)
+    # Finally, serve index.html from React build or static
+    else:
+        if os.path.exists(os.path.join(react_build_path, 'index.html')):
+            print(f"Serving index.html from React build")
+            return send_from_directory(react_build_path, 'index.html')
+        elif os.path.exists(os.path.join(static_path, 'index.html')):
+            print(f"Serving index.html from static")
+            return send_from_directory(static_path, 'index.html')
+        else:
+            print(f"No index.html found, serving minimal response")
+            return "Harmonic Universe - No frontend files found"
+
 # For gunicorn
 application = app
 
