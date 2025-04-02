@@ -3,11 +3,11 @@ services:
     name: harmonic-universe
     env: python
     buildCommand: ./render-build.sh
-    startCommand: ./backend/render-start.sh
+    startCommand: ./render-start.sh
     plan: starter
     envVars:
       - key: FLASK_APP
-        value: app.py
+        value: backend.app:create_app
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: NODE_VERSION
