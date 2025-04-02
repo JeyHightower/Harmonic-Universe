@@ -23,6 +23,105 @@ export NODE_ENV=production
 echo "==== Checking directory structure ===="
 ls -la
 
+# ===== BACKEND BUILD FIRST =====
+echo "==== Building backend first ===="
+
+# Check if backend directory exists
+BACKEND_DIR=""
+if [ -d "backend" ]; then
+  BACKEND_DIR="backend"
+elif [ -d "./backend" ]; then
+  BACKEND_DIR="./backend"
+elif [ -d "../backend" ]; then
+  BACKEND_DIR="../backend"
+fi
+
+if [ -z "$BACKEND_DIR" ]; then
+  echo "WARNING: Backend directory not found. Creating minimal backend..."
+  mkdir -p backend/static
+  mkdir -p backend/instance
+  mkdir -p backend/logs
+  
+  # Create a minimal app.py
+  cat > backend/app.py << 'EOF'
+from flask import Flask, jsonify, send_from_directory
+import os
+
+def create_app():
+    app = Flask(__name__, static_folder='static')
+    
+    @app.route('/api/health')
+    def health():
+        return jsonify({"status": "ok"})
+    
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def serve(path):
+        if path and os.path.exists(os.path.join(app.static_folder, path)):
+            return send_from_directory(app.static_folder, path)
+        return send_from_directory(app.static_folder, 'index.html')
+    
+    return app
+
+if __name__ == '__main__':
+    app = create_app()
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)))
+EOF
+
+  # Create a minimal requirements.txt
+  cat > backend/requirements.txt << 'EOF'
+flask==2.3.3
+werkzeug==2.3.7
+gunicorn==21.2.0
+EOF
+  
+  BACKEND_DIR="backend"
+  echo "Created minimal backend in './backend'"
+fi
+
+# Build Backend
+echo "==== Building backend ===="
+cd "$BACKEND_DIR"
+BACKEND_PATH=$(pwd)
+echo "Backend directory: $BACKEND_PATH"
+
+# Check if requirements.txt exists
+if [ ! -f "requirements.txt" ]; then
+  echo "WARNING: requirements.txt not found. Creating minimal version..."
+  cat > requirements.txt << 'EOF'
+flask==2.3.3
+werkzeug==2.3.7
+gunicorn==21.2.0
+EOF
+fi
+
+# Install backend dependencies
+echo "Installing backend dependencies..."
+pip install --upgrade pip
+pip install --no-cache-dir -r requirements.txt
+
+# Prepare directories
+echo "Creating necessary directories..."
+mkdir -p instance
+mkdir -p logs
+mkdir -p static
+
+# Initialize database
+echo "Initializing database..."
+if [ -f "init_migrations.py" ]; then
+  export FLASK_APP=init_migrations.py
+  python -m flask db upgrade || echo "Warning: Database migrations failed, but continuing"
+else
+  echo "init_migrations.py not found, skipping migrations"
+fi
+
+# Go back to original directory
+cd - > /dev/null
+echo "Backend build completed."
+
+# ===== FRONTEND BUILD SECOND =====
+echo "==== Building frontend ===="
+
 # Find frontend directory
 FRONTEND_DIR=""
 if [ -d "frontend" ]; then
@@ -487,98 +586,6 @@ if [ -d "dist" ]; then
 else
   echo "ERROR: Frontend build failed! No dist directory found."
   exit 1
-fi
-
-# Go back to original directory
-cd - > /dev/null
-
-# Check if backend directory exists
-BACKEND_DIR=""
-if [ -d "backend" ]; then
-  BACKEND_DIR="backend"
-elif [ -d "./backend" ]; then
-  BACKEND_DIR="./backend"
-elif [ -d "../backend" ]; then
-  BACKEND_DIR="../backend"
-fi
-
-if [ -z "$BACKEND_DIR" ]; then
-  echo "WARNING: Backend directory not found. Creating minimal backend..."
-  mkdir -p backend/static
-  mkdir -p backend/instance
-  mkdir -p backend/logs
-  
-  # Create a minimal app.py
-  cat > backend/app.py << 'EOF'
-from flask import Flask, jsonify, send_from_directory
-import os
-
-def create_app():
-    app = Flask(__name__, static_folder='static')
-    
-    @app.route('/api/health')
-    def health():
-        return jsonify({"status": "ok"})
-    
-    @app.route('/', defaults={'path': ''})
-    @app.route('/<path:path>')
-    def serve(path):
-        if path and os.path.exists(os.path.join(app.static_folder, path)):
-            return send_from_directory(app.static_folder, path)
-        return send_from_directory(app.static_folder, 'index.html')
-    
-    return app
-
-if __name__ == '__main__':
-    app = create_app()
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)))
-EOF
-
-  # Create a minimal requirements.txt
-  cat > backend/requirements.txt << 'EOF'
-flask==2.3.3
-werkzeug==2.3.7
-gunicorn==21.2.0
-EOF
-  
-  BACKEND_DIR="backend"
-  echo "Created minimal backend in './backend'"
-fi
-
-# Build Backend
-echo "==== Building backend ===="
-cd "$BACKEND_DIR"
-BACKEND_PATH=$(pwd)
-echo "Backend directory: $BACKEND_PATH"
-
-# Check if requirements.txt exists
-if [ ! -f "requirements.txt" ]; then
-  echo "WARNING: requirements.txt not found. Creating minimal version..."
-  cat > requirements.txt << 'EOF'
-flask==2.3.3
-werkzeug==2.3.7
-gunicorn==21.2.0
-EOF
-fi
-
-# Install backend dependencies
-echo "Installing backend dependencies..."
-pip install --upgrade pip
-pip install --no-cache-dir -r requirements.txt
-
-# Prepare directories
-echo "Creating necessary directories..."
-mkdir -p instance
-mkdir -p logs
-mkdir -p static
-
-# Initialize database
-echo "Initializing database..."
-if [ -f "init_migrations.py" ]; then
-  export FLASK_APP=init_migrations.py
-  python -m flask db upgrade || echo "Warning: Database migrations failed, but continuing"
-else
-  echo "init_migrations.py not found, skipping migrations"
 fi
 
 # Go back to original directory
