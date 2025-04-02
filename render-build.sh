@@ -585,7 +585,7 @@ echo "Created simplified JSX runtime modules"
 
 # Create MIME type fix script if needed
 echo "==== Adding MIME type fixes ===="
-cd ../backend
+cd backend
 mkdir -p fixes/render
 
 # Create __init__.py if it doesn't exist
