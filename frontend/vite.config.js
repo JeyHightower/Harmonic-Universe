@@ -4,15 +4,23 @@ import fs from 'fs';
 import path from 'path';
 import { resolve } from 'path';
 
-// Try to import react plugin, fallback gracefully if not available
+// Try to import React plugin with fallback to our custom shim
 let reactPlugin;
 try {
-  reactPlugin = require('@vitejs/plugin-react').default;
+  reactPlugin = require('@vitejs/plugin-react');
 } catch (e) {
-  console.warn('Warning: @vitejs/plugin-react not found, using empty plugin fallback');
+  console.warn('Failed to load @vitejs/plugin-react, using fallback shim');
   reactPlugin = () => ({
-    name: 'react-plugin-fallback',
-    // Empty plugin with minimal implementation
+    name: 'vite-react-shim',
+    config() {
+      return {
+        esbuild: {
+          jsx: 'automatic',
+          // Don't inject React import as it's causing duplication issues
+          // jsxInject: `import React from 'react'`
+        }
+      };
+    }
   });
 }
 
@@ -49,87 +57,120 @@ export default { jsx, jsxs, Fragment };
 // Path to JSX runtime fallback
 const jsxRuntimeFallback = createJsxRuntimeFallback();
 
-export default defineConfig({
-  plugins: [reactPlugin()],
-  resolve: {
-    alias: {
-      "@": fileURLToPath(new URL('./src', import.meta.url)),
-      "@components": fileURLToPath(new URL('./src/components', import.meta.url)),
-      "@pages": fileURLToPath(new URL('./src/pages', import.meta.url)),
-      "@store": fileURLToPath(new URL('./src/store', import.meta.url)),
-      "@styles": fileURLToPath(new URL('./src/styles', import.meta.url)),
-      "@assets": fileURLToPath(new URL('./src/assets', import.meta.url)),
-      "@utils": fileURLToPath(new URL('./src/utils', import.meta.url)),
-      "@hooks": fileURLToPath(new URL('./src/hooks', import.meta.url)),
-      "@contexts": fileURLToPath(new URL('./src/contexts', import.meta.url)),
-      "@services": fileURLToPath(new URL('./src/services', import.meta.url)),
-      // Add explicit JSX runtime aliases
-      "react/jsx-runtime": jsxRuntimeFallback,
-      "react/jsx-dev-runtime": jsxRuntimeFallback,
-      // Add fallback for problematic packages when in production
-      ...(isProd || forceIncludeAll ? {
-        "react-router-dom": fileURLToPath(new URL('./src/vite-fallback.js', import.meta.url)),
-      } : {})
-    },
-    extensions: ['.js', '.jsx', '.ts', '.tsx', '.json']
-  },
-  build: {
-    outDir: "dist",
-    emptyOutDir: true,
-    sourcemap: false,
-    chunkSizeWarningLimit: 1000,
-    rollupOptions: {
-      external: [],
-      input: {
-        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+// Configuration for both development and production
+export default defineConfig(({ command, mode }) => {
+  const isProduction = mode === 'production';
+
+  console.log(`Running Vite in ${mode} mode`);
+
+  // Base configuration
+  const config = {
+    root: './',
+    base: '/',
+    plugins: [reactPlugin()],
+    resolve: {
+      alias: {
+        "@": fileURLToPath(new URL('./src', import.meta.url)),
+        "@components": fileURLToPath(new URL('./src/components', import.meta.url)),
+        "@pages": fileURLToPath(new URL('./src/pages', import.meta.url)),
+        "@store": fileURLToPath(new URL('./src/store', import.meta.url)),
+        "@styles": fileURLToPath(new URL('./src/styles', import.meta.url)),
+        "@assets": fileURLToPath(new URL('./src/assets', import.meta.url)),
+        "@utils": fileURLToPath(new URL('./src/utils', import.meta.url)),
+        "@hooks": fileURLToPath(new URL('./src/hooks', import.meta.url)),
+        "@contexts": fileURLToPath(new URL('./src/contexts', import.meta.url)),
+        "@services": fileURLToPath(new URL('./src/services', import.meta.url)),
+        // Explicitly alias JSX runtime paths to ensure they're found
+        'react/jsx-runtime': resolve(__dirname, './src/jsx-runtime-polyfill.js'),
+        'react/jsx-dev-runtime': resolve(__dirname, './src/jsx-runtime-polyfill.js'),
+        // Add fallback for problematic packages when in production
+        ...(isProd || forceIncludeAll ? {
+          "react-router-dom": fileURLToPath(new URL('./src/vite-fallback.js', import.meta.url)),
+        } : {})
       },
-      output: {
-        manualChunks: {
-          vendor: [
-            'react',
-            'react-dom',
-            '@reduxjs/toolkit',
-            'react-redux'
-          ],
-          ui: [
-            'antd',
-            '@ant-design/icons',
-            '@mui/material',
-            '@mui/icons-material',
-            '@emotion/react',
-            '@emotion/styled'
-          ],
-          three: ['three'],
-          tone: ['tone']
+      extensions: ['.js', '.jsx', '.ts', '.tsx', '.json']
+    },
+    build: {
+      outDir: "dist",
+      emptyOutDir: true,
+      sourcemap: !isProduction,
+      minify: isProduction,
+      target: 'es2018',
+      cssCodeSplit: true,
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        external: [],
+        input: {
+          main: fileURLToPath(new URL('./index.html', import.meta.url)),
         },
-        chunkFileNames: "assets/[name]-[hash].js",
-        entryFileNames: "assets/[name]-[hash].js",
-        assetFileNames: "assets/[name]-[hash].[ext]",
+        output: {
+          manualChunks: {
+            vendor: [
+              'react',
+              'react-dom',
+              '@reduxjs/toolkit',
+              'react-redux'
+            ],
+            ui: [
+              'antd',
+              '@ant-design/icons',
+              '@mui/material',
+              '@mui/icons-material',
+              '@emotion/react',
+              '@emotion/styled'
+            ],
+            three: ['three'],
+            tone: ['tone']
+          },
+          chunkFileNames: "assets/[name]-[hash].js",
+          entryFileNames: "assets/[name]-[hash].js",
+          assetFileNames: "assets/[name]-[hash].[ext]",
+        },
       },
     },
-  },
-  optimizeDeps: {
-    include: ['react', 'react-dom', 'react/jsx-runtime'],
-    esbuildOptions: {
-      jsx: 'automatic'
+    optimizeDeps: {
+      include: ['react', 'react-dom', 'react/jsx-runtime'],
+      esbuildOptions: {
+        jsx: 'automatic'
+      }
+    },
+    server: {
+      port: 5173,
+      host: true,
+      strictPort: true,
+      fs: {
+        strict: true,
+        allow: ['..']
+      },
+      proxy: {
+        "/api": {
+          target: "http://localhost:5001",
+          changeOrigin: true,
+          secure: false,
+          ws: true,
+          rewrite: (path) => path,
+        },
+      },
+    },
+    // Disable automatic React injection
+    esbuild: {
+      jsx: 'automatic',
+      // Don't inject React import
+      jsxInject: false
     }
-  },
-  server: {
-    port: 5173,
-    host: true,
-    strictPort: true,
-    fs: {
-      strict: true,
-      allow: ['..']
-    },
-    proxy: {
-      "/api": {
-        target: "http://localhost:5001",
-        changeOrigin: true,
-        secure: false,
-        ws: true,
-        rewrite: (path) => path,
-      },
-    },
-  },
+  };
+
+  // Add production-specific configurations
+  if (isProduction) {
+    config.build.rollupOptions.output.manualChunks = function (id) {
+      if (id.includes('node_modules')) {
+        if (id.includes('react') || id.includes('react-dom')) {
+          return 'vendor-react';
+        }
+        return 'vendor'; // all other node_modules
+      }
+    };
+  }
+
+  return config;
 });

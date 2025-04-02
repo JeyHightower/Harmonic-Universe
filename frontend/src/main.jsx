@@ -47,75 +47,6 @@ window.onerror = function (message, source, lineno, colno, error) {
   return false;
 };
 
-// Function to initialize the application
-const initializeApp = () => {
-  console.log("Initializing Harmonic Universe application...");
-
-  // Ensure portal root exists before rendering
-  try {
-    const portalRoot = ensurePortalRoot();
-    console.log("Portal root initialized:", portalRoot);
-  } catch (error) {
-    console.error("Error initializing portal root:", error);
-  }
-
-  const rootElement = document.getElementById("root");
-  if (!rootElement) {
-    console.error("Root element not found, creating one");
-    const newRoot = document.createElement("div");
-    newRoot.id = "root";
-    document.body.appendChild(newRoot);
-  }
-
-  // Use modern React 18 API with fallback
-  const renderApp = () => {
-    try {
-      // React 18 API
-      const root = ReactDOM.createRoot(document.getElementById("root"));
-      root.render(
-        <React.StrictMode>
-          <App />
-        </React.StrictMode>
-      );
-    } catch (error) {
-      console.error("Error rendering with React 18 API:", error);
-
-      // Fallback to simple rendering
-      try {
-        const appElement = React.createElement(App);
-        const rootDiv = document.getElementById("root");
-        rootDiv.innerHTML = "";
-
-        // Manually add React to the element
-        if (rootDiv && appElement) {
-          rootDiv.appendChild(
-            document.createTextNode("Rendering application...")
-          );
-          console.log("App rendered with fallback method");
-        }
-      } catch (fallbackError) {
-        console.error("Complete render failure:", fallbackError);
-        document.getElementById("root").innerHTML =
-          "<div><h1>Harmonic Universe</h1><p>Application failed to initialize. Please try again later.</p></div>";
-      }
-    }
-  };
-
-  renderApp();
-};
-
-// Initialize the application
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initializeApp);
-} else {
-  initializeApp();
-}
-
-// Ensure React is defined globally if needed
-if (typeof window !== "undefined" && !window.React) {
-  window.React = React;
-}
-
 // Get or create the root element
 const getRootElement = () => {
   let rootElement = document.getElementById("root");
@@ -130,6 +61,16 @@ const getRootElement = () => {
 
 // Render application with fallbacks
 const renderApp = () => {
+  console.log("Initializing Harmonic Universe application...");
+
+  // Ensure portal root exists before rendering
+  try {
+    const portalRoot = ensurePortalRoot();
+    console.log("Portal root initialized:", portalRoot);
+  } catch (error) {
+    console.error("Error initializing portal root:", error);
+  }
+
   try {
     // React 18 API
     const root = ReactDOM.createRoot(getRootElement());
@@ -163,5 +104,9 @@ const renderApp = () => {
   }
 };
 
-// Start the application
-renderApp();
+// Initialize the application
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", renderApp);
+} else {
+  renderApp();
+}
