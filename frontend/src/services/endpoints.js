@@ -141,8 +141,19 @@ console.log("All endpoints exported:", {
   universesCreate: endpoints.universes?.create
 });
 
-// Export for direct use with universes
-export const universesEndpoints = universeEndpoints;
+// Add the missing export to endpoints.js as specified in the solution
+export const universesEndpoints = {
+  // Define universe endpoints here
+  getUniverses: `${API_VERSION}/universes`,
+  getUniverseById: (id) => `${API_VERSION}/universes/${id}`,
+  // Add other universe-related endpoints
+  createUniverse: `${API_VERSION}/universes`,
+  updateUniverse: (id) => `${API_VERSION}/universes/${id}`,
+  deleteUniverse: (id) => `${API_VERSION}/universes/${id}`,
+  getUniverseScenes: (id) => `${API_VERSION}/universes/${id}/scenes`,
+  getUniverseCharacters: (id) => `${API_VERSION}/universes/${id}/characters`,
+  getUniverseNotes: (id) => `${API_VERSION}/universes/${id}/notes`,
+};
 
 // Export endpoint helper functions
 export const getEndpoint = (group, name) => {
