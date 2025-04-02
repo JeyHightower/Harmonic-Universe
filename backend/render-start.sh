@@ -340,10 +340,7 @@ grep -n "app =" app.py
 grep -n "def create_app" app.py
 
 # Determine the right WSGI application path
-if grep -q "app = create_app()" app.py; then
-    echo "Found 'app = create_app()' in app.py, using 'app:app'"
-    WSGI_APP="app:app"
-elif grep -q "def create_app" app.py; then
+if grep -q "def create_app" app.py; then
     echo "Found 'create_app' function in app.py, using 'app:create_app()'"
     WSGI_APP="app:create_app()"
 else
