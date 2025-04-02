@@ -94,6 +94,14 @@ def list_scenes():
                         'scenes': []  # Return empty array instead of error
                     }), 404
                 
+                # Check if universe is deleted
+                if universe.is_deleted:
+                    current_app.logger.warning(f"Universe with ID {universe_id_int} has been deleted")
+                    return jsonify({
+                        'message': 'Universe has been deleted',
+                        'scenes': []
+                    }), 404
+                
                 current_app.logger.debug(f"Found universe: {universe.name} (owner: {universe.user_id})")
                 
                 if not universe.is_public and universe.user_id != user_id:
@@ -111,6 +119,39 @@ def list_scenes():
                         Scene.is_deleted == False
                     ).all()
                     current_app.logger.info(f"Found {len(scenes)} scenes for universe {universe_id_int}")
+                    
+                    # Safely convert scenes to dictionaries with individual error handling per scene
+                    scene_dicts = []
+                    for scene in scenes:
+                        try:
+                            scene_dict = {
+                                'id': scene.id,
+                                'name': str(scene.name) if hasattr(scene, 'name') and scene.name is not None else "Unknown",
+                                'universe_id': scene.universe_id,
+                                'description': scene.description or "",
+                                'created_at': scene.created_at.isoformat() if scene.created_at else None,
+                                'updated_at': scene.updated_at.isoformat() if scene.updated_at else None,
+                                'is_deleted': bool(scene.is_deleted),
+                                'is_public': bool(scene.is_public),
+                            }
+                            scene_dicts.append(scene_dict)
+                        except Exception as scene_error:
+                            current_app.logger.error(f"Error converting scene {scene.id} to dict: {str(scene_error)}")
+                            current_app.logger.error(traceback.format_exc())
+                            
+                            # Add minimal information for this scene
+                            scene_dicts.append({
+                                'id': scene.id,
+                                'name': str(scene.name) if hasattr(scene, 'name') and scene.name is not None else "Unknown",
+                                'universe_id': scene.universe_id,
+                                'error': 'Error generating complete scene data'
+                            })
+                    
+                    return jsonify({
+                        'message': 'Scenes retrieved successfully',
+                        'scenes': scene_dicts
+                    }), 200
+                    
                 except Exception as query_error:
                     current_app.logger.error(f"Database error querying scenes: {str(query_error)}")
                     current_app.logger.error(traceback.format_exc())
@@ -127,19 +168,71 @@ def list_scenes():
                     'scenes': []  # Return empty array instead of error
                 }), 400
         else:
-            # Get all scenes the user has access to
+            # Get all scenes the user has access to (simplify this query to avoid errors)
             try:
-                # Use explicit joins and filters to avoid SQLAlchemy errors
-                scenes = Scene.query.join(
+                # Use simpler query to avoid complex joins
+                public_scenes = Scene.query.join(
                     Universe, Scene.universe_id == Universe.id
                 ).filter(
-                    db.or_(
-                        Universe.user_id == user_id,
-                        Universe.is_public == True
-                    ),
+                    Universe.is_public == True,
                     Scene.is_deleted == False
                 ).all()
+                
+                user_scenes = Scene.query.join(
+                    Universe, Scene.universe_id == Universe.id
+                ).filter(
+                    Universe.user_id == user_id,
+                    Scene.is_deleted == False
+                ).all()
+                
+                # Combine both sets of scenes (removing duplicates)
+                scene_ids = set()
+                scenes = []
+                
+                for scene in public_scenes:
+                    if scene.id not in scene_ids:
+                        scene_ids.add(scene.id)
+                        scenes.append(scene)
+                
+                for scene in user_scenes:
+                    if scene.id not in scene_ids:
+                        scene_ids.add(scene.id)
+                        scenes.append(scene)
+                
                 current_app.logger.info(f"Found {len(scenes)} scenes across all accessible universes")
+                
+                # Safely convert scenes to dictionaries with individual error handling per scene
+                scene_dicts = []
+                for scene in scenes:
+                    try:
+                        scene_dict = {
+                            'id': scene.id,
+                            'name': str(scene.name) if hasattr(scene, 'name') and scene.name is not None else "Unknown",
+                            'universe_id': scene.universe_id,
+                            'description': scene.description or "",
+                            'created_at': scene.created_at.isoformat() if scene.created_at else None,
+                            'updated_at': scene.updated_at.isoformat() if scene.updated_at else None,
+                            'is_deleted': bool(scene.is_deleted),
+                            'is_public': bool(scene.is_public),
+                        }
+                        scene_dicts.append(scene_dict)
+                    except Exception as scene_error:
+                        current_app.logger.error(f"Error converting scene {scene.id} to dict: {str(scene_error)}")
+                        current_app.logger.error(traceback.format_exc())
+                        
+                        # Add minimal information for this scene
+                        scene_dicts.append({
+                            'id': scene.id,
+                            'name': str(scene.name) if hasattr(scene, 'name') and scene.name is not None else "Unknown",
+                            'universe_id': scene.universe_id,
+                            'error': 'Error generating complete scene data'
+                        })
+                
+                return jsonify({
+                    'message': 'Scenes retrieved successfully',
+                    'scenes': scene_dicts
+                }), 200
+                
             except Exception as query_error:
                 current_app.logger.error(f"Database error querying all scenes: {str(query_error)}")
                 current_app.logger.error(traceback.format_exc())
@@ -148,34 +241,6 @@ def list_scenes():
                     'error': str(query_error),
                     'scenes': []  # Return empty array instead of error
                 }), 500
-        
-        # Convert scenes to dictionaries with error handling
-        scene_dicts = []
-        conversion_errors = 0
-        for scene in scenes:
-            try:
-                scene_dict = scene.to_dict()
-                scene_dicts.append(scene_dict)
-            except Exception as dict_error:
-                conversion_errors += 1
-                current_app.logger.error(f"Error converting scene {scene.id} to dict: {str(dict_error)}")
-                current_app.logger.error(traceback.format_exc())
-                # Add minimal information for this scene
-                scene_dicts.append({
-                    'id': scene.id,
-                    'name': str(scene.name) if hasattr(scene, 'name') and scene.name is not None else "Unknown",
-                    'universe_id': scene.universe_id,
-                    'error': 'Error generating complete scene data'
-                })
-        
-        if conversion_errors > 0:
-            current_app.logger.warning(f"Encountered {conversion_errors} errors while converting scenes to dictionaries")
-        
-        return jsonify({
-            'message': 'Scenes retrieved successfully',
-            'scenes': scene_dicts,
-            'count': len(scene_dicts)
-        }), 200
         
     except Exception as e:
         current_app.logger.error(f"Error listing scenes: {str(e)}")
