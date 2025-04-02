@@ -230,17 +230,33 @@ export DEPLOYMENT_PLATFORM="render"
 echo "Starting server..."
 # Print the app.py file structure to debug the Flask app object
 echo "Checking app.py structure..."
-grep -n "app = " app.py
-grep -n "create_app" app.py
+grep -n "app = " app.py || echo "No direct app assignments found"
+grep -n "create_app" app.py || echo "No create_app function found"
 
-# Use the correct application object - try different formats that might work
-if grep -q "app = create_app()" app.py; then
-  echo "Using 'app:app' format..."
-  gunicorn --bind=0.0.0.0:$PORT --workers=2 --timeout=120 --log-level=info app:app
-elif grep -q "def create_app" app.py; then
-  echo "Using 'app:create_app()' format..."
-  gunicorn --bind=0.0.0.0:$PORT --workers=2 --timeout=120 --log-level=info "app:create_app()"
-else
-  echo "Using module name only format..."
-  gunicorn --bind=0.0.0.0:$PORT --workers=2 --timeout=120 --log-level=info app
-fi 
+# Check if run.py exists, if not create it
+if [ ! -f "run.py" ]; then
+  echo "Creating run.py file..."
+  cat > run.py << 'EOF'
+"""
+Simple runner module for Gunicorn.
+
+This module imports and creates the Flask application,
+making it easier for Gunicorn to find and load.
+"""
+
+# Import the app factory function and create the app
+from app import create_app
+
+# Create the Flask application
+app = create_app()
+
+# This is what Gunicorn will import
+application = app
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=5001, debug=False)
+EOF
+fi
+
+echo "Using run.py module..."
+gunicorn --bind=0.0.0.0:$PORT --workers=2 --timeout=120 --log-level=info run:application 
