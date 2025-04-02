@@ -333,28 +333,70 @@ fi
 # Set the environment variable to enable Render-specific fixes
 export DEPLOYMENT_PLATFORM="render"
 
-# Check app.py to determine the right WSGI app spec
-APP_PATH=""
-if grep -q "def create_app" app.py; then
-    echo "Found create_app factory function in app.py"
-    if grep -q "app = create_app()" app.py; then
-        echo "App instance created in app.py"
-        APP_PATH="app:app"
-    else
-        echo "Using factory function directly"
-        APP_PATH="app:create_app()"
-    fi
+# Examine app.py to determine what Gunicorn should import
+echo "Examining app.py structure..."
+grep -n "app = " app.py || echo "No 'app = ' pattern found"
+grep -n "def create_app" app.py || echo "No 'create_app' function found"
+
+# Create a simple test script to help debug the app structure
+echo "Creating test script..."
+cat > test_app.py << 'EOF'
+#!/usr/bin/env python3
+import sys
+print("Testing app.py module")
+try:
+    import app
+    print("Successfully imported app module")
+    
+    if hasattr(app, 'app'):
+        print("Found app.app - direct app instance")
+        app_obj = app.app
+        print(f"Type: {type(app_obj)}")
+    else:
+        print("No app.app found")
+    
+    if hasattr(app, 'create_app'):
+        print("Found app.create_app - factory function")
+        try:
+            app_obj = app.create_app()
+            print(f"Factory returned: {type(app_obj)}")
+        except Exception as e:
+            print(f"Error calling create_app: {e}")
+    else:
+        print("No app.create_app found")
+        
+    # Look for any Flask instances
+    print("\nLooking for Flask objects in app module:")
+    for name in dir(app):
+        obj = getattr(app, name)
+        if str(type(obj)).find('Flask') != -1:
+            print(f"Found Flask object: app.{name}, type: {type(obj)}")
+except Exception as e:
+    print(f"Error importing app: {e}")
+EOF
+
+# Run the test script
+echo "Running app.py test script..."
+python test_app.py
+
+# Try with multiple WSGI paths to find the right one
+echo "Starting Gunicorn with testing different WSGI paths..."
+export PYTHONUNBUFFERED=1
+
+# Determine the app path using a fallback approach
+echo "Testing app:app first..."
+if python -c "import app; getattr(app, 'app')" 2>/dev/null; then
+    echo "Verified app:app is valid"
+    APP_PATH="app:app"
+elif python -c "import app; app.create_app()" 2>/dev/null; then
+    echo "Verified app:create_app() is valid"
+    APP_PATH="app:create_app()"
 else
-    echo "Using app instance directly"
-    APP_PATH="app:app"  
+    echo "WARNING: Could not verify app path, using app:app"
+    APP_PATH="app:app"
 fi
 
-echo "Starting Gunicorn with WSGI app: $APP_PATH"
-echo "Port: $PORT"
-
-# Start with simplified configuration that disables buffering
-echo "Starting Gunicorn with minimal configuration"
-export PYTHONUNBUFFERED=1
+echo "Starting Gunicorn with: $APP_PATH"
 gunicorn $APP_PATH \
     --bind=0.0.0.0:$PORT \
     --workers=1 \

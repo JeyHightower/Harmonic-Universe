@@ -3,12 +3,17 @@ import os
 import sys
 import logging
 
-# Create a bare minimum Flask application
-app = Flask(__name__, static_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), "static"), static_url_path="")
-
 # Set up basic logging to console
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+# Create a bare minimum Flask application
+app = Flask(__name__, static_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), "static"), static_url_path="")
+
+# Debug log to show the app is created
+logger.info(f"Flask app created with name: {__name__}")
+logger.info(f"Static folder: {app.static_folder}")
+logger.info(f"Static folder exists: {os.path.exists(app.static_folder) if app.static_folder else False}")
 
 @app.route('/minimal')
 def minimal():
@@ -130,6 +135,12 @@ def static_file():
     
     logger.info(f"Generated static file response: {len(content)} bytes")
     return response
+
+# Function for factory pattern if that's what Gunicorn expects
+def create_app():
+    """Factory function in case Gunicorn is looking for create_app pattern"""
+    logger.info("create_app factory function called")
+    return app
 
 # Only for development - not used on Render
 if __name__ == '__main__':
