@@ -92,9 +92,14 @@ const getEndpoint = (group, name, fallback) => {
 // Request deduplication
 const pendingRequests = new Map();
 
-// Create axios instance with default config
+// Check for environment-specific API URL
+const API_BASE_URL = process.env.NODE_ENV === 'production'
+  ? 'https://harmonic-universe-v682.onrender.com'
+  : 'http://localhost:5001'; // Updated port from 5000 to 5001
+
+// Create axios instance with the API base URL
 const axiosInstance = axios.create({
-  baseURL: API_CONFIG.BASE_URL,
+  baseURL: API_BASE_URL,
   headers: API_CONFIG.HEADERS,
   timeout: API_CONFIG.TIMEOUT,
   withCredentials: true,  // Always include credentials

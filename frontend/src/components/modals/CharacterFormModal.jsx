@@ -337,17 +337,41 @@ const CharacterFormModal = ({
     if (universeId) {
       // Fetch scenes for the selected universe
       setScenesLoading(true);
+
+      // Add a timeout to prevent hanging UI if the API doesn't respond
+      const timeoutId = setTimeout(() => {
+        if (scenesLoading) {
+          setScenesLoading(false);
+          setFormErrors({
+            ...formErrors,
+            scene_id: "Loading scenes timed out. Please try again later.",
+          });
+        }
+      }, 10000); // 10 second timeout
+
       dispatch(fetchScenes(universeId))
         .unwrap()
         .then((result) => {
           console.log("Scenes loaded:", result.scenes);
-          setSceneOptions(result.scenes || []);
+          if (Array.isArray(result.scenes)) {
+            setSceneOptions(result.scenes);
+          } else {
+            // Handle case where scenes might not be an array
+            console.error("Received invalid scenes data:", result.scenes);
+            setSceneOptions([]);
+            setFormErrors({
+              ...formErrors,
+              scene_id: "Received invalid scene data. Please try again.",
+            });
+          }
           setScenesLoading(false);
+          clearTimeout(timeoutId);
         })
         .catch((error) => {
           console.error("Error loading scenes:", error);
           setSceneOptions([]);
           setScenesLoading(false);
+          clearTimeout(timeoutId);
           setFormErrors({
             ...formErrors,
             scene_id:
@@ -357,6 +381,12 @@ const CharacterFormModal = ({
     } else {
       setSceneOptions([]);
     }
+
+    // Cleanup timeout on unmount
+    return () => {
+      // Clear any existing timeouts
+      clearTimeout(timeoutId);
+    };
   }, [universeId, dispatch, formErrors]);
 
   const handleChange = (e) => {
@@ -366,8 +396,14 @@ const CharacterFormModal = ({
     if (name === "scene_id") {
       console.log(`Scene selection changed to ID:`, value);
 
-      // For MUI Select, the value is already what was selected in the dropdown
-      // No need for additional validation here as the dropdown only contains valid options
+      // Clear any scene_id error when the user selects a valid scene
+      if (value) {
+        setFormErrors((prev) => ({
+          ...prev,
+          scene_id: undefined,
+        }));
+      }
+
       setFormData((prev) => {
         const updated = {
           ...prev,
@@ -528,7 +564,9 @@ const CharacterFormModal = ({
                         )
                       ) : (
                         <MenuItem value="" disabled>
-                          No scenes available. Please create a scene first.
+                          {universeId
+                            ? "No scenes available. Please create a scene first."
+                            : "Please select a universe first"}
                         </MenuItem>
                       )}
                     </Select>
@@ -537,27 +575,40 @@ const CharacterFormModal = ({
                         {formErrors.scene_id}
                       </FormHelperText>
                     )}
+
                     {!formErrors.scene_id &&
                       sceneOptions.length === 0 &&
                       universeId &&
                       !scenesLoading && (
-                        <Button
-                          size="small"
-                          sx={{ mt: 1 }}
-                          onClick={() => {
-                            // Navigate to scene creation or open a scene creation modal
-                            onClose(); // Close current modal
-                            // Open scene form modal
-                            dispatch(
-                              openModal({
-                                type: "SCENE_FORM",
-                                props: { universeId },
-                              })
-                            );
-                          }}
-                        >
-                          Create a new scene
-                        </Button>
+                        <Box mt={1}>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            display="block"
+                            gutterBottom
+                          >
+                            No scenes found for this universe. Create one to
+                            continue.
+                          </Typography>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="primary"
+                            onClick={() => {
+                              // Navigate to scene creation or open a scene creation modal
+                              onClose(); // Close current modal
+                              // Open scene form modal
+                              dispatch(
+                                openModal({
+                                  type: "SCENE_FORM",
+                                  props: { universeId },
+                                })
+                              );
+                            }}
+                          >
+                            Create a new scene
+                          </Button>
+                        </Box>
                       )}
                   </FormControl>
                 )}

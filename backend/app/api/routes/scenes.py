@@ -94,8 +94,8 @@ def list_scenes():
                         'scenes': []  # Return empty array instead of error
                     }), 404
                 
-                # Check if universe is deleted
-                if getattr(universe, 'is_deleted', False):
+                # Check if universe is deleted - use explicit comparison with is_deleted field
+                if hasattr(universe, 'is_deleted') and universe.is_deleted is True:
                     current_app.logger.warning(f"Universe with ID {universe_id_int} has been deleted")
                     return jsonify({
                         'message': 'Universe has been deleted',
@@ -104,7 +104,8 @@ def list_scenes():
                 
                 current_app.logger.debug(f"Found universe: {universe.name} (owner: {universe.user_id})")
                 
-                if not getattr(universe, 'is_public', False) and universe.user_id != user_id:
+                # Check access permissions - use explicit comparison 
+                if hasattr(universe, 'is_public') and universe.is_public is not True and universe.user_id != user_id:
                     current_app.logger.warning(f"Access denied: User {user_id} attempting to access universe {universe_id_int} owned by {universe.user_id}")
                     return jsonify({
                         'message': 'Access denied',
@@ -114,10 +115,15 @@ def list_scenes():
                 # Get scenes for the specified universe - use a try/except block for the query itself
                 try:
                     # Direct serialization instead of using the complex to_dict method
-                    scenes = Scene.query.filter(
-                        Scene.universe_id == universe_id_int,
-                        Scene.is_deleted == False
+                    # Use filter_by which is more type-safe for simple equality conditions
+                    scenes = Scene.query.filter_by(
+                        universe_id=universe_id_int,
+                        is_deleted=False
                     ).all()
+                    
+                    if scenes is None:
+                        scenes = []  # Ensure scenes is always a list
+                    
                     current_app.logger.info(f"Found {len(scenes)} scenes for universe {universe_id_int}")
                     
                     # Safely convert scenes to dictionaries with individual error handling per scene
@@ -141,12 +147,16 @@ def list_scenes():
                             current_app.logger.error(traceback.format_exc())
                             
                             # Add minimal information for this scene
-                            scene_dicts.append({
-                                'id': scene.id,
-                                'name': str(scene.name) if hasattr(scene, 'name') and scene.name is not None else "Unknown",
-                                'universe_id': scene.universe_id,
-                                'error': 'Error generating complete scene data'
-                            })
+                            try:
+                                scene_dicts.append({
+                                    'id': scene.id,
+                                    'name': str(scene.name) if hasattr(scene, 'name') and scene.name is not None else "Unknown",
+                                    'universe_id': scene.universe_id,
+                                    'error': 'Error generating complete scene data'
+                                })
+                            except:
+                                # If even minimal data fails, just continue
+                                current_app.logger.error(f"Could not add even minimal scene data")
                     
                     return jsonify({
                         'message': 'Scenes retrieved successfully',
@@ -172,19 +182,28 @@ def list_scenes():
             # Get all scenes the user has access to (simplify this query to avoid errors)
             try:
                 # Use simpler query to avoid complex joins
+                # Use filter_by instead of filter for simple equality conditions
                 public_scenes = Scene.query.join(
                     Universe, Scene.universe_id == Universe.id
                 ).filter(
-                    Universe.is_public == True,  # Use actual boolean for SQLAlchemy
-                    Scene.is_deleted == False
+                    Universe.is_public == True,  # This works correctly in practice despite the linter warning
+                ).filter_by(
+                    is_deleted=False
                 ).all()
                 
                 user_scenes = Scene.query.join(
                     Universe, Scene.universe_id == Universe.id
                 ).filter(
-                    Universe.user_id == user_id,
-                    Scene.is_deleted == False
+                    Universe.user_id == user_id,  
+                ).filter_by(
+                    is_deleted=False
                 ).all()
+                
+                # Ensure we have valid lists
+                if public_scenes is None:
+                    public_scenes = []
+                if user_scenes is None:
+                    user_scenes = []
                 
                 # Combine both sets of scenes (removing duplicates)
                 scene_ids = set()
@@ -223,12 +242,16 @@ def list_scenes():
                         current_app.logger.error(traceback.format_exc())
                         
                         # Add minimal information for this scene
-                        scene_dicts.append({
-                            'id': scene.id,
-                            'name': str(scene.name) if hasattr(scene, 'name') and scene.name is not None else "Unknown",
-                            'universe_id': scene.universe_id,
-                            'error': 'Error generating complete scene data'
-                        })
+                        try:
+                            scene_dicts.append({
+                                'id': scene.id,
+                                'name': str(scene.name) if hasattr(scene, 'name') and scene.name is not None else "Unknown",
+                                'universe_id': scene.universe_id,
+                                'error': 'Error generating complete scene data'
+                            })
+                        except:
+                            # If even minimal data fails, just continue
+                            current_app.logger.error(f"Could not add even minimal scene data")
                 
                 return jsonify({
                     'message': 'Scenes retrieved successfully',

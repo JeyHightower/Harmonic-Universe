@@ -52,7 +52,15 @@ export const fetchScenes = createAsyncThunk(
       return serializedResponse;
     } catch (error) {
       console.error(`Error fetching scenes for universe ${universeId}:`, error);
-      return rejectWithValue(handleError(error));
+
+      // Return a valid response with empty scenes array even on error
+      // This prevents the UI from breaking on API errors
+      return {
+        message: error.response?.data?.message || "Error fetching scenes",
+        scenes: [],
+        status: error.response?.status || 500,
+        error: handleError(error)
+      };
     }
   }
 );
