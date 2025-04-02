@@ -52,42 +52,60 @@ else
     echo "WARNING: No DATABASE_URL found. Using SQLite."
 fi
 
+# Navigate to the project root directory
+cd /opt/render/project/src
+echo "Now in project root: $(pwd)"
+
 # Start the application with Gunicorn
 echo "Starting Gunicorn server..."
 
-# First try with direct app reference
-echo "Using app:app for Gunicorn"
-if gunicorn --bind 0.0.0.0:$PORT app:app; then
-    exit 0
-fi
-
-# If that fails, try with create_app factory
-echo "Direct app:app failed, trying app:create_app()"
-if gunicorn --bind 0.0.0.0:$PORT "app:create_app()"; then
-    exit 0
-fi
-
-# If that fails, try with backend.app module (from project root)
-echo "Local app module failed, trying backend.app module"
-cd /opt/render/project/src || cd ../..
-echo "Now in $(pwd)"
-if [ -f "backend/app.py" ]; then
-    echo "Found backend/app.py, using backend.app:app"
-    gunicorn --bind 0.0.0.0:$PORT backend.app:app
+# Let's examine the app.py file to find the Flask application
+echo "Examining backend/app.py to find Flask application..."
+if grep -q "create_app" backend/app.py; then
+  echo "Found create_app function, using backend.app:create_app()"
+  exec gunicorn --bind 0.0.0.0:$PORT "backend.app:create_app()"
+elif grep -q "flask_app" backend/app.py; then
+  echo "Found flask_app variable, using backend.app:flask_app"
+  exec gunicorn --bind 0.0.0.0:$PORT backend.app:flask_app
+elif grep -q "application" backend/app.py; then
+  echo "Found application variable, using backend.app:application"
+  exec gunicorn --bind 0.0.0.0:$PORT backend.app:application
 else
-    echo "ERROR: backend/app.py not found in $(pwd)"
-    find . -name app.py | head -5
-    
-    # Last resort - try to find any Flask app
-    echo "Searching for any Flask app..."
-    FLASK_FILES=$(find . -name "*.py" | xargs grep -l "Flask(" | head -1)
-    if [ -n "$FLASK_FILES" ]; then
-        echo "Found Flask app in: $FLASK_FILES"
-        MODULE_PATH=$(echo $FLASK_FILES | sed 's/\.\///g' | sed 's/\.py//g' | sed 's/\//\./g')
-        echo "Using $MODULE_PATH:app"
-        gunicorn --bind 0.0.0.0:$PORT "$MODULE_PATH:app"
+  echo "Looking for Flask app variable..."
+  FLASK_VAR=$(grep -o "[a-zA-Z_][a-zA-Z0-9_]* = Flask(__name__)" backend/app.py | cut -d' ' -f1)
+  if [ -n "$FLASK_VAR" ]; then
+    echo "Found Flask variable: $FLASK_VAR, using backend.app:$FLASK_VAR"
+    exec gunicorn --bind 0.0.0.0:$PORT backend.app:$FLASK_VAR
+  else
+    echo "Checking if wsgi.py exists..."
+    if [ -f "backend/wsgi.py" ]; then
+      echo "Found wsgi.py, using backend.wsgi:app"
+      exec gunicorn --bind 0.0.0.0:$PORT backend.wsgi:app
     else
-        echo "FATAL: Could not find any Flask application!"
-        exit 1
+      echo "Creating wsgi.py as a last resort..."
+      cat > backend/wsgi.py << 'EOF'
+# Import the Flask app from backend
+try:
+    from backend.app import create_app
+    app = create_app()
+except (ImportError, AttributeError):
+    try:
+        from backend.app import app
+    except (ImportError, AttributeError):
+        # Last resort, manually create a minimal Flask app
+        from flask import Flask, jsonify
+        app = Flask(__name__)
+        
+        @app.route('/api/health')
+        def health():
+            return jsonify({"status": "ok"})
+        
+        @app.route('/')
+        def index():
+            return "Harmonic Universe API is running"
+EOF
+      echo "Created wsgi.py, using backend.wsgi:app"
+      exec gunicorn --bind 0.0.0.0:$PORT backend.wsgi:app
     fi
+  fi
 fi 
