@@ -56,35 +56,68 @@ class Universe(BaseModel):
             
     def to_dict(self) -> Dict[str, Any]:
         """Convert universe to dictionary."""
-        scenes_count = db.session.query(Scene).filter_by(
-            universe_id=self.id,
-            is_deleted=False
-        ).count()
+        # Initialize with default values
+        scenes_count = 0
+        characters_count = 0
+        notes_count = 0
+        
+        try:
+            # Safely get scenes count
+            scenes_count = db.session.query(Scene).filter_by(
+                universe_id=self.id,
+                is_deleted=False
+            ).count()
+        except Exception as e:
+            # Log error but continue
+            print(f"Error getting scenes count for universe {self.id}: {str(e)}")
 
-        characters_count = db.session.query(Character).filter_by(
-            universe_id=self.id,
-            is_deleted=False
-        ).count()
+        try:
+            # Safely get characters count
+            characters_count = db.session.query(Character).filter_by(
+                universe_id=self.id,
+                is_deleted=False
+            ).count()
+        except Exception as e:
+            # Log error but continue
+            print(f"Error getting characters count for universe {self.id}: {str(e)}")
 
-        notes_count = db.session.query(Note).filter_by(
-            universe_id=self.id,
-            is_deleted=False
-        ).count()
+        try:
+            # Safely get notes count
+            notes_count = db.session.query(Note).filter_by(
+                universe_id=self.id,
+                is_deleted=False
+            ).count()
+        except Exception as e:
+            # Log error but continue
+            print(f"Error getting notes count for universe {self.id}: {str(e)}")
 
-        return {
-            'id': self.id,
-            'name': self.name,
-            'description': self.description,
-            'user_id': self.user_id,
-            'sound_profile_id': self.sound_profile_id,
-            'is_public': self.is_public,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
-            'is_deleted': self.is_deleted,
-            'scenes_count': scenes_count,
-            'characters_count': characters_count,
-            'notes_count': notes_count
-        }
+        try:
+            # Create a dictionary with all the universe attributes
+            return {
+                'id': self.id,
+                'name': self.name,
+                'description': self.description,
+                'user_id': self.user_id,
+                'sound_profile_id': self.sound_profile_id,
+                'is_public': self.is_public,
+                'created_at': self.created_at.isoformat() if self.created_at else None,
+                'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+                'is_deleted': self.is_deleted,
+                'scenes_count': scenes_count,
+                'characters_count': characters_count,
+                'notes_count': notes_count
+            }
+        except Exception as e:
+            # If there's an error creating the dictionary, return a simplified version
+            print(f"Error creating dictionary for universe {self.id}: {str(e)}")
+            return {
+                'id': self.id,
+                'name': str(self.name),
+                'user_id': self.user_id,
+                'is_public': bool(self.is_public),
+                'is_deleted': bool(self.is_deleted) if hasattr(self, 'is_deleted') else False,
+                'error': "Error generating complete universe data"
+            }
         
     def get_scene_by_name(self, name: str) -> Optional['Scene']:
         """Get a scene by name."""

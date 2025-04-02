@@ -22,6 +22,12 @@ services:
         value: https://harmonic-universe.onrender.com
       - key: NODE_OPTIONS
         value: --max-old-space-size=2048
+      - key: LOG_LEVEL
+        value: DEBUG
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: ENABLE_DETAILED_LOGGING
+        value: "true"
       - fromGroup: harmonic-universe-env
     healthCheckPath: /api/health
     autoDeploy: true
