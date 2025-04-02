@@ -160,10 +160,53 @@ echo "Ensuring React is bundled with the application..."
 # Create a directory for React scripts
 mkdir -p dist/js
 
-# Copy React production scripts
+# Copy React production scripts - using the correct paths for React 18
 echo "Copying React production scripts..."
-cp node_modules/react/umd/react.production.min.js dist/js/
-cp node_modules/react-dom/umd/react-dom.production.min.js dist/js/
+if [ -d "node_modules/react/umd" ] && [ -f "node_modules/react/umd/react.production.min.js" ]; then
+  # React 18 has UMD files directly in the umd directory
+  cp node_modules/react/umd/react.production.min.js dist/js/
+  cp node_modules/react-dom/umd/react-dom.production.min.js dist/js/
+else
+  # UMD files not found in expected location, downloading from CDN
+  echo "UMD files not found in node_modules, downloading from CDN..."
+  # Check if curl is available
+  if command -v curl &> /dev/null; then
+    curl -s https://unpkg.com/react@18.2.0/umd/react.production.min.js > dist/js/react.production.min.js
+    curl -s https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js > dist/js/react-dom.production.min.js
+  else
+    # Use node to download if curl is not available
+    echo "Downloading with Node.js..."
+    node -e "const https = require('https'); const fs = require('fs'); 
+      const download = (url, dest) => {
+        return new Promise((resolve, reject) => {
+          https.get(url, (res) => {
+            const file = fs.createWriteStream(dest);
+            res.pipe(file);
+            file.on('finish', () => {
+              file.close();
+              console.log('Downloaded: ' + dest);
+              resolve();
+            });
+            file.on('error', (err) => {
+              fs.unlink(dest);
+              reject(err);
+            });
+          }).on('error', (err) => {
+            reject(err);
+          });
+        });
+      };
+      Promise.all([
+        download('https://unpkg.com/react@18.2.0/umd/react.production.min.js', 'dist/js/react.production.min.js'),
+        download('https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js', 'dist/js/react-dom.production.min.js')
+      ]).then(() => console.log('All files downloaded.')).catch(err => console.error('Download error:', err));"
+  fi
+fi
+
+# Verify files exist
+if [ ! -f "dist/js/react.production.min.js" ] || [ ! -f "dist/js/react-dom.production.min.js" ]; then
+  echo "Warning: React UMD files could not be created. Will rely on CDN fallback."
+fi
 
 # Update the index.html to include React scripts
 echo "Updating index.html to include React scripts..."
