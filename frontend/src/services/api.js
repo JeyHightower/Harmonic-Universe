@@ -556,7 +556,11 @@ const apiClient = {
       queryParams.append("universe_id", params.universeId);
     }
 
-    const url = `${getEndpoint('scenes', 'list', '/api/scenes')(params)}?${queryParams.toString()}`;
+    // Get the base endpoint
+    const baseEndpoint = getEndpoint('scenes', 'list', '/api/scenes');
+    // Form the complete URL
+    const url = `${baseEndpoint}?${queryParams.toString()}`;
+
     console.log("Fetching scenes from URL:", url);
     return axiosInstance.get(url);
   },
@@ -592,7 +596,8 @@ const apiClient = {
       if (!data.universe_id) {
         console.warn("API - updateScene - universe_id missing, adding from scene data");
         // Try to get universe_id from get scene if not provided
-        const sceneResponse = await axiosInstance.get(getEndpoint('scenes', 'get', '/api/scenes')(id));
+        const sceneEndpoint = getEndpoint('scenes', 'get', `/api/scenes/${id}`);
+        const sceneResponse = await axiosInstance.get(sceneEndpoint);
         data.universe_id = sceneResponse.data?.scene?.universe_id || sceneResponse.data?.universe_id;
 
         if (!data.universe_id) {
@@ -617,7 +622,8 @@ const apiClient = {
       }
 
       console.log(`API - updateScene - Sending normalized data:`, normalizedData);
-      const response = await axiosInstance.put(getEndpoint('scenes', 'update', '/api/scenes')(id), normalizedData);
+      const updateEndpoint = getEndpoint('scenes', 'update', `/api/scenes/${id}`);
+      const response = await axiosInstance.put(updateEndpoint, normalizedData);
       console.log(`API - updateScene - Response:`, response.data);
       return response;
     } catch (error) {
@@ -627,10 +633,14 @@ const apiClient = {
   },
   deleteScene: (id) => axiosInstance.delete(getEndpoint('scenes', 'delete', `/api/scenes/${id}`)),
   reorderScenes: (data) => axiosInstance.post(getEndpoint('scenes', 'reorder', '/api/scenes/reorder'), data),
-  updateScenePhysicsParams: (sceneId, data) =>
-    axiosInstance.put(`${getEndpoint('scenes', 'get', `/api/scenes/${sceneId}`)}/physics_parameters`, data),
-  updateSceneHarmonyParams: (sceneId, data) =>
-    axiosInstance.put(`${getEndpoint('scenes', 'get', `/api/scenes/${sceneId}`)}/harmony_parameters`, data),
+  updateScenePhysicsParams: (sceneId, data) => {
+    const endpoint = getEndpoint('scenes', 'get', `/api/scenes/${sceneId}`);
+    return axiosInstance.put(`${endpoint}/physics_parameters`, data);
+  },
+  updateSceneHarmonyParams: (sceneId, data) => {
+    const endpoint = getEndpoint('scenes', 'get', `/api/scenes/${sceneId}`);
+    return axiosInstance.put(`${endpoint}/harmony_parameters`, data);
+  },
 
   // Physics Objects methods
   getPhysicsObjects: () => axiosInstance.get(getEndpoint('physicsObjects', 'list', '/api/physics-objects')),
