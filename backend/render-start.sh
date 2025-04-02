@@ -363,7 +363,6 @@ gunicorn $APP_PATH \
     --access-logfile=- \
     --error-logfile=- \
     --disable-redirect-access-to-syslog \
-    --log-syslog=false \
     --timeout=180 \
     --forwarded-allow-ips="*" \
     --access-logformat='%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s %(D)s "%(f)s" "%(a)s"' \
