@@ -24,8 +24,26 @@ echo "==== Building frontend ===="
 cd frontend
 
 # Explicitly install React and related dependencies first
-echo "Installing React and related dependencies..."
-npm install react react-dom @vitejs/plugin-react --no-save
+echo "Installing React and critical dependencies..."
+npm install react react-dom react-router-dom @reduxjs/toolkit react-redux --no-save
+
+# List installed packages for debugging
+echo "Listing installed packages:"
+npm list react react-dom react-router-dom @reduxjs/toolkit react-redux
+
+# Set build environment variables to force inclusion of all dependencies
+export VITE_FORCE_INCLUDE_ALL=true
+export NODE_ENV=production
+
+# Create a temporary copy of problematic packages for debugging
+echo "Creating temporary copy of react-router-dom..."
+mkdir -p node_modules_backup/react-router-dom
+if [ -d "node_modules/react-router-dom" ]; then
+  cp -r node_modules/react-router-dom/* node_modules_backup/react-router-dom/
+  echo "Backup created successfully"
+else
+  echo "react-router-dom not found in node_modules, continuing..."
+fi
 
 echo "Creating manual static build instead of using Vite..."
 # Create a manual build script that doesn't rely on Vite

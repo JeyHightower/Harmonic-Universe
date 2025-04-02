@@ -1,6 +1,12 @@
 import react from "@vitejs/plugin-react";
 import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from "vite";
+import fs from 'fs';
+import path from 'path';
+
+// Check if running in production mode
+const isProd = process.env.NODE_ENV === 'production';
+const forceIncludeAll = process.env.VITE_FORCE_INCLUDE_ALL === 'true';
 
 export default defineConfig({
   plugins: [react()],
@@ -16,6 +22,10 @@ export default defineConfig({
       "@hooks": fileURLToPath(new URL('./src/hooks', import.meta.url)),
       "@contexts": fileURLToPath(new URL('./src/contexts', import.meta.url)),
       "@services": fileURLToPath(new URL('./src/services', import.meta.url)),
+      // Add fallback for problematic packages when in production
+      ...(isProd || forceIncludeAll ? {
+        "react-router-dom": fileURLToPath(new URL('./src/vite-fallback.js', import.meta.url)),
+      } : {})
     },
     extensions: ['.js', '.jsx', '.ts', '.tsx', '.json']
   },
@@ -25,6 +35,7 @@ export default defineConfig({
     sourcemap: false,
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
+      external: [],
       input: {
         main: fileURLToPath(new URL('./index.html', import.meta.url)),
       },
@@ -33,7 +44,6 @@ export default defineConfig({
           vendor: [
             'react',
             'react-dom',
-            'react-router-dom',
             '@reduxjs/toolkit',
             'react-redux'
           ],
