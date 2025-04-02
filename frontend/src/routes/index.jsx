@@ -17,6 +17,9 @@ const SceneDetail = lazy(() =>
 const SceneEditPage = lazy(() =>
   import("../components/consolidated/SceneEditPage")
 );
+const SceneEditRedirect = lazy(() =>
+  import("../components/routing/SceneEditRedirect")
+);
 
 // New character and note pages
 const CharactersPage = lazy(() => import("../pages/CharactersPage"));
@@ -86,6 +89,14 @@ const routes = [
         element: (
           <ProtectedRoute>
             <SceneEditPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTES.DIRECT_SCENE_EDIT,
+        element: (
+          <ProtectedRoute>
+            <SceneEditRedirect />
           </ProtectedRoute>
         ),
       },
