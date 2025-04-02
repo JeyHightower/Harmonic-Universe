@@ -22,12 +22,50 @@ fi
 # Set environment variables
 export FLASK_APP=app.py
 export FLASK_ENV=production
-# Add the project root to PYTHONPATH
-export PYTHONPATH=$PYTHONPATH:$(pwd):/opt/render/project/src
+# Add the project root to PYTHONPATH including both project root and backend
+export PYTHONPATH=$PYTHONPATH:/opt/render/project/src:/opt/render/project/src/backend
 
 # Determine the port to use
 PORT="${PORT:-10000}"
 echo "Application will listen on port $PORT"
+
+# Run the import fixer script if it exists
+if [ -f "fix_imports.py" ]; then
+    echo "Running import fixer script..."
+    python fix_imports.py || echo "Warning: Import fixer script failed, continuing anyway"
+fi
+
+# Create an app.py in the root directory if it doesn't exist
+if [ ! -f "app.py" ]; then
+    echo "Creating app.py in root directory..."
+    cat > app.py << 'EOF'
+# Re-export everything from backend.app
+try:
+    from backend.app import *
+    print("Successfully re-exported from backend.app")
+except ImportError as e:
+    print(f"Warning: Could not import from backend.app: {e}")
+    try:
+        # Alternative: try to import specific components
+        try:
+            from backend.app import app
+            print("Successfully imported app from backend.app")
+        except ImportError:
+            pass
+            
+        try:
+            from backend.app import create_app
+            print("Successfully imported create_app from backend.app")
+        except ImportError:
+            pass
+    except Exception as e:
+        print(f"Error attempting to import specific components: {e}")
+
+# Print a message to indicate this file was loaded
+print("Root app.py module loaded")
+EOF
+    echo "Created app.py in root directory"
+fi
 
 # Ensure needed directories exist
 mkdir -p logs
@@ -210,4 +248,4 @@ EOF
 echo "Starting Gunicorn server..."
 echo "Using backend.wsgi:application for Gunicorn"
 cd /opt/render/project/src
-exec gunicorn --bind 0.0.0.0:$PORT backend.wsgi:application 
+exec gunicorn --bind 0.0.0.0:$PORT --log-level debug backend.wsgi:application 
