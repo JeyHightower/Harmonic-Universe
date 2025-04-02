@@ -1,16 +1,42 @@
 import axios from "axios";
 import { AUTH_CONFIG, API_CONFIG } from "../utils/config";
 import { log } from "../utils/logger";
-import { endpoints } from "./endpoints";
+import * as endpointsModule from "./endpoints";
 import { cache } from "../utils/cache";
 import { CACHE_CONFIG } from "../utils/cacheConfig";
 
+// Extract endpoints from the module
+const { endpoints } = endpointsModule;
+
+// Define direct fallbacks for critical endpoints
+const FALLBACK_ENDPOINTS = {
+  auth: {
+    login: '/api/auth/login',
+    register: '/api/auth/signup',
+    demoLogin: '/api/auth/demo-login',
+    refresh: '/api/auth/refresh',
+    logout: '/api/auth/logout',
+    validate: '/api/auth/validate'
+  },
+  universes: {
+    list: '/api/universes',
+    create: '/api/universes',
+    get: (id) => `/api/universes/${id}`,
+    update: (id) => `/api/universes/${id}`,
+    delete: (id) => `/api/universes/${id}`,
+    scenes: (id) => `/api/universes/${id}/scenes`,
+    characters: (id) => `/api/universes/${id}/characters`
+  }
+};
+
 // Debug logs for endpoints
 console.log("Endpoints loaded:", {
+  endpointsModule,
   endpoints,
   auth: endpoints?.auth,
   universes: endpoints?.universes,
-  hasCreateUniverse: !!endpoints?.universes?.create
+  hasCreateUniverse: !!endpoints?.universes?.create,
+  fallbacks: FALLBACK_ENDPOINTS
 });
 
 // Helper function to safely get endpoints with fallbacks
@@ -18,22 +44,38 @@ const getEndpoint = (group, name, fallback) => {
   try {
     if (!endpoints) {
       console.warn(`Endpoints object is ${typeof endpoints}, using fallback`);
+      // Try to use our direct fallbacks first
+      if (FALLBACK_ENDPOINTS[group] && FALLBACK_ENDPOINTS[group][name]) {
+        return FALLBACK_ENDPOINTS[group][name];
+      }
       return fallback;
     }
 
     if (!endpoints[group]) {
       console.warn(`Endpoint group '${group}' not found, using fallback`);
+      // Try to use our direct fallbacks first
+      if (FALLBACK_ENDPOINTS[group] && FALLBACK_ENDPOINTS[group][name]) {
+        return FALLBACK_ENDPOINTS[group][name];
+      }
       return fallback;
     }
 
     if (!endpoints[group][name]) {
       console.warn(`Endpoint '${name}' not found in group '${group}', using fallback`);
+      // Try to use our direct fallbacks first
+      if (FALLBACK_ENDPOINTS[group] && FALLBACK_ENDPOINTS[group][name]) {
+        return FALLBACK_ENDPOINTS[group][name];
+      }
       return fallback;
     }
 
     return endpoints[group][name];
   } catch (error) {
     console.error(`Error accessing endpoint ${group}.${name}:`, error);
+    // Try to use our direct fallbacks first
+    if (FALLBACK_ENDPOINTS[group] && FALLBACK_ENDPOINTS[group][name]) {
+      return FALLBACK_ENDPOINTS[group][name];
+    }
     return fallback;
   }
 };
@@ -346,11 +388,62 @@ const apiClient = {
     console.log("API - Fetching universes from URL:", url);
     return axiosInstance.get(url);
   },
-  createUniverse: (data) => {
+  createUniverse: async (data) => {
     console.log("API - Creating universe with data:", data);
     const endpoint = getEndpoint('universes', 'create', '/api/universes');
     console.log("API - Using endpoint for universe creation:", endpoint);
-    return axiosInstance.post(endpoint, data);
+
+    try {
+      // First attempt with axios
+      return await axiosInstance.post(endpoint, data);
+    } catch (error) {
+      // If the server returns 500, try a fallback approach with fetch
+      if (error.response && error.response.status === 500) {
+        console.warn("Received 500 error from universe creation API, trying fallback method");
+
+        // Get the full URL including any base URL
+        const fullUrl = API_CONFIG.BASE_URL.endsWith('/')
+          ? API_CONFIG.BASE_URL + endpoint.replace(/^\//, '')
+          : API_CONFIG.BASE_URL + endpoint;
+
+        console.log("Using fetch with URL:", fullUrl);
+
+        // Try with basic fetch API instead
+        try {
+          const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+          const headers = {
+            'Content-Type': 'application/json'
+          };
+
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+          }
+
+          const response = await fetch(fullUrl, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(data),
+            credentials: 'include'
+          });
+
+          // Convert fetch response to axios-like format
+          const responseData = await response.json();
+          console.log("Fetch response:", responseData);
+
+          return {
+            status: response.status,
+            data: responseData,
+            headers: Object.fromEntries([...response.headers])
+          };
+        } catch (fetchError) {
+          console.error("Fetch fallback failed:", fetchError);
+          throw error; // Throw the original error
+        }
+      }
+
+      // If not a 500 error or fallback failed, throw the original error
+      throw error;
+    }
   },
   getUniverse: (id, params = {}) => {
     const queryParams = new URLSearchParams();

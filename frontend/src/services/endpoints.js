@@ -5,6 +5,8 @@
 
 import { API_CONFIG } from '../utils/config';
 
+console.log("Loading endpoints.js module");
+
 // Base API URL
 const API_BASE_URL = API_CONFIG.BASE_URL;
 
@@ -139,6 +141,9 @@ console.log("All endpoints exported:", {
   universesCreate: endpoints.universes?.create
 });
 
+// Export for direct use with universes
+export const universesEndpoints = universeEndpoints;
+
 // Export endpoint helper functions
 export const getEndpoint = (group, name) => {
   if (!endpoints[group]) {
@@ -169,3 +174,6 @@ export const getApiEndpoint = (endpoint) => {
   // Ensure endpoint starts with API version
   return endpoint.startsWith(API_VERSION) ? endpoint : `${API_VERSION}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
 };
+
+// Export default for easier imports
+export default endpoints;

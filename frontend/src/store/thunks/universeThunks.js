@@ -122,7 +122,27 @@ export const createUniverse = createAsyncThunk(
   async (universeData, { rejectWithValue }) => {
     try {
       console.log("Creating universe with data:", universeData);
-      const response = await apiClient.createUniverse(universeData);
+
+      // Validate data
+      if (!universeData.name) {
+        console.error("Universe name is required");
+        return rejectWithValue({
+          message: "Universe name is required",
+          status: 400
+        });
+      }
+
+      // Ensure we have the correct data format
+      const formattedData = {
+        name: universeData.name,
+        description: universeData.description || "",
+        is_public: universeData.is_public !== undefined ? universeData.is_public : true
+      };
+
+      console.log("Sending formatted universe data:", formattedData);
+
+      // Make the API call
+      const response = await apiClient.createUniverse(formattedData);
       console.log("Created universe response:", response);
 
       // Normalize the universe data if present
@@ -133,12 +153,32 @@ export const createUniverse = createAsyncThunk(
       } else if (response && response.id) {
         // If the response itself is the universe
         return normalizeUniverseData(response);
+      } else if (response && response.data && response.data.id) {
+        // If the response.data itself is the universe
+        return normalizeUniverseData(response.data);
       }
 
       return response.data || response;
     } catch (error) {
       console.error("Error creating universe:", error);
-      return rejectWithValue(handleError(error));
+      console.error("Error details:", {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        stack: error.stack
+      });
+
+      // Try to extract more detailed error message from response
+      const errorMessage = error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Error creating universe";
+
+      return rejectWithValue({
+        message: errorMessage,
+        status: error.response?.status,
+        data: error.response?.data
+      });
     }
   }
 );
