@@ -211,11 +211,47 @@ echo "Setting up static directory..."
 mkdir -p static
 chmod -R 755 static
 
-# Update index.html to include our special loader
+# Ensure React is available in the static directory
+echo "Checking for React scripts..."
+mkdir -p static/js
+
+# If React scripts are not in the static directory, try to copy them from frontend build
+if [ ! -f "static/js/react.production.min.js" ]; then
+  echo "React scripts not found, looking for them in frontend build..."
+  
+  # Check frontend build directory
+  if [ -f "../frontend/dist/js/react.production.min.js" ]; then
+    echo "Copying React scripts from frontend build..."
+    cp ../frontend/dist/js/react.production.min.js static/js/
+    cp ../frontend/dist/js/react-dom.production.min.js static/js/
+  else
+    echo "React scripts not found in frontend build, creating from CDN URLs..."
+    # Create directory for JS files
+    mkdir -p static/js
+    
+    # Download React from CDN
+    echo "Downloading React from CDN..."
+    curl -s https://unpkg.com/react@18/umd/react.production.min.js > static/js/react.production.min.js
+    curl -s https://unpkg.com/react-dom@18/umd/react-dom.production.min.js > static/js/react-dom.production.min.js
+    
+    echo "React scripts downloaded to static/js/"
+  fi
+fi
+
+# Update index.html to include our special loader and React scripts
 if [ -f "static/index.html" ]; then
-  echo "Updating index.html to include special_loader.js..."
-  # Add special_loader.js right after the opening head tag
-  sed -i 's/<head>/<head>\n  <script src="\/special_loader.js"><\/script>/' static/index.html
+  echo "Updating index.html to include React scripts..."
+  
+  # Check if React scripts are already included
+  if ! grep -q "react.production.min.js" static/index.html; then
+    # Add React scripts right after the opening head tag
+    sed -i 's/<head>/<head>\n  <script src="\/js\/react.production.min.js"><\/script>\n  <script src="\/js\/react-dom.production.min.js"><\/script>/' static/index.html
+  fi
+  
+  # Add special_loader.js right after the React scripts
+  if ! grep -q "special_loader.js" static/index.html; then
+    sed -i 's/<\/script>/<\/script>\n  <script src="\/special_loader.js"><\/script>/' static/index.html
+  fi
   
   # Make sure the base tag exists
   if ! grep -q "<base" static/index.html; then

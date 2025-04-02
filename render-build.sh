@@ -155,6 +155,23 @@ node manual-build.js
 echo "Installing required Vite plugins..."
 npm install --no-save @vitejs/plugin-react vite react react-dom
 
+# Ensure React is properly bundled with the application
+echo "Ensuring React is bundled with the application..."
+# Create a directory for React scripts
+mkdir -p dist/js
+
+# Copy React production scripts
+echo "Copying React production scripts..."
+cp node_modules/react/umd/react.production.min.js dist/js/
+cp node_modules/react-dom/umd/react-dom.production.min.js dist/js/
+
+# Update the index.html to include React scripts
+echo "Updating index.html to include React scripts..."
+if [ -f "dist/index.html" ]; then
+  # Add React scripts right after the opening head tag
+  sed -i 's/<head>/<head>\n  <script src="\/js\/react.production.min.js"><\/script>\n  <script src="\/js\/react-dom.production.min.js"><\/script>/' dist/index.html
+fi
+
 # Create a temporary vite config file with proper external dependencies
 echo "Creating temporary Vite config with JSX runtime configuration..."
 cat > temp-vite.config.js << 'EOF'

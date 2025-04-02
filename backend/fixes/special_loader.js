@@ -82,50 +82,90 @@
 
   // Function to check if React is available and provide a polyfill if not
   function ensureReact() {
-    if (typeof React === 'undefined') {
-      console.warn("⚠️ React not found, loading from CDN");
-
-      // Load React from CDN
-      const reactScript = document.createElement('script');
-      reactScript.src = 'https://unpkg.com/react@18/umd/react.production.min.js';
-      reactScript.crossOrigin = 'anonymous';
-      document.head.appendChild(reactScript);
-
-      const reactDomScript = document.createElement('script');
-      reactDomScript.src = 'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js';
-      reactDomScript.crossOrigin = 'anonymous';
-      document.head.appendChild(reactDomScript);
-
-      // Create a minimal React polyfill
-      window.React = window.React || {
-        createElement: function (type, props, ...children) {
-          return { type, props: { ...props, children } };
-        },
-        Fragment: Symbol('Fragment')
-      };
-
-      window.ReactDOM = window.ReactDOM || {
-        createRoot: function (container) {
-          return {
-            render: function (element) {
-              container.innerHTML = '<div>React Polyfill Rendering</div>';
-              console.log('React polyfill render:', element);
-            }
-          };
-        }
-      };
+    if (typeof React !== 'undefined' && typeof ReactDOM !== 'undefined') {
+      console.log("✅ React already loaded");
+      return Promise.resolve();
     }
+
+    return new Promise((resolve, reject) => {
+      // Try loading from local path first
+      console.log("⚠️ React not found, trying local scripts...");
+
+      const localReactScript = document.createElement('script');
+      localReactScript.src = '/js/react.production.min.js';
+      localReactScript.onload = () => {
+        console.log("✅ Local React core loaded successfully");
+        const localReactDOMScript = document.createElement('script');
+        localReactDOMScript.src = '/js/react-dom.production.min.js';
+        localReactDOMScript.onload = () => {
+          console.log("✅ Local ReactDOM loaded successfully");
+          resolve();
+        };
+        localReactDOMScript.onerror = loadFromCDN;
+        document.head.appendChild(localReactDOMScript);
+      };
+      localReactScript.onerror = loadFromCDN;
+      document.head.appendChild(localReactScript);
+
+      function loadFromCDN() {
+        console.warn("⚠️ Local React scripts not found, loading from CDN");
+
+        // Load React from CDN
+        const reactScript = document.createElement('script');
+        reactScript.src = 'https://unpkg.com/react@18/umd/react.production.min.js';
+        reactScript.crossOrigin = 'anonymous';
+        reactScript.onload = () => {
+          console.log("✅ CDN React core loaded successfully");
+          const reactDomScript = document.createElement('script');
+          reactDomScript.src = 'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js';
+          reactDomScript.crossOrigin = 'anonymous';
+          reactDomScript.onload = () => {
+            console.log("✅ CDN ReactDOM loaded successfully");
+            resolve();
+          };
+          reactDomScript.onerror = createPolyfill;
+          document.head.appendChild(reactDomScript);
+        };
+        reactScript.onerror = createPolyfill;
+        document.head.appendChild(reactScript);
+      }
+
+      function createPolyfill() {
+        console.warn("⚠️ Failed to load React from CDN, creating basic polyfill");
+
+        // Create a minimal React polyfill
+        window.React = window.React || {
+          createElement: function (type, props, ...children) {
+            return { type, props: { ...props, children } };
+          },
+          Fragment: Symbol('Fragment')
+        };
+
+        window.ReactDOM = window.ReactDOM || {
+          createRoot: function (container) {
+            return {
+              render: function (element) {
+                container.innerHTML = '<div>React Polyfill Rendering</div>';
+                console.log('React polyfill render:', element);
+              }
+            };
+          }
+        };
+
+        resolve();
+      }
+    });
   }
 
   // Ensure React is available
-  ensureReact();
+  ensureReact().then(() => {
+    // Add global access to the module loader
+    window.__HU_MODULE_LOADER__ = {
+      loadFallbackScript,
+      generateFakeModule,
+      ensureReact
+    };
 
-  // Add global access to the module loader
-  window.__HU_MODULE_LOADER__ = {
-    loadFallbackScript,
-    generateFakeModule,
-    ensureReact
-  };
-
-  console.log("✅ Special module loader ready");
+    console.log("✅ Special module loader ready");
+  });
 })(); 
