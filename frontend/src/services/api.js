@@ -5,6 +5,39 @@ import { endpoints } from "./endpoints";
 import { cache } from "../utils/cache";
 import { CACHE_CONFIG } from "../utils/cacheConfig";
 
+// Debug logs for endpoints
+console.log("Endpoints loaded:", {
+  endpoints,
+  auth: endpoints?.auth,
+  universes: endpoints?.universes,
+  hasCreateUniverse: !!endpoints?.universes?.create
+});
+
+// Helper function to safely get endpoints with fallbacks
+const getEndpoint = (group, name, fallback) => {
+  try {
+    if (!endpoints) {
+      console.warn(`Endpoints object is ${typeof endpoints}, using fallback`);
+      return fallback;
+    }
+
+    if (!endpoints[group]) {
+      console.warn(`Endpoint group '${group}' not found, using fallback`);
+      return fallback;
+    }
+
+    if (!endpoints[group][name]) {
+      console.warn(`Endpoint '${name}' not found in group '${group}', using fallback`);
+      return fallback;
+    }
+
+    return endpoints[group][name];
+  } catch (error) {
+    console.error(`Error accessing endpoint ${group}.${name}:`, error);
+    return fallback;
+  }
+};
+
 // Request deduplication
 const pendingRequests = new Map();
 
@@ -147,11 +180,12 @@ axiosInstance.interceptors.response.use(
 // API methods
 const apiClient = {
   // Auth methods
-  login: (credentials) => axiosInstance.post(endpoints.auth.login, credentials),
-  register: (userData) => axiosInstance.post(endpoints.auth.register, userData),
+  login: (credentials) => axiosInstance.post(getEndpoint('auth', 'login', '/api/auth/login'), credentials),
+  register: (userData) => axiosInstance.post(getEndpoint('auth', 'register', '/api/auth/signup'), userData),
   demoLogin: () => {
-    console.log("API: Making demo login request to", endpoints.auth.demoLogin);
-    return axiosInstance.post(endpoints.auth.demoLogin);
+    const endpoint = getEndpoint('auth', 'demoLogin', '/api/auth/demo-login');
+    console.log("API: Making demo login request to", endpoint);
+    return axiosInstance.post(endpoint);
   },
   validateToken: async () => {
     try {
@@ -164,8 +198,8 @@ const apiClient = {
       }
 
       // Try the auth validate endpoint - this now exists so we don't need fallbacks
-      console.log("Trying auth validate endpoint:", endpoints.auth.validate);
-      const response = await axiosInstance.get(endpoints.auth.validate);
+      console.log("Trying auth validate endpoint:", getEndpoint('auth', 'validate', '/api/auth/validate'));
+      const response = await axiosInstance.get(getEndpoint('auth', 'validate', '/api/auth/validate'));
       console.log("Validate endpoint response:", response.data);
 
       return {
@@ -188,12 +222,12 @@ const apiClient = {
     if (!refreshToken) {
       throw new Error("No refresh token available");
     }
-    return axiosInstance.post(endpoints.auth.refresh, { refresh_token: refreshToken });
+    return axiosInstance.post(getEndpoint('auth', 'refresh', '/api/auth/refresh'), { refresh_token: refreshToken });
   },
   logout: () => {
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
     return axiosInstance.post(
-      endpoints.auth.logout,
+      getEndpoint('auth', 'logout', '/api/auth/logout'),
       {},
       {
         headers: {
@@ -204,7 +238,7 @@ const apiClient = {
   },
   checkAuth: async () => {
     try {
-      const response = await axiosInstance.get(endpoints.user.profile);
+      const response = await axiosInstance.get(getEndpoint('user', 'profile', '/api/user/profile'));
       return {
         data: {
           message: "Authentication check successful",
@@ -235,7 +269,7 @@ const apiClient = {
         };
       }
 
-      const response = await axiosInstance.get(endpoints.user.profile);
+      const response = await axiosInstance.get(getEndpoint('user', 'profile', '/api/user/profile'));
       log("api", "Raw user profile response", { response });
 
       // Extract profile data with fallbacks
@@ -281,8 +315,8 @@ const apiClient = {
       throw error;
     }
   },
-  updateUserProfile: (data) => axiosInstance.put(endpoints.user.profile, data),
-  updateUserSettings: (settings) => axiosInstance.put(endpoints.user.settings, settings),
+  updateUserProfile: (data) => axiosInstance.put(getEndpoint('user', 'profile', '/api/user/profile'), data),
+  updateUserSettings: (settings) => axiosInstance.put(getEndpoint('user', 'settings', '/api/user/settings'), settings),
   clearUserProfileCache: () => cache.clear(CACHE_CONFIG.USER_PROFILE.key),
 
   // Universe methods
@@ -301,26 +335,34 @@ const apiClient = {
       queryParams.append('user_only', params.user_only);
     }
 
+    // Get endpoint with fallback
+    const baseEndpoint = getEndpoint('universes', 'list', '/api/universes');
+
     // Construct URL with query parameters
     const url = queryParams.toString()
-      ? `${endpoints.universes.list}?${queryParams.toString()}`
-      : endpoints.universes.list;
+      ? `${baseEndpoint}?${queryParams.toString()}`
+      : baseEndpoint;
 
     console.log("API - Fetching universes from URL:", url);
     return axiosInstance.get(url);
   },
-  createUniverse: (data) => axiosInstance.post(endpoints.universes.create, data),
+  createUniverse: (data) => {
+    console.log("API - Creating universe with data:", data);
+    const endpoint = getEndpoint('universes', 'create', '/api/universes');
+    console.log("API - Using endpoint for universe creation:", endpoint);
+    return axiosInstance.post(endpoint, data);
+  },
   getUniverse: (id, params = {}) => {
     const queryParams = new URLSearchParams();
     if (params.includeScenes) {
       queryParams.append("include_scenes", "true");
     }
-    return axiosInstance.get(`${endpoints.universes.get(id)}?${queryParams.toString()}`);
+    return axiosInstance.get(`${getEndpoint('universes', 'get', `/api/universes/${id}`)}?${queryParams.toString()}`);
   },
-  updateUniverse: (id, data) => axiosInstance.put(endpoints.universes.update(id), data),
-  deleteUniverse: (id) => axiosInstance.delete(endpoints.universes.delete(id)),
+  updateUniverse: (id, data) => axiosInstance.put(getEndpoint('universes', 'update', `/api/universes/${id}`), data),
+  deleteUniverse: (id) => axiosInstance.delete(getEndpoint('universes', 'delete', `/api/universes/${id}`)),
   getUniverseScenes: (universeId) =>
-    axiosInstance.get(endpoints.universes.scenes(universeId)),
+    axiosInstance.get(getEndpoint('universes', 'scenes', `/api/universes/${universeId}/scenes`)),
   updateUniversePhysics: (universeId, physicsParams) =>
     axiosInstance.put(`/api/universes/${universeId}/physics`, {
       physics_params: physicsParams,
@@ -346,11 +388,11 @@ const apiClient = {
       queryParams.append("universe_id", params.universeId);
     }
 
-    const url = `${endpoints.scenes.list}?${queryParams.toString()}`;
+    const url = `${getEndpoint('scenes', 'list', '/api/scenes')(params)}?${queryParams.toString()}`;
     console.log("Fetching scenes from URL:", url);
     return axiosInstance.get(url);
   },
-  getScene: (id) => axiosInstance.get(endpoints.scenes.get(id)),
+  getScene: (id) => axiosInstance.get(getEndpoint('scenes', 'get', `/api/scenes/${id}`)),
   createScene: (data) => {
     // Ensure universe_id is present
     if (!data.universe_id) {
@@ -369,7 +411,7 @@ const apiClient = {
     console.log("Sending createScene request with data:", transformedData);
 
     // Use the base scenes endpoint
-    return axiosInstance.post(endpoints.scenes.list, transformedData);
+    return axiosInstance.post(getEndpoint('scenes', 'list', '/api/scenes'), transformedData);
   },
   updateScene: async (id, data) => {
     console.log(`API - updateScene - Updating scene ${id} with data:`, data);
@@ -382,7 +424,7 @@ const apiClient = {
       if (!data.universe_id) {
         console.warn("API - updateScene - universe_id missing, adding from scene data");
         // Try to get universe_id from get scene if not provided
-        const sceneResponse = await axiosInstance.get(endpoints.scenes.get(id));
+        const sceneResponse = await axiosInstance.get(getEndpoint('scenes', 'get', '/api/scenes')(id));
         data.universe_id = sceneResponse.data?.scene?.universe_id || sceneResponse.data?.universe_id;
 
         if (!data.universe_id) {
@@ -407,7 +449,7 @@ const apiClient = {
       }
 
       console.log(`API - updateScene - Sending normalized data:`, normalizedData);
-      const response = await axiosInstance.put(endpoints.scenes.update(id), normalizedData);
+      const response = await axiosInstance.put(getEndpoint('scenes', 'update', '/api/scenes')(id), normalizedData);
       console.log(`API - updateScene - Response:`, response.data);
       return response;
     } catch (error) {
@@ -415,40 +457,40 @@ const apiClient = {
       throw error;
     }
   },
-  deleteScene: (id) => axiosInstance.delete(endpoints.scenes.delete(id)),
-  reorderScenes: (data) => axiosInstance.post(endpoints.scenes.reorder, data),
+  deleteScene: (id) => axiosInstance.delete(getEndpoint('scenes', 'delete', `/api/scenes/${id}`)),
+  reorderScenes: (data) => axiosInstance.post(getEndpoint('scenes', 'reorder', '/api/scenes/reorder'), data),
   updateScenePhysicsParams: (sceneId, data) =>
-    axiosInstance.put(`${endpoints.scenes.get(sceneId)}/physics_parameters`, data),
+    axiosInstance.put(`${getEndpoint('scenes', 'get', `/api/scenes/${sceneId}`)}/physics_parameters`, data),
   updateSceneHarmonyParams: (sceneId, data) =>
-    axiosInstance.put(`${endpoints.scenes.get(sceneId)}/harmony_parameters`, data),
+    axiosInstance.put(`${getEndpoint('scenes', 'get', `/api/scenes/${sceneId}`)}/harmony_parameters`, data),
 
   // Physics Objects methods
-  getPhysicsObjects: () => axiosInstance.get(endpoints.physicsObjects.list),
+  getPhysicsObjects: () => axiosInstance.get(getEndpoint('physicsObjects', 'list', '/api/physics-objects')),
   createPhysicsObject: (data) =>
-    axiosInstance.post(endpoints.physicsObjects.create, data),
-  getPhysicsObject: (id) => axiosInstance.get(endpoints.physicsObjects.get(id)),
+    axiosInstance.post(getEndpoint('physicsObjects', 'create', '/api/physics-objects'), data),
+  getPhysicsObject: (id) => axiosInstance.get(getEndpoint('physicsObjects', 'get', '/api/physics-objects/' + id)),
   updatePhysicsObject: (id, data) =>
-    axiosInstance.put(endpoints.physicsObjects.update(id), data),
-  deletePhysicsObject: (id) => axiosInstance.delete(endpoints.physicsObjects.delete(id)),
+    axiosInstance.put(getEndpoint('physicsObjects', 'update', '/api/physics-objects/' + id), data),
+  deletePhysicsObject: (id) => axiosInstance.delete(getEndpoint('physicsObjects', 'delete', '/api/physics-objects/' + id)),
   getPhysicsObjectsForScene: (sceneId) =>
-    axiosInstance.get(endpoints.physicsObjects.forScene(sceneId)),
+    axiosInstance.get(getEndpoint('physicsObjects', 'forScene', `/api/scenes/${sceneId}/physics-objects`)),
 
   // Music methods
-  generateMusic: (data) => axiosInstance.post(endpoints.music.generate, data),
-  saveMusic: (data) => axiosInstance.post(endpoints.music.save, data),
-  getMusicList: () => axiosInstance.get(endpoints.music.list),
-  uploadMusic: (data) => axiosInstance.post(endpoints.music.upload, data),
-  deleteMusic: (id) => axiosInstance.delete(endpoints.music.delete(id)),
+  generateMusic: (data) => axiosInstance.post(getEndpoint('music', 'generate', '/api/music/generate'), data),
+  saveMusic: (data) => axiosInstance.post(getEndpoint('music', 'save', '/api/music/save'), data),
+  getMusicList: () => axiosInstance.get(getEndpoint('music', 'list', '/api/music')),
+  uploadMusic: (data) => axiosInstance.post(getEndpoint('music', 'upload', '/api/music/upload'), data),
+  deleteMusic: (id) => axiosInstance.delete(getEndpoint('music', 'delete', '/api/music/' + id)),
 
   // Physics parameters methods
   updatePhysicsParameters: (params) =>
-    axiosInstance.post(endpoints.physicsParameters.update, params),
-  getPhysicsParameters: () => axiosInstance.get(endpoints.physicsParameters.get),
-  resetPhysicsParameters: () => axiosInstance.post(endpoints.physicsParameters.reset),
+    axiosInstance.post(getEndpoint('physicsParameters', 'update', '/api/physics/parameters'), params),
+  getPhysicsParameters: () => axiosInstance.get(getEndpoint('physicsParameters', 'get', '/api/physics/parameters')),
+  resetPhysicsParameters: () => axiosInstance.post(getEndpoint('physicsParameters', 'reset', '/api/physics/parameters/reset')),
 
   // Character methods
-  getCharacters: () => axiosInstance.get(endpoints.characters.list),
-  getCharacter: (id) => axiosInstance.get(endpoints.characters.get(id)),
+  getCharacters: () => axiosInstance.get(getEndpoint('characters', 'list', '/api/characters')),
+  getCharacter: (id) => axiosInstance.get(getEndpoint('characters', 'get', '/api/characters/' + id)),
   createCharacter: (data) => {
     const normalizedData = { ...data };
     if (data.universeId && !data.universe_id) {
@@ -457,16 +499,16 @@ const apiClient = {
     if (data.sceneId && !data.scene_id) {
       normalizedData.scene_id = data.sceneId;
     }
-    return axiosInstance.post(endpoints.characters.create, normalizedData);
+    return axiosInstance.post(getEndpoint('characters', 'create', '/api/characters'), normalizedData);
   },
-  updateCharacter: (id, data) => axiosInstance.put(endpoints.characters.update(id), data),
-  deleteCharacter: (id) => axiosInstance.delete(endpoints.characters.delete(id)),
-  getCharactersByUniverse: (universeId) => axiosInstance.get(endpoints.characters.forUniverse(universeId)),
-  getCharactersByScene: (sceneId) => axiosInstance.get(endpoints.characters.forScene(sceneId)),
+  updateCharacter: (id, data) => axiosInstance.put(getEndpoint('characters', 'update', '/api/characters/' + id), data),
+  deleteCharacter: (id) => axiosInstance.delete(getEndpoint('characters', 'delete', '/api/characters/' + id)),
+  getCharactersByUniverse: (universeId) => axiosInstance.get(getEndpoint('characters', 'forUniverse', `/api/universes/${universeId}/characters`)),
+  getCharactersByScene: (sceneId) => axiosInstance.get(getEndpoint('characters', 'forScene', `/api/scenes/${sceneId}/characters`)),
 
   // Note methods
-  getNotes: () => axiosInstance.get(endpoints.notes.list),
-  getNote: (id) => axiosInstance.get(endpoints.notes.get(id)),
+  getNotes: () => axiosInstance.get(getEndpoint('notes', 'list', '/api/notes')),
+  getNote: (id) => axiosInstance.get(getEndpoint('notes', 'get', '/api/notes/' + id)),
   createNote: (data) => {
     const normalizedData = { ...data };
     if (data.universeId && !data.universe_id) {
@@ -478,13 +520,13 @@ const apiClient = {
     if (data.characterId && !data.character_id) {
       normalizedData.character_id = data.characterId;
     }
-    return axiosInstance.post(endpoints.notes.create, normalizedData);
+    return axiosInstance.post(getEndpoint('notes', 'create', '/api/notes'), normalizedData);
   },
-  updateNote: (id, data) => axiosInstance.put(endpoints.notes.update(id), data),
-  deleteNote: (id) => axiosInstance.delete(endpoints.notes.delete(id)),
-  getNotesByUniverse: (universeId) => axiosInstance.get(endpoints.notes.forUniverse(universeId)),
-  getNotesByScene: (sceneId) => axiosInstance.get(endpoints.notes.forScene(sceneId)),
-  getNotesByCharacter: (characterId) => axiosInstance.get(endpoints.notes.forCharacter(characterId)),
+  updateNote: (id, data) => axiosInstance.put(getEndpoint('notes', 'update', '/api/notes/' + id), data),
+  deleteNote: (id) => axiosInstance.delete(getEndpoint('notes', 'delete', '/api/notes/' + id)),
+  getNotesByUniverse: (universeId) => axiosInstance.get(getEndpoint('notes', 'forUniverse', `/api/universes/${universeId}/notes`)),
+  getNotesByScene: (sceneId) => axiosInstance.get(getEndpoint('notes', 'forScene', `/api/scenes/${sceneId}/notes`)),
+  getNotesByCharacter: (characterId) => axiosInstance.get(getEndpoint('notes', 'forCharacter', `/api/characters/${characterId}/notes`)),
 };
 
 export default apiClient;

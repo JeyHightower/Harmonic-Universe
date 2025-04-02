@@ -48,6 +48,9 @@ const universeEndpoints = {
   notes: (id) => `${API_VERSION}/universes/${id}/notes`,
 };
 
+// Log the universe endpoints for debugging
+console.log("Universe endpoints defined:", universeEndpoints);
+
 // Scene endpoints
 const sceneEndpoints = {
   list: `${API_VERSION}/scenes`,
@@ -128,6 +131,13 @@ export const endpoints = {
   audioTracks: audioTrackEndpoints,
   system: systemEndpoints,
 };
+
+// Log the exported endpoints for debugging
+console.log("All endpoints exported:", {
+  hasAuth: !!endpoints.auth,
+  hasUniverses: !!endpoints.universes,
+  universesCreate: endpoints.universes?.create
+});
 
 // Export endpoint helper functions
 export const getEndpoint = (group, name) => {
