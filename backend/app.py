@@ -140,24 +140,36 @@ def create_app():
     # Configure WhiteNoise for static files with proper MIME types
     if static_folder_path and os.path.exists(static_folder_path):
         app.logger.info(f"Configuring WhiteNoise with static folder: {static_folder_path}")
-        # Wrap the WSGI app with WhiteNoise
-        white_noise = WhiteNoise(app.wsgi_app)
-        # Add the static folder to the whitenoise application
-        white_noise.add_files(static_folder_path, prefix='')
         
-        # Configure WhiteNoise to add proper MIME types
         # Explicitly register MIME types for specific file extensions
+        mimetypes.add_type('text/html', '.html')
         mimetypes.add_type('application/javascript', '.js')
         mimetypes.add_type('application/javascript', '.mjs')
         mimetypes.add_type('application/javascript', '.jsx')
         mimetypes.add_type('text/css', '.css')
         mimetypes.add_type('image/svg+xml', '.svg')
-        mimetypes.add_type('text/html', '.html')
         mimetypes.add_type('application/json', '.json')
+        
+        # Wrap the WSGI app with WhiteNoise
+        white_noise = WhiteNoise(app.wsgi_app)
+        # Add the static folder to the whitenoise application with proper MIME types
+        white_noise.add_files(static_folder_path, prefix='')
         
         # Set the updated app.wsgi_app
         app.wsgi_app = white_noise
         app.logger.info("WhiteNoise configured successfully")
+        
+        # Log all available files
+        try:
+            files_count = len(getattr(white_noise, 'files', {}))
+            app.logger.info(f"WhiteNoise serving {files_count} files")
+            
+            # Log a sample of files being served
+            if files_count > 0:
+                sample_files = list(white_noise.files.keys())[:5]
+                app.logger.info(f"Sample files: {', '.join(sample_files)}")
+        except Exception as e:
+            app.logger.error(f"Error checking WhiteNoise files: {str(e)}")
     else:
         app.logger.error(f"Cannot configure WhiteNoise: static folder not available")
         startup_errors.append("WhiteNoise configuration failed: static folder not available")
@@ -422,9 +434,71 @@ def create_app():
     def serve_index():
         """Serve index.html from root route"""
         app.logger.debug("Serving index.html from root route")
+        
+        # Check if the file exists
         if app.static_folder is None:
+            app.logger.error("Static folder not configured")
             return jsonify({"error": "Static folder not configured"}), 500
-        return send_from_directory(app.static_folder, 'index.html')
+        
+        index_path = os.path.join(app.static_folder, 'index.html')
+        if not os.path.exists(index_path):
+            app.logger.error(f"index.html not found at {index_path}")
+            return "Error: index.html not found", 500
+        
+        # Return the file with explicit content type
+        response = send_from_directory(app.static_folder, 'index.html')
+        response.headers['Content-Type'] = 'text/html'
+        app.logger.debug(f"Serving index.html with content type: {response.headers.get('Content-Type')}")
+        return response
+
+    # Diagnostic endpoint to check static files
+    @app.route('/api/debug/static-files')
+    def debug_static_files():
+        """Debug endpoint to check static files"""
+        static_folder = app.static_folder
+        files = []
+        
+        try:
+            if static_folder and os.path.exists(static_folder):
+                for root, dirs, filenames in os.walk(static_folder):
+                    for filename in filenames:
+                        rel_path = os.path.relpath(os.path.join(root, filename), static_folder)
+                        file_path = os.path.join(root, filename)
+                        try:
+                            size = os.path.getsize(file_path)
+                            mime_type = mimetypes.guess_type(filename)[0]
+                            files.append({
+                                'path': rel_path,
+                                'size': size,
+                                'type': mime_type
+                            })
+                        except Exception as file_err:
+                            files.append({
+                                'path': rel_path,
+                                'error': str(file_err)
+                            })
+            else:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Static folder not found',
+                    'static_folder': static_folder,
+                    'exists': False
+                })
+        except Exception as e:
+            return jsonify({
+                'status': 'error',
+                'message': str(e),
+                'static_folder': static_folder,
+                'exists': static_folder and os.path.exists(static_folder)
+            })
+        
+        return jsonify({
+            'status': 'success',
+            'static_folder': static_folder,
+            'file_count': len(files),
+            'files': files[:20],  # Limit to first 20 files to avoid large responses
+            'index_html_exists': os.path.exists(os.path.join(static_folder, 'index.html')) if static_folder else False
+        })
 
     # Catch-all route for client-side routing
     @app.route('/<path:path>')
@@ -1120,7 +1194,7 @@ try:
         app.logger.warning(f'Not Found: {request.url}')
         
         # Always serve JavaScript for any JS-related requests to prevent MIME type issues
-        if request.path.endswith('.js') or request.path.endswith('.mjs') or request.path.endswith('.jsx') or '.js?' in request.path:
+        if request.path.endswith('.js') or request.path.endswith('.mjs') or request.path.startswith('/src/') or '.js?' in request.path:
             app.logger.info(f'Serving JavaScript 404 for path: {request.path}')
             js_404 = """
             // 404 - JavaScript file not found
