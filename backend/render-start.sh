@@ -271,7 +271,7 @@ if [ -d "frontend" ]; then
         
         # Install specific dependencies that might be missing
         echo "Installing additional dependencies..."
-        npm install --no-save antd prop-types redux-persist @ant-design/icons || echo "Warning: Installing additional dependencies failed"
+        npm install --no-save antd@4.24.10 prop-types@15.8.1 redux-persist@6.0.0 @ant-design/icons@4.8.0 react-router-dom@6.10.0 --legacy-peer-deps || echo "Warning: Installing additional dependencies failed"
         
         # Install visualization libraries
         echo "Installing visualization libraries..."

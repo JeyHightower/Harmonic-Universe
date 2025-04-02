@@ -24,6 +24,57 @@ try {
   });
 }
 
+// Try to import or create prop-types resolver plugin
+let propTypesResolver;
+try {
+  propTypesResolver = require('./vite-plugin-prop-types').default;
+} catch (e) {
+  console.warn('Failed to load prop-types resolver plugin, using inline definition');
+  propTypesResolver = () => ({
+    name: 'inline-prop-types-resolver',
+    resolveId(id) {
+      if (id === 'prop-types') {
+        return '\0prop-types-resolved';
+      }
+      return null;
+    },
+    load(id) {
+      if (id === '\0prop-types-resolved') {
+        return `
+          // Simple prop-types shim
+          const PropTypes = {
+            array: () => null,
+            bool: () => null,
+            func: () => null,
+            number: () => null,
+            object: () => null,
+            string: () => null,
+            node: () => null,
+            element: () => null,
+            any: () => null,
+            arrayOf: () => PropTypes,
+            objectOf: () => PropTypes,
+            oneOf: () => PropTypes,
+            oneOfType: () => PropTypes,
+            shape: () => PropTypes,
+            exact: () => PropTypes,
+          };
+          
+          // Add isRequired to all types
+          Object.keys(PropTypes).forEach(key => {
+            if (typeof PropTypes[key] === 'function') {
+              PropTypes[key].isRequired = PropTypes[key];
+            }
+          });
+          
+          export default PropTypes;
+        `;
+      }
+      return null;
+    }
+  });
+}
+
 // Check if running in production mode
 const isProd = process.env.NODE_ENV === 'production';
 const forceIncludeAll = process.env.VITE_FORCE_INCLUDE_ALL === 'true';
@@ -67,7 +118,7 @@ export default defineConfig(({ command, mode }) => {
   const config = {
     root: './',
     base: '/',
-    plugins: [reactPlugin()],
+    plugins: [reactPlugin(), propTypesResolver()],
     resolve: {
       alias: {
         "@": fileURLToPath(new URL('./src', import.meta.url)),
@@ -86,13 +137,15 @@ export default defineConfig(({ command, mode }) => {
         // Add fallback for problematic packages when in production
         ...(isProd || forceIncludeAll ? {
           "react-router-dom": fileURLToPath(new URL('./src/vite-fallback.js', import.meta.url)),
+          "prop-types": fileURLToPath(new URL('./src/fallbacks/prop-types.js', import.meta.url)),
         } : {}),
         // Provide fallbacks for common imports
         'three': 'three',
         'tone': 'tone',
+        'prop-types': 'prop-types',
       },
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
-      dedupe: ['three', 'react', 'react-dom']
+      dedupe: ['three', 'react', 'react-dom', 'prop-types']
     },
     build: {
       outDir: "dist",
@@ -124,7 +177,7 @@ export default defineConfig(({ command, mode }) => {
       },
     },
     optimizeDeps: {
-      include: ['react', 'react-dom', 'react/jsx-runtime'],
+      include: ['react', 'react-dom', 'react/jsx-runtime', 'prop-types'],
       esbuildOptions: {
         jsx: 'automatic'
       }

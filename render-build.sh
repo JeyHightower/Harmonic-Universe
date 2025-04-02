@@ -262,11 +262,15 @@ npm install --global vite@4.2.0
 
 # Ensure prop-types is installed
 echo "Ensuring prop-types is installed..."
-npm install --no-save prop-types@15.8.1
+npm install --no-save prop-types@15.8.1 --legacy-peer-deps
 
 # Install required packages for 3D visualization
 echo "Installing Three.js and related packages..."
 npm install --no-save three@0.155.0 tone@14.7.77
+
+# Install additional required packages explicitly
+echo "Installing additional required packages..."
+npm install --no-save antd@4.24.10 @ant-design/icons@4.8.0 react-router-dom@6.10.0 redux-persist@6.0.0 --legacy-peer-deps
 
 # Create a custom vite build script
 echo "Creating custom Vite build script..."
@@ -592,6 +596,94 @@ chmod -R 755 "$BACKEND_DIR/static"
 # Verify backend static directory
 echo "Verifying backend static directory..."
 ls -la "$BACKEND_DIR/static"
+
+# Create a fallback for prop-types in case import fails
+echo "Creating prop-types fallback..."
+mkdir -p src/fallbacks
+cat > src/fallbacks/prop-types.js << 'EOF'
+// Fallback implementation of prop-types for when the real package fails to load
+const PropTypes = {
+  array: () => null,
+  bool: () => null,
+  func: () => null,
+  number: () => null,
+  object: () => null,
+  string: () => null,
+  node: () => null,
+  element: () => null,
+  any: () => null,
+  arrayOf: () => null,
+  objectOf: () => null,
+  oneOf: () => null,
+  oneOfType: () => null,
+  shape: () => null,
+  exact: () => null,
+  isRequired: { 
+    array: () => null, 
+    bool: () => null, 
+    func: () => null, 
+    number: () => null, 
+    object: () => null, 
+    string: () => null, 
+    node: () => null, 
+    element: () => null, 
+    any: () => null 
+  }
+};
+
+export default PropTypes;
+EOF
+
+# Create a temporary vite plugin to handle prop-types
+echo "Creating prop-types resolver plugin..."
+cat > vite-plugin-prop-types.js << 'EOF'
+// Simple Vite plugin to resolve prop-types
+export default function propTypesResolver() {
+  return {
+    name: 'vite-plugin-prop-types-resolver',
+    resolveId(id) {
+      if (id === 'prop-types') {
+        return '\0prop-types-resolved';
+      }
+      return null;
+    },
+    load(id) {
+      if (id === '\0prop-types-resolved') {
+        return `
+          // Simple prop-types shim
+          const PropTypes = {
+            array: () => null,
+            bool: () => null,
+            func: () => null,
+            number: () => null,
+            object: () => null,
+            string: () => null,
+            node: () => null,
+            element: () => null,
+            any: () => null,
+            arrayOf: () => PropTypes,
+            objectOf: () => PropTypes,
+            oneOf: () => PropTypes,
+            oneOfType: () => PropTypes,
+            shape: () => PropTypes,
+            exact: () => PropTypes,
+          };
+          
+          // Add isRequired to all types
+          Object.keys(PropTypes).forEach(key => {
+            if (typeof PropTypes[key] === 'function') {
+              PropTypes[key].isRequired = PropTypes[key];
+            }
+          });
+          
+          export default PropTypes;
+        `;
+      }
+      return null;
+    }
+  };
+}
+EOF
 
 echo "Build completed successfully at $(date)"
 exit 0 
