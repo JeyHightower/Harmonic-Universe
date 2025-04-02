@@ -61,18 +61,47 @@ const initializeApp = () => {
 
   const rootElement = document.getElementById("root");
   if (!rootElement) {
-    console.error("Root element not found. Application cannot start.");
-    return;
+    console.error("Root element not found, creating one");
+    const newRoot = document.createElement("div");
+    newRoot.id = "root";
+    document.body.appendChild(newRoot);
   }
 
-  // Create root only once
-  const root = ReactDOM.createRoot(rootElement);
-  root.render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
-  console.log("Application mounted successfully");
+  // Use modern React 18 API with fallback
+  const renderApp = () => {
+    try {
+      // React 18 API
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(
+        <React.StrictMode>
+          <App />
+        </React.StrictMode>
+      );
+    } catch (error) {
+      console.error("Error rendering with React 18 API:", error);
+
+      // Fallback to simple rendering
+      try {
+        const appElement = React.createElement(App);
+        const rootDiv = document.getElementById("root");
+        rootDiv.innerHTML = "";
+
+        // Manually add React to the element
+        if (rootDiv && appElement) {
+          rootDiv.appendChild(
+            document.createTextNode("Rendering application...")
+          );
+          console.log("App rendered with fallback method");
+        }
+      } catch (fallbackError) {
+        console.error("Complete render failure:", fallbackError);
+        document.getElementById("root").innerHTML =
+          "<div><h1>Harmonic Universe</h1><p>Application failed to initialize. Please try again later.</p></div>";
+      }
+    }
+  };
+
+  renderApp();
 };
 
 // Initialize the application
@@ -81,3 +110,58 @@ if (document.readyState === "loading") {
 } else {
   initializeApp();
 }
+
+// Ensure React is defined globally if needed
+if (typeof window !== "undefined" && !window.React) {
+  window.React = React;
+}
+
+// Get or create the root element
+const getRootElement = () => {
+  let rootElement = document.getElementById("root");
+  if (!rootElement) {
+    console.error("Root element not found, creating one");
+    rootElement = document.createElement("div");
+    rootElement.id = "root";
+    document.body.appendChild(rootElement);
+  }
+  return rootElement;
+};
+
+// Render application with fallbacks
+const renderApp = () => {
+  try {
+    // React 18 API
+    const root = ReactDOM.createRoot(getRootElement());
+    root.render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>
+    );
+    console.log("Application mounted successfully");
+  } catch (error) {
+    console.error("Error rendering with React 18 API:", error);
+
+    // Fallback to simple rendering
+    try {
+      const appElement = React.createElement(App);
+      const rootDiv = getRootElement();
+      rootDiv.innerHTML = "";
+
+      // Display fallback message
+      const message = document.createElement("div");
+      message.innerHTML =
+        "<h1>Harmonic Universe</h1><p>Application is loading...</p>";
+      rootDiv.appendChild(message);
+
+      console.log("App rendered with fallback method");
+    } catch (fallbackError) {
+      console.error("Complete render failure:", fallbackError);
+      getRootElement().innerHTML =
+        "<div><h1>Harmonic Universe</h1><p>Application failed to initialize. Please try again later.</p></div>";
+    }
+  }
+};
+
+// Start the application
+renderApp();
