@@ -149,7 +149,10 @@ const apiClient = {
   // Auth methods
   login: (credentials) => axiosInstance.post(endpoints.auth.login, credentials),
   register: (userData) => axiosInstance.post(endpoints.auth.register, userData),
-  demoLogin: () => axiosInstance.post(endpoints.auth.demoLogin),
+  demoLogin: () => {
+    console.log("API: Making demo login request to", endpoints.auth.demoLogin);
+    return axiosInstance.post(endpoints.auth.demoLogin);
+  },
   validateToken: async () => {
     try {
       console.log("Attempting to validate token");

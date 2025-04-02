@@ -133,35 +133,72 @@ export const demoLogin = createAsyncThunk(
       dispatch(loginStart());
       console.debug("Logging in as demo user");
 
-      // Use fallback authentication in development mode or when API is unreachable
-      console.debug("Directly using fallback authentication for demo login");
-      const fallbackData = handleOfflineAuthentication();
-      console.debug("Fallback data:", fallbackData);
+      try {
+        // Try using the API first
+        console.debug("Attempting to use API for demo login");
+        const response = await apiClient.demoLogin();
+        console.debug("Demo login successful with API:", response);
 
-      // Store tokens from fallback
-      localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, fallbackData.token);
-      if (fallbackData.refresh_token) {
-        localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, fallbackData.refresh_token);
+        // Extract user data from response
+        const userData = response.data.user || response.data;
+        const token = response.data.token || response.data.access_token;
+        const refreshToken = response.data.refresh_token;
+
+        // Store tokens and user data
+        if (token) {
+          localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, token);
+        }
+        if (refreshToken) {
+          localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, refreshToken);
+        }
+        if (userData) {
+          localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(userData));
+        }
+
+        // Update state with the correct data structure
+        dispatch(loginSuccess({
+          user: userData,
+          token,
+          refresh_token: refreshToken
+        }));
+
+        return {
+          user: userData,
+          token,
+          refresh_token: refreshToken
+        };
+      } catch (apiError) {
+        console.warn("API demo login failed, using fallback:", apiError);
+
+        // Use fallback authentication as a backup
+        console.debug("Using fallback authentication for demo login");
+        const fallbackData = handleOfflineAuthentication();
+        console.debug("Fallback data:", fallbackData);
+
+        // Store tokens from fallback
+        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, fallbackData.token);
+        if (fallbackData.refresh_token) {
+          localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, fallbackData.refresh_token);
+        }
+        if (fallbackData.user) {
+          localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(fallbackData.user));
+        }
+
+        // Explicitly dispatch loginSuccess with the full data
+        dispatch(loginSuccess({
+          user: fallbackData.user,
+          token: fallbackData.token,
+          refresh_token: fallbackData.refresh_token
+        }));
+
+        console.debug("Demo login success with fallback");
+
+        return {
+          user: fallbackData.user,
+          token: fallbackData.token,
+          refresh_token: fallbackData.refresh_token
+        };
       }
-      if (fallbackData.user) {
-        localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(fallbackData.user));
-      }
-
-      // Explicitly dispatch loginSuccess with the full data
-      dispatch(loginSuccess({
-        user: fallbackData.user,
-        token: fallbackData.token,
-        refresh_token: fallbackData.refresh_token
-      }));
-
-      console.debug("Demo login success with fallback");
-
-      return {
-        user: fallbackData.user,
-        token: fallbackData.token,
-        refresh_token: fallbackData.refresh_token
-      };
-
     } catch (error) {
       console.error("Demo login failed:", error);
       dispatch(loginFailure(handleError(error)));

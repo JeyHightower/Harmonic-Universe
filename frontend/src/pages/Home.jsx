@@ -5,10 +5,8 @@ import {
   checkAuthState,
   loginFailure,
   loginStart,
-  loginSuccess,
-  demoLogin,
 } from "../store/slices/authSlice";
-import api from "../services/api";
+import { demoLogin } from "../store/thunks/authThunks";
 import { AUTH_CONFIG, IS_DEVELOPMENT } from "../utils/config";
 import Button from "../components/common/Button";
 import "../styles/Home.css";
@@ -41,14 +39,14 @@ function Home() {
       dispatch(loginStart());
 
       // Make demo login request
-      const result = await dispatch(demoLogin());
+      const resultAction = await dispatch(demoLogin());
 
       if (IS_DEVELOPMENT) {
-        console.debug("[Home] Demo login result:", result);
+        console.debug("[Home] Demo login result:", resultAction);
       }
 
-      if (result.error) {
-        throw new Error(result.error);
+      if (demoLogin.rejected.match(resultAction)) {
+        throw new Error(resultAction.payload || resultAction.error.message);
       }
 
       // The demoLogin thunk already handles token storage and state updates
