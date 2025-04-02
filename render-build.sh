@@ -72,6 +72,15 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@components': path.resolve(__dirname, './src/components'),
+      '@pages': path.resolve(__dirname, './src/pages'),
+      '@store': path.resolve(__dirname, './src/store'),
+      '@styles': path.resolve(__dirname, './src/styles'),
+      '@assets': path.resolve(__dirname, './src/assets'),
+      '@utils': path.resolve(__dirname, './src/utils'),
+      '@hooks': path.resolve(__dirname, './src/hooks'),
+      '@contexts': path.resolve(__dirname, './src/contexts'),
+      '@services': path.resolve(__dirname, './src/services'),
       // Add alias for redux-persist subpaths
       'redux-persist/integration/react': path.resolve(__dirname, 'node_modules/redux-persist/integration/react')
     },
@@ -173,6 +182,40 @@ npm install
 # Make sure redux-persist is properly installed and accessible
 echo "Ensuring redux-persist is properly installed..."
 npm install redux-persist@latest --save
+
+# Create necessary directory structure for services
+echo "Creating services directory structure..."
+mkdir -p src/services
+
+# Create a basic endpoints.js file to satisfy imports
+echo "Creating basic endpoints.js file..."
+cat > src/services/endpoints.js << 'EOF'
+// Basic endpoints configuration
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+
+export const ENDPOINTS = {
+  // Auth endpoints
+  LOGIN: `${API_BASE_URL}/auth/login`,
+  SIGNUP: `${API_BASE_URL}/auth/signup`,
+  LOGOUT: `${API_BASE_URL}/auth/logout`,
+  
+  // User endpoints
+  USER_PROFILE: `${API_BASE_URL}/users/profile`,
+  
+  // Music endpoints
+  MUSIC_TRACKS: `${API_BASE_URL}/music/tracks`,
+  MUSIC_PLAY: `${API_BASE_URL}/music/play`,
+  
+  // Scene endpoints
+  SCENES: `${API_BASE_URL}/scenes`,
+  SCENE_DETAIL: (id) => `${API_BASE_URL}/scenes/${id}`,
+  
+  // Health check
+  HEALTH: `${API_BASE_URL}/health`
+};
+
+export default ENDPOINTS;
+EOF
 
 # Check if the redux-persist/integration/react path exists
 if [ ! -d "node_modules/redux-persist/integration" ]; then
