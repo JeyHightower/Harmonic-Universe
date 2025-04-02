@@ -333,21 +333,38 @@ fi
 # Set the environment variable to enable Render-specific fixes
 export DEPLOYMENT_PLATFORM="render"
 
-# Start the server
-echo "Starting server..."
-echo "Checking app.py structure..."
-grep -n "app =" app.py
-grep -n "def create_app" app.py
-
-# Determine the right WSGI application path
+# Check app.py to determine the right WSGI app spec
+APP_PATH=""
 if grep -q "def create_app" app.py; then
-    echo "Found 'create_app' function in app.py, using 'app:create_app()'"
-    WSGI_APP="app:create_app()"
+    echo "Found create_app factory function in app.py"
+    if grep -q "app = create_app()" app.py; then
+        echo "App instance created in app.py"
+        APP_PATH="app:app"
+    else
+        echo "Using factory function directly"
+        APP_PATH="app:create_app()"
+    fi
 else
-    echo "Using default WSGI path 'app:app'"
-    WSGI_APP="app:app"
+    echo "Using app instance directly"
+    APP_PATH="app:app"  
 fi
 
-# Use the correct WSGI application path with explicit port binding
-echo "Starting Gunicorn with $WSGI_APP"
-exec gunicorn "$WSGI_APP" --bind 0.0.0.0:10000 --log-level debug 
+echo "Starting Gunicorn with WSGI app: $APP_PATH"
+echo "Port: $PORT"
+
+# Start with simplified configuration that disables buffering
+echo "Starting Gunicorn with minimal configuration"
+export PYTHONUNBUFFERED=1
+gunicorn $APP_PATH \
+    --bind=0.0.0.0:$PORT \
+    --workers=1 \
+    --worker-class=sync \
+    --log-level=debug \
+    --access-logfile=- \
+    --error-logfile=- \
+    --disable-redirect-access-to-syslog \
+    --log-syslog=false \
+    --timeout=180 \
+    --forwarded-allow-ips="*" \
+    --access-logformat='%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s %(D)s "%(f)s" "%(a)s"' \
+    --preload 
