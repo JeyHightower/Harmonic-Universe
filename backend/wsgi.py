@@ -5,92 +5,73 @@ This file serves as a WSGI entry point for the Flask application.
 It attempts to load the Flask app using various methods and provides fallbacks.
 """
 
-import sys
 import os
+import sys
 
-# Add debug print statements
+# Add the project root directory to the Python path
+sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+
+# Print debug information
+print("==== WSGI Debug Information ====")
 print(f"Python version: {sys.version}")
 print(f"Current directory: {os.getcwd()}")
+print(f"File location: {__file__}")
 print(f"Python path: {sys.path}")
+print(f"Environment: {os.environ.get('FLASK_ENV', 'not set')}")
+print(f"Modules in backend/: {[f for f in os.listdir('backend') if f.endswith('.py')]}")
+print("================================")
 
-# Import your Flask app properly
+# Import your Flask app
+# Try different import patterns based on your project structure
 try:
-    # First try the create_app factory pattern
-    from backend.app import create_app
-    app = create_app()
-    print("Successfully loaded Flask app using create_app factory")
-except (ImportError, AttributeError) as e:
-    print(f"Error using create_app factory: {str(e)}")
-    
+    print("Attempting to import from backend.app...")
+    from backend.app import app
+    print("Successfully imported app from backend.app")
+except ImportError as e:
+    print(f"Failed to import app from backend.app: {e}")
     try:
-        # Try direct app import
-        from backend.app import app
-        print("Successfully loaded Flask app directly")
-    except (ImportError, AttributeError) as e:
-        print(f"Error importing app directly: {str(e)}")
-        
+        print("Attempting to import create_app from backend.app...")
+        from backend.app import create_app
+        print("Successfully imported create_app, creating app instance...")
+        app = create_app()
+        print("Successfully created app instance")
+    except ImportError as e:
+        print(f"Failed to import create_app from backend.app: {e}")
         try:
-            # Try other common app variable names
-            import backend.app as backend_module
-            
-            # Check for common Flask app variable names
-            if hasattr(backend_module, 'application'):
-                app = backend_module.application
-                print("Found and using 'application' variable")
-            elif hasattr(backend_module, 'flask_app'):
-                app = backend_module.flask_app
-                print("Found and using 'flask_app' variable")
-            else:
-                # Last resort - search for Flask instance
-                flask_var_found = False
-                for var_name in dir(backend_module):
-                    var = getattr(backend_module, var_name)
-                    if str(type(var)).endswith("'flask.app.Flask'>"):
-                        app = var
-                        print(f"Found Flask app as '{var_name}'")
-                        flask_var_found = True
-                        break
+            print("Attempting to import app directly from backend...")
+            from backend import app
+            print("Successfully imported app from backend")
+        except ImportError as e:
+            print(f"Failed to import app from backend: {e}")
+            try:
+                print("Attempting to import create_app from backend...")
+                from backend import create_app
+                print("Successfully imported create_app from backend, creating app instance...")
+                app = create_app()
+                print("Successfully created app instance")
+            except ImportError as e:
+                print(f"Failed to import create_app from backend: {e}")
                 
-                if not flask_var_found:
-                    # Create minimal app if all else fails
-                    from flask import Flask, jsonify
-                    
-                    print("Creating minimal Flask app as last resort")
-                    app = Flask(__name__, static_folder='static')
-                    
-                    @app.route('/api/health')
-                    def health():
-                        return jsonify({"status": "ok"})
-                    
-                    @app.route('/')
-                    def home():
-                        return "Harmonic Universe API is running (minimal fallback)"
-        except Exception as e:
-            # Final fallback if all else fails
-            from flask import Flask, jsonify
-            
-            print(f"Error with module inspection: {str(e)}")
-            print("Creating minimal Flask app as absolute last resort")
-            app = Flask(__name__, static_folder='static')
-            
-            @app.route('/api/health')
-            def health():
-                return jsonify({"status": "ok"})
-            
-            @app.route('/')
-            def home():
-                return "Harmonic Universe API is running (fallback)"
+                # Final fallback - create a minimal app
+                print("All import attempts failed, creating minimal Flask app")
+                from flask import Flask, jsonify
+                app = Flask(__name__, static_folder='static')
+                
+                @app.route('/api/health')
+                def health():
+                    return jsonify({"status": "ok"})
+                
+                @app.route('/')
+                def index():
+                    return "Harmonic Universe API - Minimal Fallback App"
 
-# Final check to ensure app is defined
-if 'app' not in locals():
-    from flask import Flask
-    print("ERROR: app variable was not defined by any method, creating minimal app")
-    app = Flask(__name__)
+# For gunicorn
+application = app
 
-# For debugging
+# Print app information
 print(f"WSGI app: {app}")
 print(f"WSGI app type: {type(app)}")
-print(f"WSGI app routes: {app.url_map}")
-
-# This is what Gunicorn will use
-application = app 
+try:
+    print(f"WSGI app routes: {app.url_map}")
+except Exception as e:
+    print(f"Could not print app routes: {e}") 
