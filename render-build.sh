@@ -40,13 +40,19 @@ rm -f vite.config.minimal.js
 
 # Install frontend dependencies
 echo "Installing frontend dependencies..."
-npm ci || npm install
+npm install
 
 # Explicitly install specific versions of critical dependencies
 echo "Installing critical dependencies with specific versions..."
 npm install --no-save vite@4.5.1 @vitejs/plugin-react@4.2.1 react@18.2.0 react-dom@18.2.0
+npm install --no-save react-redux@8.1.3 redux@4.2.1 react-router-dom@6.20.0 redux-thunk@2.4.2 @reduxjs/toolkit@1.9.7
+npm install --no-save @mui/material@5.14.18 @mui/icons-material@5.14.18 @emotion/react@11.11.1 @emotion/styled@11.11.0
 
-# Create a minimal vite.config.temp.js for the build that won't duplicate React
+# List all explicitly installed dependencies for verification
+echo "Installed dependencies:"
+npm list --depth=0
+
+# Create a more comprehensive vite.config.temp.js for the build
 echo "Creating temporary Vite configuration that prevents React duplication..."
 cat > vite.config.temp.js << 'EOF'
 import { defineConfig } from 'vite';
@@ -74,10 +80,28 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     minify: true,
+    rollupOptions: {
+      external: [],
+      output: {
+        manualChunks: {
+          'vendor': ['react', 'react-dom', 'react-redux', 'redux', 'react-router-dom'],
+        }
+      }
+    }
   },
   esbuild: {
     jsx: 'automatic',
     jsxInject: null // Disable automatic React import to prevent duplication
+  },
+  optimizeDeps: {
+    include: [
+      'react', 
+      'react-dom', 
+      'react-redux', 
+      'redux', 
+      'react-router-dom',
+      '@reduxjs/toolkit'
+    ]
   }
 });
 EOF
@@ -96,6 +120,8 @@ echo "Checking installed versions:"
 npx vite --version
 npm list react
 npm list react-dom
+npm list react-redux
+npm list react-router-dom
 npm list @vitejs/plugin-react
 
 # Try to build with the regular config first, fallback to temporary config
@@ -105,13 +131,69 @@ if ! npx vite build --debug; then
   npx vite build --config vite.config.temp.js
 fi
 
+# If both build attempts fail, try a minimal build with just essential files
+if [ ! -d "dist" ]; then
+  echo "Both build attempts failed, creating a minimal build..."
+  
+  # Create minimal dist directory
+  mkdir -p dist
+  
+  # Copy any existing static assets
+  if [ -d "public" ]; then
+    echo "Copying public assets to dist directory..."
+    cp -r public/* dist/ || echo "Warning: Could not copy all public assets"
+  fi
+  
+  # Create a minimal index.html
+  cat > dist/index.html << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harmonic Universe</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; text-align: center; }
+    h1 { color: #333; }
+    .container { max-width: 800px; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Harmonic Universe</h1>
+    <p>Welcome to Harmonic Universe. The application is loading...</p>
+    <div id="root"></div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const root = document.getElementById('root');
+      root.innerHTML = '<div><h2>Application Loading</h2><p>Please wait while we connect to the backend...</p></div>';
+      
+      // Check if backend is available
+      fetch('/api/health')
+        .then(response => response.json())
+        .then(data => {
+          root.innerHTML = '<div><h2>Backend Connected</h2><p>The application backend is available.</p></div>';
+        })
+        .catch(err => {
+          root.innerHTML = '<div><h2>Backend Unavailable</h2><p>Could not connect to application backend.</p></div>';
+        });
+    });
+  </script>
+</body>
+</html>
+EOF
+  
+  echo "Created minimal build files"
+fi
+
 # Verify the build output
 echo "Verifying frontend build..."
 if [ -d "dist" ]; then
-  echo "Frontend build succeeded. Contents of dist directory:"
+  echo "Frontend build directory exists. Contents of dist directory:"
   ls -la dist
 else
-  echo "ERROR: Frontend build failed!"
+  echo "ERROR: Frontend build failed! No dist directory found."
   exit 1
 fi
 

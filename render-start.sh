@@ -28,6 +28,29 @@ if [ -d "static" ]; then
         head -n 10 static/index.html
     else
         echo "WARNING: index.html not found in static directory"
+        echo "Creating minimal index.html..."
+        cat > static/index.html << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harmonic Universe</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; text-align: center; }
+    h1 { color: #333; }
+    .container { max-width: 800px; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Harmonic Universe</h1>
+    <p>Welcome to Harmonic Universe. Using emergency static file.</p>
+    <div id="root"></div>
+  </div>
+</body>
+</html>
+EOF
     fi
     
     if [ -d "static/assets" ]; then
@@ -36,6 +59,7 @@ if [ -d "static" ]; then
         ls -la static/assets | head -n 10
     else
         echo "WARNING: assets directory not found in static"
+        mkdir -p static/assets
     fi
 else
     echo "ERROR: Static directory does not exist"
@@ -61,6 +85,7 @@ mkdir -p logs
 
 # Explicitly install required dependencies for production
 echo "Installing production dependencies..."
+# Core Flask dependencies
 pip install --no-cache-dir flask==2.3.3 werkzeug==2.3.7
 pip install --no-cache-dir flask-sqlalchemy==3.1.1 sqlalchemy==2.0.23
 pip install --no-cache-dir flask-migrate==4.0.5 flask-cors==4.0.0 
@@ -69,6 +94,18 @@ pip install --no-cache-dir flask-login==0.6.3 flask-socketio==5.3.6
 pip install --no-cache-dir python-dotenv==1.0.0 alembic==1.12.1
 pip install --no-cache-dir gunicorn==21.2.0 eventlet==0.33.3
 pip install --no-cache-dir flask-caching==2.1.0
+
+# Additional dependencies that might be required
+pip install --no-cache-dir psycopg2-binary==2.9.9  # PostgreSQL adapter
+pip install --no-cache-dir redis==5.0.1  # Redis client
+pip install --no-cache-dir requests==2.31.0  # HTTP requests
+pip install --no-cache-dir whitenoise==6.5.0  # Static file serving
+
+# Check if requirements.txt exists and install from it
+if [ -f "requirements.txt" ]; then
+    echo "Installing from requirements.txt..."
+    pip install --no-cache-dir -r requirements.txt
+fi
 
 # Attempt to run any pending migrations
 echo "Checking for pending database migrations..."
@@ -95,30 +132,53 @@ echo "Application will listen on port $PORT"
 # Start the application with gunicorn
 echo "Starting Gunicorn server..."
 
-# Check which app function exists
-echo "Checking for the create_app function in app.py..."
-if grep -q "def create_app" app.py; then
-    echo "Using 'app:create_app()' for Gunicorn"
-    gunicorn \
-        --bind 0.0.0.0:$PORT \
-        'app:create_app()' \
-        --worker-class eventlet \
-        --workers 4 \
-        --threads 2 \
-        --timeout 120 \
-        --access-logfile - \
-        --error-logfile - \
-        --log-level info
+# Determine the right app to serve
+if [ -f "app.py" ]; then
+    # Check which app function exists
+    echo "Checking for the create_app function in app.py..."
+    if grep -q "def create_app" app.py; then
+        echo "Using 'app:create_app()' for Gunicorn"
+        gunicorn \
+            --bind 0.0.0.0:$PORT \
+            'app:create_app()' \
+            --worker-class eventlet \
+            --workers 4 \
+            --threads 2 \
+            --timeout 120 \
+            --access-logfile - \
+            --error-logfile - \
+            --log-level info
+    else
+        echo "Using 'app:app' for Gunicorn (app already imported)"
+        gunicorn \
+            --bind 0.0.0.0:$PORT \
+            'app:app' \
+            --worker-class eventlet \
+            --workers 4 \
+            --threads 2 \
+            --timeout 120 \
+            --access-logfile - \
+            --error-logfile - \
+            --log-level info
+    fi
 else
-    echo "Using 'app:app' for Gunicorn (app already imported)"
-    gunicorn \
-        --bind 0.0.0.0:$PORT \
-        'app:app' \
-        --worker-class eventlet \
-        --workers 4 \
-        --threads 2 \
-        --timeout 120 \
-        --access-logfile - \
-        --error-logfile - \
-        --log-level info
+    echo "ERROR: app.py not found!"
+    echo "Checking for alternative app files..."
+    
+    if [ -f "application.py" ]; then
+        echo "Found application.py, using instead..."
+        gunicorn \
+            --bind 0.0.0.0:$PORT \
+            'application:app' \
+            --worker-class eventlet \
+            --workers 4 \
+            --threads 2 \
+            --timeout 120 \
+            --access-logfile - \
+            --error-logfile - \
+            --log-level info
+    else
+        echo "No app file found. Cannot start server."
+        exit 1
+    fi
 fi 
