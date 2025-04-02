@@ -193,7 +193,7 @@ cat > src/services/endpoints.js << 'EOF'
 // Basic endpoints configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
-export const ENDPOINTS = {
+export const endpoints = {
   // Auth endpoints
   LOGIN: `${API_BASE_URL}/auth/login`,
   SIGNUP: `${API_BASE_URL}/auth/signup`,
@@ -214,7 +214,10 @@ export const ENDPOINTS = {
   HEALTH: `${API_BASE_URL}/health`
 };
 
-export default ENDPOINTS;
+// For backward compatibility
+export const ENDPOINTS = endpoints;
+
+export default endpoints;
 EOF
 
 # Check if the redux-persist/integration/react path exists
