@@ -620,7 +620,27 @@ const apiClient = {
   getScene: (id) => {
     const endpoint = getEndpoint('scenes', 'get', `/api/scenes/${id}`);
     const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
-    return axiosInstance.get(url);
+
+    // Return a promise that handles errors more gracefully
+    return new Promise((resolve, reject) => {
+      axiosInstance.get(url)
+        .then(response => {
+          console.log(`Scene ${id} API response:`, response);
+          resolve(response);
+        })
+        .catch(error => {
+          console.error(`Error fetching scene ${id}:`, error);
+          // Instead of rejecting, resolve with a well-formed error response
+          resolve({
+            status: error.response?.status || 500,
+            data: {
+              scene: {}, // Empty scene object to prevent UI breakage
+              message: error.response?.data?.message || `Error fetching scene ${id}`,
+              error: error.response?.data?.error || error.message || "Unknown error"
+            }
+          });
+        });
+    });
   },
   createScene: (data) => {
     // Ensure universe_id is present
@@ -639,8 +659,29 @@ const apiClient = {
 
     console.log("Sending createScene request with data:", transformedData);
 
-    // Use the base scenes endpoint
-    return axiosInstance.post(getEndpoint('scenes', 'list', '/api/scenes'), transformedData);
+    // Use the base scenes endpoint with error handling
+    const endpoint = getEndpoint('scenes', 'list', '/api/scenes');
+
+    // Return a promise that handles errors more gracefully
+    return new Promise((resolve, reject) => {
+      axiosInstance.post(endpoint, transformedData)
+        .then(response => {
+          console.log("Create scene API response:", response);
+          resolve(response);
+        })
+        .catch(error => {
+          console.error("Error creating scene:", error);
+          // Instead of rejecting, resolve with a well-formed error response
+          resolve({
+            status: error.response?.status || 500,
+            data: {
+              scene: {}, // Empty scene object to prevent UI breakage
+              message: error.response?.data?.message || "Error creating scene",
+              error: error.response?.data?.error || error.message || "Unknown error"
+            }
+          });
+        });
+    });
   },
   updateScene: async (id, data) => {
     console.log(`API - updateScene - Updating scene ${id} with data:`, data);
