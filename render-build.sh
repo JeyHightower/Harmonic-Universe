@@ -27,9 +27,9 @@ cd frontend
 echo "Installing frontend dependencies..."
 npm install
 
-# Build the frontend application
+# Build the frontend application directly with Vite
 echo "Building frontend application..."
-npm run build
+npx vite build
 
 # Verify the build output
 echo "Verifying frontend build..."
