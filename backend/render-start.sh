@@ -273,6 +273,10 @@ if [ -d "frontend" ]; then
         echo "Installing additional dependencies..."
         npm install --no-save antd prop-types redux-persist @ant-design/icons || echo "Warning: Installing additional dependencies failed"
         
+        # Install visualization libraries
+        echo "Installing visualization libraries..."
+        npm install --no-save three@0.155.0 tone@14.7.77 || echo "Warning: Installing visualization libraries failed"
+        
         # Build frontend
         echo "Building frontend application..."
         npm run build || echo "Warning: Frontend build failed, continuing anyway"

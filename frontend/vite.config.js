@@ -86,46 +86,41 @@ export default defineConfig(({ command, mode }) => {
         // Add fallback for problematic packages when in production
         ...(isProd || forceIncludeAll ? {
           "react-router-dom": fileURLToPath(new URL('./src/vite-fallback.js', import.meta.url)),
-        } : {})
+        } : {}),
+        // Provide fallbacks for common imports
+        'three': 'three',
+        'tone': 'tone',
       },
-      extensions: ['.js', '.jsx', '.ts', '.tsx', '.json']
+      extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
+      dedupe: ['three', 'react', 'react-dom']
     },
     build: {
       outDir: "dist",
       emptyOutDir: true,
-      sourcemap: !isProduction,
-      minify: isProduction,
+      sourcemap: false,
+      minify: true,
       target: 'es2018',
       cssCodeSplit: true,
-      chunkSizeWarningLimit: 1000,
+      chunkSizeWarningLimit: 2000,
       rollupOptions: {
-        external: [],
-        input: {
-          main: fileURLToPath(new URL('./index.html', import.meta.url)),
-        },
+        external: ['react', 'react-dom'],
         output: {
+          globals: {
+            react: 'React',
+            'react-dom': 'ReactDOM'
+          },
           manualChunks: {
-            vendor: [
-              'react',
-              'react-dom',
-              '@reduxjs/toolkit',
-              'react-redux'
-            ],
-            ui: [
-              'antd',
-              '@ant-design/icons',
-              '@mui/material',
-              '@mui/icons-material',
-              '@emotion/react',
-              '@emotion/styled'
-            ],
-            three: ['three'],
-            tone: ['tone']
+            'three-bundle': ['three'],
+            'vendor': ['react', 'react-dom', 'react-router-dom', 'redux-persist']
           },
           chunkFileNames: "assets/[name]-[hash].js",
           entryFileNames: "assets/[name]-[hash].js",
           assetFileNames: "assets/[name]-[hash].[ext]",
         },
+      },
+      commonjsOptions: {
+        include: [/node_modules/],
+        extensions: ['.js', '.jsx']
       },
     },
     optimizeDeps: {

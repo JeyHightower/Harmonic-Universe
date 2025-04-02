@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Scene,
   PerspectiveCamera,
@@ -13,6 +13,34 @@ import {
   Color,
   ShaderMaterial,
 } from "three";
+
+// Try to import Three.js with a fallback
+let THREE;
+try {
+  THREE = require("three");
+} catch (error) {
+  console.error("Failed to load Three.js library:", error);
+  // Create a minimal mock version of THREE to prevent crashes
+  THREE = {
+    Scene: class MockScene {},
+    PerspectiveCamera: class MockCamera {
+      position = { z: 5 };
+    },
+    WebGLRenderer: class MockRenderer {
+      setSize() {}
+      render() {}
+      domElement = document.createElement("div");
+    },
+    BoxGeometry: class MockGeometry {},
+    MeshBasicMaterial: class MockMaterial {},
+    Mesh: class MockMesh {
+      rotation = { x: 0, y: 0 };
+    },
+    Color: class MockColor {},
+    AmbientLight: class MockLight {},
+    DirectionalLight: class MockLight {},
+  };
+}
 
 const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
   const containerRef = useRef(null);
@@ -29,17 +57,20 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
     complexity: 0.5,
     style: "default",
   });
+  const [isThreeAvailable, setIsThreeAvailable] = useState(
+    typeof THREE !== "undefined" && typeof THREE.Scene === "function"
+  );
 
   // Initialize Three.js scene
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!isThreeAvailable || !containerRef.current) return;
 
     // Create scene
-    const scene = new Scene();
+    const scene = new THREE.Scene();
     sceneRef.current = scene;
 
     // Create camera
-    const camera = new PerspectiveCamera(
+    const camera = new THREE.PerspectiveCamera(
       75,
       containerRef.current.clientWidth / containerRef.current.clientHeight,
       0.1,
@@ -49,7 +80,7 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
     cameraRef.current = camera;
 
     // Create renderer
-    const renderer = new WebGLRenderer({ alpha: true, antialias: true });
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     renderer.setSize(
       containerRef.current.clientWidth,
       containerRef.current.clientHeight
@@ -59,11 +90,11 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
     rendererRef.current = renderer;
 
     // Add ambient light
-    const ambientLight = new AmbientLight(0x404040);
+    const ambientLight = new THREE.AmbientLight(0x404040);
     scene.add(ambientLight);
 
     // Add directional light
-    const directionalLight = new DirectionalLight(0xffffff, 1);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
     directionalLight.position.set(1, 1, 1);
     scene.add(directionalLight);
 
@@ -98,7 +129,7 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
         containerRef.current.removeChild(rendererRef.current.domElement);
       }
     };
-  }, []);
+  }, [isPlaying, musicData, isThreeAvailable]);
 
   // Create particle system
   const createParticles = () => {
@@ -115,7 +146,7 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
       : 1000;
 
     // Create geometry
-    const geometry = new BufferGeometry();
+    const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
     const sizes = new Float32Array(particleCount);
@@ -141,21 +172,21 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
       sizes[i] = Math.random() * 0.5 + 0.5;
     }
 
-    geometry.setAttribute("position", new BufferAttribute(positions, 3));
-    geometry.setAttribute("color", new BufferAttribute(colors, 3));
-    geometry.setAttribute("size", new BufferAttribute(sizes, 1));
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    geometry.setAttribute("size", new THREE.BufferAttribute(sizes, 1));
 
     // Create material
-    const material = new PointsMaterial({
+    const material = new THREE.PointsMaterial({
       size: 0.5,
       vertexColors: true,
-      blending: AdditiveBlending,
+      blending: THREE.AdditiveBlending,
       transparent: true,
       sizeAttenuation: true,
     });
 
     // Create points
-    const particles = new Points(geometry, material);
+    const particles = new THREE.Points(geometry, material);
     sceneRef.current.add(particles);
     particlesRef.current = particles;
   };
@@ -170,7 +201,7 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
     }
 
     const starCount = 2000;
-    const starGeometry = new BufferGeometry();
+    const starGeometry = new THREE.BufferGeometry();
     const starPositions = new Float32Array(starCount * 3);
     const starSizes = new Float32Array(starCount);
 
@@ -190,14 +221,14 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
 
     starGeometry.setAttribute(
       "position",
-      new BufferAttribute(starPositions, 3)
+      new THREE.BufferAttribute(starPositions, 3)
     );
-    starGeometry.setAttribute("size", new BufferAttribute(starSizes, 1));
+    starGeometry.setAttribute("size", new THREE.BufferAttribute(starSizes, 1));
 
     // Star material with custom shader for better-looking stars
-    const starMaterial = new ShaderMaterial({
+    const starMaterial = new THREE.ShaderMaterial({
       uniforms: {
-        color: { value: new Color(0xffffff) },
+        color: { value: new THREE.Color(0xffffff) },
         pointTexture: { value: null }, // We'll use a simple shader without texture
       },
       vertexShader: `
@@ -219,11 +250,11 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
           gl_FragColor = vec4(vColor, intensity);
         }
       `,
-      blending: AdditiveBlending,
+      blending: THREE.AdditiveBlending,
       transparent: true,
     });
 
-    const stars = new Points(starGeometry, starMaterial);
+    const stars = new THREE.Points(starGeometry, starMaterial);
     sceneRef.current.add(stars);
     starsRef.current = stars;
   };
@@ -449,6 +480,14 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
       starsRef.current.rotation.y += speed * 0.2;
     }
   };
+
+  if (!isThreeAvailable) {
+    return (
+      <div className="visualizer-fallback">
+        <p>3D visualization not available (Three.js library not loaded)</p>
+      </div>
+    );
+  }
 
   return (
     <div

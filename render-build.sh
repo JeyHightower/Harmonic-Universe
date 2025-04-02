@@ -264,6 +264,10 @@ npm install --global vite@4.2.0
 echo "Ensuring prop-types is installed..."
 npm install --no-save prop-types@15.8.1
 
+# Install required packages for 3D visualization
+echo "Installing Three.js and related packages..."
+npm install --no-save three@0.155.0 tone@14.7.77
+
 # Create a custom vite build script
 echo "Creating custom Vite build script..."
 cat > vite-build.js << 'EOF'
