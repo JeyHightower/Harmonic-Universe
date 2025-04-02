@@ -195,23 +195,50 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export const endpoints = {
   // Auth endpoints
-  LOGIN: `${API_BASE_URL}/auth/login`,
-  SIGNUP: `${API_BASE_URL}/auth/signup`,
-  LOGOUT: `${API_BASE_URL}/auth/logout`,
+  auth: {
+    login: `${API_BASE_URL}/auth/login`,
+    signup: `${API_BASE_URL}/auth/signup`,
+    logout: `${API_BASE_URL}/auth/logout`,
+  },
   
   // User endpoints
-  USER_PROFILE: `${API_BASE_URL}/users/profile`,
+  user: {
+    profile: `${API_BASE_URL}/users/profile`,
+  },
   
-  // Music endpoints
-  MUSIC_TRACKS: `${API_BASE_URL}/music/tracks`,
-  MUSIC_PLAY: `${API_BASE_URL}/music/play`,
+  // Universe endpoints
+  universes: {
+    list: `${API_BASE_URL}/universes`,
+    create: `${API_BASE_URL}/universes`,
+    get: (id) => `${API_BASE_URL}/universes/${id}`,
+    update: (id) => `${API_BASE_URL}/universes/${id}`,
+    delete: (id) => `${API_BASE_URL}/universes/${id}`,
+    scenes: (id) => `${API_BASE_URL}/universes/${id}/scenes`,
+    characters: (id) => `${API_BASE_URL}/universes/${id}/characters`,
+  },
   
   // Scene endpoints
-  SCENES: `${API_BASE_URL}/scenes`,
-  SCENE_DETAIL: (id) => `${API_BASE_URL}/scenes/${id}`,
+  scenes: {
+    list: `${API_BASE_URL}/scenes`,
+    detail: (id) => `${API_BASE_URL}/scenes/${id}`,
+  },
   
   // Health check
-  HEALTH: `${API_BASE_URL}/health`
+  system: {
+    health: `${API_BASE_URL}/health`
+  }
+};
+
+// Export universesEndpoints separately as it's imported in api.js
+export const universesEndpoints = {
+  getUniverses: `${API_BASE_URL}/universes`,
+  getUniverseById: (id) => `${API_BASE_URL}/universes/${id}`,
+  createUniverse: `${API_BASE_URL}/universes`,
+  updateUniverse: (id) => `${API_BASE_URL}/universes/${id}`,
+  deleteUniverse: (id) => `${API_BASE_URL}/universes/${id}`,
+  getUniverseScenes: (id) => `${API_BASE_URL}/universes/${id}/scenes`,
+  getUniverseCharacters: (id) => `${API_BASE_URL}/universes/${id}/characters`,
+  getUniverseNotes: (id) => `${API_BASE_URL}/universes/${id}/notes`,
 };
 
 // For backward compatibility
