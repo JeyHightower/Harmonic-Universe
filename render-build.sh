@@ -605,6 +605,86 @@ if [ -d "$BACKEND_DIR/static" ] && [ -f "$BACKEND_DIR/static/diagnostic.html" ];
   fi
 fi
 
+# Create React fix loader
+echo "Creating React fix resources..."
+mkdir -p "$BACKEND_DIR/static/react-fixes"
+
+# Create react-fix-loader.js
+cat > "$BACKEND_DIR/static/react-fixes/react-fix-loader.js" << 'EOF'
+/**
+ * React Fix Loader
+ * This script runs before React loads and patches the environment
+ * to ensure compatibility between different versions of React.
+ */
+
+(function() {
+  console.log('React Fix Loader initializing');
+  
+  // Store original React if it exists
+  if (window.React && !window.__REACT_ORIGINAL__) {
+    window.__REACT_ORIGINAL__ = { ...window.React };
+  }
+  
+  // Keep track of loaded React instances
+  window.__REACT_INSTANCES__ = window.__REACT_INSTANCES__ || [];
+  
+  // Monitor React loading
+  Object.defineProperty(window, 'React', {
+    configurable: true,
+    enumerable: true,
+    get: function() {
+      return window.__CURRENT_REACT__ || {};
+    },
+    set: function(newReact) {
+      // Store the new React instance
+      window.__CURRENT_REACT__ = newReact;
+      window.__REACT_INSTANCES__.push(newReact);
+      
+      // Apply ref normalization patch
+      if (newReact && newReact.createElement && !newReact.__REF_PATCH_APPLIED__) {
+        const originalCreateElement = newReact.createElement;
+        
+        newReact.createElement = function patchedCreateElement(type, config, ...children) {
+          // Fix refs to avoid the "Expected ref to be a function..." error
+          if (config && config.ref !== undefined) {
+            const ref = config.ref;
+            
+            // Handle invalid refs
+            if (ref !== null && 
+                typeof ref !== 'function' && 
+                (typeof ref !== 'object' || !('current' in ref)) &&
+                typeof ref !== 'string') {
+              console.warn('Invalid ref type fixed by React Fix Loader:', typeof ref);
+              // Create a new config without the problematic ref
+              const newConfig = { ...config };
+              delete newConfig.ref;
+              return originalCreateElement(type, newConfig, ...children);
+            }
+          }
+          
+          return originalCreateElement(type, config, ...children);
+        };
+        
+        newReact.__REF_PATCH_APPLIED__ = true;
+        console.log('React Fix Loader: Patched createElement for ref handling');
+      }
+    }
+  });
+  
+  // Create a simplified React.createRef implementation
+  window.createReactRef = function() {
+    return { current: null };
+  };
+  
+  // Make React.createRef available early
+  if (!window.React.createRef) {
+    window.React.createRef = window.createReactRef;
+  }
+  
+  console.log('React Fix Loader installed');
+})();
+EOF
+
 # Clean existing files and copy frontend build
 rm -rf "$BACKEND_DIR/static/"* # Clean existing files
 cp -r "$FRONTEND_DIR/dist/"* "$BACKEND_DIR/static/"
