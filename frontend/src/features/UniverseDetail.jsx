@@ -277,6 +277,13 @@ const UniverseDetail = () => {
           universeId={id}
         />
       )}
+
+      {console.log("Modal render check:", {
+        isEditSceneModalOpen,
+        hasSceneToEdit: !!sceneToEdit,
+        sceneToEditId: sceneToEdit?.id,
+        renderModal: isEditSceneModalOpen && !!sceneToEdit,
+      })}
     </div>
   );
 };

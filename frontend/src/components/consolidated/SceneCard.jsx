@@ -40,6 +40,7 @@ const SceneCard = ({ scene, onEdit, onDelete }) => {
       return;
     }
 
+    // If no custom handler is provided, navigate to the edit page as fallback
     // Make sure we have a valid universe_id
     if (!scene.universe_id) {
       console.error(
@@ -51,7 +52,7 @@ const SceneCard = ({ scene, onEdit, onDelete }) => {
     // Navigate to the scene edit page with the correct path format
     const universeId = scene.universe_id;
     console.log(
-      `SceneCard - Navigating to edit scene with ID: ${scene.id} in universe: ${universeId}`
+      `SceneCard - No onEdit handler provided, falling back to direct navigation to edit scene with ID: ${scene.id} in universe: ${universeId}`
     );
 
     // Ensure both IDs are properly formatted

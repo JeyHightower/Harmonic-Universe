@@ -150,6 +150,9 @@ const ModalSystem = forwardRef(
 
       if (isOpen) {
         console.log(`ModalSystem - Opening modal: ${title}`);
+        console.log(`ModalSystem - Portal root:`, portalRoot);
+        console.log(`ModalSystem - Portal element:`, portalElementRef.current);
+
         mountedRef.current = true;
         openedAtRef.current = Date.now();
         modalRef.current?.setAttribute(

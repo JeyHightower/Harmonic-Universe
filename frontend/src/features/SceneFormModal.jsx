@@ -22,6 +22,14 @@ const SceneFormModal = ({
   const isEditing = !!initialData;
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Debug the props
+  console.log("SceneFormModal rendering with:", {
+    isOpen,
+    hasInitialData: !!initialData,
+    universeId,
+    initialDataId: initialData?.id,
+  });
+
   // Form state
   const [formData, setFormData] = useState({
     title: "",
