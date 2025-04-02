@@ -37,7 +37,19 @@ cat > package.json << 'EOF'
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-redux": "^8.1.3",
-    "react-router-dom": "^6.18.0"
+    "react-router-dom": "^6.18.0",
+    "@reduxjs/toolkit": "^1.9.5",
+    "redux-persist": "^6.0.0",
+    "axios": "^1.6.2",
+    "antd": "^4.24.12",
+    "@ant-design/icons": "^4.8.0",
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
+    "@mui/icons-material": "^5.14.15",
+    "@mui/material": "^5.14.15",
+    "moment": "^2.29.4",
+    "three": "^0.157.0",
+    "tone": "^14.7.77"
   },
   "devDependencies": {
     "@types/react": "^18.2.15",
@@ -48,7 +60,7 @@ cat > package.json << 'EOF'
 }
 EOF
 
-# Create a Vite configuration file
+# Create a Vite configuration file that handles redux-persist
 echo "Creating vite.config.js..."
 cat > vite.config.js << 'EOF'
 import { defineConfig } from 'vite';
@@ -60,6 +72,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      // Add alias for redux-persist subpaths
+      'redux-persist/integration/react': path.resolve(__dirname, 'node_modules/redux-persist/integration/react')
     },
   },
   build: {
@@ -67,11 +81,33 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: true,
     rollupOptions: {
-      external: []
+      // Add specific external dependencies with proper input format
+      external: [],
+      output: {
+        manualChunks: {
+          'vendor': [
+            'react', 
+            'react-dom', 
+            'react-router-dom', 
+            'react-redux', 
+            '@reduxjs/toolkit',
+            'redux-persist'
+          ]
+        }
+      }
     }
   },
   optimizeDeps: {
-    include: ['react-redux', 'react-router-dom', 'prop-types']
+    include: [
+      'react-redux', 
+      'react-router-dom', 
+      'prop-types',
+      'redux-persist',
+      'redux-persist/integration/react'
+    ],
+    esbuildOptions: {
+      jsx: 'automatic'
+    }
   }
 });
 EOF
@@ -133,6 +169,26 @@ EOF
 # Install dependencies
 echo "Installing dependencies..."
 npm install
+
+# Make sure redux-persist is properly installed and accessible
+echo "Ensuring redux-persist is properly installed..."
+npm install redux-persist@latest --save
+
+# Check if the redux-persist/integration/react path exists
+if [ ! -d "node_modules/redux-persist/integration" ]; then
+  echo "WARNING: redux-persist integration directory not found, creating shim..."
+  mkdir -p node_modules/redux-persist/integration
+  cat > node_modules/redux-persist/integration/react.js << 'EOF'
+import React from 'react';
+
+// Simple shim for PersistGate
+export const PersistGate = ({ loading, children, persistor }) => {
+  return children;
+};
+
+export default { PersistGate };
+EOF
+fi
 
 # Run the build with increased memory limit
 echo "Building frontend with Vite..."
