@@ -204,23 +204,43 @@ export const updateUniverse = createAsyncThunk(
   "universe/updateUniverse",
   async ({ id, ...updateData }, { rejectWithValue }) => {
     try {
-      console.log(`Updating universe ${id} with data:`, updateData);
+      console.log(`Thunk - Updating universe ${id} with data:`, updateData);
       const response = await apiClient.updateUniverse(id, updateData);
-      console.log("Updated universe response:", response);
+      console.log("Thunk - Updated universe response:", response);
 
       // Normalize the universe data if present
+      let normalizedData;
       if (response && response.data && response.data.universe) {
-        response.data.universe = normalizeUniverseData(response.data.universe);
+        normalizedData = normalizeUniverseData(response.data.universe);
+        return { ...response.data, universe: normalizedData };
       } else if (response && response.universe) {
-        response.universe = normalizeUniverseData(response.universe);
+        normalizedData = normalizeUniverseData(response.universe);
+        return { universe: normalizedData };
+      } else if (response && response.data) {
+        return response.data;
       } else if (response && response.id) {
         // If the response itself is the universe
         return normalizeUniverseData(response);
       }
 
-      return response.data || response;
+      return response;
     } catch (error) {
-      console.error(`Error updating universe ${id}:`, error);
+      console.error(`Thunk - Error updating universe ${id}:`, error);
+
+      // Check for specific error types
+      if (error.response && error.response.status === 403) {
+        return rejectWithValue({ message: "You don't have permission to update this universe" });
+      } else if (error.response && error.response.status === 404) {
+        return rejectWithValue({ message: "Universe not found" });
+      } else if (error.response && error.response.status === 405) {
+        return rejectWithValue({ message: "Method not allowed - please check API endpoint configuration" });
+      } else if (error.response && error.response.status === 500) {
+        const errorMessage = error.response.data?.error ||
+          error.response.data?.message ||
+          "Server error while updating universe";
+        return rejectWithValue({ message: errorMessage });
+      }
+
       return rejectWithValue(handleError(error));
     }
   }
@@ -231,12 +251,27 @@ export const deleteUniverse = createAsyncThunk(
   "universe/deleteUniverse",
   async (id, { rejectWithValue }) => {
     try {
-      console.log(`Deleting universe ${id}`);
-      await apiClient.deleteUniverse(id);
-      console.log(`Universe ${id} deleted successfully`);
+      console.log(`Thunk - Deleting universe ${id}`);
+      const response = await apiClient.deleteUniverse(id);
+      console.log(`Thunk - Universe ${id} deleted successfully, response:`, response);
+
+      // Return just the ID for the reducer to remove it from state
       return id;
     } catch (error) {
-      console.error(`Error deleting universe ${id}:`, error);
+      console.error(`Thunk - Error deleting universe ${id}:`, error);
+
+      // Check for specific error types
+      if (error.response && error.response.status === 403) {
+        return rejectWithValue({ message: "You don't have permission to delete this universe" });
+      } else if (error.response && error.response.status === 404) {
+        return rejectWithValue({ message: "Universe not found" });
+      } else if (error.response && error.response.status === 500) {
+        const errorMessage = error.response.data?.error ||
+          error.response.data?.message ||
+          "Server error while deleting universe";
+        return rejectWithValue({ message: errorMessage });
+      }
+
       return rejectWithValue(handleError(error));
     }
   }

@@ -4,6 +4,7 @@ from app.api.models.universe import Universe, Scene
 from app.api.models.character import Character
 from app.api.models.note import Note
 from app import db
+from sqlalchemy import update
 import traceback
 
 universes_bp = Blueprint('universes', __name__)
@@ -211,89 +212,65 @@ def update_universe(universe_id):
 @universes_bp.route('/<int:universe_id>', methods=['DELETE'])
 @jwt_required()
 def delete_universe(universe_id):
+    """Soft delete a universe by marking it and all related entities as deleted."""
     try:
+        # Get the universe or return 404
         universe = Universe.query.get_or_404(universe_id)
-        user_id = get_jwt_identity()
-
-        # Check if user owns this universe
-        if universe.user_id != user_id:
-            return jsonify({
-                'message': 'Access denied'
-            }), 403
-
-        # Get counts for logging
-        try:
-            scenes_count = Scene.query.filter_by(universe_id=universe_id, is_deleted=False).count()
-            characters_count = Character.query.filter_by(universe_id=universe_id, is_deleted=False).count()
-            notes_count = Note.query.filter_by(universe_id=universe_id, is_deleted=False).count()
-            current_app.logger.info(f"Deleting universe {universe_id} with {scenes_count} scenes, {characters_count} characters, {notes_count} notes")
-        except Exception as e:
-            current_app.logger.warning(f"Error counting related entities for universe {universe_id}: {str(e)}")
-            # Continue with deletion anyway
-
-        # Using a transaction to ensure all or nothing deletion
-        try:
-            # Start a nested transaction that can be rolled back without affecting outer transaction
-            with db.session.begin_nested():
-                try:
-                    # First, handle character-scene associations
-                    scenes = Scene.query.filter_by(universe_id=universe_id).all()
-                    for scene in scenes:
-                        try:
-                            current_app.logger.debug(f"Clearing character associations for scene {scene.id}")
-                            scene.characters = []
-                        except Exception as scene_e:
-                            current_app.logger.error(f"Error clearing character associations for scene {scene.id}: {str(scene_e)}")
-                            # Continue with other scenes
-
-                    # Mark universe as deleted but don't actually delete
-                    universe.is_deleted = True
-                    # Also mark all related entities as deleted
-                    Scene.query.filter_by(universe_id=universe_id).update({"is_deleted": True})
-                    Character.query.filter_by(universe_id=universe_id).update({"is_deleted": True})
-                    Note.query.filter_by(universe_id=universe_id).update({"is_deleted": True})
-                    
-                    # Commit the changes to mark everything as deleted
-                    db.session.commit()
-                    
-                    current_app.logger.info(f"Successfully marked universe {universe_id} and all related entities as deleted")
-                    
-                    return jsonify({
-                        'message': 'Universe deleted successfully'
-                    }), 200
-                    
-                except Exception as inner_e:
-                    # This will trigger the outer exception handler
-                    current_app.logger.error(f"Error during soft delete: {str(inner_e)}")
-                    current_app.logger.error(f"Traceback: {traceback.format_exc()}")
-                    raise inner_e
         
-        except Exception as e:
-            db.session.rollback()
-            current_app.logger.error(f"Database error during universe deletion: {str(e)}")
-            current_app.logger.error(f"Traceback: {traceback.format_exc()}")
+        # Check user permission
+        user_id = get_jwt_identity()
+        if universe.user_id != user_id:
+            current_app.logger.warning(f"User {user_id} attempted to delete universe {universe_id} owned by user {universe.user_id}")
+            return jsonify({'message': 'Access denied'}), 403
+        
+        # Log the deletion attempt
+        current_app.logger.info(f"Attempting to delete universe {universe_id} by user {user_id}")
+        
+        # Use a simpler approach: just mark as deleted
+        try:
+            # Mark the universe as deleted
+            current_app.logger.debug(f"Marking universe {universe_id} as deleted")
+            universe.is_deleted = True
+            db.session.flush()  # Flush to get immediate feedback on any DB issues
             
-            # Provide a more user-friendly error message
-            error_message = "Database error while deleting universe"
-            if "violates foreign key constraint" in str(e):
-                error_message = "Cannot delete universe because it has related data that depends on it"
-            elif "transaction has been rolled back" in str(e):
-                error_message = "Database transaction failed, please try again"
+            # Mark related entities as deleted using direct SQL updates
+            # This avoids loading all related objects into memory and potential cascade issues
+            current_app.logger.debug(f"Marking scenes for universe {universe_id} as deleted")
+            db.session.execute(
+                update(Scene).where(Scene.universe_id == universe_id).values(is_deleted=True)
+            )
+            
+            current_app.logger.debug(f"Marking characters for universe {universe_id} as deleted")
+            db.session.execute(
+                update(Character).where(Character.universe_id == universe_id).values(is_deleted=True)
+            )
+            
+            current_app.logger.debug(f"Marking notes for universe {universe_id} as deleted")
+            db.session.execute(
+                update(Note).where(Note.universe_id == universe_id).values(is_deleted=True)
+            )
+            
+            # Commit all changes
+            db.session.commit()
+            current_app.logger.info(f"Successfully soft-deleted universe {universe_id} and all related entities")
+            
+            return jsonify({'message': 'Universe deleted successfully'}), 200
+            
+        except Exception as db_error:
+            db.session.rollback()
+            error_message = str(db_error)
+            current_app.logger.error(f"Database error while deleting universe {universe_id}: {error_message}")
+            current_app.logger.error(traceback.format_exc())
             
             return jsonify({
-                'message': 'Error deleting universe',
-                'error': error_message,
-                'details': str(e)
+                'message': 'Error deleting universe', 
+                'error': f"Database error: {error_message[:100]}..."
             }), 500
-
+            
     except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error deleting universe {universe_id}: {str(e)}")
-        current_app.logger.error(f"Traceback: {traceback.format_exc()}")
-        return jsonify({
-            'message': 'Error deleting universe',
-            'error': str(e)
-        }), 500
+        current_app.logger.error(f"Unexpected error deleting universe {universe_id}: {str(e)}")
+        current_app.logger.error(traceback.format_exc())
+        return jsonify({'message': 'Error deleting universe', 'error': str(e)}), 500
 
 @universes_bp.route('/<int:universe_id>/characters', methods=['GET'])
 @jwt_required()

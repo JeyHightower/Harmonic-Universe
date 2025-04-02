@@ -505,8 +505,30 @@ const apiClient = {
     }
     return axiosInstance.get(`${getEndpoint('universes', 'get', `/api/universes/${id}`)}?${queryParams.toString()}`);
   },
-  updateUniverse: (id, data) => axiosInstance.put(`/api/universes/${id}`, data),
-  deleteUniverse: (id) => axiosInstance.delete(`/api/universes/${id}`),
+  updateUniverse: async (id, data) => {
+    console.log(`API - updateUniverse - Updating universe ${id} with data:`, data);
+    try {
+      const response = await axiosInstance.put(`/api/universes/${id}`, data);
+      console.log(`API - updateUniverse - Successfully updated universe ${id}:`, response);
+      return response;
+    } catch (error) {
+      console.error(`API - updateUniverse - Error updating universe ${id}:`, error.response || error);
+      // Re-throw the error to be handled by the calling code
+      throw error;
+    }
+  },
+  deleteUniverse: async (id) => {
+    console.log(`API - deleteUniverse - Deleting universe ${id}`);
+    try {
+      const response = await axiosInstance.delete(`/api/universes/${id}`);
+      console.log(`API - deleteUniverse - Successfully deleted universe ${id}:`, response);
+      return response;
+    } catch (error) {
+      console.error(`API - deleteUniverse - Error deleting universe ${id}:`, error.response || error);
+      // Re-throw the error to be handled by the calling code
+      throw error;
+    }
+  },
   getUniverseScenes: (universeId) =>
     axiosInstance.get(getEndpoint('universes', 'scenes', `/api/universes/${universeId}/scenes`)),
   updateUniversePhysics: (universeId, physicsParams) =>
