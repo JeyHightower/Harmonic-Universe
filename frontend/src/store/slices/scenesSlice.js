@@ -70,50 +70,67 @@ const scenesSlice = createSlice({
       })
       .addCase(fetchScenes.fulfilled, (state, action) => {
         state.loading = false;
+        console.log("DEBUG STORE: fetchScenes.fulfilled with payload:", action.payload);
+        console.log("DEBUG STORE: universeId from action meta:", action.meta?.arg);
 
         // Extract universeId from the action meta arg
         const universeId = action.meta?.arg;
+        console.log("DEBUG STORE: Processing scenes for universeId:", universeId);
 
         // Use scenes array directly from serialized response
         if (action.payload && action.payload.scenes) {
+          console.log("DEBUG STORE: Found scenes in payload:", action.payload.scenes.length);
           // Create a map to efficiently check for duplicates
           const scenesMap = new Map();
 
           // First add any existing scenes for this universe from universeScenes
           if (state.universeScenes[universeId]) {
+            console.log("DEBUG STORE: Adding existing universe scenes from state:", state.universeScenes[universeId].length);
             state.universeScenes[universeId].forEach(scene => {
               if (scene && scene.id) {
                 scenesMap.set(scene.id, scene);
               }
             });
+          } else {
+            console.log("DEBUG STORE: No existing scenes found for this universe in state");
           }
 
           // Add API scenes to the map second (so they override existing ones)
+          console.log("DEBUG STORE: Adding scenes from API response");
           action.payload.scenes.forEach(scene => {
             if (scene && scene.id) {
               scenesMap.set(scene.id, scene);
+            } else {
+              console.warn("DEBUG STORE: Encountered scene without ID in API response:", scene);
             }
           });
 
           // Add locally created scenes that aren't already in the API results
           // but only if they belong to this universe
-          state.locallyCreatedScenes.forEach(scene => {
-            if (scene && scene.id && !scenesMap.has(scene.id) && scene.universe_id === universeId) {
-              scenesMap.set(scene.id, scene);
-            }
-          });
+          if (state.locallyCreatedScenes.length > 0) {
+            console.log("DEBUG STORE: Adding locally created scenes:", state.locallyCreatedScenes.length);
+            state.locallyCreatedScenes.forEach(scene => {
+              if (scene && scene.id && !scenesMap.has(scene.id) && scene.universe_id === universeId) {
+                scenesMap.set(scene.id, scene);
+              }
+            });
+          }
 
           // Update scenes array with all unique scenes
           const universeScenes = Array.from(scenesMap.values());
+          console.log("DEBUG STORE: Final scenes count after processing:", universeScenes.length);
 
           // Store scenes specifically for this universe
           if (universeId) {
             state.universeScenes[universeId] = universeScenes;
+            console.log("DEBUG STORE: Stored scenes for universe in state.universeScenes");
           }
 
           // For backward compatibility, also update the main scenes array
           state.scenes = universeScenes;
+          console.log("DEBUG STORE: Updated main scenes array in state");
         } else {
+          console.log("DEBUG STORE: No scenes found in action.payload, checking for local scenes");
           // If no scenes were returned, still keep locally created scenes for this universe
           // and any existing scenes we may already have
           const existingUniverseScenes = state.universeScenes[universeId] || [];

@@ -83,45 +83,78 @@ export const fetchScenes = createAsyncThunk(
       // Handle different response formats - we need to be flexible about where the scenes are in the response
       let scenes = [];
 
+      console.log("DEBUG SCENES: Beginning to extract scenes from response format");
+      // Log the entire response structure for debugging
+      console.log("DEBUG SCENES: Response structure keys:", Object.keys(response.data));
+
       // Try different possible locations where scenes might be in the API response
       if (Array.isArray(response.data.scenes)) {
         // Format: { scenes: [...] }
-        console.log("Found scenes in response.data.scenes (array)");
+        console.log("DEBUG SCENES: Found scenes in response.data.scenes (array)");
         scenes = response.data.scenes;
       } else if (Array.isArray(response.data)) {
         // Format: [scene1, scene2, ...]
-        console.log("Found scenes directly in response.data (array)");
+        console.log("DEBUG SCENES: Found scenes directly in response.data (array)");
         scenes = response.data;
       } else if (response.data && typeof response.data === 'object' && response.data.data && Array.isArray(response.data.data.scenes)) {
         // Format: { data: { scenes: [...] } }
-        console.log("Found scenes in response.data.data.scenes (array)");
+        console.log("DEBUG SCENES: Found scenes in response.data.data.scenes (array)");
         scenes = response.data.data.scenes;
       } else if (response.data && typeof response.data === 'object' && response.data.data && Array.isArray(response.data.data)) {
         // Format: { data: [...] }
-        console.log("Found scenes in response.data.data (array)");
+        console.log("DEBUG SCENES: Found scenes in response.data.data (array)");
         scenes = response.data.data;
       } else {
         // Try to handle other potential formats
-        console.warn("Could not identify scenes array in response, searching for any array properties", response.data);
+        console.warn("DEBUG SCENES: Could not identify scenes array in response, searching for any array properties");
+        console.log("DEBUG SCENES: Response data type:", typeof response.data);
 
-        // Look for any array property that might contain scenes
-        const arrayProps = Object.entries(response.data)
-          .filter(([key, value]) => Array.isArray(value))
-          .map(([key, value]) => ({ key, length: value.length }));
+        if (response.data && typeof response.data === 'object') {
+          console.log("DEBUG SCENES: Response data keys:", Object.keys(response.data));
 
-        if (arrayProps.length > 0) {
-          // Use the largest array, which is likely to be the scenes
-          const largestArrayProp = arrayProps.sort((a, b) => b.length - a.length)[0];
-          console.log(`Using ${largestArrayProp.key} as scenes array with ${largestArrayProp.length} items`);
-          scenes = response.data[largestArrayProp.key];
+          // Look for scenes property with any type
+          if (response.data.scenes) {
+            console.log("DEBUG SCENES: Found 'scenes' property but not an array:", typeof response.data.scenes);
+
+            // Try to convert to array if it's something else
+            if (typeof response.data.scenes === 'object' && !Array.isArray(response.data.scenes)) {
+              console.log("DEBUG SCENES: Attempting to convert scenes object to array");
+              try {
+                scenes = Object.values(response.data.scenes);
+                console.log("DEBUG SCENES: Converted to array with length:", scenes.length);
+              } catch (err) {
+                console.error("DEBUG SCENES: Error converting scenes to array:", err);
+              }
+            }
+          }
+
+          // Look for any array property that might contain scenes
+          const arrayProps = Object.entries(response.data)
+            .filter(([key, value]) => Array.isArray(value))
+            .map(([key, value]) => ({ key, length: value.length }));
+
+          if (arrayProps.length > 0) {
+            // Use the largest array, which is likely to be the scenes
+            const largestArrayProp = arrayProps.sort((a, b) => b.length - a.length)[0];
+            console.log(`DEBUG SCENES: Using ${largestArrayProp.key} as scenes array with ${largestArrayProp.length} items`);
+            scenes = response.data[largestArrayProp.key];
+          } else {
+            console.error("DEBUG SCENES: No arrays found in response data, using empty array for scenes");
+          }
         } else {
-          console.error("No arrays found in response data, using empty array for scenes");
+          console.error("DEBUG SCENES: Response data is not an object:", typeof response.data);
         }
       }
 
+      // Check if we have any scenes at this point
+      console.log("DEBUG SCENES: Extracted scenes count:", scenes ? scenes.length : 0);
+
       // Normalize the scenes array
       const normalizedScenes = normalizeScenes(scenes);
-      console.log(`Normalized ${normalizedScenes.length} scenes:`, normalizedScenes);
+      console.log(`DEBUG SCENES: Normalized ${normalizedScenes.length} scenes`);
+      if (normalizedScenes.length > 0) {
+        console.log("DEBUG SCENES: First normalized scene:", normalizedScenes[0]);
+      }
 
       // Update direct store if needed
       if (dispatch) {

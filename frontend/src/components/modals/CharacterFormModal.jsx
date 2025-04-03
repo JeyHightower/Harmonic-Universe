@@ -341,6 +341,10 @@ const CharacterFormModal = ({
     if (universeId) {
       // Fetch scenes for the selected universe
       setScenesLoading(true);
+      console.log(
+        "DEBUG: Starting to fetch scenes for universeId:",
+        universeId
+      );
 
       // Add a timeout to prevent hanging UI if the API doesn't respond
       timeoutIdRef.current = setTimeout(() => {
@@ -353,36 +357,125 @@ const CharacterFormModal = ({
         }
       }, 10000); // 10 second timeout
 
-      dispatch(fetchScenes(universeId))
-        .unwrap()
-        .then((result) => {
-          console.log("Scenes loaded:", result.scenes);
-          if (Array.isArray(result.scenes)) {
-            setSceneOptions(result.scenes);
-          } else {
-            // Handle case where scenes might not be an array
-            console.error("Received invalid scenes data:", result.scenes);
-            setSceneOptions([]);
-            setFormErrors({
-              ...formErrors,
-              scene_id: "Received invalid scene data. Please try again.",
-            });
+      // First try direct API call to get scenes
+      apiClient
+        .getScenes({ universeId: universeId })
+        .then((response) => {
+          console.log("DEBUG: Direct API scenes response:", response);
+          let scenesData = [];
+
+          // Try different possible data structures
+          if (Array.isArray(response.data)) {
+            scenesData = response.data;
+          } else if (
+            response.data &&
+            response.data.scenes &&
+            Array.isArray(response.data.scenes)
+          ) {
+            scenesData = response.data.scenes;
+          } else if (response.data && typeof response.data === "object") {
+            // If we have an object but not a clear scenes array, look for it
+            const possibleArrays = Object.entries(response.data)
+              .filter(([_, value]) => Array.isArray(value))
+              .sort(([_, a], [__, b]) => b.length - a.length); // Sort by array length
+
+            if (possibleArrays.length > 0) {
+              console.log(
+                `DEBUG: Found array in response.data.${possibleArrays[0][0]}`
+              );
+              scenesData = response.data[possibleArrays[0][0]];
+            }
           }
+
+          console.log("DEBUG: Processed scenes data:", scenesData);
+
+          if (scenesData && scenesData.length > 0) {
+            // We found scenes through direct API call
+            setScenes(scenesData);
+            setSceneOptions(scenesData);
+            console.log(
+              "DEBUG: Set scene options from direct API call:",
+              scenesData.length
+            );
+
+            // Update form with first scene if needed
+            if (!formData.scene_id && scenesData.length > 0) {
+              setFormData((prev) => ({
+                ...prev,
+                scene_id: String(scenesData[0].id),
+              }));
+            }
+          } else {
+            // If direct API call doesn't return scenes, try through Redux
+            console.log("DEBUG: No scenes from direct API, trying Redux thunk");
+            dispatch(fetchScenes(universeId))
+              .unwrap()
+              .then((result) => {
+                console.log("DEBUG: Redux thunk scenes result:", result);
+                let reduxScenes = result.scenes || [];
+
+                if (Array.isArray(reduxScenes) && reduxScenes.length > 0) {
+                  setScenes(reduxScenes);
+                  setSceneOptions(reduxScenes);
+                  console.log(
+                    "DEBUG: Set scene options from Redux:",
+                    reduxScenes.length
+                  );
+
+                  // Update form with first scene if needed
+                  if (!formData.scene_id && reduxScenes.length > 0) {
+                    setFormData((prev) => ({
+                      ...prev,
+                      scene_id: String(reduxScenes[0].id),
+                    }));
+                  }
+                } else {
+                  console.log("DEBUG: No scenes found from Redux thunk either");
+                  setSceneOptions([]);
+                }
+              })
+              .catch((error) => {
+                console.error("DEBUG: Redux thunk error:", error);
+                setSceneOptions([]);
+              });
+          }
+
           setScenesLoading(false);
           clearTimeout(timeoutIdRef.current);
         })
         .catch((error) => {
-          console.error("Error loading scenes:", error);
-          setSceneOptions([]);
-          setScenesLoading(false);
-          clearTimeout(timeoutIdRef.current);
-          setFormErrors({
-            ...formErrors,
-            scene_id:
-              "Could not load scenes. Please try again or create a new scene.",
-          });
+          console.error("DEBUG: Direct API error:", error);
+          // Fallback to Redux thunk on API error
+          dispatch(fetchScenes(universeId))
+            .unwrap()
+            .then((result) => {
+              console.log("DEBUG: Fallback Redux scenes:", result);
+              const fallbackScenes = result.scenes || [];
+              if (Array.isArray(fallbackScenes) && fallbackScenes.length > 0) {
+                setScenes(fallbackScenes);
+                setSceneOptions(fallbackScenes);
+
+                // Update form with first scene if needed
+                if (!formData.scene_id && fallbackScenes.length > 0) {
+                  setFormData((prev) => ({
+                    ...prev,
+                    scene_id: String(fallbackScenes[0].id),
+                  }));
+                }
+              } else {
+                setSceneOptions([]);
+              }
+            })
+            .catch(() => {
+              setSceneOptions([]);
+            })
+            .finally(() => {
+              setScenesLoading(false);
+              clearTimeout(timeoutIdRef.current);
+            });
         });
     } else {
+      console.log("DEBUG: No universeId provided, skipping scene fetch");
       setSceneOptions([]);
     }
 
@@ -393,7 +486,7 @@ const CharacterFormModal = ({
         clearTimeout(timeoutIdRef.current);
       }
     };
-  }, [universeId, dispatch, formErrors]);
+  }, [universeId, dispatch]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
