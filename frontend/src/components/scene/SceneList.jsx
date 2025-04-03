@@ -99,6 +99,39 @@ const SceneList = () => {
     }
   }, [dispatch, universeId, forceRender]);
 
+  // Add hook to ensure persisted scenes are in the current universe scenes
+  useEffect(() => {
+    // Check if we have locally created scenes for this universe that need to be synced
+    if (universeId && locallyCreatedScenes.length > 0) {
+      console.log(
+        "SceneList: Ensuring locally created scenes are in universe scenes"
+      );
+
+      // Filter locally created scenes for this universe
+      const universeLocalScenes = locallyCreatedScenes.filter(
+        (scene) => scene && scene.universe_id === universeId
+      );
+
+      if (universeLocalScenes.length > 0) {
+        console.log(
+          `SceneList: Found ${universeLocalScenes.length} locally created scenes for universe ${universeId}`
+        );
+
+        // If universeScenes doesn't exist for this universe, ensure it's initialized
+        if (!universeScenes[universeId]) {
+          console.log(
+            "SceneList: Initializing universe scenes from locally created scenes"
+          );
+          dispatch({
+            type: "scenes/fetchScenes/fulfilled",
+            payload: { scenes: universeLocalScenes },
+            meta: { arg: universeId },
+          });
+        }
+      }
+    }
+  }, [universeId, locallyCreatedScenes, universeScenes, dispatch]);
+
   const handleCreateClick = () => {
     setIsCreateModalOpen(true);
   };

@@ -37,7 +37,7 @@ const universesPersistConfig = {
 const scenesPersistConfig = {
   key: "scenes",
   storage,
-  whitelist: ["scenes"],
+  whitelist: ["scenes", "locallyCreatedScenes", "universeScenes"],
   blacklist: ["loading", "error", "success", "currentScene"],
 };
 

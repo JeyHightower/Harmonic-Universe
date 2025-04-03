@@ -79,15 +79,26 @@ const scenesSlice = createSlice({
           // Create a map to efficiently check for duplicates
           const scenesMap = new Map();
 
-          // Add API scenes to the map first
+          // First add any existing scenes for this universe from universeScenes
+          if (state.universeScenes[universeId]) {
+            state.universeScenes[universeId].forEach(scene => {
+              if (scene && scene.id) {
+                scenesMap.set(scene.id, scene);
+              }
+            });
+          }
+
+          // Add API scenes to the map second (so they override existing ones)
           action.payload.scenes.forEach(scene => {
-            scenesMap.set(scene.id, scene);
+            if (scene && scene.id) {
+              scenesMap.set(scene.id, scene);
+            }
           });
 
           // Add locally created scenes that aren't already in the API results
           // but only if they belong to this universe
           state.locallyCreatedScenes.forEach(scene => {
-            if (!scenesMap.has(scene.id) && scene.universe_id === universeId) {
+            if (scene && scene.id && !scenesMap.has(scene.id) && scene.universe_id === universeId) {
               scenesMap.set(scene.id, scene);
             }
           });
@@ -104,17 +115,38 @@ const scenesSlice = createSlice({
           state.scenes = universeScenes;
         } else {
           // If no scenes were returned, still keep locally created scenes for this universe
+          // and any existing scenes we may already have
+          const existingUniverseScenes = state.universeScenes[universeId] || [];
           const universeLocalScenes = state.locallyCreatedScenes.filter(
-            scene => scene.universe_id === universeId
+            scene => scene && scene.universe_id === universeId
           );
+
+          // Combine existing and local scenes, removing duplicates
+          const scenesMap = new Map();
+
+          // Add existing scenes first
+          existingUniverseScenes.forEach(scene => {
+            if (scene && scene.id) {
+              scenesMap.set(scene.id, scene);
+            }
+          });
+
+          // Add locally created scenes second
+          universeLocalScenes.forEach(scene => {
+            if (scene && scene.id) {
+              scenesMap.set(scene.id, scene);
+            }
+          });
+
+          const combinedScenes = Array.from(scenesMap.values());
 
           // Store scenes specifically for this universe
           if (universeId) {
-            state.universeScenes[universeId] = universeLocalScenes;
+            state.universeScenes[universeId] = combinedScenes;
           }
 
           // For backward compatibility, also update the main scenes array
-          state.scenes = universeLocalScenes;
+          state.scenes = combinedScenes;
         }
       })
       .addCase(fetchScenes.rejected, (state, action) => {
