@@ -22,11 +22,11 @@ import {
   fetchScenes,
   deleteScene,
   createScene,
-} from "../../store/thunks/consolidated/scenesThunks";
-import { SceneCard } from "../consolidated";
-import SceneFormModal from "../scene/SceneFormModal";
-import { ROUTES } from "../../utils/routes";
-import "../../styles/SceneList.css";
+} from "../store/thunks/consolidated/scenesThunks";
+import { SceneCard } from "../components/consolidated";
+import SceneFormModal from "../features/SceneFormModal";
+import { ROUTES } from "../utils/routes";
+import "../styles/SceneList.css";
 
 const SceneList = () => {
   const dispatch = useDispatch();
@@ -75,6 +75,8 @@ const SceneList = () => {
       (s) => s && s.universe_id === universeId
     ).length,
     reduxStateAvailable: !!scenes,
+    hasUniverseScenes: !!universeScenes[universeId],
+    universeSceneIds: universeScenes[universeId]?.map((s) => s.id),
   });
 
   useEffect(() => {
@@ -87,6 +89,18 @@ const SceneList = () => {
           .then((result) => {
             console.log("SceneList: Scenes fetch completed:", result);
             console.log("SceneList: Current scenes in store:", scenes || []);
+
+            // Ensure universeScenes for this universe is up to date
+            if (result?.payload?.scenes) {
+              console.log(
+                "SceneList: Updating universeScenes from fetch result"
+              );
+              dispatch({
+                type: "scenes/fetchScenes/fulfilled",
+                payload: { scenes: result.payload.scenes },
+                meta: { arg: universeId },
+              });
+            }
           })
           .catch((err) => {
             console.error("SceneList: Error fetching scenes:", err);
@@ -163,9 +177,27 @@ const SceneList = () => {
 
   const handleDeleteConfirm = async () => {
     if (sceneToDelete) {
-      await dispatch(deleteScene(sceneToDelete.id));
-      setSceneToDelete(null);
-      dispatch(fetchScenes(universeId));
+      try {
+        console.log(`SceneList: Deleting scene ${sceneToDelete.id}`);
+        await dispatch(deleteScene(sceneToDelete.id));
+        console.log(
+          `SceneList: Scene ${sceneToDelete.id} deleted successfully`
+        );
+        setSceneToDelete(null);
+
+        // Force a re-render to make sure the UI reflects the deleted scene
+        setForceRender((prev) => prev + 1);
+
+        // Refresh scenes list from API
+        dispatch(fetchScenes(universeId)).then(() => {
+          console.log("SceneList: Refreshed scenes after deletion");
+        });
+      } catch (error) {
+        console.error(
+          `SceneList: Error deleting scene ${sceneToDelete.id}:`,
+          error
+        );
+      }
     }
   };
 

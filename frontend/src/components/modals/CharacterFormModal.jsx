@@ -19,7 +19,7 @@ import apiClient from "../../services/api";
 import { useDispatch } from "react-redux";
 import "../character/Characters.css";
 import PropTypes from "prop-types";
-import { fetchScenes } from "../../store/thunks/scenesThunks";
+import { fetchScenes } from "../../store/thunks/consolidated/scenesThunks";
 import { openModal } from "../../store/slices/modalSlice";
 import { MODAL_TYPES } from "../../constants/modalTypes";
 

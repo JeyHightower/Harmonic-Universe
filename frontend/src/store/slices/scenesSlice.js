@@ -7,7 +7,7 @@ import {
   fetchSceneById,
   reorderScenes,
   fetchScenesForUniverse,
-} from "../thunks/scenesThunks";
+} from "../thunks/consolidated/scenesThunks";
 
 const initialState = {
   scenes: [],
@@ -246,12 +246,32 @@ const scenesSlice = createSlice({
         // Remove the deleted scene from the scenes array
         if (action.payload && action.payload.id) {
           const sceneId = action.payload.id;
+
+          // Get the universe ID of the scene before removing it
+          const deletedScene = state.scenes.find(scene => scene.id === sceneId);
+          const universeId = deletedScene?.universe_id;
+
+          // Remove from main scenes array
           state.scenes = state.scenes.filter((scene) => scene.id !== sceneId);
 
           // Also remove from locally created scenes
           state.locallyCreatedScenes = state.locallyCreatedScenes.filter(
             (scene) => scene.id !== sceneId
           );
+
+          // Remove from universeScenes if the universe ID is known
+          if (universeId && state.universeScenes[universeId]) {
+            state.universeScenes[universeId] = state.universeScenes[universeId].filter(
+              (scene) => scene.id !== sceneId
+            );
+          } else {
+            // If we don't know the universe ID, we need to check all universes
+            Object.keys(state.universeScenes).forEach(universeKey => {
+              state.universeScenes[universeKey] = state.universeScenes[universeKey].filter(
+                (scene) => scene.id !== sceneId
+              );
+            });
+          }
 
           // Clear currentScene if it's the deleted one
           if (state.currentScene && state.currentScene.id === sceneId) {
@@ -303,41 +323,6 @@ const scenesSlice = createSlice({
       .addCase(reorderScenes.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to reorder scenes";
-      })
-
-      // fetchScenesForUniverse
-      .addCase(fetchScenesForUniverse.fulfilled, (state, action) => {
-        console.log("Reducer - fetchScenesForUniverse.fulfilled with payload:", action.payload);
-
-        state.loading = false;
-        state.error = action.payload.error || null;
-
-        // Ensure we have a valid scenes array
-        if (Array.isArray(action.payload.scenes)) {
-          state.scenes = action.payload.scenes;
-        } else if (action.payload.scenes === null || action.payload.scenes === undefined) {
-          // If no scenes array was provided, keep the current array or use empty array
-          console.warn("Reducer - No scenes array in payload, using empty array");
-          state.scenes = [];
-        }
-
-        // Set message from payload or default
-        state.message = action.payload.message || "Scenes loaded";
-      })
-
-      // Handle failed fetch of scenes
-      .addCase(fetchScenesForUniverse.rejected, (state, action) => {
-        console.error("Reducer - fetchScenesForUniverse.rejected with error:", action.error, "payload:", action.payload);
-
-        state.loading = false;
-        state.error = action.payload?.message || action.error.message || "Failed to fetch scenes";
-
-        // Don't clear the scenes array on error - keep any existing data
-        if (action.payload?.scenes) {
-          state.scenes = action.payload.scenes;
-        }
-
-        state.message = "Error loading scenes";
       });
   },
 });

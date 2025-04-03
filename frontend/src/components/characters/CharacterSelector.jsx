@@ -20,6 +20,7 @@ const CharacterSelector = ({
   value,
   onChange,
   disabled = false,
+  getPopupContainer = (trigger) => trigger.parentNode,
 }) => {
   const [characters, setCharacters] = useState(providedCharacters || []);
   const [loading, setLoading] = useState(!providedCharacters);
@@ -65,6 +66,9 @@ const CharacterSelector = ({
       optionFilterProp="children"
       loading={loading}
       disabled={disabled}
+      getPopupContainer={getPopupContainer}
+      dropdownStyle={{ zIndex: 1060 }}
+      listHeight={250}
       notFoundContent={
         loading ? (
           <Spin size="small" />
@@ -74,6 +78,8 @@ const CharacterSelector = ({
       }
       maxTagCount={5}
       maxTagTextLength={12}
+      showArrow={true}
+      virtual={true}
     >
       {characters.map((character) => (
         <Option key={character.id} value={character.id}>

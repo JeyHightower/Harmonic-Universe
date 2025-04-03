@@ -15,11 +15,15 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Chip,
 } from "@mui/material";
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   ArrowBack as ArrowBackIcon,
+  CalendarToday as CalendarIcon,
+  Update as UpdateIcon,
+  Info as InfoIcon,
 } from "@mui/icons-material";
 import {
   fetchSceneById,
@@ -124,7 +128,7 @@ const SceneDetail = ({ isEdit = false }) => {
       const targetUniverseId = universeId || scene?.universe_id;
 
       if (targetUniverseId) {
-        navigate(`/universes/${targetUniverseId}`);
+        navigate(`/universes/${targetUniverseId}/scenes`);
       } else {
         // Fallback to dashboard if we don't have a universe_id
         console.warn("No universe_id found for scene, navigating to dashboard");
@@ -143,7 +147,7 @@ const SceneDetail = ({ isEdit = false }) => {
       const targetUniverseId = universeId || scene?.universe_id;
 
       if (targetUniverseId) {
-        navigate(`/universes/${targetUniverseId}`);
+        navigate(`/universes/${targetUniverseId}/scenes`);
       } else {
         // Fallback to universes list if we don't have a universe_id
         console.warn("No universe_id found for scene, navigating to dashboard");
@@ -154,6 +158,10 @@ const SceneDetail = ({ isEdit = false }) => {
       // Ultimate fallback
       navigate("/dashboard");
     }
+  };
+
+  const handleCloseEditForm = () => {
+    setShowEditForm(false);
   };
 
   if (loading) {
@@ -197,6 +205,7 @@ const SceneDetail = ({ isEdit = false }) => {
     <Container className="scene-detail-container">
       <Box className="scene-detail-header">
         <Button
+          variant="outlined"
           startIcon={<ArrowBackIcon />}
           onClick={handleBack}
           sx={{ mb: 2 }}
@@ -204,7 +213,7 @@ const SceneDetail = ({ isEdit = false }) => {
           Back to Scenes
         </Button>
         <Box className="scene-detail-title-section">
-          <Typography variant="h4" component="h1" gutterBottom>
+          <Typography variant="h4" component="h1">
             {scene.name}
           </Typography>
           {isOwner && (
@@ -213,6 +222,7 @@ const SceneDetail = ({ isEdit = false }) => {
                 variant="outlined"
                 startIcon={<EditIcon />}
                 onClick={handleEdit}
+                color="primary"
               >
                 Edit Scene
               </Button>
@@ -222,7 +232,7 @@ const SceneDetail = ({ isEdit = false }) => {
                 startIcon={<DeleteIcon />}
                 onClick={() => setShowDeleteDialog(true)}
               >
-                Delete Scene
+                Delete
               </Button>
             </Box>
           )}
@@ -247,14 +257,41 @@ const SceneDetail = ({ isEdit = false }) => {
               Scene Details
             </Typography>
             <Box className="scene-detail-info">
-              <Typography variant="body2" color="textSecondary">
-                Created: {formatDate(scene.created_at)}
+              <Typography variant="body2" className="date-info-item">
+                <span>
+                  <CalendarIcon
+                    fontSize="small"
+                    sx={{ verticalAlign: "middle", mr: 1 }}
+                  />{" "}
+                  Created:
+                </span>
+                <span>{formatDate(scene.created_at)}</span>
               </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Last Updated: {formatDate(scene.updated_at)}
+              <Typography variant="body2" className="date-info-item">
+                <span>
+                  <UpdateIcon
+                    fontSize="small"
+                    sx={{ verticalAlign: "middle", mr: 1 }}
+                  />{" "}
+                  Updated:
+                </span>
+                <span>{formatDate(scene.updated_at)}</span>
               </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Status: {scene.is_active ? "Active" : "Inactive"}
+              <Typography variant="body2" className="date-info-item">
+                <span>
+                  <InfoIcon
+                    fontSize="small"
+                    sx={{ verticalAlign: "middle", mr: 1 }}
+                  />{" "}
+                  Status:
+                </span>
+                <Chip
+                  label={scene.is_active ? "Active" : "Inactive"}
+                  size="small"
+                  className={
+                    scene.is_active ? "status-active" : "status-inactive"
+                  }
+                />
               </Typography>
             </Box>
           </Paper>
@@ -265,9 +302,12 @@ const SceneDetail = ({ isEdit = false }) => {
       <Dialog
         open={showDeleteDialog}
         onClose={() => setShowDeleteDialog(false)}
+        aria-labelledby="delete-dialog-title"
+        maxWidth="xs"
+        fullWidth
       >
-        <DialogTitle>Delete Scene</DialogTitle>
-        <DialogContent>
+        <DialogTitle id="delete-dialog-title">Delete Scene</DialogTitle>
+        <DialogContent dividers>
           <Typography>
             Are you sure you want to delete "{scene.name}"? This action cannot
             be undone.
@@ -275,21 +315,26 @@ const SceneDetail = ({ isEdit = false }) => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
-          <Button onClick={handleDelete} color="error">
+          <Button onClick={handleDelete} color="error" variant="contained">
             Delete
           </Button>
         </DialogActions>
       </Dialog>
 
+      {/* Edit Form Dialog with proper configuration to ensure datepickers close correctly */}
       {showEditForm && scene && (
         <Dialog
           open={showEditForm}
-          onClose={() => setShowEditForm(false)}
+          onClose={handleCloseEditForm}
           maxWidth="md"
           fullWidth
+          disableEnforceFocus
+          disableRestoreFocus
+          closeAfterTransition
+          aria-labelledby="edit-dialog-title"
         >
-          <DialogTitle>Edit Scene</DialogTitle>
-          <DialogContent>
+          <DialogTitle id="edit-dialog-title">Edit Scene</DialogTitle>
+          <DialogContent dividers>
             <SceneForm
               universeId={scene.universe_id}
               sceneId={sceneId}
@@ -337,7 +382,7 @@ const SceneDetail = ({ isEdit = false }) => {
                   }
 
                   // Success! Close the form and refresh the data
-                  setShowEditForm(false);
+                  handleCloseEditForm();
 
                   // Refresh scene data
                   dispatch(fetchSceneById(sceneId));
@@ -360,7 +405,7 @@ const SceneDetail = ({ isEdit = false }) => {
                 }
               }}
               onCancel={() => {
-                setShowEditForm(false);
+                handleCloseEditForm();
                 // If we came from the edit route, navigate back to detail
                 if (isEdit) {
                   navigate(`/universes/${scene.universe_id}/scenes/${sceneId}`);

@@ -1,17 +1,29 @@
-import PropTypes from "prop-types";
 import React, { useEffect, useState } from "react";
+import PropTypes from "prop-types";
 import { useDispatch, useSelector } from "react-redux";
-import Button from "../components/common/Button";
-import Input from "../components/common/Input";
-import Modal from "../components/common/Modal";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormControlLabel,
+  Switch,
+  CircularProgress,
+  Alert,
+} from "@mui/material";
 import {
   createScene,
   updateScene,
-} from "../store/thunks/consolidated/scenesThunks.js";
-import "../styles/SceneFormModal.css";
+} from "../store/thunks/consolidated/scenesThunks";
 
 const SceneFormModal = ({
-  isOpen,
+  open,
   onClose,
   onSuccess,
   initialData,
@@ -20,19 +32,18 @@ const SceneFormModal = ({
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.scenes);
   const isEditing = !!initialData;
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Debug the props
-  console.log("SceneFormModal rendering with:", {
-    isOpen,
+  // Add debug logging
+  console.log("SceneFormModal: Rendering with props:", {
+    open,
     hasInitialData: !!initialData,
     universeId,
-    initialDataId: initialData?.id,
+    isEditing,
   });
 
   // Form state
   const [formData, setFormData] = useState({
-    title: "",
+    name: "",
     description: "",
     universe_id: universeId || "",
     scene_type: "standard",
@@ -41,7 +52,9 @@ const SceneFormModal = ({
   });
 
   // Form validation
-  const [errors, setErrors] = useState({});
+  const [validationErrors, setValidationErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   // Scene types
   const sceneTypes = [
@@ -55,8 +68,12 @@ const SceneFormModal = ({
   // Initialize form with data if editing
   useEffect(() => {
     if (initialData) {
+      console.log(
+        "SceneFormModal: Setting form data with initialData:",
+        initialData
+      );
       setFormData({
-        title: initialData.title || initialData.name || "",
+        name: initialData.name || "",
         description: initialData.description || "",
         universe_id: initialData.universe_id || universeId,
         scene_type: initialData.scene_type || "standard",
@@ -64,242 +81,266 @@ const SceneFormModal = ({
         duration: initialData.duration || 60,
       });
     } else if (universeId) {
+      console.log("SceneFormModal: Setting universe_id from prop:", universeId);
       setFormData((prev) => ({
         ...prev,
         universe_id: universeId,
       }));
     }
-  }, [initialData, universeId]);
+  }, [initialData, universeId, open]);
 
   const validateForm = () => {
-    const newErrors = {};
+    const errors = {};
 
-    if (!formData.title.trim()) {
-      newErrors.title = "Title is required";
-    } else if (formData.title.length < 3) {
-      newErrors.title = "Title must be at least 3 characters";
+    if (!formData.name.trim()) {
+      errors.name = "Name is required";
+    } else if (formData.name.length < 3) {
+      errors.name = "Name must be at least 3 characters";
     }
 
     if (formData.description && formData.description.length > 500) {
-      newErrors.description = "Description must be less than 500 characters";
+      errors.description = "Description must be less than 500 characters";
     }
 
-    if (!formData.universe_id) {
-      newErrors.universe_id = "Universe ID is required";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, checked, type } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
 
-    // Clear field-specific error when user types
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: null }));
+    // Clear error when field is edited
+    if (validationErrors[name]) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        [name]: undefined,
+      }));
     }
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const handleSubmit = async (e) => {
+    if (e) e.preventDefault();
 
-    // Run validation before submission
-    if (!validateForm()) {
-      console.log("SceneFormModal - Form validation failed");
-      return; // Stop submission if validation fails
+    console.log("SceneFormModal: Submitting form...");
+
+    // Validate form
+    const errors = {};
+    if (!formData.name || formData.name.trim() === "") {
+      errors.name = "Name is required";
+    }
+
+    // If there are validation errors, show them and stop submission
+    if (Object.keys(errors).length > 0) {
+      console.log("SceneFormModal: Validation errors found:", errors);
+      setValidationErrors(errors);
+      return;
     }
 
     setIsSubmitting(true);
-    console.log("SceneFormModal - Submitting form...", formData);
+    setValidationErrors({});
 
     try {
-      // Create a copy of the form data with the correct field names for the API
-      const apiData = {
-        ...formData,
-        // The backend expects 'name' not 'title'
-        name: formData.title,
-      };
-
-      let result;
-      if (isEditing) {
-        // Update existing scene
-        console.log("SceneFormModal - Updating scene:", initialData.id);
-        result = await dispatch(
-          updateScene({
+      // Prepare data - ensure universe_id is set
+      const submissionData = isEditing
+        ? {
             id: initialData.id,
-            data: apiData,
-          })
-        ).unwrap();
-      } else {
-        // Create new scene
-        console.log("SceneFormModal - Creating new scene");
-        result = await dispatch(createScene(apiData)).unwrap();
-      }
-
-      console.log("SceneFormModal - API call successful:", result);
-
-      if (onSuccess) {
-        // Extract the scene data - handle different possible response formats
-        let sceneData;
-
-        if (result && typeof result === "object") {
-          // Try different possible structures
-          if (result.status === "success" && result.data && result.data.scene) {
-            // Simple backend format: { status: 'success', data: { scene: {...} } }
-            sceneData = result.data.scene;
-          } else if (result.scene && typeof result.scene === "object") {
-            // Case: { scene: {...} }
-            sceneData = result.scene;
-          } else if (result.data && result.data.scene) {
-            // Case: { data: { scene: {...} } }
-            sceneData = result.data.scene;
-          } else if (result.id) {
-            // Case: The result itself is the scene object
-            sceneData = result;
-          } else {
-            // Fallback
-            console.warn(
-              "SceneFormModal - Unexpected response format:",
-              result
-            );
-            sceneData = result;
+            data: {
+              ...formData,
+              universe_id: universeId || formData.universe_id,
+            },
           }
-        } else {
-          // Unexpected non-object response
-          console.warn(
-            "SceneFormModal - Unexpected non-object response:",
-            result
-          );
-          sceneData = result;
-        }
+        : { ...formData, universe_id: universeId || formData.universe_id };
 
-        console.log(
-          "SceneFormModal - Calling onSuccess with extracted data:",
-          sceneData
-        );
-        onSuccess(sceneData);
-      }
-    } catch (err) {
-      console.error(
-        "SceneFormModal - Failed to save scene:",
-        err,
-        "and no communication with backend"
+      console.log(
+        `SceneFormModal: ${
+          isEditing ? "Updating" : "Creating"
+        } scene with data:`,
+        submissionData
       );
-      // Set form-wide error message
-      setErrors((prev) => ({
-        ...prev,
-        form: err.message || "Failed to save scene. Please try again.",
-      }));
+
+      // Dispatch the appropriate action based on whether we're editing or creating
+      const actionType = isEditing ? updateScene : createScene;
+      const resultAction = await dispatch(actionType(submissionData));
+
+      console.log("SceneFormModal: API call result:", resultAction);
+
+      if (actionType.fulfilled.match(resultAction)) {
+        console.log("SceneFormModal: Operation successful!");
+        setSubmitSuccess(true);
+
+        // Extract the scene data
+        const sceneData = resultAction.payload.scene;
+        console.log("SceneFormModal: Scene data from response:", sceneData);
+
+        // Short timeout for better UX
+        setTimeout(() => {
+          // Call the success callback if provided
+          if (onSuccess) {
+            console.log(
+              "SceneFormModal: Calling onSuccess callback with:",
+              sceneData
+            );
+            onSuccess(isEditing ? "update" : "create", sceneData);
+          }
+
+          // Close the modal
+          console.log("SceneFormModal: Closing modal");
+          onClose();
+        }, 100);
+      } else {
+        throw new Error(
+          resultAction.error?.message ||
+            `Failed to ${isEditing ? "update" : "create"} scene`
+        );
+      }
+    } catch (error) {
+      console.error("SceneFormModal: Error during submission:", error);
+      setValidationErrors({
+        form: error.message || "An error occurred while saving the scene",
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
+    <Dialog
+      open={open}
       onClose={onClose}
-      title={isEditing ? "Edit Scene" : "Create Scene"}
+      maxWidth="sm"
+      fullWidth
+      disableEnforceFocus
+      container={() => document.body}
+      aria-labelledby="scene-form-title"
+      aria-describedby="scene-form-description"
+      BackdropProps={{
+        "aria-hidden": null,
+      }}
     >
-      <form onSubmit={handleSubmit} className="scene-form">
-        <Input
-          label="Scene Title"
-          name="title"
-          type="text"
-          value={formData.title}
-          onChange={handleChange}
-          error={errors.title}
-          required
-        />
+      <DialogTitle id="scene-form-title">
+        {isEditing ? "Edit Scene" : "Create Scene"}
+      </DialogTitle>
+      <DialogContent id="scene-form-description">
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
 
-        <Input
-          label="Description"
-          name="description"
-          type="textarea"
-          value={formData.description}
-          onChange={handleChange}
-          error={errors.description}
-          rows={4}
-        />
+        {submitSuccess && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            Scene {isEditing ? "updated" : "created"} successfully!
+          </Alert>
+        )}
 
-        <div className="form-row">
-          <div className="select-field">
-            <label htmlFor="scene_type">Scene Type</label>
-            <select
-              id="scene_type"
+        <form onSubmit={handleSubmit}>
+          <TextField
+            autoFocus
+            margin="dense"
+            name="name"
+            label="Scene Name"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={formData.name}
+            onChange={handleChange}
+            error={!!validationErrors.name}
+            helperText={validationErrors.name}
+            required
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            margin="dense"
+            name="description"
+            label="Description"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={formData.description}
+            onChange={handleChange}
+            error={!!validationErrors.description}
+            helperText={validationErrors.description}
+            multiline
+            rows={4}
+            sx={{ mb: 2 }}
+          />
+
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel id="scene-type-label">Scene Type</InputLabel>
+            <Select
+              labelId="scene-type-label"
               name="scene_type"
               value={formData.scene_type}
               onChange={handleChange}
+              label="Scene Type"
             >
               {sceneTypes.map((type) => (
-                <option key={type.value} value={type.value}>
+                <MenuItem key={type.value} value={type.value}>
                   {type.label}
-                </option>
+                </MenuItem>
               ))}
-            </select>
-          </div>
+            </Select>
+          </FormControl>
 
-          <Input
-            label="Duration (seconds)"
+          <TextField
+            margin="dense"
             name="duration"
+            label="Duration (seconds)"
             type="number"
+            fullWidth
+            variant="outlined"
             value={formData.duration}
             onChange={handleChange}
-            min={1}
-            max={3600}
+            sx={{ mb: 2 }}
           />
-        </div>
 
-        <div className="checkbox-field">
-          <input
-            id="is_active"
-            name="is_active"
-            type="checkbox"
-            checked={formData.is_active}
-            onChange={handleChange}
+          <FormControlLabel
+            control={
+              <Switch
+                checked={formData.is_active}
+                onChange={handleChange}
+                name="is_active"
+              />
+            }
+            label="Active"
           />
-          <label htmlFor="is_active">Active scene</label>
-        </div>
-
-        {/* Hidden field for universe_id */}
-        <input type="hidden" name="universe_id" value={formData.universe_id} />
-
-        {error && <div className="form-error">{error}</div>}
-        {errors.form && <div className="form-error">{errors.form}</div>}
-
-        <div className="form-actions">
-          <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button type="submit" variant="primary" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : isEditing ? "Update" : "Create"}
-          </Button>
-        </div>
-      </form>
-    </Modal>
+        </form>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} disabled={isSubmitting}>
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
+          color="primary"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <CircularProgress size={24} />
+          ) : isEditing ? (
+            "Update"
+          ) : (
+            "Create"
+          )}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 
 SceneFormModal.propTypes = {
-  isOpen: PropTypes.bool.isRequired,
+  open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
-  onSuccess: PropTypes.func,
-  initialData: PropTypes.shape({
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    title: PropTypes.string,
-    name: PropTypes.string,
-    description: PropTypes.string,
-    universe_id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    scene_type: PropTypes.string,
-    is_active: PropTypes.bool,
-    duration: PropTypes.number,
-  }),
-  universeId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  onSuccess: PropTypes.func.isRequired,
+  initialData: PropTypes.object,
+  universeId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+    .isRequired,
 };
 
 export default SceneFormModal;

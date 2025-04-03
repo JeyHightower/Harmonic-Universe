@@ -5,6 +5,7 @@ import React, {
   lazy,
   Suspense,
   useRef,
+  useTransition,
 } from "react";
 import { Outlet } from "react-router-dom";
 import { useModal } from "../../contexts/ModalContext";
@@ -113,6 +114,8 @@ function Layout() {
   // Local state for component needs
   const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState(null);
+  const [isPending, startTransition] = useTransition();
+  const [outletContent, setOutletContent] = useState(null);
 
   // Add ref to track if we've handled parameters
   const hasHandledParams = useRef(false);
@@ -160,6 +163,15 @@ function Layout() {
       console.log("[Layout] Component unmounted");
     };
   }, [openModal]);
+
+  // Initialize the outlet with startTransition
+  useEffect(() => {
+    if (initialized) {
+      startTransition(() => {
+        setOutletContent(<Outlet />);
+      });
+    }
+  }, [initialized, location.pathname]);
 
   // Handle URL parameters for modals and demo login
   useEffect(() => {
@@ -217,11 +229,20 @@ function Layout() {
     );
   }
 
+  const loadingContent = (
+    <div className="loading-content">
+      <div className="loading-spinner"></div>
+      <p>Loading content...</p>
+    </div>
+  );
+
   return (
     <div className="layout">
       <main className="main-content">
         <ContentErrorBoundary>
-          <Outlet />
+          <Suspense fallback={loadingContent}>
+            {isPending ? loadingContent : outletContent}
+          </Suspense>
         </ContentErrorBoundary>
       </main>
       <Suspense fallback={<FooterFallback />}>

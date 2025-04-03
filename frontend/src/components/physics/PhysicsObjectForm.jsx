@@ -25,7 +25,6 @@ import {
   createPhysicsObject,
   updatePhysicsObject,
 } from "../../store/thunks/physicsObjectsThunks";
-import "../scenes/Scenes.css";
 
 const { Option } = Select;
 const { Title } = Typography;

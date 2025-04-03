@@ -10,7 +10,7 @@ const SettingsPage = lazy(() => import("../pages/SettingsPage"));
 const Dashboard = lazy(() => import("../features/Dashboard"));
 const Home = lazy(() => import("../pages/Home"));
 const UniverseDetail = lazy(() => import("../features/UniverseDetail"));
-const SceneList = lazy(() => import("../components/scene/SceneList"));
+const SceneList = lazy(() => import("../features/SceneList"));
 const SceneDetail = lazy(() =>
   import("../components/consolidated/SceneDetail")
 );

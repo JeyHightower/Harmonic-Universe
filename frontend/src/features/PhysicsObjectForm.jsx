@@ -18,14 +18,13 @@ import {
   Select,
   Switch,
   Typography,
-} from 'antd';
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+} from "antd";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   createPhysicsObject,
   updatePhysicsObject,
-} from '../../../store/thunks/physicsObjectsThunks';
-import '../scenes/Scenes.css';
+} from "../../../store/thunks/physicsObjectsThunks";
 
 const { Option } = Select;
 const { Title } = Typography;
@@ -39,7 +38,7 @@ const PhysicsObjectForm = ({
   const [form] = Form.useForm();
   const dispatch = useDispatch();
   const { currentPhysicsObject, loading } = useSelector(
-    state => state.physicsObjects
+    (state) => state.physicsObjects
   );
 
   // Initialize form values when editing
@@ -70,7 +69,7 @@ const PhysicsObjectForm = ({
     }
   }, [isEdit, currentPhysicsObject, form]);
 
-  const handleSubmit = async values => {
+  const handleSubmit = async (values) => {
     // Transform form values to API format
     const physicsObjectData = {
       name: values.name,
@@ -134,7 +133,7 @@ const PhysicsObjectForm = ({
     <Card
       title={
         <Title level={4}>
-          {isEdit ? 'Edit Physics Object' : 'Create Physics Object'}
+          {isEdit ? "Edit Physics Object" : "Create Physics Object"}
         </Title>
       }
     >
@@ -143,11 +142,11 @@ const PhysicsObjectForm = ({
         layout="vertical"
         onFinish={handleSubmit}
         initialValues={{
-          name: '',
+          name: "",
           mass: 1.0,
           is_static: false,
           is_trigger: false,
-          collision_shape: 'box',
+          collision_shape: "box",
           position_x: 0,
           position_y: 0,
           position_z: 0,
@@ -168,7 +167,7 @@ const PhysicsObjectForm = ({
         <Form.Item
           name="name"
           label="Name"
-          rules={[{ required: true, message: 'Please enter a name' }]}
+          rules={[{ required: true, message: "Please enter a name" }]}
         >
           <Input placeholder="Enter object name" />
         </Form.Item>
@@ -176,7 +175,7 @@ const PhysicsObjectForm = ({
         <Row gutter={16}>
           <Col span={8}>
             <Form.Item name="mass" label="Mass">
-              <InputNumber min={0} step={0.1} style={{ width: '100%' }} />
+              <InputNumber min={0} step={0.1} style={{ width: "100%" }} />
             </Form.Item>
           </Col>
           <Col span={8}>
@@ -210,17 +209,17 @@ const PhysicsObjectForm = ({
         <Row gutter={16}>
           <Col span={8}>
             <Form.Item name="position_x" label="X">
-              <InputNumber step={0.1} style={{ width: '100%' }} />
+              <InputNumber step={0.1} style={{ width: "100%" }} />
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item name="position_y" label="Y">
-              <InputNumber step={0.1} style={{ width: '100%' }} />
+              <InputNumber step={0.1} style={{ width: "100%" }} />
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item name="position_z" label="Z">
-              <InputNumber step={0.1} style={{ width: '100%' }} />
+              <InputNumber step={0.1} style={{ width: "100%" }} />
             </Form.Item>
           </Col>
         </Row>
@@ -229,17 +228,17 @@ const PhysicsObjectForm = ({
         <Row gutter={16}>
           <Col span={8}>
             <Form.Item name="velocity_x" label="X">
-              <InputNumber step={0.1} style={{ width: '100%' }} />
+              <InputNumber step={0.1} style={{ width: "100%" }} />
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item name="velocity_y" label="Y">
-              <InputNumber step={0.1} style={{ width: '100%' }} />
+              <InputNumber step={0.1} style={{ width: "100%" }} />
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item name="velocity_z" label="Z">
-              <InputNumber step={0.1} style={{ width: '100%' }} />
+              <InputNumber step={0.1} style={{ width: "100%" }} />
             </Form.Item>
           </Col>
         </Row>
@@ -248,17 +247,17 @@ const PhysicsObjectForm = ({
         <Row gutter={16}>
           <Col span={8}>
             <Form.Item name="rotation_x" label="X">
-              <InputNumber step={0.1} style={{ width: '100%' }} />
+              <InputNumber step={0.1} style={{ width: "100%" }} />
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item name="rotation_y" label="Y">
-              <InputNumber step={0.1} style={{ width: '100%' }} />
+              <InputNumber step={0.1} style={{ width: "100%" }} />
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item name="rotation_z" label="Z">
-              <InputNumber step={0.1} style={{ width: '100%' }} />
+              <InputNumber step={0.1} style={{ width: "100%" }} />
             </Form.Item>
           </Col>
         </Row>
@@ -267,17 +266,17 @@ const PhysicsObjectForm = ({
         <Row gutter={16}>
           <Col span={8}>
             <Form.Item name="scale_x" label="X">
-              <InputNumber min={0.1} step={0.1} style={{ width: '100%' }} />
+              <InputNumber min={0.1} step={0.1} style={{ width: "100%" }} />
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item name="scale_y" label="Y">
-              <InputNumber min={0.1} step={0.1} style={{ width: '100%' }} />
+              <InputNumber min={0.1} step={0.1} style={{ width: "100%" }} />
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item name="scale_z" label="Z">
-              <InputNumber min={0.1} step={0.1} style={{ width: '100%' }} />
+              <InputNumber min={0.1} step={0.1} style={{ width: "100%" }} />
             </Form.Item>
           </Col>
         </Row>
@@ -290,7 +289,7 @@ const PhysicsObjectForm = ({
                 min={0}
                 max={1}
                 step={0.1}
-                style={{ width: '100%' }}
+                style={{ width: "100%" }}
               />
             </Form.Item>
           </Col>
@@ -300,28 +299,28 @@ const PhysicsObjectForm = ({
                 min={0}
                 max={1}
                 step={0.1}
-                style={{ width: '100%' }}
+                style={{ width: "100%" }}
               />
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item name="density" label="Density">
-              <InputNumber min={0} step={0.1} style={{ width: '100%' }} />
+              <InputNumber min={0} step={0.1} style={{ width: "100%" }} />
             </Form.Item>
           </Col>
         </Row>
 
         <div
           style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: '8px',
-            marginTop: '16px',
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: "8px",
+            marginTop: "16px",
           }}
         >
           <Button onClick={onCancel}>Cancel</Button>
           <Button type="primary" htmlType="submit" loading={loading}>
-            {isEdit ? 'Update' : 'Create'}
+            {isEdit ? "Update" : "Create"}
           </Button>
         </div>
       </Form>

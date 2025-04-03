@@ -297,18 +297,24 @@ export const deleteScene = createAsyncThunk(
   "scenes/deleteScene",
   async (sceneId, { dispatch, rejectWithValue }) => {
     try {
+      console.log("Deleting scene:", sceneId);
       const response = await apiClient.deleteScene(sceneId);
 
-      // Update direct store if needed
-      if (dispatch) {
-        dispatch({ type: 'scenes/deleteScene', payload: sceneId });
-      }
+      // Validate response
+      if (response.status === 200 || response.status === 204) {
+        console.log(`Successfully deleted scene ${sceneId}:`, response);
 
-      // Return serializable data with the ID for the reducer
-      return {
-        id: sceneId,
-        message: response.data?.message
-      };
+        // Update direct store if needed
+        if (dispatch) {
+          dispatch({ type: 'scenes/deleteScene', payload: { id: sceneId } });
+        }
+
+        // Return the ID for easy access in the reducer
+        return { id: sceneId, status: response.status };
+      } else {
+        console.error(`Error deleting scene ${sceneId}:`, response);
+        return rejectWithValue({ message: "Failed to delete scene", status: response.status });
+      }
     } catch (error) {
       if (dispatch) {
         dispatch({ type: 'scenes/setError', payload: error.response?.data?.message || error.message });

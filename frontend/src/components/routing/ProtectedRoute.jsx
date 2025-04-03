@@ -2,11 +2,13 @@ import { useSelector } from "react-redux";
 import { Navigate, useLocation } from "react-router-dom";
 import { ROUTES } from "../../utils/routes";
 import { AUTH_CONFIG } from "../../utils/config";
-import { Suspense } from "react";
+import { Suspense, useTransition, useState, useEffect } from "react";
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading, user } = useSelector((state) => state.auth);
   const location = useLocation();
+  const [isPending, startTransition] = useTransition();
+  const [content, setContent] = useState(null);
 
   // Get tokens directly from localStorage for comparison
   const hasAccessToken = !!localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
@@ -24,6 +26,15 @@ function ProtectedRoute({ children }) {
     hasUser: !!user,
     userId: user?.id,
   });
+
+  // Update content with startTransition when authentication state changes
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      startTransition(() => {
+        setContent(children);
+      });
+    }
+  }, [loading, isAuthenticated, children]);
 
   // If still loading, show loading state
   if (loading) {
@@ -56,7 +67,9 @@ function ProtectedRoute({ children }) {
   // If authenticated, render children with Suspense boundary to handle lazy loading
   console.debug("User is authenticated, rendering protected content");
   return (
-    <Suspense fallback={<div>Loading content...</div>}>{children}</Suspense>
+    <Suspense fallback={<div>Loading content...</div>}>
+      {isPending ? <div>Loading content...</div> : content}
+    </Suspense>
   );
 }
 

@@ -1,10 +1,11 @@
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useTransition } from "react";
 import {
   Routes,
   Route,
   BrowserRouter,
   Navigate,
   Outlet,
+  useLocation,
 } from "react-router-dom";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
@@ -57,11 +58,30 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+// A component to handle the root path with query parameters
+const RootPathHandler = () => {
+  const location = useLocation();
+
+  // Log that we're handling a URL with query parameters
+  useEffect(() => {
+    if (location.search) {
+      console.log(
+        `RootPathHandler: Handling path with query parameters: ${location.pathname}${location.search}`
+      );
+    }
+  }, [location]);
+
+  // Just render the Home component
+  return <Home />;
+};
+
 // Create a separate component for the main app content
 const AppContent = () => {
   const auth = useSelector((state) => state.auth);
   const { isAuthenticated, user, isLoading } = auth;
   const dispatch = useDispatch();
+  const [isPending, startTransition] = useTransition();
+  const [routeElements, setRouteElements] = useState(null);
 
   // Check auth state when component mounts
   useEffect(() => {
@@ -80,6 +100,28 @@ const AppContent = () => {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, [dispatch]);
 
+  // Set up route elements with startTransition to prevent suspension during synchronous updates
+  useEffect(() => {
+    if (!isLoading) {
+      startTransition(() => {
+        setRouteElements(
+          routes.map((route, index) => (
+            <Route key={index} path={route.path} element={route.element}>
+              {route.children?.map((child, childIndex) => (
+                <Route
+                  key={childIndex}
+                  index={child.index}
+                  path={child.path}
+                  element={child.element}
+                />
+              ))}
+            </Route>
+          ))
+        );
+      });
+    }
+  }, [isLoading, isAuthenticated]); // Re-create routes when auth state changes
+
   // Simplified auth key to avoid excessive re-renders
   const authKey = isAuthenticated ? "authenticated" : "unauthenticated";
 
@@ -92,20 +134,20 @@ const AppContent = () => {
       <div className="App" key={authKey}>
         <Navigation />
         <main className="App-main">
-          <Routes>
-            {routes.map((route, index) => (
-              <Route key={index} path={route.path} element={route.element}>
-                {route.children?.map((child, childIndex) => (
-                  <Route
-                    key={childIndex}
-                    index={child.index}
-                    path={child.path}
-                    element={child.element}
-                  />
-                ))}
-              </Route>
-            ))}
-          </Routes>
+          <Suspense fallback={<LoadingPage />}>
+            <Routes>
+              {isPending ? (
+                <Route path="*" element={<LoadingPage />} />
+              ) : (
+                <>
+                  {/* First add an explicit route to handle the root path with query params */}
+                  <Route path="/" element={<RootPathHandler />} />
+                  {/* Then add all the other routes */}
+                  {routeElements}
+                </>
+              )}
+            </Routes>
+          </Suspense>
         </main>
         <footer className="App-footer">
           <p>&copy; {new Date().getFullYear()} Harmonic Universe</p>

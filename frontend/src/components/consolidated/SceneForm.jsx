@@ -31,6 +31,38 @@ const { TextArea } = Input;
 const { Option } = Select;
 const { Title, Text } = Typography;
 
+// Add custom styles to fix the dropdown and datepicker issues
+const formStyles = {
+  formCard: {
+    boxShadow: "none",
+    border: "1px solid #f0f0f0",
+    borderRadius: "8px",
+    marginBottom: "24px",
+  },
+  detailsCard: {
+    marginBottom: "24px",
+  },
+  contentCard: {
+    marginBottom: "24px",
+  },
+  formSection: {
+    marginBottom: "24px",
+  },
+  formTitle: {
+    fontSize: "18px",
+    fontWeight: 600,
+    marginBottom: "16px",
+  },
+  inputLabel: {
+    fontWeight: 500,
+  },
+  contentTextarea: {
+    minHeight: "200px",
+    fontSize: "14px",
+    lineHeight: 1.6,
+  },
+};
+
 /**
  * SceneForm component for creating and editing scenes
  * Now used in both modal and page-based editing workflow
@@ -287,6 +319,16 @@ const SceneForm = ({
     }
   };
 
+  // Handler to ensure DatePicker properly closes on selection
+  const handleDatePickerOpenChange = (open) => {
+    if (!open) {
+      // Reset dropdown state or perform any cleanup when datepicker closes
+      setTimeout(() => {
+        form.validateFields(["dateOfScene"]);
+      }, 100);
+    }
+  };
+
   if (loading) {
     return (
       <div
@@ -303,8 +345,16 @@ const SceneForm = ({
 
   return (
     <div className="scene-form-container">
-      <Card bordered={false} className="scene-form-card main-form-card">
-        <Title level={4} className="form-section-title">
+      <Card
+        bordered={false}
+        className="scene-form-card main-form-card"
+        style={formStyles.formCard}
+      >
+        <Title
+          level={4}
+          className="form-section-title"
+          style={formStyles.formTitle}
+        >
           {isEditMode ? "Edit Scene Details" : "Create New Scene"}
         </Title>
         <Text
@@ -346,10 +396,12 @@ const SceneForm = ({
               <Card
                 className="scene-form-card content-card"
                 title={<Title level={4}>Scene Details</Title>}
+                style={formStyles.contentCard}
+                bordered={true}
               >
                 <Form.Item
                   name="name"
-                  label="Scene Name"
+                  label={<span style={formStyles.inputLabel}>Scene Name</span>}
                   rules={[
                     { required: true, message: "Please enter a scene name" },
                   ]}
@@ -363,7 +415,7 @@ const SceneForm = ({
 
                 <Form.Item
                   name="summary"
-                  label="Summary"
+                  label={<span style={formStyles.inputLabel}>Summary</span>}
                   rules={[
                     { required: true, message: "Please enter a scene summary" },
                   ]}
@@ -381,7 +433,9 @@ const SceneForm = ({
 
                 <Form.Item
                   name="content"
-                  label="Scene Content"
+                  label={
+                    <span style={formStyles.inputLabel}>Scene Content</span>
+                  }
                   rules={[
                     { required: true, message: "Please enter scene content" },
                   ]}
@@ -391,10 +445,16 @@ const SceneForm = ({
                     placeholder="Full content of the scene"
                     className="content-textarea"
                     disabled={readOnly}
+                    style={formStyles.contentTextarea}
                   />
                 </Form.Item>
 
-                <Form.Item name="notes" label="Writer's Notes">
+                <Form.Item
+                  name="notes"
+                  label={
+                    <span style={formStyles.inputLabel}>Writer's Notes</span>
+                  }
+                >
                   <TextArea
                     rows={4}
                     placeholder="Additional notes about the scene (for writer reference only)"
@@ -408,24 +468,45 @@ const SceneForm = ({
               <Card
                 className="properties-card"
                 title={<Title level={4}>Properties</Title>}
+                style={formStyles.detailsCard}
+                bordered={true}
               >
-                <Form.Item name="location" label="Location">
+                <Form.Item
+                  name="location"
+                  label={<span style={formStyles.inputLabel}>Location</span>}
+                >
                   <Input
                     placeholder="Where the scene takes place"
                     disabled={readOnly}
                   />
                 </Form.Item>
 
-                <Form.Item name="dateOfScene" label="Date of Scene">
+                <Form.Item
+                  name="dateOfScene"
+                  label={
+                    <span style={formStyles.inputLabel}>Date of Scene</span>
+                  }
+                >
                   <DatePicker
                     format="YYYY-MM-DD"
                     style={{ width: "100%" }}
                     disabled={readOnly}
+                    getPopupContainer={(trigger) => trigger.parentNode}
+                    onOpenChange={handleDatePickerOpenChange}
+                    popupStyle={{ zIndex: 1060 }}
                   />
                 </Form.Item>
 
-                <Form.Item name="timeOfDay" label="Time of Day">
-                  <Select placeholder="Select time of day" disabled={readOnly}>
+                <Form.Item
+                  name="timeOfDay"
+                  label={<span style={formStyles.inputLabel}>Time of Day</span>}
+                >
+                  <Select
+                    placeholder="Select time of day"
+                    disabled={readOnly}
+                    getPopupContainer={(trigger) => trigger.parentNode}
+                    dropdownStyle={{ zIndex: 1060 }}
+                  >
                     <Option value="morning">Morning</Option>
                     <Option value="afternoon">Afternoon</Option>
                     <Option value="evening">Evening</Option>
@@ -433,7 +514,10 @@ const SceneForm = ({
                   </Select>
                 </Form.Item>
 
-                <Form.Item name="status" label="Status">
+                <Form.Item
+                  name="status"
+                  label={<span style={formStyles.inputLabel}>Status</span>}
+                >
                   <Radio.Group disabled={readOnly}>
                     <Radio value="draft">Draft</Radio>
                     <Radio value="review">Review</Radio>
@@ -441,7 +525,12 @@ const SceneForm = ({
                   </Radio.Group>
                 </Form.Item>
 
-                <Form.Item name="significance" label="Significance">
+                <Form.Item
+                  name="significance"
+                  label={
+                    <span style={formStyles.inputLabel}>Significance</span>
+                  }
+                >
                   <Radio.Group disabled={readOnly}>
                     <Radio value="minor">Minor</Radio>
                     <Radio value="major">Major</Radio>
@@ -451,11 +540,19 @@ const SceneForm = ({
 
                 <Divider orientation="left">Characters</Divider>
 
-                <Form.Item name="characterIds" label="Characters in Scene">
+                <Form.Item
+                  name="characterIds"
+                  label={
+                    <span style={formStyles.inputLabel}>
+                      Characters in Scene
+                    </span>
+                  }
+                >
                   <CharacterSelector
                     universeId={universeId}
                     characters={characters}
                     disabled={readOnly}
+                    getPopupContainer={(trigger) => trigger.parentNode}
                   />
                 </Form.Item>
               </Card>
