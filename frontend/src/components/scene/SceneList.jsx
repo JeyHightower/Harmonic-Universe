@@ -37,6 +37,7 @@ const SceneList = () => {
   const {
     scenes = [],
     locallyCreatedScenes = [],
+    universeScenes = {},
     loading = false,
     error = null,
   } = useSelector(
@@ -44,11 +45,18 @@ const SceneList = () => {
       state.scenes || {
         scenes: [],
         locallyCreatedScenes: [],
+        universeScenes: {},
         loading: false,
         error: null,
       }
   );
   const { user } = useSelector((state) => state.auth || {});
+
+  // Use universe-specific scenes when available, otherwise fallback to main scenes list
+  const currentUniverseScenes =
+    universeId && universeScenes[universeId]
+      ? universeScenes[universeId]
+      : scenes.filter((scene) => scene && scene.universe_id === universeId);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [sceneToDelete, setSceneToDelete] = useState(null);
@@ -60,8 +68,12 @@ const SceneList = () => {
 
   // Safe log that won't break if something is undefined
   console.log("SceneList: Rendering with data:", {
-    scenesCount: (scenes || []).length,
-    locallyCreatedCount: (locallyCreatedScenes || []).length,
+    universeId,
+    allScenesCount: (scenes || []).length,
+    universeSpecificCount: (currentUniverseScenes || []).length,
+    locallyCreatedCount: (locallyCreatedScenes || []).filter(
+      (s) => s && s.universe_id === universeId
+    ).length,
     reduxStateAvailable: !!scenes,
   });
 
@@ -148,9 +160,11 @@ const SceneList = () => {
   };
 
   // Filter and sort scenes with null safety
-  const filteredAndSortedScenes = [...(scenes || [])]
+  const filteredAndSortedScenes = [...(currentUniverseScenes || [])]
     .filter((scene) => {
       if (!scene) return false;
+
+      // Apply user-selected filters (universe filtering is already done)
       if (filter === "all") return true;
       if (filter === "active") return !!scene.is_active;
       if (filter === "inactive") return !scene.is_active;

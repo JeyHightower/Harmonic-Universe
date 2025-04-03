@@ -1,6 +1,14 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import apiClient from "../../../services/api";
-import { setScenes, setCurrentScene, addScene, addLocallyCreatedScene, updateScene as updateSceneInStore, deleteScene as deleteSceneFromStore, setError } from "../../slices/sceneSlice";
+import {
+  setScenes,
+  setCurrentScene,
+  addScene,
+  addLocallyCreatedScene,
+  updateScene as updateSceneInStore,
+  deleteScene as deleteSceneFromStore,
+  setError
+} from "../../slices/scenesSlice";
 
 /**
  * Error handler function for API errors

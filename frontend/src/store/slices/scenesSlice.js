@@ -57,6 +57,9 @@ const scenesSlice = createSlice({
       .addCase(fetchScenes.fulfilled, (state, action) => {
         state.loading = false;
 
+        // Extract universeId from the action meta arg
+        const universeId = action.meta?.arg;
+
         // Use scenes array directly from serialized response
         if (action.payload && action.payload.scenes) {
           // Create a map to efficiently check for duplicates
@@ -68,17 +71,36 @@ const scenesSlice = createSlice({
           });
 
           // Add locally created scenes that aren't already in the API results
+          // but only if they belong to this universe
           state.locallyCreatedScenes.forEach(scene => {
-            if (!scenesMap.has(scene.id)) {
+            if (!scenesMap.has(scene.id) && scene.universe_id === universeId) {
               scenesMap.set(scene.id, scene);
             }
           });
 
           // Update scenes array with all unique scenes
-          state.scenes = Array.from(scenesMap.values());
+          const universeScenes = Array.from(scenesMap.values());
+
+          // Store scenes specifically for this universe
+          if (universeId) {
+            state.universeScenes[universeId] = universeScenes;
+          }
+
+          // For backward compatibility, also update the main scenes array
+          state.scenes = universeScenes;
         } else {
-          // If no scenes were returned, still keep locally created scenes
-          state.scenes = [...state.locallyCreatedScenes];
+          // If no scenes were returned, still keep locally created scenes for this universe
+          const universeLocalScenes = state.locallyCreatedScenes.filter(
+            scene => scene.universe_id === universeId
+          );
+
+          // Store scenes specifically for this universe
+          if (universeId) {
+            state.universeScenes[universeId] = universeLocalScenes;
+          }
+
+          // For backward compatibility, also update the main scenes array
+          state.scenes = universeLocalScenes;
         }
       })
       .addCase(fetchScenes.rejected, (state, action) => {
