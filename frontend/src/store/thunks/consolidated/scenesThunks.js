@@ -75,15 +75,62 @@ export const fetchScenes = createAsyncThunk(
         });
       }
 
+      // Debug log the actual response structure to diagnose issues
+      console.log("DEBUG - Full response structure:", JSON.stringify(response.data));
+
+      // Handle different response formats - we need to be flexible about where the scenes are in the response
+      let scenes = [];
+
+      // Try different possible locations where scenes might be in the API response
+      if (Array.isArray(response.data.scenes)) {
+        // Format: { scenes: [...] }
+        console.log("Found scenes in response.data.scenes (array)");
+        scenes = response.data.scenes;
+      } else if (Array.isArray(response.data)) {
+        // Format: [scene1, scene2, ...]
+        console.log("Found scenes directly in response.data (array)");
+        scenes = response.data;
+      } else if (response.data && typeof response.data === 'object' && response.data.data && Array.isArray(response.data.data.scenes)) {
+        // Format: { data: { scenes: [...] } }
+        console.log("Found scenes in response.data.data.scenes (array)");
+        scenes = response.data.data.scenes;
+      } else if (response.data && typeof response.data === 'object' && response.data.data && Array.isArray(response.data.data)) {
+        // Format: { data: [...] }
+        console.log("Found scenes in response.data.data (array)");
+        scenes = response.data.data;
+      } else {
+        // Try to handle other potential formats
+        console.warn("Could not identify scenes array in response, searching for any array properties", response.data);
+
+        // Look for any array property that might contain scenes
+        const arrayProps = Object.entries(response.data)
+          .filter(([key, value]) => Array.isArray(value))
+          .map(([key, value]) => ({ key, length: value.length }));
+
+        if (arrayProps.length > 0) {
+          // Use the largest array, which is likely to be the scenes
+          const largestArrayProp = arrayProps.sort((a, b) => b.length - a.length)[0];
+          console.log(`Using ${largestArrayProp.key} as scenes array with ${largestArrayProp.length} items`);
+          scenes = response.data[largestArrayProp.key];
+        } else {
+          console.error("No arrays found in response data, using empty array for scenes");
+        }
+      }
+
+      // Normalize the scenes array
+      const normalizedScenes = normalizeScenes(scenes);
+      console.log(`Normalized ${normalizedScenes.length} scenes:`, normalizedScenes);
+
       // Update direct store if needed
       if (dispatch) {
-        dispatch(setScenes(response.data?.scenes || []));
+        console.log("Dispatching setScenes with:", normalizedScenes);
+        dispatch(setScenes(normalizedScenes));
       }
 
       // Return serializable data
       return {
-        message: response.data?.message,
-        scenes: response.data?.scenes || [],
+        message: response.data?.message || "Scenes fetched successfully",
+        scenes: normalizedScenes,
         status: response.status
       };
     } catch (error) {
