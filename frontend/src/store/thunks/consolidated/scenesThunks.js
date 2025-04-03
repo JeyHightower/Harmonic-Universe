@@ -179,17 +179,25 @@ export const fetchSceneById = createAsyncThunk(
  */
 export const createScene = createAsyncThunk(
   "scenes/createScene",
-  async (sceneData, { dispatch, rejectWithValue }) => {
+  async (sceneData, { dispatch, rejectWithValue, getState }) => {
     try {
       console.log("Creating scene with data:", sceneData);
       const response = await apiClient.createScene(sceneData);
       console.log("Created scene response:", response);
+      
+      // More detailed logging of response format
+      console.log("Create scene response format analysis:", {
+        hasData: !!response.data,
+        dataKeys: response.data ? Object.keys(response.data) : [],
+        sceneInResponse: !!response.data?.scene,
+        responseStatus: response.status
+      });
 
       // Create a default scene object with the input data as fallback
       // This ensures we have valid data even if the API returns incomplete data
       const defaultSceneData = {
         id: Date.now().toString(), // Generate a temporary ID if needed
-        name: sceneData.name || "New Scene",
+        name: sceneData.name || sceneData.title || "New Scene",
         description: sceneData.description || "",
         universe_id: sceneData.universe_id,
         scene_type: sceneData.scene_type || "standard",
@@ -218,7 +226,20 @@ export const createScene = createAsyncThunk(
 
       // Update direct store if needed
       if (dispatch) {
-        dispatch(addScene(sceneResponseData));
+        // Check if the scene already exists in the store
+        const currentScenes = getState().scenes.scenes || [];
+        const existingScene = currentScenes.find(s => s.id === sceneResponseData.id);
+        
+        if (existingScene) {
+          console.log("Scene already exists in store, updating:", existingScene.id);
+          dispatch(updateSceneInStore(sceneResponseData));
+        } else {
+          console.log("Adding new scene to store:", sceneResponseData.id);
+          dispatch(addScene(sceneResponseData));
+          
+          // Also update the scenes array to ensure it includes this scene
+          dispatch(setScenes([...currentScenes, sceneResponseData]));
+        }
       }
 
       // Return serializable data
