@@ -21,8 +21,8 @@ export { default as Spinner } from "./common/Spinner";
 export { default as Tooltip } from "./common/Tooltip";
 export { default as SafeIcon } from "./common/SafeIcon";
 
-// Essential Pages
-export { default as Home } from "../pages/Home";
+// Essential Pages - Remove Home import to fix code-splitting warning
+// export { default as Home } from "../pages/Home";
 
 // Character Components
 import { CharacterList, CharacterCard, CharacterForm, CharacterDetail } from "./character";

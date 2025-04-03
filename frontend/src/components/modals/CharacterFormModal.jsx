@@ -686,20 +686,30 @@ const CharacterFormModal = ({
                       sceneOptions.length === 0 &&
                       universeId &&
                       !scenesLoading && (
-                        <Box mt={1}>
+                        <Box mt={1} sx={{ textAlign: "center", py: 1 }}>
                           <Typography
-                            variant="caption"
-                            color="text.secondary"
+                            variant="subtitle2"
+                            color="primary"
                             display="block"
                             gutterBottom
                           >
-                            No scenes found for this universe. Create one to
-                            continue.
+                            No scenes found for this universe.
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            display="block"
+                            gutterBottom
+                            sx={{ mb: 2 }}
+                          >
+                            You need to create at least one scene before adding
+                            characters.
                           </Typography>
                           <Button
-                            size="small"
-                            variant="outlined"
+                            size="medium"
+                            variant="contained"
                             color="primary"
+                            fullWidth
                             onClick={() => {
                               console.log("Create a new scene button clicked");
                               // Navigate to scene creation or open a scene creation modal
@@ -743,7 +753,7 @@ const CharacterFormModal = ({
                               );
                             }}
                           >
-                            Create a new scene
+                            Create Your First Scene
                           </Button>
                         </Box>
                       )}
@@ -784,7 +794,14 @@ const CharacterFormModal = ({
               disabled={
                 loading ||
                 (type === "create" &&
-                  (!formData.scene_id || scenes.length === 0))
+                  (!formData.scene_id || sceneOptions.length === 0))
+              }
+              title={
+                type === "create" && sceneOptions.length === 0
+                  ? "Please create a scene first"
+                  : type === "create" && !formData.scene_id
+                  ? "Please select a scene"
+                  : ""
               }
             >
               {loading

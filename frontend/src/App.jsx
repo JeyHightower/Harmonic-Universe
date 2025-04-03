@@ -1,4 +1,10 @@
-import React, { useState, useEffect, Suspense, useTransition } from "react";
+import React, {
+  useState,
+  useEffect,
+  Suspense,
+  useTransition,
+  lazy,
+} from "react";
 import {
   Routes,
   Route,
@@ -11,7 +17,9 @@ import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import store, { persistor } from "./store/store";
 import { useSelector, useDispatch } from "react-redux";
-import { Home, Navigation } from "./components";
+import { Navigation } from "./components";
+// Import Home using lazy loading to match the routes file
+const Home = lazy(() => import("./pages/Home"));
 import ModalProvider from "./components/modals/ModalProvider";
 import routes from "./routes";
 import { checkAuthState } from "./store/slices/authSlice";
