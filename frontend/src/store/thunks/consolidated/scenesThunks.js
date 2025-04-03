@@ -1,6 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import apiClient from "../../../services/api";
-import { setScenes, setCurrentScene, addScene, updateScene as updateSceneInStore, deleteScene as deleteSceneFromStore, setError } from "../../slices/sceneSlice";
+import { setScenes, setCurrentScene, addScene, addLocallyCreatedScene, updateScene as updateSceneInStore, deleteScene as deleteSceneFromStore, setError } from "../../slices/sceneSlice";
 
 /**
  * Error handler function for API errors
@@ -184,7 +184,7 @@ export const createScene = createAsyncThunk(
       console.log("Creating scene with data:", sceneData);
       const response = await apiClient.createScene(sceneData);
       console.log("Created scene response:", response);
-      
+
       // More detailed logging of response format
       console.log("Create scene response format analysis:", {
         hasData: !!response.data,
@@ -224,33 +224,26 @@ export const createScene = createAsyncThunk(
 
       console.log("Using scene data:", sceneResponseData);
 
+      // Normalize the scene data
+      const normalizedSceneData = normalizeSceneData(sceneResponseData);
+
       // Update direct store if needed
       if (dispatch) {
-        // Check if the scene already exists in the store
-        const currentScenes = getState().scenes.scenes || [];
-        const existingScene = currentScenes.find(s => s.id === sceneResponseData.id);
-        
-        if (existingScene) {
-          console.log("Scene already exists in store, updating:", existingScene.id);
-          dispatch(updateSceneInStore(sceneResponseData));
-        } else {
-          console.log("Adding new scene to store:", sceneResponseData.id);
-          dispatch(addScene(sceneResponseData));
-          
-          // Also update the scenes array to ensure it includes this scene
-          dispatch(setScenes([...currentScenes, sceneResponseData]));
-        }
+        console.log("Adding scene to store and locally created scenes:", normalizedSceneData.id);
+
+        // Add to regular scenes array
+        dispatch(addScene(normalizedSceneData));
+
+        // Also add to locally created scenes for persistence
+        dispatch(addLocallyCreatedScene(normalizedSceneData));
       }
 
       // Return serializable data
       const serializedResponse = {
         message: response.data?.message || "Scene created successfully",
-        scene: sceneResponseData,
+        scene: normalizedSceneData,
         status: response.status || 200
       };
-
-      // Normalize the scene data if present
-      serializedResponse.scene = normalizeSceneData(serializedResponse.scene);
 
       return serializedResponse;
     } catch (error) {

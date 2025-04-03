@@ -32,7 +32,9 @@ const SceneList = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { universeId } = useParams();
-  const { scenes, loading, error } = useSelector((state) => state.scenes);
+  const { scenes, locallyCreatedScenes, loading, error } = useSelector(
+    (state) => state.scenes
+  );
   const { user } = useSelector((state) => state.auth);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [sceneToDelete, setSceneToDelete] = useState(null);
@@ -42,28 +44,10 @@ const SceneList = () => {
   const [sortOrder, setSortOrder] = useState("desc");
   const [forceRender, setForceRender] = useState(0);
 
-  // Add local cache of created scenes to ensure they appear even if API fetch fails
-  const [localScenes, setLocalScenes] = useState([]);
-  const createdScenesRef = useRef(new Map());
-
-  // Combine API scenes with locally created scenes
-  const allScenes = React.useMemo(() => {
-    const scenesMap = new Map();
-
-    // First add all scenes from the API
-    scenes.forEach((scene) => {
-      scenesMap.set(scene.id, scene);
-    });
-
-    // Then add any locally created scenes that aren't in the API results
-    Array.from(createdScenesRef.current.values()).forEach((scene) => {
-      if (!scenesMap.has(scene.id)) {
-        scenesMap.set(scene.id, scene);
-      }
-    });
-
-    return Array.from(scenesMap.values());
-  }, [scenes, localScenes]); // Add localScenes as dependency for re-computation
+  console.log("SceneList: Rendering with data:", {
+    scenesCount: scenes.length,
+    locallyCreatedCount: locallyCreatedScenes.length,
+  });
 
   useEffect(() => {
     if (universeId) {
@@ -72,16 +56,6 @@ const SceneList = () => {
         .then((result) => {
           console.log("SceneList: Scenes fetch completed:", result);
           console.log("SceneList: Current scenes in store:", scenes);
-
-          // Check if we got any scenes back from the API
-          if (scenes.length === 0 && createdScenesRef.current.size > 0) {
-            console.log(
-              "SceneList: No scenes returned from API, but we have locally created scenes:",
-              Array.from(createdScenesRef.current.values())
-            );
-            // Force update to ensure local scenes are displayed
-            setLocalScenes(Array.from(createdScenesRef.current.values()));
-          }
         })
         .catch((err) => {
           console.error("SceneList: Error fetching scenes:", err);
@@ -103,44 +77,15 @@ const SceneList = () => {
     // Close the modal first
     setIsCreateModalOpen(false);
 
-    // Store the created scene locally to ensure it appears in the UI
-    // even if API fetch fails to return it
-    if (sceneData && sceneData.id) {
-      console.log(
-        "SceneList: Storing created scene in local reference:",
-        sceneData
-      );
-      createdScenesRef.current.set(sceneData.id, sceneData);
-      setLocalScenes(Array.from(createdScenesRef.current.values()));
-    }
-
-    // Force render first to ensure UI update
+    // Force render to ensure UI update
     setForceRender((prev) => prev + 1);
 
-    // Refresh the scenes list with the new data
-    dispatch(fetchScenes(universeId))
-      .then((result) => {
-        console.log("SceneList: Scenes refreshed after creation");
-        console.log("SceneList: Current path:", window.location.pathname);
-
-        // Make sure we're on the scenes list page
-        const targetPath = `/universes/${universeId}/scenes`;
-        if (window.location.pathname !== targetPath) {
-          console.log(
-            `SceneList: Navigating to scenes list page: ${targetPath}`
-          );
-          navigate(targetPath, { replace: true });
-        } else {
-          console.log(
-            "SceneList: Already on scenes list page, forcing re-render"
-          );
-          // Force another render to ensure UI updates with new data
-          setForceRender((prev) => prev + 1);
-        }
-      })
-      .catch((err) => {
-        console.error("SceneList: Error refreshing scenes:", err);
-      });
+    // Make sure we're on the scenes list page
+    const targetPath = `/universes/${universeId}/scenes`;
+    if (window.location.pathname !== targetPath) {
+      console.log(`SceneList: Navigating to scenes list page: ${targetPath}`);
+      navigate(targetPath, { replace: true });
+    }
   };
 
   const handleDeleteClick = (scene) => {
@@ -179,7 +124,7 @@ const SceneList = () => {
   };
 
   // Filter and sort scenes
-  const filteredAndSortedScenes = [...allScenes]
+  const filteredAndSortedScenes = [...scenes]
     .filter((scene) => {
       if (filter === "all") return true;
       if (filter === "active") return scene.is_active;
