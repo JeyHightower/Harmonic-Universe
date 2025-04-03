@@ -46,13 +46,35 @@ const ModalRenderer = ({ type, props, onClose }) => {
   const [ModalComponent, setModalComponent] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  console.log(
+    "ModalRenderer: Rendering modal of type:",
+    type,
+    "with props:",
+    props
+  );
+
   useEffect(() => {
     const loadModalComponent = async () => {
+      console.log("ModalRenderer: Loading component for modal type:", type);
       try {
         const component = await getModalComponent(type);
-        setModalComponent(() => component);
+        if (component) {
+          console.log(
+            "ModalRenderer: Successfully loaded component for type:",
+            type
+          );
+          setModalComponent(() => component);
+        } else {
+          console.error(
+            "ModalRenderer: Component loader returned null for type:",
+            type
+          );
+        }
       } catch (error) {
-        console.error(`Error loading modal component for type ${type}:`, error);
+        console.error(
+          `ModalRenderer: Error loading modal component for type ${type}:`,
+          error
+        );
       } finally {
         setLoading(false);
       }
@@ -62,13 +84,21 @@ const ModalRenderer = ({ type, props, onClose }) => {
   }, [type]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    console.log("ModalRenderer: Still loading component for type:", type);
+    return <div>Loading modal...</div>;
   }
 
   if (!ModalComponent) {
-    console.error(`Modal component not found for type: ${type}`);
+    console.error(`ModalRenderer: Modal component not found for type: ${type}`);
     return null;
   }
+
+  console.log(
+    "ModalRenderer: Rendering component for type:",
+    type,
+    "Component:",
+    ModalComponent.name || "Unknown"
+  );
 
   return (
     <ModalComponent

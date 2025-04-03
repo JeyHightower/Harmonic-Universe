@@ -33,6 +33,14 @@ const SceneFormModal = ({
   const { loading, error } = useSelector((state) => state.scenes);
   const isEditing = !!initialData;
 
+  // Add debug logging
+  console.log("SceneFormModal: Rendering with props:", {
+    open,
+    hasInitialData: !!initialData,
+    universeId,
+    isEditing,
+  });
+
   // Form state
   const [formData, setFormData] = useState({
     name: "",
@@ -60,6 +68,10 @@ const SceneFormModal = ({
   // Initialize form with data if editing
   useEffect(() => {
     if (initialData) {
+      console.log(
+        "SceneFormModal: Setting form data with initialData:",
+        initialData
+      );
       setFormData({
         name: initialData.name || "",
         description: initialData.description || "",
@@ -69,6 +81,7 @@ const SceneFormModal = ({
         duration: initialData.duration || 60,
       });
     } else if (universeId) {
+      console.log("SceneFormModal: Setting universe_id from prop:", universeId);
       setFormData((prev) => ({
         ...prev,
         universe_id: universeId,
@@ -94,20 +107,25 @@ const SceneFormModal = ({
   };
 
   const handleChange = (e) => {
-    const { name, value, checked } = e.target;
+    const { name, value, checked, type } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: e.target.type === "checkbox" ? checked : value,
+      [name]: type === "checkbox" ? checked : value,
     }));
 
-    // Clear validation error when field is updated
+    // Clear error when field is edited
     if (validationErrors[name]) {
-      setValidationErrors((prev) => ({ ...prev, [name]: undefined }));
+      setValidationErrors((prev) => ({
+        ...prev,
+        [name]: undefined,
+      }));
     }
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+
+    console.log("SceneFormModal: Submitting form...");
 
     // Validate form
     const errors = {};
@@ -117,6 +135,7 @@ const SceneFormModal = ({
 
     // If there are validation errors, show them and stop submission
     if (Object.keys(errors).length > 0) {
+      console.log("SceneFormModal: Validation errors found:", errors);
       setValidationErrors(errors);
       return;
     }
@@ -125,35 +144,61 @@ const SceneFormModal = ({
     setValidationErrors({});
 
     try {
-      const actionType = isEditing ? updateScene : createScene;
-      const sceneData = isEditing
+      // Prepare data - ensure universe_id is set
+      const submissionData = isEditing
         ? {
             id: initialData.id,
-            data: formData,
+            data: {
+              ...formData,
+              universe_id: universeId || formData.universe_id,
+            },
           }
-        : formData;
+        : { ...formData, universe_id: universeId || formData.universe_id };
 
-      const resultAction = await dispatch(actionType(sceneData));
+      console.log(
+        `SceneFormModal: ${
+          isEditing ? "Updating" : "Creating"
+        } scene with data:`,
+        submissionData
+      );
+
+      // Dispatch the appropriate action based on whether we're editing or creating
+      const actionType = isEditing ? updateScene : createScene;
+      const resultAction = await dispatch(actionType(submissionData));
+
+      console.log("SceneFormModal: API call result:", resultAction);
 
       if (actionType.fulfilled.match(resultAction)) {
+        console.log("SceneFormModal: Operation successful!");
         setSubmitSuccess(true);
 
-        // Pass the created/updated scene data to onSuccess callback
+        // Extract the scene data
         const sceneData = resultAction.payload.scene;
+        console.log("SceneFormModal: Scene data from response:", sceneData);
 
-        // Add a small delay before closing the modal
+        // Short timeout for better UX
         setTimeout(() => {
-          // Call onSuccess with action type and scene data
+          // Call the success callback if provided
           if (onSuccess) {
+            console.log(
+              "SceneFormModal: Calling onSuccess callback with:",
+              sceneData
+            );
             onSuccess(isEditing ? "update" : "create", sceneData);
           }
+
+          // Close the modal
+          console.log("SceneFormModal: Closing modal");
           onClose();
-        }, 500);
+        }, 100);
       } else {
-        throw new Error(resultAction.error?.message || "Failed to save scene");
+        throw new Error(
+          resultAction.error?.message ||
+            `Failed to ${isEditing ? "update" : "create"} scene`
+        );
       }
     } catch (error) {
-      console.error("Error saving scene:", error);
+      console.error("SceneFormModal: Error during submission:", error);
       setValidationErrors({
         form: error.message || "An error occurred while saving the scene",
       });

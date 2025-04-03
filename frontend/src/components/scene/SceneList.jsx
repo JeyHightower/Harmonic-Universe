@@ -40,13 +40,21 @@ const SceneList = () => {
   const [filter, setFilter] = useState("all");
   const [sortBy, setSortBy] = useState("updated_at");
   const [sortOrder, setSortOrder] = useState("desc");
+  const [forceRender, setForceRender] = useState(0);
 
   useEffect(() => {
     if (universeId) {
-      console.log("Fetching scenes for universe:", universeId);
-      dispatch(fetchScenes(universeId));
+      console.log("SceneList: Fetching scenes for universe:", universeId);
+      dispatch(fetchScenes(universeId))
+        .then((result) => {
+          console.log("SceneList: Scenes fetch completed:", result);
+          console.log("SceneList: Current scenes in store:", scenes);
+        })
+        .catch((err) => {
+          console.error("SceneList: Error fetching scenes:", err);
+        });
     }
-  }, [dispatch, universeId]);
+  }, [dispatch, universeId, forceRender]);
 
   const handleCreateClick = () => {
     setIsCreateModalOpen(true);
@@ -54,24 +62,41 @@ const SceneList = () => {
 
   const handleCreateSuccess = (actionType, sceneData) => {
     console.log(
-      "Scene creation success! Closing modal and refreshing scenes for universe:",
+      "SceneList: Scene creation success! Closing modal and refreshing scenes for universe:",
       universeId
     );
-    console.log("New scene data:", sceneData);
+    console.log("SceneList: New scene data:", sceneData);
 
     // Close the modal first
     setIsCreateModalOpen(false);
 
-    // Refresh the scenes list with the new data
-    dispatch(fetchScenes(universeId)).then(() => {
-      console.log("Scenes refreshed after creation");
+    // Force render first to ensure UI update
+    setForceRender((prev) => prev + 1);
 
-      // Make sure we're on the scenes list page
-      if (window.location.pathname !== `/universes/${universeId}/scenes`) {
-        console.log("Navigating to scenes list page");
-        navigate(`/universes/${universeId}/scenes`);
-      }
-    });
+    // Refresh the scenes list with the new data
+    dispatch(fetchScenes(universeId))
+      .then(() => {
+        console.log("SceneList: Scenes refreshed after creation");
+        console.log("SceneList: Current path:", window.location.pathname);
+
+        // Make sure we're on the scenes list page
+        const targetPath = `/universes/${universeId}/scenes`;
+        if (window.location.pathname !== targetPath) {
+          console.log(
+            `SceneList: Navigating to scenes list page: ${targetPath}`
+          );
+          navigate(targetPath, { replace: true });
+        } else {
+          console.log(
+            "SceneList: Already on scenes list page, forcing re-render"
+          );
+          // Force another render to ensure UI updates with new data
+          setForceRender((prev) => prev + 1);
+        }
+      })
+      .catch((err) => {
+        console.error("SceneList: Error refreshing scenes:", err);
+      });
   };
 
   const handleDeleteClick = (scene) => {
