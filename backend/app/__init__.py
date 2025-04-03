@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, send_from_directory, Response
+from flask import Flask, jsonify, send_from_directory, Response, render_template, current_app
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_limiter import Limiter
@@ -12,9 +12,18 @@ except ImportError:
     has_flask_caching = False
 import os
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, cast, Any
 from .config import config
 from .extensions import db
+from .api.routes import api_bp
+from .api.routes.auth import auth_bp
+from .api.routes.user import user_bp
+from .api.routes.scenes import scenes_bp
+from .api.routes.characters import characters_bp
+from .api.routes.notes import notes_bp
+import click
+import logging
+from logging.handlers import RotatingFileHandler
 
 # Initialize extensions
 jwt = JWTManager()
@@ -88,7 +97,6 @@ def create_app(config_name='default'):
     
     # Register API blueprint
     try:
-        from .api.routes import api_bp
         app.register_blueprint(api_bp)
     except ImportError as e:
         print(f"Error importing API routes: {e}")
@@ -112,17 +120,21 @@ def create_app(config_name='default'):
     def ratelimit_handler(e):
         return {"error": "Rate limit exceeded"}, 429
     
-    # Create database tables
+    # Import models to ensure they are registered with SQLAlchemy
+    # Note: Tables are not created here anymore. Use setup_db.py instead.
     with app.app_context():
-        try:
-            # Import all models to ensure they are registered with SQLAlchemy
-            from .api.models import User, Note, Universe, Physics2D, Physics3D, SoundProfile, AudioSample, MusicPiece
-            
-            # Create tables if they don't exist
+        # Import all models to ensure they are registered with SQLAlchemy
+        from .api.models import (
+            User, Note, Universe, Physics2D, Physics3D, SoundProfile,
+            AudioSample, MusicPiece, Harmony, MusicalTheme, Character
+        )
+        
+        # Only create tables in development mode when explicitly requested
+        if app.config.get('ENV') == 'development' and os.environ.get('AUTO_CREATE_TABLES') == 'true':
             db.create_all()
-            print("Database tables created successfully")
-        except Exception as e:
-            print(f"Error creating database tables: {e}")
+            print("Database tables created automatically (development mode)")
+        else:
+            print("Skipping automatic table creation. Use setup_db.py to manage database.")
     
     # JWT error handlers
     @jwt.expired_token_loader
@@ -163,8 +175,9 @@ def create_app(config_name='default'):
     # Serve favicon.ico
     @app.route('/favicon.ico')
     def favicon() -> Response:
+        static_dir = cast(str, app.static_folder)
         return send_from_directory(
-            app.static_folder,
+            static_dir,
             'favicon.ico',
             mimetype='image/vnd.microsoft.icon'
         )
@@ -173,36 +186,38 @@ def create_app(config_name='default'):
     @app.route('/api/debug/static')
     def debug_static():
         files = []
-        if os.path.exists(app.static_folder):
-            for root, dirs, filenames in os.walk(app.static_folder):
+        static_dir = cast(str, app.static_folder)
+        if os.path.exists(static_dir):
+            for root, dirs, filenames in os.walk(static_dir):
                 for filename in filenames:
                     file_path = os.path.join(root, filename)
-                    rel_path = os.path.relpath(file_path, app.static_folder)
+                    rel_path = os.path.relpath(file_path, static_dir)
                     files.append({
                         'path': rel_path,
                         'size': os.path.getsize(file_path)
                     })
         
         return jsonify({
-            'static_folder': app.static_folder,
+            'static_folder': static_dir,
             'static_url_path': app.static_url_path,
             'files': files,
-            'static_folder_exists': os.path.exists(app.static_folder)
+            'static_folder_exists': os.path.exists(static_dir)
         })
     
     # Serve index.html for all non-API routes
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
-    def serve(path: str = '') -> Response:
+    def serve(path: str = '') -> Union[Response, tuple[Response, int]]:
+        static_dir = cast(str, app.static_folder)
         # Check if requesting an API route
         if path.startswith('api/'):
             return jsonify({"error": "Not found"}), 404
             
         # Try to serve the file directly if it exists
-        if path and os.path.exists(os.path.join(app.static_folder, path)):
-            return send_from_directory(app.static_folder, path)
+        if path and os.path.exists(os.path.join(static_dir, path)):
+            return send_from_directory(static_dir, path)
         
         # Default to index.html for client-side routing
-        return send_from_directory(app.static_folder, 'index.html')
+        return send_from_directory(static_dir, 'index.html')
     
     return app

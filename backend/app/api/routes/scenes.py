@@ -5,7 +5,7 @@ from app.api.models.universe import Universe
 from app.api.models.character import Character
 from app.extensions import db
 import traceback
-from sqlalchemy import text
+from sqlalchemy import text, create_engine
 
 scenes_bp = Blueprint('scenes', __name__)
 
@@ -115,77 +115,96 @@ def list_scenes():
                 
                 # Get scenes for the specified universe - use a try/except block for the query itself
                 try:
+                    # Use a new session to avoid any transaction issues from previous operations
+                    db.session.close()  # Close any existing session
+                    db.session.remove()  # Remove it from the registry
+                    
                     # Extra protection - use a raw query first to see if we get data at all
                     try:
-                        raw_scenes = db.session.execute(
-                            text(f"SELECT id, name, universe_id FROM scenes WHERE universe_id = :universe_id AND is_deleted = 0"),
-                            {"universe_id": universe_id_int}
-                        ).fetchall()
-                        current_app.logger.info(f"Raw query found {len(raw_scenes)} scenes for universe {universe_id_int}")
+                        # First check if there are any scenes using a simple count query
+                        # Use a new connection for a clean transaction state
+                        engine = db.engine
+                        with engine.connect() as connection:
+                            # Explicitly start a new transaction
+                            with connection.begin():
+                                raw_count = connection.execute(
+                                    text("SELECT COUNT(*) FROM scenes WHERE universe_id = :universe_id AND is_deleted = false"),
+                                    {"universe_id": universe_id_int}
+                                ).scalar()
+                                
+                                current_app.logger.info(f"Raw count query found {raw_count} scenes for universe {universe_id_int}")
+                                
+                                # If there are no scenes, return early with an empty array
+                                if raw_count == 0:
+                                    return jsonify({
+                                        'message': 'No scenes found for this universe',
+                                        'scenes': []
+                                    }), 200
                     except Exception as raw_error:
-                        current_app.logger.error(f"Raw query error: {str(raw_error)}")
+                        current_app.logger.error(f"Raw count query error: {str(raw_error)}")
                         # Continue with the ORM approach even if the raw query fails
                     
-                    # Direct serialization instead of using the complex to_dict method
-                    # Use filter_by which is more type-safe for simple equality conditions
-                    scenes = Scene.query.filter_by(
-                        universe_id=universe_id_int,
-                        is_deleted=False
-                    ).all()
-                    
-                    if scenes is None:
-                        scenes = []  # Ensure scenes is always a list
-                    
-                    current_app.logger.info(f"Found {len(scenes)} scenes for universe {universe_id_int}")
-                    
-                    # Safely convert scenes to dictionaries with individual error handling per scene
-                    scene_dicts = []
-                    for scene in scenes:
-                        try:
-                            # Create a basic dictionary with only essential fields to avoid serialization issues
-                            basic_dict = {
-                                'id': scene.id,
-                                'name': str(scene.name) if hasattr(scene, 'name') and scene.name is not None else "Unknown",
-                                'universe_id': scene.universe_id
-                            }
-                            
-                            # Try to add additional fields safely
+                    # Create a fresh session for the ORM query
+                    with db.session.begin():
+                        # Direct serialization instead of using the complex to_dict method
+                        scenes = Scene.query.filter_by(
+                            universe_id=universe_id_int,
+                            is_deleted=False
+                        ).all()
+                        
+                        if scenes is None:
+                            scenes = []  # Ensure scenes is always a list
+                        
+                        current_app.logger.info(f"Found {len(scenes)} scenes for universe {universe_id_int}")
+                        
+                        # Safely convert scenes to dictionaries with individual error handling per scene
+                        scene_dicts = []
+                        for scene in scenes:
                             try:
-                                if hasattr(scene, 'description'):
-                                    basic_dict['description'] = str(scene.description) if scene.description else ""
-                            except Exception:
-                                pass  # Skip fields that cause errors
-                                
-                            try:
-                                if hasattr(scene, 'is_public'):
-                                    basic_dict['is_public'] = bool(scene.is_public)
-                            except Exception:
-                                pass
-                                
-                            try:
-                                if hasattr(scene, 'is_deleted'):
-                                    basic_dict['is_deleted'] = bool(scene.is_deleted)
-                            except Exception:
-                                pass
-                                
-                            # Add it to our results
-                            scene_dicts.append(basic_dict)
-                            
-                        except Exception as scene_error:
-                            current_app.logger.error(f"Error converting scene {scene.id} to dict: {str(scene_error)}")
-                            current_app.logger.error(traceback.format_exc())
-                            
-                            # Add minimal information for this scene
-                            try:
-                                scene_dicts.append({
+                                # Create a basic dictionary with only essential fields to avoid serialization issues
+                                basic_dict = {
                                     'id': scene.id,
-                                    'name': "Unknown scene",
-                                    'universe_id': scene.universe_id,
-                                    'error': 'Error generating complete scene data'
-                                })
-                            except:
-                                # If even minimal data fails, just continue
-                                current_app.logger.error(f"Could not add even minimal scene data")
+                                    'name': str(scene.name) if hasattr(scene, 'name') and scene.name is not None else "Unknown",
+                                    'universe_id': scene.universe_id
+                                }
+                                
+                                # Try to add additional fields safely
+                                try:
+                                    if hasattr(scene, 'description'):
+                                        basic_dict['description'] = str(scene.description) if scene.description else ""
+                                except Exception:
+                                    pass  # Skip fields that cause errors
+                                    
+                                try:
+                                    if hasattr(scene, 'is_public'):
+                                        basic_dict['is_public'] = bool(scene.is_public)
+                                except Exception:
+                                    pass
+                                    
+                                try:
+                                    if hasattr(scene, 'is_deleted'):
+                                        basic_dict['is_deleted'] = bool(scene.is_deleted)
+                                except Exception:
+                                    pass
+                                    
+                                # Add it to our results
+                                scene_dicts.append(basic_dict)
+                                
+                            except Exception as scene_error:
+                                current_app.logger.error(f"Error converting scene {scene.id} to dict: {str(scene_error)}")
+                                current_app.logger.error(traceback.format_exc())
+                                
+                                # Add minimal information for this scene
+                                try:
+                                    scene_dicts.append({
+                                        'id': scene.id,
+                                        'name': "Unknown scene",
+                                        'universe_id': scene.universe_id,
+                                        'error': 'Error generating complete scene data'
+                                    })
+                                except:
+                                    # If even minimal data fails, just continue
+                                    current_app.logger.error(f"Could not add even minimal scene data")
                     
                     return jsonify({
                         'message': 'Scenes retrieved successfully',
@@ -193,6 +212,8 @@ def list_scenes():
                     }), 200
                     
                 except Exception as query_error:
+                    # Make sure to roll back any transaction in case of error
+                    db.session.rollback()
                     current_app.logger.error(f"Database error querying scenes: {str(query_error)}")
                     current_app.logger.error(traceback.format_exc())
                     return jsonify({

@@ -8,8 +8,16 @@ class Config:
     PORT = int(os.environ.get('PORT', 5001))
     
     # Database config
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:////Users/jameshightower/Desktop/AppAcademy/capstone/projects/Harmonic-Universe/app.db')
+    # Relative path to instance directory for sqlite
+    db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'instance', 'app.db')
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', f'sqlite:///{db_path}')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # Application environment
+    ENV = os.environ.get('FLASK_ENV', 'development')
+    
+    # Auto-create tables flag
+    AUTO_CREATE_TABLES = os.environ.get('AUTO_CREATE_TABLES', 'False').lower() == 'true'
     
     # JWT config
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'jwt-secret-key')
@@ -75,12 +83,16 @@ class DevelopmentConfig(Config):
     TESTING = False
     SQLALCHEMY_ECHO = True
     LOG_LEVEL = 'DEBUG'
+    # In development, create tables automatically by default
+    AUTO_CREATE_TABLES = os.environ.get('AUTO_CREATE_TABLES', 'True').lower() == 'true'
 
 class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
     WTF_CSRF_ENABLED = False
     LOG_LEVEL = 'DEBUG'
+    # In testing, always create tables automatically
+    AUTO_CREATE_TABLES = True
 
 class ProductionConfig(Config):
     DEBUG = False
@@ -91,6 +103,8 @@ class ProductionConfig(Config):
     REMEMBER_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
     REMEMBER_COOKIE_HTTPONLY = True
+    # In production, never create tables automatically
+    AUTO_CREATE_TABLES = False
 
 config = {
     'development': DevelopmentConfig,

@@ -45,7 +45,15 @@ const universeEndpoints = {
   physics: (id) => `${API_VERSION}/universes/${id}/physics`,
   audio: (id) => `${API_VERSION}/universes/${id}/audio`,
   visualization: (id) => `${API_VERSION}/universes/${id}/visualization`,
-  scenes: (id) => `${API_VERSION}/universes/${id}/scenes`,
+  scenes: (id) => {
+    // Log a deprecation warning
+    console.warn(
+      `[Deprecation Warning] The endpoint ${API_VERSION}/universes/${id}/scenes is deprecated. ` +
+      `Please use ${API_VERSION}/scenes/universe/${id} instead.`
+    );
+    // Still use the legacy endpoint which will redirect to the primary endpoint
+    return `${API_VERSION}/universes/${id}/scenes`;
+  },
   characters: (id) => `${API_VERSION}/universes/${id}/characters`,
   notes: (id) => `${API_VERSION}/universes/${id}/notes`,
 };
@@ -60,7 +68,16 @@ const sceneEndpoints = {
   get: (id) => `${API_VERSION}/scenes/${id}`,
   update: (id) => `${API_VERSION}/scenes/${id}`,
   delete: (id) => `${API_VERSION}/scenes/${id}`,
-  forUniverse: (universeId) => `${API_VERSION}/universes/${universeId}/scenes`,
+  // Add the primary endpoint for getting scenes by universe
+  byUniverse: (universeId) => `${API_VERSION}/scenes/universe/${universeId}`,
+  // Keep legacy endpoint for backward compatibility
+  forUniverse: (universeId) => {
+    console.warn(
+      `[Deprecation Warning] The endpoint ${API_VERSION}/universes/${universeId}/scenes is deprecated. ` +
+      `Please use ${API_VERSION}/scenes/universe/${universeId} instead.`
+    );
+    return `${API_VERSION}/universes/${universeId}/scenes`;
+  },
   reorder: `${API_VERSION}/scenes/reorder`,
   characters: (id) => `${API_VERSION}/scenes/${id}/characters`,
   notes: (id) => `${API_VERSION}/scenes/${id}/notes`,
@@ -150,7 +167,15 @@ export const universesEndpoints = {
   createUniverse: `${API_VERSION}/universes`,
   updateUniverse: (id) => `${API_VERSION}/universes/${id}`,
   deleteUniverse: (id) => `${API_VERSION}/universes/${id}`,
-  getUniverseScenes: (id) => `${API_VERSION}/universes/${id}/scenes`,
+  getUniverseScenes: (id) => {
+    // Log a deprecation warning
+    console.warn(
+      `[Deprecation Warning] The endpoint ${API_VERSION}/universes/${id}/scenes is deprecated. ` +
+      `Please use ${API_VERSION}/scenes/universe/${id} instead.`
+    );
+    // Still use the legacy endpoint which will redirect to the primary endpoint
+    return `${API_VERSION}/universes/${id}/scenes`;
+  },
   getUniverseCharacters: (id) => `${API_VERSION}/universes/${id}/characters`,
   getUniverseNotes: (id) => `${API_VERSION}/universes/${id}/notes`,
 };

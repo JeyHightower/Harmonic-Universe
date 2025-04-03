@@ -22,7 +22,15 @@ const FALLBACK_ENDPOINTS = {
     get: (id) => `/api/universes/${id}`,
     update: (id) => `/api/universes/${id}`,
     delete: (id) => `/api/universes/${id}`,
-    scenes: (id) => `/api/universes/${id}/scenes`,
+    scenes: (id) => {
+      // Log a deprecation warning
+      console.warn(
+        `[Deprecation Warning] The endpoint /api/universes/${id}/scenes is deprecated. ` +
+        `Please use /api/scenes/universe/${id} instead.`
+      );
+      // Still use the legacy endpoint which will redirect to the primary endpoint
+      return `/api/universes/${id}/scenes`;
+    },
     characters: (id) => `/api/universes/${id}/characters`
   }
 };

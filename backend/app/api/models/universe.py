@@ -204,6 +204,68 @@ class Universe(BaseModel):
         self.is_public = False
         self.save()
 
+    @classmethod
+    def repair_universe(cls, universe_id: int) -> Dict[str, Any]:
+        """Special method to repair database issues with a universe."""
+        try:
+            # First check if universe exists
+            universe = cls.query.get(universe_id)
+            if not universe:
+                return {
+                    'success': False,
+                    'message': f'Universe with ID {universe_id} not found'
+                }
+            
+            # Try to fix any database issues with a clean transaction
+            from sqlalchemy import text
+            from app.extensions import db
+            
+            # Make sure any existing transaction is cleaned up
+            db.session.close()
+            db.session.remove()
+            
+            # Start fresh transaction for repair
+            with db.session.begin():
+                # 1. Check scenes table for orphaned or corrupted entries
+                repair_sql = text("""
+                    UPDATE scenes 
+                    SET is_deleted = true 
+                    WHERE universe_id = :universe_id AND 
+                          (name IS NULL OR description IS NULL)
+                """)
+                
+                result = db.session.execute(repair_sql, {'universe_id': universe_id})
+                affected_rows = result.rowcount
+                
+                # 2. Clean up any problematic scene-character associations
+                cleanup_sql = text("""
+                    DELETE FROM character_scenes
+                    WHERE scene_id IN (
+                        SELECT id FROM scenes 
+                        WHERE universe_id = :universe_id AND is_deleted = true
+                    )
+                """)
+                
+                char_result = db.session.execute(cleanup_sql, {'universe_id': universe_id})
+                cleaned_assocs = char_result.rowcount
+                
+                # Force commit
+                db.session.commit()
+                
+                return {
+                    'success': True,
+                    'message': f'Universe {universe_id} repaired',
+                    'fixed_scenes': affected_rows,
+                    'cleaned_associations': cleaned_assocs
+                }
+                
+        except Exception as e:
+            db.session.rollback()
+            return {
+                'success': False,
+                'message': f'Error repairing universe: {str(e)}'
+            }
+
 class Scene(BaseModel):
     __tablename__ = 'scenes'
     

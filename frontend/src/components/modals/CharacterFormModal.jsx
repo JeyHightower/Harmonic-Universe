@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -46,6 +46,9 @@ const CharacterFormModal = ({
   const [sceneOptions, setSceneOptions] = useState([]);
   const [formErrors, setFormErrors] = useState({});
   const [scenesLoading, setScenesLoading] = useState(false);
+
+  // Add a ref to store the timeout ID so it persists between renders
+  const timeoutIdRef = useRef(null);
 
   // Helper function to validate scene_id against available scenes
   const getValidSceneId = (sceneIdToValidate, availableScenesList) => {
@@ -339,7 +342,7 @@ const CharacterFormModal = ({
       setScenesLoading(true);
 
       // Add a timeout to prevent hanging UI if the API doesn't respond
-      const timeoutId = setTimeout(() => {
+      timeoutIdRef.current = setTimeout(() => {
         if (scenesLoading) {
           setScenesLoading(false);
           setFormErrors({
@@ -365,13 +368,13 @@ const CharacterFormModal = ({
             });
           }
           setScenesLoading(false);
-          clearTimeout(timeoutId);
+          clearTimeout(timeoutIdRef.current);
         })
         .catch((error) => {
           console.error("Error loading scenes:", error);
           setSceneOptions([]);
           setScenesLoading(false);
-          clearTimeout(timeoutId);
+          clearTimeout(timeoutIdRef.current);
           setFormErrors({
             ...formErrors,
             scene_id:
@@ -385,7 +388,9 @@ const CharacterFormModal = ({
     // Cleanup timeout on unmount
     return () => {
       // Clear any existing timeouts
-      clearTimeout(timeoutId);
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+      }
     };
   }, [universeId, dispatch, formErrors]);
 
