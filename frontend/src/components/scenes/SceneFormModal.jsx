@@ -1,6 +1,7 @@
 import PropTypes from "prop-types";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import Button from "../common/Button";
 import Input from "../common/Input";
 import Modal from "../common/Modal.jsx";
@@ -18,6 +19,7 @@ const SceneFormModal = ({
   universeId,
 }) => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { loading, error } = useSelector((state) => state.scenes);
   const isEditing = !!initialData;
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -150,10 +152,13 @@ const SceneFormModal = ({
           // Extract scene from the standardized response format
           const sceneData = resultAction.payload.scene;
 
+          // Use a shorter timeout for better responsiveness
           setTimeout(() => {
-            onSuccess?.("update", sceneData);
+            if (onSuccess) {
+              onSuccess("update", sceneData);
+            }
             onClose();
-          }, 1500);
+          }, 300); // Reduced from 1500ms to 300ms
         } else if (updateScene.rejected.match(resultAction)) {
           const errorMessage =
             resultAction.payload?.message || "Failed to update scene";
@@ -183,10 +188,20 @@ const SceneFormModal = ({
           // Extract scene from the standardized response format
           const sceneData = resultAction.payload.scene;
 
+          // Use a shorter timeout for better responsiveness
           setTimeout(() => {
-            onSuccess?.("create", sceneData);
+            // Call onSuccess with the scene data
+            if (onSuccess) {
+              onSuccess("create", sceneData);
+            } else {
+              // If no onSuccess callback is provided, navigate directly to scenes page
+              console.log(
+                "No onSuccess callback provided, navigating to scenes page"
+              );
+              navigate(`/universes/${universeId}/scenes`);
+            }
             onClose();
-          }, 1500);
+          }, 300); // Reduced from 1500ms to 300ms
         } else if (createScene.rejected.match(resultAction)) {
           console.error("Scene creation failed:", resultAction.payload);
           const errorMessage =

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import SceneFormModal from "./SceneFormModal";
 
 // Global state to prevent modal from unmounting
@@ -10,6 +11,7 @@ let currentOnSuccessFn = null;
 
 const SceneCreateModal = ({ universeId, initialData, onClose, onSuccess }) => {
   const [visible, setVisible] = useState(false);
+  const navigate = useNavigate();
   const onCloseRef = useRef(onClose);
   const onSuccessRef = useRef(onSuccess);
   const universeIdRef = useRef(universeId);
@@ -65,20 +67,22 @@ const SceneCreateModal = ({ universeId, initialData, onClose, onSuccess }) => {
   };
 
   // Function to handle scene creation success
-  const handleSuccess = (data) => {
-    console.log("SceneCreateModal handleSuccess called with data:", data);
+  const handleSuccess = (actionType, sceneData) => {
+    console.log("SceneCreateModal handleSuccess called with data:", sceneData);
 
     // Call success callback if provided
     if (currentOnSuccessFn) {
-      currentOnSuccessFn(data);
+      currentOnSuccessFn(actionType, sceneData);
     }
 
     // Close the modal
     handleModalClose();
 
-    // Instead of reloading the page, let the parent component handle navigation
-    // This solves the redirect issue by allowing proper React navigation
-    // window.location.reload(); // Remove this line that's causing the issue
+    // Navigate to scenes page for this universe instead of reloading
+    if (savedUniverseId) {
+      console.log(`Navigating to scenes page for universe ${savedUniverseId}`);
+      navigate(`/universes/${savedUniverseId}/scenes`);
+    }
   };
 
   // If we don't have universe data or modal shouldn't be visible, don't render
