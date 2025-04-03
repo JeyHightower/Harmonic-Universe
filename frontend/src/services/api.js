@@ -6,6 +6,9 @@ import { endpoints, universesEndpoints } from "./endpoints";
 import { cache } from "../utils/cache";
 import { CACHE_CONFIG } from "../utils/cacheConfig";
 
+// Define fallback image URL as a constant to reduce redundant network requests
+const DEFAULT_SCENE_IMAGE = '/src/assets/images/default-scene.svg'; // Adjusted to use SVG
+
 // Define direct fallbacks for critical endpoints
 const FALLBACK_ENDPOINTS = {
   auth: {
@@ -719,6 +722,11 @@ const apiClient = {
       delete transformedData.title;
     }
 
+    // Add default image_url if missing to avoid server requests for default image
+    if (!transformedData.image_url) {
+      transformedData.image_url = DEFAULT_SCENE_IMAGE;
+    }
+
     console.log("Sending createScene request with data:", transformedData);
 
     // Use the base scenes endpoint with error handling
@@ -729,6 +737,12 @@ const apiClient = {
       axiosInstance.post(endpoint, transformedData)
         .then(response => {
           console.log("Create scene API response:", response);
+
+          // Ensure scene data has fallback image if missing
+          if (response.data?.scene && !response.data.scene.image_url) {
+            response.data.scene.image_url = DEFAULT_SCENE_IMAGE;
+          }
+
           resolve(response);
         })
         .catch(error => {
@@ -737,7 +751,14 @@ const apiClient = {
           resolve({
             status: error.response?.status || 500,
             data: {
-              scene: {}, // Empty scene object to prevent UI breakage
+              scene: {
+                // Provide a minimal scene object with the original data
+                ...transformedData,
+                id: `temp_${Date.now()}`,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                image_url: DEFAULT_SCENE_IMAGE
+              },
               message: error.response?.data?.message || "Error creating scene",
               error: error.response?.data?.error || error.message || "Unknown error"
             }

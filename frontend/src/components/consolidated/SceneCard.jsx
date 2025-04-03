@@ -3,14 +3,18 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../../styles/SceneCard.css";
 import { formatDate } from "../../utils/dateUtils";
+// Import a local default image to avoid server requests
+import localDefaultImage from "../../assets/images/default-scene.svg";
 
 /**
  * SceneCard component displays a card representation of a scene
  * Used throughout the application for scene listings and universe details
  */
-const SceneCard = ({ scene, onEdit, onDelete }) => {
-  const defaultImage = "/images/default-scene.jpg";
+const SceneCard = ({ scene, onEdit, onDelete, isOwner = false }) => {
   const navigate = useNavigate();
+
+  // Use the local image first, fall back to the remote one only if necessary
+  const defaultImage = localDefaultImage || "/images/default-scene.svg";
 
   const handleView = (e) => {
     e.preventDefault();
@@ -70,13 +74,29 @@ const SceneCard = ({ scene, onEdit, onDelete }) => {
     handleView(e);
   };
 
+  // Add a better fallback for date formatting
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "N/A";
+      return date.toLocaleDateString();
+    } catch (error) {
+      console.warn("Error formatting date:", error);
+      return "N/A";
+    }
+  };
+
   const cardContent = (
     <>
       <div className="scene-card-image">
         <img
           src={scene.image_url || defaultImage}
-          alt={scene.title || scene.name}
+          alt={scene.title || scene.name || "Scene"}
           onError={(e) => {
+            console.log("Image failed to load, using default image");
+            // Use a local fallback instead of remote one if possible
+            e.target.onerror = null; // Prevent infinite error loop
             e.target.src = defaultImage;
           }}
         />
@@ -116,8 +136,11 @@ const SceneCard = ({ scene, onEdit, onDelete }) => {
         <div className="scene-card-image">
           <img
             src={scene.image_url || defaultImage}
-            alt={scene.title || scene.name}
+            alt={scene.title || scene.name || "Scene"}
             onError={(e) => {
+              console.log("Image failed to load, using default image");
+              // Use a local fallback instead of remote one if possible
+              e.target.onerror = null; // Prevent infinite error loop
               e.target.src = defaultImage;
             }}
           />

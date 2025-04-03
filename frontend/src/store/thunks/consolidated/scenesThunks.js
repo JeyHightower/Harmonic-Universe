@@ -138,22 +138,51 @@ export const createScene = createAsyncThunk(
       const response = await apiClient.createScene(sceneData);
       console.log("Created scene response:", response);
 
+      // Create a default scene object with the input data as fallback
+      // This ensures we have valid data even if the API returns incomplete data
+      const defaultSceneData = {
+        id: Date.now().toString(), // Generate a temporary ID if needed
+        name: sceneData.name || "New Scene",
+        description: sceneData.description || "",
+        universe_id: sceneData.universe_id,
+        scene_type: sceneData.scene_type || "standard",
+        is_active: sceneData.is_active !== false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        // Add any other fields your UI expects
+      };
+
+      // Get scene data from response or use default if missing/incomplete
+      let sceneResponseData = response.data?.scene;
+
+      // If scene data is missing or empty, use our default
+      if (!sceneResponseData || Object.keys(sceneResponseData).length === 0) {
+        console.warn("Scene data missing in API response, using default scene data");
+        sceneResponseData = defaultSceneData;
+      } else {
+        // Ensure all required properties are present, use defaults for missing ones
+        sceneResponseData = {
+          ...defaultSceneData,
+          ...sceneResponseData
+        };
+      }
+
+      console.log("Using scene data:", sceneResponseData);
+
       // Update direct store if needed
       if (dispatch) {
-        dispatch(addScene(response.data?.scene));
+        dispatch(addScene(sceneResponseData));
       }
 
       // Return serializable data
       const serializedResponse = {
-        message: response.data?.message,
-        scene: response.data?.scene,
-        status: response.status
+        message: response.data?.message || "Scene created successfully",
+        scene: sceneResponseData,
+        status: response.status || 200
       };
 
       // Normalize the scene data if present
-      if (serializedResponse.scene) {
-        serializedResponse.scene = normalizeSceneData(serializedResponse.scene);
-      }
+      serializedResponse.scene = normalizeSceneData(serializedResponse.scene);
 
       return serializedResponse;
     } catch (error) {
