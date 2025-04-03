@@ -33,6 +33,20 @@ const scenesSlice = createSlice({
     resetSceneState(state) {
       return initialState;
     },
+    setError(state, action) {
+      state.error = action.payload;
+      state.loading = false;
+    },
+    setCurrentScene(state, action) {
+      state.currentScene = action.payload;
+    },
+    addScene(state, action) {
+      // Add a scene if it doesn't already exist
+      const exists = state.scenes.some(scene => scene.id === action.payload.id);
+      if (!exists) {
+        state.scenes.push(action.payload);
+      }
+    },
     addLocallyCreatedScene(state, action) {
       // Add a scene to locallyCreatedScenes if it doesn't exist already
       const exists = state.locallyCreatedScenes.some(scene => scene.id === action.payload.id);
@@ -296,7 +310,7 @@ const scenesSlice = createSlice({
   },
 });
 
-export const { clearSceneError, clearSceneSuccess, resetSceneState, addLocallyCreatedScene } =
+export const { clearSceneError, clearSceneSuccess, resetSceneState, setError, setCurrentScene, addScene, addLocallyCreatedScene } =
   scenesSlice.actions;
 
 export default scenesSlice.reducer;

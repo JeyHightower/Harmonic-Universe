@@ -1,13 +1,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import apiClient from "../../../services/api";
 import {
-  setScenes,
-  setCurrentScene,
-  addScene,
-  addLocallyCreatedScene,
-  updateScene as updateSceneInStore,
-  deleteScene as deleteSceneFromStore,
-  setError
+  addLocallyCreatedScene
 } from "../../slices/scenesSlice";
 
 /**
@@ -74,7 +68,7 @@ export const fetchScenes = createAsyncThunk(
         console.error("Error in scenes response:", response);
         if (dispatch) {
           const errorMessage = response.data?.message || `Error fetching scenes for universe ${universeId}`;
-          dispatch(setError(errorMessage));
+          dispatch({ type: 'scenes/setError', payload: errorMessage });
         }
         return rejectWithValue({
           message: response.data?.message || `Error fetching scenes for universe ${universeId}`,
@@ -132,7 +126,7 @@ export const fetchScenes = createAsyncThunk(
       // Update direct store if needed
       if (dispatch) {
         console.log("Dispatching setScenes with:", normalizedScenes);
-        dispatch(setScenes(normalizedScenes));
+        dispatch({ type: 'scenes/fetchScenes/fulfilled', payload: { scenes: normalizedScenes } });
       }
 
       // Return serializable data
@@ -143,7 +137,7 @@ export const fetchScenes = createAsyncThunk(
       };
     } catch (error) {
       if (dispatch) {
-        dispatch(setError(error.response?.data?.message || error.message));
+        dispatch({ type: 'scenes/setError', payload: error.response?.data?.message || error.message });
       }
       console.error(`Error fetching scenes for universe ${universeId}:`, error);
       return rejectWithValue(handleError(error));
@@ -165,7 +159,7 @@ export const fetchSceneById = createAsyncThunk(
 
       // Update direct store if needed
       if (dispatch) {
-        dispatch(setCurrentScene(response.data?.scene || response.data));
+        dispatch({ type: 'scenes/setCurrentScene', payload: response.data?.scene || response.data });
       }
 
       // Return serializable data
@@ -175,7 +169,7 @@ export const fetchSceneById = createAsyncThunk(
       };
     } catch (error) {
       if (dispatch) {
-        dispatch(setError(error.response?.data?.message || error.message));
+        dispatch({ type: 'scenes/setError', payload: error.response?.data?.message || error.message });
       }
       return rejectWithValue(handleError(error));
     }
@@ -240,7 +234,7 @@ export const createScene = createAsyncThunk(
         console.log("Adding scene to store and locally created scenes:", normalizedSceneData.id);
 
         // Add to regular scenes array
-        dispatch(addScene(normalizedSceneData));
+        dispatch({ type: 'scenes/addScene', payload: normalizedSceneData });
 
         // Also add to locally created scenes for persistence
         dispatch(addLocallyCreatedScene(normalizedSceneData));
@@ -256,7 +250,7 @@ export const createScene = createAsyncThunk(
       return serializedResponse;
     } catch (error) {
       if (dispatch) {
-        dispatch(setError(error.response?.data?.message || error.message));
+        dispatch({ type: 'scenes/setError', payload: error.response?.data?.message || error.message });
       }
       console.error("Error creating scene:", error);
       return rejectWithValue(handleError(error));
@@ -275,7 +269,7 @@ export const updateScene = createAsyncThunk(
 
       // Update direct store if needed
       if (dispatch) {
-        dispatch(updateSceneInStore(response.data?.scene || response.data));
+        dispatch({ type: 'scenes/updateScene', payload: response.data?.scene || response.data });
       }
 
       // Return serializable data
@@ -285,7 +279,7 @@ export const updateScene = createAsyncThunk(
       };
     } catch (error) {
       if (dispatch) {
-        dispatch(setError(error.response?.data?.message || error.message));
+        dispatch({ type: 'scenes/setError', payload: error.response?.data?.message || error.message });
       }
       console.error(`Error updating scene ${id}:`, error);
       return rejectWithValue(handleError(error));
@@ -307,7 +301,7 @@ export const deleteScene = createAsyncThunk(
 
       // Update direct store if needed
       if (dispatch) {
-        dispatch(deleteSceneFromStore(sceneId));
+        dispatch({ type: 'scenes/deleteScene', payload: sceneId });
       }
 
       // Return serializable data with the ID for the reducer
@@ -317,7 +311,7 @@ export const deleteScene = createAsyncThunk(
       };
     } catch (error) {
       if (dispatch) {
-        dispatch(setError(error.response?.data?.message || error.message));
+        dispatch({ type: 'scenes/setError', payload: error.response?.data?.message || error.message });
       }
       console.error(`Error deleting scene ${sceneId}:`, error);
       return rejectWithValue(handleError(error));
