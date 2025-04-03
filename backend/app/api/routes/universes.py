@@ -388,4 +388,47 @@ def get_universe_notes_route(universe_id):
         return jsonify({
             'message': 'Error retrieving notes',
             'error': str(e)
+        }), 500
+
+@universes_bp.route('/<int:universe_id>/repair', methods=['POST'])
+@jwt_required()
+def repair_universe(universe_id):
+    """Special endpoint to repair database issues with a universe."""
+    try:
+        # Get user ID from token
+        user_id = get_jwt_identity()
+        
+        # Get universe and check ownership
+        universe = Universe.query.get_or_404(universe_id)
+        
+        # Only the owner or admin can repair a universe
+        if universe.user_id != user_id:
+            return jsonify({
+                'message': 'Access denied - only the owner can repair a universe'
+            }), 403
+        
+        # Run the repair method - use class method correctly
+        result = Universe.repair_universe(universe_id)
+        
+        if result['success']:
+            # Log success
+            current_app.logger.info(f"Universe {universe_id} repaired: {result}")
+            return jsonify({
+                'message': f"Universe {universe_id} repaired successfully",
+                'details': result
+            }), 200
+        else:
+            # Log failure
+            current_app.logger.error(f"Failed to repair universe {universe_id}: {result}")
+            return jsonify({
+                'message': f"Failed to repair universe {universe_id}",
+                'error': result['message']
+            }), 500
+            
+    except Exception as e:
+        current_app.logger.error(f"Error repairing universe {universe_id}: {str(e)}")
+        current_app.logger.error(traceback.format_exc())
+        return jsonify({
+            'message': 'Error repairing universe',
+            'error': str(e)
         }), 500 
