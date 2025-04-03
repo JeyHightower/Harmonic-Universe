@@ -52,15 +52,25 @@ const SceneList = () => {
     setIsCreateModalOpen(true);
   };
 
-  const handleCreateSuccess = () => {
+  const handleCreateSuccess = (actionType, sceneData) => {
     console.log(
       "Scene creation success! Closing modal and refreshing scenes for universe:",
       universeId
     );
+    console.log("New scene data:", sceneData);
+
+    // Close the modal first
     setIsCreateModalOpen(false);
-    // Refresh the scenes list
+
+    // Refresh the scenes list with the new data
     dispatch(fetchScenes(universeId)).then(() => {
       console.log("Scenes refreshed after creation");
+
+      // Make sure we're on the scenes list page
+      if (window.location.pathname !== `/universes/${universeId}/scenes`) {
+        console.log("Navigating to scenes list page");
+        navigate(`/universes/${universeId}/scenes`);
+      }
     });
   };
 

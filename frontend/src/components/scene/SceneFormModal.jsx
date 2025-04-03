@@ -108,65 +108,55 @@ const SceneFormModal = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isSubmitting) return;
 
-    if (!validateForm()) {
+    // Validate form
+    const errors = {};
+    if (!formData.name || formData.name.trim() === "") {
+      errors.name = "Name is required";
+    }
+
+    // If there are validation errors, show them and stop submission
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
       return;
     }
 
     setIsSubmitting(true);
+    setValidationErrors({});
+
     try {
-      // Make sure universe_id is set
-      const sceneData = {
-        ...formData,
-        universe_id: universeId,
-      };
-
-      console.log("Starting scene submission with data:", sceneData);
-
-      let result;
-      let actionType;
-      if (isEditing) {
-        actionType = "update";
-        result = await dispatch(
-          updateScene({
+      const actionType = isEditing ? updateScene : createScene;
+      const sceneData = isEditing
+        ? {
             id: initialData.id,
-            data: sceneData,
-          })
-        );
-        console.log("Scene updated result:", result);
+            data: formData,
+          }
+        : formData;
+
+      const resultAction = await dispatch(actionType(sceneData));
+
+      if (actionType.fulfilled.match(resultAction)) {
+        setSubmitSuccess(true);
+
+        // Pass the created/updated scene data to onSuccess callback
+        const sceneData = resultAction.payload.scene;
+
+        // Add a small delay before closing the modal
+        setTimeout(() => {
+          // Call onSuccess with action type and scene data
+          if (onSuccess) {
+            onSuccess(isEditing ? "update" : "create", sceneData);
+          }
+          onClose();
+        }, 500);
       } else {
-        actionType = "create";
-        console.log("About to dispatch createScene with data:", sceneData);
-        result = await dispatch(createScene(sceneData));
-        console.log("Scene created result:", result);
+        throw new Error(resultAction.error?.message || "Failed to save scene");
       }
-
-      // Check for specific error patterns in the result
-      if (result.error) {
-        console.error(`Scene ${actionType} failed:`, result.error);
-        throw new Error(
-          result.error.message || `Failed to ${actionType} scene`
-        );
-      }
-
-      // Get the actual scene data from the result
-      const sceneResult = result.payload?.scene || {};
-      console.log(`Scene ${actionType}d successfully:`, sceneResult);
-
-      setSubmitSuccess(true);
-
-      // Call onSuccess after a short delay to allow the store to update
-      setTimeout(() => {
-        console.log(`Calling onSuccess after scene ${actionType}`, {
-          sceneId: sceneResult.id,
-          universeId,
-        });
-        onSuccess();
-      }, 1500);
     } catch (error) {
       console.error("Error saving scene:", error);
-      setValidationErrors({ form: error.message || "Failed to save scene" });
+      setValidationErrors({
+        form: error.message || "An error occurred while saving the scene",
+      });
     } finally {
       setIsSubmitting(false);
     }

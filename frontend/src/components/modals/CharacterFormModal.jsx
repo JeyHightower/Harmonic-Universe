@@ -625,20 +625,23 @@ const CharacterFormModal = ({
                                       console.log(
                                         "Scene creation successful, now we should reload scenes and reopen character modal"
                                       );
-                                      // Reload scenes and then reopen the character modal
+                                      // Reload scenes and then reopen the character modal with a slight delay
                                       dispatch(fetchScenes(universeId)).then(
                                         () => {
-                                          // Reopen the character form modal after scene is created
-                                          dispatch(
-                                            openModal({
-                                              type: "CHARACTER_FORM",
-                                              props: {
-                                                universeId,
-                                                type: "create",
-                                                isOpen: true,
-                                              },
-                                            })
-                                          );
+                                          // Add a short delay before reopening the modal to ensure proper state updates
+                                          setTimeout(() => {
+                                            // Reopen the character form modal after scene is created
+                                            dispatch(
+                                              openModal({
+                                                type: "CHARACTER_FORM",
+                                                props: {
+                                                  universeId,
+                                                  type: "create",
+                                                  isOpen: true,
+                                                },
+                                              })
+                                            );
+                                          }, 300); // 300ms delay for smoother transition
                                         }
                                       );
                                     },
