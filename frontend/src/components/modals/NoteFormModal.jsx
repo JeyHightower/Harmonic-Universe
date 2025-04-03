@@ -178,8 +178,15 @@ const NoteFormModal = ({
       maxWidth="md"
       fullWidth
       className="note-form-modal"
+      disableEnforceFocus
+      container={() => document.body}
+      aria-labelledby="note-form-title"
+      aria-describedby="note-form-description"
+      BackdropProps={{
+        "aria-hidden": null,
+      }}
     >
-      <DialogTitle>
+      <DialogTitle id="note-form-title">
         {getTitle()}
         <IconButton
           aria-label="close"
@@ -194,7 +201,7 @@ const NoteFormModal = ({
         </IconButton>
       </DialogTitle>
       <form onSubmit={handleSubmit}>
-        <DialogContent className="note-form-content">
+        <DialogContent id="note-form-description" className="note-form-content">
           {error && (
             <Typography color="error" className="note-form-error">
               {error}

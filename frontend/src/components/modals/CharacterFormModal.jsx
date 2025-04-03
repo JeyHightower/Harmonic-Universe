@@ -21,6 +21,7 @@ import "../character/Characters.css";
 import PropTypes from "prop-types";
 import { fetchScenes } from "../../store/thunks/scenesThunks";
 import { openModal } from "../../store/slices/modalSlice";
+import { MODAL_TYPES } from "../../constants/modalTypes";
 
 const CharacterFormModal = ({
   isOpen,
@@ -510,10 +511,17 @@ const CharacterFormModal = ({
       maxWidth="sm"
       fullWidth
       className="character-form-modal"
+      disableEnforceFocus
+      container={() => document.body}
+      aria-labelledby="character-form-title"
+      aria-describedby="character-form-description"
+      BackdropProps={{
+        "aria-hidden": null,
+      }}
     >
-      <DialogTitle>{getTitle()}</DialogTitle>
+      <DialogTitle id="character-form-title">{getTitle()}</DialogTitle>
       <form onSubmit={handleSubmit}>
-        <DialogContent>
+        <DialogContent id="character-form-description">
           <Box className="character-form-content">
             {error && (
               <Typography color="error" className="character-form-error">
@@ -600,13 +608,41 @@ const CharacterFormModal = ({
                             variant="outlined"
                             color="primary"
                             onClick={() => {
+                              console.log("Create a new scene button clicked");
                               // Navigate to scene creation or open a scene creation modal
                               onClose(); // Close current modal
                               // Open scene form modal
+                              console.log(
+                                "Opening SCENE_FORM modal with universeId:",
+                                universeId
+                              );
                               dispatch(
                                 openModal({
-                                  type: "SCENE_FORM",
-                                  props: { universeId },
+                                  type: MODAL_TYPES.SCENE_FORM,
+                                  props: {
+                                    universeId,
+                                    onSuccess: () => {
+                                      console.log(
+                                        "Scene creation successful, now we should reload scenes and reopen character modal"
+                                      );
+                                      // Reload scenes and then reopen the character modal
+                                      dispatch(fetchScenes(universeId)).then(
+                                        () => {
+                                          // Reopen the character form modal after scene is created
+                                          dispatch(
+                                            openModal({
+                                              type: "CHARACTER_FORM",
+                                              props: {
+                                                universeId,
+                                                type: "create",
+                                                isOpen: true,
+                                              },
+                                            })
+                                          );
+                                        }
+                                      );
+                                    },
+                                  },
                                 })
                               );
                             }}

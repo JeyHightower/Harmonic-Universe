@@ -9,6 +9,8 @@ import FormModal from "../components/modals/FormModal";
 import LoginModal from "../components/auth/LoginModal";
 import SignupModal from "../components/auth/SignupModal";
 import UniverseCreateModal from "../components/modals/UniverseCreateModal";
+import SceneFormModal from "../components/scene/SceneFormModal";
+import CharacterFormModal from "../components/modals/CharacterFormModal";
 
 // Create modal registry
 const modalRegistry = new Map();
@@ -25,7 +27,9 @@ const getModalComponent = async (type) => {
     ...Object.values(MODAL_CONFIG.TYPES),
     MODAL_TYPES.LOGIN,
     MODAL_TYPES.SIGNUP,
-    MODAL_TYPES.UNIVERSE_CREATE
+    MODAL_TYPES.UNIVERSE_CREATE,
+    "SCENE_FORM",
+    "CHARACTER_FORM"
   ];
 
   if (!validTypes.includes(type)) {
@@ -59,6 +63,14 @@ const getModalComponent = async (type) => {
       case "universe-create":
       case MODAL_TYPES.UNIVERSE_CREATE:
         component = UniverseCreateModal;
+        break;
+      case "SCENE_FORM":
+        console.log("Loading SceneFormModal component");
+        component = SceneFormModal;
+        break;
+      case "CHARACTER_FORM":
+        console.log("Loading CharacterFormModal component");
+        component = CharacterFormModal;
         break;
       default:
         console.error(`No modal component found for type: ${type}`);

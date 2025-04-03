@@ -72,6 +72,7 @@ const ModalRenderer = ({ type, props, onClose }) => {
 
   return (
     <ModalComponent
+      open={true}
       isOpen={true}
       onClose={onClose}
       {...props}

@@ -548,8 +548,12 @@ const apiClient = {
     }
   },
   getUniverseScenes: (universeId) => {
-    const endpoint = getEndpoint('universes', 'scenes', `/api/universes/${universeId}/scenes`);
+    // Use the recommended endpoint instead of the deprecated one
+    // const endpoint = getEndpoint('universes', 'scenes', `/api/universes/${universeId}/scenes`);
+    const endpoint = getEndpoint('scenes', 'byUniverse', `/api/scenes/universe/${universeId}`);
     const url = typeof endpoint === 'function' ? endpoint(universeId) : endpoint;
+
+    console.log("Using new scenes endpoint:", url);
 
     // Return a promise that handles errors more gracefully
     return new Promise((resolve, reject) => {
@@ -560,15 +564,32 @@ const apiClient = {
         })
         .catch(error => {
           console.error(`Error fetching scenes for universe ${universeId}:`, error);
-          // Instead of rejecting, resolve with a well-formed error response
-          resolve({
-            status: error.response?.status || 500,
-            data: {
-              scenes: [], // Always provide empty scenes array to prevent UI breakage
-              message: error.response?.data?.message || `Error fetching scenes for universe ${universeId}`,
-              error: error.response?.data?.error || error.message || "Unknown error"
-            }
-          });
+
+          // If the new endpoint fails, use direct API call as fallback
+          console.log(`Falling back to direct scenes endpoint for universe ${universeId}`);
+
+          // Avoid circular reference to apiClient.getScenes
+          // Instead use axiosInstance directly with the scenes endpoint
+          const fallbackUrl = `/api/scenes?universe_id=${universeId}`;
+          console.log("Using fallback URL:", fallbackUrl);
+
+          axiosInstance.get(fallbackUrl)
+            .then(fallbackResponse => {
+              console.log("Fallback direct scenes response:", fallbackResponse);
+              resolve(fallbackResponse);
+            })
+            .catch(fallbackError => {
+              console.error(`Fallback also failed for universe ${universeId}:`, fallbackError);
+              // Instead of rejecting, resolve with a well-formed error response
+              resolve({
+                status: error.response?.status || 500,
+                data: {
+                  scenes: [], // Always provide empty scenes array to prevent UI breakage
+                  message: error.response?.data?.message || `Error fetching scenes for universe ${universeId}`,
+                  error: error.response?.data?.error || error.message || "Unknown error"
+                }
+              });
+            });
         });
     });
   },

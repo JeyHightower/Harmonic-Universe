@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Container,
   Grid,
@@ -25,10 +25,12 @@ import {
 } from "../../store/thunks/consolidated/scenesThunks";
 import { SceneCard } from "../consolidated";
 import SceneFormModal from "../scene/SceneFormModal";
+import { ROUTES } from "../../utils/routes";
 import "../../styles/SceneList.css";
 
 const SceneList = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { universeId } = useParams();
   const { scenes, loading, error } = useSelector((state) => state.scenes);
   const { user } = useSelector((state) => state.auth);
@@ -41,6 +43,7 @@ const SceneList = () => {
 
   useEffect(() => {
     if (universeId) {
+      console.log("Fetching scenes for universe:", universeId);
       dispatch(fetchScenes(universeId));
     }
   }, [dispatch, universeId]);
@@ -50,8 +53,15 @@ const SceneList = () => {
   };
 
   const handleCreateSuccess = () => {
+    console.log(
+      "Scene creation success! Closing modal and refreshing scenes for universe:",
+      universeId
+    );
     setIsCreateModalOpen(false);
-    dispatch(fetchScenes(universeId));
+    // Refresh the scenes list
+    dispatch(fetchScenes(universeId)).then(() => {
+      console.log("Scenes refreshed after creation");
+    });
   };
 
   const handleDeleteClick = (scene) => {
@@ -79,8 +89,14 @@ const SceneList = () => {
   };
 
   const handleEditClick = (scene) => {
-    // Navigate to edit page or open edit modal
-    window.location.href = `/scenes/${scene.id}/edit`;
+    // Use ROUTES constant to ensure correct path pattern
+    const editPath = ROUTES.SCENE_EDIT.replace(
+      ":universeId",
+      universeId
+    ).replace(":sceneId", scene.id);
+
+    console.log("Navigating to scene edit path:", editPath);
+    navigate(editPath);
   };
 
   // Filter and sort scenes
@@ -239,9 +255,19 @@ const SceneList = () => {
       )}
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={!!sceneToDelete} onClose={handleDeleteCancel}>
-        <DialogTitle>Delete Scene</DialogTitle>
-        <DialogContent>
+      <Dialog
+        open={!!sceneToDelete}
+        onClose={handleDeleteCancel}
+        disableEnforceFocus
+        container={() => document.body}
+        aria-labelledby="delete-scene-title"
+        aria-describedby="delete-scene-description"
+        BackdropProps={{
+          "aria-hidden": null,
+        }}
+      >
+        <DialogTitle id="delete-scene-title">Delete Scene</DialogTitle>
+        <DialogContent id="delete-scene-description">
           <Typography>
             Are you sure you want to delete "{sceneToDelete?.name}"? This action
             cannot be undone.

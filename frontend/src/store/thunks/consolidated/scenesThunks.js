@@ -47,8 +47,33 @@ export const fetchScenes = createAsyncThunk(
   async (universeId, { dispatch, rejectWithValue }) => {
     try {
       console.log("Fetching scenes for universe", universeId);
-      const response = await apiClient.getScenes(universeId);
-      console.log("Got scenes response:", response);
+
+      // Try using getScenes first
+      let response;
+      try {
+        console.log("Attempting to fetch scenes using getScenes");
+        response = await apiClient.getScenes(universeId);
+        console.log("Got scenes response from getScenes:", response);
+      } catch (initialError) {
+        console.error("Initial getScenes request failed, trying getUniverseScenes as fallback:", initialError);
+        // If getScenes fails, try getUniverseScenes as fallback
+        response = await apiClient.getUniverseScenes(universeId);
+        console.log("Got scenes response from fallback getUniverseScenes:", response);
+      }
+
+      // Check for error status and data structure
+      if (response.status >= 400 || !response.data) {
+        console.error("Error in scenes response:", response);
+        if (dispatch) {
+          const errorMessage = response.data?.message || `Error fetching scenes for universe ${universeId}`;
+          dispatch(setError(errorMessage));
+        }
+        return rejectWithValue({
+          message: response.data?.message || `Error fetching scenes for universe ${universeId}`,
+          status: response.status,
+          data: response.data || {},
+        });
+      }
 
       // Update direct store if needed
       if (dispatch) {

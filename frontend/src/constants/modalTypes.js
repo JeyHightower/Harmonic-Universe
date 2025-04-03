@@ -13,6 +13,12 @@ export const MODAL_TYPES = {
 
   // Universe modals
   UNIVERSE_CREATE: "universe-create",
+
+  // Scene modals
+  SCENE_FORM: "SCENE_FORM",
+
+  // Character modals
+  CHARACTER_FORM: "CHARACTER_FORM",
 };
 
 /**
@@ -28,6 +34,8 @@ export const getModalDisplayName = (type) => {
     [MODAL_TYPES.LOGIN]: "Login",
     [MODAL_TYPES.SIGNUP]: "Sign Up",
     [MODAL_TYPES.UNIVERSE_CREATE]: "Create Universe",
+    [MODAL_TYPES.SCENE_FORM]: "Create Scene",
+    [MODAL_TYPES.CHARACTER_FORM]: "Character",
   };
 
   return displayNames[type] || type;
@@ -46,6 +54,8 @@ export const getModalIcon = (type) => {
     [MODAL_TYPES.LOGIN]: "login",
     [MODAL_TYPES.SIGNUP]: "user-plus",
     [MODAL_TYPES.UNIVERSE_CREATE]: "plus-circle",
+    [MODAL_TYPES.SCENE_FORM]: "film",
+    [MODAL_TYPES.CHARACTER_FORM]: "user",
   };
 
   return icons[type] || "question-circle";
@@ -64,6 +74,8 @@ export const getModalDescription = (type) => {
     [MODAL_TYPES.LOGIN]: "User login form",
     [MODAL_TYPES.SIGNUP]: "User registration form",
     [MODAL_TYPES.UNIVERSE_CREATE]: "Create a new musical universe",
+    [MODAL_TYPES.SCENE_FORM]: "Create a new scene in your universe",
+    [MODAL_TYPES.CHARACTER_FORM]: "Create or edit a character",
   };
 
   return descriptions[type] || "";
