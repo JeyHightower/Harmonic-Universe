@@ -17,6 +17,7 @@ const initialState = {
   success: false,
   universeScenes: {}, // Stores scenes by universeId
   message: "",
+  locallyCreatedScenes: [], // Add support for locally created scenes
 };
 
 const scenesSlice = createSlice({
@@ -32,6 +33,19 @@ const scenesSlice = createSlice({
     resetSceneState(state) {
       return initialState;
     },
+    addLocallyCreatedScene(state, action) {
+      // Add a scene to locallyCreatedScenes if it doesn't exist already
+      const exists = state.locallyCreatedScenes.some(scene => scene.id === action.payload.id);
+      if (!exists) {
+        state.locallyCreatedScenes.push(action.payload);
+
+        // Also add to the main scenes array if not already there
+        const mainExists = state.scenes.some(scene => scene.id === action.payload.id);
+        if (!mainExists) {
+          state.scenes.push(action.payload);
+        }
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -45,7 +59,26 @@ const scenesSlice = createSlice({
 
         // Use scenes array directly from serialized response
         if (action.payload && action.payload.scenes) {
-          state.scenes = action.payload.scenes;
+          // Create a map to efficiently check for duplicates
+          const scenesMap = new Map();
+
+          // Add API scenes to the map first
+          action.payload.scenes.forEach(scene => {
+            scenesMap.set(scene.id, scene);
+          });
+
+          // Add locally created scenes that aren't already in the API results
+          state.locallyCreatedScenes.forEach(scene => {
+            if (!scenesMap.has(scene.id)) {
+              scenesMap.set(scene.id, scene);
+            }
+          });
+
+          // Update scenes array with all unique scenes
+          state.scenes = Array.from(scenesMap.values());
+        } else {
+          // If no scenes were returned, still keep locally created scenes
+          state.scenes = [...state.locallyCreatedScenes];
         }
       })
       .addCase(fetchScenes.rejected, (state, action) => {
@@ -82,7 +115,18 @@ const scenesSlice = createSlice({
 
         // Add the new scene to the scenes array if it exists
         if (action.payload && action.payload.scene) {
-          state.scenes.push(action.payload.scene);
+          const newScene = action.payload.scene;
+          // Check if the scene already exists to avoid duplicates
+          const exists = state.scenes.some(scene => scene.id === newScene.id);
+          if (!exists) {
+            state.scenes.push(newScene);
+          }
+
+          // Also add to locally created scenes for persistence
+          const localExists = state.locallyCreatedScenes.some(scene => scene.id === newScene.id);
+          if (!localExists) {
+            state.locallyCreatedScenes.push(newScene);
+          }
         }
       })
       .addCase(createScene.rejected, (state, action) => {
@@ -135,6 +179,11 @@ const scenesSlice = createSlice({
         if (action.payload && action.payload.id) {
           const sceneId = action.payload.id;
           state.scenes = state.scenes.filter((scene) => scene.id !== sceneId);
+
+          // Also remove from locally created scenes
+          state.locallyCreatedScenes = state.locallyCreatedScenes.filter(
+            (scene) => scene.id !== sceneId
+          );
 
           // Clear currentScene if it's the deleted one
           if (state.currentScene && state.currentScene.id === sceneId) {
@@ -225,7 +274,7 @@ const scenesSlice = createSlice({
   },
 });
 
-export const { clearSceneError, clearSceneSuccess, resetSceneState } =
+export const { clearSceneError, clearSceneSuccess, resetSceneState, addLocallyCreatedScene } =
   scenesSlice.actions;
 
 export default scenesSlice.reducer;

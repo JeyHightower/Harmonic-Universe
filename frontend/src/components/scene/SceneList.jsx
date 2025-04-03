@@ -32,10 +32,24 @@ const SceneList = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { universeId } = useParams();
-  const { scenes, locallyCreatedScenes, loading, error } = useSelector(
-    (state) => state.scenes
+
+  // Add safe destructuring with default values to prevent undefined errors
+  const {
+    scenes = [],
+    locallyCreatedScenes = [],
+    loading = false,
+    error = null,
+  } = useSelector(
+    (state) =>
+      state.scenes || {
+        scenes: [],
+        locallyCreatedScenes: [],
+        loading: false,
+        error: null,
+      }
   );
-  const { user } = useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.auth || {});
+
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [sceneToDelete, setSceneToDelete] = useState(null);
   const [sceneToEdit, setSceneToEdit] = useState(null);
@@ -44,22 +58,32 @@ const SceneList = () => {
   const [sortOrder, setSortOrder] = useState("desc");
   const [forceRender, setForceRender] = useState(0);
 
+  // Safe log that won't break if something is undefined
   console.log("SceneList: Rendering with data:", {
-    scenesCount: scenes.length,
-    locallyCreatedCount: locallyCreatedScenes.length,
+    scenesCount: (scenes || []).length,
+    locallyCreatedCount: (locallyCreatedScenes || []).length,
+    reduxStateAvailable: !!scenes,
   });
 
   useEffect(() => {
     if (universeId) {
       console.log("SceneList: Fetching scenes for universe:", universeId);
-      dispatch(fetchScenes(universeId))
-        .then((result) => {
-          console.log("SceneList: Scenes fetch completed:", result);
-          console.log("SceneList: Current scenes in store:", scenes);
-        })
-        .catch((err) => {
-          console.error("SceneList: Error fetching scenes:", err);
-        });
+      // Safely handle promise to prevent errors if dispatch returns unexpected results
+      const fetchPromise = dispatch(fetchScenes(universeId));
+      if (fetchPromise && typeof fetchPromise.then === "function") {
+        fetchPromise
+          .then((result) => {
+            console.log("SceneList: Scenes fetch completed:", result);
+            console.log("SceneList: Current scenes in store:", scenes || []);
+          })
+          .catch((err) => {
+            console.error("SceneList: Error fetching scenes:", err);
+          });
+      } else {
+        console.warn(
+          "SceneList: dispatch did not return a promise as expected"
+        );
+      }
     }
   }, [dispatch, universeId, forceRender]);
 
@@ -123,28 +147,31 @@ const SceneList = () => {
     navigate(editPath);
   };
 
-  // Filter and sort scenes
-  const filteredAndSortedScenes = [...scenes]
+  // Filter and sort scenes with null safety
+  const filteredAndSortedScenes = [...(scenes || [])]
     .filter((scene) => {
+      if (!scene) return false;
       if (filter === "all") return true;
-      if (filter === "active") return scene.is_active;
+      if (filter === "active") return !!scene.is_active;
       if (filter === "inactive") return !scene.is_active;
       return true;
     })
     .sort((a, b) => {
+      if (!a || !b) return 0;
       let comparison = 0;
 
       switch (sortBy) {
         case "name":
-          comparison = a.name.localeCompare(b.name);
+          comparison = (a.name || "").localeCompare(b.name || "");
           break;
         case "created_at":
-          comparison = new Date(a.created_at) - new Date(b.created_at);
+          comparison =
+            new Date(a.created_at || 0) - new Date(b.created_at || 0);
           break;
         case "updated_at":
           comparison =
-            new Date(a.updated_at || a.created_at) -
-            new Date(b.updated_at || b.created_at);
+            new Date(a.updated_at || a.created_at || 0) -
+            new Date(b.updated_at || b.created_at || 0);
           break;
         default:
           comparison = 0;
