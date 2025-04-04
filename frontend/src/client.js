@@ -50,8 +50,8 @@ const getBaseUrl = () => {
 
     // Special handling for Render.com deployments
     if (hostname.includes("render.com")) {
-      // For Render we'll use the API-specific subdomain
-      const apiUrl = "https://harmonic-universe-api.onrender.com";
+      // For Render we'll use the same domain as the frontend
+      const apiUrl = `${protocol}//${hostname}`; // Just use the same domain for API requests
       logApiOperation("getBaseUrl-render", { url: apiUrl });
       window.apiDebug.baseUrl = apiUrl;
       return apiUrl;
