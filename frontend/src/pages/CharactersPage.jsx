@@ -51,34 +51,88 @@ const CharactersPage = () => {
         console.log("Universe response:", universeResponse.data);
         setUniverse(universeResponse.data.universe);
 
-        // Check if scenes are included in the universe response
+        // Improved scene fetching and processing
         let universeScenes = [];
-        if (universeResponse.data.universe?.scenes) {
+
+        // First check if scenes are in the universe response
+        if (
+          universeResponse.data.universe?.scenes &&
+          Array.isArray(universeResponse.data.universe.scenes)
+        ) {
+          console.log(
+            "Found scenes in universe response:",
+            universeResponse.data.universe.scenes.length
+          );
           universeScenes = universeResponse.data.universe.scenes;
-        } else if (universeResponse.data.scenes) {
+        } else if (
+          universeResponse.data.scenes &&
+          Array.isArray(universeResponse.data.scenes)
+        ) {
+          console.log(
+            "Found scenes at top level of response:",
+            universeResponse.data.scenes.length
+          );
           universeScenes = universeResponse.data.scenes;
         }
 
-        // If no scenes found in the universe response, try to fetch them directly
+        // If no scenes found in universe response, fetch them directly
         if (universeScenes.length === 0) {
           try {
-            console.log("Fetching scenes for universe", universeId);
+            console.log(
+              "No scenes in universe response, fetching directly for universe",
+              universeId
+            );
             const scenesResponse = await apiClient.getUniverseScenes(
               universeId
             );
-            console.log("Scenes response:", scenesResponse.data);
-            if (scenesResponse.data.scenes) {
+            console.log("Direct scenes response:", scenesResponse);
+
+            // Handle various response formats
+            if (
+              scenesResponse.data?.scenes &&
+              Array.isArray(scenesResponse.data.scenes)
+            ) {
+              console.log(
+                "Found scenes in dedicated scenes array:",
+                scenesResponse.data.scenes.length
+              );
               universeScenes = scenesResponse.data.scenes;
             } else if (Array.isArray(scenesResponse.data)) {
+              console.log(
+                "Found scenes as direct array:",
+                scenesResponse.data.length
+              );
               universeScenes = scenesResponse.data;
+            } else if (scenesResponse.data) {
+              // Search for any array property that might contain scenes
+              console.log("Searching response object for scene arrays");
+              const responseObj = scenesResponse.data;
+
+              for (const key in responseObj) {
+                if (Array.isArray(responseObj[key])) {
+                  const potentialScenes = responseObj[key];
+                  if (
+                    potentialScenes.length > 0 &&
+                    (potentialScenes[0].universe_id || potentialScenes[0].id)
+                  ) {
+                    console.log(
+                      `Found potential scenes in property '${key}':`,
+                      potentialScenes.length
+                    );
+                    universeScenes = potentialScenes;
+                    break;
+                  }
+                }
+              }
             }
           } catch (err) {
             console.error("Error fetching scenes:", err);
           }
         }
 
-        console.log("Available scenes:", universeScenes);
-        setScenes(universeScenes);
+        // Log the final result of scene fetching
+        console.log("Final scenes for universe:", universeScenes);
+        setScenes(universeScenes || []);
 
         // Get characters for this universe
         const charactersResponse = await apiClient.getCharactersByUniverse(
@@ -151,12 +205,44 @@ const CharactersPage = () => {
     navigate(`/universes/${universeId}`);
   };
 
+  const handleCreateScene = () => {
+    if (!universeId) return;
+
+    // Open the scene creation modal
+    navigate(`/universes/${universeId}/scenes/new`);
+  };
+
   const filteredCharacters = characters.filter(
     (character) =>
       character.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (character.description &&
         character.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const renderCreateSceneButton = () => {
+    if (scenes.length === 0 && !loading) {
+      return (
+        <Box textAlign="center" my={3} p={2} bgcolor="#f5f5f5" borderRadius={1}>
+          <Typography variant="h6" gutterBottom>
+            No Scenes Available
+          </Typography>
+          <Typography variant="body2" color="textSecondary" paragraph>
+            Characters need to be placed in a scene. Create your first scene to
+            get started.
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleCreateScene}
+            startIcon={<AddIcon />}
+          >
+            Create First Scene
+          </Button>
+        </Box>
+      );
+    }
+    return null;
+  };
 
   return (
     <Container maxWidth="lg" className="characters-page">
@@ -200,6 +286,8 @@ const CharactersPage = () => {
         sx={{ mb: 4 }}
       />
 
+      {renderCreateSceneButton()}
+
       {loading ? (
         <Box display="flex" justifyContent="center" my={6}>
           <CircularProgress />
@@ -219,6 +307,7 @@ const CharactersPage = () => {
             startIcon={<AddIcon />}
             onClick={handleCreateCharacter}
             sx={{ mt: 2 }}
+            disabled={scenes.length === 0}
           >
             Create your first character
           </Button>

@@ -92,11 +92,20 @@ const CharacterFormModal = ({
     }
   }, [sceneId, scenes, formData.scene_id]);
 
+  // Update sceneOptions whenever scenes change
+  useEffect(() => {
+    if (scenes && Array.isArray(scenes)) {
+      console.log(`Setting sceneOptions from ${scenes.length} scenes`);
+      setSceneOptions(scenes);
+    }
+  }, [scenes]);
+
   // Use availableScenes when provided
   useEffect(() => {
     if (availableScenes.length > 0) {
       console.log("Using provided scenes:", availableScenes);
       setScenes(availableScenes);
+      setSceneOptions(availableScenes);
 
       // Validate the current scene_id against the updated scenes list
       const validSceneId = getValidSceneId(formData.scene_id, availableScenes);
@@ -123,58 +132,85 @@ const CharacterFormModal = ({
       setLoadingScenes(true);
       console.log(`Fetching scenes for universe ${universeId}`);
 
-      // First try the getUniverseScenes method
+      // Use a single robust approach to fetch scenes
       apiClient
         .getUniverseScenes(universeId)
         .then((response) => {
-          console.log("getUniverseScenes API raw response:", response);
-          console.log("getUniverseScenes API data:", response.data);
+          console.log("Scenes API raw response:", response);
 
-          // Try to extract scenes from different possible response formats
+          // Extract scenes data with comprehensive error handling
           let scenesData = [];
-          if (Array.isArray(response.data)) {
-            scenesData = response.data;
-          } else if (
-            response.data?.scenes &&
-            Array.isArray(response.data.scenes)
-          ) {
-            scenesData = response.data.scenes;
-          } else if (response.data?.universe?.scenes) {
-            scenesData = response.data.universe.scenes;
+
+          try {
+            // Case 1: Direct array in data
+            if (Array.isArray(response.data)) {
+              console.log("Found scenes as direct array in response.data");
+              scenesData = response.data;
+            }
+            // Case 2: Scenes array in data.scenes
+            else if (
+              response.data?.scenes &&
+              Array.isArray(response.data.scenes)
+            ) {
+              console.log("Found scenes in response.data.scenes");
+              scenesData = response.data.scenes;
+            }
+            // Case 3: Nested in universe object
+            else if (
+              response.data?.universe?.scenes &&
+              Array.isArray(response.data.universe.scenes)
+            ) {
+              console.log("Found scenes in response.data.universe.scenes");
+              scenesData = response.data.universe.scenes;
+            }
+            // Case 4: Search for any array in the response
+            else if (response.data && typeof response.data === "object") {
+              console.log(
+                "Searching for scene arrays in response object properties"
+              );
+              for (const [key, value] of Object.entries(response.data)) {
+                if (
+                  Array.isArray(value) &&
+                  value.length > 0 &&
+                  value[0].universe_id
+                ) {
+                  console.log(`Found potential scenes array in data.${key}`);
+                  scenesData = value;
+                  break;
+                }
+              }
+            }
+          } catch (err) {
+            console.error("Error extracting scenes data:", err);
           }
 
           console.log(
-            "Scenes found (method 1):",
-            scenesData.length,
+            `Found ${scenesData.length} scenes for universe ${universeId}:`,
             scenesData
           );
 
+          // Try to get scenes from Redux store as fallback
           if (scenesData.length === 0) {
-            // Try the alternative method if no scenes found
             console.log(
-              "No scenes found with getUniverseScenes, trying getScenes with universeId parameter"
+              "No scenes found in API response, checking Redux store"
             );
-            return apiClient
-              .getScenes({ universeId })
-              .then((altResponse) => {
-                let altScenesData = [];
-                if (Array.isArray(altResponse.data)) {
-                  altScenesData = altResponse.data;
-                } else if (
-                  altResponse.data?.scenes &&
-                  Array.isArray(altResponse.data.scenes)
-                ) {
-                  altScenesData = altResponse.data.scenes;
-                }
+            dispatch(fetchScenes(universeId))
+              .unwrap()
+              .then((reduxResult) => {
+                console.log("Redux store scenes result:", reduxResult);
+                if (reduxResult.scenes && reduxResult.scenes.length > 0) {
+                  scenesData = reduxResult.scenes;
+                  console.log(
+                    `Found ${scenesData.length} scenes in Redux store`
+                  );
+                  setScenes(scenesData);
 
-                if (altScenesData.length > 0) {
-                  setScenes(altScenesData);
-                  // Update with valid scene_id
+                  // Update scene_id if we found valid scenes
                   const validSceneId = getValidSceneId(
                     formData.scene_id,
-                    altScenesData
+                    scenesData
                   );
-                  if (validSceneId !== formData.scene_id) {
+                  if (validSceneId && validSceneId !== formData.scene_id) {
                     setFormData((prev) => ({
                       ...prev,
                       scene_id: validSceneId,
@@ -182,24 +218,18 @@ const CharacterFormModal = ({
                   }
                 }
               })
-              .catch((altErr) => {
-                // Gracefully handle error and continue
-                console.error(
-                  "Error fetching scenes with alternative method:",
-                  altErr
-                );
-                // Just continue with empty scenes
-              })
-              .finally(() => {
-                setLoadingScenes(false);
+              .catch((reduxError) => {
+                console.error("Error fetching scenes from Redux:", reduxError);
               });
           }
 
+          // Update UI state with found scenes
+          setScenes(scenesData);
+
+          // Update scene_id if we found valid scenes
           if (scenesData.length > 0) {
-            setScenes(scenesData);
-            // Validate and update scene_id
             const validSceneId = getValidSceneId(formData.scene_id, scenesData);
-            if (validSceneId !== formData.scene_id) {
+            if (validSceneId && validSceneId !== formData.scene_id) {
               setFormData((prev) => ({
                 ...prev,
                 scene_id: validSceneId,
@@ -207,66 +237,23 @@ const CharacterFormModal = ({
             }
           }
         })
-        .catch((err) => {
-          console.error("Error fetching scenes with getUniverseScenes:", err);
-
-          // If first method fails, try the alternative method
-          console.log("Trying alternative method to fetch scenes");
-          apiClient
-            .getScenes({ universeId })
-            .then((altResponse) => {
-              let altScenesData = [];
-              try {
-                if (Array.isArray(altResponse.data)) {
-                  altScenesData = altResponse.data;
-                } else if (
-                  altResponse.data?.scenes &&
-                  Array.isArray(altResponse.data.scenes)
-                ) {
-                  altScenesData = altResponse.data.scenes;
-                }
-              } catch (parseErr) {
-                console.error("Error parsing scene data:", parseErr);
-                // Continue with empty array
-              }
-
-              console.log(
-                "Scenes found (alternative method):",
-                altScenesData.length,
-                altScenesData
-              );
-
-              setScenes(altScenesData);
-              // Validate and update scene_id if we have scenes
-              if (altScenesData.length > 0) {
-                const validSceneId = getValidSceneId(
-                  formData.scene_id,
-                  altScenesData
-                );
-                if (validSceneId !== formData.scene_id) {
-                  setFormData((prev) => ({
-                    ...prev,
-                    scene_id: validSceneId,
-                  }));
-                }
-              }
-            })
-            .catch((altErr) => {
-              console.error(
-                "Error fetching scenes with alternative method:",
-                altErr
-              );
-              // Just continue with empty scenes array
-            })
-            .finally(() => {
-              setLoadingScenes(false);
-            });
+        .catch((error) => {
+          console.error("Error fetching scenes:", error);
+          // Continue with empty scenes array
+          setScenes([]);
         })
         .finally(() => {
           setLoadingScenes(false);
         });
     }
-  }, [isOpen, universeId, type, availableScenes.length]);
+  }, [
+    isOpen,
+    universeId,
+    type,
+    availableScenes.length,
+    dispatch,
+    formData.scene_id,
+  ]);
 
   useEffect(() => {
     if (isOpen && characterId && (type === "edit" || type === "view")) {
@@ -570,14 +557,17 @@ const CharacterFormModal = ({
     }
   };
 
+  // Get modal title based on type
   const getTitle = () => {
     switch (type) {
       case "create":
-        return "Create New Character";
+        return "Create Character";
       case "edit":
         return "Edit Character";
       case "view":
-        return "Character Details";
+        return character?.name
+          ? `View Character: ${character.name}`
+          : "View Character";
       case "delete":
         return "Delete Character";
       default:
@@ -585,13 +575,126 @@ const CharacterFormModal = ({
     }
   };
 
+  // Function to create a new scene if none exists
+  const handleCreateScene = () => {
+    if (!universeId) return;
+
+    // Open the scene creation modal via redux
+    dispatch(
+      openModal({
+        type: MODAL_TYPES.SCENE_FORM,
+        props: {
+          universeId: universeId,
+          onSuccess: (newScene) => {
+            console.log("New scene created:", newScene);
+            // Add the new scene to our local state
+            const updatedScenes = [...scenes, newScene];
+            setScenes(updatedScenes);
+            setSceneOptions(updatedScenes);
+
+            // Set the new scene as selected
+            setFormData((prev) => ({
+              ...prev,
+              scene_id: String(newScene.id),
+            }));
+          },
+        },
+      })
+    );
+  };
+
+  // Add handleCreateScene button to the UI
+  const renderSceneSelector = () => {
+    return (
+      <>
+        <FormControl fullWidth margin="normal" error={!!formErrors.scene_id}>
+          <InputLabel id="scene-select-label">Scene</InputLabel>
+          <Select
+            labelId="scene-select-label"
+            id="scene_id"
+            name="scene_id"
+            value={formData.scene_id || ""}
+            onChange={handleChange}
+            label="Scene"
+            displayEmpty
+            disabled={!universeId || scenesLoading}
+          >
+            <MenuItem value="" disabled>
+              {scenesLoading ? "Loading scenes..." : "Select a scene"}
+            </MenuItem>
+
+            {Array.isArray(sceneOptions) && sceneOptions.length > 0 ? (
+              sceneOptions.map((scene) =>
+                scene && scene.id ? (
+                  <MenuItem key={scene.id} value={scene.id}>
+                    {scene.name || "Unnamed scene"}
+                  </MenuItem>
+                ) : null
+              )
+            ) : (
+              <MenuItem value="" disabled>
+                {universeId
+                  ? "No scenes available. Please create a scene first."
+                  : "Please select a universe first"}
+              </MenuItem>
+            )}
+          </Select>
+
+          {formErrors.scene_id && (
+            <FormHelperText error>{formErrors.scene_id}</FormHelperText>
+          )}
+        </FormControl>
+
+        {sceneOptions.length === 0 && universeId && !scenesLoading && (
+          <Box mt={1} sx={{ textAlign: "center", py: 1 }}>
+            <Typography
+              variant="subtitle2"
+              color="primary"
+              display="block"
+              gutterBottom
+            >
+              No scenes found for this universe.
+            </Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              display="block"
+              gutterBottom
+              sx={{ mb: 2 }}
+            >
+              You need to create at least one scene before adding characters.
+            </Typography>
+            <Button
+              variant="outlined"
+              color="primary"
+              size="small"
+              onClick={handleCreateScene}
+              startIcon={<span>+</span>}
+            >
+              Create Scene
+            </Button>
+          </Box>
+        )}
+      </>
+    );
+  };
+
   if (loading && (type === "edit" || type === "view") && !character) {
     return (
-      <Dialog open={isOpen} onClose={onClose} className="character-form-modal">
-        <DialogContent>
-          <Box display="flex" justifyContent="center" p={3}>
-            <CircularProgress />
-          </Box>
+      <Dialog open={isOpen} onClose={handleClose} maxWidth="md" fullWidth>
+        <DialogTitle>
+          {type === "create" ? "Create " : type === "edit" ? "Edit " : "View "}
+          Character
+        </DialogTitle>
+        <DialogContent
+          sx={{
+            minHeight: "300px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <CircularProgress />
         </DialogContent>
       </Dialog>
     );
@@ -601,186 +704,71 @@ const CharacterFormModal = ({
     <Dialog
       open={isOpen}
       onClose={handleClose}
-      maxWidth="sm"
+      maxWidth="md"
       fullWidth
       className="character-form-modal"
-      disableEnforceFocus
-      container={() => document.body}
-      aria-labelledby="character-form-title"
-      aria-describedby="character-form-description"
-      BackdropProps={{
-        "aria-hidden": null,
-      }}
     >
-      <DialogTitle id="character-form-title">{getTitle()}</DialogTitle>
+      <DialogTitle>{getTitle()}</DialogTitle>
       <form onSubmit={handleSubmit}>
-        <DialogContent id="character-form-description">
-          <Box className="character-form-content">
-            {error && (
-              <Typography color="error" className="character-form-error">
+        <DialogContent>
+          {error && (
+            <Box mb={3}>
+              <Typography color="error" variant="body2">
                 {error}
               </Typography>
-            )}
+            </Box>
+          )}
 
-            {type !== "delete" ? (
-              <Box>
-                <TextField
-                  autoFocus
-                  margin="dense"
-                  name="name"
-                  label="Character Name"
-                  type="text"
-                  fullWidth
-                  value={formData.name}
-                  onChange={handleChange}
-                  disabled={type === "view" || loading}
-                  required
-                  className="character-form-field"
-                />
+          {type === "delete" ? (
+            <Typography variant="body1">
+              Are you sure you want to delete this character? This action cannot
+              be undone.
+            </Typography>
+          ) : (
+            <>
+              <TextField
+                fullWidth
+                margin="normal"
+                label="Name"
+                name="name"
+                value={formData.name || ""}
+                onChange={handleChange}
+                disabled={loading || type === "view"}
+                error={!!formErrors.name}
+                helperText={formErrors.name}
+                required={type !== "view"}
+              />
 
-                {type === "create" && (
-                  <FormControl
-                    fullWidth
-                    error={!!formErrors.scene_id}
-                    sx={{ mt: 2 }}
-                  >
-                    <InputLabel id="scene-select-label">Scene</InputLabel>
-                    <Select
-                      labelId="scene-select-label"
-                      id="scene_id"
-                      name="scene_id"
-                      value={formData.scene_id || ""}
-                      onChange={handleChange}
-                      label="Scene"
-                      displayEmpty
-                      disabled={!universeId || scenesLoading}
-                    >
-                      <MenuItem value="" disabled>
-                        {scenesLoading ? "Loading scenes..." : "Select a scene"}
-                      </MenuItem>
+              <TextField
+                fullWidth
+                margin="normal"
+                label="Description"
+                name="description"
+                value={formData.description || ""}
+                onChange={handleChange}
+                multiline
+                rows={4}
+                disabled={loading || type === "view"}
+                error={!!formErrors.description}
+                helperText={formErrors.description}
+              />
 
-                      {Array.isArray(sceneOptions) &&
-                      sceneOptions.length > 0 ? (
-                        sceneOptions.map((scene) =>
-                          scene && scene.id ? (
-                            <MenuItem key={scene.id} value={scene.id}>
-                              {scene.name || "Unnamed scene"}
-                            </MenuItem>
-                          ) : null
-                        )
-                      ) : (
-                        <MenuItem value="" disabled>
-                          {universeId
-                            ? "No scenes available. Please create a scene first."
-                            : "Please select a universe first"}
-                        </MenuItem>
-                      )}
-                    </Select>
-                    {!!formErrors.scene_id && (
-                      <FormHelperText error>
-                        {formErrors.scene_id}
-                      </FormHelperText>
-                    )}
+              {type === "create" && renderSceneSelector()}
 
-                    {!formErrors.scene_id &&
-                      sceneOptions.length === 0 &&
-                      universeId &&
-                      !scenesLoading && (
-                        <Box mt={1} sx={{ textAlign: "center", py: 1 }}>
-                          <Typography
-                            variant="subtitle2"
-                            color="primary"
-                            display="block"
-                            gutterBottom
-                          >
-                            No scenes found for this universe.
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            display="block"
-                            gutterBottom
-                            sx={{ mb: 2 }}
-                          >
-                            You need to create at least one scene before adding
-                            characters.
-                          </Typography>
-                          <Button
-                            size="medium"
-                            variant="contained"
-                            color="primary"
-                            fullWidth
-                            onClick={() => {
-                              console.log("Create a new scene button clicked");
-                              // Navigate to scene creation or open a scene creation modal
-                              onClose(); // Close current modal
-                              // Open scene form modal
-                              console.log(
-                                "Opening SCENE_FORM modal with universeId:",
-                                universeId
-                              );
-                              dispatch(
-                                openModal({
-                                  type: MODAL_TYPES.SCENE_FORM,
-                                  props: {
-                                    universeId,
-                                    onSuccess: () => {
-                                      console.log(
-                                        "Scene creation successful, now we should reload scenes and reopen character modal"
-                                      );
-                                      // Reload scenes and then reopen the character modal with a slight delay
-                                      dispatch(fetchScenes(universeId)).then(
-                                        () => {
-                                          // Add a short delay before reopening the modal to ensure proper state updates
-                                          setTimeout(() => {
-                                            // Reopen the character form modal after scene is created
-                                            dispatch(
-                                              openModal({
-                                                type: "CHARACTER_FORM",
-                                                props: {
-                                                  universeId,
-                                                  type: "create",
-                                                  isOpen: true,
-                                                },
-                                              })
-                                            );
-                                          }, 300); // 300ms delay for smoother transition
-                                        }
-                                      );
-                                    },
-                                  },
-                                })
-                              );
-                            }}
-                          >
-                            Create Your First Scene
-                          </Button>
-                        </Box>
-                      )}
-                  </FormControl>
-                )}
-
-                <TextField
-                  margin="dense"
-                  name="description"
-                  label="Description"
-                  type="text"
-                  fullWidth
-                  multiline
-                  rows={4}
-                  value={formData.description}
-                  onChange={handleChange}
-                  disabled={type === "view" || loading}
-                  className="character-form-field"
-                />
-              </Box>
-            ) : (
-              <Typography>
-                Are you sure you want to delete this character? This action
-                cannot be undone.
-              </Typography>
-            )}
-          </Box>
+              <TextField
+                fullWidth
+                margin="normal"
+                label="Scene"
+                name="scene_display"
+                value={
+                  scenes.find((s) => String(s.id) === String(formData.scene_id))
+                    ?.name || "Scene not found"
+                }
+                disabled={true}
+                sx={{ display: type !== "create" ? "block" : "none" }}
+              />
+            </>
+          )}
         </DialogContent>
         <DialogActions className="character-form-actions">
           <Button onClick={handleClose} disabled={loading}>
