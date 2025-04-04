@@ -325,103 +325,111 @@ class Scene(BaseModel):
         notes_count = 0
         
         try:
-            # Try to safely get counts
-            if self.id is not None:  # Only try counting if we have an ID (saved record)
+            # Try to safely get counts only if we have a valid ID and are in a database session
+            if hasattr(self, 'id') and self.id is not None and db.session.is_active:
                 try:
-                    characters_count = db.session.query(func.count()).select_from(Character).join(
-                        character_scenes).filter(character_scenes.c.scene_id == self.id).scalar() or 0
+                    # Using a simpler query approach to avoid type issues
+                    stmt = db.session.query(func.count()).select_from(Character).join(
+                        character_scenes).filter(character_scenes.c.scene_id == self.id)
+                    result = db.session.execute(stmt)
+                    characters_count = result.scalar() or 0
                 except Exception as e:
+                    # Just log and continue with default count
                     print(f"Error counting characters for scene {self.id}: {str(e)}")
                     if current_app:
                         current_app.logger.error(f"Error counting characters for scene {self.id}: {str(e)}")
                 
                 try:
-                    notes_count = db.session.query(func.count()).select_from(Note).filter(
-                        Note.scene_id == self.id).filter(Note.is_deleted == False).scalar() or 0
+                    # Using a simpler query approach to avoid type issues
+                    stmt = db.session.query(func.count()).select_from(Note).filter(
+                        Note.scene_id == self.id, Note.is_deleted == False)
+                    result = db.session.execute(stmt)
+                    notes_count = result.scalar() or 0
                 except Exception as e:
+                    # Just log and continue with default count
                     print(f"Error counting notes for scene {self.id}: {str(e)}")
                     if current_app:
                         current_app.logger.error(f"Error counting notes for scene {self.id}: {str(e)}")
         except Exception as e:
             # Fail gracefully if counts can't be retrieved
-            print(f"Error getting counts for scene {self.id}: {str(e)}")
+            print(f"Error getting counts for scene {self.id if hasattr(self, 'id') else 'unknown'}: {str(e)}")
             if current_app:
-                current_app.logger.error(f"Error getting counts for scene {self.id}: {str(e)}")
+                current_app.logger.error(f"Error getting counts for scene {self.id if hasattr(self, 'id') else 'unknown'}: {str(e)}")
         
         # Safely assemble the dictionary
         try:
+            # Start with minimal safe attributes to ensure something is returned
             result = {
-                'id': self.id,
+                'id': self.id if hasattr(self, 'id') else None,
                 'name': str(self.name) if hasattr(self, 'name') and self.name is not None else "Unknown",
-                'universe_id': self.universe_id,
-                'is_public': bool(self.is_public) if hasattr(self, 'is_public') else False,
-                'is_deleted': bool(self.is_deleted) if hasattr(self, 'is_deleted') else False,
-                'characters_count': characters_count,
-                'notes_count': notes_count
+                'universe_id': self.universe_id if hasattr(self, 'universe_id') else None,
             }
             
-            # Add other fields with null checks
-            if hasattr(self, 'description') and self.description is not None:
-                result['description'] = self.description
+            # Add boolean flags with explicit checks to avoid None errors
+            try:
+                result['is_public'] = bool(self.is_public) if hasattr(self, 'is_public') and self.is_public is not None else False
+            except Exception:
+                result['is_public'] = False
                 
-            if hasattr(self, 'summary') and self.summary is not None:
-                result['summary'] = self.summary
-                
-            if hasattr(self, 'content') and self.content is not None:
-                result['content'] = self.content
-                
-            if hasattr(self, 'notes_text') and self.notes_text is not None:
-                result['notes'] = self.notes_text
-                
-            if hasattr(self, 'location') and self.location is not None:
-                result['location'] = self.location
-                
-            if hasattr(self, 'scene_type') and self.scene_type is not None:
-                result['scene_type'] = self.scene_type
-                
-            if hasattr(self, 'time_of_day') and self.time_of_day is not None:
-                result['time_of_day'] = self.time_of_day
-                
-            if hasattr(self, 'status') and self.status is not None:
-                result['status'] = self.status
-                
-            if hasattr(self, 'significance') and self.significance is not None:
-                result['significance'] = self.significance
-                
-            if hasattr(self, 'date_of_scene') and self.date_of_scene is not None:
-                # Don't try to format the date, just convert to string
-                result['date_of_scene'] = str(self.date_of_scene)
-                
-            if hasattr(self, 'order') and self.order is not None:
-                result['order'] = self.order
-                
-            if hasattr(self, 'sound_profile_id') and self.sound_profile_id is not None:
-                result['sound_profile_id'] = self.sound_profile_id
-                
-            # Format dates as ISO strings if they exist - use simple string conversion
-            if hasattr(self, 'created_at') and self.created_at is not None:
-                # Don't try to use isoformat, just convert to string
-                result['created_at'] = str(self.created_at)
-                
-            if hasattr(self, 'updated_at') and self.updated_at is not None:
-                # Don't try to use isoformat, just convert to string
-                result['updated_at'] = str(self.updated_at)
+            try:
+                result['is_deleted'] = bool(self.is_deleted) if hasattr(self, 'is_deleted') and self.is_deleted is not None else False
+            except Exception:
+                result['is_deleted'] = False
+            
+            # Only add counts if they were successfully retrieved
+            result['characters_count'] = characters_count
+            result['notes_count'] = notes_count
+            
+            # Add optional text fields with safety checks
+            for field in ['description', 'summary', 'content', 'notes_text', 'location',
+                          'scene_type', 'time_of_day', 'status', 'significance', 
+                          'date_of_scene']:
+                try:
+                    if hasattr(self, field) and getattr(self, field) is not None:
+                        result[field] = str(getattr(self, field))
+                except Exception:
+                    # Skip fields that cause errors
+                    pass
+            
+            # Add optional numeric fields
+            for field in ['order', 'sound_profile_id']:
+                try:
+                    if hasattr(self, field) and getattr(self, field) is not None:
+                        result[field] = getattr(self, field)
+                except Exception:
+                    # Skip fields that cause errors
+                    pass
+            
+            # Format dates as strings with explicit error handling
+            for date_field in ['created_at', 'updated_at']:
+                try:
+                    if hasattr(self, date_field) and getattr(self, date_field) is not None:
+                        result[date_field] = str(getattr(self, date_field))
+                except Exception:
+                    # Skip date fields that cause errors
+                    pass
                 
             return result
             
         except Exception as e:
-            # If conversion fails, return minimal data to avoid complete failure
-            print(f"Error creating dictionary for scene {self.id}: {str(e)}")
+            # Capture traceback for detailed debugging
+            import traceback
+            error_trace = traceback.format_exc()
+            
+            # If conversion fails completely, return absolute minimal data
+            print(f"Critical error creating dictionary for scene: {str(e)}\n{error_trace}")
             if current_app:
-                current_app.logger.error(f"Error creating dictionary for scene {self.id}: {str(e)}")
-                import traceback
-                current_app.logger.error(traceback.format_exc())
-            return {
+                current_app.logger.error(f"Critical error creating dictionary for scene: {str(e)}")
+                current_app.logger.error(error_trace)
+                
+            # Last resort fallback with minimal required fields
+            fallback = {
                 'id': self.id if hasattr(self, 'id') else None,
-                'name': str(self.name) if hasattr(self, 'name') and self.name is not None else "Unknown",
+                'name': "Error: Scene data could not be loaded",
                 'universe_id': self.universe_id if hasattr(self, 'universe_id') else None,
-                'error': "Error generating complete scene data"
+                'error': "Error generating scene data"
             }
+            return fallback
         
     def get_character_by_name(self, name: str) -> Optional[Character]:
         """Get a character by name."""

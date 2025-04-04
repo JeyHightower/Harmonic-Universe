@@ -13,28 +13,112 @@ scenes_bp = Blueprint('scenes', __name__)
 @jwt_required()
 def get_scenes(universe_id):
     try:
-        # Get universe and check access
-        universe = Universe.query.get_or_404(universe_id)
-        user_id = get_jwt_identity()
+        current_app.logger.info(f"Fetching scenes for universe ID: {universe_id}")
+        
+        # Check if universe_id is valid
+        if not universe_id or universe_id <= 0:
+            current_app.logger.error(f"Invalid universe ID: {universe_id}")
+            return jsonify({
+                'message': 'Invalid universe ID',
+                'error': 'Universe ID must be a positive integer'
+            }), 400
+        
+        # Get universe with additional error handling
+        try:
+            universe = Universe.query.get(universe_id)
+            
+            if not universe:
+                current_app.logger.warning(f"Universe with ID {universe_id} not found")
+                return jsonify({
+                    'message': 'Universe not found',
+                    'error': f'No universe found with ID {universe_id}'
+                }), 404
+                
+            if hasattr(universe, 'is_deleted') and universe.is_deleted:
+                current_app.logger.warning(f"Attempted to access deleted universe: {universe_id}")
+                return jsonify({
+                    'message': 'Universe has been deleted'
+                }), 404
+        except Exception as universe_error:
+            current_app.logger.error(f"Error fetching universe {universe_id}: {str(universe_error)}")
+            current_app.logger.error(traceback.format_exc())
+            return jsonify({
+                'message': 'Error retrieving universe',
+                'error': str(universe_error)
+            }), 500
 
+        # Check permissions
+        user_id = get_jwt_identity()
+        current_app.logger.info(f"User {user_id} accessing universe {universe_id} (owner: {universe.user_id})")
+        
         if not universe.is_public and universe.user_id != user_id:
+            current_app.logger.warning(f"Access denied: User {user_id} attempting to access private universe {universe_id}")
             return jsonify({
                 'message': 'Access denied'
             }), 403
 
-        # Get all scenes for the universe
-        scenes = Scene.query.filter_by(
-            universe_id=universe_id,
-            is_deleted=False
-        ).all()
-
-        return jsonify({
-            'message': 'Scenes retrieved successfully',
-            'scenes': [scene.to_dict() for scene in scenes]
-        }), 200
+        # Get all scenes for the universe with clean session management
+        try:
+            # Ensure we're using a fresh session
+            db.session.expire_all()
+            
+            # Get scenes with basic query to avoid complex serialization issues
+            scenes = Scene.query.filter_by(
+                universe_id=universe_id,
+                is_deleted=False
+            ).all()
+            
+            current_app.logger.info(f"Found {len(scenes) if scenes else 0} scenes for universe {universe_id}")
+            
+            # Safely convert scenes to dictionaries with error handling
+            scene_list = []
+            for scene in scenes:
+                try:
+                    # Use a simplified dictionary to avoid serialization issues
+                    scene_dict = {
+                        'id': scene.id,
+                        'name': str(scene.name) if hasattr(scene, 'name') and scene.name is not None else "Unknown",
+                        'universe_id': scene.universe_id,
+                        'is_public': bool(scene.is_public) if hasattr(scene, 'is_public') else False,
+                        'is_deleted': bool(scene.is_deleted) if hasattr(scene, 'is_deleted') else False
+                    }
+                    
+                    # Add optional fields that might cause problems
+                    if hasattr(scene, 'description') and scene.description is not None:
+                        scene_dict['description'] = str(scene.description)
+                    
+                    if hasattr(scene, 'created_at') and scene.created_at is not None:
+                        scene_dict['created_at'] = str(scene.created_at)
+                    
+                    if hasattr(scene, 'updated_at') and scene.updated_at is not None:
+                        scene_dict['updated_at'] = str(scene.updated_at)
+                    
+                    scene_list.append(scene_dict)
+                except Exception as scene_error:
+                    current_app.logger.error(f"Error converting scene {scene.id} to dict: {str(scene_error)}")
+                    # Add minimal data if conversion fails
+                    scene_list.append({
+                        'id': scene.id,
+                        'name': 'Error: Could not load scene data',
+                        'universe_id': universe_id,
+                        'error': str(scene_error)
+                    })
+            
+            return jsonify({
+                'message': 'Scenes retrieved successfully',
+                'scenes': scene_list
+            }), 200
+            
+        except Exception as query_error:
+            current_app.logger.error(f"Database error querying scenes: {str(query_error)}")
+            current_app.logger.error(traceback.format_exc())
+            return jsonify({
+                'message': 'Database error retrieving scenes',
+                'error': str(query_error)
+            }), 500
 
     except Exception as e:
-        current_app.logger.error(f"Error retrieving scenes: {str(e)}")
+        current_app.logger.error(f"Unexpected error retrieving scenes: {str(e)}")
         current_app.logger.error(traceback.format_exc())
         return jsonify({
             'message': 'Error retrieving scenes',

@@ -556,27 +556,40 @@ const apiClient = {
     const endpoint = getEndpoint('scenes', 'byUniverse', `/api/scenes/universe/${universeId}`);
     const url = typeof endpoint === 'function' ? endpoint(universeId) : endpoint;
 
-    console.log("Using new scenes endpoint:", url);
+    console.log(`API - getUniverseScenes - Fetching scenes for universe ${universeId} using endpoint:`, url);
 
-    // Return a promise that handles errors more gracefully
+    // Return a promise that handles errors more gracefully with retry logic
     return new Promise((resolve) => {
       axiosInstance.get(url)
         .then(response => {
-          console.log("Universe scenes API response:", response);
+          console.log(`API - getUniverseScenes - Universe ${universeId} scenes response:`, response);
           resolve(response);
         })
         .catch(error => {
-          console.error(`Error fetching scenes for universe ${universeId}:`, error);
+          console.error(`API - getUniverseScenes - Error fetching scenes for universe ${universeId}:`, error);
 
-          // Instead of propagating the error, resolve with a well-formed empty response
-          console.log(`Resolving with empty scenes array for universe ${universeId} to prevent UI errors`);
-          resolve({
-            status: 200, // Force a success status
-            data: {
-              scenes: [], // Return empty scenes array
-              message: "No scenes found for this universe",
-            }
-          });
+          // Try alternative endpoint if primary fails
+          const fallbackUrl = `/api/scenes?universe_id=${universeId}`;
+          console.log(`API - getUniverseScenes - Trying fallback endpoint: ${fallbackUrl}`);
+
+          axiosInstance.get(fallbackUrl)
+            .then(fallbackResponse => {
+              console.log(`API - getUniverseScenes - Fallback response for universe ${universeId}:`, fallbackResponse);
+              resolve(fallbackResponse);
+            })
+            .catch(fallbackError => {
+              console.error(`API - getUniverseScenes - Fallback also failed for universe ${universeId}:`, fallbackError);
+
+              // If both attempts fail, return an empty response to avoid breaking the UI
+              resolve({
+                status: 200, // Force a success status
+                data: {
+                  scenes: [], // Return empty scenes array
+                  message: `No scenes found for universe ${universeId} or API error occurred`,
+                  error: error.message || "Unknown error"
+                }
+              });
+            });
         });
     });
   },
