@@ -1,15 +1,21 @@
 import React, { lazy } from "react";
 import { ROUTES } from "../utils/routes";
-import { ProtectedRoute } from "../components/ProtectedRoute";
+import { ProtectedRoute } from "../components/routing/ProtectedRoute";
 
 // Lazy load components for better performance
-const Home = lazy(() => import("../components/Home"));
-const Login = lazy(() => import("../components/Login"));
-const Signup = lazy(() => import("../components/Signup"));
-const Dashboard = lazy(() => import("../components/Dashboard"));
-const PersonalUniverse = lazy(() => import("../components/PersonalUniverse"));
-const UniverseDetail = lazy(() => import("../components/UniverseDetail"));
-const CharacterDetail = lazy(() => import("../components/CharacterDetail"));
+const Home = lazy(() => import("../pages/Home"));
+const Login = lazy(() => import("../components/auth/Login"));
+const Signup = lazy(() => import("../components/auth/Signup"));
+const Dashboard = lazy(() => import("../pages/Dashboard"));
+const PersonalUniverse = lazy(() =>
+  import("../components/universe/PersonalUniverse")
+);
+const UniverseDetail = lazy(() =>
+  import("../components/universe/UniverseDetail")
+);
+const CharacterDetail = lazy(() =>
+  import("../components/character/CharacterDetail")
+);
 const NoteDetail = lazy(() => import("../components/consolidated/NoteDetail"));
 const CharacterManagement = lazy(() =>
   import("../features/CharacterManagement")
@@ -18,7 +24,7 @@ const SceneManagement = lazy(() => import("../features/SceneManagement"));
 const SceneEditPage = lazy(() =>
   import("../components/consolidated/SceneEditPage")
 );
-const NotFound = lazy(() => import("../components/NotFound"));
+const NotFound = lazy(() => import("../pages/NotFound"));
 const SceneEditRedirect = lazy(() =>
   import("../components/routing/SceneEditRedirect")
 );
