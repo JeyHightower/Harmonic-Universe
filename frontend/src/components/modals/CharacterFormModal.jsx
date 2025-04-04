@@ -217,6 +217,88 @@ const CharacterFormModal = ({
                     }));
                   }
                 }
+
+                // If we still have no scenes data, try a direct API call as a last resort
+                if (
+                  (!reduxResult || !reduxResult.length) &&
+                  scenesData.length === 0
+                ) {
+                  console.log("Trying direct API call as final fallback");
+
+                  // Try multiple potential endpoints
+                  const fallbackEndpoints = [
+                    `/api/universes/${universeId}/scenes`,
+                    `/api/scenes?universe_id=${universeId}`,
+                    `/api/scenes/universe/${universeId}`,
+                  ];
+
+                  // Try each endpoint in sequence
+                  const tryNextEndpoint = (index) => {
+                    if (index >= fallbackEndpoints.length) {
+                      console.log("All fallback endpoints failed");
+                      setScenes([]);
+                      setLoadingScenes(false);
+                      return;
+                    }
+
+                    const endpoint = fallbackEndpoints[index];
+                    console.log(`Trying fallback endpoint: ${endpoint}`);
+
+                    fetch(endpoint)
+                      .then((res) => res.json())
+                      .then((data) => {
+                        console.log(
+                          `Fallback endpoint ${endpoint} response:`,
+                          data
+                        );
+
+                        // Try to extract scenes from the response
+                        let extractedScenes = [];
+                        if (Array.isArray(data)) {
+                          extractedScenes = data;
+                        } else if (data.scenes && Array.isArray(data.scenes)) {
+                          extractedScenes = data.scenes;
+                        } else if (data.data && Array.isArray(data.data)) {
+                          extractedScenes = data.data;
+                        }
+
+                        if (extractedScenes.length > 0) {
+                          console.log(
+                            `Found ${extractedScenes.length} scenes using fallback`
+                          );
+                          setScenes(extractedScenes);
+                          setLoadingScenes(false);
+                        } else {
+                          // Try next endpoint
+                          tryNextEndpoint(index + 1);
+                        }
+                      })
+                      .catch((err) => {
+                        console.error(
+                          `Fallback endpoint ${endpoint} failed:`,
+                          err
+                        );
+                        tryNextEndpoint(index + 1);
+                      });
+                  };
+
+                  // Start trying endpoints
+                  tryNextEndpoint(0);
+                } else {
+                  // Update scene_id if we found valid scenes
+                  if (scenesData.length > 0) {
+                    const validSceneId = getValidSceneId(
+                      formData.scene_id,
+                      scenesData
+                    );
+                    if (validSceneId && validSceneId !== formData.scene_id) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        scene_id: validSceneId,
+                      }));
+                    }
+                  }
+                }
               })
               .catch((reduxError) => {
                 console.error("Error fetching scenes from Redux:", reduxError);

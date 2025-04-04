@@ -123,7 +123,7 @@ const pendingRequests = new Map();
 
 // Check for environment-specific API URL
 const API_BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'https://harmonic-universe-v682.onrender.com'
+  ? '' // Empty string to use relative URLs in production (same origin)
   : 'http://localhost:5001'; // Updated port from 5000 to 5001
 
 // Create axios instance with the API base URL
