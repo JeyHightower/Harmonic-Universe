@@ -46,134 +46,137 @@ const normalizeScenes = (scenes) => {
  */
 export const fetchScenes = createAsyncThunk(
   "scenes/fetchScenes",
-  async (universeId, { dispatch, rejectWithValue }) => {
+  async (universeId, { rejectWithValue }) => {
     try {
-      console.log("Fetching scenes for universe", universeId);
+      // Add request timestamp for easier debugging
+      const timestamp = new Date().toISOString();
+      console.log(`[${timestamp}] REDUX-THUNK: fetchScenes for universe ${universeId}`);
 
-      // Try using getScenes first
+      // Try the primary API endpoint first
       let response;
+      let scenesData = [];
+      let endpointUsed = '';
+
       try {
-        console.log("Attempting to fetch scenes using getScenes");
+        console.log(`[${timestamp}] REDUX-THUNK: Trying primary endpoint getScenes`);
         response = await apiClient.getScenes(universeId);
-        console.log("Got scenes response from getScenes:", response);
-      } catch (initialError) {
-        console.error("Initial getScenes request failed, trying getUniverseScenes as fallback:", initialError);
-        // If getScenes fails, try getUniverseScenes as fallback
-        response = await apiClient.getUniverseScenes(universeId);
-        console.log("Got scenes response from fallback getUniverseScenes:", response);
-      }
+        console.log(`[${timestamp}] REDUX-THUNK: getScenes response:`, response);
 
-      // Check for error status and data structure
-      if (response.status >= 400 || !response.data) {
-        console.error("Error in scenes response:", response);
-        if (dispatch) {
-          const errorMessage = response.data?.message || `Error fetching scenes for universe ${universeId}`;
-          dispatch({ type: 'scenes/setError', payload: errorMessage });
+        if (response?.data?.scenes) {
+          scenesData = response.data.scenes;
+          endpointUsed = 'getScenes';
         }
-        return rejectWithValue({
-          message: response.data?.message || `Error fetching scenes for universe ${universeId}`,
-          status: response.status,
-          data: response.data || {},
-        });
-      }
+      } catch (initialError) {
+        console.error(`[${timestamp}] REDUX-THUNK: Initial getScenes request failed:`, initialError);
 
-      // Debug log the actual response structure to diagnose issues
-      console.log("DEBUG - Full response structure:", JSON.stringify(response.data));
+        // If getScenes fails, try getUniverseScenes as fallback
+        try {
+          console.log(`[${timestamp}] REDUX-THUNK: Trying fallback getUniverseScenes`);
+          response = await apiClient.getUniverseScenes(universeId);
+          console.log(`[${timestamp}] REDUX-THUNK: getUniverseScenes response:`, response);
 
-      // Handle different response formats - we need to be flexible about where the scenes are in the response
-      let scenes = [];
+          if (response?.data?.scenes) {
+            scenesData = response.data.scenes;
+            endpointUsed = 'getUniverseScenes';
+          }
+        } catch (fallbackError) {
+          console.error(`[${timestamp}] REDUX-THUNK: Fallback request also failed:`, fallbackError);
 
-      console.log("DEBUG SCENES: Beginning to extract scenes from response format");
-      // Log the entire response structure for debugging
-      console.log("DEBUG SCENES: Response structure keys:", Object.keys(response.data));
+          // If both fail, try direct fetch as last resort
+          try {
+            console.log(`[${timestamp}] REDUX-THUNK: Trying direct fetch as last resort`);
 
-      // Try different possible locations where scenes might be in the API response
-      if (Array.isArray(response.data.scenes)) {
-        // Format: { scenes: [...] }
-        console.log("DEBUG SCENES: Found scenes in response.data.scenes (array)");
-        scenes = response.data.scenes;
-      } else if (Array.isArray(response.data)) {
-        // Format: [scene1, scene2, ...]
-        console.log("DEBUG SCENES: Found scenes directly in response.data (array)");
-        scenes = response.data;
-      } else if (response.data && typeof response.data === 'object' && response.data.data && Array.isArray(response.data.data.scenes)) {
-        // Format: { data: { scenes: [...] } }
-        console.log("DEBUG SCENES: Found scenes in response.data.data.scenes (array)");
-        scenes = response.data.data.scenes;
-      } else if (response.data && typeof response.data === 'object' && response.data.data && Array.isArray(response.data.data)) {
-        // Format: { data: [...] }
-        console.log("DEBUG SCENES: Found scenes in response.data.data (array)");
-        scenes = response.data.data;
-      } else {
-        // Try to handle other potential formats
-        console.warn("DEBUG SCENES: Could not identify scenes array in response, searching for any array properties");
-        console.log("DEBUG SCENES: Response data type:", typeof response.data);
+            // Create headers with authentication token
+            const headers = {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            };
 
-        if (response.data && typeof response.data === 'object') {
-          console.log("DEBUG SCENES: Response data keys:", Object.keys(response.data));
+            const token = localStorage.getItem('token');
+            if (token) {
+              headers['Authorization'] = `Bearer ${token}`;
+            }
 
-          // Look for scenes property with any type
-          if (response.data.scenes) {
-            console.log("DEBUG SCENES: Found 'scenes' property but not an array:", typeof response.data.scenes);
+            // Try each direct fetch endpoint
+            const endpoints = [
+              `/api/scenes?universe_id=${universeId}`,
+              `/api/scenes/universe/${universeId}`,
+              `/api/universes/${universeId}/scenes`
+            ];
 
-            // Try to convert to array if it's something else
-            if (typeof response.data.scenes === 'object' && !Array.isArray(response.data.scenes)) {
-              console.log("DEBUG SCENES: Attempting to convert scenes object to array");
+            let fetchSuccess = false;
+
+            for (const endpoint of endpoints) {
+              if (fetchSuccess) break;
+
               try {
-                scenes = Object.values(response.data.scenes);
-                console.log("DEBUG SCENES: Converted to array with length:", scenes.length);
-              } catch (err) {
-                console.error("DEBUG SCENES: Error converting scenes to array:", err);
+                console.log(`[${timestamp}] REDUX-THUNK: Trying direct fetch to ${endpoint}`);
+                const fetchResponse = await fetch(endpoint, {
+                  method: 'GET',
+                  headers,
+                  credentials: 'include'
+                });
+
+                if (!fetchResponse.ok) {
+                  console.log(`[${timestamp}] REDUX-THUNK: Fetch returned status ${fetchResponse.status}`);
+                  continue;
+                }
+
+                const data = await fetchResponse.json();
+                console.log(`[${timestamp}] REDUX-THUNK: Direct fetch response:`, data);
+
+                // Extract scenes from the response
+                if (Array.isArray(data)) {
+                  scenesData = data;
+                  fetchSuccess = true;
+                  endpointUsed = `direct-fetch-array:${endpoint}`;
+                } else if (data.scenes && Array.isArray(data.scenes)) {
+                  scenesData = data.scenes;
+                  fetchSuccess = true;
+                  endpointUsed = `direct-fetch-scenes:${endpoint}`;
+                } else if (data.data && Array.isArray(data.data)) {
+                  scenesData = data.data;
+                  fetchSuccess = true;
+                  endpointUsed = `direct-fetch-data:${endpoint}`;
+                }
+              } catch (fetchError) {
+                console.error(`[${timestamp}] REDUX-THUNK: Fetch error for ${endpoint}:`, fetchError);
               }
             }
-          }
 
-          // Look for any array property that might contain scenes
-          const arrayProps = Object.entries(response.data)
-            .filter(([key, value]) => Array.isArray(value))
-            .map(([key, value]) => ({ key, length: value.length }));
-
-          if (arrayProps.length > 0) {
-            // Use the largest array, which is likely to be the scenes
-            const largestArrayProp = arrayProps.sort((a, b) => b.length - a.length)[0];
-            console.log(`DEBUG SCENES: Using ${largestArrayProp.key} as scenes array with ${largestArrayProp.length} items`);
-            scenes = response.data[largestArrayProp.key];
-          } else {
-            console.error("DEBUG SCENES: No arrays found in response data, using empty array for scenes");
+            if (!fetchSuccess) {
+              console.error(`[${timestamp}] REDUX-THUNK: All fetch attempts failed`);
+              // Return empty array instead of throwing to prevent UI errors
+              return {
+                scenes: [],
+                message: 'Failed to get scenes from any endpoint',
+                universe_id: universeId
+              };
+            }
+          } catch (directFetchError) {
+            console.error(`[${timestamp}] REDUX-THUNK: All methods failed:`, directFetchError);
+            // Return empty array instead of throwing to prevent UI errors
+            return {
+              scenes: [],
+              message: 'Failed to get scenes',
+              universe_id: universeId
+            };
           }
-        } else {
-          console.error("DEBUG SCENES: Response data is not an object:", typeof response.data);
         }
       }
 
-      // Check if we have any scenes at this point
-      console.log("DEBUG SCENES: Extracted scenes count:", scenes ? scenes.length : 0);
+      console.log(`[${timestamp}] REDUX-THUNK: Successfully fetched ${scenesData.length} scenes using ${endpointUsed}`);
 
-      // Normalize the scenes array
-      const normalizedScenes = normalizeScenes(scenes);
-      console.log(`DEBUG SCENES: Normalized ${normalizedScenes.length} scenes`);
-      if (normalizedScenes.length > 0) {
-        console.log("DEBUG SCENES: First normalized scene:", normalizedScenes[0]);
-      }
-
-      // Update direct store if needed
-      if (dispatch) {
-        console.log("Dispatching setScenes with:", normalizedScenes);
-        dispatch({ type: 'scenes/fetchScenes/fulfilled', payload: { scenes: normalizedScenes } });
-      }
-
-      // Return serializable data
+      // Return the scenes array wrapped in an object
       return {
-        message: response.data?.message || "Scenes fetched successfully",
-        scenes: normalizedScenes,
-        status: response.status
+        scenes: scenesData,
+        message: 'Scenes retrieved successfully',
+        universe_id: universeId,
+        _debug: { timestamp, endpoint: endpointUsed }
       };
     } catch (error) {
-      if (dispatch) {
-        dispatch({ type: 'scenes/setError', payload: error.response?.data?.message || error.message });
-      }
-      console.error(`Error fetching scenes for universe ${universeId}:`, error);
-      return rejectWithValue(handleError(error));
+      console.error("Error in fetchScenes:", error);
+      return rejectWithValue(error.message);
     }
   }
 );
