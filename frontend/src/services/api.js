@@ -1,10 +1,17 @@
 import axios from "axios";
 import { AUTH_CONFIG, API_CONFIG } from "../utils/config";
 import { log } from "../utils/logger";
-// Import each endpoint directly
-import { endpoints, universesEndpoints } from "./endpoints";
+// Import the endpoints properly
+import { endpoints } from "./endpoints";
 import { cache } from "../utils/cache";
 import { CACHE_CONFIG } from "../utils/cacheConfig";
+
+// Debug log of imported endpoints
+console.log("Imported endpoints:", {
+  hasEndpoints: !!endpoints,
+  hasAuthEndpoints: !!(endpoints && endpoints.auth),
+  validateEndpoint: endpoints?.auth?.validate
+});
 
 // Define fallback image URL as a constant to reduce redundant network requests
 const DEFAULT_SCENE_IMAGE = '/src/assets/images/default-scene.svg'; // Adjusted to use SVG
@@ -40,16 +47,16 @@ const FALLBACK_ENDPOINTS = {
 
 // Debug logs for endpoints
 console.log("Endpoints loaded:", {
-  universesEndpoints: universesEndpoints,
+  universesEndpoints: endpoints?.universes || FALLBACK_ENDPOINTS.universes,
   endpoints,
   auth: endpoints?.auth,
-  universes: endpoints?.universes || universesEndpoints,
-  hasCreateUniverse: !!(endpoints?.universes?.create || universesEndpoints?.create),
+  universes: endpoints?.universes || FALLBACK_ENDPOINTS.universes,
+  hasCreateUniverse: !!(endpoints?.universes?.create || FALLBACK_ENDPOINTS.universes.create),
   fallbacks: FALLBACK_ENDPOINTS
 });
 
 // Use a direct universes object that combines all sources
-const universes = endpoints?.universes || universesEndpoints || FALLBACK_ENDPOINTS.universes;
+const universes = endpoints?.universes || FALLBACK_ENDPOINTS.universes;
 
 // Helper function to safely get endpoints with fallbacks
 const getEndpoint = (group, name, fallback) => {
@@ -58,6 +65,17 @@ const getEndpoint = (group, name, fallback) => {
     if (group === 'universes') {
       if (universes && universes[name]) {
         return universes[name];
+      }
+      return fallback;
+    }
+
+    // Direct handling for auth group to fix validation warning
+    if (group === 'auth') {
+      if (endpoints?.auth && endpoints.auth[name]) {
+        return endpoints.auth[name];
+      }
+      if (FALLBACK_ENDPOINTS.auth && FALLBACK_ENDPOINTS.auth[name]) {
+        return FALLBACK_ENDPOINTS.auth[name];
       }
       return fallback;
     }
@@ -264,9 +282,10 @@ const apiClient = {
         throw new Error("No token available");
       }
 
-      // Try the auth validate endpoint - this now exists so we don't need fallbacks
-      console.log("Trying auth validate endpoint:", getEndpoint('auth', 'validate', '/api/auth/validate'));
-      const response = await axiosInstance.get(getEndpoint('auth', 'validate', '/api/auth/validate'));
+      // Use the auth validate endpoint with fixed getEndpoint function
+      const validateEndpoint = getEndpoint('auth', 'validate', '/api/auth/validate');
+      console.log("Using auth validate endpoint:", validateEndpoint);
+      const response = await axiosInstance.get(validateEndpoint);
       console.log("Validate endpoint response:", response.data);
 
       return {
