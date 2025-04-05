@@ -29,8 +29,15 @@ const NotesPage = lazy(() => import("../pages/NotesPage"));
 // Create a special route handler for characters to validate the universeId
 const CharactersRouteHandler = () => {
   const { universeId } = useParams();
+  console.log(`CharactersRouteHandler: Received universeId=${universeId}`);
+
+  // Stricter validation to check for valid numeric ID
   const isValidId =
-    universeId && universeId !== "undefined" && universeId !== "null";
+    universeId &&
+    universeId !== "undefined" &&
+    universeId !== "null" &&
+    !isNaN(parseInt(universeId, 10)) &&
+    parseInt(universeId, 10) > 0;
 
   if (!isValidId) {
     console.log(
@@ -39,8 +46,30 @@ const CharactersRouteHandler = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
+  // Explicitly parse the ID to ensure it's numeric
+  const parsedId = parseInt(universeId, 10);
+  console.log(
+    `CharactersRouteHandler: Rendering CharactersPage with universeId=${parsedId}`
+  );
+
+  // Only render if we have a valid ID
   return (
-    <Suspense fallback={<div>Loading characters...</div>}>
+    <Suspense
+      fallback={
+        <div
+          className="loading-container"
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "50vh",
+          }}
+        >
+          <div className="loading-spinner"></div>
+          <p>Loading characters...</p>
+        </div>
+      }
+    >
       <CharactersPage />
     </Suspense>
   );
@@ -227,5 +256,30 @@ const routes = [
     element: <Navigate to={ROUTES.HOME} replace />,
   },
 ];
+
+// Log all route paths for debugging
+console.log(
+  "Defined routes in routes/index.jsx:",
+  routes.flatMap((route) =>
+    route.children
+      ? [
+          `Parent: ${route.path}`,
+          ...route.children.map((child) => `  Child: ${child.path || "index"}`),
+        ]
+      : [route.path]
+  )
+);
+
+// Log specific character routes for debugging
+const characterRoutes = routes[0].children.filter(
+  (route) =>
+    route.path &&
+    (route.path.includes("characters") || route.path.includes("character"))
+);
+
+console.log(
+  "Character routes:",
+  characterRoutes.map((r) => r.path)
+);
 
 export default routes;

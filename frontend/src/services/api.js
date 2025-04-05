@@ -60,6 +60,22 @@ const universes = endpoints?.universes || FALLBACK_ENDPOINTS.universes;
 
 // Helper function to safely get endpoints with fallbacks
 const getEndpoint = (group, name, fallback, ...restArgs) => {
+  // Safety check for invalid parameters
+  if (!group || !name) {
+    console.warn(`Invalid endpoint parameters: group=${group}, name=${name}`);
+    return fallback;
+  }
+
+  // Check for undefined or null in any parameters
+  const hasInvalidParams = [group, name, ...restArgs].some(arg =>
+    arg === undefined || arg === null || arg === 'undefined' || arg === 'null'
+  );
+
+  if (hasInvalidParams) {
+    console.warn(`Endpoint has invalid parameters: group=${group}, name=${name}, args=${restArgs.join(', ')}`);
+    return fallback;
+  }
+
   try {
     // Check environment to see if we need to handle duplicate /api prefixes
     const isProduction = process.env.NODE_ENV === 'production' ||
@@ -108,17 +124,52 @@ const getEndpoint = (group, name, fallback, ...restArgs) => {
       endpoint = endpoints[group][name];
     }
 
-    // Handle endpoint as function
+    // Handle endpoint as function with safety checks
     if (typeof endpoint === 'function') {
-      // Use the rest parameters instead of arguments object
-      endpoint = endpoint.apply(null, restArgs);
+      // Check for invalid arguments again before applying the function
+      if (restArgs.some(arg => arg === undefined || arg === null || arg === 'undefined' || arg === 'null')) {
+        console.warn(`Not calling endpoint function due to invalid arguments: ${restArgs.join(', ')}`);
+        return fallback;
+      }
+
+      try {
+        // Apply the function with the rest parameters
+        endpoint = endpoint.apply(null, restArgs);
+
+        // Validate the returned endpoint
+        if (typeof endpoint !== 'string' || endpoint.includes('undefined') || endpoint.includes('null')) {
+          console.warn(`Endpoint function returned invalid URL: ${endpoint}, using fallback`);
+          return fallback;
+        }
+      } catch (funcError) {
+        console.error(`Error calling endpoint function for ${group}.${name}:`, funcError);
+        return fallback;
+      }
     }
 
-    // In production, if the endpoint starts with /api and we're using a baseURL that also
-    // has /api, remove the /api prefix from the endpoint to prevent duplication
-    if (isProduction && typeof endpoint === 'string' && endpoint.startsWith('/api/')) {
-      console.log(`Fixing duplicate /api prefix in endpoint: ${endpoint}`);
-      return endpoint.substring(4); // Remove the first /api
+    // Final validation on endpoint string
+    if (typeof endpoint === 'string') {
+      // Remove undefined or null segments
+      if (endpoint.includes('/undefined') || endpoint.includes('/null')) {
+        console.warn(`Removing invalid segments from endpoint: ${endpoint}`);
+        endpoint = endpoint.replace(/\/undefined\b/g, '').replace(/\/null\b/g, '');
+
+        // Clean up any double slashes that may have been created
+        endpoint = endpoint.replace(/\/\//g, '/');
+
+        // If we end up with an invalid endpoint after cleaning, use fallback
+        if (!endpoint || endpoint === '/' || endpoint.endsWith('//')) {
+          console.warn(`Cleaned endpoint is invalid: ${endpoint}, using fallback`);
+          return fallback;
+        }
+      }
+
+      // In production, if the endpoint starts with /api and we're using a baseURL that also
+      // has /api, remove the /api prefix from the endpoint to prevent duplication
+      if (isProduction && endpoint.startsWith('/api/')) {
+        console.log(`Fixing duplicate /api prefix in endpoint: ${endpoint}`);
+        return endpoint.substring(4); // Remove the first /api
+      }
     }
 
     return endpoint;
@@ -217,6 +268,13 @@ const getApiBaseUrl = () => {
 
 // Helper function to ensure URL is properly formatted without duplicate "api"
 const formatUrl = (url) => {
+  // Check for 'undefined' in the URL and return a safe fallback
+  if (url.includes('/undefined') || url.includes('undefined/') || url.includes('/null') || url.includes('null/')) {
+    console.error(`API error: URL contains 'undefined' or 'null' value: ${url}`);
+    // Don't return a URL - this will be handled by _request
+    return null;
+  }
+
   // If the URL is already a full URL, return it as is
   if (url.startsWith('http')) {
     return url;
@@ -238,8 +296,37 @@ const formatUrl = (url) => {
 // Helper function for making API requests
 const _request = async (method, url, data = null, options = {}) => {
   try {
+    // Extra check for undefined values in URL
+    if (url === null || url.includes('undefined') || url.includes('null')) {
+      console.error(`API error: Prevented request to URL with invalid parameters: ${url}`);
+      return Promise.resolve({
+        data: {
+          message: "Request prevented due to invalid parameters",
+          error: "URL contains undefined or null values",
+          [options.entityType || 'data']: options.defaultData || [],
+          [options.entitySingular || 'item']: options.defaultItem || {}
+        }
+      });
+    }
+
     // Format the URL to avoid duplicate 'api' segments
     const formattedUrl = formatUrl(url);
+
+    // If formatUrl returned null, the URL is invalid
+    if (formattedUrl === null) {
+      const entityType = options.entityType || 'data';
+      const entitySingular = options.entitySingular || 'item';
+
+      console.error(`API error: Prevented request to URL after formatting: ${url}`);
+      return Promise.resolve({
+        data: {
+          message: "Request prevented due to invalid parameters",
+          error: "URL contains undefined or null values",
+          [entityType]: options.defaultData || [],
+          [entitySingular]: options.defaultItem || {}
+        }
+      });
+    }
 
     // Get the current token
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
@@ -1195,11 +1282,12 @@ const apiClient = {
       };
     }
   },
-  getUniverse: (id, params = {}) => {
-    // More robust validation for id
-    if (id === undefined || id === null || id === 'undefined' || id === 'null' || id === '') {
-      console.error(`getUniverse: Invalid universe ID: '${id}'`);
-      // Return an empty response to prevent app breaking
+  getUniverse: (universeId, params = { includeScenes: false }) => {
+    console.log(`getUniverse called with ID: ${universeId}, params:`, params);
+
+    // Validate universeId to ensure it's a valid numeric ID before making any API call
+    if (universeId === undefined || universeId === null || universeId === 'undefined' || universeId === 'null' || universeId === '') {
+      console.error(`getUniverse: Invalid universe ID: '${universeId}'`);
       return Promise.resolve({
         data: {
           universe: {},
@@ -1209,17 +1297,28 @@ const apiClient = {
       });
     }
 
-    // Ensure id is a number if it's a string that can be parsed
-    const universeId = typeof id === 'string' && !isNaN(parseInt(id, 10)) ? parseInt(id, 10) : id;
+    // Ensure universeId is a number if it's a string that can be parsed
+    const parsedUniverseId = typeof universeId === 'string' && !isNaN(parseInt(universeId, 10))
+      ? parseInt(universeId, 10)
+      : universeId;
 
-    // Check if we're in production and using a demo user
-    const isDemo = isProduction && localStorage.getItem(AUTH_CONFIG.TOKEN_KEY)?.startsWith('demo-');
+    // Always send a numeric ID to the API
+    if (typeof parsedUniverseId !== 'number' || isNaN(parsedUniverseId) || parsedUniverseId <= 0) {
+      console.error(`getUniverse: Invalid parsed universe ID: ${parsedUniverseId}`);
+      return Promise.resolve({
+        data: {
+          universe: {},
+          message: "Invalid universe ID format",
+          error: "Universe ID must be a positive number"
+        }
+      });
+    }
 
-    // In production for demo universe IDs, return mock data
-    if (isProduction && (isDemo || universeId === 1001 || universeId === '1001')) {
-      console.log(`Providing mock universe data for universe ${universeId} in production`);
+    console.log(`getUniverse: Using parsed ID: ${parsedUniverseId}`);
 
-      // Get any user info we might have
+    // Use mock universe data for demo purposes if needed
+    if (shouldUseMockData()) {
+      // Get user ID from local storage if available
       const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
       let userId = 'demo-user';
 
@@ -1234,7 +1333,7 @@ const apiClient = {
 
       // Create mock universe
       const mockUniverse = {
-        id: parseInt(universeId) || 1001,
+        id: parsedUniverseId,
         name: "Demo Universe",
         description: "A sample universe for exploring the application",
         is_public: true,
@@ -1280,98 +1379,171 @@ const apiClient = {
       });
     }
 
-    const queryParams = new URLSearchParams();
-    if (params.includeScenes) {
-      queryParams.append("include_scenes", "true");
-    }
-
     // Get endpoint and ensure it's called if it's a function
-    const endpoint = getEndpoint('universes', 'get', `/universes/${universeId}`);
-    const url = typeof endpoint === 'function' ? endpoint(universeId) : endpoint;
+    const endpoint = getEndpoint('universes', 'get', `/universes/${parsedUniverseId}`);
+    const url = typeof endpoint === 'function' ? endpoint(parsedUniverseId) : endpoint;
     const formattedUrl = formatUrl(url);
 
-    console.log(`getUniverse: Fetching universe ${universeId} from ${formattedUrl}`);
+    // If the URL is invalid, return an empty response instead of trying to make the request
+    if (formattedUrl === null) {
+      console.warn(`getUniverse: Invalid URL created for universe ID: ${parsedUniverseId}`);
+      return Promise.resolve({
+        data: {
+          universe: {},
+          message: "Invalid URL for universe",
+          error: "URL contains undefined or null values"
+        }
+      });
+    }
 
-    // Use _request helper to make the API call
-    return _request('get', `${formattedUrl}?${queryParams.toString()}`)
-      .catch(error => {
-        console.error(`getUniverse: Error fetching universe ${universeId}:`, error);
+    // Only add query parameters if URL is valid
+    let finalUrl = formattedUrl;
+    if (params.includeScenes) {
+      finalUrl = `${formattedUrl}?include_scenes=true`;
+    }
 
-        // For demo users in production with 401 errors, return mock data
-        if (isProduction && error.response?.status === 401 &&
-          (localStorage.getItem(AUTH_CONFIG.TOKEN_KEY)?.startsWith('demo-') || universeId === 1001 || universeId === '1001')) {
-          console.log(`Using mock data for demo user fetching universe ${universeId} due to 401 error`);
+    console.log(`getUniverse: Fetching universe ${parsedUniverseId} from ${finalUrl}`);
 
-          // Get user ID from local storage if available
-          const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-          let userId = 'demo-user';
-
-          try {
-            if (userStr) {
-              const userData = JSON.parse(userStr);
-              userId = userData.id || userId;
-            }
-          } catch (e) {
-            console.error("Error parsing user data for mock universe:", e);
-          }
-
-          // Create mock universe
-          const mockUniverse = {
-            id: parseInt(universeId) || 1001,
-            name: "Demo Universe",
-            description: "A sample universe for exploring the application",
-            is_public: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            user_id: userId
-          };
-
-          // Add scenes if requested
-          if (params.includeScenes) {
-            mockUniverse.scenes = [
-              {
-                id: 2001,
-                name: "Demo Scene 1",
-                description: "Introduction to the universe",
-                universe_id: mockUniverse.id,
-                user_id: userId,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                order: 1,
-                status: "draft"
-              },
-              {
-                id: 2002,
-                name: "Demo Scene 2",
-                description: "Continuation of the story",
-                universe_id: mockUniverse.id,
-                user_id: userId,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                order: 2,
-                status: "draft"
+    // Use _request helper with proper entity types and defaults and wrap in a try/catch
+    try {
+      return _request('get', finalUrl, null, {
+        entityType: 'universe',
+        entitySingular: 'universe',
+        defaultItem: {}
+      })
+        .then(response => {
+          // Validate response structure
+          if (!response || !response.data) {
+            console.error('getUniverse: Invalid response structure', response);
+            return {
+              data: {
+                universe: {},
+                message: "Invalid response from server",
+                error: "Response data is missing or invalid"
               }
-            ];
+            };
           }
 
-          // Return mock response
+          // Handle case where the response is directly the data object
+          if (response.universe && !response.data.universe) {
+            console.log('getUniverse: Response has universe at top level, restructuring');
+            return {
+              data: {
+                universe: response.universe,
+                message: response.message || "Universe retrieved successfully"
+              }
+            };
+          }
+
+          // Ensure universe property exists
+          if (!response.data.universe) {
+            console.warn('getUniverse: Response missing universe property, adding empty object');
+
+            // Check if the response data might be the universe object itself
+            if (response.data.id || response.data.name) {
+              console.log('getUniverse: Response data appears to be the universe object itself, restructuring');
+              return {
+                data: {
+                  universe: response.data,
+                  message: "Universe retrieved successfully"
+                }
+              };
+            }
+
+            response.data.universe = {};
+          }
+
+          return response;
+        })
+        .catch(error => {
+          console.error(`getUniverse: Error fetching universe ${parsedUniverseId}:`, error);
+
+          // For demo users in production with 401 errors, return mock data
+          if (isProduction && error.response?.status === 401 &&
+            (localStorage.getItem(AUTH_CONFIG.TOKEN_KEY)?.startsWith('demo-') || parsedUniverseId === 1001)) {
+            console.log(`Using mock data for demo user fetching universe ${parsedUniverseId} due to 401 error`);
+
+            // Get user ID from local storage if available
+            const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+            let userId = 'demo-user';
+
+            try {
+              if (userStr) {
+                const userData = JSON.parse(userStr);
+                userId = userData.id || userId;
+              }
+            } catch (e) {
+              console.error("Error parsing user data for mock universe:", e);
+            }
+
+            // Create mock universe
+            const mockUniverse = {
+              id: parsedUniverseId,
+              name: "Demo Universe",
+              description: "A sample universe for exploring the application",
+              is_public: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              user_id: userId
+            };
+
+            // Add scenes if requested
+            if (params.includeScenes) {
+              mockUniverse.scenes = [
+                {
+                  id: 2001,
+                  name: "Demo Scene 1",
+                  description: "Introduction to the universe",
+                  universe_id: mockUniverse.id,
+                  user_id: userId,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                  order: 1,
+                  status: "draft"
+                },
+                {
+                  id: 2002,
+                  name: "Demo Scene 2",
+                  description: "Continuation of the story",
+                  universe_id: mockUniverse.id,
+                  user_id: userId,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                  order: 2,
+                  status: "draft"
+                }
+              ];
+            }
+
+            // Return mock response
+            return {
+              data: {
+                universe: mockUniverse,
+                message: "Universe retrieved successfully (mock after 401)"
+              }
+            };
+          }
+
+          // Return friendly error response rather than throwing
           return {
             data: {
-              universe: mockUniverse,
-              message: "Universe retrieved successfully (mock after 401)"
+              universe: {},
+              message: "Error fetching universe",
+              error: error.message || "Unknown error"
             }
           };
+        });
+    } catch (error) {
+      console.error(`getUniverse: Unexpected error: ${error.message}`);
+      // Always return a structured response with an empty universe object
+      return Promise.resolve({
+        data: {
+          universe: {},
+          message: "Unexpected error fetching universe",
+          error: error.message || "Unknown error"
         }
-
-        // Return friendly error response rather than throwing
-        return {
-          data: {
-            universe: {},
-            message: "Error fetching universe",
-            error: error.message || "Unknown error"
-          }
-        };
       });
+    }
   },
   updateUniverse: async (id, data) => {
     console.log(`API - updateUniverse - Updating universe ${id} with data:`, data);
@@ -2062,18 +2234,11 @@ const apiClient = {
     return axiosInstance.get(url);
   },
   getCharactersByUniverse: (universeId) => {
-    // Check if we're in production and using a demo user
-    const isDemo = isProduction && localStorage.getItem(AUTH_CONFIG.TOKEN_KEY)?.startsWith('demo-');
+    console.log(`getCharactersByUniverse called with ID: ${universeId}`);
 
-    // In production, check if we're in a rate limit cooldown or if throttling has been aggressive
-    const inRateLimitCooldown = isInRateLimitCooldown();
-    const lastThrottleTimestamp = parseInt(sessionStorage.getItem('last_character_throttle') || '0');
-    const wasRecentlyThrottled = (Date.now() - lastThrottleTimestamp) < 30000; // 30 second grace period
-
-    // More robust validation for universeId
+    // Validate universeId to ensure it's a valid numeric ID before making any API call
     if (universeId === undefined || universeId === null || universeId === 'undefined' || universeId === 'null' || universeId === '') {
       console.error(`getCharactersByUniverse: Invalid universe ID: '${universeId}'`);
-      // Return an empty response to prevent app breaking
       return Promise.resolve({
         data: {
           characters: [],
@@ -2088,11 +2253,25 @@ const apiClient = {
       ? parseInt(universeId, 10)
       : universeId;
 
-    // In production for demo users, or during rate limit issues, return mock characters
-    if (isProduction && (isDemo || inRateLimitCooldown || wasRecentlyThrottled)) {
-      console.log(`Providing mock characters data for universe ${parsedUniverseId} in production`);
+    // Always send a numeric ID to the API
+    if (typeof parsedUniverseId !== 'number' || isNaN(parsedUniverseId) || parsedUniverseId <= 0) {
+      console.error(`getCharactersByUniverse: Invalid parsed universe ID: ${parsedUniverseId}`);
+      return Promise.resolve({
+        data: {
+          characters: [],
+          message: "Invalid universe ID format",
+          error: "Universe ID must be a positive number"
+        }
+      });
+    }
 
-      // Get any user info we might have
+    console.log(`getCharactersByUniverse: Using parsed ID: ${parsedUniverseId}`);
+
+    // Check if we should use mock data (rate limited, demo user, etc.)
+    if (shouldUseMockData() || sessionStorage.getItem('last_character_throttle')) {
+      console.log(`Using mock data for characters in universe ${parsedUniverseId}`);
+
+      // Get user ID from local storage if available
       const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
       let userId = 'demo-user';
 
@@ -2105,14 +2284,14 @@ const apiClient = {
         console.error("Error parsing user data for mock characters:", e);
       }
 
-      // Return mock characters
+      // Return mock character data
       return Promise.resolve({
         data: {
           characters: [
             {
               id: 1001,
-              name: "Demo Character 1",
-              description: "This is a demo character for exploring the application",
+              name: "Character One",
+              description: "First character in this universe",
               universe_id: parsedUniverseId,
               user_id: userId,
               created_at: new Date().toISOString(),
@@ -2120,15 +2299,15 @@ const apiClient = {
             },
             {
               id: 1002,
-              name: "Demo Character 2",
-              description: "Another demo character for exploring the application",
+              name: "Character Two",
+              description: "Second character in this universe",
               universe_id: parsedUniverseId,
               user_id: userId,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             }
           ],
-          message: "Mock characters retrieved successfully"
+          message: "Characters retrieved successfully (mock)"
         }
       });
     }
@@ -2137,77 +2316,163 @@ const apiClient = {
     const url = typeof endpoint === 'function' ? endpoint(parsedUniverseId) : endpoint;
     const formattedUrl = formatUrl(url);
 
+    // If the URL is invalid, return an empty response instead of trying to make the request
+    if (formattedUrl === null) {
+      console.warn(`getCharactersByUniverse: Invalid URL created for universe ID: ${parsedUniverseId}`);
+      return Promise.resolve({
+        data: {
+          characters: [],
+          message: "Invalid URL for characters",
+          error: "URL contains undefined or null values"
+        }
+      });
+    }
+
     console.log(`getCharactersByUniverse: Fetching characters for universe ${parsedUniverseId} from ${formattedUrl}`);
 
-    // Use the _request helper for making the API call
-    return _request('get', formattedUrl)
-      .catch(error => {
-        console.error(`getCharactersByUniverse: Error fetching characters for universe ${parsedUniverseId}:`, error);
-
-        // Record throttling timestamp to use mock data for a while
-        if (error.message === "Request throttled to prevent rate limits") {
-          sessionStorage.setItem('last_character_throttle', Date.now().toString());
-        }
-
-        // For throttled, rate-limited, or 401 errors in production, return mock data
-        if (isProduction && (
-          error.message === "Request throttled to prevent rate limits" ||
-          error.message === "Request rejected due to rate limit cooldown" ||
-          error.response?.status === 401 ||
-          error.response?.status === 429)) {
-
-          console.log(`Using mock data for characters due to API limit or auth error`);
-
-          // Get user ID from local storage if available
-          const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-          let userId = 'demo-user';
-
-          try {
-            if (userStr) {
-              const userData = JSON.parse(userStr);
-              userId = userData.id || userId;
-            }
-          } catch (e) {
-            console.error("Error parsing user data for mock characters:", e);
+    // Use the _request helper with proper entity types and defaults
+    try {
+      return _request('get', formattedUrl, null, {
+        entityType: 'characters',
+        entitySingular: 'character',
+        defaultData: []
+      })
+        .then(response => {
+          // Validate response structure
+          if (!response || !response.data) {
+            console.error('getCharactersByUniverse: Invalid response structure', response);
+            return {
+              data: {
+                characters: [],
+                message: "Invalid response from server",
+                error: "Response data is missing or invalid"
+              }
+            };
           }
 
-          // Return mock characters
+          // Handle case where the response is directly the data object
+          if (response.characters && !response.data.characters) {
+            console.log('getCharactersByUniverse: Response has characters at top level, restructuring');
+            return {
+              data: {
+                characters: response.characters,
+                message: response.message || "Characters retrieved successfully"
+              }
+            };
+          }
+
+          // Ensure characters property exists
+          if (!response.data.characters) {
+            console.warn('getCharactersByUniverse: Response missing characters property');
+
+            // Check if the response data might be the characters array itself
+            if (Array.isArray(response.data)) {
+              console.log('getCharactersByUniverse: Response data is an array, assuming it contains characters');
+              return {
+                data: {
+                  characters: response.data,
+                  message: "Characters retrieved successfully"
+                }
+              };
+            }
+
+            // Check if the response has a property that could be the characters array
+            for (const key in response.data) {
+              if (Array.isArray(response.data[key])) {
+                console.log(`getCharactersByUniverse: Found array in response.data.${key}, using as characters`);
+                return {
+                  data: {
+                    characters: response.data[key],
+                    message: "Characters retrieved successfully"
+                  }
+                };
+              }
+            }
+
+            // If no characters found, add empty array
+            response.data.characters = [];
+          }
+
+          return response;
+        })
+        .catch(error => {
+          console.error(`getCharactersByUniverse: Error fetching characters for universe ${parsedUniverseId}:`, error);
+
+          // Record throttling timestamp to use mock data for a while
+          if (error.message === "Request throttled to prevent rate limits") {
+            sessionStorage.setItem('last_character_throttle', Date.now().toString());
+          }
+
+          // For throttled, rate-limited, or 401 errors in production, return mock data
+          if (isProduction && (
+            error.message === "Request throttled to prevent rate limits" ||
+            error.message === "Request rejected due to rate limit cooldown" ||
+            error.response?.status === 401 ||
+            error.response?.status === 429)) {
+
+            console.log(`Using mock data for characters due to API limit or auth error`);
+
+            // Get user ID from local storage if available
+            const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+            let userId = 'demo-user';
+
+            try {
+              if (userStr) {
+                const userData = JSON.parse(userStr);
+                userId = userData.id || userId;
+              }
+            } catch (e) {
+              console.error("Error parsing user data for mock characters:", e);
+            }
+
+            // Return mock characters
+            return {
+              data: {
+                characters: [
+                  {
+                    id: 1001,
+                    name: "Demo Character 1",
+                    description: "This is a demo character for exploring the application",
+                    universe_id: parsedUniverseId,
+                    user_id: userId,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                  },
+                  {
+                    id: 1002,
+                    name: "Demo Character 2",
+                    description: "Another demo character for exploring the application",
+                    universe_id: parsedUniverseId,
+                    user_id: userId,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                  }
+                ],
+                message: "Mock characters retrieved successfully (after error)"
+              }
+            };
+          }
+
+          // Return friendly error response rather than throwing
           return {
             data: {
-              characters: [
-                {
-                  id: 1001,
-                  name: "Demo Character 1",
-                  description: "This is a demo character for exploring the application",
-                  universe_id: parsedUniverseId,
-                  user_id: userId,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString()
-                },
-                {
-                  id: 1002,
-                  name: "Demo Character 2",
-                  description: "Another demo character for exploring the application",
-                  universe_id: parsedUniverseId,
-                  user_id: userId,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString()
-                }
-              ],
-              message: "Mock characters retrieved successfully (after error)"
+              characters: [],
+              message: "Error fetching characters",
+              error: error.message || "Unknown error"
             }
           };
+        });
+    } catch (error) {
+      console.error(`getCharactersByUniverse: Unexpected error: ${error.message}`);
+      // Always return a structured response with an empty characters array
+      return Promise.resolve({
+        data: {
+          characters: [],
+          message: "Unexpected error fetching characters",
+          error: error.message || "Unknown error"
         }
-
-        // Return friendly error response rather than throwing
-        return {
-          data: {
-            characters: [],
-            message: "Error fetching characters",
-            error: error.message || "Unknown error"
-          }
-        };
       });
+    }
   },
   getCharacter: (id) => {
     const endpoint = getEndpoint('characters', 'get', `/api/characters/${id}`);
@@ -2400,18 +2665,42 @@ const getMockDemoUserData = () => {
   };
 };
 
-// Helper function to determine if a request should return mock data
+/**
+ * Determines if mock data should be used instead of real API calls
+ * @param {number|null} statusCode - Optional status code from a failed request
+ * @return {boolean} True if mock data should be used
+ */
 const shouldUseMockData = (statusCode = null) => {
-  // Get demo user info
-  const { isDemo } = getMockDemoUserData();
+  // Handle demo users in production
+  const isDemoUser = isProduction &&
+    (localStorage.getItem(AUTH_CONFIG.TOKEN_KEY)?.startsWith('demo-') ||
+      localStorage.getItem(AUTH_CONFIG.USER_KEY)?.includes('demo'));
 
-  // If this is a direct check (not error handling), only check isDemo
-  if (statusCode === null) {
-    return isDemo;
+  // Check if we're in rate limit cooldown
+  const inCooldown = isInRateLimitCooldown();
+
+  // Check for specific error status codes
+  const isErrorStatus = statusCode === 401 || statusCode === 429 || statusCode === 403;
+
+  // Check if we recently hit throttling
+  const lastThrottleTimestamp = parseInt(sessionStorage.getItem('last_throttle') || '0');
+  const wasRecentlyThrottled = (Date.now() - lastThrottleTimestamp) < 60000; // 1 minute grace period
+
+  // Check if network is down
+  const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+
+  const shouldUseMock = isDemoUser || inCooldown || isErrorStatus || wasRecentlyThrottled || isOffline;
+
+  if (shouldUseMock) {
+    console.log(`Using mock data because: ${isDemoUser ? 'demo user' :
+      inCooldown ? 'rate limit cooldown' :
+        isErrorStatus ? `error status ${statusCode}` :
+          wasRecentlyThrottled ? 'recently throttled' :
+            isOffline ? 'offline' : 'unknown reason'
+      }`);
   }
 
-  // For error handling, check both isDemo and status code
-  return isProduction && statusCode === 401 && isDemo;
+  return shouldUseMock;
 };
 
 // Generic function to create mock data for any resource type

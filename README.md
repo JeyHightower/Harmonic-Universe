@@ -73,7 +73,7 @@ cd ..
 Create a `.env` file in the backend directory with the following variables:
 
 ```env
-FLASK_APP=app.py
+FLASK_APP=wsgi.py
 FLASK_ENV=development
 SECRET_KEY=your-secret-key
 JWT_SECRET_KEY=your-jwt-secret-key
@@ -96,7 +96,7 @@ To run both frontend and backend servers in development mode:
 ```bash
 cd backend
 source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
-python app.py
+python run.py
 ```
 
 The backend will run on http://localhost:5001
@@ -163,14 +163,20 @@ harmonic-universe/
 │   └── package.json    # Frontend dependencies
 ├── backend/            # Flask backend
 │   ├── app/            # Application code
-│   │   ├── api/        # API routes
-│   │   ├── models/     # Database models
-│   │   └── utils/      # Utility functions
-│   ├── migrations/     # Database migrations
-│   └── requirements.txt # Backend dependencies
+│   │   ├── api/        # API routes and models
+│   │   │   ├── models/ # Database models
+│   │   │   └── routes/ # API routes
+│   │   ├── __init__.py # Application factory
+│   │   ├── config.py   # Configuration settings
+│   │   └── extensions.py # Flask extensions
+│   ├── fixes/          # Deployment fixes (for Render)
+│   ├── static/         # Static files (consolidated)
+│   ├── run.py          # Development server script
+│   ├── wsgi.py         # Production WSGI entry point
+│   ├── app.py          # Backward compatibility layer
+│   ├── render-build.sh # Build script for Render
+│   └── render-start.sh # Start script for Render
 ├── docs/               # Documentation
-├── render-build.sh     # Render.com build script
-├── render-start.sh     # Render.com start script
 ├── render.yaml         # Render.com blueprint configuration
 └── README.md           # Project documentation
 ```

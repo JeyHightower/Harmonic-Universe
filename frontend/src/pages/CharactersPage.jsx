@@ -38,9 +38,13 @@ const CharactersPageWrapper = () => {
   const { universeId } = useParams();
   const navigate = useNavigate();
 
-  // Check if universeId is valid
+  // Check if universeId is valid - more comprehensive check
   const isValidUniverseId =
-    universeId && universeId !== "undefined" && universeId !== "null";
+    universeId &&
+    universeId !== "undefined" &&
+    universeId !== "null" &&
+    !isNaN(parseInt(universeId, 10)) &&
+    parseInt(universeId, 10) > 0;
 
   // If no valid universeId, show loading and redirect
   if (!isValidUniverseId) {
@@ -48,12 +52,37 @@ const CharactersPageWrapper = () => {
       `Invalid universe ID detected (${universeId}), redirecting to dashboard`
     );
 
-    // Return immediate redirect to dashboard
-    return <Navigate to="/dashboard" replace />;
+    // Use useEffect to handle navigation side effect
+    useEffect(() => {
+      console.log("Redirecting to dashboard due to invalid universeId");
+      navigate("/dashboard", { replace: true });
+    }, [navigate]);
+
+    // Return a loading state instead of immediate redirect
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        flexDirection="column"
+        alignItems="center"
+        my={6}
+      >
+        <CircularProgress />
+        <Typography variant="body2" color="textSecondary" mt={2}>
+          Redirecting to dashboard...
+        </Typography>
+      </Box>
+    );
   }
 
+  // Parse universeId to make sure it's a number
+  const parsedUniverseId = parseInt(universeId, 10);
+  console.log(
+    `CharactersPageWrapper: Rendering for valid universe ID: ${parsedUniverseId}`
+  );
+
   // If universeId is valid, render the main component
-  return <CharactersPageContent universeId={universeId} />;
+  return <CharactersPageContent universeId={parsedUniverseId} />;
 };
 
 // Main component with actual content
@@ -76,126 +105,194 @@ const CharactersPageContent = ({ universeId }) => {
         setError(null);
 
         // Validate universeId before making API requests
-        const parsedUniverseId = universeId ? parseInt(universeId, 10) : null;
-
-        if (!parsedUniverseId) {
-          console.warn("No universe ID available for fetching data");
-          setError("Please select a universe first.");
+        if (!universeId || universeId === undefined || universeId === null) {
+          console.warn(`Missing universeId for API calls: ${universeId}`);
+          setError("Please select a valid universe first.");
           setLoading(false);
+          navigate("/dashboard", { replace: true });
+          return;
+        }
 
-          // Redirect to universes dashboard
-          navigate("/dashboard");
+        // Log the universeId being used
+        console.log(
+          `CharactersPageContent: Fetching data with universeId=${universeId}`
+        );
+
+        // Ensure universeId is a valid number
+        const parsedUniverseId = parseInt(universeId, 10);
+        if (isNaN(parsedUniverseId) || parsedUniverseId <= 0) {
+          console.warn(`Invalid universe ID for fetching data: ${universeId}`);
+          setError("Please select a valid universe first.");
+          setLoading(false);
+          navigate("/dashboard", { replace: true });
           return;
         }
 
         console.log("Fetching data for universe ID:", parsedUniverseId);
 
         // Get universe details
-        const universeResponse = await apiClient.getUniverse(parsedUniverseId, {
-          includeScenes: true,
-        });
-        console.log("Universe response:", universeResponse.data);
-        setUniverse(universeResponse.data.universe);
-
-        // Improved scene fetching and processing
-        let universeScenes = [];
-
-        // First check if scenes are in the universe response
-        if (
-          universeResponse.data.universe?.scenes &&
-          Array.isArray(universeResponse.data.universe.scenes)
-        ) {
-          console.log(
-            "Found scenes in universe response:",
-            universeResponse.data.universe.scenes.length
+        try {
+          const universeResponse = await apiClient.getUniverse(
+            parsedUniverseId,
+            {
+              includeScenes: true,
+            }
           );
-          universeScenes = universeResponse.data.universe.scenes;
-        } else if (
-          universeResponse.data.scenes &&
-          Array.isArray(universeResponse.data.scenes)
-        ) {
-          console.log(
-            "Found scenes at top level of response:",
-            universeResponse.data.scenes.length
-          );
-          universeScenes = universeResponse.data.scenes;
-        }
+          console.log("Universe response:", universeResponse);
 
-        // If no scenes found in universe response, fetch them directly
-        if (universeScenes.length === 0) {
-          try {
+          // Add null checks before accessing data
+          if (!universeResponse || !universeResponse.data) {
+            console.error("Empty response from getUniverse API");
+            throw new Error("Failed to fetch universe data");
+          }
+
+          // Set universe with fallback to empty object if undefined
+          const universeData = universeResponse.data.universe || {};
+          console.log("Extracted universe data:", universeData);
+          setUniverse(universeData);
+
+          // Improved scene fetching and processing
+          let universeScenes = [];
+
+          // First check if scenes are in the universe response
+          if (
+            universeResponse.data.universe?.scenes &&
+            Array.isArray(universeResponse.data.universe.scenes)
+          ) {
             console.log(
-              "No scenes in universe response, fetching directly for universe",
-              parsedUniverseId
+              "Found scenes in universe response:",
+              universeResponse.data.universe.scenes.length
             );
-            const scenesResponse = await apiClient.getUniverseScenes(
-              parsedUniverseId
+            universeScenes = universeResponse.data.universe.scenes;
+          } else if (
+            universeResponse.data.scenes &&
+            Array.isArray(universeResponse.data.scenes)
+          ) {
+            console.log(
+              "Found scenes at top level of response:",
+              universeResponse.data.scenes.length
             );
-            console.log("Direct scenes response:", scenesResponse);
+            universeScenes = universeResponse.data.scenes;
+          }
 
-            // Handle various response formats
-            if (
-              scenesResponse.data?.scenes &&
-              Array.isArray(scenesResponse.data.scenes)
-            ) {
+          // If no scenes found in universe response, fetch them directly
+          if (universeScenes.length === 0) {
+            try {
               console.log(
-                "Found scenes in dedicated scenes array:",
-                scenesResponse.data.scenes.length
+                "No scenes in universe response, fetching directly for universe",
+                parsedUniverseId
               );
-              universeScenes = scenesResponse.data.scenes;
-            } else if (Array.isArray(scenesResponse.data)) {
-              console.log(
-                "Found scenes as direct array:",
-                scenesResponse.data.length
+              const scenesResponse = await apiClient.getUniverseScenes(
+                parsedUniverseId
               );
-              universeScenes = scenesResponse.data;
-            } else if (scenesResponse.data) {
-              // Search for any array property that might contain scenes
-              console.log("Searching response object for scene arrays");
-              const responseObj = scenesResponse.data;
+              console.log("Direct scenes response:", scenesResponse);
 
-              for (const key in responseObj) {
-                if (Array.isArray(responseObj[key])) {
-                  const potentialScenes = responseObj[key];
-                  if (
-                    potentialScenes.length > 0 &&
-                    (potentialScenes[0].universe_id || potentialScenes[0].id)
-                  ) {
-                    console.log(
-                      `Found potential scenes in property '${key}':`,
-                      potentialScenes.length
-                    );
-                    universeScenes = potentialScenes;
-                    break;
+              // Handle various response formats
+              if (
+                scenesResponse.data?.scenes &&
+                Array.isArray(scenesResponse.data.scenes)
+              ) {
+                console.log(
+                  "Found scenes in dedicated scenes array:",
+                  scenesResponse.data.scenes.length
+                );
+                universeScenes = scenesResponse.data.scenes;
+              } else if (Array.isArray(scenesResponse.data)) {
+                console.log(
+                  "Found scenes as direct array:",
+                  scenesResponse.data.length
+                );
+                universeScenes = scenesResponse.data;
+              } else if (scenesResponse.data) {
+                // Search for any array property that might contain scenes
+                console.log("Searching response object for scene arrays");
+                const responseObj = scenesResponse.data;
+
+                for (const key in responseObj) {
+                  if (Array.isArray(responseObj[key])) {
+                    const potentialScenes = responseObj[key];
+                    if (
+                      potentialScenes.length > 0 &&
+                      (potentialScenes[0].universe_id || potentialScenes[0].id)
+                    ) {
+                      console.log(
+                        `Found potential scenes in property '${key}':`,
+                        potentialScenes.length
+                      );
+                      universeScenes = potentialScenes;
+                      break;
+                    }
                   }
                 }
               }
+            } catch (sceneError) {
+              console.error("Error fetching scenes:", sceneError);
+              // Continue with other data fetching even if scenes fail
             }
-          } catch (sceneError) {
-            console.error("Error fetching scenes:", sceneError);
-            // Continue with other data fetching even if scenes fail
           }
+
+          // Log the final result of scene fetching
+          console.log("Final scenes for universe:", universeScenes);
+          setScenes(universeScenes || []);
+        } catch (universeErr) {
+          console.error(
+            `Error fetching universe ${parsedUniverseId}:`,
+            universeErr
+          );
+          setError("Failed to load universe details. Please try again.");
+          // Initialize with empty data to prevent null errors
+          setUniverse({});
+          setScenes([]);
+          // We'll continue with character fetching even if universe fails
         }
 
-        // Log the final result of scene fetching
-        console.log("Final scenes for universe:", universeScenes);
-        setScenes(universeScenes || []);
+        // Get characters for this universe - only if we have a valid universeId
+        try {
+          console.log(
+            `Fetching characters for universe ID: ${parsedUniverseId}`
+          );
+          const charactersResponse = await apiClient.getCharactersByUniverse(
+            parsedUniverseId
+          );
 
-        // Get characters for this universe
-        const charactersResponse = await apiClient.getCharactersByUniverse(
-          parsedUniverseId
-        );
-        setCharacters(charactersResponse.data.characters || []);
+          // Add null checks before accessing data
+          if (!charactersResponse || !charactersResponse.data) {
+            console.error("Empty response from getCharactersByUniverse API");
+            throw new Error("Failed to fetch characters data");
+          }
+
+          // Set characters with fallback to empty array if undefined
+          const charactersData = charactersResponse.data.characters || [];
+          console.log("Extracted characters data:", charactersData);
+          setCharacters(charactersData);
+          console.log("Successfully loaded characters:", charactersData.length);
+        } catch (charactersErr) {
+          console.error("Error fetching characters:", charactersErr);
+          setError("Failed to load characters. Please try again.");
+          // Initialize with empty data to prevent null errors
+          setCharacters([]);
+        }
 
         setLoading(false);
       } catch (err) {
-        console.error("Error fetching data:", err);
-        setError("Failed to load characters. Please try again.");
+        console.error("Error in fetchData:", err);
+        setError("Failed to load data. Please try again.");
         setLoading(false);
       }
     };
 
-    fetchData();
+    if (universeId) {
+      console.log(
+        `CharactersPageContent: useEffect triggered with universeId=${universeId}`
+      );
+      fetchData();
+    } else {
+      console.warn(
+        "CharactersPageContent: useEffect triggered with no universeId"
+      );
+      setLoading(false);
+      setError("No universe selected");
+    }
   }, [universeId, navigate]);
 
   const handleCreateCharacter = () => {
