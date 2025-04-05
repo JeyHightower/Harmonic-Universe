@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Navigate } from "react-router-dom";
 import {
   Container,
   Typography,
@@ -27,14 +27,37 @@ import { CharacterFormModal } from "../components/modals";
 import apiClient from "../services/api";
 import "../components/character/Characters.css";
 
-// Test hot reloading with this console log - updated message
-console.log(
-  "CharactersPage hot reload verification - Hot Reloading IS working! " +
-    new Date().toISOString()
-);
+// Remove test console.log
+// console.log(
+//   "CharactersPage hot reload verification - Hot Reloading IS working! " +
+//     new Date().toISOString()
+// );
 
-const CharactersPage = () => {
+// Create a wrapper component that handles redirection logic
+const CharactersPageWrapper = () => {
   const { universeId } = useParams();
+  const navigate = useNavigate();
+
+  // Check if universeId is valid
+  const isValidUniverseId =
+    universeId && universeId !== "undefined" && universeId !== "null";
+
+  // If no valid universeId, show loading and redirect
+  if (!isValidUniverseId) {
+    console.log(
+      `Invalid universe ID detected (${universeId}), redirecting to dashboard`
+    );
+
+    // Return immediate redirect to dashboard
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // If universeId is valid, render the main component
+  return <CharactersPageContent universeId={universeId} />;
+};
+
+// Main component with actual content
+const CharactersPageContent = ({ universeId }) => {
   const navigate = useNavigate();
   const [characters, setCharacters] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,15 +73,6 @@ const CharactersPage = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-
-        // Check if universeId exists before making API calls
-        if (!universeId) {
-          console.error("No universe ID provided");
-          setError("No universe selected. Please select a universe first.");
-          setLoading(false);
-          return;
-        }
-
         console.log("Fetching data for universe ID:", universeId);
 
         // Get universe details
@@ -393,4 +407,5 @@ const CharactersPage = () => {
   );
 };
 
-export default CharactersPage;
+// Export the wrapper component instead
+export default CharactersPageWrapper;

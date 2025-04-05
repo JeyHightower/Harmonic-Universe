@@ -4,6 +4,20 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  server: {
+    host: true, // Listen on all addresses, including LAN and public addresses
+    hmr: {
+      clientPort: 5173, // Default client port
+      port: 5173, // Explicitly set WebSocket port
+      overlay: true, // Show overlay on errors
+      timeout: 30000, // Increase the timeout to 30 seconds
+    },
+    watch: {
+      usePolling: true, // Use polling for file changes which can be more reliable
+    },
+    strictPort: false, // Allow fallback to another port if 5173 is taken
+    cors: true, // Enable CORS for all requests
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

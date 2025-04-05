@@ -1,5 +1,5 @@
-import { lazy } from "react";
-import { Navigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
+import { Navigate, useParams } from "react-router-dom";
 import Layout from "../components/layout/Layout";
 import ProtectedRoute from "../components/routing/ProtectedRoute";
 import { ROUTES } from "../utils/routes";
@@ -25,6 +25,26 @@ const SceneEditRedirect = lazy(() =>
 // New character and note pages
 const CharactersPage = lazy(() => import("../pages/CharactersPage"));
 const NotesPage = lazy(() => import("../pages/NotesPage"));
+
+// Create a special route handler for characters to validate the universeId
+const CharactersRouteHandler = () => {
+  const { universeId } = useParams();
+  const isValidId =
+    universeId && universeId !== "undefined" && universeId !== "null";
+
+  if (!isValidId) {
+    console.log(
+      `Invalid universeId in route params (${universeId}), redirecting to dashboard`
+    );
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return (
+    <Suspense fallback={<div>Loading characters...</div>}>
+      <CharactersPage />
+    </Suspense>
+  );
+};
 
 // Legacy components to be replaced
 const CharacterList = lazy(() =>
@@ -106,7 +126,7 @@ const routes = [
         path: ROUTES.CHARACTERS,
         element: (
           <ProtectedRoute>
-            <CharactersPage />
+            <CharactersRouteHandler />
           </ProtectedRoute>
         ),
       },
@@ -114,7 +134,7 @@ const routes = [
         path: ROUTES.CHARACTERS_FOR_SCENE,
         element: (
           <ProtectedRoute>
-            <CharactersPage />
+            <CharactersRouteHandler />
           </ProtectedRoute>
         ),
       },

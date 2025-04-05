@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_CONFIG } from './config';
+import { API_CONFIG, AUTH_CONFIG } from './config';
 
 // Keep track of the last request time for specific endpoints
 const lastRequestTimes = {};
@@ -50,9 +50,28 @@ export const requestWithRetry = async (config, maxRetries = 3, baseDelay = 1000)
 
   const makeRequest = async () => {
     try {
+      // Get authentication token
+      const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+
+      // Add Authorization header if token exists
+      if (token) {
+        config.headers = {
+          ...config.headers,
+          'Authorization': `Bearer ${token}`
+        };
+        console.log(`[API DEBUG] Adding token to request: Bearer ${token.substring(0, 10)}...`);
+      } else {
+        console.warn("[API DEBUG] No authentication token found in localStorage!");
+      }
+
+      console.log(`[API DEBUG] Request URL: ${config.url}`);
+      console.log(`[API DEBUG] Request Headers:`, config.headers);
+
       // Use axios directly to make the request, but rate limited
       return await rateLimitedRequest(() => axios(config), endpointKey);
     } catch (error) {
+      console.error(`[API DEBUG] Request failed: ${error.message}`, error.response?.data);
+
       // Check if it's a rate limit error (429) and we have retries left
       if (error.response?.status === 429 && retryCount < maxRetries) {
         // Increment retry counter
@@ -93,7 +112,7 @@ export const getCharacterWithRetry = async (characterId) => {
     const response = await rateLimitedRequest(() =>
       requestWithRetry({
         method: 'get',
-        url: `${API_CONFIG.BASE_URL}/api/characters/${characterId}`,
+        url: `${API_CONFIG.BASE_URL}/characters/${characterId}`,
         headers: API_CONFIG.HEADERS,
         withCredentials: true,
       }),
@@ -121,7 +140,7 @@ export const getAllCharactersWithRetry = async () => {
     const response = await rateLimitedRequest(() =>
       requestWithRetry({
         method: 'get',
-        url: `${API_CONFIG.BASE_URL}/api/characters`,
+        url: `${API_CONFIG.BASE_URL}/characters`,
         headers: API_CONFIG.HEADERS,
         withCredentials: true,
       }),

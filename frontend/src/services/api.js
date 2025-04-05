@@ -600,14 +600,15 @@ const apiClient = {
     }
   },
   getUniverse: (id, params = {}) => {
-    // Validate id exists before making the API call
-    if (!id) {
-      console.error("getUniverse: id is undefined");
+    // More robust validation for id
+    if (id === undefined || id === null || id === 'undefined' || id === 'null') {
+      console.error(`getUniverse: Invalid universe ID: '${id}'`);
       // Return an empty response to prevent app breaking
       return Promise.resolve({
         data: {
           universe: {},
-          message: "No universe selected"
+          message: "No universe selected",
+          error: "Invalid universe ID"
         }
       });
     }
@@ -621,7 +622,21 @@ const apiClient = {
     const endpoint = getEndpoint('universes', 'get', `/api/universes/${id}`);
     const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
 
-    return axiosInstance.get(`${url}?${queryParams.toString()}`);
+    console.log(`getUniverse: Fetching universe ${id} from ${url}`);
+
+    // Handle API error more gracefully
+    return axiosInstance.get(`${url}?${queryParams.toString()}`)
+      .catch(error => {
+        console.error(`getUniverse: Error fetching universe ${id}:`, error);
+        // Return friendly error response rather than throwing
+        return {
+          data: {
+            universe: {},
+            message: "Error fetching universe",
+            error: error.message || "Unknown error"
+          }
+        };
+      });
   },
   updateUniverse: async (id, data) => {
     console.log(`API - updateUniverse - Updating universe ${id} with data:`, data);
@@ -983,21 +998,37 @@ const apiClient = {
     return axiosInstance.get(url);
   },
   getCharactersByUniverse: (universeId) => {
-    // Validate universeId exists before making the API call
-    if (!universeId) {
-      console.error("getCharactersByUniverse: universeId is undefined");
+    // More robust validation for universeId
+    if (universeId === undefined || universeId === null || universeId === 'undefined' || universeId === 'null') {
+      console.error(`getCharactersByUniverse: Invalid universe ID: '${universeId}'`);
       // Return an empty response to prevent app breaking
       return Promise.resolve({
         data: {
           characters: [],
-          message: "No universe selected"
+          message: "No universe selected",
+          error: "Invalid universe ID"
         }
       });
     }
 
     const endpoint = getEndpoint('universes', 'characters', `/api/universes/${universeId}/characters`);
     const url = typeof endpoint === 'function' ? endpoint(universeId) : endpoint;
-    return axiosInstance.get(url);
+
+    console.log(`getCharactersByUniverse: Fetching characters for universe ${universeId} from ${url}`);
+
+    // Handle API error more gracefully
+    return axiosInstance.get(url)
+      .catch(error => {
+        console.error(`getCharactersByUniverse: Error fetching characters for universe ${universeId}:`, error);
+        // Return friendly error response rather than throwing
+        return {
+          data: {
+            characters: [],
+            message: "Error fetching characters",
+            error: error.message || "Unknown error"
+          }
+        };
+      });
   },
   getCharacter: (id) => {
     const endpoint = getEndpoint('characters', 'get', `/api/characters/${id}`);

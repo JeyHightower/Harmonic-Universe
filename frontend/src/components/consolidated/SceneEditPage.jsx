@@ -88,12 +88,13 @@ const SceneEditPage = () => {
       setError(null);
 
       // Make sure we have a universe_id
-      if (!formattedValues.universe_id && universeId) {
+      const targetUniverseId = universeId || (scene && scene.universe_id);
+      if (!formattedValues.universe_id && targetUniverseId) {
         console.log(
           "SceneEditPage - Adding universeId to scene data:",
-          universeId
+          targetUniverseId
         );
-        formattedValues.universe_id = universeId;
+        formattedValues.universe_id = targetUniverseId;
       }
 
       // Log what we're about to send to the API
@@ -121,10 +122,22 @@ const SceneEditPage = () => {
       console.log("SceneEditPage - Scene updated successfully:", result);
       message.success("Scene updated successfully!");
 
+      // Get the universe_id to navigate to, preferring the response data
+      const navigateUniverseId =
+        result.universe_id ||
+        targetUniverseId ||
+        (result.universe && result.universe.id);
+
       // Delay navigation slightly to allow success message to be seen
       setTimeout(() => {
         // Navigate back to the scene details page
-        navigate(`/universes/${universeId}/scenes/${sceneId}`);
+        if (navigateUniverseId) {
+          navigate(`/universes/${navigateUniverseId}/scenes/${sceneId}`);
+        } else {
+          // Fallback to dashboard if we don't have a universe_id
+          console.warn("No universe_id found, navigating to dashboard");
+          navigate("/dashboard");
+        }
       }, 500);
 
       return result; // Return the result to the SceneForm
@@ -151,8 +164,16 @@ const SceneEditPage = () => {
   // Handle cancel action
   const handleCancel = () => {
     console.log("SceneEditPage - Edit canceled");
+    // Use scene.universe_id as a fallback if universeId is undefined
+    const targetUniverseId = universeId || (scene && scene.universe_id);
     // Navigate back to the scene details page
-    navigate(`/universes/${universeId}/scenes/${sceneId}`);
+    if (targetUniverseId) {
+      navigate(`/universes/${targetUniverseId}/scenes/${sceneId}`);
+    } else {
+      // Fallback to dashboard if we don't have a universe_id
+      console.warn("No universe_id found, navigating to dashboard");
+      navigate("/dashboard");
+    }
   };
 
   return (
@@ -161,12 +182,34 @@ const SceneEditPage = () => {
         <Breadcrumb.Item href="/">
           <HomeOutlined /> Home
         </Breadcrumb.Item>
-        <Breadcrumb.Item href={`/universes/${universeId}`}>
-          {universeName || `Universe ${universeId}`}
-        </Breadcrumb.Item>
-        <Breadcrumb.Item href={`/universes/${universeId}/scenes/${sceneId}`}>
-          <ReadOutlined /> {scene?.name || "Scene Details"}
-        </Breadcrumb.Item>
+        {scene && (
+          <>
+            <Breadcrumb.Item
+              href={`/universes/${scene.universe_id || universeId}`}
+            >
+              {universeName || `Universe ${scene.universe_id || universeId}`}
+            </Breadcrumb.Item>
+            <Breadcrumb.Item
+              href={`/universes/${
+                scene.universe_id || universeId
+              }/scenes/${sceneId}`}
+            >
+              <ReadOutlined /> {scene.name || "Scene Details"}
+            </Breadcrumb.Item>
+          </>
+        )}
+        {!scene && universeId && (
+          <>
+            <Breadcrumb.Item href={`/universes/${universeId}`}>
+              {universeName || `Universe ${universeId}`}
+            </Breadcrumb.Item>
+            <Breadcrumb.Item
+              href={`/universes/${universeId}/scenes/${sceneId}`}
+            >
+              <ReadOutlined /> {"Scene Details"}
+            </Breadcrumb.Item>
+          </>
+        )}
         <Breadcrumb.Item>
           <EditOutlined /> Edit Scene
         </Breadcrumb.Item>
@@ -199,7 +242,7 @@ const SceneEditPage = () => {
         </Card>
       ) : scene ? (
         <SceneForm
-          universeId={universeId}
+          universeId={universeId || scene.universe_id}
           sceneId={sceneId}
           initialData={scene}
           onSubmit={(formattedValues) => {

@@ -245,7 +245,7 @@ const SceneDetail = ({ isEdit = false }) => {
             <Typography variant="h6" gutterBottom>
               Description
             </Typography>
-            <Typography variant="body1" paragraph>
+            <Typography variant="body1" paragraph component="div">
               {scene.description || "No description provided"}
             </Typography>
           </Paper>
@@ -257,7 +257,11 @@ const SceneDetail = ({ isEdit = false }) => {
               Scene Details
             </Typography>
             <Box className="scene-detail-info">
-              <Typography variant="body2" className="date-info-item">
+              <Typography
+                variant="body2"
+                className="date-info-item"
+                component="div"
+              >
                 <span>
                   <CalendarIcon
                     fontSize="small"
@@ -267,7 +271,11 @@ const SceneDetail = ({ isEdit = false }) => {
                 </span>
                 <span>{formatDate(scene.created_at)}</span>
               </Typography>
-              <Typography variant="body2" className="date-info-item">
+              <Typography
+                variant="body2"
+                className="date-info-item"
+                component="div"
+              >
                 <span>
                   <UpdateIcon
                     fontSize="small"
@@ -277,7 +285,11 @@ const SceneDetail = ({ isEdit = false }) => {
                 </span>
                 <span>{formatDate(scene.updated_at)}</span>
               </Typography>
-              <Typography variant="body2" className="date-info-item">
+              <Typography
+                variant="body2"
+                className="date-info-item"
+                component="div"
+              >
                 <span>
                   <InfoIcon
                     fontSize="small"

@@ -21,10 +21,13 @@ import { Navigation } from "./components";
 // Import Home using lazy loading to match the routes file
 const Home = lazy(() => import("./pages/Home"));
 import ModalProvider from "./components/modals/ModalProvider";
-import routes from "./routes";
+import routes from "./routes/index.jsx";
 import { checkAuthState, logout } from "./store/slices/authSlice";
 import { AUTH_CONFIG } from "./utils/config";
 import "./styles"; // Import all styles
+
+// Log routes to debug
+console.log("Routes loaded:", routes);
 
 // Loading component for Suspense fallback
 const LoadingPage = () => (
@@ -84,6 +87,18 @@ const RootPathHandler = () => {
   return <Home />;
 };
 
+// Import critical components directly to ensure they're available
+const Dashboard = lazy(() => import("./features/Dashboard"));
+
+// Create a component to properly render lazy-loaded Dashboard
+const DashboardComponent = () => {
+  return (
+    <Suspense fallback={<LoadingPage />}>
+      <Dashboard />
+    </Suspense>
+  );
+};
+
 // Create a separate component for the main app content
 const AppContent = () => {
   const auth = useSelector((state) => state.auth);
@@ -91,6 +106,7 @@ const AppContent = () => {
   const dispatch = useDispatch();
   const [isPending, startTransition] = useTransition();
   const [routeElements, setRouteElements] = useState(null);
+  const [initialAuthCheckDone, setInitialAuthCheckDone] = useState(false);
 
   // Check auth state when component mounts
   useEffect(() => {
@@ -125,10 +141,24 @@ const AppContent = () => {
         dispatch(logout());
       }
     } else {
-      console.warn("AppContent - Missing auth data, cannot check auth state");
-      // If no token or user data, dispatch logout to ensure clean state
-      dispatch(logout());
+      console.info(
+        "AppContent - No authentication data found (normal for new sessions)"
+      );
+      // Don't automatically logout on initial load - just consider the user not authenticated
+      // Only logout if we previously had auth data
+      if (initialAuthCheckDone) {
+        console.log(
+          "AppContent - Logging out due to missing auth data after initial check"
+        );
+        dispatch(logout());
+      } else {
+        console.log(
+          "AppContent - Initial load with no auth data - continuing as unauthenticated"
+        );
+      }
     }
+
+    setInitialAuthCheckDone(true);
   }, [dispatch]);
 
   // Listen for storage events (which we might dispatch manually)
@@ -151,22 +181,42 @@ const AppContent = () => {
           );
           dispatch(checkAuthState());
         } else {
-          console.warn("AppContent - Missing auth data after storage event");
-          dispatch(logout());
+          console.info(
+            "AppContent - No authentication data in storage (normal for new sessions)"
+          );
+          if (initialAuthCheckDone) {
+            console.log(
+              "AppContent - Logging out due to missing auth data after storage event"
+            );
+            dispatch(logout());
+          } else {
+            console.log(
+              "AppContent - Ignoring missing auth data during initial load"
+            );
+          }
         }
       }
     };
 
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
-  }, [dispatch]);
+  }, [dispatch, initialAuthCheckDone]);
 
   // Set up route elements with startTransition to prevent suspension during synchronous updates
   useEffect(() => {
     if (!isLoading) {
+      console.log("Setting up routes with auth state:", isAuthenticated);
+      console.log("Routes data:", routes);
+
+      // Check if routes is properly defined
+      if (!routes || !Array.isArray(routes)) {
+        console.error("Routes is not an array:", routes);
+        return;
+      }
+
       startTransition(() => {
-        setRouteElements(
-          routes.map((route, index) => (
+        try {
+          const routeComponentsList = routes.map((route, index) => (
             <Route key={index} path={route.path} element={route.element}>
               {route.children?.map((child, childIndex) => (
                 <Route
@@ -177,8 +227,13 @@ const AppContent = () => {
                 />
               ))}
             </Route>
-          ))
-        );
+          ));
+
+          console.log("Route components created:", routeComponentsList.length);
+          setRouteElements(routeComponentsList);
+        } catch (error) {
+          console.error("Error setting up routes:", error);
+        }
       });
     }
   }, [isLoading, isAuthenticated]); // Re-create routes when auth state changes
@@ -203,6 +258,17 @@ const AppContent = () => {
                 <>
                   {/* First add an explicit route to handle the root path with query params */}
                   <Route path="/" element={<RootPathHandler />} />
+
+                  {/* Add critical routes directly as fallback */}
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <ProtectedRoute>
+                        <DashboardComponent />
+                      </ProtectedRoute>
+                    }
+                  />
+
                   {/* Then add all the other routes */}
                   {routeElements}
                 </>
