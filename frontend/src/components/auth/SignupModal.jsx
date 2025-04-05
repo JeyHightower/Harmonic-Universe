@@ -1,6 +1,6 @@
 import PropTypes from "prop-types";
 import React, { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { Form, Input, Button, message } from "antd";
 import { register } from "../../store/thunks/authThunks";
 import { log } from "../../utils/logger";
@@ -19,7 +19,6 @@ const SignupModal = ({ onClose }) => {
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { error } = useSelector((state) => state.auth);
 
   const handleSubmit = async (values) => {
     try {
@@ -35,20 +34,33 @@ const SignupModal = ({ onClose }) => {
         throw new Error(emailError || passwordError || usernameError);
       }
 
-      // Convert email to lowercase
+      // Check if passwords match
+      if (values.password !== values.confirmPassword) {
+        throw new Error("Passwords do not match");
+      }
+
+      // Convert email to lowercase and prepare signup data
       const signupData = {
-        ...values,
+        username: values.username,
         email: values.email.toLowerCase(),
+        password: values.password,
       };
 
       const resultAction = await dispatch(register(signupData));
+
       if (register.fulfilled.match(resultAction)) {
         log("auth", "Signup successful", { email: values.email });
-        message.success("Signup successful! Please log in.");
+        message.success("Signup successful!");
         onClose();
-        navigate("/login");
+
+        // Navigate to dashboard instead of login page
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 500);
       } else {
-        throw new Error(resultAction.error.message);
+        throw new Error(
+          resultAction.error.message || "Signup failed. Please try again."
+        );
       }
     } catch (error) {
       log("auth", "Signup failed", { error: error.message });
@@ -104,7 +116,13 @@ const SignupModal = ({ onClose }) => {
           name="password"
           rules={[
             { required: true, message: "Please input your password!" },
-            { min: 6, message: "Password must be at least 6 characters!" },
+            { min: 8, message: "Password must be at least 8 characters!" },
+            {
+              pattern:
+                /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+              message:
+                "Password must include at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)",
+            },
           ]}
         >
           <Input.Password placeholder="Choose a password" />
@@ -130,12 +148,15 @@ const SignupModal = ({ onClose }) => {
         </Form.Item>
 
         <div className="form-actions">
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose} disabled={loading}>
+            Cancel
+          </Button>
           <Button
             type="primary"
             htmlType="submit"
             loading={loading}
             className="auth-button"
+            disabled={loading}
           >
             Sign Up
           </Button>

@@ -25,34 +25,22 @@ const DemoLogin = ({ onClose }) => {
   // Handle navigation when auth state changes
   useEffect(() => {
     if (auth.isAuthenticated && auth.user) {
-      console.log("DemoLogin - User authenticated, navigating to dashboard");
+      console.log(
+        "DemoLogin - User authenticated, preparing to navigate to dashboard",
+        {
+          isAuthenticated: auth.isAuthenticated,
+          userId: auth.user?.id,
+          hasToken: !!localStorage.getItem(AUTH_CONFIG.TOKEN_KEY),
+          hasUserInStorage: !!localStorage.getItem(AUTH_CONFIG.USER_KEY),
+        }
+      );
+
       setTimeout(() => {
+        console.log("DemoLogin - Now navigating to dashboard after delay");
         navigate("/dashboard");
-      }, 500);
+      }, 1000); // Increased timeout for more stability
     }
   }, [auth.isAuthenticated, auth.user, navigate]);
-
-  const createLocalDemoUser = () => {
-    const demoUser = {
-      id: "demo-user-" + Math.random().toString(36).substring(2, 7),
-      username: "demo",
-      email: "demo@example.com",
-      firstName: "Demo",
-      lastName: "User",
-      role: "user",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    const mockToken =
-      "demo-token-" + Math.random().toString(36).substring(2, 15);
-
-    return {
-      user: demoUser,
-      token: mockToken,
-      message: "Demo login successful",
-    };
-  };
 
   const handleDemoLogin = async () => {
     try {
@@ -60,51 +48,21 @@ const DemoLogin = ({ onClose }) => {
       setIsLoading(true);
       setError(null);
 
-      // For production environments, especially on Render.com, use local demo user
-      if (window.location.hostname.includes("render.com")) {
-        console.log(
-          "DemoLogin - Render.com environment detected, using direct login"
-        );
-        const demoData = createLocalDemoUser();
+      // Dispatch the demo login action
+      const resultAction = await dispatch(demoLogin());
+      console.log("DemoLogin - Demo login result:", resultAction);
 
-        // Store in localStorage
-        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, demoData.token);
-        localStorage.setItem(
-          AUTH_CONFIG.USER_KEY,
-          JSON.stringify(demoData.user)
-        );
-
-        // Update Redux state
-        dispatch(
-          loginSuccess({
-            user: demoData.user,
-            token: demoData.token,
-          })
-        );
-
-        console.log("DemoLogin - Direct login successful");
-        // Navigation will happen via the useEffect
+      if (demoLogin.fulfilled.match(resultAction)) {
+        console.log("DemoLogin - Demo login successful via thunk");
+        // Navigation is handled by the useEffect above
         return;
-      }
-
-      // For non-production environments, try the regular flow
-      try {
-        console.log("DemoLogin - Dispatching regular demoLogin thunk");
-        const resultAction = await dispatch(demoLogin());
-        console.log("DemoLogin - Demo login result:", resultAction);
-
-        if (demoLogin.fulfilled.match(resultAction)) {
-          console.log("DemoLogin - Demo login successful via thunk");
-          // Navigation is handled by the useEffect above
-          return;
-        }
-
-        // If we get here, the thunk didn't succeed but didn't throw an error
-        console.warn("DemoLogin - Thunk didn't succeed, using fallback");
-        useLocalFallback();
-      } catch (apiError) {
-        console.error("DemoLogin - Error during demoLogin dispatch:", apiError);
-        useLocalFallback();
+      } else {
+        // If the thunk didn't succeed and didn't throw an error
+        console.warn(
+          "DemoLogin - Thunk didn't succeed, error:",
+          resultAction.error
+        );
+        setError("Demo login failed. Please try again.");
       }
     } catch (error) {
       console.error("DemoLogin - Error during demo login:", {
@@ -112,55 +70,9 @@ const DemoLogin = ({ onClose }) => {
         message: error.message,
         stack: error.stack,
       });
-
-      // Last resort fallback
-      try {
-        console.log("DemoLogin - Using last resort fallback");
-        const demoData = createLocalDemoUser();
-
-        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, demoData.token);
-        localStorage.setItem(
-          AUTH_CONFIG.USER_KEY,
-          JSON.stringify(demoData.user)
-        );
-
-        dispatch({
-          type: "auth/loginSuccess",
-          payload: {
-            user: demoData.user,
-            token: demoData.token,
-          },
-        });
-
-        console.log("DemoLogin - Last resort fallback successful");
-      } catch (finalError) {
-        console.error("DemoLogin - All fallbacks failed:", finalError);
-        setError("Failed to authenticate. Please try again later.");
-      }
+      setError("Failed to authenticate. Please try again later.");
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const useLocalFallback = () => {
-    try {
-      console.log("DemoLogin - Using local fallback");
-      const demoData = createLocalDemoUser();
-
-      localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, demoData.token);
-      localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(demoData.user));
-
-      dispatch(
-        loginSuccess({
-          user: demoData.user,
-          token: demoData.token,
-        })
-      );
-
-      console.log("DemoLogin - Local fallback successful");
-    } catch (fallbackError) {
-      console.error("DemoLogin - Local fallback failed:", fallbackError);
-      throw fallbackError; // Let the outer catch handle it
     }
   };
 
@@ -188,7 +100,7 @@ const DemoLogin = ({ onClose }) => {
                 </button>
               </>
             ) : (
-              <p>Redirecting to dashboard...</p>
+              <p>Successfully logged in! Redirecting to dashboard...</p>
             )}
           </div>
         </div>
@@ -196,9 +108,10 @@ const DemoLogin = ({ onClose }) => {
     );
   }
 
-  // If used as a modal
+  // Used as a modal
   return (
-    <div className="auth-form">
+    <div className="demo-login-modal">
+      <h2>Demo Login</h2>
       {isLoading ? (
         <>
           <p>Logging you in as a demo user...</p>
@@ -207,12 +120,17 @@ const DemoLogin = ({ onClose }) => {
       ) : error ? (
         <>
           <p className="error-message">{error}</p>
-          <button onClick={handleRetry} className="button button-primary">
-            Retry Login
-          </button>
+          <div className="modal-actions">
+            <button onClick={onClose} className="button button-secondary">
+              Cancel
+            </button>
+            <button onClick={handleRetry} className="button button-primary">
+              Retry Login
+            </button>
+          </div>
         </>
       ) : (
-        <p>Redirecting to dashboard...</p>
+        <p>Successfully logged in! Redirecting to dashboard...</p>
       )}
     </div>
   );
@@ -220,10 +138,6 @@ const DemoLogin = ({ onClose }) => {
 
 DemoLogin.propTypes = {
   onClose: PropTypes.func,
-};
-
-DemoLogin.defaultProps = {
-  onClose: null,
 };
 
 export default DemoLogin;

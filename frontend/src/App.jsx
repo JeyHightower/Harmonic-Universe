@@ -22,7 +22,8 @@ import { Navigation } from "./components";
 const Home = lazy(() => import("./pages/Home"));
 import ModalProvider from "./components/modals/ModalProvider";
 import routes from "./routes";
-import { checkAuthState } from "./store/slices/authSlice";
+import { checkAuthState, logout } from "./store/slices/authSlice";
+import { AUTH_CONFIG } from "./utils/config";
 import "./styles"; // Import all styles
 
 // Loading component for Suspense fallback
@@ -94,7 +95,25 @@ const AppContent = () => {
   // Check auth state when component mounts
   useEffect(() => {
     console.log("AppContent - Checking auth state");
-    dispatch(checkAuthState());
+
+    // Check if auth tokens and user data are in local storage
+    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+    const userData = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+
+    console.log("AppContent - Auth check:", {
+      hasToken: !!token,
+      hasUserData: !!userData,
+      tokenLength: token ? token.length : 0,
+    });
+
+    // Only dispatch checkAuthState if we have necessary data
+    if (token && userData) {
+      dispatch(checkAuthState());
+    } else {
+      console.warn("AppContent - Missing auth data, cannot check auth state");
+      // If no token or user data, dispatch logout to ensure clean state
+      dispatch(logout());
+    }
   }, [dispatch]);
 
   // Listen for storage events (which we might dispatch manually)

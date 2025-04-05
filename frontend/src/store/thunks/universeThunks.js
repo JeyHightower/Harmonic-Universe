@@ -253,10 +253,9 @@ export const deleteUniverse = createAsyncThunk(
     try {
       console.log(`Thunk - Deleting universe ${id}`);
       const response = await apiClient.deleteUniverse(id);
-      console.log(`Thunk - Universe ${id} deleted successfully, response:`, response);
+      console.log(`Thunk - Universe ${id} deleted successfully:`, response);
 
-      // Return just the ID for the reducer to remove it from state
-      return id;
+      return { id, message: response.data?.message || 'Universe deleted successfully' };
     } catch (error) {
       console.error(`Thunk - Error deleting universe ${id}:`, error);
 

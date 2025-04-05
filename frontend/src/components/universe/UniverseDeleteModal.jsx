@@ -1,13 +1,12 @@
 import PropTypes from "prop-types";
 import React, { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { Button } from "../common";
 import Modal from "../common/Modal";
 import { deleteUniverse } from "../../store/thunks/universeThunks";
 
 const UniverseDeleteModal = ({ isOpen, onClose, onSuccess, universe }) => {
   const dispatch = useDispatch();
-  const { loading } = useSelector((state) => state.universe);
   const [error, setError] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -48,8 +47,8 @@ const UniverseDeleteModal = ({ isOpen, onClose, onSuccess, universe }) => {
           Are you sure you want to delete the universe "{universe?.name}"?
         </p>
         <p className="delete-warning">
-          This action cannot be undone and will delete all scenes and data
-          associated with this universe.
+          This action cannot be undone and will delete all scenes, characters,
+          and notes associated with this universe.
         </p>
 
         {error && <div className="error-message">{error}</div>}
@@ -67,7 +66,7 @@ const UniverseDeleteModal = ({ isOpen, onClose, onSuccess, universe }) => {
             type="button"
             variant="danger"
             onClick={handleDelete}
-            disabled={isDeleting || loading}
+            disabled={isDeleting}
           >
             {isDeleting ? "Deleting..." : "Delete Universe"}
           </Button>

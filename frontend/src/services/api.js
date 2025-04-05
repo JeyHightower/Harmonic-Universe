@@ -560,11 +560,26 @@ const apiClient = {
   deleteUniverse: async (id) => {
     console.log(`API - deleteUniverse - Deleting universe ${id}`);
     try {
-      const response = await axiosInstance.delete(`/api/universes/${id}`);
+      const endpoint = getEndpoint('universes', 'delete', `/api/universes/${id}`);
+      const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
+
+      const response = await axiosInstance.delete(url);
       console.log(`API - deleteUniverse - Successfully deleted universe ${id}:`, response);
       return response;
     } catch (error) {
       console.error(`API - deleteUniverse - Error deleting universe ${id}:`, error.response || error);
+
+      // In development mode, return a mock success response if needed
+      if (process.env.NODE_ENV === 'development' && error.response?.status === 404) {
+        console.log(`API - deleteUniverse - Development mode: Returning mock success for missing universe ${id}`);
+        return {
+          status: 200,
+          data: {
+            message: `Universe ${id} deleted successfully (mock)`
+          }
+        };
+      }
+
       // Re-throw the error to be handled by the calling code
       throw error;
     }

@@ -60,7 +60,12 @@ function Home() {
         if (demoLogin.fulfilled.match(resultAction)) {
           console.debug("[Home] Demo login successful via thunk");
           // The demoLogin thunk already handles token storage and state updates
-          navigate("/dashboard", { replace: true });
+          setTimeout(() => {
+            console.debug(
+              "[Home] Navigating to dashboard after API demo login"
+            );
+            navigate("/dashboard", { replace: true });
+          }, 500);
           return;
         }
 
@@ -104,6 +109,9 @@ function Home() {
   // Helper function to create and log in a demo user
   function createAndLoginDemoUser() {
     try {
+      console.debug(
+        "[Home] createAndLoginDemoUser called - Creating demo user and logging in"
+      );
       // Create a demo user
       const demoUser = {
         id: "demo-user-" + Math.random().toString(36).substring(2, 7),
@@ -133,7 +141,12 @@ function Home() {
       );
 
       console.log("[Home] Direct demo login successful");
-      navigate("/dashboard", { replace: true });
+
+      // Use setTimeout to ensure auth state has time to update
+      setTimeout(() => {
+        console.debug("[Home] Navigating to dashboard after demo login");
+        navigate("/dashboard", { replace: true });
+      }, 500);
     } catch (error) {
       console.error("[Home] Failed to create demo user:", error);
       throw error; // Let the main try/catch handle it

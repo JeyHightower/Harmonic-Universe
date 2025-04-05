@@ -198,28 +198,32 @@ const UniverseFormModal = ({
 
         <div className="checkbox-field">
           <input
+            type="checkbox"
             id="is_public"
             name="is_public"
-            type="checkbox"
             checked={formData.is_public}
             onChange={handleChange}
           />
-          <label htmlFor="is_public">Make universe public</label>
+          <label htmlFor="is_public">Make this universe public</label>
         </div>
 
-        {error && <div className="form-error">{error}</div>}
-        {errors.form && <div className="form-error">{errors.form}</div>}
+        {errors.form && <div className="form-error-message">{errors.form}</div>}
 
-        <div className="form-actions">
-          <Button type="button" variant="secondary" onClick={onClose}>
+        <div className="modal-actions">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={isSubmitting || loading}
-          >
-            {isSubmitting ? "Saving..." : isEdit ? "Update" : "Create"}
+          <Button type="submit" variant="primary" disabled={isSubmitting}>
+            {isSubmitting
+              ? "Saving..."
+              : isEdit
+              ? "Update Universe"
+              : "Create Universe"}
           </Button>
         </div>
       </form>
@@ -230,13 +234,13 @@ const UniverseFormModal = ({
 UniverseFormModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
-  onSuccess: PropTypes.func,
+  onSuccess: PropTypes.func.isRequired,
   universe: PropTypes.object,
   isEdit: PropTypes.bool,
 };
 
 UniverseFormModal.defaultProps = {
-  isOpen: false,
+  universe: null,
   isEdit: false,
 };
 
