@@ -217,11 +217,32 @@ client.interceptors.response.use(
 
 // Retry failed requests with alternative endpoints
 async function retryWithFallbacks(originalError, endpoint) {
-  const fallbackEndpoints = [
-    "/api",
-    "https://harmonic-universe-api.onrender.com/api",
-    "https://harmonic-universe.onrender.com/api",
-  ];
+  // Check for production environment
+  const isProduction = process.env.NODE_ENV === 'production' ||
+    import.meta.env.PROD ||
+    window.location.hostname.includes('render.com') ||
+    (!window.location.hostname.includes('localhost') &&
+      !window.location.hostname.includes('127.0.0.1'));
+
+  // Adjust fallback endpoints for production vs development
+  const fallbackEndpoints = isProduction
+    ? [
+      "", // Same origin, empty string for baseURL
+      "/api", // Same origin with explicit /api prefix
+      "https://harmonic-universe.onrender.com/api"
+    ]
+    : [
+      "/api",
+      "http://localhost:5001/api"
+    ];
+
+  // Log environment and fallback choices
+  log("api", "Retry environment", {
+    isProduction,
+    originalUrl: originalError.config?.url,
+    endpoint,
+    fallbackEndpoints
+  });
 
   // Original request config
   const config = originalError.config;
@@ -230,16 +251,22 @@ async function retryWithFallbacks(originalError, endpoint) {
     return Promise.reject(originalError);
   }
 
-  // Special handling for demo login - return a mock response if this is a demo login attempt
-  if (endpoint === "/auth/demo-login" || endpoint === "/auth/demo") {
-    try {
-      log("api", "Creating mock demo login response");
+  // Special handling for demo login - handle production vs development differently
+  if (endpoint.includes("/auth/demo") || endpoint.includes("/auth/demo-login")) {
+    // For demo login in production, strip any duplicate /api prefixes
+    if (isProduction && endpoint.startsWith("/api/")) {
+      endpoint = endpoint.substring(4); // Remove leading /api
+      log("api", "Adjusted demo endpoint for production", { endpoint });
+    }
 
-      // Create a demo user
+    try {
+      log("api", "Creating demo login response");
+
+      // Create a demo user with more realistic data
       const demoUser = {
-        id: 'demo-user-' + Math.random().toString(36).substring(2, 7),
-        username: 'demo',
-        email: 'demo@example.com',
+        id: 'demo-' + Math.random().toString(36).substring(2, 10),
+        username: 'demo_user',
+        email: 'demo@harmonic-universe.com',
         firstName: 'Demo',
         lastName: 'User',
         role: 'user',
@@ -247,8 +274,9 @@ async function retryWithFallbacks(originalError, endpoint) {
         updatedAt: new Date().toISOString()
       };
 
-      // Create a mock token
-      const mockToken = 'demo-token-' + Math.random().toString(36).substring(2, 15);
+      // Create a mock token that looks more like a real JWT
+      const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZW1vLXVzZXIiLCJpYXQiOjE2NTE4MzAyMDAsImV4cCI6MTY1MTkxNjYwMH0.' +
+        Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
       // Create a mock successful response
       const mockResponse = {
@@ -263,9 +291,9 @@ async function retryWithFallbacks(originalError, endpoint) {
         config: config
       };
 
-      log("api", "Created mock demo login response", {
+      log("api", "Created demo login response", {
         user: demoUser.username,
-        token: mockToken.substring(0, 10) + '...'
+        token: mockToken.substring(0, 20) + '...'
       });
 
       return mockResponse;
@@ -280,12 +308,23 @@ async function retryWithFallbacks(originalError, endpoint) {
     try {
       log("api", "Trying fallback endpoint", { baseURL, endpoint });
 
+      // Adjust endpoint if needed to prevent /api duplication
+      let adjustedEndpoint = endpoint;
+      if (isProduction && baseURL.endsWith('/api') && adjustedEndpoint.startsWith('/api/')) {
+        adjustedEndpoint = adjustedEndpoint.substring(4);
+        log("api", "Adjusted endpoint to prevent duplication", { originalEndpoint: endpoint, adjustedEndpoint });
+      }
+
       // Create new config with fallback baseURL
       const retryConfig = {
         ...config,
         baseURL,
-        url: endpoint,
+        url: adjustedEndpoint,
       };
+
+      // Log the full URL being requested
+      const fullUrl = (baseURL || '') + (adjustedEndpoint.startsWith('/') ? adjustedEndpoint : '/' + adjustedEndpoint);
+      log("api", "Fallback request URL", { fullUrl });
 
       const response = await axios(retryConfig);
 
@@ -303,19 +342,21 @@ async function retryWithFallbacks(originalError, endpoint) {
       log("api", "Fallback endpoint failed", {
         baseURL,
         error: retryError.message,
+        status: retryError.response?.status,
+        data: retryError.response?.data
       });
       continue;
     }
   }
 
   // If all fallbacks fail and this is a demo login, create a mock response as last resort
-  if (endpoint === "/auth/demo-login" || endpoint === "/auth/demo") {
+  if (endpoint.includes("/auth/demo-login") || endpoint.includes("/auth/demo")) {
     log("api", "All fallbacks failed for demo login, returning mock response");
 
     // Create a demo user
     const demoUser = {
-      id: 'demo-user-fallback-' + Math.random().toString(36).substring(2, 7),
-      username: 'demo',
+      id: 'demo-fallback-' + Math.random().toString(36).substring(2, 10),
+      username: 'demo_fallback',
       email: 'demo@example.com',
       firstName: 'Demo',
       lastName: 'User',
@@ -325,7 +366,8 @@ async function retryWithFallbacks(originalError, endpoint) {
     };
 
     // Create a mock token
-    const mockToken = 'demo-fallback-token-' + Math.random().toString(36).substring(2, 15);
+    const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZW1vLWZhbGxiYWNrIiwiaWF0IjoxNjUxODMwMjAwLCJleHAiOjE2NTE5MTY2MDB9.' +
+      Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
     // Create a mock successful response
     return {

@@ -130,12 +130,12 @@ export const AUTH_CONFIG = {
   COOKIE_SECURE: IS_PRODUCTION,
   COOKIE_SAMESITE: "strict",
   ENDPOINTS: {
-    LOGIN: "/api/auth/login",
-    SIGNUP: "/api/auth/signup",
-    LOGOUT: "/api/auth/logout",
-    REFRESH: "/api/auth/refresh",
-    DEMO: "/api/auth/demo-login",
-    VALIDATE: "/api/auth/validate",
+    LOGIN: IS_PRODUCTION ? "/auth/login" : "/api/auth/login",
+    SIGNUP: IS_PRODUCTION ? "/auth/signup" : "/api/auth/signup",
+    LOGOUT: IS_PRODUCTION ? "/auth/logout" : "/api/auth/logout",
+    REFRESH: IS_PRODUCTION ? "/auth/refresh" : "/api/auth/refresh",
+    DEMO: IS_PRODUCTION ? "/auth/demo-login" : "/api/auth/demo-login",
+    VALIDATE: IS_PRODUCTION ? "/auth/validate" : "/api/auth/validate",
   },
 };
 

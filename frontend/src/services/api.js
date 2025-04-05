@@ -1,5 +1,5 @@
 import axios from "axios";
-import { AUTH_CONFIG, API_CONFIG } from "../utils/config";
+import { AUTH_CONFIG, API_CONFIG, IS_PRODUCTION } from "../utils/config";
 import { log } from "../utils/logger";
 // Import the endpoints properly
 import { endpoints } from "./endpoints";
@@ -19,19 +19,19 @@ const DEFAULT_SCENE_IMAGE = '/src/assets/images/default-scene.svg'; // Adjusted 
 // Define direct fallbacks for critical endpoints
 const FALLBACK_ENDPOINTS = {
   auth: {
-    login: '/api/auth/login',
-    register: '/api/auth/signup',
-    demoLogin: '/api/auth/demo-login',
-    refresh: '/api/auth/refresh',
-    logout: '/api/auth/logout',
-    validate: '/api/auth/validate'
+    login: IS_PRODUCTION ? '/auth/login' : '/api/auth/login',
+    register: IS_PRODUCTION ? '/auth/signup' : '/api/auth/signup',
+    demoLogin: IS_PRODUCTION ? '/auth/demo-login' : '/api/auth/demo-login',
+    refresh: IS_PRODUCTION ? '/auth/refresh' : '/api/auth/refresh',
+    logout: IS_PRODUCTION ? '/auth/logout' : '/api/auth/logout',
+    validate: IS_PRODUCTION ? '/auth/validate' : '/api/auth/validate'
   },
   universes: {
-    list: '/api/universes',
-    create: '/api/universes',
-    get: (id) => `/api/universes/${id}`,
-    update: (id) => `/api/universes/${id}`,
-    delete: (id) => `/api/universes/${id}`,
+    list: IS_PRODUCTION ? '/universes' : '/api/universes',
+    create: IS_PRODUCTION ? '/universes' : '/api/universes',
+    get: (id) => IS_PRODUCTION ? `/universes/${id}` : `/api/universes/${id}`,
+    update: (id) => IS_PRODUCTION ? `/universes/${id}` : `/api/universes/${id}`,
+    delete: (id) => IS_PRODUCTION ? `/universes/${id}` : `/api/universes/${id}`,
     scenes: (id) => {
       // Log a deprecation warning
       console.warn(
@@ -39,9 +39,9 @@ const FALLBACK_ENDPOINTS = {
         `Please use /api/scenes/universe/${id} instead.`
       );
       // Still use the legacy endpoint which will redirect to the primary endpoint
-      return `/api/universes/${id}/scenes`;
+      return IS_PRODUCTION ? `/universes/${id}/scenes` : `/api/universes/${id}/scenes`;
     },
-    characters: (id) => `/api/universes/${id}/characters`
+    characters: (id) => IS_PRODUCTION ? `/universes/${id}/characters` : `/api/universes/${id}/characters`
   }
 };
 
@@ -61,53 +61,66 @@ const universes = endpoints?.universes || FALLBACK_ENDPOINTS.universes;
 // Helper function to safely get endpoints with fallbacks
 const getEndpoint = (group, name, fallback) => {
   try {
+    // Check environment to see if we need to handle duplicate /api prefixes
+    const isProduction = process.env.NODE_ENV === 'production' ||
+      import.meta.env.PROD ||
+      (typeof window !== 'undefined' &&
+        !window.location.hostname.includes('localhost') &&
+        !window.location.hostname.includes('127.0.0.1'));
+
+    // Get endpoint from appropriate source
+    let endpoint;
+
     // Direct handling for universes group
     if (group === 'universes') {
-      if (universes && universes[name]) {
-        return universes[name];
-      }
-      return fallback;
+      endpoint = universes && universes[name] ? universes[name] : fallback;
     }
-
     // Direct handling for auth group to fix validation warning
-    if (group === 'auth') {
+    else if (group === 'auth') {
       if (endpoints?.auth && endpoints.auth[name]) {
-        return endpoints.auth[name];
+        endpoint = endpoints.auth[name];
+      } else if (FALLBACK_ENDPOINTS.auth && FALLBACK_ENDPOINTS.auth[name]) {
+        endpoint = FALLBACK_ENDPOINTS.auth[name];
+      } else {
+        endpoint = fallback;
       }
-      if (FALLBACK_ENDPOINTS.auth && FALLBACK_ENDPOINTS.auth[name]) {
-        return FALLBACK_ENDPOINTS.auth[name];
-      }
-      return fallback;
     }
-
-    if (!endpoints) {
+    // Standard handling for other groups
+    else if (!endpoints) {
       console.warn(`Endpoints object is ${typeof endpoints}, using fallback`);
-      // Try to use our direct fallbacks first
-      if (FALLBACK_ENDPOINTS[group] && FALLBACK_ENDPOINTS[group][name]) {
-        return FALLBACK_ENDPOINTS[group][name];
-      }
-      return fallback;
+      endpoint = FALLBACK_ENDPOINTS[group] && FALLBACK_ENDPOINTS[group][name]
+        ? FALLBACK_ENDPOINTS[group][name]
+        : fallback;
     }
-
-    if (!endpoints[group]) {
+    else if (!endpoints[group]) {
       console.warn(`Endpoint group '${group}' not found, using fallback`);
-      // Try to use our direct fallbacks first
-      if (FALLBACK_ENDPOINTS[group] && FALLBACK_ENDPOINTS[group][name]) {
-        return FALLBACK_ENDPOINTS[group][name];
-      }
-      return fallback;
+      endpoint = FALLBACK_ENDPOINTS[group] && FALLBACK_ENDPOINTS[group][name]
+        ? FALLBACK_ENDPOINTS[group][name]
+        : fallback;
     }
-
-    if (!endpoints[group][name]) {
+    else if (!endpoints[group][name]) {
       console.warn(`Endpoint '${name}' not found in group '${group}', using fallback`);
-      // Try to use our direct fallbacks first
-      if (FALLBACK_ENDPOINTS[group] && FALLBACK_ENDPOINTS[group][name]) {
-        return FALLBACK_ENDPOINTS[group][name];
-      }
-      return fallback;
+      endpoint = FALLBACK_ENDPOINTS[group] && FALLBACK_ENDPOINTS[group][name]
+        ? FALLBACK_ENDPOINTS[group][name]
+        : fallback;
+    }
+    else {
+      endpoint = endpoints[group][name];
     }
 
-    return endpoints[group][name];
+    // Handle endpoint as function
+    if (typeof endpoint === 'function') {
+      endpoint = endpoint.apply(null, Array.prototype.slice.call(arguments, 3));
+    }
+
+    // In production, if the endpoint starts with /api and we're using a baseURL that also
+    // has /api, remove the /api prefix from the endpoint to prevent duplication
+    if (isProduction && typeof endpoint === 'string' && endpoint.startsWith('/api/')) {
+      console.log(`Fixing duplicate /api prefix in endpoint: ${endpoint}`);
+      return endpoint.substring(4); // Remove the first /api
+    }
+
+    return endpoint;
   } catch (error) {
     console.error(`Error accessing endpoint ${group}.${name}:`, error);
     // Try to use our direct fallbacks first
@@ -367,6 +380,12 @@ const apiClient = {
       // Use the auth validate endpoint with fixed getEndpoint function
       const validateEndpoint = getEndpoint('auth', 'validate', '/api/auth/validate');
       console.log("Using auth validate endpoint:", validateEndpoint);
+
+      // Debugging log to verify URL construction
+      const fullUrl = axiosInstance.defaults.baseURL +
+        (validateEndpoint.startsWith('/') ? validateEndpoint.substring(1) : validateEndpoint);
+      console.log("Full request URL will be:", fullUrl);
+
       const response = await axiosInstance.get(validateEndpoint);
       console.log("Validate endpoint response:", response.data);
 
@@ -380,7 +399,8 @@ const apiClient = {
       log("api", "Token validation failed", {
         error: error.message,
         response: error.response?.data,
-        status: error.response?.status
+        status: error.response?.status,
+        url: error.config?.url
       });
       throw error;
     }

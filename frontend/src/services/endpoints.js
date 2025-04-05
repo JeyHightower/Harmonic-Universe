@@ -3,17 +3,17 @@
  * This file contains all the API endpoints used by the application.
  */
 
-import { API_CONFIG } from '../utils/config';
+import { API_CONFIG, IS_PRODUCTION } from '../utils/config';
 
 console.log("Loading endpoints.js module");
 
-// Base API URL
+// Base API URL - already contains /api
 const API_BASE_URL = API_CONFIG.BASE_URL;
 
-// API version prefix - remove this as we're already using /api in the base URL
+// API version prefix - should be empty since we're already using /api in the base URL
 const API_VERSION = '';
 
-// Auth endpoints
+// Auth endpoints - don't include /api as it's already in API_BASE_URL
 const authEndpoints = {
   login: `${API_VERSION}/auth/login`,
   register: `${API_VERSION}/auth/signup`,
@@ -207,8 +207,13 @@ export const getApiEndpoint = (endpoint) => {
     return endpoint;
   }
 
-  // Ensure endpoint doesn't start with '/api' as that's already in the base URL
-  return endpoint.startsWith('/api') ? endpoint : endpoint;
+  // Remove duplicate /api prefix if present
+  if (endpoint.startsWith('/api/') && IS_PRODUCTION) {
+    console.log(`Fixing duplicate /api prefix in: ${endpoint}`);
+    return endpoint.substring(4); // Remove the first /api
+  }
+
+  return endpoint;
 };
 
 // Export default for easier imports
