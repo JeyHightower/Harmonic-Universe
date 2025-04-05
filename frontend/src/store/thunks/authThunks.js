@@ -131,76 +131,84 @@ export const demoLogin = createAsyncThunk(
   async (_, { dispatch, rejectWithValue }) => {
     try {
       dispatch(loginStart());
-      console.debug("Logging in as demo user");
+      console.log("Thunk - Starting demo login process");
 
       try {
         // Try using the API first
-        console.debug("Attempting to use API for demo login");
+        console.log("Thunk - Calling demo login API endpoint");
         const response = await apiClient.demoLogin();
-        console.debug("Demo login successful with API:", response);
+        console.log("Thunk - Demo login API response:", response);
 
-        // Extract user data from response
-        const userData = response.data.user || response.data;
-        const token = response.data.token || response.data.access_token;
-        const refreshToken = response.data.refresh_token;
+        // Handle different response structures
+        let userData, token, refreshToken;
 
-        // Store tokens and user data
-        if (token) {
-          localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, token);
+        if (response.data) {
+          // Extract user data
+          userData = response.data.user || response.data;
+
+          // Extract tokens
+          token = response.data.token || response.data.access_token;
+          refreshToken = response.data.refresh_token;
+
+          console.log("Thunk - Extracted data from response:", {
+            hasUserData: !!userData,
+            hasToken: !!token,
+            tokenLength: token ? token.length : 0
+          });
+        } else {
+          console.error("Thunk - Unexpected response format:", response);
+          throw new Error("Invalid response format from server");
         }
+
+        // Store authentication data
+        if (token) {
+          console.log("Thunk - Storing token in localStorage");
+          localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, token);
+        } else {
+          console.error("Thunk - No token in response");
+          throw new Error("No token received from server");
+        }
+
         if (refreshToken) {
           localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, refreshToken);
         }
+
         if (userData) {
+          console.log("Thunk - Storing user data in localStorage");
           localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(userData));
+        } else {
+          console.error("Thunk - No user data in response");
+          throw new Error("No user data received from server");
         }
 
-        // Update state with the correct data structure
-        dispatch(loginSuccess({
-          user: userData,
-          token,
-          refresh_token: refreshToken
-        }));
-
-        return {
+        // Create auth data object for Redux store
+        const authData = {
           user: userData,
           token,
           refresh_token: refreshToken
         };
+
+        console.log("Thunk - Dispatching loginSuccess with:", {
+          userId: userData?.id,
+          hasToken: !!token
+        });
+
+        // Update Redux state
+        dispatch(loginSuccess(authData));
+
+        // Dispatch a storage event to notify other components
+        window.dispatchEvent(new Event("storage"));
+
+        console.log("Thunk - Demo login successful");
+        return authData;
       } catch (apiError) {
-        console.warn("API demo login failed, using fallback:", apiError);
+        console.error("Thunk - API demo login failed:", apiError);
 
-        // Use fallback authentication as a backup
-        console.debug("Using fallback authentication for demo login");
-        const fallbackData = handleOfflineAuthentication();
-        console.debug("Fallback data:", fallbackData);
-
-        // Store tokens from fallback
-        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, fallbackData.token);
-        if (fallbackData.refresh_token) {
-          localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, fallbackData.refresh_token);
-        }
-        if (fallbackData.user) {
-          localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(fallbackData.user));
-        }
-
-        // Explicitly dispatch loginSuccess with the full data
-        dispatch(loginSuccess({
-          user: fallbackData.user,
-          token: fallbackData.token,
-          refresh_token: fallbackData.refresh_token
-        }));
-
-        console.debug("Demo login success with fallback");
-
-        return {
-          user: fallbackData.user,
-          token: fallbackData.token,
-          refresh_token: fallbackData.refresh_token
-        };
+        // We won't use the fallback for demo login anymore since we have a working endpoint
+        throw apiError;
       }
     } catch (error) {
-      console.error("Demo login failed:", error);
+      console.error("Thunk - Demo login failed:", error);
       dispatch(loginFailure(handleError(error)));
       return rejectWithValue(handleError(error));
     }

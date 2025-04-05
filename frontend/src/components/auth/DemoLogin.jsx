@@ -32,8 +32,12 @@ const DemoLogin = ({ onClose }) => {
           userId: auth.user?.id,
           hasToken: !!localStorage.getItem(AUTH_CONFIG.TOKEN_KEY),
           hasUserInStorage: !!localStorage.getItem(AUTH_CONFIG.USER_KEY),
+          user: auth.user,
         }
       );
+
+      // Trigger storage event to notify other components about auth state change
+      window.dispatchEvent(new Event("storage"));
 
       setTimeout(() => {
         console.log("DemoLogin - Now navigating to dashboard after delay");
@@ -48,12 +52,83 @@ const DemoLogin = ({ onClose }) => {
       setIsLoading(true);
       setError(null);
 
+      // First check if we already have a token to avoid unnecessary login attempts
+      const existingToken = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+      const existingUser = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+
+      if (existingToken && existingUser) {
+        console.log(
+          "DemoLogin - Found existing token and user data, attempting to use it"
+        );
+        try {
+          const userData = JSON.parse(existingUser);
+
+          // Update Redux state with existing data
+          dispatch(
+            loginSuccess({
+              user: userData,
+              token: existingToken,
+            })
+          );
+
+          console.log(
+            "DemoLogin - Successfully restored session from localStorage"
+          );
+          setIsLoading(false);
+          return;
+        } catch (parseError) {
+          console.error(
+            "DemoLogin - Error parsing existing user data:",
+            parseError
+          );
+          // Continue with normal login if parsing fails
+        }
+      }
+
       // Dispatch the demo login action
+      console.log("DemoLogin - Making API request for demo login");
       const resultAction = await dispatch(demoLogin());
       console.log("DemoLogin - Demo login result:", resultAction);
 
       if (demoLogin.fulfilled.match(resultAction)) {
         console.log("DemoLogin - Demo login successful via thunk");
+
+        // Double-check localStorage has token and user data
+        const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+        const userData = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+
+        console.log("DemoLogin - LocalStorage after login:", {
+          hasToken: !!token,
+          hasUserData: !!userData,
+          tokenLength: token ? token.length : 0,
+        });
+
+        if (!token || !userData) {
+          console.warn(
+            "DemoLogin - Token or user data missing after successful login, manually storing"
+          );
+
+          // Manually store data if missing
+          if (resultAction.payload && resultAction.payload.token) {
+            localStorage.setItem(
+              AUTH_CONFIG.TOKEN_KEY,
+              resultAction.payload.token
+            );
+          }
+
+          if (resultAction.payload && resultAction.payload.user) {
+            localStorage.setItem(
+              AUTH_CONFIG.USER_KEY,
+              JSON.stringify(resultAction.payload.user)
+            );
+          }
+
+          // Manually dispatch login success again to ensure Redux state is updated
+          if (resultAction.payload) {
+            dispatch(loginSuccess(resultAction.payload));
+          }
+        }
+
         // Navigation is handled by the useEffect above
         return;
       } else {

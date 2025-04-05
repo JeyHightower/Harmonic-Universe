@@ -108,7 +108,22 @@ const AppContent = () => {
 
     // Only dispatch checkAuthState if we have necessary data
     if (token && userData) {
-      dispatch(checkAuthState());
+      try {
+        // Verify user data is valid JSON
+        const parsedUserData = JSON.parse(userData);
+        if (parsedUserData && parsedUserData.id) {
+          console.log(
+            "AppContent - Valid token and user data found, checking auth state"
+          );
+          dispatch(checkAuthState());
+        } else {
+          console.warn("AppContent - User data parsed but invalid format");
+          dispatch(logout());
+        }
+      } catch (e) {
+        console.error("AppContent - Error parsing user data:", e.message);
+        dispatch(logout());
+      }
     } else {
       console.warn("AppContent - Missing auth data, cannot check auth state");
       // If no token or user data, dispatch logout to ensure clean state
@@ -118,9 +133,28 @@ const AppContent = () => {
 
   // Listen for storage events (which we might dispatch manually)
   useEffect(() => {
-    const handleStorageChange = () => {
-      console.log("AppContent - Storage changed, checking auth state");
-      dispatch(checkAuthState());
+    const handleStorageChange = (event) => {
+      console.log("AppContent - Storage changed, checking auth state", event);
+
+      // If the token or user data changed, check auth state
+      if (
+        !event.key ||
+        event.key === AUTH_CONFIG.TOKEN_KEY ||
+        event.key === AUTH_CONFIG.USER_KEY
+      ) {
+        const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+        const userData = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+
+        if (token && userData) {
+          console.log(
+            "AppContent - Auth data found in storage, checking auth state"
+          );
+          dispatch(checkAuthState());
+        } else {
+          console.warn("AppContent - Missing auth data after storage event");
+          dispatch(logout());
+        }
+      }
     };
 
     window.addEventListener("storage", handleStorageChange);

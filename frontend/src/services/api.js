@@ -267,10 +267,51 @@ const apiClient = {
   // Auth methods
   login: (credentials) => axiosInstance.post(getEndpoint('auth', 'login', '/api/auth/login'), credentials),
   register: (userData) => axiosInstance.post(getEndpoint('auth', 'register', '/api/auth/signup'), userData),
-  demoLogin: () => {
-    const endpoint = getEndpoint('auth', 'demoLogin', '/api/auth/demo-login');
-    console.log("API: Making demo login request to", endpoint);
-    return axiosInstance.post(endpoint);
+  demoLogin: async () => {
+    try {
+      const endpoint = getEndpoint('auth', 'demoLogin', '/api/auth/demo-login');
+      console.log("API - Making demo login request to:", endpoint);
+
+      // Use GET method as the endpoint accepts both GET and POST
+      const response = await axiosInstance.get(endpoint);
+
+      console.log("API - Demo login response:", {
+        status: response.status,
+        hasData: !!response.data,
+        hasUser: !!response.data?.user,
+        hasToken: !!response.data?.token
+      });
+
+      // Verify we have the necessary data in the response
+      if (!response.data) {
+        console.error("API - Demo login response missing data");
+        throw new Error("Invalid response from server: missing data");
+      }
+
+      if (!response.data.token) {
+        console.error("API - Demo login response missing token");
+        throw new Error("Invalid response from server: missing token");
+      }
+
+      if (!response.data.user) {
+        console.error("API - Demo login response missing user data");
+        throw new Error("Invalid response from server: missing user data");
+      }
+
+      return response;
+    } catch (error) {
+      console.error("API - Demo login error:", error.message);
+
+      if (error.response) {
+        console.error("API - Server response error:", {
+          status: error.response.status,
+          data: error.response.data
+        });
+      }
+
+      // Rethrow the error to be handled by the calling code
+      throw error;
+    }
   },
   validateToken: async () => {
     try {
