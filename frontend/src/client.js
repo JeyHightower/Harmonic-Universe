@@ -48,50 +48,19 @@ const getBaseUrl = () => {
       origin,
     });
 
-    // Special handling for Render.com deployments
-    if (hostname.includes("render.com")) {
-      // For Render we'll use the same domain as the frontend
-      const apiUrl = `${protocol}//${hostname}`; // Just use the same domain for API requests
-      logApiOperation("getBaseUrl-render", { url: apiUrl });
-      window.apiDebug.baseUrl = apiUrl;
-      return apiUrl;
-    }
-
-    // Other production environments
+    // Handle production environments (including Render.com)
     if (!hostname.includes("localhost") && !hostname.includes("127.0.0.1")) {
-      // Try multiple potential API URL patterns
-
-      // Option 1: Replace 'app' with 'api' in hostname (common pattern)
-      const apiHostname1 = hostname
-        .replace("app.", "api.")
-        .replace("www.", "api.");
-
-      // Option 2: Add -api suffix to hostname base (common pattern)
-      const hostParts = hostname.replace("www.", "").split(".");
-      hostParts[0] = `${hostParts[0]}-api`;
-      const apiHostname2 = hostParts.join(".");
-
-      // Option 3: harmonic-universe-api.onrender.com as fallback
-      const apiHostname3 = "harmonic-universe-api.onrender.com";
-
-      // Log all options
-      logApiOperation("getBaseUrl-production-options", {
-        option1: apiHostname1,
-        option2: apiHostname2,
-        option3: apiHostname3,
-      });
-
-      // Select the first option as default
-      const apiUrl = `https://${apiHostname1}`;
-      logApiOperation("getBaseUrl-production", { url: apiUrl });
-      window.apiDebug.baseUrl = apiUrl;
-      return apiUrl;
+      // For production, use relative API URLs (same domain)
+      logApiOperation("getBaseUrl-production", { url: "" });
+      window.apiDebug.baseUrl = "";
+      return "";
     }
 
-    // Default for local development: use relative URLs
-    logApiOperation("getBaseUrl-local");
-    window.apiDebug.baseUrl = "";
-    return "";
+    // Default for local development: use localhost:5001
+    const localUrl = "http://localhost:5001";
+    logApiOperation("getBaseUrl-local", { url: localUrl });
+    window.apiDebug.baseUrl = localUrl;
+    return localUrl;
   } catch (error) {
     console.error("Error in getBaseUrl:", error);
     logApiOperation("getBaseUrl-error", {
@@ -109,7 +78,7 @@ const getBaseUrl = () => {
       });
     }
 
-    // Return empty string as fallback
+    // Return empty string as fallback (same origin)
     return "";
   }
 };

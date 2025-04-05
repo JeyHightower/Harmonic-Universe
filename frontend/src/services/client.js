@@ -2,8 +2,44 @@ import axios from "axios";
 import { log } from "../utils/logger";
 import { AUTH_CONFIG } from "../utils/config";
 
+// Helper function to determine API endpoint
+function chooseApiEndpoint() {
+  // Check if we're in a production environment
+  const isProduction = process.env.NODE_ENV === 'production' ||
+    import.meta.env.PROD ||
+    window.location.hostname.includes('render.com') ||
+    (!window.location.hostname.includes('localhost') &&
+      !window.location.hostname.includes('127.0.0.1'));
+
+  if (isProduction) {
+    // In production, use relative URL (same origin)
+    return '/api';
+  }
+
+  // In development, use the localhost URL
+  return import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+}
+
 // Constants
 export const API_BASE_ENDPOINT = chooseApiEndpoint();
+
+// Debug logging
+if (typeof window !== 'undefined') {
+  // Initialize API debug object if not exists
+  if (!window.apiDebug) {
+    window.apiDebug = {
+      operations: [],
+      errors: [],
+      baseUrl: API_BASE_ENDPOINT,
+      lastRequest: null,
+      lastError: null,
+    };
+  }
+
+  // Log the endpoint being used
+  console.log(`API Base Endpoint: ${API_BASE_ENDPOINT}`);
+  window.apiDebug.baseUrl = API_BASE_ENDPOINT;
+}
 
 // Add global debugging endpoint for API operations
 window.apiDebug = {
@@ -29,57 +65,6 @@ window.apiDebug = {
     }
   },
 };
-
-// Choose the appropriate API endpoint based on environment
-function chooseApiEndpoint() {
-  const endpoints = {
-    // Local development endpoint
-    local: "http://localhost:5001/api",
-
-    // Production endpoints
-    production: "https://harmonic-universe-api.onrender.com/api",
-    prodCDN: "https://harmonic-universe.onrender.com/api",
-
-    // Fallback endpoint (same origin)
-    fallback: "/api",
-  };
-
-  // Check environment
-  const isDev = process.env.NODE_ENV === "development";
-
-  // Log the selection process
-  log("api", "Selecting API endpoint", {
-    environment: process.env.NODE_ENV,
-    isDev,
-  });
-
-  // Allow override with .env variables
-  const envEndpoint = import.meta.env.VITE_API_ENDPOINT;
-  if (envEndpoint) {
-    log("api", "Using API endpoint from environment variable", {
-      endpoint: envEndpoint,
-    });
-    return envEndpoint;
-  }
-
-  // For development, use local endpoint
-  if (isDev) {
-    log("api", "Using local development endpoint");
-    return endpoints.local;
-  }
-
-  // For production, try to infer the best endpoint
-  // If we're on the same domain as our API, use relative path
-  const currentHost = window.location.hostname;
-  if (currentHost.includes("harmonic-universe")) {
-    log("api", "Using relative API endpoint", { host: currentHost });
-    return endpoints.fallback;
-  }
-
-  // Default to using the production endpoint
-  log("api", "Using production API endpoint");
-  return endpoints.production;
-}
 
 // Create axios instance
 const client = axios.create({

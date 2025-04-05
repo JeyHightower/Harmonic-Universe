@@ -23,8 +23,8 @@ export const PUBLIC_URL = import.meta.env.PUBLIC_URL || "/";
 
 // Export the API URL
 export const API_URL = IS_PRODUCTION
-  ? '' // Empty string means same origin in production
-  : (import.meta.env.VITE_API_URL || "http://localhost:5001");
+  ? '/api' // Use relative URL in production
+  : (import.meta.env.VITE_API_URL || "http://localhost:5001/api");
 
 // Export the CDN URL
 export const CDN_URL = import.meta.env.VITE_CDN_URL || "";
@@ -78,8 +78,8 @@ const parseInt = (value, defaultValue = undefined) => {
 // API configuration
 export const API_CONFIG = {
   BASE_URL: IS_PRODUCTION
-    ? '' // Empty string means same origin in production
-    : (import.meta.env.VITE_API_URL || "http://localhost:5001"),
+    ? '/api' // Use relative URL in production
+    : (import.meta.env.VITE_API_URL || "http://localhost:5001/api"),
   TIMEOUT: 10000,
   HEADERS: {
     "Content-Type": "application/json",
@@ -535,7 +535,9 @@ export const ERROR_MESSAGES = {
  */
 export const APP_CONFIG = {
   API: {
-    BASE_URL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3000",
+    BASE_URL: IS_PRODUCTION
+      ? '/api' // Use relative URL in production
+      : (import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api"),
     TIMEOUT: 30000,
   },
   FEATURES: {

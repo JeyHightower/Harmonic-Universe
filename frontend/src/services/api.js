@@ -121,10 +121,26 @@ const getEndpoint = (group, name, fallback) => {
 // Request deduplication
 const pendingRequests = new Map();
 
-// Check for environment-specific API URL
-const API_BASE_URL = process.env.NODE_ENV === 'production'
-  ? '' // Empty string to use relative URLs in production (same origin)
-  : 'http://localhost:5001'; // Updated port from 5000 to 5001
+// Determine the appropriate API URL based on environment
+const getApiBaseUrl = () => {
+  const isProduction = process.env.NODE_ENV === 'production' ||
+    import.meta.env.PROD ||
+    (typeof window !== 'undefined' &&
+      !window.location.hostname.includes('localhost') &&
+      !window.location.hostname.includes('127.0.0.1'));
+
+  if (isProduction) {
+    return '/api'; // In production, use relative URL (same origin)
+  }
+
+  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+};
+
+// Set the API base URL
+const API_BASE_URL = getApiBaseUrl();
+
+// Debug log the API base URL
+console.log(`API Base URL (in api.js): ${API_BASE_URL}`);
 
 // Create axios instance with the API base URL
 const axiosInstance = axios.create({

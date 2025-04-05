@@ -10,8 +10,8 @@ console.log("Loading endpoints.js module");
 // Base API URL
 const API_BASE_URL = API_CONFIG.BASE_URL;
 
-// API version prefix
-const API_VERSION = '/api';
+// API version prefix - remove this as we're already using /api in the base URL
+const API_VERSION = '';
 
 // Auth endpoints
 const authEndpoints = {
@@ -207,8 +207,8 @@ export const getApiEndpoint = (endpoint) => {
     return endpoint;
   }
 
-  // Ensure endpoint starts with API version
-  return endpoint.startsWith(API_VERSION) ? endpoint : `${API_VERSION}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
+  // Ensure endpoint doesn't start with '/api' as that's already in the base URL
+  return endpoint.startsWith('/api') ? endpoint : endpoint;
 };
 
 // Export default for easier imports
