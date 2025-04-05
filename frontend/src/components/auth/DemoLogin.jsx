@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { demoLogin } from "../../store/thunks/authThunks";
-import { ModalSystem } from "../modals";
-import { MODAL_CONFIG } from "../../utils/config";
+import { loginSuccess } from "../../store/slices/authSlice";
+import { AUTH_CONFIG } from "../../utils/config";
 import "./Auth.css";
 import PropTypes from "prop-types";
 
@@ -15,6 +15,9 @@ const DemoLogin = ({ onClose }) => {
   const auth = useSelector((state) => state.auth);
 
   useEffect(() => {
+    // Log page load
+    console.log("DemoLogin Component - Mounted, will auto-login");
+
     // Automatically trigger demo login when component mounts
     handleDemoLogin();
   }, []);
@@ -29,85 +32,109 @@ const DemoLogin = ({ onClose }) => {
     }
   }, [auth.isAuthenticated, auth.user, navigate]);
 
+  const createLocalDemoUser = () => {
+    const demoUser = {
+      id: "demo-user-" + Math.random().toString(36).substring(2, 7),
+      username: "demo",
+      email: "demo@example.com",
+      firstName: "Demo",
+      lastName: "User",
+      role: "user",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const mockToken =
+      "demo-token-" + Math.random().toString(36).substring(2, 15);
+
+    return {
+      user: demoUser,
+      token: mockToken,
+      message: "Demo login successful",
+    };
+  };
+
   const handleDemoLogin = async () => {
     try {
-      // Show loading indicator or message
-      console.log("DemoLogin - Logging in as demo user...");
+      console.log("DemoLogin Page - Starting demo login process");
       setIsLoading(true);
       setError(null);
 
-      // Dispatch the demo login action
-      const resultAction = await dispatch(demoLogin());
-      console.log("DemoLogin - Demo login result:", resultAction);
-
-      if (demoLogin.fulfilled.match(resultAction)) {
+      // For production environments, especially on Render.com, use local demo user
+      if (window.location.hostname.includes("render.com")) {
         console.log(
-          "DemoLogin - Demo login successful, will navigate when auth state updates"
+          "DemoLogin - Render.com environment detected, using direct login"
         );
-        // Navigation is handled by the useEffect above
-      } else {
-        // Demo login failed, show error
-        console.error("DemoLogin - Demo login failed:", resultAction);
+        const demoData = createLocalDemoUser();
 
-        // Extract a meaningful error message
-        let errorMessage = "Login failed. Please try again.";
-        if (resultAction.payload?.message) {
-          errorMessage = resultAction.payload.message;
-        } else if (resultAction.error?.message) {
-          errorMessage = resultAction.error.message;
+        // Store in localStorage
+        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, demoData.token);
+        localStorage.setItem(
+          AUTH_CONFIG.USER_KEY,
+          JSON.stringify(demoData.user)
+        );
+
+        // Update Redux state
+        dispatch(
+          loginSuccess({
+            user: demoData.user,
+            token: demoData.token,
+          })
+        );
+
+        console.log("DemoLogin - Direct login successful");
+        // Navigation will happen via the useEffect
+        return;
+      }
+
+      // For non-production environments, try the regular flow
+      try {
+        console.log("DemoLogin - Dispatching regular demoLogin thunk");
+        const resultAction = await dispatch(demoLogin());
+        console.log("DemoLogin - Demo login result:", resultAction);
+
+        if (demoLogin.fulfilled.match(resultAction)) {
+          console.log("DemoLogin - Demo login successful via thunk");
+          // Navigation is handled by the useEffect above
+          return;
         }
 
-        setError(errorMessage);
+        // If we get here, the thunk didn't succeed but didn't throw an error
+        console.warn("DemoLogin - Thunk didn't succeed, using fallback");
+        useLocalFallback();
+      } catch (apiError) {
+        console.error("DemoLogin - Error during demoLogin dispatch:", apiError);
+        useLocalFallback();
       }
     } catch (error) {
       console.error("DemoLogin - Error during demo login:", {
         name: error.name,
         message: error.message,
         stack: error.stack,
-        originalError: error,
       });
 
-      // Fallback to offline authentication if there was an error
+      // Last resort fallback
       try {
-        console.log("DemoLogin - Attempting fallback authentication directly");
-        // Import AUTH_CONFIG and handleOfflineAuthentication directly
-        const { handleOfflineAuthentication } = await import(
-          "../../utils/authFallback"
-        );
-        const { AUTH_CONFIG } = await import("../../utils/config");
+        console.log("DemoLogin - Using last resort fallback");
+        const demoData = createLocalDemoUser();
 
-        const fallbackData = handleOfflineAuthentication();
-        console.log("DemoLogin - Fallback data:", fallbackData);
-
-        // Store tokens from fallback using the correct key names
-        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, fallbackData.token);
-        if (fallbackData.refresh_token) {
-          localStorage.setItem(
-            AUTH_CONFIG.REFRESH_TOKEN_KEY,
-            fallbackData.refresh_token
-          );
-        }
+        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, demoData.token);
         localStorage.setItem(
           AUTH_CONFIG.USER_KEY,
-          JSON.stringify(fallbackData.user)
+          JSON.stringify(demoData.user)
         );
 
-        // Dispatch loginSuccess directly
         dispatch({
           type: "auth/loginSuccess",
           payload: {
-            user: fallbackData.user,
-            token: fallbackData.token,
-            refresh_token: fallbackData.refresh_token,
+            user: demoData.user,
+            token: demoData.token,
           },
         });
 
-        // Navigation will be handled by the useEffect that watches auth state
-      } catch (fallbackError) {
-        console.error(
-          "DemoLogin - Fallback authentication failed:",
-          fallbackError
-        );
+        console.log("DemoLogin - Last resort fallback successful");
+      } catch (finalError) {
+        console.error("DemoLogin - All fallbacks failed:", finalError);
         setError("Failed to authenticate. Please try again later.");
       }
     } finally {
@@ -115,46 +142,88 @@ const DemoLogin = ({ onClose }) => {
     }
   };
 
+  const useLocalFallback = () => {
+    try {
+      console.log("DemoLogin - Using local fallback");
+      const demoData = createLocalDemoUser();
+
+      localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, demoData.token);
+      localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(demoData.user));
+
+      dispatch(
+        loginSuccess({
+          user: demoData.user,
+          token: demoData.token,
+        })
+      );
+
+      console.log("DemoLogin - Local fallback successful");
+    } catch (fallbackError) {
+      console.error("DemoLogin - Local fallback failed:", fallbackError);
+      throw fallbackError; // Let the outer catch handle it
+    }
+  };
+
   const handleRetry = () => {
     handleDemoLogin();
   };
 
-  return (
-    <ModalSystem
-      isOpen={true}
-      onClose={onClose}
-      title="Demo Login"
-      size={MODAL_CONFIG.SIZES.MEDIUM}
-      type="form"
-      showCloseButton={true}
-      closeOnEscape={true}
-      closeOnBackdrop={true}
-      preventBodyScroll={true}
-      animation={MODAL_CONFIG.ANIMATIONS.FADE}
-    >
-      <div className="auth-form">
-        {isLoading ? (
-          <>
-            <p>Logging you in as a demo user...</p>
-            <div className="loading-spinner"></div>
-          </>
-        ) : error ? (
-          <>
-            <p className="error-message">{error}</p>
-            <button onClick={handleRetry} className="button button-primary">
-              Retry Login
-            </button>
-          </>
-        ) : (
-          <p>Redirecting to dashboard...</p>
-        )}
+  // If used as a page (not a modal)
+  if (!onClose) {
+    return (
+      <div className="demo-login-page">
+        <div className="auth-container">
+          <div className="auth-card">
+            <h2>Demo Login</h2>
+            {isLoading ? (
+              <>
+                <p>Logging you in as a demo user...</p>
+                <div className="loading-spinner"></div>
+              </>
+            ) : error ? (
+              <>
+                <p className="error-message">{error}</p>
+                <button onClick={handleRetry} className="button button-primary">
+                  Retry Login
+                </button>
+              </>
+            ) : (
+              <p>Redirecting to dashboard...</p>
+            )}
+          </div>
+        </div>
       </div>
-    </ModalSystem>
+    );
+  }
+
+  // If used as a modal
+  return (
+    <div className="auth-form">
+      {isLoading ? (
+        <>
+          <p>Logging you in as a demo user...</p>
+          <div className="loading-spinner"></div>
+        </>
+      ) : error ? (
+        <>
+          <p className="error-message">{error}</p>
+          <button onClick={handleRetry} className="button button-primary">
+            Retry Login
+          </button>
+        </>
+      ) : (
+        <p>Redirecting to dashboard...</p>
+      )}
+    </div>
   );
 };
 
 DemoLogin.propTypes = {
-  onClose: PropTypes.func.isRequired,
+  onClose: PropTypes.func,
+};
+
+DemoLogin.defaultProps = {
+  onClose: null,
 };
 
 export default DemoLogin;

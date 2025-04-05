@@ -20,6 +20,7 @@ const SceneEditPage = lazy(() =>
 const SceneEditRedirect = lazy(() =>
   import("../components/routing/SceneEditRedirect")
 );
+const DemoLogin = lazy(() => import("../components/auth/DemoLogin"));
 
 // New character and note pages
 const CharactersPage = lazy(() => import("../pages/CharactersPage"));
@@ -193,6 +194,11 @@ const routes = [
       {
         path: "/demo",
         element: <Navigate to="/?demo=true" replace />,
+      },
+      // Add a direct demo login route
+      {
+        path: "/demo-login",
+        element: <DemoLogin />,
       },
     ],
   },

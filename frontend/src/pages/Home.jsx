@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   checkAuthState,
   loginFailure,
@@ -178,6 +178,9 @@ function Home() {
           <Button onClick={handleDemoLogin} variant="primary">
             Try Demo
           </Button>
+          <Link to="/demo-login" className="try-demo-direct">
+            <Button variant="secondary">Try Demo (Alternative)</Button>
+          </Link>
         </div>
       </div>
       <div className="features-grid">
