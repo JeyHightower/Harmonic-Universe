@@ -1,8 +1,8 @@
-import { Card, Typography } from 'antd';
-import React from 'react';
-import { useSelector } from 'react-redux';
-import '../styles/Auth.css';
-import UserProfileModal from './UserProfileModal.jsx';
+import { Card, Typography } from "antd";
+import React from "react";
+import { useSelector } from "react-redux";
+import "../styles/Auth.css";
+import UserProfileModal from "../components/common/UserProfileModal.jsx";
 
 const { Title } = Typography;
 
@@ -10,7 +10,7 @@ const { Title } = Typography;
  * Profile page component that displays the user's profile
  */
 const ProfilePage = () => {
-  const { user } = useSelector(state => state.auth);
+  const { user } = useSelector((state) => state.auth);
 
   return (
     <div className="profile-page-container">

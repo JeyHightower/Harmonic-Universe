@@ -1,6 +1,14 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import apiClient from "../../services/api.js";
+import {
+  setCurrentScene,
+  addScene,
+  setError
+} from "../slices/scenesSlice";
 
+/**
+ * Error handler function for API errors
+ */
 const handleError = (error) => {
   console.error("API Error:", error);
   return {
@@ -11,7 +19,9 @@ const handleError = (error) => {
   };
 };
 
-// Helper function to normalize scene data (especially date fields)
+/**
+ * Helper function to normalize scene data (especially date fields)
+ */
 const normalizeSceneData = (scene) => {
   if (!scene) return null;
 
@@ -25,7 +35,9 @@ const normalizeSceneData = (scene) => {
   return normalized;
 };
 
-// Helper function to normalize scenes array
+/**
+ * Helper function to normalize scenes array
+ */
 const normalizeScenes = (scenes) => {
   if (!scenes || !Array.isArray(scenes)) return [];
   return scenes.map(normalizeSceneData);
@@ -36,130 +48,56 @@ const normalizeScenes = (scenes) => {
  */
 export const fetchScenes = createAsyncThunk(
   "scenes/fetchScenes",
-  async (universeId, { rejectWithValue }) => {
+  async (universeId, { dispatch, rejectWithValue }) => {
     try {
-      console.log("Fetching scenes for universe", universeId);
-      const response = await apiClient.getScenes(universeId);
-      console.log("Got scenes response:", response);
+      console.log(`Fetching scenes for universe ${universeId}`);
+      const response = await apiClient.get(`/api/scenes/universe/${universeId}`);
 
-      // Extra debugging for problematic universe IDs like 6
-      if (universeId == 6) {
-        console.log("DETAILED DEBUG - Universe 6 response:", JSON.stringify(response));
-      }
+      // Normalize scenes for consistent data format
+      const normalizedScenes = normalizeScenes(response.data.scenes || []);
 
-      // Check if we received an error response that was wrapped in a success response
-      if (response.data?.error) {
-        console.warn("API returned an error in a success response:", response.data.error);
-        // Return a valid response with empty scenes array even on error
-        return {
-          message: response.data.message || "Error fetching scenes",
-          scenes: response.data.scenes || [],
-          status: response.status || 200,
-          error: response.data.error,
-          universeId // Include the universeId for easier debugging
-        };
-      }
+      // We don't need to dispatch an action here since the fetchScenes is handled in the scenesSlice extraReducers
 
-      // Return only serializable data
-      const serializedResponse = {
-        message: response.data?.message,
-        scenes: response.data?.scenes || [],
-        status: response.status,
-        universeId // Include the universeId for easier debugging
+      return {
+        scenes: normalizedScenes,
+        universeId
       };
-
-      return serializedResponse;
     } catch (error) {
       console.error(`Error fetching scenes for universe ${universeId}:`, error);
+      dispatch(setError(error.response?.data?.message || error.message));
 
-      // Return a valid response with empty scenes array even on error
-      // This prevents the UI from breaking on API errors
+      // Return a valid response with empty scenes array to prevent UI errors
       return {
-        message: error.response?.data?.message || "Error fetching scenes",
         scenes: [],
-        status: error.response?.status || 500,
-        error: handleError(error),
-        universeId // Include the universeId for easier debugging
+        universeId,
+        error: handleError(error)
       };
     }
   }
 );
 
-// Fetch scenes for a specific universe
-export const fetchScenesForUniverse = createAsyncThunk(
-  "scenes/fetchScenesForUniverse",
-  async (universeId, { rejectWithValue }) => {
-    try {
-      console.log(`Thunk - Fetching scenes for universe ${universeId}`);
-
-      // Handle API errors more gracefully
-      try {
-        const response = await apiClient.getScenes(universeId);
-        console.log("Thunk - Got scenes response:", response);
-
-        // Check if response has an error but was wrapped in a success response
-        if (response.data?.error) {
-          console.warn("API returned an error in success response:", response.data.error);
-          return {
-            scenes: response.data?.scenes || [],
-            error: response.data.error,
-            message: response.data.message || "API error occurred"
-          };
-        }
-
-        // Check if response has valid data
-        if (!response.data) {
-          console.warn("Thunk - No data in response:", response);
-          return { scenes: [], error: "No data returned from API" };
-        }
-
-        // Extract scenes array, providing fallbacks
-        let scenes = [];
-        if (Array.isArray(response.data?.scenes)) {
-          scenes = response.data.scenes;
-        } else if (Array.isArray(response.data)) {
-          scenes = response.data;
-        }
-
-        console.log(`Thunk - Successfully retrieved ${scenes.length} scenes`);
-        return { scenes, message: response.data?.message || "Scenes retrieved successfully" };
-      } catch (apiError) {
-        console.error(`Thunk - API error fetching scenes for universe ${universeId}:`, apiError);
-
-        // Always return a valid object with an empty scenes array instead of rejecting
-        return {
-          scenes: [],
-          error: apiError.message || "Error fetching scenes",
-          message: "Error occurred, but continuing with empty scenes"
-        };
-      }
-    } catch (error) {
-      console.error(`Thunk - Unexpected error in scenes thunk:`, error);
-      // Even for unexpected errors, return an object with empty scenes
-      return {
-        scenes: [],
-        error: error.message || "Unexpected error",
-        message: "Unexpected error occurred"
-      };
-    }
-  }
-);
+// Alias for compatibility with existing code
+export const fetchScenesForUniverse = fetchScenes;
 
 /**
  * Fetch a single scene by ID
  */
 export const fetchSceneById = createAsyncThunk(
   "scenes/fetchSceneById",
-  async (sceneId, { rejectWithValue }) => {
+  async (sceneId, { dispatch, rejectWithValue }) => {
     try {
-      const response = await apiClient.getScene(sceneId);
+      const response = await apiClient.get(`/api/scenes/${sceneId}`);
+      const sceneData = normalizeSceneData(response.data.scene || response.data);
 
-      // Return only serializable data
+      // Update Redux store directly
+      dispatch(setCurrentScene(sceneData));
+
       return {
-        scene: response.data?.scene || response.data,
+        scene: sceneData,
         message: response.data?.message
       };
     } catch (error) {
+      dispatch(setError(error.response?.data?.message || error.message));
       return rejectWithValue(handleError(error));
     }
   }
@@ -170,27 +108,24 @@ export const fetchSceneById = createAsyncThunk(
  */
 export const createScene = createAsyncThunk(
   "scenes/createScene",
-  async (sceneData, { rejectWithValue }) => {
+  async (sceneData, { dispatch, rejectWithValue }) => {
     try {
       console.log("Creating scene with data:", sceneData);
-      const response = await apiClient.createScene(sceneData);
+      const response = await apiClient.post('/api/scenes', sceneData);
       console.log("Created scene response:", response);
 
-      // Return only serializable data
-      const serializedResponse = {
-        message: response.data?.message,
-        scene: response.data?.scene,
-        status: response.status
+      const newScene = normalizeSceneData(response.data.scene || response.data);
+
+      // Update Redux store directly
+      dispatch(addScene(newScene));
+
+      return {
+        scene: newScene,
+        message: response.data?.message
       };
-
-      // Normalize the scene data if present
-      if (serializedResponse.scene) {
-        serializedResponse.scene = normalizeSceneData(serializedResponse.scene);
-      }
-
-      return serializedResponse;
     } catch (error) {
       console.error("Error creating scene:", error);
+      dispatch(setError(error.response?.data?.message || error.message));
       return rejectWithValue(handleError(error));
     }
   }
@@ -201,17 +136,23 @@ export const createScene = createAsyncThunk(
  */
 export const updateScene = createAsyncThunk(
   "scenes/updateScene",
-  async ({ id, data }, { rejectWithValue }) => {
+  async ({ id, ...updateData }, { dispatch, rejectWithValue }) => {
     try {
-      const response = await apiClient.updateScene(id, data);
+      const response = await apiClient.put(`/api/scenes/${id}`, updateData);
+      const updatedScene = normalizeSceneData(response.data.scene || response.data);
 
-      // Return only serializable data
+      // Instead of using the action creator, dispatch directly to the reducer
+      // dispatch(updateSceneAction(updatedScene));
+      // Note: The updateScene thunk is handled in the extraReducers of scenesSlice.js
+      // so we don't need to dispatch an action here
+
       return {
-        scene: response.data?.scene || response.data,
+        scene: updatedScene,
         message: response.data?.message
       };
     } catch (error) {
       console.error(`Error updating scene ${id}:`, error);
+      dispatch(setError(error.response?.data?.message || error.message));
       return rejectWithValue(handleError(error));
     }
   }
@@ -222,71 +163,51 @@ export const updateScene = createAsyncThunk(
  */
 export const deleteScene = createAsyncThunk(
   "scenes/deleteScene",
-  async (sceneId, { rejectWithValue }) => {
+  async (sceneId, { dispatch, rejectWithValue }) => {
     try {
-      const response = await apiClient.deleteScene(sceneId);
+      await apiClient.delete(`/api/scenes/${sceneId}`);
 
-      // Return only serializable data with the ID for the reducer
+      // Don't need to dispatch an action as deleteScene is handled in extraReducers
+      // dispatch(deleteSceneAction(sceneId));
+
       return {
         id: sceneId,
-        message: response.data?.message
+        message: "Scene deleted successfully"
       };
     } catch (error) {
       console.error(`Error deleting scene ${sceneId}:`, error);
+      dispatch(setError(error.response?.data?.message || error.message));
       return rejectWithValue(handleError(error));
     }
   }
 );
 
 /**
- * Reorder scenes
+ * Reorder scenes within a universe
  */
 export const reorderScenes = createAsyncThunk(
   "scenes/reorderScenes",
-  async ({ universeId, sceneOrders }, { rejectWithValue }) => {
+  async ({ universeId, sceneOrders }, { dispatch, rejectWithValue }) => {
     try {
       console.log(`Reordering scenes for universe ${universeId}:`, sceneOrders);
 
       // For simple backend, we can update each scene individually
       const updatePromises = sceneOrders.map(({ id, order }) =>
-        apiClient.updateScene(id, { order })
+        apiClient.put(`/api/scenes/${id}`, { display_order: order })
       );
 
       await Promise.all(updatePromises);
 
-      // Fetch updated scenes
-      const response = await apiClient.getScenes(universeId);
-      console.log("Got updated scenes after reordering:", response);
+      // After reordering, refresh the scenes list
+      dispatch(fetchScenes(universeId));
 
-      // Extract and normalize the data
-      let scenes = [];
-
-      if (response && response.data && Array.isArray(response.data.scenes)) {
-        scenes = normalizeScenes(response.data.scenes);
-      } else if (response && Array.isArray(response.scenes)) {
-        scenes = normalizeScenes(response.scenes);
-      } else if (
-        response &&
-        typeof response === "object" &&
-        response.status === "success"
-      ) {
-        scenes = normalizeScenes(response.data?.scenes || []);
-      } else if (Array.isArray(response)) {
-        scenes = normalizeScenes(response);
-      } else {
-        console.error(
-          "Unexpected scenes response format after reordering:",
-          response
-        );
-        scenes = [];
-      }
-
-      return { ...response, scenes };
+      return {
+        universeId,
+        message: "Scenes reordered successfully"
+      };
     } catch (error) {
-      console.error(
-        `Error reordering scenes for universe ${universeId}:`,
-        error
-      );
+      console.error(`Error reordering scenes for universe ${universeId}:`, error);
+      dispatch(setError(error.response?.data?.message || error.message));
       return rejectWithValue(handleError(error));
     }
   }

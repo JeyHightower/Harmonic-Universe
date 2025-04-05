@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import apiClient from "../../services/api";
-import SceneFormModal from "../../features/SceneFormModal";
+import SceneModalHandler from "../../components/consolidated/SceneModalHandler";
 
 /**
  * SceneEditRedirect - Handles direct URLs to /scenes/:sceneId/edit
@@ -108,12 +108,14 @@ const SceneEditRedirect = () => {
   return (
     <div>
       {showModal && scene && universeId && (
-        <SceneFormModal
+        <SceneModalHandler
           isOpen={showModal}
           onClose={handleClose}
           onSuccess={handleEditSuccess}
           initialData={scene}
           universeId={universeId}
+          modalType="edit"
+          sceneId={sceneId}
         />
       )}
     </div>

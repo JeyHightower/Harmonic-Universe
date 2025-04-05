@@ -1,81 +1,142 @@
-# CSS Architecture - Harmonic Universe
+# Styles Directory
 
-This document outlines the CSS architecture for the Harmonic Universe frontend project, following the refactoring to eliminate conflicts and improve maintainability.
+This directory contains global CSS styles for the Harmonic Universe application. Component-specific styles are located alongside their respective components.
 
-## CSS File Structure
+## Directory Structure
 
-CSS files are organized in a specific order of importance:
+```
+styles/
+├── App.css                # Application-wide styles
+├── Button.css             # Button component styles
+├── common.css             # Common shared styles
+├── global.css             # Global styles and CSS variables
+├── index.css              # Main CSS entry point
+├── reset.css              # CSS reset/normalize
+├── theme.css              # Theme variables and styles
+├── variables.css          # CSS custom properties (variables)
+└── [component].css        # Component-specific global styles
+```
 
-1. **reset.css** - Resets browser defaults to ensure consistent styling
-2. **variables.css** - Defines CSS variables used throughout the application
-3. **theme.css** - Defines theme-specific variables and color palettes
-4. **global.css** - Global styles applied throughout the application
-5. **common.css** - Common component styles (loading states, empty states, forms)
-6. **buttons.css** - Consolidated button styles
-7. **modal.css** - Consolidated modal styles
-8. **index.css** - Additional global styles
-9. **App.css** - Application-specific styles
-10. **[component].css** - Component-specific styles
+## CSS Organization
 
-## Import Order
+The CSS in this application follows these principles:
 
-CSS files are imported in the above order in `main.jsx` to ensure proper cascading of styles. This order allows more specific styles to override more general ones when needed.
+### Global Styles
 
-## Consolidated Files
+- `reset.css`: Normalizes browser styles
+- `variables.css`: Defines global CSS custom properties
+- `global.css`: Sets global styles for HTML elements
+- `theme.css`: Defines theme-related styles and variables
+- `common.css`: Shared utility classes
 
-Several consolidated files have been created to eliminate conflicts:
+### Component-Specific Styles
 
-- **common.css** - Contains common components like loading states, spinners, empty states, and form elements
-- **buttons.css** - All button styles, replacing multiple button implementations
-- **modal.css** - All modal styles, replacing multiple modal implementations
+- Each component should have its own CSS file
+- Component-specific CSS files should be located next to the component file
+- Global component styles may be placed in this directory
+
+## CSS Naming Conventions
+
+This project uses a modified BEM (Block, Element, Modifier) naming convention:
+
+- **Block**: Main component (e.g., `.button`)
+- **Element**: Part of a component (e.g., `.button__icon`)
+- **Modifier**: Variant of a component (e.g., `.button--primary`)
+
+Example:
+
+```css
+.card {
+  /* Base card styles */
+}
+
+.card__title {
+  /* Card title styles */
+}
+
+.card__content {
+  /* Card content styles */
+}
+
+.card--featured {
+  /* Featured card variant */
+}
+```
+
+## CSS Variables
+
+CSS variables are defined in `variables.css` and are organized by:
+
+- Colors
+- Typography
+- Spacing
+- Breakpoints
+- Animation
+- Shadows
+
+Example:
+
+```css
+:root {
+  /* Colors */
+  --color-primary: #3498db;
+  --color-secondary: #2ecc71;
+  --color-text: #333333;
+  --color-background: #ffffff;
+
+  /* Typography */
+  --font-family-base: "Roboto", sans-serif;
+  --font-size-base: 16px;
+  --line-height-base: 1.5;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+}
+```
+
+## Theming
+
+The application supports light and dark themes using CSS variables and the `data-theme` attribute on the root element. Theme-specific variables are defined in `theme.css`.
+
+Example theme usage:
+
+```css
+:root {
+  /* Default light theme */
+  --bg-color: #ffffff;
+  --text-color: #333333;
+}
+
+[data-theme="dark"] {
+  --bg-color: #121212;
+  --text-color: #f1f1f1;
+}
+```
+
+## Media Queries
+
+Media queries are used for responsive design. Common breakpoints are defined as CSS variables in `variables.css`.
+
+Example media query:
+
+```css
+@media (max-width: var(--breakpoint-md)) {
+  .container {
+    padding: var(--spacing-sm);
+  }
+}
+```
 
 ## Best Practices
 
-To avoid future conflicts, follow these guidelines:
-
-### 1. Use the Established Component Classes
-
-- For buttons, use `.button` and `.button-*` classes (not `.btn`)
-- For modals, use the classes defined in `modal.css`
-- For loading states, use `.loading-container` and `.spinner` from `common.css`
-- For forms, use the form components from `common.css`
-
-### 2. Component-specific CSS
-
-- Component-specific styles should be placed in their own CSS file
-- Use component-specific class names to avoid conflicts (e.g., `.user-profile-header` instead of `.header`)
-- Import component CSS in the component file, not in `main.jsx`
-
-### 3. CSS Variables
-
-- Use CSS variables from `variables.css` and `theme.css` for consistency
-- Don't redefine variables in component CSS files
-
-### 4. Avoid !important
-
-- Never use `!important` in your CSS, as it breaks the natural cascade
-- If you need to override a style, use more specific selectors
-
-### 5. Adding New Common Components
-
-If you need to add a new common component:
-
-1. Add it to the appropriate consolidated file
-2. Document it in this README
-3. Update the team
-
-## Legacy Support
-
-For backward compatibility:
-
-- `.btn` classes are still supported but deprecated
-- The `modal-fix.css` file is no longer needed and has been replaced by `modal.css`
-
-## Troubleshooting
-
-If you encounter styling issues:
-
-1. Check browser dev tools to see which CSS rules are being applied
-2. Verify the import order in your component
-3. Check for conflicting class names
-4. Consult this README for best practices
+1. **Component Isolation**: Component styles should not affect other components
+2. **Reusable Utilities**: Common utility classes should be defined in `common.css`
+3. **CSS Variables**: Use CSS variables for consistent theming and styling
+4. **Mobile First**: Design for mobile first, then enhance for larger screens
+5. **Minimal Specificity**: Keep selector specificity as low as possible
+6. **Avoid !important**: Only use as a last resort
+7. **Comment Complex Code**: Add comments to explain complex selectors or properties

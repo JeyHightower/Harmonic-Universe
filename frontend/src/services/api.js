@@ -2223,10 +2223,12 @@ const apiClient = {
     // Otherwise treat it as a params object
     else if (params.universeId) {
       queryParams.append("universe_id", params.universeId);
+    } else if (params.sceneId) {
+      queryParams.append("scene_id", params.sceneId);
     }
 
     // Get the base endpoint
-    const baseEndpoint = getEndpoint('characters', 'list', '/api/characters');
+    const baseEndpoint = getEndpoint('characters', 'list', '/characters');
     // Form the complete URL
     const url = `${baseEndpoint}?${queryParams.toString()}`;
 
@@ -2312,9 +2314,11 @@ const apiClient = {
       });
     }
 
+    // Use endpoint without /api prefix since baseURL already includes it
     const endpoint = getEndpoint('universes', 'characters', `/universes/${parsedUniverseId}/characters`);
     const url = typeof endpoint === 'function' ? endpoint(parsedUniverseId) : endpoint;
     const formattedUrl = formatUrl(url);
+    console.log(`getCharactersByUniverse: Using URL: ${formattedUrl}`);
 
     // If the URL is invalid, return an empty response instead of trying to make the request
     if (formattedUrl === null) {
@@ -2475,23 +2479,30 @@ const apiClient = {
     }
   },
   getCharacter: (id) => {
-    const endpoint = getEndpoint('characters', 'get', `/api/characters/${id}`);
+    console.log(`Getting character with id: ${id}`);
+    // Use endpoint without /api prefix since baseURL already includes it
+    const endpoint = getEndpoint('characters', 'get', `/characters/${id}`);
     const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
+    console.log(`API - getCharacter - Using URL: ${url}`);
     return axiosInstance.get(url);
   },
   createCharacter: (data) => {
-    // Ensure universe_id is present
-    if (!data.universe_id) {
+    // Clone data and transform field names if needed
+    const transformedData = { ...data };
+
+    // Ensure we have the appropriate universe ID
+    if (!transformedData.universe_id) {
       throw new Error("universe_id is required to create a character");
     }
 
-    // Clone data and transform field names if needed
-    const transformedData = { ...data };
+    if (!transformedData.name) {
+      throw new Error("Character name is required");
+    }
 
     console.log("Sending createCharacter request with data:", transformedData);
 
     // Use the base characters endpoint
-    const endpoint = getEndpoint('characters', 'create', '/api/characters');
+    const endpoint = getEndpoint('characters', 'create', '/characters');
     return axiosInstance.post(endpoint, transformedData);
   },
   updateCharacter: async (id, data) => {
@@ -2505,7 +2516,7 @@ const apiClient = {
       if (!data.universe_id) {
         console.warn("API - updateCharacter - universe_id missing, adding from character data");
         // Try to get universe_id from get character if not provided
-        const characterEndpoint = getEndpoint('characters', 'get', `/api/characters/${id}`);
+        const characterEndpoint = getEndpoint('characters', 'get', `/characters/${id}`);
         const characterUrl = typeof characterEndpoint === 'function' ? characterEndpoint(id) : characterEndpoint;
         const characterResponse = await axiosInstance.get(characterUrl);
         data.universe_id = characterResponse.data?.character?.universe_id || characterResponse.data?.universe_id;
@@ -2519,8 +2530,10 @@ const apiClient = {
       const normalizedData = { ...data };
 
       console.log(`API - updateCharacter - Sending normalized data:`, normalizedData);
-      const updateEndpoint = getEndpoint('characters', 'update', `/api/characters/${id}`);
+      // Use endpoint without /api prefix since baseURL already includes it
+      const updateEndpoint = getEndpoint('characters', 'update', `/characters/${id}`);
       const updateUrl = typeof updateEndpoint === 'function' ? updateEndpoint(id) : updateEndpoint;
+      console.log(`API - updateCharacter - Using URL: ${updateUrl}`);
       const response = await axiosInstance.put(updateUrl, normalizedData);
       console.log(`API - updateCharacter - Successfully updated character ${id}:`, response);
       return response;
@@ -2533,8 +2546,10 @@ const apiClient = {
   deleteCharacter: async (id) => {
     console.log(`API - deleteCharacter - Deleting character ${id}`);
     try {
-      const endpoint = getEndpoint('characters', 'delete', `/api/characters/${id}`);
+      // Use endpoint without /api prefix since baseURL already includes it
+      const endpoint = getEndpoint('characters', 'delete', `/characters/${id}`);
       const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
+      console.log(`API - deleteCharacter - Using URL: ${url}`);
       const response = await axiosInstance.delete(url);
       console.log(`API - deleteCharacter - Successfully deleted character ${id}:`, response);
       return response;

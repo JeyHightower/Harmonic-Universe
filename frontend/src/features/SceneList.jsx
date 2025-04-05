@@ -23,8 +23,7 @@ import {
   deleteScene,
   createScene,
 } from "../store/thunks/consolidated/scenesThunks";
-import { SceneCard } from "../components/consolidated";
-import SceneFormModal from "../features/SceneFormModal";
+import { SceneCard, SceneModalHandler } from "../components/consolidated";
 import { ROUTES } from "../utils/routes";
 import "../styles/SceneList.css";
 
@@ -413,11 +412,12 @@ const SceneList = () => {
 
       {/* Scene Creation Modal */}
       {isCreateModalOpen && (
-        <SceneFormModal
-          open={isCreateModalOpen}
+        <SceneModalHandler
+          isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
           onSuccess={handleCreateSuccess}
           universeId={universeId}
+          modalType="create"
         />
       )}
     </Container>

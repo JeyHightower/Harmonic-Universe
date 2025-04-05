@@ -8,10 +8,9 @@ import {
 } from "../store/thunks/consolidated/scenesThunks";
 import { fetchUniverseById } from "../store/thunks/universeThunks";
 import "../styles/UniverseDetail.css";
-import { SceneCard } from "../components/consolidated";
-import SceneFormModal from "./SceneFormModal";
-import UniverseDeleteModal from "./UniverseDeleteModal";
-import UniverseFormModal from "./UniverseFormModal";
+import { SceneCard, SceneModalHandler } from "../components/consolidated";
+import UniverseDeleteModal from "../components/universe/UniverseDeleteModal";
+import UniverseFormModal from "../components/universe/UniverseFormModal";
 
 const UniverseDetail = () => {
   const { id } = useParams();
@@ -272,22 +271,25 @@ const UniverseDetail = () => {
       )}
 
       {isCreateSceneModalOpen && (
-        <SceneFormModal
+        <SceneModalHandler
           isOpen={isCreateSceneModalOpen}
           onClose={() => setIsCreateSceneModalOpen(false)}
           onSuccess={handleCreateSceneSuccess}
           universeId={id}
+          modalType="create"
         />
       )}
 
       {/* Add Scene Edit Modal */}
       {isEditSceneModalOpen && sceneToEdit && (
-        <SceneFormModal
+        <SceneModalHandler
           isOpen={isEditSceneModalOpen}
           onClose={handleEditSceneClose}
           onSuccess={handleEditSceneSuccess}
           initialData={sceneToEdit}
           universeId={id}
+          modalType="edit"
+          sceneId={sceneToEdit.id}
         />
       )}
 

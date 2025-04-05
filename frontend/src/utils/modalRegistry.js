@@ -9,7 +9,7 @@ import FormModal from "../components/modals/FormModal";
 import LoginModal from "../components/auth/LoginModal";
 import SignupModal from "../components/auth/SignupModal";
 import UniverseCreateModal from "../components/modals/UniverseCreateModal";
-import SceneFormModal from "../features/SceneFormModal";
+import SceneModalHandler from "../components/consolidated/SceneModalHandler";
 import CharacterFormModal from "../components/modals/CharacterFormModal";
 
 // Create modal registry
@@ -66,7 +66,7 @@ const getModalComponent = async (type) => {
         break;
       case "SCENE_FORM":
         console.log("Loading SceneFormModal component from features directory");
-        component = SceneFormModal;
+        component = SceneModalHandler;
         break;
       case "CHARACTER_FORM":
         console.log("Loading CharacterFormModal component");
