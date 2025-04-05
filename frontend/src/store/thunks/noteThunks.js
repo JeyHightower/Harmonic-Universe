@@ -69,7 +69,7 @@ export const createNote = createAsyncThunk(
   "notes/createNote",
   async (noteData, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post(API_MODAL_ROUTES.CREATE_NOTE, noteData);
+      const response = await apiClient.createNote(noteData);
       return response.data;
     } catch (error) {
       return rejectWithValue(handleError(error));
@@ -82,7 +82,7 @@ export const updateNote = createAsyncThunk(
   "notes/updateNote",
   async ({ noteId, noteData }, { rejectWithValue }) => {
     try {
-      const response = await apiClient.put(API_MODAL_ROUTES.EDIT_NOTE.replace(":id", noteId), noteData);
+      const response = await apiClient.updateNote(noteId, noteData);
       return response.data;
     } catch (error) {
       return rejectWithValue(handleError(error));
@@ -95,7 +95,7 @@ export const deleteNote = createAsyncThunk(
   "notes/deleteNote",
   async (noteId, { rejectWithValue }) => {
     try {
-      await apiClient.delete(API_MODAL_ROUTES.DELETE_NOTE.replace(":id", noteId));
+      await apiClient.deleteNote(noteId);
       return noteId;
     } catch (error) {
       return rejectWithValue(handleError(error));

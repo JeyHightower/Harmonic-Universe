@@ -700,7 +700,7 @@ const CharacterFormModal = ({
         try {
           // Use imported updateCharacter thunk directly
           const updatedCharacter = await dispatch(
-            updateCharacter(characterId, data)
+            updateCharacter({ characterId, characterData: data })
           );
           console.log("Character updated through Redux:", updatedCharacter);
 

@@ -349,7 +349,8 @@ const _request = async (method, url, data = null, options = {}) => {
       ...options
     });
 
-    return response.data;
+    // Return the entire response object, not just response.data
+    return response;
   } catch (error) {
     // Log the error with the URL for debugging
     console.error(`API Error:`, {

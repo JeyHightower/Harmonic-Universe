@@ -18,7 +18,7 @@ export const fetchCharacters = createAsyncThunk(
   'characters/fetchCharacters',
   async (sceneId, { rejectWithValue }) => {
     try {
-      const response = await apiClient.get(`/characters/scene/${sceneId}`);
+      const response = await apiClient.getCharactersByScene(sceneId);
       return response.data.characters;
     } catch (error) {
       // If we get rate limited, try with retry logic
@@ -82,7 +82,9 @@ export const fetchCharactersByUniverse = createAsyncThunk(
         try {
           const response = await requestWithRetry({
             method: 'get',
-            url: `/universes/${parsedUniverseId}/characters`,
+            url: `${apiClient.defaults.baseURL}/universes/${parsedUniverseId}/characters`,
+            headers: apiClient.defaults.headers,
+            withCredentials: true
           });
 
           let characters = [];
@@ -109,7 +111,7 @@ export const fetchCharacter = createAsyncThunk(
   'characters/fetchCharacter',
   async (characterId, { rejectWithValue }) => {
     try {
-      const response = await apiClient.get(`/characters/${characterId}`);
+      const response = await apiClient.getCharacter(characterId);
       return response.data.character;
     } catch (error) {
       // If we get rate limited, try with retry logic
@@ -137,7 +139,7 @@ export const createCharacter = createAsyncThunk(
   'characters/createCharacter',
   async (characterData, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post('/characters', characterData);
+      const response = await apiClient.createCharacter(characterData);
       return response.data.character;
     } catch (error) {
       // If we get rate limited, try with retry logic
@@ -166,7 +168,7 @@ export const updateCharacter = createAsyncThunk(
   'characters/updateCharacter',
   async ({ characterId, characterData }, { rejectWithValue }) => {
     try {
-      const response = await apiClient.put(`/characters/${characterId}`, characterData);
+      const response = await apiClient.updateCharacter(characterId, characterData);
       return response.data.character;
     } catch (error) {
       // If we get rate limited, try with retry logic
@@ -195,7 +197,7 @@ export const deleteCharacter = createAsyncThunk(
   'characters/deleteCharacter',
   async (characterId, { rejectWithValue }) => {
     try {
-      await apiClient.delete(`/characters/${characterId}`);
+      await apiClient.deleteCharacter(characterId);
       return characterId;
     } catch (error) {
       // If we get rate limited, try with retry logic
