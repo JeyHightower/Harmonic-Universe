@@ -73,10 +73,25 @@ const CharactersPageContent = ({ universeId }) => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        console.log("Fetching data for universe ID:", universeId);
+        setError(null);
+
+        // Validate universeId before making API requests
+        const parsedUniverseId = universeId ? parseInt(universeId, 10) : null;
+
+        if (!parsedUniverseId) {
+          console.warn("No universe ID available for fetching data");
+          setError("Please select a universe first.");
+          setLoading(false);
+
+          // Redirect to universes dashboard
+          navigate("/dashboard");
+          return;
+        }
+
+        console.log("Fetching data for universe ID:", parsedUniverseId);
 
         // Get universe details
-        const universeResponse = await apiClient.getUniverse(universeId, {
+        const universeResponse = await apiClient.getUniverse(parsedUniverseId, {
           includeScenes: true,
         });
         console.log("Universe response:", universeResponse.data);
@@ -111,10 +126,10 @@ const CharactersPageContent = ({ universeId }) => {
           try {
             console.log(
               "No scenes in universe response, fetching directly for universe",
-              universeId
+              parsedUniverseId
             );
             const scenesResponse = await apiClient.getUniverseScenes(
-              universeId
+              parsedUniverseId
             );
             console.log("Direct scenes response:", scenesResponse);
 
@@ -156,8 +171,9 @@ const CharactersPageContent = ({ universeId }) => {
                 }
               }
             }
-          } catch (err) {
-            console.error("Error fetching scenes:", err);
+          } catch (sceneError) {
+            console.error("Error fetching scenes:", sceneError);
+            // Continue with other data fetching even if scenes fail
           }
         }
 
@@ -167,7 +183,7 @@ const CharactersPageContent = ({ universeId }) => {
 
         // Get characters for this universe
         const charactersResponse = await apiClient.getCharactersByUniverse(
-          universeId
+          parsedUniverseId
         );
         setCharacters(charactersResponse.data.characters || []);
 
@@ -180,7 +196,7 @@ const CharactersPageContent = ({ universeId }) => {
     };
 
     fetchData();
-  }, [universeId]);
+  }, [universeId, navigate]);
 
   const handleCreateCharacter = () => {
     console.log("Creating character for universe:", universeId);

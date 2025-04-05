@@ -215,6 +215,67 @@ const getApiBaseUrl = () => {
   return import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
 };
 
+// Helper function to ensure URL is properly formatted without duplicate "api"
+const formatUrl = (url) => {
+  // If the URL is already a full URL, return it as is
+  if (url.startsWith('http')) {
+    return url;
+  }
+
+  // Remove leading 'api' if it exists, since we'll add it in the base URL
+  if (url.startsWith('/api/')) {
+    url = url.substring(4); // Remove '/api' prefix
+  }
+
+  // Ensure URL starts with a slash
+  if (!url.startsWith('/')) {
+    url = '/' + url;
+  }
+
+  return url;
+};
+
+// Helper function for making API requests
+const _request = async (method, url, data = null, options = {}) => {
+  try {
+    // Format the URL to avoid duplicate 'api' segments
+    const formattedUrl = formatUrl(url);
+
+    // Get the current token
+    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+
+    // Set authorization header if token exists
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      ...options.headers
+    };
+
+    // Log the request
+    console.log(`Making ${method.toUpperCase()} request to: ${formattedUrl}`);
+
+    const response = await axiosInstance({
+      method,
+      url: formattedUrl,
+      data,
+      headers,
+      ...options
+    });
+
+    return response.data;
+  } catch (error) {
+    // Log the error with the URL for debugging
+    console.error(`API Error:`, {
+      status: error.response?.status,
+      url: url,
+      data: error.response?.data,
+      headers: error.response?.headers
+    });
+
+    throw error;
+  }
+};
+
 // Set the API base URL
 const API_BASE_URL = getApiBaseUrl();
 
@@ -754,62 +815,18 @@ const apiClient = {
   },
   validateToken: async () => {
     try {
-      // If in rate limit cooldown, return cached user data if available
-      if (isInRateLimitCooldown()) {
-        console.debug("In rate limit cooldown, using cached user data for token validation");
-
-        const userDataStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-        if (userDataStr) {
-          try {
-            const userData = JSON.parse(userDataStr);
-            console.log("Returning cached user data during rate limit: ", userData);
-            return { data: userData };
-          } catch (e) {
-            console.error("Error parsing cached user data: ", e);
-          }
-        }
-
-        // If no cached data, but in production with a token that looks like demo
-        const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-        if (isProduction && token && token.startsWith('demo-')) {
-          console.debug("Using mock demo user during rate limit cooldown");
-          const mockUser = {
-            id: token.split('-')[2] || 'demo-user',
-            username: 'demo_user',
-            email: 'demo@harmonic-universe.com',
-            firstName: 'Demo',
-            lastName: 'User'
-          };
-
-          // Cache this for future use
-          localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(mockUser));
-
-          return { data: mockUser };
-        }
-
-        throw new Error("No user data available during rate limit cooldown");
-      }
-
-      // Check for demo token in production to avoid unnecessary API calls
+      // For production, if the token looks like a demo token, create a mock user
       const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+      const isProduction = process.env.NODE_ENV === 'production' ||
+        import.meta.env.PROD ||
+        (typeof window !== 'undefined' &&
+          !window.location.hostname.includes('localhost') &&
+          !window.location.hostname.includes('127.0.0.1'));
+
       if (isProduction && token && token.startsWith('demo-')) {
-        console.debug("Using mock response for demo token validation in production");
-
-        // Check if we already have user data stored
-        const userDataStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-        if (userDataStr) {
-          try {
-            const userData = JSON.parse(userDataStr);
-            console.log("Returning stored demo user: ", userData);
-            return { data: userData };
-          } catch (e) {
-            console.error("Error parsing stored user data: ", e);
-          }
-        }
-
-        // Create mock user if no stored data found
+        console.log("Using mock user for demo token validation");
         const mockUser = {
-          id: token.split('-')[2] || 'demo-user',
+          id: 'demo-' + Math.random().toString(36).substring(2, 10),
           username: 'demo_user',
           email: 'demo@harmonic-universe.com',
           firstName: 'Demo',
@@ -823,18 +840,20 @@ const apiClient = {
       }
 
       // Normal API validation for real users
-      const endpoint = getEndpoint(AUTH_CONFIG.ENDPOINTS.VALIDATE);
+      // First try to get the proper endpoint using getEndpoint with the correct parameters
+      const endpoint = getEndpoint('auth', 'validate', '/api/auth/validate');
       console.debug("Validating token at endpoint:", endpoint);
 
-      const response = await axiosInstance.get(endpoint);
-      console.log("Token validation successful:", response.data);
+      // Use the _request helper function instead of direct axios call
+      const response = await _request('get', endpoint);
+      console.log("Token validation successful:", response);
 
       // Store the user data for future use
-      if (response.data && typeof response.data === 'object') {
-        localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(response.data));
+      if (response && typeof response === 'object') {
+        localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(response));
       }
 
-      return response;
+      return { data: response };
     } catch (error) {
       console.error("Token validation error:", error.message);
 
@@ -1178,7 +1197,7 @@ const apiClient = {
   },
   getUniverse: (id, params = {}) => {
     // More robust validation for id
-    if (id === undefined || id === null || id === 'undefined' || id === 'null') {
+    if (id === undefined || id === null || id === 'undefined' || id === 'null' || id === '') {
       console.error(`getUniverse: Invalid universe ID: '${id}'`);
       // Return an empty response to prevent app breaking
       return Promise.resolve({
@@ -1190,12 +1209,15 @@ const apiClient = {
       });
     }
 
+    // Ensure id is a number if it's a string that can be parsed
+    const universeId = typeof id === 'string' && !isNaN(parseInt(id, 10)) ? parseInt(id, 10) : id;
+
     // Check if we're in production and using a demo user
     const isDemo = isProduction && localStorage.getItem(AUTH_CONFIG.TOKEN_KEY)?.startsWith('demo-');
 
     // In production for demo universe IDs, return mock data
-    if (isProduction && (isDemo || id === '1001' || id === 1001)) {
-      console.log(`Providing mock universe data for universe ${id} in production`);
+    if (isProduction && (isDemo || universeId === 1001 || universeId === '1001')) {
+      console.log(`Providing mock universe data for universe ${universeId} in production`);
 
       // Get any user info we might have
       const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
@@ -1212,7 +1234,7 @@ const apiClient = {
 
       // Create mock universe
       const mockUniverse = {
-        id: parseInt(id) || 1001,
+        id: parseInt(universeId) || 1001,
         name: "Demo Universe",
         description: "A sample universe for exploring the application",
         is_public: true,
@@ -1264,20 +1286,21 @@ const apiClient = {
     }
 
     // Get endpoint and ensure it's called if it's a function
-    const endpoint = getEndpoint('universes', 'get', `/api/universes/${id}`);
-    const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
+    const endpoint = getEndpoint('universes', 'get', `/universes/${universeId}`);
+    const url = typeof endpoint === 'function' ? endpoint(universeId) : endpoint;
+    const formattedUrl = formatUrl(url);
 
-    console.log(`getUniverse: Fetching universe ${id} from ${url}`);
+    console.log(`getUniverse: Fetching universe ${universeId} from ${formattedUrl}`);
 
-    // Handle API error more gracefully
-    return axiosInstance.get(`${url}?${queryParams.toString()}`)
+    // Use _request helper to make the API call
+    return _request('get', `${formattedUrl}?${queryParams.toString()}`)
       .catch(error => {
-        console.error(`getUniverse: Error fetching universe ${id}:`, error);
+        console.error(`getUniverse: Error fetching universe ${universeId}:`, error);
 
         // For demo users in production with 401 errors, return mock data
         if (isProduction && error.response?.status === 401 &&
-          (localStorage.getItem(AUTH_CONFIG.TOKEN_KEY)?.startsWith('demo-') || id === '1001' || id === 1001)) {
-          console.log(`Using mock data for demo user fetching universe ${id} due to 401 error`);
+          (localStorage.getItem(AUTH_CONFIG.TOKEN_KEY)?.startsWith('demo-') || universeId === 1001 || universeId === '1001')) {
+          console.log(`Using mock data for demo user fetching universe ${universeId} due to 401 error`);
 
           // Get user ID from local storage if available
           const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
@@ -1294,7 +1317,7 @@ const apiClient = {
 
           // Create mock universe
           const mockUniverse = {
-            id: parseInt(id) || 1001,
+            id: parseInt(universeId) || 1001,
             name: "Demo Universe",
             description: "A sample universe for exploring the application",
             is_public: true,
@@ -1392,13 +1415,31 @@ const apiClient = {
   getUniverseScenes: (universeId) => {
     console.log(`API - getUniverseScenes - Starting fetch for universe ${universeId}`);
 
+    // Validate universeId
+    if (universeId === undefined || universeId === null || universeId === 'undefined' || universeId === 'null' || universeId === '') {
+      console.error(`getUniverseScenes: Invalid universe ID: '${universeId}'`);
+      return Promise.resolve({
+        status: 200,
+        data: {
+          scenes: [],
+          message: "No universe selected",
+          error: "Invalid universe ID"
+        }
+      });
+    }
+
+    // Ensure universeId is a number if it's a string that can be parsed
+    const parsedUniverseId = typeof universeId === 'string' && !isNaN(parseInt(universeId, 10))
+      ? parseInt(universeId, 10)
+      : universeId;
+
     // Define all possible endpoints to try in sequence
-    // Reordered to prioritize endpoints that work without CORS issues
+    // Use the format helper to ensure proper URLs
     const endpoints = [
-      `/api/scenes/universe/${universeId}`, // This endpoint works without CORS issues - use it first
-      `/api/universes/${universeId}/scenes`,
-      `/api/universes/${universeId}?include_scenes=true`,
-      `/api/scenes?universe_id=${universeId}` // This endpoint has CORS issues - try it last
+      formatUrl(`/scenes/universe/${parsedUniverseId}`),
+      formatUrl(`/universes/${parsedUniverseId}/scenes`),
+      formatUrl(`/universes/${parsedUniverseId}?include_scenes=true`),
+      formatUrl(`/scenes?universe_id=${parsedUniverseId}`)
     ];
 
     // Return a promise that handles errors more gracefully
@@ -1406,7 +1447,7 @@ const apiClient = {
       // Helper function to try the next endpoint
       const tryNextEndpoint = (index) => {
         if (index >= endpoints.length) {
-          console.log(`API - getUniverseScenes - All endpoints failed for universe ${universeId}`);
+          console.log(`API - getUniverseScenes - All endpoints failed for universe ${parsedUniverseId}`);
           // If all endpoints fail, return an empty response with success status
           // This prevents UI breakage while logging the issue
           return resolve({
@@ -1422,31 +1463,32 @@ const apiClient = {
         const endpoint = endpoints[index];
         console.log(`API - getUniverseScenes - Trying endpoint ${index + 1}/${endpoints.length}: ${endpoint}`);
 
-        axiosInstance.get(endpoint)
+        // Use the _request helper instead of direct axios calls
+        _request('get', endpoint)
           .then(response => {
-            console.log(`API - getUniverseScenes - Got response from ${endpoint}:`, response.data);
+            console.log(`API - getUniverseScenes - Got response from ${endpoint}:`, response);
 
             // Process the response to extract scenes, handling different response formats
             let scenes = [];
 
             // Case 1: Direct array in data
-            if (Array.isArray(response.data)) {
-              scenes = response.data;
+            if (Array.isArray(response)) {
+              scenes = response;
             }
             // Case 2: Scenes in data.scenes property
-            else if (response.data?.scenes && Array.isArray(response.data.scenes)) {
-              scenes = response.data.scenes;
+            else if (response?.scenes && Array.isArray(response.scenes)) {
+              scenes = response.scenes;
             }
             // Case 3: Scenes in data.universe.scenes property (for the include_scenes endpoint)
-            else if (response.data?.universe?.scenes && Array.isArray(response.data.universe.scenes)) {
-              scenes = response.data.universe.scenes;
+            else if (response?.universe?.scenes && Array.isArray(response.universe.scenes)) {
+              scenes = response.universe.scenes;
             }
             // Case 4: Search for any array property in the response
-            else if (response.data && typeof response.data === 'object') {
-              for (const [key, value] of Object.entries(response.data)) {
+            else if (response && typeof response === 'object') {
+              for (const [key, value] of Object.entries(response)) {
                 if (Array.isArray(value) && value.length > 0 &&
                   (key.includes('scene') || (value[0] && (value[0].universe_id || value[0].name)))) {
-                  console.log(`API - getUniverseScenes - Found potential scenes array in response.data.${key}`);
+                  console.log(`API - getUniverseScenes - Found potential scenes array in response.${key}`);
                   scenes = value;
                   break;
                 }
@@ -2029,7 +2071,7 @@ const apiClient = {
     const wasRecentlyThrottled = (Date.now() - lastThrottleTimestamp) < 30000; // 30 second grace period
 
     // More robust validation for universeId
-    if (universeId === undefined || universeId === null || universeId === 'undefined' || universeId === 'null') {
+    if (universeId === undefined || universeId === null || universeId === 'undefined' || universeId === 'null' || universeId === '') {
       console.error(`getCharactersByUniverse: Invalid universe ID: '${universeId}'`);
       // Return an empty response to prevent app breaking
       return Promise.resolve({
@@ -2041,9 +2083,14 @@ const apiClient = {
       });
     }
 
+    // Ensure universeId is a number if it's a string that can be parsed
+    const parsedUniverseId = typeof universeId === 'string' && !isNaN(parseInt(universeId, 10))
+      ? parseInt(universeId, 10)
+      : universeId;
+
     // In production for demo users, or during rate limit issues, return mock characters
     if (isProduction && (isDemo || inRateLimitCooldown || wasRecentlyThrottled)) {
-      console.log(`Providing mock characters data for universe ${universeId} in production`);
+      console.log(`Providing mock characters data for universe ${parsedUniverseId} in production`);
 
       // Get any user info we might have
       const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
@@ -2066,7 +2113,7 @@ const apiClient = {
               id: 1001,
               name: "Demo Character 1",
               description: "This is a demo character for exploring the application",
-              universe_id: universeId,
+              universe_id: parsedUniverseId,
               user_id: userId,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
@@ -2075,7 +2122,7 @@ const apiClient = {
               id: 1002,
               name: "Demo Character 2",
               description: "Another demo character for exploring the application",
-              universe_id: universeId,
+              universe_id: parsedUniverseId,
               user_id: userId,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
@@ -2086,15 +2133,16 @@ const apiClient = {
       });
     }
 
-    const endpoint = getEndpoint('universes', 'characters', `/api/universes/${universeId}/characters`);
-    const url = typeof endpoint === 'function' ? endpoint(universeId) : endpoint;
+    const endpoint = getEndpoint('universes', 'characters', `/universes/${parsedUniverseId}/characters`);
+    const url = typeof endpoint === 'function' ? endpoint(parsedUniverseId) : endpoint;
+    const formattedUrl = formatUrl(url);
 
-    console.log(`getCharactersByUniverse: Fetching characters for universe ${universeId} from ${url}`);
+    console.log(`getCharactersByUniverse: Fetching characters for universe ${parsedUniverseId} from ${formattedUrl}`);
 
-    // Handle API error more gracefully
-    return axiosInstance.get(url)
+    // Use the _request helper for making the API call
+    return _request('get', formattedUrl)
       .catch(error => {
-        console.error(`getCharactersByUniverse: Error fetching characters for universe ${universeId}:`, error);
+        console.error(`getCharactersByUniverse: Error fetching characters for universe ${parsedUniverseId}:`, error);
 
         // Record throttling timestamp to use mock data for a while
         if (error.message === "Request throttled to prevent rate limits") {
@@ -2131,7 +2179,7 @@ const apiClient = {
                   id: 1001,
                   name: "Demo Character 1",
                   description: "This is a demo character for exploring the application",
-                  universe_id: universeId,
+                  universe_id: parsedUniverseId,
                   user_id: userId,
                   created_at: new Date().toISOString(),
                   updated_at: new Date().toISOString()
@@ -2140,7 +2188,7 @@ const apiClient = {
                   id: 1002,
                   name: "Demo Character 2",
                   description: "Another demo character for exploring the application",
-                  universe_id: universeId,
+                  universe_id: parsedUniverseId,
                   user_id: userId,
                   created_at: new Date().toISOString(),
                   updated_at: new Date().toISOString()
@@ -2418,6 +2466,38 @@ const createMockResource = (resourceType, resourceId, data = {}) => {
         ...data
       };
   }
+};
+
+// Helper function to try multiple API endpoints
+const tryEndpoints = async (endpoints, entityName = 'data') => {
+  let lastError = null;
+
+  // Log the endpoints we'll try
+  console.log(`API - tryEndpoints - Trying ${endpoints.length} endpoints for ${entityName}`);
+
+  for (let i = 0; i < endpoints.length; i++) {
+    const endpoint = endpoints[i];
+    try {
+      console.log(`API - tryEndpoints - Trying endpoint ${i + 1}/${endpoints.length}: ${endpoint}`);
+      const formattedUrl = formatUrl(endpoint);
+      const response = await _request('get', formattedUrl);
+      console.log(`API - tryEndpoints - Got response from ${endpoint}`);
+      return {
+        data: response,
+        _debug_endpoint: endpoint
+      };
+    } catch (error) {
+      console.error(`API - tryEndpoints - Error with endpoint ${endpoint}:`, error.message || error);
+      lastError = error;
+      // Continue to the next endpoint
+    }
+  }
+
+  // If we get here, all endpoints failed
+  console.error(`API - tryEndpoints - All ${endpoints.length} endpoints failed for ${entityName}`);
+
+  // Throw the last error
+  throw lastError || new Error(`Failed to fetch ${entityName} from all endpoints`);
 };
 
 export default apiClient;

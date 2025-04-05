@@ -127,13 +127,17 @@ const AppContent = () => {
       try {
         // Verify user data is valid JSON
         const parsedUserData = JSON.parse(userData);
-        if (parsedUserData && parsedUserData.id) {
+        // Handle both direct user objects and response objects with user property
+        if (parsedUserData && typeof parsedUserData === 'object' && 
+            (parsedUserData.id || (parsedUserData.user && parsedUserData.user.id))) {
           console.log(
             "AppContent - Valid token and user data found, checking auth state"
           );
           dispatch(checkAuthState());
         } else {
           console.warn("AppContent - User data parsed but invalid format");
+          // Log the actual parsed data to help debug
+          console.warn("Invalid user data:", parsedUserData);
           dispatch(logout());
         }
       } catch (e) {
