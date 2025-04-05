@@ -27,6 +27,12 @@ import { CharacterFormModal } from "../components/modals";
 import apiClient from "../services/api";
 import "../components/character/Characters.css";
 
+// Test hot reloading with this console log - updated message
+console.log(
+  "CharactersPage hot reload verification - Hot Reloading IS working! " +
+    new Date().toISOString()
+);
+
 const CharactersPage = () => {
   const { universeId } = useParams();
   const navigate = useNavigate();
@@ -44,6 +50,17 @@ const CharactersPage = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
+
+        // Check if universeId exists before making API calls
+        if (!universeId) {
+          console.error("No universe ID provided");
+          setError("No universe selected. Please select a universe first.");
+          setLoading(false);
+          return;
+        }
+
+        console.log("Fetching data for universe ID:", universeId);
+
         // Get universe details
         const universeResponse = await apiClient.getUniverse(universeId, {
           includeScenes: true,

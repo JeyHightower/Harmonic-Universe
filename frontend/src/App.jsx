@@ -242,7 +242,12 @@ function App() {
     return (
       <Provider store={store}>
         <PersistGate loading={<LoadingPage />} persistor={persistor}>
-          <BrowserRouter>
+          <BrowserRouter
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true,
+            }}
+          >
             <ModalProvider>
               <AppContent />
             </ModalProvider>
@@ -251,7 +256,7 @@ function App() {
       </Provider>
     );
   } catch (error) {
-    console.error("Error in App component:", error);
+    console.error("Error rendering App:", error);
     setHasError(true);
     return <ErrorFallback />;
   }

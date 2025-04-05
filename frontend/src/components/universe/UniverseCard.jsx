@@ -20,7 +20,13 @@ import {
   Delete,
 } from "@mui/icons-material";
 
-const UniverseCard = ({ universe, isNew, onEdit, onDelete, onView }) => {
+const UniverseCard = ({
+  universe,
+  isNew = false,
+  onEdit,
+  onDelete,
+  onView,
+}) => {
   const defaultImage = "/images/default-universe.svg";
   const navigate = useNavigate();
 
@@ -136,10 +142,6 @@ UniverseCard.propTypes = {
   onEdit: PropTypes.func,
   onDelete: PropTypes.func,
   onView: PropTypes.func,
-};
-
-UniverseCard.defaultProps = {
-  isNew: false,
 };
 
 export default UniverseCard;

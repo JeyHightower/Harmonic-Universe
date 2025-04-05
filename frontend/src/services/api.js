@@ -600,6 +600,18 @@ const apiClient = {
     }
   },
   getUniverse: (id, params = {}) => {
+    // Validate id exists before making the API call
+    if (!id) {
+      console.error("getUniverse: id is undefined");
+      // Return an empty response to prevent app breaking
+      return Promise.resolve({
+        data: {
+          universe: {},
+          message: "No universe selected"
+        }
+      });
+    }
+
     const queryParams = new URLSearchParams();
     if (params.includeScenes) {
       queryParams.append("include_scenes", "true");
@@ -971,6 +983,18 @@ const apiClient = {
     return axiosInstance.get(url);
   },
   getCharactersByUniverse: (universeId) => {
+    // Validate universeId exists before making the API call
+    if (!universeId) {
+      console.error("getCharactersByUniverse: universeId is undefined");
+      // Return an empty response to prevent app breaking
+      return Promise.resolve({
+        data: {
+          characters: [],
+          message: "No universe selected"
+        }
+      });
+    }
+
     const endpoint = getEndpoint('universes', 'characters', `/api/universes/${universeId}/characters`);
     const url = typeof endpoint === 'function' ? endpoint(universeId) : endpoint;
     return axiosInstance.get(url);
