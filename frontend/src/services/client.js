@@ -218,30 +218,59 @@ client.interceptors.response.use(
 // Retry failed requests with alternative endpoints
 async function retryWithFallbacks(originalError, endpoint) {
   // Check for production environment
-  const isProduction = process.env.NODE_ENV === 'production' ||
-    import.meta.env.PROD ||
-    window.location.hostname.includes('render.com') ||
-    (!window.location.hostname.includes('localhost') &&
-      !window.location.hostname.includes('127.0.0.1'));
-
+  const isProduction = process.env.NODE_ENV === 'production' || 
+                      import.meta.env.PROD || 
+                      window.location.hostname.includes('render.com') ||
+                      (!window.location.hostname.includes('localhost') && 
+                       !window.location.hostname.includes('127.0.0.1'));
+  
+  // Track retry attempts in session storage to respect rate limits
+  const retryKey = `retry_${endpoint}`;
+  const retryCount = parseInt(sessionStorage.getItem(retryKey) || '0');
+  
+  // Enforce stricter retry limits in production to avoid 429s
+  const maxRetries = isProduction ? 1 : 3;
+  
+  // If we've exceeded retry attempts, bail out quickly with fallback
+  if (retryCount >= maxRetries) {
+    log("api", "Maximum retry attempts reached, skipping retries", { endpoint, retryCount });
+    sessionStorage.setItem(retryKey, '0'); // Reset for next attempt after some time
+    
+    // For demo login, return mock response without further attempts
+    if (endpoint.includes("/auth/demo-login") || endpoint.includes("/auth/demo")) {
+      return createMockDemoResponse(originalError.config || {});
+    }
+    
+    return Promise.reject(originalError);
+  }
+  
+  // Increment retry counter
+  sessionStorage.setItem(retryKey, (retryCount + 1).toString());
+  
+  // Use exponential backoff for retries
+  const backoffDelay = Math.min(1000 * Math.pow(2, retryCount), 10000);
+  if (retryCount > 0) {
+    log("api", `Applying backoff delay before retry: ${backoffDelay}ms`, { endpoint, retryCount });
+    await new Promise(resolve => setTimeout(resolve, backoffDelay));
+  }
+  
   // Adjust fallback endpoints for production vs development
-  const fallbackEndpoints = isProduction
+  const fallbackEndpoints = isProduction 
     ? [
-      "", // Same origin, empty string for baseURL
-      "/api", // Same origin with explicit /api prefix
-      "https://harmonic-universe.onrender.com/api"
-    ]
+        "" // Same origin, empty string for baseURL (best for avoiding rate limits)
+      ]
     : [
-      "/api",
-      "http://localhost:5001/api"
-    ];
-
+        "/api",
+        "http://localhost:5001/api"
+      ];
+  
   // Log environment and fallback choices
-  log("api", "Retry environment", {
-    isProduction,
+  log("api", "Retry environment", { 
+    isProduction, 
     originalUrl: originalError.config?.url,
     endpoint,
-    fallbackEndpoints
+    fallbackEndpoints,
+    retryCount
   });
 
   // Original request config
@@ -251,138 +280,130 @@ async function retryWithFallbacks(originalError, endpoint) {
     return Promise.reject(originalError);
   }
 
+  // Special handling for 429 rate limit errors
+  if (originalError.response?.status === 429) {
+    log("api", "Rate limit hit (429), returning fallback response without retrying");
+    
+    // For demo login, return mock response immediately without retrying
+    if (endpoint.includes("/auth/demo-login") || endpoint.includes("/auth/demo")) {
+      return createMockDemoResponse(config);
+    }
+    
+    return Promise.reject(originalError);
+  }
+
   // Special handling for demo login - handle production vs development differently
   if (endpoint.includes("/auth/demo") || endpoint.includes("/auth/demo-login")) {
+    // In production, prefer mock response immediately to avoid rate limits
+    if (isProduction) {
+      log("api", "Using mock demo login in production to avoid rate limits");
+      return createMockDemoResponse(config);
+    }
+    
     // For demo login in production, strip any duplicate /api prefixes
     if (isProduction && endpoint.startsWith("/api/")) {
       endpoint = endpoint.substring(4); // Remove leading /api
       log("api", "Adjusted demo endpoint for production", { endpoint });
     }
-
+    
+    // In development, we can try real requests first
     try {
-      log("api", "Creating demo login response");
-
-      // Create a demo user with more realistic data
-      const demoUser = {
-        id: 'demo-' + Math.random().toString(36).substring(2, 10),
-        username: 'demo_user',
-        email: 'demo@harmonic-universe.com',
-        firstName: 'Demo',
-        lastName: 'User',
-        role: 'user',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      // Create a mock token that looks more like a real JWT
-      const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZW1vLXVzZXIiLCJpYXQiOjE2NTE4MzAyMDAsImV4cCI6MTY1MTkxNjYwMH0.' +
-        Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-
-      // Create a mock successful response
-      const mockResponse = {
-        data: {
-          message: 'Demo login successful',
-          user: demoUser,
-          token: mockToken
-        },
-        status: 200,
-        statusText: 'OK',
-        headers: {},
-        config: config
-      };
-
-      log("api", "Created demo login response", {
-        user: demoUser.username,
-        token: mockToken.substring(0, 20) + '...'
-      });
-
-      return mockResponse;
-    } catch (mockError) {
-      log("api", "Error creating mock response", { error: mockError.message });
-      // Continue to fallback endpoints if mock creation fails
-    }
-  }
-
-  // Try each fallback endpoint
-  for (const baseURL of fallbackEndpoints) {
-    try {
-      log("api", "Trying fallback endpoint", { baseURL, endpoint });
-
+      log("api", "Attempting demo login with real endpoint in development");
+      // Just try one fallback to avoid rate limits
+      const baseURL = fallbackEndpoints[0];
+      
       // Adjust endpoint if needed to prevent /api duplication
       let adjustedEndpoint = endpoint;
       if (isProduction && baseURL.endsWith('/api') && adjustedEndpoint.startsWith('/api/')) {
         adjustedEndpoint = adjustedEndpoint.substring(4);
-        log("api", "Adjusted endpoint to prevent duplication", { originalEndpoint: endpoint, adjustedEndpoint });
       }
-
-      // Create new config with fallback baseURL
+      
+      // Create retry config for single attempt
       const retryConfig = {
         ...config,
         baseURL,
         url: adjustedEndpoint,
       };
-
-      // Log the full URL being requested
-      const fullUrl = (baseURL || '') + (adjustedEndpoint.startsWith('/') ? adjustedEndpoint : '/' + adjustedEndpoint);
-      log("api", "Fallback request URL", { fullUrl });
-
+      
       const response = await axios(retryConfig);
-
-      // If successful, update the main API endpoint for future requests
-      log("api", "Fallback endpoint successful", {
-        baseURL,
-        status: response.status,
-      });
-
-      // Store the successful endpoint in sessionStorage for future use
-      sessionStorage.setItem("lastSuccessfulEndpoint", baseURL);
-
       return response;
-    } catch (retryError) {
-      log("api", "Fallback endpoint failed", {
-        baseURL,
-        error: retryError.message,
-        status: retryError.response?.status,
-        data: retryError.response?.data
-      });
-      continue;
+    } catch (error) {
+      log("api", "Demo login request failed, using mock response", { error: error.message });
+      return createMockDemoResponse(config);
     }
   }
 
-  // If all fallbacks fail and this is a demo login, create a mock response as last resort
-  if (endpoint.includes("/auth/demo-login") || endpoint.includes("/auth/demo")) {
-    log("api", "All fallbacks failed for demo login, returning mock response");
+  // Try fallback endpoint - just using the first one to avoid rate limits
+  try {
+    const baseURL = fallbackEndpoints[0];
+    log("api", "Trying fallback endpoint", { baseURL, endpoint });
+    
+    // Adjust endpoint if needed to prevent /api duplication
+    let adjustedEndpoint = endpoint;
+    if (isProduction && baseURL.endsWith('/api') && adjustedEndpoint.startsWith('/api/')) {
+      adjustedEndpoint = adjustedEndpoint.substring(4);
+      log("api", "Adjusted endpoint to prevent duplication", { originalEndpoint: endpoint, adjustedEndpoint });
+    }
 
-    // Create a demo user
-    const demoUser = {
-      id: 'demo-fallback-' + Math.random().toString(36).substring(2, 10),
-      username: 'demo_fallback',
-      email: 'demo@example.com',
-      firstName: 'Demo',
-      lastName: 'User',
-      role: 'user',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+    // Create new config with fallback baseURL
+    const retryConfig = {
+      ...config,
+      baseURL,
+      url: adjustedEndpoint,
     };
-
-    // Create a mock token
-    const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZW1vLWZhbGxiYWNrIiwiaWF0IjoxNjUxODMwMjAwLCJleHAiOjE2NTE5MTY2MDB9.' +
-      Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-
-    // Create a mock successful response
-    return {
-      data: {
-        message: 'Demo login successful (fallback)',
-        user: demoUser,
-        token: mockToken
-      },
-      status: 200,
-      statusText: 'OK',
-      headers: {},
-      config: config
-    };
+    
+    const response = await axios(retryConfig);
+    
+    // Reset retry counter on success
+    sessionStorage.setItem(retryKey, '0');
+    
+    return response;
+  } catch (retryError) {
+    log("api", "Fallback endpoint failed", {
+      endpoint,
+      error: retryError.message,
+      status: retryError.response?.status
+    });
+    
+    // For demo login, fall back to mock
+    if (endpoint.includes("/auth/demo-login") || endpoint.includes("/auth/demo")) {
+      return createMockDemoResponse(config);
+    }
+    
+    return Promise.reject(retryError);
   }
+}
 
-  // If all fallbacks fail, reject with original error
-  return Promise.reject(originalError);
+// Helper function to create a mock demo response
+function createMockDemoResponse(config) {
+  log("api", "Creating mock demo login response");
+  
+  // Create a demo user with realistic data
+  const demoUser = {
+    id: 'demo-' + Math.random().toString(36).substring(2, 10),
+    username: 'demo_user',
+    email: 'demo@harmonic-universe.com',
+    firstName: 'Demo',
+    lastName: 'User',
+    role: 'user',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  // Create a mock token that looks like a real JWT
+  const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZW1vLXVzZXIiLCJpYXQiOjE2NTE4MzAyMDAsImV4cCI6MTY1MTkxNjYwMH0.' + 
+                 Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+  // Create a mock successful response
+  return {
+    data: {
+      message: 'Demo login successful',
+      user: demoUser,
+      token: mockToken
+    },
+    status: 200,
+    statusText: 'OK',
+    headers: {},
+    config: config
+  };
 }
