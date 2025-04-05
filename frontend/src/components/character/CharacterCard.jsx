@@ -16,7 +16,7 @@ import {
   Visibility as ViewIcon,
 } from "@mui/icons-material";
 import { openModal } from "../../store/slices/characterSlice";
-import { deleteCharacterById } from "../../store/thunks/characterThunks";
+import { deleteCharacter } from "../../store/thunks/characterThunks";
 import "./Characters.css";
 
 const CharacterCard = ({ character }) => {
@@ -28,7 +28,7 @@ const CharacterCard = ({ character }) => {
 
   const handleDelete = () => {
     if (window.confirm("Are you sure you want to delete this character?")) {
-      dispatch(deleteCharacterById(character.id));
+      dispatch(deleteCharacter(character.id));
     }
   };
 

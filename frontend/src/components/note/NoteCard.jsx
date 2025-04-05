@@ -3,7 +3,7 @@ import { Card, CardContent, Typography, IconButton, Box } from "@mui/material";
 import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import { useDispatch } from "react-redux";
 import { openModal } from "../../store/slices/noteSlice";
-import { deleteNoteById } from "../../store/thunks/noteThunks";
+import { deleteNote } from "../../store/thunks/noteThunks";
 
 const NoteCard = ({ note }) => {
   const dispatch = useDispatch();
@@ -13,7 +13,7 @@ const NoteCard = ({ note }) => {
   };
 
   const handleDelete = () => {
-    dispatch(deleteNoteById(note.id));
+    dispatch(deleteNote(note.id));
   };
 
   return (

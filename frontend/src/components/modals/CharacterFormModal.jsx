@@ -23,6 +23,11 @@ import { fetchScenes } from "../../store/thunks/consolidated/scenesThunks";
 import { openModal } from "../../store/slices/modalSlice";
 import { MODAL_TYPES } from "../../constants/modalTypes";
 import { getCharacterWithRetry } from "../../utils/apiUtils";
+import {
+  createCharacter,
+  updateCharacter,
+  deleteCharacter,
+} from "../../store/thunks/characterThunks";
 
 // Import local storage utilities for caching
 const CHARACTER_CACHE_KEY = "character_cache";
@@ -669,8 +674,21 @@ const CharacterFormModal = ({
           universe_id: universeId,
         };
 
-        const response = await apiClient.createCharacter(data);
-        if (onSuccess) onSuccess(response.data.character);
+        // Use Redux thunk action
+        try {
+          // Use imported createCharacter thunk directly
+          const newCharacter = await dispatch(createCharacter(data));
+          console.log("Character created through Redux:", newCharacter);
+
+          // Call onSuccess with the created character
+          if (onSuccess) onSuccess(newCharacter);
+        } catch (reduxError) {
+          console.error("Error using Redux to create character:", reduxError);
+
+          // Fallback to direct API call if Redux fails
+          const response = await apiClient.createCharacter(data);
+          if (onSuccess) onSuccess(response.data.character);
+        }
       } else if (type === "edit" && characterId) {
         // Include universe_id when editing to prevent the warning
         const data = {
@@ -678,11 +696,39 @@ const CharacterFormModal = ({
           universe_id: character?.universe_id || universeId,
         };
 
-        const response = await apiClient.updateCharacter(characterId, data);
-        if (onSuccess) onSuccess(response.data.character);
+        // Use Redux thunk action
+        try {
+          // Use imported updateCharacter thunk directly
+          const updatedCharacter = await dispatch(
+            updateCharacter(characterId, data)
+          );
+          console.log("Character updated through Redux:", updatedCharacter);
+
+          // Call onSuccess with the updated character
+          if (onSuccess) onSuccess(updatedCharacter);
+        } catch (reduxError) {
+          console.error("Error using Redux to update character:", reduxError);
+
+          // Fallback to direct API call if Redux fails
+          const response = await apiClient.updateCharacter(characterId, data);
+          if (onSuccess) onSuccess(response.data.character);
+        }
       } else if (type === "delete" && characterId) {
-        await apiClient.deleteCharacter(characterId);
-        if (onSuccess) onSuccess();
+        // Use Redux thunk action
+        try {
+          // Use imported deleteCharacter thunk directly
+          await dispatch(deleteCharacter(characterId));
+          console.log("Character deleted through Redux");
+
+          // Call onSuccess
+          if (onSuccess) onSuccess();
+        } catch (reduxError) {
+          console.error("Error using Redux to delete character:", reduxError);
+
+          // Fallback to direct API call if Redux fails
+          await apiClient.deleteCharacter(characterId);
+          if (onSuccess) onSuccess();
+        }
       }
 
       handleClose(); // Use handleClose instead of onClose to properly reset the form

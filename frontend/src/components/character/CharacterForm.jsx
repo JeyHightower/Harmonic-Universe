@@ -12,8 +12,8 @@ import {
 } from "@mui/material";
 import {
   createCharacter,
-  updateCharacterById,
-  deleteCharacterById,
+  updateCharacter,
+  deleteCharacter,
   fetchCharacter,
 } from "../../store/thunks/characterThunks";
 import { closeModal } from "../../store/slices/characterSlice";
@@ -63,9 +63,9 @@ const CharacterForm = ({ open, type, sceneId, characterId }) => {
           })
         );
       } else if (type === "edit") {
-        await dispatch(updateCharacterById({ id: characterId, ...formData }));
+        await dispatch(updateCharacter({ id: characterId, ...formData }));
       } else if (type === "delete") {
-        await dispatch(deleteCharacterById(characterId));
+        await dispatch(deleteCharacter(characterId));
       }
       dispatch(closeModal());
     } catch (error) {

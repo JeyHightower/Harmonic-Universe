@@ -48,31 +48,27 @@ export const createScene = createAsyncThunk(
 );
 
 // Update an existing scene
-export const updateSceneById = createAsyncThunk(
-  'scene/updateScene',
-  async ({ id, ...updateData }, { dispatch, rejectWithValue }) => {
+export const updateScene = createAsyncThunk(
+  "scenes/updateScene",
+  async ({ sceneId, sceneData }, { rejectWithValue }) => {
     try {
-      const response = await apiClient.put(`/api/scenes/${id}`, updateData);
-      dispatch(updateScene(response.data.scene));
-      return response.data.scene;
+      const response = await apiClient.put(`/scenes/${sceneId}`, sceneData);
+      return response.data;
     } catch (error) {
-      dispatch(setError(error.response?.data?.message || error.message));
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(handleError(error));
     }
   }
 );
 
 // Delete a scene
-export const deleteSceneById = createAsyncThunk(
-  'scene/deleteScene',
-  async (sceneId, { dispatch, rejectWithValue }) => {
+export const deleteScene = createAsyncThunk(
+  "scenes/deleteScene",
+  async (sceneId, { rejectWithValue }) => {
     try {
-      await apiClient.delete(`/api/scenes/${sceneId}`);
-      dispatch(deleteScene(sceneId));
+      await apiClient.delete(`/scenes/${sceneId}`);
       return sceneId;
     } catch (error) {
-      dispatch(setError(error.response?.data?.message || error.message));
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(handleError(error));
     }
   }
 ); 

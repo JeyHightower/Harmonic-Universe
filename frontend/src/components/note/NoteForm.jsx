@@ -15,7 +15,7 @@ import {
   IconButton,
 } from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
-import { createNote, updateNoteById } from "../../store/thunks/noteThunks";
+import { createNote, updateNote } from "../../store/thunks/noteThunks";
 import "./Notes.css";
 
 const NoteForm = ({ note, universeId, sceneId, characterId }) => {
@@ -82,7 +82,7 @@ const NoteForm = ({ note, universeId, sceneId, characterId }) => {
     e.preventDefault();
     try {
       if (note) {
-        await dispatch(updateNoteById(note.id, formData));
+        await dispatch(updateNote({ noteId: note.id, noteData: formData }));
       } else {
         await dispatch(createNote(formData));
       }

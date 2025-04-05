@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   fetchCharacter,
-  deleteCharacterById,
+  deleteCharacter,
 } from "../../store/thunks/characterThunks";
 import { openModal } from "../../store/slices/modalSlice";
 import { getCharacterWithRetry } from "../../utils/apiUtils";
@@ -70,7 +70,7 @@ const CharacterDetail = () => {
 
   const handleDelete = async () => {
     if (window.confirm("Are you sure you want to delete this character?")) {
-      await dispatch(deleteCharacterById(id));
+      await dispatch(deleteCharacter(id));
       navigate("/characters");
     }
   };
