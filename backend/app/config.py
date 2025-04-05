@@ -28,9 +28,11 @@ class Config:
     JWT_HEADER_TYPE = 'Bearer'
     
     # CORS config
-    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000').split(',')
+    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost:5001,https://harmonic-universe-z5ka.onrender.com').split(',')
     CORS_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
-    CORS_HEADERS = ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With', 'Access-Control-Allow-Credentials']
+    CORS_HEADERS = ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With', 
+                   'Access-Control-Allow-Credentials', 'Access-Control-Allow-Headers', 
+                   'Access-Control-Allow-Methods', 'Access-Control-Allow-Origin']
     CORS_EXPOSE_HEADERS = ['Content-Length', 'Content-Type', 'Authorization']
     CORS_MAX_AGE = 600
     CORS_SUPPORTS_CREDENTIALS = True

@@ -22,6 +22,113 @@ import PropTypes from "prop-types";
 import { fetchScenes } from "../../store/thunks/consolidated/scenesThunks";
 import { openModal } from "../../store/slices/modalSlice";
 import { MODAL_TYPES } from "../../constants/modalTypes";
+import { getCharacterWithRetry } from "../../utils/apiUtils";
+
+// Import local storage utilities for caching
+const CHARACTER_CACHE_KEY = "character_cache";
+const CHARACTER_CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+// Add scene caching
+const SCENE_CACHE_KEY = "scene_cache";
+const SCENE_CACHE_TTL = 10 * 60 * 1000; // 10 minutes in milliseconds
+
+// Helper function to get cached character data
+const getCachedCharacter = (characterId) => {
+  try {
+    const cacheString = localStorage.getItem(CHARACTER_CACHE_KEY);
+    if (!cacheString) return null;
+
+    const cache = JSON.parse(cacheString);
+    const now = Date.now();
+
+    // Check if we have this character in cache and it's not expired
+    if (cache[characterId] && cache[characterId].expires > now) {
+      console.log(`Using cached character data for id: ${characterId}`);
+      return cache[characterId].data;
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error reading from character cache:", error);
+    return null;
+  }
+};
+
+// Helper function to cache character data
+const cacheCharacter = (characterId, data) => {
+  try {
+    const cacheString = localStorage.getItem(CHARACTER_CACHE_KEY);
+    const cache = cacheString ? JSON.parse(cacheString) : {};
+
+    // Add or update the character in cache with expiration
+    cache[characterId] = {
+      data,
+      expires: Date.now() + CHARACTER_CACHE_TTL,
+    };
+
+    // Clean up expired entries
+    Object.keys(cache).forEach((key) => {
+      if (cache[key].expires < Date.now()) {
+        delete cache[key];
+      }
+    });
+
+    localStorage.setItem(CHARACTER_CACHE_KEY, JSON.stringify(cache));
+    console.log(`Cached character data for id: ${characterId}`);
+  } catch (error) {
+    console.error("Error writing to character cache:", error);
+  }
+};
+
+// Helper function to get cached scenes data by universe ID
+const getCachedScenes = (universeId) => {
+  try {
+    const cacheString = localStorage.getItem(SCENE_CACHE_KEY);
+    if (!cacheString) return null;
+
+    const cache = JSON.parse(cacheString);
+    const now = Date.now();
+
+    // Check if we have scenes for this universe in cache and they're not expired
+    if (cache[universeId] && cache[universeId].expires > now) {
+      console.log(`Using cached scenes for universe id: ${universeId}`);
+      return cache[universeId].data;
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error reading from scene cache:", error);
+    return null;
+  }
+};
+
+// Helper function to cache scenes data
+const cacheScenes = (universeId, scenesData) => {
+  try {
+    const cacheString = localStorage.getItem(SCENE_CACHE_KEY);
+    const cache = cacheString ? JSON.parse(cacheString) : {};
+
+    // Add or update the scenes in cache with expiration
+    cache[universeId] = {
+      data: scenesData,
+      expires: Date.now() + SCENE_CACHE_TTL,
+    };
+
+    // Clean up expired entries
+    Object.keys(cache).forEach((key) => {
+      if (cache[key].expires < Date.now()) {
+        delete cache[key];
+      }
+    });
+
+    localStorage.setItem(SCENE_CACHE_KEY, JSON.stringify(cache));
+    console.log(
+      `Cached ${scenesData.length} scenes for universe id: ${universeId}`
+    );
+  } catch (error) {
+    console.error("Error writing to scene cache:", error);
+  }
+};
 
 const CharacterFormModal = ({
   isOpen,
@@ -50,6 +157,8 @@ const CharacterFormModal = ({
 
   // Add a ref to store the timeout ID so it persists between renders
   const timeoutIdRef = useRef(null);
+  // Add a ref to track which universes we've already loaded scenes for
+  const loadedUniverseRef = useRef(new Set());
 
   // Helper function to validate scene_id against available scenes
   const getValidSceneId = (sceneIdToValidate, availableScenesList) => {
@@ -121,325 +230,49 @@ const CharacterFormModal = ({
     }
   }, [availableScenes]);
 
-  // Fetch scenes for the universe when the modal opens if availableScenes is empty
+  // Main useEffect that fetches scenes based on universeId
   useEffect(() => {
-    if (
-      isOpen &&
-      universeId &&
-      type === "create" &&
-      availableScenes.length === 0
-    ) {
-      setLoadingScenes(true);
-      console.log(`Fetching scenes for universe ${universeId}`);
+    if (universeId && !loadedUniverseRef.current.has(universeId)) {
+      // Check if we already have appropriate scenes
+      if (
+        scenes.length > 0 &&
+        scenes.some((scene) => scene.universe_id === universeId)
+      ) {
+        console.log(
+          `Already have scenes for universe ${universeId}, skipping fetch`
+        );
+        loadedUniverseRef.current.add(universeId);
+        return;
+      }
 
-      // Add timestamp to help identify requests in log
-      const timestamp = new Date().toISOString();
-      console.log(
-        `[${timestamp}] CHARACTER-FORM: Starting scene fetch for universe ${universeId} (${window.location.hostname})`
-      );
-
-      // Use our enhanced getUniverseScenes method which tries multiple endpoints
-      apiClient
-        .getUniverseScenes(universeId)
-        .then((response) => {
-          console.log(
-            `[${timestamp}] CHARACTER-FORM: Got API response:`,
-            response
-          );
-
-          // Extract scenes data directly from the enhanced API response
-          let scenesData = response.data?.scenes || [];
-
-          console.log(
-            `[${timestamp}] CHARACTER-FORM: Found ${scenesData.length} scenes in API response`,
-            Array.isArray(scenesData)
-              ? scenesData.map((s) => s.id)
-              : "not an array"
-          );
-
-          // Only try Redux store if API returned no scenes
-          if (scenesData.length === 0) {
-            console.log(
-              `[${timestamp}] CHARACTER-FORM: No scenes from API, checking Redux store`
-            );
-
-            dispatch(fetchScenes(universeId))
-              .unwrap()
-              .then((reduxResult) => {
-                console.log(
-                  `[${timestamp}] CHARACTER-FORM: Redux store scenes:`,
-                  reduxResult
-                );
-
-                if (
-                  reduxResult &&
-                  reduxResult.scenes &&
-                  Array.isArray(reduxResult.scenes) &&
-                  reduxResult.scenes.length > 0
-                ) {
-                  scenesData = reduxResult.scenes;
-                  console.log(
-                    `[${timestamp}] CHARACTER-FORM: Found ${scenesData.length} scenes in Redux store`
-                  );
-
-                  // Update UI with found scenes
-                  setScenes(scenesData);
-
-                  // Update scene_id if we found valid scenes
-                  if (scenesData.length > 0) {
-                    const validSceneId = getValidSceneId(
-                      formData.scene_id,
-                      scenesData
-                    );
-                    if (validSceneId && validSceneId !== formData.scene_id) {
-                      console.log(
-                        `[${timestamp}] CHARACTER-FORM: Updating scene_id to ${validSceneId}`
-                      );
-                      setFormData((prev) => ({
-                        ...prev,
-                        scene_id: validSceneId,
-                      }));
-                    }
-                  }
-                } else {
-                  console.log(
-                    `[${timestamp}] CHARACTER-FORM: No scenes found in Redux either`
-                  );
-
-                  // As a last resort, we'll make a direct fetch request
-                  console.log(
-                    `[${timestamp}] CHARACTER-FORM: Making direct fetch as last resort`
-                  );
-
-                  // Try all endpoints with plain fetch as a last resort
-                  const lastResortEndpoints = [
-                    `/api/scenes?universe_id=${universeId}`,
-                    `/api/scenes/universe/${universeId}`,
-                    `/api/universes/${universeId}/scenes`,
-                  ];
-
-                  // Try each endpoint
-                  const tryEndpoint = (index) => {
-                    if (index >= lastResortEndpoints.length) {
-                      console.log(
-                        `[${timestamp}] CHARACTER-FORM: All fallback endpoints failed`
-                      );
-                      setScenes([]);
-                      setLoadingScenes(false);
-                      return;
-                    }
-
-                    const endpoint = lastResortEndpoints[index];
-                    console.log(
-                      `[${timestamp}] CHARACTER-FORM: Trying direct fetch to ${endpoint}`
-                    );
-
-                    fetch(endpoint, {
-                      headers: {
-                        Accept: "application/json",
-                        Authorization: `Bearer ${localStorage.getItem(
-                          "token"
-                        )}`,
-                      },
-                      credentials: "include",
-                    })
-                      .then((res) => {
-                        console.log(
-                          `[${timestamp}] CHARACTER-FORM: Got ${res.status} from ${endpoint}`
-                        );
-                        if (!res.ok) {
-                          throw new Error(`Status ${res.status}`);
-                        }
-                        return res.json();
-                      })
-                      .then((data) => {
-                        console.log(
-                          `[${timestamp}] CHARACTER-FORM: Got data from ${endpoint}:`,
-                          data
-                        );
-
-                        // Extract scenes from response
-                        let fetchedScenes = [];
-                        if (Array.isArray(data)) {
-                          fetchedScenes = data;
-                        } else if (data.scenes && Array.isArray(data.scenes)) {
-                          fetchedScenes = data.scenes;
-                        } else if (data.data && Array.isArray(data.data)) {
-                          fetchedScenes = data.data;
-                        }
-
-                        if (fetchedScenes.length > 0) {
-                          console.log(
-                            `[${timestamp}] CHARACTER-FORM: Found ${fetchedScenes.length} scenes with direct fetch`
-                          );
-                          setScenes(fetchedScenes);
-
-                          // Update scene_id
-                          const validSceneId = getValidSceneId(
-                            formData.scene_id,
-                            fetchedScenes
-                          );
-                          if (
-                            validSceneId &&
-                            validSceneId !== formData.scene_id
-                          ) {
-                            setFormData((prev) => ({
-                              ...prev,
-                              scene_id: validSceneId,
-                            }));
-                          }
-
-                          setLoadingScenes(false);
-                        } else {
-                          // Try next endpoint
-                          tryEndpoint(index + 1);
-                        }
-                      })
-                      .catch((err) => {
-                        console.error(
-                          `[${timestamp}] CHARACTER-FORM: Error with ${endpoint}:`,
-                          err.message
-                        );
-                        tryEndpoint(index + 1);
-                      });
-                  };
-
-                  // Start trying endpoints
-                  tryEndpoint(0);
-                }
-              })
-              .catch((reduxError) => {
-                console.error(
-                  `[${timestamp}] CHARACTER-FORM: Redux error:`,
-                  reduxError
-                );
-                setLoadingScenes(false);
-              });
-          } else {
-            // We got scenes directly from the API call
-            console.log(
-              `[${timestamp}] CHARACTER-FORM: Using ${scenesData.length} scenes from API response`
-            );
-
-            // Update UI with found scenes
-            setScenes(scenesData);
-
-            // Update scene_id if we found valid scenes
-            if (scenesData.length > 0) {
-              const validSceneId = getValidSceneId(
-                formData.scene_id,
-                scenesData
-              );
-              if (validSceneId && validSceneId !== formData.scene_id) {
-                console.log(
-                  `[${timestamp}] CHARACTER-FORM: Updating scene_id to ${validSceneId}`
-                );
-                setFormData((prev) => ({
-                  ...prev,
-                  scene_id: validSceneId,
-                }));
-              }
-            }
-
-            setLoadingScenes(false);
-          }
-        })
-        .catch((error) => {
-          console.error(
-            `[${timestamp}] CHARACTER-FORM: Error fetching scenes:`,
-            error
-          );
-          // Continue with empty scenes array
-          setScenes([]);
-          setLoadingScenes(false);
-        });
-    }
-  }, [
-    isOpen,
-    universeId,
-    type,
-    availableScenes.length,
-    dispatch,
-    formData.scene_id,
-  ]);
-
-  useEffect(() => {
-    if (isOpen && characterId && (type === "edit" || type === "view")) {
-      setLoading(true);
-      setError(null);
-
-      apiClient
-        .getCharacter(characterId)
-        .then((response) => {
-          console.log("Character data received:", response.data);
-          const characterData = response.data.character;
-          setCharacter(characterData);
-
-          // Get scene_id from character data or validate against available scenes
-          const characterSceneId = characterData?.scene_id
-            ? String(characterData.scene_id)
-            : "";
-
-          const validSceneId = getValidSceneId(characterSceneId, scenes);
-
-          // Use default empty values if data is missing
-          setFormData({
-            name: characterData?.name || "",
-            description: characterData?.description || "",
-            scene_id: validSceneId,
-          });
-
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.error("Error fetching character:", err);
-          setError(
-            err.response?.data?.error ||
-              "Failed to load character details. Please try again."
-          );
-
-          // Set minimal default data so the form isn't completely empty
-          setFormData({
-            name: "",
-            description: "",
-            scene_id: getValidSceneId("", scenes),
-          });
-
-          setLoading(false);
-        });
-    }
-  }, [isOpen, characterId, type, scenes]);
-
-  // Reset form data when opening the modal for character creation
-  useEffect(() => {
-    if (isOpen && type === "create" && !characterId) {
-      console.log(
-        "Resetting form data for new character creation, current scene_id:",
-        formData.scene_id
-      );
-
-      // Keep the existing scene_id if it's already set and valid
-      const validSceneId = getValidSceneId(formData.scene_id, scenes);
-
-      setFormData({
-        name: "",
-        description: "",
-        scene_id: validSceneId,
-      });
-
-      setCharacter(null);
-      setError(null);
-    }
-  }, [isOpen, type, characterId, scenes]);
-
-  useEffect(() => {
-    if (universeId) {
       // Fetch scenes for the selected universe
       setScenesLoading(true);
-      console.log(
-        "DEBUG: Starting to fetch scenes for universeId:",
-        universeId
-      );
+      console.log(`Starting to fetch scenes for universeId: ${universeId}`);
+
+      // Mark this universe as loaded to prevent repeated fetches
+      loadedUniverseRef.current.add(universeId);
+
+      // Check cache first
+      const cachedScenes = getCachedScenes(universeId);
+      if (cachedScenes) {
+        // Use cached scenes
+        console.log(
+          `Using ${cachedScenes.length} cached scenes for universe ${universeId}`
+        );
+        setScenes(cachedScenes);
+        setSceneOptions(cachedScenes);
+
+        // Update form with first scene if needed
+        if (!formData.scene_id && cachedScenes.length > 0) {
+          setFormData((prev) => ({
+            ...prev,
+            scene_id: String(cachedScenes[0].id),
+          }));
+        }
+
+        setScenesLoading(false);
+        return;
+      }
 
       // Add a timeout to prevent hanging UI if the API doesn't respond
       timeoutIdRef.current = setTimeout(() => {
@@ -456,7 +289,7 @@ const CharacterFormModal = ({
       apiClient
         .getScenes({ universeId: universeId })
         .then((response) => {
-          console.log("DEBUG: Direct API scenes response:", response);
+          console.log("Direct API scenes response:", response);
           let scenesData = [];
 
           // Try different possible data structures
@@ -476,22 +309,25 @@ const CharacterFormModal = ({
 
             if (possibleArrays.length > 0) {
               console.log(
-                `DEBUG: Found array in response.data.${possibleArrays[0][0]}`
+                `Found array in response.data.${possibleArrays[0][0]}`
               );
               scenesData = response.data[possibleArrays[0][0]];
             }
           }
 
-          console.log("DEBUG: Processed scenes data:", scenesData);
+          console.log("Processed scenes data:", scenesData);
 
           if (scenesData && scenesData.length > 0) {
             // We found scenes through direct API call
             setScenes(scenesData);
             setSceneOptions(scenesData);
             console.log(
-              "DEBUG: Set scene options from direct API call:",
+              "Set scene options from direct API call:",
               scenesData.length
             );
+
+            // Cache the scenes for future use
+            cacheScenes(universeId, scenesData);
 
             // Update form with first scene if needed
             if (!formData.scene_id && scenesData.length > 0) {
@@ -502,20 +338,23 @@ const CharacterFormModal = ({
             }
           } else {
             // If direct API call doesn't return scenes, try through Redux
-            console.log("DEBUG: No scenes from direct API, trying Redux thunk");
+            console.log("No scenes from direct API, trying Redux thunk");
             dispatch(fetchScenes(universeId))
               .unwrap()
               .then((result) => {
-                console.log("DEBUG: Redux thunk scenes result:", result);
+                console.log("Redux thunk scenes result:", result);
                 let reduxScenes = result.scenes || [];
 
                 if (Array.isArray(reduxScenes) && reduxScenes.length > 0) {
                   setScenes(reduxScenes);
                   setSceneOptions(reduxScenes);
                   console.log(
-                    "DEBUG: Set scene options from Redux:",
+                    "Set scene options from Redux:",
                     reduxScenes.length
                   );
+
+                  // Cache the scenes for future use
+                  cacheScenes(universeId, reduxScenes);
 
                   // Update form with first scene if needed
                   if (!formData.scene_id && reduxScenes.length > 0) {
@@ -525,12 +364,12 @@ const CharacterFormModal = ({
                     }));
                   }
                 } else {
-                  console.log("DEBUG: No scenes found from Redux thunk either");
+                  console.log("No scenes found from Redux thunk either");
                   setSceneOptions([]);
                 }
               })
               .catch((error) => {
-                console.error("DEBUG: Redux thunk error:", error);
+                console.error("Redux thunk error:", error);
                 setSceneOptions([]);
               });
           }
@@ -539,16 +378,19 @@ const CharacterFormModal = ({
           clearTimeout(timeoutIdRef.current);
         })
         .catch((error) => {
-          console.error("DEBUG: Direct API error:", error);
+          console.error("Direct API error:", error);
           // Fallback to Redux thunk on API error
           dispatch(fetchScenes(universeId))
             .unwrap()
             .then((result) => {
-              console.log("DEBUG: Fallback Redux scenes:", result);
+              console.log("Fallback Redux scenes:", result);
               const fallbackScenes = result.scenes || [];
               if (Array.isArray(fallbackScenes) && fallbackScenes.length > 0) {
                 setScenes(fallbackScenes);
                 setSceneOptions(fallbackScenes);
+
+                // Cache the scenes for future use
+                cacheScenes(universeId, fallbackScenes);
 
                 // Update form with first scene if needed
                 if (!formData.scene_id && fallbackScenes.length > 0) {
@@ -570,8 +412,12 @@ const CharacterFormModal = ({
             });
         });
     } else {
-      console.log("DEBUG: No universeId provided, skipping scene fetch");
-      setSceneOptions([]);
+      if (!universeId) {
+        console.log("No universeId provided, skipping scene fetch");
+        setSceneOptions([]);
+      } else {
+        console.log(`Universe ${universeId} already loaded, skipping fetch`);
+      }
     }
 
     // Cleanup timeout on unmount
@@ -581,7 +427,187 @@ const CharacterFormModal = ({
         clearTimeout(timeoutIdRef.current);
       }
     };
-  }, [universeId, dispatch]);
+  }, [universeId, dispatch, formData.scene_id]);
+
+  useEffect(() => {
+    if (isOpen && characterId && (type === "edit" || type === "view")) {
+      setLoading(true);
+      setError(null);
+
+      // Helper function to process character data, centralized to avoid code duplication
+      const processCharacterData = (characterData) => {
+        setCharacter(characterData);
+
+        // Get scene_id from character data or validate against available scenes
+        const characterSceneId = characterData?.scene_id
+          ? String(characterData.scene_id)
+          : "";
+
+        // Store the universe_id from the character data if available
+        const characterUniverseId = characterData?.universe_id;
+
+        // If we have a universe_id from the character but no scenes loaded yet, load them now
+        // Only load scenes if we haven't already loaded them for this universe
+        if (
+          characterUniverseId &&
+          (scenes.length === 0 || type === "edit") &&
+          !loadedUniverseRef.current.has(characterUniverseId)
+        ) {
+          console.log(
+            "Loading scenes for character's universe:",
+            characterUniverseId
+          );
+          setScenesLoading(true);
+
+          // Mark this universe as loaded to prevent repeated fetches
+          loadedUniverseRef.current.add(characterUniverseId);
+
+          // Store the existing scenes first to prevent UI flicker
+          const existingScenes = [...scenes];
+
+          // Only make one API call instead of potentially many redundant ones
+          apiClient
+            .getUniverseScenes(characterUniverseId)
+            .then((scenesResponse) => {
+              const scenesData = scenesResponse.data?.scenes || [];
+              console.log(
+                `Found ${scenesData.length} scenes for universe ${characterUniverseId}`
+              );
+
+              if (scenesData.length > 0) {
+                setScenes(scenesData);
+                setSceneOptions(scenesData);
+              } else if (existingScenes.length > 0) {
+                // If we got no scenes but had some before, keep the existing ones
+                console.log("No new scenes found, keeping existing scenes");
+                setScenes(existingScenes);
+                setSceneOptions(existingScenes);
+              }
+              setScenesLoading(false);
+            })
+            .catch((err) => {
+              console.error(
+                `Error loading scenes for universe ${characterUniverseId}:`,
+                err
+              );
+              // In case of error, keep existing scenes to prevent UI breakage
+              if (existingScenes.length > 0) {
+                setScenes(existingScenes);
+                setSceneOptions(existingScenes);
+              }
+              setScenesLoading(false);
+            });
+        }
+
+        const validSceneId = getValidSceneId(characterSceneId, scenes);
+
+        // Use default empty values if data is missing
+        setFormData({
+          name: characterData?.name || "",
+          description: characterData?.description || "",
+          scene_id: validSceneId,
+          // Store universe_id in form data to ensure it's available for updates
+          universe_id: characterData?.universe_id || universeId,
+        });
+
+        // Cache the character data for future use
+        cacheCharacter(characterId, characterData);
+      };
+
+      // Check cache first
+      const cachedCharacter = getCachedCharacter(characterId);
+      if (cachedCharacter) {
+        // Use cached data
+        console.log("Using cached character data");
+        processCharacterData(cachedCharacter);
+        setLoading(false);
+        return;
+      }
+
+      // Try using the retry utility first
+      getCharacterWithRetry(characterId)
+        .then((data) => {
+          // Extract character data - handle both response formats
+          const characterData = data.character || data;
+          console.log(
+            "Character data received with retry utility:",
+            characterData
+          );
+          processCharacterData(characterData);
+          setLoading(false);
+        })
+        .catch((retryError) => {
+          console.error(
+            "Retry utility failed, falling back to standard API:",
+            retryError
+          );
+
+          // Fall back to regular API call if retry utility fails for some reason
+          apiClient
+            .getCharacter(characterId)
+            .then((response) => {
+              console.log(
+                "Character data received from fallback:",
+                response.data
+              );
+              const characterData = response.data.character;
+              processCharacterData(characterData);
+              setLoading(false);
+            })
+            .catch((err) => {
+              console.error(
+                "Error fetching character (both methods failed):",
+                err
+              );
+              setError(
+                err.response?.data?.error ||
+                  "Failed to load character details. Please try again."
+              );
+
+              // Set minimal default data so the form isn't completely empty
+              setFormData({
+                name: "",
+                description: "",
+                scene_id: getValidSceneId("", scenes),
+                universe_id: universeId, // Ensure universe_id is set
+              });
+
+              setLoading(false);
+            });
+        });
+    }
+  }, [isOpen, characterId, type, scenes, universeId]);
+
+  // Reset form data when opening the modal for character creation
+  useEffect(() => {
+    if (isOpen && type === "create" && !characterId) {
+      console.log(
+        "Resetting form data for new character creation, current scene_id:",
+        formData.scene_id
+      );
+
+      // Keep the existing scene_id if it's already set and valid
+      const validSceneId = getValidSceneId(formData.scene_id, scenes);
+
+      setFormData({
+        name: "",
+        description: "",
+        scene_id: validSceneId,
+        universe_id: universeId, // Ensure universe_id is set for new characters too
+      });
+
+      setCharacter(null);
+      setError(null);
+    }
+  }, [isOpen, type, characterId, scenes, universeId]);
+
+  // Reset loaded universes when the modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      // Clear the tracked universes when the modal closes
+      loadedUniverseRef.current.clear();
+    }
+  }, [isOpen]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -646,7 +672,13 @@ const CharacterFormModal = ({
         const response = await apiClient.createCharacter(data);
         if (onSuccess) onSuccess(response.data.character);
       } else if (type === "edit" && characterId) {
-        const response = await apiClient.updateCharacter(characterId, formData);
+        // Include universe_id when editing to prevent the warning
+        const data = {
+          ...formData,
+          universe_id: character?.universe_id || universeId,
+        };
+
+        const response = await apiClient.updateCharacter(characterId, data);
         if (onSuccess) onSuccess(response.data.character);
       } else if (type === "delete" && characterId) {
         await apiClient.deleteCharacter(characterId);
@@ -861,20 +893,24 @@ const CharacterFormModal = ({
                 helperText={formErrors.description}
               />
 
-              {type === "create" && renderSceneSelector()}
+              {/* Show scene selector for both create and edit modes */}
+              {(type === "create" || type === "edit") && renderSceneSelector()}
 
-              <TextField
-                fullWidth
-                margin="normal"
-                label="Scene"
-                name="scene_display"
-                value={
-                  scenes.find((s) => String(s.id) === String(formData.scene_id))
-                    ?.name || "Scene not found"
-                }
-                disabled={true}
-                sx={{ display: type !== "create" ? "block" : "none" }}
-              />
+              {/* Only show this non-editable field in view mode */}
+              {type === "view" && (
+                <TextField
+                  fullWidth
+                  margin="normal"
+                  label="Scene"
+                  name="scene_display"
+                  value={
+                    scenes.find(
+                      (s) => String(s.id) === String(formData.scene_id)
+                    )?.name || "Scene not found"
+                  }
+                  disabled={true}
+                />
+              )}
             </>
           )}
         </DialogContent>

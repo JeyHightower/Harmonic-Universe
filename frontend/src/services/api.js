@@ -220,6 +220,31 @@ axiosInstance.interceptors.response.use(
       pendingRequests.delete(requestKey);
     }
 
+    // Handle 429 Too Many Requests with exponential backoff
+    if (error.response?.status === 429 && !originalRequest._rateLimitRetry) {
+      // Track retry attempts
+      if (!originalRequest._retryCount) {
+        originalRequest._retryCount = 0;
+      }
+
+      // Max 3 retries for rate limiting
+      if (originalRequest._retryCount < 3) {
+        originalRequest._rateLimitRetry = true;
+        originalRequest._retryCount++;
+
+        // Calculate delay with exponential backoff
+        const delay = Math.pow(2, originalRequest._retryCount) * 1000;
+
+        console.log(`Rate limited (429), retry attempt ${originalRequest._retryCount} after ${delay}ms delay...`);
+
+        // Wait for the calculated delay
+        await new Promise(resolve => setTimeout(resolve, delay));
+
+        // Retry the request
+        return axiosInstance(originalRequest);
+      }
+    }
+
     // Handle 401 errors
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
@@ -629,11 +654,12 @@ const apiClient = {
     console.log(`API - getUniverseScenes - Starting fetch for universe ${universeId}`);
 
     // Define all possible endpoints to try in sequence
+    // Reordered to prioritize endpoints that work without CORS issues
     const endpoints = [
-      `/api/scenes?universe_id=${universeId}`,
-      `/api/scenes/universe/${universeId}`,
+      `/api/scenes/universe/${universeId}`, // This endpoint works without CORS issues - use it first
       `/api/universes/${universeId}/scenes`,
-      `/api/universes/${universeId}?include_scenes=true` // Try getting the universe with scenes included
+      `/api/universes/${universeId}?include_scenes=true`,
+      `/api/scenes?universe_id=${universeId}` // This endpoint has CORS issues - try it last
     ];
 
     // Return a promise that handles errors more gracefully

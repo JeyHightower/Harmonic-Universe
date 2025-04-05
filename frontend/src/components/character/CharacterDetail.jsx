@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -6,6 +6,7 @@ import {
   deleteCharacterById,
 } from "../../store/thunks/characterThunks";
 import { openModal } from "../../store/slices/modalSlice";
+import { getCharacterWithRetry } from "../../utils/apiUtils";
 import {
   Box,
   Typography,
@@ -13,6 +14,8 @@ import {
   Card,
   CardContent,
   CardActions,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
 
 const CharacterDetail = () => {
@@ -22,11 +25,43 @@ const CharacterDetail = () => {
   const character = useSelector((state) => state.characters.currentCharacter);
   const loading = useSelector((state) => state.characters.loading);
   const error = useSelector((state) => state.characters.error);
+  const [localLoading, setLocalLoading] = useState(false);
+  const [localError, setLocalError] = useState(null);
 
   useEffect(() => {
-    if (id) {
-      dispatch(fetchCharacter(id));
-    }
+    const fetchData = async () => {
+      if (id) {
+        try {
+          // First try with our standard Redux approach
+          dispatch(fetchCharacter(id));
+        } catch (err) {
+          // If that fails, especially with 429, we'll try our retry utility
+          if (err.response?.status === 429) {
+            setLocalLoading(true);
+            setLocalError(null);
+
+            try {
+              // Use our utility with retry logic
+              const characterData = await getCharacterWithRetry(id);
+              // Update Redux state manually
+              dispatch({
+                type: "characters/setCurrentCharacter",
+                payload: characterData.character || characterData,
+              });
+            } catch (retryError) {
+              setLocalError(
+                "Failed to fetch character after multiple retries. Please try again later."
+              );
+              console.error("Retry failed:", retryError);
+            } finally {
+              setLocalLoading(false);
+            }
+          }
+        }
+      }
+    };
+
+    fetchData();
   }, [dispatch, id]);
 
   const handleEdit = () => {
@@ -40,12 +75,16 @@ const CharacterDetail = () => {
     }
   };
 
-  if (loading) {
-    return <Typography>Loading...</Typography>;
+  if (loading || localLoading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
-  if (error) {
-    return <Typography color="error">{error}</Typography>;
+  if (error || localError) {
+    return <Alert severity="error">{error || localError}</Alert>;
   }
 
   if (!character) {

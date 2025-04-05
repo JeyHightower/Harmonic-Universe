@@ -3,9 +3,8 @@ import React from "react";
 // Auth Components
 import LoginModal from "./auth/LoginModal";
 import SignupModal from "./auth/SignupModal";
-import DemoLogin from "./auth/DemoLogin";
 
-export { LoginModal, SignupModal, DemoLogin };
+export { LoginModal, SignupModal };
 
 // Navigation Components
 export { default as Navigation } from "./navigation/Navigation";

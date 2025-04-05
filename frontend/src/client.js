@@ -198,6 +198,42 @@ api.interceptors.response.use(
 
     const originalRequest = error.config;
 
+    // Handle 429 Too Many Requests with exponential backoff
+    if (error.response?.status === 429 && originalRequest) {
+      // Initialize retry count if it doesn't exist
+      if (!originalRequest._retryCount) {
+        originalRequest._retryCount = 0;
+      }
+
+      // Limit to 3 retries
+      if (originalRequest._retryCount < 3) {
+        originalRequest._retryCount++;
+
+        // Calculate exponential backoff delay: 2^retry * 1000 ms
+        const delay = Math.pow(2, originalRequest._retryCount) * 1000;
+
+        logApiOperation("rate-limit-retry", {
+          attempt: originalRequest._retryCount,
+          delay,
+          url: originalRequest.url,
+        });
+
+        // Log to console for visibility
+        console.log(`Rate limited (429), retrying in ${delay}ms... (attempt ${originalRequest._retryCount}/3)`);
+
+        // Wait for the calculated delay
+        await new Promise(resolve => setTimeout(resolve, delay));
+
+        // Retry the request
+        return api(originalRequest);
+      } else {
+        logApiOperation("rate-limit-max-retries-reached", {
+          url: originalRequest.url,
+        });
+        console.warn("Maximum rate limit retries reached, giving up.");
+      }
+    }
+
     // Try token refresh for 401 errors
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;

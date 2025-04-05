@@ -9,6 +9,7 @@ import ModalTest from "../components/test/ModalTest";
 const SettingsPage = lazy(() => import("../pages/SettingsPage"));
 const Dashboard = lazy(() => import("../features/Dashboard"));
 const Home = lazy(() => import("../pages/Home"));
+const LoginPage = lazy(() => import("../pages/LoginPage"));
 const UniverseDetail = lazy(() => import("../features/UniverseDetail"));
 const SceneList = lazy(() => import("../features/SceneList"));
 const SceneDetail = lazy(() =>
@@ -20,7 +21,6 @@ const SceneEditPage = lazy(() =>
 const SceneEditRedirect = lazy(() =>
   import("../components/routing/SceneEditRedirect")
 );
-const DemoLogin = lazy(() => import("../components/auth/DemoLogin"));
 
 // New character and note pages
 const CharactersPage = lazy(() => import("../pages/CharactersPage"));
@@ -185,7 +185,7 @@ const routes = [
       },
       {
         path: ROUTES.LOGIN,
-        element: <Navigate to="/?modal=login" replace />,
+        element: <LoginPage />,
       },
       {
         path: ROUTES.SIGNUP,
@@ -193,12 +193,12 @@ const routes = [
       },
       {
         path: "/demo",
-        element: <Navigate to="/?demo=true" replace />,
+        element: <Navigate to="/login" replace />,
       },
       // Add a direct demo login route
       {
         path: "/demo-login",
-        element: <DemoLogin />,
+        element: <LoginPage />,
       },
     ],
   },

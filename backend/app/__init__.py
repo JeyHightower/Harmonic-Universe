@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, send_from_directory, Response, render_template, current_app
+from flask import Flask, jsonify, send_from_directory, Response, render_template, current_app, request
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_limiter import Limiter
@@ -83,6 +83,22 @@ def create_app(config_name='default'):
     limiter.init_app(app)
     cache.init_app(app)
     
+    # Exempt OPTIONS requests from rate limiting globally
+    @limiter.request_filter
+    def options_request_filter():
+        return request.method == "OPTIONS"
+    
+    # Exempt OPTIONS requests from JWT verification
+    exempt_methods = ["OPTIONS"]
+    
+    @jwt.token_in_blocklist_loader
+    def check_if_token_in_blocklist(jwt_header, jwt_payload):
+        # Always let OPTIONS requests through
+        if request.method in exempt_methods:
+            return False
+        # Check if token is in blocklist (implementation depends on your needs)
+        return False  # Placeholder - replace with actual blocklist check if needed
+    
     # Configure CORS
     CORS(app, resources={
         r"/api/*": {
@@ -91,9 +107,58 @@ def create_app(config_name='default'):
             "allow_headers": app.config['CORS_HEADERS'],
             "expose_headers": app.config['CORS_EXPOSE_HEADERS'],
             "max_age": app.config['CORS_MAX_AGE'],
-            "supports_credentials": True
+            "supports_credentials": True,
+            "allow_credentials": True
         }
     })
+    
+    # Make sure OPTIONS requests are not intercepted by JWT validation
+    @app.before_request
+    def handle_preflight():
+        if request.method == "OPTIONS":
+            # No need to use limiter.exempt here as we'll configure it globally
+            response = app.make_default_options_response()
+            origin = request.headers.get('Origin', '')
+            
+            # For credentials to work, we can't use '*' - we must specify the exact origin
+            if origin and origin in app.config['CORS_ORIGINS']:
+                response.headers.add('Access-Control-Allow-Origin', origin)
+            elif app.config['CORS_ORIGINS']:
+                # Fallback to the first configured origin if available
+                response.headers.add('Access-Control-Allow-Origin', app.config['CORS_ORIGINS'][0])
+            else:
+                # Last resort fallback
+                response.headers.add('Access-Control-Allow-Origin', '*')
+            
+            response.headers.add('Access-Control-Allow-Methods', ', '.join(app.config['CORS_METHODS']))
+            response.headers.add('Access-Control-Allow-Headers', ', '.join(app.config['CORS_HEADERS']))
+            response.headers.add('Access-Control-Max-Age', str(app.config['CORS_MAX_AGE']))
+            
+            if app.config.get('CORS_SUPPORTS_CREDENTIALS', False):
+                response.headers.add('Access-Control-Allow-Credentials', 'true')
+            
+            return response
+
+    # Add an OPTIONS route handler to enable CORS preflight on all API routes
+    @app.route('/api/<path:path>', methods=['OPTIONS'])
+    def cors_preflight(path):
+        response = app.make_default_options_response()
+        # Add explicit CORS headers for preflight requests
+        origin = request.headers.get('Origin', '')
+        
+        # For credentials to work, we can't use '*' - we must specify the exact origin
+        if origin:
+            response.headers.add('Access-Control-Allow-Origin', origin)
+        else:
+            # Fallback to the first configured origin if available, otherwise use '*'
+            response.headers.add('Access-Control-Allow-Origin', app.config['CORS_ORIGINS'][0] if app.config['CORS_ORIGINS'] else '*')
+            
+        response.headers.add('Access-Control-Allow-Methods', ', '.join(app.config['CORS_METHODS']))
+        response.headers.add('Access-Control-Allow-Headers', ', '.join(app.config['CORS_HEADERS']))
+        response.headers.add('Access-Control-Max-Age', str(app.config['CORS_MAX_AGE']))
+        if app.config.get('CORS_SUPPORTS_CREDENTIALS', False):
+            response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response, 200
     
     # Register API blueprint
     try:
