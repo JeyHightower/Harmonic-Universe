@@ -109,6 +109,38 @@ const AppContent = () => {
   const [routeElements, setRouteElements] = useState(null);
   const [initialAuthCheckDone, setInitialAuthCheckDone] = useState(false);
 
+  // Persist login state on navigation
+  useEffect(() => {
+    console.log("AppContent - Initial mount, checking persistent auth state");
+    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+    const userData = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+
+    // Check if we have auth data but not authenticated in Redux
+    if (token && userData && !isAuthenticated) {
+      console.log(
+        "AppContent - Found stored auth data but not authenticated in Redux, restoring session"
+      );
+      dispatch(checkAuthState());
+    }
+
+    // Listen for auth storage changes from other tabs
+    const handleAuthStorageChange = (event) => {
+      console.log(
+        "AppContent - Auth storage changed event received",
+        event.detail
+      );
+      dispatch(checkAuthState());
+    };
+
+    window.addEventListener("auth-storage-changed", handleAuthStorageChange);
+    return () => {
+      window.removeEventListener(
+        "auth-storage-changed",
+        handleAuthStorageChange
+      );
+    };
+  }, [dispatch, isAuthenticated]);
+
   // Check auth state when component mounts
   useEffect(() => {
     console.log("AppContent - Checking auth state");

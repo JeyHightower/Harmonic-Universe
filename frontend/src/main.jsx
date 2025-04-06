@@ -13,6 +13,7 @@ import "./styles/index.css"; // Eighth: Additional global styles
 // App.css comes last so it can override component-specific styles if needed
 import "./styles/App.css";
 import { ensurePortalRoot } from "./utils/portalUtils";
+import { AUTH_CONFIG } from "./utils/config";
 
 // Environment setup
 const isLocal =
@@ -20,6 +21,23 @@ const isLocal =
   window.location.hostname === "127.0.0.1";
 const isDev = process.env.NODE_ENV === "development";
 const isProd = process.env.NODE_ENV === "production";
+
+// Setup storage event listener for auth sync across tabs
+window.addEventListener("storage", (event) => {
+  if (
+    event.key === AUTH_CONFIG.TOKEN_KEY ||
+    event.key === AUTH_CONFIG.USER_KEY
+  ) {
+    console.log("Auth storage changed in another tab, syncing state");
+
+    // Dispatch a custom event that our app can listen for
+    window.dispatchEvent(
+      new CustomEvent("auth-storage-changed", {
+        detail: { key: event.key, newValue: event.newValue },
+      })
+    );
+  }
+});
 
 // Log environment
 if (isDev) {

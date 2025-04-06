@@ -55,6 +55,18 @@ const authPersistConfig = {
   whitelist: ["user", "isAuthenticated"],
   blacklist: ["isLoading", "error", "authError"],
   writeFailHandler: handlePersistError,
+  stateReconciler: (inboundState, originalState, reducedState, { debug }) => {
+    // Always prioritize inbound authenticated state if it exists
+    if (inboundState.isAuthenticated) {
+      return {
+        ...reducedState,
+        ...inboundState,
+        isLoading: false, // Never persist loading state
+        error: null,      // Clear any errors on rehydration
+      };
+    }
+    return reducedState;
+  }
 };
 
 // Configure persistence for other reducers

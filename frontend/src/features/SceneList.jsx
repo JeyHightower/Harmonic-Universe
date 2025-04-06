@@ -23,6 +23,7 @@ import {
   deleteScene,
   createScene,
 } from "../store/thunks/consolidated/scenesThunks";
+import { addScene } from "../store/slices/scenesSlice";
 import { SceneCard, SceneModalHandler } from "../components/consolidated";
 import { ROUTES } from "../utils/routes";
 import "../styles/SceneList.css";
@@ -154,10 +155,16 @@ const SceneList = () => {
       "SceneList: Scene creation success! Closing modal and refreshing scenes for universe:",
       universeId
     );
+    console.log("SceneList: Action type:", actionType);
     console.log("SceneList: New scene data:", sceneData);
 
     // Close the modal first
     setIsCreateModalOpen(false);
+
+    // Add the newly created scene to our local state
+    if (sceneData && sceneData.id) {
+      dispatch(addScene(sceneData));
+    }
 
     // Force render to ensure UI update
     setForceRender((prev) => prev + 1);

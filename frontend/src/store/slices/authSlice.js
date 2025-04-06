@@ -61,9 +61,16 @@ export const handleAuthTokens = createAsyncThunk(
 // Check auth state
 export const checkAuthState = createAsyncThunk(
   "auth/checkState",
-  async (_, { dispatch }) => {
+  async (_, { dispatch, getState }) => {
     try {
       console.debug("Checking auth state");
+
+      // Check if already authenticated in Redux state
+      const { auth } = getState();
+      if (auth.isAuthenticated && auth.user) {
+        console.log("Already authenticated in Redux state");
+        return auth.user;
+      }
 
       // Get tokens from localStorage
       const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
@@ -76,6 +83,18 @@ export const checkAuthState = createAsyncThunk(
         return null;
       }
 
+      let userData = null;
+
+      // Try to parse stored user data first
+      if (userStr) {
+        try {
+          userData = JSON.parse(userStr);
+          console.debug("Found user data in localStorage:", userData.id || userData.user?.id);
+        } catch (err) {
+          console.error("Failed to parse stored user data:", err);
+        }
+      }
+
       // Try to validate token
       try {
         console.debug("Attempting to validate token");
@@ -84,74 +103,25 @@ export const checkAuthState = createAsyncThunk(
 
         // Update state with validated user
         if (response.data.user) {
-          dispatch(loginSuccess({ user: response.data.user, token }));
-          return response.data;
+          userData = response.data.user;
+          // Update localStorage with fresh data
+          localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(userData));
         }
-      } catch (error) {
-        console.warn("Token validation failed:", error);
-        console.error("Validation error details:", {
-          message: error.message,
-          status: error.response?.status,
-          data: error.response?.data,
-          url: error.config?.url
-        });
-
-        // Try to refresh token
-        if (refreshToken) {
-          try {
-            console.debug("Attempting to refresh token");
-            const response = await apiClient.refreshToken();
-            console.debug("Token refresh successful:", response);
-
-            // Store new tokens
-            if (response.data.token) {
-              localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.token);
-            } else if (response.data.access_token) {
-              localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.access_token);
-            }
-            if (response.data.refresh_token) {
-              localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, response.data.refresh_token);
-            }
-            if (response.data.user) {
-              localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(response.data.user));
-            }
-
-            // Update state with refreshed user
-            dispatch(loginSuccess({ user: response.data.user, token: response.data.token || response.data.access_token }));
-            return response.data;
-          } catch (refreshError) {
-            console.error("Token refresh failed:", refreshError);
-            // If refresh fails, clear all auth data and logout
-            localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-            localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-            localStorage.removeItem(AUTH_CONFIG.USER_KEY);
-            dispatch(logout());
-            return null;
-          }
-        } else {
-          // No refresh token available, clear auth data and logout
-          localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-          localStorage.removeItem(AUTH_CONFIG.USER_KEY);
-          dispatch(logout());
+      } catch (err) {
+        console.warn("Token validation failed, using stored user data:", err);
+        // If validation fails but we have stored user data, use that
+        if (!userData) {
+          console.error("No valid user data available after token validation failure");
           return null;
         }
       }
 
-      // If we got here without valid user data, try using localStorage as fallback
-      if (userStr) {
-        try {
-          const userData = JSON.parse(userStr);
-          console.debug("Using cached user data from localStorage:", userData);
-          dispatch(loginSuccess({ user: userData, token }));
-          return { user: userData };
-        } catch (e) {
-          console.error("Failed to parse stored user data", e);
-        }
+      // If we have user data from any source, use it
+      if (userData) {
+        dispatch(loginSuccess({ user: userData, token }));
+        return userData;
       }
 
-      // If all else fails, logout
-      console.warn("No valid user data found, logging out");
-      dispatch(logout());
       return null;
     } catch (error) {
       console.error("Auth state check failed:", error);
