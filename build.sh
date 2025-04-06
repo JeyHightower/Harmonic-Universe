@@ -32,19 +32,18 @@ mkdir -p backend/app/static
 # Build frontend
 echo "Building frontend assets..."
 if [ -d "frontend" ]; then
+  # First ensure we're in the root directory
+  ROOT_DIR=$(pwd)
   cd frontend
   
-  # Update package.json build script to avoid the problematic commands
-  echo "Updating package.json build script..."
-  node -e "
-    const fs = require('fs');
-    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-    pkg.scripts.build = 'vite build';
-    fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
-  "
+  # Install all needed dependencies explicitly
+  echo "Installing frontend dependencies..."
+  # First install core dependencies required for build
+  npm install --no-save vite@4.5.2 @vitejs/plugin-react@4.0.3 --legacy-peer-deps
+  # Then install React and Redux dependencies
+  npm install --no-save react@18.2.0 react-dom@18.2.0 react-router-dom@6.18.0 react-router@6.18.0 react-redux@8.1.3 @reduxjs/toolkit@1.9.5 redux-persist@6.0.0 --legacy-peer-deps
   
-  # Create a fixed vite.config.js file that handles external dependencies properly
-  echo "Creating optimized vite.config.js..."
+  # Create simple vite config
   cat > vite.config.js << 'EOF'
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -52,67 +51,36 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src')
-    },
-    dedupe: ['react', 'react-dom', 'react-router-dom', 'react-redux', '@reduxjs/toolkit']
-  },
   build: {
     outDir: 'dist',
-    sourcemap: false,
-    minify: true,
     rollupOptions: {
-      external: [],
-      output: {
-        manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || 
-                id.includes('redux') || 
-                id.includes('router')) {
-              return 'vendor';
-            }
-          }
-        }
-      }
+      external: []
     }
-  },
-  optimizeDeps: {
-    include: [
-      'react', 
-      'react-dom',
-      'react-router-dom',
-      'react-redux',
-      '@reduxjs/toolkit'
-    ]
   }
 });
 EOF
-
-  # Install all needed dependencies explicitly
-  echo "Installing frontend dependencies..."
-  npm install --save react react-dom react-router-dom react-router react-redux @reduxjs/toolkit redux-persist --legacy-peer-deps
-  npm install --save-dev @vitejs/plugin-react vite --legacy-peer-deps
   
+  # Run vite build directly
   echo "Building frontend production bundle..."
-  NODE_OPTIONS="--max-old-space-size=4096" npm run build
+  NODE_OPTIONS="--max-old-space-size=4096" npx vite build
   
   # Copy built files to static directory
   echo "Copying built files to Flask app static directory..."
   if [ -d "dist" ]; then
-    cp -r dist/* ../backend/app/static/
+    cp -r dist/* "$ROOT_DIR/backend/app/static/"
     echo "Copied files from dist/ to backend/app/static/"
     
     # Also copy to root static for fallback
-    mkdir -p ../static
-    cp -r dist/* ../static/
+    mkdir -p "$ROOT_DIR/static"
+    cp -r dist/* "$ROOT_DIR/static/"
     echo "Copied files from dist/ to static/ (fallback)"
   else
     echo "WARNING: No dist directory found after build"
     ls -la
   fi
   
-  cd ..
+  # Return to root directory
+  cd "$ROOT_DIR"
 else
   echo "No frontend directory found, skipping frontend build"
 fi
