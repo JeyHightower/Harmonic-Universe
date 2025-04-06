@@ -34,11 +34,65 @@ echo "Building frontend assets..."
 if [ -d "frontend" ]; then
   cd frontend
   
-  # Fix react-router-dom dependency issue
-  npm install react-router-dom@6.18.0 react-router@6.18.0 --legacy-peer-deps --force
+  # Update package.json build script to avoid the problematic commands
+  echo "Updating package.json build script..."
+  node -e "
+    const fs = require('fs');
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    pkg.scripts.build = 'vite build';
+    fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+  "
+  
+  # Create a fixed vite.config.js file that handles external dependencies properly
+  echo "Creating optimized vite.config.js..."
+  cat > vite.config.js << 'EOF'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
 
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src')
+    },
+    dedupe: ['react', 'react-dom', 'react-router-dom', 'react-redux', '@reduxjs/toolkit']
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    minify: true,
+    rollupOptions: {
+      external: [],
+      output: {
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || 
+                id.includes('redux') || 
+                id.includes('router')) {
+              return 'vendor';
+            }
+          }
+        }
+      }
+    }
+  },
+  optimizeDeps: {
+    include: [
+      'react', 
+      'react-dom',
+      'react-router-dom',
+      'react-redux',
+      '@reduxjs/toolkit'
+    ]
+  }
+});
+EOF
+
+  # Install all needed dependencies explicitly
   echo "Installing frontend dependencies..."
-  npm install --legacy-peer-deps
+  npm install --save react react-dom react-router-dom react-router react-redux @reduxjs/toolkit redux-persist --legacy-peer-deps
+  npm install --save-dev @vitejs/plugin-react vite --legacy-peer-deps
   
   echo "Building frontend production bundle..."
   NODE_OPTIONS="--max-old-space-size=4096" npm run build
