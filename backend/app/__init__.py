@@ -316,17 +316,40 @@ def create_app(config_name='default'):
     def serve(path: str = '') -> Union[Response, tuple[Response, int]]:
         static_dir = cast(str, app.static_folder)
         
-        # Check if requesting an API route
+        # Check if requesting an API route - these should be handled by API routes, not here
         if path.startswith('api/'):
             return jsonify({"error": "Not found"}), 404
+        
+        # Log the requested path for debugging
+        app.logger.info(f"Serving path: {path}")
             
-        # Try to serve the file directly if it exists
+        # Try to serve the file directly if it exists (for assets, etc.)
         if path and os.path.exists(os.path.join(static_dir, path)):
+            app.logger.debug(f"Serving specific file: {path}")
             return send_from_directory(static_dir, path)
         
-        # Handle request for favicon.ico
-        if path == 'favicon.ico' and os.path.exists(os.path.join(static_dir, 'favicon.ico')):
-            return send_from_directory(static_dir, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+        # Handle request for specific files
+        if path and path in ['favicon.ico', 'robots.txt', 'manifest.json']:
+            file_path = os.path.join(static_dir, path)
+            if os.path.exists(file_path):
+                app.logger.debug(f"Serving specific meta file: {path}")
+                mimetype = 'image/x-icon' if path == 'favicon.ico' else 'text/plain'
+                return send_from_directory(static_dir, path, mimetype=mimetype)
+        
+        # For any other request, serve index.html for client-side routing
+        app.logger.debug(f"Serving index.html for path: {path}")
+        
+        # Check if index.html exists
+        index_path = os.path.join(static_dir, 'index.html')
+        if not os.path.exists(index_path):
+            app.logger.error(f"index.html not found in {static_dir}")
+            # Create a simple fallback index.html if it doesn't exist
+            return Response(
+                "<!DOCTYPE html><html><head><title>Harmonic Universe</title></head><body>"
+                "<h1>Harmonic Universe</h1><p>Application is running but index.html was not found.</p>"
+                "<p>Please check the API at <a href='/api/health'>/api/health</a>.</p></body></html>",
+                mimetype='text/html'
+            )
         
         # Force no-cache for index.html to prevent stale content issues
         response = send_from_directory(static_dir, 'index.html')

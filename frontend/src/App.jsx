@@ -5,14 +5,7 @@ import React, {
   useTransition,
   lazy,
 } from "react";
-import {
-  Routes,
-  Route,
-  BrowserRouter,
-  Navigate,
-  Outlet,
-  useLocation,
-} from "react-router-dom";
+import { Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import store, { persistor } from "./store/store";
@@ -25,6 +18,7 @@ import routes from "./routes/index.jsx";
 import { checkAuthState, logout } from "./store/slices/authSlice";
 import { AUTH_CONFIG } from "./utils/config";
 import { isHardRefresh } from "./utils/browserUtils";
+import AppRouter from "./router";
 import "./styles"; // Import all styles
 
 // Log routes to debug
@@ -298,44 +292,7 @@ const AppContent = () => {
         <Navigation />
         <main className="App-main">
           <Suspense fallback={<LoadingPage />}>
-            <Routes>
-              {isPending ? (
-                <Route path="*" element={<LoadingPage />} />
-              ) : (
-                <>
-                  {/* First add an explicit route to handle the root path with query params */}
-                  <Route path="/" element={<RootPathHandler />} />
-
-                  {/* Add critical routes directly as fallback */}
-                  <Route
-                    path="/dashboard"
-                    element={
-                      <ProtectedRoute>
-                        <DashboardComponent />
-                      </ProtectedRoute>
-                    }
-                  />
-
-                  {/* Add direct route for characters to fix routing issues */}
-                  <Route
-                    path="/universes/:universeId/characters"
-                    element={
-                      <ProtectedRoute>
-                        <Suspense fallback={<LoadingPage />}>
-                          {/* Dynamic import of CharactersPage to match how it's loaded in routes/index.jsx */}
-                          {React.createElement(
-                            lazy(() => import("./pages/CharactersPage"))
-                          )}
-                        </Suspense>
-                      </ProtectedRoute>
-                    }
-                  />
-
-                  {/* Then add all the other routes */}
-                  {routeElements}
-                </>
-              )}
-            </Routes>
+            <AppRouter />
           </Suspense>
         </main>
         <footer className="App-footer">
@@ -368,20 +325,13 @@ function App() {
 
   try {
     return (
-      <Provider store={store}>
-        <PersistGate loading={<LoadingPage />} persistor={persistor}>
-          <BrowserRouter
-            future={{
-              v7_startTransition: true,
-              v7_relativeSplatPath: true,
-            }}
-          >
-            <ModalProvider>
-              <AppContent />
-            </ModalProvider>
-          </BrowserRouter>
-        </PersistGate>
-      </Provider>
+      <div className="app">
+        <Provider store={store}>
+          <PersistGate loading={<LoadingPage />} persistor={persistor}>
+            <AppContent />
+          </PersistGate>
+        </Provider>
+      </div>
     );
   } catch (error) {
     console.error("Error rendering App:", error);

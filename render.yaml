@@ -23,7 +23,21 @@ services:
       - key: API_BASE_URL
         value: /api
       - key: NODE_OPTIONS
-        value: --max-old-space-size=2048
+        value: --max-old-space-size=4096
+      - key: VITE_APP_ENV
+        value: production
+      - key: VITE_BUILD_PATH
+        value: dist
+      - key: VITE_USE_HASH_ROUTER
+        value: "true"
+      - key: VITE_ROUTER_BASE
+        value: "/"
+      - key: ROLLUP_SKIP_NODEJS_NATIVE_BUILD
+        value: "true"
+      - key: ROLLUP_NATIVE_PURE_JS
+        value: "true"
+      - key: ROLLUP_DISABLE_NATIVE
+        value: "true"
       - key: LOG_LEVEL
         value: DEBUG
       - key: PYTHONUNBUFFERED
@@ -33,7 +47,7 @@ services:
       - key: STATIC_URL_PATH
         value: ""
       - key: STATIC_FOLDER
-        value: "/opt/render/project/src/static"
+        value: "/opt/render/project/src/backend/app/static"
       - key: REACT_APP_API_URL
         value: /api
       - key: RENDER

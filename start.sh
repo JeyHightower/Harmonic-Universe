@@ -24,33 +24,58 @@ fi
 PORT="${PORT:-10000}"
 echo "Application will listen on port $PORT"
 
-# Create static directory if it doesn't exist
-mkdir -p static
-
-# Create logs directory for application logs
-mkdir -p logs
-
-# Check and fix static files
-echo "Checking static files..."
-STATIC_DIR="static"
+# Define static directories
+FLASK_STATIC_DIR="backend/app/static"
+BACKUP_STATIC_DIR="static"
 RENDER_STATIC_DIR="/opt/render/project/src/static"
 
-if [ -d "$STATIC_DIR" ]; then
-  file_count=$(find "$STATIC_DIR" -type f | wc -l)
-  echo "Found $file_count files in static directory"
+# Create necessary directories
+mkdir -p "$FLASK_STATIC_DIR"
+mkdir -p "$BACKUP_STATIC_DIR"
+mkdir -p logs
+
+# Ensure static files are in all possible locations used by Flask
+echo "Ensuring static files are in all necessary locations..."
+
+# First check if Flask app static dir has files
+if [ -d "$FLASK_STATIC_DIR" ] && [ "$(ls -A "$FLASK_STATIC_DIR" 2>/dev/null)" ]; then
+  echo "Flask static directory has files, using as source"
+  STATIC_SOURCE="$FLASK_STATIC_DIR"
+elif [ -d "$BACKUP_STATIC_DIR" ] && [ "$(ls -A "$BACKUP_STATIC_DIR" 2>/dev/null)" ]; then
+  echo "Using backup static directory as source"
+  STATIC_SOURCE="$BACKUP_STATIC_DIR"
+elif [ -d "$RENDER_STATIC_DIR" ] && [ "$(ls -A "$RENDER_STATIC_DIR" 2>/dev/null)" ]; then
+  echo "Using Render static directory as source"
+  STATIC_SOURCE="$RENDER_STATIC_DIR"
+else
+  echo "No static files found in any location, will create minimal fallback"
+  STATIC_SOURCE=""
+fi
+
+# If we have a source with files, copy to all locations
+if [ -n "$STATIC_SOURCE" ]; then
+  echo "Copying from $STATIC_SOURCE to all static locations"
   
-  if [ -f "$STATIC_DIR/index.html" ]; then
-    echo "index.html exists in local static directory"
-  else
-    echo "WARNING: index.html not found in local static directory"
-    
-    # Check if index.html exists in Render static directory
-    if [ -f "$RENDER_STATIC_DIR/index.html" ]; then
-      echo "index.html found in Render static directory, copying to local static..."
-      cp "$RENDER_STATIC_DIR/index.html" "$STATIC_DIR/"
-    else
-      echo "Creating fallback index.html..."
-      cat > "$STATIC_DIR/index.html" << 'EOF'
+  # Copy to Flask app static dir if source is different
+  if [ "$STATIC_SOURCE" != "$FLASK_STATIC_DIR" ]; then
+    cp -r "$STATIC_SOURCE"/* "$FLASK_STATIC_DIR"/ || echo "Warning: Failed to copy to Flask static directory"
+  fi
+  
+  # Copy to backup static dir if source is different
+  if [ "$STATIC_SOURCE" != "$BACKUP_STATIC_DIR" ]; then
+    cp -r "$STATIC_SOURCE"/* "$BACKUP_STATIC_DIR"/ || echo "Warning: Failed to copy to backup static directory"
+  fi
+  
+  # Copy to Render static dir if it exists and source is different
+  if [ -d "$RENDER_STATIC_DIR" ] && [ "$STATIC_SOURCE" != "$RENDER_STATIC_DIR" ]; then
+    cp -r "$STATIC_SOURCE"/* "$RENDER_STATIC_DIR"/ || echo "Warning: Failed to copy to Render static directory"
+  fi
+else
+  # Create a minimal index.html if no source exists
+  echo "Creating minimal index.html in all static directories"
+  for DIR in "$FLASK_STATIC_DIR" "$BACKUP_STATIC_DIR" "$RENDER_STATIC_DIR"; do
+    if [ -d "$DIR" ]; then
+      cat > "$DIR/index.html" << 'EOF'
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -88,63 +113,38 @@ if [ -d "$STATIC_DIR" ]; then
 </html>
 EOF
     fi
-  fi
-else
-  echo "WARNING: Static directory not found, creating it"
-  mkdir -p "$STATIC_DIR"
-  
-  # Create fallback index.html
-  echo "Creating fallback index.html..."
-  cat > "$STATIC_DIR/index.html" << 'EOF'
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Harmonic Universe</title>
-    <style>
-        body { font-family: sans-serif; margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
-        h1 { color: #3498db; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Harmonic Universe</h1>
-        <p>The application is running. Please check the API status below:</p>
-        <div id="status">Checking API...</div>
-    </div>
-    <script>
-        // Check API health
-        fetch('/api/health')
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('status').innerHTML = 
-                    '<strong style="color:green">API is running: ' + 
-                    JSON.stringify(data) + '</strong>';
-            })
-            .catch(error => {
-                document.getElementById('status').innerHTML = 
-                    '<strong style="color:red">Error connecting to API: ' + 
-                    error.message + '</strong>';
-            });
-    </script>
-</body>
-</html>
-EOF
+  done
 fi
 
-# Make sure static files are in the Render expected path
-if [ -d "$RENDER_STATIC_DIR" ] && [ "$RENDER_STATIC_DIR" != "$STATIC_DIR" ]; then
-  echo "Copying static files to Render static directory..."
-  cp -r "$STATIC_DIR"/* "$RENDER_STATIC_DIR"/ || echo "Warning: Failed to copy to Render static directory"
-fi
+# Display info about static files
+for DIR in "$FLASK_STATIC_DIR" "$BACKUP_STATIC_DIR" "$RENDER_STATIC_DIR"; do
+  if [ -d "$DIR" ]; then
+    file_count=$(find "$DIR" -type f | wc -l)
+    echo "Found $file_count files in $DIR"
+    if [ -f "$DIR/index.html" ]; then
+      echo "index.html exists in $DIR"
+    else
+      echo "WARNING: index.html NOT found in $DIR"
+    fi
+  else
+    echo "WARNING: Directory $DIR does not exist"
+  fi
+done
 
 # Set the static folder environment variable
-export STATIC_FOLDER="$STATIC_DIR"
+export STATIC_FOLDER="$(pwd)/$FLASK_STATIC_DIR"
 export STATIC_URL_PATH=""
 
-# Start the application with gunicorn
+# Create a .env file with critical environment variables
+cat > .env << EOF
+FLASK_APP=backend.app:create_app
+FLASK_ENV=production
+FLASK_DEBUG=0
+STATIC_FOLDER=$(pwd)/$FLASK_STATIC_DIR
+STATIC_URL_PATH=
+RENDER=true
+EOF
+
 echo "Starting application with gunicorn..."
 exec gunicorn backend.wsgi:app \
   --bind 0.0.0.0:$PORT \
