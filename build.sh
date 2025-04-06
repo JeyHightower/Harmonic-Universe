@@ -34,6 +34,30 @@ echo "Building frontend assets..."
 if [ -d "frontend" ]; then
   # First ensure we're in the root directory
   ROOT_DIR=$(pwd)
+  
+  # Run both fix scripts if they exist
+  if [ -f "scripts/fix/fix-jsx-extension.sh" ]; then
+    echo "Running JSX extension fixes..."
+    bash scripts/fix/fix-jsx-extension.sh
+  else
+    echo "JSX extension fix script not found, continuing without fixes"
+  fi
+  
+  if [ -f "scripts/fix/fix-react-errors.sh" ]; then
+    echo "Running React error fixes..."
+    bash scripts/fix/fix-react-errors.sh
+  else
+    echo "React error fix script not found, continuing without fixes"
+  fi
+  
+  # If the deployment fix script exists, run it as well
+  if [ -f "scripts/fix/fix-deployment.sh" ]; then
+    echo "Running deployment fixes..."
+    bash scripts/fix/fix-deployment.sh
+  else
+    echo "Deployment fix script not found, continuing without fixes"
+  fi
+  
   cd frontend
   
   # Install all needed dependencies explicitly
@@ -55,27 +79,53 @@ if [ -d "frontend" ]; then
   cat > vite.config.js << 'EOF'
 // vite.config.js
 import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
 
 export default defineConfig({
+  plugins: [react()],
   build: {
     outDir: 'dist',
     rollupOptions: {
       external: [
         // Mark problematic modules as external if needed
+        'prop-types'
       ]
     }
   },
   resolve: {
     alias: {
-      // Add any path aliases if needed
-      src: '/src'
-    }
+      '@': resolve(__dirname, 'src'),
+      'src': resolve(__dirname, 'src'),
+      './pages/auth/LoginPage': resolve(__dirname, 'src/pages/LoginPage'),
+      './pages/Dashboard': resolve(__dirname, 'src/features/Dashboard')
+    },
+    extensions: ['.mjs', '.js', '.jsx', '.ts', '.tsx', '.json']
   },
   optimizeDeps: {
     include: ['prop-types', 'react-redux', '@mui/material', '@mui/icons-material', 'antd', '@ant-design/icons']
+  },
+  esbuild: {
+    loader: 'jsx',
+    include: /src\/.*\.jsx?$/,
+    exclude: [],
   }
 });
 EOF
+  
+  # Fix imports in router.jsx if it exists
+  if [ -f "src/router.jsx" ]; then
+    echo "Fixing imports in router.jsx..."
+    sed -i.bak 's|from "./pages/Dashboard"|from "./features/Dashboard"|g' src/router.jsx
+    sed -i.bak 's|from "./pages/auth/LoginPage"|from "./pages/LoginPage"|g' src/router.jsx
+    sed -i.bak 's|from "./pages/auth/RegisterPage"|from "./pages/LoginPage"|g' src/router.jsx
+    # Fix other imports for scene, universe, etc.
+    sed -i.bak 's|from "./pages/universe/UniverseDetail"|from "./features/UniverseDetail"|g' src/router.jsx
+    sed -i.bak 's|from "./pages/scenes/SceneDetail"|from "./components/consolidated/SceneDetail"|g' src/router.jsx
+    sed -i.bak 's|from "./pages/scenes/SceneEditPage"|from "./components/consolidated/SceneEditPage"|g' src/router.jsx
+    sed -i.bak 's|from "./pages/scenes/SceneEditRedirect"|from "./components/routing/SceneEditRedirect"|g' src/router.jsx
+    rm -f src/router.jsx.bak
+  fi
   
   # Run vite build with source maps
   echo "Building frontend production bundle..."

@@ -5,19 +5,19 @@ import { useSelector } from "react-redux";
 // Import pages
 import Home from "./pages/Home";
 import Dashboard from "./features/Dashboard";
-import LoginPage from "./pages/auth/LoginPage";
-import RegisterPage from "./pages/auth/RegisterPage";
-import UniverseDetail from "./pages/universe/UniverseDetail";
-import SceneDetail from "./pages/scenes/SceneDetail";
-import SceneEditPage from "./pages/scenes/SceneEditPage";
-import SceneEditRedirect from "./pages/scenes/SceneEditRedirect";
+import LoginPage from "./pages/LoginPage";
+// Import components from features or components directory
+import UniverseDetail from "./features/UniverseDetail";
+import SceneDetail from "./components/consolidated/SceneDetail";
+import SceneEditPage from "./components/consolidated/SceneEditPage";
+import SceneEditRedirect from "./components/routing/SceneEditRedirect";
 import NotFound from "./pages/NotFound";
 import Debug from "./pages/Debug";
-import SettingsPage from "./pages/settings/SettingsPage";
-import CharactersPage from "./pages/characters/CharactersPage";
-import CharacterDetail from "./pages/characters/CharacterDetail";
-import NotesPage from "./pages/notes/NotesPage";
-import NoteDetail from "./pages/notes/NoteDetail";
+import SettingsPage from "./pages/SettingsPage";
+import CharactersPage from "./pages/CharactersPage";
+import CharacterDetail from "./components/character/CharacterDetail";
+import NotesPage from "./pages/NotesPage";
+import NoteDetail from "./components/consolidated/NoteDetail";
 
 // Determine which router to use based on environment
 const Router = import.meta.env.PROD ? HashRouter : BrowserRouter;
@@ -30,7 +30,7 @@ const AppRouter = () => {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/register" element={<LoginPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/universes/:universeId" element={<UniverseDetail />} />
         <Route path="/scenes/:sceneId" element={<SceneDetail />} />
