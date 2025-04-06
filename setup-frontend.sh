@@ -1,48 +1,4 @@
 #!/bin/bash
-# build.sh - Comprehensive build script for Render deployment
-
-set -e # Exit on error
-
-echo "Starting Harmonic Universe build process..."
-echo "Current directory: $(pwd)"
-echo "Python version: $(python --version)"
-echo "Node version: $(node --version || echo 'Node not found')"
-
-# Set environment variables for deployment
-export RENDER=true
-export FLASK_ENV=production
-export FLASK_DEBUG=0
-export VITE_APP_ENV=production
-export VITE_USE_HASH_ROUTER=true
-export ROLLUP_DISABLE_NATIVE=true
-
-# Fix PostgreSQL URL format if needed
-if [[ $DATABASE_URL == postgres://* ]]; then
-  export DATABASE_URL=${DATABASE_URL/postgres:\/\//postgresql:\/\/}
-  echo "Fixed DATABASE_URL format from postgres:// to postgresql://"
-fi
-
-# Install Python dependencies
-echo "Installing Python dependencies..."
-pip install -r backend/requirements.txt
-
-# Ensure backend app static directory exists
-mkdir -p backend/app/static
-
-# Export the root directory for child scripts
-export ROOT_DIR=$(pwd)
-
-# Build frontend
-echo "Building frontend assets..."
-if [ -d "frontend" ]; then
-  # Navigate to frontend directory
-  cd frontend
-  
-  # Check if setup-frontend.sh exists, otherwise create it
-  if [ ! -f "$ROOT_DIR/setup-frontend.sh" ]; then
-    echo "Creating setup-frontend.sh script..."
-    cat > "$ROOT_DIR/setup-frontend.sh" << 'EOF'
-#!/bin/bash
 # setup-frontend.sh - Script to handle all frontend build processes
 
 set -e # Exit on error
@@ -59,7 +15,7 @@ rm -rf node_modules dist
 
 # Create a fresh package.json with all needed dependencies
 echo "Creating fresh package.json with correct dependencies..."
-cat > package.json << 'EOT'
+cat > package.json << 'EOF'
 {
   "name": "frontend",
   "version": "1.0.0",
@@ -95,11 +51,11 @@ cat > package.json << 'EOT'
     "vite": "^4.5.1"
   }
 }
-EOT
+EOF
 
 # Create a fresh vite.config.js with proper aliases
 echo "Creating optimized vite.config.js..."
-cat > vite.config.js << 'EOT'
+cat > vite.config.js << 'EOF'
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
@@ -165,7 +121,7 @@ export default defineConfig({
     }
   }
 });
-EOT
+EOF
 
 # Add React CDN to index.html if it exists
 if [ -f "index.html" ]; then
@@ -187,17 +143,17 @@ mkdir -p src/services
 create_placeholders() {
   # Debug component
   echo "Creating placeholder Debug component..."
-  cat > src/components/Debug.jsx << 'EOT'
+  cat > src/components/Debug.jsx << 'EOF'
 import React from "react";
 
 export default function Debug() {
   return <div>Debug Page</div>;
 }
-EOT
+EOF
 
   # NoteDetail component
   echo "Creating placeholder NoteDetail component..."
-  cat > src/components/consolidated/NoteDetail.jsx << 'EOT'
+  cat > src/components/consolidated/NoteDetail.jsx << 'EOF'
 import React from "react";
 import { useParams } from "react-router-dom";
 
@@ -211,11 +167,11 @@ export default function NoteDetail() {
     </div>
   );
 }
-EOT
+EOF
 
   # SceneDetail component
   echo "Creating placeholder SceneDetail component..."
-  cat > src/components/consolidated/SceneDetail.jsx << 'EOT'
+  cat > src/components/consolidated/SceneDetail.jsx << 'EOF'
 import React from "react";
 import { useParams } from "react-router-dom";
 
@@ -229,11 +185,11 @@ export default function SceneDetail() {
     </div>
   );
 }
-EOT
+EOF
 
   # SceneEditPage component
   echo "Creating placeholder SceneEditPage component..."
-  cat > src/components/consolidated/SceneEditPage.jsx << 'EOT'
+  cat > src/components/consolidated/SceneEditPage.jsx << 'EOF'
 import React from "react";
 import { useParams } from "react-router-dom";
 
@@ -247,11 +203,11 @@ export default function SceneEditPage() {
     </div>
   );
 }
-EOT
+EOF
 
   # SceneEditRedirect component
   echo "Creating placeholder SceneEditRedirect component..."
-  cat > src/components/routing/SceneEditRedirect.jsx << 'EOT'
+  cat > src/components/routing/SceneEditRedirect.jsx << 'EOF'
 import React from "react";
 import { Navigate, useParams } from "react-router-dom";
 
@@ -260,11 +216,11 @@ export default function SceneEditRedirect() {
   // Simply redirects to the scene edit page
   return <Navigate to={`/scenes/${sceneId}/edit`} replace />;
 }
-EOT
+EOF
 
   # utils/routes.jsx file
   echo "Creating placeholder routes file..."
-  cat > src/utils/routes.jsx << 'EOT'
+  cat > src/utils/routes.jsx << 'EOF'
 // Placeholder routes file created during deployment
 import React from 'react';
 
@@ -288,13 +244,13 @@ export const routes = [
 ];
 
 export default routes;
-EOT
+EOF
 }
 
 # Create endpoints.js
 create_endpoints() {
   echo "Creating basic endpoints.js file..."
-  cat > src/services/endpoints.js << 'EOT'
+  cat > src/services/endpoints.js << 'EOF'
 // Basic endpoints configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -350,7 +306,7 @@ export const universesEndpoints = {
 export const ENDPOINTS = endpoints;
 
 export default endpoints;
-EOT
+EOF
 }
 
 # Create all placeholders
@@ -388,185 +344,4 @@ if [ -d "dist" ]; then
 else
   echo "ERROR: No dist directory found after build. Frontend build failed."
   exit 1
-fi
-
-# Check if setup-static.sh exists, otherwise create it
-if [ ! -f "$ROOT_DIR/setup-static.sh" ]; then
-  echo "Creating setup-static.sh script..."
-  cat > "$ROOT_DIR/setup-static.sh" << 'EOF'
-#!/bin/bash
-# setup-static.sh - Script to handle static file setup and fallbacks
-
-set -e # Exit on error
-
-# Check if ROOT_DIR is set, otherwise use current directory
-ROOT_DIR=${ROOT_DIR:-$(pwd)}
-
-echo "Setting up static files and fallbacks..."
-echo "Root directory: $ROOT_DIR"
-
-# Ensure static directory exists and has an index.html
-if [ ! -f "$ROOT_DIR/backend/app/static/index.html" ]; then
-  echo "No index.html found in backend/app/static directory, creating a placeholder"
-  
-  mkdir -p "$ROOT_DIR/backend/app/static"
-  
-  cat > "$ROOT_DIR/backend/app/static/index.html" << 'EOT'
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Harmonic Universe</title>
-    <!-- Include React and ReactDOM directly from CDN -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <style>
-        body { font-family: sans-serif; margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
-        h1 { color: #3498db; }
-    </style>
-    <script>
-        // Handle SPA routing for deep links
-        (function() {
-            // Redirect all 404s back to index.html for client-side routing
-            if (window.location.pathname !== '/' && !window.location.pathname.startsWith('/api/')) {
-                console.log('SPA routing: handling deep link:', window.location.pathname);
-                // History is preserved when using pushState
-                window.history.pushState({}, '', '/');
-            }
-        })();
-    </script>
-</head>
-<body>
-    <div class="container">
-        <h1>Harmonic Universe</h1>
-        <p>The application is running. Please check the API status below:</p>
-        <div id="status">Checking API...</div>
-    </div>
-    <script>
-        // Check API health
-        fetch('/api/health')
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('status').innerHTML = 
-                    '<strong style="color:green">API is running: ' + 
-                    JSON.stringify(data) + '</strong>';
-            })
-            .catch(error => {
-                document.getElementById('status').innerHTML = 
-                    '<strong style="color:red">Error connecting to API: ' + 
-                    error.message + '</strong>';
-            });
-    </script>
-</body>
-</html>
-EOT
-fi
-
-# Create fallback scripts for React
-echo "Creating fallback React scripts..."
-mkdir -p "$ROOT_DIR/static"
-
-cat > "$ROOT_DIR/static/react-setup.js" << 'EOT'
-console.log('Loading React from CDN...');
-// Already loaded in index.html
-EOT
-
-# Create a fallback index.js for direct loading
-cat > "$ROOT_DIR/static/index.js" << 'EOT'
-// Check if React and ReactDOM are already loaded
-if (!window.React || !window.ReactDOM) {
-  console.error('React or ReactDOM not found - loading from CDN');
-  
-  // Load React
-  if (!window.React) {
-    const reactScript = document.createElement('script');
-    reactScript.src = 'https://unpkg.com/react@18/umd/react.production.min.js';
-    reactScript.async = false;
-    document.head.appendChild(reactScript);
-  }
-  
-  // Load ReactDOM
-  if (!window.ReactDOM) {
-    const reactDOMScript = document.createElement('script');
-    reactDOMScript.src = 'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js';
-    reactDOMScript.async = false;
-    document.head.appendChild(reactDOMScript);
-  }
-}
-
-// Simple App component to test rendering
-console.log('Index.js loaded properly');
-window.addEventListener('DOMContentLoaded', () => {
-  console.log('DOM loaded, attempting to mount app');
-  if (window.React && window.ReactDOM) {
-    console.log('React and ReactDOM available');
-    
-    const App = () => {
-      const [status, setStatus] = React.useState('Loading...');
-      
-      React.useEffect(() => {
-        fetch('/api/health')
-          .then(res => res.json())
-          .then(data => setStatus(JSON.stringify(data)))
-          .catch(err => setStatus('Error: ' + err.message));
-      }, []);
-      
-      return React.createElement('div', null, [
-        React.createElement('h1', {key: 'title'}, 'Harmonic Universe'),
-        React.createElement('p', {key: 'status'}, 'Status: ' + status)
-      ]);
-    };
-    
-    const root = document.getElementById('root');
-    if (root) {
-      const reactRoot = ReactDOM.createRoot(root);
-      reactRoot.render(React.createElement(App));
-    }
-  }
-});
-EOT
-
-# Copy the fallback scripts to backend/static as well
-cp "$ROOT_DIR/static/react-setup.js" "$ROOT_DIR/backend/app/static/" || echo "Warning: Could not copy react-setup.js to backend/app/static/"
-cp "$ROOT_DIR/static/index.js" "$ROOT_DIR/backend/app/static/" || echo "Warning: Could not copy index.js to backend/app/static/"
-
-# Check if there's an index.html in the secondary static folder, copy if not
-if [ ! -f "$ROOT_DIR/static/index.html" ] && [ -f "$ROOT_DIR/backend/app/static/index.html" ]; then
-  mkdir -p "$ROOT_DIR/static"
-  cp -r "$ROOT_DIR/backend/app/static/"* "$ROOT_DIR/static/"
-  echo "Copied index.html to static/ directory (secondary location)"
-fi
-
-# Copy static files to expected Render location for redundancy
-mkdir -p /opt/render/project/src/static || echo "Could not create directory (normal for local build)"
-cp -r "$ROOT_DIR/backend/app/static/"* /opt/render/project/src/static/ || echo "Warning: Could not copy to Render path"
-
-echo "Static files setup completed successfully"
-EOF
-    
-    # Make it executable
-    chmod +x "$ROOT_DIR/setup-static.sh"
-fi
-
-# Execute the static files setup script
-if [ -x "$ROOT_DIR/setup-static.sh" ]; then
-  echo "Running static files setup script..."
-  "$ROOT_DIR/setup-static.sh"
-else
-  # Fallback to inline execution
-  bash "$ROOT_DIR/setup-static.sh"
-fi
-
-# Set up database if needed
-echo "Setting up database..."
-export FLASK_APP=backend.app:create_app
-
-# Run database migrations
-echo "Running database migrations..."
-cd backend
-python -m flask db upgrade || echo "Warning: Database migrations failed, continuing"
-cd ..
-
-echo "Build process completed successfully" 
+fi 
