@@ -72,6 +72,25 @@ if [ -d "frontend" ]; then
     echo "Fixed main.jsx import statements"
   fi
   
+  # Fix App.jsx syntax error
+  if [ -f "src/App.jsx" ]; then
+    echo "Checking and fixing App.jsx..."
+    # Fix the incorrect "from" syntax if present
+    sed -i "s/import ModalProvider 'from/import ModalProvider from/g" src/App.jsx
+    sed -i "s/'from '.\/components\/modals\/ModalProvider.jsx'/from '.\/components\/modals\/ModalProvider.jsx'/g" src/App.jsx
+    sed -i "s/'from '.\/components\/modals\/ModalProvider'/from '.\/components\/modals\/ModalProvider'/g" src/App.jsx
+    # Make general fixes to import statements
+    sed -i "s/} 'from/} from/g" src/App.jsx
+    sed -i "s/ 'from / from /g" src/App.jsx
+    echo "Fixed App.jsx import statements"
+  fi
+  
+  # General fix for all JSX files
+  echo "Applying general import statement fixes to all JSX files..."
+  find src -name "*.jsx" -exec sed -i "s/ 'from / from /g" {} \;
+  find src -name "*.jsx" -exec sed -i "s/} 'from/} from/g" {} \;
+  find src -name "*.jsx" -exec sed -i "s/'from /from /g" {} \;
+  
   # Install all needed dependencies explicitly
   echo "Installing frontend dependencies..."
   
