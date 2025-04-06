@@ -18,36 +18,70 @@ import characterReducer from "./slices/characterSlice";
 import noteReducer from "./slices/noteSlice";
 import modalReducer from "./slices/modalSlice";
 
+// Create a more resilient storage reference
+const createNoopStorage = () => {
+  return {
+    getItem(_key) {
+      return Promise.resolve(null);
+    },
+    setItem(_key, value) {
+      return Promise.resolve(value);
+    },
+    removeItem(_key) {
+      return Promise.resolve();
+    }
+  };
+};
+
+// Get appropriate storage mechanism
+const getStorage = () => {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    return storage;
+  }
+  return createNoopStorage();
+};
+
+// Persist error handler
+const handlePersistError = (err) => {
+  console.warn('Redux persist error:', err);
+  // Don't throw error to prevent app from breaking
+  return null;
+};
+
 // Configure persistence for auth state
 const authPersistConfig = {
   key: "auth",
-  storage,
+  storage: getStorage(),
   whitelist: ["user", "isAuthenticated"],
   blacklist: ["isLoading", "error", "authError"],
+  writeFailHandler: handlePersistError,
 };
 
 // Configure persistence for other reducers
 const universesPersistConfig = {
   key: "universes",
-  storage,
+  storage: getStorage(),
   whitelist: ["universes", "currentUniverse"],
   blacklist: ["loading", "error", "success"],
+  writeFailHandler: handlePersistError,
 };
 
 const scenesPersistConfig = {
   key: "scenes",
-  storage,
+  storage: getStorage(),
   whitelist: ["scenes", "locallyCreatedScenes", "universeScenes"],
   blacklist: ["loading", "error", "success", "currentScene"],
+  writeFailHandler: handlePersistError,
 };
 
 // Root persist config
 const persistConfig = {
   key: "root",
   version: 1,
-  storage,
+  storage: getStorage(),
   whitelist: [], // Don't persist anything at root level
   blacklist: ["modal"], // Never persist modal state
+  writeFailHandler: handlePersistError,
 };
 
 const rootReducer = combineReducers({

@@ -5,6 +5,7 @@ import { AUTH_CONFIG } from "../../utils/config";
 import { ROUTES } from "../../utils/routes";
 import apiClient from "../../services/api";
 import { login, register } from "../thunks/authThunks";
+import { isHardRefresh } from "../../utils/browserUtils";
 
 // Debug logging for all authentication operations
 const logAuthOperation = (operation, data = {}) => {
@@ -167,7 +168,14 @@ export const logout = createAsyncThunk(
     try {
       console.debug("Logging out user");
 
-      // Clear tokens from localStorage
+      // For hard refreshes, don't clear local storage
+      if (isHardRefresh()) {
+        console.log("Hard refresh detected - not clearing auth data");
+        return null;
+      }
+
+      // For normal logout, clear tokens from localStorage
+      console.log("Normal logout - clearing auth data");
       localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
       localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
       localStorage.removeItem(AUTH_CONFIG.USER_KEY);

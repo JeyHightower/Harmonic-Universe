@@ -24,6 +24,7 @@ import ModalProvider from "./components/modals/ModalProvider";
 import routes from "./routes/index.jsx";
 import { checkAuthState, logout } from "./store/slices/authSlice";
 import { AUTH_CONFIG } from "./utils/config";
+import { isHardRefresh } from "./utils/browserUtils";
 import "./styles"; // Import all styles
 
 // Log routes to debug
@@ -128,8 +129,11 @@ const AppContent = () => {
         // Verify user data is valid JSON
         const parsedUserData = JSON.parse(userData);
         // Handle both direct user objects and response objects with user property
-        if (parsedUserData && typeof parsedUserData === 'object' && 
-            (parsedUserData.id || (parsedUserData.user && parsedUserData.user.id))) {
+        if (
+          parsedUserData &&
+          typeof parsedUserData === "object" &&
+          (parsedUserData.id || (parsedUserData.user && parsedUserData.user.id))
+        ) {
           console.log(
             "AppContent - Valid token and user data found, checking auth state"
           );
@@ -138,19 +142,25 @@ const AppContent = () => {
           console.warn("AppContent - User data parsed but invalid format");
           // Log the actual parsed data to help debug
           console.warn("Invalid user data:", parsedUserData);
-          dispatch(logout());
+          // Don't log out during page hard refresh
+          if (!isHardRefresh()) {
+            dispatch(logout());
+          }
         }
       } catch (e) {
         console.error("AppContent - Error parsing user data:", e.message);
-        dispatch(logout());
+        // Don't log out during page hard refresh
+        if (!isHardRefresh()) {
+          dispatch(logout());
+        }
       }
     } else {
       console.info(
         "AppContent - No authentication data found (normal for new sessions)"
       );
-      // Don't automatically logout on initial load - just consider the user not authenticated
-      // Only logout if we previously had auth data
-      if (initialAuthCheckDone) {
+      // Don't automatically logout on initial load or during hard refresh
+      // Only logout if we previously had auth data and this is not a hard refresh
+      if (initialAuthCheckDone && !isHardRefresh()) {
         console.log(
           "AppContent - Logging out due to missing auth data after initial check"
         );
@@ -188,7 +198,8 @@ const AppContent = () => {
           console.info(
             "AppContent - No authentication data in storage (normal for new sessions)"
           );
-          if (initialAuthCheckDone) {
+          // Don't log out during hard refresh
+          if (initialAuthCheckDone && !isHardRefresh()) {
             console.log(
               "AppContent - Logging out due to missing auth data after storage event"
             );
@@ -269,6 +280,21 @@ const AppContent = () => {
                     element={
                       <ProtectedRoute>
                         <DashboardComponent />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Add direct route for characters to fix routing issues */}
+                  <Route
+                    path="/universes/:universeId/characters"
+                    element={
+                      <ProtectedRoute>
+                        <Suspense fallback={<LoadingPage />}>
+                          {/* Dynamic import of CharactersPage to match how it's loaded in routes/index.jsx */}
+                          {React.createElement(
+                            lazy(() => import("./pages/CharactersPage"))
+                          )}
+                        </Suspense>
                       </ProtectedRoute>
                     }
                   />

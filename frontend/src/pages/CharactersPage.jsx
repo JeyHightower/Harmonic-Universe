@@ -39,25 +39,43 @@ import { fetchCharactersByUniverse } from "../store/thunks/characterThunks";
 const CharactersPageWrapper = () => {
   const { universeId } = useParams();
   const navigate = useNavigate();
+  const [isValidating, setIsValidating] = useState(true);
 
-  // Check if universeId is valid - more comprehensive check
-  const isValidUniverseId =
-    universeId &&
-    universeId !== "undefined" &&
-    universeId !== "null" &&
-    !isNaN(parseInt(universeId, 10)) &&
-    parseInt(universeId, 10) > 0;
+  // Validate the universeId immediately when component mounts
+  useEffect(() => {
+    // Comprehensive validation check for universeId
+    const isValidUniverseId =
+      universeId !== undefined &&
+      universeId !== null &&
+      universeId !== "undefined" &&
+      universeId !== "null" &&
+      universeId !== "" &&
+      !isNaN(parseInt(universeId, 10)) &&
+      parseInt(universeId, 10) > 0;
 
-  // If no valid universeId, show loading and redirect
-  if (!isValidUniverseId) {
-    console.log(
-      `Invalid universe ID detected (${universeId}), redirecting to dashboard`
+    if (!isValidUniverseId) {
+      console.log(
+        `Invalid universe ID detected (${universeId}), redirecting to dashboard`
+      );
+      navigate("/dashboard", { replace: true });
+    } else {
+      setIsValidating(false);
+    }
+  }, [universeId, navigate]);
+
+  // Show loading while validating
+  if (isValidating) {
+    return (
+      <Box display="flex" justifyContent="center" my={6}>
+        <CircularProgress />
+        <Typography variant="body1" sx={{ ml: 2 }}>
+          Validating universe...
+        </Typography>
+      </Box>
     );
-
-    // Use Navigate component instead of useEffect to ensure redirect happens before any renders
-    return <Navigate to="/dashboard" replace />;
   }
 
+  // Validation is complete and universeId is valid
   // Parse universeId to make sure it's a number
   const parsedUniverseId = parseInt(universeId, 10);
   console.log(
@@ -72,6 +90,11 @@ const CharactersPageWrapper = () => {
 const CharactersPageContent = ({ universeId }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  // Double-check universeId is valid, even after wrapper validation
+  const safeUniverseId = universeId && !isNaN(parseInt(universeId, 10)) && parseInt(universeId, 10) > 0 
+    ? parseInt(universeId, 10) 
+    : null;
 
   // Get characters from Redux store
   const charactersFromStore = useSelector(
@@ -104,24 +127,25 @@ const CharactersPageContent = ({ universeId }) => {
   }, [charactersFromStore, loadingFromStore, errorFromStore]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      // Guard clause - immediately abort if no valid universeId
-      if (!universeId || universeId <= 0 || isNaN(universeId)) {
-        console.warn(`Invalid universeId for API calls: ${universeId}`);
-        setError("Please select a valid universe first.");
-        setLoading(false);
-        return;
-      }
+    // Early return to prevent any API calls if universeId is invalid or null
+    if (!safeUniverseId) {
+      console.warn(`Invalid universeId for API calls: ${universeId}, skipping data fetch`);
+      setLoading(false);
+      setError("Invalid universe ID. Redirecting to dashboard.");
+      // Additional safety - redirect if we somehow got here with an invalid ID
+      setTimeout(() => navigate("/dashboard", { replace: true }), 1500);
+      return;
+    }
 
+    const fetchData = async () => {
       try {
+        console.log(`Fetching data for valid universe ID: ${safeUniverseId}`);
         setLoading(true);
         setError(null);
 
-        console.log("Fetching data for universe ID:", universeId);
-
         // Get universe details
         try {
-          const universeResponse = await apiClient.getUniverse(universeId, {
+          const universeResponse = await apiClient.getUniverse(safeUniverseId, {
             includeScenes: true,
           });
           console.log("Universe response:", universeResponse);
@@ -166,10 +190,10 @@ const CharactersPageContent = ({ universeId }) => {
             try {
               console.log(
                 "No scenes in universe response, fetching directly for universe",
-                universeId
+                safeUniverseId
               );
               const scenesResponse = await apiClient.getUniverseScenes(
-                universeId
+                safeUniverseId
               );
               console.log("Direct scenes response:", scenesResponse);
 
@@ -221,7 +245,7 @@ const CharactersPageContent = ({ universeId }) => {
           console.log("Final scenes for universe:", universeScenes);
           setScenes(universeScenes || []);
         } catch (universeErr) {
-          console.error(`Error fetching universe ${universeId}:`, universeErr);
+          console.error(`Error fetching universe ${safeUniverseId}:`, universeErr);
           setError("Failed to load universe details. Please try again.");
           // Initialize with empty data to prevent null errors
           setUniverse({});
@@ -232,11 +256,11 @@ const CharactersPageContent = ({ universeId }) => {
         // Get characters for this universe using Redux thunk action
         try {
           console.log(
-            `Fetching characters for universe ID: ${universeId} from Redux`
+            `Fetching characters for universe ID: ${safeUniverseId} from Redux`
           );
 
           // Dispatch the Redux action to fetch characters with the validated ID
-          await dispatch(fetchCharactersByUniverse(universeId));
+          await dispatch(fetchCharactersByUniverse(safeUniverseId));
 
           // Characters will be updated via the useEffect that watches charactersFromStore
           console.log("Characters fetched from Redux store");
@@ -256,22 +280,22 @@ const CharactersPageContent = ({ universeId }) => {
     };
 
     // Only run fetchData if universeId is valid and defined
-    if (universeId && universeId > 0) {
+    if (safeUniverseId && safeUniverseId > 0) {
       console.log(
-        `CharactersPageContent: useEffect triggered with universeId=${universeId}`
+        `CharactersPageContent: useEffect triggered with universeId=${safeUniverseId}`
       );
       fetchData();
     } else {
       console.warn(
-        `CharactersPageContent: useEffect triggered with invalid universeId=${universeId}`
+        `CharactersPageContent: useEffect triggered with invalid universeId=${safeUniverseId}`
       );
       setLoading(false);
       setError("Invalid universe ID");
     }
-  }, [universeId, navigate, dispatch]);
+  }, [safeUniverseId, navigate, dispatch]);
 
   const handleCreateCharacter = () => {
-    console.log("Creating character for universe:", universeId);
+    console.log("Creating character for universe:", safeUniverseId);
     console.log("Available scenes for character:", scenes);
     setModalType("create");
     setSelectedCharacterId(null);
@@ -306,16 +330,16 @@ const CharactersPageContent = ({ universeId }) => {
 
   const handleCharacterSuccess = (updatedCharacter) => {
     // After character operations, refresh characters from Redux
-    if (!universeId) {
+    if (!safeUniverseId) {
       console.error("Cannot refresh characters: universeId is undefined");
       return;
     }
 
     // Ensure universeId is a number
-    const parsedUniverseId = parseInt(universeId, 10);
+    const parsedUniverseId = parseInt(safeUniverseId, 10);
     if (isNaN(parsedUniverseId) || parsedUniverseId <= 0) {
       console.error(
-        `Invalid universe ID for refreshing characters: ${universeId}`
+        `Invalid universe ID for refreshing characters: ${safeUniverseId}`
       );
       return;
     }
@@ -325,14 +349,14 @@ const CharactersPageContent = ({ universeId }) => {
   };
 
   const handleBackToUniverse = () => {
-    navigate(`/universes/${universeId}`);
+    navigate(`/universes/${safeUniverseId}`);
   };
 
   const handleCreateScene = () => {
-    if (!universeId) return;
+    if (!safeUniverseId) return;
 
     // Open the scene creation modal
-    navigate(`/universes/${universeId}/scenes/new`);
+    navigate(`/universes/${safeUniverseId}/scenes/new`);
   };
 
   const filteredCharacters = characters.filter(
@@ -490,7 +514,7 @@ const CharactersPageContent = ({ universeId }) => {
         isOpen={modalOpen}
         onClose={handleModalClose}
         characterId={selectedCharacterId}
-        universeId={Number(universeId)}
+        universeId={Number(safeUniverseId)}
         type={modalType}
         onSuccess={handleCharacterSuccess}
         availableScenes={scenes}

@@ -66,12 +66,17 @@ const getEndpoint = (group, name, fallback, ...restArgs) => {
     return fallback;
   }
 
-  // Check for undefined or null in any parameters
-  const hasInvalidParams = [group, name, ...restArgs].some(arg =>
-    arg === undefined || arg === null || arg === 'undefined' || arg === 'null'
+  // More strict checking for undefined/null values in rest arguments
+  const hasInvalidParams = [group, name].some(arg =>
+    arg === undefined || arg === null || arg === 'undefined' || arg === 'null' || arg === ''
   );
 
-  if (hasInvalidParams) {
+  // Separate check for rest args to provide better error messages
+  const invalidRestArgs = restArgs.some(arg =>
+    arg === undefined || arg === null || arg === 'undefined' || arg === 'null' || arg === ''
+  );
+
+  if (hasInvalidParams || invalidRestArgs) {
     console.warn(`Endpoint has invalid parameters: group=${group}, name=${name}, args=${restArgs.join(', ')}`);
     return fallback;
   }
@@ -127,7 +132,11 @@ const getEndpoint = (group, name, fallback, ...restArgs) => {
     // Handle endpoint as function with safety checks
     if (typeof endpoint === 'function') {
       // Check for invalid arguments again before applying the function
-      if (restArgs.some(arg => arg === undefined || arg === null || arg === 'undefined' || arg === 'null')) {
+      const invalidFunctionArgs = restArgs.some(arg =>
+        arg === undefined || arg === null || arg === 'undefined' || arg === 'null' || arg === ''
+      );
+
+      if (invalidFunctionArgs) {
         console.warn(`Not calling endpoint function due to invalid arguments: ${restArgs.join(', ')}`);
         return fallback;
       }
@@ -137,7 +146,7 @@ const getEndpoint = (group, name, fallback, ...restArgs) => {
         endpoint = endpoint.apply(null, restArgs);
 
         // Validate the returned endpoint
-        if (typeof endpoint !== 'string' || endpoint.includes('undefined') || endpoint.includes('null')) {
+        if (!endpoint || typeof endpoint !== 'string' || endpoint.includes('undefined') || endpoint.includes('null')) {
           console.warn(`Endpoint function returned invalid URL: ${endpoint}, using fallback`);
           return fallback;
         }
@@ -150,12 +159,18 @@ const getEndpoint = (group, name, fallback, ...restArgs) => {
     // Final validation on endpoint string
     if (typeof endpoint === 'string') {
       // Remove undefined or null segments
-      if (endpoint.includes('/undefined') || endpoint.includes('/null')) {
+      if (endpoint.includes('/undefined') || endpoint.includes('/null') || endpoint.includes('//')) {
         console.warn(`Removing invalid segments from endpoint: ${endpoint}`);
+        // Replace undefined and null segments with empty string
         endpoint = endpoint.replace(/\/undefined\b/g, '').replace(/\/null\b/g, '');
 
         // Clean up any double slashes that may have been created
-        endpoint = endpoint.replace(/\/\//g, '/');
+        endpoint = endpoint.replace(/\/+/g, '/');
+
+        // Restore the first slash if it was removed
+        if (!endpoint.startsWith('/')) {
+          endpoint = '/' + endpoint;
+        }
 
         // If we end up with an invalid endpoint after cleaning, use fallback
         if (!endpoint || endpoint === '/' || endpoint.endsWith('//')) {
@@ -170,6 +185,9 @@ const getEndpoint = (group, name, fallback, ...restArgs) => {
         console.log(`Fixing duplicate /api prefix in endpoint: ${endpoint}`);
         return endpoint.substring(4); // Remove the first /api
       }
+    } else {
+      console.warn(`Endpoint is not a string: ${typeof endpoint}, using fallback`);
+      return fallback;
     }
 
     return endpoint;
@@ -1286,8 +1304,16 @@ const apiClient = {
   getUniverse: (id, options = {}) => {
     console.log(`getUniverse called with ID: ${id} and options:`, options);
 
-    // Validate id to prevent server errors
-    if (!id || id === undefined || id === null || id === 'undefined' || id === 'null') {
+    // Comprehensive validation check for id
+    if (
+      id === undefined ||
+      id === null ||
+      id === 'undefined' ||
+      id === 'null' ||
+      id === '' ||
+      isNaN(parseInt(id, 10)) ||
+      parseInt(id, 10) <= 0
+    ) {
       console.error(`getUniverse: Invalid universe ID: '${id}'`);
       return Promise.resolve({
         data: {
@@ -1297,13 +1323,11 @@ const apiClient = {
       });
     }
 
-    // Ensure id is a number if it's a string that can be parsed
-    const parsedId = typeof id === 'string' && !isNaN(parseInt(id, 10))
-      ? parseInt(id, 10)
-      : id;
+    // Parse ID to ensure it's a number
+    const parsedId = parseInt(id, 10);
 
-    // Always send a numeric ID to the API
-    if (typeof parsedId !== 'number' || isNaN(parsedId) || parsedId <= 0) {
+    // Double-check the parsed value
+    if (isNaN(parsedId) || parsedId <= 0) {
       console.error(`getUniverse: Invalid parsed ID: ${parsedId}`);
       return Promise.resolve({
         data: {
@@ -1332,6 +1356,25 @@ const apiClient = {
         data: {
           universe: null,
           message: "Error generating API URL"
+        }
+      });
+    }
+
+    // Use the shouldUseMockData helper if available to determine if we should return mock data
+    if (typeof shouldUseMockData === 'function' && shouldUseMockData()) {
+      console.log(`getUniverse: Using mock data for universe ${parsedId}`);
+      return Promise.resolve({
+        data: {
+          universe: {
+            id: parsedId,
+            name: `Universe ${parsedId}`,
+            description: "This is a mock universe generated when API calls are limited",
+            is_public: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            scenes: []
+          },
+          message: "Universe retrieved successfully (mock)"
         }
       });
     }
@@ -2101,170 +2144,154 @@ const apiClient = {
     return axiosInstance.get(url);
   },
   getCharactersByUniverse: (universeId) => {
-    console.log(`getCharactersByUniverse called with ID: ${universeId}`);
+    console.log(`getCharactersByUniverse called with universeId: ${universeId}`);
 
-    // Validate universeId to ensure it's a valid numeric ID before making any API call
-    if (!universeId || universeId === undefined || universeId === null || universeId === 'undefined' || universeId === 'null' || universeId === '') {
+    // Comprehensive validation check for universeId
+    if (
+      universeId === undefined ||
+      universeId === null ||
+      universeId === 'undefined' ||
+      universeId === 'null' ||
+      universeId === '' ||
+      isNaN(parseInt(universeId, 10)) ||
+      parseInt(universeId, 10) <= 0
+    ) {
       console.error(`getCharactersByUniverse: Invalid universe ID: '${universeId}'`);
       return Promise.resolve({
         data: {
           characters: [],
-          message: "No universe selected",
-          error: "Invalid universe ID"
+          message: "Invalid universe ID"
         }
       });
     }
 
-    // Ensure universeId is a number if it's a string that can be parsed
-    const parsedUniverseId = typeof universeId === 'string' && !isNaN(parseInt(universeId, 10))
-      ? parseInt(universeId, 10)
-      : universeId;
+    // Parse ID to ensure it's a number
+    const parsedUniverseId = parseInt(universeId, 10);
 
-    // Always send a numeric ID to the API
-    if (typeof parsedUniverseId !== 'number' || isNaN(parsedUniverseId) || parsedUniverseId <= 0) {
-      console.error(`getCharactersByUniverse: Invalid parsed universe ID: ${parsedUniverseId}`);
-      return Promise.resolve({
-        data: {
-          characters: [],
-          message: "Invalid universe ID format",
-          error: "Universe ID must be a positive number"
-        }
-      });
-    }
-
-    console.log(`getCharactersByUniverse: Using parsed ID: ${parsedUniverseId}`);
-
-    // Check if we should use mock data
-    if (shouldUseMockData() || sessionStorage.getItem('last_character_throttle')) {
-      console.log(`Using mock data for characters in universe ${parsedUniverseId}`);
-      // Mock data code...
-      return Promise.resolve({
-        data: {
-          characters: [
-            // Mock character data
-          ],
-          message: "Characters retrieved successfully (mock)"
-        }
-      });
-    }
-
-    // Safely construct the URL
-    let safeUrl;
     try {
-      // Directly construct the URL to avoid issues with endpoint function
-      safeUrl = `/universes/${parsedUniverseId}/characters`;
+      // Use a safer method to construct the endpoint
+      let safeUrl;
+      try {
+        // Use endpoint without /api prefix since baseURL already includes it
+        const endpoint = getEndpoint('characters', 'forUniverse', `/universes/${parsedUniverseId}/characters`);
+        safeUrl = typeof endpoint === 'function' ? endpoint(parsedUniverseId) : endpoint;
 
-      // Use getEndpoint if we have a valid universeId
-      const endpoint = getEndpoint('universes', 'characters', safeUrl);
-      if (endpoint && typeof endpoint === 'string' && !endpoint.includes('undefined')) {
-        safeUrl = endpoint;
+        // Final validation of URL
+        if (!safeUrl || safeUrl.includes('undefined') || safeUrl.includes('null')) {
+          throw new Error(`Invalid URL generated: ${safeUrl}`);
+        }
+
+        console.log(`getCharactersByUniverse: Using URL: ${safeUrl}`);
+      } catch (error) {
+        console.error(`getCharactersByUniverse: Error generating URL: ${error.message}`);
+        return Promise.resolve({
+          data: {
+            characters: [],
+            message: "Error generating API URL"
+          }
+        });
       }
 
-      // Final URL validation
-      if (!safeUrl || safeUrl.includes('undefined') || safeUrl.includes('null')) {
-        throw new Error(`Invalid URL generated: ${safeUrl}`);
-      }
+      // Rest of the function remains the same...
+      console.log(`getCharactersByUniverse: Fetching characters for universe ${parsedUniverseId} from ${safeUrl}`);
 
-      console.log(`getCharactersByUniverse: Using URL: ${safeUrl}`);
-    } catch (error) {
-      console.error(`getCharactersByUniverse: Error generating URL: ${error.message}`);
-      return Promise.resolve({
-        data: {
-          characters: [],
-          message: "Error generating API URL",
-          error: error.message
-        }
-      });
-    }
-
-    console.log(`getCharactersByUniverse: Fetching characters for universe ${parsedUniverseId} from ${safeUrl}`);
-
-    // Use the _request helper with proper entity types and defaults
-    try {
-      return _request('get', safeUrl, null, {
-        entityType: 'characters',
-        entitySingular: 'character',
-        defaultData: []
-      })
-        .then(response => {
-          // Handle different response structures
-          if (!response || !response.data) {
-            console.error('getCharactersByUniverse: Empty response');
-            return {
-              data: {
-                characters: [],
-                message: "Empty response from server"
-              }
-            };
-          }
-
-          // If we already have the expected format, return it directly
-          if (response.data.characters && Array.isArray(response.data.characters)) {
-            console.log('getCharactersByUniverse: Response already has characters array');
-            return response;
-          }
-
-          // If we have a simple {characters, message} structure at the top level (common API pattern)
-          if (response.characters && Array.isArray(response.characters)) {
-            console.log('getCharactersByUniverse: Response has characters at top level');
-            return {
-              data: {
-                characters: response.characters,
-                message: response.message || "Characters retrieved successfully"
-              }
-            };
-          }
-
-          // If the response data is directly the characters array
-          if (Array.isArray(response.data)) {
-            console.log('getCharactersByUniverse: Response data is directly the characters array');
-            return {
-              data: {
-                characters: response.data,
-                message: "Characters retrieved successfully"
-              }
-            };
-          }
-
-          // Search for an array property that might contain the characters
-          for (const key in response.data) {
-            if (Array.isArray(response.data[key])) {
-              console.log(`getCharactersByUniverse: Found array in response.data.${key}, using as characters`);
+      // Use the _request helper with proper entity types and defaults
+      try {
+        return _request('get', safeUrl, null, {
+          entityType: 'characters',
+          entitySingular: 'character',
+          defaultData: []
+        })
+          .then(response => {
+            // Handle different response structures
+            if (!response || !response.data) {
+              console.error('getCharactersByUniverse: Empty response');
               return {
                 data: {
-                  characters: response.data[key],
-                  message: response.data.message || "Characters retrieved successfully"
+                  characters: [],
+                  message: "Empty response from server"
                 }
               };
             }
-          }
 
-          // If we still can't find the characters array, return an empty array
-          console.warn('getCharactersByUniverse: Could not find characters array in response');
-          return {
-            data: {
-              characters: [],
-              message: "No characters found in response"
+            // If we already have the expected format, return it directly
+            if (response.data.characters && Array.isArray(response.data.characters)) {
+              console.log('getCharactersByUniverse: Response already has characters array');
+              return response;
             }
-          };
-        })
-        .catch(error => {
-          console.error(`getCharactersByUniverse: Error fetching characters for universe ${parsedUniverseId}:`, error);
 
-          // Record throttling timestamp to use mock data for a while
-          if (error.message === "Request throttled to prevent rate limits") {
-            sessionStorage.setItem('last_character_throttle', Date.now().toString());
-          }
-
-          // Return friendly error response rather than throwing
-          return {
-            data: {
-              characters: [],
-              message: "Error fetching characters",
-              error: error.message || "Unknown error"
+            // If we have a simple {characters, message} structure at the top level (common API pattern)
+            if (response.characters && Array.isArray(response.characters)) {
+              console.log('getCharactersByUniverse: Response has characters at top level');
+              return {
+                data: {
+                  characters: response.characters,
+                  message: response.message || "Characters retrieved successfully"
+                }
+              };
             }
-          };
+
+            // If the response data is directly the characters array
+            if (Array.isArray(response.data)) {
+              console.log('getCharactersByUniverse: Response data is directly the characters array');
+              return {
+                data: {
+                  characters: response.data,
+                  message: "Characters retrieved successfully"
+                }
+              };
+            }
+
+            // Search for an array property that might contain the characters
+            for (const key in response.data) {
+              if (Array.isArray(response.data[key])) {
+                console.log(`getCharactersByUniverse: Found array in response.data.${key}, using as characters`);
+                return {
+                  data: {
+                    characters: response.data[key],
+                    message: response.data.message || "Characters retrieved successfully"
+                  }
+                };
+              }
+            }
+
+            // If we still can't find the characters array, return an empty array
+            console.warn('getCharactersByUniverse: Could not find characters array in response');
+            return {
+              data: {
+                characters: [],
+                message: "No characters found in response"
+              }
+            };
+          })
+          .catch(error => {
+            console.error(`getCharactersByUniverse: Error fetching characters for universe ${parsedUniverseId}:`, error);
+
+            // Record throttling timestamp to use mock data for a while
+            if (error.message === "Request throttled to prevent rate limits") {
+              sessionStorage.setItem('last_character_throttle', Date.now().toString());
+            }
+
+            // Return friendly error response rather than throwing
+            return {
+              data: {
+                characters: [],
+                message: "Error fetching characters",
+                error: error.message || "Unknown error"
+              }
+            };
+          });
+      } catch (error) {
+        console.error(`getCharactersByUniverse: Unexpected error: ${error.message}`);
+        // Always return a structured response with an empty characters array
+        return Promise.resolve({
+          data: {
+            characters: [],
+            message: "Unexpected error fetching characters",
+            error: error.message || "Unknown error"
+          }
         });
+      }
     } catch (error) {
       console.error(`getCharactersByUniverse: Unexpected error: ${error.message}`);
       // Always return a structured response with an empty characters array
