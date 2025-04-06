@@ -38,31 +38,22 @@ if [ -d "frontend" ]; then
   
   # Install all needed dependencies explicitly
   echo "Installing frontend dependencies..."
-  # First install core dependencies required for build
-  npm install --no-save vite@4.5.2 @vitejs/plugin-react@4.0.3 --legacy-peer-deps
-  # Then install React and Redux dependencies
-  npm install --no-save react@18.2.0 react-dom@18.2.0 react-router-dom@6.18.0 react-router@6.18.0 react-redux@8.1.3 @reduxjs/toolkit@1.9.5 redux-persist@6.0.0 --legacy-peer-deps
+  # Install dependencies to node_modules (without --no-save flag)
+  npm install vite@4.5.2 @vitejs/plugin-react@4.0.3 --save-dev --legacy-peer-deps
+  npm install react@18.2.0 react-dom@18.2.0 react-router-dom@6.18.0 react-router@6.18.0 react-redux@8.1.3 @reduxjs/toolkit@1.9.5 redux-persist@6.0.0 --save --legacy-peer-deps
   
-  # Create simple vite config
-  cat > vite.config.js << 'EOF'
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import path from 'path';
-
-export default defineConfig({
-  plugins: [react()],
-  build: {
-    outDir: 'dist',
-    rollupOptions: {
-      external: []
-    }
-  }
-});
-EOF
+  # Create an extremely simple vite config without any imports
+  echo "// vite.config.js" > vite.config.js
+  echo "export default {" >> vite.config.js
+  echo "  plugins: []," >> vite.config.js
+  echo "  build: {" >> vite.config.js
+  echo "    outDir: 'dist'" >> vite.config.js
+  echo "  }" >> vite.config.js
+  echo "};" >> vite.config.js
   
   # Run vite build directly
   echo "Building frontend production bundle..."
-  NODE_OPTIONS="--max-old-space-size=4096" npx vite build
+  NODE_OPTIONS="--max-old-space-size=4096" npx vite build --emptyOutDir
   
   # Copy built files to static directory
   echo "Copying built files to Flask app static directory..."
