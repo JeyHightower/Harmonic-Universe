@@ -298,9 +298,18 @@ const formatUrl = (url) => {
     return url;
   }
 
+  const originalUrl = url;
+
+  // Handle double /api/api/ pattern which is a common error
+  if (url.includes('/api/api/')) {
+    url = url.replace('/api/api/', '/api/');
+    console.log(`Fixed double /api/api/ pattern: ${originalUrl} → ${url}`);
+  }
+
   // Remove leading 'api' if it exists, since we'll add it in the base URL
   if (url.startsWith('/api/')) {
     url = url.substring(4); // Remove '/api' prefix
+    console.log(`Removed duplicate /api prefix: ${originalUrl} → ${url}`);
   }
 
   // Ensure URL starts with a slash
@@ -1161,17 +1170,19 @@ const apiClient = {
     }
 
     // Get endpoint with fallback
-    const baseEndpoint = getEndpoint('universes', 'list', '/api/universes');
+    const baseEndpoint = getEndpoint('universes', 'list', '/universes');
 
     // Construct URL with query parameters
     const url = queryParams.toString()
       ? `${baseEndpoint}?${queryParams.toString()}`
       : baseEndpoint;
 
-    console.log("API - Fetching universes from URL:", url);
+    const formattedUrl = formatUrl(url);
+
+    console.log("API - Fetching universes from URL:", formattedUrl);
 
     try {
-      const response = await axiosInstance.get(url);
+      const response = await axiosInstance.get(formattedUrl);
       return response;
     } catch (error) {
       console.error("Error fetching universes:", {
@@ -1251,12 +1262,14 @@ const apiClient = {
     console.log("API - Creating universe with data:", data);
 
     // Get endpoint with fallback
-    const endpoint = getEndpoint('universes', 'create', '/api/universes');
-    console.log("API - Using endpoint for universe creation:", endpoint);
+    const endpoint = getEndpoint('universes', 'create', '/universes');
+    const formattedUrl = formatUrl(endpoint);
+
+    console.log("API - Using formatted URL for universe creation:", formattedUrl);
 
     try {
       // First attempt with axios
-      return await axiosInstance.post(endpoint, data);
+      return await axiosInstance.post(formattedUrl, data);
     } catch (error) {
       // If the server returns 500 or other error, log the details
       console.error("Error creating universe:", {
@@ -1456,7 +1469,12 @@ const apiClient = {
   updateUniverse: async (id, data) => {
     console.log(`API - updateUniverse - Updating universe ${id} with data:`, data);
     try {
-      const response = await axiosInstance.put(`/api/universes/${id}`, data);
+      const endpoint = getEndpoint('universes', 'update', `/universes/${id}`);
+      const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
+      const formattedUrl = formatUrl(url);
+
+      console.log(`API - updateUniverse - Using formatted URL:`, formattedUrl);
+      const response = await axiosInstance.put(formattedUrl, data);
       console.log(`API - updateUniverse - Successfully updated universe ${id}:`, response);
       return response;
     } catch (error) {
@@ -1468,10 +1486,12 @@ const apiClient = {
   deleteUniverse: async (id) => {
     console.log(`API - deleteUniverse - Deleting universe ${id}`);
     try {
-      const endpoint = getEndpoint('universes', 'delete', `/api/universes/${id}`);
+      const endpoint = getEndpoint('universes', 'delete', `/universes/${id}`);
       const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
+      const formattedUrl = formatUrl(url);
 
-      const response = await axiosInstance.delete(url);
+      console.log(`API - deleteUniverse - Using formatted URL:`, formattedUrl);
+      const response = await axiosInstance.delete(formattedUrl);
       console.log(`API - deleteUniverse - Successfully deleted universe ${id}:`, response);
       return response;
     } catch (error) {
@@ -1602,14 +1622,18 @@ const apiClient = {
       tryNextEndpoint(0);
     });
   },
-  updateUniversePhysics: (universeId, physicsParams) =>
-    axiosInstance.put(`/api/universes/${universeId}/physics`, {
+  updateUniversePhysics: (universeId, physicsParams) => {
+    const url = formatUrl(`/universes/${universeId}/physics`);
+    return axiosInstance.put(url, {
       physics_params: physicsParams,
-    }),
-  updateUniverseHarmony: (universeId, harmonyParams) =>
-    axiosInstance.put(`/api/universes/${universeId}/harmony`, {
+    });
+  },
+  updateUniverseHarmony: (universeId, harmonyParams) => {
+    const url = formatUrl(`/universes/${universeId}/harmony`);
+    return axiosInstance.put(url, {
       harmony_params: harmonyParams,
-    }),
+    });
+  },
 
   // Scene methods
   getScenes: (params = {}) => {
@@ -1702,15 +1726,16 @@ const apiClient = {
     }
 
     // Get the base endpoint
-    const baseEndpoint = getEndpoint('scenes', 'list', '/api/scenes');
+    const baseEndpoint = getEndpoint('scenes', 'list', '/scenes');
     // Form the complete URL
     const url = `${baseEndpoint}?${queryParams.toString()}`;
+    const formattedUrl = formatUrl(url);
 
-    console.log("Fetching scenes from URL:", url);
+    console.log("Fetching scenes from URL:", formattedUrl);
 
     // Return a promise that handles errors more gracefully
     return new Promise((resolve) => {
-      axiosInstance.get(url)
+      axiosInstance.get(formattedUrl)
         .then(response => {
           console.log("Scenes API response:", response);
           resolve(response);
@@ -1842,12 +1867,15 @@ const apiClient = {
       });
     }
 
-    const endpoint = getEndpoint('scenes', 'get', `/api/scenes/${id}`);
+    const endpoint = getEndpoint('scenes', 'get', `/scenes/${id}`);
     const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
+    const formattedUrl = formatUrl(url);
+
+    console.log(`getScene: Fetching scene ${id} with URL:`, formattedUrl);
 
     // Return a promise that handles errors more gracefully
     return new Promise((resolve, reject) => {
-      axiosInstance.get(url)
+      axiosInstance.get(formattedUrl)
         .then(response => {
           console.log(`Scene ${id} API response:`, response);
           resolve(response);
@@ -1975,11 +2003,14 @@ const apiClient = {
     console.log("Sending createScene request with data:", transformedData);
 
     // Use the base scenes endpoint with error handling
-    const endpoint = getEndpoint('scenes', 'list', '/api/scenes');
+    const endpoint = getEndpoint('scenes', 'list', '/scenes');
+    const formattedUrl = formatUrl(endpoint);
+
+    console.log("Creating scene with formatted URL:", formattedUrl);
 
     // Return a promise that handles errors more gracefully
     return new Promise((resolve, reject) => {
-      axiosInstance.post(endpoint, transformedData)
+      axiosInstance.post(formattedUrl, transformedData)
         .then(response => {
           console.log("Create scene API response:", response);
 
@@ -2063,7 +2094,7 @@ const apiClient = {
       if (!data.universe_id) {
         console.warn("API - updateScene - universe_id missing, adding from scene data");
         // Try to get universe_id from get scene if not provided
-        const sceneEndpoint = getEndpoint('scenes', 'get', `/api/scenes/${id}`);
+        const sceneEndpoint = getEndpoint('scenes', 'get', `/scenes/${id}`);
         const sceneResponse = await axiosInstance.get(sceneEndpoint);
         data.universe_id = sceneResponse.data?.scene?.universe_id || sceneResponse.data?.universe_id;
 
@@ -2089,9 +2120,14 @@ const apiClient = {
       }
 
       console.log(`API - updateScene - Sending normalized data:`, normalizedData);
-      const updateEndpoint = getEndpoint('scenes', 'update', `/api/scenes/${id}`);
+      const updateEndpoint = getEndpoint('scenes', 'update', `/scenes/${id}`);
       const updateUrl = typeof updateEndpoint === 'function' ? updateEndpoint(id) : updateEndpoint;
-      const response = await axiosInstance.put(updateUrl, normalizedData);
+
+      // Format the URL to avoid double /api prefix
+      const formattedUrl = formatUrl(updateUrl);
+
+      console.log(`API - updateScene - Using formatted URL:`, formattedUrl);
+      const response = await axiosInstance.put(formattedUrl, normalizedData);
       console.log(`API - updateScene - Successfully updated scene ${id}:`, response);
       return response;
     } catch (error) {
@@ -2103,9 +2139,12 @@ const apiClient = {
   deleteScene: async (id) => {
     console.log(`API - deleteScene - Deleting scene ${id}`);
     try {
-      const endpoint = getEndpoint('scenes', 'delete', `/api/scenes/${id}`);
+      const endpoint = getEndpoint('scenes', 'delete', `/scenes/${id}`);
       const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
-      const response = await axiosInstance.delete(url);
+      const formattedUrl = formatUrl(url);
+
+      console.log(`API - deleteScene - Using formatted URL:`, formattedUrl);
+      const response = await axiosInstance.delete(formattedUrl);
       console.log(`API - deleteScene - Successfully deleted scene ${id}:`, response);
       return response;
     } catch (error) {
@@ -2114,10 +2153,12 @@ const apiClient = {
       throw error;
     }
   },
-  updateSceneHarmony: (sceneId, harmonyParams) =>
-    axiosInstance.put(`/api/scenes/${sceneId}/harmony`, {
+  updateSceneHarmony: (sceneId, harmonyParams) => {
+    const url = formatUrl(`/scenes/${sceneId}/harmony`);
+    return axiosInstance.put(url, {
       harmony_params: harmonyParams,
-    }),
+    });
+  },
 
   // Character methods
   getCharacters: (params = {}) => {
@@ -2413,22 +2454,22 @@ const apiClient = {
     return axiosInstance.get(url);
   },
   getNotesByUniverse: (universeId) => {
-    const endpoint = getEndpoint('notes', 'forUniverse', `/api/universes/${universeId}/notes`);
+    const endpoint = getEndpoint('notes', 'forUniverse', `/universes/${universeId}/notes`);
     const url = typeof endpoint === 'function' ? endpoint(universeId) : endpoint;
     return axiosInstance.get(url);
   },
   getNotesByScene: (sceneId) => {
-    const endpoint = getEndpoint('notes', 'forScene', `/api/scenes/${sceneId}/notes`);
+    const endpoint = getEndpoint('notes', 'forScene', `/scenes/${sceneId}/notes`);
     const url = typeof endpoint === 'function' ? endpoint(sceneId) : endpoint;
     return axiosInstance.get(url);
   },
   getNotesByCharacter: (characterId) => {
-    const endpoint = getEndpoint('notes', 'forCharacter', `/api/characters/${characterId}/notes`);
+    const endpoint = getEndpoint('notes', 'forCharacter', `/characters/${characterId}/notes`);
     const url = typeof endpoint === 'function' ? endpoint(characterId) : endpoint;
     return axiosInstance.get(url);
   },
   getNote: (id) => {
-    const endpoint = getEndpoint('notes', 'get', `/api/notes/${id}`);
+    const endpoint = getEndpoint('notes', 'get', `/notes/${id}`);
     const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
     return axiosInstance.get(url);
   },
@@ -2444,7 +2485,7 @@ const apiClient = {
     console.log("Sending createNote request with data:", transformedData);
 
     // Use the base notes endpoint
-    const endpoint = getEndpoint('notes', 'create', '/api/notes');
+    const endpoint = getEndpoint('notes', 'create', `/notes`);
     return axiosInstance.post(endpoint, transformedData);
   },
   updateNote: async (id, data) => {
@@ -2459,7 +2500,7 @@ const apiClient = {
       const normalizedData = { ...data };
 
       console.log(`API - updateNote - Sending normalized data:`, normalizedData);
-      const updateEndpoint = getEndpoint('notes', 'update', `/api/notes/${id}`);
+      const updateEndpoint = getEndpoint('notes', 'update', `/notes/${id}`);
       const updateUrl = typeof updateEndpoint === 'function' ? updateEndpoint(id) : updateEndpoint;
       const response = await axiosInstance.put(updateUrl, normalizedData);
       console.log(`API - updateNote - Successfully updated note ${id}:`, response);
@@ -2473,7 +2514,7 @@ const apiClient = {
   deleteNote: async (id) => {
     console.log(`API - deleteNote - Deleting note ${id}`);
     try {
-      const endpoint = getEndpoint('notes', 'delete', `/api/notes/${id}`);
+      const endpoint = getEndpoint('notes', 'delete', `/notes/${id}`);
       const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
       const response = await axiosInstance.delete(url);
       console.log(`API - deleteNote - Successfully deleted note ${id}:`, response);

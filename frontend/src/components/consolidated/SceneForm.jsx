@@ -228,6 +228,18 @@ const SceneForm = ({
 
       console.log("SceneForm - Formatted values for API:", formattedValues);
 
+      // If we have an onSubmit handler, let the parent component handle the API call
+      if (onSubmit) {
+        console.log("SceneForm - Using parent onSubmit handler");
+        const result = await onSubmit(formattedValues);
+        console.log("SceneForm - Parent onSubmit result:", result);
+        message.success(
+          `Scene ${isEditMode ? "updated" : "created"} successfully`
+        );
+        return;
+      }
+
+      // Only reached if no parent handler was provided - handle API call ourselves
       let response;
       let result;
 
@@ -235,16 +247,6 @@ const SceneForm = ({
         // Update existing scene
         console.log("SceneForm - Updating existing scene:", sceneId);
         try {
-          // If we have an onSubmit handler, let the parent component handle the API call
-          if (onSubmit) {
-            console.log("SceneForm - Using parent onSubmit handler for update");
-            result = await onSubmit(formattedValues);
-            console.log("SceneForm - Parent onSubmit result:", result);
-            message.success("Scene updated successfully");
-            return;
-          }
-
-          // Otherwise handle API call ourselves
           response = await apiClient.updateScene(sceneId, formattedValues);
           console.log("SceneForm - Update API response:", response);
         } catch (updateError) {
@@ -256,16 +258,6 @@ const SceneForm = ({
         // Create new scene
         console.log("SceneForm - Creating new scene");
         try {
-          // If we have an onSubmit handler, let the parent component handle the API call
-          if (onSubmit) {
-            console.log("SceneForm - Using parent onSubmit handler for create");
-            result = await onSubmit(formattedValues);
-            console.log("SceneForm - Parent onSubmit result:", result);
-            message.success("Scene created successfully");
-            return;
-          }
-
-          // Otherwise handle API call ourselves
           response = await apiClient.createScene(formattedValues);
           console.log("SceneForm - Create API response:", response);
         } catch (createError) {
@@ -441,7 +433,7 @@ const SceneForm = ({
                   ]}
                 >
                   <TextArea
-                    rows={10}
+                    rows={6}
                     placeholder="Full content of the scene"
                     className="content-textarea"
                     disabled={readOnly}
@@ -456,7 +448,7 @@ const SceneForm = ({
                   }
                 >
                   <TextArea
-                    rows={4}
+                    rows={3}
                     placeholder="Additional notes about the scene (for writer reference only)"
                     disabled={readOnly}
                   />

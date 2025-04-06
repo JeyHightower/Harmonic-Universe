@@ -106,6 +106,7 @@
   padding: var(--spacing-md, 1rem);
   overflow-y: auto;
   pointer-events: auto;
+  max-height: 75vh; /* Limit height to ensure scrolling works */
 }
 
 .modal-body.centered {
@@ -114,6 +115,17 @@
   align-items: center;
   justify-content: center;
   text-align: center;
+}
+
+/* Updated styles for SceneForm in modal */
+.scene-form-container {
+  padding: 8px 0;
+  overflow-y: auto;
+  max-height: 75vh;
+}
+
+.modal-body .scene-form-container {
+  max-height: 100%; /* Let the modal-body handle the scrolling */
 }
 
 /* ===== Modal Footer ===== */
@@ -242,7 +254,7 @@
   .form-modal-content .modal-actions {
     flex-direction: column-reverse;
   }
-  
+
   .modal-actions button {
     width: 100%;
   }
@@ -360,4 +372,3 @@ body.modal-open {
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
-
