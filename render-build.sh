@@ -248,76 +248,25 @@ export default endpoints;
 EOF
 
 # Check if the redux-persist/integration/react path exists
-if [ ! -d "node_modules/redux-persist/integration" ]; then
-  echo "WARNING: redux-persist integration directory not found, creating shim..."
-  mkdir -p node_modules/redux-persist/integration
-  cat > node_modules/redux-persist/integration/react.js << 'EOF'
-import React from 'react';
+mkdir -p node_modules/redux-persist/integration/react
 
-// Simple shim for PersistGate
-export const PersistGate = ({ loading, children, persistor }) => {
-  return children;
-};
+# Build the frontend application
+echo "Building frontend application..."
+npm run build
 
-export default { PersistGate };
-EOF
-fi
-
-# Run the build with increased memory limit
-echo "Building frontend with Vite..."
-NODE_OPTIONS=--max-old-space-size=4096 npm run build
-
+# Go back to the root directory
 cd ..
 
-# Verify the build
-echo "Verifying frontend build..."
-if [ -d "frontend/dist" ]; then
-    echo "Frontend build successful."
-    
-    # Create static directory if it doesn't exist
-    mkdir -p backend/static
-    
-    # Copy frontend build to static directory
-    echo "Copying frontend build to backend/static..."
-    cp -r frontend/dist/* backend/static/
-    
-    echo "Frontend build deployed to static directory."
-else
-    echo "WARNING: Frontend build directory not found. Creating fallback HTML..."
-    mkdir -p backend/static
-    cat > backend/static/index.html << 'EOL'
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Harmonic Universe</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
-        h1 { color: #333; }
-    </style>
-</head>
-<body>
-    <h1>Harmonic Universe</h1>
-    <p>The application is running in API-only mode due to frontend build issues.</p>
-    <p>The API should still be accessible at /api endpoints.</p>
-</body>
-</html>
-EOL
-fi
+# Create a static directory at the project root (not inside backend)
+echo "Setting up static directory..."
+mkdir -p static
 
-# Create a test HTML file to verify static file serving
-echo "Creating test.html in static directory..."
-cat > backend/static/test.html << 'EOL'
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Harmonic Universe Test Page</title>
-</head>
-<body>
-    <h1>Harmonic Universe Test Page</h1>
-    <p>If you can see this, static file serving is working!</p>
-</body>
-</html>
-EOL
+# Copy the built frontend to the static directory
+echo "Copying built frontend to static directory..."
+cp -r frontend/dist/* static/
+
+# Create _redirects file for SPA routing
+echo "/* /index.html 200" > static/_redirects
 
 # Set up database if needed
 echo "Setting up database..."
@@ -325,4 +274,4 @@ cd backend
 python init_migrations.py || echo "Warning: Database initialization failed, continuing anyway"
 cd ..
 
-echo "Build process complete." 
+echo "Build process completed successfully" 

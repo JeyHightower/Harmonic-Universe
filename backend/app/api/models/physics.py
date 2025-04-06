@@ -1,4 +1,4 @@
-from app.extensions import db
+from backend.app.extensions import db
 from .base import BaseModel
 
 class PhysicsObject(BaseModel):

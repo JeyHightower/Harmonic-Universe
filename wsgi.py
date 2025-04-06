@@ -23,7 +23,18 @@ logger = logging.getLogger(__name__)
 logger.info("Starting Harmonic Universe WSGI application")
 
 # Import the app factory function and create the application
-from app import create_app
+# Try import path for production (render.com), fall back to local development path
+try:
+    from backend.app import create_app
+    logger.info("Using production import path")
+except ImportError:
+    try:
+        from app import create_app
+        logger.info("Using local development import path")
+    except ImportError:
+        logger.critical("Could not import create_app from any known location")
+        raise
+
 application = create_app()
 
 # This is what Gunicorn will import

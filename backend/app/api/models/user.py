@@ -1,9 +1,10 @@
 from werkzeug.security import generate_password_hash, check_password_hash
 from .base import BaseModel
-from app.extensions import db
+from ...extensions import db
 
 class User(BaseModel):
     __tablename__ = 'users'
+    __table_args__ = {'extend_existing': True}
     
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)

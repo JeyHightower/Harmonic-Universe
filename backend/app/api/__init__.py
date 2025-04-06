@@ -1,13 +1,13 @@
 from flask import Blueprint, jsonify, Flask
 
 # Import routes
-from app.api.routes.auth import auth_bp
-from app.api.routes.user import user_bp
-from app.api.routes.universes import universes_bp
-from app.api.routes.scenes import scenes_bp
-from app.api.routes.characters import characters_bp
-from app.api.routes.notes import notes_bp
-# from app.api.routes.health import health_bp  # Commented out as it doesn't exist
+from ..api.routes.auth import auth_bp
+from ..api.routes.user import user_bp
+from ..api.routes.universes import universes_bp
+from ..api.routes.scenes import scenes_bp
+from ..api.routes.characters import characters_bp
+from ..api.routes.notes import notes_bp
+# from ..api.routes.health import health_bp  # Commented out as it doesn't exist
 
 # Create and configure the api blueprint
 api_bp = Blueprint('api', __name__)

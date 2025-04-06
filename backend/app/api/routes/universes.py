@@ -1,9 +1,9 @@
 from flask import Blueprint, jsonify, request, current_app, url_for, redirect
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.api.models.universe import Universe, Scene
-from app.api.models.character import Character
-from app.api.models.note import Note
-from app.extensions import db
+from backend.app.api.models.universe import Universe, Scene
+from backend.app.api.models.character import Character
+from backend.app.api.models.note import Note
+from backend.app.extensions import db
 from sqlalchemy import update
 import traceback
 
@@ -315,7 +315,7 @@ def get_universe_scenes(universe_id):
         current_app.logger.info(f"Redirecting scenes request for universe {universe_id} to the primary scenes endpoint")
         
         # Redirect internally to the scenes endpoint
-        from app.api.routes.scenes import get_scenes
+        from backend.app.api.routes.scenes import get_scenes
         
         # Call the primary endpoint directly
         return get_scenes(universe_id)

@@ -7,6 +7,9 @@ echo "Starting Harmonic Universe application"
 echo "Current directory: $(pwd)"
 echo "Python version: $(python --version)"
 
+# Ensure we are in the project root directory
+cd /opt/render/project/src
+
 # Set environment variables
 export FLASK_APP=wsgi.py
 export FLASK_ENV=production
@@ -27,19 +30,18 @@ echo "Application will listen on port $PORT"
 
 # Verify static directory exists
 echo "Checking static directory..."
-if [ -d "backend/static" ]; then
+if [ -d "static" ]; then
     echo "Static directory exists"
     echo "Contents:"
-    ls -la backend/static | head -n 10
+    ls -la static
 else
     echo "WARNING: Static directory not found, creating it"
-    mkdir -p backend/static
-    echo "<html><body><h1>Harmonic Universe</h1><p>Static files not found.</p></body></html>" > backend/static/index.html
+    mkdir -p static
+    echo "<html><body><h1>Harmonic Universe</h1><p>Static files not found.</p></body></html>" > static/index.html
 fi
 
 # Run database health check
 echo "Running database health check..."
-cd backend
 python -c "
 try:
     import sys

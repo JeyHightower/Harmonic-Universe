@@ -1,8 +1,8 @@
 from flask import Blueprint, jsonify, request, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.api.models.universe import Scene
-from app.api.models.character import Character
-from app.extensions import db
+from backend.app.api.models.universe import Scene
+from backend.app.api.models.character import Character
+from backend.app.extensions import db
 
 characters_bp = Blueprint('characters', __name__)
 
@@ -49,7 +49,7 @@ def get_character(character_id):
         universe_id = character.universe_id
         
         # Check if the universe is public or belongs to the user
-        from app.api.models.universe import Universe
+        from backend.app.api.models.universe import Universe
         universe = Universe.query.get_or_404(universe_id)
         
         if not universe.is_public and universe.user_id != user_id:
@@ -150,7 +150,7 @@ def update_character(character_id):
         universe_id = character.universe_id
         
         # Check if the universe is public or belongs to the user
-        from app.api.models.universe import Universe
+        from backend.app.api.models.universe import Universe
         universe = Universe.query.get_or_404(universe_id)
         
         if not universe.is_public and universe.user_id != user_id:
@@ -201,7 +201,7 @@ def delete_character(character_id):
         universe_id = character.universe_id
         
         # Check if the universe is public or belongs to the user
-        from app.api.models.universe import Universe
+        from backend.app.api.models.universe import Universe
         universe = Universe.query.get_or_404(universe_id)
         
         if not universe.is_public and universe.user_id != user_id:

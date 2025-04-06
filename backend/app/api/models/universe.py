@@ -1,4 +1,4 @@
-from app.extensions import db
+from backend.app.extensions import db
 from .base import BaseModel
 from sqlalchemy import func, and_, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -218,7 +218,7 @@ class Universe(BaseModel):
             
             # Try to fix any database issues with a clean transaction
             from sqlalchemy import text
-            from app.extensions import db
+            from backend.app.extensions import db
             
             # Make sure any existing transaction is cleaned up
             db.session.close()

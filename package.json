@@ -6,7 +6,7 @@
     "install-all": "npm install && cd frontend && npm install && cd ../backend && pip install -r requirements.txt",
     "start": "concurrently \"npm run backend\" \"npm run frontend\"",
     "start:prod": "concurrently \"npm run backend:prod\" \"npm run frontend:prod\"",
-    "backend": "cd backend && PYTHONPATH=$PYTHONPATH:. python run.py",
+    "backend": "cd backend && PYTHONPATH=$PYTHONPATH:$(pwd):.. python run.py",
     "backend:prod": "cd backend && gunicorn app.app:create_app() -b 0.0.0.0:5001",
     "frontend": "cd frontend && npm run dev",
     "frontend:prod": "cd frontend && npm run build && npm run preview",

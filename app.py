@@ -17,8 +17,25 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 logger = logging.getLogger(__name__)
 logger.warning("app.py is deprecated; use run.py (development) or wsgi.py (production) instead")
 
-# Import directly from the backend/app package
-from backend.app import create_app
+# Import directly from the backend/app package or local app package
+try:
+    # Try production import path first
+    from backend.app import create_app
+    logger.info("Using production import path")
+except ImportError:
+    # Fall back to local development import path
+    try:
+        from app import create_app
+        logger.info("Using local development import path")
+    except ImportError:
+        # If both fail, try relative import
+        try:
+            from backend import app
+            create_app = app.create_app
+            logger.info("Using relative import path")
+        except ImportError:
+            logger.critical("Could not import create_app from any known location")
+            raise
 
 # Create the application
 app = create_app()

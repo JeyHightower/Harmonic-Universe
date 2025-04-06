@@ -62,7 +62,7 @@ def setup_database(reset_db=True):
     from app import create_app, db
     
     # Import all models to ensure they are registered with SQLAlchemy
-    from app.api.models import (
+    from backend.app.api.models import (
         User, Note, Universe, Scene, Physics2D, Physics3D,
         PhysicsObject, PhysicsConstraint, SoundProfile,
         AudioSample, MusicPiece, Harmony, MusicalTheme,

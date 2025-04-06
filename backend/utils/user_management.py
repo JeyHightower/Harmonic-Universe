@@ -20,8 +20,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     from app import create_app
-    from app.api.models.user import User
-    from app.extensions import db
+    from backend.app.api.models.user import User
+    from backend.app.extensions import db
 except ImportError as e:
     print(f"Error importing application modules: {e}")
     sys.exit(1)
