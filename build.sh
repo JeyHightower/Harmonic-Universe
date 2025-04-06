@@ -60,6 +60,18 @@ if [ -d "frontend" ]; then
   
   cd frontend
   
+  # Fix main.jsx syntax error
+  if [ -f "src/main.jsx" ]; then
+    echo "Checking and fixing main.jsx..."
+    # Fix the incorrect "from" syntax if present
+    sed -i "s/import { AUTH_CONFIG } 'from/import { AUTH_CONFIG } from/g" src/main.jsx
+    sed -i "s/'from '.\/utils\/config.jsx'/from '.\/utils\/config.jsx'/g" src/main.jsx
+    sed -i "s/'from '.\/utils\/config'/from '.\/utils\/config'/g" src/main.jsx
+    # Make general fixes to import statements
+    sed -i "s/} 'from/} from/g" src/main.jsx
+    echo "Fixed main.jsx import statements"
+  fi
+  
   # Install all needed dependencies explicitly
   echo "Installing frontend dependencies..."
   
