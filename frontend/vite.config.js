@@ -23,8 +23,11 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
       '@services': path.resolve(__dirname, './src/services'),
       // Add alias for redux-persist subpaths
-      'redux-persist/integration/react': path.resolve(__dirname, 'node_modules/redux-persist/integration/react')
+      'redux-persist/integration/react': path.resolve(__dirname, 'node_modules/redux-persist/integration/react'),
+      // Fix for react-router-dom resolution
+      'react-router-dom': path.resolve(__dirname, 'node_modules/react-router-dom/dist/index.js')
     },
+    dedupe: ['react', 'react-dom', 'react-router-dom']
   },
   build: {
     outDir: 'dist',
