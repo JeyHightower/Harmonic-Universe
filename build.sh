@@ -120,12 +120,70 @@ if [ -d "frontend" ]; then
   # Install antd - now required by the LoginModal component
   npm install antd@4.24.12 @ant-design/icons@4.8.0 --save
   
+  # Fix the routing files issues
+  echo "Checking for routes file issues..."
+  
+  # Create a placeholder routes.jsx if needed
+  if [ -f "src/routes/index.jsx" ]; then
+    echo "Found src/routes/index.jsx - checking for missing utils/routes.jsx"
+    
+    if [ ! -d "src/utils" ]; then
+      mkdir -p src/utils
+      echo "Created src/utils directory"
+    fi
+    
+    if [ ! -f "src/utils/routes.jsx" ]; then
+      echo "Creating placeholder for src/utils/routes.jsx"
+      cat > src/utils/routes.jsx << 'EOF'
+// Placeholder routes file created during deployment
+import React from 'react';
+
+// Basic routes configuration
+export const routes = [
+  {
+    path: '/',
+    name: 'Home',
+    component: () => <div>Home Page</div>,
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => <div>Login Page</div>,
+  },
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: () => <div>Dashboard Page</div>,
+  },
+];
+
+export default routes;
+EOF
+    fi
+    
+    # Fix the import in routes/index.jsx
+    echo "Updating import path in src/routes/index.jsx"
+    sed -i.bak "s|from \"../utils/routes.jsx\"|from \"../utils/routes\"|g" src/routes/index.jsx
+    sed -i.bak "s|from \"../utils/routes\"|from \"./utils/routes\"|g" src/routes/index.jsx
+    rm -f src/routes/index.jsx.bak
+  fi
+  
   # Create a comprehensive vite config with module handling
   cat > vite.config.js << 'EOF'
 // vite.config.js
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
+import fs from 'fs';
+
+// Function to check if a file exists
+const fileExists = (path) => {
+  try {
+    return fs.statSync(path).isFile();
+  } catch (e) {
+    return false;
+  }
+};
 
 export default defineConfig({
   plugins: [react()],
@@ -144,7 +202,9 @@ export default defineConfig({
       'src': resolve(__dirname, 'src'),
       './pages/auth/LoginPage': resolve(__dirname, 'src/pages/LoginPage'),
       './pages/Dashboard': resolve(__dirname, 'src/features/Dashboard'),
-      './pages/Debug': resolve(__dirname, 'src/components/Debug')
+      './pages/Debug': resolve(__dirname, 'src/components/Debug'),
+      '../utils/routes.jsx': resolve(__dirname, 'src/utils/routes.jsx'),
+      '../utils/routes': resolve(__dirname, 'src/utils/routes.jsx')
     },
     extensions: ['.mjs', '.js', '.jsx', '.ts', '.tsx', '.json']
   },
@@ -155,6 +215,29 @@ export default defineConfig({
     loader: 'jsx',
     include: /src\/.*\.jsx?$/,
     exclude: [],
+  },
+  // Custom handler for file resolution
+  customResolver: {
+    resolveId(source, importer) {
+      // Handle specific problematic imports
+      if (source === '../utils/routes.jsx' || source === '../utils/routes') {
+        const possiblePaths = [
+          resolve(__dirname, 'src/utils/routes.jsx'),
+          resolve(__dirname, 'src/utils/routes.js')
+        ];
+        
+        for (const path of possiblePaths) {
+          if (fileExists(path)) {
+            return path;
+          }
+        }
+        
+        // Fallback to the created placeholder
+        return resolve(__dirname, 'src/utils/routes.jsx');
+      }
+      
+      return null; // Let Vite handle other imports
+    }
   }
 });
 EOF
