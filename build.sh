@@ -38,63 +38,40 @@ if [ -d "frontend" ]; then
   
   # Install all needed dependencies explicitly
   echo "Installing frontend dependencies..."
-  # Install dependencies to node_modules (without --no-save flag)
-  npm install vite@4.5.2 @vitejs/plugin-react@4.0.3 --save-dev --legacy-peer-deps
-  npm install react@18.2.0 react-dom@18.2.0 react-router-dom@6.18.0 react-router@6.18.0 react-redux@8.1.3 @reduxjs/toolkit@1.9.5 redux-persist@6.0.0 prop-types@15.8.1 antd@4.24.12 @ant-design/icons@4.8.0 @emotion/react@11.11.1 @emotion/styled@11.11.0 @mui/icons-material@5.14.15 @mui/material@5.14.15 moment@2.29.4 three@0.157.0 tone@14.7.77 --save --legacy-peer-deps
   
-  # Create vite config with explicit external handling
+  # Install build tools first
+  npm install vite@4.5.2 @vitejs/plugin-react@4.0.3 --save-dev
+  
+  # Install React and core dependencies first
+  npm install react@18.2.0 react-dom@18.2.0 react-router-dom@6.18.0 react-redux@8.1.3 @reduxjs/toolkit@1.9.5 redux-persist@6.0.0 prop-types@15.8.1 --save
+  
+  # Install UI libraries
+  npm install @mui/material@5.14.15 @mui/icons-material@5.14.15 @emotion/react@11.11.1 @emotion/styled@11.11.0 --save
+  
+  # Create a comprehensive vite config with module handling
   cat > vite.config.js << 'EOF'
 // vite.config.js
-export default {
-  plugins: [],
+import { defineConfig } from 'vite';
+
+export default defineConfig({
   build: {
-    outDir: 'dist',
-    commonjsOptions: {
-      transformMixedEsModules: true
-    },
-    rollupOptions: {
-      // Treat these modules as external to avoid resolution issues
-      external: [
-        'prop-types',
-        'react',
-        'react-dom',
-        'react-router-dom',
-        'react-redux',
-        '@reduxjs/toolkit',
-        'redux-persist',
-        '@ant-design/icons',
-        '@emotion/react',
-        '@emotion/styled',
-        '@mui/icons-material',
-        '@mui/material',
-        'moment',
-        'three',
-        'tone'
-      ]
+    outDir: 'dist'
+  },
+  resolve: {
+    alias: {
+      // Add any path aliases if needed
+      src: '/src'
     }
+  },
+  optimizeDeps: {
+    include: ['prop-types', 'react-redux', '@mui/material', '@mui/icons-material']
   }
-};
+});
 EOF
   
-  # Create a simple index.html file for Vite to use
-  cat > index.html << 'EOF'
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Harmonic Universe</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
-</html>
-EOF
-
-  # Run vite build with force option to ignore warnings
+  # Run vite build with source maps
   echo "Building frontend production bundle..."
-  NODE_OPTIONS="--max-old-space-size=4096" npx vite build --emptyOutDir --force
+  NODE_OPTIONS="--max-old-space-size=4096" npx vite build --emptyOutDir
   
   # Copy built files to static directory
   echo "Copying built files to Flask app static directory..."
@@ -116,9 +93,6 @@ EOF
 else
   echo "No frontend directory found, skipping frontend build"
 fi
-
-# Create a static directory if none exists
-mkdir -p backend/app/static
 
 # Ensure static directory exists and has an index.html
 if [ ! -f "backend/app/static/index.html" ]; then
@@ -182,7 +156,7 @@ if [ ! -f "static/index.html" ] && [ -f "backend/app/static/index.html" ]; then
 fi
 
 # Copy static files to expected Render location for redundancy
-mkdir -p /opt/render/project/src/static
+mkdir -p /opt/render/project/src/static || echo "Could not create directory (normal for local build)"
 cp -r backend/app/static/* /opt/render/project/src/static/ || echo "Warning: Could not copy to Render path"
 
 # Set up database if needed

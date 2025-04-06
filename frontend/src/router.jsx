@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 
 // Import pages
 import Home from "./pages/Home";
-import Dashboard from "./pages/Dashboard";
+import Dashboard from "./features/Dashboard";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 import UniverseDetail from "./pages/universe/UniverseDetail";
