@@ -1,5 +1,6 @@
 import logging
 from logging.config import fileConfig
+import os
 
 from flask import current_app
 
@@ -11,7 +12,8 @@ config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-fileConfig(config.config_file_name)
+if hasattr(config, 'config_file_name'):
+    fileConfig(config.config_file_name)
 logger = logging.getLogger('alembic.env')
 
 
@@ -26,10 +28,16 @@ def get_engine():
 
 def get_engine_url():
     try:
-        return get_engine().url.render_as_string(hide_password=False).replace(
+        url = get_engine().url.render_as_string(hide_password=False).replace(
             '%', '%%')
     except AttributeError:
-        return str(get_engine().url).replace('%', '%%')
+        url = str(get_engine().url).replace('%', '%%')
+    
+    # Fix for PostgreSQL URL format for migrations
+    if url and url.startswith('postgres://'):
+        url = url.replace('postgres://', 'postgresql://', 1)
+    
+    return url
 
 
 # add your model's MetaData object here
@@ -64,6 +72,11 @@ def run_migrations_offline():
 
     """
     url = config.get_main_option("sqlalchemy.url")
+    
+    # Additional check for PostgreSQL URL format
+    if url and url.startswith('postgres://'):
+        url = url.replace('postgres://', 'postgresql://', 1)
+    
     context.configure(
         url=url, target_metadata=get_metadata(), literal_binds=True
     )

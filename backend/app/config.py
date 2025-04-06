@@ -10,7 +10,15 @@ class Config:
     # Database config
     # Relative path to instance directory for sqlite
     db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'instance', 'app.db')
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', f'sqlite:///{db_path}')
+    
+    # Fix for PostgreSQL URL format (Render.com uses postgres:// but SQLAlchemy needs postgresql://)
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url and database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    else:
+        database_url = os.environ.get('DATABASE_URL', f'sqlite:///{db_path}')
+    
+    SQLALCHEMY_DATABASE_URI = database_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Application environment
@@ -79,6 +87,9 @@ class Config:
     DEBUG_MODE = os.environ.get('DEBUG_MODE', 'False').lower() == 'true'
     ANALYTICS = os.environ.get('ANALYTICS', 'False').lower() == 'true'
     PERFORMANCE_MONITORING = os.environ.get('PERFORMANCE_MONITORING', 'False').lower() == 'true'
+    
+    # Render.com specific configuration
+    IS_RENDER = os.environ.get('RENDER', 'False').lower() == 'true'
 
 class DevelopmentConfig(Config):
     DEBUG = True

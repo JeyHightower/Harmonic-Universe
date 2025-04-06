@@ -2,8 +2,8 @@ services:
   - type: web
     name: harmonic-universe
     env: python
-    buildCommand: ./render-build.sh
-    startCommand: ./render-start.sh
+    buildCommand: ./build.sh
+    startCommand: ./start.sh
     plan: starter
     envVars:
       - key: FLASK_APP
@@ -36,6 +36,8 @@ services:
         value: "/opt/render/project/src/static"
       - key: REACT_APP_API_URL
         value: /api
+      - key: RENDER
+        value: "true"
       - fromGroup: harmonic-universe-env
     healthCheckPath: /api/health
     autoDeploy: true

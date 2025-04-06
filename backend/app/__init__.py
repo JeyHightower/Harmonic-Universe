@@ -58,11 +58,16 @@ def create_app(config_name='default'):
     # Check multiple paths to find the best one with static files
     possible_static_folders = [
         os.environ.get('STATIC_FOLDER'),  # First try environment variable
+        '/opt/render/project/src/static',  # Render.com primary deployment path
+        '/opt/render/project/src/backend/static',  # Alternative Render.com path
         os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'static')),  # Project root static
         os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static')),  # Backend static
-        '/opt/render/project/src/static',  # Render.com deployment path
-        '/opt/render/project/src/backend/static'  # Alternative Render.com path
     ]
+    
+    # Print environment info for debugging
+    is_render = os.environ.get('RENDER', 'False').lower() == 'true'
+    print(f"Running on Render.com: {is_render}")
+    print(f"Current working directory: {os.getcwd()}")
     
     static_folder = None
     for folder in possible_static_folders:
