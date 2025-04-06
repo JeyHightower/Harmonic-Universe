@@ -19,7 +19,9 @@ services:
       - key: DEPLOYMENT_PLATFORM
         value: render
       - key: VITE_API_BASE_URL
-        value: https://harmonic-universe.onrender.com
+        value: /api
+      - key: API_BASE_URL
+        value: /api
       - key: NODE_OPTIONS
         value: --max-old-space-size=2048
       - key: LOG_LEVEL
@@ -28,6 +30,12 @@ services:
         value: "1"
       - key: ENABLE_DETAILED_LOGGING
         value: "true"
+      - key: STATIC_URL_PATH
+        value: ""
+      - key: STATIC_FOLDER
+        value: "/opt/render/project/src/static"
+      - key: REACT_APP_API_URL
+        value: /api
       - fromGroup: harmonic-universe-env
     healthCheckPath: /api/health
     autoDeploy: true
@@ -47,4 +55,4 @@ envVarGroups:
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: CORS_ORIGINS
-        value: https://harmonic-universe.onrender.com
+        value: https://harmonic-universe.onrender.com,https://harmonic-universe-z5ka.onrender.com,*

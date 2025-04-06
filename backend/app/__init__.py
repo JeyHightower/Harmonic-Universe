@@ -54,20 +54,57 @@ else:
 def create_app(config_name='default'):
     app = Flask(__name__)
     
-    # Set the static folder to the backend/static directory
-    static_folder = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static'))
-    print(f"Setting static folder to: {static_folder}")
+    # Set the static folder based on environment or default paths
+    # Check multiple paths to find the best one with static files
+    possible_static_folders = [
+        os.environ.get('STATIC_FOLDER'),  # First try environment variable
+        os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'static')),  # Project root static
+        os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static')),  # Backend static
+        '/opt/render/project/src/static',  # Render.com deployment path
+        '/opt/render/project/src/backend/static'  # Alternative Render.com path
+    ]
+    
+    static_folder = None
+    for folder in possible_static_folders:
+        if folder and os.path.exists(folder) and os.path.isdir(folder):
+            index_path = os.path.join(folder, 'index.html')
+            if os.path.exists(index_path):
+                static_folder = folder
+                print(f"Found valid static folder with index.html at: {static_folder}")
+                break
+    
+    # If no valid static folder found, use the first existing directory
+    if not static_folder:
+        for folder in possible_static_folders:
+            if folder and os.path.exists(folder) and os.path.isdir(folder):
+                static_folder = folder
+                print(f"Using existing static folder (no index.html): {static_folder}")
+                break
+    
+    # Last resort - use backend/static and create it if needed
+    if not static_folder:
+        static_folder = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static'))
+        os.makedirs(static_folder, exist_ok=True)
+        print(f"Created static folder at: {static_folder}")
+    
+    # Set the static folder and URL path
     app.static_folder = static_folder
-    app.static_url_path = ''
+    app.static_url_path = os.environ.get('STATIC_URL_PATH', '')
     
     # Print debugging information
+    print(f"Static folder set to: {app.static_folder}")
+    print(f"Static URL path set to: {app.static_url_path}")
+    
     if os.path.exists(static_folder):
-        print(f"Static folder exists and contains: {os.listdir(static_folder)}")
-        index_path = os.path.join(static_folder, 'index.html')
-        if os.path.exists(index_path):
-            print(f"index.html exists (size: {os.path.getsize(index_path)} bytes)")
-        else:
-            print("WARNING: index.html not found in static folder")
+        try:
+            static_files = os.listdir(static_folder)
+            print(f"Static folder contains {len(static_files)} files")
+            if 'index.html' in static_files:
+                print(f"index.html exists (size: {os.path.getsize(os.path.join(static_folder, 'index.html'))} bytes)")
+            else:
+                print("WARNING: index.html not found in static folder")
+        except Exception as e:
+            print(f"Error inspecting static folder: {str(e)}")
     else:
         print(f"WARNING: Static folder does not exist at {static_folder}")
     
@@ -240,9 +277,8 @@ def create_app(config_name='default'):
     # Serve favicon.ico
     @app.route('/favicon.ico')
     def favicon() -> Response:
-        static_dir = cast(str, app.static_folder)
         return send_from_directory(
-            static_dir,
+            cast(str, app.static_folder),
             'favicon.ico',
             mimetype='image/vnd.microsoft.icon'
         )
@@ -274,6 +310,7 @@ def create_app(config_name='default'):
     @app.route('/<path:path>')
     def serve(path: str = '') -> Union[Response, tuple[Response, int]]:
         static_dir = cast(str, app.static_folder)
+        
         # Check if requesting an API route
         if path.startswith('api/'):
             return jsonify({"error": "Not found"}), 404
@@ -282,7 +319,15 @@ def create_app(config_name='default'):
         if path and os.path.exists(os.path.join(static_dir, path)):
             return send_from_directory(static_dir, path)
         
-        # Default to index.html for client-side routing
-        return send_from_directory(static_dir, 'index.html')
+        # Handle request for favicon.ico
+        if path == 'favicon.ico' and os.path.exists(os.path.join(static_dir, 'favicon.ico')):
+            return send_from_directory(static_dir, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+        
+        # Force no-cache for index.html to prevent stale content issues
+        response = send_from_directory(static_dir, 'index.html')
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response
     
     return app

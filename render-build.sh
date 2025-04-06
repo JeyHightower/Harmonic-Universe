@@ -130,6 +130,9 @@ cat > index.html << 'EOF'
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Harmonic Universe</title>
+    <!-- Include React and ReactDOM directly from CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   </head>
   <body>
     <div id="root"></div>
@@ -257,16 +260,85 @@ npm run build
 # Go back to the root directory
 cd ..
 
-# Create a static directory at the project root (not inside backend)
-echo "Setting up static directory..."
+# Create a static directory in both places to ensure it's found
+echo "Setting up static directories..."
 mkdir -p static
+mkdir -p backend/static
 
-# Copy the built frontend to the static directory
-echo "Copying built frontend to static directory..."
+# Copy the built frontend to both static directories
+echo "Copying built frontend to static directories..."
 cp -r frontend/dist/* static/
+cp -r frontend/dist/* backend/static/
 
 # Create _redirects file for SPA routing
 echo "/* /index.html 200" > static/_redirects
+echo "/* /index.html 200" > backend/static/_redirects
+
+# Create a script that loads React and ReactDOM directly
+echo "Creating fallback scripts..."
+cat > static/react-setup.js << 'EOF'
+console.log('Loading React from CDN...');
+// Already loaded in index.html
+EOF
+
+# Create a fallback index.js for direct loading
+cat > static/index.js << 'EOF'
+// Check if React and ReactDOM are already loaded
+if (!window.React || !window.ReactDOM) {
+  console.error('React or ReactDOM not found - loading from CDN');
+  
+  // Load React
+  if (!window.React) {
+    const reactScript = document.createElement('script');
+    reactScript.src = 'https://unpkg.com/react@18/umd/react.production.min.js';
+    reactScript.async = false;
+    document.head.appendChild(reactScript);
+  }
+  
+  // Load ReactDOM
+  if (!window.ReactDOM) {
+    const reactDOMScript = document.createElement('script');
+    reactDOMScript.src = 'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js';
+    reactDOMScript.async = false;
+    document.head.appendChild(reactDOMScript);
+  }
+}
+
+// Simple App component to test rendering
+console.log('Index.js loaded properly');
+window.addEventListener('DOMContentLoaded', () => {
+  console.log('DOM loaded, attempting to mount app');
+  if (window.React && window.ReactDOM) {
+    console.log('React and ReactDOM available');
+    
+    const App = () => {
+      const [status, setStatus] = React.useState('Loading...');
+      
+      React.useEffect(() => {
+        fetch('/api/health')
+          .then(res => res.json())
+          .then(data => setStatus(JSON.stringify(data)))
+          .catch(err => setStatus('Error: ' + err.message));
+      }, []);
+      
+      return React.createElement('div', null, [
+        React.createElement('h1', {key: 'title'}, 'Harmonic Universe'),
+        React.createElement('p', {key: 'status'}, 'Status: ' + status)
+      ]);
+    };
+    
+    const root = document.getElementById('root');
+    if (root) {
+      const reactRoot = ReactDOM.createRoot(root);
+      reactRoot.render(React.createElement(App));
+    }
+  }
+});
+EOF
+
+# Copy the fallback scripts to backend/static as well
+cp static/react-setup.js backend/static/
+cp static/index.js backend/static/
 
 # Set up database if needed
 echo "Setting up database..."
