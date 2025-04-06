@@ -389,6 +389,17 @@ else
   echo "ERROR: No dist directory found after build. Frontend build failed."
   exit 1
 fi
+EOF
+    
+    # Make it executable
+    chmod +x "$ROOT_DIR/setup-frontend.sh"
+  fi
+  
+  # Return to root directory after frontend setup
+  cd "$ROOT_DIR"
+else
+  echo "No frontend directory found, skipping frontend build"
+fi
 
 # Check if setup-static.sh exists, otherwise create it
 if [ ! -f "$ROOT_DIR/setup-static.sh" ]; then
@@ -548,6 +559,15 @@ EOF
     
     # Make it executable
     chmod +x "$ROOT_DIR/setup-static.sh"
+fi
+
+# Execute the frontend setup script
+if [ -x "$ROOT_DIR/setup-frontend.sh" ]; then
+  echo "Running frontend setup script..."
+  "$ROOT_DIR/setup-frontend.sh"
+else
+  # Fallback to inline execution
+  bash "$ROOT_DIR/setup-frontend.sh"
 fi
 
 # Execute the static files setup script
