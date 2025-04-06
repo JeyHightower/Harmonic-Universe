@@ -1,4 +1,4 @@
-from backend.app.extensions import db
+from ...extensions import db
 from .base import BaseModel
 
 class PhysicsObject(BaseModel):
@@ -60,8 +60,8 @@ class PhysicsObject(BaseModel):
             'is_trigger': self.is_trigger,
             'shape_type': self.shape_type,
             'shape_data': self.shape_data,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
+            'created_at': str(self.created_at) if self.created_at else None,
+            'updated_at': str(self.updated_at) if self.updated_at else None,
             'is_deleted': self.is_deleted
         }
 
@@ -111,8 +111,8 @@ class Physics2D(BaseModel):
             'sub_stepping': self.sub_stepping,
             'velocity_iterations': self.velocity_iterations,
             'position_iterations': self.position_iterations,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
+            'created_at': str(self.created_at) if self.created_at else None,
+            'updated_at': str(self.updated_at) if self.updated_at else None,
             'is_deleted': self.is_deleted
         }
 
@@ -163,8 +163,8 @@ class Physics3D(BaseModel):
             'sub_stepping': self.sub_stepping,
             'solver_iterations': self.solver_iterations,
             'solver_tolerance': self.solver_tolerance,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
+            'created_at': str(self.created_at) if self.created_at else None,
+            'updated_at': str(self.updated_at) if self.updated_at else None,
             'is_deleted': self.is_deleted
         }
 
@@ -215,7 +215,7 @@ class PhysicsConstraint(BaseModel):
             'enable_collision': self.enable_collision,
             'break_force': self.break_force,
             'break_torque': self.break_torque,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
+            'created_at': str(self.created_at) if self.created_at else None,
+            'updated_at': str(self.updated_at) if self.updated_at else None,
             'is_deleted': self.is_deleted
         } 

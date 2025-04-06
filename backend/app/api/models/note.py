@@ -1,4 +1,4 @@
-from backend.app.extensions import db
+from ...extensions import db
 from .base import BaseModel
 
 class Note(BaseModel):
@@ -42,8 +42,8 @@ class Note(BaseModel):
             'is_public': self.is_public,
             'is_archived': self.is_archived,
             'position': {'x': self.position_x, 'y': self.position_y, 'z': self.position_z},
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
+            'created_at': str(self.created_at) if self.created_at else None,
+            'updated_at': str(self.updated_at) if self.updated_at else None,
             'is_deleted': self.is_deleted
         }
         

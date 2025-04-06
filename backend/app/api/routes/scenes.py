@@ -1,7 +1,6 @@
 from flask import Blueprint, jsonify, request, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from backend.app.api.models.universe import Scene
-from backend.app.api.models.universe import Universe
+from backend.app.api.models.universe import Scene, Universe
 from backend.app.api.models.character import Character
 from backend.app.extensions import db
 import traceback

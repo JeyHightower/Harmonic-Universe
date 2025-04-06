@@ -48,20 +48,22 @@ class User(BaseModel):
             'id': self.id,
             'username': self.username,
             'email': self.email,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
+            'created_at': str(self.created_at) if self.created_at else None,
+            'updated_at': str(self.updated_at) if self.updated_at else None,
             'is_deleted': self.is_deleted,
             'version': self.version
         }
         
     def get_stats(self):
         """Get user statistics."""
+        from sqlalchemy import func
+        
         return {
-            'universes_count': len(self.universes),
-            'notes_count': len(self.notes),
-            'sound_profiles_count': len(self.sound_profiles),
-            'audio_samples_count': len(self.audio_samples),
-            'music_pieces_count': len(self.music_pieces)
+            'universes_count': db.session.query(func.count('Universe')).filter_by(user_id=self.id, is_deleted=False).scalar() or 0,
+            'notes_count': db.session.query(func.count('Note')).filter_by(user_id=self.id, is_deleted=False).scalar() or 0,
+            'sound_profiles_count': db.session.query(func.count('SoundProfile')).filter_by(user_id=self.id, is_deleted=False).scalar() or 0,
+            'audio_samples_count': db.session.query(func.count('AudioSample')).filter_by(user_id=self.id, is_deleted=False).scalar() or 0,
+            'music_pieces_count': db.session.query(func.count('MusicPiece')).filter_by(user_id=self.id, is_deleted=False).scalar() or 0
         }
         
     @classmethod

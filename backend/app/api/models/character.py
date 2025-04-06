@@ -17,18 +17,15 @@ character_scenes = db.Table(
 class Character(BaseModel):
     __tablename__ = 'characters'
 
-    id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), nullable=False, index=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    is_deleted = db.Column(db.Boolean, default=False)
 
     # Relationships
     scenes = db.relationship('Scene', secondary=character_scenes, lazy=True)
 
     def __init__(self, name, universe_id, description=None):
+        super().__init__()  # Added to properly initialize BaseModel
         self.name = name
         self.universe_id = universe_id
         self.description = description
@@ -50,7 +47,8 @@ class Character(BaseModel):
             'description': self.description,
             'universe_id': self.universe_id,
             'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'is_deleted': self.is_deleted
         }
 
     def __repr__(self):

@@ -1,4 +1,4 @@
-from backend.app.extensions import db
+from ...extensions import db
 from .base import BaseModel
 
 class SoundProfile(BaseModel):
@@ -43,8 +43,8 @@ class SoundProfile(BaseModel):
             'ambient_volume': self.ambient_volume,
             'music_volume': self.music_volume,
             'effects_volume': self.effects_volume,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
+            'created_at': str(self.created_at) if self.created_at else None,
+            'updated_at': str(self.updated_at) if self.updated_at else None,
             'is_deleted': self.is_deleted
         }
 
@@ -91,8 +91,8 @@ class AudioSample(BaseModel):
             'sound_profile_id': self.sound_profile_id,
             'universe_id': self.universe_id,
             'scene_id': self.scene_id,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
+            'created_at': str(self.created_at) if self.created_at else None,
+            'updated_at': str(self.updated_at) if self.updated_at else None,
             'is_deleted': self.is_deleted
         }
 
@@ -143,8 +143,8 @@ class MusicPiece(BaseModel):
             'sound_profile_id': self.sound_profile_id,
             'universe_id': self.universe_id,
             'scene_id': self.scene_id,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
+            'created_at': str(self.created_at) if self.created_at else None,
+            'updated_at': str(self.updated_at) if self.updated_at else None,
             'is_deleted': self.is_deleted
         }
 
@@ -177,8 +177,8 @@ class Harmony(BaseModel):
             'music_piece_id': self.music_piece_id,
             'chord_progression': self.chord_progression,
             'duration': self.duration,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
+            'created_at': str(self.created_at) if self.created_at else None,
+            'updated_at': str(self.updated_at) if self.updated_at else None,
             'is_deleted': self.is_deleted
         }
 
@@ -211,7 +211,7 @@ class MusicalTheme(BaseModel):
             'music_piece_id': self.music_piece_id,
             'character_id': self.character_id,
             'motif': self.motif,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
+            'created_at': str(self.created_at) if self.created_at else None,
+            'updated_at': str(self.updated_at) if self.updated_at else None,
             'is_deleted': self.is_deleted
         } 

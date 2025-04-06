@@ -1,4 +1,4 @@
-from backend.app.extensions import db
+from ...extensions import db
 from .base import BaseModel
 from sqlalchemy import func, and_, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -218,7 +218,7 @@ class Universe(BaseModel):
             
             # Try to fix any database issues with a clean transaction
             from sqlalchemy import text
-            from backend.app.extensions import db
+            from ...extensions import db
             
             # Make sure any existing transaction is cleaned up
             db.session.close()
@@ -233,30 +233,38 @@ class Universe(BaseModel):
                     WHERE universe_id = :universe_id AND 
                           (name IS NULL OR description IS NULL)
                 """)
+                db.session.execute(repair_sql, {'universe_id': universe_id})
                 
-                result = db.session.execute(repair_sql, {'universe_id': universe_id})
-                affected_rows = result.rowcount
-                
-                # 2. Clean up any problematic scene-character associations
-                cleanup_sql = text("""
-                    DELETE FROM character_scenes
+                # 2. Fix character-scene relationships that reference deleted scenes
+                repair_sql = text("""
+                    DELETE FROM character_scenes 
                     WHERE scene_id IN (
                         SELECT id FROM scenes 
                         WHERE universe_id = :universe_id AND is_deleted = true
                     )
                 """)
+                db.session.execute(repair_sql, {'universe_id': universe_id})
                 
-                char_result = db.session.execute(cleanup_sql, {'universe_id': universe_id})
-                cleaned_assocs = char_result.rowcount
-                
-                # Force commit
-                db.session.commit()
+                # 3. Update the universe record itself
+                try:
+                    # Make sure name isn't null
+                    if not universe.name:
+                        universe.name = f"Repaired Universe {universe_id}"
+                    
+                    # Ensure we have a description
+                    if not universe.description:
+                        universe.description = "This universe was automatically repaired."
+                    
+                    universe.save()
+                except Exception as universe_error:
+                    return {
+                        'success': False,
+                        'message': f'Error fixing universe: {str(universe_error)}'
+                    }
                 
                 return {
                     'success': True,
-                    'message': f'Universe {universe_id} repaired',
-                    'fixed_scenes': affected_rows,
-                    'cleaned_associations': cleaned_assocs
+                    'message': f'Universe {universe_id} repaired'
                 }
                 
         except Exception as e:

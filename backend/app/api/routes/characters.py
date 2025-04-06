@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from backend.app.api.models.universe import Scene
+from backend.app.api.models.universe import Scene, Universe
 from backend.app.api.models.character import Character
 from backend.app.extensions import db
 
@@ -49,7 +49,6 @@ def get_character(character_id):
         universe_id = character.universe_id
         
         # Check if the universe is public or belongs to the user
-        from backend.app.api.models.universe import Universe
         universe = Universe.query.get_or_404(universe_id)
         
         if not universe.is_public and universe.user_id != user_id:
@@ -69,7 +68,7 @@ def get_character(character_id):
             'error': str(e)
         }), 500
 
-@characters_bp.route('', methods=['POST'])
+@characters_bp.route('/', methods=['POST'])
 @jwt_required()
 def create_character():
     try:
@@ -150,7 +149,6 @@ def update_character(character_id):
         universe_id = character.universe_id
         
         # Check if the universe is public or belongs to the user
-        from backend.app.api.models.universe import Universe
         universe = Universe.query.get_or_404(universe_id)
         
         if not universe.is_public and universe.user_id != user_id:
@@ -200,28 +198,21 @@ def delete_character(character_id):
         # Get the universe for this character
         universe_id = character.universe_id
         
-        # Check if the universe is public or belongs to the user
-        from backend.app.api.models.universe import Universe
+        # Check if the universe belongs to the user (only owner can delete)
         universe = Universe.query.get_or_404(universe_id)
         
-        if not universe.is_public and universe.user_id != user_id:
+        if universe.user_id != user_id:
             return jsonify({
                 'message': 'Access denied'
             }), 403
 
-        # First, remove any character-scene relationships
-        if character.scenes:
-            for scene in character.scenes:
-                character.scenes.remove(scene)
-            
-        # Then soft delete the character
-        character.is_deleted = True
-        db.session.commit()
-
+        # Soft delete
+        character.delete()
+        
         return jsonify({
             'message': 'Character deleted successfully'
         }), 200
-
+        
     except Exception as e:
         db.session.rollback()
         print(f"Error deleting character: {str(e)}")
