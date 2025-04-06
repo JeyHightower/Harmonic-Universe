@@ -60,6 +60,31 @@ if [ -d "frontend" ]; then
   
   cd frontend
   
+  # Check for Debug.jsx file existence in different locations
+  echo "Checking for Debug component location..."
+  DEBUG_COMPONENT_PATH=""
+  
+  if [ -f "src/components/Debug.jsx" ]; then
+    DEBUG_COMPONENT_PATH="./components/Debug"
+    echo "Found Debug component at: src/components/Debug.jsx"
+  elif [ -f "src/components/Debug.js" ]; then
+    DEBUG_COMPONENT_PATH="./components/Debug"
+    echo "Found Debug component at: src/components/Debug.js"
+  elif [ -f "src/features/Debug.jsx" ]; then
+    DEBUG_COMPONENT_PATH="./features/Debug"
+    echo "Found Debug component at: src/features/Debug.jsx"
+  elif [ -f "src/features/Debug.js" ]; then
+    DEBUG_COMPONENT_PATH="./features/Debug"
+    echo "Found Debug component at: src/features/Debug.js"
+  elif [ -f "src/pages/Debug.js" ]; then
+    DEBUG_COMPONENT_PATH="./pages/Debug"
+    echo "Found Debug component at: src/pages/Debug.js"
+  else
+    # Default to a guess based on the pattern of other components
+    DEBUG_COMPONENT_PATH="./components/debug/Debug"
+    echo "Debug component not found in common locations, using fallback path: $DEBUG_COMPONENT_PATH"
+  fi
+  
   # Fix main.jsx syntax error
   if [ -f "src/main.jsx" ]; then
     echo "Checking and fixing main.jsx..."
@@ -169,6 +194,34 @@ EOF
     sed -i.bak 's|from "./pages/scenes/SceneDetail"|from "./components/consolidated/SceneDetail"|g' src/router.jsx
     sed -i.bak 's|from "./pages/scenes/SceneEditPage"|from "./components/consolidated/SceneEditPage"|g' src/router.jsx
     sed -i.bak 's|from "./pages/scenes/SceneEditRedirect"|from "./components/routing/SceneEditRedirect"|g' src/router.jsx
+    
+    # Fix Debug component import - either remove it or point to correct location
+    if [ ! -z "$DEBUG_COMPONENT_PATH" ]; then
+      sed -i.bak "s|from \"./pages/Debug\"|from \"$DEBUG_COMPONENT_PATH\"|g" src/router.jsx
+    fi
+    
+    # Create a placeholder Debug component if needed
+    if [ ! -f "src/components/Debug.jsx" ] && [ ! -f "src/features/Debug.jsx" ] && [ ! -f "src/pages/Debug.js" ] && [ ! -f "src/pages/Debug.jsx" ]; then
+      echo "Creating placeholder Debug component..."
+      mkdir -p src/components
+      cat > src/components/Debug.jsx << 'EOF'
+import React from "react";
+
+const Debug = () => {
+  return (
+    <div className="debug-page">
+      <h2>Debug Page</h2>
+      <p>This is a placeholder debug page.</p>
+    </div>
+  );
+};
+
+export default Debug;
+EOF
+      # Update the import path to the placeholder
+      sed -i.bak 's|from "./pages/Debug"|from "./components/Debug"|g' src/router.jsx
+    fi
+    
     rm -f src/router.jsx.bak
   fi
   
