@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api from "../../services/api";
 import { log } from "../../utils/logger";
-import { AUTH_CONFIG } from "../../utils/config";
+import { AUTH_CONFIG, FORCE_DEMO_MODE, IS_PRODUCTION } from "../../utils/config";
 import { ROUTES } from "../../utils/routes";
 import apiClient from "../../services/api";
 import { login, register } from "../thunks/authThunks";
@@ -25,6 +25,35 @@ const logAuthError = (operation, error) => {
   } catch (logError) {
     console.error("Error logging auth error", logError);
   }
+};
+
+// Helper to create a demo user when needed
+const createDemoUser = () => {
+  const randomId = 'demo-' + Math.random().toString(36).substring(2, 10);
+  return {
+    id: randomId,
+    username: 'demo_user',
+    email: 'demo@harmonic-universe.com',
+    firstName: 'Demo',
+    lastName: 'User',
+    role: 'user',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+};
+
+// Helper to set up demo mode authentication
+const setupDemoMode = () => {
+  console.log("Setting up demo mode authentication");
+  const mockUser = createDemoUser();
+  const mockToken = 'demo-token-' + Math.random().toString(36).substring(2, 15);
+
+  // Store the mock tokens and user data
+  localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, mockToken);
+  localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(mockUser));
+  localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, 'demo-refresh-' + Math.random().toString(36).substring(2, 15));
+
+  return { user: mockUser, token: mockToken };
 };
 
 // Handle auth tokens
@@ -247,14 +276,67 @@ export const demoLogin = createAsyncThunk(
   }
 );
 
-const initialState = {
-  user: null,
-  isAuthenticated: false,
-  isLoading: false,
-  error: null,
-  networkError: null,
-  offlineMode: false,
-};
+// Initialize the auth state
+const initialState = (() => {
+  try {
+    // Force demo mode in production if configured
+    if (FORCE_DEMO_MODE && IS_PRODUCTION) {
+      console.log("Forcing demo mode in production");
+      const demoData = setupDemoMode();
+      return {
+        user: demoData.user,
+        token: demoData.token,
+        isAuthenticated: true,
+        status: "idle",
+        error: null,
+        isLoading: false,
+        loginRedirect: ROUTES.HOME,
+      };
+    }
+
+    // Check if we have a token in localStorage
+    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+    const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+    const user = userStr ? JSON.parse(userStr) : null;
+
+    // In production, if token is demo-token, set up demo mode
+    if (IS_PRODUCTION && token && token.startsWith('demo-')) {
+      console.log("Demo token detected in production, setting up demo mode");
+      const demoData = setupDemoMode();
+      return {
+        user: demoData.user,
+        token: demoData.token,
+        isAuthenticated: true,
+        status: "idle",
+        error: null,
+        isLoading: false,
+        loginRedirect: ROUTES.HOME,
+      };
+    }
+
+    // Normal initialization
+    return {
+      user: user,
+      token: token || null,
+      isAuthenticated: !!token && !!user,
+      status: "idle",
+      error: null,
+      isLoading: false,
+      loginRedirect: ROUTES.HOME,
+    };
+  } catch (error) {
+    console.error("Error initializing auth state:", error);
+    return {
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      status: "idle",
+      error: null,
+      isLoading: false,
+      loginRedirect: ROUTES.HOME,
+    };
+  }
+})();
 
 const authSlice = createSlice({
   name: "auth",

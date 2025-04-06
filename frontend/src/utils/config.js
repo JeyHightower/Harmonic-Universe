@@ -7,10 +7,14 @@
 export const ENV = import.meta.env.MODE || "development";
 
 // Export whether we're in production
-export const IS_PRODUCTION = ENV === "production";
+export const IS_PRODUCTION = process.env.NODE_ENV === 'production' ||
+  import.meta.env.PROD ||
+  (typeof window !== 'undefined' && 
+    !window.location.hostname.includes('localhost') &&
+    !window.location.hostname.includes('127.0.0.1'));
 
 // Export whether we're in development
-export const IS_DEVELOPMENT = ENV === "development";
+export const IS_DEVELOPMENT = !IS_PRODUCTION;
 
 // Export whether we're in test
 export const IS_TEST = ENV === "test";
@@ -75,49 +79,8 @@ const parseInt = (value, defaultValue = undefined) => {
   return isNaN(parsed) ? defaultValue : parsed;
 };
 
-// API configuration
-export const API_CONFIG = {
-  BASE_URL: IS_PRODUCTION
-    ? '/api' // Use relative URL in production
-    : (import.meta.env.VITE_API_URL || "http://localhost:5001/api"),
-  TIMEOUT: 10000,
-  HEADERS: {
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-  },
-  CORS: {
-    CREDENTIALS: true,
-    ALLOWED_ORIGINS: parseArray(
-      validateEnvVar(
-        "VITE_CORS_ALLOWED_ORIGINS",
-        "http://localhost:5173,http://localhost:3000"
-      )
-    ),
-    ALLOWED_METHODS: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    ALLOWED_HEADERS: ["Content-Type", "Authorization", "Accept"],
-    EXPOSED_HEADERS: ["Content-Length", "Content-Type", "Authorization"],
-    MAX_AGE: 600,
-  },
-  HEALTH_CHECK: {
-    ENDPOINT: "/api/health",
-    INTERVAL: 30000,
-    TIMEOUT: 3000,
-    RETRY_ATTEMPTS: 3,
-  },
-  ERROR_HANDLING: {
-    RETRY_ATTEMPTS: 3,
-    RETRY_DELAY: 1000,
-    NETWORK_ERROR_THRESHOLD: 5000,
-  },
-  RETRY: {
-    MAX_ATTEMPTS: 3,
-    DELAY: 1000,
-  },
-  CACHE: {
-    ENABLED: true,
-    TTL: 300000, // 5 minutes
-  },
-};
+// Force demo mode in production for testing
+export const FORCE_DEMO_MODE = IS_PRODUCTION;
 
 // Authentication configuration
 export const AUTH_CONFIG = {
@@ -130,13 +93,30 @@ export const AUTH_CONFIG = {
   COOKIE_SECURE: IS_PRODUCTION,
   COOKIE_SAMESITE: "strict",
   ENDPOINTS: {
-    LOGIN: IS_PRODUCTION ? "/auth/login" : "/api/auth/login",
-    SIGNUP: IS_PRODUCTION ? "/auth/signup" : "/api/auth/signup",
-    LOGOUT: IS_PRODUCTION ? "/auth/logout" : "/api/auth/logout",
-    REFRESH: IS_PRODUCTION ? "/auth/refresh" : "/api/auth/refresh",
-    DEMO: IS_PRODUCTION ? "/auth/demo-login" : "/api/auth/demo-login",
-    VALIDATE: IS_PRODUCTION ? "/auth/validate" : "/api/auth/validate",
+    LOGIN: IS_PRODUCTION ? "/api/auth/login" : "/api/auth/login",
+    SIGNUP: IS_PRODUCTION ? "/api/auth/signup" : "/api/auth/signup",
+    LOGOUT: IS_PRODUCTION ? "/api/auth/logout" : "/api/auth/logout",
+    REFRESH: IS_PRODUCTION ? "/api/auth/refresh" : "/api/auth/refresh",
+    DEMO: IS_PRODUCTION ? "/api/auth/demo-login" : "/api/auth/demo-login",
+    VALIDATE: IS_PRODUCTION ? "/api/auth/validate" : "/api/auth/validate",
   },
+};
+
+// Application configuration for API access
+export const API_CONFIG = {
+  // Base URL should be relative in production to avoid CORS issues
+  BASE_URL: IS_PRODUCTION
+    ? '/api' // Use relative URL in production
+    : (import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api"),
+  TIMEOUT: 30000,
+  HEADERS: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+  MOCK_ENABLED: IS_PRODUCTION || import.meta.env.VITE_MOCK_API === 'true',
+  THROTTLE_ENABLED: true,
+  MAX_RETRIES: 3,
+  RETRY_DELAY: 2000,
 };
 
 // Security configuration
