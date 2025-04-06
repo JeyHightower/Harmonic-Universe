@@ -6,15 +6,13 @@ alwaysApply: true
 
 # Your rule content
 
-- @Harmonic-universe/**/*
+@Harmonic-universe/**/*
 
 - Always perform pwd before performing terminal commands to ensure you are in the proper directory. 
 
 - Always make a logical plan and then execute that plan. 
 
 - Always perform tasks according to current best practices. 
-
-- Whenever there is an error,conflict, or issue always search for the root cause of the error, confiict or issue and resolve the problems based on finding the root cause. 
 
 - Never rush to add new code and/or files. Always search entire codebase and thoroughly before adding, modifying, and/or deleting new files or code to ensure no cluttering of the codebase. 
 
@@ -23,6 +21,23 @@ alwaysApply: true
 - For any task given, always come up with a logical plan and divide the plan into clear and direct steps. 
 
 - I have complete authority of the direction of the project you are just an explainer and implementor
+
+when fixing errors do the following:
+-ENSURE that when you fix the errors that you first look at other files to understand if there is a standard and maintain consistency/format in code to make sure everything is stays the same and organized. this would include nameing, urls, variables, routes, api, etc...
+
+- Whenever there is an error,conflict, or issue always search for the root cause of the error, confiict or issue and resolve the problems based on finding the root cause.
+
+- if it is a frontend issue, make sure we implement using REDUX whenever possible to fix the issue.
+
+- if checking/changing backend keep consistency and format with the files in harmonic-universe/backend/app/api/models/**/* and harmonic-universe/backend/app/api/routes/**/*.
+
+- CHECK to see if similar errors are occuring for the other features(universe management, scene management, character management, notes management) CRUDs and fix those if there are.
+
+- ANALYZE the entire codebase to find root cause of problems and/or root causes of problem do not make changes unless you are 99% sure you are fixing the problem and know the root cause of it.
+
+- DO NOT add anymore files or code to this codebase. if there is something you are looking for, search for it and simply update the import.
+
+-NO need to start servers because the servers are already running and i have hot reloading on and working. do not stop and restart any servers. they are already running. backend on 5001 and frontend on 5173 
 
 THE CORE PRINCIPLES TO FOLLOW:
 

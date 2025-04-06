@@ -22,30 +22,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Create a simple Flask application
-from flask import Flask
-from backend.app.extensions import db
-from backend.app.config import config
-from backend.app.api.routes import api_bp
-
-def create_app(config_name='development'):
-    app = Flask(__name__)
-    app.config.from_object(config[config_name])
-    
-    # Initialize extensions
-    db.init_app(app)
-    
-    # Register blueprints
-    app.register_blueprint(api_bp, url_prefix='/api')
-    
-    @app.route('/health')
-    def health_check():
-        return {"status": "healthy"}, 200
-    
-    return app
+# Import the complete create_app function from app/__init__.py
+from backend.app import create_app
 
 # Create the Flask application
-app = create_app()
+app = create_app('development')
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5001))
