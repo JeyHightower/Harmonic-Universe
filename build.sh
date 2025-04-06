@@ -48,6 +48,9 @@ if [ -d "frontend" ]; then
   # Install UI libraries
   npm install @mui/material@5.14.15 @mui/icons-material@5.14.15 @emotion/react@11.11.1 @emotion/styled@11.11.0 --save
   
+  # Install antd - now required by the LoginModal component
+  npm install antd@4.24.12 @ant-design/icons@4.8.0 --save
+  
   # Create a comprehensive vite config with module handling
   cat > vite.config.js << 'EOF'
 // vite.config.js
@@ -55,7 +58,12 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   build: {
-    outDir: 'dist'
+    outDir: 'dist',
+    rollupOptions: {
+      external: [
+        // Mark problematic modules as external if needed
+      ]
+    }
   },
   resolve: {
     alias: {
@@ -64,7 +72,7 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    include: ['prop-types', 'react-redux', '@mui/material', '@mui/icons-material']
+    include: ['prop-types', 'react-redux', '@mui/material', '@mui/icons-material', 'antd', '@ant-design/icons']
   }
 });
 EOF
