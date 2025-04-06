@@ -165,11 +165,25 @@ export const deleteScene = createAsyncThunk(
   "scenes/deleteScene",
   async (sceneId, { dispatch, rejectWithValue }) => {
     try {
-      await apiClient.delete(`/api/scenes/${sceneId}`);
+      // Check if this is a temporary ID (client-side generated)
+      const isTemporaryId = typeof sceneId === 'string' && sceneId.includes('temp_');
+      const isProduction = process.env.NODE_ENV === 'production' ||
+        import.meta.env.PROD ||
+        !window.location.hostname.includes('localhost');
+
+      // For temporary scenes in production, return success without API call
+      if (isProduction && isTemporaryId) {
+        console.log(`Production mode: Simulating successful deletion for temporary scene ${sceneId}`);
+        return {
+          id: sceneId,
+          message: "Scene deleted successfully (mock)"
+        };
+      }
+
+      // Use apiClient.deleteScene instead of direct .delete call
+      await apiClient.deleteScene(sceneId);
 
       // Don't need to dispatch an action as deleteScene is handled in extraReducers
-      // dispatch(deleteSceneAction(sceneId));
-
       return {
         id: sceneId,
         message: "Scene deleted successfully"
@@ -177,6 +191,21 @@ export const deleteScene = createAsyncThunk(
     } catch (error) {
       console.error(`Error deleting scene ${sceneId}:`, error);
       dispatch(setError(error.response?.data?.message || error.message));
+
+      // In production, for temp scenes, return success response despite error
+      const isTemporaryId = typeof sceneId === 'string' && sceneId.includes('temp_');
+      const isProduction = process.env.NODE_ENV === 'production' ||
+        import.meta.env.PROD ||
+        !window.location.hostname.includes('localhost');
+
+      if (isProduction && isTemporaryId) {
+        console.log(`Production mode: Returning success for failed temp scene deletion ${sceneId}`);
+        return {
+          id: sceneId,
+          message: "Scene deleted successfully (mock after error)"
+        };
+      }
+
       return rejectWithValue(handleError(error));
     }
   }
