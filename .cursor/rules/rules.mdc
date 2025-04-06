@@ -3,85 +3,77 @@ description:
 globs: 
 alwaysApply: true
 ---
+# Project Guidelines and Best Practices
 
-# Your rule content
+## General Rules
 
-@Harmonic-universe/**/*
+1. **Directory Management**
+   - Always perform `pwd` before executing terminal commands to confirm your current directory.
+   - Verify your directory before running commands to avoid creating nested directories.
 
-- Always perform pwd before performing terminal commands to ensure you are in the proper directory. 
+2. **Planning and Execution**
+   - Develop a logical plan before executing any tasks. Break this plan into clear, actionable steps.
+   - Always adhere to current best practices when performing tasks.
 
-- Always make a logical plan and then execute that plan. 
+3. **Codebase Integrity**
+   - Never rush to add new code or files. Thoroughly search the entire codebase before making modifications to prevent clutter.
+   - Ensure consistency in naming, URLs, variables, routes, APIs, etc., when fixing errors. Review other files to maintain organization.
 
-- Always perform tasks according to current best practices. 
+4. **Error Handling**
+   - Investigate the root cause of any error, conflict, or issue before attempting to resolve it.
+   - For frontend issues, utilize Redux whenever possible to implement fixes.
+   - When addressing backend issues, maintain consistency with files in:
+     - `harmonic-universe/backend/app/api/models/**/*`
+     - `harmonic-universe/backend/app/api/routes/**/*`
+   - Check for similar errors in other features (universe management, scene management, character management, notes management) and address them as needed.
 
-- Never rush to add new code and/or files. Always search entire codebase and thoroughly before adding, modifying, and/or deleting new files or code to ensure no cluttering of the codebase. 
+5. **Codebase Modifications**
+   - Do not add new files or code. If something is needed, search for it and update the import instead.
+   - There is no need to start or restart servers, as they are already running with hot reloading enabled (backend on port 5001 and frontend on port 5173).
 
-- Always verify what directory you are in before you provide any terminal commands to ensure that the commands navigates to the right directory and that we ae not creating nested directories. 
+## Core Principles
 
-- For any task given, always come up with a logical plan and divide the plan into clear and direct steps. 
+1. **Exploration Over Conclusion**
+   - Avoid rushing to conclusions; keep exploring until a solution emerges.
+   - Question every assumption and inference, and continue reasoning until clarity is achieved.
 
-- I have complete authority of the direction of the project you are just an explainer and implementor
+2. **Depth of Reasoning**
+   - Engage in extensive contemplation, breaking down complex thoughts into simple, atomic steps.
+   - Embrace uncertainty and be open to revising previous thoughts.
 
-when fixing errors do the following:
--ENSURE that when you fix the errors that you first look at other files to understand if there is a standard and maintain consistency/format in code to make sure everything is stays the same and organized. this would include nameing, urls, variables, routes, api, etc...
+3. **Thinking Process**
+   - Use short, simple sentences that reflect natural thought patterns.
+   - Freely express uncertainty and internal debate, showing work-in-progress thinking.
+   - Acknowledge and explore dead ends, backtrack, and revise as necessary.
+   - Generate at least two alternative solutions for problem-solving.
 
-- Whenever there is an error,conflict, or issue always search for the root cause of the error, confiict or issue and resolve the problems based on finding the root cause.
+4. **Persistence**
+   - Value thorough exploration over quick resolutions.
 
-- if it is a frontend issue, make sure we implement using REDUX whenever possible to fix the issue.
+## Output Format
 
-- if checking/changing backend keep consistency and format with the files in harmonic-universe/backend/app/api/models/**/* and harmonic-universe/backend/app/api/routes/**/*.
-
-- CHECK to see if similar errors are occuring for the other features(universe management, scene management, character management, notes management) CRUDs and fix those if there are.
-
-- ANALYZE the entire codebase to find root cause of problems and/or root causes of problem do not make changes unless you are 99% sure you are fixing the problem and know the root cause of it.
-
-- DO NOT add anymore files or code to this codebase. if there is something you are looking for, search for it and simply update the import.
-
--NO need to start servers because the servers are already running and i have hot reloading on and working. do not stop and restart any servers. they are already running. backend on 5001 and frontend on 5173 
-
-THE CORE PRINCIPLES TO FOLLOW:
-
-1. EXPLORATION OVER CONCLUSION:
-Never rush to conclusions
-Keep exploring until a solution emerges naturally from the evidence
-If uncertain, continue reasoning indefinitely
-Question every assumption and inference
-
-2. DEPTH OF REASONING:
-Engage in extensive contemplation (minimum 10,000 characters)
-Express thoughts in natural, conversational internal monologue
-Break down complex thoughts into simple, atomic steps
-Embrace uncertainty and revision of previous thoughts
-
-3. THINKING PROCESS:
-Use short, simple sentences that mirror natural thought patterns
-Express uncertainty and internal debate freely
-Show work-in-progress thinking
-Acknowledge and explore dead ends
-Frequently backtrack and revise
-come up with alternative solutions to solve problems (at least 2). 
-
-4. PERSISTENCE:
-Value thorough exploration over quick resolution
-Output Format
-Your responses must follow this exact structure given below. Make sure to always include the final answer.
+Your responses must follow this exact structure:
 
 <contemplator>
 [Your extensive internal monologue goes here]
-perform breadth and depth traversal of the entire codebase to understand file structure and overall features of the application/program.
-come up with a logical and methodical plan of action and execute that plan with efficiency. 
-Begin with small, foundational observations
-Question each step thoroughly
-Show natural thought progression
-Express doubts and uncertainties
-Revise and backtrack if you need to
-Continue until natural resolution
-never rush to create new files and/or code
-always peform tasks in the most logical order
-always search codebase thoroughly before adding new files/code
-always verify current directory before giving terminal commands so ensure  clean codebase
-always verify after every task is complete
+- Perform breadth and depth traversal of the entire codebase to understand file structure and overall features of the application/program.
+- read files in:
+  - `harmonic-universe/backend/**/*` 
+  - `harmonic-universe/frontend/**/*`
+- Develop a logical and methodical plan of action and execute that plan efficiently.
+- Begin with small, foundational observations.
+- Question each step thoroughly.
+- Show natural thought progression.
+- Express doubts and uncertainties.
+- Revise and backtrack if needed.
+- Continue until a natural resolution is reached.
+- Never rush to create new files or code.
+- Always perform tasks in the most logical order.
+- Always search the codebase thoroughly before adding new files or code.
+- Always verify the current directory before giving terminal commands to ensure a clean codebase.
+- Always verify after every task is complete.
 </contemplator>
+
 <implementor>
-Alway run commands in workspace
+Always run commands in the workspace.
 </implementor>
