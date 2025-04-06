@@ -85,11 +85,25 @@ if [ -d "frontend" ]; then
     echo "Fixed App.jsx import statements"
   fi
   
+  # Fix authSlice.js specifically
+  if [ -f "src/store/slices/authSlice.js" ]; then
+    echo "Checking and fixing authSlice.js..."
+    sed -i "s/} 'from /} from /g" src/store/slices/authSlice.js
+    sed -i "s/'from '/from '/g" src/store/slices/authSlice.js
+    echo "Fixed authSlice.js import statements"
+  fi
+  
   # General fix for all JSX files
   echo "Applying general import statement fixes to all JSX files..."
   find src -name "*.jsx" -exec sed -i "s/ 'from / from /g" {} \;
   find src -name "*.jsx" -exec sed -i "s/} 'from/} from/g" {} \;
   find src -name "*.jsx" -exec sed -i "s/'from /from /g" {} \;
+  
+  # General fix for all JS files too
+  echo "Applying general import statement fixes to all JS files..."
+  find src -name "*.js" -exec sed -i "s/ 'from / from /g" {} \;
+  find src -name "*.js" -exec sed -i "s/} 'from/} from/g" {} \;
+  find src -name "*.js" -exec sed -i "s/'from /from /g" {} \;
   
   # Install all needed dependencies explicitly
   echo "Installing frontend dependencies..."
