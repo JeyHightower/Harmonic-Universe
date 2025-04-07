@@ -1941,7 +1941,11 @@ const apiClient = {
     console.log("API Client: Sending scene create request with data:", requestData);
 
     try {
-      const response = await axiosInstance.post(`/api/scenes`, requestData);
+      // Use formatUrl helper to prevent duplicate /api prefix
+      const url = formatUrl('/api/scenes');
+      console.log("API Client: Using formatted URL for create:", url);
+
+      const response = await axiosInstance.post(url, requestData);
       console.log("API Client: Scene creation response:", response.data);
 
       // For mock/test environments, ensure response contains is_deleted: false
