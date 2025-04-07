@@ -107,7 +107,9 @@ export const API_CONFIG = {
   // Base URL should be relative in production to avoid CORS issues
   BASE_URL: IS_PRODUCTION
     ? '' // Empty string in production to avoid double /api prefix
-    : (import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api"),
+    : (import.meta.env.VITE_API_BASE_URL || "http://localhost:5001"), // Don't include /api in BASE_URL
+  // API prefix should always be /api, used for both local and production
+  API_PREFIX: '/api',
   TIMEOUT: 30000,
   HEADERS: {
     'Content-Type': 'application/json',
@@ -117,6 +119,17 @@ export const API_CONFIG = {
   THROTTLE_ENABLED: true,
   MAX_RETRIES: 3,
   RETRY_DELAY: 2000,
+  // Health check endpoint configuration
+  HEALTH_CHECK: {
+    ENDPOINT: IS_PRODUCTION ? '/api/health' : 'http://localhost:5001/api/health',
+    TIMEOUT: 5000,
+    RETRY_ATTEMPTS: 3,
+    INTERVAL: 60000,
+  },
+  ERROR_HANDLING: {
+    RETRY_DELAY: 3000,
+    NETWORK_ERROR_THRESHOLD: 5000,
+  }
 };
 
 // Security configuration

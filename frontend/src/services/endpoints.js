@@ -7,13 +7,13 @@ import { API_CONFIG, IS_PRODUCTION } from '../utils/config';
 
 console.log("Loading endpoints.js module");
 
-// Base API URL - already contains /api
+// Base API URL - if in production, use relative path, otherwise use the full API_BASE_URL
 const API_BASE_URL = API_CONFIG.BASE_URL;
 
-// API version prefix - should be empty since we're already using /api in the base URL
-const API_VERSION = '';
+// API version prefix - for all environments this should be the API_PREFIX from config
+const API_VERSION = API_CONFIG.API_PREFIX;
 
-// Auth endpoints - don't include /api as it's already in API_BASE_URL
+// Auth endpoints - don't include /api as it's already in API_VERSION
 const authEndpoints = {
   login: `${API_VERSION}/auth/login`,
   register: `${API_VERSION}/auth/signup`,

@@ -303,11 +303,9 @@ const getApiBaseUrl = () => {
       !window.location.hostname.includes('localhost') &&
       !window.location.hostname.includes('127.0.0.1'));
 
-  if (isProduction) {
-    return ''; // In production, use empty string to avoid double /api prefix
-  }
-
-  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+  // Use the BASE_URL from API_CONFIG which is already set to be appropriate for the environment
+  // Empty string in production, full URL in development
+  return API_CONFIG.BASE_URL;
 };
 
 // Helper function to ensure URL is properly formatted without duplicate "api"
@@ -349,10 +347,17 @@ const formatUrl = (url) => {
   }
 
   // For development:
-  // Remove leading '/api' if it exists, since we'll add it in the base URL
+  const baseUrl = getApiBaseUrl();
+
+  // If we already have the full URL with /api in it, don't modify it further
   if (formattedUrl.startsWith('/api/')) {
-    formattedUrl = formattedUrl.substring(4); // Remove '/api' prefix
-    console.log(`Removed duplicate /api prefix: ${originalUrl} → ${formattedUrl}`);
+    // For full development URLs like http://localhost:5001, we need to combine them
+    if (baseUrl) {
+      const result = `${baseUrl}${formattedUrl}`;
+      console.log(`Full development URL: ${result}`);
+      return result;
+    }
+    return formattedUrl;
   }
 
   // Ensure URL starts with a slash
@@ -360,23 +365,19 @@ const formatUrl = (url) => {
     formattedUrl = '/' + formattedUrl;
   }
 
-  // Get the API base URL, which already includes '/api' in development
-  const baseUrl = getApiBaseUrl();
+  // For development, add the API prefix if not present
+  if (!formattedUrl.startsWith('/api/')) {
+    formattedUrl = `/api${formattedUrl}`;
+  }
 
-  // For local development, add the full base URL
-  if (baseUrl.startsWith('http')) {
-    // For full URLs like http://localhost:5001/api
-    // Make sure we don't add /api again
-    const apiBase = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}`;
-    const result = `${apiBase}${formattedUrl}`;
-    console.log(`Full formatted URL: ${result}`);
-    return result;
-  } else {
-    // For relative URLs like '/api'
+  // Combine with base URL for development
+  if (baseUrl) {
     const result = `${baseUrl}${formattedUrl}`;
-    console.log(`Relative formatted URL: ${result}`);
+    console.log(`Full development URL with added /api: ${result}`);
     return result;
   }
+
+  return formattedUrl;
 };
 
 // Helper function for making API requests
@@ -1185,8 +1186,8 @@ const apiClient = {
       }
 
       // Normal API validation for real users
-      // First try to get the proper endpoint using getEndpoint with the correct parameters
-      const endpoint = getEndpoint('auth', 'validate', '/api/auth/validate');
+      // Use explicit path with correct formatting for validation endpoint
+      const endpoint = '/api/auth/validate';
       console.debug("Validating token at endpoint:", endpoint);
 
       // Use the _request helper function instead of direct axios call
@@ -1399,20 +1400,20 @@ const apiClient = {
       queryParams.append('user_only', params.user_only);
     }
 
-    // Get endpoint with fallback
-    const baseEndpoint = getEndpoint('universes', 'list', '/universes');
+    // Use a direct explicit endpoint path
+    const baseEndpoint = '/api/universes';
 
     // Construct URL with query parameters
-    const url = queryParams.toString()
-      ? `${baseEndpoint}?${queryParams.toString()}`
-      : baseEndpoint;
+    let url = baseEndpoint;
+    if (queryParams.toString()) {
+      url = `${baseEndpoint}?${queryParams.toString()}`;
+    }
 
-    const formattedUrl = formatUrl(url);
-
-    console.log("API - Fetching universes from URL:", formattedUrl);
+    console.log("API - Fetching universes from URL:", url);
 
     try {
-      const response = await axiosInstance.get(formattedUrl);
+      // Use the _request helper to properly format the URL
+      const response = await _request('get', url);
       return response;
     } catch (error) {
       console.error("Error fetching universes:", {
@@ -2640,24 +2641,36 @@ const apiClient = {
     return axiosInstance.get(url);
   },
   getNotesByUniverse: (universeId) => {
-    const endpoint = getEndpoint('notes', 'forUniverse', `/universes/${universeId}/notes`);
-    const url = typeof endpoint === 'function' ? endpoint(universeId) : endpoint;
-    return axiosInstance.get(url);
+    console.log(`Getting notes for universe ${universeId}`);
+    // Use direct path with '/api' prefix
+    const url = `/api/universes/${universeId}/notes`;
+    console.log("Fetching notes from URL:", url);
+    // Use _request to ensure proper URL formatting
+    return _request('get', url);
   },
   getNotesByScene: (sceneId) => {
-    const endpoint = getEndpoint('notes', 'forScene', `/scenes/${sceneId}/notes`);
-    const url = typeof endpoint === 'function' ? endpoint(sceneId) : endpoint;
-    return axiosInstance.get(url);
+    console.log(`Getting notes for scene ${sceneId}`);
+    // Use direct path with '/api' prefix
+    const url = `/api/scenes/${sceneId}/notes`;
+    console.log("Fetching notes from URL:", url);
+    // Use _request to ensure proper URL formatting
+    return _request('get', url);
   },
   getNotesByCharacter: (characterId) => {
-    const endpoint = getEndpoint('notes', 'forCharacter', `/characters/${characterId}/notes`);
-    const url = typeof endpoint === 'function' ? endpoint(characterId) : endpoint;
-    return axiosInstance.get(url);
+    console.log(`Getting notes for character ${characterId}`);
+    // Use direct path with '/api' prefix
+    const url = `/api/characters/${characterId}/notes`;
+    console.log("Fetching notes from URL:", url);
+    // Use _request to ensure proper URL formatting
+    return _request('get', url);
   },
   getNote: (id) => {
-    const endpoint = getEndpoint('notes', 'get', `/notes/${id}`);
-    const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
-    return axiosInstance.get(url);
+    console.log(`Getting note ${id}`);
+    // Use direct path with '/api' prefix
+    const url = `/api/notes/${id}`;
+    console.log("Fetching note from URL:", url);
+    // Use _request to ensure proper URL formatting
+    return _request('get', url);
   },
   createNote: (data) => {
     // Clone data and transform field names if needed
@@ -2670,9 +2683,11 @@ const apiClient = {
 
     console.log("Sending createNote request with data:", transformedData);
 
-    // Use the base notes endpoint
-    const endpoint = getEndpoint('notes', 'create', `/notes`);
-    return axiosInstance.post(endpoint, transformedData);
+    // Use direct path with '/api' prefix
+    const url = `/api/notes`;
+    console.log("Creating note at URL:", url);
+    // Use _request to ensure proper URL formatting
+    return _request('post', url, transformedData);
   },
   updateNote: async (id, data) => {
     console.log(`API - updateNote - Updating note ${id} with data:`, data);
@@ -2686,9 +2701,11 @@ const apiClient = {
       const normalizedData = { ...data };
 
       console.log(`API - updateNote - Sending normalized data:`, normalizedData);
-      const updateEndpoint = getEndpoint('notes', 'update', `/notes/${id}`);
-      const updateUrl = typeof updateEndpoint === 'function' ? updateEndpoint(id) : updateEndpoint;
-      const response = await axiosInstance.put(updateUrl, normalizedData);
+      // Use direct path with '/api' prefix
+      const url = `/api/notes/${id}`;
+      console.log("Updating note at URL:", url);
+      // Use _request to ensure proper URL formatting
+      const response = await _request('put', url, normalizedData);
       console.log(`API - updateNote - Successfully updated note ${id}:`, response);
       return response;
     } catch (error) {
@@ -2700,9 +2717,11 @@ const apiClient = {
   deleteNote: async (id) => {
     console.log(`API - deleteNote - Deleting note ${id}`);
     try {
-      const endpoint = getEndpoint('notes', 'delete', `/notes/${id}`);
-      const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
-      const response = await axiosInstance.delete(url);
+      // Use direct path with '/api' prefix
+      const url = `/api/notes/${id}`;
+      console.log("Deleting note at URL:", url);
+      // Use _request to ensure proper URL formatting
+      const response = await _request('delete', url);
       console.log(`API - deleteNote - Successfully deleted note ${id}:`, response);
       return response;
     } catch (error) {
