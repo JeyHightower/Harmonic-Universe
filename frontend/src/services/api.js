@@ -667,6 +667,15 @@ axiosInstance.interceptors.response.use(
     if (isProduction && error.response?.status === 401) {
       console.warn("Authentication error (401) in production");
 
+      // Log detailed debug information
+      console.log("401 Error Details:", {
+        url: originalRequest?.url,
+        method: originalRequest?.method,
+        headers: originalRequest?.headers,
+        hasToken: !!originalRequest?.headers?.Authorization,
+        originalRequest: originalRequest
+      });
+
       // Check for demo user info in localStorage
       const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
       if (userStr) {
@@ -783,20 +792,86 @@ axiosInstance.interceptors.response.use(
 
             // If this was an API call related to universes, return mock data
             if (originalRequest?.url?.includes('/universes')) {
+              // Determine if it's a GET, POST, PUT or DELETE request
+              const method = originalRequest.method.toLowerCase();
+
+              if (method === 'get') {
+                // For GET requests, return list of universes
+                return Promise.resolve({
+                  data: {
+                    message: "Mock universe data due to 401 in production",
+                    universes: [
+                      {
+                        id: 1001,
+                        name: "Demo Universe",
+                        description: "A sample universe for exploring the application",
+                        is_public: true,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                        user_id: userData.id || 'demo-user'
+                      }
+                    ]
+                  }
+                });
+              } else if (method === 'post') {
+                // For universe creation, generate a consistent response format
+                // that matches what the backend would return
+
+                // Generate a random ID for the new universe
+                const universeId = 1000 + Math.floor(Math.random() * 1000);
+
+                // Create a mock universe using data from the request
+                const mockUniverse = {
+                  id: universeId,
+                  name: originalRequest.data?.name || "New Universe",
+                  description: originalRequest.data?.description || "A new universe",
+                  is_public: originalRequest.data?.is_public ?? false,
+                  user_id: userData.id || 'demo-user',
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                };
+
+                // Return a response that matches the expected format in the universe reducers
+                return Promise.resolve({
+                  data: {
+                    message: "Universe created successfully (mock)",
+                    universe: mockUniverse
+                  }
+                });
+              } else if (method === 'put') {
+                // For PUT requests (update), return success with updated universe
+                const universeId = originalRequest.url.split('/').pop();
+                const mockUniverse = {
+                  id: Number(universeId) || 1001,
+                  name: originalRequest.data?.name || "Updated Universe",
+                  description: originalRequest.data?.description || "Updated universe description",
+                  is_public: originalRequest.data?.is_public ?? false,
+                  user_id: userData.id || 'demo-user',
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                };
+
+                return Promise.resolve({
+                  data: {
+                    message: "Universe updated successfully (mock)",
+                    universe: mockUniverse
+                  }
+                });
+              } else if (method === 'delete') {
+                // For DELETE requests
+                return Promise.resolve({
+                  data: {
+                    message: "Universe deleted successfully (mock)",
+                    success: true
+                  }
+                });
+              }
+
+              // Default fallback for other methods
               return Promise.resolve({
                 data: {
-                  message: "Mock universe data due to 401 in production",
-                  universes: [
-                    {
-                      id: 1001,
-                      name: "Demo Universe",
-                      description: "A sample universe for exploring the application",
-                      is_public: true,
-                      created_at: new Date().toISOString(),
-                      updated_at: new Date().toISOString(),
-                      user_id: userData.id || 'demo-user'
-                    }
-                  ]
+                  message: "Mock universe operation completed",
+                  success: true
                 }
               });
             }

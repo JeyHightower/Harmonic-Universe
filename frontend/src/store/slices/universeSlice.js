@@ -185,18 +185,14 @@ const universeSlice = createSlice({
         state.success = false;
       })
       .addCase(createUniverse.fulfilled, (state, action) => {
-        console.debug("Universe created:", action.payload);
         state.loading = false;
         state.success = true;
 
-        // Handle different possible response formats
-        let newUniverse;
-        if (action.payload && typeof action.payload === "object") {
-          if (
-            action.payload.status === "success" &&
-            action.payload.data &&
-            action.payload.data.universe
-          ) {
+        // Process different possible response formats
+        if (action.payload) {
+          let newUniverse = null;
+
+          if (action.payload.data?.status === 'success' && action.payload.data?.universe) {
             // Simple backend format: { status: 'success', data: { universe: {...} } }
             newUniverse = action.payload.data.universe;
           } else if (
@@ -211,6 +207,11 @@ const universeSlice = createSlice({
           } else if (action.payload.id) {
             // Response format: The payload itself is the universe
             newUniverse = action.payload;
+          } else if (action.payload.universes && Array.isArray(action.payload.universes) && action.payload.universes.length > 0) {
+            // Special case for mock response: { message: '...', universes: [...] }
+            // Take the first universe from the array
+            newUniverse = action.payload.universes[0];
+            console.log("Using first universe from mock data array:", newUniverse);
           } else {
             console.error(
               "Unexpected response format in createUniverse.fulfilled:",

@@ -83,38 +83,46 @@ const UniverseFormModal = ({
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setIsSubmitting(true);
+    setErrors({});
 
-    // Run validation before submission
-    if (!validateForm()) {
-      console.log("UniverseFormModal - Form validation failed");
-      return; // Stop submission if validation fails
+    // Validate form inputs
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      setIsSubmitting(false);
+      return;
     }
 
-    setIsSubmitting(true);
-    console.log("UniverseFormModal - Submitting form...", formData);
-
     try {
-      let result;
-      if (isEdit && universe) {
-        // Update existing universe
-        console.log("UniverseFormModal - Updating universe:", universe.id);
-        result = await dispatch(
-          updateUniverse({
-            id: universe.id,
-            ...formData,
-          })
-        ).unwrap();
-      } else {
-        // Create new universe
-        console.log("UniverseFormModal - Creating new universe");
-        result = await dispatch(createUniverse(formData)).unwrap();
+      // Prepare the universe data for API submission
+      // Only include non-empty fields
+      const universeData = {
+        name: formData.name.trim(),
+        description: formData.description.trim() || "",
+        is_public: formData.is_public,
+      };
+
+      // Call the appropriate API function based on whether we're editing
+      const result = isEdit
+        ? await dispatch(
+            updateUniverse({ id: universe.id, ...universeData })
+          ).unwrap()
+        : await dispatch(createUniverse(universeData)).unwrap();
+
+      console.log(
+        `UniverseFormModal - ${isEdit ? "Update" : "Create"} result:`,
+        result
+      );
+
+      // Handle the modal close and success callback
+      if (onClose) {
+        onClose();
       }
 
-      console.log("UniverseFormModal - API call successful:", result);
-
       if (onSuccess) {
-        // Extract the universe data - handle different possible response formats
-        let universeData;
+        // Extract the universe data from the response
+        let universeData = null;
 
         if (result && typeof result === "object") {
           // Try different possible structures
@@ -127,6 +135,18 @@ const UniverseFormModal = ({
           } else if (result.id) {
             // Case: The result itself is the universe object
             universeData = result;
+          } else if (
+            result.universes &&
+            Array.isArray(result.universes) &&
+            result.universes.length > 0
+          ) {
+            // Special case for mock response: { message: '...', universes: [...] }
+            // Take the first universe from the array
+            universeData = result.universes[0];
+            console.log(
+              "UniverseFormModal - Using first universe from universes array:",
+              universeData
+            );
           } else {
             // Fallback
             console.warn(

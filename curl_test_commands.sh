@@ -8,11 +8,13 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # API configuration
-API_BASE_URL="http://localhost:5001/api"
+API_BASE_URL="https://harmonic-universe-z5ka.onrender.com/api"
+# API_BASE_URL="http://localhost:5001/api"  # Commented out local URL
 TOKEN=""
 UNIVERSE_ID=""
 SCENE_ID=""
 CHARACTER_ID=""
+NOTE_ID=""
 
 # Function to print section header
 section() {
@@ -33,6 +35,21 @@ error() {
 info() {
   echo -e "${YELLOW}ℹ️ $1${NC}"
 }
+
+section "HEALTH CHECK"
+
+# Test the API health endpoint
+info "Testing API health endpoint..."
+RESPONSE=$(curl -s "${API_BASE_URL}/health")
+
+if [[ $RESPONSE == *"healthy"* ]]; then
+  success "API is healthy!"
+  echo "$RESPONSE"
+else
+  error "API health check failed"
+  echo "$RESPONSE"
+  echo "Continuing with other tests anyway..."
+fi
 
 section "AUTHENTICATION"
 
@@ -291,6 +308,131 @@ else
   fi
 fi
 
+section "NOTES MANAGEMENT"
+
+# Create a note
+info "Creating a new note..."
+RESPONSE=$(curl -s -X POST "${API_BASE_URL}/notes" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"title\":\"Curl Test Note\",\"content\":\"This is a note created with curl\",\"universe_id\":$UNIVERSE_ID,\"scene_id\":$SCENE_ID}")
+
+# Extract note ID using jq if available
+if command -v jq &> /dev/null; then
+  NOTE_ID=$(echo "$RESPONSE" | jq -r '.note.id')
+  if [ "$NOTE_ID" = "null" ]; then
+    NOTE_ID=""
+  fi
+else
+  # Fallback extraction
+  NOTE_ID=$(echo "$RESPONSE" | grep -o '"id":[0-9]*' | head -1 | grep -o '[0-9]*')
+fi
+
+if [ -z "$NOTE_ID" ]; then
+  error "Note creation failed"
+  echo "$RESPONSE"
+  exit 1
+else
+  success "Note created with ID: $NOTE_ID"
+fi
+
+# Get note details
+info "Getting note details..."
+RESPONSE=$(curl -s -X GET "${API_BASE_URL}/notes/$NOTE_ID" \
+  -H "Authorization: Bearer $TOKEN")
+
+if command -v jq &> /dev/null; then
+  NOTE_TITLE=$(echo "$RESPONSE" | jq -r '.note.title')
+  if [ "$NOTE_TITLE" != "null" ] && [ -n "$NOTE_TITLE" ]; then
+    success "Note details retrieved successfully"
+    echo "$RESPONSE" | jq '.'
+  else
+    error "Failed to get note details"
+    echo "$RESPONSE"
+  fi
+else
+  if [[ $RESPONSE == *"note"* ]]; then
+    success "Note details retrieved successfully"
+    echo "$RESPONSE"
+  else
+    error "Failed to get note details"
+    echo "$RESPONSE"
+  fi
+fi
+
+# Get notes for universe
+info "Getting notes for universe..."
+RESPONSE=$(curl -s -X GET "${API_BASE_URL}/notes/universe/$UNIVERSE_ID" \
+  -H "Authorization: Bearer $TOKEN")
+
+if command -v jq &> /dev/null; then
+  NOTE_COUNT=$(echo "$RESPONSE" | jq -r '.notes | length')
+  if [ "$NOTE_COUNT" != "null" ]; then
+    success "Notes retrieved for universe"
+    echo "Found $NOTE_COUNT notes"
+    echo "$RESPONSE" | jq '.notes[] | {id, title}'
+  else
+    error "Failed to get notes for universe"
+    echo "$RESPONSE"
+  fi
+else
+  if [[ $RESPONSE == *"notes"* ]]; then
+    success "Notes retrieved for universe"
+    echo "$RESPONSE"
+  else
+    error "Failed to get notes for universe"
+    echo "$RESPONSE"
+  fi
+fi
+
+# Update note
+info "Updating note..."
+RESPONSE=$(curl -s -X PUT "${API_BASE_URL}/notes/$NOTE_ID" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Updated Curl Test Note","content":"This note was updated with curl"}')
+
+if command -v jq &> /dev/null; then
+  SUCCESS=$(echo "$RESPONSE" | jq -r '.message')
+  if [[ $SUCCESS == *"updated successfully"* ]]; then
+    success "Note updated successfully"
+    echo "$RESPONSE" | jq '.'
+  else
+    error "Failed to update note"
+    echo "$RESPONSE"
+  fi
+else
+  if [[ $RESPONSE == *"updated successfully"* ]]; then
+    success "Note updated successfully"
+    echo "$RESPONSE"
+  else
+    error "Failed to update note"
+    echo "$RESPONSE"
+  fi
+fi
+
+# Delete note
+info "Deleting note..."
+RESPONSE=$(curl -s -X DELETE "${API_BASE_URL}/notes/$NOTE_ID" \
+  -H "Authorization: Bearer $TOKEN")
+
+if command -v jq &> /dev/null; then
+  SUCCESS=$(echo "$RESPONSE" | jq -r '.message')
+  if [[ $SUCCESS == *"deleted successfully"* ]]; then
+    success "Note deleted successfully"
+  else
+    error "Failed to delete note"
+    echo "$RESPONSE"
+  fi
+else
+  if [[ $RESPONSE == *"deleted successfully"* ]]; then
+    success "Note deleted successfully"
+  else
+    error "Failed to delete note"
+    echo "$RESPONSE"
+  fi
+fi
+
 section "CLEANUP"
 
 # Delete character (soft delete)
@@ -342,27 +484,48 @@ success "All API tests completed"
 echo -e "Universe ID: $UNIVERSE_ID"
 echo -e "Scene ID: $SCENE_ID (soft deleted)"
 echo -e "Character ID: $CHARACTER_ID (soft deleted)"
+echo -e "Note ID: $NOTE_ID (soft deleted)"
 
 # Informational message about how to run specific tests
 info "To run individual tests, you can use the following examples:"
 
 echo -e "\n# Authenticate and get token"
-echo 'curl -X POST "http://localhost:5001/api/auth/demo-login"'
+echo 'curl -X POST "https://harmonic-universe-z5ka.onrender.com/api/auth/demo-login"'
 
 echo -e "\n# Create universe"
-echo 'curl -X POST "http://localhost:5001/api/universes" \'
+echo 'curl -X POST "https://harmonic-universe-z5ka.onrender.com/api/universes" \'
 echo '  -H "Authorization: Bearer YOUR_TOKEN" \'
 echo '  -H "Content-Type: application/json" \'
 echo '  -d '"'"'{"name":"Test Universe","description":"A test universe"}'"'"
 
 echo -e "\n# Create scene"
-echo 'curl -X POST "http://localhost:5001/api/scenes" \'
+echo 'curl -X POST "https://harmonic-universe-z5ka.onrender.com/api/scenes" \'
 echo '  -H "Authorization: Bearer YOUR_TOKEN" \'
 echo '  -H "Content-Type: application/json" \'
 echo '  -d '"'"'{"name":"Test Scene","description":"A test scene","universe_id":YOUR_UNIVERSE_ID}'"'"
 
 echo -e "\n# Create character"
-echo 'curl -X POST "http://localhost:5001/api/characters" \'
+echo 'curl -X POST "https://harmonic-universe-z5ka.onrender.com/api/characters" \'
 echo '  -H "Authorization: Bearer YOUR_TOKEN" \'
 echo '  -H "Content-Type: application/json" \'
-echo '  -d '"'"'{"name":"Test Character","description":"A test character","scene_id":YOUR_SCENE_ID}'"'" 
+echo '  -d '"'"'{"name":"Test Character","description":"A test character","scene_id":YOUR_SCENE_ID}'"'"
+
+echo -e "\n# Create note"
+echo 'curl -X POST "https://harmonic-universe-z5ka.onrender.com/api/notes" \'
+echo '  -H "Authorization: Bearer YOUR_TOKEN" \'
+echo '  -H "Content-Type: application/json" \'
+echo '  -d '"'"'{"title":"Test Note","content":"A test note content","universe_id":YOUR_UNIVERSE_ID}'"'"
+
+echo -e "\n# Get notes for universe"
+echo 'curl -X GET "https://harmonic-universe-z5ka.onrender.com/api/notes/universe/YOUR_UNIVERSE_ID" \'
+echo '  -H "Authorization: Bearer YOUR_TOKEN"'
+
+echo -e "\n# Update note"
+echo 'curl -X PUT "https://harmonic-universe-z5ka.onrender.com/api/notes/YOUR_NOTE_ID" \'
+echo '  -H "Authorization: Bearer YOUR_TOKEN" \'
+echo '  -H "Content-Type: application/json" \'
+echo '  -d '"'"'{"title":"Updated Note","content":"Updated note content"}'"'"
+
+echo -e "\n# Delete note"
+echo 'curl -X DELETE "https://harmonic-universe-z5ka.onrender.com/api/notes/YOUR_NOTE_ID" \'
+echo '  -H "Authorization: Bearer YOUR_TOKEN"' 
