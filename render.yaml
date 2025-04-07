@@ -36,6 +36,10 @@ services:
         value: "/opt/render/project/src/static"
       - key: REACT_APP_API_URL
         value: /api
+      - key: CORS_ORIGINS
+        value: "https://harmonic-universe.onrender.com,https://harmonic-universe-z5ka.onrender.com,*"
+      - key: CORS_SUPPORTS_CREDENTIALS
+        value: "true"
       - fromGroup: harmonic-universe-env
     healthCheckPath: /api/health
     autoDeploy: true
@@ -55,4 +59,4 @@ envVarGroups:
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: CORS_ORIGINS
-        value: https://harmonic-universe.onrender.com,https://harmonic-universe-z5ka.onrender.com,*
+        value: "https://harmonic-universe.onrender.com,https://harmonic-universe-z5ka.onrender.com,*"

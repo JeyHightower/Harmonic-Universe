@@ -13,6 +13,10 @@ export FLASK_ENV=production
 export FLASK_DEBUG=0
 export PYTHONPATH=$(pwd):$PYTHONPATH
 
+# Set CORS environment variables for API requests
+export CORS_ORIGINS="https://harmonic-universe.onrender.com,https://harmonic-universe-z5ka.onrender.com,*"
+export CORS_SUPPORTS_CREDENTIALS=true
+
 # Enhanced logging
 if [ "${ENABLE_DETAILED_LOGGING}" = "true" ]; then
     echo "Detailed logging enabled"
@@ -280,8 +284,8 @@ cp static/diagnostic.html backend/static/
 echo "Running database health check..."
 python -c "
 try:
-    import os, sys
-    sys.path.insert(0, os.path.abspath('.'))
+    import sys
+    sys.path.insert(0, '.')
     from backend.app.extensions import db
     from backend.app import create_app
     app = create_app()
@@ -295,11 +299,11 @@ except Exception as e:
 " || echo "Warning: Database check failed, continuing anyway"
 
 # Run database migrations if needed
-if [ -f "migrations/env.py" ]; then
+if [ -f "init_migrations.py" ]; then
     echo "Running database migrations..."
-    python -m flask db upgrade || echo "Warning: Migrations failed, continuing anyway"
+    python init_migrations.py || echo "Warning: Migrations failed, continuing anyway"
 fi
 
 # Start the application with gunicorn
 echo "Starting application with gunicorn..."
-gunicorn --workers=2 --timeout=120 --bind=0.0.0.0:$PORT --log-level ${LOG_LEVEL:-info} wsgi:app 
+gunicorn --workers=2 --timeout=120 --bind=0.0.0.0:$PORT --log-level ${LOG_LEVEL:-info} wsgi:app
