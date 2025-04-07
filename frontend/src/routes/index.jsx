@@ -1,9 +1,32 @@
 import { lazy, Suspense } from "react";
-import { Navigate, useParams } from "react-router-dom";
+import { Navigate, useParams, useNavigate } from "react-router-dom";
 import Layout from "../components/layout/Layout";
 import ProtectedRoute from "../components/routing/ProtectedRoute";
 import { ROUTES } from "../utils/routes";
 import ModalTest from "../components/test/ModalTest";
+import SceneModalHandler from "../components/consolidated/SceneModalHandler";
+
+// Create a wrapper component for SceneModalHandler in routes
+const SceneCreateRoute = () => {
+  const { universeId } = useParams();
+  const navigate = useNavigate();
+
+  return (
+    <SceneModalHandler
+      isOpen={true}
+      onClose={() => navigate(`/universes/${universeId}/scenes`)}
+      modalType="create"
+      universeId={universeId}
+      onSuccess={(actionType, scene) => {
+        if (scene && scene.id) {
+          navigate(`/universes/${universeId}/scenes/${scene.id}`);
+        } else {
+          navigate(`/universes/${universeId}/scenes`);
+        }
+      }}
+    />
+  );
+};
 
 // Lazy load components
 const SettingsPage = lazy(() => import("../pages/SettingsPage"));
@@ -85,6 +108,7 @@ const CharacterDetail = lazy(() =>
 const NoteList = lazy(() => import("../components/note/NoteList"));
 const NoteDetail = lazy(() => import("../components/note/NoteDetail"));
 
+// Create a wrapper component for SceneModalHandler in routes
 const routes = [
   {
     path: ROUTES.HOME,
@@ -123,6 +147,14 @@ const routes = [
         element: (
           <ProtectedRoute>
             <SceneList />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTES.SCENE_CREATE,
+        element: (
+          <ProtectedRoute>
+            <SceneCreateRoute />
           </ProtectedRoute>
         ),
       },

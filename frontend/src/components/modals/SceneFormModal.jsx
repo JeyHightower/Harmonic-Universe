@@ -9,12 +9,14 @@ import {
   Box,
   CircularProgress,
   Alert,
+  IconButton,
 } from "@mui/material";
 import { useDispatch } from "react-redux";
 import apiClient from "../../services/api";
 // Import only the fetchScenes thunk to refresh scenes after operations
 import { fetchScenes } from "../../store/thunks/consolidated/scenesThunks";
 import SceneForm from "../consolidated/SceneForm";
+import CloseIcon from "@mui/icons-material/Close";
 
 /**
  * Modal component for creating and editing scenes
@@ -33,49 +35,51 @@ const SceneFormModal = ({
   const [sceneData, setSceneData] = useState(null);
   // Use a ref to access the form submit function
   const formSubmitRef = React.useRef(null);
+  const [initialValues, setInitialValues] = useState(null);
 
-  // Fetch scene data if editing
+  // Fetch scene data if editing or clear data when creating
   useEffect(() => {
-    if (isOpen && modalType === "edit" && sceneId) {
-      const fetchSceneData = async () => {
-        try {
-          setLoading(true);
-          setError(null);
-
-          const response = await apiClient.getScene(sceneId);
-          const data = response?.data?.scene || response?.data;
-
-          if (data) {
-            setSceneData(data);
-          } else {
-            throw new Error("Scene data not found");
-          }
-        } catch (err) {
-          console.error("Error fetching scene:", err);
-          setError("Failed to load scene data. Please try again.");
-        } finally {
-          setLoading(false);
-        }
-      };
-
+    if (isOpen) {
+      setError(null);
+      console.log(`SceneFormModal: Modal opened in ${modalType} mode`);
       fetchSceneData();
     }
-  }, [isOpen, modalType, sceneId]);
+  }, [isOpen, modalType, sceneId, universeId]);
+
+  // Add debugging for the form submit reference
+  useEffect(() => {
+    console.log(
+      "SceneFormModal - formSubmitRef current value:",
+      formSubmitRef.current
+    );
+  }, [formSubmitRef.current]);
 
   const handleCancel = () => {
     onClose();
   };
 
-  const handleSubmit = async (formValues) => {
+  const handleSubmit = async (action, formData) => {
     try {
       setLoading(true);
       setError(null);
 
+      // Check if we received properly formatted data from SceneForm
+      console.log("SceneFormModal - Received form data:", action, formData);
+
+      if (!formData || typeof formData !== "object") {
+        throw new Error("Invalid form data received from SceneForm");
+      }
+
       let result;
-      if (modalType === "create") {
-        // Add universe_id to form values
+      if (action === "create" || modalType === "create") {
+        // Make sure we have a proper payload with required fields
+        if (!formData.name) {
+          throw new Error("Scene name is required");
+        }
+
+        // Ensure universe_id is set
         const scenePayload = {
-          ...formValues,
+          ...formData,
           universe_id: universeId,
           is_deleted: false,
         };
@@ -104,10 +108,10 @@ const SceneFormModal = ({
         } else {
           throw new Error("Failed to create scene");
         }
-      } else if (modalType === "edit") {
+      } else if (action === "update" || modalType === "edit") {
         // Make sure we have the scene ID
         const scenePayload = {
-          ...formValues,
+          ...formData,
           universe_id: universeId,
         };
 
@@ -136,7 +140,7 @@ const SceneFormModal = ({
       onClose();
     } catch (err) {
       console.error("Error saving scene:", err);
-      setError("Failed to save scene. Please try again.");
+      setError(err.message || "Failed to save scene. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -144,11 +148,85 @@ const SceneFormModal = ({
 
   // Method to register the form submit function
   const registerSubmit = (submitFn) => {
+    console.log("SceneFormModal - Registering submit function");
     formSubmitRef.current = submitFn;
+  };
+
+  const handleModalSubmit = () => {
+    console.log(
+      "SceneFormModal - Submit button clicked, form ref:",
+      formSubmitRef.current
+    );
+    if (formSubmitRef.current && typeof formSubmitRef.current === "function") {
+      formSubmitRef.current();
+    } else {
+      console.error("SceneFormModal - No valid submit function registered");
+      setError("Form submission failed. Please try again.");
+    }
   };
 
   const getTitle = () => {
     return modalType === "create" ? "Create New Scene" : "Edit Scene";
+  };
+
+  const fetchSceneData = async () => {
+    if (modalType === "edit" && sceneId) {
+      try {
+        setLoading(true);
+        console.log(`SceneFormModal: Fetching scene data for ID: ${sceneId}`);
+
+        const response = await apiClient.getScene(sceneId);
+        console.log("SceneFormModal: Scene data fetched:", response.data);
+
+        if (response.data && response.data.scene) {
+          setInitialValues(response.data.scene);
+          console.log("SceneFormModal: Set initial values from scene data");
+        } else {
+          console.warn(
+            "SceneFormModal: Retrieved scene data is empty or invalid"
+          );
+          setError(
+            "Could not load scene data. The scene may have been deleted."
+          );
+          // Create empty initial values to prevent form errors
+          setInitialValues({
+            name: "",
+            description: "",
+            universe_id: universeId || null,
+          });
+        }
+      } catch (error) {
+        console.error("SceneFormModal: Error fetching scene:", error);
+
+        // Handle 404 errors specially
+        if (error.response && error.response.status === 404) {
+          setError(
+            "The requested scene was not found. It may have been deleted."
+          );
+        } else {
+          setError(`Failed to load scene: ${error.message || "Unknown error"}`);
+        }
+
+        // Set empty initial values to prevent form breaking
+        setInitialValues({
+          name: "",
+          description: "",
+          universe_id: universeId || null,
+        });
+      } finally {
+        setLoading(false);
+      }
+    } else if (modalType === "create") {
+      // For create mode, set default initial values
+      console.log(
+        "SceneFormModal: Setting default initial values for create mode"
+      );
+      setInitialValues({
+        name: "",
+        description: "",
+        universe_id: universeId || null,
+      });
+    }
   };
 
   return (
@@ -157,44 +235,64 @@ const SceneFormModal = ({
       onClose={handleCancel}
       maxWidth="md"
       fullWidth
-      scroll="paper"
+      PaperProps={{
+        elevation: 5,
+        sx: {
+          borderRadius: 2,
+          p: 2,
+        },
+      }}
     >
-      <DialogTitle>{getTitle()}</DialogTitle>
-      <DialogContent dividers>
-        {loading && !sceneData && modalType === "edit" ? (
-          <Box display="flex" justifyContent="center" my={3}>
+      <DialogTitle sx={{ mb: 2 }}>
+        {getTitle()}
+        <IconButton
+          aria-label="close"
+          onClick={handleCancel}
+          sx={{
+            position: "absolute",
+            right: 10,
+            top: 10,
+            color: (theme) => theme.palette.grey[500],
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      <DialogContent>
+        {loading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
             <CircularProgress />
           </Box>
-        ) : error ? (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
         ) : (
-          <Box sx={{ mt: 2 }}>
-            {/* Use SceneForm directly */}
-            <SceneForm
-              universeId={universeId}
-              sceneId={modalType === "edit" ? sceneId : null}
-              initialData={sceneData}
-              onSubmit={handleSubmit}
-              onCancel={handleCancel}
-              registerSubmit={registerSubmit}
-            />
-          </Box>
+          <SceneForm
+            initialValues={initialValues}
+            universeId={universeId}
+            sceneId={sceneId}
+            readOnly={false}
+            isEditMode={modalType === "edit"}
+            onSubmit={handleSubmit}
+            registerSubmit={registerSubmit}
+          />
         )}
       </DialogContent>
+
       <DialogActions>
-        <Button onClick={handleCancel} color="primary">
-          Cancel
-        </Button>
+        <Button onClick={handleCancel}>Cancel</Button>
         <Button
           variant="contained"
           color="primary"
-          onClick={() => formSubmitRef.current && formSubmitRef.current()}
+          onClick={handleModalSubmit}
           disabled={loading}
           startIcon={loading && <CircularProgress size={20} color="inherit" />}
         >
-          {modalType === "create" ? "Create" : "Save"}
+          {modalType === "create" ? "Create" : "Save Changes"}
         </Button>
       </DialogActions>
     </Dialog>

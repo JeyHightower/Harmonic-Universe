@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Container,
@@ -115,6 +115,10 @@ const ScenesPageContent = ({ universeId }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState("create");
   const [selectedSceneId, setSelectedSceneId] = useState(null);
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("name");
+  const [sortDirection, setSortDirection] = useState("asc");
 
   // Update local state when Redux state changes
   useEffect(() => {
@@ -233,17 +237,74 @@ const ScenesPageContent = ({ universeId }) => {
     navigate(`/universes/${safeUniverseId}`);
   };
 
-  // Filter scenes based on search term
-  const filteredScenes = scenes.filter((scene) => {
-    // First check if scene is valid and not deleted
-    if (!scene || scene.is_deleted === true) {
-      return false;
+  // Filter and sort scenes
+  const filteredScenes = useMemo(() => {
+    let result = scenes;
+
+    // Filter out deleted scenes
+    result = result.filter((scene) => scene && scene.is_deleted !== true);
+
+    // Apply search filter if search term is present
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(
+        (scene) =>
+          scene.name?.toLowerCase().includes(term) ||
+          scene.description?.toLowerCase().includes(term) ||
+          scene.content?.toLowerCase().includes(term) ||
+          scene.summary?.toLowerCase().includes(term) ||
+          scene.location?.toLowerCase().includes(term)
+      );
     }
 
-    // Then check search term
-    const name = scene.title || scene.name || "";
-    return name.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+    // Apply type filter if not set to "all"
+    if (typeFilter && typeFilter !== "all") {
+      result = result.filter((scene) => scene.scene_type === typeFilter);
+    }
+
+    // Apply status filter if not set to "all"
+    if (statusFilter && statusFilter !== "all") {
+      result = result.filter((scene) => scene.status === statusFilter);
+    }
+
+    // Apply sort
+    if (sortBy) {
+      result = [...result].sort((a, b) => {
+        if (sortBy === "name") {
+          return sortDirection === "asc"
+            ? (a.name || "").localeCompare(b.name || "")
+            : (b.name || "").localeCompare(a.name || "");
+        } else if (sortBy === "date_of_scene") {
+          // Sorting by scene date
+          const aDate = a.date_of_scene
+            ? new Date(a.date_of_scene)
+            : new Date(0);
+          const bDate = b.date_of_scene
+            ? new Date(b.date_of_scene)
+            : new Date(0);
+          return sortDirection === "asc" ? aDate - bDate : bDate - aDate;
+        } else if (sortBy === "created_at") {
+          // Sorting by creation date
+          const aDate = a.created_at ? new Date(a.created_at) : new Date(0);
+          const bDate = b.created_at ? new Date(b.created_at) : new Date(0);
+          return sortDirection === "asc" ? aDate - bDate : bDate - aDate;
+        } else if (sortBy === "updated_at") {
+          // Sorting by update date
+          const aDate = a.updated_at ? new Date(a.updated_at) : new Date(0);
+          const bDate = b.updated_at ? new Date(b.updated_at) : new Date(0);
+          return sortDirection === "asc" ? aDate - bDate : bDate - aDate;
+        } else if (sortBy === "order") {
+          // Sorting by order field (numeric)
+          const aOrder = typeof a.order === "number" ? a.order : 0;
+          const bOrder = typeof b.order === "number" ? b.order : 0;
+          return sortDirection === "asc" ? aOrder - bOrder : bOrder - aOrder;
+        }
+        return 0;
+      });
+    }
+
+    return result;
+  }, [scenes, searchTerm, typeFilter, statusFilter, sortBy, sortDirection]);
 
   if (loading) {
     return (

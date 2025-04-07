@@ -79,6 +79,13 @@ const SceneDetail = ({ isEdit = false }) => {
 
   useEffect(() => {
     if (sceneId) {
+      // If sceneId is "new", redirect to create scene page
+      if (sceneId === "new") {
+        console.log("Redirecting to create scene page");
+        navigate(`/universes/${universeId}/scenes/create`);
+        return;
+      }
+
       try {
         console.log("Fetching scene with ID:", sceneId);
         dispatch(fetchSceneById(sceneId)).catch((error) => {
@@ -94,7 +101,7 @@ const SceneDetail = ({ isEdit = false }) => {
         console.error("Error in scene fetch effect:", error);
       }
     }
-  }, [dispatch, sceneId]);
+  }, [dispatch, sceneId, universeId, navigate]);
 
   const handleEdit = () => {
     try {
@@ -181,10 +188,14 @@ const SceneDetail = ({ isEdit = false }) => {
 
   if (error) {
     return (
-      <Container className="scene-detail-container">
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {error}
-        </Alert>
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Paper sx={{ p: 3 }}>
+          <Alert severity="error">
+            {typeof error === "object"
+              ? error.message || "An error occurred"
+              : error}
+          </Alert>
+        </Paper>
       </Container>
     );
   }

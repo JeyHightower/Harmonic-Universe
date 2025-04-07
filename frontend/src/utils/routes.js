@@ -10,6 +10,7 @@ export const ROUTES = {
   UNIVERSE_EDIT: "/universes/:id/edit",
   SCENES: "/universes/:universeId/scenes",
   SCENE_DETAIL: "/universes/:universeId/scenes/:sceneId",
+  SCENE_CREATE: "/universes/:universeId/scenes/create",
   SCENE_EDIT: "/universes/:universeId/scenes/:sceneId/edit",
   DIRECT_SCENE_EDIT: "/scenes/:sceneId/edit",
   MODAL_EXAMPLES: "/examples/modals",

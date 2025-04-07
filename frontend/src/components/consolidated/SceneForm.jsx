@@ -26,6 +26,7 @@ import {
 import apiClient from "../../services/api";
 import CharacterSelector from "../characters/CharacterSelector";
 import moment from "moment";
+import dayjs from "dayjs";
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -75,6 +76,7 @@ const SceneForm = ({
   onCancel,
   readOnly = false,
   registerSubmit,
+  initialValues,
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -220,110 +222,106 @@ const SceneForm = ({
     }
   }, [registerSubmit, form]);
 
-  // Handle form submission
-  const handleSubmit = async (values) => {
-    try {
-      console.log("SceneForm - Submitting form with values:", values);
-      setSubmitting(true);
-      setError(null);
+  // Set up the form with initial values
+  useEffect(() => {
+    if (initialValues) {
+      console.log(
+        "SceneForm: Setting form values from initialValues:",
+        initialValues
+      );
 
-      // Format and transform values for API
+      // Convert API snake_case to camelCase for the form fields
       const formattedValues = {
-        name: values.name || values.title || "",
-        description: values.description || "",
-        summary: values.summary || "",
-        content: values.content || "",
-        notes: values.notes || "",
-        location: values.location || "",
-        scene_type: values.scene_type || "default",
-        time_of_day: values.timeOfDay,
-        status: values.status,
-        significance: values.significance,
-        character_ids: values.characterIds || [],
-        order: values.order || 0,
-        date_of_scene: values.dateOfScene
-          ? values.dateOfScene.format("YYYY-MM-DD")
-          : null,
+        ...initialValues,
+        timeOfDay: initialValues.time_of_day || initialValues.timeOfDay,
+        characterIds:
+          initialValues.character_ids || initialValues.characterIds || [],
+      };
+
+      // Handle date formatting safely
+      if (initialValues.date_of_scene) {
+        try {
+          const date = dayjs(initialValues.date_of_scene);
+          if (date.isValid()) {
+            formattedValues.dateOfScene = date;
+          } else {
+            console.warn(
+              "SceneForm: Invalid date format for dateOfScene:",
+              initialValues.date_of_scene
+            );
+            formattedValues.dateOfScene = null;
+          }
+        } catch (err) {
+          console.error("SceneForm: Error parsing date:", err);
+          formattedValues.dateOfScene = null;
+        }
+      } else {
+        formattedValues.dateOfScene = null;
+      }
+
+      // Set form fields with the formatted values
+      form.setFieldsValue(formattedValues);
+      console.log("SceneForm: Form values set with:", formattedValues);
+    } else if (isEditMode && sceneId) {
+      // If we're in edit mode but don't have initial values, we might want to fetch them
+      console.log(
+        "SceneForm: Edit mode without initialValues, may need to fetch data"
+      );
+    } else {
+      // For create mode, set some defaults if needed
+      console.log("SceneForm: Create mode, using default values");
+      form.setFieldsValue({
+        title: "",
+        description: "",
         universe_id: universeId,
-        is_deleted: false, // Explicitly set is_deleted to false
+      });
+    }
+  }, [initialValues, form, isEditMode, sceneId, universeId]);
+
+  // Handle form submission
+  const onFinish = async (values) => {
+    console.log("SceneForm - Form submitted with values:", values);
+
+    try {
+      // Format the values for API submission
+      const formattedValues = {
+        ...values,
+        universe_id: universeId,
+        // Convert empty strings to null
+        description: values.description || null,
+        summary: values.summary || null,
+        content: values.content || null,
+        notes: values.notes || null,
+        location: values.location || null,
+        scene_type: values.scene_type || null,
+        time_of_day: values.time_of_day || null,
+        status: values.status || null,
+        significance: values.significance || null,
+        date_of_scene: values.date_of_scene
+          ? values.date_of_scene.toISOString()
+          : null,
+        order: values.order || null,
         is_public: values.is_public || false,
       };
 
-      console.log(
-        "SceneForm - Sending API request with formatted values:",
-        formattedValues
-      );
+      console.log("SceneForm - Formatted values:", formattedValues);
 
-      let response;
-      if (isEditMode) {
-        console.log(`SceneForm - Updating scene with ID: ${sceneId}`);
-        response = await apiClient.updateScene(sceneId, formattedValues);
-      } else {
-        console.log("SceneForm - Creating new scene");
-        response = await apiClient.createScene(formattedValues);
+      // Call the onSubmit callback with formatted values
+      const result = await onSubmit(formattedValues);
+      console.log("SceneForm - Submit result:", result);
+
+      // Show success message
+      message.success("Scene saved successfully!");
+
+      // Call onCancel to close the form
+      if (onCancel) {
+        onCancel();
       }
 
-      console.log(
-        `SceneForm - Scene ${isEditMode ? "updated" : "created"} successfully:`,
-        response
-      );
-
-      // Extract scene data from response
-      let sceneData = response.data?.scene || response.data || {};
-
-      // Ensure is_deleted flag is false
-      sceneData = {
-        ...sceneData,
-        is_deleted: false,
-      };
-
-      // Normalize field names back to camelCase for frontend
-      const normalizedData = {
-        ...sceneData,
-        timeOfDay: sceneData.time_of_day || sceneData.timeOfDay,
-        characterIds: sceneData.character_ids || sceneData.characterIds || [],
-        dateOfScene: sceneData.date_of_scene || sceneData.dateOfScene,
-      };
-
-      console.log(
-        `SceneForm - Normalized scene data for frontend:`,
-        normalizedData
-      );
-
-      setSubmitting(false);
-
-      // Call the success handler
-      if (onSubmit) {
-        console.log("SceneForm - Calling onSubmit handler");
-        onSubmit(isEditMode ? "update" : "create", normalizedData);
-      }
-
-      // For modal usage
-      if (!readOnly) {
-        console.log("SceneForm - Form is not read-only, resetting form");
-        form.resetFields();
-      }
-
-      return normalizedData;
+      return result;
     } catch (error) {
-      console.error(
-        `SceneForm - Error ${isEditMode ? "updating" : "creating"} scene:`,
-        error
-      );
-      setError(
-        error.response?.data?.message ||
-          error.message ||
-          `Failed to ${isEditMode ? "update" : "create"} scene`
-      );
-      setSubmitting(false);
-
-      // Show detailed error message
-      message.error(
-        `Failed to ${isEditMode ? "update" : "create"} scene: ${
-          error.response?.data?.message || error.message || "Unknown error"
-        }`
-      );
-
+      console.error("SceneForm - Error submitting form:", error);
+      message.error(error.message || "Failed to save scene");
       throw error;
     }
   };
@@ -396,7 +394,7 @@ const SceneForm = ({
         <Form
           form={form}
           layout="vertical"
-          onFinish={handleSubmit}
+          onFinish={onFinish}
           disabled={readOnly}
           className="scene-form"
           style={{ marginTop: "24px" }}
@@ -617,6 +615,7 @@ SceneForm.propTypes = {
   onCancel: PropTypes.func.isRequired,
   readOnly: PropTypes.bool,
   registerSubmit: PropTypes.func,
+  initialValues: PropTypes.object,
 };
 
 export default SceneForm;

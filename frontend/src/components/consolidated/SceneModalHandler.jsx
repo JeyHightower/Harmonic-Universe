@@ -119,78 +119,34 @@ const SceneModalHandler = ({
 
           // Pass the scene data to the parent's onSuccess callback with actionType
           if (onSuccess) {
-            console.log(
-              "SceneModalHandler - Calling onSuccess with scene data:",
-              newScene
-            );
             onSuccess("create", newScene);
-          } else {
-            console.log("SceneModalHandler - No onSuccess callback provided");
           }
-        } catch (apiError) {
-          console.error("SceneModalHandler - API error:", apiError);
 
-          // In production, create a fake scene to not block the user
-          if (IS_PRODUCTION) {
-            console.log(
-              "SceneModalHandler - Creating mock scene in production after error"
-            );
-            const mockScene = {
-              ...formValues,
-              universe_id: universeId || formValues.universe_id,
-              id: `temp_${Date.now()}`,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            };
-
-            // Add mock scene to Redux store
-            dispatch(addScene(mockScene));
-
-            // Call success callback with mock data
-            if (onSuccess) {
-              console.log(
-                "SceneModalHandler - Calling onSuccess with mock scene:",
-                mockScene
-              );
-              onSuccess("create", mockScene);
-            }
-          } else {
-            // In development, show the error
-            setError(apiError.message || "Error creating scene");
-            setLoading(false);
-            return; // Don't close the modal
+          // Close the modal
+          if (onClose) {
+            onClose();
           }
-        }
-      } else if (modalType === "edit") {
-        // For edit operations
-        if (onSuccess) {
-          console.log(
-            "SceneModalHandler - Calling onSuccess callback for edit"
+
+          return newScene;
+        } catch (error) {
+          console.error("SceneModalHandler - Error creating scene:", error);
+          setError(
+            error.response?.data?.error ||
+              error.message ||
+              "Failed to create scene"
           );
-          onSuccess("edit", formValues);
-        } else {
-          console.log("SceneModalHandler - No onSuccess callback provided");
-        }
-      } else {
-        // For other operations like delete
-        if (onSuccess) {
-          console.log("SceneModalHandler - Calling onSuccess callback");
-          onSuccess(modalType, formValues);
-        } else {
-          console.log("SceneModalHandler - No onSuccess callback provided");
+          throw error;
         }
       }
 
-      // Close the modal on success
-      console.log(
-        "SceneModalHandler - Operation completed successfully, closing modal"
-      );
-      onClose();
+      // For other operations (edit, delete), let the parent handle it
+      return onSubmit(formValues);
     } catch (error) {
-      console.error("SceneModalHandler - Error handling form result:", error);
-      setError(error.message || "An error occurred");
-      setLoading(false);
-      return; // Don't close the modal on error
+      console.error("SceneModalHandler - Error in form result handler:", error);
+      setError(
+        error.response?.data?.error || error.message || "An error occurred"
+      );
+      throw error;
     } finally {
       setLoading(false);
     }

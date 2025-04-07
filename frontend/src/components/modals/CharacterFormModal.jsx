@@ -669,10 +669,26 @@ const CharacterFormModal = ({
 
     try {
       if (type === "create") {
+        // Validate required fields
+        if (!formData.name || !formData.name.trim()) {
+          setError("Character name is required");
+          setLoading(false);
+          return;
+        }
+
+        if (!formData.scene_id) {
+          setError("Please select a scene for the character");
+          setLoading(false);
+          return;
+        }
+
         const data = {
           ...formData,
           universe_id: universeId,
+          scene_id: formData.scene_id,
         };
+
+        console.log("Submitting character data:", data);
 
         // Use Redux thunk action
         try {
@@ -735,6 +751,7 @@ const CharacterFormModal = ({
     } catch (err) {
       setError(
         err.response?.data?.error ||
+          err.message ||
           "An error occurred while processing your request"
       );
       console.error("Error submitting character form:", err);

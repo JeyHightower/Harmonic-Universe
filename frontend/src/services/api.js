@@ -1815,116 +1815,42 @@ const apiClient = {
         });
     });
   },
-  getScene: (id) => {
-    // Check if we're in production and using a demo user
-    const isDemo = isProduction && localStorage.getItem(AUTH_CONFIG.TOKEN_KEY)?.startsWith('demo-');
+  getScene: async (sceneId) => {
+    console.log("API Client: getScene called with ID:", sceneId);
 
-    // In production, for temporary scene IDs (which we create client-side), return a mock scene
-    if (isProduction && (id.toString().includes('temp_') || isDemo)) {
-      console.log(`Providing mock scene data for scene ${id} in production`);
-
-      // Get any user info we might have
-      const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-      let userId = 'demo-user';
-
-      try {
-        if (userStr) {
-          const userData = JSON.parse(userStr);
-          userId = userData.id || userId;
-        }
-      } catch (e) {
-        console.error("Error parsing user data for mock scene:", e);
-      }
-
-      // Return a mock scene
-      return Promise.resolve({
-        data: {
-          scene: {
-            id: id,
-            name: "Demo Scene",
-            description: "This is a demo scene for exploring the application.",
-            content: "Scene content goes here. This is a placeholder for demonstration purposes.",
-            universe_id: id.includes('universe') ? parseInt(id.split('_')[1]) : 1001,
-            user_id: userId,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            characters: [],
-            status: "draft",
-            scene_type: "default"
-          },
-          message: "Mock scene retrieved successfully"
-        }
-      });
+    // Validate sceneId
+    if (!sceneId || sceneId === 'new') {
+      console.error("API Client: Invalid scene ID:", sceneId);
+      throw new Error("Invalid scene ID");
     }
 
-    const endpoint = getEndpoint('scenes', 'get', `/scenes/${id}`);
-    const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
-    const formattedUrl = formatUrl(url);
+    // Use the correct endpoint format
+    const url = formatUrl(`/api/scenes/${sceneId}`);
+    console.log("API Client: Using URL for getScene:", url);
 
-    console.log(`getScene: Fetching scene ${id} with URL:`, formattedUrl);
-
-    // Return a promise that handles errors more gracefully
-    return new Promise((resolve, reject) => {
-      axiosInstance.get(formattedUrl)
-        .then(response => {
-          console.log(`Scene ${id} API response:`, response);
-          resolve(response);
-        })
-        .catch(error => {
-          console.error(`Error fetching scene ${id}:`, error);
-
-          // For demo users in production with 401 errors, return mock data
-          if (isProduction && error.response?.status === 401 && localStorage.getItem(AUTH_CONFIG.TOKEN_KEY)?.startsWith('demo-')) {
-            console.log(`Using mock data for demo user fetching scene ${id} due to 401 error`);
-
-            // Get user ID from local storage if available
-            const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-            let userId = 'demo-user';
-
-            try {
-              if (userStr) {
-                const userData = JSON.parse(userStr);
-                userId = userData.id || userId;
-              }
-            } catch (e) {
-              console.error("Error parsing user data for mock scene:", e);
-            }
-
-            // Return a mock scene
-            return resolve({
-              data: {
-                scene: {
-                  id: id,
-                  name: "Demo Scene",
-                  description: "This is a demo scene for exploring the application.",
-                  content: "Scene content goes here. This is a placeholder for demonstration purposes.",
-                  universe_id: id.includes('universe') ? parseInt(id.split('_')[1]) : 1001,
-                  user_id: userId,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString(),
-                  characters: [],
-                  status: "draft",
-                  scene_type: "default"
-                },
-                message: "Mock scene retrieved successfully (after 401)"
-              }
-            });
-          }
-
-          // Otherwise resolve with a well-formed error response
-          resolve({
-            status: error.response?.status || 500,
-            data: {
-              scene: {}, // Empty scene object to prevent UI breakage
-              message: error.response?.data?.message || `Error fetching scene ${id}`,
-              error: error.response?.data?.error || error.message || "Unknown error"
-            }
-          });
-        });
-    });
+    try {
+      const response = await _request('get', url);
+      console.log("API Client: Scene retrieved successfully:", response);
+      return response;
+    } catch (error) {
+      console.error("API Client: Error retrieving scene:", error);
+      throw error;
+    }
   },
   createScene: async (sceneData) => {
     console.log("API Client: createScene called with data:", sceneData);
+
+    // Validate data structure
+    if (!sceneData || typeof sceneData !== 'object') {
+      console.error("API Client: Invalid scene data structure");
+      throw new Error("Invalid scene data: must be an object");
+    }
+
+    // Check for required fields
+    if (!sceneData.name || sceneData.name.trim() === '') {
+      console.error("API Client: Missing required name field");
+      throw new Error("Scene name is required");
+    }
 
     // Ensure universe_id is properly set
     if (!sceneData.universe_id) {
@@ -1932,11 +1858,11 @@ const apiClient = {
       throw new Error("universe_id is required for scene creation");
     }
 
+    // Clone data to avoid mutation issues
+    const requestData = { ...sceneData };
+
     // Ensure is_deleted is explicitly set to false
-    const requestData = {
-      ...sceneData,
-      is_deleted: false
-    };
+    requestData.is_deleted = false;
 
     // Format field names to snake_case for API
     if (requestData.timeOfDay && !requestData.time_of_day) {
@@ -1966,7 +1892,10 @@ const apiClient = {
       const url = formatUrl('/api/scenes');
       console.log("API Client: Using formatted URL for create:", url);
 
-      const response = await axiosInstance.post(url, requestData);
+      // Ensure data is properly serialized
+      const cleanedData = JSON.parse(JSON.stringify(requestData));
+
+      const response = await axiosInstance.post(url, cleanedData);
       console.log("API Client: Scene creation response:", response.data);
 
       // Ensure response data has is_deleted explicitly set to false
@@ -1981,6 +1910,14 @@ const apiClient = {
       return response;
     } catch (error) {
       console.error("API Client: Error creating scene:", error);
+
+      // Enhance error with more details
+      if (error.response && error.response.data) {
+        console.error("API Client: Server error response:", error.response.data);
+        if (error.response.data.message) {
+          error.message = `Scene creation failed: ${error.response.data.message}`;
+        }
+      }
 
       // For demo/production environment, handle 401 gracefully
       if (error.response && error.response.status === 401 && apiClient.isDemoEnvironment()) {
@@ -2008,73 +1945,149 @@ const apiClient = {
       throw error;
     }
   },
-  updateScene: async (id, data) => {
-    console.log(`API - updateScene - Updating scene ${id} with data:`, data);
+  updateScene: async (sceneId, sceneData) => {
+    console.log("API Client: updateScene called with ID:", sceneId, "and data:", sceneData);
+
+    // Validate input
+    if (!sceneId) {
+      console.error("API Client: Missing scene ID");
+      throw new Error("Scene ID is required for update");
+    }
+
+    if (!sceneData || typeof sceneData !== 'object') {
+      console.error("API Client: Invalid scene data structure");
+      throw new Error("Invalid scene data: must be an object");
+    }
+
+    // Check for required fields
+    if (sceneData.name !== undefined && (!sceneData.name || sceneData.name.trim() === '')) {
+      console.error("API Client: Empty scene name in update");
+      throw new Error("Scene name cannot be empty");
+    }
+
+    // Clone data to avoid mutation issues
+    const requestData = { ...sceneData };
+
+    // Ensure is_deleted is explicitly set to false for visibility
+    requestData.is_deleted = false;
+
+    // Format field names to snake_case for API
+    if (requestData.timeOfDay && !requestData.time_of_day) {
+      requestData.time_of_day = requestData.timeOfDay;
+      delete requestData.timeOfDay;
+    }
+
+    if (requestData.characterIds && !requestData.character_ids) {
+      requestData.character_ids = requestData.characterIds;
+      delete requestData.characterIds;
+    }
+
+    if (requestData.dateOfScene && !requestData.date_of_scene) {
+      requestData.date_of_scene = requestData.dateOfScene;
+      delete requestData.dateOfScene;
+    }
+
+    if (requestData.notesText && !requestData.notes_text) {
+      requestData.notes_text = requestData.notesText;
+      delete requestData.notesText;
+    }
+
+    console.log("API Client: Sending scene update request with data:", requestData);
+
     try {
-      // Ensure we have all required fields
-      if (!data.name) {
-        throw new Error("Scene name is required");
+      const url = formatUrl(`/api/scenes/${sceneId}`);
+      console.log("API Client: Using URL for update:", url);
+
+      // Ensure data is properly serialized
+      const cleanedData = JSON.parse(JSON.stringify(requestData));
+
+      const response = await axiosInstance.put(url, cleanedData);
+      console.log("API Client: Scene update response:", response.data);
+
+      // Ensure is_deleted is explicitly false in the response
+      if (response.data && response.data.scene) {
+        response.data.scene.is_deleted = false;
       }
 
-      if (!data.universe_id) {
-        console.warn("API - updateScene - universe_id missing, adding from scene data");
-        // Try to get universe_id from get scene if not provided
-        const sceneEndpoint = getEndpoint('scenes', 'get', `/scenes/${id}`);
-        const sceneResponse = await axiosInstance.get(sceneEndpoint);
-        data.universe_id = sceneResponse.data?.scene?.universe_id || sceneResponse.data?.universe_id;
+      return response;
+    } catch (error) {
+      console.error("API Client: Error updating scene:", error);
 
-        if (!data.universe_id) {
-          throw new Error("universe_id is required to update a scene");
+      // Enhance error with more details
+      if (error.response && error.response.data) {
+        console.error("API Client: Server error response:", error.response.data);
+        if (error.response.data.message) {
+          error.message = `Scene update failed: ${error.response.data.message}`;
         }
       }
 
-      // Normalize data for API consistency
-      const normalizedData = { ...data };
+      // For demo/production environment, handle 401/403 gracefully
+      if (error.response && (error.response.status === 401 || error.response.status === 403) && apiClient.isDemoEnvironment()) {
+        console.log("API Client: Demo environment detected - returning mock update response");
 
-      // Ensure correct field names for API
-      if (data.timeOfDay && !data.time_of_day) {
-        normalizedData.time_of_day = data.timeOfDay;
+        // Create a mock updated scene
+        return {
+          data: {
+            message: "Scene updated successfully (Demo mode)",
+            scene: {
+              ...requestData,
+              id: sceneId,
+              updated_at: new Date().toISOString(),
+              is_deleted: false
+            }
+          }
+        };
       }
 
-      if (data.characterIds && !data.character_ids) {
-        normalizedData.character_ids = data.characterIds;
-      }
-
-      if (data.dateOfScene && !data.date_of_scene) {
-        normalizedData.date_of_scene = data.dateOfScene;
-      }
-
-      console.log(`API - updateScene - Sending normalized data:`, normalizedData);
-      const updateEndpoint = getEndpoint('scenes', 'update', `/scenes/${id}`);
-      const updateUrl = typeof updateEndpoint === 'function' ? updateEndpoint(id) : updateEndpoint;
-
-      // Format the URL to avoid double /api prefix
-      const formattedUrl = formatUrl(updateUrl);
-
-      console.log(`API - updateScene - Using formatted URL:`, formattedUrl);
-      const response = await axiosInstance.put(formattedUrl, normalizedData);
-      console.log(`API - updateScene - Successfully updated scene ${id}:`, response);
-      return response;
-    } catch (error) {
-      console.error(`API - updateScene - Error updating scene ${id}:`, error.response || error);
-      // Re-throw the error to be handled by the calling code
       throw error;
     }
   },
-  deleteScene: async (id) => {
-    console.log(`API - deleteScene - Deleting scene ${id}`);
-    try {
-      const endpoint = getEndpoint('scenes', 'delete', `/scenes/${id}`);
-      const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
-      const formattedUrl = formatUrl(url);
+  deleteScene: async (sceneId) => {
+    console.log("API Client: deleteScene called for ID:", sceneId);
 
-      console.log(`API - deleteScene - Using formatted URL:`, formattedUrl);
-      const response = await axiosInstance.delete(formattedUrl);
-      console.log(`API - deleteScene - Successfully deleted scene ${id}:`, response);
-      return response;
+    // Validate input
+    if (!sceneId) {
+      console.error("API Client: Missing scene ID for deletion");
+      throw new Error("Scene ID is required for deletion");
+    }
+
+    try {
+      const url = formatUrl(`/api/scenes/${sceneId}`);
+      console.log("API Client: Using URL for delete:", url);
+
+      const response = await axiosInstance.delete(url);
+      console.log("API Client: Scene deletion response:", response.data);
+
+      return {
+        ...response,
+        data: {
+          ...response.data,
+          id: sceneId // Ensure ID is included in the response
+        }
+      };
     } catch (error) {
-      console.error(`API - deleteScene - Error deleting scene ${id}:`, error.response || error);
-      // Re-throw the error to be handled by the calling code
+      console.error("API Client: Error deleting scene:", error);
+
+      // Enhance error with more details
+      if (error.response && error.response.data) {
+        console.error("API Client: Server error response:", error.response.data);
+        if (error.response.data.message) {
+          error.message = `Scene deletion failed: ${error.response.data.message}`;
+        }
+      }
+
+      // For demo/production environment, handle 401/403 gracefully
+      if (error.response && (error.response.status === 401 || error.response.status === 403) && apiClient.isDemoEnvironment()) {
+        console.log("API Client: Demo environment detected - returning mock deletion response");
+
+        return {
+          data: {
+            message: "Scene deleted successfully (Demo mode)",
+            id: sceneId
+          }
+        };
+      }
+
       throw error;
     }
   },
@@ -2146,24 +2159,59 @@ const apiClient = {
   },
 
   createCharacter: async (characterData) => {
-    // In production with demo token, return mock response
-    if (isProduction && localStorage.getItem(AUTH_CONFIG.TOKEN_KEY)?.startsWith('demo-')) {
-      console.log("Creating mock character in production");
-      return {
-        data: {
-          message: "Character created successfully (mock)",
-          character: {
-            id: 'demo-char-' + Math.random().toString(36).substring(2, 10),
-            ...characterData,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        }
-      };
+    console.log("Creating character with data:", characterData);
+
+    // Validate required fields
+    if (!characterData.name) {
+      throw new Error("Character name is required");
+    }
+    if (!characterData.universe_id) {
+      throw new Error("Universe ID is required");
+    }
+    if (!characterData.scene_id) {
+      throw new Error("Scene ID is required");
     }
 
-    // Original implementation for non-demo users
-    return _request('post', getEndpoint('characters', 'create', '/api/characters'), characterData);
+    // Ensure data is properly formatted
+    const formattedData = {
+      ...characterData,
+      // Ensure boolean fields are properly formatted
+      is_deleted: false,
+      // Convert any undefined values to null
+      description: characterData.description || null,
+      image_url: characterData.image_url || null,
+      gender: characterData.gender || null,
+      occupation: characterData.occupation || null,
+      personality: characterData.personality || null,
+      background: characterData.background || null,
+      goals: characterData.goals || null,
+      relationships: characterData.relationships || null,
+      notes: characterData.notes || null,
+      status: characterData.status || 'active'
+    };
+
+    try {
+      // Use the correct endpoint format without relying on getEndpoint
+      const url = formatUrl('/api/characters');
+      console.log("Making POST request to:", url);
+      console.log("Request data:", formattedData);
+
+      const response = await axiosInstance.post(url, formattedData);
+      console.log("Character creation response:", response);
+      return response;
+    } catch (error) {
+      console.error("Character creation error:", {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+
+      // Enhance error message with server response if available
+      if (error.response?.data?.message) {
+        throw new Error(`Character creation failed: ${error.response.data.message}`);
+      }
+      throw error;
+    }
   },
 
   // ... other character methods with similar demo handling
@@ -2267,6 +2315,16 @@ const apiClient = {
       // Re-throw the error to be handled by the calling code
       throw error;
     }
+  },
+  // Utility function to check if we're in demo environment
+  isDemoEnvironment: () => {
+    // Check if we're in production and using a demo user token
+    const isProduction = process.env.NODE_ENV === 'production';
+    const demoToken = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+    const isDemoUser = demoToken && demoToken.startsWith('demo-');
+
+    // Also consider this a demo environment when running in development
+    return isProduction && isDemoUser || process.env.NODE_ENV === 'development';
   },
 };
 

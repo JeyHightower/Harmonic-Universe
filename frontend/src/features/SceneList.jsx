@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -76,6 +76,9 @@ const SceneList = () => {
   const [sortBy, setSortBy] = useState("updated_at");
   const [sortOrder, setSortOrder] = useState("desc");
   const [forceRender, setForceRender] = useState(0);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState(null);
+  const [selectedSceneId, setSelectedSceneId] = useState(null);
 
   // Safe log that won't break if something is undefined
   console.log("SceneList: Rendering with data:", {
@@ -172,142 +175,53 @@ const SceneList = () => {
     }
   }, [universeId, locallyCreatedScenes, universeScenes, dispatch]);
 
-  const handleCreateClick = () => {
-    console.log("SceneList: Opening create scene modal");
-    // Prevent navigation - just open the modal
-    setIsCreateModalOpen(true);
+  const handleCreateScene = () => {
+    console.log("Opening create scene modal");
+    setModalType("create");
+    setSelectedSceneId(null);
+    setModalOpen(true);
   };
 
-  const handleCreateSuccess = (actionType, sceneData) => {
-    console.log(
-      "SceneList: Scene creation success! Closing modal and refreshing scenes for universe:",
-      universeId
-    );
-    console.log("SceneList: Action type:", actionType);
-    console.log("SceneList: New scene data:", sceneData);
+  const handleEditScene = (sceneId) => {
+    console.log("Opening edit scene modal for scene:", sceneId);
+    setModalType("edit");
+    setSelectedSceneId(sceneId);
+    setModalOpen(true);
+  };
 
-    // Close the modal first
-    setIsCreateModalOpen(false);
-
-    // Make sure is_deleted is explicitly false on the new scene
-    const sceneWithDeleteFlag = {
-      ...sceneData,
-      is_deleted: false,
-    };
-
-    console.log(
-      "SceneList: Adding scene with explicit is_deleted=false:",
-      sceneWithDeleteFlag
-    );
-
-    // Add the newly created scene to Redux store
-    if (sceneWithDeleteFlag && sceneWithDeleteFlag.id) {
-      // Add to global scenes array
-      dispatch(addScene(sceneWithDeleteFlag));
-
-      // Add to locally created scenes for persistence
-      dispatch({
-        type: "scenes/addLocallyCreatedScene",
-        payload: sceneWithDeleteFlag,
-      });
-
-      // Update current universe's scenes array
-      if (universeId) {
-        // Get current scenes for this universe
-        const currentScenes = universeScenes[universeId] || [];
-
-        // Check if scene already exists
-        const sceneExists = currentScenes.some(
-          (s) => s.id === sceneWithDeleteFlag.id
-        );
-
-        if (!sceneExists) {
-          console.log(
-            "SceneList: Adding new scene to universe scenes:",
-            universeId
-          );
-
-          // Create updated scenes array with the new scene
-          const updatedScenes = [...currentScenes, sceneWithDeleteFlag];
-
-          // Update the scenes for this universe in Redux
-          dispatch({
-            type: "scenes/fetchScenes/fulfilled",
-            payload: { scenes: updatedScenes },
-            meta: { arg: universeId },
-          });
-        }
-      }
-
-      // Also fetch from server to ensure we have the latest data
-      dispatch(fetchScenes(universeId))
-        .then((result) => {
-          console.log(
-            "SceneList: Successfully refreshed scenes after creation:",
-            result
-          );
-        })
-        .catch((err) => {
-          console.error(
-            "SceneList: Error refreshing scenes after creation:",
-            err
-          );
-        });
+  const handleViewScene = (sceneId) => {
+    console.log("Navigating to scene view:", sceneId);
+    if (universeId) {
+      navigate(`/universes/${universeId}/scenes/${sceneId}`);
+    } else {
+      navigate(`/scenes/${sceneId}`);
     }
-
-    // Force render to ensure UI update
-    setForceRender((prev) => prev + 1);
   };
 
-  const handleDeleteClick = (scene) => {
-    setSceneToDelete(scene);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (sceneToDelete) {
+  const handleDeleteScene = async (sceneId) => {
+    if (window.confirm("Are you sure you want to delete this scene?")) {
       try {
-        console.log(`SceneList: Deleting scene ${sceneToDelete.id}`);
-        await dispatch(deleteScene(sceneToDelete.id));
-        console.log(
-          `SceneList: Scene ${sceneToDelete.id} deleted successfully`
-        );
-        setSceneToDelete(null);
-
-        // Force a re-render to make sure the UI reflects the deleted scene
-        setForceRender((prev) => prev + 1);
-
-        // Refresh scenes list from API
-        dispatch(fetchScenes(universeId)).then(() => {
-          console.log("SceneList: Refreshed scenes after deletion");
-        });
+        await apiClient.deleteScene(sceneId);
+        // Refresh the scenes list
+        dispatch(fetchScenes(universeId));
       } catch (error) {
-        console.error(
-          `SceneList: Error deleting scene ${sceneToDelete.id}:`,
-          error
-        );
-
-        // In production, handle deletion failure gracefully
-        if (IS_PRODUCTION) {
-          console.log(
-            "Production mode: Simulating success after delete failure"
-          );
-          setSceneToDelete(null);
-
-          // Remove from UI anyway to prevent confusion
-          dispatch({
-            type: "scenes/deleteScene/fulfilled",
-            payload: { id: sceneToDelete.id },
-          });
-
-          // Force render to update UI
-          setForceRender((prev) => prev + 1);
-        }
+        console.error("Error deleting scene:", error);
+        setError("Failed to delete scene. Please try again.");
       }
     }
   };
 
-  const handleDeleteCancel = () => {
-    setSceneToDelete(null);
+  const handleModalClose = () => {
+    setModalOpen(false);
+    setModalType(null);
+    setSelectedSceneId(null);
+  };
+
+  const handleModalSuccess = (scene) => {
+    console.log("Scene operation successful:", scene);
+    // Refresh the scenes list
+    dispatch(fetchScenes(universeId));
+    handleModalClose();
   };
 
   const handleSortChange = (e) => {
@@ -329,48 +243,100 @@ const SceneList = () => {
     navigate(editPath);
   };
 
-  // Filter and sort scenes with null safety
-  const filteredAndSortedScenes = [...(currentUniverseScenes || [])]
-    .filter((scene) => {
-      if (!scene) return false;
-
-      // Filter out scenes that are marked as deleted
-      if (scene.is_deleted === true) {
-        console.log(
-          `SceneList: Filtering out deleted scene: ${scene.id} - ${scene.name}`
-        );
-        return false;
+  // Sort and filter scenes
+  const { filteredAndSortedScenes, activeScenes, deletedScenes } =
+    useMemo(() => {
+      // Check if we have a valid scenes array
+      if (!Array.isArray(scenes)) {
+        console.warn("SceneList: scenes is not an array", scenes);
+        return {
+          filteredAndSortedScenes: [],
+          activeScenes: [],
+          deletedScenes: [],
+        };
       }
 
-      // Apply user-selected filters (universe filtering is already done)
-      if (filter === "all") return true;
-      if (filter === "active") return !!scene.is_active;
-      if (filter === "inactive") return !scene.is_active;
-      return true;
-    })
-    .sort((a, b) => {
-      if (!a || !b) return 0;
-      let comparison = 0;
+      // Initialize with all scenes that are not null/undefined
+      let workingScenes = scenes.filter((scene) => !!scene);
 
-      switch (sortBy) {
-        case "name":
-          comparison = (a.name || "").localeCompare(b.name || "");
-          break;
-        case "created_at":
-          comparison =
-            new Date(a.created_at || 0) - new Date(b.created_at || 0);
-          break;
-        case "updated_at":
-          comparison =
-            new Date(a.updated_at || a.created_at || 0) -
-            new Date(b.updated_at || b.created_at || 0);
-          break;
-        default:
-          comparison = 0;
+      // Separate deleted and active scenes
+      const deletedScenes = workingScenes.filter(
+        (scene) => scene.is_deleted === true
+      );
+      const activeScenes = workingScenes.filter(
+        (scene) => scene.is_deleted !== true
+      );
+
+      // Copy the active scenes to work with
+      let result = [...activeScenes];
+
+      // Apply search filter if we have a search term
+      if (searchQuery) {
+        const lowerQuery = searchQuery.toLowerCase();
+        result = result.filter((scene) => {
+          return (
+            scene.name?.toLowerCase().includes(lowerQuery) ||
+            scene.description?.toLowerCase().includes(lowerQuery) ||
+            scene.summary?.toLowerCase().includes(lowerQuery) ||
+            scene.content?.toLowerCase().includes(lowerQuery) ||
+            scene.location?.toLowerCase().includes(lowerQuery) ||
+            scene.notes?.toLowerCase().includes(lowerQuery)
+          );
+        });
       }
 
-      return sortOrder === "asc" ? comparison : -comparison;
-    });
+      // Apply status filter
+      if (statusFilter && statusFilter !== "all") {
+        result = result.filter((scene) => scene.status === statusFilter);
+      }
+
+      // Apply scene type filter
+      if (typeFilter && typeFilter !== "all") {
+        result = result.filter((scene) => scene.scene_type === typeFilter);
+      }
+
+      // Apply sort
+      if (sortBy) {
+        result = [...result].sort((a, b) => {
+          // For string fields
+          if (
+            sortBy === "name" ||
+            sortBy === "status" ||
+            sortBy === "scene_type" ||
+            sortBy === "location"
+          ) {
+            const aValue = String(a[sortBy] || "").toLowerCase();
+            const bValue = String(b[sortBy] || "").toLowerCase();
+            return sortDirection === "asc"
+              ? aValue.localeCompare(bValue)
+              : bValue.localeCompare(aValue);
+          }
+          // For date fields
+          else if (
+            sortBy === "date_of_scene" ||
+            sortBy === "created_at" ||
+            sortBy === "updated_at"
+          ) {
+            const aDate = a[sortBy] ? new Date(a[sortBy]) : new Date(0);
+            const bDate = b[sortBy] ? new Date(b[sortBy]) : new Date(0);
+            return sortDirection === "asc" ? aDate - bDate : bDate - aDate;
+          }
+          // For numeric fields
+          else if (sortBy === "order" || sortBy === "id") {
+            const aValue = Number(a[sortBy] || 0);
+            const bValue = Number(b[sortBy] || 0);
+            return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
+          }
+          return 0;
+        });
+      }
+
+      return {
+        filteredAndSortedScenes: result,
+        activeScenes,
+        deletedScenes,
+      };
+    }, [scenes, searchQuery, statusFilter, typeFilter, sortBy, sortDirection]);
 
   // Add logging to inspect the scenes
   console.log("SceneList: Final filtered and sorted scenes to display:", {
@@ -537,7 +503,7 @@ const SceneList = () => {
             variant="contained"
             color="primary"
             startIcon={<AddIcon />}
-            onClick={handleCreateClick}
+            onClick={handleCreateScene}
           >
             Create Scene
           </Button>
@@ -546,18 +512,20 @@ const SceneList = () => {
 
       {/* Create scene modal */}
       <SceneModalHandler
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSuccess={handleCreateSuccess}
+        isOpen={modalOpen}
+        onClose={handleModalClose}
+        onSuccess={handleModalSuccess}
         universeId={universeId}
-        modalType="create"
-        sceneData={null}
+        modalType={modalType}
+        sceneData={
+          selectedSceneId ? scenes.find((s) => s.id === selectedSceneId) : null
+        }
       />
 
       {/* Delete confirmation dialog */}
       <Dialog
         open={!!sceneToDelete}
-        onClose={handleDeleteCancel}
+        onClose={() => setSceneToDelete(null)}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
@@ -570,11 +538,17 @@ const SceneList = () => {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeleteCancel} color="primary">
+          <Button onClick={() => setSceneToDelete(null)} color="primary">
             Cancel
           </Button>
           <Button
-            onClick={handleDeleteConfirm}
+            onClick={() => {
+              if (sceneToDelete) {
+                dispatch(deleteScene(sceneToDelete.id));
+                setSceneToDelete(null);
+                dispatch(fetchScenes(universeId));
+              }
+            }}
             color="error"
             variant="contained"
             autoFocus
@@ -634,8 +608,8 @@ const SceneList = () => {
             <Grid item xs={12} sm={6} md={4} key={scene.id}>
               <SceneCard
                 scene={scene}
-                onDelete={handleDeleteClick}
-                onEdit={handleEditClick}
+                onDelete={() => setSceneToDelete(scene)}
+                onEdit={handleEditScene}
                 isOwner={user?.id === scene.universe?.user_id}
               />
             </Grid>
@@ -660,7 +634,7 @@ const SceneList = () => {
             variant="contained"
             color="primary"
             startIcon={<AddIcon />}
-            onClick={handleCreateClick}
+            onClick={handleCreateScene}
             sx={{ mt: 2 }}
           >
             Create Scene

@@ -128,26 +128,145 @@ def get_scenes(universe_id):
 @jwt_required()
 def get_scene(scene_id):
     try:
-        scene = Scene.query.get_or_404(scene_id)
-        user_id = get_jwt_identity()
-
-        # Check if user has access to this scene's universe
-        if not scene.universe.is_public and scene.universe.user_id != user_id:
+        current_app.logger.info(f"Fetching scene with ID: {scene_id}")
+        
+        # Validate scene_id
+        if not scene_id or scene_id <= 0:
+            current_app.logger.error(f"Invalid scene ID: {scene_id}")
             return jsonify({
-                'message': 'Access denied'
-            }), 403
+                'message': 'Invalid scene ID',
+                'error': 'Scene ID must be a positive integer',
+                'scene': {}
+            }), 400
+            
+        # Get the scene with additional error handling
+        try:
+            scene = Scene.query.get(scene_id)
+            
+            if not scene:
+                current_app.logger.warning(f"Scene with ID {scene_id} not found")
+                return jsonify({
+                    'message': 'Scene not found',
+                    'error': f'No scene found with ID {scene_id}',
+                    'scene': {}
+                }), 404
+                
+            # Check if scene is marked as deleted
+            if hasattr(scene, 'is_deleted') and scene.is_deleted:
+                current_app.logger.warning(f"Attempted to access deleted scene: {scene_id}")
+                return jsonify({
+                    'message': 'Scene has been deleted',
+                    'scene': {}
+                }), 404
+                
+        except Exception as scene_error:
+            current_app.logger.error(f"Error fetching scene {scene_id}: {str(scene_error)}")
+            current_app.logger.error(traceback.format_exc())
+            return jsonify({
+                'message': 'Error retrieving scene',
+                'error': str(scene_error),
+                'scene': {}
+            }), 500
 
-        return jsonify({
-            'message': 'Scene retrieved successfully',
-            'scene': scene.to_dict()
-        }), 200
+        # Check permissions
+        user_id = get_jwt_identity()
+        current_app.logger.info(f"User {user_id} accessing scene {scene_id} from universe {scene.universe_id}")
+        
+        # Get universe for permission check
+        try:
+            universe = Universe.query.get(scene.universe_id)
+            if not universe:
+                current_app.logger.error(f"Universe with ID {scene.universe_id} not found for scene {scene_id}")
+                return jsonify({
+                    'message': 'Scene universe not found',
+                    'error': f'The universe this scene belongs to does not exist',
+                    'scene': {}
+                }), 404
+                
+            # Check if user has access to this scene's universe
+            if not universe.is_public and universe.user_id != user_id:
+                current_app.logger.warning(f"Access denied: User {user_id} attempting to access scene {scene_id} in private universe {scene.universe_id}")
+                return jsonify({
+                    'message': 'Access denied',
+                    'scene': {}
+                }), 403
+                
+        except Exception as universe_error:
+            current_app.logger.error(f"Error checking universe access for scene {scene_id}: {str(universe_error)}")
+            current_app.logger.error(traceback.format_exc())
+            return jsonify({
+                'message': 'Error checking universe access',
+                'error': str(universe_error),
+                'scene': {}
+            }), 500
+
+        # Create a comprehensive scene dictionary for the response
+        try:
+            scene_dict = {
+                'id': scene.id,
+                'name': scene.name,
+                'description': scene.description if hasattr(scene, 'description') else "",
+                'universe_id': scene.universe_id,
+                'is_deleted': False,  # Explicitly set to False since we already filtered deleted scenes
+                'created_at': str(scene.created_at) if hasattr(scene, 'created_at') and scene.created_at else None,
+                'updated_at': str(scene.updated_at) if hasattr(scene, 'updated_at') and scene.updated_at else None
+            }
+            
+            # Add optional fields that were set
+            if hasattr(scene, 'summary') and scene.summary is not None:
+                scene_dict['summary'] = scene.summary
+            if hasattr(scene, 'content') and scene.content is not None:
+                scene_dict['content'] = scene.content
+            if hasattr(scene, 'notes_text') and scene.notes_text is not None:
+                scene_dict['notes'] = scene.notes_text
+            if hasattr(scene, 'location') and scene.location is not None:
+                scene_dict['location'] = scene.location
+            if hasattr(scene, 'scene_type') and scene.scene_type is not None:
+                scene_dict['scene_type'] = scene.scene_type
+            if hasattr(scene, 'time_of_day') and scene.time_of_day is not None:
+                scene_dict['time_of_day'] = scene.time_of_day
+            if hasattr(scene, 'status') and scene.status is not None:
+                scene_dict['status'] = scene.status
+            if hasattr(scene, 'significance') and scene.significance is not None:
+                scene_dict['significance'] = scene.significance
+            if hasattr(scene, 'date_of_scene') and scene.date_of_scene is not None:
+                scene_dict['date_of_scene'] = str(scene.date_of_scene)
+            if hasattr(scene, 'order') and scene.order is not None:
+                scene_dict['order'] = scene.order
+            if hasattr(scene, 'is_public') and scene.is_public is not None:
+                scene_dict['is_public'] = scene.is_public
+                
+            # Add character IDs if available
+            if hasattr(scene, 'characters') and scene.characters:
+                scene_dict['character_ids'] = [c.id for c in scene.characters]
+                
+            current_app.logger.info(f"Scene {scene_id} retrieved successfully")
+            
+            return jsonify({
+                'message': 'Scene retrieved successfully',
+                'scene': scene_dict
+            }), 200
+            
+        except Exception as dict_error:
+            current_app.logger.error(f"Error creating scene dictionary: {str(dict_error)}")
+            current_app.logger.error(traceback.format_exc())
+            return jsonify({
+                'message': 'Error formatting scene data',
+                'error': str(dict_error),
+                'scene': {
+                    'id': scene.id,
+                    'name': scene.name,
+                    'universe_id': scene.universe_id
+                }  # Provide minimal data
+            }), 500
 
     except Exception as e:
-        current_app.logger.error(f"Error retrieving scene: {str(e)}")
+        current_app.logger.error(f"Unexpected error retrieving scene: {str(e)}")
         current_app.logger.error(traceback.format_exc())
         return jsonify({
             'message': 'Error retrieving scene',
-            'error': str(e)
+            'error': str(e),
+            'scene': {}
         }), 500
 
 @scenes_bp.route('/', methods=['GET'])
@@ -415,12 +534,26 @@ def create_scene():
     try:
         current_app.logger.info(f"Creating scene with request data: {request.data}")
         data = request.get_json()
+        
+        # Additional logging to debug malformed requests
+        current_app.logger.info(f"Request JSON data type: {type(data)}")
+        
         if not data:
             current_app.logger.error("No JSON data provided in request")
             return jsonify({
                 'message': 'No data provided',
                 'error': 'Request body is required',
                 'scene': {}  # Include empty scene to prevent UI breakage
+            }), 400
+
+        # Check for unusual data format (numbered keys instead of named fields)
+        has_numbered_keys = any(str(i) in data for i in range(10))
+        if has_numbered_keys:
+            current_app.logger.error(f"Malformed request data detected (numbered keys): {data}")
+            return jsonify({
+                'message': 'Malformed data',
+                'error': 'Request contains invalid JSON structure with numbered keys',
+                'scene': {}
             }), 400
 
         current_app.logger.info(f"Scene creation data: {data}")
@@ -602,105 +735,346 @@ def create_scene():
 @jwt_required()
 def update_scene(scene_id):
     try:
-        scene = Scene.query.get_or_404(scene_id)
-        user_id = get_jwt_identity()
-
-        # Check if user has access to this scene's universe
-        if not scene.universe.is_public and scene.universe.user_id != user_id:
-            return jsonify({
-                'message': 'Access denied'
-            }), 403
-
-        data = request.get_json()
-        current_app.logger.info(f"Updating scene {scene_id} with data: {data}")
-
-        # Update scene fields
-        if 'name' in data:
-            scene.name = data['name'].strip()
-        if 'description' in data:
-            scene.description = data['description'].strip()
-        if 'summary' in data:
-            scene.summary = data['summary']
-        if 'content' in data:
-            scene.content = data['content']
-        if 'notes' in data:
-            scene.notes_text = data['notes']
-        if 'location' in data:
-            scene.location = data['location']
-        if 'scene_type' in data:
-            scene.scene_type = data['scene_type']
-        if 'time_of_day' in data:
-            scene.time_of_day = data['time_of_day']
-        if 'status' in data:
-            scene.status = data['status']
-        if 'significance' in data:
-            scene.significance = data['significance']
-        if 'date_of_scene' in data:
-            scene.date_of_scene = data['date_of_scene']
-        if 'order' in data:
-            scene.order = data['order']
+        current_app.logger.info(f"Updating scene with ID: {scene_id}")
         
+        # Validate scene_id
+        if not scene_id or scene_id <= 0:
+            current_app.logger.error(f"Invalid scene ID: {scene_id}")
+            return jsonify({
+                'message': 'Invalid scene ID',
+                'error': 'Scene ID must be a positive integer',
+                'scene': {}
+            }), 400
+            
+        # Get the scene with additional error handling
+        try:
+            scene = Scene.query.get(scene_id)
+            
+            if not scene:
+                current_app.logger.warning(f"Scene with ID {scene_id} not found")
+                return jsonify({
+                    'message': 'Scene not found',
+                    'error': f'No scene found with ID {scene_id}',
+                    'scene': {}
+                }), 404
+                
+            # Check if scene is marked as deleted
+            if hasattr(scene, 'is_deleted') and scene.is_deleted:
+                current_app.logger.warning(f"Attempted to update deleted scene: {scene_id}")
+                return jsonify({
+                    'message': 'Scene has been deleted and cannot be updated',
+                    'scene': {}
+                }), 400
+                
+        except Exception as scene_error:
+            current_app.logger.error(f"Error fetching scene {scene_id}: {str(scene_error)}")
+            current_app.logger.error(traceback.format_exc())
+            return jsonify({
+                'message': 'Error retrieving scene',
+                'error': str(scene_error),
+                'scene': {}
+            }), 500
+
+        # Check permissions
+        user_id = get_jwt_identity()
+        current_app.logger.info(f"User {user_id} updating scene {scene_id} in universe {scene.universe_id}")
+        
+        # Get universe for permission check
+        try:
+            universe = Universe.query.get(scene.universe_id)
+            if not universe:
+                current_app.logger.error(f"Universe with ID {scene.universe_id} not found for scene {scene_id}")
+                return jsonify({
+                    'message': 'Scene universe not found',
+                    'error': f'The universe this scene belongs to does not exist',
+                    'scene': {}
+                }), 404
+                
+            # Check if user has access to this scene's universe
+            if universe.user_id != user_id:  # For updates, require full ownership
+                current_app.logger.warning(f"Access denied: User {user_id} attempting to update scene {scene_id} in universe owned by {universe.user_id}")
+                return jsonify({
+                    'message': 'Access denied. You must be the owner to update scenes.',
+                    'scene': {}
+                }), 403
+                
+        except Exception as universe_error:
+            current_app.logger.error(f"Error checking universe access for scene {scene_id}: {str(universe_error)}")
+            current_app.logger.error(traceback.format_exc())
+            return jsonify({
+                'message': 'Error checking universe access',
+                'error': str(universe_error),
+                'scene': {}
+            }), 500
+
+        # Get and validate request data
+        data = request.get_json()
+        current_app.logger.info(f"Update data for scene {scene_id}: {data}")
+        
+        if not data:
+            current_app.logger.error("No JSON data provided in request")
+            return jsonify({
+                'message': 'No data provided',
+                'error': 'Request body is required',
+                'scene': {}
+            }), 400
+            
+        # Check for unusual data format (numbered keys instead of named fields)
+        has_numbered_keys = any(str(i) in data for i in range(10))
+        if has_numbered_keys:
+            current_app.logger.error(f"Malformed request data detected (numbered keys): {data}")
+            return jsonify({
+                'message': 'Malformed data',
+                'error': 'Request contains invalid JSON structure with numbered keys',
+                'scene': {}
+            }), 400
+
+        # Update scene fields - with careful checking to avoid None/null issues
+        try:
+            # Handle name field - required field with special validation
+            if 'name' in data:
+                name = data.get('name', '').strip()
+                if not name:
+                    current_app.logger.error("Scene name is empty in update")
+                    return jsonify({
+                        'message': 'Name is required',
+                        'error': 'Scene name cannot be empty',
+                        'scene': {}
+                    }), 400
+                scene.name = name
+                
+            # Update simple text fields with checks
+            if 'description' in data:
+                scene.description = data.get('description', '').strip()
+            if 'summary' in data and data['summary'] is not None:
+                scene.summary = data['summary']
+            if 'content' in data and data['content'] is not None:
+                scene.content = data['content']
+            if 'notes' in data and data['notes'] is not None:
+                scene.notes_text = data['notes']
+            if 'location' in data and data['location'] is not None:
+                scene.location = data['location']
+            if 'scene_type' in data and data['scene_type'] is not None:
+                scene.scene_type = data['scene_type']
+            if 'time_of_day' in data and data['time_of_day'] is not None:
+                scene.time_of_day = data['time_of_day']
+            if 'status' in data and data['status'] is not None:
+                scene.status = data['status']
+            if 'significance' in data and data['significance'] is not None:
+                scene.significance = data['significance']
+            if 'date_of_scene' in data and data['date_of_scene'] is not None:
+                scene.date_of_scene = data['date_of_scene']
+            if 'order' in data and data['order'] is not None:
+                scene.order = data['order']
+            if 'is_public' in data and data['is_public'] is not None:
+                scene.is_public = data['is_public']
+                
+            # Explicitly ensure is_deleted remains false for visibility
+            scene.is_deleted = False
+                
+            current_app.logger.info(f"Updated scene object fields for scene {scene_id}")
+        except Exception as update_error:
+            current_app.logger.error(f"Error updating scene fields: {str(update_error)}")
+            current_app.logger.error(traceback.format_exc())
+            return jsonify({
+                'message': 'Error updating scene fields',
+                'error': str(update_error),
+                'scene': {}
+            }), 400
+            
         # Update character relationships if provided
         if 'character_ids' in data and isinstance(data['character_ids'], list):
-            # Clear existing character associations
-            scene.characters = []
-            
-            # Add new character associations
-            for character_id in data['character_ids']:
-                character = Character.query.get(character_id)
-                if character:
-                    scene.characters.append(character)
+            try:
+                # Clear existing character associations
+                scene.characters = []
+                
+                # Add new character associations
+                for character_id in data['character_ids']:
+                    character = Character.query.get(character_id)
+                    if character:
+                        scene.characters.append(character)
+                        
+                current_app.logger.info(f"Updated character relationships for scene {scene_id}")
+            except Exception as character_error:
+                current_app.logger.error(f"Error updating character relationships: {str(character_error)}")
+                current_app.logger.error(traceback.format_exc())
+                # We'll continue despite character errors - this is non-critical
 
         # Validate the scene
         try:
             scene.validate()
+            current_app.logger.info(f"Scene {scene_id} validation successful")
         except ValueError as ve:
+            current_app.logger.error(f"Scene validation error: {str(ve)}")
             return jsonify({
                 'message': 'Validation error',
-                'error': str(ve)
+                'error': str(ve),
+                'scene': {}
             }), 400
 
-        db.session.commit()
-        current_app.logger.info(f"Scene {scene_id} updated successfully")
-
-        return jsonify({
-            'message': 'Scene updated successfully',
-            'scene': scene.to_dict()
-        }), 200
+        # Commit changes to database
+        try:
+            db.session.commit()
+            current_app.logger.info(f"Scene {scene_id} updated successfully")
+            
+            # Create a comprehensive scene dictionary for the response
+            scene_dict = {
+                'id': scene.id,
+                'name': scene.name,
+                'description': scene.description if hasattr(scene, 'description') else "",
+                'universe_id': scene.universe_id,
+                'is_deleted': False,  # Explicitly set to False since we already filtered deleted scenes
+                'created_at': str(scene.created_at) if hasattr(scene, 'created_at') and scene.created_at else None,
+                'updated_at': str(scene.updated_at) if hasattr(scene, 'updated_at') and scene.updated_at else None
+            }
+            
+            # Add optional fields that were set
+            if hasattr(scene, 'summary') and scene.summary is not None:
+                scene_dict['summary'] = scene.summary
+            if hasattr(scene, 'content') and scene.content is not None:
+                scene_dict['content'] = scene.content
+            if hasattr(scene, 'notes_text') and scene.notes_text is not None:
+                scene_dict['notes'] = scene.notes_text
+            if hasattr(scene, 'location') and scene.location is not None:
+                scene_dict['location'] = scene.location
+            if hasattr(scene, 'scene_type') and scene.scene_type is not None:
+                scene_dict['scene_type'] = scene.scene_type
+            if hasattr(scene, 'time_of_day') and scene.time_of_day is not None:
+                scene_dict['time_of_day'] = scene.time_of_day
+            if hasattr(scene, 'status') and scene.status is not None:
+                scene_dict['status'] = scene.status
+            if hasattr(scene, 'significance') and scene.significance is not None:
+                scene_dict['significance'] = scene.significance
+            if hasattr(scene, 'date_of_scene') and scene.date_of_scene is not None:
+                scene_dict['date_of_scene'] = str(scene.date_of_scene)
+            if hasattr(scene, 'order') and scene.order is not None:
+                scene_dict['order'] = scene.order
+            if hasattr(scene, 'is_public') and scene.is_public is not None:
+                scene_dict['is_public'] = scene.is_public
+                
+            # Add character IDs if available
+            if hasattr(scene, 'characters') and scene.characters:
+                scene_dict['character_ids'] = [c.id for c in scene.characters]
+            
+            return jsonify({
+                'message': 'Scene updated successfully',
+                'scene': scene_dict
+            }), 200
+            
+        except Exception as commit_error:
+            db.session.rollback()
+            current_app.logger.error(f"Database error updating scene: {str(commit_error)}")
+            current_app.logger.error(traceback.format_exc())
+            return jsonify({
+                'message': 'Error committing scene update',
+                'error': str(commit_error),
+                'scene': {}
+            }), 500
 
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Error updating scene: {str(e)}")
+        current_app.logger.error(f"Unexpected error updating scene: {str(e)}")
         current_app.logger.error(traceback.format_exc())
         return jsonify({
             'message': 'Error updating scene',
-            'error': str(e)
+            'error': str(e),
+            'scene': {}
         }), 500
 
 @scenes_bp.route('/<int:scene_id>', methods=['DELETE'])
 @jwt_required()
 def delete_scene(scene_id):
     try:
-        scene = Scene.query.get_or_404(scene_id)
-        user_id = get_jwt_identity()
-
-        # Check if user has access to this scene's universe
-        if not scene.universe.is_public and scene.universe.user_id != user_id:
+        current_app.logger.info(f"Deleting scene with ID: {scene_id}")
+        
+        # Validate scene_id
+        if not scene_id or scene_id <= 0:
+            current_app.logger.error(f"Invalid scene ID: {scene_id}")
             return jsonify({
-                'message': 'Access denied'
-            }), 403
+                'message': 'Invalid scene ID',
+                'error': 'Scene ID must be a positive integer'
+            }), 400
+            
+        # Get the scene with additional error handling
+        try:
+            scene = Scene.query.get(scene_id)
+            
+            if not scene:
+                current_app.logger.warning(f"Scene with ID {scene_id} not found")
+                return jsonify({
+                    'message': 'Scene not found',
+                    'error': f'No scene found with ID {scene_id}'
+                }), 404
+                
+            # Check if scene is already marked as deleted
+            if hasattr(scene, 'is_deleted') and scene.is_deleted:
+                current_app.logger.warning(f"Scene {scene_id} is already deleted")
+                return jsonify({
+                    'message': 'Scene is already deleted',
+                    'id': scene_id
+                }), 200  # Return 200 as this is not an error condition
+                
+        except Exception as scene_error:
+            current_app.logger.error(f"Error fetching scene {scene_id}: {str(scene_error)}")
+            current_app.logger.error(traceback.format_exc())
+            return jsonify({
+                'message': 'Error retrieving scene',
+                'error': str(scene_error)
+            }), 500
 
-        # Soft delete the scene
-        scene.is_deleted = True
-        db.session.commit()
+        # Check permissions
+        user_id = get_jwt_identity()
+        current_app.logger.info(f"User {user_id} deleting scene {scene_id} in universe {scene.universe_id}")
+        
+        # Get universe for permission check
+        try:
+            universe = Universe.query.get(scene.universe_id)
+            if not universe:
+                current_app.logger.error(f"Universe with ID {scene.universe_id} not found for scene {scene_id}")
+                return jsonify({
+                    'message': 'Scene universe not found',
+                    'error': f'The universe this scene belongs to does not exist'
+                }), 404
+                
+            # Check if user has access to this scene's universe
+            if universe.user_id != user_id:  # For deletions, require full ownership
+                current_app.logger.warning(f"Access denied: User {user_id} attempting to delete scene {scene_id} in universe owned by {universe.user_id}")
+                return jsonify({
+                    'message': 'Access denied. You must be the owner to delete scenes.'
+                }), 403
+                
+        except Exception as universe_error:
+            current_app.logger.error(f"Error checking universe access for scene {scene_id}: {str(universe_error)}")
+            current_app.logger.error(traceback.format_exc())
+            return jsonify({
+                'message': 'Error checking universe access',
+                'error': str(universe_error)
+            }), 500
 
-        return jsonify({
-            'message': 'Scene deleted successfully'
-        }), 200
+        # Perform the soft delete
+        try:
+            # Soft delete the scene
+            scene.is_deleted = True
+            db.session.commit()
+            current_app.logger.info(f"Scene {scene_id} soft-deleted successfully")
+            
+            return jsonify({
+                'message': 'Scene deleted successfully',
+                'id': scene_id
+            }), 200
+            
+        except Exception as delete_error:
+            db.session.rollback()
+            current_app.logger.error(f"Database error deleting scene: {str(delete_error)}")
+            current_app.logger.error(traceback.format_exc())
+            return jsonify({
+                'message': 'Error deleting scene',
+                'error': str(delete_error)
+            }), 500
 
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Error deleting scene: {str(e)}")
+        current_app.logger.error(f"Unexpected error deleting scene: {str(e)}")
         current_app.logger.error(traceback.format_exc())
         return jsonify({
             'message': 'Error deleting scene',
