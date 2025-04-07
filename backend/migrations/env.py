@@ -26,16 +26,10 @@ def get_engine():
 
 def get_engine_url():
     try:
-        url = get_engine().url.render_as_string(hide_password=False).replace(
+        return get_engine().url.render_as_string(hide_password=False).replace(
             '%', '%%')
     except AttributeError:
-        url = str(get_engine().url).replace('%', '%%')
-    
-    # Handle PostgreSQL URL format compatibility
-    if url.startswith('postgres://'):
-        url = url.replace('postgres://', 'postgresql://', 1)
-    
-    return url
+        return str(get_engine().url).replace('%', '%%')
 
 
 # add your model's MetaData object here

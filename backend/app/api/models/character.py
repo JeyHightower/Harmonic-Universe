@@ -6,12 +6,9 @@ from ...extensions import db
 # Association table for character-scene many-to-many relationship
 character_scenes = db.Table(
     'character_scenes',
-    db.Column('character_id', db.Integer, db.ForeignKey('characters.id'), primary_key=True),
-    db.Column('scene_id', db.Integer, db.ForeignKey('scenes.id'), primary_key=True),
-    db.Column('is_primary', db.Boolean, default=False),
-    db.Column('notes', db.Text),
-    db.Column('created_at', db.DateTime, default=datetime.utcnow),
-    db.Column('updated_at', db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    db.Column('character_id', db.Integer, db.ForeignKey('characters.id', ondelete='CASCADE'), primary_key=True),
+    db.Column('scene_id', db.Integer, db.ForeignKey('scenes.id', ondelete='CASCADE'), primary_key=True)
+    # Removed columns that don't exist in the actual database schema
 )
 
 class Character(BaseModel):
