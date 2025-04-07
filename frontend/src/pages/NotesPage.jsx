@@ -178,12 +178,28 @@ const NotesPage = () => {
   };
 
   const handleBack = () => {
+    // Safe navigation for the case when parent data is not loaded yet
     if (characterId) {
-      navigate(`/universes/${universe.id}/characters`);
+      // Get the universeId from the parent data or fall back to the URL param
+      const universeIdToUse = parent?.data?.universe_id || universeId;
+      if (universeIdToUse) {
+        navigate(`/universes/${universeIdToUse}/characters`);
+      } else {
+        navigate(`/universes`);
+      }
     } else if (sceneId) {
-      navigate(`/universes/${universe.id}/scenes`);
+      // Get the universeId from the parent data or fall back to the URL param
+      const universeIdToUse = parent?.data?.universe_id || universeId;
+      if (universeIdToUse) {
+        navigate(`/universes/${universeIdToUse}/scenes`);
+      } else {
+        navigate(`/universes`);
+      }
     } else if (universeId) {
       navigate(`/universes/${universeId}`);
+    } else {
+      // Fallback to universes list
+      navigate("/universes");
     }
   };
 
@@ -196,30 +212,41 @@ const NotesPage = () => {
   };
 
   const filteredNotes = notes.filter((note) => {
-    // Text search
+    // Skip notes with invalid structure
+    if (!note || typeof note !== "object") return false;
+
+    // Text search - with null checks
+    const noteTitle = note.title || "";
+    const noteContent = note.content || "";
+
     const matchesSearch =
-      note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (note.content &&
-        note.content.toLowerCase().includes(searchTerm.toLowerCase()));
+      noteTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      noteContent.toLowerCase().includes(searchTerm.toLowerCase());
 
     // Tag filtering
     const matchesTags =
       selectedTags.length === 0 ||
-      (note.tags && selectedTags.every((tag) => note.tags.includes(tag)));
+      (note.tags &&
+        Array.isArray(note.tags) &&
+        selectedTags.every((tag) => note.tags.includes(tag)));
 
     return matchesSearch && matchesTags;
   });
 
   const getParentTitle = () => {
-    if (!parent) return "";
+    // Safe check for parent and parent.data
+    if (!parent || !parent.data) return "";
+
+    // Safe check for parent.data.name
+    const name = parent.data.name || "Untitled";
 
     switch (parent.type) {
       case "universe":
-        return `for Universe: ${parent.data.name}`;
+        return `for Universe: ${name}`;
       case "scene":
-        return `for Scene: ${parent.data.name}`;
+        return `for Scene: ${name}`;
       case "character":
-        return `for Character: ${parent.data.name}`;
+        return `for Character: ${name}`;
       default:
         return "";
     }
@@ -329,31 +356,33 @@ const NotesPage = () => {
                     component="h2"
                     className="note-card-title"
                   >
-                    {note.title}
+                    {note.title || "Untitled Note"}
                   </Typography>
                   <Typography
                     variant="body2"
                     color="textSecondary"
                     className="note-card-content"
                   >
-                    {note.content.length > 150
+                    {note.content && note.content.length > 150
                       ? `${note.content.substring(0, 150)}...`
-                      : note.content}
+                      : note.content || "No content"}
                   </Typography>
 
-                  {note.tags && note.tags.length > 0 && (
-                    <Box mt={2} className="note-card-tags">
-                      {note.tags.map((tag) => (
-                        <Chip
-                          key={tag}
-                          label={tag}
-                          size="small"
-                          className="note-tag"
-                          onClick={() => handleTagSelect(tag)}
-                        />
-                      ))}
-                    </Box>
-                  )}
+                  {note.tags &&
+                    Array.isArray(note.tags) &&
+                    note.tags.length > 0 && (
+                      <Box mt={2} className="note-card-tags">
+                        {note.tags.map((tag) => (
+                          <Chip
+                            key={tag}
+                            label={tag || ""}
+                            size="small"
+                            className="note-tag"
+                            onClick={() => handleTagSelect(tag)}
+                          />
+                        ))}
+                      </Box>
+                    )}
                 </CardContent>
                 <CardActions className="note-card-actions">
                   <IconButton
