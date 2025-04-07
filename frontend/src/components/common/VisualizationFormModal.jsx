@@ -59,9 +59,7 @@ const VisualizationFormModal = ({
       if (!visualizationId) return;
 
       try {
-        const response = await fetch(
-          `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/visualizations/${visualizationId}`
-        );
+        const response = await fetch(`/api/visualizations/${visualizationId}`);
 
         if (!response.ok) {
           throw new Error("Failed to fetch visualization data");
@@ -124,8 +122,8 @@ const VisualizationFormModal = ({
 
     try {
       const url = visualizationId
-        ? `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/visualizations/${visualizationId}`
-        : `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/visualizations`;
+        ? `/api/visualizations/${visualizationId}`
+        : `/api/visualizations`;
 
       const method = visualizationId ? "PUT" : "POST";
 

@@ -100,12 +100,19 @@ const ModalRenderer = ({ type, props, onClose }) => {
     ModalComponent.name || "Unknown"
   );
 
+  // Check if this is a SceneModalHandler and ensure modalType is passed
+  const modalProps = {
+    ...props,
+    // If this is a SceneModalHandler (SCENE_FORM type), pass modalType
+    ...(type === "SCENE_FORM" && { modalType: props.modalType || "create" }),
+  };
+
   return (
     <ModalComponent
       open={true}
       isOpen={true}
       onClose={onClose}
-      {...props}
+      {...modalProps}
       style={{
         ...getModalSizeStyles(props.size || MODAL_CONFIG.SIZES.MEDIUM),
         ...getModalTypeStyles(type),

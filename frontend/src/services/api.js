@@ -315,6 +315,22 @@ const formatUrl = (url) => {
     console.log(`Fixed double /api/api/ pattern: ${originalUrl} → ${formattedUrl}`);
   }
 
+  // Make sure URL starts with /api/ in production if it doesn't already
+  if (IS_PRODUCTION) {
+    // If URL doesn't start with /api/, add it
+    if (!formattedUrl.startsWith('/api/')) {
+      // Remove any leading slash
+      if (formattedUrl.startsWith('/')) {
+        formattedUrl = formattedUrl.substring(1);
+      }
+      formattedUrl = `/api/${formattedUrl}`;
+      console.log(`Added /api/ prefix for production: ${originalUrl} → ${formattedUrl}`);
+    }
+    // Return the URL as is for production, no need to add baseUrl which is empty string
+    return formattedUrl;
+  }
+
+  // For development:
   // Remove leading '/api' if it exists, since we'll add it in the base URL
   if (formattedUrl.startsWith('/api/')) {
     formattedUrl = formattedUrl.substring(4); // Remove '/api' prefix
@@ -326,7 +342,7 @@ const formatUrl = (url) => {
     formattedUrl = '/' + formattedUrl;
   }
 
-  // Get the API base URL, which already includes '/api'
+  // Get the API base URL, which already includes '/api' in development
   const baseUrl = getApiBaseUrl();
 
   // For local development, add the full base URL
@@ -1541,12 +1557,12 @@ const apiClient = {
       : universeId;
 
     // Define all possible endpoints to try in sequence
-    // Use the format helper to ensure proper URLs
+    // Use the formatUrl helper to ensure proper URLs
     const endpoints = [
-      formatUrl(`/scenes/universe/${parsedUniverseId}`),
-      formatUrl(`/universes/${parsedUniverseId}/scenes`),
-      formatUrl(`/universes/${parsedUniverseId}?include_scenes=true`),
-      formatUrl(`/scenes?universe_id=${parsedUniverseId}`)
+      `/scenes/universe/${parsedUniverseId}`,
+      `/universes/${parsedUniverseId}/scenes`,
+      `/universes/${parsedUniverseId}?include_scenes=true`,
+      `/scenes?universe_id=${parsedUniverseId}`
     ];
 
     // Return a promise that handles errors more gracefully
@@ -1567,7 +1583,8 @@ const apiClient = {
           });
         }
 
-        const endpoint = endpoints[index];
+        // Format the endpoint URL properly
+        const endpoint = formatUrl(endpoints[index]);
         console.log(`API - getUniverseScenes - Trying endpoint ${index + 1}/${endpoints.length}: ${endpoint}`);
 
         // Use the _request helper instead of direct axios calls
@@ -1578,21 +1595,34 @@ const apiClient = {
             // Process the response to extract scenes, handling different response formats
             let scenes = [];
 
-            // Case 1: Direct array in data
-            if (Array.isArray(response)) {
-              scenes = response;
+            if (!response) {
+              console.error(`API - getUniverseScenes - Empty response from ${endpoint}`);
+              tryNextEndpoint(index + 1);
+              return;
+            }
+
+            // Handle different response structures
+            const responseData = response.data || response;
+
+            // Case 1: Direct array in response 
+            if (Array.isArray(responseData)) {
+              scenes = responseData;
             }
             // Case 2: Scenes in data.scenes property
-            else if (response?.scenes && Array.isArray(response.scenes)) {
-              scenes = response.scenes;
+            else if (responseData?.scenes && Array.isArray(responseData.scenes)) {
+              scenes = responseData.scenes;
             }
-            // Case 3: Scenes in data.universe.scenes property (for the include_scenes endpoint)
-            else if (response?.universe?.scenes && Array.isArray(response.universe.scenes)) {
-              scenes = response.universe.scenes;
+            // Case 3: Scenes in data.data property
+            else if (responseData?.data && Array.isArray(responseData.data)) {
+              scenes = responseData.data;
             }
-            // Case 4: Search for any array property in the response
-            else if (response && typeof response === 'object') {
-              for (const [key, value] of Object.entries(response)) {
+            // Case 4: Scenes in universe.scenes property
+            else if (responseData?.universe?.scenes && Array.isArray(responseData.universe.scenes)) {
+              scenes = responseData.universe.scenes;
+            }
+            // Case 5: Search for any array property in the response
+            else if (responseData && typeof responseData === 'object') {
+              for (const [key, value] of Object.entries(responseData)) {
                 if (Array.isArray(value) && value.length > 0 &&
                   (key.includes('scene') || (value[0] && (value[0].universe_id || value[0].name)))) {
                   console.log(`API - getUniverseScenes - Found potential scenes array in response.${key}`);
@@ -1849,7 +1879,46 @@ const apiClient = {
     try {
       const response = await axiosInstance.get(url);
       console.log("API Client: Scene retrieved successfully:", response);
-      return response;
+
+      // Check if response has expected structure
+      if (response.data && response.data.scene) {
+        // Already has the expected structure
+        return response;
+      }
+
+      // Handle case where data is directly the scene object (common in some API responses)
+      if (response.data && typeof response.data === 'object' && response.data.id) {
+        console.log("API Client: Normalizing direct scene object response");
+        return {
+          ...response,
+          data: {
+            scene: response.data,
+            message: "Scene retrieved successfully"
+          }
+        };
+      }
+
+      // Handle case where scene is nested in a different property
+      if (response.data && typeof response.data === 'object') {
+        // Look for a property that might contain the scene
+        for (const key in response.data) {
+          if (response.data[key] && typeof response.data[key] === 'object' &&
+            (response.data[key].id || key === 'scene')) {
+            console.log(`API Client: Found scene in response.data.${key}`);
+            return {
+              ...response,
+              data: {
+                scene: response.data[key],
+                message: response.data.message || "Scene retrieved successfully"
+              }
+            };
+          }
+        }
+      }
+
+      // If we can't find a scene object, throw an error
+      console.error("API Client: Could not find scene object in response:", response);
+      throw new Error("Invalid response format - missing scene data");
     } catch (error) {
       console.error("API Client: Error retrieving scene:", error);
       throw error;

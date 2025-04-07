@@ -18,7 +18,7 @@ import { addScene } from "../../store/slices/scenesSlice";
 const SceneModalHandler = ({
   isOpen,
   onClose,
-  modalType,
+  modalType = "create",
   universeId,
   sceneId,
   initialData,
@@ -309,7 +309,7 @@ const SceneModalHandler = ({
 SceneModalHandler.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
-  modalType: PropTypes.oneOf(["create", "edit", "view", "delete"]).isRequired,
+  modalType: PropTypes.oneOf(["create", "edit", "view", "delete"]),
   universeId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   sceneId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   initialData: PropTypes.object,
