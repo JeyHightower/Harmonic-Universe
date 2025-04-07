@@ -245,87 +245,86 @@ const SceneForm = ({
           ? values.dateOfScene.format("YYYY-MM-DD")
           : null,
         universe_id: universeId,
-        is_deleted: false,
+        is_deleted: false, // Explicitly set is_deleted to false
+        is_public: values.is_public || false,
       };
 
       console.log(
-        "SceneForm - Formatted values for API with explicit is_deleted=false:",
+        "SceneForm - Sending API request with formatted values:",
         formattedValues
       );
 
-      // If we have an onSubmit handler, let the parent component handle the API call
-      if (onSubmit) {
-        console.log("SceneForm - Using parent onSubmit handler");
-        const result = await onSubmit(formattedValues);
-        console.log("SceneForm - Parent onSubmit result:", result);
-        message.success(
-          `Scene ${isEditMode ? "updated" : "created"} successfully`
-        );
-        return;
-      }
-
-      // Only reached if no parent handler was provided - handle API call ourselves
       let response;
-      let result;
-
       if (isEditMode) {
-        // Update existing scene
-        console.log("SceneForm - Updating existing scene:", sceneId);
-        try {
-          response = await apiClient.updateScene(sceneId, formattedValues);
-          console.log("SceneForm - Update API response:", response);
-        } catch (updateError) {
-          console.error("SceneForm - Scene update API error:", updateError);
-          console.error("SceneForm - Error response:", updateError.response);
-          throw updateError;
-        }
+        console.log(`SceneForm - Updating scene with ID: ${sceneId}`);
+        response = await apiClient.updateScene(sceneId, formattedValues);
       } else {
-        // Create new scene
         console.log("SceneForm - Creating new scene");
-        try {
-          response = await apiClient.createScene(formattedValues);
-          console.log("SceneForm - Create API response:", response);
-        } catch (createError) {
-          console.error("SceneForm - Scene create API error:", createError);
-          console.error("SceneForm - Error response:", createError.response);
-          throw createError;
-        }
+        response = await apiClient.createScene(formattedValues);
       }
 
-      // Handle different response formats
-      if (response) {
-        if (response.data?.scene) {
-          result = response.data.scene;
-        } else if (response.data) {
-          result = response.data;
-        } else {
-          console.warn("SceneForm - Unexpected API response format:", response);
-          result = response;
-        }
+      console.log(
+        `SceneForm - Scene ${isEditMode ? "updated" : "created"} successfully:`,
+        response
+      );
 
-        console.log("SceneForm - Scene saved successfully:", result);
-        message.success(
-          `Scene ${isEditMode ? "updated" : "created"} successfully`
-        );
+      // Extract scene data from response
+      let sceneData = response.data?.scene || response.data || {};
 
-        if (onSubmit) {
-          console.log(
-            "SceneForm - Calling onSubmit callback with result:",
-            result
-          );
-          onSubmit(result);
-        }
+      // Ensure is_deleted flag is false
+      sceneData = {
+        ...sceneData,
+        is_deleted: false,
+      };
+
+      // Normalize field names back to camelCase for frontend
+      const normalizedData = {
+        ...sceneData,
+        timeOfDay: sceneData.time_of_day || sceneData.timeOfDay,
+        characterIds: sceneData.character_ids || sceneData.characterIds || [],
+        dateOfScene: sceneData.date_of_scene || sceneData.dateOfScene,
+      };
+
+      console.log(
+        `SceneForm - Normalized scene data for frontend:`,
+        normalizedData
+      );
+
+      setSubmitting(false);
+
+      // Call the success handler
+      if (onSubmit) {
+        console.log("SceneForm - Calling onSubmit handler");
+        onSubmit(isEditMode ? "update" : "create", normalizedData);
       }
+
+      // For modal usage
+      if (!readOnly) {
+        console.log("SceneForm - Form is not read-only, resetting form");
+        form.resetFields();
+      }
+
+      return normalizedData;
     } catch (error) {
-      console.error("SceneForm - Error submitting scene form:", error);
+      console.error(
+        `SceneForm - Error ${isEditMode ? "updating" : "creating"} scene:`,
+        error
+      );
       setError(
-        `Failed to ${isEditMode ? "update" : "create"} scene. ${
-          error.message || "Please try again."
+        error.response?.data?.message ||
+          error.message ||
+          `Failed to ${isEditMode ? "update" : "create"} scene`
+      );
+      setSubmitting(false);
+
+      // Show detailed error message
+      message.error(
+        `Failed to ${isEditMode ? "update" : "create"} scene: ${
+          error.response?.data?.message || error.message || "Unknown error"
         }`
       );
-      message.error(`Failed to ${isEditMode ? "update" : "create"} scene`);
-    } finally {
-      setSubmitting(false);
+
+      throw error;
     }
   };
 

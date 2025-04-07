@@ -2,7 +2,6 @@ import PropTypes from "prop-types";
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../../styles/SceneCard.css";
-import { formatDate } from "../../utils/dateUtils";
 // Import a local default image to avoid server requests
 import localDefaultImage from "../../assets/images/default-scene.svg";
 
@@ -15,6 +14,21 @@ const SceneCard = ({ scene, onEdit, onDelete, isOwner = false }) => {
 
   // Use the local image first, fall back to the remote one only if necessary
   const defaultImage = localDefaultImage || "/images/default-scene.svg";
+
+  // Safety check for scene object - return placeholder if scene is invalid
+  if (!scene || !scene.id) {
+    console.error("SceneCard - Invalid scene object:", scene);
+    return (
+      <div className="scene-card-container scene-card-error">
+        <div className="scene-card-content">
+          <h3 className="scene-card-title">Error: Invalid Scene</h3>
+          <p className="scene-card-description">
+            This scene contains invalid data and cannot be displayed correctly.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const handleView = (e) => {
     e.preventDefault();
@@ -74,8 +88,8 @@ const SceneCard = ({ scene, onEdit, onDelete, isOwner = false }) => {
     handleView(e);
   };
 
-  // Add a better fallback for date formatting
-  const formatDate = (dateString) => {
+  // Format date string to a more readable format
+  const formatDateString = (dateString) => {
     if (!dateString) return "N/A";
     try {
       const date = new Date(dateString);
@@ -87,48 +101,13 @@ const SceneCard = ({ scene, onEdit, onDelete, isOwner = false }) => {
     }
   };
 
-  const cardContent = (
-    <>
-      <div className="scene-card-image">
-        <img
-          src={scene.image_url || defaultImage}
-          alt={scene.title || scene.name || "Scene"}
-          onError={(e) => {
-            console.log("Image failed to load, using default image");
-            // Use a local fallback instead of remote one if possible
-            e.target.onerror = null; // Prevent infinite error loop
-            e.target.src = defaultImage;
-          }}
-        />
-        {scene.scene_type && (
-          <div className="scene-type-badge">{scene.scene_type}</div>
-        )}
-      </div>
-      <div className="scene-card-content">
-        <h3 className="scene-card-title">{scene.title || scene.name}</h3>
-        <p className="scene-card-description">
-          {scene.description
-            ? scene.description.length > 100
-              ? `${scene.description.substring(0, 100)}...`
-              : scene.description
-            : "No description provided"}
-        </p>
-        <div className="scene-card-meta">
-          <span className="scene-card-date">
-            Created: {formatDate(scene.created_at)}
-          </span>
-          {scene.updated_at && (
-            <span className="scene-card-date">
-              Updated: {formatDate(scene.updated_at)}
-            </span>
-          )}
-          {scene.order !== undefined && (
-            <span className="scene-card-order">Order: {scene.order}</span>
-          )}
-        </div>
-      </div>
-    </>
-  );
+  // Check if scene is marked as deleted and handle appropriately
+  if (scene.is_deleted === true) {
+    console.log(
+      `SceneCard - Scene ${scene.id} is marked as deleted, not rendering`
+    );
+    return null;
+  }
 
   return (
     <div className="scene-card-container">
@@ -149,7 +128,9 @@ const SceneCard = ({ scene, onEdit, onDelete, isOwner = false }) => {
           )}
         </div>
         <div className="scene-card-content">
-          <h3 className="scene-card-title">{scene.title || scene.name}</h3>
+          <h3 className="scene-card-title">
+            {scene.title || scene.name || "Untitled Scene"}
+          </h3>
           <p className="scene-card-description">
             {scene.description
               ? scene.description.length > 100
@@ -159,11 +140,11 @@ const SceneCard = ({ scene, onEdit, onDelete, isOwner = false }) => {
           </p>
           <div className="scene-card-meta">
             <span className="scene-card-date">
-              Created: {formatDate(scene.created_at)}
+              Created: {formatDateString(scene.created_at)}
             </span>
             {scene.updated_at && (
               <span className="scene-card-date">
-                Updated: {formatDate(scene.updated_at)}
+                Updated: {formatDateString(scene.updated_at)}
               </span>
             )}
             {scene.order !== undefined && (
@@ -217,9 +198,11 @@ SceneCard.propTypes = {
     updated_at: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     universe_id: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
       .isRequired,
+    is_deleted: PropTypes.bool,
   }).isRequired,
   onEdit: PropTypes.func,
   onDelete: PropTypes.func,
+  isOwner: PropTypes.bool,
 };
 
 export default SceneCard;

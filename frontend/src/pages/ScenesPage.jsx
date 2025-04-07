@@ -234,9 +234,16 @@ const ScenesPageContent = ({ universeId }) => {
   };
 
   // Filter scenes based on search term
-  const filteredScenes = scenes.filter((scene) =>
-    scene.title?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredScenes = scenes.filter((scene) => {
+    // First check if scene is valid and not deleted
+    if (!scene || scene.is_deleted === true) {
+      return false;
+    }
+
+    // Then check search term
+    const name = scene.title || scene.name || "";
+    return name.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   if (loading) {
     return (

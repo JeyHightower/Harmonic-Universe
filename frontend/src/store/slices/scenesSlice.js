@@ -44,19 +44,36 @@ const scenesSlice = createSlice({
       // Add a scene if it doesn't already exist
       const exists = state.scenes.some(scene => scene.id === action.payload.id);
       if (!exists) {
-        state.scenes.push(action.payload);
+        // Ensure is_deleted is explicitly set to false
+        const newScene = { ...action.payload, is_deleted: false };
+        state.scenes.push(newScene);
       }
     },
     addLocallyCreatedScene(state, action) {
       // Add a scene to locallyCreatedScenes if it doesn't exist already
       const exists = state.locallyCreatedScenes.some(scene => scene.id === action.payload.id);
       if (!exists) {
-        state.locallyCreatedScenes.push(action.payload);
+        // Ensure is_deleted is explicitly set to false
+        const newScene = { ...action.payload, is_deleted: false };
+        state.locallyCreatedScenes.push(newScene);
 
         // Also add to the main scenes array if not already there
         const mainExists = state.scenes.some(scene => scene.id === action.payload.id);
         if (!mainExists) {
-          state.scenes.push(action.payload);
+          state.scenes.push(newScene);
+        }
+
+        // Add to universeScenes if not already there
+        if (newScene.universe_id) {
+          if (!state.universeScenes[newScene.universe_id]) {
+            state.universeScenes[newScene.universe_id] = [];
+          }
+          const existsInUniverse = state.universeScenes[newScene.universe_id].some(
+            scene => scene.id === newScene.id
+          );
+          if (!existsInUniverse) {
+            state.universeScenes[newScene.universe_id].push(newScene);
+          }
         }
       }
     },
@@ -103,7 +120,8 @@ const scenesSlice = createSlice({
           console.log("DEBUG STORE: Adding scenes from API response");
           activeScenes.forEach(scene => {
             if (scene && scene.id) {
-              scenesMap.set(scene.id, scene);
+              // Ensure is_deleted is explicitly false
+              scenesMap.set(scene.id, { ...scene, is_deleted: false });
             } else {
               console.warn("DEBUG STORE: Encountered scene without ID in API response:", scene);
             }
@@ -115,7 +133,8 @@ const scenesSlice = createSlice({
             console.log("DEBUG STORE: Adding locally created scenes:", state.locallyCreatedScenes.length);
             state.locallyCreatedScenes.forEach(scene => {
               if (scene && scene.id && !scenesMap.has(scene.id) && scene.universe_id === universeId) {
-                scenesMap.set(scene.id, scene);
+                // Ensure is_deleted is explicitly false
+                scenesMap.set(scene.id, { ...scene, is_deleted: false });
               }
             });
           }
@@ -131,7 +150,24 @@ const scenesSlice = createSlice({
           }
 
           // For backward compatibility, also update the main scenes array
-          state.scenes = universeScenes;
+          // Merge in scenes to avoid overwriting scenes from other universes
+          const scenesById = new Map();
+
+          // First add existing scenes
+          state.scenes.forEach(scene => {
+            if (scene && scene.id) {
+              scenesById.set(scene.id, scene);
+            }
+          });
+
+          // Then add/update with universe scenes
+          universeScenes.forEach(scene => {
+            if (scene && scene.id) {
+              scenesById.set(scene.id, scene);
+            }
+          });
+
+          state.scenes = Array.from(scenesById.values());
           console.log("DEBUG STORE: Updated main scenes array in state");
         } else {
           console.log("DEBUG STORE: No scenes found in action.payload, checking for local scenes");
@@ -148,14 +184,16 @@ const scenesSlice = createSlice({
           // Add existing scenes first
           existingUniverseScenes.forEach(scene => {
             if (scene && scene.id) {
-              scenesMap.set(scene.id, scene);
+              // Ensure is_deleted is explicitly false
+              scenesMap.set(scene.id, { ...scene, is_deleted: false });
             }
           });
 
           // Add locally created scenes second
           universeLocalScenes.forEach(scene => {
             if (scene && scene.id) {
-              scenesMap.set(scene.id, scene);
+              // Ensure is_deleted is explicitly false
+              scenesMap.set(scene.id, { ...scene, is_deleted: false });
             }
           });
 
@@ -166,8 +204,24 @@ const scenesSlice = createSlice({
             state.universeScenes[universeId] = combinedScenes;
           }
 
-          // For backward compatibility, also update the main scenes array
-          state.scenes = combinedScenes;
+          // DO NOT replace all scenes - just update the ones for this universe
+          const scenesById = new Map();
+
+          // First add existing scenes
+          state.scenes.forEach(scene => {
+            if (scene && scene.id) {
+              scenesById.set(scene.id, scene);
+            }
+          });
+
+          // Then add/update with universe scenes
+          combinedScenes.forEach(scene => {
+            if (scene && scene.id) {
+              scenesById.set(scene.id, scene);
+            }
+          });
+
+          state.scenes = Array.from(scenesById.values());
         }
       })
       .addCase(fetchScenes.rejected, (state, action) => {
@@ -184,7 +238,8 @@ const scenesSlice = createSlice({
         state.loading = false;
         // Set current scene from serialized response
         if (action.payload && action.payload.scene) {
-          state.currentScene = action.payload.scene;
+          // Ensure is_deleted is explicitly false
+          state.currentScene = { ...action.payload.scene, is_deleted: false };
         }
       })
       .addCase(fetchSceneById.rejected, (state, action) => {
@@ -240,6 +295,9 @@ const scenesSlice = createSlice({
               console.log(`Redux store: Added new scene to universe ${newScene.universe_id} scenes`);
             }
           }
+
+          // Set as current scene for convenience
+          state.currentScene = newScene;
         }
       })
       .addCase(createScene.rejected, (state, action) => {
@@ -260,10 +318,34 @@ const scenesSlice = createSlice({
 
         // Update the scene in the scenes array
         if (action.payload && action.payload.scene) {
-          const updatedScene = action.payload.scene;
+          // Ensure is_deleted is explicitly false
+          const updatedScene = { ...action.payload.scene, is_deleted: false };
+
+          // Update in main scenes array
           const index = state.scenes.findIndex((scene) => scene.id === updatedScene.id);
           if (index !== -1) {
             state.scenes[index] = updatedScene;
+          }
+
+          // Update in universeScenes
+          if (updatedScene.universe_id && state.universeScenes[updatedScene.universe_id]) {
+            const universeIndex = state.universeScenes[updatedScene.universe_id].findIndex(
+              (scene) => scene.id === updatedScene.id
+            );
+            if (universeIndex !== -1) {
+              state.universeScenes[updatedScene.universe_id][universeIndex] = updatedScene;
+            } else {
+              // Add if not found
+              state.universeScenes[updatedScene.universe_id].push(updatedScene);
+            }
+          }
+
+          // Update in locallyCreatedScenes
+          const localIndex = state.locallyCreatedScenes.findIndex(
+            (scene) => scene.id === updatedScene.id
+          );
+          if (localIndex !== -1) {
+            state.locallyCreatedScenes[localIndex] = updatedScene;
           }
 
           // Update currentScene if it's the same one
@@ -340,13 +422,19 @@ const scenesSlice = createSlice({
         const { universeId } = action.meta.arg;
         const reorderedScenes = action.payload.scenes;
 
-        // Update the scenes in the universeScenes object
-        state.universeScenes[universeId] = reorderedScenes;
+        // Ensure all scenes have is_deleted: false
+        const normalizedScenes = reorderedScenes.map(scene => ({
+          ...scene,
+          is_deleted: false
+        }));
 
-        // Update the general scenes array
+        // Update the scenes in the universeScenes object
+        state.universeScenes[universeId] = normalizedScenes;
+
+        // Update the general scenes array - only for scenes in this universe
         state.scenes = state.scenes.map((scene) => {
           if (scene.universe_id === universeId) {
-            const updatedScene = reorderedScenes.find((s) => s.id === scene.id);
+            const updatedScene = normalizedScenes.find((s) => s.id === scene.id);
             return updatedScene || scene;
           }
           return scene;
@@ -357,7 +445,7 @@ const scenesSlice = createSlice({
           state.currentScene &&
           state.currentScene.universe_id === universeId
         ) {
-          const updatedCurrentScene = reorderedScenes.find(
+          const updatedCurrentScene = normalizedScenes.find(
             (s) => s.id === state.currentScene.id
           );
           if (updatedCurrentScene) {

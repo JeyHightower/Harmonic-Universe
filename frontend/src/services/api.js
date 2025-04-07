@@ -1938,6 +1938,27 @@ const apiClient = {
       is_deleted: false
     };
 
+    // Format field names to snake_case for API
+    if (requestData.timeOfDay && !requestData.time_of_day) {
+      requestData.time_of_day = requestData.timeOfDay;
+      delete requestData.timeOfDay;
+    }
+
+    if (requestData.characterIds && !requestData.character_ids) {
+      requestData.character_ids = requestData.characterIds;
+      delete requestData.characterIds;
+    }
+
+    if (requestData.dateOfScene && !requestData.date_of_scene) {
+      requestData.date_of_scene = requestData.dateOfScene;
+      delete requestData.dateOfScene;
+    }
+
+    if (requestData.notesText && !requestData.notes_text) {
+      requestData.notes_text = requestData.notesText;
+      delete requestData.notesText;
+    }
+
     console.log("API Client: Sending scene create request with data:", requestData);
 
     try {
@@ -1948,7 +1969,7 @@ const apiClient = {
       const response = await axiosInstance.post(url, requestData);
       console.log("API Client: Scene creation response:", response.data);
 
-      // For mock/test environments, ensure response contains is_deleted: false
+      // Ensure response data has is_deleted explicitly set to false
       if (response.data) {
         if (response.data.scene) {
           response.data.scene.is_deleted = false;

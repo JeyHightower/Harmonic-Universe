@@ -18,6 +18,7 @@ import {
   Switch,
   IconButton,
   Tooltip,
+  MenuItem,
 } from "@mui/material";
 import { Add as AddIcon, Refresh as RefreshIcon } from "@mui/icons-material";
 import {
@@ -113,9 +114,16 @@ const SceneList = () => {
               console.log(
                 "SceneList: Updating universeScenes from fetch result"
               );
+
+              // Make sure is_deleted is explicitly set to false for all scenes
+              const normalizedScenes = result.payload.scenes.map((scene) => ({
+                ...scene,
+                is_deleted: scene.is_deleted === true ? true : false,
+              }));
+
               dispatch({
                 type: "scenes/fetchScenes/fulfilled",
-                payload: { scenes: result.payload.scenes },
+                payload: { scenes: normalizedScenes },
                 meta: { arg: universeId },
               });
             }
@@ -364,12 +372,14 @@ const SceneList = () => {
       return sortOrder === "asc" ? comparison : -comparison;
     });
 
+  // Add logging to inspect the scenes
   console.log("SceneList: Final filtered and sorted scenes to display:", {
     totalCount: filteredAndSortedScenes.length,
     scenes: filteredAndSortedScenes.map((scene) => ({
       id: scene.id,
       name: scene.name,
       is_deleted: scene.is_deleted,
+      universe_id: scene.universe_id,
     })),
   });
 
@@ -500,47 +510,88 @@ const SceneList = () => {
           <Box className="sort-controls">
             <TextField
               select
+              label="Sort By"
               value={sortBy}
               onChange={handleSortChange}
               size="small"
-              SelectProps={{
-                native: true,
-              }}
+              sx={{ minWidth: "120px", mr: 1 }}
             >
-              <option value="updated_at">Last Updated</option>
-              <option value="created_at">Date Created</option>
-              <option value="name">Name</option>
+              <MenuItem value="name">Name</MenuItem>
+              <MenuItem value="created_at">Created</MenuItem>
+              <MenuItem value="updated_at">Updated</MenuItem>
             </TextField>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={handleSortOrderToggle}
-              className="sort-order-button"
-            >
-              {sortOrder === "asc" ? "↑" : "↓"}
-            </Button>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={sortOrder === "desc"}
+                  onChange={handleSortOrderToggle}
+                  name="sortDesc"
+                  size="small"
+                />
+              }
+              label="Desc"
+            />
           </Box>
 
           <Button
             variant="contained"
             color="primary"
-            onClick={handleCreateClick}
             startIcon={<AddIcon />}
+            onClick={handleCreateClick}
           >
             Create Scene
           </Button>
         </Box>
       </Box>
 
-      {/* Debug information display */}
+      {/* Create scene modal */}
+      <SceneModalHandler
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={handleCreateSuccess}
+        universeId={universeId}
+        modalType="create"
+        sceneData={null}
+      />
+
+      {/* Delete confirmation dialog */}
+      <Dialog
+        open={!!sceneToDelete}
+        onClose={handleDeleteCancel}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">{"Confirm Delete"}</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete scene "
+            {sceneToDelete ? sceneToDelete.name || sceneToDelete.title : ""}
+            "? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} color="primary">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            color="error"
+            variant="contained"
+            autoFocus
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Debug Section - makes diagnosing issues easier */}
       <Box
         sx={{
-          mt: 2,
-          mb: 2,
+          mt: 4,
           p: 2,
-          border: "1px dashed grey",
+          border: "1px dashed #ccc",
           borderRadius: 1,
-          bgcolor: "#f5f5f5",
+          display: IS_PRODUCTION ? "none" : "block",
         }}
       >
         <Typography variant="h6">Debug Information</Typography>
@@ -591,60 +642,30 @@ const SceneList = () => {
           ))}
         </Grid>
       ) : (
-        <Box className="empty-state">
-          <Typography variant="h6" gutterBottom>
+        <Box
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
+          minHeight="200px"
+          mt={4}
+        >
+          <Typography variant="h6" color="textSecondary" gutterBottom>
             No scenes found
           </Typography>
-          <Typography variant="body1" color="textSecondary" paragraph>
-            Create your first scene to get started!
+          <Typography variant="body1" color="textSecondary" gutterBottom>
+            Get started by creating your first scene
           </Typography>
           <Button
             variant="contained"
             color="primary"
-            onClick={handleCreateClick}
             startIcon={<AddIcon />}
+            onClick={handleCreateClick}
+            sx={{ mt: 2 }}
           >
             Create Scene
           </Button>
         </Box>
-      )}
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={!!sceneToDelete}
-        onClose={handleDeleteCancel}
-        disableEnforceFocus
-        container={() => document.body}
-        aria-labelledby="delete-scene-title"
-        aria-describedby="delete-scene-description"
-        BackdropProps={{
-          "aria-hidden": null,
-        }}
-      >
-        <DialogTitle id="delete-scene-title">Delete Scene</DialogTitle>
-        <DialogContent id="delete-scene-description">
-          <Typography>
-            Are you sure you want to delete "{sceneToDelete?.name}"? This action
-            cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteCancel}>Cancel</Button>
-          <Button onClick={handleDeleteConfirm} color="error">
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Scene Creation Modal */}
-      {isCreateModalOpen && (
-        <SceneModalHandler
-          isOpen={isCreateModalOpen}
-          onClose={() => setIsCreateModalOpen(false)}
-          onSuccess={handleCreateSuccess}
-          universeId={universeId}
-          modalType="create"
-        />
       )}
     </Container>
   );

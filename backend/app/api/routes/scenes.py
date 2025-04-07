@@ -484,6 +484,33 @@ def create_scene():
                 description=data.get('description', '').strip(),
                 universe_id=universe_id
             )
+            # Explicitly set is_deleted to False
+            scene.is_deleted = False
+            
+            # Set optional fields from request data
+            if 'summary' in data:
+                scene.summary = data.get('summary')
+            if 'content' in data:
+                scene.content = data.get('content')
+            if 'notes' in data:
+                scene.notes_text = data.get('notes')
+            if 'location' in data:
+                scene.location = data.get('location')
+            if 'scene_type' in data:
+                scene.scene_type = data.get('scene_type')
+            if 'time_of_day' in data:
+                scene.time_of_day = data.get('time_of_day')
+            if 'status' in data:
+                scene.status = data.get('status')
+            if 'significance' in data:
+                scene.significance = data.get('significance')
+            if 'date_of_scene' in data:
+                scene.date_of_scene = data.get('date_of_scene')
+            if 'order' in data:
+                scene.order = data.get('order')
+            if 'is_public' in data:
+                scene.is_public = data.get('is_public')
+                
             current_app.logger.info(f"Created scene object: {scene.name} for universe {scene.universe_id}")
         except Exception as e:
             current_app.logger.error(f"Error creating scene object: {str(e)}")
@@ -506,25 +533,50 @@ def create_scene():
                 'scene': {}
             }), 400
 
-        # Create basic scene dict for response that doesn't rely on to_dict
-        basic_scene_dict = {
-            'name': scene.name,
-            'description': scene.description,
-            'universe_id': scene.universe_id,
-        }
-
         try:
             db.session.add(scene)
             current_app.logger.info("Added scene to session")
             db.session.commit()
             current_app.logger.info(f"Committed scene to database with ID: {scene.id}")
             
-            # Add the ID to our basic dict now that it's available
-            basic_scene_dict['id'] = scene.id
+            # Create a comprehensive scene dictionary for the response
+            scene_dict = {
+                'id': scene.id,
+                'name': scene.name,
+                'description': scene.description,
+                'universe_id': scene.universe_id,
+                'is_deleted': False,  # Explicitly set to False
+                'created_at': str(scene.created_at) if scene.created_at else None,
+                'updated_at': str(scene.updated_at) if scene.updated_at else None
+            }
+            
+            # Add optional fields that were set
+            if scene.summary is not None:
+                scene_dict['summary'] = scene.summary
+            if scene.content is not None:
+                scene_dict['content'] = scene.content
+            if scene.notes_text is not None:
+                scene_dict['notes'] = scene.notes_text
+            if scene.location is not None:
+                scene_dict['location'] = scene.location
+            if scene.scene_type is not None:
+                scene_dict['scene_type'] = scene.scene_type
+            if scene.time_of_day is not None:
+                scene_dict['time_of_day'] = scene.time_of_day
+            if scene.status is not None:
+                scene_dict['status'] = scene.status
+            if scene.significance is not None:
+                scene_dict['significance'] = scene.significance
+            if scene.date_of_scene is not None:
+                scene_dict['date_of_scene'] = scene.date_of_scene
+            if scene.order is not None:
+                scene_dict['order'] = scene.order
+            if scene.is_public is not None:
+                scene_dict['is_public'] = scene.is_public
             
             return jsonify({
                 'message': 'Scene created successfully',
-                'scene': basic_scene_dict
+                'scene': scene_dict
             }), 201
         except Exception as e:
             db.session.rollback()
@@ -534,7 +586,7 @@ def create_scene():
                 'message': 'Error creating scene',
                 'error': str(e),
                 'scene': {}
-            }), 200  # Return 200 instead of 500 to prevent frontend errors
+            }), 500  # Use 500 for server errors
 
     except Exception as e:
         db.session.rollback()
@@ -544,7 +596,7 @@ def create_scene():
             'message': 'Error creating scene',
             'error': str(e),
             'scene': {}
-        }), 200  # Return 200 instead of 500 to prevent frontend errors
+        }), 500  # Use 500 for server errors
 
 @scenes_bp.route('/<int:scene_id>', methods=['PUT'])
 @jwt_required()
