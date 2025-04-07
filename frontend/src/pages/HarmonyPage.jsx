@@ -4,15 +4,27 @@ import {
   PlayCircleOutlined,
   SettingOutlined,
   SoundOutlined,
-} from '@ant-design/icons';
-import { Button, Card, Col, Empty, List, Modal, Row, Slider, Spin, Tabs, message } from 'antd';
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useModal } from '../contexts/ModalContext.jsx';
-import { fetchUniverseById } from '../store/universeThunks.js';
-import '../styles/HarmonyPage.css';
-import { api } from '../utils/api.js';
+} from "@ant-design/icons";
+import {
+  Button,
+  Card,
+  Col,
+  Empty,
+  List,
+  Modal,
+  Row,
+  Slider,
+  Spin,
+  Tabs,
+  message,
+} from "antd";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useParams } from "react-router-dom";
+import { useModal } from "../contexts/ModalContext.jsx";
+import { fetchUniverseById } from "../store/thunks/universeThunks.js";
+import "../styles/HarmonyPage.css";
+import { api } from "../utils/api.js";
 
 const HarmonyPage = () => {
   const { universeId } = useParams();
@@ -21,7 +33,7 @@ const HarmonyPage = () => {
   const { openModal } = useModal();
 
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('parameters');
+  const [activeTab, setActiveTab] = useState("parameters");
   const [audioSettings, setAudioSettings] = useState({
     tempo: 120,
     volume: 75,
@@ -33,7 +45,7 @@ const HarmonyPage = () => {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [parameterToDelete, setParameterToDelete] = useState(null);
 
-  const universe = useSelector(state => state.universe.currentUniverse);
+  const universe = useSelector((state) => state.universe.currentUniverse);
 
   useEffect(() => {
     const loadUniverse = async () => {
@@ -41,7 +53,7 @@ const HarmonyPage = () => {
         setLoading(true);
         await dispatch(fetchUniverseById(universeId));
       } catch (error) {
-        console.error('Error loading universe:', error);
+        console.error("Error loading universe:", error);
       } finally {
         setLoading(false);
       }
@@ -58,12 +70,14 @@ const HarmonyPage = () => {
       // This may need to be adjusted based on your app's structure
       if (universe && universe.scenes && universe.scenes.length > 0) {
         const sceneId = universe.scenes[0].id;
-        const response = await api.get(`/api/scenes/${sceneId}/harmony_parameters`);
+        const response = await api.get(
+          `/api/scenes/${sceneId}/harmony_parameters`
+        );
         setHarmonyParameters(response.data || []);
       }
     } catch (error) {
-      console.error('Error fetching harmony parameters:', error);
-      message.error('Failed to load harmony parameters');
+      console.error("Error fetching harmony parameters:", error);
+      message.error("Failed to load harmony parameters");
     } finally {
       setFetchingParameters(false);
     }
@@ -73,16 +87,18 @@ const HarmonyPage = () => {
     // Get the first scene ID from the universe
     if (universe && universe.scenes && universe.scenes.length > 0) {
       const sceneId = universe.scenes[0].id;
-      openModal('harmony-parameters', {
+      openModal("harmony-parameters", {
         universeId,
         sceneId,
         onClose: () => {
           fetchHarmonyParameters(); // Refresh the list after creation
-          message.success('Harmony parameter created successfully!');
-        }
+          message.success("Harmony parameter created successfully!");
+        },
       });
     } else {
-      message.warning('You need to create a scene first before adding harmony parameters.');
+      message.warning(
+        "You need to create a scene first before adding harmony parameters."
+      );
     }
   };
 
@@ -90,14 +106,14 @@ const HarmonyPage = () => {
     // Get the first scene ID from the universe
     if (universe && universe.scenes && universe.scenes.length > 0) {
       const sceneId = universe.scenes[0].id;
-      openModal('harmony-parameters', {
+      openModal("harmony-parameters", {
         universeId,
         sceneId,
         initialData: parameter,
         onClose: () => {
           fetchHarmonyParameters(); // Refresh the list after editing
-          message.success('Harmony parameter updated successfully!');
-        }
+          message.success("Harmony parameter updated successfully!");
+        },
       });
     }
   };
@@ -114,15 +130,19 @@ const HarmonyPage = () => {
       // Get the first scene ID from the universe
       if (universe && universe.scenes && universe.scenes.length > 0) {
         const sceneId = universe.scenes[0].id;
-        await api.delete(`/api/scenes/${sceneId}/harmony_parameters/${parameterToDelete.id}`);
+        await api.delete(
+          `/api/scenes/${sceneId}/harmony_parameters/${parameterToDelete.id}`
+        );
 
         // Update the local state to remove the deleted parameter
-        setHarmonyParameters(prev => prev.filter(p => p.id !== parameterToDelete.id));
-        message.success('Harmony parameter deleted successfully!');
+        setHarmonyParameters((prev) =>
+          prev.filter((p) => p.id !== parameterToDelete.id)
+        );
+        message.success("Harmony parameter deleted successfully!");
       }
     } catch (error) {
-      console.error('Error deleting harmony parameter:', error);
-      message.error('Failed to delete harmony parameter');
+      console.error("Error deleting harmony parameter:", error);
+      message.error("Failed to delete harmony parameter");
     } finally {
       setDeleteModalVisible(false);
       setParameterToDelete(null);
@@ -130,11 +150,11 @@ const HarmonyPage = () => {
   };
 
   const handleGenerateMusic = () => {
-    openModal('audio-generate', { universeId });
+    openModal("audio-generate", { universeId });
   };
 
   const handleSettingChange = (setting, value) => {
-    setAudioSettings(prev => ({
+    setAudioSettings((prev) => ({
       ...prev,
       [setting]: value,
     }));
@@ -155,7 +175,7 @@ const HarmonyPage = () => {
         className="harmony-parameters-list"
         itemLayout="horizontal"
         dataSource={harmonyParameters}
-        renderItem={parameter => (
+        renderItem={(parameter) => (
           <List.Item
             actions={[
               <Button
@@ -168,12 +188,12 @@ const HarmonyPage = () => {
                 danger
                 onClick={() => showDeleteConfirm(parameter)}
                 title="Delete"
-              />
+              />,
             ]}
           >
             <List.Item.Meta
               title={parameter.name}
-              description={parameter.description || 'No description'}
+              description={parameter.description || "No description"}
             />
             <div className="harmony-parameter-details">
               <span>Key: {parameter.key}</span>
@@ -203,8 +223,8 @@ const HarmonyPage = () => {
         className="harmony-tabs"
         items={[
           {
-            key: 'parameters',
-            label: 'Harmony Parameters',
+            key: "parameters",
+            label: "Harmony Parameters",
             icon: <SettingOutlined />,
             children: (
               <div className="harmony-tab-content">
@@ -245,8 +265,8 @@ const HarmonyPage = () => {
             ),
           },
           {
-            key: 'generator',
-            label: 'Music Generator',
+            key: "generator",
+            label: "Music Generator",
             icon: <SoundOutlined />,
             children: (
               <div className="harmony-tab-content">
@@ -265,8 +285,8 @@ const HarmonyPage = () => {
                             min={60}
                             max={200}
                             value={audioSettings.tempo}
-                            onChange={value =>
-                              handleSettingChange('tempo', value)
+                            onChange={(value) =>
+                              handleSettingChange("tempo", value)
                             }
                           />
                           <span className="harmony-setting-value">
@@ -281,8 +301,8 @@ const HarmonyPage = () => {
                             min={0}
                             max={100}
                             value={audioSettings.volume}
-                            onChange={value =>
-                              handleSettingChange('volume', value)
+                            onChange={(value) =>
+                              handleSettingChange("volume", value)
                             }
                           />
                           <span className="harmony-setting-value">
@@ -297,8 +317,8 @@ const HarmonyPage = () => {
                             min={0}
                             max={100}
                             value={audioSettings.reverb}
-                            onChange={value =>
-                              handleSettingChange('reverb', value)
+                            onChange={(value) =>
+                              handleSettingChange("reverb", value)
                             }
                           />
                           <span className="harmony-setting-value">
@@ -313,8 +333,8 @@ const HarmonyPage = () => {
                             min={0}
                             max={100}
                             value={audioSettings.delay}
-                            onChange={value =>
-                              handleSettingChange('delay', value)
+                            onChange={(value) =>
+                              handleSettingChange("delay", value)
                             }
                           />
                           <span className="harmony-setting-value">

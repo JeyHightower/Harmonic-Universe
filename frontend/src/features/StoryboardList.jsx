@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import Button from "../components/Button.jsx";
 import Spinner from "../components/Spinner.jsx";
-import { fetchUniverseById } from "../store/universeThunks.js";
+import { fetchUniverseById } from "../store/thunks/universeThunks.js";
 import "../styles/Storyboard.css";
 import { api, endpoints } from "@services/api";
 

@@ -26,15 +26,21 @@ export {
   setCharacters,
   setCurrentCharacter,
   addCharacter,
-  updateCharacter,
-  deleteCharacter,
+  updateCharacterAction as updateCharacter,
+  deleteCharacterAction as deleteCharacter,
   setCharacterError,
+  openModal,
+  closeModal,
+  clearError,
+  clearSuccess,
+  clearCharacters,
+  clearCurrentCharacter,
 } from './slices/characterSlice';
 
 // Exports from modal slice
 export {
-  openModal,
-  closeModal,
+  openModal as openModalAction,
+  closeModal as closeModalAction,
   setModalData,
 } from './slices/modalSlice';
 
@@ -70,7 +76,7 @@ export {
   clearSceneError,
   clearSceneSuccess,
   resetSceneState,
-  setError,
+  setError as setSceneError,
   setCurrentScene,
   addScene,
   addLocallyCreatedScene,
@@ -81,18 +87,13 @@ export {
   setUniverses,
   setCurrentUniverse,
   addUniverse,
-  updateUniverse,
-  deleteUniverse,
+  updateUniverse as updateUniverseAction,
+  deleteUniverse as deleteUniverseAction,
   setUniverseError,
 } from './slices/universeSlice';
 
 // Thunks
-export * from './thunks/authThunks';
-export * from './thunks/characterThunks';
-export * from './thunks/noteThunks';
-export * from './thunks/physicsObjectsThunks';
-export * from './thunks/scenesThunks';
-export * from './thunks/universeThunks';
+export * from './thunks';
 
 // Selectors
 export * from './selectors/universeSelectors'; 

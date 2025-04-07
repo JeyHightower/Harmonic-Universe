@@ -6,13 +6,13 @@
  * Consider using consistent panel patterns from the application.
  */
 
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import Button from '../components/Button';
-import Input from '../components/Input';
-import Select from '../components/Select';
-import { updateHarmonyParams } from '../store/universeThunks';
-import '../styles/Universe.css';
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import Button from "../components/Button";
+import Input from "../components/Input";
+import Select from "../components/Select";
+import { updateHarmonyParams } from "../../store/thunks/universeThunks";
+import "../styles/Universe.css";
 
 const DEFAULT_HARMONY_PARAMS = {
   resonance: {
@@ -41,29 +41,29 @@ const DEFAULT_HARMONY_PARAMS = {
   },
   tempo: {
     value: 120,
-    unit: 'bpm',
+    unit: "bpm",
     min: 60,
     max: 200,
     warning_threshold: 10,
   },
   key: {
-    value: 'C',
-    options: ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#', 'F', 'Bb', 'Eb', 'Ab'],
+    value: "C",
+    options: ["C", "G", "D", "A", "E", "B", "F#", "C#", "F", "Bb", "Eb", "Ab"],
   },
   scale: {
-    value: 'major',
+    value: "major",
     options: [
-      'major',
-      'minor',
-      'harmonic_minor',
-      'melodic_minor',
-      'pentatonic',
+      "major",
+      "minor",
+      "harmonic_minor",
+      "melodic_minor",
+      "pentatonic",
     ],
   },
   instruments: {
-    primary: 'piano',
-    secondary: ['strings', 'pad'],
-    options: ['piano', 'strings', 'pad', 'bass', 'drums', 'synth'],
+    primary: "piano",
+    secondary: ["strings", "pad"],
+    options: ["piano", "strings", "pad", "bass", "drums", "synth"],
   },
 };
 
@@ -77,13 +77,13 @@ function HarmonyPanel({
   const [harmonyParams, setHarmonyParams] = useState(
     initialHarmonyParams || DEFAULT_HARMONY_PARAMS
   );
-  const [selectedSecondary, setSelectedSecondary] = useState('');
+  const [selectedSecondary, setSelectedSecondary] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const status = useSelector(state => state.universes.status);
-  const error = useSelector(state => state.universes.error);
+  const status = useSelector((state) => state.universes.status);
+  const error = useSelector((state) => state.universes.error);
 
   useEffect(() => {
     if (initialHarmonyParams) {
@@ -92,14 +92,14 @@ function HarmonyPanel({
   }, [initialHarmonyParams]);
 
   useEffect(() => {
-    if (status === 'succeeded' && isSubmitting) {
+    if (status === "succeeded" && isSubmitting) {
       setIsSubmitting(false);
       setHasChanges(false);
     }
   }, [status, isSubmitting]);
 
   const validateParameter = (name, value) => {
-    if (typeof value === 'number') {
+    if (typeof value === "number") {
       const param = harmonyParams[name];
       if (value < param.min || value > param.max) {
         return `Value must be between ${param.min} and ${param.max}`;
@@ -107,10 +107,10 @@ function HarmonyPanel({
 
       // Check for warning threshold
       if (param.warning_threshold) {
-        if (name === 'resonance' && value < param.warning_threshold) {
+        if (name === "resonance" && value < param.warning_threshold) {
           return `Low resonance may produce weak harmonics`;
         }
-        if (name === 'dissonance' && value > 1 - param.warning_threshold) {
+        if (name === "dissonance" && value > 1 - param.warning_threshold) {
           return `High dissonance may produce harsh sounds`;
         }
       }
@@ -122,34 +122,34 @@ function HarmonyPanel({
     let newValue = value;
 
     // Convert numeric strings to numbers
-    if (!isNaN(value) && typeof value === 'string') {
+    if (!isNaN(value) && typeof value === "string") {
       newValue = parseFloat(value);
     }
 
     const error = validateParameter(name, newValue);
-    setErrors(prev => ({
+    setErrors((prev) => ({
       ...prev,
       [name]: error,
     }));
 
-    setHarmonyParams(prev => {
+    setHarmonyParams((prev) => {
       const updated = { ...prev };
 
       // Handle special cases
-      if (name === 'key' || name === 'scale') {
+      if (name === "key" || name === "scale") {
         updated[name].value = value;
-      } else if (name === 'instruments.primary') {
+      } else if (name === "instruments.primary") {
         updated.instruments.primary = value;
-      } else if (name === 'instruments.secondary.add') {
+      } else if (name === "instruments.secondary.add") {
         if (value && !updated.instruments.secondary.includes(value)) {
           updated.instruments.secondary = [
             ...updated.instruments.secondary,
             value,
           ];
         }
-      } else if (name === 'instruments.secondary.remove') {
+      } else if (name === "instruments.secondary.remove") {
         updated.instruments.secondary = updated.instruments.secondary.filter(
-          instrument => instrument !== value
+          (instrument) => instrument !== value
         );
       } else {
         // Handle standard numeric values
@@ -167,7 +167,7 @@ function HarmonyPanel({
   };
 
   const handleSubmit = async () => {
-    if (Object.values(errors).some(error => error !== null)) {
+    if (Object.values(errors).some((error) => error !== null)) {
       return;
     }
 
@@ -181,7 +181,7 @@ function HarmonyPanel({
         })
       );
     } catch (error) {
-      console.error('Error updating harmony parameters:', error);
+      console.error("Error updating harmony parameters:", error);
       setIsSubmitting(false);
     }
   };
@@ -196,7 +196,7 @@ function HarmonyPanel({
             id={name}
             type="number"
             value={param.value}
-            onChange={e => handleParameterChange(name, e.target.value)}
+            onChange={(e) => handleParameterChange(name, e.target.value)}
             min={param.min}
             max={param.max}
             step="0.01"
@@ -218,10 +218,10 @@ function HarmonyPanel({
         <Select
           id={name}
           value={param.value}
-          onChange={e => handleParameterChange(name, e.target.value)}
+          onChange={(e) => handleParameterChange(name, e.target.value)}
           disabled={readOnly}
         >
-          {param.options.map(option => (
+          {param.options.map((option) => (
             <option key={option} value={option}>
               {option}
             </option>
@@ -242,12 +242,12 @@ function HarmonyPanel({
           <Select
             id="instruments.primary"
             value={instruments.primary}
-            onChange={e =>
-              handleParameterChange('instruments.primary', e.target.value)
+            onChange={(e) =>
+              handleParameterChange("instruments.primary", e.target.value)
             }
             disabled={readOnly}
           >
-            {instruments.options.map(option => (
+            {instruments.options.map((option) => (
               <option key={option} value={option}>
                 {option}
               </option>
@@ -258,7 +258,7 @@ function HarmonyPanel({
         <div className="parameter-input">
           <label>Secondary Instruments</label>
           <div className="secondary-instruments">
-            {instruments.secondary.map(instrument => (
+            {instruments.secondary.map((instrument) => (
               <div key={instrument} className="secondary-instrument">
                 {instrument}
                 {!readOnly && (
@@ -267,7 +267,7 @@ function HarmonyPanel({
                     className="remove-instrument"
                     onClick={() =>
                       handleParameterChange(
-                        'instruments.secondary.remove',
+                        "instruments.secondary.remove",
                         instrument
                       )
                     }
@@ -284,16 +284,16 @@ function HarmonyPanel({
           <div className="add-instrument">
             <Select
               value={selectedSecondary}
-              onChange={e => setSelectedSecondary(e.target.value)}
+              onChange={(e) => setSelectedSecondary(e.target.value)}
             >
               <option value="">Add instrument...</option>
               {instruments.options
                 .filter(
-                  option =>
+                  (option) =>
                     !instruments.secondary.includes(option) &&
                     option !== instruments.primary
                 )
-                .map(option => (
+                .map((option) => (
                   <option key={option} value={option}>
                     {option}
                   </option>
@@ -303,10 +303,10 @@ function HarmonyPanel({
               onClick={() => {
                 if (selectedSecondary) {
                   handleParameterChange(
-                    'instruments.secondary.add',
+                    "instruments.secondary.add",
                     selectedSecondary
                   );
-                  setSelectedSecondary('');
+                  setSelectedSecondary("");
                 }
               }}
               disabled={!selectedSecondary}
@@ -326,17 +326,17 @@ function HarmonyPanel({
       <div className="parameters-container">
         <div className="parameter-section">
           <h3>Harmony Controls</h3>
-          {renderNumericInput('resonance', 'Resonance', false)}
-          {renderNumericInput('dissonance', 'Dissonance', false)}
-          {renderNumericInput('harmony_scale', 'Harmony Scale', false)}
-          {renderNumericInput('balance', 'Balance', false)}
+          {renderNumericInput("resonance", "Resonance", false)}
+          {renderNumericInput("dissonance", "Dissonance", false)}
+          {renderNumericInput("harmony_scale", "Harmony Scale", false)}
+          {renderNumericInput("balance", "Balance", false)}
         </div>
 
         <div className="parameter-section">
           <h3>Music Basics</h3>
-          {renderNumericInput('tempo', 'Tempo')}
-          {renderSelectInput('key', 'Key')}
-          {renderSelectInput('scale', 'Scale')}
+          {renderNumericInput("tempo", "Tempo")}
+          {renderSelectInput("key", "Key")}
+          {renderSelectInput("scale", "Scale")}
         </div>
 
         {renderInstrumentsSection()}
@@ -350,10 +350,10 @@ function HarmonyPanel({
             disabled={
               !hasChanges ||
               isSubmitting ||
-              Object.values(errors).some(error => error !== null)
+              Object.values(errors).some((error) => error !== null)
             }
           >
-            {isSubmitting ? 'Saving...' : 'Save Changes'}
+            {isSubmitting ? "Saving..." : "Save Changes"}
           </Button>
 
           {error && <div className="error-message">{error}</div>}

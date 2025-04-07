@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import Tooltip from "../components/common/Tooltip";
 import UniverseCard from "../components/universe/UniverseCard";
-import { fetchUniverses } from "../store/universeThunks";
+import { fetchUniverses } from "../store/thunks/universeThunks";
 import "../styles/Dashboard.css";
 import { AUTH_CONFIG } from "../utils/config";
 import UniverseFormModal from "../components/universe/UniverseFormModal";

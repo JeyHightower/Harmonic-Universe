@@ -1,10 +1,10 @@
-import { Spin } from 'antd';
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useModal } from '../contexts/ModalContext.jsx';
-import { fetchUniverseById } from '../store/universeThunks.js';
-import '../styles/PhysicsPage.css';
+import { Spin } from "antd";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useParams } from "react-router-dom";
+import { useModal } from "../contexts/ModalContext.jsx";
+import { fetchUniverseById } from "../../store/thunks/universeThunks.js";
+import "../styles/PhysicsPage.css";
 
 const PhysicsPage = () => {
   const { universeId } = useParams();
@@ -13,9 +13,9 @@ const PhysicsPage = () => {
   const { openModal } = useModal();
 
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('objects');
+  const [activeTab, setActiveTab] = useState("objects");
 
-  const universe = useSelector(state => state.universe.currentUniverse);
+  const universe = useSelector((state) => state.universe.currentUniverse);
 
   useEffect(() => {
     const loadUniverse = async () => {
@@ -23,7 +23,7 @@ const PhysicsPage = () => {
         setLoading(true);
         await dispatch(fetchUniverseById(universeId));
       } catch (error) {
-        console.error('Error loading universe:', error);
+        console.error("Error loading universe:", error);
       } finally {
         setLoading(false);
       }
@@ -33,15 +33,15 @@ const PhysicsPage = () => {
   }, [dispatch, universeId]);
 
   const handleCreatePhysicsObject = () => {
-    openModal('physics-object', { universeId });
+    openModal("physics-object", { universeId });
   };
 
   const handleCreatePhysicsParameter = () => {
-    openModal('physics-parameters', { universeId });
+    openModal("physics-parameters", { universeId });
   };
 
   const handleCreatePhysicsConstraint = () => {
-    openModal('physics-constraint', { universeId });
+    openModal("physics-constraint", { universeId });
   };
 
   if (loading) {
@@ -68,8 +68,8 @@ const PhysicsPage = () => {
         className="physics-tabs"
         items={[
           {
-            key: 'objects',
-            label: 'Physics Objects',
+            key: "objects",
+            label: "Physics Objects",
             children: (
               <div className="physics-tab-content">
                 <div className="physics-actions">
@@ -93,8 +93,8 @@ const PhysicsPage = () => {
             ),
           },
           {
-            key: 'parameters',
-            label: 'Physics Parameters',
+            key: "parameters",
+            label: "Physics Parameters",
             children: (
               <div className="physics-tab-content">
                 <div className="physics-actions">
@@ -121,8 +121,8 @@ const PhysicsPage = () => {
             ),
           },
           {
-            key: 'constraints',
-            label: 'Physics Constraints',
+            key: "constraints",
+            label: "Physics Constraints",
             children: (
               <div className="physics-tab-content">
                 <div className="physics-actions">

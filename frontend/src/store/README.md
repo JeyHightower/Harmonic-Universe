@@ -1,135 +1,65 @@
 # Redux Store Organization
 
-This directory contains the Redux store configuration, slices, thunks, and selectors for the Harmonic Universe application.
+This directory contains the Redux store implementation for the Harmonic Universe application.
 
 ## Directory Structure
 
 ```
 store/
-├── slices/           # Redux Toolkit slices for state management
-├── thunks/           # Async thunks for API calls and side effects
-├── selectors/        # Selectors for accessing and computing state
-├── index.js          # Main store exports
-└── store.js          # Store configuration
+├── index.js             # Main entry point for Redux exports
+├── store.js             # Store configuration with middleware
+├── slices/              # Redux slices using Redux Toolkit createSlice
+│   ├── authSlice.js     # User authentication state
+│   ├── characterSlice.js # Character management
+│   ├── modalSlice.js    # UI modal state
+│   ├── noteSlice.js     # Notes management
+│   ├── physicsObjectsSlice.js # Physics objects
+│   ├── physicsParametersSlice.js # Physics parameters
+│   ├── scenesSlice.js   # Scene management
+│   └── universeSlice.js # Universe management
+├── thunks/              # Async thunk actions
+│   ├── index.js         # Entry point for all thunks
+│   ├── authThunks.js    # Authentication-related async actions
+│   ├── characterThunks.js # Character-related async actions
+│   ├── noteThunks.js    # Notes-related async actions
+│   ├── physicsObjectsThunks.js # Physics objects-related async actions
+│   ├── universeThunks.js # Universe-related async actions
+│   └── consolidated/    # Consolidated/reorganized thunks
+│       ├── index.js     # Entry point for consolidated thunks
+│       └── scenesThunks.js # Scene-related async actions
+└── selectors/           # Redux selectors for computed state
+    └── universeSelectors.js # Universe-related selectors
 ```
 
-## Redux Toolkit
+## Usage
 
-This application uses Redux Toolkit to simplify Redux development. Key concepts:
+Import components from the main index.js file:
 
-- **Slices**: Combines reducers, actions, and action creators into a single file
-- **Thunks**: Handles asynchronous operations like API calls
-- **Selectors**: Functions to extract specific pieces of state
+```javascript
+import { store, fetchScenes, addScene, updateCharacter } from "../store";
+```
 
 ## Slices
 
-Each slice represents a domain or feature of the application. Slices include:
+Each slice is responsible for a specific domain of the application state and includes:
 
-- `authSlice.js` - Authentication state
-- `characterSlice.js` - Character management
-- `noteSlice.js` - Notes management
-- `physicsObjectsSlice.js` - Physics objects state
-- `physicsParametersSlice.js` - Physics parameters state
-- `scenesSlice.js` - Scenes management
-- `universeSlice.js` - Universe management
-
-Slices should follow this organization:
-
-1. Initial state
-2. Slice definition with reducers
-3. Extra reducers for handling async thunks
-4. Export actions
-5. Export reducer
+- Initial state
+- Reducer functions for synchronous updates
+- Extra reducers for handling async thunk actions
 
 ## Thunks
 
-Thunks handle asynchronous operations, primarily API calls. They're organized by feature in the `thunks/` directory.
+Async operations are implemented using Redux Toolkit's `createAsyncThunk` function. These handle:
 
-Key thunk files:
-
-- `authThunks.js` - Authentication operations
-- `characterThunks.js` - Character CRUD operations
-- `noteThunks.js` - Note management operations
-- `physicsObjectsThunks.js` - Physics object operations
-- `scenesThunks.js` - Scene management operations
-- `universeThunks.js` - Universe management operations
+- API calls to the backend
+- Loading states
+- Success and error handling
+- Data normalization
 
 ## Selectors
 
-Selectors provide a way to extract specific pieces of state from the Redux store, potentially with memoization for performance.
+Selectors are used to derive computed data from the store state. They help with:
 
-## Usage Guidelines
-
-### Creating a New Slice
-
-1. Create a new file in the `slices/` directory named after your feature (e.g., `featureSlice.js`)
-2. Define the initial state
-3. Create the slice with reducers
-4. Export the actions and reducer
-
-```javascript
-import { createSlice } from "@reduxjs/toolkit";
-
-const initialState = {
-  // Initial state properties
-};
-
-const featureSlice = createSlice({
-  name: "feature",
-  initialState,
-  reducers: {
-    // Reducers
-  },
-  extraReducers: (builder) => {
-    // Handle async thunks
-  },
-});
-
-export const { action1, action2 } = featureSlice.actions;
-export default featureSlice.reducer;
-```
-
-### Creating a New Thunk
-
-1. Create a new file in the `thunks/` directory (or add to existing one)
-2. Import `createAsyncThunk` from Redux Toolkit
-3. Define your thunk functions for async operations
-
-```javascript
-import { createAsyncThunk } from "@reduxjs/toolkit";
-import apiClient from "../../services/api";
-
-export const fetchData = createAsyncThunk(
-  "feature/fetchData",
-  async (params, { dispatch, rejectWithValue }) => {
-    try {
-      const response = await apiClient.get("/api/endpoint");
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
-```
-
-### Connecting to React Components
-
-Use the `useSelector` and `useDispatch` hooks to connect your components to the Redux store.
-
-```javascript
-import { useSelector, useDispatch } from 'react-redux';
-import { fetchData } from '../store/thunks/featureThunks';
-
-const MyComponent = () => {
-  const dispatch = useDispatch();
-  const data = useSelector((state) => state.feature.data);
-
-  useEffect(() => {
-    dispatch(fetchData());
-  }, [dispatch]);
-
-  return (
-    // Component JSX
-  );
-};
-```
+- Memoization of computed values
+- Extracting specific pieces of state
+- Transforming state for component consumption
