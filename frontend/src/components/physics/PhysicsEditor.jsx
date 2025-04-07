@@ -16,7 +16,6 @@ import {
   Divider,
   Alert,
 } from "@mui/material";
-import { API_CONFIG } from "../../utils/config";
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -58,18 +57,14 @@ export default function PhysicsEditor({ entityType, entityId }) {
         let response;
 
         // Fetch 2D physics if available
-        response = await fetch(
-          `${API_CONFIG.BASE_URL}/api/physics/2d?${entityType}_id=${entityId}`
-        );
+        response = await fetch(`/api/physics/2d?${entityType}_id=${entityId}`);
         const data2D = await response.json();
         if (data2D.success && data2D.data.length > 0) {
           setPhysics2D(data2D.data[0]);
         }
 
         // Fetch 3D physics if available
-        response = await fetch(
-          `${API_CONFIG.BASE_URL}/api/physics/3d?${entityType}_id=${entityId}`
-        );
+        response = await fetch(`/api/physics/3d?${entityType}_id=${entityId}`);
         const data3D = await response.json();
         if (data3D.success && data3D.data.length > 0) {
           setPhysics3D(data3D.data[0]);
@@ -77,7 +72,7 @@ export default function PhysicsEditor({ entityType, entityId }) {
 
         // Fetch physics objects
         response = await fetch(
-          `${API_CONFIG.BASE_URL}/api/physics/objects?${entityType}_id=${entityId}`
+          `/api/physics/objects?${entityType}_id=${entityId}`
         );
         const objectsData = await response.json();
         if (objectsData.success) {
@@ -87,7 +82,7 @@ export default function PhysicsEditor({ entityType, entityId }) {
         // Fetch physics constraints
         if (entityType === "scene") {
           response = await fetch(
-            `${API_CONFIG.BASE_URL}/api/physics/constraints?scene_id=${entityId}`
+            `/api/physics/constraints?scene_id=${entityId}`
           );
           const constraintsData = await response.json();
           if (constraintsData.success) {
@@ -96,9 +91,7 @@ export default function PhysicsEditor({ entityType, entityId }) {
         }
 
         // Determine if entity uses 2D or 3D physics
-        response = await fetch(
-          `${API_CONFIG.BASE_URL}/api/${entityType}s/${entityId}`
-        );
+        response = await fetch(`/api/${entityType}s/${entityId}`);
         const entityData = await response.json();
         if (entityData.success) {
           setIs2D(entityData.data.is_2d !== false); // Default to true if not specified
@@ -123,8 +116,8 @@ export default function PhysicsEditor({ entityType, entityId }) {
     try {
       const method = physics2D.id ? "PUT" : "POST";
       const url = physics2D.id
-        ? `${API_CONFIG.BASE_URL}/api/physics/2d/${physics2D.id}`
-        : `${API_CONFIG.BASE_URL}/api/physics/2d`;
+        ? `/api/physics/2d/${physics2D.id}`
+        : `/api/physics/2d`;
 
       const response = await fetch(url, {
         method,
@@ -151,8 +144,8 @@ export default function PhysicsEditor({ entityType, entityId }) {
     try {
       const method = physics3D.id ? "PUT" : "POST";
       const url = physics3D.id
-        ? `${API_CONFIG.BASE_URL}/api/physics/3d/${physics3D.id}`
-        : `${API_CONFIG.BASE_URL}/api/physics/3d`;
+        ? `/api/physics/3d/${physics3D.id}`
+        : `/api/physics/3d`;
 
       const response = await fetch(url, {
         method,

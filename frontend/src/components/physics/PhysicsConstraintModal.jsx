@@ -56,7 +56,7 @@ const PhysicsConstraintModal = ({
     const fetchPhysicsObjects = async () => {
       try {
         const response = await fetch(
-          `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-objects?scene_id=${sceneId}`
+          `/api/physics-objects?scene_id=${sceneId}`
         );
 
         if (!response.ok) {
@@ -80,7 +80,7 @@ const PhysicsConstraintModal = ({
 
       try {
         const response = await fetch(
-          `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-constraints/${initialData.id}`
+          `/api/physics-constraints/${initialData.id}`
         );
 
         if (!response.ok) {
@@ -147,8 +147,8 @@ const PhysicsConstraintModal = ({
       }
 
       const url = initialData?.id
-        ? `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-constraints/${initialData.id}`
-        : `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}/physics-constraints`;
+        ? `/api/physics-constraints/${initialData.id}`
+        : `/api/physics-constraints`;
 
       const method = initialData?.id ? "PUT" : "POST";
 

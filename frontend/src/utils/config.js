@@ -9,7 +9,7 @@ export const ENV = import.meta.env.MODE || "development";
 // Export whether we're in production
 export const IS_PRODUCTION = process.env.NODE_ENV === 'production' ||
   import.meta.env.PROD ||
-  (typeof window !== 'undefined' && 
+  (typeof window !== 'undefined' &&
     !window.location.hostname.includes('localhost') &&
     !window.location.hostname.includes('127.0.0.1'));
 
@@ -27,7 +27,7 @@ export const PUBLIC_URL = import.meta.env.PUBLIC_URL || "/";
 
 // Export the API URL
 export const API_URL = IS_PRODUCTION
-  ? '/api' // Use relative URL in production
+  ? '' // Empty string in production to avoid double /api prefix
   : (import.meta.env.VITE_API_URL || "http://localhost:5001/api");
 
 // Export the CDN URL
@@ -106,7 +106,7 @@ export const AUTH_CONFIG = {
 export const API_CONFIG = {
   // Base URL should be relative in production to avoid CORS issues
   BASE_URL: IS_PRODUCTION
-    ? '/api' // Use relative URL in production
+    ? '' // Empty string in production to avoid double /api prefix
     : (import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api"),
   TIMEOUT: 30000,
   HEADERS: {

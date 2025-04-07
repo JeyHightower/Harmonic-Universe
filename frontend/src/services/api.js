@@ -286,7 +286,7 @@ const getApiBaseUrl = () => {
       !window.location.hostname.includes('127.0.0.1'));
 
   if (isProduction) {
-    return '/api'; // In production, use relative URL (same origin)
+    return ''; // In production, use empty string to avoid double /api prefix
   }
 
   return import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
