@@ -4,7 +4,7 @@ from backend.app.api.models.universe import Universe, Scene
 from backend.app.api.models.character import Character
 from backend.app.api.models.note import Note
 from backend.app.extensions import db
-from sqlalchemy import update
+from sqlalchemy import text
 import traceback
 
 universes_bp = Blueprint('universes', __name__)
@@ -233,21 +233,24 @@ def delete_universe(universe_id):
             universe.is_deleted = True
             db.session.flush()  # Flush to get immediate feedback on any DB issues
             
-            # Mark related entities as deleted using direct SQL updates
+            # Mark related entities as deleted using direct SQL updates with text()
             # This avoids loading all related objects into memory and potential cascade issues
             current_app.logger.debug(f"Marking scenes for universe {universe_id} as deleted")
             db.session.execute(
-                update(Scene).where(Scene.universe_id == universe_id).values(is_deleted=True)
+                text("UPDATE scenes SET is_deleted = TRUE WHERE universe_id = :universe_id"),
+                {"universe_id": universe_id}
             )
             
             current_app.logger.debug(f"Marking characters for universe {universe_id} as deleted")
             db.session.execute(
-                update(Character).where(Character.universe_id == universe_id).values(is_deleted=True)
+                text("UPDATE characters SET is_deleted = TRUE WHERE universe_id = :universe_id"),
+                {"universe_id": universe_id}
             )
             
             current_app.logger.debug(f"Marking notes for universe {universe_id} as deleted")
             db.session.execute(
-                update(Note).where(Note.universe_id == universe_id).values(is_deleted=True)
+                text("UPDATE notes SET is_deleted = TRUE WHERE universe_id = :universe_id"),
+                {"universe_id": universe_id}
             )
             
             # Commit all changes
@@ -270,8 +273,8 @@ def delete_universe(universe_id):
     except Exception as e:
         current_app.logger.error(f"Unexpected error deleting universe {universe_id}: {str(e)}")
         current_app.logger.error(traceback.format_exc())
-        return jsonify({'message': 'Error deleting universe', 'error': str(e)}), 500
 
+        return jsonify({'message': 'Error deleting universe', 'error': str(e)}), 500
 @universes_bp.route('/<int:universe_id>/characters', methods=['GET'])
 @jwt_required()
 def get_universe_characters(universe_id):

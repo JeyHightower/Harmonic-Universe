@@ -15,8 +15,8 @@ const UniverseFormModal = ({
   isOpen,
   onClose,
   onSuccess,
-  universe,
-  isEdit,
+  universe = null, // Default value for universe
+  isEdit = false, // Default value for isEdit
 }) => {
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.universes);
@@ -237,11 +237,6 @@ UniverseFormModal.propTypes = {
   onSuccess: PropTypes.func.isRequired,
   universe: PropTypes.object,
   isEdit: PropTypes.bool,
-};
-
-UniverseFormModal.defaultProps = {
-  universe: null,
-  isEdit: false,
 };
 
 export default UniverseFormModal;

@@ -10,7 +10,6 @@ import {
   Route,
   BrowserRouter,
   Navigate,
-  Outlet,
   useLocation,
 } from "react-router-dom";
 import { Provider } from "react-redux";
@@ -18,8 +17,6 @@ import { PersistGate } from "redux-persist/integration/react";
 import store, { persistor } from "./store/store";
 import { useSelector, useDispatch } from "react-redux";
 import { Navigation } from "./components";
-// Import Home using lazy loading to match the routes file
-const Home = lazy(() => import("./pages/Home"));
 import ModalProvider from "./components/modals/ModalProvider";
 import routes from "./routes/index.jsx";
 import { checkAuthState, logout } from "./store/slices/authSlice";
@@ -85,7 +82,12 @@ const RootPathHandler = () => {
   }, [location]);
 
   // Just render the Home component
-  return <Home />;
+  const Home = lazy(() => import("./pages/Home"));
+  return (
+    <Suspense fallback={<LoadingPage />}>
+      <Home />
+    </Suspense>
+  );
 };
 
 // Import critical components directly to ensure they're available
@@ -103,7 +105,7 @@ const DashboardComponent = () => {
 // Create a separate component for the main app content
 const AppContent = () => {
   const auth = useSelector((state) => state.auth);
-  const { isAuthenticated, user, isLoading } = auth;
+  const { isAuthenticated, isLoading } = auth;
   const dispatch = useDispatch();
   const [isPending, startTransition] = useTransition();
   const [routeElements, setRouteElements] = useState(null);
@@ -160,15 +162,19 @@ const AppContent = () => {
       try {
         // Verify user data is valid JSON
         const parsedUserData = JSON.parse(userData);
-        // Handle both direct user objects and response objects with user property
+        console.log("Parsed user data:", parsedUserData); // Log the parsed data
+
+        // Handle various possible structures including Axios response objects
         if (
           parsedUserData &&
-          typeof parsedUserData === "object" &&
-          (parsedUserData.id || (parsedUserData.user && parsedUserData.user.id))
+          typeof parsedUserData === "object" && (
+            parsedUserData.id || 
+            (parsedUserData.user && parsedUserData.user.id) ||
+            (parsedUserData.data && parsedUserData.data.id) ||
+            (parsedUserData.data && parsedUserData.data.user && parsedUserData.data.user.id)
+          )
         ) {
-          console.log(
-            "AppContent - Valid token and user data found, checking auth state"
-          );
+          console.log("AppContent - Valid token and user data found, checking auth state");
           dispatch(checkAuthState());
         } else {
           console.warn("AppContent - User data parsed but invalid format");
@@ -339,7 +345,7 @@ const AppContent = () => {
           </Suspense>
         </main>
         <footer className="App-footer">
-          <p>&copy; {new Date().getFullYear()} Harmonic Universe</p>
+          <p>© {new Date().getFullYear()} Harmonic Universe</p>
         </footer>
       </div>
     );

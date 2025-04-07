@@ -1,16 +1,13 @@
 from ...extensions import db
 from .base import BaseModel
-from sqlalchemy import func, and_, select
+from sqlalchemy import func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from typing import Optional, List, Dict, Any, TYPE_CHECKING
+from typing import Optional, List, Dict, Any
 from .character import Character, character_scenes
 from .note import Note
 from .audio import SoundProfile, AudioSample, MusicPiece
 from .physics import PhysicsObject, Physics2D, Physics3D
 from flask import current_app
-
-if TYPE_CHECKING:
-    from .universe import Universe
 
 class Universe(BaseModel):
     __tablename__ = 'universes'
@@ -22,7 +19,7 @@ class Universe(BaseModel):
     is_public: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=False)
     
     # Relationships
-    scenes: Mapped[List['Scene']] = relationship('Scene', lazy=True, cascade='all, delete-orphan')
+    scenes: Mapped[List["Scene"]] = relationship('Scene', lazy=True, cascade='all, delete-orphan')
     notes: Mapped[List[Note]] = relationship('Note', backref='universe', lazy=True, cascade='all, delete-orphan')
     characters: Mapped[List[Character]] = relationship('Character', backref='universe', lazy=True, cascade='all, delete-orphan')
     physics_objects: Mapped[List[PhysicsObject]] = relationship('PhysicsObject', backref='universe', lazy=True, cascade='all, delete-orphan')
@@ -34,15 +31,19 @@ class Universe(BaseModel):
     
     def __init__(self, name: str, user_id: int, description: Optional[str] = None, sound_profile_id: Optional[int] = None, is_public: bool = False) -> None:
         super().__init__()
-        if not name or len(name.strip()) == 0:
-            raise ValueError("Name is required and cannot be empty")
-        if not user_id:
-            raise ValueError("User ID is required")
+        self.validate_initialization(name, user_id)
         self.name = name
         self.description = description
         self.user_id = user_id
         self.sound_profile_id = sound_profile_id
         self.is_public = is_public
+    
+    def validate_initialization(self, name: str, user_id: int) -> None:
+        """Validate initialization parameters."""
+        if not name or len(name.strip()) == 0:
+            raise ValueError("Name is required and cannot be empty")
+        if not user_id:
+            raise ValueError("User  ID is required")
     
     def validate(self) -> None:
         """Validate universe data."""
@@ -51,75 +52,53 @@ class Universe(BaseModel):
         if len(self.name) > 100:
             raise ValueError("Universe name cannot exceed 100 characters")
         if not self.user_id:
-            raise ValueError("User ID is required")
+            raise ValueError("User  ID is required")
         if self.description and len(self.description) > 5000:
             raise ValueError("Description cannot exceed 5000 characters")
             
     def to_dict(self) -> Dict[str, Any]:
         """Convert universe to dictionary."""
-        # Initialize with default values
-        scenes_count = 0
-        characters_count = 0
-        notes_count = 0
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'user_id': self.user_id,
+            'sound_profile_id': self.sound_profile_id,
+            'is_public': self.is_public,
+            'created_at': str(self.created_at) if self.created_at else None,
+            'updated_at': str(self.updated_at) if self.updated_at else None,
+            'is_deleted': self.is_deleted,
+            'scenes_count': self.get_scenes_count(),
+            'characters_count': self.get_characters_count(),
+            'notes_count': self.get_notes_count()
+        }
         
+    def get_scenes_count(self) -> int:
+        """Get the count of scenes in the universe."""
         try:
-            # Safely get scenes count
-            scenes_count = db.session.query(Scene).filter_by(
-                universe_id=self.id,
-                is_deleted=False
-            ).count()
+            return db.session.query(Scene).filter_by(universe_id=self.id, is_deleted=False).count()
         except Exception as e:
-            # Log error but continue
             print(f"Error getting scenes count for universe {self.id}: {str(e)}")
+            return 0
 
+    def get_characters_count(self) -> int:
+        """Get the count of characters in the universe."""
         try:
-            # Safely get characters count
-            characters_count = db.session.query(Character).filter_by(
-                universe_id=self.id,
-                is_deleted=False
-            ).count()
+            return db.session.query(Character).filter_by(universe_id=self.id, is_deleted=False).count()
         except Exception as e:
-            # Log error but continue
             print(f"Error getting characters count for universe {self.id}: {str(e)}")
+            return 0
 
+    def get_notes_count(self) -> int:
+        """Get the count of notes in the universe."""
         try:
-            # Safely get notes count
-            notes_count = db.session.query(Note).filter_by(
-                universe_id=self.id,
-                is_deleted=False
-            ).count()
+            query = text("SELECT COUNT(*) FROM notes WHERE universe_id = :universe_id AND is_deleted = 0")
+            result = db.session.execute(query, {"universe_id": self.id})
+            return result.scalar() or 0
         except Exception as e:
-            # Log error but continue
             print(f"Error getting notes count for universe {self.id}: {str(e)}")
+            return 0
 
-        try:
-            # Create a dictionary with all the universe attributes
-            return {
-                'id': self.id,
-                'name': self.name,
-                'description': self.description,
-                'user_id': self.user_id,
-                'sound_profile_id': self.sound_profile_id,
-                'is_public': self.is_public,
-                'created_at': str(self.created_at) if self.created_at else None,
-                'updated_at': str(self.updated_at) if self.updated_at else None,
-                'is_deleted': self.is_deleted,
-                'scenes_count': scenes_count,
-                'characters_count': characters_count,
-                'notes_count': notes_count
-            }
-        except Exception as e:
-            # If there's an error creating the dictionary, return a simplified version
-            print(f"Error creating dictionary for universe {self.id}: {str(e)}")
-            return {
-                'id': self.id,
-                'name': str(self.name),
-                'user_id': self.user_id,
-                'is_public': bool(self.is_public),
-                'is_deleted': bool(self.is_deleted) if hasattr(self, 'is_deleted') else False,
-                'error': "Error generating complete universe data"
-            }
-        
     def get_scene_by_name(self, name: str) -> Optional['Scene']:
         """Get a scene by name."""
         return Scene.query.filter_by(universe_id=self.id, name=name, is_deleted=False).first()
@@ -208,71 +187,56 @@ class Universe(BaseModel):
     def repair_universe(cls, universe_id: int) -> Dict[str, Any]:
         """Special method to repair database issues with a universe."""
         try:
-            # First check if universe exists
             universe = cls.query.get(universe_id)
             if not universe:
-                return {
-                    'success': False,
-                    'message': f'Universe with ID {universe_id} not found'
-                }
+                return {'success': False, 'message': f'Universe with ID {universe_id} not found'}
             
-            # Try to fix any database issues with a clean transaction
-            from sqlalchemy import text
-            from ...extensions import db
-            
-            # Make sure any existing transaction is cleaned up
             db.session.close()
             db.session.remove()
             
-            # Start fresh transaction for repair
             with db.session.begin():
-                # 1. Check scenes table for orphaned or corrupted entries
-                repair_sql = text("""
-                    UPDATE scenes 
-                    SET is_deleted = true 
-                    WHERE universe_id = :universe_id AND 
-                          (name IS NULL OR description IS NULL)
-                """)
-                db.session.execute(repair_sql, {'universe_id': universe_id})
+                cls.repair_scenes(universe_id)
+                cls.repair_character_scenes(universe_id)
+                cls.update_universe_record(universe)
                 
-                # 2. Fix character-scene relationships that reference deleted scenes
-                repair_sql = text("""
-                    DELETE FROM character_scenes 
-                    WHERE scene_id IN (
-                        SELECT id FROM scenes 
-                        WHERE universe_id = :universe_id AND is_deleted = true
-                    )
-                """)
-                db.session.execute(repair_sql, {'universe_id': universe_id})
-                
-                # 3. Update the universe record itself
-                try:
-                    # Make sure name isn't null
-                    if not universe.name:
-                        universe.name = f"Repaired Universe {universe_id}"
-                    
-                    # Ensure we have a description
-                    if not universe.description:
-                        universe.description = "This universe was automatically repaired."
-                    
-                    universe.save()
-                except Exception as universe_error:
-                    return {
-                        'success': False,
-                        'message': f'Error fixing universe: {str(universe_error)}'
-                    }
-                
-                return {
-                    'success': True,
-                    'message': f'Universe {universe_id} repaired'
-                }
+            return {'success': True, 'message': f'Universe {universe_id} repaired'}
                 
         except Exception as e:
             db.session.rollback()
-            return {
-                'success': False,
-                'message': f'Error repairing universe: {str(e)}'
-            }
+            return {'success': False, 'message': f'Error repairing universe: {str(e)}'}
+
+    @classmethod
+    def repair_scenes(cls, universe_id: int) -> None:
+        """Repair orphaned or corrupted scenes."""
+        repair_sql = text("""
+            UPDATE scenes 
+            SET is_deleted = true 
+            WHERE universe_id = :universe_id AND 
+                  (name IS NULL OR description IS NULL)
+        """)
+        db.session.execute(repair_sql, {'universe_id': universe_id})
+
+    @classmethod
+    def repair_character_scenes(cls, universe_id: int) -> None:
+        """Fix character-scene relationships that reference deleted scenes."""
+        repair_sql = text("""
+            DELETE FROM character_scenes 
+            WHERE scene_id IN (
+                SELECT id FROM scenes 
+                WHERE universe_id = :universe_id AND is_deleted = true
+            )
+        """)
+        db.session.execute(repair_sql, {'universe_id': universe_id})
+
+    @classmethod
+    def update_universe_record(cls, universe) -> None:
+        """Update the universe record to ensure it has valid data."""
+        if not universe.name:
+            universe.name = f"Repaired Universe {universe.id}"
+        if not universe.description:
+            universe.description = "This universe was automatically repaired."
+        universe.save()
+
 
 class Scene(BaseModel):
     __tablename__ = 'scenes'
@@ -294,7 +258,7 @@ class Scene(BaseModel):
     is_public: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=False)
     
     # Relationships
-    universe: Mapped[Optional[Universe]] = relationship('Universe', foreign_keys=[universe_id], lazy=True)
+    universe: Mapped[Optional["Universe"]] = relationship('Universe', foreign_keys=[universe_id], lazy=True)
     notes: Mapped[List[Note]] = relationship('Note', backref='scene', lazy=True, cascade='all, delete-orphan')
     characters: Mapped[List[Character]] = relationship('Character', secondary=character_scenes, lazy=True)
     physics_objects: Mapped[List[PhysicsObject]] = relationship('PhysicsObject', backref='scene', lazy=True, cascade='all, delete-orphan')
@@ -305,15 +269,19 @@ class Scene(BaseModel):
     
     def __init__(self, name: str, universe_id: int, description: Optional[str] = None, sound_profile_id: Optional[int] = None, is_public: bool = False) -> None:
         super().__init__()
-        if not name or len(name.strip()) == 0:
-            raise ValueError("Name is required and cannot be empty")
-        if not universe_id:
-            raise ValueError("Universe ID is required")
+        self.validate_initialization(name, universe_id)
         self.name = name
         self.description = description
         self.universe_id = universe_id
         self.sound_profile_id = sound_profile_id
         self.is_public = is_public
+    
+    def validate_initialization(self, name: str, universe_id: int) -> None:
+        """Validate initialization parameters."""
+        if not name or len(name.strip()) == 0:
+            raise ValueError("Name is required and cannot be empty")
+        if not universe_id:
+            raise ValueError("Universe ID is required")
     
     def validate(self) -> None:
         """Validate scene data."""
@@ -328,117 +296,50 @@ class Scene(BaseModel):
             
     def to_dict(self) -> Dict[str, Any]:
         """Convert scene to dictionary."""
-        # Default values for safety
-        characters_count = 0
-        notes_count = 0
-        
+        return {
+            'id': self.id,
+            'name': self.name,
+            'universe_id': self.universe_id,
+            'is_public': self.is_public,
+            'is_deleted': self.is_deleted,
+            'characters_count': self.get_characters_count(),
+            'notes_count': self.get_notes_count(),
+            **self.get_optional_fields()
+        }
+
+    def get_characters_count(self) -> int:
+        """Get the count of characters in the scene."""
         try:
-            # Try to safely get counts only if we have a valid ID and are in a database session
-            if hasattr(self, 'id') and self.id is not None and db.session.is_active:
-                try:
-                    # Using a simpler query approach to avoid type issues
-                    stmt = db.session.query(func.count()).select_from(Character).join(
-                        character_scenes).filter(character_scenes.c.scene_id == self.id)
-                    result = db.session.execute(stmt)
-                    characters_count = result.scalar() or 0
-                except Exception as e:
-                    # Just log and continue with default count
-                    print(f"Error counting characters for scene {self.id}: {str(e)}")
-                    if current_app:
-                        current_app.logger.error(f"Error counting characters for scene {self.id}: {str(e)}")
-                
-                try:
-                    # Using a simpler query approach to avoid type issues
-                    stmt = db.session.query(func.count()).select_from(Note).filter(
-                        Note.scene_id == self.id, Note.is_deleted == False)
-                    result = db.session.execute(stmt)
-                    notes_count = result.scalar() or 0
-                except Exception as e:
-                    # Just log and continue with default count
-                    print(f"Error counting notes for scene {self.id}: {str(e)}")
-                    if current_app:
-                        current_app.logger.error(f"Error counting notes for scene {self.id}: {str(e)}")
+            stmt = db.session.query(func.count()).select_from(Character).join(character_scenes).filter(character_scenes.c.scene_id == self.id)
+            result = db.session.execute(stmt)
+            return result.scalar() or 0
         except Exception as e:
-            # Fail gracefully if counts can't be retrieved
-            print(f"Error getting counts for scene {self.id if hasattr(self, 'id') else 'unknown'}: {str(e)}")
-            if current_app:
-                current_app.logger.error(f"Error getting counts for scene {self.id if hasattr(self, 'id') else 'unknown'}: {str(e)}")
-        
-        # Safely assemble the dictionary
+            print(f"Error counting characters for scene {self.id}: {str(e)}")
+            return 0
+
+    def get_notes_count(self) -> int:
+        """Get the count of notes in the scene."""
         try:
-            # Start with minimal safe attributes to ensure something is returned
-            result = {
-                'id': self.id if hasattr(self, 'id') else None,
-                'name': str(self.name) if hasattr(self, 'name') and self.name is not None else "Unknown",
-                'universe_id': self.universe_id if hasattr(self, 'universe_id') else None,
-            }
-            
-            # Add boolean flags with explicit checks to avoid None errors
-            try:
-                result['is_public'] = bool(self.is_public) if hasattr(self, 'is_public') and self.is_public is not None else False
-            except Exception:
-                result['is_public'] = False
-                
-            try:
-                result['is_deleted'] = bool(self.is_deleted) if hasattr(self, 'is_deleted') and self.is_deleted is not None else False
-            except Exception:
-                result['is_deleted'] = False
-            
-            # Only add counts if they were successfully retrieved
-            result['characters_count'] = characters_count
-            result['notes_count'] = notes_count
-            
-            # Add optional text fields with safety checks
-            for field in ['description', 'summary', 'content', 'notes_text', 'location',
-                          'scene_type', 'time_of_day', 'status', 'significance', 
-                          'date_of_scene']:
-                try:
-                    if hasattr(self, field) and getattr(self, field) is not None:
-                        result[field] = str(getattr(self, field))
-                except Exception:
-                    # Skip fields that cause errors
-                    pass
-            
-            # Add optional numeric fields
-            for field in ['order', 'sound_profile_id']:
-                try:
-                    if hasattr(self, field) and getattr(self, field) is not None:
-                        result[field] = getattr(self, field)
-                except Exception:
-                    # Skip fields that cause errors
-                    pass
-            
-            # Format dates as strings with explicit error handling
-            for date_field in ['created_at', 'updated_at']:
-                try:
-                    if hasattr(self, date_field) and getattr(self, date_field) is not None:
-                        result[date_field] = str(getattr(self, date_field))
-                except Exception:
-                    # Skip date fields that cause errors
-                    pass
-                
-            return result
-            
+            query = text("SELECT COUNT(*) FROM notes WHERE scene_id = :scene_id AND is_deleted = 0")
+            result = db.session.execute(query, {"scene_id": self.id})
+            return result.scalar() or 0
         except Exception as e:
-            # Capture traceback for detailed debugging
-            import traceback
-            error_trace = traceback.format_exc()
-            
-            # If conversion fails completely, return absolute minimal data
-            print(f"Critical error creating dictionary for scene: {str(e)}\n{error_trace}")
-            if current_app:
-                current_app.logger.error(f"Critical error creating dictionary for scene: {str(e)}")
-                current_app.logger.error(error_trace)
-                
-            # Last resort fallback with minimal required fields
-            fallback = {
-                'id': self.id if hasattr(self, 'id') else None,
-                'name': "Error: Scene data could not be loaded",
-                'universe_id': self.universe_id if hasattr(self, 'universe_id') else None,
-                'error': "Error generating scene data"
-            }
-            return fallback
-        
+            print(f"Error counting notes for scene {self.id}: {str(e)}")
+            return 0
+
+    def get_optional_fields(self) -> Dict[str, Any]:
+        """Get optional fields for the scene dictionary."""
+        optional_fields = {}
+        for field in ['description', 'summary', 'content', 'notes_text', 'location', 'scene_type', 'time_of_day', 'status', 'significance', 'date_of_scene']:
+            value = getattr(self, field, None)
+            if value is not None:
+                optional_fields[field] = str(value)
+        for field in ['order', 'sound_profile_id']:
+            value = getattr(self, field, None)
+            if value is not None:
+                optional_fields[field] = value
+        return optional_fields
+
     def get_character_by_name(self, name: str) -> Optional[Character]:
         """Get a character by name."""
         return Character.query.join(character_scenes).filter_by(scene_id=self.id, name=name, is_deleted=False).first()
@@ -493,4 +394,4 @@ class Scene(BaseModel):
     def make_private(self) -> None:
         """Make the scene private."""
         self.is_public = False
-        self.save() 
+        self.save()

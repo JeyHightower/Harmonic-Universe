@@ -1,0 +1,4 @@
+FLASK_APP=wsgi.py
+FLASK_ENV=production
+FLASK_DEBUG=0
+PYTHONPATH=. 

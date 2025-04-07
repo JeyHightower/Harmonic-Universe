@@ -10,7 +10,13 @@ class Config:
     # Database config
     # Relative path to instance directory for sqlite
     db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'instance', 'app.db')
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', f'sqlite:///{db_path}')
+    
+    # Handle PostgreSQL URL from render.com (starts with postgres://) vs SQLAlchemy (requires postgresql://)
+    database_url = os.environ.get('DATABASE_URL', f'sqlite:///{db_path}')
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+        
+    SQLALCHEMY_DATABASE_URI = database_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Application environment

@@ -54,32 +54,23 @@ def setup_database(reset_db=True):
     else:
         print(f"Using existing database: {db_path}")
     
-    # Set SQLite database URL explicitly if not already set
-    database_url = os.environ.get('DATABASE_URL')
-    if not database_url:
-        os.environ['DATABASE_URL'] = f'sqlite:///{db_path}'
-    # Fix for PostgreSQL URL format if needed
-    elif database_url.startswith('postgres://'):
-        os.environ['DATABASE_URL'] = database_url.replace('postgres://', 'postgresql://', 1)
-        print("Converted 'postgres://' to 'postgresql://' for SQLAlchemy compatibility")
+    # Set SQLite database URL explicitly
+    os.environ['DATABASE_URL'] = f'sqlite:///{db_path}'
     
     # Import after setting DATABASE_URL
     from flask_migrate import Migrate, init, migrate as create_migration, upgrade
-    from app import create_app
-    
-    # Create Flask application
-    app = create_app()
-    
-    # Get db reference from app
-    from app import db
+    from app import create_app, db
     
     # Import all models to ensure they are registered with SQLAlchemy
-    from app.api.models import (
+    from backend.app.api.models import (
         User, Note, Universe, Scene, Physics2D, Physics3D,
         PhysicsObject, PhysicsConstraint, SoundProfile,
         AudioSample, MusicPiece, Harmony, MusicalTheme,
         Character
     )
+    
+    # Create Flask application
+    app = create_app()
     
     # Initialize Flask-Migrate
     migrate = Migrate(app, db)
