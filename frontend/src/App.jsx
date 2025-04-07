@@ -147,7 +147,6 @@ const AppContent = () => {
   useEffect(() => {
     console.log("AppContent - Checking auth state");
 
-    // Check if auth tokens and user data are in local storage
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
     const userData = localStorage.getItem(AUTH_CONFIG.USER_KEY);
 
@@ -157,37 +156,34 @@ const AppContent = () => {
       tokenLength: token ? token.length : 0,
     });
 
-    // Only dispatch checkAuthState if we have necessary data
     if (token && userData) {
       try {
-        // Verify user data is valid JSON
         const parsedUserData = JSON.parse(userData);
-        console.log("Parsed user data:", parsedUserData); // Log the parsed data
+        console.log("Parsed user data:", parsedUserData);
 
-        // Handle various possible structures including Axios response objects
         if (
           parsedUserData &&
-          typeof parsedUserData === "object" && (
-            parsedUserData.id || 
+          typeof parsedUserData === "object" &&
+          (parsedUserData.id ||
             (parsedUserData.user && parsedUserData.user.id) ||
             (parsedUserData.data && parsedUserData.data.id) ||
-            (parsedUserData.data && parsedUserData.data.user && parsedUserData.data.user.id)
-          )
+            (parsedUserData.data &&
+              parsedUserData.data.user &&
+              parsedUserData.data.user.id))
         ) {
-          console.log("AppContent - Valid token and user data found, checking auth state");
+          console.log(
+            "AppContent - Valid token and user data found, checking auth state"
+          );
           dispatch(checkAuthState());
         } else {
           console.warn("AppContent - User data parsed but invalid format");
-          // Log the actual parsed data to help debug
           console.warn("Invalid user data:", parsedUserData);
-          // Don't log out during page hard refresh
           if (!isHardRefresh()) {
             dispatch(logout());
           }
         }
       } catch (e) {
         console.error("AppContent - Error parsing user data:", e.message);
-        // Don't log out during page hard refresh
         if (!isHardRefresh()) {
           dispatch(logout());
         }
@@ -196,8 +192,6 @@ const AppContent = () => {
       console.info(
         "AppContent - No authentication data found (normal for new sessions)"
       );
-      // Don't automatically logout on initial load or during hard refresh
-      // Only logout if we previously had auth data and this is not a hard refresh
       if (initialAuthCheckDone && !isHardRefresh()) {
         console.log(
           "AppContent - Logging out due to missing auth data after initial check"
@@ -213,12 +207,10 @@ const AppContent = () => {
     setInitialAuthCheckDone(true);
   }, [dispatch]);
 
-  // Listen for storage events (which we might dispatch manually)
   useEffect(() => {
     const handleStorageChange = (event) => {
       console.log("AppContent - Storage changed, checking auth state", event);
 
-      // If the token or user data changed, check auth state
       if (
         !event.key ||
         event.key === AUTH_CONFIG.TOKEN_KEY ||
@@ -236,7 +228,6 @@ const AppContent = () => {
           console.info(
             "AppContent - No authentication data in storage (normal for new sessions)"
           );
-          // Don't log out during hard refresh
           if (initialAuthCheckDone && !isHardRefresh()) {
             console.log(
               "AppContent - Logging out due to missing auth data after storage event"
@@ -255,13 +246,11 @@ const AppContent = () => {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, [dispatch, initialAuthCheckDone]);
 
-  // Set up route elements with startTransition to prevent suspension during synchronous updates
   useEffect(() => {
     if (!isLoading) {
       console.log("Setting up routes with auth state:", isAuthenticated);
       console.log("Routes data:", routes);
 
-      // Check if routes is properly defined
       if (!routes || !Array.isArray(routes)) {
         console.error("Routes is not an array:", routes);
         return;
@@ -289,9 +278,8 @@ const AppContent = () => {
         }
       });
     }
-  }, [isLoading, isAuthenticated]); // Re-create routes when auth state changes
+  }, [isLoading, isAuthenticated]);
 
-  // Simplified auth key to avoid excessive re-renders
   const authKey = isAuthenticated ? "authenticated" : "unauthenticated";
 
   if (isLoading) {
@@ -309,10 +297,7 @@ const AppContent = () => {
                 <Route path="*" element={<LoadingPage />} />
               ) : (
                 <>
-                  {/* First add an explicit route to handle the root path with query params */}
                   <Route path="/" element={<RootPathHandler />} />
-
-                  {/* Add critical routes directly as fallback */}
                   <Route
                     path="/dashboard"
                     element={
@@ -321,14 +306,11 @@ const AppContent = () => {
                       </ProtectedRoute>
                     }
                   />
-
-                  {/* Add direct route for characters to fix routing issues */}
                   <Route
                     path="/universes/:universeId/characters"
                     element={
                       <ProtectedRoute>
                         <Suspense fallback={<LoadingPage />}>
-                          {/* Dynamic import of CharactersPage to match how it's loaded in routes/index.jsx */}
                           {React.createElement(
                             lazy(() => import("./pages/CharactersPage"))
                           )}
@@ -336,8 +318,19 @@ const AppContent = () => {
                       </ProtectedRoute>
                     }
                   />
-
-                  {/* Then add all the other routes */}
+                  {/* Add direct route for scenes to fix routing issues */}
+                  <Route
+                    path="/universes/:universeId/scenes"
+                    element={
+                      <ProtectedRoute>
+                        <Suspense fallback={<LoadingPage />}>
+                          {React.createElement(
+                            lazy(() => import("./pages/ScenesPage"))
+                          )}
+                        </Suspense>
+                      </ProtectedRoute>
+                    }
+                  />
                   {routeElements}
                 </>
               )}
@@ -360,14 +353,12 @@ function App() {
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
-    // Log that the component has mounted successfully
     console.log("App component mounted successfully");
     return () => {
       console.log("App component unmounted");
     };
   }, []);
 
-  // Error boundary functionality
   if (hasError) {
     return <ErrorFallback />;
   }

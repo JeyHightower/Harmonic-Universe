@@ -16,8 +16,10 @@ import {
   TextField,
   FormControlLabel,
   Switch,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
-import { Add as AddIcon } from "@mui/icons-material";
+import { Add as AddIcon, Refresh as RefreshIcon } from "@mui/icons-material";
 import {
   fetchScenes,
   deleteScene,
@@ -96,6 +98,14 @@ const SceneList = () => {
         fetchPromise
           .then((result) => {
             console.log("SceneList: Scenes fetch completed:", result);
+            console.log("SceneList: Raw payload data:", result.payload);
+            if (result.payload && result.payload.scenes) {
+              console.log(
+                "SceneList: Non-deleted scenes:",
+                result.payload.scenes.filter((s) => s && s.is_deleted !== true)
+                  .length
+              );
+            }
             console.log("SceneList: Current scenes in store:", scenes || []);
 
             // Ensure universeScenes for this universe is up to date
@@ -171,15 +181,74 @@ const SceneList = () => {
     // Close the modal first
     setIsCreateModalOpen(false);
 
-    // Add the newly created scene to our local state
-    if (sceneData && sceneData.id) {
-      dispatch(addScene(sceneData));
+    // Make sure is_deleted is explicitly false on the new scene
+    const sceneWithDeleteFlag = {
+      ...sceneData,
+      is_deleted: false,
+    };
+
+    console.log(
+      "SceneList: Adding scene with explicit is_deleted=false:",
+      sceneWithDeleteFlag
+    );
+
+    // Add the newly created scene to Redux store
+    if (sceneWithDeleteFlag && sceneWithDeleteFlag.id) {
+      // Add to global scenes array
+      dispatch(addScene(sceneWithDeleteFlag));
+
+      // Add to locally created scenes for persistence
+      dispatch({
+        type: "scenes/addLocallyCreatedScene",
+        payload: sceneWithDeleteFlag,
+      });
+
+      // Update current universe's scenes array
+      if (universeId) {
+        // Get current scenes for this universe
+        const currentScenes = universeScenes[universeId] || [];
+
+        // Check if scene already exists
+        const sceneExists = currentScenes.some(
+          (s) => s.id === sceneWithDeleteFlag.id
+        );
+
+        if (!sceneExists) {
+          console.log(
+            "SceneList: Adding new scene to universe scenes:",
+            universeId
+          );
+
+          // Create updated scenes array with the new scene
+          const updatedScenes = [...currentScenes, sceneWithDeleteFlag];
+
+          // Update the scenes for this universe in Redux
+          dispatch({
+            type: "scenes/fetchScenes/fulfilled",
+            payload: { scenes: updatedScenes },
+            meta: { arg: universeId },
+          });
+        }
+      }
+
+      // Also fetch from server to ensure we have the latest data
+      dispatch(fetchScenes(universeId))
+        .then((result) => {
+          console.log(
+            "SceneList: Successfully refreshed scenes after creation:",
+            result
+          );
+        })
+        .catch((err) => {
+          console.error(
+            "SceneList: Error refreshing scenes after creation:",
+            err
+          );
+        });
     }
 
     // Force render to ensure UI update
     setForceRender((prev) => prev + 1);
-
-    // No automatic navigation needed - the user should remain on the scenes list
   };
 
   const handleDeleteClick = (scene) => {
@@ -257,6 +326,14 @@ const SceneList = () => {
     .filter((scene) => {
       if (!scene) return false;
 
+      // Filter out scenes that are marked as deleted
+      if (scene.is_deleted === true) {
+        console.log(
+          `SceneList: Filtering out deleted scene: ${scene.id} - ${scene.name}`
+        );
+        return false;
+      }
+
       // Apply user-selected filters (universe filtering is already done)
       if (filter === "all") return true;
       if (filter === "active") return !!scene.is_active;
@@ -286,6 +363,69 @@ const SceneList = () => {
 
       return sortOrder === "asc" ? comparison : -comparison;
     });
+
+  console.log("SceneList: Final filtered and sorted scenes to display:", {
+    totalCount: filteredAndSortedScenes.length,
+    scenes: filteredAndSortedScenes.map((scene) => ({
+      id: scene.id,
+      name: scene.name,
+      is_deleted: scene.is_deleted,
+    })),
+  });
+
+  // Log the universe scenes data for debugging
+  useEffect(() => {
+    if (universeId && universeScenes[universeId]) {
+      console.log(`SceneList: Universe ${universeId} scenes data:`, {
+        total: universeScenes[universeId].length,
+        nonDeleted: universeScenes[universeId].filter(
+          (s) => s.is_deleted !== true
+        ).length,
+        deleted: universeScenes[universeId].filter((s) => s.is_deleted === true)
+          .length,
+      });
+    }
+  }, [universeId, universeScenes]);
+
+  // Add debug function to force refresh and log scene state
+  const debugForceRefresh = () => {
+    console.log("====== DEBUG: FORCE REFRESHING SCENES ======");
+    console.log("Current scenes state:", {
+      scenes,
+      universeScenes,
+      currentUniverseScenes,
+      locallyCreatedScenes,
+    });
+
+    // Increment forceRender to trigger UI update
+    setForceRender((prev) => prev + 1);
+
+    // Force fetch from server
+    dispatch(fetchScenes(universeId)).then((result) => {
+      console.log("DEBUG: Forced refresh result:", result);
+
+      // Add debug info to help understand scene visibility issues
+      if (result?.payload?.scenes) {
+        const allScenes = result.payload.scenes;
+        const activeScenes = allScenes.filter(
+          (s) => s && s.is_deleted !== true
+        );
+        const deletedScenes = allScenes.filter(
+          (s) => s && s.is_deleted === true
+        );
+
+        console.log("DEBUG SCENES ANALYSIS:", {
+          total: allScenes.length,
+          active: activeScenes.length,
+          deleted: deletedScenes.length,
+          activeSceneIds: activeScenes.map((s) => s.id),
+          deletedSceneIds: deletedScenes.map((s) => s.id),
+        });
+      }
+    });
+
+    console.log("===========================================");
+  };
 
   if (loading) {
     return (
@@ -343,6 +483,18 @@ const SceneList = () => {
             >
               Inactive
             </Button>
+
+            {/* Add debug refresh button */}
+            <Tooltip title="Force Refresh Scenes">
+              <IconButton
+                color="primary"
+                size="small"
+                onClick={debugForceRefresh}
+                sx={{ ml: 1 }}
+              >
+                <RefreshIcon />
+              </IconButton>
+            </Tooltip>
           </Box>
 
           <Box className="sort-controls">
@@ -377,6 +529,51 @@ const SceneList = () => {
           >
             Create Scene
           </Button>
+        </Box>
+      </Box>
+
+      {/* Debug information display */}
+      <Box
+        sx={{
+          mt: 2,
+          mb: 2,
+          p: 2,
+          border: "1px dashed grey",
+          borderRadius: 1,
+          bgcolor: "#f5f5f5",
+        }}
+      >
+        <Typography variant="h6">Debug Information</Typography>
+        <Typography variant="body2">Universe ID: {universeId}</Typography>
+        <Typography variant="body2">
+          Scenes Count: {(currentUniverseScenes || []).length}
+        </Typography>
+        <Typography variant="body2">
+          Filtered Scenes Count: {filteredAndSortedScenes.length}
+        </Typography>
+        <Typography variant="body2">
+          Scenes in Redux Store: {(scenes || []).length}
+        </Typography>
+        <Typography variant="body2">
+          Local Scenes: {(locallyCreatedScenes || []).length}
+        </Typography>
+
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="subtitle2">Raw Scene Data:</Typography>
+          <Box
+            component="pre"
+            sx={{
+              mt: 1,
+              maxHeight: 200,
+              overflow: "auto",
+              fontSize: "12px",
+              p: 1,
+              bgcolor: "#eaeaea",
+              borderRadius: 1,
+            }}
+          >
+            {JSON.stringify(currentUniverseScenes || [], null, 2)}
+          </Box>
         </Box>
       </Box>
 

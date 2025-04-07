@@ -28,17 +28,17 @@ const isDemoMode = () => {
 const saveCharactersToCache = (universeId, characters) => {
   try {
     if (!IS_PRODUCTION) return; // Only use cache in production
-    
+
     // Get existing cache or initialize empty object
     const cacheString = localStorage.getItem(CHARACTER_CACHE_KEY);
     const cache = cacheString ? JSON.parse(cacheString) : {};
-    
+
     // Update cache for this universe
     cache[universeId] = {
       characters,
       timestamp: Date.now() // Add timestamp for potential cache expiration
     };
-    
+
     // Save updated cache
     localStorage.setItem(CHARACTER_CACHE_KEY, JSON.stringify(cache));
     console.log(`Cached ${characters.length} characters for universe ${universeId}`);
@@ -51,19 +51,19 @@ const saveCharactersToCache = (universeId, characters) => {
 const getCharactersFromCache = (universeId) => {
   try {
     if (!IS_PRODUCTION) return null; // Only use cache in production
-    
+
     const cacheString = localStorage.getItem(CHARACTER_CACHE_KEY);
     if (!cacheString) return null;
-    
+
     const cache = JSON.parse(cacheString);
     const universeCache = cache[universeId];
-    
+
     // Check if cache exists and is not too old (24 hours)
     if (universeCache && (Date.now() - universeCache.timestamp < 24 * 60 * 60 * 1000)) {
       console.log(`Using cached ${universeCache.characters.length} characters for universe ${universeId}`);
       return universeCache.characters;
     }
-    
+
     return null;
   } catch (error) {
     console.error('Error reading characters from cache:', error);
@@ -128,7 +128,7 @@ export const fetchCharactersByUniverse = createAsyncThunk(
           return cachedCharacters;
         }
       }
-      
+
       // In production demo mode, return empty array immediately without API call
       if (isDemoMode()) {
         console.log('Demo mode: Returning empty characters array for universe');
@@ -171,21 +171,25 @@ export const fetchCharactersByUniverse = createAsyncThunk(
       }
 
       console.log(`Redux: Found ${characters.length} characters for universe ${parsedUniverseId}`);
-      
+
       // Save to cache in production
       if (IS_PRODUCTION && characters.length > 0) {
         saveCharactersToCache(parsedUniverseId, characters);
       }
-      
+
       return characters;
     } catch (error) {
       // If we get rate limited, try with retry logic
       if (error.response?.status === 429) {
         console.log('Rate limited when fetching characters by universe, trying with retry logic...');
         try {
+          // Use the same endpoint format as our API client - simple and direct
+          const url = `${apiClient.defaults.baseURL}/universes/${parsedUniverseId}/characters`;
+          console.log("Retry request URL:", url);
+
           const response = await requestWithRetry({
             method: 'get',
-            url: `${apiClient.defaults.baseURL}/universes/${parsedUniverseId}/characters`,
+            url: url,
             headers: apiClient.defaults.headers,
             withCredentials: true
           });
@@ -196,16 +200,16 @@ export const fetchCharactersByUniverse = createAsyncThunk(
           } else if (Array.isArray(response.data)) {
             characters = response.data;
           }
-          
+
           // Save to cache
           if (IS_PRODUCTION && characters.length > 0) {
             saveCharactersToCache(parsedUniverseId, characters);
           }
-          
+
           return characters;
         } catch (retryError) {
           console.error(`Error in retry for characters of universe ${universeId}:`, retryError);
-          
+
           // Check cache again as fallback
           if (IS_PRODUCTION) {
             const cachedCharacters = getCharactersFromCache(universeId);
@@ -214,7 +218,7 @@ export const fetchCharactersByUniverse = createAsyncThunk(
               return cachedCharacters;
             }
           }
-          
+
           // In production, return empty array instead of failing
           if (IS_PRODUCTION) {
             return [];
@@ -233,7 +237,7 @@ export const fetchCharactersByUniverse = createAsyncThunk(
           return cachedCharacters;
         }
       }
-      
+
       // In production, return empty array instead of failing
       if (IS_PRODUCTION) {
         return [];
@@ -320,27 +324,27 @@ export const createCharacter = createAsyncThunk(
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
-        
+
         // Update cache with the new character
         if (IS_PRODUCTION && characterData.universe_id) {
           const state = getState();
           const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
           saveCharactersToCache(characterData.universe_id, [...existingCharacters, mockCharacter]);
         }
-        
+
         return mockCharacter;
       }
 
       const response = await apiClient.createCharacter(characterData);
       const newCharacter = response.data.character;
-      
+
       // Update cache with the new character
       if (IS_PRODUCTION && characterData.universe_id) {
         const state = getState();
         const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
         saveCharactersToCache(characterData.universe_id, [...existingCharacters, newCharacter]);
       }
-      
+
       return newCharacter;
     } catch (error) {
       // If we get rate limited, try with retry logic
@@ -354,16 +358,16 @@ export const createCharacter = createAsyncThunk(
             headers: apiClient.defaults.headers,
             withCredentials: true
           });
-          
+
           const newCharacter = response.data.character;
-          
+
           // Update cache
           if (IS_PRODUCTION && characterData.universe_id) {
             const state = getState();
             const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
             saveCharactersToCache(characterData.universe_id, [...existingCharacters, newCharacter]);
           }
-          
+
           return newCharacter;
         } catch (retryError) {
           // In production, return mock character instead of failing
@@ -375,14 +379,14 @@ export const createCharacter = createAsyncThunk(
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             };
-            
+
             // Update cache
             if (characterData.universe_id) {
               const state = getState();
               const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
               saveCharactersToCache(characterData.universe_id, [...existingCharacters, mockCharacter]);
             }
-            
+
             return mockCharacter;
           }
           return rejectWithValue(handleError(retryError));
@@ -398,14 +402,14 @@ export const createCharacter = createAsyncThunk(
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
-        
+
         // Update cache
         if (characterData.universe_id) {
           const state = getState();
           const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
           saveCharactersToCache(characterData.universe_id, [...existingCharacters, mockCharacter]);
         }
-        
+
         return mockCharacter;
       }
       return rejectWithValue(handleError(error));
@@ -426,33 +430,33 @@ export const updateCharacter = createAsyncThunk(
           ...characterData,
           updated_at: new Date().toISOString()
         };
-        
+
         // Update character in cache
         if (IS_PRODUCTION && characterData.universe_id) {
           const state = getState();
           const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
-          const updatedCharacters = existingCharacters.map(char => 
+          const updatedCharacters = existingCharacters.map(char =>
             char.id === characterId ? updatedCharacter : char
           );
           saveCharactersToCache(characterData.universe_id, updatedCharacters);
         }
-        
+
         return updatedCharacter;
       }
 
       const response = await apiClient.updateCharacter(characterId, characterData);
       const updatedCharacter = response.data.character;
-      
+
       // Update character in cache
       if (IS_PRODUCTION && characterData.universe_id) {
         const state = getState();
         const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
-        const updatedCharacters = existingCharacters.map(char => 
+        const updatedCharacters = existingCharacters.map(char =>
           char.id === characterId ? updatedCharacter : char
         );
         saveCharactersToCache(characterData.universe_id, updatedCharacters);
       }
-      
+
       return updatedCharacter;
     } catch (error) {
       // If we get rate limited, try with retry logic
@@ -466,19 +470,19 @@ export const updateCharacter = createAsyncThunk(
             headers: apiClient.defaults.headers,
             withCredentials: true
           });
-          
+
           const updatedCharacter = response.data.character;
-          
+
           // Update cache
           if (IS_PRODUCTION && characterData.universe_id) {
             const state = getState();
             const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
-            const updatedCharacters = existingCharacters.map(char => 
+            const updatedCharacters = existingCharacters.map(char =>
               char.id === characterId ? updatedCharacter : char
             );
             saveCharactersToCache(characterData.universe_id, updatedCharacters);
           }
-          
+
           return updatedCharacter;
         } catch (retryError) {
           // In production, return mock character instead of failing
@@ -489,17 +493,17 @@ export const updateCharacter = createAsyncThunk(
               ...characterData,
               updated_at: new Date().toISOString()
             };
-            
+
             // Update cache
             if (characterData.universe_id) {
               const state = getState();
               const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
-              const updatedCharacters = existingCharacters.map(char => 
+              const updatedCharacters = existingCharacters.map(char =>
                 char.id === characterId ? updatedCharacter : char
               );
               saveCharactersToCache(characterData.universe_id, updatedCharacters);
             }
-            
+
             return updatedCharacter;
           }
           return rejectWithValue(handleError(retryError));
@@ -514,17 +518,17 @@ export const updateCharacter = createAsyncThunk(
           ...characterData,
           updated_at: new Date().toISOString()
         };
-        
+
         // Update cache
         if (characterData.universe_id) {
           const state = getState();
           const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
-          const updatedCharacters = existingCharacters.map(char => 
+          const updatedCharacters = existingCharacters.map(char =>
             char.id === characterId ? updatedCharacter : char
           );
           saveCharactersToCache(characterData.universe_id, updatedCharacters);
         }
-        
+
         return updatedCharacter;
       }
       return rejectWithValue(handleError(error));
@@ -540,7 +544,7 @@ export const deleteCharacter = createAsyncThunk(
       // In production demo mode, return success without API call
       if (isDemoMode()) {
         console.log('Demo mode: Simulating successful character deletion');
-        
+
         // Update character caches
         if (IS_PRODUCTION) {
           const state = getState();
@@ -553,12 +557,12 @@ export const deleteCharacter = createAsyncThunk(
             }
           });
         }
-        
+
         return characterId;
       }
 
       await apiClient.deleteCharacter(characterId);
-      
+
       // Update character caches
       if (IS_PRODUCTION) {
         const state = getState();
@@ -571,7 +575,7 @@ export const deleteCharacter = createAsyncThunk(
           }
         });
       }
-      
+
       return characterId;
     } catch (error) {
       // If we get rate limited, try with retry logic
@@ -584,7 +588,7 @@ export const deleteCharacter = createAsyncThunk(
             headers: apiClient.defaults.headers,
             withCredentials: true
           });
-          
+
           // Update character caches
           if (IS_PRODUCTION) {
             const state = getState();
@@ -596,13 +600,13 @@ export const deleteCharacter = createAsyncThunk(
               }
             });
           }
-          
+
           return characterId;
         } catch (retryError) {
           // In production, return characterId (success) instead of failing
           if (IS_PRODUCTION) {
             console.log('Production mode: Simulating successful character deletion after retry failure');
-            
+
             // Update character caches despite error
             const state = getState();
             Object.keys(state.characters.universeCharacters).forEach(universeId => {
@@ -612,7 +616,7 @@ export const deleteCharacter = createAsyncThunk(
                 saveCharactersToCache(universeId, filteredCharacters);
               }
             });
-            
+
             return characterId;
           }
           return rejectWithValue(handleError(retryError));
@@ -622,7 +626,7 @@ export const deleteCharacter = createAsyncThunk(
       // In production, return characterId (success) instead of failing
       if (IS_PRODUCTION) {
         console.log('Production mode: Simulating successful character deletion after failure');
-        
+
         // Update character caches despite error
         const state = getState();
         Object.keys(state.characters.universeCharacters).forEach(universeId => {
@@ -632,7 +636,7 @@ export const deleteCharacter = createAsyncThunk(
             saveCharactersToCache(universeId, filteredCharacters);
           }
         });
-        
+
         return characterId;
       }
       return rejectWithValue(handleError(error));

@@ -74,6 +74,7 @@ const SceneForm = ({
   onSubmit,
   onCancel,
   readOnly = false,
+  registerSubmit,
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -186,18 +187,38 @@ const SceneForm = ({
         console.log(
           `SceneForm - Fetching characters for universe ${universeId}`
         );
+        // Make sure API is properly imported
         const response = await apiClient.getCharactersByUniverse(universeId);
         const charactersData = response.data?.characters || response.data || [];
         console.log("SceneForm - Characters fetched:", charactersData);
         setCharacters(charactersData);
       } catch (error) {
         console.error("SceneForm - Error fetching characters:", error);
-        message.error("Failed to load characters. Please try again.");
+        // Provide a fallback
+        setCharacters([]);
+        // Show user-friendly error notification
+        notification.error({
+          message: "Failed to load characters",
+          description:
+            "Please try again or contact support if the issue persists.",
+        });
       }
     };
 
     fetchCharacters();
-  }, [universeId]);
+  }, [universeId]); // Ensure to include universeId in the dependency array
+
+  // Register the submit function if the prop is provided
+  useEffect(() => {
+    if (registerSubmit && typeof registerSubmit === "function") {
+      console.log(
+        "SceneForm - Registering submit handler with parent component"
+      );
+      registerSubmit(() => {
+        form.submit();
+      });
+    }
+  }, [registerSubmit, form]);
 
   // Handle form submission
   const handleSubmit = async (values) => {
@@ -208,7 +229,7 @@ const SceneForm = ({
 
       // Format and transform values for API
       const formattedValues = {
-        name: values.name,
+        name: values.name || values.title || "",
         description: values.description || "",
         summary: values.summary || "",
         content: values.content || "",
@@ -224,9 +245,13 @@ const SceneForm = ({
           ? values.dateOfScene.format("YYYY-MM-DD")
           : null,
         universe_id: universeId,
+        is_deleted: false,
       };
 
-      console.log("SceneForm - Formatted values for API:", formattedValues);
+      console.log(
+        "SceneForm - Formatted values for API with explicit is_deleted=false:",
+        formattedValues
+      );
 
       // If we have an onSubmit handler, let the parent component handle the API call
       if (onSubmit) {
@@ -592,6 +617,7 @@ SceneForm.propTypes = {
   onSubmit: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
   readOnly: PropTypes.bool,
+  registerSubmit: PropTypes.func,
 };
 
 export default SceneForm;

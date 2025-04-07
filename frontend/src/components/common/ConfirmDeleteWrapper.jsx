@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
 import ConfirmDeleteModal from "../../components/modals/ConfirmDeleteModal";
-import { deleteScene } from "../../store/thunks/scenesThunks";
+import { deleteScene } from "../../store/thunks/consolidated/scenesThunks";
 
 // Global state to prevent modal from unmounting
 let modalVisible = false;

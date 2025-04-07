@@ -92,9 +92,12 @@ const CharactersPageContent = ({ universeId }) => {
   const dispatch = useDispatch();
 
   // Double-check universeId is valid, even after wrapper validation
-  const safeUniverseId = universeId && !isNaN(parseInt(universeId, 10)) && parseInt(universeId, 10) > 0 
-    ? parseInt(universeId, 10) 
-    : null;
+  const safeUniverseId =
+    universeId &&
+    !isNaN(parseInt(universeId, 10)) &&
+    parseInt(universeId, 10) > 0
+      ? parseInt(universeId, 10)
+      : null;
 
   // Get characters from Redux store
   const charactersFromStore = useSelector(
@@ -122,14 +125,21 @@ const CharactersPageContent = ({ universeId }) => {
       setLoading(loadingFromStore);
     }
     if (errorFromStore) {
-      setError(errorFromStore);
+      // Ensure error is a string before setting it
+      if (typeof errorFromStore === "object") {
+        setError(errorFromStore.message || JSON.stringify(errorFromStore));
+      } else {
+        setError(errorFromStore);
+      }
     }
   }, [charactersFromStore, loadingFromStore, errorFromStore]);
 
   useEffect(() => {
     // Early return to prevent any API calls if universeId is invalid or null
     if (!safeUniverseId) {
-      console.warn(`Invalid universeId for API calls: ${universeId}, skipping data fetch`);
+      console.warn(
+        `Invalid universeId for API calls: ${universeId}, skipping data fetch`
+      );
       setLoading(false);
       setError("Invalid universe ID. Redirecting to dashboard.");
       // Additional safety - redirect if we somehow got here with an invalid ID
@@ -245,8 +255,17 @@ const CharactersPageContent = ({ universeId }) => {
           console.log("Final scenes for universe:", universeScenes);
           setScenes(universeScenes || []);
         } catch (universeErr) {
-          console.error(`Error fetching universe ${safeUniverseId}:`, universeErr);
-          setError("Failed to load universe details. Please try again.");
+          console.error(
+            `Error fetching universe ${safeUniverseId}:`,
+            universeErr
+          );
+          // Extract error message instead of setting the entire error object
+          const errorMessage =
+            typeof universeErr === "object"
+              ? universeErr.message ||
+                "Failed to load universe details. Please try again."
+              : universeErr;
+          setError(errorMessage);
           // Initialize with empty data to prevent null errors
           setUniverse({});
           setScenes([]);
@@ -266,7 +285,13 @@ const CharactersPageContent = ({ universeId }) => {
           console.log("Characters fetched from Redux store");
         } catch (charactersErr) {
           console.error("Error fetching characters from Redux:", charactersErr);
-          setError("Failed to load characters. Please try again.");
+          // Extract error message instead of setting the entire error object
+          const errorMessage =
+            typeof charactersErr === "object"
+              ? charactersErr.message ||
+                "Failed to load characters. Please try again."
+              : charactersErr;
+          setError(errorMessage);
           // Initialize with empty data to prevent null errors
           setCharacters([]);
         }
@@ -274,7 +299,12 @@ const CharactersPageContent = ({ universeId }) => {
         setLoading(false);
       } catch (err) {
         console.error("Error in fetchData:", err);
-        setError("Failed to load data. Please try again.");
+        // Extract error message instead of setting the entire error object
+        const errorMessage =
+          typeof err === "object"
+            ? err.message || "Failed to load data. Please try again."
+            : err;
+        setError(errorMessage);
         setLoading(false);
       }
     };
@@ -441,7 +471,9 @@ const CharactersPageContent = ({ universeId }) => {
         </Box>
       ) : error ? (
         <Alert severity="error" sx={{ my: 2 }}>
-          {error}
+          {typeof error === "object"
+            ? error.message || "Failed to load characters"
+            : error}
         </Alert>
       ) : filteredCharacters.length === 0 ? (
         <Box my={4} textAlign="center">

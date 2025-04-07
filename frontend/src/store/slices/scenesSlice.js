@@ -95,9 +95,13 @@ const scenesSlice = createSlice({
             console.log("DEBUG STORE: No existing scenes found for this universe in state");
           }
 
+          // Filter out scenes with is_deleted=true before adding to map
+          const activeScenes = action.payload.scenes.filter(scene => scene && scene.is_deleted !== true);
+          console.log("DEBUG STORE: Filtered out deleted scenes, keeping:", activeScenes.length);
+
           // Add API scenes to the map second (so they override existing ones)
           console.log("DEBUG STORE: Adding scenes from API response");
-          action.payload.scenes.forEach(scene => {
+          activeScenes.forEach(scene => {
             if (scene && scene.id) {
               scenesMap.set(scene.id, scene);
             } else {
@@ -200,17 +204,41 @@ const scenesSlice = createSlice({
 
         // Add the new scene to the scenes array if it exists
         if (action.payload && action.payload.scene) {
-          const newScene = action.payload.scene;
+          const newScene = {
+            ...action.payload.scene,
+            is_deleted: false // Ensure is_deleted is explicitly false
+          };
+
           // Check if the scene already exists to avoid duplicates
           const exists = state.scenes.some(scene => scene.id === newScene.id);
           if (!exists) {
             state.scenes.push(newScene);
+            console.log("Redux store: Added new scene to scenes array:", newScene.id);
           }
 
           // Also add to locally created scenes for persistence
           const localExists = state.locallyCreatedScenes.some(scene => scene.id === newScene.id);
           if (!localExists) {
             state.locallyCreatedScenes.push(newScene);
+            console.log("Redux store: Added new scene to locallyCreatedScenes:", newScene.id);
+          }
+
+          // If the scene belongs to a specific universe, update that universe's scenes
+          if (newScene.universe_id) {
+            // Initialize the universe's scenes array if it doesn't exist
+            if (!state.universeScenes[newScene.universe_id]) {
+              state.universeScenes[newScene.universe_id] = [];
+            }
+
+            // Add to universe-specific scenes if not already there
+            const existsInUniverse = state.universeScenes[newScene.universe_id].some(
+              scene => scene.id === newScene.id
+            );
+
+            if (!existsInUniverse) {
+              state.universeScenes[newScene.universe_id].push(newScene);
+              console.log(`Redux store: Added new scene to universe ${newScene.universe_id} scenes`);
+            }
           }
         }
       })

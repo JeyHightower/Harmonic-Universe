@@ -219,12 +219,43 @@ export const createScene = createAsyncThunk(
   "scenes/createScene",
   async (sceneData, { dispatch, rejectWithValue, getState }) => {
     try {
-      console.log("Creating scene with data:", sceneData);
-      const response = await apiClient.createScene(sceneData);
-      console.log("Created scene response:", response);
+      console.log("THUNK createScene: Called with data:", sceneData);
+
+      // Format data before sending to API
+      const formattedData = {
+        ...sceneData,
+        is_deleted: false // Explicitly set is_deleted to false
+      };
+
+      // Make sure name is used instead of title
+      if (formattedData.title && !formattedData.name) {
+        formattedData.name = formattedData.title;
+        delete formattedData.title;
+      }
+
+      // Ensure snake_case for fields that require it
+      if (formattedData.timeOfDay && !formattedData.time_of_day) {
+        formattedData.time_of_day = formattedData.timeOfDay;
+        delete formattedData.timeOfDay;
+      }
+
+      if (formattedData.characterIds && !formattedData.character_ids) {
+        formattedData.character_ids = formattedData.characterIds;
+        delete formattedData.characterIds;
+      }
+
+      if (formattedData.dateOfScene && !formattedData.date_of_scene) {
+        formattedData.date_of_scene = formattedData.dateOfScene;
+        delete formattedData.dateOfScene;
+      }
+
+      console.log("THUNK createScene: Sending formatted data to API:", formattedData);
+
+      const response = await apiClient.createScene(formattedData);
+      console.log("THUNK createScene: Received API response:", response);
 
       // More detailed logging of response format
-      console.log("Create scene response format analysis:", {
+      console.log("THUNK createScene: Response format analysis:", {
         hasData: !!response.data,
         dataKeys: response.data ? Object.keys(response.data) : [],
         sceneInResponse: !!response.data?.scene,
@@ -235,45 +266,52 @@ export const createScene = createAsyncThunk(
       // This ensures we have valid data even if the API returns incomplete data
       const defaultSceneData = {
         id: Date.now().toString(), // Generate a temporary ID if needed
-        name: sceneData.name || sceneData.title || "New Scene",
-        description: sceneData.description || "",
-        universe_id: sceneData.universe_id,
-        scene_type: sceneData.scene_type || "standard",
-        is_active: sceneData.is_active !== false,
+        name: formattedData.name || "New Scene",
+        description: formattedData.description || "",
+        universe_id: formattedData.universe_id,
+        scene_type: formattedData.scene_type || "standard",
+        is_active: formattedData.is_active !== false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        // Add any other fields your UI expects
+        is_deleted: false // Explicitly set is_deleted to false
       };
 
       // Get scene data from response or use default if missing/incomplete
-      let sceneResponseData = response.data?.scene;
+      let sceneResponseData = response.data?.scene || response.data;
 
       // If scene data is missing or empty, use our default
       if (!sceneResponseData || Object.keys(sceneResponseData).length === 0) {
-        console.warn("Scene data missing in API response, using default scene data");
+        console.warn("THUNK createScene: Scene data missing in API response, using default scene data");
         sceneResponseData = defaultSceneData;
       } else {
         // Ensure all required properties are present, use defaults for missing ones
         sceneResponseData = {
           ...defaultSceneData,
-          ...sceneResponseData
+          ...sceneResponseData,
+          is_deleted: false // Always ensure is_deleted is false regardless of response
         };
       }
 
-      console.log("Using scene data:", sceneResponseData);
+      console.log("THUNK createScene: Final scene data with is_deleted=false:", sceneResponseData);
 
       // Normalize the scene data
       const normalizedSceneData = normalizeSceneData(sceneResponseData);
 
       // Update direct store if needed
       if (dispatch) {
-        console.log("Adding scene to store and locally created scenes:", normalizedSceneData.id);
+        console.log("THUNK createScene: Adding scene to store:", normalizedSceneData.id);
 
         // Add to regular scenes array
         dispatch({ type: 'scenes/addScene', payload: normalizedSceneData });
 
         // Also add to locally created scenes for persistence
         dispatch(addLocallyCreatedScene(normalizedSceneData));
+
+        // Update the universe-specific scenes array
+        if (normalizedSceneData.universe_id) {
+          console.log(`THUNK createScene: Fetching scenes for universe ${normalizedSceneData.universe_id} to update store`);
+          dispatch(fetchScenes(normalizedSceneData.universe_id));
+        }
       }
 
       // Return serializable data
@@ -285,10 +323,12 @@ export const createScene = createAsyncThunk(
 
       return serializedResponse;
     } catch (error) {
+      console.error("THUNK createScene: Error creating scene:", error);
+
       if (dispatch) {
         dispatch({ type: 'scenes/setError', payload: error.response?.data?.message || error.message });
       }
-      console.error("Error creating scene:", error);
+
       return rejectWithValue(handleError(error));
     }
   }

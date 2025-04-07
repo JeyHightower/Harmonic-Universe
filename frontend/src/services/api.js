@@ -44,13 +44,12 @@ const FALLBACK_ENDPOINTS = {
     characters: (id) => IS_PRODUCTION ? `/api/universes/${id}/characters` : `/api/universes/${id}/characters`
   },
   characters: {
-    list: IS_PRODUCTION ? '/api/characters' : '/api/characters',
-    create: IS_PRODUCTION ? '/api/characters' : '/api/characters',
-    get: (id) => IS_PRODUCTION ? `/api/characters/${id}` : `/api/characters/${id}`,
-    update: (id) => IS_PRODUCTION ? `/api/characters/${id}` : `/api/characters/${id}`,
-    delete: (id) => IS_PRODUCTION ? `/api/characters/${id}` : `/api/characters/${id}`,
-    byUniverse: (id) => IS_PRODUCTION ? `/api/universes/${id}/characters` : `/api/universes/${id}/characters`,
-    byScene: (id) => IS_PRODUCTION ? `/api/scenes/${id}/characters` : `/api/scenes/${id}/characters`
+    list: (params) => makeRequest('GET', '/api/characters', params),
+    byId: (params) => makeRequest('GET', `/api/characters/${params.id}`),
+    byUniverse: (params) => makeRequest('GET', `/api/characters/universe/${params.universeId}`),
+    create: (params) => makeRequest('POST', '/api/characters', params),
+    update: (params) => makeRequest('PUT', `/api/characters/${params.id}`, params),
+    delete: (params) => makeRequest('DELETE', `/api/characters/${params.id}`)
   }
 };
 
@@ -1337,10 +1336,14 @@ const apiClient = {
   getUniverse: (id, options = {}) => {
     console.log(`getUniverse called with ID: ${id} and options:`, options);
 
+    // Validate the ID before using it
+    if (id === undefined || id === null) {
+      console.error("getUniverse called with invalid ID:", id);
+      return Promise.reject(new Error("Invalid universe ID"));
+    }
+
     // Comprehensive validation check for id
     if (
-      id === undefined ||
-      id === null ||
       id === 'undefined' ||
       id === 'null' ||
       id === '' ||
@@ -1348,12 +1351,7 @@ const apiClient = {
       parseInt(id, 10) <= 0
     ) {
       console.error(`getUniverse: Invalid universe ID: '${id}'`);
-      return Promise.resolve({
-        data: {
-          universe: null,
-          message: "Invalid universe ID"
-        }
-      });
+      return Promise.reject(new Error(`Invalid universe ID format: ${id}`));
     }
 
     // Parse ID to ensure it's a number
@@ -1362,12 +1360,7 @@ const apiClient = {
     // Double-check the parsed value
     if (isNaN(parsedId) || parsedId <= 0) {
       console.error(`getUniverse: Invalid parsed ID: ${parsedId}`);
-      return Promise.resolve({
-        data: {
-          universe: null,
-          message: "Invalid universe ID format"
-        }
-      });
+      return Promise.reject(new Error(`Invalid universe ID value: ${parsedId}`));
     }
 
     // Safely create URL - first ensure we have a valid ID
@@ -1385,33 +1378,10 @@ const apiClient = {
       console.log(`getUniverse: Using URL: ${safeUrl}`);
     } catch (error) {
       console.error(`getUniverse: Error generating URL: ${error.message}`);
-      return Promise.resolve({
-        data: {
-          universe: null,
-          message: "Error generating API URL"
-        }
-      });
+      return Promise.reject(new Error(`Error generating API URL: ${error.message}`));
     }
 
-    // Use the shouldUseMockData helper if available to determine if we should return mock data
-    if (typeof shouldUseMockData === 'function' && shouldUseMockData()) {
-      console.log(`getUniverse: Using mock data for universe ${parsedId}`);
-      return Promise.resolve({
-        data: {
-          universe: {
-            id: parsedId,
-            name: `Universe ${parsedId}`,
-            description: "This is a mock universe generated when API calls are limited",
-            is_public: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            scenes: []
-          },
-          message: "Universe retrieved successfully (mock)"
-        }
-      });
-    }
-
+    // Make the API call with the validated ID
     return _request('get', safeUrl, null, {
       entityType: 'universe',
       entitySingular: 'universe',
@@ -1953,155 +1923,65 @@ const apiClient = {
         });
     });
   },
-  createScene: (data) => {
-    // Check if we're in production and using a demo user
-    const isDemo = isProduction && localStorage.getItem(AUTH_CONFIG.TOKEN_KEY)?.startsWith('demo-');
+  createScene: async (sceneData) => {
+    console.log("API Client: createScene called with data:", sceneData);
 
-    // In production for demo users, return mock data immediately
-    if (isProduction && isDemo) {
-      console.log(`Providing mock scene creation response in production for demo user`);
+    // Ensure universe_id is properly set
+    if (!sceneData.universe_id) {
+      console.error("API Client: Missing universe_id in scene data!");
+      throw new Error("universe_id is required for scene creation");
+    }
 
-      // Get any user info we might have
-      const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-      let userId = 'demo-user';
+    // Ensure is_deleted is explicitly set to false
+    const requestData = {
+      ...sceneData,
+      is_deleted: false
+    };
 
-      try {
-        if (userStr) {
-          const userData = JSON.parse(userStr);
-          userId = userData.id || userId;
+    console.log("API Client: Sending scene create request with data:", requestData);
+
+    try {
+      const response = await axiosInstance.post(`/api/scenes`, requestData);
+      console.log("API Client: Scene creation response:", response.data);
+
+      // For mock/test environments, ensure response contains is_deleted: false
+      if (response.data) {
+        if (response.data.scene) {
+          response.data.scene.is_deleted = false;
+        } else if (typeof response.data === 'object') {
+          response.data.is_deleted = false;
         }
-      } catch (e) {
-        console.error("Error parsing user data for mock scene creation:", e);
       }
 
-      // Create a mock scene based on the input data
-      const mockScene = {
-        ...data,
-        id: `demo_${Date.now()}`,
-        universe_id: data.universe_id || 1001,
-        user_id: userId,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        image_url: data.image_url || DEFAULT_SCENE_IMAGE,
-        status: data.status || "draft",
-        scene_type: data.scene_type || "default"
-      };
+      return response;
+    } catch (error) {
+      console.error("API Client: Error creating scene:", error);
 
-      // Return mock response after a small delay for realism
-      return new Promise(resolve => {
-        setTimeout(() => {
-          resolve({
-            status: 201,
-            data: {
-              scene: mockScene,
-              message: "Scene created successfully (mock)"
-            }
-          });
-        }, 500);
-      });
-    }
+      // For demo/production environment, handle 401 gracefully
+      if (error.response && error.response.status === 401 && apiClient.isDemoEnvironment()) {
+        console.log("API Client: Demo environment detected - returning mock scene data");
 
-    // Ensure universe_id is present
-    if (!data.universe_id) {
-      throw new Error("universe_id is required to create a scene");
-    }
+        // Create a mock scene with provided data
+        const mockScene = {
+          id: `demo-${Date.now()}`,
+          ...requestData,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          is_deleted: false
+        };
 
-    // Clone data and transform field names if needed
-    const transformedData = { ...data };
+        console.log("API Client: Returning mock scene:", mockScene);
 
-    // Backend expects 'name' not 'title'
-    if (transformedData.title && !transformedData.name) {
-      transformedData.name = transformedData.title;
-      delete transformedData.title;
-    }
-
-    // Add default image_url if missing to avoid server requests for default image
-    if (!transformedData.image_url) {
-      transformedData.image_url = DEFAULT_SCENE_IMAGE;
-    }
-
-    console.log("Sending createScene request with data:", transformedData);
-
-    // Use the base scenes endpoint with error handling
-    const endpoint = getEndpoint('scenes', 'list', '/scenes');
-    const formattedUrl = formatUrl(endpoint);
-
-    console.log("Creating scene with formatted URL:", formattedUrl);
-
-    // Return a promise that handles errors more gracefully
-    return new Promise((resolve, reject) => {
-      axiosInstance.post(formattedUrl, transformedData)
-        .then(response => {
-          console.log("Create scene API response:", response);
-
-          // Ensure scene data has fallback image if missing
-          if (response.data?.scene && !response.data.scene.image_url) {
-            response.data.scene.image_url = DEFAULT_SCENE_IMAGE;
+        return {
+          data: {
+            scene: mockScene,
+            message: "Scene created successfully (Demo mode)"
           }
+        };
+      }
 
-          resolve(response);
-        })
-        .catch(error => {
-          console.error("Error creating scene:", error);
-
-          // For demo users in production with 401 errors, return mock data
-          if (isProduction && error.response?.status === 401 &&
-            localStorage.getItem(AUTH_CONFIG.TOKEN_KEY)?.startsWith('demo-')) {
-            console.log(`Using mock data for demo user creating scene due to 401 error`);
-
-            // Get user ID from local storage if available
-            const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-            let userId = 'demo-user';
-
-            try {
-              if (userStr) {
-                const userData = JSON.parse(userStr);
-                userId = userData.id || userId;
-              }
-            } catch (e) {
-              console.error("Error parsing user data for mock scene creation:", e);
-            }
-
-            // Create a mock scene based on the input data
-            const mockScene = {
-              ...transformedData,
-              id: `demo_${Date.now()}`,
-              universe_id: transformedData.universe_id || 1001,
-              user_id: userId,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              image_url: transformedData.image_url || DEFAULT_SCENE_IMAGE,
-              status: transformedData.status || "draft",
-              scene_type: transformedData.scene_type || "default"
-            };
-
-            return resolve({
-              status: 201,
-              data: {
-                scene: mockScene,
-                message: "Scene created successfully (mock after 401)"
-              }
-            });
-          }
-
-          // Instead of rejecting, resolve with a well-formed error response
-          resolve({
-            status: error.response?.status || 500,
-            data: {
-              scene: {
-                // Provide a minimal scene object with the original data
-                ...transformedData,
-                id: `temp_${Date.now()}`,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                image_url: DEFAULT_SCENE_IMAGE
-              },
-              message: error.response?.data?.message || "Error creating scene",
-              error: error.response?.data?.error || error.message || "Unknown error"
-            }
-          });
-        });
-    });
+      throw error;
+    }
   },
   updateScene: async (id, data) => {
     console.log(`API - updateScene - Updating scene ${id} with data:`, data);
@@ -2214,33 +2094,30 @@ const apiClient = {
     }
   },
 
-  getCharactersByUniverse: async (universeId) => {
-    console.log(`getCharactersByUniverse called with universeId: ${universeId}`);
+  getCharactersByUniverse: (universeId) => {
+    console.log("getCharactersByUniverse called with ID:", universeId);
 
-    // Check for production and demo token
-    if (isProduction && localStorage.getItem(AUTH_CONFIG.TOKEN_KEY)?.startsWith('demo-')) {
-      console.log("Using mock character data for universe in production");
-      return {
-        data: {
-          message: "Characters retrieved successfully (mock)",
-          characters: []
-        }
-      };
+    // Validate the universeId parameter
+    if (!universeId || universeId === undefined || universeId === null ||
+      universeId === 'undefined' || universeId === 'null') {
+      console.error(`Invalid universe ID for fetching characters: ${universeId}`);
+      return Promise.reject(new Error(`Invalid universe ID: ${universeId}`));
     }
 
-    // Original implementation...
-    const parsedUniverseId = parseInt(universeId, 10) || universeId;
-    console.log(`getCharactersByUniverse: parsed universeId = ${parsedUniverseId}`);
+    // Try to parse if it's a string
+    const parsedId = typeof universeId === 'string' ? parseInt(universeId, 10) : universeId;
 
-    // Use the characters/byUniverse endpoint getter
-    const safeUrl = getEndpoint(
-      'characters',
-      'byUniverse',
-      `/api/universes/${parsedUniverseId}/characters`,
-      (id) => `/api/universes/${id}/characters`
-    )(parsedUniverseId);
+    if (isNaN(parsedId) || parsedId <= 0) {
+      console.error(`Invalid parsed universe ID: ${parsedId}`);
+      return Promise.reject(new Error(`Invalid universe ID format: ${universeId}`));
+    }
 
-    // Rest of original implementation...
+    // Directly use the correct endpoint format without relying on getEndpoint
+    // to avoid any potential double path issues
+    const url = formatUrl(`/api/universes/${parsedId}/characters`);
+
+    console.log("Final characters endpoint URL:", url);
+    return axiosInstance.get(url);
   },
 
   createCharacter: async (characterData) => {
