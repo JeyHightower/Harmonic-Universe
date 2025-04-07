@@ -152,17 +152,13 @@ def create_app(config_name='default'):
     # Make sure OPTIONS requests are not intercepted by JWT validation
     @app.before_request
     def handle_preflight():
-        # Track API requests in production for debugging
-        if app.config['ENV'] == 'production' and request.path.startswith('/api'):
-            app.logger.info(f"API request: {request.method} {request.path} from {request.remote_addr}")
-            
         if request.method == "OPTIONS":
             # No need to use limiter.exempt here as we'll configure it globally
             response = app.make_default_options_response()
             origin = request.headers.get('Origin', '')
             
             # For credentials to work, we can't use '*' - we must specify the exact origin
-            if origin and (origin in app.config['CORS_ORIGINS'] or '*' in app.config['CORS_ORIGINS']):
+            if origin and origin in app.config['CORS_ORIGINS']:
                 response.headers.add('Access-Control-Allow-Origin', origin)
             elif app.config['CORS_ORIGINS']:
                 # Fallback to the first configured origin if available
@@ -179,39 +175,27 @@ def create_app(config_name='default'):
                 response.headers.add('Access-Control-Allow-Credentials', 'true')
             
             return response
-        
-        # Special handling for deployed instance to add CORS headers for non-OPTIONS requests
-        elif app.config['ENV'] == 'production' and request.path.startswith('/api'):
-            # Check if we need to add CORS headers for production API requests
-            origin = request.headers.get('Origin', '')
-            if origin:
-                # Add header to the request environment to signal that CORS headers should be added
-                request.environ['ADD_CORS_HEADERS'] = True
-                request.environ['ORIGIN'] = origin
 
-    # After request handler to add CORS headers for non-OPTIONS requests in production
-    @app.after_request
-    def add_cors_headers(response):
-        # Add CORS headers if this was flagged during the request
-        if app.config['ENV'] == 'production' and request.environ.get('ADD_CORS_HEADERS'):
-            origin = request.environ.get('ORIGIN', '')
-            
-            # Only add the header if it doesn't already exist
-            if 'Access-Control-Allow-Origin' not in response.headers:
-                if origin and (origin in app.config['CORS_ORIGINS'] or '*' in app.config['CORS_ORIGINS']):
-                    response.headers.add('Access-Control-Allow-Origin', origin)
-                elif app.config['CORS_ORIGINS']:
-                    response.headers.add('Access-Control-Allow-Origin', app.config['CORS_ORIGINS'][0])
-            
-            # Add other CORS headers if needed
-            if 'Access-Control-Allow-Credentials' not in response.headers and app.config.get('CORS_SUPPORTS_CREDENTIALS', False):
-                response.headers.add('Access-Control-Allow-Credentials', 'true')
-                
-            # Expose headers
-            if 'Access-Control-Expose-Headers' not in response.headers:
-                response.headers.add('Access-Control-Expose-Headers', ', '.join(app.config['CORS_EXPOSE_HEADERS']))
+    # Add an OPTIONS route handler to enable CORS preflight on all API routes
+    @app.route('/api/<path:path>', methods=['OPTIONS'])
+    def cors_preflight(path):
+        response = app.make_default_options_response()
+        # Add explicit CORS headers for preflight requests
+        origin = request.headers.get('Origin', '')
         
-        return response
+        # For credentials to work, we can't use '*' - we must specify the exact origin
+        if origin:
+            response.headers.add('Access-Control-Allow-Origin', origin)
+        else:
+            # Fallback to the first configured origin if available, otherwise use '*'
+            response.headers.add('Access-Control-Allow-Origin', app.config['CORS_ORIGINS'][0] if app.config['CORS_ORIGINS'] else '*')
+            
+        response.headers.add('Access-Control-Allow-Methods', ', '.join(app.config['CORS_METHODS']))
+        response.headers.add('Access-Control-Allow-Headers', ', '.join(app.config['CORS_HEADERS']))
+        response.headers.add('Access-Control-Max-Age', str(app.config['CORS_MAX_AGE']))
+        if app.config.get('CORS_SUPPORTS_CREDENTIALS', False):
+            response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response, 200
     
     # Register API blueprint
     try:

@@ -315,56 +315,33 @@ const formatUrl = (url) => {
     console.log(`Fixed double /api/api/ pattern: ${originalUrl} → ${formattedUrl}`);
   }
 
-  // In production, we need to ensure we're using the right path format
-  const isProduction = IS_PRODUCTION || (typeof window !== 'undefined' && !window.location.hostname.includes('localhost'));
+  // Remove leading '/api' if it exists, since we'll add it in the base URL
+  if (formattedUrl.startsWith('/api/')) {
+    formattedUrl = formattedUrl.substring(4); // Remove '/api' prefix
+    console.log(`Removed duplicate /api prefix: ${originalUrl} → ${formattedUrl}`);
+  }
 
-  if (isProduction) {
-    // For production deployment on render.com, use simplified approach
-    // Remove leading '/api' if it exists to avoid duplication
-    if (formattedUrl.startsWith('/api/')) {
-      formattedUrl = formattedUrl.substring(4); // Remove '/api' prefix
-      console.log(`[PROD] Removed duplicate /api prefix: ${originalUrl} → ${formattedUrl}`);
-    }
+  // Ensure URL starts with a slash
+  if (!formattedUrl.startsWith('/')) {
+    formattedUrl = '/' + formattedUrl;
+  }
 
-    // Ensure URL starts with a slash
-    if (!formattedUrl.startsWith('/')) {
-      formattedUrl = '/' + formattedUrl;
-    }
+  // Get the API base URL, which already includes '/api'
+  const baseUrl = getApiBaseUrl();
 
-    // Add /api prefix to make sure all routes go through the API
-    const result = `/api${formattedUrl}`;
-    console.log(`[PROD] Final URL: ${result}`);
+  // For local development, add the full base URL
+  if (baseUrl.startsWith('http')) {
+    // For full URLs like http://localhost:5001/api
+    // Make sure we don't add /api again
+    const apiBase = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}`;
+    const result = `${apiBase}${formattedUrl}`;
+    console.log(`Full formatted URL: ${result}`);
     return result;
   } else {
-    // For local development, use the existing approach
-    // Remove leading '/api' if it exists, since we'll add it in the base URL
-    if (formattedUrl.startsWith('/api/')) {
-      formattedUrl = formattedUrl.substring(4); // Remove '/api' prefix
-      console.log(`[DEV] Removed duplicate /api prefix: ${originalUrl} → ${formattedUrl}`);
-    }
-
-    // Ensure URL starts with a slash
-    if (!formattedUrl.startsWith('/')) {
-      formattedUrl = '/' + formattedUrl;
-    }
-
-    // Get the API base URL, which already includes '/api'
-    const baseUrl = getApiBaseUrl();
-
-    // For local development, add the full base URL
-    if (baseUrl.startsWith('http')) {
-      // For full URLs like http://localhost:5001/api
-      // Make sure we don't add /api again
-      const apiBase = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}`;
-      const result = `${apiBase}${formattedUrl}`;
-      console.log(`[DEV] Full formatted URL: ${result}`);
-      return result;
-    } else {
-      // For relative URLs like '/api'
-      const result = `${baseUrl}${formattedUrl}`;
-      console.log(`[DEV] Relative formatted URL: ${result}`);
-      return result;
-    }
+    // For relative URLs like '/api'
+    const result = `${baseUrl}${formattedUrl}`;
+    console.log(`Relative formatted URL: ${result}`);
+    return result;
   }
 };
 
@@ -466,90 +443,14 @@ if (isProduction) {
   axiosConfig.maxContentLength = 2 * 1024 * 1024; // 2MB max size
   axiosConfig.decompress = true; // Ensure responses are decompressed
 
-  // Add specific Render.com production fixes
-  axiosConfig.xsrfCookieName = 'csrftoken';
-  axiosConfig.xsrfHeaderName = 'X-CSRFToken';
+  // Remove User-Agent header - browsers block this as unsafe
+  // axiosConfig.headers['User-Agent'] = 'Harmonic-Universe-Web-Client';
 
-  // Ensure proper content types
-  axiosConfig.headers = {
-    ...axiosConfig.headers,
-    'Accept': 'application/json, text/plain, */*',
-    'Cache-Control': 'no-cache',
-    'Pragma': 'no-cache'
-  };
-
-  console.log("Using production-optimized Axios configuration", axiosConfig);
+  console.log("Using production-optimized Axios configuration");
 }
 
-// Create the axios instance
+// Create axios instance with the API base URL
 const axiosInstance = axios.create(axiosConfig);
-
-// Add request interceptor to help debug issues in production
-axiosInstance.interceptors.request.use(
-  (config) => {
-    // Log request details in development or when debugging is enabled
-    if (!isProduction || import.meta.env.VITE_ENABLE_DEBUG_LOGGING === 'true') {
-      console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, {
-        headers: config.headers,
-        data: config.data
-      });
-    }
-    return config;
-  },
-  (error) => {
-    console.error('[API Request Error]', error);
-    return Promise.reject(error);
-  }
-);
-
-// Add response interceptor to detect and handle common production issues
-axiosInstance.interceptors.response.use(
-  (response) => {
-    // Log successful responses in development or when debugging is enabled
-    if (!isProduction || import.meta.env.VITE_ENABLE_DEBUG_LOGGING === 'true') {
-      console.log(`[API Response] ${response.status} ${response.config.url}`, {
-        data: response.data,
-        headers: response.headers
-      });
-    }
-    return response;
-  },
-  (error) => {
-    // Enhanced error logging for debugging in production
-    const status = error.response?.status;
-    const url = error.config?.url;
-    const method = error.config?.method?.toUpperCase();
-
-    // Log the specific error details
-    console.error(`[API Error] ${method} ${url} - ${status}`, {
-      message: error.message,
-      response: error.response?.data,
-      request: {
-        url,
-        method,
-        headers: error.config?.headers,
-        data: error.config?.data
-      }
-    });
-
-    // For specific error types that might occur in production, add special handling
-    if (status === 401) {
-      // Authentication error - could clear token and redirect to login
-      console.warn('[API] Authentication error - user may need to re-login');
-    } else if (status === 403) {
-      // Forbidden error - could be CORS or permission issues
-      console.warn('[API] Forbidden error - possible CORS issue or lack of permissions');
-    } else if (status === 500) {
-      // Server error
-      console.error('[API] Server error occurred');
-    } else if (!status) {
-      // Network error - no response received
-      console.error('[API] Network error - server may be unreachable or CORS issue');
-    }
-
-    return Promise.reject(error);
-  }
-);
 
 // Request interceptor
 axiosInstance.interceptors.request.use(
