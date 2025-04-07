@@ -27,7 +27,7 @@ const isDemoMode = () => {
 // Helper to save characters to local storage cache
 const saveCharactersToCache = (universeId, characters) => {
   try {
-    if (!IS_PRODUCTION) return; // Only use cache in production
+    // Allow caching in all environments to fix refresh issue
 
     // Get existing cache or initialize empty object
     const cacheString = localStorage.getItem(CHARACTER_CACHE_KEY);
@@ -50,8 +50,7 @@ const saveCharactersToCache = (universeId, characters) => {
 // Helper to get characters from local storage cache
 const getCharactersFromCache = (universeId) => {
   try {
-    if (!IS_PRODUCTION) return null; // Only use cache in production
-
+    // Allow cache in all environments to fix refresh issue
     const cacheString = localStorage.getItem(CHARACTER_CACHE_KEY);
     if (!cacheString) return null;
 
@@ -59,7 +58,7 @@ const getCharactersFromCache = (universeId) => {
     const universeCache = cache[universeId];
 
     // Check if cache exists and is not too old (24 hours)
-    if (universeCache && (Date.now() - universeCache.timestamp < 24 * 60 * 60 * 1000)) {
+    if (universeCache && universeCache.characters && (Date.now() - universeCache.timestamp < 24 * 60 * 60 * 1000)) {
       console.log(`Using cached ${universeCache.characters.length} characters for universe ${universeId}`);
       return universeCache.characters;
     }
@@ -121,12 +120,10 @@ export const fetchCharactersByUniverse = createAsyncThunk(
   'characters/fetchCharactersByUniverse',
   async (universeId, { rejectWithValue }) => {
     try {
-      // Check cache first in production
-      if (IS_PRODUCTION) {
-        const cachedCharacters = getCharactersFromCache(universeId);
-        if (cachedCharacters && cachedCharacters.length > 0) {
-          return cachedCharacters;
-        }
+      // Check cache first in all environments
+      const cachedCharacters = getCharactersFromCache(universeId);
+      if (cachedCharacters && cachedCharacters.length > 0) {
+        return cachedCharacters;
       }
 
       // In production demo mode, return empty array immediately without API call
@@ -172,8 +169,8 @@ export const fetchCharactersByUniverse = createAsyncThunk(
 
       console.log(`Redux: Found ${characters.length} characters for universe ${parsedUniverseId}`);
 
-      // Save to cache in production
-      if (IS_PRODUCTION && characters.length > 0) {
+      // Save to cache in all environments, not just production
+      if (characters.length > 0) {
         saveCharactersToCache(parsedUniverseId, characters);
       }
 
@@ -202,7 +199,7 @@ export const fetchCharactersByUniverse = createAsyncThunk(
           }
 
           // Save to cache
-          if (IS_PRODUCTION && characters.length > 0) {
+          if (characters.length > 0) {
             saveCharactersToCache(parsedUniverseId, characters);
           }
 
@@ -211,12 +208,10 @@ export const fetchCharactersByUniverse = createAsyncThunk(
           console.error(`Error in retry for characters of universe ${universeId}:`, retryError);
 
           // Check cache again as fallback
-          if (IS_PRODUCTION) {
-            const cachedCharacters = getCharactersFromCache(universeId);
-            if (cachedCharacters) {
-              console.log(`Using cached characters after retry failure for universe ${universeId}`);
-              return cachedCharacters;
-            }
+          const cachedCharacters = getCharactersFromCache(universeId);
+          if (cachedCharacters) {
+            console.log(`Using cached characters after retry failure for universe ${universeId}`);
+            return cachedCharacters;
           }
 
           // In production, return empty array instead of failing
@@ -230,16 +225,15 @@ export const fetchCharactersByUniverse = createAsyncThunk(
       console.error(errorMessage, error);
 
       // Try cache as fallback
-      if (IS_PRODUCTION) {
-        const cachedCharacters = getCharactersFromCache(universeId);
-        if (cachedCharacters) {
-          console.log(`Using cached characters after API error for universe ${universeId}`);
-          return cachedCharacters;
-        }
+      const cachedCharacters = getCharactersFromCache(universeId);
+      if (cachedCharacters) {
+        console.log(`Using cached characters after API error for universe ${universeId}`);
+        return cachedCharacters;
       }
 
       // In production, return empty array instead of failing
       if (IS_PRODUCTION) {
+        console.log('Production mode: Returning empty characters array after failure');
         return [];
       }
       return rejectWithValue(handleError(error));
@@ -326,7 +320,7 @@ export const createCharacter = createAsyncThunk(
         };
 
         // Update cache with the new character
-        if (IS_PRODUCTION && characterData.universe_id) {
+        if (characterData.universe_id) {
           const state = getState();
           const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
           saveCharactersToCache(characterData.universe_id, [...existingCharacters, mockCharacter]);
@@ -339,7 +333,7 @@ export const createCharacter = createAsyncThunk(
       const newCharacter = response.data.character;
 
       // Update cache with the new character
-      if (IS_PRODUCTION && characterData.universe_id) {
+      if (characterData.universe_id) {
         const state = getState();
         const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
         saveCharactersToCache(characterData.universe_id, [...existingCharacters, newCharacter]);
@@ -362,7 +356,7 @@ export const createCharacter = createAsyncThunk(
           const newCharacter = response.data.character;
 
           // Update cache
-          if (IS_PRODUCTION && characterData.universe_id) {
+          if (characterData.universe_id) {
             const state = getState();
             const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
             saveCharactersToCache(characterData.universe_id, [...existingCharacters, newCharacter]);
@@ -422,7 +416,7 @@ export const updateCharacter = createAsyncThunk(
   'characters/updateCharacter',
   async ({ characterId, characterData }, { rejectWithValue, getState }) => {
     try {
-      // In production demo mode, return mock updated character
+      // In production demo mode, return success without API call
       if (isDemoMode()) {
         console.log('Demo mode: Returning mock updated character');
         const updatedCharacter = {
@@ -432,7 +426,7 @@ export const updateCharacter = createAsyncThunk(
         };
 
         // Update character in cache
-        if (IS_PRODUCTION && characterData.universe_id) {
+        if (characterData.universe_id) {
           const state = getState();
           const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
           const updatedCharacters = existingCharacters.map(char =>
@@ -448,7 +442,7 @@ export const updateCharacter = createAsyncThunk(
       const updatedCharacter = response.data.character;
 
       // Update character in cache
-      if (IS_PRODUCTION && characterData.universe_id) {
+      if (characterData.universe_id) {
         const state = getState();
         const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
         const updatedCharacters = existingCharacters.map(char =>
@@ -474,7 +468,7 @@ export const updateCharacter = createAsyncThunk(
           const updatedCharacter = response.data.character;
 
           // Update cache
-          if (IS_PRODUCTION && characterData.universe_id) {
+          if (characterData.universe_id) {
             const state = getState();
             const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
             const updatedCharacters = existingCharacters.map(char =>
@@ -546,25 +540,6 @@ export const deleteCharacter = createAsyncThunk(
         console.log('Demo mode: Simulating successful character deletion');
 
         // Update character caches
-        if (IS_PRODUCTION) {
-          const state = getState();
-          // Need to update all universe caches that might contain this character
-          Object.keys(state.characters.universeCharacters).forEach(universeId => {
-            const existingCharacters = state.characters.universeCharacters[universeId] || [];
-            if (existingCharacters.some(char => char.id === characterId)) {
-              const filteredCharacters = existingCharacters.filter(char => char.id !== characterId);
-              saveCharactersToCache(universeId, filteredCharacters);
-            }
-          });
-        }
-
-        return characterId;
-      }
-
-      await apiClient.deleteCharacter(characterId);
-
-      // Update character caches
-      if (IS_PRODUCTION) {
         const state = getState();
         // Need to update all universe caches that might contain this character
         Object.keys(state.characters.universeCharacters).forEach(universeId => {
@@ -574,7 +549,22 @@ export const deleteCharacter = createAsyncThunk(
             saveCharactersToCache(universeId, filteredCharacters);
           }
         });
+
+        return characterId;
       }
+
+      await apiClient.deleteCharacter(characterId);
+
+      // Update character caches
+      const state = getState();
+      // Need to update all universe caches that might contain this character
+      Object.keys(state.characters.universeCharacters).forEach(universeId => {
+        const existingCharacters = state.characters.universeCharacters[universeId] || [];
+        if (existingCharacters.some(char => char.id === characterId)) {
+          const filteredCharacters = existingCharacters.filter(char => char.id !== characterId);
+          saveCharactersToCache(universeId, filteredCharacters);
+        }
+      });
 
       return characterId;
     } catch (error) {
@@ -590,16 +580,14 @@ export const deleteCharacter = createAsyncThunk(
           });
 
           // Update character caches
-          if (IS_PRODUCTION) {
-            const state = getState();
-            Object.keys(state.characters.universeCharacters).forEach(universeId => {
-              const existingCharacters = state.characters.universeCharacters[universeId] || [];
-              if (existingCharacters.some(char => char.id === characterId)) {
-                const filteredCharacters = existingCharacters.filter(char => char.id !== characterId);
-                saveCharactersToCache(universeId, filteredCharacters);
-              }
-            });
-          }
+          const state = getState();
+          Object.keys(state.characters.universeCharacters).forEach(universeId => {
+            const existingCharacters = state.characters.universeCharacters[universeId] || [];
+            if (existingCharacters.some(char => char.id === characterId)) {
+              const filteredCharacters = existingCharacters.filter(char => char.id !== characterId);
+              saveCharactersToCache(universeId, filteredCharacters);
+            }
+          });
 
           return characterId;
         } catch (retryError) {

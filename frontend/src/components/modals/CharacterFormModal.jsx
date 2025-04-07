@@ -62,6 +62,7 @@ const getCachedCharacter = (characterId) => {
 // Helper function to cache character data
 const cacheCharacter = (characterId, data) => {
   try {
+    // Always cache character data regardless of environment
     const cacheString = localStorage.getItem(CHARACTER_CACHE_KEY);
     const cache = cacheString ? JSON.parse(cacheString) : {};
 

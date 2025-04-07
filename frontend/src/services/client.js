@@ -412,3 +412,165 @@ function createMockDemoResponse(config) {
     config: config
   };
 }
+
+// Create a fetchWithCredentials function for the apiClient to use
+const fetchWithCredentials = async (url, method = "GET", data = null) => {
+  try {
+    // Log operation
+    log("api", "fetchWithCredentials-started", { url, method });
+
+    // Determine full URL if not absolute
+    const fullUrl = url.startsWith("http") ? url : `${API_BASE_ENDPOINT}${url}`;
+
+    // Setup options
+    const options = {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      credentials: "include",
+    };
+
+    // Add auth token if available
+    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+    if (token) {
+      options.headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    // Add body if there's data
+    if (data) {
+      options.body = JSON.stringify(data);
+    }
+
+    // Make the request
+    const response = await fetch(fullUrl, options);
+
+    // Check if response is ok
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    // Parse and return response
+    const result = await response.json();
+    log("api", "fetchWithCredentials-success", { url });
+    return result;
+  } catch (error) {
+    log("api", "fetchWithCredentials-error", { url, message: error.message });
+    throw error;
+  }
+};
+
+// Export API methods with error handling and logging
+const apiClient = {
+  get: async (url, config = {}) => {
+    try {
+      log("api", "get-started", { url });
+      const response = await client.get(url, config);
+      log("api", "get-success", { url });
+      return response;
+    } catch (error) {
+      log("api", "get-error", {
+        url,
+        message: error.message,
+      });
+      throw error;
+    }
+  },
+
+  post: async (url, data = {}, config = {}) => {
+    try {
+      log("api", "post-started", { url });
+      const response = await client.post(url, data, config);
+      log("api", "post-success", { url });
+      return response;
+    } catch (error) {
+      log("api", "post-error", {
+        url,
+        message: error.message,
+      });
+      throw error;
+    }
+  },
+
+  // Updated fetchWithCredentials
+  fetchWithCredentials,
+
+  put: async (url, data = {}, config = {}) => {
+    try {
+      log("api", "put-started", { url });
+      const response = await client.put(url, data, config);
+      log("api", "put-success", { url });
+      return response;
+    } catch (error) {
+      log("api", "put-error", {
+        url,
+        message: error.message,
+      });
+      throw error;
+    }
+  },
+
+  delete: async (url, config = {}) => {
+    try {
+      log("api", "delete-started", { url });
+      const response = await client.delete(url, config);
+      log("api", "delete-success", { url });
+      return response;
+    } catch (error) {
+      log("api", "delete-error", {
+        url,
+        message: error.message,
+      });
+      throw error;
+    }
+  },
+
+  // Character methods required for compatibility with characterThunks.js
+  getCharacter: async (characterId) => {
+    try {
+      log("api", "getCharacter-started", { characterId });
+      const response = await client.get(`/characters/${characterId}`);
+      log("api", "getCharacter-success", { characterId });
+      return response;
+    } catch (error) {
+      log("api", "getCharacter-error", {
+        characterId,
+        message: error.message
+      });
+      throw error;
+    }
+  },
+
+  updateCharacter: async (characterId, characterData) => {
+    try {
+      log("api", "updateCharacter-started", { characterId });
+      const response = await client.put(`/characters/${characterId}`, characterData);
+      log("api", "updateCharacter-success", { characterId });
+      return response;
+    } catch (error) {
+      log("api", "updateCharacter-error", {
+        characterId,
+        message: error.message
+      });
+      throw error;
+    }
+  },
+
+  deleteCharacter: async (characterId) => {
+    try {
+      log("api", "deleteCharacter-started", { characterId });
+      const response = await client.delete(`/characters/${characterId}`);
+      log("api", "deleteCharacter-success", { characterId });
+      return response;
+    } catch (error) {
+      log("api", "deleteCharacter-error", {
+        characterId,
+        message: error.message
+      });
+      throw error;
+    }
+  }
+};
+
+export default apiClient;

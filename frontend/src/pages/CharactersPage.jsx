@@ -153,6 +153,33 @@ const CharactersPageContent = ({ universeId }) => {
         setLoading(true);
         setError(null);
 
+        // Check for cached characters first
+        const CHARACTER_CACHE_KEY = "harmonic_universe_character_cache";
+        try {
+          // Try to get characters from cache first before making any API calls
+          const cacheString = localStorage.getItem(CHARACTER_CACHE_KEY);
+          if (cacheString) {
+            const cache = JSON.parse(cacheString);
+            const universeCache = cache[safeUniverseId];
+
+            // Check if cache exists and is not too old (24 hours)
+            if (
+              universeCache &&
+              universeCache.characters &&
+              Date.now() - universeCache.timestamp < 24 * 60 * 60 * 1000
+            ) {
+              console.log(
+                `Using ${universeCache.characters.length} cached characters for universe ${safeUniverseId}`
+              );
+              setCharacters(universeCache.characters);
+              // Don't return here, continue with fetching other data
+            }
+          }
+        } catch (cacheError) {
+          console.error("Error reading characters from cache:", cacheError);
+          // Continue with normal fetching if cache fails
+        }
+
         // Get universe details
         try {
           const universeResponse = await apiClient.getUniverse(safeUniverseId, {

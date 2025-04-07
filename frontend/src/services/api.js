@@ -2307,6 +2307,61 @@ const apiClient = {
     }
   },
 
+  getCharacter: async (characterId) => {
+    console.log(`Getting character with ID: ${characterId}`);
+    try {
+      const url = formatUrl(`/api/characters/${characterId}`);
+      console.log("Character fetch URL:", url);
+
+      const response = await axiosInstance.get(url);
+      return response;
+    } catch (error) {
+      console.error("Error fetching character:", error);
+      throw error;
+    }
+  },
+
+  updateCharacter: async (characterId, characterData) => {
+    console.log(`Updating character with ID: ${characterId}`);
+
+    try {
+      const url = formatUrl(`/api/characters/${characterId}`);
+      console.log("Making PUT request to:", url);
+      console.log("Request data:", characterData);
+
+      const response = await axiosInstance.put(url, characterData);
+      console.log("Character update response:", response);
+      return response;
+    } catch (error) {
+      console.error("Character update error:", {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+      throw error;
+    }
+  },
+
+  deleteCharacter: async (characterId) => {
+    console.log(`Deleting character with ID: ${characterId}`);
+
+    try {
+      const url = formatUrl(`/api/characters/${characterId}`);
+      console.log("Making DELETE request to:", url);
+
+      const response = await axiosInstance.delete(url);
+      console.log("Character deletion response:", response);
+      return response;
+    } catch (error) {
+      console.error("Character deletion error:", {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+      throw error;
+    }
+  },
+
   // ... other character methods with similar demo handling
 
   // ... existing code ...
