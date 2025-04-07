@@ -307,25 +307,42 @@ const formatUrl = (url) => {
   }
 
   const originalUrl = url;
+  let formattedUrl = url;
 
   // Handle double /api/api/ pattern which is a common error
-  if (url.includes('/api/api/')) {
-    url = url.replace('/api/api/', '/api/');
-    console.log(`Fixed double /api/api/ pattern: ${originalUrl} → ${url}`);
+  if (formattedUrl.includes('/api/api/')) {
+    formattedUrl = formattedUrl.replace('/api/api/', '/api/');
+    console.log(`Fixed double /api/api/ pattern: ${originalUrl} → ${formattedUrl}`);
   }
 
-  // Remove leading 'api' if it exists, since we'll add it in the base URL
-  if (url.startsWith('/api/')) {
-    url = url.substring(4); // Remove '/api' prefix
-    console.log(`Removed duplicate /api prefix: ${originalUrl} → ${url}`);
+  // Remove leading '/api' if it exists, since we'll add it in the base URL
+  if (formattedUrl.startsWith('/api/')) {
+    formattedUrl = formattedUrl.substring(4); // Remove '/api' prefix
+    console.log(`Removed duplicate /api prefix: ${originalUrl} → ${formattedUrl}`);
   }
 
   // Ensure URL starts with a slash
-  if (!url.startsWith('/')) {
-    url = '/' + url;
+  if (!formattedUrl.startsWith('/')) {
+    formattedUrl = '/' + formattedUrl;
   }
 
-  return url;
+  // Get the API base URL, which already includes '/api'
+  const baseUrl = getApiBaseUrl();
+
+  // For local development, add the full base URL
+  if (baseUrl.startsWith('http')) {
+    // For full URLs like http://localhost:5001/api
+    // Make sure we don't add /api again
+    const apiBase = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}`;
+    const result = `${apiBase}${formattedUrl}`;
+    console.log(`Full formatted URL: ${result}`);
+    return result;
+  } else {
+    // For relative URLs like '/api'
+    const result = `${baseUrl}${formattedUrl}`;
+    console.log(`Relative formatted URL: ${result}`);
+    return result;
+  }
 };
 
 // Helper function for making API requests
@@ -1825,11 +1842,12 @@ const apiClient = {
     }
 
     // Use the correct endpoint format
-    const url = formatUrl(`/api/scenes/${sceneId}`);
+    // Remove the '/api' prefix as formatUrl will handle it properly
+    const url = formatUrl(`/scenes/${sceneId}`);
     console.log("API Client: Using URL for getScene:", url);
 
     try {
-      const response = await _request('get', url);
+      const response = await axiosInstance.get(url);
       console.log("API Client: Scene retrieved successfully:", response);
       return response;
     } catch (error) {
@@ -1885,11 +1903,44 @@ const apiClient = {
       delete requestData.notesText;
     }
 
+    // CRITICAL: Fix required fields that might be missing or null
+    // Make sure summary is ALWAYS a string, never null or undefined
+    requestData.summary = (requestData.summary || requestData.description || '').toString();
+
+    // Make sure content is a string, default to empty if missing
+    requestData.content = (requestData.content || '').toString();
+
+    // Fix other potential null fields that should be strings
+    requestData.description = (requestData.description || '').toString();
+    requestData.name = requestData.name.toString();
+
+    // Ensure all string fields are either strings or empty strings, but never null or undefined
+    // This prevents the server-side Python error: 'NoneType' object has no attribute 'strip'
+    const stringFields = [
+      'name', 'title', 'description', 'summary', 'content', 'notes',
+      'location', 'scene_type', 'significance', 'status', 'time_of_day'
+    ];
+
+    stringFields.forEach(field => {
+      // Convert undefined to empty string
+      if (field in requestData) {
+        if (requestData[field] === undefined || requestData[field] === null) {
+          requestData[field] = '';
+        } else if (typeof requestData[field] !== 'string') {
+          // Convert non-string values to strings
+          requestData[field] = String(requestData[field]);
+        }
+      } else {
+        // Initialize missing fields as empty strings
+        requestData[field] = '';
+      }
+    });
+
     console.log("API Client: Sending scene create request with data:", requestData);
 
     try {
       // Use formatUrl helper to prevent duplicate /api prefix
-      const url = formatUrl('/api/scenes');
+      const url = formatUrl('/scenes');
       console.log("API Client: Using formatted URL for create:", url);
 
       // Ensure data is properly serialized
@@ -1992,11 +2043,52 @@ const apiClient = {
       delete requestData.notesText;
     }
 
+    // CRITICAL: Fix required fields that might be missing or null
+    // Make sure summary is ALWAYS a string, never null or undefined
+    if ('summary' in requestData || 'description' in requestData) {
+      requestData.summary = (requestData.summary || requestData.description || '').toString();
+    }
+
+    // Make sure content is a string, default to empty if missing
+    if ('content' in requestData) {
+      requestData.content = (requestData.content || '').toString();
+    }
+
+    // Fix other potential null fields that should be strings
+    if ('description' in requestData) {
+      requestData.description = (requestData.description || '').toString();
+    }
+
+    if ('name' in requestData) {
+      requestData.name = requestData.name.toString();
+    }
+
+    // Ensure all string fields are either strings or empty strings, but never null or undefined
+    // This prevents the server-side Python error: 'NoneType' object has no attribute 'strip'
+    const stringFields = [
+      'name', 'title', 'description', 'summary', 'content', 'notes',
+      'location', 'scene_type', 'significance', 'status', 'time_of_day'
+    ];
+
+    stringFields.forEach(field => {
+      // Convert undefined to empty string
+      if (field in requestData) {
+        if (requestData[field] === undefined || requestData[field] === null) {
+          requestData[field] = '';
+        } else if (typeof requestData[field] !== 'string') {
+          // Convert non-string values to strings
+          requestData[field] = String(requestData[field]);
+        }
+      }
+      // For update, we don't initialize missing fields as that would overwrite existing data
+    });
+
     console.log("API Client: Sending scene update request with data:", requestData);
 
     try {
-      const url = formatUrl(`/api/scenes/${sceneId}`);
-      console.log("API Client: Using URL for update:", url);
+      // Use formatUrl helper to prevent duplicate /api prefix - fix URL format
+      const url = formatUrl(`/scenes/${sceneId}`);
+      console.log("API Client: Using formatted URL for update:", url);
 
       // Ensure data is properly serialized
       const cleanedData = JSON.parse(JSON.stringify(requestData));
@@ -2052,7 +2144,7 @@ const apiClient = {
     }
 
     try {
-      const url = formatUrl(`/api/scenes/${sceneId}`);
+      const url = formatUrl(`/scenes/${sceneId}`);
       console.log("API Client: Using URL for delete:", url);
 
       const response = await axiosInstance.delete(url);
@@ -2113,10 +2205,11 @@ const apiClient = {
       }
 
       // Normal API call for non-demo users
-      const response = await _request('get', getEndpoint('characters', 'list', '/api/characters'));
+      const endpoint = getEndpoint('characters', 'list', '/api/characters');
+      const response = await axiosInstance.get(endpoint);
       return {
         data: {
-          characters: Array.isArray(response) ? response : (response.characters || []),
+          characters: Array.isArray(response.data) ? response.data : (response.data.characters || []),
           message: "Characters retrieved successfully"
         }
       };

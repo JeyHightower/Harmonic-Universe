@@ -287,31 +287,87 @@ const SceneForm = ({
       const formattedValues = {
         ...values,
         universe_id: universeId,
+        // If we have an existing ID, include it
+        id: sceneId || undefined,
+        // Convert camelCase to snake_case
+        time_of_day: values.timeOfDay || values.time_of_day || null,
+        // Fix date handling - ensure proper format
+        date_of_scene: values.dateOfScene
+          ? values.dateOfScene.toISOString
+            ? values.dateOfScene.toISOString()
+            : values.dateOfScene
+          : values.date_of_scene
+          ? values.date_of_scene
+          : null,
         // Convert empty strings to null
+        title: values.name || values.title || null,
+        name: values.name || values.title || null,
         description: values.description || null,
-        summary: values.summary || null,
+        // Ensure summary is always set to a non-null value
+        summary: values.summary || values.description || "",
         content: values.content || null,
         notes: values.notes || null,
         location: values.location || null,
-        scene_type: values.scene_type || null,
-        time_of_day: values.time_of_day || null,
-        status: values.status || null,
-        significance: values.significance || null,
-        date_of_scene: values.date_of_scene
-          ? values.date_of_scene.toISOString()
-          : null,
-        order: values.order || null,
+        scene_type: values.scene_type || "default",
+        status: values.status || "draft",
+        significance: values.significance || "minor",
+        order: values.order || 0,
         is_public: values.is_public || false,
+        is_deleted: false, // Explicitly set to false
       };
+
+      // Ensure all string fields are either valid strings or null, never undefined
+      const stringFields = [
+        "name",
+        "title",
+        "description",
+        "summary",
+        "content",
+        "notes",
+        "location",
+        "scene_type",
+        "significance",
+        "status",
+        "time_of_day",
+      ];
+
+      stringFields.forEach((field) => {
+        if (formattedValues[field] === undefined) {
+          formattedValues[field] = null;
+        }
+
+        // Ensure the field is either a non-empty string or null
+        if (typeof formattedValues[field] === "string") {
+          formattedValues[field] = formattedValues[field].trim() || null;
+        }
+      });
+
+      // Make sure important fields have fallbacks
+      if (!formattedValues.summary) {
+        formattedValues.summary = formattedValues.description || "";
+      }
 
       console.log("SceneForm - Formatted values:", formattedValues);
 
+      // Check for required fields
+      if (!formattedValues.name) {
+        throw new Error("Scene name is required");
+      }
+
+      // Additional validation for required fields
+      if (!formattedValues.summary) {
+        throw new Error("Scene summary is required");
+      }
+
       // Call the onSubmit callback with formatted values
-      const result = await onSubmit(formattedValues);
+      const action = isEditMode ? "update" : "create";
+      const result = await onSubmit(action, formattedValues);
       console.log("SceneForm - Submit result:", result);
 
       // Show success message
-      message.success("Scene saved successfully!");
+      message.success(
+        `Scene ${isEditMode ? "updated" : "created"} successfully!`
+      );
 
       // Call onCancel to close the form
       if (onCancel) {

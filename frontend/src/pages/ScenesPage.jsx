@@ -25,7 +25,10 @@ import {
 } from "@mui/icons-material";
 import apiClient from "../services/api";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchScenes } from "../store/thunks/consolidated/scenesThunks";
+import {
+  fetchScenes,
+  deleteScene,
+} from "../store/thunks/consolidated/scenesThunks";
 import { SceneFormModal } from "../components/modals";
 
 // Create a wrapper component that handles redirection logic
@@ -219,8 +222,11 @@ const ScenesPageContent = ({ universeId }) => {
   const handleDeleteScene = async (sceneId) => {
     if (window.confirm("Are you sure you want to delete this scene?")) {
       try {
-        await apiClient.deleteScene(sceneId);
-        // Refresh the scenes list
+        // Use the Redux thunk instead of directly calling the API
+        await dispatch(deleteScene(sceneId)).unwrap();
+        console.log(`Scene ${sceneId} deleted successfully`);
+
+        // Refresh the scenes list for this universe
         dispatch(fetchScenes(safeUniverseId));
       } catch (error) {
         console.error("Error deleting scene:", error);

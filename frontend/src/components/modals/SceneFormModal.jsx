@@ -110,12 +110,24 @@ const SceneFormModal = ({
         }
       } else if (action === "update" || modalType === "edit") {
         // Make sure we have the scene ID
+        if (!sceneId && !formData.id) {
+          throw new Error("Scene ID is required for update");
+        }
+
+        const idToUse = sceneId || formData.id;
         const scenePayload = {
           ...formData,
           universe_id: universeId,
+          is_deleted: false,
         };
 
-        const response = await apiClient.updateScene(sceneId, scenePayload);
+        console.log(
+          `SceneFormModal - Updating scene ${idToUse} with payload:`,
+          scenePayload
+        );
+        const response = await apiClient.updateScene(idToUse, scenePayload);
+        console.log("SceneFormModal - Update scene response:", response);
+
         result = response?.data?.scene || response?.data;
 
         if (result) {
@@ -279,6 +291,7 @@ const SceneFormModal = ({
             isEditMode={modalType === "edit"}
             onSubmit={handleSubmit}
             registerSubmit={registerSubmit}
+            onCancel={handleCancel}
           />
         )}
       </DialogContent>

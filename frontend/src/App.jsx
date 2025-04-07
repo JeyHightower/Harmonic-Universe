@@ -331,6 +331,21 @@ const AppContent = () => {
                       </ProtectedRoute>
                     }
                   />
+                  {/* Add direct route for viewing a single scene */}
+                  <Route
+                    path="/scenes/:sceneId"
+                    element={
+                      <ProtectedRoute>
+                        <Suspense fallback={<LoadingPage />}>
+                          {React.createElement(
+                            lazy(() =>
+                              import("./components/consolidated/SceneDetail")
+                            )
+                          )}
+                        </Suspense>
+                      </ProtectedRoute>
+                    }
+                  />
                   {routeElements}
                 </>
               )}
