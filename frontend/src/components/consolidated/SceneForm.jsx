@@ -283,12 +283,33 @@ const SceneForm = ({
     console.log("SceneForm - Form submitted with values:", values);
 
     try {
+      // Validate required fields manually first
+      if (!values.name || values.name.trim() === "") {
+        console.error("SceneForm - Missing required name field in form values");
+        message.error("Scene name is required");
+        throw new Error("Scene name is required");
+      }
+
+      if (!values.summary || values.summary.trim() === "") {
+        console.error(
+          "SceneForm - Missing required summary field in form values"
+        );
+        message.error("Scene summary is required");
+        throw new Error("Scene summary is required");
+      }
+
+      // DEBUGGING: Get the exact form values before any processing
+      const rawFormValues = form.getFieldsValue(true);
+      console.log("DEBUG - Raw form values from form instance:", rawFormValues);
+
       // Format the values for API submission
       const formattedValues = {
         ...values,
         universe_id: universeId,
         // If we have an existing ID, include it
         id: sceneId || undefined,
+        // Ensure name is correctly set and preserved
+        name: values.name?.trim(),
         // Convert camelCase to snake_case
         time_of_day: values.timeOfDay || values.time_of_day || null,
         // Fix date handling - ensure proper format
@@ -299,9 +320,8 @@ const SceneForm = ({
           : values.date_of_scene
           ? values.date_of_scene
           : null,
-        // Convert empty strings to null
-        title: values.name || values.title || null,
-        name: values.name || values.title || null,
+        // Copy name to title for flexibility
+        title: values.name?.trim(),
         description: values.description || null,
         // Ensure summary is always set to a non-null value
         summary: values.summary || values.description || "",
@@ -316,46 +336,46 @@ const SceneForm = ({
         is_deleted: false, // Explicitly set to false
       };
 
-      // Ensure all string fields are either valid strings or null, never undefined
-      const stringFields = [
-        "name",
-        "title",
-        "description",
-        "summary",
-        "content",
-        "notes",
-        "location",
-        "scene_type",
-        "significance",
-        "status",
-        "time_of_day",
-      ];
-
-      stringFields.forEach((field) => {
-        if (formattedValues[field] === undefined) {
-          formattedValues[field] = null;
-        }
-
-        // Ensure the field is either a non-empty string or null
-        if (typeof formattedValues[field] === "string") {
-          formattedValues[field] = formattedValues[field].trim() || null;
-        }
+      // Debug log
+      console.log("SceneForm - Form field values before processing:", {
+        name: values.name,
+        summary: values.summary,
+        description: values.description,
+        content: values.content,
       });
 
-      // Make sure important fields have fallbacks
-      if (!formattedValues.summary) {
-        formattedValues.summary = formattedValues.description || "";
+      // Debug validation step
+      if (!formattedValues.name) {
+        console.error("CRITICAL: Name field is missing after formatting");
       }
 
-      console.log("SceneForm - Formatted values:", formattedValues);
+      // CRITICAL: Make sure required fields are explicitly set as non-empty strings
+      if (!formattedValues.name || formattedValues.name.trim() === "") {
+        formattedValues.name = rawFormValues.name?.trim() || "Untitled Scene";
+        console.log("Applied name fallback to:", formattedValues.name);
+      }
 
-      // Check for required fields
+      if (!formattedValues.summary || formattedValues.summary.trim() === "") {
+        formattedValues.summary =
+          rawFormValues.summary?.trim() ||
+          formattedValues.description ||
+          "No summary provided";
+        console.log("Applied summary fallback to:", formattedValues.summary);
+      }
+
+      console.log("SceneForm - FINAL Formatted values:", formattedValues);
+
+      // Final validation check
       if (!formattedValues.name) {
+        console.error("SceneForm - Name validation failed after processing");
+        message.error("Scene name is required");
         throw new Error("Scene name is required");
       }
 
       // Additional validation for required fields
       if (!formattedValues.summary) {
+        console.error("SceneForm - Summary validation failed after processing");
+        message.error("Scene summary is required");
         throw new Error("Scene summary is required");
       }
 

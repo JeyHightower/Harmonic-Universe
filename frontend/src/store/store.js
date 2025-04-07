@@ -113,6 +113,9 @@ const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+        // Ignore non-serializable values in specific paths
+        ignoredActionPaths: ['payload.props.onSuccess', 'meta.arg.props.onSuccess'],
+        ignoredPaths: ['modal.props.onSuccess'],
       },
     }),
   devTools: process.env.NODE_ENV !== 'production',

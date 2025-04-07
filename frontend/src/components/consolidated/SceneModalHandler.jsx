@@ -56,9 +56,11 @@ const SceneModalHandler = ({
   };
 
   // Handler for form submission result
-  const handleFormResult = async (formValues) => {
+  const handleFormResult = async (action, formValues) => {
     console.log(
-      "SceneModalHandler - handleFormResult called with:",
+      "SceneModalHandler - handleFormResult called with action:",
+      action,
+      "and data:",
       formValues
     );
 
@@ -69,11 +71,37 @@ const SceneModalHandler = ({
       setLoading(true);
 
       // If this is a create operation, we need to call the API ourselves
-      if (modalType === "create") {
+      if (modalType === "create" || action === "create") {
         console.log(
           "SceneModalHandler - Creating new scene with values:",
           formValues
         );
+
+        // DEBUGGING: Log all properties of formValues to understand what's being received
+        console.log("DEBUG - formValues properties:", Object.keys(formValues));
+        console.log(
+          "DEBUG - name value:",
+          formValues.name,
+          typeof formValues.name
+        );
+        console.log(
+          "DEBUG - summary value:",
+          formValues.summary,
+          typeof formValues.summary
+        );
+
+        // Validate required fields before proceeding
+        if (!formValues.name) {
+          console.error("SceneModalHandler - Missing scene name in form data");
+          throw new Error("Scene name is required");
+        }
+
+        if (!formValues.summary) {
+          console.error(
+            "SceneModalHandler - Missing scene summary in form data"
+          );
+          throw new Error("Scene summary is required");
+        }
 
         try {
           // Ensure universeId is properly included
@@ -82,7 +110,19 @@ const SceneModalHandler = ({
             universe_id: universeId || formValues.universe_id,
           };
 
-          console.log("SceneModalHandler - Using scene data:", sceneData);
+          // Extra validation to ensure critical fields are strings
+          if (sceneData.name) {
+            sceneData.name = String(sceneData.name).trim();
+          }
+
+          if (sceneData.summary) {
+            sceneData.summary = String(sceneData.summary).trim();
+          }
+
+          console.log(
+            "SceneModalHandler - FINAL scene data being sent to API:",
+            sceneData
+          );
 
           const response = await apiClient.createScene(sceneData);
           console.log("SceneModalHandler - API response:", response);
@@ -119,7 +159,7 @@ const SceneModalHandler = ({
 
           // Pass the scene data to the parent's onSuccess callback with actionType
           if (onSuccess) {
-            onSuccess("create", newScene);
+            onSuccess(action, newScene);
           }
 
           // Close the modal
@@ -137,10 +177,17 @@ const SceneModalHandler = ({
           );
           throw error;
         }
+      } else {
+        // For other operations (edit, delete), let the parent handle it
+        if (typeof onSubmit === "function") {
+          return onSubmit(action, formValues);
+        } else {
+          console.error(
+            "SceneModalHandler - onSubmit prop is not defined for non-create operations"
+          );
+          throw new Error("Operation not supported");
+        }
       }
-
-      // For other operations (edit, delete), let the parent handle it
-      return onSubmit(formValues);
     } catch (error) {
       console.error("SceneModalHandler - Error in form result handler:", error);
       setError(
