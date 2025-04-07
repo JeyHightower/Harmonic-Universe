@@ -241,6 +241,11 @@ const ScenesPageContent = ({ universeId }) => {
   const filteredScenes = useMemo(() => {
     let result = scenes;
 
+    // Filter scenes by universe ID
+    result = result.filter(
+      (scene) => scene && scene.universe_id === safeUniverseId
+    );
+
     // Filter out deleted scenes
     result = result.filter((scene) => scene && scene.is_deleted !== true);
 
@@ -304,7 +309,15 @@ const ScenesPageContent = ({ universeId }) => {
     }
 
     return result;
-  }, [scenes, searchTerm, typeFilter, statusFilter, sortBy, sortDirection]);
+  }, [
+    scenes,
+    searchTerm,
+    typeFilter,
+    statusFilter,
+    sortBy,
+    sortDirection,
+    safeUniverseId,
+  ]);
 
   if (loading) {
     return (
@@ -407,7 +420,7 @@ const ScenesPageContent = ({ universeId }) => {
               >
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Typography variant="h5" component="h2" gutterBottom noWrap>
-                    {scene.title}
+                    {scene.title || scene.name || "Untitled Scene"}
                   </Typography>
                   <Typography
                     variant="body2"
