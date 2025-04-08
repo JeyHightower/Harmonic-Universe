@@ -2,7 +2,7 @@ services:
   - type: web
     name: harmonic-universe
     env: python
-    buildCommand: ./render-build.sh
+    buildCommand: chmod +x ./frontend-setup.sh && ./frontend-setup.sh && ./render-build.sh
     startCommand: ./render-start.sh
     plan: starter
     envVars:
