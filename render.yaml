@@ -10,21 +10,21 @@ services:
       - key: SCHEMA
         sync: false
       - key: FLASK_APP
-        sync: false
+        value: "backend/wsgi.py"
       - key: DATABASE_URL
         sync: false
       - key: PYTHONPATH
-        sync: false
+        value: "."
       - key: PYTHON_VERSION
         sync: false
       - key: PORT
         sync: false
       - key: PYTHONUNBUFFERED
-        sync: false
+        value: "1"
       - key: LOG_LEVEL
-        sync: false
+        value: "INFO"
       - key: FLASK_ENV
-        sync: false
+        value: "production"
       - key: JWT_SECRET_KEY
         sync: false
       - key: SECRET_KEY
@@ -32,11 +32,31 @@ services:
       - key: STATIC_URL_PATH
         value: "/"
       - key: STATIC_FOLDER
-        value: "/opt/render/project/src/frontend/dist"
+        value: "backend/static"
+      - key: NODE_VERSION
+        value: "18.16.0"
+      - key: VITE_API_URL
+        value: "https://harmonic-universe-z5ka.onrender.com/api"
     region: ohio
-    buildCommand:
-      npm install --prefix frontend && npm run build --prefix frontend &&
-      pip install -r requirements.txt && pip install psycopg2 && flask db upgrade &&
-      flask seed all
-    startCommand: gunicorn --worker-class eventlet -w 1 app:app
+    buildCommand: |
+      # Install dependencies
+      npm install
+
+      # Build the frontend
+      npm run build
+
+      # Install Python dependencies
+      pip install -r backend/requirements.txt
+
+      # Run database migrations if needed
+      if [ -d "migrations" ]; then
+        flask db upgrade
+      fi
+
+      # Seed the database if needed
+      if [ -d "backend/seeds" ]; then
+        flask seed all
+      fi
+    startCommand: |
+      cd backend && gunicorn --worker-class eventlet -w 1 wsgi:app
 version: "1"

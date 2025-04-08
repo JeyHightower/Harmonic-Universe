@@ -9,7 +9,7 @@ const isDebug = process.env.DEBUG || process.env.VITE_VERBOSE;
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: './',
+  base: '/',
 
   define: {
     'process.env.NODE_ENV': JSON.stringify(isProd ? 'production' : 'development'),
@@ -18,7 +18,7 @@ export default defineConfig({
 
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: isProd ? false : true,
     minify: isProd ? 'terser' : false,
     terserOptions: {
       compress: {
@@ -29,24 +29,33 @@ export default defineConfig({
     chunkSizeWarningLimit: 1600,
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          // Put all redux-persist code in one chunk
-          if (id.includes('redux-persist')) {
-            return 'redux-persist';
-          }
-          // Put all MUI related code in one chunk
-          if (id.includes('@mui') || id.includes('@emotion')) {
-            return 'material-ui';
-          }
-          // Group react and core deps
-          if (id.includes('react') || id.includes('redux')) {
-            return 'vendor-core';
-          }
-          return undefined;
-        },
         entryFileNames: 'assets/[name].[hash].js',
         chunkFileNames: 'assets/[name].[hash].js',
-        assetFileNames: 'assets/[name].[hash].[ext]'
+        assetFileNames: ({ name }) => {
+          if (/\.(gif|jpe?g|png|svg)$/.test(name ?? '')) {
+            return 'images/[name].[hash][extname]';
+          }
+
+          if (/\.css$/.test(name ?? '')) {
+            return 'styles/[name].[hash][extname]';
+          }
+
+          return 'assets/[name].[hash][extname]';
+        },
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('scheduler') || id.includes('prop-types')) {
+              return 'vendor-react';
+            }
+            if (id.includes('redux')) {
+              return 'vendor-redux';
+            }
+            if (id.includes('@mui') || id.includes('@emotion')) {
+              return 'vendor-mui';
+            }
+            return 'vendor';
+          }
+        }
       }
     }
   },
@@ -54,6 +63,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      'react': path.resolve(__dirname, 'node_modules/react'),
+      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
       'redux-persist': path.resolve(__dirname, 'node_modules/redux-persist'),
       'redux-persist/integration/react': path.resolve(__dirname, 'node_modules/redux-persist/integration/react'),
       'redux-persist/lib/storage': path.resolve(__dirname, 'node_modules/redux-persist/lib/storage')
