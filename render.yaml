@@ -1,62 +1,37 @@
+# Exported from Render on 2025-04-08T01:29:23Z
 services:
-  - type: web
-    name: harmonic-universe
-    env: python
-    buildCommand: chmod +x ./frontend-setup.sh && ./frontend-setup.sh && ./render-build.sh
-    startCommand: ./render-start.sh
-    plan: starter
-    envVars:
-      - key: FLASK_APP
-        value: backend.app:create_app
-      - key: PYTHON_VERSION
-        value: 3.11.0
-      - key: NODE_VERSION
-        value: 18.18.0
-      - key: FLASK_ENV
-        value: production
-      - key: FLASK_DEBUG
-        value: 0
-      - key: DEPLOYMENT_PLATFORM
-        value: render
-      - key: VITE_API_BASE_URL
-        value: /api
-      - key: API_BASE_URL
-        value: /api
-      - key: NODE_OPTIONS
-        value: --max-old-space-size=2048
-      - key: LOG_LEVEL
-        value: DEBUG
-      - key: PYTHONUNBUFFERED
-        value: "1"
-      - key: ENABLE_DETAILED_LOGGING
-        value: "true"
-      - key: STATIC_URL_PATH
-        value: ""
-      - key: STATIC_FOLDER
-        value: "/opt/render/project/src/static"
-      - key: REACT_APP_API_URL
-        value: /api
-      - key: CORS_ORIGINS
-        value: "https://harmonic-universe.onrender.com,https://harmonic-universe-z5ka.onrender.com,*"
-      - key: CORS_SUPPORTS_CREDENTIALS
-        value: "true"
-      - fromGroup: harmonic-universe-env
-    healthCheckPath: /api/health
-    autoDeploy: true
-
-databases:
-  - name: harmonic_universe_db
-    plan: free
-    postgresMajorVersion: 15
-
-envVarGroups:
-  - name: harmonic-universe-env
-    envVars:
-      - key: DATABASE_URL
-        value: ${harmonic_universe_db.connectionString}
-      - key: SECRET_KEY
-        generateValue: true
-      - key: JWT_SECRET_KEY
-        generateValue: true
-      - key: CORS_ORIGINS
-        value: "https://harmonic-universe.onrender.com,https://harmonic-universe-z5ka.onrender.com,*"
+- type: web
+  name: Harmonic-Universe
+  runtime: python
+  repo: https://github.com/JeyHightower/Harmonic-Universe
+  branch: deploy-2
+  plan: free
+  envVars:
+  - key: SCHEMA
+    sync: false
+  - key: FLASK_APP
+    sync: false
+  - key: DATABASE_URL
+    sync: false
+  - key: PYTHONPATH
+    sync: false
+  - key: PYTHON_VERSION
+    sync: false
+  - key: PORT
+    sync: false
+  - key: PYTHONUNBUFFERED
+    sync: false
+  - key: LOG_LEVEL
+    sync: false
+  - key: FLASK_ENV
+    sync: false
+  - key: JWT_SECRET_KEY
+    sync: false
+  - key: SECRET_KEY
+    sync: false
+  region: ohio
+  buildCommand: npm install --prefix frontend && npm run build --prefix frontend &&
+    pip install -r requirements.txt && pip install psycopg2 && flask db upgrade &&
+    flask seed all
+  startCommand: gunicorn --worker-class eventlet -w 1 app:app
+version: "1"
