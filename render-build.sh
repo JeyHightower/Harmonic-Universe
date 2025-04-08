@@ -15,6 +15,19 @@ if [ ! -d "frontend" ]; then
     exit 1
 fi
 
+# Install frontend dependencies
+echo "Installing frontend dependencies..."
+npm ci || npm install --legacy-peer-deps
+
+# Explicitly install redux-persist and related packages
+echo "Ensuring redux-persist and its dependencies are properly installed..."
+npm install --no-save redux-persist@6.0.0 @reduxjs/toolkit@1.9.5 react-redux@8.1.3
+
+# Clear previous installations
+echo "Cleaning up previous installations..."
+rm -rf dist
+rm -rf node_modules/.vite
+
 # Install frontend dependencies and build
 cd frontend
 if [ -d "node_modules" ]; then
@@ -95,16 +108,6 @@ fi
 echo "Installing npm packages directly in frontend directory..."
 npm install --legacy-peer-deps --verbose
 
-# Explicitly install critical dependencies
-echo "Installing critical dependencies explicitly..."
-npm install react react-dom react-redux@8.1.3 @reduxjs/toolkit@1.9.5 react-router-dom@6.18.0 react-router@6.18.0 vite@4.5.1 @vitejs/plugin-react@4.2.1 prop-types@15.8.1 --legacy-peer-deps --save
-
-# Check if react-redux is installed properly
-if ! npm list react-redux; then
-  echo "react-redux installation failed, trying alternative approach..."
-  npm install react-redux@8.1.3 --force --save
-fi
-
 # Install additional dependencies that might be missing
 echo "Installing additional dependencies..."
 npm install redux-persist@6.0.0 three tone axios moment history --legacy-peer-deps --save
@@ -113,6 +116,117 @@ npm install @babel/core @babel/preset-env @babel/preset-react @emotion/babel-plu
 # Install MUI packages that are required
 echo "Installing MUI packages..."
 npm install @mui/material@5.14.15 @mui/icons-material@5.14.15 @emotion/react@11.11.1 @emotion/styled@11.11.0 @ant-design/icons@4.8.0 antd@4.24.12 --legacy-peer-deps --save
+
+# Explicitly install redux-persist and its integration components
+echo "Installing redux-persist and ensuring integration/react is available..."
+npm install redux-persist --legacy-peer-deps --save
+mkdir -p node_modules/redux-persist/integration
+cat > node_modules/redux-persist/integration/react.js <<EOL
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.PersistGate = void 0;
+
+var _react = _interopRequireWildcard(require("react"));
+
+function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
+
+function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+
+function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); Object.defineProperty(subClass, "prototype", { writable: false }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf ? Object.setPrototypeOf.bind() : function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } else if (call !== void 0) { throw new TypeError("Derived constructors may only return object or undefined"); } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf.bind() : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+var PersistGate = /*#__PURE__*/function (_PureComponent) {
+  _inherits(PersistGate, _PureComponent);
+
+  var _super = _createSuper(PersistGate);
+
+  function PersistGate() {
+    var _this;
+
+    _classCallCheck(this, PersistGate);
+
+    _this = _super.apply(this, arguments);
+    _this.state = {
+      bootstrapped: false
+    };
+    _this.handlePersistorState = function () {
+      var persistor = _this.props.persistor;
+
+      var _persistor$getState = persistor.getState(),
+          bootstrapped = _persistor$getState.bootstrapped;
+
+      if (bootstrapped) {
+        if (_this.props.onBeforeLift) {
+          Promise.resolve(_this.props.onBeforeLift()).finally(function () {
+            _this.setState({
+              bootstrapped: true
+            });
+          });
+        } else {
+          _this.setState({
+            bootstrapped: true
+          });
+        }
+
+        _this._unsubscribe && _this._unsubscribe();
+      }
+    };
+    return _this;
+  }
+
+  _createClass(PersistGate, [{
+    key: "componentDidMount",
+    value: function componentDidMount() {
+      this._unsubscribe = this.props.persistor.subscribe(this.handlePersistorState);
+      this.handlePersistorState();
+    }
+  }, {
+    key: "componentWillUnmount",
+    value: function componentWillUnmount() {
+      this._unsubscribe && this._unsubscribe();
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      if (process.env.NODE_ENV !== 'production') {
+        if (typeof this.props.children === 'function' && this.props.loading) console.error('redux-persist: PersistGate expects either a function child or loading prop, but not both. The loading prop will be ignored.');
+      }
+
+      if (typeof this.props.children === 'function') {
+        return this.props.children(this.state.bootstrapped);
+      }
+
+      return this.state.bootstrapped ? this.props.children : this.props.loading;
+    }
+  }]);
+
+  return PersistGate;
+}(_react.PureComponent);
+
+exports.PersistGate = PersistGate;
+EOL
 
 # Create a temporary simplified vite.config.js to ensure build works
 cat > vite.config.js.temp <<EOL
@@ -138,6 +252,8 @@ export default defineConfig({
         '@reduxjs/toolkit',
         'prop-types',
         'redux-persist',
+        'redux-persist/integration/react',
+        'redux-persist/lib/storage',
         'three',
         'tone',
         'moment',
@@ -159,6 +275,9 @@ export default defineConfig({
           'react-router-dom': 'ReactRouterDOM',
           '@reduxjs/toolkit': 'RTK',
           'prop-types': 'PropTypes',
+          'redux-persist': 'ReduxPersist',
+          'redux-persist/integration/react': 'PersistGate',
+          'redux-persist/lib/storage': 'ReduxPersistStorage',
           '@mui/material': 'MaterialUI',
           '@mui/icons-material': 'MaterialIcons',
           '@emotion/react': 'EmotionReact',
@@ -171,6 +290,8 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       'redux-persist': path.resolve(__dirname, 'node_modules/redux-persist'),
+      'redux-persist/integration/react': path.resolve(__dirname, 'node_modules/redux-persist/integration/react'),
+      'redux-persist/lib/storage': path.resolve(__dirname, 'node_modules/redux-persist/lib/storage'),
       '@mui/material': path.resolve(__dirname, 'node_modules/@mui/material'),
       '@mui/icons-material': path.resolve(__dirname, 'node_modules/@mui/icons-material')
     }
@@ -184,6 +305,7 @@ export default defineConfig({
       'prop-types',
       'redux-persist',
       'redux-persist/integration/react',
+      'redux-persist/lib/storage',
       '@mui/material',
       '@mui/icons-material',
       '@emotion/react',
@@ -244,6 +366,9 @@ export default defineConfig({
         'react-router-dom',
         '@reduxjs/toolkit',
         'prop-types',
+        'redux-persist',
+        'redux-persist/integration/react',
+        'redux-persist/lib/storage',
         '@mui/material', 
         '@mui/icons-material',
         '@emotion/react',
@@ -265,6 +390,8 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       'redux-persist': path.resolve(__dirname, 'node_modules/redux-persist'),
+      'redux-persist/integration/react': path.resolve(__dirname, 'node_modules/redux-persist/integration/react.js'),
+      'redux-persist/lib/storage': path.resolve(__dirname, 'node_modules/redux-persist/lib/storage'),
       'react-redux': path.resolve(__dirname, 'node_modules/react-redux'),
       'prop-types': path.resolve(__dirname, 'node_modules/prop-types'),
       '@mui/material': path.resolve(__dirname, 'node_modules/@mui/material'),
@@ -279,7 +406,7 @@ export default defineConfig({
 EOL
     
     # Try install additional dependencies before final attempt
-    npm install prop-types@15.8.1 @mui/material@5.14.15 @mui/icons-material@5.14.15 @emotion/react@11.11.1 @emotion/styled@11.11.0 --force
+    npm install redux-persist@6.0.0 @reduxjs/toolkit@1.9.5 react-redux@8.1.3 prop-types@15.8.1 @mui/material@5.14.15 @mui/icons-material@5.14.15 @emotion/react@11.11.1 @emotion/styled@11.11.0 --force
     
     # Create a minimal entrypoint to ensure build succeeds
     mkdir -p src/backup
@@ -390,13 +517,25 @@ cd ../backend
 
 # Install backend dependencies
 echo "Installing backend dependencies..."
-pip install -r requirements.txt
-pip install psycopg2 
+pip install -r requirements.txt || python -m pip install -r requirements.txt
+
+# Install specific packages needed for deployment
+echo "Installing additional backend packages for deployment..."
+pip install gunicorn eventlet psycopg2-binary || python -m pip install gunicorn eventlet psycopg2-binary
+pip install Flask-Migrate Flask-SQLAlchemy Flask-Login || python -m pip install Flask-Migrate Flask-SQLAlchemy Flask-Login
+
+# Verify gunicorn is installed
+if python -m pip list | grep -q gunicorn; then
+    echo "Gunicorn installed successfully."
+else
+    echo "Installing gunicorn directly..."
+    python -m pip install gunicorn
+fi
 
 # Run database migrations and seed data
 echo "Running database migrations..."
-flask db upgrade
+flask db upgrade || python -m flask db upgrade
 echo "Seeding database..."
-flask seed all
+flask seed all || python -m flask seed all
 
 echo "Build completed successfully!" 
