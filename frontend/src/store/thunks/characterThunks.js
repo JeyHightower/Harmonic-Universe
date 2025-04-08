@@ -70,6 +70,24 @@ const getCharactersFromCache = (universeId) => {
   }
 };
 
+// Helper to clear characters cache for a specific universe
+const clearCharactersCache = (universeId) => {
+  try {
+    const cacheString = localStorage.getItem(CHARACTER_CACHE_KEY);
+    if (!cacheString) return;
+
+    const cache = JSON.parse(cacheString);
+    if (cache[universeId]) {
+      // Remove this universe's cache
+      delete cache[universeId];
+      localStorage.setItem(CHARACTER_CACHE_KEY, JSON.stringify(cache));
+      console.log(`Cleared character cache for universe ${universeId}`);
+    }
+  } catch (error) {
+    console.error('Error clearing character cache:', error);
+  }
+};
+
 // Fetch all characters for a scene
 export const fetchCharacters = createAsyncThunk(
   'characters/fetchCharacters',
@@ -326,6 +344,11 @@ export const createCharacter = createAsyncThunk(
           saveCharactersToCache(characterData.universe_id, [...existingCharacters, mockCharacter]);
         }
 
+        // Clear cache for this universe to force refresh
+        if (characterData.universe_id) {
+          clearCharactersCache(characterData.universe_id);
+        }
+
         return mockCharacter;
       }
 
@@ -337,6 +360,11 @@ export const createCharacter = createAsyncThunk(
         const state = getState();
         const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
         saveCharactersToCache(characterData.universe_id, [...existingCharacters, newCharacter]);
+      }
+
+      // Clear cache for this universe to force refresh
+      if (characterData.universe_id) {
+        clearCharactersCache(characterData.universe_id);
       }
 
       return newCharacter;
@@ -362,6 +390,11 @@ export const createCharacter = createAsyncThunk(
             saveCharactersToCache(characterData.universe_id, [...existingCharacters, newCharacter]);
           }
 
+          // Clear cache for this universe to force refresh
+          if (characterData.universe_id) {
+            clearCharactersCache(characterData.universe_id);
+          }
+
           return newCharacter;
         } catch (retryError) {
           // In production, return mock character instead of failing
@@ -379,6 +412,11 @@ export const createCharacter = createAsyncThunk(
               const state = getState();
               const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
               saveCharactersToCache(characterData.universe_id, [...existingCharacters, mockCharacter]);
+            }
+
+            // Clear cache for this universe to force refresh
+            if (characterData.universe_id) {
+              clearCharactersCache(characterData.universe_id);
             }
 
             return mockCharacter;
@@ -402,6 +440,11 @@ export const createCharacter = createAsyncThunk(
           const state = getState();
           const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
           saveCharactersToCache(characterData.universe_id, [...existingCharacters, mockCharacter]);
+        }
+
+        // Clear cache for this universe to force refresh
+        if (characterData.universe_id) {
+          clearCharactersCache(characterData.universe_id);
         }
 
         return mockCharacter;
@@ -435,6 +478,11 @@ export const updateCharacter = createAsyncThunk(
           saveCharactersToCache(characterData.universe_id, updatedCharacters);
         }
 
+        // Clear cache for this universe to force refresh
+        if (characterData.universe_id) {
+          clearCharactersCache(characterData.universe_id);
+        }
+
         return updatedCharacter;
       }
 
@@ -449,6 +497,11 @@ export const updateCharacter = createAsyncThunk(
           char.id === characterId ? updatedCharacter : char
         );
         saveCharactersToCache(characterData.universe_id, updatedCharacters);
+      }
+
+      // Clear cache for this universe to force refresh
+      if (characterData.universe_id) {
+        clearCharactersCache(characterData.universe_id);
       }
 
       return updatedCharacter;
@@ -477,6 +530,11 @@ export const updateCharacter = createAsyncThunk(
             saveCharactersToCache(characterData.universe_id, updatedCharacters);
           }
 
+          // Clear cache for this universe to force refresh
+          if (characterData.universe_id) {
+            clearCharactersCache(characterData.universe_id);
+          }
+
           return updatedCharacter;
         } catch (retryError) {
           // In production, return mock character instead of failing
@@ -496,6 +554,11 @@ export const updateCharacter = createAsyncThunk(
                 char.id === characterId ? updatedCharacter : char
               );
               saveCharactersToCache(characterData.universe_id, updatedCharacters);
+            }
+
+            // Clear cache for this universe to force refresh
+            if (characterData.universe_id) {
+              clearCharactersCache(characterData.universe_id);
             }
 
             return updatedCharacter;
@@ -521,6 +584,11 @@ export const updateCharacter = createAsyncThunk(
             char.id === characterId ? updatedCharacter : char
           );
           saveCharactersToCache(characterData.universe_id, updatedCharacters);
+        }
+
+        // Clear cache for this universe to force refresh
+        if (characterData.universe_id) {
+          clearCharactersCache(characterData.universe_id);
         }
 
         return updatedCharacter;

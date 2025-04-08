@@ -94,6 +94,55 @@ const CharactersRouteHandler = () => {
   );
 };
 
+// Create a special route handler for notes to validate the universeId
+const NotesRouteHandler = () => {
+  const { universeId } = useParams();
+  console.log(`NotesRouteHandler: Received universeId=${universeId}`);
+
+  // Stricter validation to check for valid numeric ID
+  const isValidId =
+    universeId &&
+    universeId !== "undefined" &&
+    universeId !== "null" &&
+    !isNaN(parseInt(universeId, 10)) &&
+    parseInt(universeId, 10) > 0;
+
+  if (!isValidId) {
+    console.log(
+      `Invalid universeId in route params (${universeId}) for notes, redirecting to dashboard`
+    );
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Explicitly parse the ID to ensure it's numeric
+  const parsedId = parseInt(universeId, 10);
+  console.log(
+    `NotesRouteHandler: Rendering NotesPage with universeId=${parsedId}`
+  );
+
+  // Only render if we have a valid ID
+  return (
+    <Suspense
+      fallback={
+        <div
+          className="loading-container"
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "50vh",
+          }}
+        >
+          <div className="loading-spinner"></div>
+          <p>Loading notes...</p>
+        </div>
+      }
+    >
+      <NotesPage />
+    </Suspense>
+  );
+};
+
 // Legacy components to be replaced
 const CharacterList = lazy(() =>
   import("../components/characters/CharacterList")
@@ -216,7 +265,7 @@ const routes = [
         path: ROUTES.NOTES,
         element: (
           <ProtectedRoute>
-            <NotesPage />
+            <NotesRouteHandler />
           </ProtectedRoute>
         ),
       },
@@ -224,7 +273,7 @@ const routes = [
         path: ROUTES.NOTES_FOR_SCENE,
         element: (
           <ProtectedRoute>
-            <NotesPage />
+            <NotesRouteHandler />
           </ProtectedRoute>
         ),
       },
@@ -232,7 +281,7 @@ const routes = [
         path: ROUTES.NOTES_FOR_CHARACTER,
         element: (
           <ProtectedRoute>
-            <NotesPage />
+            <NotesRouteHandler />
           </ProtectedRoute>
         ),
       },

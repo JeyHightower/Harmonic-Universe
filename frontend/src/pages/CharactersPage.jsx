@@ -27,6 +27,7 @@ import { CharacterFormModal } from "../components/modals";
 import apiClient from "../services/api";
 import "../components/characters/Characters.css";
 import { useDispatch, useSelector } from "react-redux";
+import { clearCharacters } from "../store/slices/characterSlice";
 import { fetchCharactersByUniverse } from "../store/thunks/characterThunks";
 
 // Remove test console.log
@@ -100,15 +101,15 @@ const CharactersPageContent = ({ universeId }) => {
       : null;
 
   // Get characters from Redux store
-  const charactersFromStore = useSelector(
-    (state) => state.characters.characters
+  const { universeCharacters, isLoading: reduxLoading } = useSelector(
+    (state) => state.characters
   );
-  const loadingFromStore = useSelector((state) => state.characters.loading);
-  const errorFromStore = useSelector((state) => state.characters.error);
-
-  const [characters, setCharacters] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const characters =
+    universeId && universeCharacters[universeId]
+      ? universeCharacters[universeId]
+      : [];
+  const loading = reduxLoading;
+  const error = useSelector((state) => state.characters.error);
   const [universe, setUniverse] = useState(null);
   const [scenes, setScenes] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -118,21 +119,15 @@ const CharactersPageContent = ({ universeId }) => {
 
   // Update local state when Redux state changes
   useEffect(() => {
-    if (charactersFromStore) {
-      setCharacters(charactersFromStore);
+    if (universeId) {
+      dispatch(fetchCharactersByUniverse(universeId));
     }
-    if (loadingFromStore !== undefined) {
-      setLoading(loadingFromStore);
-    }
-    if (errorFromStore) {
-      // Ensure error is a string before setting it
-      if (typeof errorFromStore === "object") {
-        setError(errorFromStore.message || JSON.stringify(errorFromStore));
-      } else {
-        setError(errorFromStore);
-      }
-    }
-  }, [charactersFromStore, loadingFromStore, errorFromStore]);
+
+    // Clean up Redux state on unmount
+    return () => {
+      dispatch(clearCharacters());
+    };
+  }, [dispatch, universeId]);
 
   useEffect(() => {
     // Early return to prevent any API calls if universeId is invalid or null
@@ -140,9 +135,6 @@ const CharactersPageContent = ({ universeId }) => {
       console.warn(
         `Invalid universeId for API calls: ${universeId}, skipping data fetch`
       );
-      setLoading(false);
-      setError("Invalid universe ID. Redirecting to dashboard.");
-      // Additional safety - redirect if we somehow got here with an invalid ID
       setTimeout(() => navigate("/dashboard", { replace: true }), 1500);
       return;
     }
@@ -150,8 +142,6 @@ const CharactersPageContent = ({ universeId }) => {
     const fetchData = async () => {
       try {
         console.log(`Fetching data for valid universe ID: ${safeUniverseId}`);
-        setLoading(true);
-        setError(null);
 
         // Check for cached characters first
         const CHARACTER_CACHE_KEY = "harmonic_universe_character_cache";
@@ -171,8 +161,6 @@ const CharactersPageContent = ({ universeId }) => {
               console.log(
                 `Using ${universeCache.characters.length} cached characters for universe ${safeUniverseId}`
               );
-              setCharacters(universeCache.characters);
-              // Don't return here, continue with fetching other data
             }
           }
         } catch (cacheError) {
@@ -286,13 +274,6 @@ const CharactersPageContent = ({ universeId }) => {
             `Error fetching universe ${safeUniverseId}:`,
             universeErr
           );
-          // Extract error message instead of setting the entire error object
-          const errorMessage =
-            typeof universeErr === "object"
-              ? universeErr.message ||
-                "Failed to load universe details. Please try again."
-              : universeErr;
-          setError(errorMessage);
           // Initialize with empty data to prevent null errors
           setUniverse({});
           setScenes([]);
@@ -305,34 +286,14 @@ const CharactersPageContent = ({ universeId }) => {
             `Fetching characters for universe ID: ${safeUniverseId} from Redux`
           );
 
-          // Dispatch the Redux action to fetch characters with the validated ID
-          await dispatch(fetchCharactersByUniverse(safeUniverseId));
-
-          // Characters will be updated via the useEffect that watches charactersFromStore
+          // Characters will be updated via the useEffect that watches characters
           console.log("Characters fetched from Redux store");
         } catch (charactersErr) {
           console.error("Error fetching characters from Redux:", charactersErr);
-          // Extract error message instead of setting the entire error object
-          const errorMessage =
-            typeof charactersErr === "object"
-              ? charactersErr.message ||
-                "Failed to load characters. Please try again."
-              : charactersErr;
-          setError(errorMessage);
-          // Initialize with empty data to prevent null errors
-          setCharacters([]);
+          // Don't call setError, just log the error
         }
-
-        setLoading(false);
       } catch (err) {
         console.error("Error in fetchData:", err);
-        // Extract error message instead of setting the entire error object
-        const errorMessage =
-          typeof err === "object"
-            ? err.message || "Failed to load data. Please try again."
-            : err;
-        setError(errorMessage);
-        setLoading(false);
       }
     };
 
@@ -346,8 +307,6 @@ const CharactersPageContent = ({ universeId }) => {
       console.warn(
         `CharactersPageContent: useEffect triggered with invalid universeId=${safeUniverseId}`
       );
-      setLoading(false);
-      setError("Invalid universe ID");
     }
   }, [safeUniverseId, navigate, dispatch]);
 
@@ -385,24 +344,9 @@ const CharactersPageContent = ({ universeId }) => {
     }
   };
 
-  const handleCharacterSuccess = (updatedCharacter) => {
-    // After character operations, refresh characters from Redux
-    if (!safeUniverseId) {
-      console.error("Cannot refresh characters: universeId is undefined");
-      return;
-    }
-
-    // Ensure universeId is a number
-    const parsedUniverseId = parseInt(safeUniverseId, 10);
-    if (isNaN(parsedUniverseId) || parsedUniverseId <= 0) {
-      console.error(
-        `Invalid universe ID for refreshing characters: ${safeUniverseId}`
-      );
-      return;
-    }
-
-    console.log(`Refreshing characters for universe ID: ${parsedUniverseId}`);
-    dispatch(fetchCharactersByUniverse(parsedUniverseId));
+  const handleCharacterSuccess = (actionType) => {
+    // Refresh the character list from API
+    dispatch(fetchCharactersByUniverse(safeUniverseId));
   };
 
   const handleBackToUniverse = () => {
