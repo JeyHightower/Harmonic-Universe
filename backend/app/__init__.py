@@ -52,49 +52,18 @@ else:
     cache = DummyCache()
 
 def create_app(config_name='default'):
-    app = Flask(__name__)
+    # For deployment, we use the frontend/dist folder for static files
+    static_folder = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'frontend', 'dist'))
+    static_url_path = ''
     
-    # Set the static folder based on environment or default paths
-    # Check multiple paths to find the best one with static files
-    possible_static_folders = [
-        os.environ.get('STATIC_FOLDER'),  # First try environment variable
-        os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'static')),  # Project root static
-        os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static')),  # Backend static
-        '/opt/render/project/src/static',  # Render.com deployment path
-        '/opt/render/project/src/backend/static'  # Alternative Render.com path
-    ]
+    # Create the Flask app with the correct static folder configuration
+    app = Flask(__name__, static_folder=static_folder, static_url_path=static_url_path)
     
-    static_folder = None
-    for folder in possible_static_folders:
-        if folder and os.path.exists(folder) and os.path.isdir(folder):
-            index_path = os.path.join(folder, 'index.html')
-            if os.path.exists(index_path):
-                static_folder = folder
-                print(f"Found valid static folder with index.html at: {static_folder}")
-                break
-    
-    # If no valid static folder found, use the first existing directory
-    if not static_folder:
-        for folder in possible_static_folders:
-            if folder and os.path.exists(folder) and os.path.isdir(folder):
-                static_folder = folder
-                print(f"Using existing static folder (no index.html): {static_folder}")
-                break
-    
-    # Last resort - use backend/static and create it if needed
-    if not static_folder:
-        static_folder = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static'))
-        os.makedirs(static_folder, exist_ok=True)
-        print(f"Created static folder at: {static_folder}")
-    
-    # Set the static folder and URL path
-    app.static_folder = static_folder
-    app.static_url_path = os.environ.get('STATIC_URL_PATH', '')
-    
-    # Print debugging information
+    # Print debugging information about static folder
     print(f"Static folder set to: {app.static_folder}")
     print(f"Static URL path set to: {app.static_url_path}")
     
+    # Check if the static folder exists and has the necessary files
     if os.path.exists(static_folder):
         try:
             static_files = os.listdir(static_folder)
@@ -107,6 +76,20 @@ def create_app(config_name='default'):
             print(f"Error inspecting static folder: {str(e)}")
     else:
         print(f"WARNING: Static folder does not exist at {static_folder}")
+        # Try alternative locations based on environment variables
+        possible_static_folders = [
+            os.environ.get('STATIC_FOLDER'),  # Try environment variable
+            os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'static')),  # Project root static
+            os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static')),  # Backend static
+            '/opt/render/project/src/static',  # Render.com deployment path
+            '/opt/render/project/src/backend/static'  # Alternative Render.com path
+        ]
+        
+        for folder in possible_static_folders:
+            if folder and os.path.exists(folder) and os.path.isdir(folder):
+                app.static_folder = folder
+                print(f"Using alternative static folder: {app.static_folder}")
+                break
     
     # Disable trailing slash redirects
     app.url_map.strict_slashes = False
@@ -305,26 +288,26 @@ def create_app(config_name='default'):
             'static_folder_exists': os.path.exists(static_dir)
         })
     
-    # Serve index.html for all non-API routes
+    # Serve index.html for all non-API routes to support SPA routing
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
-    def serve(path: str = '') -> Union[Response, tuple[Response, int]]:
-        static_dir = cast(str, app.static_folder)
-        
+    def react_root(path: str = '') -> Union[Response, tuple[Response, int]]:
+        """Serve React App for any non-API routes to support client-side routing."""
         # Check if requesting an API route
         if path.startswith('api/'):
             return jsonify({"error": "Not found"}), 404
             
-        # Try to serve the file directly if it exists
-        if path and os.path.exists(os.path.join(static_dir, path)):
-            return send_from_directory(static_dir, path)
-        
         # Handle request for favicon.ico
-        if path == 'favicon.ico' and os.path.exists(os.path.join(static_dir, 'favicon.ico')):
-            return send_from_directory(static_dir, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+        if path == 'favicon.ico' and os.path.exists(os.path.join(app.static_folder, 'favicon.ico')):
+            return send_from_directory(app.static_folder, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+            
+        # Try to serve the file directly if it exists
+        if path and os.path.exists(os.path.join(app.static_folder, path)):
+            return send_from_directory(app.static_folder, path)
         
+        # For all other routes, serve the index.html file for the React SPA
         # Force no-cache for index.html to prevent stale content issues
-        response = send_from_directory(static_dir, 'index.html')
+        response = send_from_directory(app.static_folder, 'index.html')
         response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '0'

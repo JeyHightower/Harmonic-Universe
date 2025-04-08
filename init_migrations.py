@@ -1,180 +1,217 @@
 #!/usr/bin/env python3
 """
-Database initialization script for Harmonic Universe on Render.com.
+Database Initialization and Migration Script for Render Deployment
 
-This script ensures that all database tables exist in the production database.
-It handles both PostgreSQL and SQLite databases.
+This script automates the process of creating and initializing the database
+for deployment on Render.com. It handles:
+1. Creating database tables if they don't exist
+2. Running database migrations
+3. Creating a test user if needed
+
+Usage: python init_migrations.py
+
+Environment variables:
+- DATABASE_URL: The database connection string
+- FLASK_APP: The Flask application module
 """
 
 import os
 import sys
-from dotenv import load_dotenv
+import subprocess
+import time
+import logging
+from logging.handlers import RotatingFileHandler
 
-# Add the current directory to the Python path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        RotatingFileHandler(
+            'db_init.log',
+            maxBytes=1024 * 1024,  # 1MB
+            backupCount=3
+        )
+    ]
+)
 
-def initialize_database():
-    """Initialize the database for the application in production."""
-    # Load environment variables
-    load_dotenv()
+logger = logging.getLogger('db_init')
+
+def run_command(command, env=None):
+    """Run a shell command and return its output and exit code."""
+    logger.info(f"Running command: {command}")
+    try:
+        env_dict = os.environ.copy()
+        if env:
+            env_dict.update(env)
+        
+        process = subprocess.Popen(
+            command,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env_dict
+        )
+        stdout, stderr = process.communicate()
+        exit_code = process.returncode
+        
+        if stdout:
+            logger.info(f"Command output: {stdout.decode('utf-8')}")
+        if stderr:
+            logger.warning(f"Command error output: {stderr.decode('utf-8')}")
+        
+        return stdout.decode('utf-8'), stderr.decode('utf-8'), exit_code
+    except Exception as e:
+        logger.error(f"Error running command: {e}")
+        return "", str(e), 1
+
+def wait_for_database(max_retries=30, delay=2):
+    """Wait for the database to be available."""
+    logger.info("Waiting for database to be available...")
     
-    print("Starting database initialization...")
+    # Add the backend directory to the Python path
+    backend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backend')
+    if os.path.exists(backend_dir):
+        sys.path.insert(0, backend_dir)
     
-    # Fix for PostgreSQL URL format if needed
-    database_url = os.environ.get('DATABASE_URL', '')
-    if database_url.startswith('postgres://'):
-        os.environ['DATABASE_URL'] = database_url.replace('postgres://', 'postgresql://', 1)
-        print("Converted 'postgres://' to 'postgresql://' for SQLAlchemy compatibility")
+    # Import after path setup
+    try:
+        from backend.app.extensions import db
+        from backend.app import create_app
+    except ImportError:
+        try:
+            # Try alternate import path
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            from app.extensions import db
+            from app import create_app
+        except ImportError as e:
+            logger.error(f"Could not import Flask app: {e}")
+            logger.error("Current sys.path: %s", sys.path)
+            logger.error("Current directory: %s", os.getcwd())
+            return False
     
-    # Import Flask app and models
-    from backend.app import create_app, db
-    
-    # Create Flask application
+    retries = 0
     app = create_app()
     
-    # Import all models to ensure they are registered with SQLAlchemy
-    from backend.app.api.models import (
-        User, Note, Universe, Scene, Physics2D, Physics3D,
-        PhysicsObject, PhysicsConstraint, SoundProfile,
-        AudioSample, MusicPiece, Harmony, MusicalTheme,
-        Character
-    )
-    
-    with app.app_context():
-        # First try to create all tables
+    while retries < max_retries:
         try:
-            print("Creating tables if they don't exist...")
-            db.create_all()
-            print("Tables created successfully!")
+            with app.app_context():
+                # Test database connection
+                with db.engine.connect() as conn:
+                    result = conn.execute(db.text('SELECT 1'))
+                    logger.info("Database connection successful!")
+                    return True
         except Exception as e:
-            print(f"Error creating tables: {str(e)}")
-            
-        # Check if tables exist
-        try:
-            # Try to query the users table
-            result = db.session.execute(db.text("SELECT 1 FROM users LIMIT 1"))
-            print("Users table exists and is accessible")
-        except Exception as e:
-            print(f"Error checking users table: {str(e)}")
-            
-            # Try Flask-Migrate as a fallback
-            try:
-                from flask_migrate import Migrate, init, migrate, upgrade
-                
-                print("Using Flask-Migrate to ensure database schema...")
-                
-                # Initialize Flask-Migrate
-                migrate_obj = Migrate(app, db)
-                
-                # Check if migrations directory exists
-                migrations_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backend/migrations')
-                if not os.path.exists(migrations_dir):
-                    print("Initializing migrations directory...")
-                    init()
-                
-                # Create a migration
-                print("Creating migration...")
-                migrate(message="render_deployment")
-                
-                # Apply the migration
-                print("Applying migration...")
-                upgrade()
-                
-                print("Database migration completed successfully!")
-            except Exception as migrate_error:
-                print(f"Error using Flask-Migrate: {str(migrate_error)}")
-                
-                # Last resort: try to create tables directly with raw SQL
-                try:
-                    print("Attempting to create tables with raw SQL...")
-                    
-                    # User table
-                    db.session.execute(db.text("""
-                    CREATE TABLE IF NOT EXISTS users (
-                        id SERIAL PRIMARY KEY,
-                        username VARCHAR(64) NOT NULL,
-                        email VARCHAR(120) NOT NULL UNIQUE,
-                        password_hash VARCHAR(128),
-                        version INTEGER DEFAULT 1,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        is_deleted BOOLEAN DEFAULT FALSE
-                    )
-                    """))
-                    
-                    # Universe table
-                    db.session.execute(db.text("""
-                    CREATE TABLE IF NOT EXISTS universes (
-                        id SERIAL PRIMARY KEY,
-                        name VARCHAR(100) NOT NULL,
-                        description TEXT,
-                        user_id INTEGER NOT NULL,
-                        version INTEGER DEFAULT 1,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        is_public BOOLEAN DEFAULT FALSE,
-                        is_deleted BOOLEAN DEFAULT FALSE
-                    )
-                    """))
-                    
-                    # Scenes table
-                    db.session.execute(db.text("""
-                    CREATE TABLE IF NOT EXISTS scenes (
-                        id SERIAL PRIMARY KEY,
-                        name VARCHAR(100) NOT NULL,
-                        description TEXT,
-                        universe_id INTEGER NOT NULL,
-                        version INTEGER DEFAULT 1,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        is_deleted BOOLEAN DEFAULT FALSE
-                    )
-                    """))
-                    
-                    # Characters table
-                    db.session.execute(db.text("""
-                    CREATE TABLE IF NOT EXISTS characters (
-                        id SERIAL PRIMARY KEY,
-                        name VARCHAR(100) NOT NULL,
-                        description TEXT,
-                        scene_id INTEGER NOT NULL,
-                        version INTEGER DEFAULT 1,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        is_deleted BOOLEAN DEFAULT FALSE
-                    )
-                    """))
-                    
-                    # Notes table
-                    db.session.execute(db.text("""
-                    CREATE TABLE IF NOT EXISTS notes (
-                        id SERIAL PRIMARY KEY,
-                        title VARCHAR(100) NOT NULL,
-                        content TEXT,
-                        user_id INTEGER NOT NULL,
-                        universe_id INTEGER,
-                        scene_id INTEGER,
-                        character_id INTEGER,
-                        tags JSONB,
-                        position_x FLOAT DEFAULT 0,
-                        position_y FLOAT DEFAULT 0,
-                        position_z FLOAT DEFAULT 0,
-                        is_public BOOLEAN DEFAULT FALSE,
-                        is_archived BOOLEAN DEFAULT FALSE,
-                        version INTEGER DEFAULT 1,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        is_deleted BOOLEAN DEFAULT FALSE
-                    )
-                    """))
-                    
-                    # Commit the changes
-                    db.session.commit()
-                    print("Tables created successfully with raw SQL!")
-                except Exception as sql_error:
-                    print(f"Error creating tables with raw SQL: {str(sql_error)}")
+            retries += 1
+            logger.warning(f"Database not yet available (attempt {retries}/{max_retries}): {e}")
+            time.sleep(delay)
     
-    print("Database initialization completed!")
+    logger.error(f"Database not available after {max_retries} attempts")
+    return False
 
-if __name__ == '__main__':
-    initialize_database() 
+def setup_database():
+    """Set up the database with tables and initial migrations."""
+    logger.info("Setting up database...")
+    
+    # Check for Flask app environment variable
+    if not os.environ.get('FLASK_APP'):
+        os.environ['FLASK_APP'] = 'wsgi.py'
+        logger.info("FLASK_APP environment variable set to wsgi.py")
+    
+    # Wait for database to be available
+    if not wait_for_database():
+        logger.error("Failed to connect to database, exiting.")
+        return False
+    
+    # Initialize migrations if they don't exist
+    migrations_dir = os.path.join('backend', 'migrations')
+    if not os.path.exists(migrations_dir):
+        logger.info("Initializing migrations...")
+        output, error, code = run_command("cd backend && flask db init")
+        if code != 0:
+            logger.error(f"Failed to initialize migrations: {error}")
+            return False
+    
+    # Create the first migration if none exists
+    migration_versions_dir = os.path.join(migrations_dir, 'versions')
+    if not os.path.exists(migration_versions_dir) or not os.listdir(migration_versions_dir):
+        logger.info("Creating initial migration...")
+        output, error, code = run_command("cd backend && flask db migrate -m 'Initial migration'")
+        if code != 0:
+            logger.error(f"Failed to create initial migration: {error}")
+            return False
+    
+    # Apply migrations
+    logger.info("Applying migrations...")
+    output, error, code = run_command("cd backend && flask db upgrade")
+    if code != 0:
+        logger.error(f"Failed to apply migrations: {error}")
+        return False
+    
+    logger.info("Database setup completed successfully")
+    return True
+
+def create_test_user():
+    """Create a test user if it doesn't exist."""
+    logger.info("Checking for test user...")
+    
+    try:
+        # Add the backend directory to the Python path
+        backend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backend')
+        if os.path.exists(backend_dir):
+            sys.path.insert(0, backend_dir)
+        
+        # Try to import the model classes
+        try:
+            from backend.app.api.models.user import User
+            from backend.app.extensions import db
+            from backend.app import create_app
+        except ImportError:
+            # Try alternate import path
+            from app.api.models.user import User
+            from app.extensions import db
+            from app import create_app
+        
+        app = create_app()
+        with app.app_context():
+            # Check if test user exists
+            admin_user = User.query.filter_by(email="admin@example.com").first()
+            if admin_user:
+                logger.info("Test user already exists")
+                return True
+            
+            # Create test user
+            logger.info("Creating test user...")
+            admin_user = User(
+                username="admin",
+                email="admin@example.com",
+                first_name="Admin",
+                last_name="User"
+            )
+            admin_user.set_password("AdminPassword123!")
+            db.session.add(admin_user)
+            db.session.commit()
+            logger.info("Test user created successfully")
+        return True
+    except Exception as e:
+        logger.error(f"Error creating test user: {e}")
+        return False
+
+def main():
+    """Main entry point for database initialization."""
+    logger.info("Starting database initialization and migration...")
+    
+    # Set up the database
+    if not setup_database():
+        logger.error("Database setup failed")
+        sys.exit(1)
+    
+    # Create test user
+    if not create_test_user():
+        logger.warning("Failed to create test user, but continuing with setup")
+    
+    logger.info("Database initialization and migration completed successfully")
+
+if __name__ == "__main__":
+    main() 
