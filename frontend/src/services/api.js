@@ -458,7 +458,7 @@ const axiosConfig = {
   baseURL: API_BASE_URL,
   headers: API_CONFIG.HEADERS,
   timeout: API_CONFIG.TIMEOUT,
-  withCredentials: true  // Always include credentials
+  withCredentials: API_CONFIG.WITH_CREDENTIALS  // Always include credentials
 };
 
 // In production, add more conservative settings to avoid rate limits

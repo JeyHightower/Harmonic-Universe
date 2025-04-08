@@ -416,43 +416,33 @@ function createMockDemoResponse(config) {
 // Create a fetchWithCredentials function for the apiClient to use
 const fetchWithCredentials = async (url, method = "GET", data = null) => {
   try {
-    // Log operation
+    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+    const fullUrl = url.startsWith('http') ? url : `${API_BASE_ENDPOINT}${url}`;
+
     log("api", "fetchWithCredentials-started", { url, method });
 
-    // Determine full URL if not absolute
-    const fullUrl = url.startsWith("http") ? url : `${API_BASE_ENDPOINT}${url}`;
-
-    // Setup options
     const options = {
       method,
+      credentials: 'include', // Always include credentials
       headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       },
-      credentials: "include",
+      mode: 'cors'
     };
 
-    // Add auth token if available
-    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-    if (token) {
-      options.headers["Authorization"] = `Bearer ${token}`;
-    }
-
-    // Add body if there's data
-    if (data) {
+    if (data && (method === "POST" || method === "PUT" || method === "PATCH")) {
       options.body = JSON.stringify(data);
     }
 
-    // Make the request
     const response = await fetch(fullUrl, options);
 
-    // Check if response is ok
     if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
     }
 
-    // Parse and return response
-    const result = await response.json();
+    const result = await response.json().catch(() => ({}));
     log("api", "fetchWithCredentials-success", { url });
     return result;
   } catch (error) {

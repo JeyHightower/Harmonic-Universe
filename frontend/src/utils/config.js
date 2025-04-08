@@ -150,7 +150,16 @@ export const API_CONFIG = {
   ERROR_HANDLING: {
     RETRY_DELAY: 3000,
     NETWORK_ERROR_THRESHOLD: 5000,
-  }
+  },
+  // Cookie settings for authentication
+  COOKIES: {
+    DOMAIN: IS_PRODUCTION ? '.onrender.com' : 'localhost',
+    SECURE: IS_PRODUCTION,
+    SAMESITE: IS_PRODUCTION ? 'none' : 'lax',
+    MAX_AGE: 24 * 60 * 60 * 1000 // 24 hours
+  },
+  // Always include credentials in requests
+  WITH_CREDENTIALS: true
 };
 
 // First, create simplified versions of our config for Node.js environment

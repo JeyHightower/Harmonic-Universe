@@ -111,11 +111,34 @@ def login():
         # Generate token
         access_token = create_access_token(identity=user.id)
         
-        return jsonify({
+        # Create response
+        response = jsonify({
             'message': 'Login successful',
             'user': user.to_dict(),
             'token': access_token
-        }), 200
+        })
+        
+        # Set cookie for token (in addition to JSON response)
+        is_production = current_app.config.get('ENV') == 'production'
+        cookie_domain = None  # Let browser set domain automatically
+        same_site = 'None' if is_production else 'Lax'
+        secure = is_production
+        
+        # Get token expiration time or default to 24 hours
+        token_expires = current_app.config.get('JWT_ACCESS_TOKEN_EXPIRES')
+        max_age = token_expires.total_seconds() if token_expires else 24 * 60 * 60  # 24 hours default
+        
+        response.set_cookie(
+            'token',
+            access_token,
+            httponly=True,
+            secure=secure,
+            samesite=same_site,
+            max_age=max_age,
+            domain=cookie_domain
+        )
+        
+        return response, 200
         
     except Exception as e:
         current_app.logger.error(f'Login error: {str(e)}')
@@ -178,7 +201,31 @@ def demo_login():
                 'token': access_token
             }
             current_app.logger.info('Demo login successful')
-            return jsonify(response_data), 200
+            
+            # Create response with cookies
+            response = jsonify(response_data)
+            
+            # Set cookie for token
+            is_production = current_app.config.get('ENV') == 'production'
+            cookie_domain = None  # Let browser set domain automatically
+            same_site = 'None' if is_production else 'Lax'
+            secure = is_production
+            
+            # Get token expiration time or default to 24 hours
+            token_expires = current_app.config.get('JWT_ACCESS_TOKEN_EXPIRES')
+            max_age = token_expires.total_seconds() if token_expires else 24 * 60 * 60  # 24 hours default
+            
+            response.set_cookie(
+                'token',
+                access_token,
+                httponly=True,
+                secure=secure,
+                samesite=same_site,
+                max_age=max_age,
+                domain=cookie_domain
+            )
+            
+            return response, 200
         except Exception as e:
             current_app.logger.error(f'Error generating token: {str(e)}')
             current_app.logger.exception('Full traceback:')

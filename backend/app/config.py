@@ -29,9 +29,15 @@ class Config:
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'jwt-secret-key')
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=7)
-    JWT_TOKEN_LOCATION = ['headers']
+    # Use both headers and cookies for JWT
+    JWT_TOKEN_LOCATION = ['headers', 'cookies']
     JWT_HEADER_NAME = 'Authorization'
     JWT_HEADER_TYPE = 'Bearer'
+    # Secure cookies in production
+    JWT_COOKIE_SECURE = os.environ.get('FLASK_ENV', 'development') == 'production'
+    JWT_COOKIE_SAMESITE = 'None' if os.environ.get('FLASK_ENV', 'development') == 'production' else 'Lax'
+    # Don't CSRF protect the JWT endpoints
+    JWT_COOKIE_CSRF_PROTECT = False
     
     # CORS config
     CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost:5001,https://harmonic-universe.onrender.com,https://harmonic-universe-z5ka.onrender.com,*').split(',')

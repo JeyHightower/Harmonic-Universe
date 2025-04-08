@@ -163,6 +163,11 @@ def create_app(config_name='default'):
             # For credentials to work, we can't use '*' - we must specify the exact origin
             if origin and origin in app.config['CORS_ORIGINS']:
                 response.headers.add('Access-Control-Allow-Origin', origin)
+            elif origin:
+                # Allow the origin if specified, needed for production cross-origin requests
+                response.headers.add('Access-Control-Allow-Origin', origin)
+                if app.config.get('CORS_SUPPORTS_CREDENTIALS', False):
+                    response.headers.add('Access-Control-Allow-Credentials', 'true')
             elif app.config['CORS_ORIGINS']:
                 # Fallback to the first configured origin if available
                 response.headers.add('Access-Control-Allow-Origin', app.config['CORS_ORIGINS'][0])
@@ -251,6 +256,9 @@ def create_app(config_name='default'):
 
     @jwt.invalid_token_loader
     def invalid_token_callback(error):
+        # Log the error in production for debugging 
+        if app.config.get('ENV') == 'production':
+            app.logger.warning(f"Invalid token error: {error}")
         return jsonify({
             'message': 'Signature verification failed',
             'error': 'invalid_token'
