@@ -277,6 +277,7 @@ const SceneForm = ({
       form.setFieldsValue({
         title: "",
         description: "",
+        summary: "",
         universe_id: universeId,
       });
     }
@@ -524,6 +525,16 @@ const SceneForm = ({
                     placeholder="Enter scene name"
                     disabled={readOnly}
                     size="large"
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="description"
+                  label={<span style={formStyles.inputLabel}>Description</span>}
+                >
+                  <Input
+                    placeholder="Short description of the scene"
+                    disabled={readOnly}
                   />
                 </Form.Item>
 
