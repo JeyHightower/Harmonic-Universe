@@ -299,7 +299,7 @@ def create_app(config_name='default'):
             
         # Handle request for favicon.ico
         if path == 'favicon.ico':
-            return send_from_directory('public', 'favicon.ico')
+            return send_from_directory(cast(str, app.static_folder), 'favicon.ico')
         
         # For all other routes, serve the index.html file for the React SPA
         return app.send_static_file('index.html')

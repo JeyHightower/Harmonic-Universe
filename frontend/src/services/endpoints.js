@@ -181,15 +181,15 @@ export const universesEndpoints = {
 };
 
 // Export endpoint helper functions
-export const getEndpoint = (group, name) => {
+export const getEndpoint = (group, name, fallbackUrl = null) => {
   if (!endpoints[group]) {
     console.error(`API endpoint group '${group}' not found`);
-    return null;
+    return fallbackUrl;
   }
 
   if (!endpoints[group][name]) {
     console.error(`API endpoint '${name}' not found in group '${group}'`);
-    return null;
+    return fallbackUrl;
   }
 
   return endpoints[group][name];

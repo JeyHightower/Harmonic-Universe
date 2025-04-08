@@ -318,7 +318,7 @@ def get_universe_scenes(universe_id):
         current_app.logger.info(f"Redirecting scenes request for universe {universe_id} to the primary scenes endpoint")
         
         # Redirect internally to the scenes endpoint
-        from backend.app.api.routes.scenes import get_scenes
+        from .scenes import get_scenes
         
         # Call the primary endpoint directly
         return get_scenes(universe_id)

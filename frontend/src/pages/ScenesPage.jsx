@@ -101,6 +101,13 @@ const ScenesPageContent = ({ universeId }) => {
   const safeUniverseId =
     universeId && !isNaN(universeId) && universeId > 0 ? universeId : null;
 
+  // Store the universe ID in localStorage for recovery
+  useEffect(() => {
+    if (safeUniverseId) {
+      localStorage.setItem("lastViewedUniverseId", safeUniverseId.toString());
+    }
+  }, [safeUniverseId]);
+
   // Add more debug logging
   console.log("Calculated safeUniverseId:", safeUniverseId);
   console.log("Type of safeUniverseId:", typeof safeUniverseId);

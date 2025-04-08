@@ -2,7 +2,7 @@ import axios from "axios";
 import { AUTH_CONFIG, API_CONFIG, IS_PRODUCTION } from "../utils/config";
 import { log } from "../utils/logger";
 // Import the endpoints properly
-import { endpoints } from "./endpoints";
+import { endpoints, getEndpoint, getApiEndpoint } from "./endpoints";
 import { cache } from "../utils/cache";
 import { CACHE_CONFIG } from "../utils/cacheConfig";
 
@@ -66,147 +66,108 @@ console.log("Endpoints loaded:", {
 // Use a direct universes object that combines all sources
 const universes = endpoints?.universes || FALLBACK_ENDPOINTS.universes;
 
-// Helper function to safely get endpoints with fallbacks
-const getEndpoint = (group, name, fallback, ...restArgs) => {
-  // Safety check for invalid parameters
-  if (!group || !name) {
-    console.warn(`Invalid endpoint parameters: group=${group}, name=${name}`);
-    return fallback;
+/**
+ * Helper function to safely validate and recover IDs
+ * @param {string|number} id - The ID to validate
+ * @param {string} type - The type of entity (universe, scene, character, etc.)
+ * @param {object} options - Additional options
+ * @returns {object} - An object with validated ID and status information
+ */
+const safeId = (id, type, options = {}) => {
+  // Generate debug context to help with troubleshooting
+  const callStack = new Error().stack;
+  const callerInfo = callStack ? callStack.split('\n')[2] : 'unknown';
+  const debugContext = `safeId check for ${type} (${id}) - Called from: ${callerInfo.trim()}`;
+
+  // Early validation - check if id is undefined, null, empty, etc.
+  if (id === undefined || id === null || id === '' || id === 'undefined' || id === 'null') {
+    console.warn(`${type} ID is invalid (${id})`, debugContext);
+
+    // Try to recover from localStorage for common entity types
+    const localStorageKey = `lastViewed${type.charAt(0).toUpperCase() + type.slice(1)}Id`;
+    const storedId = localStorage.getItem(localStorageKey);
+
+    if (storedId && !isNaN(parseInt(storedId, 10))) {
+      const recoveredId = parseInt(storedId, 10);
+      console.log(`Recovered ${type} ID from localStorage: ${recoveredId}`, debugContext);
+
+      return {
+        id: recoveredId,
+        valid: true,
+        recovered: true,
+        message: `Used stored ${type} ID (${recoveredId}) from previous session`
+      };
+    }
+
+    // Return invalid status if no recovery possible
+    return {
+      id: null,
+      valid: false,
+      recovered: false,
+      message: `Invalid ${type} ID and no stored ID available`
+    };
   }
 
-  // More strict checking for undefined/null values in rest arguments
-  const hasInvalidParams = [group, name].some(arg =>
-    arg === undefined || arg === null || arg === 'undefined' || arg === 'null' || arg === ''
-  );
-
-  // Separate check for rest args to provide better error messages
-  const invalidRestArgs = restArgs.some(arg =>
-    arg === undefined || arg === null || arg === 'undefined' || arg === 'null' || arg === ''
-  );
-
-  if (hasInvalidParams || invalidRestArgs) {
-    console.warn(`Endpoint has invalid parameters: group=${group}, name=${name}, args=${restArgs.join(', ')}`);
-    return fallback;
+  // Validate numeric values
+  if (isNaN(parseInt(id, 10))) {
+    console.warn(`${type} ID is not a valid number: ${id}`, debugContext);
+    return {
+      id: null,
+      valid: false,
+      recovered: false,
+      message: `Invalid ${type} ID format: not a number`
+    };
   }
 
-  try {
-    // Check environment to see if we need to handle duplicate /api prefixes
-    const isProduction = process.env.NODE_ENV === 'production' ||
-      import.meta.env.PROD ||
-      (typeof window !== 'undefined' &&
-        !window.location.hostname.includes('localhost') &&
-        !window.location.hostname.includes('127.0.0.1'));
+  // We have a valid ID, convert to number to ensure consistency
+  const numericId = parseInt(id, 10);
 
-    // Get endpoint from appropriate source
-    let endpoint;
+  // Store valid ID for future recovery
+  const localStorageKey = `lastViewed${type.charAt(0).toUpperCase() + type.slice(1)}Id`;
+  localStorage.setItem(localStorageKey, numericId.toString());
 
-    // Direct handling for universes group
-    if (group === 'universes') {
-      endpoint = universes && universes[name] ? universes[name] : fallback;
-    }
-    // Direct handling for auth group to fix validation warning
-    else if (group === 'auth') {
-      if (endpoints?.auth && endpoints.auth[name]) {
-        endpoint = endpoints.auth[name];
-      } else if (FALLBACK_ENDPOINTS.auth && FALLBACK_ENDPOINTS.auth[name]) {
-        endpoint = FALLBACK_ENDPOINTS.auth[name];
-      } else {
-        endpoint = fallback;
-      }
-    }
-    // Standard handling for other groups
-    else if (!endpoints) {
-      console.warn(`Endpoints object is ${typeof endpoints}, using fallback`);
-      endpoint = FALLBACK_ENDPOINTS[group] && FALLBACK_ENDPOINTS[group][name]
-        ? FALLBACK_ENDPOINTS[group][name]
-        : fallback;
-    }
-    else if (!endpoints[group]) {
-      console.warn(`Endpoint group '${group}' not found, using fallback`);
-      endpoint = FALLBACK_ENDPOINTS[group] && FALLBACK_ENDPOINTS[group][name]
-        ? FALLBACK_ENDPOINTS[group][name]
-        : fallback;
-    }
-    else if (!endpoints[group][name]) {
-      console.warn(`Endpoint '${name}' not found in group '${group}', using fallback`);
-      endpoint = FALLBACK_ENDPOINTS[group] && FALLBACK_ENDPOINTS[group][name]
-        ? FALLBACK_ENDPOINTS[group][name]
-        : fallback;
-    }
-    else {
-      endpoint = endpoints[group][name];
+  // Return validated ID
+  return {
+    id: numericId,
+    valid: true,
+    recovered: false,
+    message: `Valid ${type} ID: ${numericId}`
+  };
+};
+
+/**
+ * Higher-order function to wrap API methods that require ID validation
+ * @param {Function} apiMethod - The API method to wrap
+ * @param {string} entityType - The type of entity (universe, scene, character)
+ * @returns {Function} - A wrapped function that validates IDs before calling the API
+ */
+const withSafeIds = (apiMethod, entityType) => {
+  return async (id, ...args) => {
+    // Validate the ID
+    const { id: safeIdValue, valid, recovered, message } = safeId(id, entityType);
+
+    // Log the validation result
+    console.log(`API call validation for ${entityType} (${id}): ${message}`);
+
+    // If ID is invalid and couldn't be recovered, return empty data instead of making API call
+    if (!valid) {
+      console.warn(`Skipping API call due to invalid ${entityType} ID: ${id}`);
+      return {
+        data: entityType === 'universe' ? {} : [],
+        status: 'warning',
+        message: `No valid ${entityType} ID available`,
+        _debug_id: id
+      };
     }
 
-    // Handle endpoint as function with safety checks
-    if (typeof endpoint === 'function') {
-      // Check for invalid arguments again before applying the function
-      const invalidFunctionArgs = restArgs.some(arg =>
-        arg === undefined || arg === null || arg === 'undefined' || arg === 'null' || arg === ''
-      );
-
-      if (invalidFunctionArgs) {
-        console.warn(`Not calling endpoint function due to invalid arguments: ${restArgs.join(', ')}`);
-        return fallback;
-      }
-
-      try {
-        // Apply the function with the rest parameters
-        endpoint = endpoint.apply(null, restArgs);
-
-        // Validate the returned endpoint
-        if (!endpoint || typeof endpoint !== 'string' || endpoint.includes('undefined') || endpoint.includes('null')) {
-          console.warn(`Endpoint function returned invalid URL: ${endpoint}, using fallback`);
-          return fallback;
-        }
-      } catch (funcError) {
-        console.error(`Error calling endpoint function for ${group}.${name}:`, funcError);
-        return fallback;
-      }
+    // If the ID was recovered, log this information
+    if (recovered) {
+      console.log(`Using recovered ${entityType} ID: ${safeIdValue} instead of ${id}`);
     }
 
-    // Final validation on endpoint string
-    if (typeof endpoint === 'string') {
-      // Remove undefined or null segments
-      if (endpoint.includes('/undefined') || endpoint.includes('/null') || endpoint.includes('//')) {
-        console.warn(`Removing invalid segments from endpoint: ${endpoint}`);
-        // Replace undefined and null segments with empty string
-        endpoint = endpoint.replace(/\/undefined\b/g, '').replace(/\/null\b/g, '');
-
-        // Clean up any double slashes that may have been created
-        endpoint = endpoint.replace(/\/+/g, '/');
-
-        // Restore the first slash if it was removed
-        if (!endpoint.startsWith('/')) {
-          endpoint = '/' + endpoint;
-        }
-
-        // If we end up with an invalid endpoint after cleaning, use fallback
-        if (!endpoint || endpoint === '/' || endpoint.endsWith('//')) {
-          console.warn(`Cleaned endpoint is invalid: ${endpoint}, using fallback`);
-          return fallback;
-        }
-      }
-
-      // In production, if the endpoint starts with /api and we're using a baseURL that also
-      // has /api, remove the /api prefix from the endpoint to prevent duplication
-      if (isProduction && endpoint.startsWith('/api/')) {
-        console.log(`Fixing duplicate /api prefix in endpoint: ${endpoint}`);
-        return endpoint.substring(4); // Remove the first /api
-      }
-    } else {
-      console.warn(`Endpoint is not a string: ${typeof endpoint}, using fallback`);
-      return fallback;
-    }
-
-    return endpoint;
-  } catch (error) {
-    console.error(`Error accessing endpoint ${group}.${name}:`, error);
-    // Try to use our direct fallbacks first
-    if (FALLBACK_ENDPOINTS[group] && FALLBACK_ENDPOINTS[group][name]) {
-      return FALLBACK_ENDPOINTS[group][name];
-    }
-    return fallback;
-  }
+    // Call the original API method with the validated ID
+    return apiMethod(safeIdValue, ...args);
+  };
 };
 
 // Request deduplication
@@ -310,11 +271,46 @@ const getApiBaseUrl = () => {
 
 // Helper function to ensure URL is properly formatted without duplicate "api"
 const formatUrl = (url) => {
-  // Check for 'undefined' in the URL and return a safe fallback
-  if (url.includes('/undefined') || url.includes('undefined/') || url.includes('/null') || url.includes('null/')) {
-    console.error(`API error: URL contains 'undefined' or 'null' value: ${url}`);
-    // Don't return a URL - this will be handled by _request
+  // Return null for completely undefined/null URLs
+  if (!url) {
+    console.error('formatUrl: URL is null or undefined');
     return null;
+  }
+
+  // Clean up URLs with undefined segments 
+  if (url.includes('/undefined') || url.includes('/null')) {
+    console.warn(`formatUrl: Cleaning URL with undefined segments: ${url}`);
+
+    // Replace patterns like /xyz/undefined/abc with /xyz/abc
+    let cleanedUrl = url.replace(/\/[^\/]+\/undefined\//g, '/');
+    cleanedUrl = cleanedUrl.replace(/\/[^\/]+\/null\//g, '/');
+
+    // Replace trailing undefined or null segments
+    cleanedUrl = cleanedUrl.replace(/\/undefined($|\/)/g, '/');
+    cleanedUrl = cleanedUrl.replace(/\/null($|\/)/g, '/');
+
+    // Fix any double slashes
+    cleanedUrl = cleanedUrl.replace(/\/+/g, '/');
+
+    // Ensure we still have a slash at the beginning if it's not a full URL
+    if (!cleanedUrl.startsWith('/') && !cleanedUrl.startsWith('http')) {
+      cleanedUrl = '/' + cleanedUrl;
+    }
+
+    // Remove trailing slash if present (unless it's just '/')
+    if (cleanedUrl.length > 1 && cleanedUrl.endsWith('/')) {
+      cleanedUrl = cleanedUrl.slice(0, -1);
+    }
+
+    console.log(`formatUrl: Cleaned URL: ${url} → ${cleanedUrl}`);
+
+    // If after cleaning, the URL is still invalid, return null
+    if (cleanedUrl.includes('undefined') || cleanedUrl.includes('null')) {
+      console.error(`formatUrl: URL still contains invalid segments after cleaning: ${cleanedUrl}`);
+      return null;
+    }
+
+    url = cleanedUrl;
   }
 
   // If the URL is already a full URL, return it as is
@@ -1017,6 +1013,117 @@ axiosInstance.interceptors.response.use(
   }
 );
 
+// Add this before the API client object definition
+
+/**
+ * Ensures an ID is valid, attempting to recover from localStorage if not
+ * @param {any} id - The ID to check
+ * @param {string} entityType - Type of entity (e.g., 'universe', 'scene')
+ * @return {number|null} - The parsed valid ID or null
+ */
+const validateId = (id, entityType = 'universe') => {
+  // Convert string 'undefined' or 'null' to actual undefined or null
+  if (id === 'undefined' || id === 'null') {
+    id = undefined;
+  }
+
+  // Check if ID is valid
+  if (id === undefined || id === null || id === '') {
+    console.warn(`validateId: Invalid ${entityType} ID '${id}', attempting recovery`);
+
+    // Try to recover from localStorage
+    const storageKey = `last${entityType.charAt(0).toUpperCase() + entityType.slice(1)}Id`;
+    const storedId = localStorage.getItem(storageKey);
+
+    if (storedId && !isNaN(parseInt(storedId, 10))) {
+      console.log(`validateId: Recovered ${entityType} ID ${storedId} from localStorage`);
+      return parseInt(storedId, 10);
+    }
+
+    console.warn(`validateId: Could not recover ${entityType} ID`);
+    return null;
+  }
+
+  // Parse ID to number if it's a string
+  const parsedId = typeof id === 'string' ? parseInt(id, 10) : id;
+
+  // Final validation
+  if (isNaN(parsedId) || parsedId <= 0) {
+    console.warn(`validateId: Invalid ${entityType} ID value ${parsedId}`);
+    return null;
+  }
+
+  // Store valid ID for future recovery
+  const storageKey = `last${entityType.charAt(0).toUpperCase() + entityType.slice(1)}Id`;
+  localStorage.setItem(storageKey, parsedId.toString());
+
+  return parsedId;
+};
+
+/**
+ * Creates a wrapped version of API methods that safely handle IDs
+ * @param {Object} apiMethods - The original API methods object
+ * @return {Object} - API methods with ID safety
+ */
+const wrapMethodsWithIdValidation = (apiMethods) => {
+  const wrappedMethods = {};
+
+  // Methods that need ID validation
+  const methodsNeedingIdValidation = {
+    getUniverse: { paramIndex: 0, entityType: 'universe' },
+    updateUniverse: { paramIndex: 0, entityType: 'universe' },
+    deleteUniverse: { paramIndex: 0, entityType: 'universe' },
+    getUniverseScenes: { paramIndex: 0, entityType: 'universe' },
+    getScene: { paramIndex: 0, entityType: 'scene' },
+    updateScene: { paramIndex: 0, entityType: 'scene' },
+    deleteScene: { paramIndex: 0, entityType: 'scene' },
+    getCharacter: { paramIndex: 0, entityType: 'character' },
+    // Add other methods as needed
+  };
+
+  // Create wrapped versions of all methods
+  for (const [methodName, originalMethod] of Object.entries(apiMethods)) {
+    if (methodsNeedingIdValidation[methodName]) {
+      // This method needs ID validation
+      const { paramIndex, entityType } = methodsNeedingIdValidation[methodName];
+
+      wrappedMethods[methodName] = (...args) => {
+        // Create a copy of the arguments
+        const safeArgs = [...args];
+
+        // Check if we have a valid ID
+        const id = args[paramIndex];
+        const validId = validateId(id, entityType);
+
+        if (validId === null) {
+          // Return empty result instead of making the API call
+          console.warn(`API call to ${methodName} skipped due to invalid ID`);
+          return Promise.resolve({
+            data: {
+              message: `No ${entityType} selected`,
+              [`${entityType}`]: {},
+              scenes: [],
+              characters: [],
+              recovered: false
+            }
+          });
+        }
+
+        // Replace with safe ID
+        safeArgs[paramIndex] = validId;
+
+        // Call original method with safe arguments
+        return originalMethod(...safeArgs);
+      };
+    } else {
+      // No special handling needed, just use the original method
+      wrappedMethods[methodName] = originalMethod;
+    }
+  }
+
+  return wrappedMethods;
+};
+
 // API methods
 const apiClient = {
   // Auth methods
@@ -1548,22 +1655,38 @@ const apiClient = {
   getUniverse: (id, options = {}) => {
     console.log(`getUniverse called with ID: ${id} and options:`, options);
 
-    // Validate the ID before using it
-    if (id === undefined || id === null) {
-      console.error("getUniverse called with invalid ID:", id);
-      return Promise.reject(new Error("Invalid universe ID"));
+    // Early validation and recovery for invalid IDs
+    if (id === undefined || id === null || id === 'undefined' || id === 'null' || id === '') {
+      console.warn("getUniverse called with invalid ID, attempting to recover");
+
+      // Try to recover from localStorage
+      const lastUniverseId = localStorage.getItem('lastViewedUniverseId');
+      if (lastUniverseId && !isNaN(parseInt(lastUniverseId, 10))) {
+        console.log(`getUniverse: Recovered universe ID from localStorage: ${lastUniverseId}`);
+        id = parseInt(lastUniverseId, 10);
+      } else {
+        // Return empty data instead of rejecting with an error
+        console.log("getUniverse: No recovery ID available, returning empty universe data");
+        return Promise.resolve({
+          data: {
+            universe: {},
+            message: "No universe selected",
+            recovered: false
+          }
+        });
+      }
     }
 
-    // Comprehensive validation check for id
-    if (
-      id === 'undefined' ||
-      id === 'null' ||
-      id === '' ||
-      isNaN(parseInt(id, 10)) ||
-      parseInt(id, 10) <= 0
-    ) {
-      console.error(`getUniverse: Invalid universe ID: '${id}'`);
-      return Promise.reject(new Error(`Invalid universe ID format: ${id}`));
+    // Continue with normal validation for numeric values
+    if (id === '' || isNaN(parseInt(id, 10)) || parseInt(id, 10) <= 0) {
+      console.error(`getUniverse: Invalid universe ID format: '${id}'`);
+      return Promise.resolve({
+        data: {
+          universe: {},
+          message: `Invalid universe ID format: ${id}`,
+          error: "Invalid ID format"
+        }
+      });
     }
 
     // Parse ID to ensure it's a number
@@ -1572,25 +1695,54 @@ const apiClient = {
     // Double-check the parsed value
     if (isNaN(parsedId) || parsedId <= 0) {
       console.error(`getUniverse: Invalid parsed ID: ${parsedId}`);
-      return Promise.reject(new Error(`Invalid universe ID value: ${parsedId}`));
+      return Promise.resolve({
+        data: {
+          universe: {},
+          message: `Invalid universe ID value: ${parsedId}`,
+          error: "Invalid ID value"
+        }
+      });
     }
+
+    // Store valid ID for future recovery
+    localStorage.setItem('lastViewedUniverseId', parsedId.toString());
 
     // Safely create URL - first ensure we have a valid ID
     let safeUrl;
     try {
-      // Use endpoint without /api prefix since baseURL already includes it
+      // Get the appropriate endpoint from the endpoint configuration
       const endpoint = getEndpoint('universes', 'get', `/universes/${parsedId}`);
-      safeUrl = typeof endpoint === 'function' ? endpoint(parsedId) : endpoint;
+      console.log(`getUniverse: Retrieved endpoint:`, endpoint);
+
+      // Handle different types of endpoint values correctly
+      if (typeof endpoint === 'function') {
+        console.log(`getUniverse: Endpoint is a function, calling with ID ${parsedId}`);
+        safeUrl = endpoint(parsedId);
+      } else if (endpoint) {
+        console.log(`getUniverse: Endpoint is a string: ${endpoint}`);
+        safeUrl = endpoint;
+      } else {
+        console.error(`getUniverse: No valid endpoint returned`);
+        throw new Error(`No valid endpoint for universe ${parsedId}`);
+      }
 
       // Final validation of URL
       if (!safeUrl || safeUrl.includes('undefined') || safeUrl.includes('null')) {
         throw new Error(`Invalid URL generated: ${safeUrl}`);
       }
 
-      console.log(`getUniverse: Using URL: ${safeUrl}`);
+      // Format the URL to ensure proper API prefix handling
+      safeUrl = formatUrl(safeUrl);
+      console.log(`getUniverse: Final formatted URL: ${safeUrl}`);
     } catch (error) {
       console.error(`getUniverse: Error generating URL: ${error.message}`);
-      return Promise.reject(new Error(`Error generating API URL: ${error.message}`));
+      return Promise.resolve({
+        data: {
+          universe: {},
+          message: `Error generating API URL: ${error.message}`,
+          error: "URL generation failed"
+        }
+      });
     }
 
     // Make the API call with the validated ID
@@ -1717,23 +1869,42 @@ const apiClient = {
   getUniverseScenes: (universeId) => {
     console.log(`API - getUniverseScenes - Starting fetch for universe ${universeId}`);
 
-    // Validate universeId
-    if (universeId === undefined || universeId === null || universeId === 'undefined' || universeId === 'null' || universeId === '') {
+    // Improved validation for universeId
+    // First convert string "undefined" and "null" to actual undefined and null
+    if (universeId === "undefined" || universeId === "null") {
+      universeId = undefined;
+    }
+
+    // Then validate more thoroughly
+    if (universeId === undefined || universeId === null || universeId === "") {
       console.error(`getUniverseScenes: Invalid universe ID: '${universeId}'`);
-      return Promise.resolve({
-        status: 200,
-        data: {
-          scenes: [],
-          message: "No universe selected",
-          error: "Invalid universe ID"
-        }
-      });
+
+      // Try to recover the universe ID from localStorage
+      const lastUniverseId = localStorage.getItem('lastViewedUniverseId');
+      if (lastUniverseId && !isNaN(parseInt(lastUniverseId, 10))) {
+        console.log(`Recovering universe ID from localStorage: ${lastUniverseId}`);
+        universeId = parseInt(lastUniverseId, 10);
+      } else {
+        return Promise.resolve({
+          status: 200,
+          data: {
+            scenes: [],
+            message: "No universe selected",
+            error: "Invalid universe ID"
+          }
+        });
+      }
     }
 
     // Ensure universeId is a number if it's a string that can be parsed
     const parsedUniverseId = typeof universeId === 'string' && !isNaN(parseInt(universeId, 10))
       ? parseInt(universeId, 10)
       : universeId;
+
+    // Save the last universe ID for recovery purposes
+    if (parsedUniverseId && typeof parsedUniverseId === 'number') {
+      localStorage.setItem('lastViewedUniverseId', parsedUniverseId.toString());
+    }
 
     // Define all possible endpoints to try in sequence
     // Use the formatUrl helper to ensure proper URLs
