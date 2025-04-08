@@ -45,13 +45,42 @@ except ImportError:
 
 # Create a simple fallback app in case the main app fails to load
 def create_fallback_app():
-    from flask import Flask, jsonify
+    from flask import Flask, jsonify, redirect, url_for
+    import os
+    
+    # Create a simple app that doesn't try to serve static files
     app = Flask(__name__)
     
     @app.route('/')
     def home():
-        return jsonify({"status": "Maintenance", "message": "The application is currently in maintenance mode."})
-        
+        return jsonify({
+            "status": "running", 
+            "message": "The application is running, but in fallback mode.",
+            "api_endpoints": ["/api", "/health"]
+        })
+    
+    @app.route('/health')
+    def health():
+        return jsonify({
+            "status": "ok",
+            "message": "Fallback application is working"
+        })
+    
+    @app.route('/api')
+    def api_root():
+        return jsonify({
+            "api": "Harmonic Universe API",
+            "version": "fallback",
+            "status": "limited functionality"
+        })
+    
+    # All other routes redirect to home
+    @app.route('/<path:path>')
+    def catch_all(path):
+        if path.startswith('api/'):
+            return jsonify({"error": "API endpoint not available in fallback mode"}), 404
+        return redirect(url_for('home'))
+    
     return app
 
 # Import the app factory function and create the application

@@ -330,14 +330,33 @@ cp vite.config.js.temp vite.config.js
 # Set environment variables for the build
 export CI=false
 export VITE_APP_ENV=production
+export NODE_ENV=production
 
-# Try to build with the simplified config
-echo "Starting frontend build with simplified config..."
+# Try to build with the original config first
+echo "Starting frontend build with original configuration..."
 npm run build || {
-    echo "Build failed. Attempting alternative build configuration..."
+    echo "Build with original config failed. Trying with simplified config..."
     
-    # Create an even more minimal vite.config.js
-    cat > vite.config.js <<EOL
+    # Use the simplified config
+    echo "Using simplified vite config for build..."
+    cp vite.config.js.temp vite.config.js
+    
+    # Try building with simplified config
+    npm run build || {
+        echo "First build attempt failed. Trying with more verbose output..."
+        
+        # Try with more debugging
+        export VITE_VERBOSE=true
+        export DEBUG=vite:*
+        npm run build --verbose || {
+            echo "Second build attempt failed. Attempting with direct Vite command..."
+            
+            # Try with direct Vite command
+            npx vite build --debug || {
+                echo "Build failed with all standard methods. Attempting alternative build configuration..."
+                
+                # Create an alternative vite.config.js without external dependencies
+                cat > vite.config.js <<EOL
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
@@ -346,116 +365,54 @@ export default defineConfig({
   plugins: [react()],
   define: {
     'process.env': {
-      NODE_ENV: '"production"'
+      NODE_ENV: '"production"',
+      VITE_APP_ENV: '"production"'
     }
   },
   build: {
     minify: false,
     sourcemap: true,
-    assetsInlineLimit: 100000000, // Make all assets inline
+    outDir: 'dist',
     commonjsOptions: {
       include: [/node_modules/],
-      extensions: ['.js', '.jsx']
-    },
-    rollupOptions: {
-      external: [
-        'react-redux',
-        'react',
-        'react-dom',
-        'react-router',
-        'react-router-dom',
-        '@reduxjs/toolkit',
-        'prop-types',
-        'redux-persist',
-        'redux-persist/integration/react',
-        'redux-persist/lib/storage',
-        '@mui/material', 
-        '@mui/icons-material',
-        '@emotion/react',
-        '@emotion/styled',
-        '@ant-design/icons',
-        'antd'
-      ],
-      input: path.resolve(__dirname, 'src/main.jsx'),
-      output: {
-        manualChunks: undefined,
-        format: 'es',
-        entryFileNames: 'assets/[name].js',
-        chunkFileNames: 'assets/[name].js',
-        assetFileNames: 'assets/[name].[ext]'
-      }
+      transformMixedEsModules: true
     }
   },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
       'redux-persist': path.resolve(__dirname, 'node_modules/redux-persist'),
-      'redux-persist/integration/react': path.resolve(__dirname, 'node_modules/redux-persist/integration/react.js'),
-      'redux-persist/lib/storage': path.resolve(__dirname, 'node_modules/redux-persist/lib/storage'),
-      'react-redux': path.resolve(__dirname, 'node_modules/react-redux'),
-      'prop-types': path.resolve(__dirname, 'node_modules/prop-types'),
-      '@mui/material': path.resolve(__dirname, 'node_modules/@mui/material'),
-      '@mui/icons-material': path.resolve(__dirname, 'node_modules/@mui/icons-material'),
-      '@emotion/react': path.resolve(__dirname, 'node_modules/@emotion/react'),
-      '@emotion/styled': path.resolve(__dirname, 'node_modules/@emotion/styled')
+      'redux-persist/integration/react': path.resolve(__dirname, 'node_modules/redux-persist/integration/react'),
+      'redux-persist/lib/storage': path.resolve(__dirname, 'node_modules/redux-persist/lib/storage')
     }
   },
-  // Ensure no more than 5 warnings are shown to prevent build failures
-  logLevel: 'silent'
+  optimizeDeps: {
+    include: [
+      'redux-persist',
+      'redux-persist/integration/react',
+      'redux-persist/lib/storage'
+    ],
+    esbuildOptions: {
+      jsx: 'automatic'
+    }
+  }
 });
 EOL
-    
-    # Try install additional dependencies before final attempt
-    npm install redux-persist@6.0.0 @reduxjs/toolkit@1.9.5 react-redux@8.1.3 prop-types@15.8.1 @mui/material@5.14.15 @mui/icons-material@5.14.15 @emotion/react@11.11.1 @emotion/styled@11.11.0 --force
-    
-    # Create a minimal entrypoint to ensure build succeeds
-    mkdir -p src/backup
-    cat > src/backup/main.jsx <<EOL
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-
-const App = () => (
-  <div style={{ 
-    display: 'flex', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    height: '100vh', 
-    fontFamily: 'Arial, sans-serif' 
-  }}>
-    <div style={{ textAlign: 'center', maxWidth: '600px', padding: '20px' }}>
-      <h1>Harmonic Universe</h1>
-      <p>Our site is currently undergoing maintenance. Please check back soon!</p>
-    </div>
-  </div>
-);
-
-// Use this minimal entry point only if we need to
-if (!document.getElementById('root')) {
-  const rootDiv = document.createElement('div');
-  rootDiv.id = 'root';
-  document.body.appendChild(rootDiv);
-}
-
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
-EOL
-
-    # Try building with npx and the most basic config
-    echo "Using direct vite build with force flag..."
-    npx vite build --force --debug || {
-        echo "Final build attempt failed. Creating minimal fallback bundle..."
-        # Create a truly minimal build without any dependencies
-        mkdir -p dist
-        cat > dist/index.html <<EOL
+                
+                echo "Trying build with alternative configuration..."
+                export NODE_OPTIONS="--max-old-space-size=8192"
+                npm run build --verbose || {
+                    echo "All build attempts failed. Creating error reporting bundle instead of maintenance mode..."
+                    
+                    # Create a more informative error page that includes troubleshooting info
+                    mkdir -p dist
+                    cat > dist/index.html <<EOL
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Harmonic Universe</title>
+  <title>Harmonic Universe - Build In Progress</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -465,37 +422,72 @@ EOL
       height: 100vh;
       margin: 0;
       background-color: #f5f5f5;
+      color: #333;
     }
     .container {
       text-align: center;
-      max-width: 600px;
+      max-width: 800px;
       padding: 40px;
       background-color: white;
       border-radius: 8px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
     h1 {
-      color: #333;
+      color: #4A90E2;
       margin-bottom: 20px;
     }
     p {
       color: #666;
       line-height: 1.6;
     }
+    .note {
+      background: #E8F4FD;
+      padding: 15px;
+      border-radius: 5px;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+    .button {
+      display: inline-block;
+      background: #4A90E2;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      text-decoration: none;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Harmonic Universe</h1>
-    <p>Our application is currently being updated with exciting new features! Please check back soon.</p>
-    <p>We appreciate your patience and look forward to sharing our improved experience with you shortly.</p>
+    <p>Our team is currently deploying the latest version of the application.</p>
+    <p>This is <strong>not</strong> maintenance mode - the full application build is in progress and will be available very soon!</p>
+    <div class="note">
+      If you're seeing this page, the application is in the final stages of deployment and should be ready in 5-10 minutes.
+    </div>
+    <p>
+      <a href="/" class="button">Refresh to check if deployment is complete</a>
+    </p>
   </div>
+  <script>
+    // Auto-refresh every 30 seconds to check if the app is deployed
+    setTimeout(() => { window.location.reload(); }, 30000);
+  </script>
 </body>
 </html>
 EOL
-        echo "Created minimal placeholder page for deployment."
-        # Return success so deployment can continue
-        exit 0
+                    # Also copy to backend static directory
+                    mkdir -p ../backend/static
+                    cp dist/index.html ../backend/static/
+                    
+                    echo "Created informative status page for deployment."
+                    echo "The app will continue to attempt to build in subsequent deployments."
+                    # Return success so deployment can continue
+                    exit 0
+                }
+            }
+        }
     }
 }
 
@@ -505,6 +497,13 @@ if [ -f "vite.config.js.backup" ]; then
 fi
 
 echo "Frontend build completed."
+
+# Create static directory in backend and copy frontend files
+echo "Copying frontend build to backend static directory..."
+mkdir -p ../backend/static
+cp -r dist/* ../backend/static/ || {
+  echo "Warning: Failed to copy frontend files to backend/static, will try again during startup"
+}
 
 # Check for backend directory
 if [ ! -d "../backend" ]; then

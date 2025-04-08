@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Make sure Python can find our modules
+export PYTHONPATH="$PYTHONPATH:$(pwd):$(pwd)/backend"
+
 # Run deployment script to ensure correct python environment
 echo "Running deployment setup script..."
 python render_deploy.py || {
@@ -11,6 +14,18 @@ python render_deploy.py || {
     python -m pip install flask flask-login flask-sqlalchemy flask-migrate gunicorn
 }
 
+# Create symbolic links to ensure the static frontend is served properly
+echo "Setting up static file links for production..."
+if [ -d "frontend/dist" ]; then
+    echo "Frontend build found at frontend/dist"
+    # Create static folder if it doesn't exist
+    mkdir -p backend/static
+    # Link the frontend dist to backend static
+    cp -r frontend/dist/* backend/static/ || echo "Failed to copy frontend assets to backend/static"
+else
+    echo "WARNING: No frontend build found at frontend/dist"
+fi
+
 cd backend
 
 # Update pip if needed
@@ -19,10 +34,10 @@ python -m pip install --upgrade pip
 
 # Make sure Flask is installed
 echo "Ensuring Flask is installed..."
-python -m pip install flask flask-login flask-sqlalchemy flask-migrate || {
+python -m pip install flask flask-login flask-sqlalchemy flask-migrate flask-cors || {
     echo "Failed to install Flask with python -m pip, trying alternatives..."
-    pip install flask flask-login flask-sqlalchemy flask-migrate
-    pip3 install flask flask-login flask-sqlalchemy flask-migrate
+    pip install flask flask-login flask-sqlalchemy flask-migrate flask-cors
+    pip3 install flask flask-login flask-sqlalchemy flask-migrate flask-cors
 }
 
 # Verify Flask is installed properly
@@ -119,6 +134,10 @@ fi
 echo "Setting PYTHONPATH to include $(pwd) and $(dirname $(pwd))"
 export PYTHONPATH="$PYTHONPATH:$(pwd):$(dirname $(pwd))"
 
+# Set environment variables for production
+export FLASK_ENV=production
+export FLASK_APP=wsgi:app
+
 # Check if gunicorn is working properly
 GUNICORN_PATH=$(which gunicorn 2>/dev/null || echo "")
 if [ -n "$GUNICORN_PATH" ]; then
@@ -126,11 +145,9 @@ if [ -n "$GUNICORN_PATH" ]; then
     
     # Start the Flask application with gunicorn
     echo "Starting Flask application with gunicorn..."
-    exec gunicorn wsgi:app
+    exec gunicorn --bind 0.0.0.0:$PORT --workers=2 --threads=2 --timeout=60 wsgi:app
 else
     echo "Falling back to direct Flask execution..."
     # Use Flask's built-in server as a fallback
-    export FLASK_APP=wsgi:app
-    export FLASK_ENV=production
     exec python -m flask run --host=0.0.0.0 --port=${PORT:-5000}
 fi
