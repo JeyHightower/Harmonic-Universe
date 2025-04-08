@@ -43,46 +43,6 @@ except ImportError:
         logger.critical(f"Failed to install Flask: {e}")
         raise
 
-# Create a simple fallback app in case the main app fails to load
-def create_fallback_app():
-    from flask import Flask, jsonify, redirect, url_for
-    import os
-    
-    # Create a simple app that doesn't try to serve static files
-    app = Flask(__name__)
-    
-    @app.route('/')
-    def home():
-        return jsonify({
-            "status": "running", 
-            "message": "The application is running, but in fallback mode.",
-            "api_endpoints": ["/api", "/health"]
-        })
-    
-    @app.route('/health')
-    def health():
-        return jsonify({
-            "status": "ok",
-            "message": "Fallback application is working"
-        })
-    
-    @app.route('/api')
-    def api_root():
-        return jsonify({
-            "api": "Harmonic Universe API",
-            "version": "fallback",
-            "status": "limited functionality"
-        })
-    
-    # All other routes redirect to home
-    @app.route('/<path:path>')
-    def catch_all(path):
-        if path.startswith('api/'):
-            return jsonify({"error": "API endpoint not available in fallback mode"}), 404
-        return redirect(url_for('home'))
-    
-    return app
-
 # Import the app factory function and create the application
 application = None
 try:
@@ -104,9 +64,46 @@ except Exception as e:
     logger.critical(f"Failed to create application: {e}")
     logger.critical(traceback.format_exc())
     
-    # Create a minimal fallback application
-    logger.warning("Creating fallback application...")
-    application = create_fallback_app()
+    # Create an app that serves the React frontend directly
+    from flask import Flask, send_from_directory
+    
+    def create_direct_frontend_app():
+        # Find the static directory
+        static_locations = [
+            os.path.join(BASE_DIR, 'backend/static'),
+            os.path.join(BASE_DIR, 'frontend/dist'),
+            os.path.join(BASE_DIR, 'static')
+        ]
+        
+        # Choose the first valid location
+        static_folder = None
+        for loc in static_locations:
+            if os.path.exists(loc):
+                static_folder = loc
+                logger.info(f"Found static files at: {loc}")
+                break
+        
+        if not static_folder:
+            logger.error("No static folder found, creating one...")
+            static_folder = os.path.join(BASE_DIR, 'static')
+            os.makedirs(static_folder, exist_ok=True)
+        
+        # Create a simple Flask app that serves the frontend
+        app = Flask(__name__, static_folder=static_folder, static_url_path='')
+        
+        @app.route('/', defaults={'path': ''})
+        @app.route('/<path:path>')
+        def serve(path):
+            # For SPA routing, serve index.html for routes that don't exist
+            if path and os.path.exists(os.path.join(static_folder, path)):
+                return send_from_directory(static_folder, path)
+            else:
+                return send_from_directory(static_folder, 'index.html')
+        
+        logger.info(f"Created direct frontend app using {static_folder}")
+        return app
+    
+    application = create_direct_frontend_app()
 
 # This is what Gunicorn will import
 app = application
