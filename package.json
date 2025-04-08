@@ -10,8 +10,8 @@
     "backend:prod": "cd backend && gunicorn app.app:create_app() -b 0.0.0.0:5001",
     "frontend": "cd frontend && npm run dev",
     "frontend:prod": "cd frontend && npm run build && npm run preview",
-    "build": "npm run build:frontend",
-    "build:frontend": "cd frontend && npm run build",
+    "build": "echo \"Building project...\" && npm run build:frontend",
+    "build:frontend": "cd frontend && CI=false VITE_APP_ENV=production npx vite build",
     "build:backend": "cd backend && echo \"Backend build completed\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
