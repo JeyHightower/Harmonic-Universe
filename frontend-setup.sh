@@ -19,19 +19,10 @@ if [ -d "/opt/render/project/src" ]; then
     echo "Creating frontend directory..."
     mkdir -p /opt/render/project/src/frontend
     
-    # Check if react-app exists instead
-    if [ -d "/opt/render/project/src/react-app" ]; then
-      echo "Found react-app directory, copying contents to frontend..."
-      cp -r /opt/render/project/src/react-app/* /opt/render/project/src/frontend/
-    else
-      # If neither directory exists, then we need to find where the frontend code is
-      echo "Looking for frontend code in the project..."
-      
-      # If package.json exists in the root and has React dependencies, copy it to frontend
-      if [ -f "package.json" ] && grep -q "react" "package.json"; then
-        echo "Found React package.json in root, copying to frontend..."
-        cp -r ./* frontend/ 2>/dev/null || true
-      fi
+    # If package.json exists in the root and has React dependencies, copy it to frontend
+    if [ -f "package.json" ] && grep -q "react" "package.json"; then
+      echo "Found React package.json in root, copying to frontend..."
+      cp -r ./* frontend/ 2>/dev/null || true
     fi
   fi
   

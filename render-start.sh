@@ -1,3 +1,4 @@
 #!/bin/bash
 
-gunicorn --worker-class eventlet -w 1 app:app
+# Start the Flask application with Gunicorn
+cd backend && gunicorn --worker-class eventlet -w 1 wsgi:app

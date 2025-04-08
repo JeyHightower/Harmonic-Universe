@@ -54,7 +54,7 @@ else:
 def create_app(config_name='default'):
     # For deployment, we use the frontend/dist folder for static files
     static_folder = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'frontend', 'dist'))
-    static_url_path = ''
+    static_url_path = '/'
     
     # Create the Flask app with the correct static folder configuration
     app = Flask(__name__, static_folder=static_folder, static_url_path=static_url_path)
@@ -298,19 +298,10 @@ def create_app(config_name='default'):
             return jsonify({"error": "Not found"}), 404
             
         # Handle request for favicon.ico
-        if path == 'favicon.ico' and os.path.exists(os.path.join(app.static_folder, 'favicon.ico')):
-            return send_from_directory(app.static_folder, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
-            
-        # Try to serve the file directly if it exists
-        if path and os.path.exists(os.path.join(app.static_folder, path)):
-            return send_from_directory(app.static_folder, path)
+        if path == 'favicon.ico':
+            return send_from_directory('public', 'favicon.ico')
         
         # For all other routes, serve the index.html file for the React SPA
-        # Force no-cache for index.html to prevent stale content issues
-        response = send_from_directory(app.static_folder, 'index.html')
-        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-        response.headers['Pragma'] = 'no-cache'
-        response.headers['Expires'] = '0'
-        return response
+        return app.send_static_file('index.html')
     
     return app

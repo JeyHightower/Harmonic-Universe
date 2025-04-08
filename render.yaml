@@ -1,37 +1,42 @@
 # Exported from Render on 2025-04-08T01:29:23Z
 services:
-- type: web
-  name: Harmonic-Universe
-  runtime: python
-  repo: https://github.com/JeyHightower/Harmonic-Universe
-  branch: deploy-2
-  plan: free
-  envVars:
-  - key: SCHEMA
-    sync: false
-  - key: FLASK_APP
-    sync: false
-  - key: DATABASE_URL
-    sync: false
-  - key: PYTHONPATH
-    sync: false
-  - key: PYTHON_VERSION
-    sync: false
-  - key: PORT
-    sync: false
-  - key: PYTHONUNBUFFERED
-    sync: false
-  - key: LOG_LEVEL
-    sync: false
-  - key: FLASK_ENV
-    sync: false
-  - key: JWT_SECRET_KEY
-    sync: false
-  - key: SECRET_KEY
-    sync: false
-  region: ohio
-  buildCommand: npm install --prefix frontend && npm run build --prefix frontend &&
-    pip install -r requirements.txt && pip install psycopg2 && flask db upgrade &&
-    flask seed all
-  startCommand: gunicorn --worker-class eventlet -w 1 app:app
+  - type: web
+    name: Harmonic-Universe
+    runtime: python
+    repo: https://github.com/JeyHightower/Harmonic-Universe
+    branch: deploy-2
+    plan: free
+    envVars:
+      - key: SCHEMA
+        sync: false
+      - key: FLASK_APP
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: PYTHONPATH
+        sync: false
+      - key: PYTHON_VERSION
+        sync: false
+      - key: PORT
+        sync: false
+      - key: PYTHONUNBUFFERED
+        sync: false
+      - key: LOG_LEVEL
+        sync: false
+      - key: FLASK_ENV
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: STATIC_URL_PATH
+        value: "/"
+      - key: STATIC_FOLDER
+        value: "/opt/render/project/src/frontend/dist"
+    region: ohio
+    buildCommand:
+      npm install --prefix frontend && npm run build --prefix frontend &&
+      pip install -r requirements.txt && pip install psycopg2 && flask db upgrade &&
+      flask seed all
+    startCommand: gunicorn --worker-class eventlet -w 1 app:app
 version: "1"
