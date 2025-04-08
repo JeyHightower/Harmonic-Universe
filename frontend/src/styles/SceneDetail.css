@@ -50,6 +50,27 @@
   transition: box-shadow 0.3s ease;
 }
 
+/* Modal and dropdown positioning fixes */
+.ant-picker-dropdown,
+.ant-select-dropdown {
+  position: absolute;
+  z-index: 1100 !important;
+}
+
+/* Ensure modal elements appear above others */
+.ant-modal,
+.MuiDialog-root {
+  z-index: 1200 !important;
+}
+
+/* Fix for Safari and Firefox specific positioning */
+@supports (-webkit-overflow-scrolling: touch) or (scrollbar-width: thin) {
+  .ant-picker-dropdown,
+  .ant-select-dropdown {
+    position: fixed !important;
+  }
+}
+
 .scene-detail-section:hover {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
 }
@@ -69,6 +90,12 @@
   gap: 1rem;
 }
 
+.scene-detail-metadata {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
 .scene-detail-info .MuiTypography-body2 {
   font-size: 0.95rem;
   padding: 0.75rem 1rem;
@@ -77,6 +104,21 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.detail-info-item {
+  font-size: 0.95rem;
+  padding: 0.75rem 1rem;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.detail-info-item span:first-child {
+  font-weight: 500;
+  color: #555;
 }
 
 .scene-breadcrumb {

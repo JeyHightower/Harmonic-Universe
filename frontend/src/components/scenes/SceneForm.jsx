@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import PropTypes from "prop-types";
 import {
   Form,
@@ -32,7 +32,7 @@ const { TextArea } = Input;
 const { Option } = Select;
 const { Title, Text } = Typography;
 
-// Add custom styles to fix the dropdown and datepicker issues
+// Improved styles for modals
 const formStyles = {
   formCard: {
     boxShadow: "none",
@@ -61,6 +61,10 @@ const formStyles = {
     minHeight: "200px",
     fontSize: "14px",
     lineHeight: 1.6,
+  },
+  // Add higher z-index for modals to ensure they appear above other content
+  modalOverride: {
+    zIndex: 1100,
   },
 };
 
@@ -278,6 +282,12 @@ const SceneForm = ({
     }
   }, [initialValues, form, isEditMode, sceneId, universeId]);
 
+  // Improved handler for all popup containers - consistent implementation
+  const getPopupContainer = useCallback(
+    (triggerNode) => triggerNode.parentNode || document.body,
+    []
+  );
+
   // Handle form submission
   const onFinish = async (values) => {
     console.log("SceneForm - Form submitted with values:", values);
@@ -417,6 +427,20 @@ const SceneForm = ({
         form.validateFields(["dateOfScene"]);
       }, 100);
     }
+  };
+
+  // Handle focus/blur for all selects to ensure proper cleanup
+  const handleSelectBlur = () => {
+    // Force blur on all open selects
+    document
+      .querySelectorAll(".ant-select-dropdown:not(.ant-select-dropdown-hidden)")
+      .forEach((dropdown) => {
+        const selectId = dropdown.getAttribute("id")?.replace("-popup", "");
+        if (selectId) {
+          const select = document.getElementById(selectId);
+          if (select) select.blur();
+        }
+      });
   };
 
   if (loading) {
@@ -581,9 +605,10 @@ const SceneForm = ({
                     format="YYYY-MM-DD"
                     style={{ width: "100%" }}
                     disabled={readOnly}
-                    getPopupContainer={(trigger) => trigger.parentNode}
+                    getPopupContainer={getPopupContainer}
                     onOpenChange={handleDatePickerOpenChange}
-                    popupStyle={{ zIndex: 1060 }}
+                    popupStyle={{ ...formStyles.modalOverride }}
+                    autoComplete="off"
                   />
                 </Form.Item>
 
@@ -594,8 +619,10 @@ const SceneForm = ({
                   <Select
                     placeholder="Select time of day"
                     disabled={readOnly}
-                    getPopupContainer={(trigger) => trigger.parentNode}
-                    dropdownStyle={{ zIndex: 1060 }}
+                    getPopupContainer={getPopupContainer}
+                    dropdownStyle={{ ...formStyles.modalOverride }}
+                    onBlur={handleSelectBlur}
+                    autoComplete="off"
                   >
                     <Option value="morning">Morning</Option>
                     <Option value="afternoon">Afternoon</Option>
@@ -642,7 +669,8 @@ const SceneForm = ({
                     universeId={universeId}
                     characters={characters}
                     disabled={readOnly}
-                    getPopupContainer={(trigger) => trigger.parentNode}
+                    getPopupContainer={getPopupContainer}
+                    onBlur={handleSelectBlur}
                   />
                 </Form.Item>
               </Card>

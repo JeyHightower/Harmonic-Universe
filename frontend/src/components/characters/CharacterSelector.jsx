@@ -17,6 +17,7 @@ const { Option } = Select;
  * @param {Array} props.value - Currently selected character IDs
  * @param {Function} props.onChange - Callback for when selection changes
  * @param {boolean} props.disabled - Whether the selector is disabled
+ * @param {Function} props.onBlur - Callback for when the selector loses focus
  */
 const CharacterSelector = ({
   universeId,
@@ -24,12 +25,14 @@ const CharacterSelector = ({
   value,
   onChange,
   disabled = false,
+  onBlur,
   getPopupContainer = (trigger) => trigger.parentNode,
 }) => {
   const [characters, setCharacters] = useState(
     Array.isArray(providedCharacters) ? providedCharacters : []
   );
   const [loading, setLoading] = useState(!providedCharacters);
+  const [open, setOpen] = useState(false);
 
   // Create mock characters for production fallback
   const createMockCharacters = () => {
@@ -37,6 +40,22 @@ const CharacterSelector = ({
       { id: 1001, name: "Demo Character 1" },
       { id: 1002, name: "Demo Character 2" },
     ];
+  };
+
+  // Handle dropdown visibility change
+  const handleDropdownVisibleChange = (visible) => {
+    setOpen(visible);
+    // When closing dropdown, trigger onBlur if provided
+    if (!visible && onBlur && typeof onBlur === "function") {
+      setTimeout(() => onBlur(), 100);
+    }
+  };
+
+  // Handle manual blur
+  const handleBlur = () => {
+    if (onBlur && typeof onBlur === "function") {
+      onBlur();
+    }
   };
 
   useEffect(() => {
@@ -118,8 +137,12 @@ const CharacterSelector = ({
       loading={loading}
       disabled={disabled}
       getPopupContainer={getPopupContainer}
-      dropdownStyle={{ zIndex: 1060 }}
+      dropdownStyle={{ zIndex: 1100 }}
       listHeight={250}
+      onDropdownVisibleChange={handleDropdownVisibleChange}
+      onBlur={handleBlur}
+      open={open}
+      autoComplete="off"
       notFoundContent={
         loading ? (
           <Spin size="small" />

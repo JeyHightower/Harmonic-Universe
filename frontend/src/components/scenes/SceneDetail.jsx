@@ -260,6 +260,69 @@ const SceneDetail = ({ isEdit = false }) => {
               {scene.description || "No description provided"}
             </Typography>
           </Paper>
+
+          {/* Add summary section if available */}
+          {scene.summary && (
+            <Paper className="scene-detail-section" sx={{ mt: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Summary
+              </Typography>
+              <Typography variant="body1" paragraph component="div">
+                {scene.summary}
+              </Typography>
+            </Paper>
+          )}
+
+          {/* Add content section if available */}
+          {scene.content && (
+            <Paper className="scene-detail-section" sx={{ mt: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Content
+              </Typography>
+              <Typography variant="body1" paragraph component="div">
+                {scene.content}
+              </Typography>
+            </Paper>
+          )}
+
+          {/* Add notes section if available */}
+          {scene.notes_text && (
+            <Paper className="scene-detail-section" sx={{ mt: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Notes
+              </Typography>
+              <Typography variant="body1" paragraph component="div">
+                {scene.notes_text}
+              </Typography>
+            </Paper>
+          )}
+
+          {/* Display note count if available */}
+          {scene.notes_count !== undefined && scene.notes_count > 0 && (
+            <Paper className="scene-detail-section" sx={{ mt: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Notes
+              </Typography>
+              <Typography variant="body1" component="div">
+                This scene has {scene.notes_count} note
+                {scene.notes_count !== 1 ? "s" : ""}.
+              </Typography>
+            </Paper>
+          )}
+
+          {/* Display character count if available */}
+          {scene.characters_count !== undefined &&
+            scene.characters_count > 0 && (
+              <Paper className="scene-detail-section" sx={{ mt: 2 }}>
+                <Typography variant="h6" gutterBottom>
+                  Characters
+                </Typography>
+                <Typography variant="body1" component="div">
+                  This scene has {scene.characters_count} character
+                  {scene.characters_count !== 1 ? "s" : ""}.
+                </Typography>
+              </Paper>
+            )}
         </Grid>
 
         <Grid item xs={12} md={4}>
@@ -316,6 +379,85 @@ const SceneDetail = ({ isEdit = false }) => {
                   }
                 />
               </Typography>
+            </Box>
+          </Paper>
+
+          {/* Add additional scene metadata in a new section */}
+          <Paper className="scene-detail-section" sx={{ mt: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Additional Information
+            </Typography>
+            <Box className="scene-detail-metadata">
+              {scene.location && (
+                <Typography
+                  variant="body2"
+                  className="detail-info-item"
+                  component="div"
+                >
+                  <span>Location:</span>
+                  <span>{scene.location}</span>
+                </Typography>
+              )}
+              {scene.scene_type && (
+                <Typography
+                  variant="body2"
+                  className="detail-info-item"
+                  component="div"
+                >
+                  <span>Scene Type:</span>
+                  <span>{scene.scene_type}</span>
+                </Typography>
+              )}
+              {scene.time_of_day && (
+                <Typography
+                  variant="body2"
+                  className="detail-info-item"
+                  component="div"
+                >
+                  <span>Time of Day:</span>
+                  <span>{scene.time_of_day}</span>
+                </Typography>
+              )}
+              {scene.status && (
+                <Typography
+                  variant="body2"
+                  className="detail-info-item"
+                  component="div"
+                >
+                  <span>Status:</span>
+                  <span>{scene.status}</span>
+                </Typography>
+              )}
+              {scene.significance && (
+                <Typography
+                  variant="body2"
+                  className="detail-info-item"
+                  component="div"
+                >
+                  <span>Significance:</span>
+                  <span>{scene.significance}</span>
+                </Typography>
+              )}
+              {scene.date_of_scene && (
+                <Typography
+                  variant="body2"
+                  className="detail-info-item"
+                  component="div"
+                >
+                  <span>Scene Date:</span>
+                  <span>{scene.date_of_scene}</span>
+                </Typography>
+              )}
+              {typeof scene.order === "number" && (
+                <Typography
+                  variant="body2"
+                  className="detail-info-item"
+                  component="div"
+                >
+                  <span>Order:</span>
+                  <span>{scene.order}</span>
+                </Typography>
+              )}
             </Box>
           </Paper>
         </Grid>

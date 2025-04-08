@@ -247,67 +247,66 @@ const SceneFormModal = ({
       onClose={handleCancel}
       maxWidth="md"
       fullWidth
-      PaperProps={{
-        elevation: 5,
-        sx: {
-          borderRadius: 2,
-          p: 2,
+      disableEnforceFocus={false}
+      keepMounted={false}
+      sx={{
+        zIndex: 1300,
+        ".MuiDialog-paper": {
+          overflowY: "auto",
+          maxHeight: "90vh",
         },
       }}
     >
-      <DialogTitle sx={{ mb: 2 }}>
+      <DialogTitle>
         {getTitle()}
         <IconButton
           aria-label="close"
           onClick={handleCancel}
           sx={{
             position: "absolute",
-            right: 10,
-            top: 10,
-            color: (theme) => theme.palette.grey[500],
+            right: 8,
+            top: 8,
           }}
         >
           <CloseIcon />
         </IconButton>
       </DialogTitle>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      <DialogContent>
+      <DialogContent dividers>
         {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
+          <Box display="flex" justifyContent="center" p={3}>
             <CircularProgress />
           </Box>
+        ) : error ? (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
         ) : (
           <SceneForm
-            initialValues={initialValues}
             universeId={universeId}
             sceneId={sceneId}
-            readOnly={false}
-            isEditMode={modalType === "edit"}
+            initialData={initialValues}
             onSubmit={handleSubmit}
-            registerSubmit={registerSubmit}
             onCancel={handleCancel}
+            registerSubmit={(submitFn) => {
+              formSubmitRef.current = submitFn;
+              console.log("SceneFormModal: Registered form submit function");
+            }}
           />
         )}
       </DialogContent>
-
-      <DialogActions>
-        <Button onClick={handleCancel}>Cancel</Button>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleModalSubmit}
-          disabled={loading}
-          startIcon={loading && <CircularProgress size={20} color="inherit" />}
-        >
-          {modalType === "create" ? "Create" : "Save Changes"}
-        </Button>
-      </DialogActions>
+      {!loading && !error && (
+        <DialogActions>
+          <Button onClick={handleCancel}>Cancel</Button>
+          <Button
+            onClick={handleModalSubmit}
+            variant="contained"
+            color="primary"
+            disabled={loading}
+          >
+            {modalType === "create" ? "Create" : "Save"}
+          </Button>
+        </DialogActions>
+      )}
     </Dialog>
   );
 };
