@@ -3,8 +3,11 @@
  * This logger persists logs even in production builds and provides a way to view them
  */
 
-// Initialize the global log store if it doesn't exist
-if (!window.appLogs) {
+// Check if we're in a browser environment
+const isBrowser = typeof window !== 'undefined';
+
+// Initialize the global log store if it doesn't exist and we're in browser
+if (isBrowser && !window.appLogs) {
     window.appLogs = {
         logs: [],
         enabled: true,
@@ -20,13 +23,13 @@ if (!window.appLogs) {
 }
 
 // Check for debug mode from environment variables
-const isDebugEnabled = import.meta.env.VITE_DEBUG === 'true';
+const isDebugEnabled = isBrowser && typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_DEBUG === 'true';
 
 // Helper to determine if we're in production
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production';
 
 // Initialize with debug mode if enabled in environment
-if (isDebugEnabled) {
+if (isBrowser && isDebugEnabled) {
     window.debugMode = true;
     console.log('Debug mode enabled via environment variable');
 }
@@ -40,6 +43,12 @@ if (isDebugEnabled) {
  * @param {boolean} forceLog - Whether to log even if the category is disabled
  */
 export const log = (category, message, data = {}, forceLog = false) => {
+    // Skip logging in non-browser environments
+    if (!isBrowser) {
+        console.log(`[${category.toUpperCase()}] ${message}`, data);
+        return;
+    }
+
     // Create the log entry
     const entry = {
         time: new Date().toISOString(),
@@ -69,6 +78,12 @@ export const log = (category, message, data = {}, forceLog = false) => {
  * Log an error
  */
 export const logError = (message, error, category = 'error') => {
+    // In non-browser environment, just log to console
+    if (!isBrowser) {
+        console.error(`[${category.toUpperCase()}] ${message}`, error);
+        return;
+    }
+
     const data = {
         message: error?.message,
         stack: error?.stack,
@@ -116,6 +131,8 @@ export const createLogger = (category) => ({
  * Enable or disable logging for a category
  */
 export const toggleLogging = (category, enabled = true) => {
+    if (!isBrowser) return;
+
     if (category === 'all') {
         Object.keys(window.appLogs.categories).forEach(cat => {
             window.appLogs.categories[cat] = enabled;
@@ -129,6 +146,8 @@ export const toggleLogging = (category, enabled = true) => {
  * Enable debug mode (forces logging in production)
  */
 export const enableDebugMode = () => {
+    if (!isBrowser) return;
+
     window.debugMode = true;
     log('general', 'Debug mode enabled', {}, true);
 };
@@ -137,6 +156,8 @@ export const enableDebugMode = () => {
  * Get all logs for display
  */
 export const getLogs = (category = null, limit = 100) => {
+    if (!isBrowser) return [];
+
     let filteredLogs = window.appLogs.logs;
 
     if (category) {
@@ -150,6 +171,8 @@ export const getLogs = (category = null, limit = 100) => {
  * Clear all logs
  */
 export const clearLogs = () => {
+    if (!isBrowser) return;
+
     window.appLogs.logs = [];
     log('general', 'Logs cleared', {}, true);
 };
@@ -161,11 +184,13 @@ export const apiLogger = createLogger('api');
 export const generalLogger = createLogger('general');
 
 // Create a global logging function for easy access
-window.appLog = log;
-window.enableDebugMode = enableDebugMode;
+if (isBrowser) {
+    window.appLog = log;
+    window.enableDebugMode = enableDebugMode;
 
-// Initialize with debug mode enabled if URL has debug parameter
-if (window.location.search.includes('debug=true')) {
-    enableDebugMode();
-    log('general', 'Debug mode enabled via URL parameter', {}, true);
+    // Initialize with debug mode enabled if URL has debug parameter
+    if (window.location.search.includes('debug=true')) {
+        enableDebugMode();
+        log('general', 'Debug mode enabled via URL parameter', {}, true);
+    }
 }

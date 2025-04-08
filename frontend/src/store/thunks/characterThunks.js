@@ -1,7 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import apiClient from '../../services/api';
 import { requestWithRetry } from '../../utils/apiUtils';
-import { IS_PRODUCTION, AUTH_CONFIG } from '../../utils/config';
+import { IS_PRODUCTION, AUTH_CONFIG } from '../../utils/config.js';
 
 // Storage key for character cache
 const CHARACTER_CACHE_KEY = 'harmonic_universe_character_cache';
@@ -108,7 +108,7 @@ export const fetchCharacters = createAsyncThunk(
         try {
           const response = await requestWithRetry({
             method: 'get',
-            url: `${apiClient.defaults.baseURL}/characters/scene/${sceneId}`,
+            url: `${apiClient.defaults.baseURL}/api/characters/scene/${sceneId}`,
             headers: apiClient.defaults.headers,
             withCredentials: true
           });
@@ -199,7 +199,7 @@ export const fetchCharactersByUniverse = createAsyncThunk(
         console.log('Rate limited when fetching characters by universe, trying with retry logic...');
         try {
           // Use the same endpoint format as our API client - simple and direct
-          const url = `${apiClient.defaults.baseURL}/universes/${parsedUniverseId}/characters`;
+          const url = `${apiClient.defaults.baseURL}/api/universes/${parsedUniverseId}/characters`;
           console.log("Retry request URL:", url);
 
           const response = await requestWithRetry({
@@ -285,7 +285,7 @@ export const fetchCharacter = createAsyncThunk(
         try {
           const response = await requestWithRetry({
             method: 'get',
-            url: `${apiClient.defaults.baseURL}/characters/${characterId}`,
+            url: `${apiClient.defaults.baseURL}/api/characters/${characterId}`,
             headers: apiClient.defaults.headers,
             withCredentials: true
           });
@@ -375,7 +375,7 @@ export const createCharacter = createAsyncThunk(
         try {
           const response = await requestWithRetry({
             method: 'post',
-            url: `${apiClient.defaults.baseURL}/characters`,
+            url: `${apiClient.defaults.baseURL}/api/characters`,
             data: characterData,
             headers: apiClient.defaults.headers,
             withCredentials: true
@@ -512,7 +512,7 @@ export const updateCharacter = createAsyncThunk(
         try {
           const response = await requestWithRetry({
             method: 'put',
-            url: `${apiClient.defaults.baseURL}/characters/${characterId}`,
+            url: `${apiClient.defaults.baseURL}/api/characters/${characterId}`,
             data: characterData,
             headers: apiClient.defaults.headers,
             withCredentials: true
@@ -642,7 +642,7 @@ export const deleteCharacter = createAsyncThunk(
         try {
           await requestWithRetry({
             method: 'delete',
-            url: `${apiClient.defaults.baseURL}/characters/${characterId}`,
+            url: `${apiClient.defaults.baseURL}/api/characters/${characterId}`,
             headers: apiClient.defaults.headers,
             withCredentials: true
           });

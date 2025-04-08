@@ -3,15 +3,20 @@
  * This file centralizes environment-specific configuration with validation
  */
 
+// Check if import.meta is available (browser environment) or not (Node environment)
+const isNodeEnv = typeof window === 'undefined' && typeof process !== 'undefined';
+
 // Export environment
-export const ENV = import.meta.env.MODE || "development";
+export const ENV = isNodeEnv ? process.env.NODE_ENV || "development" : (import.meta.env.MODE || "development");
 
 // Export whether we're in production
-export const IS_PRODUCTION = process.env.NODE_ENV === 'production' ||
-  import.meta.env.PROD ||
-  (typeof window !== 'undefined' &&
-    !window.location.hostname.includes('localhost') &&
-    !window.location.hostname.includes('127.0.0.1'));
+export const IS_PRODUCTION = isNodeEnv ?
+  process.env.NODE_ENV === 'production' :
+  (process.env.NODE_ENV === 'production' ||
+    import.meta.env?.PROD ||
+    (typeof window !== 'undefined' &&
+      !window.location.hostname.includes('localhost') &&
+      !window.location.hostname.includes('127.0.0.1')));
 
 // Export whether we're in development
 export const IS_DEVELOPMENT = !IS_PRODUCTION;
@@ -20,28 +25,28 @@ export const IS_DEVELOPMENT = !IS_PRODUCTION;
 export const IS_TEST = ENV === "test";
 
 // Export the base URL
-export const BASE_URL = import.meta.env.BASE_URL || "/";
+export const BASE_URL = isNodeEnv ? "/" : (import.meta.env.BASE_URL || "/");
 
 // Export the public URL
-export const PUBLIC_URL = import.meta.env.PUBLIC_URL || "/";
+export const PUBLIC_URL = isNodeEnv ? "/" : (import.meta.env.PUBLIC_URL || "/");
 
 // Export the API URL
 export const API_URL = IS_PRODUCTION
   ? '' // Empty string in production to avoid double /api prefix
-  : (import.meta.env.VITE_API_URL || "http://localhost:5001/api");
+  : (isNodeEnv ? "http://localhost:5001/api" : (import.meta.env.VITE_API_URL || "http://localhost:5001/api"));
 
 // Export the CDN URL
-export const CDN_URL = import.meta.env.VITE_CDN_URL || "";
+export const CDN_URL = isNodeEnv ? "" : (import.meta.env.VITE_CDN_URL || "");
 
 // Export the version
-export const VERSION = import.meta.env.VITE_APP_VERSION || "1.0.0";
+export const VERSION = isNodeEnv ? process.env.VERSION || "1.0.0" : (import.meta.env.VITE_APP_VERSION || "1.0.0");
 
 // Export the build time
-export const BUILD_TIME =
-  import.meta.env.VITE_BUILD_TIME || new Date().toISOString();
+export const BUILD_TIME = isNodeEnv ? new Date().toISOString() :
+  (import.meta.env.VITE_BUILD_TIME || new Date().toISOString());
 
 // Export the git hash
-export const GIT_HASH = import.meta.env.VITE_GIT_HASH || "";
+export const GIT_HASH = isNodeEnv ? "" : (import.meta.env.VITE_GIT_HASH || "");
 
 // Export the environment variables
 export const ENV_VARS = {
@@ -57,13 +62,29 @@ export const ENV_VARS = {
 
 // Utility function to validate required environment variables
 const validateEnvVar = (key, defaultValue = undefined, validator = null) => {
-  const value = import.meta.env[key] ?? defaultValue;
+  // In Node environment, use process.env
+  const value = isNodeEnv
+    ? (process.env[key] ?? defaultValue)
+    : (import.meta.env[key] ?? defaultValue);
+
   if (value === undefined) {
+    if (isNodeEnv) {
+      console.warn(`Missing environment variable: ${key}, using default`);
+      return defaultValue;
+    }
+    // In browser, can be stricter
     throw new Error(`Missing required environment variable: ${key}`);
   }
+
   if (validator && !validator(value)) {
+    if (isNodeEnv) {
+      console.warn(`Invalid value for environment variable: ${key}, using default`);
+      return defaultValue;
+    }
+    // In browser, can be stricter
     throw new Error(`Invalid value for environment variable: ${key}`);
   }
+
   return value;
 };
 
@@ -107,7 +128,7 @@ export const API_CONFIG = {
   // Base URL should be relative in production to avoid CORS issues
   BASE_URL: IS_PRODUCTION
     ? '' // Empty string in production to avoid double /api prefix
-    : (import.meta.env.VITE_API_BASE_URL || "http://localhost:5001"), // Don't include /api in BASE_URL
+    : (isNodeEnv ? "http://localhost:5001" : (import.meta.env.VITE_API_BASE_URL || "http://localhost:5001")), // Don't include /api in BASE_URL
   // API prefix should always be /api, used for both local and production
   API_PREFIX: '/api',
   TIMEOUT: 30000,
@@ -115,7 +136,7 @@ export const API_CONFIG = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  MOCK_ENABLED: IS_PRODUCTION || import.meta.env.VITE_MOCK_API === 'true',
+  MOCK_ENABLED: IS_PRODUCTION || (isNodeEnv ? false : (import.meta.env.VITE_MOCK_API === 'true')),
   THROTTLE_ENABLED: true,
   MAX_RETRIES: 3,
   RETRY_DELAY: 2000,
@@ -132,75 +153,130 @@ export const API_CONFIG = {
   }
 };
 
-// Security configuration
-export const SECURITY_CONFIG = {
-  ENABLE_HTTPS: parseBool(validateEnvVar("VITE_ENABLE_HTTPS", "false")),
+// First, create simplified versions of our config for Node.js environment
+// Security configuration - simplified for Node.js
+const getNodeSecurityConfig = () => ({
+  ENABLE_HTTPS: false,
   RATE_LIMIT: {
-    ENABLED: parseBool(validateEnvVar("VITE_RATE_LIMIT_ENABLED", "true")),
-    MAX_REQUESTS: parseInt(
-      validateEnvVar("VITE_RATE_LIMIT_MAX_REQUESTS", "100")
-    ),
-    WINDOW_MS: parseInt(validateEnvVar("VITE_RATE_LIMIT_WINDOW_MS", "60000")), // 1 minute
+    ENABLED: true,
+    MAX_REQUESTS: 100,
+    WINDOW_MS: 60000, // 1 minute
   },
   PASSWORD: {
-    MIN_LENGTH: parseInt(validateEnvVar("VITE_PASSWORD_MIN_LENGTH", "8")),
-    MAX_LENGTH: parseInt(validateEnvVar("VITE_PASSWORD_MAX_LENGTH", "128")),
-    REQUIRE_UPPERCASE: parseBool(
-      validateEnvVar("VITE_PASSWORD_REQUIRE_UPPERCASE", "true")
-    ),
-    REQUIRE_LOWERCASE: parseBool(
-      validateEnvVar("VITE_PASSWORD_REQUIRE_LOWERCASE", "true")
-    ),
-    REQUIRE_NUMBERS: parseBool(
-      validateEnvVar("VITE_PASSWORD_REQUIRE_NUMBERS", "true")
-    ),
-    REQUIRE_SYMBOLS: parseBool(
-      validateEnvVar("VITE_PASSWORD_REQUIRE_SYMBOLS", "true")
-    ),
+    MIN_LENGTH: 8,
+    MAX_LENGTH: 128,
+    REQUIRE_UPPERCASE: true,
+    REQUIRE_LOWERCASE: true,
+    REQUIRE_NUMBERS: true,
+    REQUIRE_SYMBOLS: true,
   },
   JWT: {
-    STORAGE_KEY: validateEnvVar("VITE_JWT_STORAGE_KEY", "token"),
-    REFRESH_KEY: validateEnvVar("VITE_JWT_REFRESH_KEY", "refreshToken"),
-    EXPIRY_BUFFER: parseInt(validateEnvVar("VITE_JWT_EXPIRY_BUFFER", "300")), // 5 minutes
+    STORAGE_KEY: "token",
+    REFRESH_KEY: "refreshToken",
+    EXPIRY_BUFFER: 300, // 5 minutes
   },
   CSRF: {
-    ENABLED: parseBool(validateEnvVar("VITE_CSRF_ENABLED", "true")),
-    HEADER_NAME: validateEnvVar("VITE_CSRF_HEADER_NAME", "X-CSRF-Token"),
+    ENABLED: true,
+    HEADER_NAME: "X-CSRF-Token",
   },
-};
+});
+
+// Features config - simplified for Node.js
+const getNodeFeaturesConfig = () => ({
+  ENABLE_MFA: false,
+  ENABLE_PASSWORD_RESET: true,
+  ENABLE_ACCOUNT_LOCKOUT: true,
+  ENABLE_DEBUG_LOGGING: false,
+  MOCK_AUTH_IN_DEV: false,
+  DEMO_MODE: false,
+  OFFLINE_MODE: true,
+  DEBUG_MODE: false,
+  ANALYTICS: false,
+  PERFORMANCE_MONITORING: true,
+});
+
+// Session config - simplified for Node.js
+const getNodeSessionConfig = () => ({
+  TIMEOUT: 3600000,
+  ENABLE_KEEPALIVE: true,
+  RENEW_THRESHOLD: 300000,
+});
+
+// Security configuration
+export const SECURITY_CONFIG = isNodeEnv
+  ? getNodeSecurityConfig()
+  : {
+    ENABLE_HTTPS: parseBool(validateEnvVar("VITE_ENABLE_HTTPS", "false")),
+    RATE_LIMIT: {
+      ENABLED: parseBool(validateEnvVar("VITE_RATE_LIMIT_ENABLED", "true")),
+      MAX_REQUESTS: parseInt(
+        validateEnvVar("VITE_RATE_LIMIT_MAX_REQUESTS", "100")
+      ),
+      WINDOW_MS: parseInt(validateEnvVar("VITE_RATE_LIMIT_WINDOW_MS", "60000")), // 1 minute
+    },
+    PASSWORD: {
+      MIN_LENGTH: parseInt(validateEnvVar("VITE_PASSWORD_MIN_LENGTH", "8")),
+      MAX_LENGTH: parseInt(validateEnvVar("VITE_PASSWORD_MAX_LENGTH", "128")),
+      REQUIRE_UPPERCASE: parseBool(
+        validateEnvVar("VITE_PASSWORD_REQUIRE_UPPERCASE", "true")
+      ),
+      REQUIRE_LOWERCASE: parseBool(
+        validateEnvVar("VITE_PASSWORD_REQUIRE_LOWERCASE", "true")
+      ),
+      REQUIRE_NUMBERS: parseBool(
+        validateEnvVar("VITE_PASSWORD_REQUIRE_NUMBERS", "true")
+      ),
+      REQUIRE_SYMBOLS: parseBool(
+        validateEnvVar("VITE_PASSWORD_REQUIRE_SYMBOLS", "true")
+      ),
+    },
+    JWT: {
+      STORAGE_KEY: validateEnvVar("VITE_JWT_STORAGE_KEY", "token"),
+      REFRESH_KEY: validateEnvVar("VITE_JWT_REFRESH_KEY", "refreshToken"),
+      EXPIRY_BUFFER: parseInt(validateEnvVar("VITE_JWT_EXPIRY_BUFFER", "300")), // 5 minutes
+    },
+    CSRF: {
+      ENABLED: parseBool(validateEnvVar("VITE_CSRF_ENABLED", "true")),
+      HEADER_NAME: validateEnvVar("VITE_CSRF_HEADER_NAME", "X-CSRF-Token"),
+    },
+  };
 
 // Feature flags
-export const FEATURES = {
-  ENABLE_MFA: parseBool(validateEnvVar("VITE_ENABLE_MFA", "false")),
-  ENABLE_PASSWORD_RESET: parseBool(
-    validateEnvVar("VITE_ENABLE_PASSWORD_RESET", "true")
-  ),
-  ENABLE_ACCOUNT_LOCKOUT: parseBool(
-    validateEnvVar("VITE_ENABLE_ACCOUNT_LOCKOUT", "true")
-  ),
-  ENABLE_DEBUG_LOGGING: parseBool(
-    validateEnvVar("VITE_ENABLE_DEBUG_LOGGING", "false")
-  ),
-  MOCK_AUTH_IN_DEV: parseBool(validateEnvVar("VITE_MOCK_AUTH_IN_DEV", "false")),
-  DEMO_MODE: parseBool(validateEnvVar("VITE_FEATURE_DEMO_MODE", "false")),
-  OFFLINE_MODE: parseBool(validateEnvVar("VITE_FEATURE_OFFLINE_MODE", "true")),
-  DEBUG_MODE: parseBool(validateEnvVar("VITE_FEATURE_DEBUG_MODE", "false")),
-  ANALYTICS: parseBool(validateEnvVar("VITE_FEATURE_ANALYTICS", "false")),
-  PERFORMANCE_MONITORING: parseBool(
-    validateEnvVar("VITE_FEATURE_PERFORMANCE_MONITORING", "true")
-  ),
-};
+export const FEATURES = isNodeEnv
+  ? getNodeFeaturesConfig()
+  : {
+    ENABLE_MFA: parseBool(validateEnvVar("VITE_ENABLE_MFA", "false")),
+    ENABLE_PASSWORD_RESET: parseBool(
+      validateEnvVar("VITE_ENABLE_PASSWORD_RESET", "true")
+    ),
+    ENABLE_ACCOUNT_LOCKOUT: parseBool(
+      validateEnvVar("VITE_ENABLE_ACCOUNT_LOCKOUT", "true")
+    ),
+    ENABLE_DEBUG_LOGGING: parseBool(
+      validateEnvVar("VITE_ENABLE_DEBUG_LOGGING", "false")
+    ),
+    MOCK_AUTH_IN_DEV: parseBool(validateEnvVar("VITE_MOCK_AUTH_IN_DEV", "false")),
+    DEMO_MODE: parseBool(validateEnvVar("VITE_FEATURE_DEMO_MODE", "false")),
+    OFFLINE_MODE: parseBool(validateEnvVar("VITE_FEATURE_OFFLINE_MODE", "true")),
+    DEBUG_MODE: parseBool(validateEnvVar("VITE_FEATURE_DEBUG_MODE", "false")),
+    ANALYTICS: parseBool(validateEnvVar("VITE_FEATURE_ANALYTICS", "false")),
+    PERFORMANCE_MONITORING: parseBool(
+      validateEnvVar("VITE_FEATURE_PERFORMANCE_MONITORING", "true")
+    ),
+  };
 
 // Session configuration
-export const SESSION_CONFIG = {
-  TIMEOUT: parseInt(validateEnvVar("VITE_SESSION_TIMEOUT", "3600000")),
-  ENABLE_KEEPALIVE: parseBool(
-    validateEnvVar("VITE_ENABLE_SESSION_KEEPALIVE", "true")
-  ),
-  RENEW_THRESHOLD: parseInt(
-    validateEnvVar("VITE_SESSION_RENEW_THRESHOLD", "300000")
-  ),
-};
+export const SESSION_CONFIG = isNodeEnv
+  ? getNodeSessionConfig()
+  : {
+    TIMEOUT: parseInt(validateEnvVar("VITE_SESSION_TIMEOUT", "3600000")),
+    ENABLE_KEEPALIVE: parseBool(
+      validateEnvVar("VITE_ENABLE_SESSION_KEEPALIVE", "true")
+    ),
+    RENEW_THRESHOLD: parseInt(
+      validateEnvVar("VITE_SESSION_RENEW_THRESHOLD", "300000")
+    ),
+  };
 
 /**
  * Configuration for monitoring and error tracking
@@ -530,7 +606,7 @@ export const APP_CONFIG = {
   API: {
     BASE_URL: IS_PRODUCTION
       ? '/api' // Use relative URL in production
-      : (import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api"),
+      : (isNodeEnv ? "http://localhost:5001/api" : (import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api")),
     TIMEOUT: 30000,
   },
   FEATURES: {

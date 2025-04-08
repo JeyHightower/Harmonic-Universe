@@ -1,5 +1,5 @@
 import axios from "axios";
-import { AUTH_CONFIG, API_CONFIG, IS_PRODUCTION } from "../utils/config";
+import { AUTH_CONFIG, API_CONFIG, IS_PRODUCTION } from "../utils/config.js";
 import { log } from "../utils/logger";
 // Import the endpoints properly
 import { endpoints, getEndpoint, getApiEndpoint } from "./endpoints";

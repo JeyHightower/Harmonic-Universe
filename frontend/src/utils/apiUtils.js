@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_CONFIG, AUTH_CONFIG } from './config';
+import { API_CONFIG, AUTH_CONFIG } from './config.js';
 
 // Keep track of the last request time for specific endpoints
 const lastRequestTimes = {};
@@ -33,6 +33,31 @@ const rateLimitedRequest = async (requestFn, endpointKey) => {
   return requestFn();
 };
 
+// Helper function to ensure URL has the correct API prefix
+const ensureApiPrefix = (url, baseUrl, apiPrefix) => {
+  // Check if the URL already includes the API prefix
+  if (url.includes(`${apiPrefix}/`)) {
+    return url;
+  }
+
+  // If the URL directly starts with a resource (e.g., /characters/1)
+  if (url.startsWith('/')) {
+    return `${baseUrl}${apiPrefix}${url}`;
+  }
+
+  // If it's a full URL without the API prefix
+  if (url.startsWith(baseUrl)) {
+    const pathAfterBaseUrl = url.substring(baseUrl.length);
+    if (pathAfterBaseUrl.startsWith('/')) {
+      return `${baseUrl}${apiPrefix}${pathAfterBaseUrl}`;
+    }
+    return `${baseUrl}${apiPrefix}/${pathAfterBaseUrl}`;
+  }
+
+  // Default case: assume it's a resource path and prepend everything
+  return `${baseUrl}${apiPrefix}/${url}`;
+};
+
 /**
  * Make an API request with retry logic and exponential backoff
  * Specifically handles 429 Too Many Requests errors
@@ -44,6 +69,11 @@ const rateLimitedRequest = async (requestFn, endpointKey) => {
  */
 export const requestWithRetry = async (config, maxRetries = 3, baseDelay = 1000) => {
   let retryCount = 0;
+
+  // Process the URL to ensure it has the API prefix
+  if (config.url) {
+    config.url = ensureApiPrefix(config.url, API_CONFIG.BASE_URL, API_CONFIG.API_PREFIX);
+  }
 
   // Create an endpoint key for rate limiting
   const endpointKey = `${config.method || 'get'}-${config.url}`;
@@ -108,17 +138,21 @@ export const getCharacterWithRetry = async (characterId) => {
     // Create an endpoint key for rate limiting
     const endpointKey = `get-character-${characterId}`;
 
+    // Use rate-limited request with retry - construct the URL with proper API prefix
+    const url = ensureApiPrefix(`/characters/${characterId}`, API_CONFIG.BASE_URL, API_CONFIG.API_PREFIX);
+
     // Use rate-limited request with retry
     const response = await rateLimitedRequest(() =>
       requestWithRetry({
         method: 'get',
-        url: `${API_CONFIG.BASE_URL}/characters/${characterId}`,
+        url,
         headers: API_CONFIG.HEADERS,
         withCredentials: true,
       }),
       endpointKey
     );
 
+    console.log("API CONFIG:", API_CONFIG.BASE_URL, API_CONFIG.API_PREFIX);
     return response.data;
   } catch (error) {
     console.error('Error fetching character:', error);
@@ -136,11 +170,14 @@ export const getAllCharactersWithRetry = async () => {
     // Create an endpoint key for rate limiting
     const endpointKey = 'get-all-characters';
 
+    // Construct the URL with proper API prefix
+    const url = ensureApiPrefix('/characters', API_CONFIG.BASE_URL, API_CONFIG.API_PREFIX);
+
     // Use rate-limited request with retry
     const response = await rateLimitedRequest(() =>
       requestWithRetry({
         method: 'get',
-        url: `${API_CONFIG.BASE_URL}/characters`,
+        url,
         headers: API_CONFIG.HEADERS,
         withCredentials: true,
       }),
