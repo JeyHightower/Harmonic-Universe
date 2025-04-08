@@ -23,55 +23,98 @@ if [ -d "node_modules" ]; then
 fi
 
 echo "Installing frontend dependencies..."
-# First try with npm ci for exact versions
-npm ci || {
-    echo "npm ci failed, falling back to npm install..."
-    # Explicitly install with both production and development dependencies
-    npm install --production=false
-}
+# Install dependencies in the correct location
+echo "Installing npm packages directly in frontend directory..."
+npm install --legacy-peer-deps --verbose
 
-# Verify critical packages are installed
-CRITICAL_PACKAGES=("vite" "@vitejs/plugin-react" "react" "react-dom" "@reduxjs/toolkit" "react-router-dom")
-MISSING_PACKAGES=()
+# Explicitly install critical dependencies
+echo "Installing critical dependencies explicitly..."
+npm install react react-dom react-redux @reduxjs/toolkit react-router-dom react-router vite@latest @vitejs/plugin-react --legacy-peer-deps --save
 
-echo "Verifying critical dependencies..."
-for package in "${CRITICAL_PACKAGES[@]}"
-do
-    if ! npm list "$package" --depth=0 | grep -q "$package"; then
-        echo "Critical package $package is missing, installing it explicitly..."
-        MISSING_PACKAGES+=("$package")
-    else
-        echo "✅ $package is installed."
-    fi
-done
-
-# Install any missing critical packages
-if [ ${#MISSING_PACKAGES[@]} -gt 0 ]; then
-    echo "Installing missing critical packages: ${MISSING_PACKAGES[*]}"
-    npm install "${MISSING_PACKAGES[@]}" --save-dev --no-audit
+# Check if react-redux is installed properly
+if ! npm list react-redux; then
+  echo "react-redux installation failed, trying alternative approach..."
+  npm install react-redux@8.1.3 --force --save
 fi
 
-# Double-check vite installation as it's crucial for the build
-if ! npm list vite --depth=0 | grep -q "vite"; then
-    echo "Vite is still not installed after verification. Installing it explicitly..."
-    npm install vite --save-dev --no-audit
-    # Also install it globally as a fallback
-    npm install -g vite
+# Create a temporary simplified vite.config.js to ensure build works
+cat > vite.config.js.temp <<EOL
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+
+export default defineConfig({
+  plugins: [react()],
+  build: {
+    outDir: 'dist',
+    rollupOptions: {
+      external: [
+        'react-redux',
+        'react',
+        'react-dom',
+        'react-router',
+        'react-router-dom',
+        '@reduxjs/toolkit'
+      ]
+    }
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src')
+    }
+  }
+});
+EOL
+
+# Make a backup of the original config
+if [ -f "vite.config.js" ]; then
+  cp vite.config.js vite.config.js.backup
 fi
+
+# Use the simplified config
+echo "Using simplified vite config for build..."
+cp vite.config.js.temp vite.config.js
 
 # Set environment variables for the build
 export CI=false
 export VITE_APP_ENV=production
 
-echo "Starting frontend build..."
+# Try to build with the simplified config
+echo "Starting frontend build with simplified config..."
 npm run build || {
-    echo "Build failed. Trying with explicit vite execution..."
-    # If the build fails, try running vite build directly
-    npx vite build || {
-        echo "Direct vite build failed. Trying with global vite..."
-        vite build
+    echo "Build failed. Attempting alternative build configuration..."
+    
+    # Create an even more minimal vite.config.js
+    cat > vite.config.js <<EOL
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  build: {
+    commonjsOptions: {
+      include: [/node_modules/],
+      extensions: ['.js', '.jsx']
+    },
+    rollupOptions: {
+      external: [],
+      output: {
+        manualChunks: undefined
+      }
     }
+  }
+});
+EOL
+    
+    # Try building with npx and the most basic config
+    npx vite build --debug
 }
+
+# Restore original config if backup exists
+if [ -f "vite.config.js.backup" ]; then
+  mv vite.config.js.backup vite.config.js
+fi
+
 echo "Frontend build completed."
 
 # Check for backend directory
