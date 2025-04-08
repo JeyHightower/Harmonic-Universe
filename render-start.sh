@@ -1,7 +1,43 @@
 #!/bin/bash
 set -e
 
+# Run deployment script to ensure correct python environment
+echo "Running deployment setup script..."
+python render_deploy.py || {
+    echo "WARNING: Deployment script failed, continuing with manual setup"
+    
+    # Make sure Flask is installed
+    echo "Ensuring Flask is installed manually..."
+    python -m pip install flask flask-login flask-sqlalchemy flask-migrate gunicorn
+}
+
 cd backend
+
+# Update pip if needed
+echo "Updating pip..."
+python -m pip install --upgrade pip
+
+# Make sure Flask is installed
+echo "Ensuring Flask is installed..."
+python -m pip install flask flask-login flask-sqlalchemy flask-migrate || {
+    echo "Failed to install Flask with python -m pip, trying alternatives..."
+    pip install flask flask-login flask-sqlalchemy flask-migrate
+    pip3 install flask flask-login flask-sqlalchemy flask-migrate
+}
+
+# Verify Flask is installed properly
+if python -c "import flask" 2>/dev/null; then
+    echo "Flask successfully imported"
+else
+    echo "ERROR: Flask still cannot be imported!"
+    echo "Python path: $(which python)"
+    echo "Python version: $(python --version)"
+    echo "PYTHONPATH: $PYTHONPATH"
+    echo "Installed packages:"
+    python -m pip list
+    echo "Falling back to direct installation for Flask and dependencies..."
+    pip install --force-reinstall flask werkzeug jinja2 itsdangerous click
+fi
 
 # Function to check if gunicorn is properly installed and executable
 check_gunicorn() {
@@ -54,6 +90,34 @@ if ! check_gunicorn; then
         fi
     fi
 fi
+
+# Verify that both Flask and the app module are importable
+echo "Verifying application imports..."
+python -c "import flask; print('Flask version:', flask.__version__)" || echo "WARNING: Flask import failed!"
+python -c "import sys; print('Python sys.path:', sys.path)" || echo "WARNING: Cannot print sys.path!"
+
+# Check if wsgi.py exists and its content
+if [ -f "wsgi.py" ]; then
+    echo "wsgi.py exists in the backend directory."
+    echo "First few lines of wsgi.py:"
+    head -n 10 wsgi.py
+else
+    echo "ERROR: wsgi.py not found in backend directory!"
+    echo "Current directory: $(pwd)"
+    echo "Directory contents:"
+    ls -la
+    
+    # Check if it's in the parent directory
+    if [ -f "../wsgi.py" ]; then
+        echo "Found wsgi.py in the parent directory, using that instead."
+        cd ..
+        echo "Now in directory: $(pwd)"
+    fi
+fi
+
+# Make sure Python can find our modules
+echo "Setting PYTHONPATH to include $(pwd) and $(dirname $(pwd))"
+export PYTHONPATH="$PYTHONPATH:$(pwd):$(dirname $(pwd))"
 
 # Check if gunicorn is working properly
 GUNICORN_PATH=$(which gunicorn 2>/dev/null || echo "")

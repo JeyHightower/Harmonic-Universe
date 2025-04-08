@@ -8,9 +8,12 @@ It uses the create_app function from app/__init__.py to initialize the applicati
 import os
 import logging
 import sys
+import traceback
 
-# Add the current directory to Python's path to ensure proper imports
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+# Configure Python's import path to include relevant directories
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+sys.path.insert(0, BASE_DIR)
+sys.path.insert(0, os.path.join(BASE_DIR, 'backend'))
 
 # Set up logging
 logging.basicConfig(
@@ -21,21 +24,60 @@ logger = logging.getLogger(__name__)
 
 # Log startup information
 logger.info("Starting Harmonic Universe WSGI application")
+logger.info(f"Python version: {sys.version}")
+logger.info(f"Current working directory: {os.getcwd()}")
+logger.info(f"sys.path: {sys.path}")
 
-# Import the app factory function and create the application
-# Try import path for production (render.com), fall back to local development path
+# Check if Flask is installed
 try:
-    from backend.app import create_app
-    logger.info("Using production import path")
+    import flask
+    logger.info(f"Flask is installed (version {flask.__version__})")
 except ImportError:
+    logger.critical("Flask is not installed! Installing now...")
+    import subprocess
     try:
-        from app import create_app
-        logger.info("Using local development import path")
-    except ImportError:
-        logger.critical("Could not import create_app from any known location")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "flask"])
+        import flask
+        logger.info(f"Successfully installed Flask version {flask.__version__}")
+    except Exception as e:
+        logger.critical(f"Failed to install Flask: {e}")
         raise
 
-application = create_app()
+# Create a simple fallback app in case the main app fails to load
+def create_fallback_app():
+    from flask import Flask, jsonify
+    app = Flask(__name__)
+    
+    @app.route('/')
+    def home():
+        return jsonify({"status": "Maintenance", "message": "The application is currently in maintenance mode."})
+        
+    return app
+
+# Import the app factory function and create the application
+application = None
+try:
+    try:
+        # Try the production import path first
+        from backend.app import create_app
+        logger.info("Using production import path (backend.app)")
+    except ImportError as e:
+        logger.warning(f"Could not import from backend.app: {e}")
+        
+        # Try the direct import path
+        from app import create_app
+        logger.info("Using direct import path (app)")
+    
+    # Create the application
+    application = create_app()
+    
+except Exception as e:
+    logger.critical(f"Failed to create application: {e}")
+    logger.critical(traceback.format_exc())
+    
+    # Create a minimal fallback application
+    logger.warning("Creating fallback application...")
+    application = create_fallback_app()
 
 # This is what Gunicorn will import
 app = application
