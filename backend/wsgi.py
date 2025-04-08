@@ -9,6 +9,7 @@ It uses the create_app function from app/__init__.py to initialize the applicati
 import os
 import sys
 import logging
+import importlib.util
 
 # Set up logging based on environment
 log_level = os.environ.get('LOG_LEVEL', 'INFO')
@@ -20,6 +21,16 @@ logger = logging.getLogger(__name__)
 
 # Log startup information
 logger.info("Starting Harmonic Universe application")
+
+# Check if fixes modules are available
+try:
+    # Check if render fixes are available
+    render_fixes_spec = importlib.util.find_spec('fixes.render')
+    render_fixes_available = render_fixes_spec is not None
+    logger.info(f"Render fixes module available: {render_fixes_available}")
+except ImportError:
+    logger.warning("Could not check for render fixes module")
+    render_fixes_available = False
 
 # Import the app factory function and create the application
 from app import create_app

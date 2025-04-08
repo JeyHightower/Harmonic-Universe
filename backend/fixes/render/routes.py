@@ -6,8 +6,9 @@ This module adds special routes to handle specific paths on Render's platform.
 
 def register_render_routes(app):
     """Register special routes for Render platform compatibility."""
-    from flask import request, jsonify, send_file
+    from flask import request, jsonify, send_file, send_from_directory
     import io
+    import os
     
     @app.route('/render-static-js/<path:filename>')
     def render_static_js(filename):
@@ -63,6 +64,19 @@ def register_render_routes(app):
         }
         
         return jsonify(debug_info)
+    
+    # Add explicit SPA route handlers for common frontend routes
+    @app.route('/dashboard')
+    def spa_dashboard():
+        """Handle SPA dashboard route in production."""
+        app.logger.info("SPA route hit: /dashboard")
+        # Serve the index.html file for SPA routing
+        static_folder = app.static_folder
+        if static_folder and os.path.exists(os.path.join(static_folder, 'index.html')):
+            return send_from_directory(static_folder, 'index.html')
+        else:
+            app.logger.error(f"Could not find index.html in {static_folder}")
+            return jsonify({"error": "SPA index not found"}), 500
     
     print("Render-specific routes registered")
     return True 
