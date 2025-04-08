@@ -25,6 +25,15 @@ import click
 import logging
 from logging.handlers import RotatingFileHandler
 
+# Import fixes modules
+try:
+    from fixes.mime_override import apply_all_mime_fixes
+    from fixes.render import apply_render_fixes
+    FIXES_AVAILABLE = True
+except ImportError:
+    print("WARNING: fixes modules not found, continuing without fixes")
+    FIXES_AVAILABLE = False
+
 # Initialize extensions
 jwt = JWTManager()
 limiter = Limiter(key_func=get_remote_address)
@@ -102,6 +111,17 @@ def create_app(config_name='default'):
     jwt.init_app(app)
     limiter.init_app(app)
     cache.init_app(app)
+    
+    # Apply MIME type and Render fixes if available
+    if FIXES_AVAILABLE:
+        print("Applying fixes for MIME types and Render compatibility...")
+        try:
+            apply_all_mime_fixes(app)
+            # Only apply Render fixes in production
+            if config_name == 'production' or os.environ.get('APPLY_RENDER_FIXES') == 'true':
+                apply_render_fixes(app)
+        except Exception as e:
+            print(f"WARNING: Error applying fixes: {str(e)}")
     
     # Exempt OPTIONS requests from rate limiting globally
     @limiter.request_filter

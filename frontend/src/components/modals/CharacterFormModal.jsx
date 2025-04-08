@@ -17,7 +17,7 @@ import {
 } from "@mui/material";
 import apiClient from "../../services/api";
 import { useDispatch } from "react-redux";
-import "../character/Characters.css";
+import "../characters/Characters.css";
 import PropTypes from "prop-types";
 import { fetchScenes } from "../../store/thunks/consolidated/scenesThunks";
 import { openModal } from "../../store/slices/modalSlice";

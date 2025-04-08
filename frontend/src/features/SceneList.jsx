@@ -27,7 +27,7 @@ import {
   createScene,
 } from "../store/thunks/consolidated/scenesThunks";
 import { addScene } from "../store/slices/scenesSlice";
-import { SceneCard, SceneModalHandler } from "../components/consolidated";
+import { SceneCard, SceneModalHandler } from "../components/scenes";
 import { ROUTES } from "../utils/routes";
 import "../styles/SceneList.css";
 

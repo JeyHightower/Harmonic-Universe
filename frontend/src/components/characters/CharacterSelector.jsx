@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchCharacters } from "../../store/thunks/characterThunks";
+import { CharacterCard } from ".";
 import { Select, Empty, Spin, Avatar } from "antd";
 import { UserOutlined } from "@ant-design/icons";
 import apiClient from "../../services/api";
+import "./Characters.css";
 
 const { Option } = Select;
 

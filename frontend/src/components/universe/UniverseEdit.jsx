@@ -5,7 +5,8 @@ import {
   fetchUniverses,
   updateUniverse,
 } from "../../store/thunks/universeThunks";
-import { api, endpoints } from "@services/api";
+import apiClient from "../../services/api";
+import { endpoints } from "../../services/endpoints";
 import {
   validateDescription,
   validateUniverseName,
@@ -43,7 +44,7 @@ function UniverseEdit() {
   const fetchUniverseData = async () => {
     try {
       setLoading(true);
-      const response = await api.get(endpoints.universes.detail(id));
+      const response = await apiClient.get(endpoints.universes.detail(id));
       const newFormData = {
         name: response.name,
         description: response.description || "",

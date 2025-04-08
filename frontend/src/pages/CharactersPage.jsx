@@ -25,7 +25,7 @@ import {
 } from "@mui/icons-material";
 import { CharacterFormModal } from "../components/modals";
 import apiClient from "../services/api";
-import "../components/character/Characters.css";
+import "../components/characters/Characters.css";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCharactersByUniverse } from "../store/thunks/characterThunks";
 

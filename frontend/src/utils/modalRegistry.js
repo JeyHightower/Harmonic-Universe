@@ -9,7 +9,7 @@ import FormModal from "../components/modals/FormModal";
 import LoginModal from "../components/auth/LoginModal";
 import SignupModal from "../components/auth/SignupModal";
 import UniverseCreateModal from "../components/modals/UniverseCreateModal";
-import SceneModalHandler from "../components/consolidated/SceneModalHandler";
+import SceneModalHandler from "../components/scenes/SceneModalHandler";
 import CharacterFormModal from "../components/modals/CharacterFormModal";
 
 // Create modal registry

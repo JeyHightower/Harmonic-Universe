@@ -2,11 +2,13 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import Tooltip from "../components/common/Tooltip";
-import UniverseCard from "../components/universe/UniverseCard";
+import {
+  UniverseCard,
+  UniverseModalFinal,
+} from "../components/universe";
 import { fetchUniverses } from "../store/thunks/universeThunks";
 import "../styles/Dashboard.css";
 import { AUTH_CONFIG } from "../utils/config";
-import UniverseFormModal from "../components/universe/UniverseFormModal";
 import { logout } from "../store/thunks/authThunks";
 import { Button } from "@mui/material";
 import {
@@ -276,7 +278,7 @@ const Dashboard = () => {
           </Button>
         </div>
         {isCreateModalOpen && (
-          <UniverseFormModal
+          <UniverseModalFinal
             isOpen={isCreateModalOpen}
             onClose={() => setIsCreateModalOpen(false)}
             onSuccess={handleCreateSuccess}
@@ -322,7 +324,7 @@ const Dashboard = () => {
           </div>
         </div>
         {isCreateModalOpen && (
-          <UniverseFormModal
+          <UniverseModalFinal
             isOpen={isCreateModalOpen}
             onClose={() => setIsCreateModalOpen(false)}
             onSuccess={handleCreateSuccess}
@@ -355,7 +357,7 @@ const Dashboard = () => {
           </Button>
         </div>
         {isCreateModalOpen && (
-          <UniverseFormModal
+          <UniverseModalFinal
             isOpen={isCreateModalOpen}
             onClose={() => setIsCreateModalOpen(false)}
             onSuccess={handleCreateSuccess}
@@ -413,14 +415,14 @@ const Dashboard = () => {
         ))}
       </div>
       {isCreateModalOpen && (
-        <UniverseFormModal
+        <UniverseModalFinal
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
           onSuccess={handleCreateSuccess}
         />
       )}
       {isEditModalOpen && selectedUniverse && (
-        <UniverseFormModal
+        <UniverseModalFinal
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           onSuccess={handleEditSuccess}

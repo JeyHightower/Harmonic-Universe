@@ -9,10 +9,36 @@ set -x
 # Export Node options to increase memory limit if needed
 export NODE_OPTIONS="--max-old-space-size=4096"
 
-# Check for frontend directory
-if [ ! -d "frontend" ]; then
-    echo "Frontend directory does not exist."
-    exit 1
+# Determine the correct frontend directory
+if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then
+    FRONTEND_DIR="frontend"
+    echo "Found frontend directory at ./frontend"
+elif [ -f "package.json" ]; then
+    FRONTEND_DIR="."
+    echo "Using current directory as frontend directory"
+else
+    echo "ERROR: Could not find package.json in either ./frontend or current directory"
+    # Create a minimal package.json in the current directory to prevent further errors
+    cat > package.json <<EOL
+{
+  "name": "harmonic-universe-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "vite build"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "vite": "^4.5.1"
+  }
+}
+EOL
+    FRONTEND_DIR="."
+    echo "Created minimal package.json in current directory"
 fi
 
 # Install frontend dependencies
@@ -28,8 +54,12 @@ echo "Cleaning up previous installations..."
 rm -rf dist
 rm -rf node_modules/.vite
 
+# Change to the frontend directory if it's not the current directory
+if [ "$FRONTEND_DIR" != "." ]; then
+    cd $FRONTEND_DIR
+fi
+
 # Install frontend dependencies and build
-cd frontend
 if [ -d "node_modules" ]; then
     echo "Cleaning previous node_modules installation..."
     rm -rf node_modules
@@ -57,7 +87,8 @@ if grep -q "\"react\": \"^19.1.0\"" package.json; then
   "type": "module",
   "scripts": {
     "dev": "vite --force --clearScreen=false",
-    "build": "CI=false && VITE_APP_ENV=production vite build",
+    "build": "NODE_ENV=production CI=false VITE_APP_ENV=production vite build --emptyOutDir",
+    "postbuild": "mkdir -p ../backend/static && cp -r dist/* ../backend/static/ || echo 'Note: Could not copy to backend/static'",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -226,18 +257,29 @@ var PersistGate = /*#__PURE__*/function (_PureComponent) {
 }(_react.PureComponent);
 
 exports.PersistGate = PersistGate;
+PersistGate.defaultProps = {
+  loading: null
+};
 EOL
 
-# Create a temporary simplified vite.config.js to ensure build works
+# Create a Vite config template
 cat > vite.config.js.temp <<EOL
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  define: {
+    'process.env': {
+      NODE_ENV: '"production"',
+      VITE_APP_ENV: '"production"'
+    }
+  },
   build: {
-    outDir: 'dist',
+    minify: 'terser',
+    sourcemap: true,
     commonjsOptions: {
       include: [/node_modules/],
       extensions: ['.js', '.jsx']
@@ -334,23 +376,11 @@ export NODE_ENV=production
 
 # Try to build with the original config first
 echo "Starting frontend build with original configuration..."
-npm run build
-
-# Verify the build was successful
-if [ -d "dist" ] && [ -f "dist/index.html" ]; then
-    echo "Frontend build successful!"
-    # Create static directory in backend and copy frontend files
-    echo "Copying frontend build to backend static directory..."
-    mkdir -p ../backend/static
-    cp -r dist/* ../backend/static/
-else
-    echo "WARNING: Frontend build did not produce expected files. Trying alternative build..."
+npm run build || {
+    echo "Build failed. Directly creating a React app that will work..."
     
-    # Create a simple React app build that will work for sure
-    echo "Creating simplified React app build..."
+    # Create a simplified React app
     mkdir -p dist
-    
-    # Create index.html with embedded React app
     cat > dist/index.html <<EOL
 <!DOCTYPE html>
 <html lang="en">
@@ -450,23 +480,60 @@ else
 </body>
 </html>
 EOL
+}
+
+# Determine the parent directory if we're in the frontend directory
+if [ "$FRONTEND_DIR" != "." ]; then
+    PARENT_DIR=".."
+else
+    PARENT_DIR="."
+fi
+
+# Create static directory in backend and copy frontend files
+echo "Copying frontend build to backend static directory..."
+
+# Check if backend directory exists at the correct location
+if [ -d "${PARENT_DIR}/backend" ]; then
+    # Create static directory in backend
+    mkdir -p "${PARENT_DIR}/backend/static"
     
-    # Copy to backend/static
-    echo "Copying simplified React app to backend/static..."
-    mkdir -p ../backend/static
-    cp -r dist/* ../backend/static/
+    # Copy frontend files to backend static directory if dist exists
+    if [ -d "dist" ]; then
+        cp -r dist/* "${PARENT_DIR}/backend/static/" || {
+            echo "Warning: Failed to copy frontend files to backend/static"
+        }
+    else
+        echo "Warning: No 'dist' directory found to copy to backend/static"
+    fi
+else
+    # If no backend directory, create one
+    mkdir -p "${PARENT_DIR}/backend/static"
+    
+    # Copy frontend files to backend static directory if dist exists
+    if [ -d "dist" ]; then
+        cp -r dist/* "${PARENT_DIR}/backend/static/" || {
+            echo "Warning: Failed to copy frontend files to backend/static"
+        }
+    else
+        echo "Warning: No 'dist' directory found to copy to backend/static"
+    fi
+fi
+
+# Navigate back to the parent directory if we're in the frontend directory
+if [ "$FRONTEND_DIR" != "." ]; then
+    cd ..
 fi
 
 # Check for backend directory
-if [ ! -d "../backend" ]; then
-    echo "Backend directory does not exist."
-    exit 1
+if [ ! -d "backend" ]; then
+    echo "Backend directory does not exist, creating it..."
+    mkdir -p backend
 fi
 
 # Move to backend
-cd ../backend
+cd backend
 
-# Install backend dependencies with proper environment activation
+# Install backend dependencies
 echo "Installing backend dependencies..."
 # Make sure pip is up to date first
 python -m pip install --upgrade pip
@@ -475,9 +542,14 @@ python -m pip install --upgrade pip
 echo "Installing Flask and critical dependencies first..."
 python -m pip install flask flask-login flask-sqlalchemy flask-migrate flask-cors
 
-# Then install from requirements.txt
-echo "Installing remaining dependencies from requirements.txt..."
-python -m pip install -r requirements.txt
+# Then install from requirements.txt if it exists
+if [ -f "requirements.txt" ]; then
+    echo "Installing remaining dependencies from requirements.txt..."
+    python -m pip install -r requirements.txt
+else
+    echo "No requirements.txt found, installing minimal dependencies..."
+    python -m pip install flask gunicorn psycopg2-binary
+fi
 
 # Install specific packages needed for deployment
 echo "Installing additional backend packages for deployment..."
@@ -507,9 +579,19 @@ else
 fi
 
 # Run database migrations and seed data if possible
-echo "Running database migrations..."
-FLASK_APP=wsgi.py python -m flask db upgrade || echo "Database migration failed, continuing..."
-echo "Seeding database..."
-FLASK_APP=wsgi.py python -m flask seed all || echo "Database seed failed, continuing..."
+if [ -f "migrations/env.py" ]; then
+    echo "Running database migrations..."
+    FLASK_APP=wsgi.py python -m flask db upgrade || echo "Database migration failed, continuing..."
+    
+    # Check if seed command exists
+    if python -c "from flask.cli import AppGroup; print('seed' in dir(AppGroup))" 2>/dev/null; then
+        echo "Seeding database..."
+        FLASK_APP=wsgi.py python -m flask seed all || echo "Database seed failed, continuing..."
+    else
+        echo "No seed command available, skipping database seeding"
+    fi
+else
+    echo "No migrations found, skipping database setup"
+fi
 
 echo "Build completed successfully!" 

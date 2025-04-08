@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Button } from "../common";
 import { useModal } from "../../contexts/ModalContext";
 import { MODAL_TYPES } from "../../constants/modalTypes";
-import "./UniverseInfoModal.css";
+import "../../styles/Universe.css";
 
 // Global state to prevent modal from unmounting
 let modalVisible = false;

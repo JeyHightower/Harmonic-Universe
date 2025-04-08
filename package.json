@@ -2,27 +2,31 @@
   "name": "harmonic-universe",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "install-all": "npm install && cd frontend && npm install && cd ../backend && pip install -r requirements.txt",
-    "start": "concurrently \"npm run backend\" \"npm run frontend\"",
-    "start:prod": "concurrently \"npm run backend:prod\" \"npm run frontend:prod\"",
-    "backend": "cd backend && PYTHONPATH=$PYTHONPATH:$(pwd):.. FLASK_APP=wsgi.py FLASK_DEBUG=1 FLASK_ENV=development flask run --port=5001",
-    "backend:prod": "cd backend && gunicorn app.app:create_app() -b 0.0.0.0:5001",
-    "frontend": "cd frontend && npm run dev -- --port=5173 --strictPort=false",
-    "frontend:prod": "cd frontend && npm run build && npm run preview",
-    "build": "echo \"Building project...\" && npm run build:frontend",
-    "build:frontend": "cd frontend && CI=false VITE_APP_ENV=production npx vite build",
-    "build:backend": "cd backend && echo \"Backend build completed\"",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "vite build",
+    "postbuild": "mkdir -p backend/static && cp -r dist/* backend/static/",
+    "start": "concurrently \"python backend/wsgi.py\" \"npm run dev\"",
+    "start-backend": "python backend/wsgi.py",
+    "dev": "vite --force --clearScreen=false"
   },
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0",
-    "python": ">=3.8.0"
+  "dependencies": {
+    "@reduxjs/toolkit": "^1.9.5",
+    "axios": "^1.6.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-redux": "^8.1.3",
+    "react-router-dom": "^6.18.0",
+    "redux-persist": "^6.0.0"
   },
   "devDependencies": {
-    "axios": "^1.8.4",
-    "concurrently": "^8.2.2"
+    "@vitejs/plugin-react": "^4.2.1",
+    "concurrently": "^9.1.2",
+    "terser": "^5.39.0",
+    "vite": "^4.5.12"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "description": "A web application for creating and exploring musical universes",
   "repository": {
@@ -30,8 +34,5 @@
     "url": "git+https://github.com/JeyHightower/Harmonic-Universe.git"
   },
   "author": "",
-  "license": "MIT",
-  "dependencies": {
-    "redux-persist": "^6.0.0"
-  }
+  "license": "MIT"
 }

@@ -1,18 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import Button from "../components/common/Button";
+import Button from "../common/Button";
 import {
   fetchScenesForUniverse,
   deleteScene,
-} from "../store/thunks/consolidated/scenesThunks";
-import { fetchUniverseById } from "../store/thunks/universeThunks";
-import "../styles/UniverseDetail.css";
-import { SceneCard, SceneModalHandler } from "../components/scenes";
-import {
-  UniverseModalFinal,
-  UniverseDeleteModalFinal,
-} from "../components/universe";
+} from "../../store/thunks/consolidated/scenesThunks";
+import { fetchUniverseById } from "../../store/thunks/universeThunks";
+import "../../styles/UniverseDetail.css";
+import { SceneCard, SceneModalHandler } from "../../components/scenes";
+import { UniverseModalFinal, UniverseDeleteModalFinal } from ".";
 
 const UniverseDetail = () => {
   const { id } = useParams();

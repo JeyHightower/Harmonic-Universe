@@ -24,7 +24,7 @@ import {
   WarningOutlined,
 } from "@ant-design/icons";
 import apiClient from "../../services/api";
-import CharacterSelector from "../characters/CharacterSelector";
+import { CharacterSelector } from "../characters";
 import moment from "moment";
 import dayjs from "dayjs";
 

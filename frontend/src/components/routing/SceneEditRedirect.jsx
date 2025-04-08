@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import apiClient from "../../services/api";
-import SceneModalHandler from "../../components/consolidated/SceneModalHandler";
+import SceneModalHandler from "../../components/scenes/SceneModalHandler";
 
 /**
  * SceneEditRedirect - Handles direct URLs to /scenes/:sceneId/edit

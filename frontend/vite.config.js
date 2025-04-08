@@ -9,6 +9,7 @@ const isDebug = process.env.DEBUG || process.env.VITE_VERBOSE;
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  base: './',
 
   define: {
     'process.env.NODE_ENV': JSON.stringify(isProd ? 'production' : 'development'),

@@ -1,15 +1,11 @@
 """
-Simplified app.py that redirects to the main app in app/__init__.py.
+Simplified app.py that redirects to the main app in wsgi.py.
 This file exists only for backward compatibility with existing code that imports from here.
 """
 
-from app import create_app
+# Import directly from wsgi.py for consistency
+from wsgi import app, application, create_app
 
-# This is what Gunicorn will import
-application = create_app()
-app = application
-
+# If this file is run directly, delegate to wsgi.py
 if __name__ == "__main__":
-    import os
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    import wsgi

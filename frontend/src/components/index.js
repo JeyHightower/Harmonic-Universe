@@ -24,7 +24,7 @@ export { default as SafeIcon } from "./common/SafeIcon";
 // export { default as Home } from "../pages/Home";
 
 // Character Components
-import { CharacterList, CharacterCard, CharacterForm, CharacterDetail } from "./character";
+import { CharacterList, CharacterCard, CharacterForm, CharacterDetail } from "./characters";
 export { CharacterList, CharacterCard, CharacterForm, CharacterDetail };
 
 // Note Components

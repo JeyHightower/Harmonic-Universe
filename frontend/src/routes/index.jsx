@@ -4,7 +4,7 @@ import Layout from "../components/layout/Layout";
 import ProtectedRoute from "../components/routing/ProtectedRoute";
 import { ROUTES } from "../utils/routes";
 import ModalTest from "../components/test/ModalTest";
-import SceneModalHandler from "../components/consolidated/SceneModalHandler";
+import { SceneModalHandler } from "../components/scenes";
 
 // Create a wrapper component for SceneModalHandler in routes
 const SceneCreateRoute = () => {
@@ -35,12 +35,8 @@ const Home = lazy(() => import("../pages/Home"));
 const LoginPage = lazy(() => import("../pages/LoginPage"));
 const UniverseDetail = lazy(() => import("../features/UniverseDetail"));
 const SceneList = lazy(() => import("../features/SceneList"));
-const SceneDetail = lazy(() =>
-  import("../components/consolidated/SceneDetail")
-);
-const SceneEditPage = lazy(() =>
-  import("../components/consolidated/SceneEditPage")
-);
+const SceneDetail = lazy(() => import("../components/scenes/SceneDetail"));
+const SceneEditPage = lazy(() => import("../components/scenes/SceneEditPage"));
 const SceneEditRedirect = lazy(() =>
   import("../components/routing/SceneEditRedirect")
 );
@@ -100,10 +96,10 @@ const CharactersRouteHandler = () => {
 
 // Legacy components to be replaced
 const CharacterList = lazy(() =>
-  import("../components/character/CharacterList")
+  import("../components/characters/CharacterList")
 );
 const CharacterDetail = lazy(() =>
-  import("../components/character/CharacterDetail")
+  import("../components/characters/CharacterDetail")
 );
 const NoteList = lazy(() => import("../components/note/NoteList"));
 const NoteDetail = lazy(() => import("../components/note/NoteDetail"));

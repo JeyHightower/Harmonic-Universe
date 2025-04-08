@@ -1,0 +1,28 @@
+Frontend cleanup round 2 initiated on April 8, 2025
+
+1. Created consolidated directories for:
+
+   - characters_consolidated
+   - scenes_consolidated
+   - universe_consolidated
+
+2. Created documentation for each consolidated directory
+
+3. Added detailed cleanup plan in src/cleanup_completion_2.md
+
+Progress update (April 8, 2025):
+
+1. Updated key imports to use consolidated components:
+
+   - Updated scene forms to use CharacterSelector from characters_consolidated
+   - Updated routes to use scene components from scenes_consolidated
+   - Updated universe-related files to use scene and universe components from consolidated directories
+
+2. Created progress tracker in src/consolidation-progress.md
+
+Next steps:
+
+- Continue updating imports throughout the codebase
+- Deduplicate components with overlapping functionality
+- Remove original directories after all imports are updated
+- Rename consolidated directories to their final names

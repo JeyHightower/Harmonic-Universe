@@ -15,7 +15,7 @@ import { useDispatch } from "react-redux";
 import apiClient from "../../services/api";
 // Import only the fetchScenes thunk to refresh scenes after operations
 import { fetchScenes } from "../../store/thunks/consolidated/scenesThunks";
-import SceneForm from "../consolidated/SceneForm";
+import SceneForm from "../scenes/SceneForm";
 import CloseIcon from "@mui/icons-material/Close";
 
 /**

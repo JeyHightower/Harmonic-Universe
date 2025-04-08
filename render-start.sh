@@ -1,32 +1,46 @@
 #!/bin/bash
 set -e
 
-# Make sure Python can find our modules
-export PYTHONPATH="$PYTHONPATH:$(pwd):$(pwd)/backend"
-
-# Verify frontend build exists
-if [ -d "frontend/dist" ]; then
-    echo "Frontend build found at frontend/dist"
+# Determine the correct directory structure
+if [ -d "backend" ]; then
+    BACKEND_DIR="backend"
+    echo "Found backend directory at ./backend"
 else
-    echo "WARNING: No frontend build found in frontend/dist! Backend may not be able to serve the frontend."
+    BACKEND_DIR="."
+    echo "Using current directory as backend directory"
+fi
+
+# Make sure Python can find our modules
+export PYTHONPATH="$PYTHONPATH:$(pwd):$(pwd)/${BACKEND_DIR}"
+
+# Verify frontend build static files
+STATIC_DIRS=("${BACKEND_DIR}/static" "frontend/dist" "static")
+STATIC_DIR=""
+
+# Find the first valid static directory
+for dir in "${STATIC_DIRS[@]}"; do
+    if [ -d "$dir" ]; then
+        STATIC_DIR="$dir"
+        echo "Found static files directory at $dir"
+        break
+    fi
+done
+
+if [ -z "$STATIC_DIR" ]; then
+    echo "WARNING: No static directory found! Creating one..."
+    mkdir -p "${BACKEND_DIR}/static"
+    STATIC_DIR="${BACKEND_DIR}/static"
 fi
 
 # Ensure static directory exists and has the React app
 echo "Setting up static files for production..."
-mkdir -p backend/static
-
-# Copy frontend files if they exist
-if [ -d "frontend/dist" ] && [ "$(ls -A frontend/dist)" ]; then
-    echo "Copying frontend files to backend/static..."
-    cp -r frontend/dist/* backend/static/
-fi
 
 # Check if we have an index.html file in the static directory
-if [ ! -f "backend/static/index.html" ]; then
-    echo "WARNING: No index.html found in backend/static! Creating a minimal React app..."
+if [ ! -f "${STATIC_DIR}/index.html" ]; then
+    echo "WARNING: No index.html found in static directory! Creating a minimal React app..."
     
     # Create a minimal React app
-    cat > backend/static/index.html <<EOL
+    cat > "${STATIC_DIR}/index.html" <<EOL
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -127,7 +141,8 @@ if [ ! -f "backend/static/index.html" ]; then
 EOL
 fi
 
-cd backend
+# Change to the backend directory
+cd $BACKEND_DIR
 
 # Update pip if needed
 echo "Updating pip..."
@@ -178,6 +193,64 @@ export PYTHONPATH="$PYTHONPATH:$(pwd):$(dirname $(pwd))"
 # Set environment variables for production
 export FLASK_ENV=production
 export FLASK_APP=wsgi:app
+
+# Create a minimal wsgi.py file if it doesn't exist
+if [ ! -f "wsgi.py" ]; then
+    echo "WARNING: No wsgi.py found! Creating a minimal one..."
+    cat > wsgi.py <<EOL
+#!/usr/bin/env python
+"""
+WSGI entry point for Harmonic Universe backend
+"""
+
+import os
+import sys
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Add current directory to Python path
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+
+# Create Flask app
+from flask import Flask, send_from_directory
+
+def create_app():
+    """Create a minimal Flask application that serves the React frontend"""
+    # Find static folder
+    static_folder = None
+    for path in ['static', '../frontend/dist', '../static']:
+        if os.path.exists(os.path.join(os.path.dirname(__file__), path)):
+            static_folder = os.path.join(os.path.dirname(__file__), path)
+            break
+    
+    if not static_folder:
+        static_folder = os.path.join(os.path.dirname(__file__), 'static')
+        if not os.path.exists(static_folder):
+            os.makedirs(static_folder)
+    
+    app = Flask(__name__, static_folder=static_folder, static_url_path='')
+    
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def serve(path):
+        if path and os.path.exists(os.path.join(static_folder, path)):
+            return send_from_directory(static_folder, path)
+        else:
+            return send_from_directory(static_folder, 'index.html')
+    
+    return app
+
+app = create_app()
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
+EOL
+    chmod +x wsgi.py
+fi
 
 # Check if gunicorn is working properly
 GUNICORN_PATH=$(which gunicorn 2>/dev/null || echo "")

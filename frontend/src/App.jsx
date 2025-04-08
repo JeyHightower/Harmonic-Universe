@@ -339,7 +339,7 @@ const AppContent = () => {
                         <Suspense fallback={<LoadingPage />}>
                           {React.createElement(
                             lazy(() =>
-                              import("./components/consolidated/SceneDetail")
+                              import("./components/scenes/SceneDetail")
                             )
                           )}
                         </Suspense>

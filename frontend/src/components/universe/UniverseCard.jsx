@@ -3,6 +3,7 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../../styles/UniverseCard.css";
 import { formatDate } from "../../utils/dateUtils";
+import defaultUniverseImage from "../../assets/images/default-universe.svg";
 import {
   Card,
   CardContent,
@@ -27,7 +28,6 @@ const UniverseCard = ({
   onDelete,
   onView,
 }) => {
-  const defaultImage = "/images/default-universe.svg";
   const navigate = useNavigate();
 
   const handleViewScenes = () => {
@@ -47,7 +47,7 @@ const UniverseCard = ({
       <CardMedia
         component="img"
         height="140"
-        image={universe.image_url || "/images/default-universe.jpg"}
+        image={universe.image_url || defaultUniverseImage}
         alt={universe.name}
         className="universe-card-media"
       />
