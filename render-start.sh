@@ -300,6 +300,73 @@ if [ -f "migrations/env.py" ]; then
     python -m flask db upgrade || echo "Warning: Migrations failed, continuing anyway"
 fi
 
+# Check if the frontend dist directory exists and has content
+echo "Verifying frontend build..."
+if [ -d "frontend/dist" ]; then
+  files_count=$(find frontend/dist -type f | wc -l)
+  if [ $files_count -gt 5 ]; then
+    echo "✅ Frontend build looks good! Found $files_count files in frontend/dist"
+  else
+    echo "⚠️ Frontend build directory exists but has few files ($files_count). This might indicate a partial build."
+  fi
+else
+  echo "⚠️ Warning: Frontend build directory (frontend/dist) not found."
+  
+  # Create the directory structure
+  mkdir -p frontend/dist
+  
+  # Add a basic HTML file for debugging
+  cat > frontend/dist/index.html << EOF
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Harmonic Universe - Fallback Page</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    .message { background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
+    .error { color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; }
+  </style>
+</head>
+<body>
+  <h1>Harmonic Universe</h1>
+  <div class="message">
+    <p>This is a fallback page. The frontend build appears to be missing.</p>
+    <p>Please check the Render.com build logs for more information.</p>
+  </div>
+  <div class="message error">
+    <h3>Build Error Details</h3>
+    <p>The frontend build may have failed during deployment.</p>
+    <p>Common issues include:</p>
+    <ul>
+      <li>Missing dependencies in package.json</li>
+      <li>Syntax errors in source code</li>
+      <li>Import errors (missing exports)</li>
+    </ul>
+  </div>
+  <script>
+    // Try to fetch API health status
+    fetch('/api/health')
+      .then(response => response.json())
+      .then(data => {
+        document.body.innerHTML += '<div class="message"><h3>API Status</h3><pre>' + JSON.stringify(data, null, 2) + '</pre></div>';
+      })
+      .catch(error => {
+        document.body.innerHTML += '<div class="message error"><h3>API Error</h3><p>' + error.message + '</p></div>';
+      });
+  </script>
+</body>
+</html>
+EOF
+fi
+
+# Ensure static directory is linked to frontend/dist if it exists
+if [ -d "frontend/dist" ]; then
+  echo "Linking frontend/dist to static directory..."
+  mkdir -p static
+  cp -r frontend/dist/* static/
+  echo "✅ Copied frontend build to static directory"
+fi
+
 # Start the application with gunicorn
 echo "Starting application with gunicorn..."
 gunicorn --workers=2 --timeout=120 --bind=0.0.0.0:$PORT --log-level ${LOG_LEVEL:-info} wsgi:app 
