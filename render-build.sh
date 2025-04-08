@@ -4,7 +4,7 @@
 set -e
 
 # Install frontend dependencies and build
-cd frontend && npm install && npm run build 
+cd frontend && rm -rf node_modules && npm install && npm run build 
 
 #move to backend
 cd ../backend
