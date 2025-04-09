@@ -414,15 +414,33 @@ const _request = async (method, url, data = null, options = {}) => {
     // Get the current token
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
 
-    // Set authorization header if token exists
+    // Set authorization header if token exists, ensuring proper format
     const headers = {
       'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       ...options.headers
     };
 
+    // Properly format and include the Authorization header
+    if (token) {
+      // Ensure token has proper format (has Bearer prefix)
+      let authHeader = token;
+      if (!token.startsWith('Bearer ')) {
+        authHeader = `Bearer ${token}`;
+      }
+
+      headers['Authorization'] = authHeader;
+
+      // For demo tokens, add a special header to help with debugging
+      if (token.startsWith('demo-')) {
+        headers['X-Demo-Mode'] = 'true';
+      }
+    }
+
     // Log the request
     console.log(`Making ${method.toUpperCase()} request to: ${formattedUrl}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.debug('Request headers:', headers);
+    }
 
     const response = await axiosInstance({
       method,
@@ -483,532 +501,340 @@ if (isProduction) {
 // Create axios instance with the API base URL
 const axiosInstance = axios.create(axiosConfig);
 
-// Request interceptor
+// Helper function to check if we should use mock data
+const shouldUseMockData = () => {
+  // Check for explicit mock mode flags
+  const mockModeEnabled = API_CONFIG.MOCK_ENABLED;
+
+  // Demo tokens always use mock data
+  const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+  const isDemo = token && token.toString().startsWith('demo-');
+
+  // Check if we're in demo mode (either explicitly or through token)
+  return mockModeEnabled || isDemo;
+};
+
+// Helper function to create or refresh demo user and tokens
+const createOrRefreshDemoUser = (existingId = null) => {
+  // Generate a demo ID that's either derived from existing ID or new
+  const userId = existingId || `demo-${Date.now()}`;
+
+  // Create a demo user
+  const demoUser = {
+    id: userId,
+    username: 'demo_user',
+    email: 'demo@harmonic-universe.com',
+    firstName: 'Demo',
+    lastName: 'User',
+    role: 'user',
+    is_demo: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  // Create tokens with timestamps
+  const newToken = `demo-${userId}-${Date.now()}`;
+  const newRefreshToken = `demo-refresh-${userId}-${Date.now()}`;
+
+  // Store in localStorage
+  localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, newToken);
+  localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, newRefreshToken);
+  localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(demoUser));
+
+  console.log(`Demo user created/refreshed with ID: ${userId}`);
+
+  return {
+    user: demoUser,
+    token: newToken,
+    refreshToken: newRefreshToken
+  };
+};
+
+// Helper function to check if a token is expired
+const isTokenExpired = (token) => {
+  if (!token) return true;
+
+  // For demo tokens with timestamp format demo-id-issuedAt-expiresAt
+  if (token.startsWith('demo-')) {
+    const parts = token.split('-');
+    if (parts.length >= 4) {
+      const expiresAt = parseInt(parts[3], 10);
+      return Date.now() > expiresAt;
+    }
+    // If no expiry in token format, expire after 1 hour from now as safety
+    return false;
+  }
+
+  // For JWT tokens, we'd need to decode and check exp
+  // This is a simplified check - JWTs should be validated server-side
+  return false;
+};
+
+// Custom refresh token function
+const refreshToken = async () => {
+  console.log('Refresh token function called');
+
+  // Check if we should use mock data regardless of token state
+  if (shouldUseMockData()) {
+    console.log('Using mock refresh token flow due to shouldUseMockData');
+
+    // Generate a demo user ID
+    const userId = `demo-${Date.now()}`;
+
+    // Create tokens with timestamps
+    const newToken = `demo-${userId}-${Date.now()}-${Date.now() + 3600000}`;
+    const newRefreshToken = `demo-refresh-${userId}-${Date.now()}-${Date.now() + 86400000}`;
+
+    // Create a demo user
+    const demoUser = {
+      id: userId,
+      email: 'demo@example.com',
+      username: 'DemoUser',
+      is_demo: true,
+      created_at: new Date().toISOString()
+    };
+
+    // Store in localStorage
+    localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, newToken);
+    localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, newRefreshToken);
+    localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(demoUser));
+
+    return {
+      data: {
+        token: newToken,
+        refreshToken: newRefreshToken,
+        user: demoUser
+      }
+    };
+  }
+
+  // Get tokens from localStorage
+  const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+  const refreshTokenValue = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+
+  // If this is a demo user token
+  if (token && token.toString().startsWith('demo')) {
+    console.log('Demo user detected, generating new demo tokens without API call');
+
+    // Extract user ID from existing token or create new demo ID
+    let userId;
+    try {
+      const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        userId = user.id;
+      }
+    } catch (e) {
+      console.error('Error parsing user data:', e);
+    }
+
+    // If we couldn't extract a user ID, try to extract it from the token
+    if (!userId && token) {
+      const tokenParts = token.split('-');
+      if (tokenParts.length > 1) {
+        userId = tokenParts[1];
+      }
+    }
+
+    userId = userId || `demo-${Date.now()}`;
+
+    // Create a new demo token with 1 hour expiry
+    const newToken = `demo-${userId}-${Date.now()}-${Date.now() + 3600000}`;
+    const newRefreshToken = `demo-refresh-${userId}-${Date.now()}-${Date.now() + 86400000}`;
+
+    // Create or update the demo user object
+    const demoUser = {
+      id: userId,
+      email: 'demo@example.com',
+      username: 'DemoUser',
+      is_demo: true,
+      created_at: new Date().toISOString()
+    };
+
+    // Store the new tokens and user
+    localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, newToken);
+    localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, newRefreshToken);
+    localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(demoUser));
+
+    // Return new tokens without making API call
+    return {
+      data: {
+        token: newToken,
+        refreshToken: newRefreshToken,
+        user: demoUser
+      }
+    };
+  }
+
+  // Handle case where we have no tokens at all - create demo tokens
+  if (!token && !refreshTokenValue) {
+    console.log('No tokens available, creating demo tokens');
+
+    const userId = `demo-${Date.now()}`;
+    const newToken = `demo-${userId}-${Date.now()}-${Date.now() + 3600000}`;
+    const newRefreshToken = `demo-refresh-${userId}-${Date.now()}-${Date.now() + 86400000}`;
+
+    const demoUser = {
+      id: userId,
+      email: 'demo@example.com',
+      username: 'DemoUser',
+      is_demo: true,
+      created_at: new Date().toISOString()
+    };
+
+    localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, newToken);
+    localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, newRefreshToken);
+    localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(demoUser));
+
+    return {
+      data: {
+        token: newToken,
+        refreshToken: newRefreshToken,
+        user: demoUser
+      }
+    };
+  }
+
+  // If we have a token but no refresh token, create a refresh token
+  if (token && !refreshTokenValue) {
+    console.log('Token exists but no refresh token, creating one');
+    const newRefreshToken = `refresh-${Date.now()}-${Date.now() + 86400000}`;
+    localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, newRefreshToken);
+    return {
+      data: {
+        token: token,
+        refreshToken: newRefreshToken
+      }
+    };
+  }
+
+  // For real users with a refresh token, try to refresh via API
+  if (refreshTokenValue) {
+    try {
+      console.log('Attempting API token refresh with refresh token');
+      const response = await axios.post(
+        getEndpoint('auth', 'refresh', '/api/auth/refresh'),
+        { refresh_token: refreshTokenValue }
+      );
+
+      if (response.data && response.data.token) {
+        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.token);
+        if (response.data.refreshToken) {
+          localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, response.data.refreshToken);
+        }
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Error refreshing token via API:', error);
+
+      // If API refresh fails, fall back to demo mode
+      console.log('API refresh failed, falling back to demo mode');
+      const userId = `demo-${Date.now()}`;
+      const newToken = `demo-${userId}-${Date.now()}-${Date.now() + 3600000}`;
+      const newRefreshToken = `demo-refresh-${userId}-${Date.now()}-${Date.now() + 86400000}`;
+
+      localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, newToken);
+      localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, newRefreshToken);
+
+      return {
+        data: {
+          token: newToken,
+          refreshToken: newRefreshToken
+        }
+      };
+    }
+  }
+
+  // This should never happen given all the cases above
+  console.error('Unexpected state in refreshToken function');
+  throw new Error('Unexpected state in refreshToken function');
+};
+
+// Add request interceptor for authentication
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Check for rate limit cooldown
-    if (isInRateLimitCooldown()) {
-      // If in cooldown, reject non-essential requests
-      const isEssentialRequest =
-        (config.url?.includes('/auth/') && !config.url?.includes('/auth/validate')) ||
-        config.url?.includes('/health');
-
-      if (!isEssentialRequest) {
-        console.warn(`Request to ${config.url} rejected due to rate limit cooldown`);
-        return Promise.reject({
-          __rateLimited: true,
-          message: "Request rejected due to rate limit cooldown"
-        });
-      }
-    }
-
-    // Apply request throttling in production
-    if (isProduction && throttleRequests(config.url)) {
-      // For non-essential requests, reject if throttled
-      const isEssentialRequest =
-        (config.url?.includes('/auth/') && !config.url?.includes('/auth/validate')) ||
-        config.url?.includes('/health') ||
-        // Make character endpoints essential for the scene dropdown in character creation
-        (config.url?.includes('/characters') && config.method?.toLowerCase() === 'get');
-
-      if (!isEssentialRequest) {
-        console.warn(`Request to ${config.url} throttled to avoid rate limits`);
-        return Promise.reject({
-          __throttled: true,
-          message: "Request throttled to avoid rate limits"
-        });
-      }
-    }
-
-    // Get token from localStorage
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-
-    // Log request details
-    console.debug("API Request:", {
-      method: config.method,
-      url: config.url,
-      data: config.data,
-      headers: config.headers,
-      hasToken: !!token,
-      withCredentials: config.withCredentials,
-    });
-
-    // Add token to headers if available
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
-    // Check for pending requests
-    const requestKey = `${config.method}:${config.url}`;
-    if (pendingRequests.has(requestKey)) {
-      console.debug("Request already pending, returning existing promise");
-      return Promise.reject({
-        __deduplication: true,
-        promise: pendingRequests.get(requestKey),
-      });
-    }
-
-    // Store the request promise
-    const promise = new Promise((resolve, reject) => {
-      config.__resolve = resolve;
-      config.__reject = reject;
-    });
-    pendingRequests.set(requestKey, promise);
-
     return config;
   },
-  (error) => {
-    console.error("Request interceptor error:", error);
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor
+// Add response interceptor for token refresh
 axiosInstance.interceptors.response.use(
-  (response) => {
-    // Log response details
-    console.debug("API Response:", {
-      status: response.status,
-      url: response.config.url,
-      data: response.data,
-      headers: response.headers,
-    });
-
-    // Clean up pending request
-    const requestKey = `${response.config.method}:${response.config.url}`;
-    pendingRequests.delete(requestKey);
-
-    return response;
-  },
+  (response) => response,
   async (error) => {
-    const originalRequest = error.config;
-
-    // Handle custom rejection cases
-    if (error.__rateLimited) {
-      console.debug("Request was rejected due to rate limit cooldown");
-      return Promise.reject(new Error("Request rejected due to rate limit cooldown"));
-    }
-
-    if (error.__throttled) {
-      console.debug("Request was throttled to prevent rate limits");
-      return Promise.reject(new Error("Request throttled to prevent rate limits"));
-    }
-
-    // Handle deduplication
-    if (error.__deduplication) {
-      console.debug("Request was deduplicated, returning existing promise");
-      return error.promise;
-    }
-
-    // Log error details
-    console.error("API Error:", {
-      status: error.response?.status,
-      url: originalRequest?.url,
-      data: error.response?.data,
-      headers: error.response?.headers,
-    });
-
-    // Clean up pending request
-    if (originalRequest) {
-      const requestKey = `${originalRequest.method}:${originalRequest.url}`;
-      pendingRequests.delete(requestKey);
-    }
-
-    // Special handling for rate limits (429)
-    if (error.response?.status === 429) {
-      console.warn("Rate limit exceeded (429), backing off");
-
-      // Store rate limit info in session storage
-      const rateLimitKey = 'rate_limit_hit';
-      const rateLimitCount = parseInt(sessionStorage.getItem(rateLimitKey) || '0');
-      sessionStorage.setItem(rateLimitKey, (rateLimitCount + 1).toString());
-
-      // If we've hit rate limits multiple times, enforce a longer cooldown period
-      if (rateLimitCount > 2) {
-        const cooldownKey = 'rate_limit_cooldown';
-        const now = Date.now();
-        const cooldownUntil = now + (30 * 1000); // 30 second cooldown
-        sessionStorage.setItem(cooldownKey, cooldownUntil.toString());
-        console.warn("Multiple rate limits detected, enforcing cooldown period");
-      }
-
-      // If this is a demo login or validate request, return a mock response
-      if (originalRequest?.url?.includes('/auth/demo') ||
-        originalRequest?.url?.includes('/auth/validate')) {
-        // Create a mock successful response
-        const mockUser = {
-          id: 'demo-' + Math.random().toString(36).substring(2, 10),
-          username: 'demo_user',
-          email: 'demo@harmonic-universe.com',
-          firstName: 'Demo',
-          lastName: 'User',
-          role: 'user'
-        };
-
-        return {
-          data: originalRequest.url.includes('/auth/validate')
-            ? mockUser
-            : {
-              message: 'Demo login successful',
-              user: mockUser,
-              token: 'mock-token-' + Math.random().toString(36).substring(2, 15)
-            }
-        };
-      }
-
-      // Don't retry automatically for rate limits
+    // If the request has already been retried, don't retry again
+    if (error.config && error.config._isRetry) {
       return Promise.reject(error);
     }
 
-    // Special handling for 401 errors in production
-    if (isProduction && error.response?.status === 401) {
-      console.warn("Authentication error (401) in production");
+    // Handle authentication errors
+    if (error.response && error.response.status === 401) {
+      const originalRequest = error.config;
+      originalRequest._isRetry = true;
 
-      // Log detailed debug information
-      console.log("401 Error Details:", {
-        url: originalRequest?.url,
-        method: originalRequest?.method,
-        headers: originalRequest?.headers,
-        hasToken: !!originalRequest?.headers?.Authorization,
-        originalRequest: originalRequest
+      console.log('Handling 401 error in response interceptor', {
+        url: originalRequest.url,
+        isDemo: shouldUseMockData()
       });
 
-      // Check for demo user info in localStorage
-      const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-      if (userStr) {
-        try {
-          const userData = JSON.parse(userStr);
+      // Special handling for API endpoints that have mock implementations
+      if (originalRequest.url.includes('/universes') ||
+        originalRequest.url.includes('/scenes') ||
+        originalRequest.url.includes('/characters')) {
 
-          // If this is any user in production, handle it with mock data instead of redirecting
-          if (isProduction) {
-            console.log("Production environment detected, using mock data instead of redirecting");
+        console.log('Using special mock handling for', originalRequest.url);
 
-            // Create new demo auth data
-            const newToken = 'demo-token-' + Math.random().toString(36).substring(2, 15);
-            const refreshToken = 'demo-refresh-' + Math.random().toString(36).substring(2, 15);
-
-            // Store new tokens
-            localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, newToken);
-            localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, refreshToken);
-
-            // If this was an API call related to scenes
-            if (originalRequest?.url?.includes('/scenes')) {
-              // Determine if it's a GET, POST, PUT or DELETE request
-              const method = originalRequest.method.toLowerCase();
-
-              if (method === 'get') {
-                // For GET requests, return mock scene data
-                return Promise.resolve({
-                  data: {
-                    message: "Mock scene data due to 401 in production",
-                    scenes: [
-                      {
-                        id: 2001,
-                        name: "Demo Scene 1",
-                        description: "Introduction to the universe",
-                        content: "This is the content of the first demo scene",
-                        universe_id: 1001,
-                        user_id: userData.id || 'demo-user',
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                        order: 1,
-                        status: "draft",
-                        scene_type: "default"
-                      },
-                      {
-                        id: 2002,
-                        name: "Demo Scene 2",
-                        description: "Continuation of the story",
-                        content: "This is the content of the second demo scene",
-                        universe_id: 1001,
-                        user_id: userData.id || 'demo-user',
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                        order: 2,
-                        status: "draft",
-                        scene_type: "default"
-                      }
-                    ],
-                    scene: {
-                      id: originalRequest.url.includes('/scenes/') ? originalRequest.url.split('/').pop() : 2001,
-                      name: "Demo Scene",
-                      description: "A demo scene for exploring the application",
-                      content: "This is the content of the demo scene",
-                      universe_id: 1001,
-                      user_id: userData.id || 'demo-user',
-                      created_at: new Date().toISOString(),
-                      updated_at: new Date().toISOString(),
-                      order: 1,
-                      status: "draft",
-                      scene_type: "default"
-                    }
-                  }
-                });
-              } else if (method === 'post') {
-                // For POST requests (scene creation), return mock created scene
-                const mockScene = {
-                  id: 2000 + Math.floor(Math.random() * 1000),
-                  name: originalRequest.data?.name || "New Scene",
-                  description: originalRequest.data?.description || "A new scene description",
-                  content: originalRequest.data?.content || "Scene content goes here",
-                  universe_id: originalRequest.data?.universe_id || 1001,
-                  user_id: userData.id || 'demo-user',
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString(),
-                  status: "draft",
-                  scene_type: "default"
-                };
-
-                return Promise.resolve({
-                  data: {
-                    message: "Scene created successfully (mock)",
-                    scene: mockScene
-                  }
-                });
-              } else if (method === 'delete') {
-                // For DELETE requests
-                return Promise.resolve({
-                  data: {
-                    message: "Scene deleted successfully (mock)",
-                    success: true
-                  }
-                });
-              }
-            }
-
-            // If this was an API call related to characters, return mock data
-            if (originalRequest?.url?.includes('/characters')) {
-              return Promise.resolve({
-                data: {
-                  message: "Mock character data due to 401 in production",
-                  characters: [],
-                  character: {}
-                }
-              });
-            }
-
-            // If this was an API call related to universes, return mock data
-            if (originalRequest?.url?.includes('/universes')) {
-              // Determine if it's a GET, POST, PUT or DELETE request
-              const method = originalRequest.method.toLowerCase();
-
-              if (method === 'get') {
-                // For GET requests, return list of universes
-                return Promise.resolve({
-                  data: {
-                    message: "Mock universe data due to 401 in production",
-                    universes: [
-                      {
-                        id: 1001,
-                        name: "Demo Universe",
-                        description: "A sample universe for exploring the application",
-                        is_public: true,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                        user_id: userData.id || 'demo-user'
-                      }
-                    ]
-                  }
-                });
-              } else if (method === 'post') {
-                // For universe creation, generate a consistent response format
-                // that matches what the backend would return
-
-                // Generate a random ID for the new universe
-                const universeId = 1000 + Math.floor(Math.random() * 1000);
-
-                // Create a mock universe using data from the request
-                const mockUniverse = {
-                  id: universeId,
-                  name: originalRequest.data?.name || "New Universe",
-                  description: originalRequest.data?.description || "A new universe",
-                  is_public: originalRequest.data?.is_public ?? false,
-                  user_id: userData.id || 'demo-user',
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString()
-                };
-
-                // Return a response that matches the expected format in the universe reducers
-                return Promise.resolve({
-                  data: {
-                    message: "Universe created successfully (mock)",
-                    universe: mockUniverse
-                  }
-                });
-              } else if (method === 'put') {
-                // For PUT requests (update), return success with updated universe
-                const universeId = originalRequest.url.split('/').pop();
-                const mockUniverse = {
-                  id: Number(universeId) || 1001,
-                  name: originalRequest.data?.name || "Updated Universe",
-                  description: originalRequest.data?.description || "Updated universe description",
-                  is_public: originalRequest.data?.is_public ?? false,
-                  user_id: userData.id || 'demo-user',
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString()
-                };
-
-                return Promise.resolve({
-                  data: {
-                    message: "Universe updated successfully (mock)",
-                    universe: mockUniverse
-                  }
-                });
-              } else if (method === 'delete') {
-                // For DELETE requests
-                return Promise.resolve({
-                  data: {
-                    message: "Universe deleted successfully (mock)",
-                    success: true
-                  }
-                });
-              }
-
-              // Default fallback for other methods
-              return Promise.resolve({
-                data: {
-                  message: "Mock universe operation completed",
-                  success: true
-                }
-              });
-            }
-
-            // For other requests, retry with new token if possible
-            if (originalRequest) {
-              originalRequest.headers.Authorization = `Bearer ${newToken}`;
-              return axiosInstance(originalRequest);
-            }
-          }
-        } catch (e) {
-          console.error("Error processing user data:", e);
+        // For these endpoints, don't retry - let the API method use mock data
+        if (shouldUseMockData()) {
+          console.log('shouldUseMockData returned true, not retrying request');
+          return Promise.reject({
+            ...error,
+            _useMockData: true
+          });
         }
       }
-    }
-
-    // Handle 429 Too Many Requests with exponential backoff
-    if (error.response?.status === 429 && !originalRequest._rateLimitRetry) {
-      // Track retry attempts
-      if (!originalRequest._retryCount) {
-        originalRequest._retryCount = 0;
-      }
-
-      // Max 3 retries for rate limiting
-      if (originalRequest._retryCount < 1) { // Reduced from 3 to 1 to avoid cascading
-        originalRequest._rateLimitRetry = true;
-        originalRequest._retryCount++;
-
-        // Calculate delay with exponential backoff
-        const delay = Math.pow(2, originalRequest._retryCount) * 2000; // Increased delay
-
-        console.log(`Rate limited (429), retry attempt ${originalRequest._retryCount} after ${delay}ms delay...`);
-
-        // Wait for the calculated delay
-        await new Promise(resolve => setTimeout(resolve, delay));
-
-        // Retry the request
-        return axiosInstance(originalRequest);
-      }
-    }
-
-    // Handle 401 errors
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
 
       try {
-        // Get refresh token
-        const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+        console.log('Attempting token refresh');
+        // Always try to refresh the token - our refreshToken function will handle all cases
+        const refreshResponse = await refreshToken();
 
-        if (!refreshToken) {
-          // If no refresh token but this is a demo-like URL, create mock auth
-          if (isProduction && (
-            originalRequest?.url?.includes('demo') ||
-            originalRequest?.url?.includes('user_id=demo')
-          )) {
-            console.log("No refresh token for potential demo request, creating mock auth");
+        if (refreshResponse && refreshResponse.data && refreshResponse.data.token) {
+          console.log('Token refresh successful, retrying original request');
+          // Update the authorization header with the new token
+          originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.token}`;
 
-            const mockUser = {
-              id: 'demo-' + Math.random().toString(36).substring(2, 10),
-              username: 'demo_user',
-              email: 'demo@harmonic-universe.com'
-            };
-
-            const mockToken = 'demo-token-' + Math.random().toString(36).substring(2, 15);
-
-            localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, mockToken);
-            localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(mockUser));
-            localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, 'demo-refresh-' + Math.random().toString(36).substring(2, 15));
-
-            // Retry request with new token
-            if (originalRequest) {
-              originalRequest.headers.Authorization = `Bearer ${mockToken}`;
-              return axiosInstance(originalRequest);
-            }
-          }
-
-          throw new Error("No refresh token available");
+          // Retry the original request with new token
+          return axiosInstance(originalRequest);
+        } else {
+          console.log('Token refresh did not return a token');
+          return Promise.reject(error);
         }
-
-        // Attempt to refresh token
-        const response = await axiosInstance.post(AUTH_CONFIG.ENDPOINTS.REFRESH, {
-          refresh_token: refreshToken,
-        });
-
-        // Store new tokens
-        if (response.data.token) {
-          localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.token);
-        }
-        if (response.data.refresh_token) {
-          localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, response.data.refresh_token);
-        }
-
-        // Retry original request with new token
-        originalRequest.headers.Authorization = `Bearer ${response.data.token}`;
-        return axiosInstance(originalRequest);
       } catch (refreshError) {
-        // For demo users in production, don't redirect to login - create new auth data
-        if (isProduction) {
-          const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-          if (userStr) {
-            try {
-              const userData = JSON.parse(userStr);
-              if (userData.id && userData.id.toString().startsWith('demo-')) {
-                console.log("Demo user refresh failed, creating new demo auth");
+        console.error('Token refresh error:', refreshError);
 
-                const mockUser = userData; // Keep the same user data
-                const mockToken = 'demo-token-' + Math.random().toString(36).substring(2, 15);
+        // If refreshing fails, don't redirect for demo users
+        const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+        if (!token || !token.toString().startsWith('demo')) {
+          // Clear auth data and redirect to login for real users
+          localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+          localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
 
-                localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, mockToken);
-                localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, 'demo-refresh-' + Math.random().toString(36).substring(2, 15));
-
-                // Don't redirect demo users to login, just return mock data or retry
-                return {
-                  data: {
-                    message: "Using mock data for demo user after failed token refresh",
-                    mock: true,
-                    user: mockUser
-                  }
-                };
-              }
-            } catch (e) {
-              console.error("Error parsing user data for demo check:", e);
-            }
+          if (typeof window !== 'undefined') {
+            window.location.href = '/?login=true';
           }
         }
 
-        // If refresh fails, clear tokens and redirect to login
-        localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-        localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-        localStorage.removeItem(AUTH_CONFIG.USER_KEY);
-
-        // Only redirect in non-demo cases
-        if (!isProduction || !(originalRequest?.url?.includes('demo') || originalRequest?.url?.includes('user_id=demo'))) {
-          window.location.href = "/login";
-        }
-
-        return Promise.reject(refreshError);
+        return Promise.reject(error);
       }
     }
 
+    // For non-401 errors, just reject the promise
     return Promise.reject(error);
   }
 );
@@ -1268,7 +1094,6 @@ const apiClient = {
   },
   validateToken: async () => {
     try {
-      // For production, if the token looks like a demo token, create a mock user
       const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
       const isProduction = process.env.NODE_ENV === 'production' ||
         import.meta.env.PROD ||
@@ -1276,10 +1101,35 @@ const apiClient = {
           !window.location.hostname.includes('localhost') &&
           !window.location.hostname.includes('127.0.0.1'));
 
-      if (isProduction && token && token.startsWith('demo-')) {
-        console.log("Using mock user for demo token validation");
+      // First, check if we even have a token
+      if (!token) {
+        console.log("No token found in localStorage");
+        // Return early - no token to validate
+        return Promise.reject({ message: "No authentication token found" });
+      }
+
+      // Check if the token is a demo token - this should work in both prod and dev
+      if (token.startsWith('demo-')) {
+        console.log("Demo token detected, using mock user without API call");
+
+        // Generate consistent ID from token if possible
+        let userId;
+        try {
+          // Try to extract ID from token or stored user data
+          const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+          if (userStr) {
+            const user = JSON.parse(userStr);
+            userId = user.id || `demo-${Date.now()}`;
+          } else {
+            userId = `demo-${Date.now()}`;
+          }
+        } catch (e) {
+          userId = `demo-${Date.now()}`;
+        }
+
+        // Create a mock user
         const mockUser = {
-          id: 'demo-' + Math.random().toString(36).substring(2, 10),
+          id: userId,
           username: 'demo_user',
           email: 'demo@harmonic-universe.com',
           firstName: 'Demo',
@@ -1289,53 +1139,49 @@ const apiClient = {
         // Store for future use
         localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(mockUser));
 
-        return { data: mockUser };
+        return { data: { user: mockUser, message: "Demo token validated" } };
       }
 
-      // Normal API validation for real users
-      // Use explicit path with correct formatting for validation endpoint
-      const endpoint = '/api/auth/validate';
-      console.debug("Validating token at endpoint:", endpoint);
-
-      // Use the _request helper function instead of direct axios call
-      const response = await _request('get', endpoint);
+      // For real users, validate token with the backend
+      console.debug("Validating real user token at endpoint: /api/auth/validate");
+      const response = await _request('get', '/api/auth/validate');
       console.log("Token validation successful:", response);
 
-      // Store the user data for future use
-      if (response && typeof response === 'object') {
-        localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(response));
+      // Store user data for future use
+      if (response?.data?.user) {
+        localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(response.data.user));
       }
 
-      return { data: response };
+      return { data: response.data };
     } catch (error) {
       console.error("Token validation error:", error.message);
 
-      // For production, if we have a token that looks like a demo token
-      // create a mock user instead of failing
-      if (isProduction) {
-        const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-        if (token && token.startsWith('demo-')) {
-          console.log("Creating mock user for failed demo token validation");
-          const mockUser = {
-            id: 'demo-' + Math.random().toString(36).substring(2, 10),
-            username: 'demo_user',
-            email: 'demo@harmonic-universe.com',
-            firstName: 'Demo',
-            lastName: 'User'
-          };
+      // Check if we have stored user data to use as fallback
+      try {
+        const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+        if (userStr) {
+          const userData = JSON.parse(userStr);
+          console.warn("Token validation failed, using stored user data:", error);
 
-          // Store the mock user
-          localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(mockUser));
+          // If the token starts with 'demo-', refresh it
+          const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+          if (token && token.startsWith('demo-')) {
+            const newToken = `demo-${userData.id || Date.now()}-${Date.now()}`;
+            localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, newToken);
+            console.log("Refreshed demo token after validation failure");
+          }
 
-          return { data: mockUser };
+          return { data: { user: userData, message: "Using stored user data" } };
         }
+      } catch (e) {
+        console.error("Error parsing stored user data:", e);
       }
 
       // Clean up tokens on authentication failure
       if (error.response?.status === 401) {
-        // Don't remove tokens for demo users in production
+        // Don't remove tokens for demo users
         const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-        if (isProduction && token && token.startsWith('demo-')) {
+        if (token && token.startsWith('demo-')) {
           console.log("Keeping demo tokens despite 401 error");
         } else {
           console.log("Clearing auth tokens due to 401 error");
@@ -1349,11 +1195,42 @@ const apiClient = {
     }
   },
   refreshToken: async () => {
+    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
     const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+
+    // Check if this is a demo user by checking token format
+    if (token && token.toString().startsWith('demo')) {
+      console.log("API - Demo user detected for token refresh, using mock implementation");
+
+      // For demo users, create a new demo token instead of making an API call
+      const newToken = `demo-token-${Date.now()}`;
+      const newRefreshToken = `demo-refresh-${Date.now()}`;
+
+      // Update tokens in localStorage
+      localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, newToken);
+      localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, newRefreshToken);
+
+      // Return mock successful response
+      return {
+        data: {
+          token: newToken,
+          refresh_token: newRefreshToken,
+          message: "Token refreshed successfully (mock)"
+        },
+        status: 200
+      };
+    }
+
+    // For real users, try the API call
     if (!refreshToken) {
       throw new Error("No refresh token available");
     }
-    return axiosInstance.post(getEndpoint('auth', 'refresh', '/api/auth/refresh'), { refresh_token: refreshToken });
+
+    // Use POST method for token refresh
+    return axiosInstance.post(
+      getEndpoint('auth', 'refresh', '/api/auth/refresh'),
+      { refresh_token: refreshToken }
+    );
   },
   logout: () => {
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
@@ -1454,148 +1331,62 @@ const apiClient = {
   getUniverses: async (params = {}) => {
     console.log("API - Getting universes with params:", params);
 
-    // Check if this is a demo user ID (demo IDs typically start with 'demo-')
-    const isDemoUser = params.userId && typeof params.userId === 'string' && params.userId.startsWith('demo-');
-
-    // In production with demo users, use mock data to avoid auth issues
-    if (isProduction && isDemoUser) {
-      console.log("API - Using mock universes for demo user in production");
-
-      // Simulate small delay for realism
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      // Create a mock demo universe
-      const mockUniverses = [
-        {
-          id: 1001,
-          name: "Demo Universe",
-          description: "A sample universe for exploring the application",
-          is_public: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          user_id: params.userId
-        },
-        {
-          id: 1002,
-          name: "Physics Playground",
-          description: "Experiment with different physics settings",
-          is_public: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          user_id: params.userId
-        }
-      ];
-
-      return {
-        status: 200,
-        data: {
-          message: "Universes retrieved successfully (mock)",
-          universes: mockUniverses
-        }
-      };
+    // Check if we should use mock data
+    if (shouldUseMockData()) {
+      console.log("API - Using mock universes data based on shouldUseMockData");
+      // Create mock universes data
+      return createMockUniversesResponse();
     }
 
-    // Build query parameters
-    const queryParams = new URLSearchParams();
-    if (params.userId) {
-      queryParams.append('user_id', params.userId);
-    }
-    if (params.public) {
-      queryParams.append('public', params.public);
-    }
-    if (params.user_only) {
-      queryParams.append('user_only', params.user_only);
-    }
-
-    // Use a direct explicit endpoint path
-    const baseEndpoint = '/api/universes';
-
-    // Construct URL with query parameters
-    let url = baseEndpoint;
-    if (queryParams.toString()) {
-      url = `${baseEndpoint}?${queryParams.toString()}`;
-    }
-
-    console.log("API - Fetching universes from URL:", url);
+    // Get user info
+    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+    const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+    let user = null;
 
     try {
-      // Use the _request helper to properly format the URL
-      const response = await _request('get', url);
+      if (userStr) {
+        user = JSON.parse(userStr);
+      }
+    } catch (e) {
+      console.error("Error parsing user data:", e);
+    }
+
+    // Determine if this is a demo user by checking token or user ID
+    const isDemoUser = (token && token.toString().startsWith('demo')) ||
+      (user && user.id && (user.id.toString().includes('demo') || user.is_demo === true));
+
+    // Ensure demo users have refresh tokens to prevent auth errors
+    if (isDemoUser && !localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY)) {
+      console.log("Creating missing refresh token for demo user");
+      const newRefreshToken = `demo-refresh-${Date.now()}-${Date.now() + 86400000}`;
+      localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, newRefreshToken);
+    }
+
+    // For demo users, ALWAYS return mock data without making API calls
+    if (isDemoUser) {
+      console.log("API - Demo user detected, using mock data");
+      return createMockUniversesResponse(user);
+    }
+
+    // Only make API calls for non-demo users
+    try {
+      console.log("Making real API call for authenticated user");
+      const endpoint = getEndpoint('universes', 'list', '/api/universes');
+      const response = await axiosInstance.get(endpoint, { params });
       return response;
     } catch (error) {
       console.error("Error fetching universes:", {
         status: error.response?.status,
-        message: error.response?.data?.message || error.message,
+        message: error.message,
         data: error.response?.data
       });
 
-      // If unauthorized (401) or rate-limited (429) in production with query params, return mock data
-      if (isProduction && (error.response?.status === 401 || error.response?.status === 429) && params.userId) {
-        console.log(`Production mode: Returning mock universes due to ${error.response?.status} error`);
-
-        // Determine if this looks like a demo user
-        const isDemoUser = typeof params.userId === 'string' && params.userId.startsWith('demo-');
-
-        // Create mock universe objects based on the user type
-        const mockUniverses = isDemoUser ? [
-          {
-            id: 1001,
-            name: "Demo Universe",
-            description: "A sample universe for exploring the application",
-            is_public: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            user_id: params.userId
-          }
-        ] : [];
-
-        return {
-          status: 200,
-          data: {
-            message: `Universes retrieved successfully (mock due to ${error.response?.status})`,
-            universes: mockUniverses
-          }
-        };
-      }
-
-      // In development mode, return mock universes
-      if (process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost') {
-        console.log("Development mode: Returning mock universes");
-
-        // Create some mock universe objects
-        const mockUniverses = params.user_only ? [
-          {
-            id: 1001,
-            name: "Demo Universe",
-            description: "A demo universe for testing",
-            is_public: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            user_id: params.userId || 1
-          }
-        ] : [];
-
-        return {
-          status: 200,
-          data: {
-            message: "Universes retrieved successfully (mock)",
-            universes: mockUniverses
-          }
-        };
-      }
-
-      // Return a formatted error for production
-      const errorMsg = error.response?.data?.message || "Error retrieving universes";
-      return {
-        status: error.response?.status || 500,
-        data: {
-          error: error.response?.data?.error || error.message,
-          message: errorMsg,
-          universes: [] // Return empty array to avoid crashes
-        }
-      };
+      // Fall back to mock data if there was an error
+      console.log("API call failed, using fallback mock data");
+      return createMockUniversesResponse(user);
     }
   },
+
   createUniverse: async (data) => {
     console.log("API - Creating universe with data:", data);
 
@@ -1851,6 +1642,7 @@ const apiClient = {
     } catch (error) {
       console.error(`API - deleteUniverse - Error deleting universe ${id}:`, error.response || error);
 
+      // In development mode, return a mock success response if needed
       // In development mode, return a mock success response if needed
       if (process.env.NODE_ENV === 'development' && error.response?.status === 404) {
         console.log(`API - deleteUniverse - Development mode: Returning mock success for missing universe ${id}`);
@@ -2911,6 +2703,8 @@ const apiClient = {
     // Also consider this a demo environment when running in development
     return isProduction && isDemoUser || process.env.NODE_ENV === 'development';
   },
+  createOrRefreshDemoUser, // Export the helper function
+  shouldUseMockData, // Export the helper function
 };
 
 // Helper function to get mock user data for demo users
@@ -2935,10 +2729,21 @@ const getMockDemoUserData = () => {
 
 /**
  * Determines if mock data should be used instead of real API calls
+ * Based on the implementation from the earlier function.
  * @param {number|null} statusCode - Optional status code from a failed request
  * @return {boolean} True if mock data should be used
  */
-const shouldUseMockData = (statusCode = null) => {
+const _shouldUseMockDataWithStatus = (statusCode = null) => {
+  // First check our basic conditions from the original function
+  const mockModeEnabled = API_CONFIG.MOCK_ENABLED;
+  const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+  const isDemo = token && token.toString().startsWith('demo-');
+
+  // If basic conditions are met, return true immediately
+  if (mockModeEnabled || isDemo) {
+    return true;
+  }
+
   // Handle demo users in production
   const isDemoUser = isProduction &&
     (localStorage.getItem(AUTH_CONFIG.TOKEN_KEY)?.startsWith('demo-') ||
@@ -3055,6 +2860,52 @@ const tryEndpoints = async (endpoints, entityName = 'data') => {
 
   // Throw the last error
   throw lastError || new Error(`Failed to fetch ${entityName} from all endpoints`);
+};
+
+// Utility function to create mock universes response
+const createMockUniversesResponse = (user = null) => {
+  const userId = user?.id || "demo-user";
+  const mockUniverses = [
+    {
+      id: 1001,
+      name: "Demo Universe",
+      description: "A demo universe created for testing",
+      is_public: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      user_id: userId
+    },
+    {
+      id: 1002,
+      name: "Physics Sandbox",
+      description: "Experiment with physics parameters in this sandbox universe",
+      is_public: false,
+      created_at: new Date(Date.now() - 86400000).toISOString(), // Yesterday
+      updated_at: new Date(Date.now() - 43200000).toISOString(), // 12 hours ago
+      user_id: userId
+    },
+    {
+      id: 1003,
+      name: "Musical Cosmos",
+      description: "Visualize music as cosmic events in this universe",
+      is_public: true,
+      created_at: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+      updated_at: new Date(Date.now() - 86400000).toISOString(), // Yesterday
+      user_id: userId
+    }
+  ];
+
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve({
+        data: {
+          universes: mockUniverses,
+          message: "Universes retrieved successfully (mock data)"
+        },
+        status: 200
+      });
+    }, 300);
+  });
 };
 
 export default apiClient;

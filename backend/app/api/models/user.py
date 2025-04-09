@@ -1,6 +1,9 @@
 from werkzeug.security import generate_password_hash, check_password_hash
 from .base import BaseModel
 from ...extensions import db
+from .universe import Universe
+from .note import Note
+from .audio import SoundProfile, AudioSample, MusicPiece
 
 class User(BaseModel):
     __tablename__ = 'users'
@@ -8,7 +11,7 @@ class User(BaseModel):
     
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
-    password_hash = db.Column(db.String(128))
+    password_hash = db.Column(db.String(255))
     version = db.Column(db.Integer, nullable=False, default=1)
     
     # Relationships
@@ -59,11 +62,11 @@ class User(BaseModel):
         from sqlalchemy import func
         
         return {
-            'universes_count': db.session.query(func.count('Universe')).filter_by(user_id=self.id, is_deleted=False).scalar() or 0,
-            'notes_count': db.session.query(func.count('Note')).filter_by(user_id=self.id, is_deleted=False).scalar() or 0,
-            'sound_profiles_count': db.session.query(func.count('SoundProfile')).filter_by(user_id=self.id, is_deleted=False).scalar() or 0,
-            'audio_samples_count': db.session.query(func.count('AudioSample')).filter_by(user_id=self.id, is_deleted=False).scalar() or 0,
-            'music_pieces_count': db.session.query(func.count('MusicPiece')).filter_by(user_id=self.id, is_deleted=False).scalar() or 0
+            'universes_count': db.session.query(func.count(Universe.id)).filter_by(user_id=self.id, is_deleted=False).scalar() or 0,
+            'notes_count': db.session.query(func.count(Note.id)).filter_by(user_id=self.id, is_deleted=False).scalar() or 0,
+            'sound_profiles_count': db.session.query(func.count(SoundProfile.id)).filter_by(user_id=self.id, is_deleted=False).scalar() or 0,
+            'audio_samples_count': db.session.query(func.count(AudioSample.id)).filter_by(user_id=self.id, is_deleted=False).scalar() or 0,
+            'music_pieces_count': db.session.query(func.count(MusicPiece.id)).filter_by(user_id=self.id, is_deleted=False).scalar() or 0
         }
         
     @classmethod

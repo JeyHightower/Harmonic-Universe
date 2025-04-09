@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Navigate, useParams, useNavigate } from "react-router-dom";
 import Layout from "../components/layout/Layout";
 import ProtectedRoute from "../components/routing/ProtectedRoute";
@@ -141,6 +141,18 @@ const NotesRouteHandler = () => {
       <NotesPage />
     </Suspense>
   );
+};
+
+// Add a redirect route for /login to fix "No routes matched location /login" error
+const LoginRedirect = () => {
+  const navigate = useNavigate();
+
+  // Redirect to home page with login modal parameter
+  useEffect(() => {
+    navigate("/?modal=login", { replace: true });
+  }, [navigate]);
+
+  return <div className="redirect-loader">Redirecting to login...</div>;
 };
 
 // Legacy components to be replaced
@@ -311,7 +323,7 @@ const routes = [
       },
       {
         path: ROUTES.LOGIN,
-        element: <LoginPage />,
+        element: <LoginRedirect />,
       },
       {
         path: ROUTES.SIGNUP,
@@ -321,9 +333,9 @@ const routes = [
         path: "/demo",
         element: <Navigate to="/login" replace />,
       },
-      // Add a direct demo login route
+      // Add route for /demo-login that loads the LoginPage component
       {
-        path: "/demo-login",
+        path: "demo-login",
         element: <LoginPage />,
       },
     ],

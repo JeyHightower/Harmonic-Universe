@@ -108,6 +108,7 @@ def create_app(config_name='default'):
     
     # Initialize extensions
     db.init_app(app)
+    migrate = Migrate(app, db)  # Initialize Flask-Migrate
     jwt.init_app(app)
     limiter.init_app(app)
     cache.init_app(app)

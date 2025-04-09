@@ -2,55 +2,33 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import Tooltip from "../components/common/Tooltip";
-import {
-  UniverseCard,
-  UniverseModalFinal,
-} from "../components/universe";
+import { UniverseCard, UniverseModalFinal } from "../components/universe";
 import { fetchUniverses } from "../store/thunks/universeThunks";
+import { deleteUniverse } from "../store/thunks/universeThunks";
 import "../styles/Dashboard.css";
 import { AUTH_CONFIG } from "../utils/config";
 import { logout } from "../store/thunks/authThunks";
-import { Button } from "@mui/material";
 import {
-  Box,
-  Container,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  CardActions,
-  IconButton,
   CircularProgress,
-  Alert,
+  Typography,
+  Button,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
-  FormControlLabel,
-  Switch,
-  AppBar,
-  Toolbar,
 } from "@mui/material";
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Star as StarIcon,
-  StarBorder as StarBorderIcon,
-  Search as SearchIcon,
-  Sort as SortIcon,
-  FilterList as FilterIcon,
-  Logout as LogoutIcon,
   Refresh as RefreshIcon,
+  Logout as LogoutIcon,
 } from "@mui/icons-material";
-import {
-  createUniverse,
-  updateUniverse,
-  deleteUniverse,
-} from "../store/thunks/universeThunks";
-import { log } from "../utils/logger";
 
+/**
+ * Dashboard component for displaying and managing user's universes
+ * Combines features from both Dashboard implementations
+ */
 const Dashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -68,7 +46,7 @@ const Dashboard = () => {
   // Enhanced function to load universes with better error handling and logging
   const loadUniverses = useCallback(() => {
     console.log("Dashboard - Loading universes, attempt:", retryCount + 1);
-    return dispatch(fetchUniverses({ userId: user?.id, user_only: true })) // Only fetch user's created universes
+    return dispatch(fetchUniverses({ userId: user?.id, user_only: true }))
       .then((result) => {
         console.log("Dashboard - Fetch universes result:", {
           payload: result.payload,
@@ -109,7 +87,6 @@ const Dashboard = () => {
           count: universes.length,
           isArray: Array.isArray(universes),
           hasData: !!universes,
-          data: universes,
         });
 
         return { universes };
@@ -124,21 +101,13 @@ const Dashboard = () => {
       });
   }, [dispatch, retryCount, user?.id]);
 
+  // Load universes on component mount
   useEffect(() => {
     console.log("Dashboard - Component mounted, loading universes");
     loadUniverses();
   }, [loadUniverses]);
 
-  useEffect(() => {
-    console.log("Dashboard - State updated:", {
-      universesCount: universes?.length,
-      loading,
-      error,
-      isAuthenticated,
-    });
-  }, [universes, loading, error, isAuthenticated]);
-
-  // Debug log to check universes data - enhanced with more detail
+  // Debug log to check universes data
   useEffect(() => {
     if (universes) {
       console.log("Dashboard - Current universes state:", {
@@ -243,6 +212,35 @@ const Dashboard = () => {
     }
   };
 
+  // Sort universes based on selected option
+  const getSortedUniverses = () => {
+    if (!universes || !Array.isArray(universes)) {
+      return [];
+    }
+
+    let filteredUniverses = [...universes];
+
+    // Apply filter
+    if (filterOption === "public") {
+      filteredUniverses = filteredUniverses.filter((u) => u.is_public);
+    } else if (filterOption === "private") {
+      filteredUniverses = filteredUniverses.filter((u) => !u.is_public);
+    }
+
+    // Apply sort
+    return filteredUniverses.sort((a, b) => {
+      switch (sortOption) {
+        case "name":
+          return (a.name || "").localeCompare(b.name || "");
+        case "created_at":
+          return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+        case "updated_at":
+        default:
+          return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
+      }
+    });
+  };
+
   // Render loading state
   if (loading) {
     return (
@@ -255,86 +253,7 @@ const Dashboard = () => {
     );
   }
 
-  // Skip error state and show empty state for new users
-  if (error && !universes?.length) {
-    return (
-      <div className="dashboard-container">
-        <div className="empty-state">
-          <Typography variant="h4" gutterBottom>
-            No Universes Found
-          </Typography>
-          <Typography variant="body1" paragraph>
-            You haven't created any universes yet. Create your first universe to
-            start your journey into harmonizing music and physics!
-          </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            size="large"
-            onClick={handleCreateClick}
-            startIcon={<AddIcon />}
-          >
-            Create Your First Universe
-          </Button>
-        </div>
-        {isCreateModalOpen && (
-          <UniverseModalFinal
-            isOpen={isCreateModalOpen}
-            onClose={() => setIsCreateModalOpen(false)}
-            onSuccess={handleCreateSuccess}
-          />
-        )}
-      </div>
-    );
-  }
-
-  // Show actual error state for other errors
-  if (error) {
-    return (
-      <div className="dashboard-container">
-        <div className="error-message">
-          <Alert severity="error">
-            Error loading universes:{" "}
-            {typeof error === "object" ? JSON.stringify(error) : error}
-          </Alert>
-          <div
-            style={{
-              marginTop: "20px",
-              display: "flex",
-              gap: "10px",
-              justifyContent: "center",
-            }}
-          >
-            <Button
-              variant="outlined"
-              color="primary"
-              onClick={loadUniverses}
-              startIcon={<RefreshIcon />}
-            >
-              Retry
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleCreateClick}
-              startIcon={<AddIcon />}
-            >
-              Create Your First Universe
-            </Button>
-          </div>
-        </div>
-        {isCreateModalOpen && (
-          <UniverseModalFinal
-            isOpen={isCreateModalOpen}
-            onClose={() => setIsCreateModalOpen(false)}
-            onSuccess={handleCreateSuccess}
-          />
-        )}
-      </div>
-    );
-  }
-
-  // Render empty state
+  // Show empty state for new users
   if (!universes || universes.length === 0) {
     return (
       <div className="dashboard-container">
@@ -367,7 +286,98 @@ const Dashboard = () => {
     );
   }
 
-  // Render universes grid
+  // Show error state if there are errors but we have some universes
+  if (error && universes?.length) {
+    return (
+      <div className="dashboard-container">
+        <div className="dashboard-header">
+          <Typography variant="h4" component="h1">
+            Your Universes
+          </Typography>
+          <div className="dashboard-actions">
+            <Tooltip content="Refresh universe list" position="bottom">
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={loadUniverses}
+                startIcon={<RefreshIcon />}
+                disabled={loading}
+              >
+                Refresh
+              </Button>
+            </Tooltip>
+            <Tooltip content="Create a new universe" position="bottom">
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleCreateClick}
+                startIcon={<AddIcon />}
+              >
+                Create Universe
+              </Button>
+            </Tooltip>
+            <Tooltip content="Log out of your account" position="bottom">
+              <Button
+                variant="outlined"
+                color="secondary"
+                onClick={handleLogout}
+                startIcon={<LogoutIcon />}
+              >
+                Logout
+              </Button>
+            </Tooltip>
+          </div>
+        </div>
+        <div className="universes-controls">
+          <Tooltip content="Filter universes by visibility" position="top">
+            <select
+              className="control-select"
+              value={filterOption}
+              onChange={(e) => setFilterOption(e.target.value)}
+            >
+              <option value="all">All Universes</option>
+              <option value="public">Public Only</option>
+              <option value="private">Private Only</option>
+            </select>
+          </Tooltip>
+
+          <Tooltip
+            content="Sort universes by different criteria"
+            position="top"
+          >
+            <select
+              className="control-select"
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value)}
+            >
+              <option value="updated_at">Recently Updated</option>
+              <option value="created_at">Recently Created</option>
+              <option value="name">Name (A-Z)</option>
+            </select>
+          </Tooltip>
+        </div>
+        <Typography color="error" className="error-message">
+          {typeof error === "object" ? JSON.stringify(error) : error}
+        </Typography>
+        <div className="universes-grid">
+          {getSortedUniverses().map((universe) => (
+            <UniverseCard
+              key={universe.id}
+              universe={universe}
+              isNew={universe.id === newUniverseId}
+              onView={() => handleViewUniverse(universe)}
+              onEdit={() => handleEditUniverse(universe)}
+              onDelete={() => handleDeleteUniverse(universe)}
+            />
+          ))}
+        </div>
+        {/* Modals */}
+        {renderModals()}
+      </div>
+    );
+  }
+
+  // Render universes grid (main view)
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
@@ -375,35 +385,66 @@ const Dashboard = () => {
           Your Universes
         </Typography>
         <div className="dashboard-actions">
-          <Button
-            variant="outlined"
-            color="primary"
-            onClick={loadUniverses}
-            startIcon={<RefreshIcon />}
-            disabled={loading}
-          >
-            Refresh
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleCreateClick}
-            startIcon={<AddIcon />}
-          >
-            Create Universe
-          </Button>
-          <Button
-            variant="outlined"
-            color="secondary"
-            onClick={handleLogout}
-            startIcon={<LogoutIcon />}
-          >
-            Logout
-          </Button>
+          <Tooltip content="Refresh universe list" position="bottom">
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={loadUniverses}
+              startIcon={<RefreshIcon />}
+              disabled={loading}
+            >
+              Refresh
+            </Button>
+          </Tooltip>
+          <Tooltip content="Create a new universe" position="bottom">
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleCreateClick}
+              startIcon={<AddIcon />}
+            >
+              Create Universe
+            </Button>
+          </Tooltip>
+          <Tooltip content="Log out of your account" position="bottom">
+            <Button
+              variant="outlined"
+              color="secondary"
+              onClick={handleLogout}
+              startIcon={<LogoutIcon />}
+            >
+              Logout
+            </Button>
+          </Tooltip>
         </div>
       </div>
+      <div className="universes-controls">
+        <Tooltip content="Filter universes by visibility" position="top">
+          <select
+            className="control-select"
+            value={filterOption}
+            onChange={(e) => setFilterOption(e.target.value)}
+          >
+            <option value="all">All Universes</option>
+            <option value="public">Public Only</option>
+            <option value="private">Private Only</option>
+          </select>
+        </Tooltip>
+
+        <Tooltip content="Sort universes by different criteria" position="top">
+          <select
+            className="control-select"
+            value={sortOption}
+            onChange={(e) => setSortOption(e.target.value)}
+          >
+            <option value="updated_at">Recently Updated</option>
+            <option value="created_at">Recently Created</option>
+            <option value="name">Name (A-Z)</option>
+          </select>
+        </Tooltip>
+      </div>
       <div className="universes-grid">
-        {universes.map((universe) => (
+        {getSortedUniverses().map((universe) => (
           <UniverseCard
             key={universe.id}
             universe={universe}
@@ -414,45 +455,56 @@ const Dashboard = () => {
           />
         ))}
       </div>
-      {isCreateModalOpen && (
-        <UniverseModalFinal
-          isOpen={isCreateModalOpen}
-          onClose={() => setIsCreateModalOpen(false)}
-          onSuccess={handleCreateSuccess}
-        />
-      )}
-      {isEditModalOpen && selectedUniverse && (
-        <UniverseModalFinal
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-          onSuccess={handleEditSuccess}
-          universe={selectedUniverse}
-          isEdit={true}
-        />
-      )}
-      {isDeleteModalOpen && selectedUniverse && (
-        <Dialog
-          open={isDeleteModalOpen}
-          onClose={() => setIsDeleteModalOpen(false)}
-        >
-          <DialogTitle>Confirm Delete</DialogTitle>
-          <DialogContent>
-            <Typography>
-              Are you sure you want to delete the universe "
-              {selectedUniverse.name}"? This action cannot be undone and will
-              delete all associated scenes, characters, and notes.
-            </Typography>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setIsDeleteModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleConfirmDelete} color="error">
-              Delete
-            </Button>
-          </DialogActions>
-        </Dialog>
-      )}
+      {renderModals()}
     </div>
   );
+
+  // Helper function to render modals
+  function renderModals() {
+    return (
+      <>
+        {isCreateModalOpen && (
+          <UniverseModalFinal
+            isOpen={isCreateModalOpen}
+            onClose={() => setIsCreateModalOpen(false)}
+            onSuccess={handleCreateSuccess}
+          />
+        )}
+        {isEditModalOpen && selectedUniverse && (
+          <UniverseModalFinal
+            isOpen={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+            onSuccess={handleEditSuccess}
+            universe={selectedUniverse}
+            isEdit={true}
+          />
+        )}
+        {isDeleteModalOpen && selectedUniverse && (
+          <Dialog
+            open={isDeleteModalOpen}
+            onClose={() => setIsDeleteModalOpen(false)}
+          >
+            <DialogTitle>Confirm Delete</DialogTitle>
+            <DialogContent>
+              <Typography>
+                Are you sure you want to delete the universe "
+                {selectedUniverse.name}"? This action cannot be undone and will
+                delete all associated scenes, characters, and notes.
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setIsDeleteModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleConfirmDelete} color="error">
+                Delete
+              </Button>
+            </DialogActions>
+          </Dialog>
+        )}
+      </>
+    );
+  }
 };
 
 export default Dashboard;

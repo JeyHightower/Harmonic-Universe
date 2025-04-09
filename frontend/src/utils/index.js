@@ -11,17 +11,28 @@
 export * from '@ant-design/icons';
 export { default } from '@ant-design/icons';
 
-// This is a special handler that intercepts dynamic requires
-// It catches paths like: @ant-design/icons/es/icons/EllipsisOutlined
-// And returns the proper icon from the official implementation
-export function resolveIcon(iconName) {
-    // Import everything from the official Ant Design icons
-    const icons = require('@ant-design/icons');
+// Import these specific exports directly instead of using require
+import {
+    getTwoToneColor,
+    setTwoToneColor,
+    createFromIconfontCN
+} from '@ant-design/icons';
 
-    // Return the requested icon or a placeholder
-    return icons[iconName] || (() => null);
+// This is a special handler that intercepts dynamic imports
+// It returns the proper icon from the official implementation
+export function resolveIcon(iconName) {
+    try {
+        // Use the imported icons instead of requiring them
+        // Get the icon from the already imported icons
+        const icons = import.meta.glob('@ant-design/icons');
+
+        // Return the requested icon or a placeholder
+        return icons[iconName] || (() => null);
+    } catch (error) {
+        console.error(`Error resolving icon ${iconName}:`, error);
+        return () => null;
+    }
 }
 
-// These are already provided by the official package, but we'll
-// export them here for backwards compatibility
-export const { getTwoToneColor, setTwoToneColor, createFromIconfontCN } = require('@ant-design/icons');
+// Export these methods for backwards compatibility
+export { getTwoToneColor, setTwoToneColor, createFromIconfontCN };

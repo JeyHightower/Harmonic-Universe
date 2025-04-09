@@ -131,15 +131,43 @@ export const checkAuthState = createAsyncThunk(
         console.debug("Token validation successful:", response);
 
         // Update state with validated user
-        if (response.data.user) {
+        if (response.data && response.data.user) {
           userData = response.data.user;
           // Update localStorage with fresh data
           localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(userData));
         }
       } catch (err) {
         console.warn("Token validation failed, using stored user data:", err);
-        // If validation fails but we have stored user data, use that
-        if (!userData) {
+
+        // For demo tokens, we'll create a new token and continue
+        if (token.startsWith('demo-')) {
+          console.log("Demo token detected, creating fresh demo session");
+
+          // Get or create a user ID
+          const userId = userData?.id || `demo-${Date.now()}`;
+
+          // Create a demo user with the same ID for continuity
+          userData = {
+            id: userId,
+            username: "demo_user",
+            email: "demo@harmonic-universe.com",
+            firstName: "Demo",
+            lastName: "User",
+            role: "user",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+
+          // Create fresh tokens
+          const newToken = `demo-${userId}-${Date.now()}`;
+          const newRefreshToken = `demo-refresh-${userId}-${Date.now()}`;
+
+          // Store the new tokens and user
+          localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, newToken);
+          localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, newRefreshToken);
+          localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(userData));
+          console.log("Created fresh demo session with ID:", userId);
+        } else if (!userData) {
           console.error("No valid user data available after token validation failure");
           return null;
         }
@@ -244,29 +272,60 @@ export const demoLogin = createAsyncThunk(
     try {
       logAuthOperation("Demo login attempt");
 
-      const response = await apiClient.demoLogin();
-      logAuthOperation("Demo login successful", { status: response.status });
+      // Call API client to create a demo user with consistent implementation
+      console.log("AuthSlice - Using API client for demo user creation");
 
-      // Extract user data from response
-      const userData = response.data.user || response.data;
-      const token = response.data.token || response.data.access_token;
-      const refreshToken = response.data.refresh_token;
+      // Import the API client
+      const apiClient = await import("../../services/api").then(module => module.default);
 
-      // Store tokens and user data
-      if (token) {
+      // Check if the API client has the createOrRefreshDemoUser function
+      if (typeof apiClient.createOrRefreshDemoUser === 'function') {
+        // Use the API client's helper function
+        const demoData = apiClient.createOrRefreshDemoUser();
+
+        logAuthOperation("API-based demo login successful", { userId: demoData.user.id });
+
+        // Update state
+        dispatch(loginSuccess({
+          user: demoData.user,
+          token: demoData.token,
+          refresh_token: demoData.refreshToken
+        }));
+
+        return demoData;
+      } else {
+        // Fallback to direct demo user creation if API helper not available
+        console.log("AuthSlice - Using direct demo user creation (fallback method)");
+
+        // Create a demo user with a unique ID - use simpler ID format
+        const randomId = Math.floor(Math.random() * 10000);
+        const userData = {
+          id: `demo-${randomId}`,
+          username: "demo_user",
+          email: "demo@example.com",
+          firstName: "Demo",
+          lastName: "User",
+          role: "user",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+
+        // Create tokens - use simpler format without special characters
+        const token = `demo-token-${Date.now()}`;
+        const refreshToken = `demo-refresh-${Date.now()}`;
+
+        // Store tokens and user data
         localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, token);
-      }
-      if (refreshToken) {
         localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, refreshToken);
-      }
-      if (userData) {
         localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(userData));
+
+        logAuthOperation("Direct demo login successful", { userId: userData.id });
+
+        // Update state with the correct data structure
+        dispatch(loginSuccess({ user: userData, token, refresh_token: refreshToken }));
+
+        return { user: userData, token, refresh_token: refreshToken };
       }
-
-      // Update state with the correct data structure
-      dispatch(loginSuccess({ user: userData, token, refresh_token: refreshToken }));
-
-      return { user: userData, token, refresh_token: refreshToken };
     } catch (error) {
       logAuthError("Demo login", error);
       return rejectWithValue(
@@ -279,6 +338,13 @@ export const demoLogin = createAsyncThunk(
 // Initialize the auth state
 const initialState = (() => {
   try {
+    // Import API for helper functions
+    let demoModeHelper = null;
+
+    // Setup demo mode using local implementation for initialization
+    // We can't use dynamic imports in the initializer because they're async
+    // and this needs to return synchronously
+
     // Force demo mode in production if configured
     if (FORCE_DEMO_MODE && IS_PRODUCTION) {
       console.log("Forcing demo mode in production");
