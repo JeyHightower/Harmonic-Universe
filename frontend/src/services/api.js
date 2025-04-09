@@ -713,8 +713,12 @@ const refreshToken = async () => {
     try {
       console.log('Attempting API token refresh with refresh token');
       const response = await axios.post(
-        getEndpoint('auth', 'refresh', '/api/auth/refresh'),
-        { refresh_token: refreshTokenValue }
+        `${API_BASE_URL}/api/auth/refresh`,
+        { refresh_token: refreshTokenValue },
+        {
+          baseURL: '',  // Override baseURL to use absolute URL
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
 
       if (response.data && response.data.token) {
@@ -1095,11 +1099,6 @@ const apiClient = {
   validateToken: async () => {
     try {
       const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-      const isProduction = process.env.NODE_ENV === 'production' ||
-        import.meta.env.PROD ||
-        (typeof window !== 'undefined' &&
-          !window.location.hostname.includes('localhost') &&
-          !window.location.hostname.includes('127.0.0.1'));
 
       // First, check if we even have a token
       if (!token) {
@@ -1114,32 +1113,58 @@ const apiClient = {
 
         // Generate consistent ID from token if possible
         let userId;
+        let existingUser = null;
+
         try {
           // Try to extract ID from token or stored user data
           const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
           if (userStr) {
             const user = JSON.parse(userStr);
+            existingUser = user;
             userId = user.id || `demo-${Date.now()}`;
           } else {
             userId = `demo-${Date.now()}`;
           }
         } catch (e) {
+          console.error("Error parsing stored demo user data:", e);
           userId = `demo-${Date.now()}`;
         }
 
-        // Create a mock user
-        const mockUser = {
+        // Create a new demo token to ensure it's fresh
+        const newToken = `demo-${userId}-${Date.now()}`;
+        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, newToken);
+
+        // Also refresh the refresh token
+        const newRefreshToken = `demo-refresh-${userId}-${Date.now()}`;
+        localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, newRefreshToken);
+
+        // Create or update mock user
+        const mockUser = existingUser || {
           id: userId,
           username: 'demo_user',
           email: 'demo@harmonic-universe.com',
           firstName: 'Demo',
-          lastName: 'User'
+          lastName: 'User',
+          role: 'user',
+          is_demo: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         };
+
+        // Ensure the user has the correct ID
+        mockUser.id = userId;
 
         // Store for future use
         localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(mockUser));
 
-        return { data: { user: mockUser, message: "Demo token validated" } };
+        console.log(`Demo token refreshed for user: ${userId}`);
+        return {
+          data: {
+            user: mockUser,
+            message: "Demo token validated",
+            token: newToken
+          }
+        };
       }
 
       // For real users, validate token with the backend
@@ -1159,18 +1184,42 @@ const apiClient = {
       // Check if we have stored user data to use as fallback
       try {
         const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-        if (userStr) {
+        const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+
+        if (userStr && token && token.startsWith('demo-')) {
+          const userData = JSON.parse(userStr);
+          console.warn("Token validation failed for demo user, refreshing demo session:", error);
+
+          // Create fresh demo tokens
+          const userId = userData?.id || `demo-${Date.now()}`;
+          const newToken = `demo-${userId}-${Date.now()}`;
+          const newRefreshToken = `demo-refresh-${userId}-${Date.now()}`;
+
+          // Update user data
+          const updatedUser = {
+            ...userData,
+            id: userId,
+            is_demo: true,
+            updatedAt: new Date().toISOString()
+          };
+
+          // Store updated tokens and user
+          localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, newToken);
+          localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, newRefreshToken);
+          localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(updatedUser));
+
+          console.log("Created fresh demo session with ID:", userId);
+
+          return {
+            data: {
+              user: updatedUser,
+              message: "Using refreshed demo session",
+              token: newToken
+            }
+          };
+        } else if (userStr) {
           const userData = JSON.parse(userStr);
           console.warn("Token validation failed, using stored user data:", error);
-
-          // If the token starts with 'demo-', refresh it
-          const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-          if (token && token.startsWith('demo-')) {
-            const newToken = `demo-${userData.id || Date.now()}-${Date.now()}`;
-            localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, newToken);
-            console.log("Refreshed demo token after validation failure");
-          }
-
           return { data: { user: userData, message: "Using stored user data" } };
         }
       } catch (e) {
@@ -1232,8 +1281,27 @@ const apiClient = {
       { refresh_token: refreshToken }
     );
   },
-  logout: () => {
+  logout: async () => {
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+
+    // For demo tokens, don't attempt to call the backend
+    if (token && token.startsWith('demo-')) {
+      console.log("API - Demo user logout, skipping API call");
+
+      // Clear the token from localStorage
+      localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+      localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+      localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+
+      return {
+        data: {
+          message: "Demo user logged out successfully",
+        },
+        status: 200
+      };
+    }
+
+    // For real users, call the logout endpoint
     return axiosInstance.post(
       getEndpoint('auth', 'logout', '/api/auth/logout'),
       {},
@@ -1331,48 +1399,85 @@ const apiClient = {
   getUniverses: async (params = {}) => {
     console.log("API - Getting universes with params:", params);
 
-    // Check if we should use mock data
-    if (shouldUseMockData()) {
-      console.log("API - Using mock universes data based on shouldUseMockData");
-      // Create mock universes data
-      return createMockUniversesResponse();
-    }
-
-    // Get user info
+    // Get user info from localStorage
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
     const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+    let userId = null;
     let user = null;
 
     try {
       if (userStr) {
         user = JSON.parse(userStr);
+        userId = user.id;
       }
     } catch (e) {
       console.error("Error parsing user data:", e);
     }
 
     // Determine if this is a demo user by checking token or user ID
-    const isDemoUser = (token && token.toString().startsWith('demo')) ||
-      (user && user.id && (user.id.toString().includes('demo') || user.is_demo === true));
+    const isDemoUser = (token && token.toString().startsWith('demo-')) ||
+      (userId && userId.toString().includes('demo'));
 
-    // Ensure demo users have refresh tokens to prevent auth errors
-    if (isDemoUser && !localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY)) {
-      console.log("Creating missing refresh token for demo user");
-      const newRefreshToken = `demo-refresh-${Date.now()}-${Date.now() + 86400000}`;
-      localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, newRefreshToken);
-    }
-
-    // For demo users, ALWAYS return mock data without making API calls
+    // For demo users (detected by token starting with 'demo-'), always return mock data
     if (isDemoUser) {
-      console.log("API - Demo user detected, using mock data");
-      return createMockUniversesResponse(user);
+      console.log("API - Demo user detected, using mock universes data");
+
+      // If we don't have a user ID, create one
+      if (!userId) {
+        userId = `demo-${Date.now()}`;
+
+        // Create a mock user
+        user = {
+          id: userId,
+          username: 'demo_user',
+          email: 'demo@harmonic-universe.com',
+          firstName: 'Demo',
+          lastName: 'User',
+          role: 'user',
+          is_demo: true
+        };
+
+        // Store user data
+        localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(user));
+      }
+
+      // Create mock universes for this demo user
+      const mockUniverses = [
+        {
+          id: 1001,
+          user_id: userId,
+          name: "Demo Universe 1",
+          description: "A sample universe for exploring the application",
+          is_public: true,
+          created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+          updated_at: new Date().toISOString()
+        },
+        {
+          id: 1002,
+          user_id: userId,
+          name: "Demo Universe 2",
+          description: "Another sample universe with different properties",
+          is_public: false,
+          created_at: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+          updated_at: new Date(Date.now() - 86400000).toISOString() // 1 day ago
+        }
+      ];
+
+      return {
+        data: {
+          message: "Mock universes retrieved successfully",
+          universes: mockUniverses
+        },
+        status: 200
+      };
     }
 
-    // Only make API calls for non-demo users
+    // For non-demo users, make the actual API call
     try {
       console.log("Making real API call for authenticated user");
-      const endpoint = getEndpoint('universes', 'list', '/api/universes');
-      const response = await axiosInstance.get(endpoint, { params });
+      const endpoint = formatUrl('/api/universes');
+      const response = await _request('get', endpoint, null, { params });
+      console.log("API response for universes:", response);
       return response;
     } catch (error) {
       console.error("Error fetching universes:", {
@@ -1381,9 +1486,38 @@ const apiClient = {
         data: error.response?.data
       });
 
-      // Fall back to mock data if there was an error
-      console.log("API call failed, using fallback mock data");
-      return createMockUniversesResponse(user);
+      // If the error is 401 Unauthorized, check if we have a token
+      if (error.response?.status === 401 && token) {
+        console.log("Token unauthorized, refreshing and trying again");
+        try {
+          // Try refreshing the token
+          await refreshToken();
+
+          // Try the API call again with the new token
+          const endpoint = formatUrl('/api/universes');
+          const response = await _request('get', endpoint, null, { params });
+          return response;
+        } catch (refreshError) {
+          console.error("Failed to refresh token:", refreshError);
+          // Fall back to empty result
+          return {
+            data: {
+              message: "Could not authenticate user",
+              universes: []
+            },
+            status: 200
+          };
+        }
+      }
+
+      // Return empty result to prevent UI errors
+      return {
+        data: {
+          message: error.message || "Error fetching universes",
+          universes: []
+        },
+        status: 200
+      };
     }
   },
 

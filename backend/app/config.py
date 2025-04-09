@@ -77,7 +77,7 @@ class Config:
     CORS_HEADERS = ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With', 
                    'Access-Control-Allow-Credentials', 'Access-Control-Allow-Headers', 
                    'Access-Control-Allow-Methods', 'Access-Control-Allow-Origin',
-                   'Cache-Control', 'Pragma', 'X-CSRFToken']
+                   'Cache-Control', 'Pragma', 'X-CSRFToken', 'X-Demo-Mode']
     CORS_EXPOSE_HEADERS = ['Content-Length', 'Content-Type', 'Authorization', 'X-CSRFToken']
     CORS_MAX_AGE = 600
     CORS_SEND_WILDCARD = False  # Important for credentials

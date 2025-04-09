@@ -201,6 +201,20 @@ export const logout = createAsyncThunk(
         return null;
       }
 
+      // Get the token to check if it's a demo token
+      const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+      const isDemoToken = token && token.startsWith('demo-');
+
+      // For demo tokens, skip the API call and just clean up localStorage
+      if (isDemoToken) {
+        console.log("Logging out demo user - cleaning up demo session");
+        localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+        localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+        localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+        dispatch(logoutSuccess());
+        return null;
+      }
+
       // For normal logout, clear tokens from localStorage
       console.log("Normal logout - clearing auth data");
       localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
