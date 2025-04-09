@@ -1,119 +1,133 @@
 #!/usr/bin/env python3
 """
-Comprehensive database setup script for Harmonic Universe.
+Database setup script for Harmonic Universe.
 
 This script provides a single source of truth for database initialization.
-It combines functionality from:
-- init_db.py (table creation)
-- init_migrations.py (migration setup)
-- setup_db.py (database initialization)
+It handles migrations setup and database verification.
+
+PostgreSQL is required for all environments, especially production.
 
 Usage:
-  python setup_db.py              # Full setup (delete existing DB, init migrations, create tables)
-  python setup_db.py --no-reset   # Keep existing DB, just ensure tables and migrations
+  python setup_db.py              # Initialize database and apply migrations
+  python setup_db.py --reset      # Reset database (drop all tables) and recreate
+  python setup_db.py --init-only  # Only initialize migrations, don't attempt any database operations
 """
 
 import os
 import sys
 import argparse
-from dotenv import load_dotenv
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from pathlib import Path
+from sqlalchemy.exc import SQLAlchemyError
+from urllib.parse import urlparse
 
-def setup_database(reset_db=True):
+def setup_db(reset_db=False, init_only=False):
     """
-    Set up the database for the application.
+    Set up the database using PostgreSQL exclusively.
     
     Args:
-        reset_db: If True, deletes existing database and recreates it.
-                  If False, keeps existing database and just ensures tables exist.
+        reset_db (bool, optional): Whether to reset the database. Defaults to False.
+        init_only (bool, optional): Whether to only initialize migrations. Defaults to False.
     """
-    # Load environment variables
-    load_dotenv()
-    
-    # Ensure instance directory exists
-    instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
-    if not os.path.exists(instance_path):
-        os.makedirs(instance_path)
-        os.chmod(instance_path, 0o777)
-        print(f"Created instance directory: {instance_path}")
-    
-    # Database file path
-    db_path = os.path.join(instance_path, 'app.db')
-    
-    if reset_db:
-        # Remove existing database file if it exists
-        if os.path.exists(db_path):
-            os.remove(db_path)
-            print(f"Removed existing database: {db_path}")
-            
-        # Create empty database file with proper permissions
-        with open(db_path, 'w') as f:
-            pass
-        os.chmod(db_path, 0o666)
-        print(f"Created new database file: {db_path}")
-    else:
-        print(f"Using existing database: {db_path}")
-    
-    # Set SQLite database URL explicitly if not already set
+    # Load required packages
+    from app import create_app
+    from app.extensions import db
+
+    # Check if DATABASE_URL is set
     database_url = os.environ.get('DATABASE_URL')
+    
+    # Require PostgreSQL database
     if not database_url:
-        os.environ['DATABASE_URL'] = f'sqlite:///{db_path}'
-    # Fix for PostgreSQL URL format if needed
-    elif database_url.startswith('postgres://'):
-        os.environ['DATABASE_URL'] = database_url.replace('postgres://', 'postgresql://', 1)
+        print("ERROR: DATABASE_URL environment variable is not set.")
+        print("PostgreSQL is required for this application.")
+        print("Please set DATABASE_URL to a valid PostgreSQL connection string.")
+        sys.exit(1)
+        
+    # If PostgreSQL, ensure URL format is correct
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+        os.environ['DATABASE_URL'] = database_url
         print("Converted 'postgres://' to 'postgresql://' for SQLAlchemy compatibility")
     
-    # Import after setting DATABASE_URL
-    from flask_migrate import Migrate, init, migrate as create_migration, upgrade
-    from app import create_app
+    # Validate URL format
+    parsed_url = urlparse(database_url)
+    if parsed_url.scheme not in ('postgresql', 'postgres'):
+        print(f"ERROR: Unsupported database type: {parsed_url.scheme}")
+        print("Only PostgreSQL is supported.")
+        sys.exit(1)
     
-    # Create Flask application
+    print(f"Using PostgreSQL database: {parsed_url.netloc}")
+
+    # Create app with database configuration
     app = create_app()
     
-    # Get db reference from app
-    from app import db
-    
-    # Import all models to ensure they are registered with SQLAlchemy
-    from app.api.models import (
-        User, Note, Universe, Scene, Physics2D, Physics3D,
-        PhysicsObject, PhysicsConstraint, SoundProfile,
-        AudioSample, MusicPiece, Harmony, MusicalTheme,
-        Character
-    )
-    
-    # Initialize Flask-Migrate
-    migrate = Migrate(app, db)
-    
-    with app.app_context():
-        if reset_db:
-            # Remove existing migrations directory if it exists
-            migrations_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'migrations')
-            if os.path.exists(migrations_dir):
-                import shutil
-                shutil.rmtree(migrations_dir)
-                print(f"Removed existing migrations directory: {migrations_dir}")
-            
-            # Initialize migrations
-            init()
-            print("Initialized Flask-Migrate")
-            
-            # Create a new migration
-            create_migration(message='initial migration')
-            print("Created initial migration")
-            
-            # Apply the migration
-            upgrade()
-            print("Applied initial migration")
-        else:
-            # Create tables directly if they don't exist
-            db.create_all()
-            print("Ensured database tables exist")
-        
-        print("Database setup completed successfully!")
+    # If init_only, just initialize the migration environment
+    if init_only:
+        from flask_migrate import init, current
+        with app.app_context():
+            # Check if migrations are already initialized
+            migrations_dir = Path('migrations')
+            if migrations_dir.exists() and migrations_dir.is_dir():
+                print("Migrations directory already exists")
+            else:
+                print("Initializing migrations directory...")
+                init()
+                print("Migrations initialized successfully")
+        return True
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Set up the database for Harmonic Universe')
-    parser.add_argument('--no-reset', action='store_true', help='Do not reset the database')
+    with app.app_context():
+        # Handle database operations
+        if reset_db:
+            # For PostgreSQL: use SQLAlchemy to drop all tables
+            print(f"Dropping all tables from the PostgreSQL database...")
+            db.drop_all()
+            print("All tables dropped successfully.")
+
+        # Create database tables
+        print(f"Creating database tables...")
+        db.create_all()
+        print("Database tables created successfully.")
+
+        # Apply migrations
+        from flask_migrate import Migrate, upgrade, init, migrate
+        
+        # Initialize Migrate extension
+        migrate_obj = Migrate(app, db)
+        
+        # Check if migrations directory exists, if not initialize it
+        migrations_dir = Path('migrations')
+        if not migrations_dir.exists():
+            print("Initializing migrations directory...")
+            init()
+            print("Creating initial migration...")
+            migrate(message='Initial migration')
+        
+        # Apply migrations
+        try:
+            print("Applying database migrations...")
+            upgrade()
+            print("Database migrations applied successfully.")
+        except SQLAlchemyError as e:
+            print(f"WARNING: Failed to apply migrations: {str(e)}")
+            print("You may need to manually initialize and apply migrations:")
+            print("  flask db init       # If migrations directory doesn't exist")
+            print("  flask db migrate -m 'Initial migration'")
+            print("  flask db upgrade")
+            print()
+            print("For PostgreSQL users:")
+            print("  1. Make sure your database exists and is accessible")
+            print("  2. Check your DATABASE_URL in the .env file")
+            print("  3. Ensure you have permission to create/modify tables")
+            
+            # Don't exit with error as tables may have been created successfully
+            # even if migrations couldn't be applied
+
+    print("Database setup completed successfully.")
+    return True
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Set up the PostgreSQL database")
+    parser.add_argument("--reset", action="store_true", help="Reset the database (drop all tables)")
+    parser.add_argument("--init-only", action="store_true", help="Only initialize migrations")
     args = parser.parse_args()
     
-    setup_database(not args.no_reset) 
+    setup_db(reset_db=args.reset, init_only=args.init_only)

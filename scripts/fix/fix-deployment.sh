@@ -302,8 +302,10 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
 
-# Get database URL from environment or use SQLite as fallback
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./harmonic_universe.db")
+# Get database URL from environment, PostgreSQL required
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL environment variable is required. PostgreSQL is required for this application.")
 
 # Handle PostgreSQL scheme for SQLAlchemy when using Render
 if DATABASE_URL.startswith("postgres://"):

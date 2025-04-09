@@ -1,198 +1,112 @@
 # Harmonic Universe
 
-A full-stack application for creating and managing interactive harmonic universes. Create scenes, characters, and notes in your universe with rich editing features and physics-based sound generation.
+Welcome to the Harmonic Universe repository! This project is a collaborative physics playground designed for educational purposes.
 
-## Features
+## Overview
 
-- **Universe Management**: Create and manage multiple interactive universes
-- **Scene Editor**: Design scenes within your universes with detailed properties and relationships
-- **Character System**: Add characters to your universe and assign them to specific scenes
-- **Note Taking**: Create notes associated with universes, scenes, or characters
-- **Physics-Based Sound**: Generate sounds using physics principles within your universe
-- **Interactive Dashboard**: Visualize and manage your universe content from a central hub
-- **Demo User Login**: Quick access to try out the application without registration
-- **Responsive Design**: Seamless experience across desktop and mobile devices
+The Harmonic Universe is a platform that allows users to create, share, and interact with physical simulations in a 2D environment. Users can create "universes" with specific physics properties and build interactive scenes.
 
-## Tech Stack
+## Technology Stack
 
-### Frontend
+- **Backend**: Python/Flask
+- **Frontend**: React/JavaScript
+- **Database**: PostgreSQL (required for both development and production)
+- **Deployment**: Render.com
 
-- **React 18** with **Vite** for fast development and optimized builds
-- **Redux** and **Redux Toolkit** for state management
-- **React Router** for client-side routing
-- **Ant Design** and **Material UI** for UI components
-- **Axios** for API requests
-- **Three.js** for 3D visualizations
-- **Tone.js** for audio generation
+## Repository Structure
 
-### Backend
+- `/frontend` - React JavaScript frontend application
+- `/backend` - Flask Python backend API
+- `/scripts` - Utility scripts for development and deployment
+- `/docs` - Documentation files
 
-- **Flask** web framework
-- **SQLAlchemy ORM** for database operations
-- **Flask-JWT-Extended** for authentication
-- **PostgreSQL** for production and **SQLite** for development
-- **Flask-Migrate** for database migrations
-- **Flask-SocketIO** for real-time communication
+## Getting Started
 
-## Prerequisites
+### Prerequisites
 
-- Node.js (v16 or higher)
-- Python (v3.11 or higher recommended, minimum v3.8)
-- npm (Node package manager)
-- pip (Python package manager)
+- Node.js 18+
+- Python 3.11+
+- PostgreSQL (required - this project does not support SQLite)
+- Redis (optional, for rate limiting)
 
-## Installation
+### Installation
 
 1. Clone the repository:
 
-```bash
-git clone https://github.com/JeyHightower/Harmonic-Universe.git
-cd Harmonic-Universe
-```
+   ```bash
+   git clone https://github.com/yourusername/harmonic-universe.git
+   cd harmonic-universe
+   ```
 
-2. Install frontend dependencies:
+2. Set up the backend:
 
-```bash
-cd frontend
-npm install
-cd ..
-```
+   ```bash
+   cd backend
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
 
-3. Install backend dependencies:
+3. Set up the PostgreSQL database:
 
-```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
-pip install -r requirements.txt
-cd ..
-```
+   ```bash
+   # Create a PostgreSQL database
+   createdb harmonic_universe  # If using local PostgreSQL
 
-4. Set up environment variables:
+   # Update .env file with PostgreSQL connection string
+   # DATABASE_URL=postgresql://postgres:password@localhost:5432/harmonic_universe
 
-Create a `.env` file in the backend directory with the following variables:
+   # Run the setup script
+   python setup_db.py
+   ```
 
-```env
-FLASK_APP=wsgi.py
-FLASK_ENV=development
-SECRET_KEY=your-secret-key
-JWT_SECRET_KEY=your-jwt-secret-key
-DATABASE_URL=sqlite:///app.db
-CORS_ORIGINS=http://localhost:5173
-```
+4. Start the backend server:
 
-Create a `.env` file in the frontend directory with:
+   ```bash
+   python run.py
+   ```
 
-```env
-VITE_API_BASE_URL=http://localhost:5001
-```
+5. Set up the frontend:
+
+   ```bash
+   cd ../frontend
+   npm install
+   ```
+
+6. Start the frontend development server:
+
+   ```bash
+   npm run dev
+   ```
+
+7. Open your browser and navigate to http://localhost:5173
 
 ## Development
 
-To run both frontend and backend servers in development mode:
+Please see the README files in the `/frontend` and `/backend` directories for detailed development instructions.
 
-### Backend:
+## Database Configuration
 
-```bash
-cd backend
-source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
-python run.py
-```
+This project requires PostgreSQL for both development and production environments. SQLite is not supported.
 
-The backend will run on http://localhost:5001
-
-### Frontend:
-
-```bash
-cd frontend
-npm run dev
-```
-
-The frontend will run on http://localhost:5173
-
-## API Documentation
-
-The application provides a RESTful API for interacting with universes, scenes, characters, and notes. For detailed API documentation, see:
-
-- [API Documentation](docs/api/README.md) - Primary API reference
-- [Physics API](docs/frontend/api/PHYSICS_API.md) - Physics-related API endpoints
-- [WebSocket Protocol](docs/frontend/api/WEBSOCKET_PROTOCOL.md) - Real-time communication
-
-## Production Deployment
-
-The application is configured for deployment on Render.com using the provided scripts:
-
-- `render-build.sh`: Builds both frontend and backend for production
-- `render-start.sh`: Starts the production application
-- `render.yaml`: Blueprint configuration for automated deployment
-
-### Deployment Options:
-
-#### 1. Blueprint Deployment (Recommended)
-
-Use Render.com's Blueprint feature to deploy the entire stack with a single click:
-
-1. Connect your repository to Render
-2. Select "Blueprint" deployment
-3. Let Render create all necessary services based on the `render.yaml` configuration
-
-#### 2. Manual Deployment
-
-1. Push your code to a Git repository
-2. Create a new Web Service on Render
-3. Connect to your repository
-4. Set build command to `./render-build.sh`
-5. Set start command to `./render-start.sh`
-6. Add necessary environment variables (see `docs/RENDER_DEPLOYMENT.md`)
-
-See `docs/RENDER_DEPLOYMENT.md` for more detailed deployment instructions.
-
-## Project Structure
+### Local Development
 
 ```
-harmonic-universe/
-├── frontend/           # React frontend
-│   ├── src/            # Source files
-│   │   ├── components/ # React components
-│   │   ├── features/   # Feature components
-│   │   ├── pages/      # Page components
-│   │   ├── store/      # Redux store
-│   │   ├── services/   # API services
-│   │   └── utils/      # Utility functions
-│   ├── public/         # Static files
-│   └── package.json    # Frontend dependencies
-├── backend/            # Flask backend
-│   ├── app/            # Application code
-│   │   ├── api/        # API routes and models
-│   │   │   ├── models/ # Database models
-│   │   │   └── routes/ # API routes
-│   │   ├── __init__.py # Application factory
-│   │   ├── config.py   # Configuration settings
-│   │   └── extensions.py # Flask extensions
-│   ├── fixes/          # Deployment fixes (for Render)
-│   ├── static/         # Static files (consolidated)
-│   ├── run.py          # Development server script
-│   ├── wsgi.py         # Production WSGI entry point
-│   ├── app.py          # Backward compatibility layer
-│   ├── render-build.sh # Build script for Render
-│   └── render-start.sh # Start script for Render
-├── docs/               # Documentation
-├── render.yaml         # Render.com blueprint configuration
-└── README.md           # Project documentation
+DATABASE_URL=postgresql://postgres:password@localhost:5432/harmonic_universe
 ```
 
-## Troubleshooting
+### Production (Render.com)
 
-For common issues and their solutions, see `docs/FIXES-README.md`.
+The PostgreSQL database is automatically configured in the `render.yaml` file.
 
-## Contributing
+## Deployment
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+The application can be deployed to Render.com using the provided `render.yaml` configuration file.
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgements
+
+This project was created by the App Academy Capstone Team.

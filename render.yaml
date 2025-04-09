@@ -12,7 +12,9 @@ services:
       - key: FLASK_APP
         value: "backend/wsgi.py"
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: harmonic-universe-db
+          property: connectionString
       - key: PYTHONPATH
         value: "."
       - key: PYTHON_VERSION
@@ -38,25 +40,27 @@ services:
       - key: VITE_API_URL
         value: "https://harmonic-universe-z5ka.onrender.com/api"
     region: ohio
-    buildCommand: |
-      # Install dependencies
-      npm install
-
-      # Build the frontend
-      npm run build
-
-      # Install Python dependencies
-      pip install -r backend/requirements.txt
-
-      # Run database migrations if needed
-      if [ -d "migrations" ]; then
-        flask db upgrade
-      fi
-
-      # Seed the database if needed
-      if [ -d "backend/seeds" ]; then
-        flask seed all
-      fi
+    buildCommand: chmod +x render-build.sh && ./render-build.sh
     startCommand: |
       cd backend && gunicorn --worker-class eventlet -w 1 wsgi:app
+
+  # PostgreSQL Database
+  - type: pserv
+    name: harmonic-universe-db
+    plan: free
+    region: ohio
+    env: postgresql
+    disk:
+      name: database-data
+      mountPath: /var/lib/postgresql/data
+      sizeGB: 1
+
+databases:
+  - name: harmonic-universe-db
+    plan: free
+    region: ohio
+    databaseName: harmonic_universe
+    user: harmonic_user
+    ipAllowList: [] # Allow connections from all IPs
+
 version: "1"
