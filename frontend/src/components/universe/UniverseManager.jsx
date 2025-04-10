@@ -15,7 +15,7 @@ import Icon from "../common/Icon";
 import Modal from "../common/Modal";
 import Spinner from "../common/Spinner";
 import "../../styles/Universe.css";
-import UniverseModal from "./UniverseModal";
+import { UniverseModalFinal } from "./";
 
 const UniverseManager = () => {
   const dispatch = useDispatch();
@@ -195,12 +195,12 @@ const UniverseManager = () => {
         width="800px"
       >
         {isModalVisible && (
-          <UniverseModal
-            universeId={selectedUniverse?.id}
-            initialData={selectedUniverse}
-            mode={modalMode}
+          <UniverseModalFinal
+            isOpen={true}
             onClose={handleModalClose}
             onSuccess={handleModalSuccess}
+            universe={selectedUniverse}
+            isEdit={modalMode === 'edit'}
           />
         )}
       </Modal>

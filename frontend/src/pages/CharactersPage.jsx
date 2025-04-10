@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, Navigate } from "react-router-dom";
 import {
   Container,
@@ -14,6 +14,9 @@ import {
   Alert,
   TextField,
   InputAdornment,
+  CardMedia,
+  CardHeader,
+  Chip,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -23,7 +26,7 @@ import {
   Search as SearchIcon,
   ArrowBack as ArrowBackIcon,
 } from "@mui/icons-material";
-import { CharacterFormModal } from "../components/modals";
+import { CharacterFormModalComponent } from "../components/consolidated";
 import apiClient from "../services/api";
 import "../components/characters/Characters.css";
 import { useDispatch, useSelector } from "react-redux";
@@ -513,15 +516,17 @@ const CharactersPageContent = ({ universeId }) => {
         </Grid>
       )}
 
-      <CharacterFormModal
-        isOpen={modalOpen}
-        onClose={handleModalClose}
-        characterId={selectedCharacterId}
-        universeId={Number(safeUniverseId)}
-        type={modalType}
-        onSuccess={handleCharacterSuccess}
-        availableScenes={scenes}
-      />
+      {modalOpen && (
+        <CharacterFormModalComponent
+          open={modalOpen}
+          onClose={handleModalClose}
+          characterId={selectedCharacterId}
+          universeId={Number(safeUniverseId)}
+          mode={modalType}
+          onSuccess={handleCharacterSuccess}
+          availableScenes={scenes}
+        />
+      )}
     </Container>
   );
 };

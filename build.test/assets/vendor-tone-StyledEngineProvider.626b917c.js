@@ -1,0 +1,1 @@
+import{j as e,f as o}from"./vendor-react-core.73efc664.js";import{c as r}from"./vendor-emotion-core.fcf170e6.js";let t;function c(r){const{injectFirst:c,children:n}=r;return c&&t?e.jsx(o,{value:t,children:n}):n}"object"==typeof document&&(t=r({key:"css",prepend:!0}));export{c as S};

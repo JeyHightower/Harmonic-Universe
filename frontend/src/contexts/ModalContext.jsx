@@ -17,7 +17,7 @@ import {
   getModalAnimationStyles,
   getModalPositionStyles,
 } from "../utils/config";
-import { getModalComponent } from "../utils/modalRegistry";
+import modalRegistry from "../utils/modalRegistry";
 import {
   selectModalState,
   selectIsModalOpen,
@@ -57,7 +57,7 @@ const ModalRenderer = ({ type, props, onClose }) => {
     const loadModalComponent = async () => {
       console.log("ModalRenderer: Loading component for modal type:", type);
       try {
-        const component = await getModalComponent(type);
+        const component = await modalRegistry.getModalComponent(type);
         if (component) {
           console.log(
             "ModalRenderer: Successfully loaded component for type:",
@@ -104,7 +104,12 @@ const ModalRenderer = ({ type, props, onClose }) => {
   const modalProps = {
     ...props,
     // If this is a SceneModalHandler (SCENE_FORM type), pass modalType
-    ...(type === "SCENE_FORM" && { modalType: props.modalType || "create" }),
+    ...(type === "SCENE_FORM" && { 
+      modalType: props.modalType || "create",
+      // For consolidated component - map to its expected prop names
+      mode: props.modalType || "create",
+      open: true
+    }),
   };
 
   return (

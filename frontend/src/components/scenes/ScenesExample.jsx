@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Button, Card, List, Typography, Space, message } from "antd";
 import useSceneModal from "../../hooks/useSceneModal";
-import SceneModalHandler from "./SceneModalHandler";
-import SceneCard from "./SceneCard";
+import { SceneModalHandler, SceneCard } from "./";
 import apiClient from "../../services/api";
 
 const { Title } = Typography;
@@ -124,7 +123,7 @@ const ScenesExample = ({ universeId }) => {
         <SceneModalHandler
           isOpen={isOpen}
           onClose={closeModal}
-          modalType={modalType}
+          mode={modalType}
           universeId={modalData.universeId}
           sceneId={modalData.sceneId}
           initialData={modalData.initialData}

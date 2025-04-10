@@ -45,6 +45,11 @@ const universeEndpoints = {
   physics: (id) => `${API_VERSION}/universes/${id}/physics`,
   audio: (id) => `${API_VERSION}/universes/${id}/audio`,
   visualization: (id) => `${API_VERSION}/universes/${id}/visualization`,
+  generateMusic: (id) => `${API_VERSION}/universes/${id}/generate-music`,
+  saveMusic: (id) => `${API_VERSION}/universes/${id}/save-music`,
+  downloadMusic: (id) => `${API_VERSION}/universes/${id}/download-music`,
+  getMusic: (id, musicId) => `${API_VERSION}/universes/${id}/music/${musicId}`,
+  deleteMusic: (id, musicId) => `${API_VERSION}/universes/${id}/music/${musicId}`,
   scenes: (id) => {
     // Log a deprecation warning
     console.warn(
@@ -167,6 +172,11 @@ export const universesEndpoints = {
   createUniverse: `${API_VERSION}/universes`,
   updateUniverse: (id) => `${API_VERSION}/universes/${id}`,
   deleteUniverse: (id) => `${API_VERSION}/universes/${id}`,
+  generateMusic: (id) => `${API_VERSION}/universes/${id}/generate-music`,
+  saveMusic: (id) => `${API_VERSION}/universes/${id}/save-music`,
+  downloadMusic: (id) => `${API_VERSION}/universes/${id}/download-music`,
+  getMusic: (id, musicId) => `${API_VERSION}/universes/${id}/music/${musicId}`,
+  deleteMusic: (id, musicId) => `${API_VERSION}/universes/${id}/music/${musicId}`,
   getUniverseScenes: (id) => {
     // Log a deprecation warning
     console.warn(

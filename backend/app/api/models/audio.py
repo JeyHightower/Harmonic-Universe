@@ -1,5 +1,6 @@
 from ...extensions import db
 from .base import BaseModel
+from datetime import datetime
 
 class SoundProfile(BaseModel):
     __tablename__ = 'sound_profiles'
@@ -213,5 +214,51 @@ class MusicalTheme(BaseModel):
             'motif': self.motif,
             'created_at': str(self.created_at) if self.created_at else None,
             'updated_at': str(self.updated_at) if self.updated_at else None,
+            'is_deleted': self.is_deleted
+        }
+
+class Music(BaseModel):
+    """Model for storing music settings and data"""
+    __tablename__ = 'music'
+
+    name = db.Column(db.String(100), nullable=False, index=True)
+    description = db.Column(db.Text)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), nullable=False, index=True)
+    scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id', ondelete='CASCADE'), index=True)
+    music_data = db.Column(db.JSON, nullable=False)  # Store generated music data
+    algorithm = db.Column(db.String(50), default='harmonic_synthesis')  # Type of algorithm used
+    tempo = db.Column(db.Integer, default=120)  # BPM
+    key = db.Column(db.String(10), default='C')  # Musical key (C, D, E, etc.)
+    scale = db.Column(db.String(20), default='major')  # Scale (major, minor, pentatonic, etc.)
+    parameters = db.Column(db.JSON)  # Store algorithm-specific parameters
+    audio_url = db.Column(db.String(255))  # URL to generated audio file if available
+    
+    def validate(self):
+        """Validates the Music data"""
+        if not self.name:
+            raise ValueError("Name is required")
+        if not self.music_data:
+            raise ValueError("Music data is required")
+        return True
+        
+    def to_dict(self):
+        """Convert instance to dictionary"""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'user_id': self.user_id,
+            'universe_id': self.universe_id,
+            'scene_id': self.scene_id,
+            'music_data': self.music_data,
+            'algorithm': self.algorithm,
+            'tempo': self.tempo,
+            'key': self.key,
+            'scale': self.scale,
+            'parameters': self.parameters,
+            'audio_url': self.audio_url,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'is_deleted': self.is_deleted
         } 

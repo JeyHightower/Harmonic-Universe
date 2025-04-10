@@ -26,7 +26,7 @@ import {
   ArrowBack as ArrowBackIcon,
   Label as LabelIcon,
 } from "@mui/icons-material";
-import { NoteFormModal } from "../components/modals";
+import { NoteFormModal } from "../components/note";
 import apiClient from "../services/api";
 import "../components/note/Notes.css";
 

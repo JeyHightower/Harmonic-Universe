@@ -10,5 +10,6 @@ from .update_routes import *
 from .delete_routes import *
 from .related_routes import *
 from .repair_routes import *
+from .music_routes import *
 
 # All routes are already registered with universes_bp in their respective modules 

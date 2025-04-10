@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App";
+import App from "./App.jsx";
 // CSS imports in correct order to prevent conflicts
 import "./styles/reset.css"; // First: Reset browser defaults
 import "./styles/variables.css"; // Second: Define CSS variables
@@ -8,19 +8,61 @@ import "./styles/theme.css"; // Third: Define theme variables
 import "./styles/global.css"; // Fourth: Global styles
 import "./styles/common.css"; // Fifth: Common component styles
 import "./styles/buttons.css"; // Sixth: Button styles
-// import "./styles/modal.css"; // Seventh: Modal styles - commented out as it may not exist
-import "./styles/index.css"; // Eighth: Additional global styles
-// App.css comes last so it can override component-specific styles if needed
-import "./styles/App.css";
+import "./styles/index.css"; // Seventh: Additional global styles
+import "./styles/App.css"; // Last: App-specific styles
 import { ensurePortalRoot } from "./utils/portalUtils";
 import { AUTH_CONFIG } from "./utils/config";
 
-// Environment setup
-const isLocal =
-  window.location.hostname === "localhost" ||
-  window.location.hostname === "127.0.0.1";
-const isDev = process.env.NODE_ENV === "development";
-const isProd = process.env.NODE_ENV === "production";
+// Setup global error handling
+const handleGlobalError = (error, info) => {
+  console.error('Global error caught:', error);
+  console.error('Error info:', info);
+
+  // Send error to monitoring service (if implemented)
+  try {
+    // Example: errorMonitoringService.reportError(error);
+    localStorage.setItem('lastError', JSON.stringify({
+      message: error.message,
+      stack: error.stack,
+      time: new Date().toISOString()
+    }));
+  } catch (e) {
+    console.error('Error reporting failure:', e);
+  }
+};
+
+// Detect environment
+const isProduction = import.meta.env.PROD;
+const isDevelopment = import.meta.env.DEV;
+
+// Basic environment configuration
+if (isDevelopment) {
+  console.info('Running in development mode');
+} else if (isProduction) {
+  // In production, silence console logs but keep errors
+  const originalConsoleLog = console.log;
+  const originalConsoleInfo = console.info;
+  
+  // Silence non-critical logs in production
+  console.log = (...args) => {
+    if (localStorage.getItem('debug') === 'true') {
+      originalConsoleLog(...args);
+    }
+  };
+  
+  console.info = (...args) => {
+    if (localStorage.getItem('debug') === 'true') {
+      originalConsoleInfo(...args);
+    }
+  };
+}
+
+// Add polyfill for structuredClone if needed
+if (typeof window.structuredClone !== 'function') {
+  window.structuredClone = (obj) => {
+    return JSON.parse(JSON.stringify(obj));
+  };
+}
 
 // Setup storage event listener for auth sync across tabs
 window.addEventListener("storage", (event) => {
@@ -39,32 +81,6 @@ window.addEventListener("storage", (event) => {
   }
 });
 
-// Log environment
-if (isDev) {
-  console.log(
-    `Running in ${isLocal ? "local" : ""} ${isDev ? "development" : ""} mode`
-  );
-}
-
-// Setup error handling
-window.onerror = function (message, source, lineno, colno, error) {
-  console.error("Global error caught", {
-    message,
-    source,
-    lineno,
-    colno,
-    error,
-  });
-
-  // Optionally send to error tracking service in production
-  if (isProd) {
-    // Example: errorTrackingService.logError(error);
-  }
-
-  // Don't prevent default error handling
-  return false;
-};
-
 // Get or create the root element
 const getRootElement = () => {
   let rootElement = document.getElementById("root");
@@ -77,14 +93,11 @@ const getRootElement = () => {
   return rootElement;
 };
 
-// Render application with fallbacks
+// Render application
 const renderApp = () => {
-  console.log("Initializing Harmonic Universe application...");
-
   // Ensure portal root exists before rendering
   try {
-    const portalRoot = ensurePortalRoot();
-    console.log("Portal root initialized:", portalRoot);
+    ensurePortalRoot();
   } catch (error) {
     console.error("Error initializing portal root:", error);
   }
@@ -97,13 +110,11 @@ const renderApp = () => {
         <App />
       </React.StrictMode>
     );
-    console.log("Application mounted successfully");
   } catch (error) {
     console.error("Error rendering with React 18 API:", error);
 
     // Fallback to simple rendering
     try {
-      const appElement = React.createElement(App);
       const rootDiv = getRootElement();
       rootDiv.innerHTML = "";
 
@@ -112,8 +123,6 @@ const renderApp = () => {
       message.innerHTML =
         "<h1>Harmonic Universe</h1><p>Application is loading...</p>";
       rootDiv.appendChild(message);
-
-      console.log("App rendered with fallback method");
     } catch (fallbackError) {
       console.error("Complete render failure:", fallbackError);
       getRootElement().innerHTML =
@@ -125,28 +134,12 @@ const renderApp = () => {
 // Initialize the application
 const init = async () => {
   try {
-    console.log("Initializing Harmonic Universe application...");
-
-    // Log the current location for debugging routing issues
-    console.log(`Current location: ${window.location.pathname}`);
-
-    // Check for scenes edit path specifically
-    if (
-      window.location.pathname.includes("/scenes/") &&
-      window.location.pathname.includes("/edit")
-    ) {
-      console.log("Scene edit path detected. Ensuring proper routing...");
-    }
-
     // Initialize portal root
     const portalRoot = document.getElementById("portal-root");
     if (!portalRoot) {
       const newPortalRoot = document.createElement("div");
       newPortalRoot.id = "portal-root";
       document.body.appendChild(newPortalRoot);
-      console.log("Portal root created dynamically");
-    } else {
-      console.log("Portal root initialized:", portalRoot);
     }
 
     // Render the application

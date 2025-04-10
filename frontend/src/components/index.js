@@ -66,12 +66,12 @@ export const ModalComponents = {
 
 // Lazy loaded component groups - these will only be loaded when needed
 export const MusicComponents = {
-  MusicPlayer: React.lazy(() => import("./music/MusicPlayer")),
-  MusicGenerationModal: React.lazy(() => import("./music/MusicGenerationModal")),
+  MusicPlayer: React.lazy(() => import("./music/MusicPlayerComponent")),
+  MusicGenerationModal: React.lazy(() => import("./consolidated/MusicModalComponent")),
   MusicVisualizer3D: React.lazy(() => import("./music/MusicVisualizer3D")),
-  MusicModal: React.lazy(() => import("./music/MusicModal")),
-  AudioDetailsModal: React.lazy(() => import("./music/AudioDetailsModal")),
-  AudioGenerationModal: React.lazy(() => import("./music/AudioGenerationModal")),
+  MusicModal: React.lazy(() => import("./consolidated/MusicModalComponent")),
+  AudioDetailsModal: React.lazy(() => import("./consolidated/AudioDetailsModalFinal")),
+  AudioGenerationModal: React.lazy(() => import("./consolidated/AudioGenerationModalFinal")),
 };
 
 export const PhysicsComponents = {

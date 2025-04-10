@@ -256,7 +256,8 @@ const UniverseDetail = () => {
           isOpen={isEditModalOpen}
           onClose={handleEditModalClose}
           onSuccess={handleEditSuccess}
-          initialData={currentUniverse}
+          universe={currentUniverse}
+          isEdit={true}
         />
       )}
 
@@ -275,7 +276,7 @@ const UniverseDetail = () => {
           onClose={() => setIsCreateSceneModalOpen(false)}
           onSuccess={handleCreateSceneSuccess}
           universeId={id}
-          modalType="create"
+          mode="create"
         />
       )}
 
@@ -287,7 +288,7 @@ const UniverseDetail = () => {
           onSuccess={handleEditSceneSuccess}
           initialData={sceneToEdit}
           universeId={id}
-          modalType="edit"
+          mode="edit"
           sceneId={sceneToEdit.id}
         />
       )}

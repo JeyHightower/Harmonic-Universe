@@ -5,8 +5,7 @@ import { Button } from "../common";
 import { fetchUniverses } from "../../store/thunks/universeThunks";
 import "../../styles/UniverseList.css";
 import UniverseCard from "./UniverseCard";
-import UniverseDeleteModal from "./UniverseDeleteModal";
-import UniverseFormModal from "./UniverseFormModal";
+import { UniverseModalFinal, UniverseDeleteModalFinal } from "./";
 
 const UniverseList = () => {
   const dispatch = useDispatch();
@@ -178,15 +177,16 @@ const UniverseList = () => {
       )}
 
       {isCreateModalOpen && (
-        <UniverseFormModal
+        <UniverseModalFinal
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
           onSuccess={handleCreateSuccess}
+          isEdit={false}
         />
       )}
 
       {universeToDelete && (
-        <UniverseDeleteModal
+        <UniverseDeleteModalFinal
           isOpen={!!universeToDelete}
           onClose={() => setUniverseToDelete(null)}
           onSuccess={handleDeleteSuccess}

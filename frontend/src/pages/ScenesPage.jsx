@@ -29,7 +29,7 @@ import {
   fetchScenes,
   deleteScene,
 } from "../store/thunks/consolidated/scenesThunks";
-import { SceneFormModal } from "../components/modals";
+import { SceneModalHandler } from "../components/scenes";
 
 // Create a wrapper component that handles redirection logic
 const ScenesPageWrapper = () => {
@@ -482,14 +482,14 @@ const ScenesPageContent = ({ universeId }) => {
       )}
 
       {modalOpen && (
-        <SceneFormModal
-          isOpen={modalOpen}
+        <SceneModalHandler
+          open={modalOpen}
           onClose={handleModalClose}
           universeId={safeUniverseId}
           sceneId={selectedSceneId}
-          modalType={modalType}
-          onSuccess={(type, data) => {
-            console.log(`Scene ${type} successful:`, data);
+          mode={modalType}
+          onSuccess={(data) => {
+            console.log(`Scene ${modalType} successful:`, data);
             // Refresh scenes list
             dispatch(fetchScenes(safeUniverseId));
           }}

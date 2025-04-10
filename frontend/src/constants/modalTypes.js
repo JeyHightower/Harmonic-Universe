@@ -19,6 +19,14 @@ export const MODAL_TYPES = {
 
   // Character modals
   CHARACTER_FORM: "CHARACTER_FORM",
+  
+  // Music modals
+  MUSIC_CREATE: "music-create",
+  MUSIC_VIEW: "music-view",
+  MUSIC_EDIT: "music-edit",
+  MUSIC_DELETE: "music-delete",
+  MUSIC_GENERATE: "audio-generate", // Legacy name for backward compatibility
+  MUSIC_DETAILS: "audio-details",   // Legacy name for backward compatibility
 };
 
 /**
@@ -36,6 +44,12 @@ export const getModalDisplayName = (type) => {
     [MODAL_TYPES.UNIVERSE_CREATE]: "Create Universe",
     [MODAL_TYPES.SCENE_FORM]: "Create Scene",
     [MODAL_TYPES.CHARACTER_FORM]: "Character",
+    [MODAL_TYPES.MUSIC_CREATE]: "Create Music",
+    [MODAL_TYPES.MUSIC_VIEW]: "View Music",
+    [MODAL_TYPES.MUSIC_EDIT]: "Edit Music",
+    [MODAL_TYPES.MUSIC_DELETE]: "Delete Music",
+    [MODAL_TYPES.MUSIC_GENERATE]: "Generate Music",
+    [MODAL_TYPES.MUSIC_DETAILS]: "Music Details",
   };
 
   return displayNames[type] || type;
@@ -56,6 +70,12 @@ export const getModalIcon = (type) => {
     [MODAL_TYPES.UNIVERSE_CREATE]: "plus-circle",
     [MODAL_TYPES.SCENE_FORM]: "film",
     [MODAL_TYPES.CHARACTER_FORM]: "user",
+    [MODAL_TYPES.MUSIC_CREATE]: "music-note",
+    [MODAL_TYPES.MUSIC_VIEW]: "music-note",
+    [MODAL_TYPES.MUSIC_EDIT]: "edit",
+    [MODAL_TYPES.MUSIC_DELETE]: "delete",
+    [MODAL_TYPES.MUSIC_GENERATE]: "music-note-plus",
+    [MODAL_TYPES.MUSIC_DETAILS]: "music-note",
   };
 
   return icons[type] || "question-circle";
@@ -76,6 +96,12 @@ export const getModalDescription = (type) => {
     [MODAL_TYPES.UNIVERSE_CREATE]: "Create a new musical universe",
     [MODAL_TYPES.SCENE_FORM]: "Create a new scene in your universe",
     [MODAL_TYPES.CHARACTER_FORM]: "Create or edit a character",
+    [MODAL_TYPES.MUSIC_CREATE]: "Create new music for your universe",
+    [MODAL_TYPES.MUSIC_VIEW]: "View and play music from your universe",
+    [MODAL_TYPES.MUSIC_EDIT]: "Edit music settings and parameters",
+    [MODAL_TYPES.MUSIC_DELETE]: "Delete music from your universe",
+    [MODAL_TYPES.MUSIC_GENERATE]: "Generate new music using AI",
+    [MODAL_TYPES.MUSIC_DETAILS]: "View detailed information about music",
   };
 
   return descriptions[type] || "";

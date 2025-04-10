@@ -483,6 +483,7 @@ const getManualChunks = (id) => {
 export default defineConfig({
   plugins: [react(), splitVendorChunkPlugin()],
   base: '/',
+  root: path.resolve(__dirname),
 
   define: {
     'process.env.NODE_ENV': JSON.stringify(isProd ? 'production' : 'development'),
