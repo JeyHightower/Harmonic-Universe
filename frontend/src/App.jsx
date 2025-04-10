@@ -2,13 +2,13 @@ import React, { useState, useEffect, Suspense, useTransition, lazy } from "react
 import { Routes, Route, BrowserRouter, Navigate } from "react-router-dom";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
-import store, { persistor } from "./store/store";
+import store, { persistor } from "./store";
 import { useSelector, useDispatch } from "react-redux";
 import { Navigation } from "./components";
 import ModalProvider from "./components/modals/ModalProvider";
 import routes from "./routes/index.jsx";
 import { checkAuthState } from "./store/slices/authSlice";
-import { AUTH_CONFIG } from "./utils/config";
+import { AUTH_CONFIG } from "./utils";
 import "./styles"; // Import all styles
 
 // Loading component for Suspense fallback

@@ -1,5 +1,5 @@
 // Store configuration
-export { default as store } from './store';
+export { default, persistor } from './store';
 
 // Slices
 export { default as authReducer } from './slices/authSlice';
@@ -11,85 +11,50 @@ export { default as physicsParametersReducer } from './slices/physicsParametersS
 export { default as scenesReducer } from './slices/scenesSlice';
 export { default as universeReducer } from './slices/universeSlice';
 
-// Exports from auth slice
+// Actions from slices
 export {
-  setUser,
-  clearUser,
-  setAuthError,
-  clearAuthError,
-  setLoading,
-  clearLoading,
+  // Auth actions
+  setUser, clearUser, setAuthError, clearAuthError, setLoading, clearLoading,
 } from './slices/authSlice';
 
-// Exports from character slice
 export {
-  setCharacters,
-  setCurrentCharacter,
-  addCharacter,
-  updateCharacterAction as updateCharacter,
-  deleteCharacterAction as deleteCharacter,
-  setCharacterError,
-  openModal,
-  closeModal,
-  clearError,
-  clearSuccess,
-  clearCharacters,
-  clearCurrentCharacter,
+  // Character actions
+  setCharacters, setCurrentCharacter, addCharacter,
+  updateCharacterAction as updateCharacter, deleteCharacterAction as deleteCharacter,
+  setCharacterError, clearError, clearSuccess, clearCharacters, clearCurrentCharacter,
 } from './slices/characterSlice';
 
-// Exports from modal slice
 export {
-  openModal as openModalAction,
-  closeModal as closeModalAction,
-  setModalData,
+  // Modal actions
+  openModal as openModalAction, closeModal as closeModalAction, setModalData,
 } from './slices/modalSlice';
 
-// Exports from note slice
 export {
-  setNotes,
-  setCurrentNote,
-  addNote,
-  updateNote,
-  deleteNote,
-  setNoteError,
+  // Note actions
+  setNotes, setCurrentNote, addNote, updateNote, deleteNote, setNoteError,
 } from './slices/noteSlice';
 
-// Exports from physics objects slice
 export {
-  setPhysicsObjects,
-  addPhysicsObject,
-  updatePhysicsObject,
-  deletePhysicsObject,
-  setCurrentPhysicsObject,
-  setPhysicsObjectsError,
+  // Physics objects actions
+  setPhysicsObjects, addPhysicsObject, updatePhysicsObject, deletePhysicsObject,
+  setCurrentPhysicsObject, setPhysicsObjectsError,
 } from './slices/physicsObjectsSlice';
 
-// Exports from physics parameters slice
 export {
-  setPhysicsParameters,
-  updatePhysicsParameters,
-  setPhysicsParametersError,
+  // Physics parameters actions
+  setPhysicsParameters, updatePhysicsParameters, setPhysicsParametersError,
 } from './slices/physicsParametersSlice';
 
-// Exports from scenes slice
 export {
-  clearSceneError,
-  clearSceneSuccess,
-  resetSceneState,
-  setError as setSceneError,
-  setCurrentScene,
-  addScene,
-  addLocallyCreatedScene,
+  // Scene actions
+  clearSceneError, clearSceneSuccess, resetSceneState,
+  setError as setSceneError, setCurrentScene, addScene, addLocallyCreatedScene,
 } from './slices/scenesSlice';
 
-// Exports from universe slice
 export {
-  setUniverses,
-  setCurrentUniverse,
-  addUniverse,
-  updateUniverse as updateUniverseAction,
-  deleteUniverse as deleteUniverseAction,
-  setUniverseError,
+  // Universe actions
+  setUniverses, setCurrentUniverse, addUniverse,
+  updateUniverse as updateUniverseAction, deleteUniverse as deleteUniverseAction, setUniverseError,
 } from './slices/universeSlice';
 
 // Thunks

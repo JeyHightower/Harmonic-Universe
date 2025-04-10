@@ -29,12 +29,30 @@ import {
   updateCharacter,
   deleteCharacter,
 } from "../../store/thunks/characterThunks";
-import {
-  getCachedCharacter,
-  cacheCharacter,
-  getCachedScenes,
-  cacheScenes
-} from "../../utils/cacheUtils";
+import { cache } from "../../utils";
+
+// Cache constants for characters and scenes
+const CHARACTER_CACHE_KEY = "character_cache";
+const CHARACTER_CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+const SCENE_CACHE_KEY = "scene_cache";
+const SCENE_CACHE_TTL = 10 * 60 * 1000; // 10 minutes in milliseconds
+
+// Cache helper functions for backward compatibility
+const getCachedCharacter = (characterId) => {
+  return cache.get(`${CHARACTER_CACHE_KEY}_${characterId}`);
+};
+
+const cacheCharacter = (characterId, data) => {
+  cache.set(`${CHARACTER_CACHE_KEY}_${characterId}`, data, CHARACTER_CACHE_TTL);
+};
+
+const getCachedScenes = (universeId) => {
+  return cache.get(`${SCENE_CACHE_KEY}_${universeId}`);
+};
+
+const cacheScenes = (universeId, scenesData) => {
+  cache.set(`${SCENE_CACHE_KEY}_${universeId}`, scenesData, SCENE_CACHE_TTL);
+};
 
 /**
  * Consolidated Character Form Modal Component

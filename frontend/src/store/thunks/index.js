@@ -1,21 +1,24 @@
 /**
- * This file provides a single entry point for all thunks
+ * Centralized exports for all Redux thunks in the application
  */
 
-// Export auth thunks
+// Auth thunks - Authentication-related async operations
 export * from './authThunks';
 
-// Export character thunks
-export * from './characterThunks';
-
-// Export note thunks
-export * from './noteThunks';
-
-// Export physics objects thunks
-export * from './physicsObjectsThunks';
-
-// Export universe thunks
+// Universe thunks - Universe management operations
 export * from './universeThunks';
 
-// Export consolidated thunks
+// Scene thunks - Scene management operations
+export * from './consolidated/scenesThunks';
+
+// Character thunks - Character management operations
+export * from './characterThunks';
+
+// Note thunks - Note management operations
+export * from './noteThunks';
+
+// Physics thunks - Physics object management
+export * from './physicsObjectsThunks';
+
+// Other consolidated thunks
 export * from './consolidated'; 

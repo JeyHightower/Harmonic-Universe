@@ -10,8 +10,7 @@ import "./styles/common.css"; // Fifth: Common component styles
 import "./styles/buttons.css"; // Sixth: Button styles
 import "./styles/index.css"; // Seventh: Additional global styles
 import "./styles/App.css"; // Last: App-specific styles
-import { ensurePortalRoot } from "./utils/portalUtils";
-import { AUTH_CONFIG } from "./utils/config";
+import { ensurePortalRoot, AUTH_CONFIG } from "./utils";
 
 // Setup global error handling
 const handleGlobalError = (error, info) => {
