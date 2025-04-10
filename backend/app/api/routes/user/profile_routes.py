@@ -1,13 +1,10 @@
-from flask import Blueprint, jsonify, request, current_app
+from flask import jsonify, request, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from ...extensions import db
-from ..models.user import User
-from ..models.universe import Universe, Scene
-from ..models.character import Character
-from ..models.note import Note
+from ...models.user import User
+from ....extensions import db
 import traceback
 
-user_bp = Blueprint('user', __name__)
+from . import user_bp
 
 @user_bp.route('/profile', methods=['GET'])
 @jwt_required()

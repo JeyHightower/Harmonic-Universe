@@ -16,20 +16,40 @@ export default defineConfig({
     sourcemap: true,
     emptyOutDir: true,
     minify: 'terser',
-    chunkSizeWarningLimit: 2000,
+    chunkSizeWarningLimit: 5000,
+    target: 'es2015',
+    cssTarget: 'chrome80',
+
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html')
+      },
+      output: {
+        format: 'es',
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
       }
     }
   },
 
+  // Disable optimizeDeps for problematic packages
+  optimizeDeps: {
+    disabled: true
+  },
+
   resolve: {
+    mainFields: ['browser', 'module', 'main'],
     alias: {
-      '@': path.resolve(__dirname, './src'),
-      'redux-persist': path.resolve(__dirname, 'node_modules/redux-persist'),
-      'redux-persist/integration/react': path.resolve(__dirname, 'node_modules/redux-persist/integration/react'),
-      'redux-persist/lib/storage': path.resolve(__dirname, 'node_modules/redux-persist/lib/storage')
+      '@': path.resolve(__dirname, './src')
+    },
+    dedupe: ['react', 'react-dom']
+  },
+
+  // Needed for windows compatibility
+  server: {
+    fs: {
+      strict: false
     }
-  }
+  },
 }); 

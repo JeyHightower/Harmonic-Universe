@@ -25,32 +25,24 @@ let Link = ({ to, children }) => React.createElement('a', { href: to }, children
 // Try to import router components with dynamic import
 async function loadRouterComponents() {
     try {
-        // Try to import from react-router-dom (most common)
+        // Import from react-router-dom
         const ReactRouterDom = await import('react-router-dom');
         console.log('[Router Fix] Successfully imported from react-router-dom');
         return ReactRouterDom;
     } catch (error) {
         console.error('[Router Fix] Failed to import from react-router-dom:', error);
 
-        try {
-            // Try to import from react-router as fallback
-            const ReactRouter = await import('react-router');
-            console.log('[Router Fix] Successfully imported from react-router');
-            return ReactRouter;
-        } catch (err) {
-            console.error('[Router Fix] Failed to import React Router:', err);
-            // Return minimal mock components
-            return {
-                BrowserRouter: ReactBrowserRouter,
-                Routes,
-                Route,
-                useLocation,
-                useNavigate,
-                useParams,
-                Outlet,
-                Link
-            };
-        }
+        // Return minimal mock components
+        return {
+            BrowserRouter: ReactBrowserRouter,
+            Routes,
+            Route,
+            useLocation,
+            useNavigate,
+            useParams,
+            Outlet,
+            Link
+        };
     }
 }
 
