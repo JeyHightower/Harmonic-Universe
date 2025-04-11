@@ -4,8 +4,9 @@
  */
 
 import axios from 'axios';
-import { utilityApi } from './utilityApi';
-import { log } from '../../utils/logger';
+import { log } from '../../utils';
+import { client } from '../client';
+import { handleResponse } from './responseHandler';
 
 // Create axios instance with default config
 const axiosInstance = axios.create({
@@ -59,7 +60,7 @@ const addAuthHeader = (config, options) => {
   }
   
   // Check if token exists and is valid
-  if (token && !utilityApi.isTokenExpired(token)) {
+  if (token && !client.isTokenExpired(token)) {
     config.headers.Authorization = `Bearer ${token}`;
   } else if (!options.skipTokenCheck) {
     // Token is required but missing or expired
@@ -188,7 +189,7 @@ export const baseApi = {
    */
   get: async (url, options = {}) => {
     try {
-      url = utilityApi.formatUrl(url);
+      url = client.formatUrl(url);
       
       // Check cache for GET requests
       const cachedResponse = getCachedResponse(url, options);
@@ -223,7 +224,7 @@ export const baseApi = {
    */
   post: async (url, data = {}, options = {}) => {
     try {
-      url = utilityApi.formatUrl(url);
+      url = client.formatUrl(url);
       
       // Clear cache for this URL if it exists
       clearCacheForUrl(url);
@@ -250,7 +251,7 @@ export const baseApi = {
    */
   put: async (url, data = {}, options = {}) => {
     try {
-      url = utilityApi.formatUrl(url);
+      url = client.formatUrl(url);
       
       // Clear cache for this URL if it exists
       clearCacheForUrl(url);
@@ -277,7 +278,7 @@ export const baseApi = {
    */
   patch: async (url, data = {}, options = {}) => {
     try {
-      url = utilityApi.formatUrl(url);
+      url = client.formatUrl(url);
       
       // Clear cache for this URL if it exists
       clearCacheForUrl(url);
@@ -303,7 +304,7 @@ export const baseApi = {
    */
   delete: async (url, options = {}) => {
     try {
-      url = utilityApi.formatUrl(url);
+      url = client.formatUrl(url);
       
       // Clear cache for this URL if it exists
       clearCacheForUrl(url);
@@ -331,7 +332,7 @@ export const baseApi = {
    */
   upload: async (url, formData, onProgress = null, options = {}) => {
     try {
-      url = utilityApi.formatUrl(url);
+      url = client.formatUrl(url);
       
       const config = addAuthHeader({
         method: 'POST',
@@ -361,7 +362,7 @@ export const baseApi = {
    */
   download: async (url, options = {}) => {
     try {
-      url = utilityApi.formatUrl(url);
+      url = client.formatUrl(url);
       
       const config = addAuthHeader({
         method: 'GET',

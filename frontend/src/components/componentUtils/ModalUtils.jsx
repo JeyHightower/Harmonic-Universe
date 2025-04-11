@@ -4,9 +4,9 @@ import { MODAL_CONFIG } from "../../utils/config";
 import AlertModal from "../modals/AlertModal";
 import ConfirmationModal from "../modals/ConfirmationModal";
 import FormModal from "../modals/FormModal";
-import LoginModal from "../auth/LoginModal";
-import SignupModal from "../auth/SignupModal";
-import HarmonyParametersModal from "../harmony/HarmonyParametersModal";
+import LoginModal from "../features/auth/modals/LoginModal";
+import SignupModal from "../features/auth/modals/SignupModal";
+import HarmonyParametersModal from "../features/harmony/modals/HarmonyParametersModal";
 
 /**
  * Helper function to get the modal component by type

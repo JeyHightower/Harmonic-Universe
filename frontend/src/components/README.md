@@ -11,27 +11,45 @@ components/
 ├── common/           # Common/reusable UI components
 ├── componentUtils/   # Utility functions for components
 ├── error/            # Error handling components
-├── harmony/          # Musical harmony components
+├── features/         # Feature-specific components organized by domain
+│   ├── auth/         # Authentication components
+│   ├── character/    # Character components
+│   ├── harmony/      # Musical harmony components
+│   ├── music/        # Music components
+│   ├── physics/      # Physics components
+│   ├── scene/        # Scene components
+│   └── universe/     # Universe components
 ├── icons/            # Icon components and helpers
 ├── layout/           # Layout components (header, footer, etc.)
 ├── modals/           # Modal components and modal system
-├── music/            # Music-related components
+├── music/            # Music-related components (legacy)
 ├── navigation/       # Navigation components
 ├── note/             # Note-related components
-├── physics/          # Physics simulation components
+├── physics/          # Physics simulation components (legacy)
 ├── routing/          # Routing-related components
 ├── settings/         # Settings-related components
 ├── theme/            # Theme components
-└── universe/         # Universe-related components
+└── universe/         # Universe-related components (legacy)
 ```
 
 ## Component Organization
 
-Components should be organized by feature or domain. Each feature directory typically contains:
+Components are being refactored to be organized under the `features/` directory by domain. Each feature directory typically contains:
 
-- Main feature component
+- Main feature components
 - Subcomponents specific to that feature
 - An `index.js` file that exports the components
+- A `README.md` file documenting the components
+
+## Refactoring Status
+
+We are in the process of refactoring our component structure to follow a more consistent pattern. The following features have been refactored:
+
+- Music components (moved to `features/music/`)
+- Harmony components (moved to `features/harmony/`)
+- Universe components (moved to `features/universe/`)
+
+Legacy directories will be removed as refactoring progresses.
 
 ## Naming Conventions
 
@@ -52,7 +70,7 @@ Components should be exported using named exports in their respective files, and
 Example:
 
 ```javascript
-// universe/index.js
+// features/universe/index.js
 export { default as UniverseCard } from "./UniverseCard";
 export { default as UniverseList } from "./UniverseList";
 ```
@@ -60,7 +78,14 @@ export { default as UniverseList } from "./UniverseList";
 This allows for clean imports:
 
 ```javascript
-import { UniverseCard, UniverseList } from "../components/universe";
+import { UniverseCard, UniverseList } from "../components/features/universe";
+```
+
+Alternatively, you can use the lazy-loaded components from the main index:
+
+```javascript
+import { UniverseComponents } from "../components";
+const { UniverseCard, UniverseList } = UniverseComponents;
 ```
 
 ## Code Organization Within Components

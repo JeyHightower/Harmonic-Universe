@@ -1,7 +1,7 @@
+import React from "react";
 import { useSelector } from "react-redux";
 import { Navigate, useLocation } from "react-router-dom";
-import { ROUTES } from "../../utils/routes";
-import { AUTH_CONFIG } from "../../utils/config";
+import { AUTH_CONFIG, ROUTES } from "../../utils";
 import { Suspense, useTransition, useState, useEffect } from "react";
 
 function ProtectedRoute({ children }) {

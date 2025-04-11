@@ -4,7 +4,8 @@
  */
 
 // Configuration
-export { AUTH_CONFIG, API_CONFIG, IS_PRODUCTION } from './config';
+export { AUTH_CONFIG, API_CONFIG, IS_PRODUCTION, FORCE_DEMO_MODE } from './config';
+export { MODAL_CONFIG } from './config';
 export { ROUTES } from './routes';
 export { CACHE_CONFIG } from './cacheConfig';
 
@@ -29,7 +30,7 @@ export * from './themeUtils';
 export { default as classNames } from './classnames-shim';
 
 // Modal Registry
-export { registerModal, unregisterModal, getModalComponent } from './modalRegistry';
+export { registerModalComponent as registerModal, unregisterModalComponent as unregisterModal, getModalComponent } from './modalRegistry';
 
 // Visualization Utilities
 export * from './visualizerUtils';

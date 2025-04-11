@@ -3,6 +3,8 @@
  * Helper functions for API requests
  */
 
+import { getEndpoint, getApiEndpoint } from '../endpoints';
+
 // Simple environment detection
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -178,11 +180,49 @@ export const fileToBase64 = (file) => {
   });
 };
 
-export default {
+/**
+ * Check if a JWT token is expired
+ * @param {string} token - JWT token to check
+ * @returns {boolean} - True if token is expired or invalid
+ */
+export const isTokenExpired = (token) => {
+  if (!token) return true;
+  
+  try {
+    // Parse JWT token
+    const base64Url = token.split('.')[1];
+    if (!base64Url) return true;
+    
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    
+    const { exp } = JSON.parse(jsonPayload);
+    if (!exp) return true;
+    
+    // Check if token is expired
+    const currentTime = Math.floor(Date.now() / 1000);
+    return currentTime > exp;
+  } catch (error) {
+    console.error('Error checking token expiration:', error);
+    return true;
+  }
+};
+
+export const utilityApi = {
   getAuthHeaders,
   formatUrl,
   formatQueryParams,
   extractResponseData,
   extractErrorData,
-  fileToBase64
-}; 
+  fileToBase64,
+  getEndpoint,
+  getApiEndpoint,
+  isTokenExpired
+};
+
+export default utilityApi; 

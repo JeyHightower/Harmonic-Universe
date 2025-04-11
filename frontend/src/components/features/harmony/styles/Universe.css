@@ -1,0 +1,419 @@
+/* Universe-specific styles */
+:root {
+  --universe-primary: #4361ee;
+  --universe-secondary: #3a0ca3;
+  --universe-tertiary: #7209b7;
+  --universe-accent: #f72585;
+  --universe-bg-gradient: linear-gradient(
+    135deg,
+    rgba(23, 25, 35, 0.8),
+    rgba(33, 39, 55, 0.9)
+  );
+  --universe-card-bg: rgba(255, 255, 255, 0.05);
+  --universe-card-border: rgba(255, 255, 255, 0.1);
+  --universe-card-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  --star-color-1: rgba(255, 255, 255, 0.8);
+  --star-color-2: rgba(161, 196, 253, 0.8);
+  --star-color-3: rgba(194, 233, 251, 0.8);
+}
+
+/* Animated background for universe pages */
+.universe-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  background: var(--universe-bg-gradient),
+    url("/images/default-universe.svg") center/cover no-repeat;
+  overflow: hidden;
+}
+
+.universe-background::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: radial-gradient(
+      1px 1px at 25% 10%,
+      var(--star-color-1) 1px,
+      transparent 0
+    ),
+    radial-gradient(1px 1px at 50% 25%, var(--star-color-2) 1px, transparent 0),
+    radial-gradient(1px 1px at 75% 40%, var(--star-color-3) 1px, transparent 0),
+    radial-gradient(2px 2px at 15% 65%, var(--star-color-1) 1px, transparent 0),
+    radial-gradient(2px 2px at 35% 85%, var(--star-color-2) 1px, transparent 0),
+    radial-gradient(2px 2px at 55% 5%, var(--star-color-3) 1px, transparent 0),
+    radial-gradient(2px 2px at 90% 15%, var(--star-color-1) 1px, transparent 0);
+  background-size: 550px 550px;
+  animation: star-rotate 300s linear infinite;
+}
+
+@keyframes star-rotate {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-550px);
+  }
+}
+
+/* Container styles */
+.universe-container {
+  width: 100%;
+  max-width: var(--container-width);
+  margin: 0 auto;
+  padding: var(--spacing-lg);
+}
+
+/* Universe List Styles */
+.universe-list-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.universe-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.universe-list-header h1 {
+  font-size: 2rem;
+  margin: 0;
+}
+
+.universe-list-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.universe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+/* Universe Card Styles */
+.universe-card {
+  display: block;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  background-color: #fff;
+  text-decoration: none;
+  color: inherit;
+}
+
+.universe-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.universe-card-image {
+  position: relative;
+  height: 180px;
+  overflow: hidden;
+}
+
+.universe-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s;
+}
+
+.universe-card:hover .universe-card-image img {
+  transform: scale(1.05);
+}
+
+.universe-visibility-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.universe-visibility-badge.public {
+  background-color: rgba(39, 174, 96, 0.8);
+  color: white;
+}
+
+.universe-visibility-badge.private {
+  background-color: rgba(41, 128, 185, 0.8);
+  color: white;
+}
+
+.universe-card-content {
+  padding: 1.5rem;
+}
+
+.universe-card-title {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.universe-card-description {
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  color: #666;
+  line-height: 1.5;
+}
+
+.universe-card-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: auto;
+}
+
+/* Universe Detail Styles */
+.universe-detail-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.universe-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+}
+
+.universe-info h1 {
+  font-size: 2.5rem;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.universe-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.universe-visibility,
+.universe-theme,
+.universe-genre {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.universe-visibility.public {
+  background-color: rgba(39, 174, 96, 0.15);
+  color: #27ae60;
+}
+
+.universe-visibility.private {
+  background-color: rgba(41, 128, 185, 0.15);
+  color: #2980b9;
+}
+
+.universe-theme,
+.universe-genre {
+  background-color: rgba(155, 89, 182, 0.15);
+  color: #8e44ad;
+}
+
+.universe-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.universe-description {
+  background-color: #f9f9f9;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.universe-description p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.universe-scenes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.universe-scenes-header h2 {
+  margin: 0;
+}
+
+.scene-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Loading and Empty States */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+}
+
+.loading-container.small {
+  min-height: 200px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top-color: #3498db;
+  animation: spin 1s ease-in-out infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+.empty-state h2 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+  margin-bottom: 1.5rem;
+  color: #666;
+}
+
+.error-container,
+.not-found-container {
+  max-width: 600px;
+  margin: 4rem auto;
+  padding: 2rem;
+  text-align: center;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+/* Delete Confirmation */
+.delete-confirmation {
+  padding: 1rem 0;
+}
+
+.delete-confirmation p {
+  margin-bottom: 2rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .universe-list-header,
+  .universe-detail-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .universe-list-actions,
+  .universe-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .universe-grid,
+  .scene-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+
+  .universe-card-image {
+    height: 160px;
+  }
+}
+
+@media (max-width: 480px) {
+  .universe-list-container,
+  .universe-detail-container {
+    padding: 1rem;
+  }
+
+  .universe-grid,
+  .scene-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-buttons {
+    flex-wrap: wrap;
+  }
+
+  .universe-card-image {
+    height: 140px;
+  }
+
+  .universe-card-title {
+    font-size: 1.125rem;
+  }
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .universe-card {
+    background-color: var(--bg-color-dark);
+  }
+
+  .universe-card-title {
+    color: var(--text-primary);
+  }
+
+  .universe-card-description {
+    color: var(--text-secondary);
+  }
+
+  .universe-card-footer {
+    color: var(--text-tertiary);
+  }
+}

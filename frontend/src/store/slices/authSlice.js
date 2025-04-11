@@ -1,11 +1,8 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api from "../../services/api";
-import { log } from "../../utils/logger";
-import { AUTH_CONFIG, FORCE_DEMO_MODE, IS_PRODUCTION } from "../../utils/config";
-import { ROUTES } from "../../utils/routes";
+import { log, AUTH_CONFIG, FORCE_DEMO_MODE, IS_PRODUCTION, ROUTES, isHardRefresh } from "../../utils";
 import apiClient from "../../services/api";
 import { login, register } from "../thunks/authThunks";
-import { isHardRefresh } from "../../utils/browserUtils";
 
 // Debug logging for all authentication operations
 const logAuthOperation = (operation, data = {}) => {

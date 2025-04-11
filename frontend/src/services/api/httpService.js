@@ -4,9 +4,10 @@
  */
 
 import axios from 'axios';
+import { authApi } from './authApi';
+import { log } from '../../utils';
+import { responseHandler } from './responseHandler';
 import { getAuthHeaders, formatUrl } from './utilityApi';
-import responseHandler from './responseHandler';
-import { log } from '../../utils/logger';
 
 /**
  * Creates a configured instance of axios

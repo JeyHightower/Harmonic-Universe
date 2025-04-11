@@ -14,6 +14,7 @@ import {
 const initialState = {
   notes: [],
   currentNote: null,
+  selectedNote: null,
   loading: false,
   error: null,
   success: false,
@@ -43,6 +44,9 @@ const noteSlice = createSlice({
         if (state.currentNote?.id === action.payload.id) {
           state.currentNote = action.payload;
         }
+        if (state.selectedNote?.id === action.payload.id) {
+          state.selectedNote = action.payload;
+        }
       }
     },
     deleteNoteAction: (state, action) => {
@@ -50,14 +54,26 @@ const noteSlice = createSlice({
       if (state.currentNote?.id === action.payload) {
         state.currentNote = null;
       }
+      if (state.selectedNote?.id === action.payload) {
+        state.selectedNote = null;
+      }
     },
     openModal: (state, action) => {
       state.modalOpen = true;
-      state.modalType = action.payload;
+      if (typeof action.payload === 'object' && action.payload !== null) {
+        // If we're passing an object with type and note
+        state.modalType = action.payload.type;
+        state.selectedNote = action.payload.note;
+      } else {
+        // If we're just passing the type
+        state.modalType = action.payload;
+        state.selectedNote = null;
+      }
     },
     closeModal: (state) => {
       state.modalOpen = false;
       state.modalType = null;
+      state.selectedNote = null;
     },
     clearError: (state) => {
       state.error = null;
@@ -156,6 +172,9 @@ const noteSlice = createSlice({
           if (state.currentNote?.id === action.payload.id) {
             state.currentNote = action.payload;
           }
+          if (state.selectedNote?.id === action.payload.id) {
+            state.selectedNote = action.payload;
+          }
         }
         state.success = true;
         state.modalOpen = false;
@@ -178,6 +197,9 @@ const noteSlice = createSlice({
         if (state.currentNote?.id === action.payload) {
           state.currentNote = null;
         }
+        if (state.selectedNote?.id === action.payload) {
+          state.selectedNote = null;
+        }
         state.success = true;
       })
       .addCase(deleteNote.rejected, (state, action) => {
@@ -199,6 +221,9 @@ const noteSlice = createSlice({
           if (state.currentNote?.id === action.payload.id) {
             state.currentNote = action.payload;
           }
+          if (state.selectedNote?.id === action.payload.id) {
+            state.selectedNote = action.payload;
+          }
         }
         state.success = true;
       })
@@ -219,6 +244,9 @@ const noteSlice = createSlice({
           state.notes[index] = action.payload;
           if (state.currentNote?.id === action.payload.id) {
             state.currentNote = action.payload;
+          }
+          if (state.selectedNote?.id === action.payload.id) {
+            state.selectedNote = action.payload;
           }
         }
         state.success = true;

@@ -6,14 +6,14 @@ import { MODAL_TYPES } from "../constants/modalTypes";
 import AlertModal from "../components/modals/AlertModal";
 import ConfirmationModal from "../components/modals/ConfirmationModal";
 import FormModal from "../components/modals/FormModal";
-import LoginModal from "../components/auth/LoginModal";
-import SignupModal from "../components/auth/SignupModal";
+import LoginModal from "../components/features/auth/modals/LoginModal";
+import SignupModal from "../components/features/auth/modals/SignupModal";
 
 // Create modal registry
 const modalRegistry = new Map();
 
 // Component lookup function
-const getModalComponent = async (type) => {
+export const getModalComponent = async (type) => {
   if (!type) {
     console.error("Modal type is required");
     return null;
@@ -32,7 +32,8 @@ const getModalComponent = async (type) => {
     "music-create",
     "music-view",
     "music-edit",
-    "music-delete"
+    "music-delete",
+    "PHYSICS_OBJECT"
   ];
 
   if (!validTypes.includes(type)) {
@@ -65,19 +66,24 @@ const getModalComponent = async (type) => {
         break;
       case "universe-create":
       case MODAL_TYPES.UNIVERSE_CREATE:
-        console.log("Loading UniverseModalComponent from consolidated components");
-        const { UniverseModalComponent } = await import("../components/consolidated");
-        component = UniverseModalComponent;
+        console.log("Loading UniverseModal from features/universe");
+        const { UniverseModal } = await import("../components/features/universe");
+        component = UniverseModal;
         break;
       case "SCENE_FORM":
-        console.log("Loading SceneModalComponent from consolidated components");
-        const { SceneModalComponent } = await import("../components/consolidated");
-        component = SceneModalComponent;
+        console.log("Loading SceneModal from features/scene");
+        const { SceneModal } = await import("../components/features/scene");
+        component = SceneModal;
         break;
       case "CHARACTER_FORM":
-        console.log("Loading CharacterFormModalComponent from consolidated components");
-        const { CharacterFormModalComponent } = await import("../components/consolidated");
-        component = CharacterFormModalComponent;
+        console.log("Loading CharacterModal from features/character");
+        const { CharacterModal } = await import("../components/features/character");
+        component = CharacterModal;
+        break;
+      case "PHYSICS_OBJECT":
+        console.log("Loading PhysicsObjectModal from features/physics");
+        const { PhysicsObjectModal } = await import("../components/features/physics");
+        component = PhysicsObjectModal;
         break;
       case "audio-generate":
         console.log("Loading AudioGenerationModalFinal component");

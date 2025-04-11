@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
-import { API_CONFIG } from "../../utils/config";
+import { API_CONFIG } from "../../utils";
 
 const API_URL = `${API_CONFIG.BASE_URL}/physics-parameters`;
 

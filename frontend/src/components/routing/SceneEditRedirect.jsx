@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import apiClient from "../../services/api";
-import { SceneModalComponent } from "../../components/consolidated";
+import { SceneModal } from "../../components/features/scene";
 
 /**
  * SceneEditRedirect - Handles direct URLs to /scenes/:sceneId/edit
@@ -108,7 +108,7 @@ const SceneEditRedirect = () => {
   return (
     <div>
       {showModal && scene && universeId && (
-        <SceneModalComponent
+        <SceneModal
           isOpen={showModal}
           onClose={handleClose}
           onSuccess={handleEditSuccess}

@@ -1,0 +1,114 @@
+.physics-parameters-modal {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.physics-parameters-modal .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.physics-parameters-modal .modal-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.physics-parameters-modal .modal-content {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+  max-height: 70vh;
+}
+
+.physics-parameters-modal .loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  gap: 1rem;
+}
+
+.physics-parameters-modal .delete-confirmation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1rem;
+  gap: 1rem;
+}
+
+.physics-parameters-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.physics-parameters-form .form-section {
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  background-color: var(--bg-subtle);
+}
+
+.physics-parameters-form .form-section h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.physics-parameters-form .form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.physics-parameters-form .form-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.error-message {
+  color: var(--color-danger);
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background-color: var(--color-danger-subtle);
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.success-message {
+  color: var(--color-success);
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background-color: var(--color-success-subtle);
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 600px) {
+  .physics-parameters-form .form-row {
+    flex-direction: column;
+  }
+  
+  .physics-parameters-form .form-group {
+    width: 100%;
+  }
+} 

@@ -1,8 +1,8 @@
 import React from "react";
 
 // Auth Components
-import LoginModal from "./auth/LoginModal";
-import SignupModal from "./auth/SignupModal";
+import LoginModal from "./features/auth/modals/LoginModal";
+import SignupModal from "./features/auth/modals/SignupModal";
 
 export { LoginModal, SignupModal };
 
@@ -24,12 +24,11 @@ export { default as SafeIcon } from "./common/SafeIcon";
 // export { default as Home } from "../pages/Home";
 
 // Character Components
-import { CharacterList, CharacterCard, CharacterForm, CharacterDetail } from "./characters";
-export { CharacterList, CharacterCard, CharacterForm, CharacterDetail };
+import { CharacterList, CharacterCard, CharacterForm, CharacterDetail, CharacterManagement } from "./features/character";
+export { CharacterList, CharacterCard, CharacterForm, CharacterDetail, CharacterManagement };
 
 // Note Components
-import { NoteList, NoteCard, NoteForm, NoteDetail } from "./note";
-export { NoteList, NoteCard, NoteForm, NoteDetail };
+export { NoteList, NoteCard, NoteForm, NoteDetail, NoteFormModal } from "./features/note";
 
 // Modal Components
 // Import from the modals directory for consistency
@@ -66,23 +65,50 @@ export const ModalComponents = {
 
 // Lazy loaded component groups - these will only be loaded when needed
 export const MusicComponents = {
-  MusicPlayer: React.lazy(() => import("./music/MusicPlayerComponent")),
-  MusicGenerationModal: React.lazy(() => import("./consolidated/MusicModalComponent")),
-  MusicVisualizer3D: React.lazy(() => import("./music/MusicVisualizer3D")),
-  MusicModal: React.lazy(() => import("./consolidated/MusicModalComponent")),
-  AudioDetailsModal: React.lazy(() => import("./consolidated/AudioDetailsModalFinal")),
-  AudioGenerationModal: React.lazy(() => import("./consolidated/AudioGenerationModalFinal")),
+  MusicPlayer: React.lazy(() => import("./features/music/MusicPlayer")),
+  MusicGenerationModal: React.lazy(() => import("./features/music/MusicModal")),
+  MusicVisualizer3D: React.lazy(() => import("./features/music/MusicVisualizer3D")),
+  MusicModal: React.lazy(() => import("./features/music/MusicModal")),
+  AudioDetailsModal: React.lazy(() => import("./features/music/AudioDetailsModal")),
+  AudioGenerationModal: React.lazy(() => import("./features/music/AudioGenerationModal")),
+};
+
+export const HarmonyComponents = {
+  HarmonyPanel: React.lazy(() => import("./features/harmony/components/HarmonyPanel")),
+  HarmonyParametersModal: React.lazy(() => import("./features/harmony/modals/HarmonyParametersModal")),
+};
+
+export const UniverseComponents = {
+  UniverseCard: React.lazy(() => import("./features/universe/UniverseCard")),
+  UniverseCreate: React.lazy(() => import("./features/universe/UniverseCreate")),
+  UniverseDetail: React.lazy(() => import("./features/universe/UniverseDetail")),
+  UniverseEdit: React.lazy(() => import("./features/universe/UniverseEdit")),
+  UniverseList: React.lazy(() => import("./features/universe/UniverseList")),
+  UniverseManager: React.lazy(() => import("./features/universe/UniverseManager")),
+  UniverseModal: React.lazy(() => import("./features/universe/UniverseModal")),
+  UniverseDeleteModal: React.lazy(() => import("./features/universe/UniverseDeleteModal")),
+  UniverseInfoModal: React.lazy(() => import("./features/universe/UniverseInfoModal")),
 };
 
 export const PhysicsComponents = {
-  PhysicsPanel: React.lazy(() => import("./physics/PhysicsPanel")),
-  PhysicsEditor: React.lazy(() => import("./physics/PhysicsEditor")),
-  PhysicsParametersModal: React.lazy(() => import("./physics/PhysicsParametersModal")),
-  PhysicsObjectsManager: React.lazy(() => import("./physics/PhysicsObjectsManager")),
-  PhysicsObjectForm: React.lazy(() => import("./physics/PhysicsObjectForm")),
-  PhysicsObjectsList: React.lazy(() => import("./physics/PhysicsObjectsList")),
-  PhysicsSettingsModal: React.lazy(() => import("./physics/PhysicsSettingsModal")),
-  PhysicsParametersManager: React.lazy(() => import("./physics/PhysicsParametersManager")),
+  PhysicsPanel: React.lazy(() => import("./features/physics/components/PhysicsPanel")),
+  PhysicsEditor: React.lazy(() => import("./features/physics/pages/PhysicsEditor")),
+  PhysicsParametersModal: React.lazy(() => import("./features/physics/modals/PhysicsParametersModal")),
+  PhysicsObjectsManager: React.lazy(() => import("./features/physics/components/PhysicsObjectsManager")),
+  PhysicsObjectForm: React.lazy(() => import("./features/physics/components/PhysicsObjectForm")),
+  PhysicsObjectsList: React.lazy(() => import("./features/physics/components/PhysicsObjectsList")),
+  PhysicsSettingsModal: React.lazy(() => import("./features/physics/modals/PhysicsSettingsModal")),
+  PhysicsParametersManager: React.lazy(() => import("./features/physics/components/PhysicsParametersManager")),
+  PhysicsObjectModal: React.lazy(() => import("./features/physics/modals/PhysicsObjectModal")),
+};
+
+// Update to use the new feature-based note components
+export const NoteComponents = {
+  NoteList: React.lazy(() => import("./features/note/components/NoteList")),
+  NoteCard: React.lazy(() => import("./features/note/components/NoteCard")),
+  NoteForm: React.lazy(() => import("./features/note/pages/NoteForm")),
+  NoteDetail: React.lazy(() => import("./features/note/pages/NoteDetail")),
+  NoteFormModal: React.lazy(() => import("./features/note/modals/NoteFormModal")),
 };
 
 export const DebugComponents = {

@@ -14,15 +14,15 @@ const UniverseDetail = lazy(() =>
   import("../components/universe/UniverseDetail")
 );
 const CharacterDetail = lazy(() =>
-  import("../components/character/CharacterDetail")
+  import("../components/features/character/pages/CharacterDetail")
 );
-const NoteDetail = lazy(() => import("../components/consolidated/NoteDetail"));
+const NoteDetail = lazy(() => import("../components/features/note/pages/NoteDetail"));
 const CharacterManagement = lazy(() =>
   import("../features/CharacterManagement")
 );
 const SceneManagement = lazy(() => import("../features/SceneManagement"));
 const SceneEditPage = lazy(() =>
-  import("../components/consolidated/SceneEditPage")
+  import("../components/features/scene/pages/SceneEditPage")
 );
 const NotFound = lazy(() => import("../pages/NotFound"));
 const SceneEditRedirect = lazy(() =>

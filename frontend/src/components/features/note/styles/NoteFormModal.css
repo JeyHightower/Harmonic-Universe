@@ -1,0 +1,25 @@
+.note-form-modal .MuiDialogTitle-root {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background-color: #f5f5f5;
+}
+
+.note-form-modal .MuiDialogContent-root {
+  padding: 24px;
+}
+
+.note-form-modal .MuiDialogActions-root {
+  padding: 16px 24px;
+  border-top: 1px solid #eee;
+}
+
+.note-form-modal .MuiChip-root {
+  margin-right: 8px;
+  margin-bottom: 8px;
+}
+
+.note-form-modal .MuiFormControlLabel-root {
+  margin-top: 16px;
+} 

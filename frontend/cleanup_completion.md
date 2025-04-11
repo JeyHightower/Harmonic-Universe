@@ -28,6 +28,14 @@ This document summarizes the cleanup and consolidation actions taken for the Har
 - ✅ Documented CSS naming conventions (BEM)
 - ✅ Explained theme system and CSS variables usage
 
+### 5. Feature Component Refactoring
+
+- ✅ Moved PhysicsPanel component to features/physics
+- ✅ Moved PhysicsObjectModalComponent to features/physics and renamed to PhysicsObjectModal
+- ✅ Enhanced UniverseModal to incorporate functionality from UniverseModalComponent
+- ✅ Updated modal registry to use the refactored components
+- ✅ Updated import paths in affected files
+
 ## Structure Improvements
 
 ### Redux Store
@@ -59,8 +67,11 @@ CSS organization has been documented:
 
 ### Future Phase 1: Component Consolidation
 
-- [ ] Move duplicate components from `features/` to `components/`
-- [ ] Update imports across the codebase to point to the consolidated components
+- [x] Move PhysicsObjectModalComponent from `consolidated/` to `features/physics/`
+- [x] Enhance UniverseModal with functionality from UniverseModalComponent
+- [x] Move SceneModalComponent from `consolidated/` to `features/scene/`
+- [x] Move CharacterFormModalComponent from `consolidated/` to `features/character/`
+- [x] Update imports across the codebase to point to the consolidated components
 
 ### Future Phase 2: CSS Consolidation
 
@@ -70,9 +81,13 @@ CSS organization has been documented:
 
 ### Future Phase 3: Remove Obsolete Files
 
-- [ ] Remove redundant feature components after import paths are updated
+- [x] Remove redundant Universe component files (UniverseModalComponent.jsx)
+- [x] Remove redundant Scene component files (SceneModalComponent.jsx)
+- [x] Remove redundant Physics component files (PhysicsObjectModalComponent.jsx)
+- [x] Remove redundant Character component files (CharacterFormModalComponent.jsx)
 - [ ] Remove duplicate thunk files
 - [ ] Remove any remaining duplicate CSS files
+- [x] Remove all components from the consolidated directory
 
 ## Testing
 

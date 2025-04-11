@@ -3,10 +3,12 @@
  * Handles authentication operations like login, register, logout, and token management
  */
 
+import axios from 'axios';
+import { log } from '../../utils';
+import { httpService } from './httpService';
 import { baseApi } from './baseApi';
 import { utilityApi } from './utilityApi';
 import { endpoints } from '../endpoints';
-import { log } from '../../utils/logger';
 
 /**
  * Auth API service for authentication operations

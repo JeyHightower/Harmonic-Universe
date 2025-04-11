@@ -1,5 +1,5 @@
+import { MODAL_CONFIG } from "../../utils";
 import { createSlice } from "@reduxjs/toolkit";
-import { MODAL_CONFIG } from "../../utils/config";
 
 const initialState = {
   isOpen: false,
