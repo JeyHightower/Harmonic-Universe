@@ -21,17 +21,25 @@ export const login = async (email, password) => {
     
     // Handle successful login
     if (response.token) {
+      // Clear any previous token verification failures
+      localStorage.removeItem("token_verification_failed");
+      
       // Store token in localStorage
       localStorage.setItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY, response.token);
       
       // Log successful login
-      Logger.log('auth', 'User logged in successfully', { email });
+      Logger.log('auth', 'User logged in successfully', { 
+        email, 
+        tokenLength: response.token.length,
+        tokenPreview: `${response.token.substring(0, 5)}...${response.token.substring(response.token.length - 5)}`
+      });
       
       return responseHandler.handleSuccess(response);
     }
     
     return responseHandler.handleSuccess(response);
   } catch (error) {
+    Logger.error('auth', 'Login failed', { error: error.message });
     return responseHandler.handleError(error);
   }
 };

@@ -53,9 +53,23 @@ const clearCacheForUrl = (url) => {
  */
 const addAuthHeader = (config) => {
   const token = localStorage.getItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
+  
   if (token) {
-    config.headers.Authorization = `${API_SERVICE_CONFIG.AUTH.TOKEN_TYPE} ${token}`;
+    try {
+      // Log token details for debugging (safely)
+      const tokenStart = token.substring(0, 5);
+      const tokenEnd = token.length > 10 ? token.substring(token.length - 5) : '...';
+      log('api', 'Adding auth token', { tokenFormat: `${tokenStart}...${tokenEnd}`, length: token.length });
+      
+      // Add proper Authorization header
+      config.headers.Authorization = `${API_SERVICE_CONFIG.AUTH.TOKEN_TYPE} ${token}`;
+    } catch (err) {
+      log('api', 'Error adding auth token', { error: err.message });
+    }
+  } else {
+    log('api', 'No auth token available');
   }
+  
   return config;
 };
 

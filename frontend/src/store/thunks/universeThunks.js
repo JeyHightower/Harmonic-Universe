@@ -1,5 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import api from '../../services/api.adapter';
+import { AUTH_CONFIG } from '../../utils/config';
 
 const handleError = (error) => {
   console.error("API Error:", error);
@@ -37,7 +38,18 @@ export const fetchUniverses = createAsyncThunk(
   async (params = {}, { rejectWithValue }) => {
     try {
       console.log("Fetching universes with params:", params);
-      const response = await api.getUniverses(params);
+      
+      // Add a check for the token's existence
+      const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+      if (!token) {
+        console.error("No authentication token found");
+        return rejectWithValue({
+          message: "No authentication token found. Please log in again.",
+          status: 401,
+        });
+      }
+      
+      const response = await api.universes.getUniverses(params);
       console.log("Got universes response:", {
         status: response.status,
         data: response.data,
@@ -91,6 +103,25 @@ export const fetchUniverses = createAsyncThunk(
         status: error.response?.status,
         headers: error.response?.headers,
       });
+      
+      // Handle specific token verification errors
+      if (error.response?.status === 401) {
+        const errorMessage = error.response?.data?.message || "Authentication error";
+        console.error(`Authentication error (401): ${errorMessage}`);
+        
+        // If there's a specific signature verification error, handle it specially
+        if (errorMessage.includes("Signature verification failed")) {
+          console.error("Token signature verification failed - token may be invalid");
+          localStorage.setItem("token_verification_failed", "true");
+        }
+        
+        return rejectWithValue({
+          message: errorMessage,
+          status: 401,
+          authError: true
+        });
+      }
+      
       return rejectWithValue(handleError(error));
     }
   }
@@ -104,7 +135,7 @@ export const fetchUniverseById = createAsyncThunk(
       console.log(
         `Fetching universe ${id} with includeScenes=${includeScenes}`
       );
-      const response = await api.getUniverse(id);
+      const response = await api.universes.getUniverse(id);
       console.log("Got universe response:", response);
 
       // Normalize the universe data if present
@@ -148,7 +179,7 @@ export const createUniverse = createAsyncThunk(
       console.log("Sending formatted universe data:", formattedData);
 
       // Make the API call
-      const response = await api.createUniverse(formattedData);
+      const response = await api.universes.createUniverse(formattedData);
       console.log("Created universe response:", response);
 
       // Handle our mock response from development mode
@@ -205,7 +236,7 @@ export const updateUniverse = createAsyncThunk(
   async ({ id, ...updateData }, { rejectWithValue }) => {
     try {
       console.log(`Thunk - Updating universe ${id} with data:`, updateData);
-      const response = await api.updateUniverse(id, updateData);
+      const response = await api.universes.updateUniverse(id, updateData);
       console.log("Thunk - Updated universe response:", response);
 
       // Normalize the universe data if present
@@ -251,26 +282,12 @@ export const deleteUniverse = createAsyncThunk(
   "universe/deleteUniverse",
   async (id, { rejectWithValue }) => {
     try {
-      console.log(`Thunk - Deleting universe ${id}`);
-      const response = await api.deleteUniverse(id);
-      console.log(`Thunk - Universe ${id} deleted successfully:`, response);
-
-      return { id, message: response.data?.message || 'Universe deleted successfully' };
+      console.log(`Deleting universe ${id}`);
+      const response = await api.universes.deleteUniverse(id);
+      console.log("Delete universe response:", response);
+      return { id, ...response.data };
     } catch (error) {
-      console.error(`Thunk - Error deleting universe ${id}:`, error);
-
-      // Check for specific error types
-      if (error.response && error.response.status === 403) {
-        return rejectWithValue({ message: "You don't have permission to delete this universe" });
-      } else if (error.response && error.response.status === 404) {
-        return rejectWithValue({ message: "Universe not found" });
-      } else if (error.response && error.response.status === 500) {
-        const errorMessage = error.response.data?.error ||
-          error.response.data?.message ||
-          "Server error while deleting universe";
-        return rejectWithValue({ message: errorMessage });
-      }
-
+      console.error(`Error deleting universe ${id}:`, error);
       return rejectWithValue(handleError(error));
     }
   }
@@ -282,7 +299,7 @@ export const fetchScenesForUniverse = createAsyncThunk(
   async (universeId, { rejectWithValue }) => {
     try {
       console.log(`Fetching scenes for universe ${universeId}`);
-      const response = await api.getScenes(universeId);
+      const response = await api.scenes.getScenesByUniverse(universeId);
       console.log("Got scenes response:", response);
       return response.data || response;
     } catch (error) {
@@ -301,7 +318,7 @@ export const updatePhysicsParams = createAsyncThunk(
         `Updating physics params for universe ${universeId}:`,
         physicsParams
       );
-      const response = await api.updateUniverse(universeId, {
+      const response = await api.universes.updateUniverse(universeId, {
         physics_params: physicsParams,
       });
       console.log("Updated physics params response:", response);
@@ -336,7 +353,7 @@ export const updateHarmonyParams = createAsyncThunk(
         `Updating harmony params for universe ${universeId}:`,
         harmonyParams
       );
-      const response = await api.updateUniverse(universeId, {
+      const response = await api.universes.updateUniverse(universeId, {
         harmony_params: harmonyParams,
       });
       console.log("Updated harmony params response:", response);

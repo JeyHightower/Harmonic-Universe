@@ -78,6 +78,21 @@ const Dashboard = () => {
           error: result.error,
           meta: result.meta,
         });
+        
+        // Check for authentication errors (401)
+        if (result.error?.name === "RejectWithValue" && 
+            (result.payload?.status === 401 || 
+             result.payload?.message?.includes("authentication") ||
+             result.payload?.message?.includes("Signature verification failed"))) {
+          console.error("Dashboard - Authentication error, redirecting to login");
+          // Use direct navigation instead of handleRefreshAuth to avoid dependency issues
+          localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+          localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+          dispatch(logout());
+          navigate("/?modal=login", { replace: true });
+          return { error: "Authentication failed" };
+        }
+        
         if (!result.payload) {
           console.warn("Dashboard - No payload in result:", result);
           if (retryCount < 3) {
@@ -122,9 +137,23 @@ const Dashboard = () => {
           response: error.response?.data,
           status: error.response?.status,
         });
+        
+        // Check if error is related to authentication
+        if (error.response?.status === 401 || 
+            error.message?.includes("authentication") ||
+            error.message?.includes("Signature verification failed")) {
+          console.error("Dashboard - Authentication error in catch block, redirecting to login");
+          // Use direct navigation instead of handleRefreshAuth to avoid dependency issues
+          localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+          localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+          dispatch(logout());
+          navigate("/?modal=login", { replace: true });
+          return { error: "Authentication failed" };
+        }
+        
         return { error: error.message };
       });
-  }, [dispatch, retryCount, user?.id]);
+  }, [dispatch, retryCount, user?.id, navigate]);
 
   // Load universes on component mount
   useEffect(() => {
@@ -153,11 +182,35 @@ const Dashboard = () => {
       console.log("Not authenticated, redirecting to login");
       navigate("/?modal=login", { replace: true });
     } else {
+      // Verify token validity before fetching data
+      const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+      if (!token) {
+        console.log("No token found, redirecting to login");
+        dispatch(logout());
+        navigate("/?modal=login", { replace: true });
+        return;
+      }
+      
+      // Check if token had previously failed verification
+      const tokenVerificationFailed = localStorage.getItem("token_verification_failed");
+      if (tokenVerificationFailed === "true") {
+        console.log("Token verification previously failed, refreshing authentication");
+        localStorage.removeItem("token_verification_failed");
+        handleRefreshAuth();
+        return;
+      }
+      
       // Fetch universes when component mounts or retry is triggered
       console.log("Dashboard - Fetching universes...");
-      loadUniverses();
+      loadUniverses().then(result => {
+        if (result && result.error === "Authentication failed") {
+          // Mark token as failed verification for next reload
+          localStorage.setItem("token_verification_failed", "true");
+          handleRefreshAuth();
+        }
+      });
     }
-  }, [navigate, loadUniverses, retryCount, isAuthenticated]);
+  }, [navigate, loadUniverses, retryCount, isAuthenticated, dispatch]);
 
   // Clear new universe highlight after delay
   useEffect(() => {
@@ -171,8 +224,21 @@ const Dashboard = () => {
   }, [newUniverseId]);
 
   const handleLogout = () => {
+    localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+    localStorage.removeItem(AUTH_CONFIG.USER_KEY);
     dispatch(logout());
-    navigate("/");
+    navigate("/?modal=login", { replace: true });
+  };
+  
+  const handleRefreshAuth = () => {
+    console.log("Dashboard - Refreshing authentication");
+    // Clear token and user data from localStorage
+    localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+    localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+    // Dispatch logout action
+    dispatch(logout());
+    // Redirect to login page with modal
+    navigate("/?modal=login", { replace: true });
   };
 
   const handleCreateClick = () => {
@@ -266,6 +332,99 @@ const Dashboard = () => {
     });
   };
 
+  // Render error state with auth error handling
+  if (error) {
+    const isAuthError = error.message?.includes("Signature verification") || 
+                      error.message?.includes("Authentication") || 
+                      error.message?.includes("token") ||
+                      error.status === 401;
+    
+    return (
+      <div className="dashboard-container">
+        <div className="dashboard-header">
+          <Typography variant="h4" component="h1">
+            {isAuthError ? "Authentication Error" : "Error Loading Universes"}
+          </Typography>
+          <div className="dashboard-actions">
+            {isAuthError ? (
+              <Tooltip title="Re-authenticate to fix token issues">
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleRefreshAuth}
+                  startIcon={<RefreshIcon />}
+                >
+                  Re-authenticate
+                </Button>
+              </Tooltip>
+            ) : (
+              <Tooltip title="Refresh Universes">
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<RefreshIcon />}
+                  onClick={() => loadUniverses()}
+                  disabled={loading}
+                >
+                  Retry
+                </Button>
+              </Tooltip>
+            )}
+            <Tooltip title="Logout">
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<LogoutIcon />}
+                onClick={handleLogout}
+              >
+                Logout
+              </Button>
+            </Tooltip>
+          </div>
+        </div>
+        
+        <Typography color="error" className="error-message" style={{ margin: '20px 0' }}>
+          {isAuthError ? 
+            "Your session has expired or is invalid. Please re-authenticate to continue." : 
+            (typeof error === "object" ? JSON.stringify(error) : error)}
+        </Typography>
+        
+        {isAuthError && (
+          <div style={{ margin: '20px 0', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
+            <Typography variant="body1">
+              This issue is typically caused by:
+            </Typography>
+            <ul>
+              <li>Your session has expired</li>
+              <li>The authentication token is invalid</li>
+              <li>The server was restarted with a different secret key</li>
+            </ul>
+            <Typography variant="body1" style={{ marginTop: '10px' }}>
+              Click the "Re-authenticate" button above to log in again.
+            </Typography>
+          </div>
+        )}
+        
+        {!isAuthError && universes?.length > 0 && (
+          <div className="universes-grid">
+            {getSortedUniverses().map((universe) => (
+              <UniverseCard
+                key={universe.id}
+                universe={universe}
+                isNew={universe.id === newUniverseId}
+                onView={() => handleViewUniverse(universe)}
+                onEdit={() => handleEditUniverse(universe)}
+                onDelete={() => handleDeleteUniverse(universe)}
+              />
+            ))}
+          </div>
+        )}
+        {/* Modals */}
+        {renderModals()}
+      </div>
+    );
+  }
+
   // Render loading state
   if (loading) {
     return (
@@ -311,97 +470,6 @@ const Dashboard = () => {
     );
   }
 
-  // Show error state if there are errors but we have some universes
-  if (error && universes?.length) {
-    return (
-      <div className="dashboard-container">
-        <div className="dashboard-header">
-          <Typography variant="h4" component="h1">
-            Your Universes
-          </Typography>
-          <div className="dashboard-actions">
-            <Tooltip content="Refresh universe list" position="bottom">
-              <Button
-                variant="outlined"
-                color="primary"
-                onClick={loadUniverses}
-                startIcon={<RefreshIcon />}
-                disabled={loading}
-              >
-                Refresh
-              </Button>
-            </Tooltip>
-            <Tooltip content="Create a new universe" position="bottom">
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleCreateClick}
-                startIcon={<AddIcon />}
-              >
-                Create Universe
-              </Button>
-            </Tooltip>
-            <Tooltip content="Log out of your account" position="bottom">
-              <Button
-                variant="outlined"
-                color="secondary"
-                onClick={handleLogout}
-                startIcon={<LogoutIcon />}
-              >
-                Logout
-              </Button>
-            </Tooltip>
-          </div>
-        </div>
-        <div className="universes-controls">
-          <Tooltip content="Filter universes by visibility" position="top">
-            <select
-              className="control-select"
-              value={filterOption}
-              onChange={(e) => setFilterOption(e.target.value)}
-            >
-              <option value="all">All Universes</option>
-              <option value="public">Public Only</option>
-              <option value="private">Private Only</option>
-            </select>
-          </Tooltip>
-
-          <Tooltip
-            content="Sort universes by different criteria"
-            position="top"
-          >
-            <select
-              className="control-select"
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value)}
-            >
-              <option value="updated_at">Recently Updated</option>
-              <option value="created_at">Recently Created</option>
-              <option value="name">Name (A-Z)</option>
-            </select>
-          </Tooltip>
-        </div>
-        <Typography color="error" className="error-message">
-          {typeof error === "object" ? JSON.stringify(error) : error}
-        </Typography>
-        <div className="universes-grid">
-          {getSortedUniverses().map((universe) => (
-            <UniverseCard
-              key={universe.id}
-              universe={universe}
-              isNew={universe.id === newUniverseId}
-              onView={() => handleViewUniverse(universe)}
-              onEdit={() => handleEditUniverse(universe)}
-              onDelete={() => handleDeleteUniverse(universe)}
-            />
-          ))}
-        </div>
-        {/* Modals */}
-        {renderModals()}
-      </div>
-    );
-  }
-
   // Render universes grid (main view)
   return (
     <div className="dashboard-container">
@@ -410,33 +478,42 @@ const Dashboard = () => {
           Your Universes
         </Typography>
         <div className="dashboard-actions">
-          <Tooltip content="Refresh universe list" position="bottom">
+          <Tooltip title="Create New Universe">
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={handleCreateClick}
+            >
+              Create Universe
+            </Button>
+          </Tooltip>
+          <Tooltip title="Refresh Universes">
             <Button
               variant="outlined"
               color="primary"
-              onClick={loadUniverses}
               startIcon={<RefreshIcon />}
+              onClick={() => loadUniverses()}
               disabled={loading}
             >
               Refresh
             </Button>
           </Tooltip>
-          <Tooltip content="Create a new universe" position="bottom">
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleCreateClick}
-              startIcon={<AddIcon />}
-            >
-              Create Universe
-            </Button>
-          </Tooltip>
-          <Tooltip content="Log out of your account" position="bottom">
+          <Tooltip title="Re-authenticate">
             <Button
               variant="outlined"
               color="secondary"
-              onClick={handleLogout}
+              onClick={handleRefreshAuth}
+            >
+              Re-authenticate
+            </Button>
+          </Tooltip>
+          <Tooltip title="Logout">
+            <Button
+              variant="outlined"
+              color="error"
               startIcon={<LogoutIcon />}
+              onClick={handleLogout}
             >
               Logout
             </Button>
