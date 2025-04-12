@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense, useTransition, lazy } from "react";
-import { Routes, Route, BrowserRouter, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { useSelector, useDispatch } from "react-redux";
@@ -209,16 +209,9 @@ function App() {
     return (
       <Provider store={store}>
         <PersistGate loading={<LoadingPage />} persistor={persistor}>
-          <BrowserRouter
-            future={{
-              v7_startTransition: true,
-              v7_relativeSplatPath: true,
-            }}
-          >
-            <ModalProvider>
-              <AppContent />
-            </ModalProvider>
-          </BrowserRouter>
+          <ModalProvider>
+            <AppContent />
+          </ModalProvider>
         </PersistGate>
       </Provider>
     );
