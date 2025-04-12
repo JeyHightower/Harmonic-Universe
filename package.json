@@ -6,11 +6,13 @@
   "scripts": {
     "build": "vite build",
     "postbuild": "mkdir -p backend/static && cp -r dist/* backend/static/",
-    "start": "concurrently \"python backend/wsgi.py\" \"npm run dev\"",
+    "start": "concurrently \"python backend/wsgi.py\" \"pnpm run dev\"",
     "start-backend": "python backend/wsgi.py",
     "dev": "vite --force --clearScreen=false",
     "lint": "eslint . --ignore-pattern \"build.test/**\"",
-    "lint:fix": "eslint . --fix --ignore-pattern \"build.test/**\""
+    "lint:fix": "eslint . --fix --ignore-pattern \"build.test/**\"",
+    "frontend": "cd frontend && pnpm run dev",
+    "frontend:build": "cd frontend && pnpm run build"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
