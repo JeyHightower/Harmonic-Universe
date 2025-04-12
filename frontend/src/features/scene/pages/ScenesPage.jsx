@@ -29,7 +29,7 @@ import {
   fetchScenes,
   deleteScene,
 } from "../../../store/thunks/consolidated/scenesThunks";
-import { SceneModalHandler } from "..";
+import { SceneModal } from "..";
 
 // Create a wrapper component that handles redirection logic
 const ScenesPageWrapper = () => {
@@ -499,7 +499,7 @@ const ScenesPageContent = ({ universeId }) => {
       )}
 
       {modalOpen && (
-        <SceneModalHandler
+        <SceneModal
           open={modalOpen}
           onClose={handleModalClose}
           universeId={safeUniverseId}

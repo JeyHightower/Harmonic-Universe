@@ -60,7 +60,7 @@ const LoginPage = () => {
         setTimeout(() => {
           setLoading(false);
           // Trigger storage event to notify other components
-          window.dispatchEvent(new Event("storage"));
+          window.dispatchEvent(new CustomEvent("storage"));
         }, 500);
 
         return;

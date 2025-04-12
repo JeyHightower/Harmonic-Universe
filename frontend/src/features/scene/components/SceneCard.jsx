@@ -1,6 +1,6 @@
 import PropTypes from "prop-types";
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import "../styles/SceneCard.css";
 // Import a local default image to avoid server requests
 import defaultSceneImage from "../../../assets/images/default-scene.svg";
@@ -9,7 +9,7 @@ import defaultSceneImage from "../../../assets/images/default-scene.svg";
  * SceneCard component displays a card representation of a scene
  * Used throughout the application for scene listings and universe details
  */
-const SceneCard = ({ scene, onEdit, onDelete, isOwner = false }) => {
+const SceneCard = ({ scene, onEdit, onDelete, onView, active = false, _isOwner = false }) => {
   const navigate = useNavigate();
 
   // Use the local image first, fall back to the remote one only if necessary
@@ -202,7 +202,9 @@ SceneCard.propTypes = {
   }).isRequired,
   onEdit: PropTypes.func,
   onDelete: PropTypes.func,
-  isOwner: PropTypes.bool,
+  onView: PropTypes.func,
+  active: PropTypes.bool,
+  _isOwner: PropTypes.bool,
 };
 
 export default SceneCard;

@@ -4,9 +4,24 @@ import { MODAL_CONFIG } from "../../utils/config";
 import AlertModal from "../modals/AlertModal";
 import ConfirmationModal from "../modals/ConfirmationModal";
 import FormModal from "../modals/FormModal";
-import LoginModal from "../features/auth/modals/LoginModal";
-import SignupModal from "../features/auth/modals/SignupModal";
-import HarmonyParametersModal from "../features/harmony/modals/HarmonyParametersModal";
+import LoginModal from "../../features/auth/modals/LoginModal";
+import SignupModal from "../../features/auth/modals/SignupModal";
+import HarmonyParametersModal from "../../features/harmony/modals/HarmonyParametersModal";
+import { Button } from "antd";
+
+// Define the missing NetworkErrorModalContent component
+const NetworkErrorModalContent = ({ message, onClose }) => {
+  return (
+    <div className="network-error-modal-content">
+      <p className="error-message">{message || "Network connection error. Please check your internet connection and try again."}</p>
+      <div className="modal-actions">
+        <Button type="primary" onClick={onClose}>
+          OK
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 /**
  * Helper function to get the modal component by type

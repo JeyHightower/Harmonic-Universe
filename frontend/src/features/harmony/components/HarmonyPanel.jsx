@@ -8,10 +8,10 @@
 
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import Button from "../../../common/Button";
-import Input from "../../../common/Input";
-import Select from "../../../common/Select";
-import { updateHarmonyParams } from "../../../../store/thunks/universeThunks";
+import Button from "../../../components/common/Button";
+import Input from "../../../components/common/Input";
+import Select from "../../../components/common/Select";
+import { updateHarmonyParams } from "../../../store/thunks/universeThunks";
 import "../styles/Universe.css";
 
 const DEFAULT_HARMONY_PARAMS = {
@@ -362,5 +362,8 @@ function HarmonyPanel({
     </div>
   );
 }
+
+// Add display name to fix ESLint warning
+HarmonyPanel.displayName = 'HarmonyPanel';
 
 export default HarmonyPanel; 

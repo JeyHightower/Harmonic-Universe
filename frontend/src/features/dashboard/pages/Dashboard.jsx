@@ -49,6 +49,7 @@ import { fetchUniverses } from "../../../store/thunks/universeThunks";
 import { deleteUniverse } from "../../../store/thunks/universeThunks";
 import { AUTH_CONFIG } from "../../../utils/config";
 import { logout } from "../../../store/thunks/authThunks";
+import api from "../../../services/api.adapter";
 
 /**
  * Dashboard component for displaying and managing user's universes
@@ -68,31 +69,64 @@ const Dashboard = () => {
   const [newUniverseId, setNewUniverseId] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
 
+  // Track last dashboard logout attempt
+  let lastDashboardLogoutAttempt = 0;
+  const DASHBOARD_LOGOUT_COOLDOWN = 2000; // 2 seconds
+
   // Enhanced function to load universes with better error handling and logging
   const loadUniverses = useCallback(() => {
     console.log("Dashboard - Loading universes, attempt:", retryCount + 1);
+    
+    // Check token before making request
+    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+    const tokenVerificationFailed = localStorage.getItem("token_verification_failed");
+    
+    if (!token) {
+      console.error("Dashboard - No auth token found, cannot load universes");
+      handleRefreshAuth();
+      return Promise.resolve({ error: "Authentication failed" });
+    }
+    
+    if (tokenVerificationFailed === "true") {
+      console.error("Dashboard - Token verification previously failed");
+      handleRefreshAuth();
+      return Promise.resolve({ error: "Authentication failed" });
+    }
+    
     return dispatch(fetchUniverses({ userId: user?.id, user_only: true }))
       .then((result) => {
         console.log("Dashboard - Fetch universes result:", {
-          payload: result.payload,
-          error: result.error,
+          type: result.type,
+          hasError: !!result.error, 
           meta: result.meta,
         });
         
-        // Check for authentication errors (401)
-        if (result.error?.name === "RejectWithValue" && 
-            (result.payload?.status === 401 || 
-             result.payload?.message?.includes("authentication") ||
-             result.payload?.message?.includes("Signature verification failed"))) {
-          console.error("Dashboard - Authentication error, redirecting to login");
-          // Use direct navigation instead of handleRefreshAuth to avoid dependency issues
-          localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-          localStorage.removeItem(AUTH_CONFIG.USER_KEY);
-          dispatch(logout());
-          navigate("/?modal=login", { replace: true });
-          return { error: "Authentication failed" };
+        // Check if the action was rejected
+        if (result.error) {
+          console.error("Dashboard - API error response:", result.payload);
+          
+          // Check for authentication errors (401)
+          const isAuthError = 
+            result.payload?.status === 401 || 
+            result.payload?.authError || 
+            (result.payload?.message && (
+              result.payload.message.includes("authentication") ||
+              result.payload.message.includes("Signature verification failed") ||
+              result.payload.message.includes("token") ||
+              result.payload.message.includes("login")
+            ));
+            
+          if (isAuthError) {
+            console.error("Dashboard - Authentication error, redirecting to login");
+            localStorage.setItem("token_verification_failed", "true");
+            handleRefreshAuth();
+            return { error: "Authentication failed" };
+          }
+          
+          return { error: result.payload?.message || "API error" };
         }
         
+        // Other data handling remains the same
         if (!result.payload) {
           console.warn("Dashboard - No payload in result:", result);
           if (retryCount < 3) {
@@ -139,15 +173,17 @@ const Dashboard = () => {
         });
         
         // Check if error is related to authentication
-        if (error.response?.status === 401 || 
-            error.message?.includes("authentication") ||
-            error.message?.includes("Signature verification failed")) {
+        const isAuthError = 
+          error.response?.status === 401 || 
+          error.message?.includes("authentication") ||
+          error.message?.includes("Signature verification failed") ||
+          error.message?.includes("token") ||
+          error.message?.includes("login");
+          
+        if (isAuthError) {
           console.error("Dashboard - Authentication error in catch block, redirecting to login");
-          // Use direct navigation instead of handleRefreshAuth to avoid dependency issues
-          localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-          localStorage.removeItem(AUTH_CONFIG.USER_KEY);
-          dispatch(logout());
-          navigate("/?modal=login", { replace: true });
+          localStorage.setItem("token_verification_failed", "true");
+          handleRefreshAuth();
           return { error: "Authentication failed" };
         }
         
@@ -181,36 +217,43 @@ const Dashboard = () => {
     if (!isAuthenticated) {
       console.log("Not authenticated, redirecting to login");
       navigate("/?modal=login", { replace: true });
-    } else {
-      // Verify token validity before fetching data
-      const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-      if (!token) {
-        console.log("No token found, redirecting to login");
-        dispatch(logout());
-        navigate("/?modal=login", { replace: true });
-        return;
-      }
-      
-      // Check if token had previously failed verification
-      const tokenVerificationFailed = localStorage.getItem("token_verification_failed");
-      if (tokenVerificationFailed === "true") {
-        console.log("Token verification previously failed, refreshing authentication");
-        localStorage.removeItem("token_verification_failed");
-        handleRefreshAuth();
-        return;
-      }
-      
-      // Fetch universes when component mounts or retry is triggered
-      console.log("Dashboard - Fetching universes...");
-      loadUniverses().then(result => {
-        if (result && result.error === "Authentication failed") {
-          // Mark token as failed verification for next reload
-          localStorage.setItem("token_verification_failed", "true");
-          handleRefreshAuth();
-        }
-      });
+      return;
     }
-  }, [navigate, loadUniverses, retryCount, isAuthenticated, dispatch]);
+    
+    // Verify token validity before fetching data
+    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+    if (!token) {
+      console.log("No token found, redirecting to login");
+      dispatch(logout());
+      navigate("/?modal=login", { replace: true });
+      return;
+    }
+    
+    // Check if token had previously failed verification
+    const tokenVerificationFailed = localStorage.getItem("token_verification_failed");
+    if (tokenVerificationFailed === "true") {
+      console.log("Token verification previously failed, refreshing authentication");
+      localStorage.removeItem("token_verification_failed");
+      
+      // Perform a complete auth cleanup and redirect
+      console.log("Cleaning up authentication state and redirecting to login");
+      handleRefreshAuth();
+      return;
+    }
+    
+    // Only fetch if we have a valid token and no previous verification failures
+    console.log("Dashboard - Fetching universes...");
+    loadUniverses().then(result => {
+      if (result && result.error && (
+          result.error === "Authentication failed" || 
+          (typeof result.error === 'object' && result.error.authError) ||
+          result.error.includes && result.error.includes('Signature verification')
+         )) {
+        console.log("Authentication failed during universe fetch, redirecting to login");
+        handleRefreshAuth();
+      }
+    });
+  }, [isAuthenticated, dispatch, navigate, loadUniverses]);
 
   // Clear new universe highlight after delay
   useEffect(() => {
@@ -224,19 +267,61 @@ const Dashboard = () => {
   }, [newUniverseId]);
 
   const handleLogout = () => {
+    const now = Date.now();
+    
+    // Prevent multiple rapid logout attempts
+    if (now - lastDashboardLogoutAttempt < DASHBOARD_LOGOUT_COOLDOWN) {
+      console.log("Dashboard - Logout throttled (multiple attempts)");
+      return;
+    }
+    
+    // Update timestamp
+    lastDashboardLogoutAttempt = now;
+    
+    console.log("Dashboard - Logging out user");
+    
+    // Proceed with normal logout flow
     localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
     localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+    localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+    
+    // Disable the logout buttons temporarily to prevent multiple clicks
+    const logoutButtons = document.querySelectorAll('button[data-action="logout"]');
+    logoutButtons.forEach(button => {
+      if (button) {
+        button.disabled = true;
+        setTimeout(() => {
+          if (button) button.disabled = false;
+        }, DASHBOARD_LOGOUT_COOLDOWN);
+      }
+    });
+    
     dispatch(logout());
     navigate("/?modal=login", { replace: true });
   };
   
   const handleRefreshAuth = () => {
     console.log("Dashboard - Refreshing authentication");
-    // Clear token and user data from localStorage
+    
+    // Clear all auth-related localStorage items
     localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
     localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+    localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+    localStorage.removeItem("token_verification_failed");
+    
+    // Clear any cached data
+    try {
+      if (typeof api.clearCache === 'function') {
+        api.clearCache();
+        console.log("Dashboard - API cache cleared");
+      }
+    } catch (error) {
+      console.error("Dashboard - Error clearing API cache:", error);
+    }
+    
     // Dispatch logout action
     dispatch(logout());
+    
     // Redirect to login page with modal
     navigate("/?modal=login", { replace: true });
   };
@@ -376,6 +461,7 @@ const Dashboard = () => {
                 color="error"
                 startIcon={<LogoutIcon />}
                 onClick={handleLogout}
+                data-action="logout"
               >
                 Logout
               </Button>
@@ -514,6 +600,7 @@ const Dashboard = () => {
               color="error"
               startIcon={<LogoutIcon />}
               onClick={handleLogout}
+              data-action="logout"
             >
               Logout
             </Button>

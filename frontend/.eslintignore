@@ -1,0 +1,53 @@
+# Build files
+dist/
+build/
+*.min.js
+*.worker.js
+*.production.min.js
+
+# Node modules
+node_modules/
+
+# Config files
+*.config.js
+babel.config.js
+vite.config.js
+
+# Generated files
+*.d.ts
+public/
+public/static/
+**/vendor-*
+src/assets/
+src/jsx-runtime.js
+jsx-runtime.js
+
+# Test files
+__tests__/
+*/__tests__/**
+test_*.js
+**/test_*.js
+**/__tests__/**
+
+# Script files
+scripts/
+scripts/**
+**/scripts/**
+
+# Specific directories
+**/ant-icons/
+backend/static/
+venv/
+**/site-packages/
+
+# Specific files
+update-paths.js
+index.js
+jsx-runtime.js
+*-*.js
+**/*.min.js
+**/*.worker.js
+**/*.js.map
+**/*.css.map
+src/assets/**
+src/components/common/ExportModal.jsx 

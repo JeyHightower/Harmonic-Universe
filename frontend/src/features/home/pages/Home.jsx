@@ -12,6 +12,9 @@ import { AUTH_CONFIG, IS_DEVELOPMENT } from "../../../utils/config";
 import Button from "../../../components/common/Button";
 import "../../../styles/Home.css";
 
+// Destructure window.setTimeout to fix linter error
+const { setTimeout } = window;
+
 function Home() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -108,49 +111,44 @@ function Home() {
 
   // Helper function to create and log in a demo user
   function createAndLoginDemoUser() {
-    try {
-      console.debug(
-        "[Home] createAndLoginDemoUser called - Creating demo user and logging in"
-      );
-      // Create a demo user
-      const demoUser = {
-        id: "demo-user-" + Math.random().toString(36).substring(2, 7),
-        username: "demo",
-        email: "demo@example.com",
-        firstName: "Demo",
-        lastName: "User",
-        role: "user",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+    console.debug(
+      "[Home] createAndLoginDemoUser called - Creating demo user and logging in"
+    );
+    // Create a demo user
+    const demoUser = {
+      id: "demo-user-" + Math.random().toString(36).substring(2, 7),
+      username: "demo",
+      email: "demo@example.com",
+      firstName: "Demo",
+      lastName: "User",
+      role: "user",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
 
-      // Create a mock token
-      const mockToken =
-        "demo-token-" + Math.random().toString(36).substring(2, 15);
+    // Create a mock token
+    const mockToken =
+      "demo-token-" + Math.random().toString(36).substring(2, 15);
 
-      // Store in localStorage
-      localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, mockToken);
-      localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(demoUser));
+    // Store in localStorage
+    localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, mockToken);
+    localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(demoUser));
 
-      // Dispatch login success
-      dispatch(
-        loginSuccess({
-          user: demoUser,
-          token: mockToken,
-        })
-      );
+    // Dispatch login success
+    dispatch(
+      loginSuccess({
+        user: demoUser,
+        token: mockToken,
+      })
+    );
 
-      console.log("[Home] Direct demo login successful");
+    console.log("[Home] Direct demo login successful");
 
-      // Use setTimeout to ensure auth state has time to update
-      setTimeout(() => {
-        console.debug("[Home] Navigating to dashboard after demo login");
-        navigate("/dashboard", { replace: true });
-      }, 500);
-    } catch (error) {
-      console.error("[Home] Failed to create demo user:", error);
-      throw error; // Let the main try/catch handle it
-    }
+    // Use setTimeout to ensure auth state has time to update
+    setTimeout(() => {
+      console.debug("[Home] Navigating to dashboard after demo login");
+      navigate("/dashboard", { replace: true });
+    }, 500);
   }
 
   console.debug("Rendering Home component:", { isAuthenticated, loading });

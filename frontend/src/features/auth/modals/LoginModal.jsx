@@ -2,9 +2,9 @@ import PropTypes from "prop-types";
 import React, { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Form, Input, Button, message } from "antd";
+import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { login, demoLogin } from "../../../store/thunks/authThunks";
 import { AUTH_CONFIG, MODAL_CONFIG } from "../../../utils/config";
-import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import "../styles/Auth.css";
 import { log } from "../../../utils/logger";
 
@@ -67,8 +67,8 @@ const LoginModal = ({ onClose }) => {
         setTimeout(() => {
           forceClose();
 
-          // Dispatch a simple storage event to encourage components to refresh
-          window.dispatchEvent(new Event("storage"));
+          // Dispatch a custom event to encourage components to refresh
+          window.dispatchEvent(new CustomEvent("storage"));
         }, 500);
       } else {
         const errorMessage =

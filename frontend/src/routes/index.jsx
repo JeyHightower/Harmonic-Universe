@@ -4,15 +4,15 @@ import Layout from "../components/layout/Layout";
 import ProtectedRoute from "../components/routing/ProtectedRoute";
 import { ROUTES } from "../utils/routes";
 import ModalTest from "../components/test/ModalTest";
-import { SceneModalHandler } from "../features/scene";
+import { SceneModal } from "../features/scene";
 
-// Create a wrapper component for SceneModalHandler in routes
+// Create a wrapper component for SceneModal in routes
 export const SceneCreateRoute = () => {
   const { universeId } = useParams();
   const navigate = useNavigate();
 
   return (
-    <SceneModalHandler
+    <SceneModal
       isOpen={true}
       onClose={() => navigate(`/universes/${universeId}/scenes`)}
       modalType="create"
@@ -159,7 +159,7 @@ const CharacterDetail = lazy(() =>
 );
 const NoteDetail = lazy(() => import("../features/note/pages/NoteDetail"));
 
-// Create a wrapper component for SceneModalHandler in routes
+// Create a wrapper component for SceneModal in routes
 const routes = [
   {
     path: ROUTES.HOME,

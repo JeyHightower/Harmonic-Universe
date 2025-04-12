@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import PropTypes from 'prop-types';
 import Button from "../../../components/common/Button";
 import Input from "../../../components/common/Input";
 import "../styles/Universe.css";
-import PropTypes from "prop-types";
 
 const PhysicsSettingsModal = ({ initialPhysicsParams, onSave, onClose }) => {
   const [physicsParams, setPhysicsParams] = useState(initialPhysicsParams);

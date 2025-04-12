@@ -21,10 +21,10 @@ import {
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
-import { useModal } from "../contexts/ModalContext.jsx";
-import { fetchUniverseById } from "../store/thunks/universeThunks.js";
+import { useModal } from "../../../contexts/ModalContext";
+import { fetchUniverseById } from "../../../store/thunks/universeThunks";
 import "../styles/HarmonyPage.css";
-import { api } from "../utils/api.js";
+import { api } from "../../../utils/api";
 
 const HarmonyPage = () => {
   const { universeId } = useParams();
@@ -179,11 +179,13 @@ const HarmonyPage = () => {
           <List.Item
             actions={[
               <Button
+                key="edit"
                 icon={<EditOutlined />}
                 onClick={() => handleEditHarmonyParameter(parameter)}
                 title="Edit"
               />,
               <Button
+                key="delete"
                 icon={<DeleteOutlined />}
                 danger
                 onClick={() => showDeleteConfirm(parameter)}
@@ -380,5 +382,8 @@ const HarmonyPage = () => {
     </div>
   );
 };
+
+// Add display name to component to fix ESLint warning
+HarmonyPage.displayName = 'HarmonyPage';
 
 export default HarmonyPage;

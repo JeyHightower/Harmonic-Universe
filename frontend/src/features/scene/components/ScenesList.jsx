@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import PropTypes from "prop-types";
 import SceneCard from "./SceneCard";
 
 // Create a ScenesList component with the existing functionality
@@ -39,6 +40,18 @@ const ScenesList = ({ scenes, sortField, sortDirection }) => {
       ))}
     </div>
   );
+};
+
+ScenesList.propTypes = {
+  scenes: PropTypes.array,
+  sortField: PropTypes.string,
+  sortDirection: PropTypes.string
+};
+
+ScenesList.defaultProps = {
+  scenes: [],
+  sortField: "updated_at",
+  sortDirection: "desc"
 };
 
 export default ScenesList;

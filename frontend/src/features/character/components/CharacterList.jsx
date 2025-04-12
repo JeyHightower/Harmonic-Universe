@@ -4,8 +4,8 @@ import { Box, Typography, Button, CircularProgress } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
 import { fetchCharacters } from "../../../store/thunks/characterThunks";
 import { openModal } from "../../../store/slices/characterSlice";
-import CharacterCard from "./CharacterCard";
 import { CharacterForm } from "..";
+import CharacterCard from "./CharacterCard";
 import "../styles/Character.css";
 
 const CharacterList = ({ sceneId }) => {

@@ -1,7 +1,7 @@
 /**
  * Formats a date string into a human-readable format
  * @param {string} dateString - The date string to format
- * @param {Object} options - Formatting options
+ * @param {object} options - Additional formatting options
  * @returns {string} Formatted date string
  */
 export const formatDate = (dateString, options = {}) => {
@@ -9,21 +9,19 @@ export const formatDate = (dateString, options = {}) => {
 
     try {
         const date = new Date(dateString);
-
+        
         // Check if date is valid
         if (isNaN(date.getTime())) {
             return 'Invalid date';
         }
-
-        // Default options
-        const defaultOptions = {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            ...options
-        };
-
-        return new Intl.DateTimeFormat('en-US', defaultOptions).format(date);
+        
+        // Simple date formatting without using Intl
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const month = months[date.getMonth()];
+        const day = date.getDate();
+        const year = date.getFullYear();
+        
+        return `${month} ${day}, ${year}`;
     } catch (error) {
         console.error('Error formatting date:', error);
         return 'Error';
@@ -47,24 +45,36 @@ export const getRelativeTime = (dateString) => {
             return 'Invalid date';
         }
 
-        const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
         const diffInSeconds = Math.floor((date - now) / 1000);
         const diffInMinutes = Math.floor(diffInSeconds / 60);
         const diffInHours = Math.floor(diffInMinutes / 60);
         const diffInDays = Math.floor(diffInHours / 24);
+        const diffInMonths = Math.floor(diffInDays / 30);
+        const diffInYears = Math.floor(diffInDays / 365);
 
-        if (diffInDays < -365) {
-            return formatDate(dateString); // More than a year ago, use full date
-        } else if (diffInDays < -30) {
-            return rtf.format(Math.floor(diffInDays / 30), 'month');
+        // Simple relative time formatting without using Intl
+        if (diffInYears < -1) {
+            return `${Math.abs(diffInYears)} years ago`;
+        } else if (diffInYears === -1) {
+            return 'a year ago';
+        } else if (diffInMonths < -1) {
+            return `${Math.abs(diffInMonths)} months ago`;
+        } else if (diffInMonths === -1) {
+            return 'a month ago';
         } else if (diffInDays < -1) {
-            return rtf.format(diffInDays, 'day');
+            return `${Math.abs(diffInDays)} days ago`;
+        } else if (diffInDays === -1) {
+            return 'yesterday';
         } else if (diffInHours < -1) {
-            return rtf.format(diffInHours, 'hour');
+            return `${Math.abs(diffInHours)} hours ago`;
+        } else if (diffInHours === -1) {
+            return 'an hour ago';
         } else if (diffInMinutes < -1) {
-            return rtf.format(diffInMinutes, 'minute');
+            return `${Math.abs(diffInMinutes)} minutes ago`;
+        } else if (diffInMinutes === -1) {
+            return 'a minute ago';
         } else if (diffInSeconds < -10) {
-            return rtf.format(diffInSeconds, 'second');
+            return `${Math.abs(diffInSeconds)} seconds ago`;
         } else {
             return 'just now';
         }

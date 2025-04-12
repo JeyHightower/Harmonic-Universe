@@ -8,7 +8,7 @@ import {
 } from "../../../store/thunks/consolidated/scenesThunks";
 import { fetchUniverseById } from "../../../store/thunks/universeThunks";
 import "../styles/UniverseDetail.css";
-import { SceneCard, SceneModalHandler } from "../../scene";
+import { SceneCard, SceneModal } from "../../scene";
 import { UniverseModal, UniverseDeleteModal } from "../";
 
 const UniverseDetail = () => {
@@ -170,7 +170,7 @@ const UniverseDetail = () => {
       <div className="not-found-container">
         <h2>Universe Not Found</h2>
         <p>
-          The universe you're looking for doesn't exist or you don't have
+          The universe you&apos;re looking for doesn&apos;t exist or you don&apos;t have
           permission to view it.
         </p>
         <Button onClick={() => navigate("/universes")}>
@@ -270,7 +270,7 @@ const UniverseDetail = () => {
       )}
 
       {isCreateSceneModalOpen && (
-        <SceneModalHandler
+        <SceneModal
           isOpen={isCreateSceneModalOpen}
           onClose={() => setIsCreateSceneModalOpen(false)}
           onSuccess={handleCreateSceneSuccess}
@@ -281,7 +281,7 @@ const UniverseDetail = () => {
 
       {/* Add Scene Edit Modal */}
       {isEditSceneModalOpen && sceneToEdit && (
-        <SceneModalHandler
+        <SceneModal
           isOpen={isEditSceneModalOpen}
           onClose={handleEditSceneClose}
           onSuccess={handleEditSceneSuccess}

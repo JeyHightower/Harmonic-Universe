@@ -24,11 +24,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import "../styles/Music.css";
 import { Pause, PlayArrow } from '@mui/icons-material';
 import { 
-  generateMusic, 
-  saveMusic, 
-  getMusic, 
-  deleteMusic 
-} from "../../../services/api/audioApi";
+  audioApi
+} from "../../../services/api";
 
 // Define window globals to fix ESLint errors
 const { requestAnimationFrame, cancelAnimationFrame, setTimeout } = window;
@@ -89,6 +86,12 @@ const ROOT_NOTE_OPTIONS = [
   { value: "A#", label: "A#" },
   { value: "B", label: "B" },
 ];
+
+// Replace named imports with proper functions
+const generateMusic = audioApi.generateAudio || (() => console.error("generateAudio function not available"));
+const saveMusic = audioApi.saveAudio || (() => console.error("saveAudio function not available"));
+const getMusic = audioApi.getAudio || (() => console.error("getAudio function not available"));
+const deleteMusic = audioApi.deleteAudio || (() => console.error("deleteAudio function not available"));
 
 /**
  * Music Modal Component

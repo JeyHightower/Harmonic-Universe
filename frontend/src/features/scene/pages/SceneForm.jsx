@@ -189,7 +189,7 @@ const SceneForm = ({
 
       loadSceneData();
     }
-  }, [sceneId, initialData, form]);
+  }, [sceneId, initialData, form, universeId]);
 
   // Load characters for the universe
   useEffect(() => {
@@ -219,7 +219,7 @@ const SceneForm = ({
     };
 
     fetchCharacters();
-  }, [universeId]); // Ensure to include universeId in the dependency array
+  }, [universeId]);
 
   // Register the submit function if the prop is provided
   useEffect(() => {
@@ -298,9 +298,12 @@ const SceneForm = ({
 
   // Handle form submission
   const onFinish = async (values) => {
-    console.log("SceneForm - Form submitted with values:", values);
-
     try {
+      setSubmitting(true);
+      setError(null);
+
+      console.log("SceneForm - Form submitted with values:", values);
+
       // Validate required fields manually first
       if (!values.name || values.name.trim() === "") {
         console.error("SceneForm - Missing required name field in form values");
@@ -417,6 +420,8 @@ const SceneForm = ({
       console.error("SceneForm - Error submitting form:", error);
       message.error(error.message || "Failed to save scene");
       throw error;
+    } finally {
+      setSubmitting(false);
     }
   };
 

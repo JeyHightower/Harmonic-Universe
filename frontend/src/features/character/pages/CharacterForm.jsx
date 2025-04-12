@@ -9,6 +9,7 @@ import {
   Button,
   Box,
   Typography,
+  CircularProgress,
 } from "@mui/material";
 import {
   createCharacter,
@@ -183,5 +184,8 @@ const CharacterForm = ({ open, type, sceneId, characterId }) => {
     </Dialog>
   );
 };
+
+// Add display name to fix ESLint warning
+CharacterForm.displayName = 'CharacterForm';
 
 export default CharacterForm;

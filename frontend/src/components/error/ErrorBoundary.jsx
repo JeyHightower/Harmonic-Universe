@@ -1,7 +1,15 @@
 import React, { Component } from "react";
 import PropTypes from "prop-types";
-import { logError } from "../../services/errorService";
+import { logError } from "../../utils/logger";
 import "./ErrorBoundary.css";
+
+// Simple error service if the imported one isn't available
+const errorService = {
+  handleError: (error, source, info) => {
+    console.error(`Error in ${source}:`, error, info);
+    logError(error, source, info);
+  }
+};
 
 // Define a fallback for process.env if it's not available in the environment
 const processEnv = typeof process !== 'undefined' && process.env ? process.env : { NODE_ENV: 'development' };

@@ -17,9 +17,9 @@ export const fetchPhysicsObjects = createAsyncThunk(
   async (sceneId, { rejectWithValue }) => {
     try {
       console.debug(`Fetching physics objects for scene ${sceneId}`);
-      const response = await api.getPhysicsObjectsForScene(sceneId);
+      const response = await api.scenes.getSceneSettings(sceneId);
       console.debug("Physics objects fetched:", response);
-      return response.data || [];
+      return response.data?.physicsObjects || [];
     } catch (error) {
       console.error("Failed to fetch physics objects:", error);
       return rejectWithValue(handleError(error));
@@ -33,9 +33,23 @@ export const createPhysicsObject = createAsyncThunk(
   async (physicsObjectData, { rejectWithValue }) => {
     try {
       console.debug("Creating physics object:", physicsObjectData);
-      const response = await api.createPhysicsObject(physicsObjectData);
+      const { sceneId, ...objectData } = physicsObjectData;
+      
+      // First get current scene settings
+      const sceneResponse = await api.scenes.getSceneSettings(sceneId);
+      const currentSettings = sceneResponse.data || {};
+      
+      // Add new physics object to the list
+      const physicsObjects = [...(currentSettings.physicsObjects || []), objectData];
+      
+      // Update scene settings with new physics objects
+      const response = await api.scenes.updateSceneSettings(sceneId, {
+        ...currentSettings,
+        physicsObjects
+      });
+      
       console.debug("Physics object created:", response);
-      return response.data;
+      return objectData;
     } catch (error) {
       console.error("Failed to create physics object:", error);
       return rejectWithValue(handleError(error));
@@ -46,12 +60,27 @@ export const createPhysicsObject = createAsyncThunk(
 // Update a physics object
 export const updatePhysicsObject = createAsyncThunk(
   "physicsObjects/updatePhysicsObject",
-  async ({ id, data }, { rejectWithValue }) => {
+  async ({ id, sceneId, data }, { rejectWithValue }) => {
     try {
       console.debug(`Updating physics object ${id}:`, data);
-      const response = await api.updatePhysicsObject(id, data);
+      
+      // First get current scene settings
+      const sceneResponse = await api.scenes.getSceneSettings(sceneId);
+      const currentSettings = sceneResponse.data || {};
+      
+      // Update the specific physics object
+      const physicsObjects = (currentSettings.physicsObjects || []).map(obj => 
+        obj.id === id ? { ...obj, ...data } : obj
+      );
+      
+      // Update scene settings with modified physics objects
+      const response = await api.scenes.updateSceneSettings(sceneId, {
+        ...currentSettings,
+        physicsObjects
+      });
+      
       console.debug("Physics object updated:", response);
-      return response.data;
+      return { id, ...data };
     } catch (error) {
       console.error("Failed to update physics object:", error);
       return rejectWithValue(handleError(error));
@@ -62,10 +91,23 @@ export const updatePhysicsObject = createAsyncThunk(
 // Delete a physics object
 export const deletePhysicsObject = createAsyncThunk(
   "physicsObjects/deletePhysicsObject",
-  async (id, { rejectWithValue }) => {
+  async ({ id, sceneId }, { rejectWithValue }) => {
     try {
       console.debug(`Deleting physics object ${id}`);
-      await api.deletePhysicsObject(id);
+      
+      // First get current scene settings
+      const sceneResponse = await api.scenes.getSceneSettings(sceneId);
+      const currentSettings = sceneResponse.data || {};
+      
+      // Filter out the deleted physics object
+      const physicsObjects = (currentSettings.physicsObjects || []).filter(obj => obj.id !== id);
+      
+      // Update scene settings without the deleted physics object
+      await api.scenes.updateSceneSettings(sceneId, {
+        ...currentSettings,
+        physicsObjects
+      });
+      
       return id; // Return the ID for state updates
     } catch (error) {
       console.error("Failed to delete physics object:", error);

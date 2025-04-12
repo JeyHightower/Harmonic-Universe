@@ -12,10 +12,16 @@ const ImportModal = ({ visible, onClose, onImport, type = "json" }) => {
       return;
     }
 
+    // Check if FileReader is available
+    if (typeof window === 'undefined' || !window.FileReader) {
+      message.error("File reading is not supported in this environment");
+      return;
+    }
+
     try {
       setLoading(true);
       const file = fileList[0];
-      const reader = new FileReader();
+      const reader = new window.FileReader();
 
       reader.onload = async (e) => {
         try {

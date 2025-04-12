@@ -3,7 +3,7 @@ import React from "react";
 import { Provider } from "react-redux";
 
 // Safe wrapper for useDispatch hook
-export function safeUseDispatch() {
+export function useSafeDispatch() {
   try {
     return useDispatch();
   } catch (error) {
@@ -18,6 +18,9 @@ export function safeUseDispatch() {
   }
 }
 
+// For backward compatibility
+export const safeUseDispatch = useSafeDispatch;
+
 /**
  * Ensures a component is wrapped in a Redux Provider
  * Useful for components that need to use Redux outside the main app structure
@@ -28,7 +31,7 @@ export function safeUseDispatch() {
  */
 export const ensureReduxProvider = (Component, store) => {
   // Return a new component that wraps the provided component with Redux Provider
-  return (props) => {
+  const WrappedWithReduxProvider = (props) => {
     if (!store) {
       console.error("[ensure-redux-provider] No store provided!");
       return <Component {...props} />;
@@ -40,4 +43,10 @@ export const ensureReduxProvider = (Component, store) => {
       </Provider>
     );
   };
+
+  // Add displayName for debugging and to fix ESLint warning
+  const wrappedComponentName = Component.displayName || Component.name || 'Component';
+  WrappedWithReduxProvider.displayName = `EnsureReduxProvider(${wrappedComponentName})`;
+
+  return WrappedWithReduxProvider;
 };

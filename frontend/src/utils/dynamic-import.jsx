@@ -84,7 +84,7 @@ export const loadComponent = (path, options = {}) => {
   });
 
   // Return a component that handles suspense
-  return (props) => {
+  const DynamicComponent = (props) => {
     const Fallback = options.fallback || (() => React.createElement('div', null, 'Loading...'));
     return React.createElement(
       React.Suspense,
@@ -92,6 +92,12 @@ export const loadComponent = (path, options = {}) => {
       React.createElement(LazyComponent, props)
     );
   };
+
+  // Add displayName for debugging and to fix ESLint warning
+  const componentName = path.split('/').pop().replace(/\.\w+$/, '');
+  DynamicComponent.displayName = `DynamicComponent(${componentName})`;
+
+  return DynamicComponent;
 };
 
 // Provide a global shim for require if it doesn't exist

@@ -7,8 +7,8 @@ import ConfirmationModal from "../components/modals/ConfirmationModal";
 import FormModal from "../components/modals/FormModal";
 import LoginModal from "../features/auth/modals/LoginModal";
 import SignupModal from "../features/auth/modals/SignupModal";
-import { MODAL_CONFIG } from "./config";
 import { PhysicsParametersModal, PhysicsConstraintModal } from "../features/physics";
+import { MODAL_CONFIG } from "./config";
 
 // Create modal registry
 const modalRegistry = new Map();

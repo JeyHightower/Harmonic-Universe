@@ -260,7 +260,7 @@ const SceneEditPage = () => {
           <Card className="error-card">
             <div className="error-container">
               <p>
-                Scene not found. The scene may have been deleted or you don't
+                Scene not found. The scene may have been deleted or you do not
                 have permission to view it.
               </p>
               <button onClick={() => navigate(`/universes/${universeId}`)}>

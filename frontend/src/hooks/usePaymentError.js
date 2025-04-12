@@ -151,10 +151,11 @@ export function usePaymentError({
   }, []);
 
   const formatAmount = useCallback((amount, currency = "USD") => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency,
-    }).format(amount);
+    // Use a simple formatting approach instead of Intl
+    if (currency === "USD") {
+      return "$" + parseFloat(amount).toFixed(2);
+    }
+    return parseFloat(amount).toFixed(2) + " " + currency;
   }, []);
 
   return {

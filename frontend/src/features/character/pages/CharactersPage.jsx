@@ -39,8 +39,8 @@ const CharacterModal = ({ open, onClose, type, characterId }) => {
 };
 
 // Fix the API import path
-import api from "../../../services/api.adapter";
 import { useDispatch, useSelector } from "react-redux";
+import api from "../../../services/api.adapter";
 import { clearCharacters } from "../../../store/slices/characterSlice";
 import { fetchCharactersByUniverse } from "../../../store/thunks/characterThunks";
 

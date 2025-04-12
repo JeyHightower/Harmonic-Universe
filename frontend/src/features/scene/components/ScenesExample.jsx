@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Button, Card, List, Typography, Space, message } from "antd";
 import useSceneModal from "../../../hooks/useSceneModal";
 import apiClient from "../../../services/api.adapter";
+import SceneModal from "../modals/SceneModal";
 import SceneCardSimple from "./SceneCardSimple";
 
 const { Title } = Typography;
@@ -120,7 +121,7 @@ const ScenesExample = ({ universeId }) => {
 
       {/* The modal handler - only renders when isOpen is true */}
       {isOpen && (
-        <SceneModalHandler
+        <SceneModal
           isOpen={isOpen}
           onClose={closeModal}
           mode={modalType}

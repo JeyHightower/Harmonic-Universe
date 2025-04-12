@@ -4,14 +4,33 @@
  */
 
 import axios from 'axios';
-// Replace the import with a local log function
-const log = (category, message, data) => {
-  if (!import.meta.env.PROD) {
-    console.log(`[${category}] ${message}`, data || '');
+import { API_SERVICE_CONFIG } from './config';
+
+/**
+ * Safe logging function that won't throw errors
+ */
+const log = (category, message, data = {}) => {
+  try {
+    if (!import.meta.env.PROD) {
+      console.log(`[${category.toUpperCase()}] ${message}`, data || '');
+    }
+  } catch (error) {
+    // Fallback if there's any issue with logging
+    console.log(`[API] ${message}`);
   }
 };
 
-import { API_SERVICE_CONFIG } from './config';
+/**
+ * Safe error logging function
+ */
+const logError = (message, error) => {
+  try {
+    console.error(`[API ERROR] ${message}`, error);
+  } catch (logError) {
+    // Ultra-safe fallback
+    console.error(message);
+  }
+};
 
 // Create axios instance with default config
 const axiosInstance = axios.create({
@@ -110,17 +129,59 @@ axiosInstance.interceptors.response.use(
     const method = error.config ? error.config.method?.toUpperCase() : 'Unknown Method';
 
     // Log error
-    log('api', 'Response error', {
+    logError(`${method} ${url} - ${status}`, {
       status,
       url,
       method,
       message: error.message,
+      data: error.response?.data
     });
 
-    // Handle 401 Unauthorized errors (token expired)
+    // Handle 401 Unauthorized errors (token expired or invalid)
     if (error.response && error.response.status === 401) {
-      // Potential place to refresh token or logout
-      log('api', 'Authentication error', { url });
+      // Check if it's a signature verification failure or other auth error
+      const errorMessage = error.response.data?.message || '';
+      const isTokenError = 
+        errorMessage.includes('Signature verification failed') || 
+        errorMessage.includes('Invalid token') ||
+        errorMessage.includes('expired') ||
+        errorMessage.includes('Token has expired') ||
+        errorMessage.includes('Not enough segments') ||
+        errorMessage.includes('authentication');
+        
+      if (isTokenError) {
+        logError('Authentication token invalid or expired', {
+          message: errorMessage,
+          url,
+          method
+        });
+        
+        // Mark token as verification failed to trigger a redirect to login
+        localStorage.setItem("token_verification_failed", "true");
+        
+        // Clear ALL auth related values from localStorage - use consistent keys from config
+        localStorage.removeItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
+        
+        // Also clear user and refresh token with proper keys from the config
+        try {
+          // Use dynamic import to avoid circular dependencies
+          import('../utils/config').then(({ AUTH_CONFIG }) => {
+            localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+            localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+            log('api', 'Cleared all auth related localStorage items');
+          }).catch(err => {
+            // Fallback to common keys if import fails
+            localStorage.removeItem("user");
+            localStorage.removeItem("refreshToken");
+            log('api', 'Cleared auth related localStorage items with fallback keys');
+          });
+        } catch (err) {
+          // Ultra-safe fallback
+          localStorage.removeItem("user");
+          localStorage.removeItem("refreshToken");
+          log('api', 'Cleared auth related localStorage with fallback due to error', { error: err.message });
+        }
+      }
     }
 
     return Promise.reject(error);
@@ -197,6 +258,95 @@ const cacheResponse = (url, data, options) => {
 };
 
 /**
+ * Handle retry logic for rate limited requests
+ * @param {Function} requestFn - The request function to call
+ * @param {object} options - Request options
+ * @returns {Promise<any>} - Response data
+ */
+const withRetry = async (requestFn, options = {}) => {
+  const maxRetries = options.maxRetries || API_SERVICE_CONFIG.RETRY.MAX_RETRIES;
+  const initialRetryDelay = options.retryDelay || API_SERVICE_CONFIG.RETRY.RETRY_DELAY;
+  const retryStatuses = options.retryStatuses || API_SERVICE_CONFIG.RETRY.RETRY_STATUSES;
+  const backoffFactor = API_SERVICE_CONFIG.RETRY.BACKOFF_FACTOR || 2;
+  const rateLimitConfig = API_SERVICE_CONFIG.RETRY.RATE_LIMIT;
+  
+  let lastError;
+  let attempts = 0;
+  
+  while (attempts <= maxRetries) {
+    try {
+      return await requestFn();
+    } catch (error) {
+      lastError = error;
+      
+      // Only retry on specific status codes
+      if (
+        error.response &&
+        retryStatuses.includes(error.response.status) &&
+        attempts < maxRetries
+      ) {
+        // Calculate base delay with exponential backoff and jitter
+        let delay = initialRetryDelay * Math.pow(backoffFactor, attempts) + (Math.random() * 500);
+        
+        // Special handling for rate limiting (429)
+        if (error.response.status === 429) {
+          log('api', 'Rate limit (429) detected, applying special handling');
+          
+          if (rateLimitConfig?.RESPECT_RETRY_AFTER) {
+            // Try to get Retry-After header
+            const retryAfter = error.response.headers?.['retry-after'];
+            if (retryAfter) {
+              // Retry-After can be seconds or a date
+              let retryAfterMs;
+              if (/^\d+$/.test(retryAfter)) {
+                // It's seconds
+                retryAfterMs = parseInt(retryAfter) * 1000;
+              } else {
+                // It's a date
+                const retryDate = new Date(retryAfter);
+                retryAfterMs = retryDate.getTime() - Date.now();
+              }
+              
+              if (retryAfterMs > 0) {
+                log('api', `Using server's Retry-After value: ${retryAfterMs}ms`);
+                delay = retryAfterMs;
+              }
+            } else {
+              // No Retry-After, use default
+              delay = rateLimitConfig.DEFAULT_RETRY_AFTER || 5000;
+              log('api', `No Retry-After header, using default delay: ${delay}ms`);
+            }
+          }
+          
+          // Add additional delay for rate limiting
+          if (rateLimitConfig?.ADDITIONAL_DELAY) {
+            delay += rateLimitConfig.ADDITIONAL_DELAY;
+          }
+        }
+        
+        log('api', `Request failed with status ${error.response.status}. Retrying in ${Math.round(delay)}ms (${attempts + 1}/${maxRetries})`, {
+          status: error.response.status,
+          url: error.config.url,
+          attempt: attempts + 1,
+          delay: Math.round(delay)
+        });
+        
+        // Wait for the calculated delay
+        await new Promise(resolve => setTimeout(resolve, delay));
+        attempts++;
+        continue;
+      }
+      
+      // If we're not retrying, rethrow the error
+      throw error;
+    }
+  }
+  
+  // If we've exhausted our retries, throw the last error
+  throw lastError;
+};
+
+/**
  * HTTP Client with methods for different HTTP verbs
  */
 export const httpClient = {
@@ -215,7 +365,11 @@ export const httpClient = {
       return cachedResponse;
     }
     
-    const response = await axiosInstance.get(formattedUrl, options);
+    // Make the request with retry logic for cacheable GET requests
+    const response = await withRetry(
+      () => axiosInstance.get(formattedUrl, options),
+      options
+    );
     const data = response.data;
     
     // Cache successful response
@@ -237,7 +391,29 @@ export const httpClient = {
     // Clear cache for this URL if it exists
     clearCacheForUrl(formattedUrl);
     
-    const response = await axiosInstance.post(formattedUrl, data, options);
+    // Special handling for auth endpoints
+    const isAuthEndpoint = formattedUrl.includes('/auth/');
+    
+    if (isAuthEndpoint && formattedUrl.includes('/logout')) {
+      // Handle logout specially - don't retry on 429
+      try {
+        const response = await axiosInstance.post(formattedUrl, data, options);
+        return response.data;
+      } catch (error) {
+        if (error.response && error.response.status === 429) {
+          log('api', 'Logout rate limited (429) - treating as successful', { url: formattedUrl });
+          return { success: true, message: "Logged out successfully (client-side only)" };
+        }
+        throw error;
+      }
+    }
+    
+    // Make the request with retry logic
+    const response = await withRetry(
+      () => axiosInstance.post(formattedUrl, data, options),
+      options
+    );
+    
     return response.data;
   },
   
@@ -254,7 +430,12 @@ export const httpClient = {
     // Clear cache for this URL if it exists
     clearCacheForUrl(formattedUrl);
     
-    const response = await axiosInstance.put(formattedUrl, data, options);
+    // Make the request with retry logic
+    const response = await withRetry(
+      () => axiosInstance.put(formattedUrl, data, options),
+      options
+    );
+    
     return response.data;
   },
   
@@ -271,7 +452,12 @@ export const httpClient = {
     // Clear cache for this URL if it exists
     clearCacheForUrl(formattedUrl);
     
-    const response = await axiosInstance.patch(formattedUrl, data, options);
+    // Make the request with retry logic
+    const response = await withRetry(
+      () => axiosInstance.patch(formattedUrl, data, options),
+      options
+    );
+    
     return response.data;
   },
   
@@ -287,7 +473,12 @@ export const httpClient = {
     // Clear cache for this URL if it exists
     clearCacheForUrl(formattedUrl);
     
-    const response = await axiosInstance.delete(formattedUrl, options);
+    // Make the request with retry logic
+    const response = await withRetry(
+      () => axiosInstance.delete(formattedUrl, options),
+      options
+    );
+    
     return response.data;
   },
   

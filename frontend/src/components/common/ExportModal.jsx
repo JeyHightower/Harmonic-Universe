@@ -21,7 +21,7 @@ const ExportModal = ({ visible, onClose, data, type = "json" }) => {
           mimeType = "application/json";
           fileExtension = "json";
           break;
-        case "csv":
+        case "csv": {
           // Convert data to CSV format
           const headers = Object.keys(data[0] || {}).join(",");
           const rows = data
@@ -31,6 +31,7 @@ const ExportModal = ({ visible, onClose, data, type = "json" }) => {
           mimeType = "text/csv";
           fileExtension = "csv";
           break;
+        }
         default:
           throw new Error("Unsupported export format");
       }

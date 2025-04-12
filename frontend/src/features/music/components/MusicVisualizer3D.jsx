@@ -42,78 +42,8 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
     typeof THREE !== "undefined" && typeof THREE.Scene === "function"
   );
 
-  // Initialize Three.js scene
-  useEffect(() => {
-    if (!isThreeAvailable || !containerRef.current) return;
-
-    // Create scene
-    const scene = new THREE.Scene();
-    sceneRef.current = scene;
-
-    // Create camera
-    const camera = new THREE.PerspectiveCamera(
-      75,
-      containerRef.current.clientWidth / containerRef.current.clientHeight,
-      0.1,
-      1000
-    );
-    camera.position.z = 30;
-    cameraRef.current = camera;
-
-    // Create renderer
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-    renderer.setSize(
-      containerRef.current.clientWidth,
-      containerRef.current.clientHeight
-    );
-    renderer.setClearColor(0x000000, 0);
-    containerRef.current.appendChild(renderer.domElement);
-    rendererRef.current = renderer;
-
-    // Add ambient light
-    const ambientLight = new THREE.AmbientLight(0x404040);
-    scene.add(ambientLight);
-
-    // Add directional light
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(1, 1, 1);
-    scene.add(directionalLight);
-
-    // Create stars background
-    createStars();
-
-    // Create particle system for music visualization
-    createParticles();
-
-    // Handle window resize
-    const handleResize = () => {
-      if (!containerRef.current || !cameraRef.current || !rendererRef.current)
-        return;
-
-      cameraRef.current.aspect =
-        containerRef.current.clientWidth / containerRef.current.clientHeight;
-      cameraRef.current.updateProjectionMatrix();
-      rendererRef.current.setSize(
-        containerRef.current.clientWidth,
-        containerRef.current.clientHeight
-      );
-    };
-
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      if (frameIdRef.current) {
-        cancelAnimationFrame(frameIdRef.current);
-      }
-      if (rendererRef.current && containerRef.current) {
-        containerRef.current.removeChild(rendererRef.current.domElement);
-      }
-    };
-  }, [isPlaying, musicData, isThreeAvailable]);
-
   // Create particle system
-  const createParticles = () => {
+  const createParticles = React.useCallback(() => {
     if (!sceneRef.current) return;
 
     // Clean up existing particles
@@ -170,10 +100,10 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
     const particles = new THREE.Points(geometry, material);
     sceneRef.current.add(particles);
     particlesRef.current = particles;
-  };
+  }, [musicData]);
 
   // Create stars background
-  const createStars = () => {
+  const createStars = React.useCallback(() => {
     if (!sceneRef.current) return;
 
     // Clean up existing stars
@@ -240,59 +170,10 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
     const stars = new THREE.Points(starGeometry, starMaterial);
     sceneRef.current.add(stars);
     starsRef.current = stars;
-  };
-
-  // Animation loop
-  useEffect(() => {
-    if (!sceneRef.current || !cameraRef.current || !rendererRef.current) return;
-
-    const animate = () => {
-      frameIdRef.current = requestAnimationFrame(animate);
-
-      if (!isPlaying) {
-        // Idle animation when not playing
-        rotateScene(0.0005);
-      } else if (particlesRef.current && analyzerData) {
-        // Active animation when playing music
-        updateParticles(analyzerData);
-      }
-
-      // Render scene
-      rendererRef.current.render(sceneRef.current, cameraRef.current);
-    };
-
-    animate();
-
-    return () => {
-      if (frameIdRef.current) {
-        cancelAnimationFrame(frameIdRef.current);
-      }
-    };
-  }, [isPlaying, analyzerData]);
-
-  // React to music data changes
-  useEffect(() => {
-    if (musicData) {
-      // Recreate the particles when music data changes
-      createParticles();
-
-      // Update effects based on AI metadata if available
-      if (musicData.ai_metadata) {
-        effectsRef.current = {
-          energy: musicData.ai_metadata.energy || 0.5,
-          mood: musicData.ai_metadata.mood || "neutral",
-          complexity: musicData.ai_metadata.complexity || 0.5,
-          style: musicData.ai_metadata.style || "default",
-        };
-
-        // Update scene based on style
-        updateSceneForStyle(musicData.ai_metadata.style);
-      }
-    }
-  }, [musicData]);
+  }, []);
 
   // Update scene appearance based on AI style
-  const updateSceneForStyle = (style) => {
+  const updateSceneForStyle = React.useCallback((style) => {
     if (!sceneRef.current) return;
 
     switch (style) {
@@ -398,10 +279,10 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
           colors.needsUpdate = true;
         }
     }
-  };
+  }, []);
 
   // Update particles based on analyzer data
-  const updateParticles = (dataArray) => {
+  const updateParticles = React.useCallback((dataArray) => {
     if (!particlesRef.current || !musicData) return;
 
     const particles = particlesRef.current;
@@ -460,10 +341,10 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
 
     // Also rotate the scene based on the beat and energy
     rotateScene(0.001 + 0.001 * intensity * energyFactor);
-  };
+  }, [musicData, rotateScene]);
 
   // Rotate the entire scene
-  const rotateScene = (speed) => {
+  const rotateScene = React.useCallback((speed) => {
     if (particlesRef.current) {
       particlesRef.current.rotation.y += speed;
       particlesRef.current.rotation.x += speed * 0.5;
@@ -471,7 +352,130 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
     if (starsRef.current) {
       starsRef.current.rotation.y += speed * 0.2;
     }
-  };
+  }, []);
+
+  // Initialize Three.js scene
+  useEffect(() => {
+    if (!isThreeAvailable || !containerRef.current) return;
+
+    // Create scene
+    const scene = new THREE.Scene();
+    sceneRef.current = scene;
+
+    // Create camera
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      containerRef.current.clientWidth / containerRef.current.clientHeight,
+      0.1,
+      1000
+    );
+    camera.position.z = 30;
+    cameraRef.current = camera;
+
+    // Create renderer
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(
+      containerRef.current.clientWidth,
+      containerRef.current.clientHeight
+    );
+    renderer.setClearColor(0x000000, 0);
+    containerRef.current.appendChild(renderer.domElement);
+    rendererRef.current = renderer;
+
+    // Add ambient light
+    const ambientLight = new THREE.AmbientLight(0x404040);
+    scene.add(ambientLight);
+
+    // Add directional light
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(1, 1, 1);
+    scene.add(directionalLight);
+
+    // Create stars background
+    createStars();
+
+    // Create particle system for music visualization
+    createParticles();
+
+    // Handle window resize
+    const handleResize = () => {
+      if (!containerRef.current || !cameraRef.current || !rendererRef.current)
+        return;
+
+      cameraRef.current.aspect =
+        containerRef.current.clientWidth / containerRef.current.clientHeight;
+      cameraRef.current.updateProjectionMatrix();
+      rendererRef.current.setSize(
+        containerRef.current.clientWidth,
+        containerRef.current.clientHeight
+      );
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    // Capture the DOM element for cleanup
+    const container = containerRef.current;
+    const domElement = rendererRef.current.domElement;
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      if (frameIdRef.current) {
+        cancelAnimationFrame(frameIdRef.current);
+      }
+      if (domElement && container && container.contains(domElement)) {
+        container.removeChild(domElement);
+      }
+    };
+  }, [isThreeAvailable, createParticles, createStars]);
+
+  // Animation loop
+  useEffect(() => {
+    if (!sceneRef.current || !cameraRef.current || !rendererRef.current) return;
+
+    const animate = () => {
+      frameIdRef.current = requestAnimationFrame(animate);
+
+      if (!isPlaying) {
+        // Idle animation when not playing
+        rotateScene(0.0005);
+      } else if (particlesRef.current && analyzerData) {
+        // Active animation when playing music
+        updateParticles(analyzerData);
+      }
+
+      // Render scene
+      rendererRef.current.render(sceneRef.current, cameraRef.current);
+    };
+
+    animate();
+
+    return () => {
+      if (frameIdRef.current) {
+        cancelAnimationFrame(frameIdRef.current);
+      }
+    };
+  }, [isPlaying, analyzerData, updateParticles, rotateScene]);
+
+  // React to music data changes
+  useEffect(() => {
+    if (musicData) {
+      // Recreate the particles when music data changes
+      createParticles();
+
+      // Update effects based on AI metadata if available
+      if (musicData.ai_metadata) {
+        effectsRef.current = {
+          energy: musicData.ai_metadata.energy || 0.5,
+          mood: musicData.ai_metadata.mood || "neutral",
+          complexity: musicData.ai_metadata.complexity || 0.5,
+          style: musicData.ai_metadata.style || "default",
+        };
+
+        // Update scene based on style
+        updateSceneForStyle(musicData.ai_metadata.style);
+      }
+    }
+  }, [musicData, createParticles, updateSceneForStyle]);
 
   if (!isThreeAvailable) {
     return (
@@ -501,5 +505,7 @@ MusicVisualizer3D.propTypes = {
   musicData: PropTypes.object,
   analyzerData: PropTypes.array,
 };
+
+MusicVisualizer3D.displayName = 'MusicVisualizer3D';
 
 export default MusicVisualizer3D; 

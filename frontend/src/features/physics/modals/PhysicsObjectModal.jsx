@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Dialog,
@@ -22,12 +22,12 @@ import {
   FormControl,
   Alert,
 } from '@mui/material';
+import PropTypes from 'prop-types';
 import {
   createPhysicsObject,
   deletePhysicsObject,
   updatePhysicsObject,
 } from '../../../store/thunks/physicsObjectsThunks';
-import PropTypes from 'prop-types';
 
 /**
  * Default physics object properties

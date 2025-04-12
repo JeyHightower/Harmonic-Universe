@@ -1,10 +1,11 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import React from "react";
 
 /**
  * Safe version of useLocation that ensures Router Provider is available
  * @returns {Object} The location object
  */
-export const safeUseLocation = () => {
+export const useSafeLocation = () => {
   try {
     return useLocation();
   } catch (error) {
@@ -13,11 +14,14 @@ export const safeUseLocation = () => {
   }
 };
 
+// For backward compatibility
+export const safeUseLocation = useSafeLocation;
+
 /**
  * Safe version of useNavigate that ensures Router Provider is available
  * @returns {Function} The navigate function
  */
-export const safeUseNavigate = () => {
+export const useSafeNavigate = () => {
   try {
     return useNavigate();
   } catch (error) {
@@ -26,12 +30,16 @@ export const safeUseNavigate = () => {
   }
 };
 
+// For backward compatibility
+export const safeUseNavigate = useSafeNavigate;
+
 /**
- * Ensures Router Provider is available
+ * React hook to check if Router Provider is available
  * @returns {boolean} Whether Router Provider is available
  */
-export const ensureRouterProvider = () => {
+export const useRouterProvider = () => {
   try {
+    // Just reference the hook to check if it throws
     useLocation();
     return true;
   } catch (error) {
@@ -39,3 +47,6 @@ export const ensureRouterProvider = () => {
     return false;
   }
 };
+
+// For backward compatibility
+export const ensureRouterProvider = useRouterProvider;

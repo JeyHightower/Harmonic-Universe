@@ -34,9 +34,10 @@ export const API_SERVICE_CONFIG = {
     DURATION: 5 * 60 * 1000, // 5 minutes
   },
   
-  // Authentication configuration
+  // Authentication configuration - critical to use same keys as AUTH_CONFIG
   AUTH: {
-    TOKEN_KEY: AUTH_CONFIG.TOKEN_KEY || 'auth_token',
+    // Must use the exact same TOKEN_KEY from AUTH_CONFIG to maintain consistency
+    TOKEN_KEY: AUTH_CONFIG.TOKEN_KEY,
     TOKEN_TYPE: 'Bearer',
   },
   
@@ -45,6 +46,16 @@ export const API_SERVICE_CONFIG = {
     MAX_RETRIES: 3,
     RETRY_DELAY: 1000,
     RETRY_STATUSES: [408, 429, 500, 502, 503, 504],
+    BACKOFF_FACTOR: 2,
+    // Special handling for rate limiting (429 errors)
+    RATE_LIMIT: {
+      // Additional delay for rate limit errors (in ms)
+      ADDITIONAL_DELAY: 2000,
+      // Whether to respect the Retry-After header
+      RESPECT_RETRY_AFTER: true,
+      // Default delay if no Retry-After header (in ms)
+      DEFAULT_RETRY_AFTER: 5000
+    }
   },
 };
 

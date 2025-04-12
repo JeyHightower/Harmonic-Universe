@@ -1,19 +1,29 @@
 import { useCallback, useState, useEffect } from "react";
 import errorService from "../services/errorService";
-import { APP_CONFIG } from "../utils/config";
 
 // Define WebSocket globally if it doesn't exist to prevent no-undef errors
 if (typeof WebSocket === 'undefined') {
-  // Use window.WebSocket if available, otherwise define placeholder values
-  const WS = typeof window !== 'undefined' && window.WebSocket ? window.WebSocket : {
+  // Check if we're in a browser or Node.js environment
+  const globalObj = typeof window !== 'undefined' ? window : 
+                   typeof global !== 'undefined' ? global : 
+                   typeof globalThis !== 'undefined' ? globalThis : {};
+                   
+  // Use existing WebSocket if available, otherwise define placeholder values
+  const WS = globalObj.WebSocket || {
     CONNECTING: 0,
     OPEN: 1,
     CLOSING: 2,
     CLOSED: 3
   };
   
-  // Define globally
-  globalThis.WebSocket = WS;
+  // Define WebSocket on the appropriate global object
+  if (typeof window !== 'undefined') {
+    window.WebSocket = window.WebSocket || WS;
+  } else if (typeof global !== 'undefined') {
+    global.WebSocket = global.WebSocket || WS;
+  } else if (typeof globalThis !== 'undefined') {
+    globalThis.WebSocket = globalThis.WebSocket || WS;
+  }
 }
 
 /**
@@ -26,8 +36,8 @@ export function useWebSocketError({
   onConnectionError,
   onMessageError,
   onCloseError,
-  retryCount = 3,
-  retryDelay = 1000,
+  _retryCount = 3,
+  _retryDelay = 1000,
 }) {
   const [retryAttempts, setRetryAttempts] = useState(0);
 
@@ -145,21 +155,42 @@ export function useWebSocketError({
     }
   }, []);
 
+  // Get the appropriate WebSocket object based on environment
+  const getWebSocketObj = useCallback(() => {
+    // First try the global variable
+    if (typeof WebSocket !== 'undefined') return WebSocket;
+    
+    // Then try browser or node specific globals
+    if (typeof window !== 'undefined' && window.WebSocket) return window.WebSocket;
+    if (typeof global !== 'undefined' && global.WebSocket) return global.WebSocket;
+    if (typeof globalThis !== 'undefined' && globalThis.WebSocket) return globalThis.WebSocket;
+    
+    // Fallback constants if no WebSocket implementation is available
+    return {
+      CONNECTING: 0,
+      OPEN: 1,
+      CLOSING: 2,
+      CLOSED: 3
+    };
+  }, []);
+
   const getConnectionState = useCallback((socket) => {
     if (!socket) return "CLOSED";
+    const WS = getWebSocketObj();
+    
     switch (socket.readyState) {
-      case WebSocket.CONNECTING:
+      case WS.CONNECTING:
         return "CONNECTING";
-      case WebSocket.OPEN:
+      case WS.OPEN:
         return "OPEN";
-      case WebSocket.CLOSING:
+      case WS.CLOSING:
         return "CLOSING";
-      case WebSocket.CLOSED:
+      case WS.CLOSED:
         return "CLOSED";
       default:
         return "UNKNOWN";
     }
-  }, []);
+  }, [getWebSocketObj]);
 
   const resetRetryAttempts = useCallback(() => {
     setRetryAttempts(0);

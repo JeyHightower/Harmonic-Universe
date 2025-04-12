@@ -34,7 +34,7 @@ import apiClient from "../../../services/api.adapter";
 import "../styles/SceneList.css";
 
 // Define a fallback for process.env if it's not available in the environment
-const processEnv = typeof process !== 'undefined' && process.env ? process.env : { NODE_ENV: 'development' };
+const processEnv = { NODE_ENV: import.meta.env.PROD ? 'production' : 'development' };
 
 // Production environment detection
 const IS_PRODUCTION =
@@ -150,7 +150,7 @@ const SceneList = () => {
         );
       }
     }
-  }, [dispatch, universeId, forceRender]);
+  }, [dispatch, universeId, forceRender, fetchScenes]);
 
   // Add hook to ensure persisted scenes are in the current universe scenes
   useEffect(() => {
@@ -183,7 +183,7 @@ const SceneList = () => {
         }
       }
     }
-  }, [universeId, locallyCreatedScenes, universeScenes, dispatch]);
+  }, [universeId, locallyCreatedScenes, universeScenes, dispatch, scenes]);
 
   const handleCreateScene = () => {
     console.log("Opening create scene modal");

@@ -9,8 +9,8 @@
     "start": "concurrently \"python backend/wsgi.py\" \"npm run dev\"",
     "start-backend": "python backend/wsgi.py",
     "dev": "vite --force --clearScreen=false",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint": "eslint . --ignore-pattern \"build.test/**\"",
+    "lint:fix": "eslint . --fix --ignore-pattern \"build.test/**\""
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

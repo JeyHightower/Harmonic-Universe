@@ -2,12 +2,12 @@ import PropTypes from "prop-types";
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import * as Tone from "tone";
-import Button from "../../../common/Button";
-import Input from "../../../common/Input";
-import Modal from "../../../common/Modal";
-import Select from "../../../common/Select";
-import Slider from "../../../common/Slider";
-import Spinner from "../../../common/Spinner";
+import Button from "../../../components/common/Button";
+import Input from "../../../components/common/Input";
+import Modal from "../../../components/common/Modal";
+import Select from "../../../components/common/Select";
+import Slider from "../../../components/common/Slider";
+import Spinner from "../../../components/common/Spinner";
 import "../styles/Modal.css";
 import { audioService } from "../../../services";
 

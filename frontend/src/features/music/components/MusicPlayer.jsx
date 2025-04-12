@@ -18,7 +18,8 @@ import {
   Grid,
   FormControl,
   InputLabel,
-  Stack
+  Stack,
+  CardMedia
 } from "@mui/material";
 import {
   PlayArrow,
@@ -29,9 +30,12 @@ import {
   Settings,
   Sync,
   SkipNext,
-  SkipPrevious
+  SkipPrevious,
+  VolumeUp,
+  Loop
 } from "@mui/icons-material";
 import * as Tone from "tone";
+import PropTypes from "prop-types";
 import { MODAL_TYPES } from "../../../constants/modalTypes";
 import { createVisualizer, drawVisualization } from "../../../utils/visualizerUtils";
 import "../styles/Music.css";
@@ -645,6 +649,20 @@ const MusicPlayer = ({
       {renderControls()}
     </Card>
   );
+};
+
+MusicPlayer.propTypes = {
+  universeId: PropTypes.string,
+  initialMusic: PropTypes.object,
+  onMusicGenerated: PropTypes.func,
+  mode: PropTypes.string
+};
+
+MusicPlayer.defaultProps = {
+  universeId: "",
+  initialMusic: null,
+  onMusicGenerated: () => {},
+  mode: "standalone"
 };
 
 export default MusicPlayer; 

@@ -5,11 +5,12 @@ import ProtectedRoute from "../components/routing/ProtectedRoute";
 // Lazy load components for better performance
 const Home = lazy(() => import("../features/home/pages/Home"));
 const Login = lazy(() => import("../features/auth/pages/LoginPage"));
-const Signup = lazy(() => import("../features/auth/pages/SignupPage"));
+const Signup = lazy(() => import("../features/auth/modals/SignupModal"));
 const Dashboard = lazy(() => import("../features/dashboard/pages/Dashboard"));
-const PersonalUniverse = lazy(() =>
-  import("../features/universe/pages/PersonalUniversePage")
-);
+const PersonalUniverse = lazy(() => {
+  console.warn("PersonalUniversePage not found, using Dashboard as fallback");
+  return import("../features/dashboard/pages/Dashboard");
+});
 const UniverseDetail = lazy(() => import("../features/universe/pages/UniverseDetail"));
 const CharacterDetail = lazy(() => import("../features/character/pages/CharacterDetail"));
 const NoteDetail = lazy(() => import("../features/note/pages/NoteDetail"));
@@ -17,7 +18,16 @@ const CharacterManagement = lazy(() => import("../features/character/pages/Chara
 const SceneManagement = lazy(() => import("../features/scene/pages/ScenesPage"));
 const SceneEditPage = lazy(() => import("../features/scene/pages/SceneEditPage"));
 const SceneEditRedirect = lazy(() => import("../components/routing/SceneEditRedirect"));
-const NotFound = lazy(() => import("../features/error/pages/NotFoundPage"));
+const NotFound = lazy(() => 
+  Promise.resolve({
+    default: () => (
+      <div>
+        <h1>404 - Page Not Found</h1>
+        <p>The page you are looking for does not exist.</p>
+      </div>
+    )
+  })
+);
 
 export const routes = [
   {

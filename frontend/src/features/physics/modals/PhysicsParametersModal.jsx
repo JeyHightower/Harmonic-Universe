@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import PropTypes from 'prop-types';
 import apiClient from "../../../services/api.adapter";
 import Button from "../../../components/common/Button";
 import Icon from "../../../components/common/Icon";
 import Input from "../../../components/common/Input";
 import Spinner from "../../../components/common/Spinner";
 import "../styles/PhysicsParameters.css";
-import PropTypes from "prop-types";
 import { endpoints } from "../../../services/endpoints";
 
 // Default physics parameters

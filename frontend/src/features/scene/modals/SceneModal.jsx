@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import { Dialog, DialogTitle, DialogContent } from '@mui/material';
 import SceneForm from '../pages/SceneForm';
 import SceneViewer from '../components/SceneViewer';
-import { MODAL_CONFIG } from '../../../utils/config';
 import apiClient from '../../../services/api.adapter';
 import SceneDeleteConfirmation from './SceneDeleteConfirmation';
 

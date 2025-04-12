@@ -35,9 +35,22 @@ const normalizeUniverses = (universes) => {
 // Fetch all universes
 export const fetchUniverses = createAsyncThunk(
   "universe/fetchUniverses",
-  async (params = {}, { rejectWithValue }) => {
+  async (params, { rejectWithValue }) => {
     try {
       console.log("Fetching universes with params:", params);
+      
+      // First, check if there's already a token verification failure flag set
+      const tokenVerificationFailed = localStorage.getItem("token_verification_failed");
+      if (tokenVerificationFailed === "true") {
+        console.error("Token verification previously failed, aborting universes fetch");
+        // Clear the flag to allow future authentication attempts
+        localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+        return rejectWithValue({
+          message: "Authentication token verification failed. Please log in again.",
+          status: 401,
+          authError: true
+        });
+      }
       
       // Add a check for the token's existence
       const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
@@ -46,9 +59,30 @@ export const fetchUniverses = createAsyncThunk(
         return rejectWithValue({
           message: "No authentication token found. Please log in again.",
           status: 401,
+          authError: true
         });
       }
       
+      // Try to validate token before making the actual request
+      try {
+        // Make a lightweight request first just to validate the token
+        await api.auth.validateToken();
+      } catch (validationError) {
+        // If validation explicitly fails with a signature error, don't continue
+        if (validationError.message?.includes("Signature verification failed") ||
+            validationError.response?.data?.message?.includes("Signature verification failed")) {
+          console.error("Token validation failed with signature verification error");
+          localStorage.setItem("token_verification_failed", "true");
+          localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+          return rejectWithValue({
+            message: "Authentication token signature verification failed. Please log in again.",
+            status: 401,
+            authError: true
+          });
+        }
+      }
+      
+      // If we get here, either validation succeeded or had a non-signature error we can try to proceed
       const response = await api.universes.getUniverses(params);
       console.log("Got universes response:", {
         status: response.status,
@@ -110,9 +144,13 @@ export const fetchUniverses = createAsyncThunk(
         console.error(`Authentication error (401): ${errorMessage}`);
         
         // If there's a specific signature verification error, handle it specially
-        if (errorMessage.includes("Signature verification failed")) {
+        if (errorMessage.includes("Signature verification failed") || 
+            errorMessage.includes("Invalid token") || 
+            errorMessage.includes("Token has expired")) {
           console.error("Token signature verification failed - token may be invalid");
           localStorage.setItem("token_verification_failed", "true");
+          // Clear the invalid token
+          localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
         }
         
         return rejectWithValue({

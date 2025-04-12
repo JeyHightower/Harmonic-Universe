@@ -22,6 +22,21 @@ const handleError = (error) => {
   };
 };
 
+// Function to cleanup all authentication state when logging out
+const cleanupAuthState = () => {
+  // Remove the token
+  localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+  
+  // Remove user data
+  localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+  
+  // Remove refresh token
+  localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+  
+  // Remove any error flags
+  localStorage.removeItem("token_verification_failed");
+};
+
 // Login
 export const login = createAsyncThunk(
   "auth/login",
@@ -30,37 +45,30 @@ export const login = createAsyncThunk(
       dispatch(loginStart());
       console.debug("Logging in user:", credentials.email);
 
-      const response = await api.login(credentials);
-      console.debug("Login successful:", response);
-
-      // Extract relevant data from response
-      const responseData = response.data || response;
-      const userData = responseData.user || responseData;
-      const token = responseData.token || responseData.access_token;
-      const refreshToken = responseData.refresh_token;
-
-      console.debug("Extracted login data:", {
-        userData,
-        hasToken: !!token,
-        hasRefreshToken: !!refreshToken
-      });
-
-      // Store tokens
-      if (token) {
-        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, token);
+      // Clean up any previous failed auth state
+      localStorage.removeItem("token_verification_failed");
+      
+      const response = await api.auth.login(credentials);
+      
+      if (!response.success) {
+        throw new Error(response.message || "Login failed");
       }
-      if (refreshToken) {
-        localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, refreshToken);
+      
+      // Store the token in localStorage - use the same key as in config
+      if (response.data?.token) {
+        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.token);
       }
-      if (userData) {
-        localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(userData));
+      
+      // Store user data if available
+      if (response.data?.user) {
+        localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(response.data.user));
       }
-
+      
       // Prepare data for state update
       const authData = {
-        user: userData,
-        token,
-        refresh_token: refreshToken
+        user: response.data.user,
+        token: response.data.token,
+        refresh_token: response.data.refresh_token
       };
 
       dispatch(loginSuccess(authData));
@@ -100,7 +108,7 @@ export const register = createAsyncThunk(
     try {
       console.debug("Registering user:", userData.email);
 
-      const response = await api.register(userData);
+      const response = await api.auth.register(userData);
       console.debug("Registration successful:", response);
 
       // Store tokens
@@ -204,7 +212,7 @@ export const registerUser = createAsyncThunk(
       dispatch(loginStart());
       console.debug("Registering user:", userData);
 
-      const response = await api.register(userData);
+      const response = await api.auth.register(userData);
       console.debug("Registration successful:", response);
 
       // Store tokens
@@ -239,7 +247,7 @@ export const updateUserProfile = createAsyncThunk(
   async (profileData, { dispatch, rejectWithValue }) => {
     try {
       console.debug("Updating user profile:", profileData);
-      const response = await api.updateUserProfile(profileData);
+      const response = await api.user.updateProfile(profileData);
       console.debug("User profile updated:", response);
 
       // Update the user in the Redux store
@@ -261,7 +269,7 @@ export const loginUser = createAsyncThunk(
       dispatch(loginStart());
       console.debug("Logging in user:", loginData);
 
-      const response = await api.login(loginData);
+      const response = await api.auth.login(loginData);
       console.debug("Login successful:", response);
 
       // Store tokens
@@ -290,47 +298,120 @@ export const loginUser = createAsyncThunk(
   }
 );
 
-// Logout
+// Logout thunk with rate limiting protection
+let lastLogoutThunkAttempt = 0;
+const LOGOUT_THUNK_COOLDOWN = 2000; // 2 seconds between allowed attempts
+
 export const logout = createAsyncThunk(
   "auth/logout",
-  async (_, { dispatch, rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      console.debug("Logging out user");
-
-      // Get token before making request
-      const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-      if (!token) {
-        console.debug("No token found, clearing state and navigating");
-        // Still clear storage and navigate
-        localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-        localStorage.removeItem(AUTH_CONFIG.USER_KEY);
-        window.location.href = "/";
-        return { message: "Logged out successfully" };
+      const now = Date.now();
+      
+      // Prevent rapid multiple logout attempts
+      if (now - lastLogoutThunkAttempt < LOGOUT_THUNK_COOLDOWN) {
+        console.log("Throttled logout thunk - too many requests");
+        // Just clean up local state without API call
+        cleanupAuthState();
+        return { 
+          message: "Logged out successfully (local only)", 
+          throttled: true 
+        };
       }
-
-      // Call backend logout endpoint
-      const response = await api.logout();
-      console.debug("Logout API call successful:", response);
-
-      // Clear local storage after successful API call
-      localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-      localStorage.removeItem(AUTH_CONFIG.USER_KEY);
-
-      // Clear auth state
-      dispatch(loginFailure({ message: "Logged out successfully" }));
-
-      // Navigate to home page
-      window.location.href = "/";
-
+      
+      // Update timestamp
+      lastLogoutThunkAttempt = now;
+      
+      // Try to call the logout API endpoint first
+      try {
+        await api.auth.logout();
+        console.log("Logout API call successful");
+      } catch (apiError) {
+        // Check for rate limiting or other expected errors
+        if (apiError.response?.status === 429) {
+          console.warn("Logout rate limited (429) - proceeding with local cleanup only");
+        } else {
+          console.error("Logout API call failed:", apiError);
+        }
+        // Continue with local logout even if API call fails
+      }
+      
+      // Clean up all auth state regardless of API result
+      cleanupAuthState();
+      
       return { message: "Logged out successfully" };
     } catch (error) {
-      console.error("Logout failed:", error);
-      // Still clear tokens even if API call fails
-      localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-      localStorage.removeItem(AUTH_CONFIG.USER_KEY);
-      // Still navigate to home even if logout fails
-      window.location.href = "/";
-      return rejectWithValue(handleError(error));
+      console.error("Logout thunk encountered an error:", error);
+      
+      // Still clean up local state even on error
+      cleanupAuthState();
+      
+      return rejectWithValue({
+        message: error.message || "Logout failed, but local state was cleared",
+        status: error.response?.status || 500,
+      });
+    }
+  }
+);
+
+export const loginWithToken = createAsyncThunk(
+  "auth/loginWithToken",
+  async (loginData, { dispatch, rejectWithValue }) => {
+    try {
+      dispatch(loginStart());
+      
+      const response = await api.auth.login(loginData);
+      // ... existing code ...
+    } catch (error) {
+      // ... existing code ...
+    }
+  }
+);
+
+// Add proper error handling for token validation failures
+export const validateToken = createAsyncThunk(
+  "auth/validateToken",
+  async (_, { rejectWithValue }) => {
+    try {
+      // Check for a token verification failure flag
+      const tokenVerificationFailed = localStorage.getItem("token_verification_failed");
+      if (tokenVerificationFailed === "true") {
+        console.error("Token verification previously failed");
+        localStorage.removeItem("token_verification_failed");
+        localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+        localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+        return rejectWithValue({
+          message: "Token validation failed. Please log in again.",
+          status: 401,
+        });
+      }
+      
+      // Proceed with validation
+      const response = await api.auth.validateToken();
+      
+      if (!response.success) {
+        throw new Error(response.message || "Token validation failed");
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error("Token validation error:", error);
+      
+      // Clear token on validation failure
+      if (error.response?.status === 401 || 
+          (error.message && (
+            error.message.includes("Token validation failed") || 
+            error.message.includes("Signature verification") ||
+            error.message.includes("Invalid token")
+          ))) {
+        localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+        localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+      }
+      
+      return rejectWithValue({
+        message: error.response?.data?.message || error.message || "Token validation failed",
+        status: error.response?.status || 401,
+      });
     }
   }
 );

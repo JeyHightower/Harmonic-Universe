@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import PropTypes from "prop-types";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -10,7 +11,6 @@ import {
   Alert,
   Paper,
   Grid,
-  Divider,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -86,20 +86,16 @@ const SceneDetail = ({ isEdit = false }) => {
         return;
       }
 
-      try {
-        console.log("Fetching scene with ID:", sceneId);
-        dispatch(fetchSceneById(sceneId)).catch((error) => {
-          console.error("Error fetching scene:", error);
-          if (error.response?.status === 401) {
-            // Token issue - this will be handled by the API interceptor
-            console.warn(
-              "Authentication issue detected, might redirect to login"
-            );
-          }
-        });
-      } catch (error) {
-        console.error("Error in scene fetch effect:", error);
-      }
+      console.log("Fetching scene with ID:", sceneId);
+      dispatch(fetchSceneById(sceneId)).catch((error) => {
+        console.error("Error fetching scene:", error);
+        if (error.response?.status === 401) {
+          // Token issue - this will be handled by the API interceptor
+          console.warn(
+            "Authentication issue detected, might redirect to login"
+          );
+        }
+      });
     }
   }, [dispatch, sceneId, universeId, navigate]);
 
@@ -474,7 +470,7 @@ const SceneDetail = ({ isEdit = false }) => {
         <DialogTitle id="delete-dialog-title">Delete Scene</DialogTitle>
         <DialogContent dividers>
           <Typography>
-            Are you sure you want to delete "{scene.name}"? This action cannot
+            Are you sure you want to delete &quot;{scene.name}&quot;? This action cannot
             be undone.
           </Typography>
         </DialogContent>
@@ -582,6 +578,15 @@ const SceneDetail = ({ isEdit = false }) => {
       )}
     </Container>
   );
+};
+
+// Add PropTypes validation
+SceneDetail.propTypes = {
+  isEdit: PropTypes.bool
+};
+
+SceneDetail.defaultProps = {
+  isEdit: false
 };
 
 export default SceneDetail;

@@ -1,9 +1,9 @@
 import PropTypes from "prop-types";
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Button from "../../../common/Button";
-import Modal from "../../../common/Modal";
-import Spinner from "../../../common/Spinner";
+import Button from "../../../components/common/Button";
+import Modal from "../../../components/common/Modal";
+import Spinner from "../../../components/common/Spinner";
 import "../styles/Modal.css";
 import { audioService } from "../../../services";
 

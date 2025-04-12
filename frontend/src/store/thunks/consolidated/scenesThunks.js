@@ -189,7 +189,7 @@ export const fetchScenesForUniverse = fetchScenes;
  */
 export const fetchSceneById = createAsyncThunk(
   "scenes/fetchById",
-  async (sceneId, { rejectWithValue, dispatch, _getState }) => {
+  async (sceneId, { rejectWithValue, _dispatch, _getState }) => {
     try {
       console.log("THUNK fetchSceneById: Called with ID:", sceneId);
 
@@ -384,7 +384,7 @@ export const createScene = createAsyncThunk(
  */
 export const updateScene = createAsyncThunk(
   "scenes/updateScene",
-  async (sceneData, { dispatch, rejectWithValue, getState }) => {
+  async (sceneData, { dispatch, rejectWithValue, _getState }) => {
     try {
       console.log("THUNK updateScene: Called with data:", sceneData);
 
@@ -580,4 +580,44 @@ export const reorderScenes = createAsyncThunk(
       return rejectWithValue(handleError(error));
     }
   }
-); 
+);
+
+// Fix unused dispatch parameter
+export const fetchLocalScenes = () => async (_dispatch, getState) => {
+  try {
+    // Get scenes from local storage
+    const scenes = JSON.parse(localStorage.getItem("scenes") || "[]");
+    return scenes;
+  } catch (error) {
+    console.error("Error fetching scenes from local storage:", error);
+    return [];
+  }
+};
+
+// Fix unused getState parameter
+export const deleteSceneLocally = (sceneId) => async (dispatch, _getState) => {
+  try {
+    console.log("deleteSceneLocally thunk - Deleting scene with ID:", sceneId);
+    
+    // Get scenes from local storage
+    const scenes = JSON.parse(localStorage.getItem("scenes") || "[]");
+    
+    // Filter out the scene to delete
+    const updatedScenes = scenes.filter(scene => scene.id !== sceneId);
+    
+    // Save the updated scenes back to localStorage
+    localStorage.setItem("scenes", JSON.stringify(updatedScenes));
+    
+    // Dispatch the action to update Redux state
+    dispatch({
+      type: "scenes/deleteScene/fulfilled",
+      payload: { id: sceneId }
+    });
+    
+    console.log("deleteSceneLocally thunk - Scene deleted successfully");
+    return { success: true, id: sceneId };
+  } catch (error) {
+    console.error("Error deleting scene locally:", error);
+    return { success: false, error };
+  }
+}; 

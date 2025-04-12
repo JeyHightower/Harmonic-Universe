@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../components/common/Button";
 import Input from "../../../components/common/Input";
-import Modal from "../../../components/common/Modal";
 import Spinner from "../../../components/common/Spinner";
 import "../styles/Modal.css";
 
@@ -390,6 +389,9 @@ const PhysicsConstraintModal = (props) => {
     </>
   );
 };
+
+// Add display name to fix ESLint warning
+PhysicsConstraintModal.displayName = 'PhysicsConstraintModal';
 
 PhysicsConstraintModal.propTypes = {
   sceneId: PropTypes.string.isRequired,

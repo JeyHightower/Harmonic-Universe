@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import PropTypes from "prop-types";
+import { useNavigate } from "react-router-dom";
 import apiClient from "../../../services/api";
 import { endpoints } from "../../../services/endpoints";
 import { Button } from "../../../components/common";
 import Icon from "../../../components/common/Icon";
 import Spinner from "../../../components/common/Spinner";
 import "../styles/PhysicsParameters.css";
-import PropTypes from "prop-types";
-import { useNavigate } from 'react-router-dom';
 import { useModalRedux } from "../../../hooks/useModal";
 import { MODAL_TYPES } from "../../../constants/modalTypes";
 
@@ -25,41 +25,22 @@ const PhysicsParametersManager = ({ sceneId }) => {
   // Fetch physics parameters for the scene
   useEffect(() => {
     const fetchPhysicsParameters = async () => {
-      if (!sceneId) return;
-
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await apiClient.get(
-          endpoints.scenes.physicsParameters.list(sceneId)
-        );
-        setPhysicsParameters(response.data || []);
-
-        // Select the first parameters set if available
-        if (response.data && response.data.length > 0 && !selectedParamsId) {
-          setSelectedParamsId(response.data[0].id);
-        }
-      } catch (error) {
-        console.error("Error fetching physics parameters:", error);
-        setError("Failed to load physics parameters. Please try again.");
-      } finally {
-        setLoading(false);
+      if (selectedParamsId) {
+        console.log("Fetching specific parameter:", selectedParamsId);
+        const response = await apiClient.getPhysicsParameters(selectedParamsId);
+        setPhysicsParameters(response.data);
+      } else if (sceneId) {
+        console.log("Fetching parameters for scene:", sceneId);
+        const response = await apiClient.getPhysicsParametersForScene(sceneId);
+        setPhysicsParameters(response.data);
+      } else {
+        console.log("No IDs provided, using default parameters");
+        setPhysicsParameters([]);
       }
     };
 
     fetchPhysicsParameters();
-    
-    // Define the polling interval
-    const intervalId = window.setTimeout(() => {
-      fetchPhysicsParameters();
-    }, 5000);
-    
-    // Cleanup function to clear the timeout when component unmounts
-    return () => {
-      window.clearTimeout(intervalId);
-    };
-  }, [reloadTrigger]);
+  }, [selectedParamsId, sceneId]);
 
   // Handle adding new physics parameters
   const handleAddParameters = () => {

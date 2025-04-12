@@ -230,6 +230,7 @@ export const generalLogger = createLogger('general');
 // Create a default logger export with all functions
 const Logger = {
   log,
+  error: logError,
   logError,
   logInfo,
   logWarning,
