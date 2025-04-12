@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import apiClient from "../../services/api.js";
+import api from '../../services/api.adapter';
 
 const handleError = (error) => {
   console.error("API Error:", error);
@@ -17,7 +17,7 @@ export const fetchPhysicsObjects = createAsyncThunk(
   async (sceneId, { rejectWithValue }) => {
     try {
       console.debug(`Fetching physics objects for scene ${sceneId}`);
-      const response = await apiClient.getPhysicsObjectsForScene(sceneId);
+      const response = await api.getPhysicsObjectsForScene(sceneId);
       console.debug("Physics objects fetched:", response);
       return response.data || [];
     } catch (error) {
@@ -33,7 +33,7 @@ export const createPhysicsObject = createAsyncThunk(
   async (physicsObjectData, { rejectWithValue }) => {
     try {
       console.debug("Creating physics object:", physicsObjectData);
-      const response = await apiClient.createPhysicsObject(physicsObjectData);
+      const response = await api.createPhysicsObject(physicsObjectData);
       console.debug("Physics object created:", response);
       return response.data;
     } catch (error) {
@@ -49,7 +49,7 @@ export const updatePhysicsObject = createAsyncThunk(
   async ({ id, data }, { rejectWithValue }) => {
     try {
       console.debug(`Updating physics object ${id}:`, data);
-      const response = await apiClient.updatePhysicsObject(id, data);
+      const response = await api.updatePhysicsObject(id, data);
       console.debug("Physics object updated:", response);
       return response.data;
     } catch (error) {
@@ -65,7 +65,7 @@ export const deletePhysicsObject = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       console.debug(`Deleting physics object ${id}`);
-      await apiClient.deletePhysicsObject(id);
+      await api.deletePhysicsObject(id);
       return id; // Return the ID for state updates
     } catch (error) {
       console.error("Failed to delete physics object:", error);

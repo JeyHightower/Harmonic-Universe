@@ -99,6 +99,46 @@ export const logError = (message, error, category = 'error') => {
 };
 
 /**
+ * Log a warning message
+ * @param {string} message - The warning message
+ * @param {object} data - Additional data
+ * @param {string} category - The log category
+ */
+export const logWarning = (message, data = {}, category = 'warning') => {
+    // In non-browser environment, just log to console
+    if (!isBrowser) {
+        console.warn(`[${category.toUpperCase()}] ${message}`, data);
+        return;
+    }
+
+    log(category, `⚠️ ${message}`, data);
+    
+    if (!isProduction) {
+        console.warn(`[${category.toUpperCase()}] ${message}`, data);
+    }
+};
+
+/**
+ * Log an informational message
+ * @param {string} message - The info message
+ * @param {object} data - Additional data
+ * @param {string} category - The log category
+ */
+export const logInfo = (message, data = {}, category = 'info') => {
+    // In non-browser environment, just log to console
+    if (!isBrowser) {
+        console.info(`[${category.toUpperCase()}] ${message}`, data);
+        return;
+    }
+
+    log(category, `ℹ️ ${message}`, data);
+    
+    if (!isProduction) {
+        console.info(`[${category.toUpperCase()}] ${message}`, data);
+    }
+};
+
+/**
  * Get a CSS style for console logs based on category
  */
 const getLogStyle = (category) => {
@@ -111,6 +151,10 @@ const getLogStyle = (category) => {
             return 'color: green; font-weight: bold';
         case 'error':
             return 'color: red; font-weight: bold; background: #ffeeee';
+        case 'warning':
+            return 'color: orange; font-weight: bold; background: #fffaee';
+        case 'info':
+            return 'color: teal; font-weight: bold';
         default:
             return 'color: gray; font-weight: bold';
     }
@@ -122,8 +166,8 @@ const getLogStyle = (category) => {
 export const createLogger = (category) => ({
     log: (message, data) => log(category, message, data),
     error: (message, error) => logError(message, error, category),
-    warn: (message, data) => log(category, `⚠️ ${message}`, data),
-    info: (message, data) => log(category, `ℹ️ ${message}`, data),
+    warn: (message, data) => logWarning(message, data, category),
+    info: (message, data) => logInfo(message, data, category),
     success: (message, data) => log(category, `✅ ${message}`, data)
 });
 
@@ -182,6 +226,25 @@ export const modalLogger = createLogger('modal');
 export const authLogger = createLogger('auth');
 export const apiLogger = createLogger('api');
 export const generalLogger = createLogger('general');
+
+// Create a default logger export with all functions
+const Logger = {
+  log,
+  logError,
+  logInfo,
+  logWarning,
+  createLogger,
+  toggleLogging,
+  enableDebugMode,
+  getLogs,
+  clearLogs,
+  modalLogger,
+  authLogger,
+  apiLogger,
+  generalLogger
+};
+
+export default Logger;
 
 // Create a global logging function for easy access
 if (isBrowser) {

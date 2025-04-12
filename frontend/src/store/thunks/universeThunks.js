@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import apiClient from "../../services/api.js";
+import api from '../../services/api.adapter';
 
 const handleError = (error) => {
   console.error("API Error:", error);
@@ -37,7 +37,7 @@ export const fetchUniverses = createAsyncThunk(
   async (params = {}, { rejectWithValue }) => {
     try {
       console.log("Fetching universes with params:", params);
-      const response = await apiClient.getUniverses(params);
+      const response = await api.getUniverses(params);
       console.log("Got universes response:", {
         status: response.status,
         data: response.data,
@@ -104,7 +104,7 @@ export const fetchUniverseById = createAsyncThunk(
       console.log(
         `Fetching universe ${id} with includeScenes=${includeScenes}`
       );
-      const response = await apiClient.getUniverse(id);
+      const response = await api.getUniverse(id);
       console.log("Got universe response:", response);
 
       // Normalize the universe data if present
@@ -148,7 +148,7 @@ export const createUniverse = createAsyncThunk(
       console.log("Sending formatted universe data:", formattedData);
 
       // Make the API call
-      const response = await apiClient.createUniverse(formattedData);
+      const response = await api.createUniverse(formattedData);
       console.log("Created universe response:", response);
 
       // Handle our mock response from development mode
@@ -205,7 +205,7 @@ export const updateUniverse = createAsyncThunk(
   async ({ id, ...updateData }, { rejectWithValue }) => {
     try {
       console.log(`Thunk - Updating universe ${id} with data:`, updateData);
-      const response = await apiClient.updateUniverse(id, updateData);
+      const response = await api.updateUniverse(id, updateData);
       console.log("Thunk - Updated universe response:", response);
 
       // Normalize the universe data if present
@@ -252,7 +252,7 @@ export const deleteUniverse = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       console.log(`Thunk - Deleting universe ${id}`);
-      const response = await apiClient.deleteUniverse(id);
+      const response = await api.deleteUniverse(id);
       console.log(`Thunk - Universe ${id} deleted successfully:`, response);
 
       return { id, message: response.data?.message || 'Universe deleted successfully' };
@@ -282,7 +282,7 @@ export const fetchScenesForUniverse = createAsyncThunk(
   async (universeId, { rejectWithValue }) => {
     try {
       console.log(`Fetching scenes for universe ${universeId}`);
-      const response = await apiClient.getScenes(universeId);
+      const response = await api.getScenes(universeId);
       console.log("Got scenes response:", response);
       return response.data || response;
     } catch (error) {
@@ -301,7 +301,7 @@ export const updatePhysicsParams = createAsyncThunk(
         `Updating physics params for universe ${universeId}:`,
         physicsParams
       );
-      const response = await apiClient.updateUniverse(universeId, {
+      const response = await api.updateUniverse(universeId, {
         physics_params: physicsParams,
       });
       console.log("Updated physics params response:", response);
@@ -336,7 +336,7 @@ export const updateHarmonyParams = createAsyncThunk(
         `Updating harmony params for universe ${universeId}:`,
         harmonyParams
       );
-      const response = await apiClient.updateUniverse(universeId, {
+      const response = await api.updateUniverse(universeId, {
         harmony_params: harmonyParams,
       });
       console.log("Updated harmony params response:", response);

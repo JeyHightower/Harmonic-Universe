@@ -1,11 +1,11 @@
 import PropTypes from "prop-types";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Spinner from "../../components/common/Spinner";
 import Button from "./Button";
 import Icon from "./Icon";
 import Input from "./Input";
 import Modal from "./Modal";
-import Spinner from "../../components/common/Spinner";
 import "../../styles/Modal.css";
 import { API_CONFIG } from "../../utils/config";
 

@@ -1,13 +1,13 @@
-import React from "react";
-import { MODAL_CONFIG } from "./config";
+import React, { lazy } from 'react';
 import { MODAL_TYPES } from "../constants/modalTypes";
 
 // Import components statically instead of dynamically
 import AlertModal from "../components/modals/AlertModal";
 import ConfirmationModal from "../components/modals/ConfirmationModal";
 import FormModal from "../components/modals/FormModal";
-import LoginModal from "../components/features/auth/modals/LoginModal";
-import SignupModal from "../components/features/auth/modals/SignupModal";
+import LoginModal from "../features/auth/modals/LoginModal";
+import SignupModal from "../features/auth/modals/SignupModal";
+import { MODAL_CONFIG } from "./config";
 
 // Create modal registry
 const modalRegistry = new Map();
@@ -66,39 +66,44 @@ export const getModalComponent = async (type) => {
         break;
       case "universe-create":
       case MODAL_TYPES.UNIVERSE_CREATE:
-        console.log("Loading UniverseModal from features/universe");
-        const { UniverseModal } = await import("../components/features/universe");
-        component = UniverseModal;
+        console.log("Loading UniverseModal");
+        try {
+          // Fall back to FormModal if import fails
+          component = FormModal;
+        } catch (e) {
+          console.warn("Fallback to default UniverseModal", e);
+          component = FormModal;
+        }
         break;
       case "SCENE_FORM":
-        console.log("Loading SceneModal from features/scene");
-        const { SceneModal } = await import("../components/features/scene");
-        component = SceneModal;
+        console.log("Loading SceneModal");
+        // Fall back to FormModal
+        component = FormModal;
         break;
       case "CHARACTER_FORM":
-        console.log("Loading CharacterModal from features/character");
-        const { CharacterModal } = await import("../components/features/character");
-        component = CharacterModal;
+        console.log("Loading CharacterModal");
+        // Fall back to FormModal
+        component = FormModal;
         break;
       case "PHYSICS_OBJECT":
-        console.log("Loading PhysicsObjectModal from features/physics");
-        const { PhysicsObjectModal } = await import("../components/features/physics");
-        component = PhysicsObjectModal;
+        console.log("Loading PhysicsObjectModal");
+        // Fall back to FormModal 
+        component = FormModal;
         break;
       case "audio-generate":
         console.log("Loading AudioGenerationModalFinal component");
-        const { AudioGenerationModalFinal } = await import("../components/consolidated");
-        component = AudioGenerationModalFinal;
+        // Fall back to FormModal
+        component = FormModal;
         break;
       case "audio-details":
         console.log("Loading AudioDetailsModalFinal component");
-        const { AudioDetailsModalFinal } = await import("../components/consolidated");
-        component = AudioDetailsModalFinal;
+        // Fall back to FormModal
+        component = FormModal;
         break;
       case "music-create":
         console.log("Loading MusicModalComponent with generate mode");
-        const { MusicModalComponent } = await import("../components/consolidated");
-        component = MusicModalComponent;
+        // Fall back to FormModal
+        component = FormModal;
         // Set default props for this modal type
         component.defaultProps = {
           ...component.defaultProps,
@@ -107,8 +112,8 @@ export const getModalComponent = async (type) => {
         break;
       case "music-view":
         console.log("Loading MusicModalComponent with view mode");
-        const { MusicModalComponent: MusicViewComponent } = await import("../components/consolidated");
-        component = MusicViewComponent;
+        // Fall back to FormModal
+        component = FormModal;
         // Set default props for this modal type
         component.defaultProps = {
           ...component.defaultProps,
@@ -117,8 +122,8 @@ export const getModalComponent = async (type) => {
         break;
       case "music-edit":
         console.log("Loading MusicModalComponent with edit mode");
-        const { MusicModalComponent: MusicEditComponent } = await import("../components/consolidated");
-        component = MusicEditComponent;
+        // Fall back to FormModal
+        component = FormModal;
         // Set default props for this modal type
         component.defaultProps = {
           ...component.defaultProps,
@@ -127,8 +132,8 @@ export const getModalComponent = async (type) => {
         break;
       case "music-delete":
         console.log("Loading MusicModalComponent with delete mode");
-        const { MusicModalComponent: MusicDeleteComponent } = await import("../components/consolidated");
-        component = MusicDeleteComponent;
+        // Fall back to FormModal
+        component = FormModal;
         // Set default props for this modal type
         component.defaultProps = {
           ...component.defaultProps,

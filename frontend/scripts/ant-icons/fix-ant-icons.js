@@ -6,9 +6,9 @@
  */
 
 import fs from 'fs';
-import pkg from 'glob';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import pkg from 'glob';
 const { glob } = pkg;
 
 // Get __dirname equivalent in ES modules

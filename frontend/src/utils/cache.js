@@ -54,3 +54,32 @@ class Cache {
 }
 
 export const cache = new Cache();
+
+/**
+ * Clear the entire cache or a specific cache key
+ * @param {string} [key] - Optional cache key to clear, if not provided clears all
+ */
+export const clearCache = (key) => {
+  if (key) {
+    cache.clear(key);
+  } else {
+    cache.clearAll();
+  }
+};
+
+/**
+ * Invalidate a specific cache key or keys matching a pattern
+ * @param {string|RegExp} pattern - Key or pattern to match
+ */
+export const invalidateCache = (pattern) => {
+  if (typeof pattern === 'string') {
+    cache.clear(pattern);
+  } else if (pattern instanceof RegExp) {
+    // For RegExp patterns, we need to iterate all keys
+    [...cache.cache.keys()].forEach(key => {
+      if (pattern.test(key)) {
+        cache.clear(key);
+      }
+    });
+  }
+};

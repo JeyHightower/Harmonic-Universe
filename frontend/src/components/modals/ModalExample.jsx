@@ -6,8 +6,8 @@ import {
   createFormModal,
 } from "../../utils/modalHelpers";
 import { Button } from "../common";
-import { DraggableModal } from "./";
 import Input from "../common/Input";
+import { DraggableModal } from "./";
 import "./ModalExample.css";
 
 // Example form component for the form modal

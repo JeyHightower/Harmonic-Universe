@@ -191,6 +191,15 @@ export const getAllCharactersWithRetry = async () => {
   }
 };
 
+// Create the apiUtils object that's exported and used elsewhere
+export const apiUtils = {
+  requestWithRetry,
+  getCharacterWithRetry,
+  getAllCharactersWithRetry,
+  rateLimitedRequest,
+  ensureApiPrefix
+};
+
 export default {
   requestWithRetry,
   getCharacterWithRetry,

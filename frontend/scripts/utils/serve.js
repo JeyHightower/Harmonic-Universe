@@ -1,7 +1,7 @@
 // ES Module syntax for Express server
-import express from 'express';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
+import express from 'express';
 
 // Get the equivalent of __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);

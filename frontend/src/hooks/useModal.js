@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from "react-redux";
 import {
   openModal,
@@ -10,10 +10,87 @@ import { MODAL_CONFIG } from "../utils/config";
 import { isValidModalType } from "../utils/modalRegistry";
 
 /**
+ * Custom hook for managing modal state
+ * 
+ * @param {Object} options - Configuration options
+ * @param {boolean} options.defaultOpen - Whether the modal is open by default
+ * @param {number} options.closeDelay - Delay in ms before closing the modal (for animations)
+ * @param {Function} options.onOpen - Callback when modal opens
+ * @param {Function} options.onClose - Callback when modal closes
+ * @returns {Object} Modal state and handlers
+ */
+const useModal = (options = {}) => {
+  const {
+    defaultOpen = false,
+    closeDelay = 300,
+    onOpen,
+    onClose,
+  } = options;
+
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const [isClosing, setIsClosing] = useState(false);
+  const timerRef = useRef(null);
+
+  // Clear the timer on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        window.clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
+
+  const openModal = useCallback(() => {
+    // Clear any existing close timer
+    if (timerRef.current) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+
+    setIsClosing(false);
+    setIsOpen(true);
+
+    if (onOpen && typeof onOpen === 'function') {
+      onOpen();
+    }
+  }, [onOpen]);
+
+  const closeModal = useCallback(() => {
+    setIsClosing(true);
+
+    // Use window.setTimeout to avoid ESLint no-undef error
+    timerRef.current = window.setTimeout(() => {
+      setIsOpen(false);
+      setIsClosing(false);
+      
+      if (onClose && typeof onClose === 'function') {
+        onClose();
+      }
+    }, closeDelay);
+  }, [closeDelay, onClose]);
+
+  const toggleModal = useCallback(() => {
+    if (isOpen) {
+      closeModal();
+    } else {
+      openModal();
+    }
+  }, [isOpen, closeModal, openModal]);
+
+  return {
+    isOpen,
+    isClosing,
+    openModal,
+    closeModal,
+    toggleModal,
+  };
+};
+
+/**
  * Hook for managing modals
  * @returns {Object} Modal management functions and state
  */
-export const useModal = () => {
+export const useModalRedux = () => {
   const dispatch = useDispatch();
   const modalState = useSelector((state) => state.modal);
   const closeTimeoutRef = useRef(null);
@@ -79,7 +156,7 @@ export const useModal = () => {
  */
 export const useModalType = (type) => {
   const { open, close, updateProps, isOpen, props, isTransitioning } =
-    useModal();
+    useModalRedux();
 
   const openWithType = useCallback(
     (modalProps = {}) => {

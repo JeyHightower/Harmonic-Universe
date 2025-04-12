@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
-import { useModalRoute } from "../providers/ModalProvider";
+import { useContext } from 'react';
+import { ModalContext, useModal } from '../contexts/ModalContext';
 import { MODAL_TYPES } from "../constants/modalTypes";
 
 /**
@@ -18,8 +19,8 @@ const useModalManager = (modalType, options = {}) => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { openModalRoute, closeModalRoute, currentModal, currentModalId } =
-    useModalRoute();
+  const { open, close, type: currentModal, props: modalProps } = useModal();
+  const currentModalId = modalProps?.id;
 
   // Open modal with optional ID and additional parameters
   const openModal = useCallback(
@@ -30,20 +31,21 @@ const useModalManager = (modalType, options = {}) => {
       }
 
       setError(null);
-      openModalRoute(MODAL_TYPES[modalType], id, {
+      open(MODAL_TYPES[modalType], {
+        id,
         ...additionalParams,
         ...params,
       });
     },
-    [modalType, additionalParams, openModalRoute]
+    [modalType, additionalParams, open]
   );
 
   // Close modal with option to preserve query parameters
   const closeModal = useCallback(() => {
     setError(null);
     setLoading(false);
-    closeModalRoute(preserveQueryParams);
-  }, [preserveQueryParams, closeModalRoute]);
+    close();
+  }, [close]);
 
   // Handle modal submission
   const handleSubmit = useCallback(

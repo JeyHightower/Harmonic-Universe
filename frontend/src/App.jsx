@@ -2,8 +2,8 @@ import React, { useState, useEffect, Suspense, useTransition, lazy } from "react
 import { Routes, Route, BrowserRouter, Navigate } from "react-router-dom";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
-import store, { persistor } from "./store";
 import { useSelector, useDispatch } from "react-redux";
+import store, { persistor } from "./store";
 import { Navigation } from "./components";
 import ModalProvider from "./components/modals/ModalProvider";
 import routes from "./routes/index.jsx";
@@ -44,7 +44,7 @@ const ProtectedRoute = ({ children }) => {
 
 // A component to handle the root path with query parameters
 const RootPathHandler = () => {
-  const Home = lazy(() => import("./components/features/home/pages/Home"));
+  const Home = lazy(() => import("./features/home/pages/Home"));
   return (
     <Suspense fallback={<LoadingPage />}>
       <Home />
@@ -52,13 +52,12 @@ const RootPathHandler = () => {
   );
 };
 
-// Import dashboard component with lazy loading
-const Dashboard = lazy(() => import("./components/features/dashboard/pages/Dashboard"));
-
 // Create a component to properly render lazy-loaded Dashboard
 const DashboardComponent = () => (
   <Suspense fallback={<LoadingPage />}>
-    <Dashboard />
+    {React.createElement(
+      lazy(() => import("./features/dashboard/pages/Dashboard"))
+    )}
   </Suspense>
 );
 
@@ -146,7 +145,7 @@ const AppContent = () => {
                       <ProtectedRoute>
                         <Suspense fallback={<LoadingPage />}>
                           {React.createElement(
-                            lazy(() => import("./components/features/character/pages/CharactersPage"))
+                            lazy(() => import("./features/character/pages/CharactersPage"))
                           )}
                         </Suspense>
                       </ProtectedRoute>
@@ -158,7 +157,7 @@ const AppContent = () => {
                       <ProtectedRoute>
                         <Suspense fallback={<LoadingPage />}>
                           {React.createElement(
-                            lazy(() => import("./components/features/scene/pages/ScenesPage"))
+                            lazy(() => import("./features/scene/pages/ScenesPage"))
                           )}
                         </Suspense>
                       </ProtectedRoute>
@@ -170,7 +169,7 @@ const AppContent = () => {
                       <ProtectedRoute>
                         <Suspense fallback={<LoadingPage />}>
                           {React.createElement(
-                            lazy(() => import("./components/features/scene/pages/SceneDetail"))
+                            lazy(() => import("./features/scene/pages/SceneDetail"))
                           )}
                         </Suspense>
                       </ProtectedRoute>

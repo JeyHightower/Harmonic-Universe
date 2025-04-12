@@ -2,8 +2,8 @@ import { Form, Input, Select, Tabs } from "antd";
 import PropTypes from "prop-types";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import Button from "./Button";
 import { updateUserProfile } from "../../store/thunks/authThunks";
+import Button from "./Button";
 
 const { TextArea } = Input;
 const { Option } = Select;

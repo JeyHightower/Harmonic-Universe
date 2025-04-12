@@ -1,186 +1,103 @@
 /**
- * Audio API Service
- * Handles all audio-related API requests
+ * Audio API
+ * Legacy adapter for older components that use audioApi directly
+ * Redirects to the new audioService
  */
 
-import httpService from './httpService';
-import { formatUrl } from './utilityApi';
-
-// Base endpoints for audio API
-const ENDPOINTS = {
-  GENERATE: 'audio/generate',
-  SAVE: 'audio/save',
-  LIST: 'audio/list',
-  GET: 'audio/get',
-  UPDATE: 'audio/update',
-  DELETE: 'audio/delete',
-  FAVORITE: 'audio/favorite',
-  UNFAVORITE: 'audio/unfavorite',
-  FAVORITES: 'audio/favorites',
-  UPLOAD: 'audio/upload',
-  DOWNLOAD: 'audio/download',
-  CONVERT: 'audio/convert'
-};
+import { audioService } from '../index';
 
 /**
- * Generate audio based on parameters
- * @param {Object} params - Audio generation parameters
- * @param {Object} options - Request options
- * @returns {Promise<Object>} Generated audio data
+ * Get audio details
+ * @param {string|number} universeId - Universe ID
+ * @param {string|number} sceneId - Scene ID
+ * @param {string|number} audioId - Audio ID
+ * @returns {Promise<object>} - Audio details
  */
-export const generateAudio = async (params, options = {}) => {
-  return httpService.post(formatUrl(ENDPOINTS.GENERATE), params, options);
-};
-
-/**
- * Save generated audio
- * @param {Object} audioData - Audio data to save
- * @param {Object} options - Request options
- * @returns {Promise<Object>} Saved audio data
- */
-export const saveAudio = async (audioData, options = {}) => {
-  return httpService.post(formatUrl(ENDPOINTS.SAVE), audioData, options);
-};
-
-/**
- * Get list of audio samples
- * @param {Object} params - Query parameters
- * @param {Object} options - Request options
- * @returns {Promise<Array>} List of audio samples
- */
-export const listAudio = async (params = {}, options = {}) => {
-  return httpService.get(formatUrl(ENDPOINTS.LIST), { params, ...options });
-};
-
-/**
- * Get audio by ID
- * @param {string} id - Audio ID
- * @param {Object} options - Request options
- * @returns {Promise<Object>} Audio data
- */
-export const getAudio = async (id, options = {}) => {
-  return httpService.get(formatUrl(`${ENDPOINTS.GET}/${id}`), options);
-};
-
-/**
- * Update audio
- * @param {string} id - Audio ID
- * @param {Object} audioData - Updated audio data
- * @param {Object} options - Request options
- * @returns {Promise<Object>} Updated audio data
- */
-export const updateAudio = async (id, audioData, options = {}) => {
-  return httpService.put(formatUrl(`${ENDPOINTS.UPDATE}/${id}`), audioData, options);
+export const getAudio = (universeId, sceneId, audioId) => {
+  console.log('Using legacy audioApi.getAudio, please update to audioService.getAudioTrack');
+  return audioService.getAudioTrack(audioId);
 };
 
 /**
  * Delete audio
- * @param {string} id - Audio ID
- * @param {Object} options - Request options
- * @returns {Promise<Object>} Delete response
+ * @param {string|number} universeId - Universe ID
+ * @param {string|number} sceneId - Scene ID
+ * @param {string|number} audioId - Audio ID
+ * @returns {Promise<object>} - Delete response
  */
-export const deleteAudio = async (id, options = {}) => {
-  return httpService.delete(formatUrl(`${ENDPOINTS.DELETE}/${id}`), options);
+export const deleteAudio = (universeId, sceneId, audioId) => {
+  console.log('Using legacy audioApi.deleteAudio, please update to audioService.deleteAudioTrack');
+  return audioService.deleteAudioTrack(audioId);
 };
 
 /**
- * Add audio to favorites
- * @param {string} id - Audio ID
- * @param {Object} options - Request options
- * @returns {Promise<Object>} Favorite response
+ * Generate audio
+ * @param {string|number} universeId - Universe ID
+ * @param {string|number} sceneId - Scene ID
+ * @param {object} options - Generation options
+ * @returns {Promise<object>} - Generated audio
  */
-export const favoriteAudio = async (id, options = {}) => {
-  return httpService.post(formatUrl(`${ENDPOINTS.FAVORITE}/${id}`), {}, options);
-};
-
-/**
- * Remove audio from favorites
- * @param {string} id - Audio ID
- * @param {Object} options - Request options
- * @returns {Promise<Object>} Unfavorite response
- */
-export const unfavoriteAudio = async (id, options = {}) => {
-  return httpService.post(formatUrl(`${ENDPOINTS.UNFAVORITE}/${id}`), {}, options);
-};
-
-/**
- * Get list of favorite audio samples
- * @param {Object} params - Query parameters
- * @param {Object} options - Request options
- * @returns {Promise<Array>} List of favorite audio
- */
-export const getFavorites = async (params = {}, options = {}) => {
-  return httpService.get(formatUrl(ENDPOINTS.FAVORITES), { params, ...options });
-};
-
-/**
- * Upload audio file
- * @param {File} file - Audio file to upload
- * @param {Object} metadata - Audio metadata
- * @param {Object} options - Request options
- * @returns {Promise<Object>} Uploaded audio data
- */
-export const uploadAudio = async (file, metadata = {}, options = {}) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  
-  if (metadata) {
-    formData.append('metadata', JSON.stringify(metadata));
-  }
-  
-  return httpService.post(formatUrl(ENDPOINTS.UPLOAD), formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    },
+export const generateAudio = (universeId, sceneId, options) => {
+  console.log('Using legacy audioApi.generateAudio, please update to audioService.generateMusic');
+  return audioService.generateMusic({
+    universeId,
+    sceneId,
     ...options
+  });
+};
+
+/**
+ * Save audio
+ * @param {string|number} universeId - Universe ID
+ * @param {string|number} sceneId - Scene ID
+ * @param {object} audioData - Audio data
+ * @returns {Promise<object>} - Saved audio
+ */
+export const saveAudio = (universeId, sceneId, audioData) => {
+  console.log('Using legacy audioApi.saveAudio, please update to audioService.createAudioTrack');
+  return audioService.createAudioTrack({
+    universeId,
+    sceneId,
+    ...audioData
   });
 };
 
 /**
  * Download audio file
- * @param {string} id - Audio ID
- * @param {string} format - Audio format (mp3, wav, etc.)
- * @param {Object} options - Request options
- * @returns {Promise<Blob>} Audio file blob
+ * @param {number|string} universeId - Universe ID
+ * @param {string} format - File format (mp3, wav)
+ * @returns {Promise<Blob>} - Audio file blob
  */
-export const downloadAudio = async (id, format = 'mp3', options = {}) => {
-  return httpService.get(formatUrl(`${ENDPOINTS.DOWNLOAD}/${id}`), {
-    params: { format },
-    responseType: 'blob',
-    ...options
-  });
+export const downloadAudio = (universeId, format) => {
+  return audioService.downloadMusic(universeId, format);
 };
 
 /**
- * Convert audio to a different format
- * @param {string} id - Audio ID
- * @param {string} format - Target format (mp3, wav, etc.)
- * @param {Object} options - Request options
- * @returns {Promise<Blob>} Converted audio file blob
+ * Get all audio tracks for a universe
+ * @param {number|string} universeId - Universe ID
+ * @returns {Promise<object>} - List of audio tracks
  */
-export const convertAudio = async (id, format = 'mp3', options = {}) => {
-  return httpService.get(formatUrl(`${ENDPOINTS.CONVERT}/${id}`), {
-    params: { format },
-    responseType: 'blob',
-    ...options
-  });
+export const getAudioTracks = (universeId) => {
+  return audioService.getAudioTracks(universeId);
 };
 
-// Export the audio API
-export const audioApi = {
+/**
+ * Update existing audio track
+ * @param {number|string} universeId - Universe ID
+ * @param {number|string} audioId - Audio ID
+ * @param {object} audioData - Updated audio data
+ * @returns {Promise<object>} - Updated audio track
+ */
+export const updateAudio = (universeId, audioId, audioData) => {
+  return audioService.updateAudioTrack(universeId, audioId, audioData);
+};
+
+export default {
+  getAudio,
+  deleteAudio,
   generateAudio,
   saveAudio,
-  listAudio,
-  getAudio,
-  updateAudio,
-  deleteAudio,
-  favoriteAudio,
-  unfavoriteAudio,
-  getFavorites,
-  uploadAudio,
   downloadAudio,
-  convertAudio
-};
-
-// Default export
-export default audioApi; 
+  getAudioTracks,
+  updateAudio
+}; 

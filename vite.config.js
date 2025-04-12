@@ -1,6 +1,6 @@
+import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -33,15 +33,28 @@ export default defineConfig({
     }
   },
 
-  // Disable optimizeDeps for problematic packages
+  // Updated from optimizeDeps.disabled to follow Vite 6.2.5 recommendation
   optimizeDeps: {
-    disabled: true
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@reduxjs/toolkit',
+      'react-redux'
+    ],
+    esbuildOptions: {
+      loader: {
+        '.js': 'jsx',
+      },
+    },
   },
 
   resolve: {
     mainFields: ['browser', 'module', 'main'],
     alias: {
-      '@': path.resolve(__dirname, './src')
+      '@': path.resolve(__dirname, './frontend/src'),
+      'frontend': path.resolve(__dirname, './frontend'),
+      'backend': path.resolve(__dirname, './backend')
     },
     dedupe: ['react', 'react-dom']
   },

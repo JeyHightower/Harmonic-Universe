@@ -5,8 +5,8 @@
  */
 
 import fs from 'fs';
-import pkg from 'glob';
 import path from 'path';
+import pkg from 'glob';
 const glob = pkg;
 
 console.log('Direct inline patching of ant-icons file...');

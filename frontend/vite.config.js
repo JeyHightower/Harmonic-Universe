@@ -1,6 +1,6 @@
+import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
 
 // Detect environment
 const isProd = process.env.NODE_ENV === 'production' || process.env.VITE_APP_ENV === 'production';
@@ -479,32 +479,13 @@ const getManualChunks = (id) => {
   }
 };
 
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react(), splitVendorChunkPlugin()],
-  base: '/',
-  root: path.resolve(__dirname),
-
-  define: {
-    'process.env.NODE_ENV': JSON.stringify(isProd ? 'production' : 'development'),
-    'process.env.VITE_APP_ENV': JSON.stringify(isProd ? 'production' : 'development')
-  },
-
-  build: {
+// Create build configuration based on environment
+const getBuildConfig = () => {
+  // Base build config for all environments
+  const buildConfig = {
     outDir: 'dist',
-    sourcemap: isProd ? false : true,
-    minify: isProd ? 'terser' : false,
-    terserOptions: {
-      compress: {
-        drop_console: isProd && !isDebug,
-        drop_debugger: isProd && !isDebug,
-        pure_funcs: isProd ? ['console.log', 'console.debug', 'console.info'] : []
-      },
-      mangle: {
-        safari10: true
-      }
-    },
-    chunkSizeWarningLimit: 500,
+    sourcemap: !isProd,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         entryFileNames: 'assets/[name].[hash].js',
@@ -520,43 +501,101 @@ export default defineConfig({
 
           return 'assets/[name].[hash][extname]';
         },
-        // Use the external function for manual chunks
         manualChunks: getManualChunks
       }
     }
+  };
+
+  // Only add terser options for production builds
+  if (isProd) {
+    buildConfig.minify = 'terser';
+    buildConfig.terserOptions = {
+      compress: {
+        drop_console: !isDebug,
+        drop_debugger: !isDebug,
+        pure_funcs: isDebug ? [] : ['console.log', 'console.debug', 'console.info']
+      },
+      mangle: {
+        safari10: true
+      }
+    };
+  } else {
+    buildConfig.minify = false;
+  }
+
+  return buildConfig;
+};
+
+// Export final config
+export default defineConfig({
+  plugins: [react()],
+  base: '/',
+  root: path.resolve(__dirname),
+
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(isProd ? 'production' : 'development'),
+    'process.env.VITE_APP_ENV': JSON.stringify(isProd ? 'production' : 'development')
   },
 
+  build: getBuildConfig(),
+
   resolve: {
+    mainFields: ['browser', 'module', 'main'],
     alias: {
       '@': path.resolve(__dirname, './src'),
-      'react': path.resolve(__dirname, 'node_modules/react'),
-      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
-      'redux-persist': path.resolve(__dirname, 'node_modules/redux-persist'),
-      'redux-persist/integration/react': path.resolve(__dirname, 'node_modules/redux-persist/integration/react'),
-      'redux-persist/lib/storage': path.resolve(__dirname, 'node_modules/redux-persist/lib/storage')
-    }
+      // Add alias for components for easier imports
+      'components': path.resolve(__dirname, './src/components'),
+      'features': path.resolve(__dirname, './src/features'),
+      'store': path.resolve(__dirname, './src/store'),
+      'utils': path.resolve(__dirname, './src/utils'),
+      'services': path.resolve(__dirname, './src/services'),
+      'hooks': path.resolve(__dirname, './src/hooks'),
+      'contexts': path.resolve(__dirname, './src/contexts'),
+      'assets': path.resolve(__dirname, './src/assets'),
+      'styles': path.resolve(__dirname, './src/styles'),
+      'constants': path.resolve(__dirname, './src/constants')
+    },
+    dedupe: ['react', 'react-dom', 'react-router-dom', '@reduxjs/toolkit', 'react-redux']
   },
 
   // Ensure Vite doesn't time out for slow connections
   server: {
     hmr: {
       timeout: 10000
-    }
+    },
+    port: 5173,
+    open: false,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 
   optimizeDeps: {
     include: [
       'react',
       'react-dom',
-      'react-redux',
       'react-router-dom',
-      'redux-persist',
-      'redux-persist/integration/react',
-      'redux-persist/lib/storage'
+      '@reduxjs/toolkit',
+      'react-redux'
     ],
     esbuildOptions: {
-      jsx: 'automatic',
-      treeShaking: true
-    }
-  }
+      loader: {
+        '.js': 'jsx',
+      },
+    },
+  },
+
+  // Enable JSX in .js files
+  esbuild: {
+    loader: 'jsx',
+    include: /src\/.*\.jsx?$/,
+    exclude: [],
+  },
+
+  // Enables more verbose logging if env var is set
+  logLevel: isDebug ? 'info' : 'warn',
 });

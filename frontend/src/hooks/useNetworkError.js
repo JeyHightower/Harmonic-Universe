@@ -71,7 +71,7 @@ export function useNetworkError({
       if (networkError.status === 0) {
         // Handle CORS or network connectivity issues
         if (retryFn && retryAttempts < retryCount) {
-          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+          await new Promise((resolve) => window.setTimeout(resolve, retryDelay));
           setRetryAttempts((prev) => prev + 1);
           return retryFn();
         }
@@ -81,7 +81,7 @@ export function useNetworkError({
       if (networkError.status === 408) {
         // Handle timeout errors
         if (retryFn && retryAttempts < retryCount) {
-          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+          await new Promise((resolve) => window.setTimeout(resolve, retryDelay));
           setRetryAttempts((prev) => prev + 1);
           return retryFn();
         }
@@ -91,7 +91,7 @@ export function useNetworkError({
       if (networkError.status >= 500) {
         // Handle server errors
         if (retryFn && retryAttempts < retryCount) {
-          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+          await new Promise((resolve) => window.setTimeout(resolve, retryDelay));
           setRetryAttempts((prev) => prev + 1);
           return retryFn();
         }

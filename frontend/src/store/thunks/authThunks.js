@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import apiClient from "../../services/api.js";
+import api from '../../services/api.adapter';
 import {
   handleOfflineAuthentication,
   shouldUseFallback,
@@ -30,7 +30,7 @@ export const login = createAsyncThunk(
       dispatch(loginStart());
       console.debug("Logging in user:", credentials.email);
 
-      const response = await apiClient.login(credentials);
+      const response = await api.login(credentials);
       console.debug("Login successful:", response);
 
       // Extract relevant data from response
@@ -100,7 +100,7 @@ export const register = createAsyncThunk(
     try {
       console.debug("Registering user:", userData.email);
 
-      const response = await apiClient.register(userData);
+      const response = await api.register(userData);
       console.debug("Registration successful:", response);
 
       // Store tokens
@@ -195,7 +195,7 @@ export const registerUser = createAsyncThunk(
       dispatch(loginStart());
       console.debug("Registering user:", userData);
 
-      const response = await apiClient.register(userData);
+      const response = await api.register(userData);
       console.debug("Registration successful:", response);
 
       // Store tokens
@@ -230,7 +230,7 @@ export const updateUserProfile = createAsyncThunk(
   async (profileData, { dispatch, rejectWithValue }) => {
     try {
       console.debug("Updating user profile:", profileData);
-      const response = await apiClient.updateUserProfile(profileData);
+      const response = await api.updateUserProfile(profileData);
       console.debug("User profile updated:", response);
 
       // Update the user in the Redux store
@@ -252,7 +252,7 @@ export const loginUser = createAsyncThunk(
       dispatch(loginStart());
       console.debug("Logging in user:", loginData);
 
-      const response = await apiClient.login(loginData);
+      const response = await api.login(loginData);
       console.debug("Login successful:", response);
 
       // Store tokens
@@ -300,7 +300,7 @@ export const logout = createAsyncThunk(
       }
 
       // Call backend logout endpoint
-      const response = await apiClient.logout();
+      const response = await api.logout();
       console.debug("Logout API call successful:", response);
 
       // Clear local storage after successful API call

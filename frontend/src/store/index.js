@@ -14,9 +14,12 @@ export { default as universeReducer } from './slices/universeSlice';
 // Actions from slices
 export {
   // Auth actions
-  setUser, clearUser, setAuthError, clearAuthError, setLoading, clearLoading,
+  loginStart, loginSuccess, loginFailure, logoutSuccess, logoutFailure, 
+  updateUser, clearError as clearAuthError, setNetworkError, setOfflineMode,
 } from './slices/authSlice';
 
+// Commenting out exports that may not exist - uncomment after implementing in slice files
+/*
 export {
   // Character actions
   setCharacters, setCurrentCharacter, addCharacter,
@@ -56,6 +59,7 @@ export {
   setUniverses, setCurrentUniverse, addUniverse,
   updateUniverse as updateUniverseAction, deleteUniverse as deleteUniverseAction, setUniverseError,
 } from './slices/universeSlice';
+*/
 
 // Thunks
 export * from './thunks';

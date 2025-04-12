@@ -23,7 +23,7 @@ export * from './errorHandling';
 
 // UI Utilities
 export { ensurePortalRoot } from './portalUtils';
-export { ensureReduxProvider } from './ensure-redux-provider';
+export { ensureReduxProvider } from './ensure-redux-provider.jsx';
 export { ensureRouterProvider } from './ensure-router-provider';
 export * from './browserUtils';
 export * from './themeUtils';
@@ -39,7 +39,7 @@ export * from './visualizerUtils';
 export * from './authFallback';
 
 // Dynamic Import Helper
-export { loadComponent } from './dynamic-import';
+export { loadComponent } from './dynamic-import.jsx';
 
 // Versioning
 export { version } from './version';

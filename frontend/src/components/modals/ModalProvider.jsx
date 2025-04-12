@@ -1,8 +1,8 @@
 import PropTypes from "prop-types";
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import GlobalModal from "./GlobalModal";
 import { ModalProvider as ContextModalProvider } from "../../contexts/ModalContext";
+import GlobalModal from "./GlobalModal";
 
 const ModalProvider = ({ children }) => {
   return (
