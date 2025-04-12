@@ -2,12 +2,10 @@ import PropTypes from "prop-types";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../components/common/Button";
-import Icon from "../../../components/common/Icon";
 import Input from "../../../components/common/Input";
 import Modal from "../../../components/common/Modal";
 import Spinner from "../../../components/common/Spinner";
 import "../styles/Modal.css";
-import { API_CONFIG } from "../../../utils/config";
 
 /**
  * Modal for creating and editing physics constraints between objects.
@@ -18,13 +16,14 @@ import { API_CONFIG } from "../../../utils/config";
  * @param {Object} props.modalProps - Props for the Modal component
  * @param {boolean} props.isGlobalModal - Whether this modal is opened globally
  */
-const PhysicsConstraintModal = ({
-  sceneId,
-  initialData,
-  onClose,
-  modalProps = {},
-  isGlobalModal = false,
-}) => {
+const PhysicsConstraintModal = (props) => {
+  const {
+    sceneId,
+    initialData,
+    onClose,
+    modalProps = {},
+    isGlobalModal = false,
+  } = props;
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(!!initialData?.id);
@@ -199,207 +198,196 @@ const PhysicsConstraintModal = ({
   // Determine if we're creating or editing
   const isEditing = !!initialData?.id;
 
-  // Show loading spinner while fetching existing data
-  if (fetchLoading) {
-    return (
-      <Modal
-        {...modalProps}
-        onClose={onClose}
-        className="physics-constraint-modal"
-      >
+  return (
+    <>
+      {fetchLoading ? (
         <div className="modal-body centered">
           <Spinner size="medium" />
           <p>Loading constraint data...</p>
         </div>
-      </Modal>
-    );
-  }
-
-  return (
-    <Modal
-      {...modalProps}
-      onClose={onClose}
-      className="physics-constraint-modal"
-    >
-      <div className="modal-header">
-        <h2>
-          {modalProps.title ||
-            (isEditing
-              ? "Edit Physics Constraint"
-              : "Create Physics Constraint")}
-        </h2>
-      </div>
-
-      <div className="modal-body">
-        {error && <div className="error-message">{error}</div>}
-
-        {physicsObjects.length < 2 ? (
-          <div className="warning-message">
-            You need at least two physics objects in this scene to create a
-            constraint.
+      ) : (
+        <>
+          <div className="modal-header">
+            <h2>
+              {modalProps.title ||
+                (isEditing
+                  ? "Edit Physics Constraint"
+                  : "Create Physics Constraint")}
+            </h2>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label htmlFor="name">Constraint Name</label>
-              <Input
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                placeholder="Enter a name for this constraint"
-                required
-              />
-            </div>
 
-            <div className="form-group">
-              <label htmlFor="type">Constraint Type</label>
-              <select
-                id="type"
-                name="type"
-                value={formData.type}
-                onChange={handleInputChange}
-                className="form-control"
-                required
-              >
-                {constraintTypes.map((type) => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div className="modal-body">
+            {error && <div className="error-message">{error}</div>}
 
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="object1_id">First Object</label>
-                <select
-                  id="object1_id"
-                  name="object1_id"
-                  value={formData.object1_id}
-                  onChange={handleInputChange}
-                  className="form-control"
-                  required
-                >
-                  <option value="">Select an object</option>
-                  {physicsObjects.map((obj) => (
-                    <option key={obj.id} value={obj.id}>
-                      {obj.name}
-                    </option>
-                  ))}
-                </select>
+            {physicsObjects.length < 2 ? (
+              <div className="warning-message">
+                You need at least two physics objects in this scene to create a
+                constraint.
               </div>
+            ) : (
+              <form onSubmit={handleSubmit}>
+                <div className="form-group">
+                  <label htmlFor="name">Constraint Name</label>
+                  <Input
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    placeholder="Enter a name for this constraint"
+                    required
+                  />
+                </div>
 
-              <div className="form-group">
-                <label htmlFor="object2_id">Second Object</label>
-                <select
-                  id="object2_id"
-                  name="object2_id"
-                  value={formData.object2_id}
-                  onChange={handleInputChange}
-                  className="form-control"
-                  required
-                >
-                  <option value="">Select an object</option>
-                  {physicsObjects.map((obj) => (
-                    <option key={obj.id} value={obj.id}>
-                      {obj.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+                <div className="form-group">
+                  <label htmlFor="type">Constraint Type</label>
+                  <select
+                    id="type"
+                    name="type"
+                    value={formData.type}
+                    onChange={handleInputChange}
+                    className="form-control"
+                    required
+                  >
+                    {constraintTypes.map((type) => (
+                      <option key={type.value} value={type.value}>
+                        {type.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            <fieldset className="parameters-fieldset">
-              <legend>Constraint Parameters</legend>
-
-              {formData.type === "SPRING" && (
-                <>
+                <div className="form-row">
                   <div className="form-group">
-                    <label htmlFor="stiffness">Stiffness</label>
+                    <label htmlFor="object1_id">First Object</label>
+                    <select
+                      id="object1_id"
+                      name="object1_id"
+                      value={formData.object1_id}
+                      onChange={handleInputChange}
+                      className="form-control"
+                      required
+                    >
+                      <option value="">Select an object</option>
+                      {physicsObjects.map((obj) => (
+                        <option key={obj.id} value={obj.id}>
+                          {obj.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="object2_id">Second Object</label>
+                    <select
+                      id="object2_id"
+                      name="object2_id"
+                      value={formData.object2_id}
+                      onChange={handleInputChange}
+                      className="form-control"
+                      required
+                    >
+                      <option value="">Select an object</option>
+                      {physicsObjects.map((obj) => (
+                        <option key={obj.id} value={obj.id}>
+                          {obj.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <fieldset className="parameters-fieldset">
+                  <legend>Constraint Parameters</legend>
+
+                  {formData.type === "SPRING" && (
+                    <>
+                      <div className="form-group">
+                        <label htmlFor="stiffness">Stiffness</label>
+                        <Input
+                          id="stiffness"
+                          name="stiffness"
+                          type="number"
+                          min="1"
+                          max="1000"
+                          value={formData.parameters.stiffness}
+                          onChange={handleParameterChange}
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="damping">Damping</label>
+                        <Input
+                          id="damping"
+                          name="damping"
+                          type="number"
+                          min="0"
+                          max="5"
+                          step="0.1"
+                          value={formData.parameters.damping}
+                          onChange={handleParameterChange}
+                          required
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  <div className="form-group">
+                    <label htmlFor="restLength">Rest Length</label>
                     <Input
-                      id="stiffness"
-                      name="stiffness"
+                      id="restLength"
+                      name="restLength"
                       type="number"
                       min="1"
                       max="1000"
-                      value={formData.parameters.stiffness}
+                      value={formData.parameters.restLength}
                       onChange={handleParameterChange}
                       required
                     />
                   </div>
 
                   <div className="form-group">
-                    <label htmlFor="damping">Damping</label>
+                    <label htmlFor="breakForce">Break Force</label>
                     <Input
-                      id="damping"
-                      name="damping"
+                      id="breakForce"
+                      name="breakForce"
                       type="number"
                       min="0"
-                      max="5"
-                      step="0.1"
-                      value={formData.parameters.damping}
+                      max="10000"
+                      value={formData.parameters.breakForce}
                       onChange={handleParameterChange}
                       required
                     />
+                    <small className="help-text">
+                      Set to 0 for an unbreakable constraint
+                    </small>
                   </div>
-                </>
-              )}
+                </fieldset>
 
-              <div className="form-group">
-                <label htmlFor="restLength">Rest Length</label>
-                <Input
-                  id="restLength"
-                  name="restLength"
-                  type="number"
-                  min="1"
-                  max="1000"
-                  value={formData.parameters.restLength}
-                  onChange={handleParameterChange}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="breakForce">Break Force</label>
-                <Input
-                  id="breakForce"
-                  name="breakForce"
-                  type="number"
-                  min="0"
-                  max="10000"
-                  value={formData.parameters.breakForce}
-                  onChange={handleParameterChange}
-                  required
-                />
-                <small className="help-text">
-                  Set to 0 for an unbreakable constraint
-                </small>
-              </div>
-            </fieldset>
-
-            <div className="form-actions">
-              <Button type="button" variant="secondary" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={loading || physicsObjects.length < 2}
-              >
-                {loading ? (
-                  <Spinner size="small" />
-                ) : isEditing ? (
-                  "Save Changes"
-                ) : (
-                  "Create Constraint"
-                )}
-              </Button>
-            </div>
-          </form>
-        )}
-      </div>
-    </Modal>
+                <div className="form-actions">
+                  <Button type="button" variant="secondary" onClick={onClose}>
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    disabled={loading || physicsObjects.length < 2}
+                  >
+                    {loading ? (
+                      <Spinner size="small" />
+                    ) : isEditing ? (
+                      "Save Changes"
+                    ) : (
+                      "Create Constraint"
+                    )}
+                  </Button>
+                </div>
+              </form>
+            )}
+          </div>
+        </>
+      )}
+    </>
   );
 };
 

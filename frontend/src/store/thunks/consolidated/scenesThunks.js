@@ -188,8 +188,8 @@ export const fetchScenesForUniverse = fetchScenes;
  * Fetch a single scene by ID
  */
 export const fetchSceneById = createAsyncThunk(
-  "scenes/fetchSceneById",
-  async (sceneId, { rejectWithValue, getState }) => {
+  "scenes/fetchById",
+  async (sceneId, { rejectWithValue, dispatch, _getState }) => {
     try {
       console.log("THUNK fetchSceneById: Called with ID:", sceneId);
 
@@ -478,8 +478,8 @@ export const updateScene = createAsyncThunk(
  * Delete a scene (soft delete)
  */
 export const deleteScene = createAsyncThunk(
-  "scenes/deleteScene",
-  async (sceneId, { dispatch, rejectWithValue, getState }) => {
+  "scenes/delete",
+  async (sceneId, { rejectWithValue, dispatch, _getState }) => {
     try {
       console.log("THUNK deleteScene: Called with ID:", sceneId);
 
@@ -490,23 +490,21 @@ export const deleteScene = createAsyncThunk(
 
       // Get scene data before deletion to know which universe to refresh
       let universeId = null;
-      try {
-        const state = getState();
-        const scene = state.scenes.scenes.find(s => s.id === sceneId);
-        if (scene) {
-          universeId = scene.universe_id;
-          console.log(`THUNK deleteScene: Found universe_id ${universeId} for scene ${sceneId}`);
-        }
-      } catch (e) {
-        console.warn("THUNK deleteScene: Error getting universe_id from state:", e);
-      }
-
+      // Skip this part since _getState is not used
+      // Previously we were trying to look up the universe from state
+      
       // Call API to delete scene
       const response = await apiClient.deleteScene(sceneId);
       console.log("THUNK deleteScene: Received API response:", response);
 
       // Get the scene ID from the response if available, or use the input ID
       const deletedSceneId = response.data?.id || sceneId;
+      
+      // Get the universe ID from the response if available
+      if (response.data?.universe_id) {
+        universeId = response.data.universe_id;
+        console.log(`THUNK deleteScene: Got universe_id ${universeId} from response`);
+      }
 
       // If we have a universe ID, refresh the scenes for that universe
       if (universeId) {

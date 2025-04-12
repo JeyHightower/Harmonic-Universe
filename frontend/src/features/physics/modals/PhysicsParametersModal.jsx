@@ -5,6 +5,8 @@ import Icon from "../../../components/common/Icon";
 import Input from "../../../components/common/Input";
 import Spinner from "../../../components/common/Spinner";
 import "../styles/PhysicsParameters.css";
+import PropTypes from "prop-types";
+import { endpoints } from "../../../services/endpoints";
 
 // Default physics parameters
 const DEFAULT_PHYSICS_PARAMS = {
@@ -21,14 +23,17 @@ const DEFAULT_PHYSICS_PARAMS = {
   scene_id: null,
 };
 
-const PhysicsParametersModal = ({
-  sceneId,
-  paramsId,
-  onClose,
-  onSuccess,
-  mode = "create",
-  initialData = null,
-}) => {
+const PhysicsParametersModal = (props) => {
+  // Extract props 
+  const {
+    sceneId,
+    paramsId,
+    onClose,
+    onSuccess,
+    mode = "create",
+    initialData = null,
+  } = props;
+
   // State for form data
   const [formData, setFormData] = useState({
     ...DEFAULT_PHYSICS_PARAMS,
@@ -254,7 +259,7 @@ const PhysicsParametersModal = ({
       }
 
       // Close modal after a delay
-      setTimeout(() => {
+      window.setTimeout(() => {
         onClose();
       }, 1500);
     } catch (error) {
@@ -514,6 +519,16 @@ const PhysicsParametersModal = ({
       <div className="modal-content">{renderModalContent()}</div>
     </div>
   );
+};
+
+// Add PropTypes validation
+PhysicsParametersModal.propTypes = {
+  sceneId: PropTypes.string.isRequired,
+  paramsId: PropTypes.string,
+  onClose: PropTypes.func.isRequired,
+  onSuccess: PropTypes.func,
+  mode: PropTypes.oneOf(["create", "edit", "view", "delete"]),
+  initialData: PropTypes.object
 };
 
 export default PhysicsParametersModal;

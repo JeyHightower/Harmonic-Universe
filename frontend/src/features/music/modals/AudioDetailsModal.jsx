@@ -5,7 +5,7 @@ import Button from "../../../common/Button";
 import Modal from "../../../common/Modal";
 import Spinner from "../../../common/Spinner";
 import "../styles/Modal.css";
-import { audioService } from "../../../../services";
+import { audioService } from "../../../services";
 
 /**
  * Modal for displaying and playing audio tracks.

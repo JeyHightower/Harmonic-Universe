@@ -4,20 +4,10 @@ import Layout from "../components/layout/Layout";
 import ProtectedRoute from "../components/routing/ProtectedRoute";
 import { ROUTES } from "../utils/routes";
 import ModalTest from "../components/test/ModalTest";
-
-// Create a stub component instead of importing from missing path
-const SceneModalHandler = ({ isOpen, onClose, modalType, universeId, onSuccess }) => {
-  return (
-    <div>
-      <h2>Scene Modal Handler</h2>
-      <p>This is a placeholder for the SceneModalHandler component.</p>
-      <button onClick={() => onClose()}>Close</button>
-    </div>
-  );
-};
+import { SceneModalHandler } from "../features/scene";
 
 // Create a wrapper component for SceneModalHandler in routes
-const SceneCreateRoute = () => {
+export const SceneCreateRoute = () => {
   const { universeId } = useParams();
   const navigate = useNavigate();
 
@@ -54,7 +44,7 @@ const CharactersPage = lazy(() => import("../features/character/pages/Characters
 const NotesPage = lazy(() => import("../features/note/pages/NotesPage"));
 
 // Create a special route handler for characters to validate the universeId
-const CharactersRouteHandler = () => {
+export const CharactersRouteHandler = () => {
   const { universeId } = useParams();
   console.log(`CharactersRouteHandler: Received universeId=${universeId}`);
 
@@ -103,7 +93,7 @@ const CharactersRouteHandler = () => {
 };
 
 // Create a special route handler for notes to validate the universeId
-const NotesRouteHandler = () => {
+export const NotesRouteHandler = () => {
   const { universeId } = useParams();
   console.log(`NotesRouteHandler: Received universeId=${universeId}`);
 
@@ -152,7 +142,7 @@ const NotesRouteHandler = () => {
 };
 
 // Add a redirect route for /login to fix "No routes matched location /login" error
-const LoginRedirect = () => {
+export const LoginRedirect = () => {
   const navigate = useNavigate();
 
   // Redirect to home page with login modal parameter
@@ -163,14 +153,10 @@ const LoginRedirect = () => {
   return <div className="redirect-loader">Redirecting to login...</div>;
 };
 
-// Legacy components to be replaced
-const CharacterList = lazy(() =>
-  import("../features/character/components/CharacterList")
-);
+// Legacy components that are currently used
 const CharacterDetail = lazy(() =>
   import("../features/character/pages/CharacterDetail")
 );
-const NoteList = lazy(() => import("../features/note/components/NoteList"));
 const NoteDetail = lazy(() => import("../features/note/pages/NoteDetail"));
 
 // Create a wrapper component for SceneModalHandler in routes

@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import PropTypes from "prop-types";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Dialog,
@@ -123,6 +124,10 @@ const NoteDetail = ({ noteId }) => {
       </DialogActions>
     </Dialog>
   );
+};
+
+NoteDetail.propTypes = {
+  noteId: PropTypes.string.isRequired
 };
 
 export default NoteDetail; 

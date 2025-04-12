@@ -3,7 +3,6 @@
  * Handles operations related to user profiles and account management
  */
 
-import Logger from "../utils/logger";
 import { httpClient } from './http-client';
 import { userEndpoints } from './endpoints';
 import { responseHandler } from './response-handler';
@@ -17,7 +16,7 @@ export const getProfile = async () => {
     const response = await httpClient.get(userEndpoints.profile);
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('user', 'Error fetching user profile', { error: error.message });
+    console.log('user', 'Error fetching user profile', { error: error.message });
     return responseHandler.handleError(error);
   }
 };
@@ -35,10 +34,10 @@ export const updateProfile = async (profileData) => {
 
     const response = await httpClient.put(userEndpoints.profile, profileData);
     
-    log('user', 'User profile updated successfully');
+    console.log('user', 'User profile updated successfully');
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('user', 'Error updating user profile', { error: error.message });
+    console.log('user', 'Error updating user profile', { error: error.message });
     return responseHandler.handleError(error);
   }
 };
@@ -64,10 +63,10 @@ export const changePassword = async (currentPassword, newPassword) => {
       new_password: newPassword
     });
     
-    log('user', 'Password changed successfully');
+    console.log('user', 'Password changed successfully');
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('user', 'Error changing password', { error: error.message });
+    console.log('user', 'Error changing password', { error: error.message });
     return responseHandler.handleError(error);
   }
 };
@@ -85,10 +84,10 @@ export const deleteAccount = async (password) => {
 
     const response = await httpClient.post(userEndpoints.deleteAccount, { password });
     
-    log('user', 'Account deleted successfully');
+    console.log('user', 'Account deleted successfully');
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('user', 'Error deleting account', { error: error.message });
+    console.log('user', 'Error deleting account', { error: error.message });
     return responseHandler.handleError(error);
   }
 };
@@ -102,7 +101,7 @@ export const getPreferences = async () => {
     const response = await httpClient.get(userEndpoints.preferences);
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('user', 'Error fetching user preferences', { error: error.message });
+    console.log('user', 'Error fetching user preferences', { error: error.message });
     return responseHandler.handleError(error);
   }
 };
@@ -120,10 +119,10 @@ export const updatePreferences = async (preferences) => {
 
     const response = await httpClient.put(userEndpoints.preferences, preferences);
     
-    log('user', 'User preferences updated successfully');
+    console.log('user', 'User preferences updated successfully');
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('user', 'Error updating user preferences', { error: error.message });
+    console.log('user', 'Error updating user preferences', { error: error.message });
     return responseHandler.handleError(error);
   }
 };

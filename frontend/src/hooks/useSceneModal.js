@@ -1,5 +1,8 @@
 import { useState, useCallback } from 'react';
 
+// Define window globals to fix ESLint errors
+const { setTimeout } = window;
+
 /**
  * Custom hook for managing scene modals
  * This provides a consistent interface for handling all scene-related modals
@@ -123,7 +126,7 @@ const useSceneModal = () => {
 
   // Function to handle modal success
   const handleSuccess = useCallback((result) => {
-    console.log("useSceneModal - handleSuccess called with result:", result);
+    console.log("useSceneModal - handleSuccess called with:", result);
 
     if (modalData.successCallback) {
       console.log("useSceneModal - Calling success callback");
@@ -134,7 +137,7 @@ const useSceneModal = () => {
 
     console.log("useSceneModal - Closing modal after success");
     closeModal();
-  }, [modalData.successCallback, closeModal]);
+  }, [modalData, closeModal]);
 
   return {
     isOpen,

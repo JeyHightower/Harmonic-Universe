@@ -2,6 +2,9 @@ import { useCallback } from "react";
 import errorService from "../services/errorService";
 import { APP_CONFIG } from "../utils/config";
 
+// Define setTimeout for ESLint compatibility
+const { setTimeout } = window;
+
 /**
  * Custom hook for handling API errors consistently across the application
  */

@@ -36,6 +36,9 @@ import { MODAL_TYPES } from "../../../constants/modalTypes";
 import { createVisualizer, drawVisualization } from "../../../utils/visualizerUtils";
 import "../styles/Music.css";
 
+// Define window globals to fix ESLint errors
+const { requestAnimationFrame, cancelAnimationFrame } = window;
+
 /**
  * Music Player Component
  * 

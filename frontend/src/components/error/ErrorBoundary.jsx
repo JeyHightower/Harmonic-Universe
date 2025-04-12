@@ -1,6 +1,10 @@
 import React, { Component } from "react";
 import PropTypes from "prop-types";
 import { logError } from "../../services/errorService";
+import "./ErrorBoundary.css";
+
+// Define a fallback for process.env if it's not available in the environment
+const processEnv = typeof process !== 'undefined' && process.env ? process.env : { NODE_ENV: 'development' };
 
 /**
  * Error boundary component that catches JavaScript errors anywhere in the child component tree
@@ -47,7 +51,7 @@ class ErrorBoundary extends Component {
           <p>
             We apologize for the inconvenience. Please try refreshing the page.
           </p>
-          {process.env.NODE_ENV === "development" && this.state.error && (
+          {processEnv.NODE_ENV === "development" && this.state.error && (
             <details style={{ whiteSpace: "pre-wrap" }}>
               <summary>Error Details</summary>
               {this.state.error.toString()}

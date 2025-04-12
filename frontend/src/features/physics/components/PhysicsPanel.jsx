@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import PropTypes from "prop-types";
 import { useDispatch, useSelector } from "react-redux";
 import { useModal } from "../../../contexts/ModalContext";
 import { updatePhysicsParams } from "../../../store/thunks/universeThunks";
@@ -63,10 +64,8 @@ function PhysicsPanel({
     (state) => state.universe.currentUniverse
   );
   const [physicsParams, setPhysicsParams] = useState(null);
-  const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [lastSubmittedValues, setLastSubmittedValues] = useState(null);
 
   // Check if user has permission to edit - handle loading state properly
   const canEdit =
@@ -101,19 +100,16 @@ function PhysicsPanel({
         {}
       );
       setPhysicsParams(updatedParams);
-      setLastSubmittedValues(extractValues(updatedParams));
       setIsLoading(false);
     }
     // Fallback to prop data if available
     else if (initialPhysicsParams) {
       setPhysicsParams(initialPhysicsParams);
-      setLastSubmittedValues(extractValues(initialPhysicsParams));
       setIsLoading(false);
     }
     // Fallback to defaults if no data
     else {
       setPhysicsParams(DEFAULT_PHYSICS_PARAMS);
-      setLastSubmittedValues(extractValues(DEFAULT_PHYSICS_PARAMS));
       setIsLoading(false);
     }
   }, [universeId, currentUniverse, initialPhysicsParams]);
@@ -149,7 +145,6 @@ function PhysicsPanel({
 
       // Extract values for API submission
       const physicsValues = extractValues(updatedParams);
-      setLastSubmittedValues(physicsValues);
 
       // Dispatch Redux action to update backend
       if (universeId) {
@@ -244,5 +239,18 @@ function PhysicsPanel({
     </div>
   );
 }
+
+PhysicsPanel.propTypes = {
+  universeId: PropTypes.string.isRequired,
+  initialPhysicsParams: PropTypes.object,
+  readOnly: PropTypes.bool,
+  onPhysicsParamsChange: PropTypes.func
+};
+
+PhysicsPanel.defaultProps = {
+  initialPhysicsParams: null,
+  readOnly: false,
+  onPhysicsParamsChange: null
+};
 
 export default PhysicsPanel;

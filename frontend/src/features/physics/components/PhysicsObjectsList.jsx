@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import PropTypes from "prop-types";
-import { motion, AnimatePresence } from "framer-motion";
 import "../styles/PhysicsObjects.css";
 import { fetchPhysicsObjects } from "../../../store/thunks/physicsObjectsThunks";
 import { Button } from "../../../components/common";

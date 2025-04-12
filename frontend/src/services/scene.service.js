@@ -3,7 +3,6 @@
  * Handles operations related to scenes in the application
  */
 
-import Logger from "../utils/logger";
 import { httpClient } from './http-client';
 import { sceneEndpoints } from './endpoints';
 import { responseHandler } from './response-handler';
@@ -17,7 +16,7 @@ export const getAllScenes = async () => {
     const response = await httpClient.get(sceneEndpoints.list);
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('scenes', 'Error fetching all scenes', { error: error.message });
+    console.log('scenes', 'Error fetching all scenes', { error: error.message });
     return responseHandler.handleError(error);
   }
 };
@@ -36,7 +35,7 @@ export const getScenesByUniverse = async (universeId) => {
     const response = await httpClient.get(sceneEndpoints.forUniverse(universeId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('scenes', 'Error fetching universe scenes', { 
+    console.log('scenes', 'Error fetching universe scenes', { 
       universeId, 
       error: error.message 
     });
@@ -58,7 +57,7 @@ export const getSceneById = async (sceneId) => {
     const response = await httpClient.get(sceneEndpoints.get(sceneId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('scenes', 'Error fetching scene by ID', { 
+    console.log('scenes', 'Error fetching scene by ID', { 
       sceneId, 
       error: error.message 
     });
@@ -84,10 +83,10 @@ export const createScene = async (sceneData) => {
 
     const response = await httpClient.post(sceneEndpoints.create, sceneData);
     
-    log('scenes', 'Scene created successfully');
+    console.log('scenes', 'Scene created successfully');
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('scenes', 'Error creating scene', { error: error.message });
+    console.log('scenes', 'Error creating scene', { error: error.message });
     return responseHandler.handleError(error);
   }
 };
@@ -110,10 +109,10 @@ export const updateScene = async (sceneId, sceneData) => {
 
     const response = await httpClient.put(sceneEndpoints.update(sceneId), sceneData);
     
-    log('scenes', 'Scene updated successfully', { sceneId });
+    console.log('scenes', 'Scene updated successfully', { sceneId });
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('scenes', 'Error updating scene', { 
+    console.log('scenes', 'Error updating scene', { 
       sceneId, 
       error: error.message 
     });
@@ -134,10 +133,10 @@ export const deleteScene = async (sceneId) => {
 
     const response = await httpClient.delete(sceneEndpoints.delete(sceneId));
     
-    log('scenes', 'Scene deleted successfully', { sceneId });
+    console.log('scenes', 'Scene deleted successfully', { sceneId });
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('scenes', 'Error deleting scene', { 
+    console.log('scenes', 'Error deleting scene', { 
       sceneId, 
       error: error.message 
     });
@@ -159,7 +158,7 @@ export const getSceneSettings = async (sceneId) => {
     const response = await httpClient.get(sceneEndpoints.settings(sceneId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('scenes', 'Error fetching scene settings', { 
+    console.log('scenes', 'Error fetching scene settings', { 
       sceneId, 
       error: error.message 
     });
@@ -185,10 +184,10 @@ export const updateSceneSettings = async (sceneId, settings) => {
 
     const response = await httpClient.put(sceneEndpoints.settings(sceneId), settings);
     
-    log('scenes', 'Scene settings updated successfully', { sceneId });
+    console.log('scenes', 'Scene settings updated successfully', { sceneId });
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('scenes', 'Error updating scene settings', { 
+    console.log('scenes', 'Error updating scene settings', { 
       sceneId, 
       error: error.message 
     });
@@ -216,10 +215,10 @@ export const reorderScenes = async (universeId, sceneOrder) => {
       scene_order: sceneOrder 
     });
     
-    log('scenes', 'Scenes reordered successfully', { universeId });
+    console.log('scenes', 'Scenes reordered successfully', { universeId });
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('scenes', 'Error reordering scenes', { 
+    console.log('scenes', 'Error reordering scenes', { 
       universeId, 
       error: error.message 
     });

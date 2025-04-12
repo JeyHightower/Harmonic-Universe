@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import * as Tone from "tone";
 import Button from "../../../common/Button";
@@ -9,7 +9,7 @@ import Select from "../../../common/Select";
 import Slider from "../../../common/Slider";
 import Spinner from "../../../common/Spinner";
 import "../styles/Modal.css";
-import { audioService } from "../../../../services";
+import { audioService } from "../../../services";
 
 /**
  * Modal for generating audio based on the physics of a universe and scene.
@@ -67,16 +67,17 @@ const AudioGenerationModal = ({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [loading, setLoading] = useState(initialData?.id ? true : false);
-  const audioPlayer = React.useRef(null);
-  const synthRef = React.useRef(null);
+  const [isLoading, setIsLoading] = useState(initialData?.id ? true : false);
+  const audioPlayer = useRef(null);
+  const synthRef = useRef(null);
   
   // Initialize Tone.js
   useEffect(() => {
     // Clean up if component is unmounted during playback
     return () => {
-      if (synthRef.current) {
-        synthRef.current.dispose();
+      const synth = synthRef.current;
+      if (synth) {
+        synth.dispose();
       }
       if (Tone.Transport.state === "started") {
         Tone.Transport.stop();
@@ -89,7 +90,7 @@ const AudioGenerationModal = ({
     const fetchAudioData = async () => {
       if (initialData?.id) {
         try {
-          setLoading(true);
+          setIsLoading(true);
           const response = await audioService.getAudio(universeId, sceneId, initialData.id);
           if (response.success) {
             setFormData({
@@ -106,13 +107,13 @@ const AudioGenerationModal = ({
           console.error("Error fetching audio:", error);
           setError("Failed to load audio data. Please try again.");
         } finally {
-          setLoading(false);
+          setIsLoading(false);
         }
       }
     };
     
     fetchAudioData();
-  }, [initialData?.id, universeId, sceneId]);
+  }, [initialData?.id, universeId, sceneId, formData]);
   
   // Handle input changes
   const handleInputChange = (e) => {
@@ -166,7 +167,7 @@ const AudioGenerationModal = ({
         setSuccessMessage("Audio generated successfully!");
         
         // Play the audio automatically
-        setTimeout(() => {
+        window.setTimeout(() => {
           if (audioPlayer.current) {
             audioPlayer.current.load();
             audioPlayer.current.play()
@@ -221,7 +222,7 @@ const AudioGenerationModal = ({
       
       if (response.success) {
         setSuccessMessage("Audio saved successfully!");
-        setTimeout(() => {
+        window.setTimeout(() => {
           if (isGlobalModal) {
             // Navigate to the scene page
             navigate(`/universes/${universeId}/scenes/${sceneId}`);

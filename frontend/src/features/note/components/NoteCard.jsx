@@ -1,9 +1,10 @@
 import React from "react";
+import PropTypes from "prop-types";
 import { Card, CardContent, Typography, IconButton, Box } from "@mui/material";
 import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import { useDispatch } from "react-redux";
 import { openModal } from "../../../store/slices/noteSlice";
-import { deleteNote } from "../../../store/thunks/noteThunks";
+import { deleteNote as _deleteNote } from "../../../store/thunks/noteThunks";
 import "../styles/NoteCard.css";
 
 const NoteCard = ({ note }) => {
@@ -49,6 +50,14 @@ const NoteCard = ({ note }) => {
       </CardContent>
     </Card>
   );
+};
+
+NoteCard.propTypes = {
+  note: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+    content: PropTypes.string.isRequired
+  }).isRequired
 };
 
 export default NoteCard; 

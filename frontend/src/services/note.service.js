@@ -3,7 +3,6 @@
  * Handles operations related to notes for universes, scenes, and characters
  */
 
-import Logger from "../utils/logger";
 import { httpClient } from './http-client';
 import { noteEndpoints } from './endpoints';
 import { responseHandler } from './response-handler';
@@ -17,7 +16,7 @@ export const getAllNotes = async () => {
     const response = await httpClient.get(noteEndpoints.list);
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('notes', 'Error fetching all notes', { error: error.message });
+    console.log('notes', 'Error fetching all notes', { error: error.message });
     return responseHandler.handleError(error);
   }
 };
@@ -36,7 +35,7 @@ export const getNotesByUniverse = async (universeId) => {
     const response = await httpClient.get(noteEndpoints.forUniverse(universeId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('notes', 'Error fetching universe notes', { 
+    console.log('notes', 'Error fetching universe notes', { 
       universeId, 
       error: error.message 
     });
@@ -58,7 +57,7 @@ export const getNotesByScene = async (sceneId) => {
     const response = await httpClient.get(noteEndpoints.forScene(sceneId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('notes', 'Error fetching scene notes', { 
+    console.log('notes', 'Error fetching scene notes', { 
       sceneId, 
       error: error.message 
     });
@@ -80,7 +79,7 @@ export const getNotesByCharacter = async (characterId) => {
     const response = await httpClient.get(noteEndpoints.forCharacter(characterId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('notes', 'Error fetching character notes', { 
+    console.log('notes', 'Error fetching character notes', { 
       characterId, 
       error: error.message 
     });
@@ -102,7 +101,7 @@ export const getNoteById = async (noteId) => {
     const response = await httpClient.get(noteEndpoints.get(noteId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('notes', 'Error fetching note by ID', { 
+    console.log('notes', 'Error fetching note by ID', { 
       noteId, 
       error: error.message 
     });
@@ -131,10 +130,10 @@ export const createNote = async (noteData) => {
 
     const response = await httpClient.post(noteEndpoints.create, noteData);
     
-    log('notes', 'Note created successfully');
+    console.log('notes', 'Note created successfully');
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('notes', 'Error creating note', { error: error.message });
+    console.log('notes', 'Error creating note', { error: error.message });
     return responseHandler.handleError(error);
   }
 };
@@ -157,10 +156,10 @@ export const updateNote = async (noteId, noteData) => {
 
     const response = await httpClient.put(noteEndpoints.update(noteId), noteData);
     
-    log('notes', 'Note updated successfully', { noteId });
+    console.log('notes', 'Note updated successfully', { noteId });
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('notes', 'Error updating note', { 
+    console.log('notes', 'Error updating note', { 
       noteId, 
       error: error.message 
     });
@@ -181,10 +180,10 @@ export const deleteNote = async (noteId) => {
 
     const response = await httpClient.delete(noteEndpoints.delete(noteId));
     
-    log('notes', 'Note deleted successfully', { noteId });
+    console.log('notes', 'Note deleted successfully', { noteId });
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('notes', 'Error deleting note', { 
+    console.log('notes', 'Error deleting note', { 
       noteId, 
       error: error.message 
     });

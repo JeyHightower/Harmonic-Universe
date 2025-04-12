@@ -1,13 +1,16 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from "react-redux";
 import {
-  openModal,
+  openModal as openModalAction,
   closeModal,
   closeModalComplete,
   updateModalProps,
 } from "../store/slices/modalSlice";
 import { MODAL_CONFIG } from "../utils/config";
 import { isValidModalType } from "../utils/modalRegistry";
+
+// Define window globals to fix ESLint errors
+const { setTimeout, clearTimeout } = window;
 
 /**
  * Custom hook for managing modal state
@@ -35,7 +38,7 @@ const useModal = (options = {}) => {
   useEffect(() => {
     return () => {
       if (timerRef.current) {
-        window.clearTimeout(timerRef.current);
+        clearTimeout(timerRef.current);
       }
     };
   }, []);
@@ -43,7 +46,7 @@ const useModal = (options = {}) => {
   const openModal = useCallback(() => {
     // Clear any existing close timer
     if (timerRef.current) {
-      window.clearTimeout(timerRef.current);
+      clearTimeout(timerRef.current);
       timerRef.current = null;
     }
 
@@ -58,8 +61,8 @@ const useModal = (options = {}) => {
   const closeModal = useCallback(() => {
     setIsClosing(true);
 
-    // Use window.setTimeout to avoid ESLint no-undef error
-    timerRef.current = window.setTimeout(() => {
+    // Use setTimeout to avoid ESLint no-undef error
+    timerRef.current = setTimeout(() => {
       setIsOpen(false);
       setIsClosing(false);
       
@@ -108,7 +111,7 @@ export const useModalRedux = () => {
       }
 
       try {
-        dispatch(openModal({ type, props }));
+        dispatch(openModalAction({ type, props }));
       } catch (error) {
         console.error("Error opening modal:", error);
       }

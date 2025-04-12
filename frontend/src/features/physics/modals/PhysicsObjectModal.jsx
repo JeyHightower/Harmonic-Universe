@@ -27,6 +27,7 @@ import {
   deletePhysicsObject,
   updatePhysicsObject,
 } from '../../../store/thunks/physicsObjectsThunks';
+import PropTypes from 'prop-types';
 
 /**
  * Default physics object properties
@@ -346,7 +347,7 @@ const PhysicsObjectModal = ({
       }
       
       // Close modal after short delay to show success message
-      setTimeout(() => {
+      window.setTimeout(() => {
         onClose();
       }, 1500);
     } catch (error) {
@@ -379,11 +380,11 @@ const PhysicsObjectModal = ({
       
       // Call success callback
       if (onSuccess) {
-        onSuccess(objectId);
+        onSuccess({ id: objectId }, 'delete');
       }
       
       // Close modal after short delay
-      setTimeout(() => {
+      window.setTimeout(() => {
         onClose();
       }, 1500);
     } catch (error) {
@@ -447,7 +448,7 @@ const PhysicsObjectModal = ({
               label="Static Object"
             />
             <FormHelperText>
-              Static objects don't move but affect other objects
+              Static objects don&apos;t move but affect other objects
             </FormHelperText>
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -463,7 +464,7 @@ const PhysicsObjectModal = ({
               label="Trigger"
             />
             <FormHelperText>
-              Triggers detect collisions but don't physically interact
+              Triggers detect collisions but don&apos;t physically interact
             </FormHelperText>
           </Grid>
           <Grid item xs={12}>
@@ -773,6 +774,16 @@ const PhysicsObjectModal = ({
       </DialogActions>
     </Dialog>
   );
+};
+
+PhysicsObjectModal.propTypes = {
+  open: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  sceneId: PropTypes.string.isRequired,
+  objectId: PropTypes.string,
+  initialData: PropTypes.object,
+  mode: PropTypes.oneOf(['create', 'edit', 'view', 'delete']),
+  onSuccess: PropTypes.func
 };
 
 export default PhysicsObjectModal; 

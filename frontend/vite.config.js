@@ -3,8 +3,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 // Detect environment
-const isProd = process.env.NODE_ENV === 'production' || process.env.VITE_APP_ENV === 'production';
-const isDebug = process.env.DEBUG || process.env.VITE_VERBOSE;
+const isProd = import.meta?.env?.PROD || process.env.NODE_ENV === 'production' || process.env.VITE_APP_ENV === 'production';
+const isDebug = import.meta?.env?.DEBUG || process.env.DEBUG || process.env.VITE_VERBOSE;
 
 // Split vendor plugin to ensure app and vendor code are separated
 const splitVendorChunkPlugin = () => {

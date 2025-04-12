@@ -152,7 +152,7 @@ const ScenesPageContent = ({ universeId }) => {
       setLoading(false);
       setError("Invalid universe ID. Redirecting to dashboard.");
       // Additional safety - redirect if we somehow got here with an invalid ID
-      setTimeout(() => navigate("/dashboard", { replace: true }), 1500);
+      window.setTimeout(() => navigate("/dashboard", { replace: true }), 1500);
       return;
     }
 
@@ -248,6 +248,23 @@ const ScenesPageContent = ({ universeId }) => {
 
   const handleBackToUniverse = () => {
     navigate(`/universes/${safeUniverseId}`);
+  };
+
+  // Handlers for filter and sort changes
+  const handleTypeFilterChange = (newTypeFilter) => {
+    setTypeFilter(newTypeFilter);
+  };
+
+  const handleStatusFilterChange = (newStatusFilter) => {
+    setStatusFilter(newStatusFilter);
+  };
+
+  const handleSortByChange = (newSortBy) => {
+    setSortBy(newSortBy);
+  };
+
+  const handleSortDirectionChange = (newSortDirection) => {
+    setSortDirection(newSortDirection);
   };
 
   // Filter and sort scenes

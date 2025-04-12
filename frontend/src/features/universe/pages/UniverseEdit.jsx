@@ -73,7 +73,7 @@ function UniverseEdit() {
 
   useEffect(() => {
     fetchUniverseData();
-  }, [id]);
+  }, [id, fetchUniverseData]);
 
   // Add effect to refresh data when component gains focus
   useEffect(() => {
@@ -86,7 +86,7 @@ function UniverseEdit() {
 
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);
-  }, [lastFetchTime]);
+  }, [lastFetchTime, fetchUniverseData]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

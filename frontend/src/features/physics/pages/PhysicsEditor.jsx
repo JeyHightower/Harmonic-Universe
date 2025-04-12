@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import PropTypes from "prop-types";
 import {
   Box,
   Typography,
@@ -30,6 +31,13 @@ function TabPanel({ children, value, index, ...other }) {
     </div>
   );
 }
+
+// Add PropTypes for TabPanel
+TabPanel.propTypes = {
+  children: PropTypes.node,
+  value: PropTypes.number.isRequired,
+  index: PropTypes.number.isRequired
+};
 
 function a11yProps(index) {
   return {
@@ -848,3 +856,9 @@ export default function PhysicsEditor({ entityType, entityId }) {
     </Box>
   );
 }
+
+// Add PropTypes for PhysicsEditor
+PhysicsEditor.propTypes = {
+  entityType: PropTypes.string.isRequired,
+  entityId: PropTypes.string.isRequired
+};

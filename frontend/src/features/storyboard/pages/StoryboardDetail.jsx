@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
-import Button from "../../../../common/Button.jsx";
-import Spinner from "../../../../common/Spinner.jsx";
-import { fetchUniverseById } from "../../../../../store/thunks/universeThunks.js";
+import Button from "../../../components/common/Button.jsx";
+import Spinner from "../../../components/common/Spinner.jsx";
+import { fetchUniverseById } from "../../../store/thunks/universeThunks.js";
 import "../styles/Storyboard.css";
-import api from "../../../../../services/api";
+import apiClient from "../../../services/api.adapter";
 
 const StoryboardDetail = () => {
   const { universeId, storyboardId } = useParams();
@@ -36,7 +36,7 @@ const StoryboardDetail = () => {
         setLoading(true);
 
         // Check if the API endpoints are available
-        if (!api.endpoints.storyboards) {
+        if (!apiClient.endpoints.storyboards) {
           console.error("Storyboard endpoints not available");
           setError(
             "Storyboard feature is not available yet. Please check back later."
@@ -46,14 +46,14 @@ const StoryboardDetail = () => {
         }
 
         // Fetch storyboard details
-        const storyboardResponse = await api.get(
-          api.endpoints.storyboards.get(universeId, storyboardId)
+        const storyboardResponse = await apiClient.get(
+          apiClient.endpoints.storyboards.get(universeId, storyboardId)
         );
         setStoryboard(storyboardResponse);
 
         // Fetch story points
-        const pointsResponse = await api.get(
-          api.endpoints.storyboards.points.list(universeId, storyboardId)
+        const pointsResponse = await apiClient.get(
+          apiClient.endpoints.storyboards.points.list(universeId, storyboardId)
         );
         setStoryPoints(pointsResponse.story_points || []);
 

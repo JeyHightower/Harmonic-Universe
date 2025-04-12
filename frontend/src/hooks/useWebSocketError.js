@@ -2,9 +2,24 @@ import { useCallback, useState, useEffect } from "react";
 import errorService from "../services/errorService";
 import { APP_CONFIG } from "../utils/config";
 
+// Define WebSocket globally if it doesn't exist to prevent no-undef errors
+if (typeof WebSocket === 'undefined') {
+  // Use window.WebSocket if available, otherwise define placeholder values
+  const WS = typeof window !== 'undefined' && window.WebSocket ? window.WebSocket : {
+    CONNECTING: 0,
+    OPEN: 1,
+    CLOSING: 2,
+    CLOSED: 3
+  };
+  
+  // Define globally
+  globalThis.WebSocket = WS;
+}
+
 /**
  * Custom hook for handling WebSocket errors consistently across the application
  */
+
 export function useWebSocketError({
   context,
   onError,

@@ -3,7 +3,6 @@
  * Handles operations related to universes in the application
  */
 
-import Logger from "../utils/logger";
 import { httpClient } from './http-client';
 import { universeEndpoints } from './endpoints';
 import { responseHandler } from './response-handler';
@@ -47,7 +46,7 @@ export const getUniverseById = async (id) => {
 export const createUniverse = async (universeData) => {
   try {
     const response = await httpClient.post(universeEndpoints.create, universeData);
-    log('universe', 'Universe created successfully', { id: response.id });
+    console.log('universe', 'Universe created successfully', { id: response.id });
     return responseHandler.handleSuccess(response);
   } catch (error) {
     return responseHandler.handleError(error);
@@ -67,7 +66,7 @@ export const updateUniverse = async (id, universeData) => {
     }
     
     const response = await httpClient.put(universeEndpoints.update(id), universeData);
-    log('universe', 'Universe updated successfully', { id });
+    console.log('universe', 'Universe updated successfully', { id });
     return responseHandler.handleSuccess(response);
   } catch (error) {
     return responseHandler.handleError(error);
@@ -86,7 +85,7 @@ export const deleteUniverse = async (id) => {
     }
     
     const response = await httpClient.delete(universeEndpoints.delete(id));
-    log('universe', 'Universe deleted successfully', { id });
+    console.log('universe', 'Universe deleted successfully', { id });
     return responseHandler.handleSuccess(response);
   } catch (error) {
     return responseHandler.handleError(error);
@@ -124,7 +123,7 @@ export const generateUniverseMusic = async (id, options = {}) => {
     }
     
     const response = await httpClient.post(universeEndpoints.generateMusic(id), options);
-    log('universe', 'Music generation initiated', { id });
+    console.log('universe', 'Music generation initiated', { id });
     return responseHandler.handleSuccess(response);
   } catch (error) {
     return responseHandler.handleError(error);

@@ -3,21 +3,20 @@
  * Handles operations related to system-level functionality
  */
 
-import Logger from "../utils/logger";
 import { httpClient } from './http-client';
 import { systemEndpoints } from './endpoints';
 import { responseHandler } from './response-handler';
 
 /**
- * Check the health of the API
- * @returns {Promise<object>} - Health status response
+ * Check the health status of the API
+ * @returns {Promise<object>} - Health status information
  */
 export const checkHealth = async () => {
   try {
     const response = await httpClient.get(systemEndpoints.health);
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('system', 'Error checking API health', { error: error.message });
+    console.log('system', 'Error checking health status', { error: error.message });
     return responseHandler.handleError(error);
   }
 };
@@ -31,7 +30,7 @@ export const getVersion = async () => {
     const response = await httpClient.get(systemEndpoints.version);
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('system', 'Error fetching API version', { error: error.message });
+    console.log('system', 'Error fetching API version', { error: error.message });
     return responseHandler.handleError(error);
   }
 };
@@ -45,7 +44,7 @@ export const ping = async () => {
     const response = await httpClient.get(systemEndpoints.ping);
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('system', 'Error pinging API', { error: error.message });
+    console.log('system', 'Error pinging API', { error: error.message });
     return responseHandler.handleError(error);
   }
 };
@@ -59,7 +58,7 @@ export const getSystemConfig = async () => {
     const response = await httpClient.get(systemEndpoints.config);
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('system', 'Error fetching system configuration', { error: error.message });
+    console.log('system', 'Error fetching system configuration', { error: error.message });
     return responseHandler.handleError(error);
   }
 };
@@ -73,7 +72,7 @@ export const getSystemMetrics = async () => {
     const response = await httpClient.get(systemEndpoints.metrics);
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('system', 'Error fetching system metrics', { error: error.message });
+    console.log('system', 'Error fetching system metrics', { error: error.message });
     return responseHandler.handleError(error);
   }
 };

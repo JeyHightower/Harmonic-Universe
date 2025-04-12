@@ -6,7 +6,7 @@
 import axios from 'axios';
 // Replace the import with a local log function
 const log = (category, message, data) => {
-  if (process.env.NODE_ENV !== 'production') {
+  if (!import.meta.env.PROD) {
     console.log(`[${category}] ${message}`, data || '');
   }
 };

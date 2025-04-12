@@ -6,6 +6,7 @@ const initialState = {
   type: null,
   props: {},
   isTransitioning: false,
+  queue: [], // Add queue for handling multiple modals
 };
 
 const modalSlice = createSlice({
@@ -52,6 +53,15 @@ const modalSlice = createSlice({
       state.type = null;
       state.props = {};
       state.isTransitioning = false;
+      
+      // If there are modals in the queue, open the next one
+      if (state.queue.length > 0) {
+        const nextModal = state.queue.shift();
+        state.isOpen = true;
+        state.type = nextModal.type;
+        state.props = nextModal.props;
+        state.isTransitioning = true;
+      }
     },
     updateModalProps: (state, action) => {
       if (!state.isTransitioning) {
@@ -61,11 +71,20 @@ const modalSlice = createSlice({
         };
       }
     },
+    queueModal: (state, action) => {
+      const { type, props = {} } = action.payload;
+      state.queue.push({ type, props });
+    },
   },
 });
 
-export const { openModal, closeModal, closeModalComplete, updateModalProps } =
-  modalSlice.actions;
+export const { 
+  openModal, 
+  closeModal, 
+  closeModalComplete, 
+  updateModalProps,
+  queueModal
+} = modalSlice.actions;
 
 // Selectors
 export const selectModalState = (state) => state.modal;
@@ -74,5 +93,6 @@ export const selectModalType = (state) => state.modal.type;
 export const selectModalProps = (state) => state.modal.props;
 export const selectIsModalTransitioning = (state) =>
   state.modal.isTransitioning;
+export const selectModalQueue = (state) => state.modal.queue;
 
 export default modalSlice.reducer;

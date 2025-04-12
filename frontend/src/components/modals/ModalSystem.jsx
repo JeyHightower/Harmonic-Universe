@@ -6,10 +6,18 @@ import React, {
   useMemo,
   useRef,
   useState,
+  createContext,
+  useContext,
+  Suspense,
+  useImperativeHandle,
 } from "react";
 import { createPortal } from "react-dom";
 import { MODAL_CONFIG } from "../../utils/config";
 import "../../styles/Modal.css";
+import { ensurePortalRoot } from "../../utils/portalUtils";
+
+// Define window globals to fix ESLint errors
+const { requestAnimationFrame, clearTimeout } = window;
 
 // Animation duration in ms
 const ANIMATION_DURATION = MODAL_CONFIG.ANIMATIONS.FADE.duration;

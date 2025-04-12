@@ -161,12 +161,12 @@ export const fetchCharactersByUniverse = createAsyncThunk(
       }
 
       // Ensure universeId is a number
-      const parsedUniverseId = typeof universeId === 'string'
+      const parsedId = typeof universeId === 'string'
         ? parseInt(universeId, 10)
         : universeId;
 
-      if (isNaN(parsedUniverseId) || parsedUniverseId <= 0) {
-        console.error(`Redux: Invalid parsed universe ID: ${parsedUniverseId}`);
+      if (isNaN(parsedId) || parsedId <= 0) {
+        console.error(`Redux: Invalid parsed universe ID: ${parsedId}`);
         // In production, return empty array instead of failing
         if (IS_PRODUCTION) {
           return [];
@@ -174,8 +174,8 @@ export const fetchCharactersByUniverse = createAsyncThunk(
         return rejectWithValue(`Invalid universe ID format: ${universeId}`);
       }
 
-      console.log(`Redux: Fetching characters for universe ${parsedUniverseId}`);
-      const response = await apiClient.getCharactersByUniverse(parsedUniverseId);
+      console.log(`Redux: Fetching characters for universe ${parsedId}`);
+      const response = await apiClient.getCharactersByUniverse(parsedId);
 
       // Handle different response formats
       let characters = [];
@@ -185,11 +185,11 @@ export const fetchCharactersByUniverse = createAsyncThunk(
         characters = response.data;
       }
 
-      console.log(`Redux: Found ${characters.length} characters for universe ${parsedUniverseId}`);
+      console.log(`Redux: Found ${characters.length} characters for universe ${parsedId}`);
 
       // Save to cache in all environments, not just production
       if (characters.length > 0) {
-        saveCharactersToCache(parsedUniverseId, characters);
+        saveCharactersToCache(parsedId, characters);
       }
 
       return characters;
@@ -198,8 +198,13 @@ export const fetchCharactersByUniverse = createAsyncThunk(
       if (error.response?.status === 429) {
         console.log('Rate limited when fetching characters by universe, trying with retry logic...');
         try {
+          // Ensure universeId is properly parsed here too
+          const parsedId = typeof universeId === 'string'
+            ? parseInt(universeId, 10)
+            : universeId;
+            
           // Use the same endpoint format as our API client - simple and direct
-          const url = `${apiClient.defaults.baseURL}/api/universes/${parsedUniverseId}/characters`;
+          const url = `${apiClient.defaults.baseURL}/api/universes/${parsedId}/characters`;
           console.log("Retry request URL:", url);
 
           const response = await requestWithRetry({
@@ -218,7 +223,7 @@ export const fetchCharactersByUniverse = createAsyncThunk(
 
           // Save to cache
           if (characters.length > 0) {
-            saveCharactersToCache(parsedUniverseId, characters);
+            saveCharactersToCache(parsedId, characters);
           }
 
           return characters;

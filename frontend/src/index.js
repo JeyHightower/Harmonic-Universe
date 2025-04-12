@@ -1,5 +1,5 @@
 // This file now only exports route constants to avoid circular dependencies
-import { API_CONFIG } from '../utils/config';
+import { API_CONFIG } from './utils/config';
 
 export const ROUTES = {
   HOME: '/',

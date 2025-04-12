@@ -11,6 +11,9 @@ import apiClient from "../../../services/api";
 import SceneForm from "./SceneForm";
 import "../styles/SceneEditPage.css";
 
+// Destructure window.setTimeout to fix linter error
+const { setTimeout } = window;
+
 const { Title } = Typography;
 
 /**

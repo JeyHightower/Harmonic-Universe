@@ -52,7 +52,7 @@ const UniverseDeleteModal = ({ isOpen, onClose, onSuccess, universe }) => {
     >
       <div className="delete-confirmation">
         <p className="delete-message">
-          Are you sure you want to delete the universe "{universe?.name}"?
+          Are you sure you want to delete the universe &quot;{universe?.name}&quot;?
         </p>
         <p className="delete-warning">
           This action cannot be undone and will delete all scenes, characters,

@@ -1,5 +1,4 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import api from "../../services/api";
 import { log, AUTH_CONFIG, FORCE_DEMO_MODE, IS_PRODUCTION, ROUTES, isHardRefresh } from "../../utils";
 import apiClient from "../../services/api";
 import { login, register } from "../thunks/authThunks";
@@ -107,6 +106,11 @@ export const checkAuthState = createAsyncThunk(
         console.debug("No token found in localStorage");
         dispatch(logout());
         return null;
+      }
+
+      // Log refresh token availability for debugging
+      if (refreshToken) {
+        console.debug("Found refresh token, can use for token renewal if needed");
       }
 
       let userData = null;

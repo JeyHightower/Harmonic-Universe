@@ -1,5 +1,9 @@
 import React from "react";
-import ReactDOM from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import { BrowserRouter as Router } from "react-router-dom";
+import { Provider } from "react-redux";
+import { PersistGate } from "redux-persist/integration/react";
+import store, { persistor } from "./store/store";
 import App from "./App.jsx";
 // CSS imports in correct order to prevent conflicts
 import "./styles/reset.css"; // First: Reset browser defaults
@@ -63,6 +67,16 @@ if (typeof window.structuredClone !== 'function') {
   };
 }
 
+// Add polyfill for CustomEvent if needed
+if (typeof window.CustomEvent !== 'function') {
+  window.CustomEvent = function(event, params) {
+    params = params || { bubbles: false, cancelable: false, detail: null };
+    const evt = document.createEvent('CustomEvent');
+    evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
+    return evt;
+  };
+}
+
 // Setup storage event listener for auth sync across tabs
 window.addEventListener("storage", (event) => {
   if (
@@ -73,7 +87,7 @@ window.addEventListener("storage", (event) => {
 
     // Dispatch a custom event that our app can listen for
     window.dispatchEvent(
-      new CustomEvent("auth-storage-changed", {
+      new window.CustomEvent("auth-storage-changed", {
         detail: { key: event.key, newValue: event.newValue },
       })
     );
@@ -103,10 +117,16 @@ const renderApp = () => {
 
   try {
     // React 18 API
-    const root = ReactDOM.createRoot(getRootElement());
+    const root = createRoot(getRootElement());
     root.render(
       <React.StrictMode>
-        <App />
+        <Provider store={store}>
+          <PersistGate loading={null} persistor={persistor}>
+            <Router>
+              <App />
+            </Router>
+          </PersistGate>
+        </Provider>
       </React.StrictMode>
     );
   } catch (error) {

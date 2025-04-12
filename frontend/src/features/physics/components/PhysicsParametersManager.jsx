@@ -3,19 +3,24 @@ import apiClient from "../../../services/api";
 import { endpoints } from "../../../services/endpoints";
 import { Button } from "../../../components/common";
 import Icon from "../../../components/common/Icon";
-import Modal from "../../../components/common/Modal";
 import Spinner from "../../../components/common/Spinner";
 import "../styles/PhysicsParameters.css";
-import PhysicsParametersModal from "../modals/PhysicsParametersModal";
+import PropTypes from "prop-types";
+import { useNavigate } from 'react-router-dom';
+import { useModalRedux } from "../../../hooks/useModal";
+import { MODAL_TYPES } from "../../../constants/modalTypes";
 
 const PhysicsParametersManager = ({ sceneId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [physicsParameters, setPhysicsParameters] = useState([]);
   const [selectedParamsId, setSelectedParamsId] = useState(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalMode, setModalMode] = useState("create");
   const [selectedParams, setSelectedParams] = useState(null);
+  const [reloadTrigger, setReloadTrigger] = useState(0);
+  
+  // Use Redux modal system
+  const modalRedux = useModalRedux();
 
   // Fetch physics parameters for the scene
   useEffect(() => {
@@ -44,40 +49,70 @@ const PhysicsParametersManager = ({ sceneId }) => {
     };
 
     fetchPhysicsParameters();
-  }, [sceneId, selectedParamsId]);
+    
+    // Define the polling interval
+    const intervalId = window.setTimeout(() => {
+      fetchPhysicsParameters();
+    }, 5000);
+    
+    // Cleanup function to clear the timeout when component unmounts
+    return () => {
+      window.clearTimeout(intervalId);
+    };
+  }, [reloadTrigger]);
 
   // Handle adding new physics parameters
   const handleAddParameters = () => {
     setSelectedParams(null);
     setModalMode("create");
-    setIsModalVisible(true);
+    modalRedux.open(MODAL_TYPES.PHYSICS_PARAMETERS, {
+      sceneId,
+      mode: "create",
+      onSuccess: handleModalSuccess,
+      onClose: handleModalClose
+    });
   };
 
   // Handle viewing physics parameters
   const handleViewParameters = (params) => {
     setSelectedParams(params);
     setModalMode("view");
-    setIsModalVisible(true);
+    modalRedux.open(MODAL_TYPES.PHYSICS_PARAMETERS, {
+      sceneId,
+      paramsId: params.id,
+      initialData: params,
+      mode: "view",
+      onSuccess: handleModalSuccess,
+      onClose: handleModalClose
+    });
   };
 
   // Handle editing physics parameters
   const handleEditParameters = (params) => {
     setSelectedParams(params);
     setModalMode("edit");
-    setIsModalVisible(true);
+    modalRedux.open(MODAL_TYPES.PHYSICS_PARAMETERS, {
+      sceneId,
+      paramsId: params.id,
+      initialData: params,
+      mode: "edit",
+      onSuccess: handleModalSuccess,
+      onClose: handleModalClose
+    });
   };
 
   // Handle deleting physics parameters
   const handleDeleteParameters = (params) => {
     setSelectedParams(params);
     setModalMode("delete");
-    setIsModalVisible(true);
-  };
-
-  // Handle modal close
-  const handleModalClose = () => {
-    setIsModalVisible(false);
-    setSelectedParams(null);
+    modalRedux.open(MODAL_TYPES.PHYSICS_PARAMETERS, {
+      sceneId,
+      paramsId: params.id,
+      initialData: params,
+      mode: "delete",
+      onSuccess: handleModalSuccess,
+      onClose: handleModalClose
+    });
   };
 
   // Handle modal success (create, edit, delete)
@@ -103,6 +138,12 @@ const PhysicsParametersManager = ({ sceneId }) => {
         setSelectedParamsId(newList.length > 0 ? newList[0].id : null);
       }
     }
+  };
+
+  // Handle modal close
+  const handleModalClose = () => {
+    modalRedux.close();
+    setSelectedParams(null);
   };
 
   // Apply physics parameters
@@ -358,25 +399,13 @@ const PhysicsParametersManager = ({ sceneId }) => {
           {renderSelectedParametersDetails()}
         </div>
       </div>
-
-      <Modal
-        isVisible={isModalVisible}
-        onClose={handleModalClose}
-        width="600px"
-      >
-        {isModalVisible && (
-          <PhysicsParametersModal
-            sceneId={sceneId}
-            paramsId={selectedParams?.id}
-            onClose={handleModalClose}
-            onSuccess={handleModalSuccess}
-            mode={modalMode}
-            initialData={selectedParams}
-          />
-        )}
-      </Modal>
     </div>
   );
 };
 
 export default PhysicsParametersManager;
+
+// Add PropTypes validation
+PhysicsParametersManager.propTypes = {
+  sceneId: PropTypes.string.isRequired
+};

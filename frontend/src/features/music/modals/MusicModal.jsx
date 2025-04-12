@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import PropTypes from "prop-types";
 import {
   Modal,
   Box,
@@ -13,7 +14,6 @@ import {
   FormHelperText,
   Grid,
   Divider,
-  Paper,
   Alert,
   Slider,
   IconButton
@@ -28,7 +28,10 @@ import {
   saveMusic, 
   getMusic, 
   deleteMusic 
-} from "../../../services/api/musicApi";
+} from "../../../services/api/audioApi";
+
+// Define window globals to fix ESLint errors
+const { requestAnimationFrame, cancelAnimationFrame, setTimeout } = window;
 
 const modalStyle = {
   position: 'absolute',
@@ -857,6 +860,16 @@ const MusicModal = ({
       </Box>
     </Modal>
   );
+};
+
+MusicModal.propTypes = {
+  open: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  universeId: PropTypes.string.isRequired,
+  musicId: PropTypes.string,
+  onSuccess: PropTypes.func,
+  mode: PropTypes.oneOf(['create', 'edit', 'view', 'delete', 'generate']),
+  initialData: PropTypes.object
 };
 
 export default MusicModal; 

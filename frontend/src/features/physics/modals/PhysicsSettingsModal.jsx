@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import Button from "../../../components/common/Button";
 import Input from "../../../components/common/Input";
 import "../styles/Universe.css";
+import PropTypes from "prop-types";
 
 const PhysicsSettingsModal = ({ initialPhysicsParams, onSave, onClose }) => {
   const [physicsParams, setPhysicsParams] = useState(initialPhysicsParams);
@@ -131,6 +132,13 @@ const PhysicsSettingsModal = ({ initialPhysicsParams, onSave, onClose }) => {
       </div>
     </div>
   );
+};
+
+PhysicsSettingsModal.propTypes = {
+  universeId: PropTypes.string.isRequired,
+  initialPhysicsParams: PropTypes.object,
+  onSave: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired
 };
 
 export default PhysicsSettingsModal;

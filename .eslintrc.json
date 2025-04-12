@@ -7,6 +7,7 @@
   },
   "globals": {
     "process": true,
+    "window": true,
     "setTimeout": true,
     "clearTimeout": true,
     "setInterval": true,
@@ -18,7 +19,9 @@
     "requestAnimationFrame": true,
     "alert": true,
     "TextEncoder": true,
-    "self": true
+    "self": true,
+    "globalThis": true,
+    "document": true
   },
   "extends": [
     "eslint:recommended",

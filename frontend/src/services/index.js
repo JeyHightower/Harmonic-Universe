@@ -3,13 +3,11 @@
  * Main entry point for all API-related services
  */
 
-// Core HTTP and configuration
+// Core imports - all in one group to avoid empty lines
 import { httpClient } from './http-client';
 import { endpoints, getEndpoint } from './endpoints';
 import { API_SERVICE_CONFIG } from './config';
 import { responseHandler } from './response-handler';
-
-// Domain-specific services
 import { authService } from './auth.service';
 import { universeService } from './universe.service';
 import { sceneService } from './scene.service';
@@ -18,8 +16,6 @@ import { noteService } from './note.service';
 import { userService } from './user.service';
 import { audioService } from './audio.service';
 import { systemService } from './system.service';
-
-// Legacy adapters
 import { audioApi } from './audio.adapter';
 
 /**

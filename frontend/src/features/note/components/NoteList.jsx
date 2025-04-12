@@ -9,8 +9,8 @@ import {
   fetchCharacterNotes,
 } from "../../../store/thunks/noteThunks";
 import { openModal } from "../../../store/slices/noteSlice";
-import NoteCard from "./NoteCard";
 import NoteFormModal from "../modals/NoteFormModal";
+import NoteCard from "./NoteCard";
 import "../styles/NoteList.css";
 
 const NoteList = () => {

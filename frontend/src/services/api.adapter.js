@@ -6,9 +6,9 @@
 
 // Import HTTP client for convenience methods
 import { httpClient } from './http-client';
-
-// Import individual services for direct access
+// Import endpoints for direct access
 import { endpoints } from './endpoints';
+// Import individual services for direct access
 import { 
   authService, 
   universeService, 
@@ -19,8 +19,6 @@ import {
   audioService,
   systemService
 } from './index';
-
-// Import endpoints for direct access
 
 // Re-export endpoints for components that import them directly
 export { endpoints };

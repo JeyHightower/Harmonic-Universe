@@ -3,6 +3,7 @@ import { Routes, Route, BrowserRouter, Navigate } from "react-router-dom";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { useSelector, useDispatch } from "react-redux";
+import PropTypes from "prop-types";
 import store, { persistor } from "./store";
 import { Navigation } from "./components";
 import ModalProvider from "./components/modals/ModalProvider";
@@ -23,7 +24,7 @@ const LoadingPage = () => (
 const ErrorFallback = () => (
   <div className="error-fallback">
     <h1>Something went wrong</h1>
-    <p>We're having trouble loading the application. Please try again later.</p>
+    <p>We&apos;re having trouble loading the application. Please try again later.</p>
   </div>
 );
 
@@ -40,6 +41,10 @@ const ProtectedRoute = ({ children }) => {
   }
 
   return children;
+};
+
+ProtectedRoute.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 // A component to handle the root path with query parameters

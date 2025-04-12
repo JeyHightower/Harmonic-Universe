@@ -6,7 +6,6 @@ import {
   deleteScene,
   fetchSceneById,
   reorderScenes,
-  fetchScenesForUniverse,
 } from "../thunks/consolidated/scenesThunks";
 
 const initialState = {

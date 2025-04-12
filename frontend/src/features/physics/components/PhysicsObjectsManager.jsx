@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import PropTypes from "prop-types";
 import { useDispatch, useSelector } from "react-redux";
 import { useModal } from "../../../contexts/ModalContext";
 import { fetchPhysicsObjects } from "../../../store/thunks/physicsObjectsThunks";
@@ -110,6 +111,10 @@ const PhysicsObjectsManager = ({ sceneId }) => {
       />
     </div>
   );
+};
+
+PhysicsObjectsManager.propTypes = {
+  sceneId: PropTypes.string.isRequired
 };
 
 export default PhysicsObjectsManager;

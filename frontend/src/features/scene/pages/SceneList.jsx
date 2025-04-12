@@ -30,11 +30,15 @@ import { addScene } from "../../../store/slices/scenesSlice";
 import { ROUTES } from "../../../utils/routes";
 import SceneCard from "../components/SceneCard";
 import SceneModal from "../modals/SceneModal";
+import apiClient from "../../../services/api.adapter";
 import "../styles/SceneList.css";
+
+// Define a fallback for process.env if it's not available in the environment
+const processEnv = typeof process !== 'undefined' && process.env ? process.env : { NODE_ENV: 'development' };
 
 // Production environment detection
 const IS_PRODUCTION =
-  process.env.NODE_ENV === "production" ||
+  processEnv.NODE_ENV === "production" ||
   import.meta.env.PROD ||
   (typeof window !== "undefined" &&
     !window.location.hostname.includes("localhost") &&
@@ -80,6 +84,11 @@ const SceneList = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState(null);
   const [selectedSceneId, setSelectedSceneId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [sortDirection, setSortDirection] = useState("desc");
+  const [localError, setError] = useState(null);
 
   // Safe log that won't break if something is undefined
   console.log("SceneList: Rendering with data:", {
@@ -230,7 +239,7 @@ const SceneList = () => {
   };
 
   const handleSortOrderToggle = () => {
-    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    setSortDirection(sortDirection === "asc" ? "desc" : "asc");
   };
 
   const handleEditClick = (scene) => {
@@ -490,7 +499,7 @@ const SceneList = () => {
             <FormControlLabel
               control={
                 <Switch
-                  checked={sortOrder === "desc"}
+                  checked={sortDirection === "desc"}
                   onChange={handleSortOrderToggle}
                   name="sortDesc"
                   size="small"
@@ -541,12 +550,12 @@ const SceneList = () => {
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title">{"Confirm Delete"}</DialogTitle>
+        <DialogTitle id="alert-dialog-title">Confirm Delete</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete scene "
+            Are you sure you want to delete scene &quot;
             {sceneToDelete ? sceneToDelete.name || sceneToDelete.title : ""}
-            "? This action cannot be undone.
+            &quot;? This action cannot be undone.
           </Typography>
         </DialogContent>
         <DialogActions>

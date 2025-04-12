@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
-import Button from "../../../../common/Button.jsx";
-import Spinner from "../../../../common/Spinner.jsx";
-import { fetchUniverseById } from "../../../../../store/thunks/universeThunks.js";
+import Button from "../../../components/common/Button.jsx";
+import Spinner from "../../../components/common/Spinner.jsx";
+import { fetchUniverseById } from "../../../store/thunks/universeThunks.js";
 import "../styles/Storyboard.css";
-import api from "../../../../../services/api";
+import apiClient from "../../../services/api.adapter";
 
 const StoryboardList = () => {
   const { universeId } = useParams();
@@ -37,7 +37,7 @@ const StoryboardList = () => {
         setLoading(true);
 
         // Check if the API endpoints are available
-        if (!api.endpoints.storyboards) {
+        if (!apiClient.endpoints.storyboards) {
           console.error("Storyboard endpoints not available");
           setError(
             "Storyboard feature is not available yet. Please check back later."
@@ -47,7 +47,7 @@ const StoryboardList = () => {
           return;
         }
 
-        const response = await api.get(api.endpoints.storyboards.list(universeId));
+        const response = await apiClient.get(apiClient.endpoints.storyboards.list(universeId));
         setStoryboards(response.storyboards || []);
         setError(null);
       } catch (err) {
@@ -84,7 +84,7 @@ const StoryboardList = () => {
       setLoading(true);
 
       // Check if the API endpoints are available
-      if (!api.endpoints.storyboards || !api.endpoints.storyboards.create) {
+      if (!apiClient.endpoints.storyboards || !apiClient.endpoints.storyboards.create) {
         setError(
           "Storyboard creation is not available yet. Please check back later."
         );
@@ -92,8 +92,8 @@ const StoryboardList = () => {
         return;
       }
 
-      const response = await api.post(
-        api.endpoints.storyboards.create(universeId),
+      const response = await apiClient.post(
+        apiClient.endpoints.storyboards.create(universeId),
         newStoryboard
       );
 
@@ -127,7 +127,7 @@ const StoryboardList = () => {
 
     try {
       setLoading(true);
-      await api.delete(api.endpoints.storyboards.delete(universeId, storyboardId));
+      await apiClient.delete(apiClient.endpoints.storyboards.delete(universeId, storyboardId));
 
       // Remove deleted storyboard from the list
       setStoryboards(storyboards.filter((sb) => sb.id !== storyboardId));

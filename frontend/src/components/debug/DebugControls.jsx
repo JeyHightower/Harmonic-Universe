@@ -8,6 +8,9 @@ import { useModal } from "../../contexts/ModalContext";
 import "./DebugControls.css";
 import { AUTH_CONFIG } from "../../utils/config";
 
+// Define a fallback for process.env if it's not available in the environment
+const processEnv = typeof process !== 'undefined' && process.env ? process.env : { NODE_ENV: 'development' };
+
 /**
  * Debug Controls Panel - For testing modal and login functionality
  * Only shown in development or when debug mode is active
@@ -147,7 +150,7 @@ const DebugControls = () => {
 
   // Check for environment and initialize visibility
   useEffect(() => {
-    const isDevMode = process.env.NODE_ENV === "development";
+    const isDevMode = processEnv.NODE_ENV === "development";
     const isDebugMode =
       window.debugMode || localStorage.getItem("debugMode") === "true";
 
@@ -155,7 +158,7 @@ const DebugControls = () => {
 
     if (isDevMode || isDebugMode) {
       addLog("Debug controls initialized");
-      addLog(`Environment: ${process.env.NODE_ENV}`);
+      addLog(`Environment: ${processEnv.NODE_ENV}`);
       addLog(`URL: ${window.location.href}`);
     }
 
@@ -260,7 +263,7 @@ const DebugControls = () => {
     addLog("Debug mode enabled globally");
 
     // Reload the page to apply debug mode
-    if (!process.env.NODE_ENV === "development") {
+    if (!processEnv.NODE_ENV === "development") {
       window.location.reload();
     }
   };

@@ -172,7 +172,16 @@ export const demoLogin = createAsyncThunk(
       dispatch(loginSuccess(authData));
 
       // Dispatch a storage event to notify other components
-      window.dispatchEvent(new Event("storage"));
+      if (typeof window !== 'undefined') {
+        if (typeof window.Event === 'function') {
+          window.dispatchEvent(new window.Event("storage"));
+        } else {
+          // Fallback for older browsers
+          const storageEvent = document.createEvent("Event");
+          storageEvent.initEvent("storage", true, true);
+          window.dispatchEvent(storageEvent);
+        }
+      }
 
       console.log("Thunk - Direct demo login successful");
       return authData;

@@ -6,10 +6,10 @@ import {
 import { Button, Card, Col, Empty, Image, Row, Spin, Tabs, Tag } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useModal } from '../../../contexts/ModalContext';
 import { fetchUniverseById } from '../../../store/thunks/universeThunks';
-import './VisualPage.css';
+import '../../../styles/VisualPage.css';
 
 // Placeholder image for visualization examples
 const PLACEHOLDER_IMAGES = [
@@ -21,7 +21,6 @@ const PLACEHOLDER_IMAGES = [
 
 const VisualPage = () => {
   const { universeId } = useParams();
-  const navigate = useNavigate();
   const dispatch = useDispatch();
   const { openModal } = useModal();
 

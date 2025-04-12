@@ -23,7 +23,14 @@ const rateLimitedRequest = async (requestFn, endpointKey) => {
     console.log(`Rate limiting: Delaying request to ${endpointKey} by ${delayNeeded}ms`);
 
     // Wait before proceeding
-    await new Promise(resolve => setTimeout(resolve, delayNeeded));
+    await new Promise(resolve => {
+      if (typeof window !== 'undefined') {
+        window.setTimeout(resolve, delayNeeded);
+      } else {
+        // For server-side environments
+        global.setTimeout(resolve, delayNeeded);
+      }
+    });
   }
 
   // Update the last request time for this endpoint
@@ -113,7 +120,14 @@ export const requestWithRetry = async (config, maxRetries = 3, baseDelay = 1000)
         console.log(`Rate limited (429), retrying in ${delay}ms... (attempt ${retryCount}/${maxRetries})`);
 
         // Wait for the calculated delay
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise(resolve => {
+          if (typeof window !== 'undefined') {
+            window.setTimeout(resolve, delay);
+          } else {
+            // For server-side environments
+            global.setTimeout(resolve, delay);
+          }
+        });
 
         // Try again recursively
         return makeRequest();

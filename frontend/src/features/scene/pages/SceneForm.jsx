@@ -8,6 +8,7 @@ import {
   Select,
   Spin,
   message,
+  notification,
   Divider,
   Row,
   Col,
@@ -16,6 +17,9 @@ import {
   DatePicker,
   Radio,
   Alert,
+  Slider,
+  Tooltip,
+  Switch,
 } from "antd";
 import {
   DeleteOutlined,
@@ -31,6 +35,9 @@ import { CharacterSelector } from "../../character";
 const { TextArea } = Input;
 const { Option } = Select;
 const { Title, Text } = Typography;
+
+// Destructure window.setTimeout to fix linter error
+const { setTimeout } = window;
 
 // Improved styles for modals
 const formStyles = {

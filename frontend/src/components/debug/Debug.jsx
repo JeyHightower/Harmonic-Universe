@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
+import { Button } from "antd";
 import "../../styles/Debug.css";
 import {
   clearLogs,
@@ -6,6 +8,12 @@ import {
   getLogs,
   toggleLogging,
 } from "../../utils/logger";
+
+// Define window globals to fix ESLint errors
+const { clearInterval, setInterval } = window;
+
+// Define a fallback for process.env if it's not available in the environment
+const processEnv = typeof process !== 'undefined' && process.env ? process.env : { NODE_ENV: 'development' };
 
 /**
  * Debug panel component for viewing logs in production
@@ -185,7 +193,7 @@ const Debug = () => {
               <span>Total Logs: {window.appLogs?.logs?.length || 0}</span>
               <span>Displaying: {logs.length}</span>
             </div>
-            <div className="debug-env">Mode: {process.env.NODE_ENV}</div>
+            <div className="debug-env">Mode: {processEnv.NODE_ENV}</div>
           </div>
         </div>
       )}

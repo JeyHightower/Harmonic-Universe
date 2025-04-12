@@ -20,6 +20,7 @@ import {
   Typography,
 } from "antd";
 import React, { useEffect } from "react";
+import PropTypes from "prop-types";
 import { useDispatch, useSelector } from "react-redux";
 import { createPhysicsObject, updatePhysicsObject } from "../../../store/thunks/physicsObjectsThunks";
 
@@ -323,6 +324,19 @@ const PhysicsObjectForm = ({
       </Form>
     </Card>
   );
+};
+
+PhysicsObjectForm.propTypes = {
+  sceneId: PropTypes.string.isRequired,
+  onSuccess: PropTypes.func,
+  onCancel: PropTypes.func,
+  isEdit: PropTypes.bool
+};
+
+PhysicsObjectForm.defaultProps = {
+  onSuccess: () => {},
+  onCancel: () => {},
+  isEdit: false
 };
 
 export default PhysicsObjectForm;

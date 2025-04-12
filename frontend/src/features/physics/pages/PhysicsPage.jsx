@@ -1,4 +1,4 @@
-import { Spin } from "antd";
+import { Spin, Tabs, Button, Card, Empty } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
@@ -8,7 +8,7 @@ import "../styles/PhysicsPage.css";
 
 const PhysicsPage = () => {
   const { universeId } = useParams();
-  const navigate = useNavigate();
+  const _navigate = useNavigate();
   const dispatch = useDispatch();
   const { openModal } = useModal();
 

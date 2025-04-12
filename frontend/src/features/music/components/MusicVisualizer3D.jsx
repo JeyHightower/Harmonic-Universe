@@ -13,34 +13,12 @@ import {
   Color,
   ShaderMaterial,
 } from "three";
+import * as THREE from 'three';
+import PropTypes from 'prop-types';
+import '../styles/MusicVisualizer3D.css';
 
-// Try to import Three.js with a fallback
-let THREE;
-try {
-  THREE = require("three");
-} catch (error) {
-  console.error("Failed to load Three.js library:", error);
-  // Create a minimal mock version of THREE to prevent crashes
-  THREE = {
-    Scene: class MockScene {},
-    PerspectiveCamera: class MockCamera {
-      position = { z: 5 };
-    },
-    WebGLRenderer: class MockRenderer {
-      setSize() {}
-      render() {}
-      domElement = document.createElement("div");
-    },
-    BoxGeometry: class MockGeometry {},
-    MeshBasicMaterial: class MockMaterial {},
-    Mesh: class MockMesh {
-      rotation = { x: 0, y: 0 };
-    },
-    Color: class MockColor {},
-    AmbientLight: class MockLight {},
-    DirectionalLight: class MockLight {},
-  };
-}
+// Define window globals to fix ESLint errors
+const { requestAnimationFrame, cancelAnimationFrame } = window;
 
 /**
  * 3D music visualizer component
@@ -516,6 +494,12 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
       }}
     />
   );
+};
+
+MusicVisualizer3D.propTypes = {
+  isPlaying: PropTypes.bool.isRequired,
+  musicData: PropTypes.object,
+  analyzerData: PropTypes.array,
 };
 
 export default MusicVisualizer3D; 

@@ -1,6 +1,6 @@
 import PropTypes from "prop-types";
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import "../styles/UniverseCard.css";
 import {
   Card,
@@ -18,7 +18,6 @@ import {
   Edit,
   Delete,
 } from "@mui/icons-material";
-import { formatDate } from "../../../utils/dateUtils";
 import defaultUniverseImage from "../../../assets/images/default-universe.svg";
 
 const UniverseCard = ({

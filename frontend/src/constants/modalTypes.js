@@ -22,6 +22,8 @@ export const MODAL_TYPES = {
   
   // Physics modals
   PHYSICS_OBJECT: "PHYSICS_OBJECT",
+  PHYSICS_PARAMETERS: "PHYSICS_PARAMETERS",
+  PHYSICS_CONSTRAINT: "PHYSICS_CONSTRAINT",
   
   // Music modals
   MUSIC_CREATE: "music-create",
@@ -48,6 +50,8 @@ export const getModalDisplayName = (type) => {
     [MODAL_TYPES.SCENE_FORM]: "Create Scene",
     [MODAL_TYPES.CHARACTER_FORM]: "Character",
     [MODAL_TYPES.PHYSICS_OBJECT]: "Physics Object",
+    [MODAL_TYPES.PHYSICS_PARAMETERS]: "Physics Parameters",
+    [MODAL_TYPES.PHYSICS_CONSTRAINT]: "Physics Constraint",
     [MODAL_TYPES.MUSIC_CREATE]: "Create Music",
     [MODAL_TYPES.MUSIC_VIEW]: "View Music",
     [MODAL_TYPES.MUSIC_EDIT]: "Edit Music",
@@ -75,6 +79,8 @@ export const getModalIcon = (type) => {
     [MODAL_TYPES.SCENE_FORM]: "film",
     [MODAL_TYPES.CHARACTER_FORM]: "user",
     [MODAL_TYPES.PHYSICS_OBJECT]: "physics",
+    [MODAL_TYPES.PHYSICS_PARAMETERS]: "physics",
+    [MODAL_TYPES.PHYSICS_CONSTRAINT]: "physics",
     [MODAL_TYPES.MUSIC_CREATE]: "music-note",
     [MODAL_TYPES.MUSIC_VIEW]: "music-note",
     [MODAL_TYPES.MUSIC_EDIT]: "edit",
@@ -102,6 +108,8 @@ export const getModalDescription = (type) => {
     [MODAL_TYPES.SCENE_FORM]: "Create a new scene in your universe",
     [MODAL_TYPES.CHARACTER_FORM]: "Create or edit a character",
     [MODAL_TYPES.PHYSICS_OBJECT]: "Create, edit, or delete physics objects",
+    [MODAL_TYPES.PHYSICS_PARAMETERS]: "Edit physics object parameters",
+    [MODAL_TYPES.PHYSICS_CONSTRAINT]: "Edit physics object constraints",
     [MODAL_TYPES.MUSIC_CREATE]: "Create new music for your universe",
     [MODAL_TYPES.MUSIC_VIEW]: "View and play music from your universe",
     [MODAL_TYPES.MUSIC_EDIT]: "Edit music settings and parameters",

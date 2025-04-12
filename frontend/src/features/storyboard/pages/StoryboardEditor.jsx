@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
-import Button from "../../../../common/Button.jsx";
-import Spinner from "../../../../common/Spinner.jsx";
-import { fetchUniverseById } from "../../../../../store/thunks/universeThunks.js";
+import Button from "../../../components/common/Button.jsx";
+import Spinner from "../../../components/common/Spinner.jsx";
+import { fetchUniverseById } from "../../../store/thunks/universeThunks.js";
 import "../styles/Storyboard.css";
-import api from "../../../../../services/api";
+import apiClient from "../../../services/api.adapter";
 
 const StoryboardEditor = () => {
   const { universeId, storyboardId } = useParams();
@@ -45,7 +45,7 @@ const StoryboardEditor = () => {
         setLoading(true);
 
         // Check if the API endpoints are available
-        if (!api.endpoints.storyboards) {
+        if (!apiClient.endpoints.storyboards) {
           console.error("Storyboard endpoints not available");
           setError(
             "Storyboard feature is not available yet. Please check back later."
@@ -55,14 +55,14 @@ const StoryboardEditor = () => {
         }
 
         // Fetch storyboard details
-        const storyboardResponse = await api.get(
-          api.endpoints.storyboards.get(universeId, storyboardId)
+        const storyboardResponse = await apiClient.get(
+          apiClient.endpoints.storyboards.get(universeId, storyboardId)
         );
         setStoryboard(storyboardResponse);
 
         // Fetch story points
-        const pointsResponse = await api.get(
-          api.endpoints.storyboards.points.list(universeId, storyboardId)
+        const pointsResponse = await apiClient.get(
+          apiClient.endpoints.storyboards.points.list(universeId, storyboardId)
         );
         setStoryPoints(pointsResponse.story_points || []);
 
@@ -136,8 +136,8 @@ const StoryboardEditor = () => {
         const updatedPoint = storyPoints.find((p) => p.id === draggedPoint.id);
 
         // Save the new position to the backend
-        await api.put(
-          api.endpoints.storyboards.points.update(
+        await apiClient.put(
+          apiClient.endpoints.storyboards.points.update(
             universeId,
             storyboardId,
             draggedPoint.id
@@ -170,9 +170,9 @@ const StoryboardEditor = () => {
 
       // Check if the API endpoints are available
       if (
-        !api.endpoints.storyboards ||
-        !api.endpoints.storyboards.points ||
-        !api.endpoints.storyboards.points.create
+        !apiClient.endpoints.storyboards ||
+        !apiClient.endpoints.storyboards.points ||
+        !apiClient.endpoints.storyboards.points.create
       ) {
         setError(
           "Story point creation is not available yet. Please check back later."
@@ -181,8 +181,8 @@ const StoryboardEditor = () => {
         return;
       }
 
-      const response = await api.post(
-        api.endpoints.storyboards.points.create(universeId, storyboardId),
+      const response = await apiClient.post(
+        apiClient.endpoints.storyboards.points.create(universeId, storyboardId),
         newPoint
       );
 
@@ -221,8 +221,8 @@ const StoryboardEditor = () => {
 
     try {
       setLoading(true);
-      await api.delete(
-        api.endpoints.storyboards.points.delete(universeId, storyboardId, pointId)
+      await apiClient.delete(
+        apiClient.endpoints.storyboards.points.delete(universeId, storyboardId, pointId)
       );
 
       // Remove deleted point from the list
@@ -259,7 +259,7 @@ const StoryboardEditor = () => {
   const handleSaveStoryboard = async () => {
     try {
       setLoading(true);
-      await api.put(api.endpoints.storyboards.update(universeId, storyboardId), {
+      await apiClient.put(apiClient.endpoints.storyboards.update(universeId, storyboardId), {
         name: storyboard.name,
         description: storyboard.description,
       });

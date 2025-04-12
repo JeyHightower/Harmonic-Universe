@@ -8,6 +8,7 @@ import FormModal from "../components/modals/FormModal";
 import LoginModal from "../features/auth/modals/LoginModal";
 import SignupModal from "../features/auth/modals/SignupModal";
 import { MODAL_CONFIG } from "./config";
+import { PhysicsParametersModal, PhysicsConstraintModal } from "../features/physics";
 
 // Create modal registry
 const modalRegistry = new Map();
@@ -33,7 +34,9 @@ export const getModalComponent = async (type) => {
     "music-view",
     "music-edit",
     "music-delete",
-    "PHYSICS_OBJECT"
+    "PHYSICS_OBJECT",
+    "PHYSICS_PARAMETERS",
+    "PHYSICS_CONSTRAINT"
   ];
 
   if (!validTypes.includes(type)) {
@@ -89,6 +92,16 @@ export const getModalComponent = async (type) => {
         console.log("Loading PhysicsObjectModal");
         // Fall back to FormModal 
         component = FormModal;
+        break;
+      case "PHYSICS_PARAMETERS":
+      case MODAL_TYPES.PHYSICS_PARAMETERS:
+        console.log("Loading PhysicsParametersModal");
+        component = PhysicsParametersModal;
+        break;
+      case "PHYSICS_CONSTRAINT":
+      case "physics-constraint":
+        console.log("Loading PhysicsConstraintModal");
+        component = PhysicsConstraintModal;
         break;
       case "audio-generate":
         console.log("Loading AudioGenerationModalFinal component");

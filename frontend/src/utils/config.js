@@ -4,16 +4,17 @@
  */
 
 // Check if import.meta is available (browser environment) or not (Node environment)
-const isNodeEnv = typeof window === 'undefined' && typeof process !== 'undefined';
+const isNodeEnv = typeof window === 'undefined' && typeof global !== 'undefined' && global.process !== undefined;
 
 // Export environment
-export const ENV = isNodeEnv ? process.env.NODE_ENV || "development" : (import.meta.env.MODE || "development");
+export const ENV = isNodeEnv ? 
+  (global.process.env.NODE_ENV || "development") : 
+  (import.meta.env.MODE || "development");
 
 // Export whether we're in production
 export const IS_PRODUCTION = isNodeEnv ?
-  process.env.NODE_ENV === 'production' :
-  (process.env.NODE_ENV === 'production' ||
-    import.meta.env?.PROD ||
+  global.process.env.NODE_ENV === 'production' :
+  (import.meta.env.PROD ||
     (typeof window !== 'undefined' &&
       !window.location.hostname.includes('localhost') &&
       !window.location.hostname.includes('127.0.0.1')));
@@ -39,7 +40,7 @@ export const API_URL = IS_PRODUCTION
 export const CDN_URL = isNodeEnv ? "" : (import.meta.env.VITE_CDN_URL || "");
 
 // Export the version
-export const VERSION = isNodeEnv ? process.env.VERSION || "1.0.0" : (import.meta.env.VITE_APP_VERSION || "1.0.0");
+export const VERSION = isNodeEnv ? global.process.env.VERSION || "1.0.0" : (import.meta.env.VITE_APP_VERSION || "1.0.0");
 
 // Export the build time
 export const BUILD_TIME = isNodeEnv ? new Date().toISOString() :
@@ -64,7 +65,7 @@ export const ENV_VARS = {
 const validateEnvVar = (key, defaultValue = undefined, validator = null) => {
   // In Node environment, use process.env
   const value = isNodeEnv
-    ? (process.env[key] ?? defaultValue)
+    ? (global.process.env[key] ?? defaultValue)
     : (import.meta.env[key] ?? defaultValue);
 
   if (value === undefined) {

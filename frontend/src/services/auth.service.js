@@ -3,7 +3,7 @@
  * Handles authentication operations like login, register, token validation
  */
 
-import { log } from "../utils/logger";
+import Logger from "../utils/logger";
 import { httpClient } from './http-client';
 import { authEndpoints } from './endpoints';
 import { responseHandler } from './response-handler';
@@ -25,7 +25,7 @@ export const login = async (email, password) => {
       localStorage.setItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY, response.token);
       
       // Log successful login
-      log('auth', 'User logged in successfully', { email });
+      Logger.log('auth', 'User logged in successfully', { email });
       
       return responseHandler.handleSuccess(response);
     }
@@ -61,7 +61,7 @@ export const demoLogin = async () => {
     // Handle successful demo login
     if (response.token) {
       localStorage.setItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY, response.token);
-      log('auth', 'Demo user logged in successfully');
+      Logger.log('auth', 'Demo user logged in successfully');
     }
     
     return responseHandler.handleSuccess(response);
@@ -85,7 +85,7 @@ export const logout = async () => {
     // Clear any cached data
     httpClient.clearCache();
     
-    log('auth', 'User logged out successfully');
+    Logger.log('auth', 'User logged out successfully');
     return responseHandler.handleSuccess(response);
   } catch (error) {
     // Still remove token even if logout fails
@@ -123,7 +123,7 @@ export const refreshToken = async () => {
     
     if (response.token) {
       localStorage.setItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY, response.token);
-      log('auth', 'Auth token refreshed successfully');
+      Logger.log('auth', 'Auth token refreshed successfully');
     }
     
     return responseHandler.handleSuccess(response);

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import { useDispatch, useSelector } from "react-redux";
 import {
   TextField,
@@ -200,6 +201,30 @@ const NoteForm = ({ note, universeId, sceneId, characterId, onSuccess, onCancel 
       </form>
     </Paper>
   );
+};
+
+NoteForm.propTypes = {
+  note: PropTypes.shape({
+    id: PropTypes.string,
+    title: PropTypes.string,
+    content: PropTypes.string,
+    tags: PropTypes.arrayOf(PropTypes.string),
+    is_public: PropTypes.bool,
+    universe_id: PropTypes.string,
+    scene_id: PropTypes.string,
+    character_id: PropTypes.string
+  }),
+  universeId: PropTypes.string,
+  sceneId: PropTypes.string,
+  characterId: PropTypes.string,
+  onSuccess: PropTypes.func,
+  onCancel: PropTypes.func
+};
+
+NoteForm.defaultProps = {
+  note: null,
+  onSuccess: () => {},
+  onCancel: () => {}
 };
 
 export default NoteForm; 

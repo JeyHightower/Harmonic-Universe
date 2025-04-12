@@ -3,7 +3,6 @@
  * Handles operations related to audio in the application
  */
 
-import Logger from "../utils/logger";
 import { httpClient } from './http-client';
 import { audioEndpoints } from './endpoints';
 import { responseHandler } from './response-handler';
@@ -18,7 +17,7 @@ export const getAudioTracks = async (filters = {}) => {
     const response = await httpClient.get(audioEndpoints.list, { params: filters });
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('audio', 'Error fetching audio tracks', { error: error.message });
+    console.log('audio', 'Error fetching audio tracks', { error: error.message });
     return responseHandler.handleError(error);
   }
 };
@@ -37,7 +36,7 @@ export const getAudioTrack = async (audioId) => {
     const response = await httpClient.get(audioEndpoints.get(audioId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('audio', 'Error fetching audio track', { 
+    console.log('audio', 'Error fetching audio track', { 
       audioId, 
       error: error.message 
     });
@@ -58,10 +57,10 @@ export const createAudioTrack = async (audioData) => {
 
     const response = await httpClient.post(audioEndpoints.create, audioData);
     
-    log('audio', 'Audio track created successfully');
+    console.log('audio', 'Audio track created successfully');
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('audio', 'Error creating audio track', { error: error.message });
+    console.log('audio', 'Error creating audio track', { error: error.message });
     return responseHandler.handleError(error);
   }
 };
@@ -84,10 +83,10 @@ export const updateAudioTrack = async (audioId, audioData) => {
 
     const response = await httpClient.put(audioEndpoints.update(audioId), audioData);
     
-    log('audio', 'Audio track updated successfully', { audioId });
+    console.log('audio', 'Audio track updated successfully', { audioId });
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('audio', 'Error updating audio track', { 
+    console.log('audio', 'Error updating audio track', { 
       audioId, 
       error: error.message 
     });
@@ -108,10 +107,10 @@ export const deleteAudioTrack = async (audioId) => {
 
     const response = await httpClient.delete(audioEndpoints.delete(audioId));
     
-    log('audio', 'Audio track deleted successfully', { audioId });
+    console.log('audio', 'Audio track deleted successfully', { audioId });
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('audio', 'Error deleting audio track', { 
+    console.log('audio', 'Error deleting audio track', { 
       audioId, 
       error: error.message 
     });
@@ -133,7 +132,7 @@ export const getAudioTracksByUniverse = async (universeId) => {
     const response = await httpClient.get(audioEndpoints.forUniverse(universeId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('audio', 'Error fetching universe audio tracks', { 
+    console.log('audio', 'Error fetching universe audio tracks', { 
       universeId, 
       error: error.message 
     });
@@ -155,7 +154,7 @@ export const getAudioTracksByScene = async (sceneId) => {
     const response = await httpClient.get(audioEndpoints.forScene(sceneId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('audio', 'Error fetching scene audio tracks', { 
+    console.log('audio', 'Error fetching scene audio tracks', { 
       sceneId, 
       error: error.message 
     });
@@ -176,10 +175,10 @@ export const generateMusic = async (params) => {
 
     const response = await httpClient.post(audioEndpoints.generate, params);
     
-    log('audio', 'Music generated successfully');
+    console.log('audio', 'Music generated successfully');
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('audio', 'Error generating music', { error: error.message });
+    console.log('audio', 'Error generating music', { error: error.message });
     return responseHandler.handleError(error);
   }
 };
@@ -200,10 +199,10 @@ export const downloadMusic = async (audioId, format = 'mp3') => {
       responseType: 'blob'
     });
     
-    log('audio', 'Music downloaded successfully', { audioId, format });
+    console.log('audio', 'Music downloaded successfully', { audioId, format });
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('audio', 'Error downloading music', { 
+    console.log('audio', 'Error downloading music', { 
       audioId, 
       format,
       error: error.message 

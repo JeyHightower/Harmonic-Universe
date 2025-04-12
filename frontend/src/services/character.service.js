@@ -3,7 +3,6 @@
  * Handles operations related to characters in the application
  */
 
-import Logger from "../utils/logger";
 import { httpClient } from './http-client';
 import { characterEndpoints } from './endpoints';
 import { responseHandler } from './response-handler';
@@ -17,7 +16,7 @@ export const getAllCharacters = async () => {
     const response = await httpClient.get(characterEndpoints.list);
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('characters', 'Error fetching all characters', { error: error.message });
+    console.log('characters', 'Error fetching all characters', { error: error.message });
     return responseHandler.handleError(error);
   }
 };
@@ -36,7 +35,7 @@ export const getCharactersByUniverse = async (universeId) => {
     const response = await httpClient.get(characterEndpoints.forUniverse(universeId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('characters', 'Error fetching universe characters', { 
+    console.log('characters', 'Error fetching universe characters', { 
       universeId, 
       error: error.message 
     });
@@ -58,7 +57,7 @@ export const getCharactersByScene = async (sceneId) => {
     const response = await httpClient.get(characterEndpoints.forScene(sceneId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('characters', 'Error fetching scene characters', { 
+    console.log('characters', 'Error fetching scene characters', { 
       sceneId, 
       error: error.message 
     });
@@ -80,7 +79,7 @@ export const getCharacterById = async (characterId) => {
     const response = await httpClient.get(characterEndpoints.get(characterId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('characters', 'Error fetching character by ID', { 
+    console.log('characters', 'Error fetching character by ID', { 
       characterId, 
       error: error.message 
     });
@@ -106,10 +105,10 @@ export const createCharacter = async (characterData) => {
 
     const response = await httpClient.post(characterEndpoints.create, characterData);
     
-    log('characters', 'Character created successfully');
+    console.log('characters', 'Character created successfully');
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('characters', 'Error creating character', { error: error.message });
+    console.log('characters', 'Error creating character', { error: error.message });
     return responseHandler.handleError(error);
   }
 };
@@ -132,10 +131,10 @@ export const updateCharacter = async (characterId, characterData) => {
 
     const response = await httpClient.put(characterEndpoints.update(characterId), characterData);
     
-    log('characters', 'Character updated successfully', { characterId });
+    console.log('characters', 'Character updated successfully', { characterId });
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('characters', 'Error updating character', { 
+    console.log('characters', 'Error updating character', { 
       characterId, 
       error: error.message 
     });
@@ -156,10 +155,10 @@ export const deleteCharacter = async (characterId) => {
 
     const response = await httpClient.delete(characterEndpoints.delete(characterId));
     
-    log('characters', 'Character deleted successfully', { characterId });
+    console.log('characters', 'Character deleted successfully', { characterId });
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('characters', 'Error deleting character', { 
+    console.log('characters', 'Error deleting character', { 
       characterId, 
       error: error.message 
     });
@@ -181,7 +180,7 @@ export const getCharacterRelationships = async (characterId) => {
     const response = await httpClient.get(characterEndpoints.relationships(characterId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('characters', 'Error fetching character relationships', { 
+    console.log('characters', 'Error fetching character relationships', { 
       characterId, 
       error: error.message 
     });
@@ -207,10 +206,10 @@ export const updateCharacterAttributes = async (characterId, attributes) => {
 
     const response = await httpClient.patch(characterEndpoints.attributes(characterId), { attributes });
     
-    log('characters', 'Character attributes updated successfully', { characterId });
+    console.log('characters', 'Character attributes updated successfully', { characterId });
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    log('characters', 'Error updating character attributes', { 
+    console.log('characters', 'Error updating character attributes', { 
       characterId, 
       error: error.message 
     });

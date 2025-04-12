@@ -1,33 +1,23 @@
 import React, { lazy } from "react";
 import { ROUTES } from "../utils/routes";
-import { ProtectedRoute } from "../components/routing/ProtectedRoute";
+import ProtectedRoute from "../components/routing/ProtectedRoute";
 
 // Lazy load components for better performance
-const Home = lazy(() => import("../pages/Home"));
-const Login = lazy(() => import("../components/auth/Login"));
-const Signup = lazy(() => import("../components/auth/Signup"));
-const Dashboard = lazy(() => import("../pages/Dashboard"));
+const Home = lazy(() => import("../features/home/pages/Home"));
+const Login = lazy(() => import("../features/auth/pages/LoginPage"));
+const Signup = lazy(() => import("../features/auth/pages/SignupPage"));
+const Dashboard = lazy(() => import("../features/dashboard/pages/Dashboard"));
 const PersonalUniverse = lazy(() =>
-  import("../components/universe/PersonalUniverse")
+  import("../features/universe/pages/PersonalUniversePage")
 );
-const UniverseDetail = lazy(() =>
-  import("../components/universe/UniverseDetail")
-);
-const CharacterDetail = lazy(() =>
-  import("../components/features/character/pages/CharacterDetail")
-);
-const NoteDetail = lazy(() => import("../components/features/note/pages/NoteDetail"));
-const CharacterManagement = lazy(() =>
-  import("../features/CharacterManagement")
-);
-const SceneManagement = lazy(() => import("../features/SceneManagement"));
-const SceneEditPage = lazy(() =>
-  import("../components/features/scene/pages/SceneEditPage")
-);
-const NotFound = lazy(() => import("../pages/NotFound"));
-const SceneEditRedirect = lazy(() =>
-  import("../components/routing/SceneEditRedirect")
-);
+const UniverseDetail = lazy(() => import("../features/universe/pages/UniverseDetail"));
+const CharacterDetail = lazy(() => import("../features/character/pages/CharacterDetail"));
+const NoteDetail = lazy(() => import("../features/note/pages/NoteDetail"));
+const CharacterManagement = lazy(() => import("../features/character/pages/CharactersPage"));
+const SceneManagement = lazy(() => import("../features/scene/pages/ScenesPage"));
+const SceneEditPage = lazy(() => import("../features/scene/pages/SceneEditPage"));
+const SceneEditRedirect = lazy(() => import("../components/routing/SceneEditRedirect"));
+const NotFound = lazy(() => import("../features/error/pages/NotFoundPage"));
 
 export const routes = [
   {
