@@ -53,9 +53,10 @@ try:
     except ImportError as e:
         logger.warning(f"Could not import from backend.app: {e}")
         
-        # Try the direct import path
-        from app import create_app
-        logger.info("Using direct import path (app)")
+        # Instead of trying to import from app, which no longer exists,
+        # we'll raise the error to trigger the fallback logic below
+        logger.error("Cannot import create_app from any location")
+        raise
     
     # Create the application
     application = create_app()

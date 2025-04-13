@@ -9,8 +9,9 @@
 
 # Source core utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/core.sh"
-source "$SCRIPT_DIR/utils.sh"
+ROOT_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")"
+source "$ROOT_DIR/scripts/core/core.sh"
+source "$ROOT_DIR/scripts/core/utils.sh"
 
 # Get project root directory
 ROOT_DIR=$(get_root_dir)
