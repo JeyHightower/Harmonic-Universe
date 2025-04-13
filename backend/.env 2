@@ -1,0 +1,15 @@
+# Environment Configuration
+FLASK_APP=app.py
+FLASK_ENV=development
+FLASK_DEBUG=1
+
+# Secret Keys (keep these secure in production)
+SECRET_KEY=dev-secret-key-change-in-production
+JWT_SECRET_KEY=harmonic-universe-jwt-secret-key
+
+# Database
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/harmonic_universe
+
+# CORS Settings
+CORS_ORIGINS=http://localhost:5173,http://localhost:3000,http://localhost:8000,http://localhost:5001
+CORS_SUPPORTS_CREDENTIALS=true 

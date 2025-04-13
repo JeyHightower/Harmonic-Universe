@@ -31,8 +31,7 @@ The scripts have been organized into the following categories:
   - `db.sh` - Manage the database
 
 - **Testing**: Scripts for running tests
-  - `test.sh` - Run tests
-  - `api_tests.sh` - Run API tests
+  - `testing.sh` - Comprehensive test suite (auth tests, API tests, backend tests, frontend tests)
 
 ## Master Script
 

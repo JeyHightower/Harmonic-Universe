@@ -64,7 +64,7 @@ main() {
             "$SCRIPT_DIR/database/db.sh" "$@"
             ;;
         test|testing)
-            "$SCRIPT_DIR/testing/test.sh" "$@"
+            "$ROOT_DIR/scripts/testing.sh" "$@"
             ;;
         maintain|maintenance)
             # Route to specific maintenance script based on command
