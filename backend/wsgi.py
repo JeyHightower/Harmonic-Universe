@@ -1,100 +1,116 @@
 """
 WSGI entry point for Harmonic Universe backend
 
-This file serves as the main WSGI entry point for the Flask application
-in all environments (development, testing, and production).
+This file serves as the WSGI entry point for the Flask application for production deployment.
 It uses the create_app function from app/__init__.py to initialize the application.
 """
 
 import os
-import sys
 import logging
-import importlib.util
-from dotenv import load_dotenv
+import sys
+import traceback
 
-# Set up logging based on environment
-log_level = os.environ.get('LOG_LEVEL', 'INFO')
+# Configure Python's import path to include relevant directories
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+sys.path.insert(0, BASE_DIR)
+sys.path.insert(0, os.path.join(BASE_DIR, 'backend'))
+
+# Set up logging
 logging.basicConfig(
-    level=getattr(logging, log_level),
+    level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
 # Log startup information
-logger.info("Starting Harmonic Universe application")
+logger.info("Starting Harmonic Universe WSGI application")
+logger.info(f"Python version: {sys.version}")
+logger.info(f"Current working directory: {os.getcwd()}")
+logger.info(f"sys.path: {sys.path}")
 
-# Get the directory where this script is located
-script_dir = os.path.dirname(os.path.abspath(__file__))
-
-# Load .env file from the backend directory explicitly
-backend_env = os.path.join(script_dir, '.env')
-if os.path.exists(backend_env):
-    load_dotenv(dotenv_path=backend_env)
-    logger.info(f"Loading environment from: {backend_env}")
-else:
-    # Fallback to root .env
-    root_dir = os.path.dirname(script_dir)
-    root_env = os.path.join(root_dir, '.env')
-    if os.path.exists(root_env):
-        load_dotenv(dotenv_path=root_env)
-        logger.info(f"Loading environment from: {root_env}")
-    else:
-        # Last resort: default behavior
-        load_dotenv()
-        logger.info("Using default load_dotenv behavior")
-
-# CRITICAL: Set the JWT key directly in environment
-# This is the key that caused the issue - the env var is getting lost
-jwt_key = os.environ.get('JWT_SECRET_KEY')
-if jwt_key:
-    # Save it back to environment to fix the issue with lost env variables
-    os.environ['JWT_SECRET_KEY'] = jwt_key
-    safe_key = jwt_key[:5] + '...' + jwt_key[-5:] if len(jwt_key) > 10 else "***"
-    logger.info(f"Using JWT_SECRET_KEY: {safe_key}")
-else:
-    os.environ['JWT_SECRET_KEY'] = 'harmonic-universe-jwt-secret-key'
-    logger.info("JWT_SECRET_KEY not found in environment, setting to default: harmonic-universe-jwt-secret-key")
-
-# Check if fixes modules are available
+# Check if Flask is installed
 try:
-    # Check if render fixes are available
-    render_fixes_spec = importlib.util.find_spec('fixes.render')
-    render_fixes_available = render_fixes_spec is not None
-    logger.info(f"Render fixes module available: {render_fixes_available}")
+    import flask
+    logger.info(f"Flask is installed (version {flask.__version__})")
 except ImportError:
-    logger.warning("Could not check for render fixes module")
-    render_fixes_available = False
-
-# CRITICAL: Register a JWT key provider
-# This extends Flask-JWT-Extended to ensure it gets the key from environment on every check
-def _patched_jwt_get_secret_key():
-    """Get the JWT secret key from environment on every access."""
-    jwt_key = os.environ.get('JWT_SECRET_KEY', 'harmonic-universe-jwt-secret-key')
-    logger.info(f"Using JWT secret key: {jwt_key[:5]}...")
-    return jwt_key
+    logger.critical("Flask is not installed! Installing now...")
+    import subprocess
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "flask"])
+        import flask
+        logger.info(f"Successfully installed Flask version {flask.__version__}")
+    except Exception as e:
+        logger.critical(f"Failed to install Flask: {e}")
+        raise
 
 # Import the app factory function and create the application
-from app import create_app
-
-# Apply the patch just before application creation
+application = None
 try:
-    from flask_jwt_extended.config import config as jwt_config
-    # Use setattr to bypass linter warnings for internal attributes
-    setattr(jwt_config, '_user_get_jwt_secret_key', _patched_jwt_get_secret_key)
-    logger.info("Successfully patched JWT secret key provider")
+    try:
+        # Try the production import path first
+        from backend.app import create_app
+        logger.info("Using production import path (backend.app)")
+    except ImportError as e:
+        logger.warning(f"Could not import from backend.app: {e}")
+        
+        # Instead of trying to import from app, which no longer exists,
+        # we'll raise the error to trigger the fallback logic below
+        logger.error("Cannot import create_app from any location")
+        raise
+    
+    # Create the application
+    application = create_app()
+    
 except Exception as e:
-    logger.error(f"Failed to patch JWT secret key provider: {e}")
-
-# Get the environment from environment variable or use development as default
-flask_env = os.environ.get('FLASK_ENV', 'development')
-application = create_app(flask_env)
+    logger.critical(f"Failed to create application: {e}")
+    logger.critical(traceback.format_exc())
+    
+    # Create an app that serves the React frontend directly
+    from flask import Flask, send_from_directory
+    
+    def create_direct_frontend_app():
+        # Find the static directory
+        static_locations = [
+            os.path.join(BASE_DIR, 'backend/static'),
+            os.path.join(BASE_DIR, 'frontend/dist'),
+            os.path.join(BASE_DIR, 'static')
+        ]
+        
+        # Choose the first valid location
+        static_folder = None
+        for loc in static_locations:
+            if os.path.exists(loc):
+                static_folder = loc
+                logger.info(f"Found static files at: {loc}")
+                break
+        
+        if not static_folder:
+            logger.error("No static folder found, creating one...")
+            static_folder = os.path.join(BASE_DIR, 'static')
+            os.makedirs(static_folder, exist_ok=True)
+        
+        # Create a simple Flask app that serves the frontend
+        app = Flask(__name__, static_folder=static_folder, static_url_path='')
+        
+        @app.route('/', defaults={'path': ''})
+        @app.route('/<path:path>')
+        def serve(path):
+            # For SPA routing, serve index.html for routes that don't exist
+            if path and os.path.exists(os.path.join(static_folder, path)):
+                return send_from_directory(static_folder, path)
+            else:
+                return send_from_directory(static_folder, 'index.html')
+        
+        logger.info(f"Created direct frontend app using {static_folder}")
+        return app
+    
+    application = create_direct_frontend_app()
 
 # This is what Gunicorn will import
 app = application
 
-# Development server
+# Development server (not used in production)
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5001))
-    debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
-    logger.info(f"Starting development server on port {port} (debug={debug})")
-    app.run(host='0.0.0.0', port=port, debug=debug) 
+    port = int(os.environ.get('PORT', 5000))
+    logger.info(f"Starting development server on port {port} (NOT RECOMMENDED FOR PRODUCTION)")
+    app.run(host='0.0.0.0', port=port) 
