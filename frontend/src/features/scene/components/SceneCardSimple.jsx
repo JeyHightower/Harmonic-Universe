@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import React from "react";
 import { Link } from "react-router-dom";
 import "../styles/SceneCardSimple.css";
-import { formatDate } from "../../../utils/dateUtils.js";
+import { formatDate } from "../../../utils/dateUtils.mjs";
 
 const SceneCardSimple = ({ scene, onEdit, onDelete }) => {
   const defaultImage = "/images/default-scene.jpg";

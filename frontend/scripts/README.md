@@ -31,6 +31,18 @@ The following core modules handle most of the complex functionality:
 - `core/react.mjs` - React-related utilities
 - `core/ant-icons.mjs` - Ant Icons patching and fallbacks
 
+## Utility Scripts
+
+The following utility scripts provide additional functionality:
+
+- `utils/fix-static-symlinks.mjs` - Fix static symlinks in the build output
+- `utils/prepare-assets.mjs` - Prepare assets for deployment
+- `utils/verify-deploy.mjs` - Verify deployment artifacts
+- `utils/update-paths.mjs` - Update paths in built files to use relative paths
+- `utils/runtime-diagnostics.mjs` - Runtime diagnostics for debugging
+- `utils/debug-build.mjs` - Debug build issues
+- `utils/clean-index.mjs` - Clean up index.html
+
 ## Usage Examples
 
 ```bash

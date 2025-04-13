@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Button } from "../../../components/common";
 import { fetchUniverses } from "../../../store/thunks/universeThunks";
 import "../styles/UniverseList.css";
-import { UniverseModal, UniverseDeleteModal } from "../index.js";
+import { UniverseModal, UniverseDeleteModal } from "../index.mjs";
 import UniverseCard from "./UniverseCard";
 
 const UniverseList = () => {

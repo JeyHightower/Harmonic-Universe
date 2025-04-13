@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { useModal } from "../../../contexts/ModalContext.jsx";
-import { fetchUniverseById } from "../../../store/thunks/universeThunks.js";
+import { fetchUniverseById } from "../../../store/thunks/universeThunks.mjs";
 import "../styles/PhysicsPage.css";
 
 const PhysicsPage = () => {

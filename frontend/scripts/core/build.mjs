@@ -3,6 +3,7 @@ import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { updatePaths } from '../utils/update-paths.mjs';
 
 // Get script directory path
 const __filename = fileURLToPath(import.meta.url);
@@ -248,11 +249,24 @@ function verifyBuild() {
   }
 }
 
+// Function to update paths in built files
+function runUpdatePaths() {
+  console.log('Updating paths in built files...');
+  try {
+    // Execute the update-paths script
+    updatePaths(distDir);
+    console.log('✅ Paths updated successfully.');
+  } catch (error) {
+    console.error('Failed to update paths:', error);
+  }
+}
+
 // Run the build process
 ensureDirectories();
 patchRollupNative();
 runBuild();
 addAntIconsFallback();
 verifyBuild();
+runUpdatePaths();
 
 console.log('👍 Build process completed!'); 
