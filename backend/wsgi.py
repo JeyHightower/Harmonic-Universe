@@ -79,7 +79,8 @@ from app import create_app
 # Apply the patch just before application creation
 try:
     from flask_jwt_extended.config import config as jwt_config
-    jwt_config._user_get_jwt_secret_key = _patched_jwt_get_secret_key
+    # Use setattr to bypass linter warnings for internal attributes
+    setattr(jwt_config, '_user_get_jwt_secret_key', _patched_jwt_get_secret_key)
     logger.info("Successfully patched JWT secret key provider")
 except Exception as e:
     logger.error(f"Failed to patch JWT secret key provider: {e}")

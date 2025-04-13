@@ -1,1 +1,0 @@
-import{U as s,F as a,B as o}from"./vendor-tone-classes.909fbaba.js";const t={isBrowser:!0,classes:{URLSearchParams:s,FormData:a,Blob:o},protocols:["http","https","file","blob","url","data"]};export{t as p};

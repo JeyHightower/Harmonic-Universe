@@ -35,9 +35,6 @@ export { registerModalComponent as registerModal, unregisterModalComponent as un
 // Visualization Utilities
 export * from './visualizerUtils';
 
-// Authentication Utilities
-export * from './authFallback';
-
 // Dynamic Import Helper
 export { loadComponent } from './dynamic-import.jsx';
 

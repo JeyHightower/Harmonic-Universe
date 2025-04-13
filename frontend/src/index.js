@@ -1,3 +1,6 @@
+// Import React fixes first to ensure they're applied before any other code
+import './utils/react-fixes';
+
 // This file now only exports route constants to avoid circular dependencies
 import { API_CONFIG } from './utils/config';
 

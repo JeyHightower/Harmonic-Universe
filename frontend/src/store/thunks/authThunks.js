@@ -1,9 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import api from '../../services/api.adapter';
-import {
-  handleOfflineAuthentication,
-  shouldUseFallback,
-} from "../../utils/authFallback";
 import { AUTH_CONFIG } from "../../utils/config.js";
 import {
   loginFailure,
@@ -76,25 +72,7 @@ export const login = createAsyncThunk(
     } catch (error) {
       console.error("Login failed:", error);
 
-      // Check if we should use the fallback authentication
-      if (shouldUseFallback(error)) {
-        console.warn("Using offline authentication fallback for login");
-        const fallbackData = handleOfflineAuthentication();
-
-        // Store tokens from fallback
-        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, fallbackData.token);
-        if (fallbackData.refresh_token) {
-          localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, fallbackData.refresh_token);
-        }
-        if (fallbackData.user) {
-          localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(fallbackData.user));
-        }
-
-        dispatch(loginSuccess(fallbackData));
-        return fallbackData;
-      }
-
-      // Regular error handling if fallback not used
+      // Regular error handling
       dispatch(loginFailure(handleError(error)));
       return rejectWithValue(handleError(error));
     }

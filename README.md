@@ -109,4 +109,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgements
 
-This project was created by the App Academy Capstone Team.
+This project was created by the App Academy Capstone Team. 

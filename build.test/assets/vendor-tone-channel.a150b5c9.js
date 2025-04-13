@@ -1,1 +1,0 @@
-import{ao as e}from"./vendor-tone-util.a79eb63f.js";function n(n){if("undefined"==typeof MessageChannel)e(n);else{var o=new MessageChannel;o.port1.onmessage=function(){return n()},o.port2.postMessage(void 0)}}export{n as c};

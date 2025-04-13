@@ -31,76 +31,14 @@ The application has several entry points:
 - **run.py**: Development server script (for local development)
 - **app.py**: Backward compatibility wrapper (avoid using this directly)
 
-## Deployment Scripts
+## Technology Stack
 
-- **render-build.sh**: Script for building the application on Render
-- **render-start.sh**: Script for starting the application on Render
-
-## Development
-
-For local development:
-
-1. Set up your environment:
-
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
-
-2. Configure PostgreSQL:
-
-   ```bash
-   # Create a PostgreSQL database
-   createdb harmonic_universe
-
-   # Update .env file with your PostgreSQL connection string
-   echo "DATABASE_URL=postgresql://postgres:password@localhost:5432/harmonic_universe" > ../.env
-   ```
-
-3. Run the database setup script:
-
-   ```bash
-   python setup_db.py
-   ```
-
-4. Run the development server:
-
-   ```bash
-   python run.py
-   ```
-
-5. The development server will be available at http://localhost:5001
-
-## Production Deployment
-
-For production deployment:
-
-1. Set environment variables:
-
-   ```bash
-   export FLASK_APP=wsgi.py
-   export FLASK_ENV=production
-   export FLASK_DEBUG=0
-   ```
-
-2. Start with Gunicorn:
-   ```bash
-   gunicorn --workers=2 --timeout=120 --bind=0.0.0.0:5000 wsgi:app
-   ```
-
-## Database
-
-The application uses SQLAlchemy with PostgreSQL exclusively:
-
-- PostgreSQL is required for both development and production environments
-- SQLite is not supported
-- Database connection string is configured via the DATABASE_URL env var
-- Database setup: `python setup_db.py`
-
-## API Documentation
-
-API documentation is available in the docs directory.
+- **Framework**: Flask
+- **ORM**: SQLAlchemy
+- **Database**: PostgreSQL
+- **Authentication**: JWT
+- **API**: RESTful APIs
+- **Documentation**: OpenAPI/Swagger
 
 ## Getting Started
 
@@ -167,36 +105,67 @@ This project requires PostgreSQL for both development and production:
    - The `render.yaml` file configures the PostgreSQL database service
    - Database migrations will be applied during deployment
 
-## API Documentation
+## API Overview
 
-### Authentication
+See the [API.md](docs/API.md) file for detailed API documentation.
 
-- POST `/api/auth/login`
-- POST `/api/auth/register`
-- POST `/api/auth/logout`
+### Core Resources
 
-### Universes
+- **Universes**: Story universes containing scenes, characters, etc.
+- **Scenes**: Individual scenes within a universe
+- **Characters**: Characters that appear in scenes
+- **Notes**: Notes associated with universes, scenes, or characters
 
-- GET `/api/universes`
-- POST `/api/universes`
-- GET `/api/universes/:id`
-- PUT `/api/universes/:id`
-- DELETE `/api/universes/:id`
+## Authentication
 
-### Scenes
+The API uses JWT (JSON Web Tokens) for authentication:
 
-- GET `/api/scenes`
-- POST `/api/scenes`
-- GET `/api/scenes/:id`
-- PUT `/api/scenes/:id`
-- DELETE `/api/scenes/:id`
+1. Register a user: `POST /api/auth/register`
+2. Log in: `POST /api/auth/login`
+3. Use the token in subsequent requests: `Authorization: Bearer <token>`
+
+## Development
+
+### Code Style
+
+- Follow PEP 8 guidelines
+- Use Black for code formatting
+- Use type hints
+
+### Database Migrations
+
+1. Generate migrations after model changes:
+
+```bash
+flask db migrate -m "Description of changes"
+```
+
+2. Apply migrations:
+
+```bash
+flask db upgrade
+```
+
+3. Revert migrations if needed:
+
+```bash
+flask db downgrade
+```
+
+### Testing
+
+Run tests with pytest:
+
+```bash
+pytest
+```
 
 ## Deployment
 
 For deployment to Render.com:
 
-1. Configure PostgreSQL as described above
-2. Push changes to your repository
-3. Render.com will automatically build and deploy the application
+1. Push changes to your repository
+2. Render.com will automatically build and deploy the application
+3. Database migrations will be applied during deployment
 
-The deployment configuration is defined in `render.yaml` in the root directory.
+The deployment configuration is defined in `render.yaml` in the root directory. 

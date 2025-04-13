@@ -1,6 +1,7 @@
 import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import copyReactFixesPlugin from './src/utils/vite-plugins/copy-react-fixes';
 
 // Detect environment
 const isProd = import.meta?.env?.PROD || process.env.NODE_ENV === 'production' || process.env.VITE_APP_ENV === 'production';
@@ -528,7 +529,10 @@ const getBuildConfig = () => {
 
 // Export final config
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    copyReactFixesPlugin(),
+  ],
   base: '/',
   root: path.resolve(__dirname),
 
