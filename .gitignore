@@ -1,81 +1,72 @@
+# Harmonic Universe .gitignore
+# Optimized and organized by sections
+
 # Dependencies
 node_modules/
 /.pnp
 .pnp.js
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Python Dependencies
 __pycache__/
 *.py[cod]
 *$py.class
 .Python
+*.so
+*.egg
+*.egg-info/
+*.pyd
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+
+# Virtual Environments
 env/
 venv/
 ENV/
+.venv/
 .env
 .env.sqlite
-.venv
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Testing
-/coverage
-.coverage
-htmlcov/
-.tox/
-.nox/
-.pytest_cache/
-nosetests.xml
-coverage.xml
-
-# Production & Build
-/build
-/dist
-/.next/
-/out/
-.nuxt
-dist/
-build/
-*.egg-info/
-.installed.cfg
-*.egg
-.eggs/
 
 # Environment Variables
 .env
+.env.*
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
-.env*.local
+!.env.example
 
-# Debug & Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-logs/
-*.log
-debug.log
+# Build & Distribution
+/build/
+/dist/
+build/
+dist/
+*.egg-info/
+.installed.cfg
+.next/
+out/
+.nuxt/
+.vercel/
+.netlify/
+.serverless/
+.dynamodb/
+.fusebox/
 
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-.project
-.classpath
-.settings/
-*.sublime-workspace
-*.sublime-project
-
-# OS
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Cache & Temp
+# Cache & Temporary files
 .cache/
 .temp/
 .tmp/
@@ -84,16 +75,58 @@ Thumbs.db
 .eslintcache
 .stylelintcache
 .parcel-cache
+.pytest_cache/
+.webassets-cache
+.hypothesis/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+pytest.xml
+coverage.xml
 
-# Database
+# IDE and Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
+.tern-port
+.vscode-test
+.\#*
+*.code-workspace
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Log Files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Database files
 *.sqlite
 *.sqlite3
 *.db
 backend/instance/
 instance/
-*.pem
-*.key
-config/secrets.yml
 
 # Media & Assets
 /public/uploads/
@@ -106,129 +139,23 @@ config/secrets.yml
 *.mov
 *.avi
 
-# Config (except examples)
-config/*
-!config/default.js
-!config/example.js
+# Backup & Duplicate files
+*.flaskenv 2
+*.env 2
+* 2.sh
+* 2.py
+*\ 2
+*\ copy*
+*\ (copy)*
+*\ (Finder\'s conflicted copy*
+*\~.*
+.\#*
+*~
+*.bak
+*.orig
+*.old
 
-# Package Files
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-
-# Build Output
-/.next/
-/out/
-.vercel
-.netlify
-.serverless/
-.fusebox/
-.dynamodb/
-.tern-port
-.vscode-test
-.yarn/cache
-.yarn/unplugged
-.yarn/build-state.yml
-.yarn/install-state.gz
-.pnp.*
-
-# Python
-*.pyc
-*.pyo
-*.pyd
-.Python
-*.so
-.Python
-*.egg
-*.egg-info
-dist/
-build/
-eggs/
-parts/
-bin/
-var/
-sdist/
-develop-eggs/
-.installed.cfg
-lib/
-lib64/
-__pycache__/
-
-# React/Next.js
-.next/
-out/
-build/
-.DS_Store
-*.pem
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.vercel
-
-# Project-specific files
-.npmrc
-*.code-workspace
-backend/.dockerignore
-backend/.htaccess
-backend/config/
-backend/render.yaml
-backend/src/
-backend/static/
-backend/wsgi.py
-frontend/.env*
-frontend/.npmrc
-frontend/.preinstallrc
-frontend/.render-buildcommands.yaml
-frontend/config/
-frontend/index.html
-frontend/package.json
-frontend/vite.config.js
-
-# Allow these files
-!backend/requirements.txt
-!backend/app.py
-
-# Virtual Environment
-.env
-.venv
-env/
-venv/
-ENV/
-
-# Logs
-*.log
-
-# Local development
-instance/
-.webassets-cache
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Database
-*.sqlite
-*.db
-
-# Coverage reports
-htmlcov/
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# pyenv
-.python-version
-
-# Sensitive data
+# Secrets & Keys
 *.pem
 *.key
 *.crt
@@ -243,3 +170,31 @@ coverage.xml
 *.p7r
 *.spc
 *.sst
+config/secrets.yml
+
+# Other Config
+config/*
+!config/default.js
+!config/example.js
+
+# Special exceptions - Files to keep
+!backend/requirements.txt
+!backend/app.py
+
+# Python-specific
+.python-version
+.ipynb_checkpoints/
+
+# Project-specific ignore patterns
+backend/.dockerignore
+backend/.htaccess
+backend/config/
+backend/render.yaml
+backend/src/
+backend/static/
+backend/wsgi.py
+frontend/.env*
+frontend/.npmrc
+frontend/.preinstallrc
+frontend/.render-buildcommands.yaml
+frontend/config/
