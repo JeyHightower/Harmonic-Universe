@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vite build",
-    "postbuild": "mkdir -p backend/static && cp -r dist/* backend/static/",
+    "build": "cd frontend && vite build",
+    "postbuild": "mkdir -p backend/static && cp -r frontend/dist/* backend/static/",
     "start": "concurrently \"python backend/wsgi.py\" \"pnpm run dev\"",
     "start-backend": "python backend/wsgi.py",
     "dev": "vite --force --clearScreen=false",
