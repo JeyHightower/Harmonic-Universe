@@ -13,7 +13,8 @@ import traceback
 # Configure Python's import path to include relevant directories
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, BASE_DIR)
-sys.path.insert(0, os.path.join(BASE_DIR, 'backend'))
+# Remove the incorrect import path
+# sys.path.insert(0, os.path.join(BASE_DIR, 'backend'))
 
 # Set up logging
 logging.basicConfig(
@@ -47,14 +48,13 @@ except ImportError:
 application = None
 try:
     try:
-        # Try the production import path first
-        from backend.app import create_app
-        logger.info("Using production import path (backend.app)")
+        # Try importing directly from app instead of backend.app
+        from app import create_app
+        logger.info("Using direct import path (app)")
     except ImportError as e:
-        logger.warning(f"Could not import from backend.app: {e}")
+        logger.warning(f"Could not import from app: {e}")
         
-        # Instead of trying to import from app, which no longer exists,
-        # we'll raise the error to trigger the fallback logic below
+        # Try an alternative import path
         logger.error("Cannot import create_app from any location")
         raise
     
@@ -71,9 +71,9 @@ except Exception as e:
     def create_direct_frontend_app():
         # Find the static directory
         static_locations = [
-            os.path.join(BASE_DIR, 'backend/static'),
-            os.path.join(BASE_DIR, 'frontend/dist'),
-            os.path.join(BASE_DIR, 'static')
+            os.path.join(BASE_DIR, 'static'),
+            os.path.join(BASE_DIR, '..', 'frontend', 'dist'),
+            os.path.join(BASE_DIR, '..', 'static')
         ]
         
         # Choose the first valid location
