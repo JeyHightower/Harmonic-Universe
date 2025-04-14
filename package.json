@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "cd frontend && vite build",
-    "start": "concurrently \"python backend/wsgi.py\" \"pnpm run dev\"",
-    "start-backend": "python backend/wsgi.py",
+    "start": "concurrently \"cd backend && source venv/bin/activate && cross-env FLASK_APP=wsgi.py FLASK_ENV=development FLASK_DEBUG=1 AUTO_CREATE_TABLES=true python wsgi.py\" \"cd frontend && pnpm run dev\"",
+    "start-backend": "cd backend && cross-env FLASK_APP=wsgi.py FLASK_ENV=development FLASK_DEBUG=1 AUTO_CREATE_TABLES=true python3 wsgi.py",
     "dev": "vite --force --clearScreen=false",
     "lint": "eslint . --ignore-pattern \"build.test/**\"",
     "lint:fix": "eslint . --fix --ignore-pattern \"build.test/**\"",
@@ -35,6 +35,7 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
     "eslint": "^9.24.0",
     "eslint-import-resolver-alias": "^1.1.2",
     "eslint-plugin-import": "^2.31.0",

@@ -34,15 +34,12 @@ try:
     import flask
     logger.info(f"Flask is installed (version {flask.__version__})")
 except ImportError:
-    logger.critical("Flask is not installed! Installing now...")
-    import subprocess
-    try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "flask"])
-        import flask
-        logger.info(f"Successfully installed Flask version {flask.__version__}")
-    except Exception as e:
-        logger.critical(f"Failed to install Flask: {e}")
-        raise
+    logger.critical("Flask is not installed! Please install using the virtual environment:")
+    logger.critical("python -m venv venv")
+    logger.critical("source venv/bin/activate")
+    logger.critical("pip install flask")
+    logger.critical("Then run this script again from within the activated virtual environment.")
+    sys.exit(1)
 
 # Import the app factory function and create the application
 application = None

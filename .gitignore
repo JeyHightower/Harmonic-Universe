@@ -198,3 +198,4 @@ frontend/.npmrc
 frontend/.preinstallrc
 frontend/.render-buildcommands.yaml
 frontend/config/
+.qodo
