@@ -8,7 +8,6 @@ import os
 # Removed unused imports
 
 from . import auth_bp
-@auth_bp.route('/login', methods=['POST'])
 @auth_bp.route('/validate', methods=['POST'])
 @jwt_required()
 def validate_token():

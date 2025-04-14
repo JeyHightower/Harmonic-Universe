@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 WSGI entry point for Harmonic Universe backend
 
@@ -9,6 +10,19 @@ import os
 import logging
 import sys
 import traceback
+from pathlib import Path
+
+# Load environment variables from .env file early
+try:
+    from dotenv import load_dotenv
+    dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+    if os.path.exists(dotenv_path):
+        load_dotenv(dotenv_path)
+        print(f"Loaded environment variables from {dotenv_path}")
+    else:
+        print(f"Warning: No .env file found at {dotenv_path}")
+except ImportError:
+    print("Warning: python-dotenv not installed. Environment variables may not be loaded properly.")
 
 # Configure Python's import path to include relevant directories
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -32,7 +46,8 @@ logger.info(f"sys.path: {sys.path}")
 # Check if Flask is installed
 try:
     import flask
-    logger.info(f"Flask is installed (version {flask.__version__})")
+    from importlib.metadata import version
+    logger.info(f"Flask is installed (version {version('flask')})")
 except ImportError:
     logger.critical("Flask is not installed! Please install using the virtual environment:")
     logger.critical("python -m venv venv")

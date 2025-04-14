@@ -39,20 +39,24 @@ except ImportError:
 
 # Initialize extensions
 jwt = JWTManager()
-limiter = Limiter(key_func=get_remote_address)
+limiter = Limiter(
+    key_func=get_remote_address,
+    storage_uri="memory://",
+    storage_options={}
+)
 
 class DummyCache:
     def __init__(self, *args, **kwargs):
         pass
-    
+
     def init_app(self, app):
         pass
-    
+
     def cached(self, *args, **kwargs):
         def decorator(f):
             return f
         return decorator
-    
+
     def memoize(self, *args, **kwargs):
         def decorator(f):
             return f
@@ -81,7 +85,7 @@ def setup_static_folder(app):
             '/opt/render/project/src/static',
             '/opt/render/project/src/backend/static'
         ]
-        
+
         for folder in possible_static_folders:
             if folder and os.path.exists(folder) and os.path.isdir(folder):
                 app.static_folder = folder
@@ -95,7 +99,7 @@ def setup_cors_handlers(app):
         if request.method == "OPTIONS":
             response = app.make_default_options_response()
             origin = request.headers.get('Origin', '')
-            
+
             # Set appropriate CORS headers
             if origin and origin in app.config['CORS_ORIGINS']:
                 response.headers.add('Access-Control-Allow-Origin', origin)
@@ -107,33 +111,33 @@ def setup_cors_handlers(app):
                 response.headers.add('Access-Control-Allow-Origin', app.config['CORS_ORIGINS'][0])
             else:
                 response.headers.add('Access-Control-Allow-Origin', '*')
-            
+
             response.headers.add('Access-Control-Allow-Methods', ', '.join(app.config['CORS_METHODS']))
             response.headers.add('Access-Control-Allow-Headers', ', '.join(app.config['CORS_HEADERS']))
             response.headers.add('Access-Control-Max-Age', str(app.config['CORS_MAX_AGE']))
-            
+
             if app.config.get('CORS_SUPPORTS_CREDENTIALS', False):
                 response.headers.add('Access-Control-Allow-Credentials', 'true')
-            
+
             return response
 
     @app.route('/api/<path:path>', methods=['OPTIONS'])
     def cors_preflight(path):
         response = app.make_default_options_response()
         origin = request.headers.get('Origin', '')
-        
+
         if origin:
             response.headers.add('Access-Control-Allow-Origin', origin)
         else:
             response.headers.add('Access-Control-Allow-Origin', app.config['CORS_ORIGINS'][0] if app.config['CORS_ORIGINS'] else '*')
-            
+
         response.headers.add('Access-Control-Allow-Methods', ', '.join(app.config['CORS_METHODS']))
         response.headers.add('Access-Control-Allow-Headers', ', '.join(app.config['CORS_HEADERS']))
         response.headers.add('Access-Control-Max-Age', str(app.config['CORS_MAX_AGE']))
-        
+
         if app.config.get('CORS_SUPPORTS_CREDENTIALS', False):
             response.headers.add('Access-Control-Allow-Credentials', 'true')
-        
+
         return response, 200
 
 def setup_error_handlers(app):
@@ -141,12 +145,12 @@ def setup_error_handlers(app):
     @app.errorhandler(404)
     def not_found_error(error):
         return {"error": "Not found"}, 404
-    
+
     @app.errorhandler(500)
     def internal_error(error):
         db.session.rollback()
         return {"error": "Internal server error"}, 500
-    
+
     @app.errorhandler(429)
     def ratelimit_handler(e):
         return {"error": "Rate limit exceeded"}, 429
@@ -196,7 +200,7 @@ def setup_routes(app):
     @app.route(app.config['HEALTH_CHECK_ENDPOINT'])
     def health_check():
         return {"status": "healthy"}, 200
-    
+
     # Favicon route
     @app.route('/favicon.ico')
     def favicon() -> Response:
@@ -205,7 +209,7 @@ def setup_routes(app):
             'favicon.ico',
             mimetype='image/vnd.microsoft.icon'
         )
-    
+
     # Debug static files endpoint
     @app.route('/api/debug/static')
     def debug_static():
@@ -220,24 +224,24 @@ def setup_routes(app):
                         'path': rel_path,
                         'size': os.path.getsize(file_path)
                     })
-        
+
         return jsonify({
             'static_folder': static_dir,
             'static_url_path': app.static_url_path,
             'files': files,
             'static_folder_exists': os.path.exists(static_dir)
         })
-    
+
     # SPA route handler
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
     def react_root(path: str = '') -> Union[Response, tuple[Response, int]]:
         if path.startswith('api/'):
             return jsonify({"error": "Not found"}), 404
-            
+
         if path == 'favicon.ico':
             return send_from_directory(cast(str, app.static_folder), 'favicon.ico')
-        
+
         return app.send_static_file('index.html')
 
 def create_app(config_name='default'):
@@ -245,27 +249,27 @@ def create_app(config_name='default'):
     # Configure static folder
     static_folder = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'frontend', 'dist'))
     static_url_path = '/'
-    
+
     # Create Flask app
     app = Flask(__name__, static_folder=static_folder, static_url_path=static_url_path)
-    
+
     # Log static folder configuration
     print(f"Static folder set to: {app.static_folder}")
     print(f"Static URL path set to: {app.static_url_path}")
-    
+
     # Set up static folder with fallbacks
     setup_static_folder(app)
-    
+
     # Basic app configuration
     app.url_map.strict_slashes = False
     app.config.from_object(config[config_name])
-    
+
     # Initialize extensions
     db.init_app(app)
     jwt.init_app(app)
     limiter.init_app(app)
     cache.init_app(app)
-    
+
     # Apply MIME type and Render fixes if available
     if FIXES_AVAILABLE:
         print("Applying fixes for MIME types and Render compatibility...")
@@ -275,55 +279,54 @@ def create_app(config_name='default'):
                 apply_render_fixes(app)
         except Exception as e:
             print(f"WARNING: Error applying fixes: {str(e)}")
-    
+
     # Configure CORS
     @limiter.request_filter
     def options_request_filter():
         return request.method == "OPTIONS"
-    
+
     exempt_methods = ["OPTIONS"]
-    
+
     @jwt.token_in_blocklist_loader
     def check_if_token_in_blocklist(jwt_header, jwt_payload):
         if request.method in exempt_methods:
             return False
         return False
-    
+
     CORS(app, resources={
         r"/api/*": {
-            "origins": app.config['CORS_ORIGINS'],
-            "methods": app.config['CORS_METHODS'],
-            "allow_headers": app.config['CORS_HEADERS'],
-            "expose_headers": app.config['CORS_EXPOSE_HEADERS'],
-            "max_age": app.config['CORS_MAX_AGE'],
-            "supports_credentials": True,
-            "allow_credentials": True
+            "origins": ["http://localhost:5173", "http://127.0.0.1:5173"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "expose_headers": ["Content-Type", "Authorization"],
+            "max_age": 86400,
+            "supports_credentials": True
         }
     })
-    
+
     # Set up handlers and routes
     setup_cors_handlers(app)
     setup_error_handlers(app)
     setup_jwt_handlers(app)
     setup_routes(app)
-    
+
     # Register API blueprint
     try:
         app.register_blueprint(api_bp)
     except ImportError as e:
         print(f"Error importing API routes: {e}")
-    
+
     # Initialize database models
     with app.app_context():
         from .api.models import (
             User, Note, Universe, Physics2D, Physics3D, SoundProfile,
             AudioSample, MusicPiece, Harmony, MusicalTheme, Character
         )
-        
+
         if app.config.get('ENV') == 'development' and os.environ.get('AUTO_CREATE_TABLES') == 'true':
             db.create_all()
             print("Database tables created automatically (development mode)")
         else:
             print("Skipping automatic table creation. Use setup_db.py to manage database.")
-    
+
     return app
