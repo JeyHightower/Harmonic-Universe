@@ -6,7 +6,7 @@ import {
   loginStart,
   loginSuccess,
   updateUser,
-} from "../slices/authSlice.js";
+} from "../slices/authSlice.mjs";
 
 const handleError = (error) => {
   console.error("API Error:", error);

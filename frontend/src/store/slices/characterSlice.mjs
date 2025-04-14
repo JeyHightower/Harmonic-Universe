@@ -7,7 +7,7 @@ import {
   updateCharacter,
   deleteCharacter
 } from '../thunks/characterThunks';
-import { IS_PRODUCTION } from '../../utils/config.mjs";
+import { IS_PRODUCTION } from '../../utils/config.mjs';
 
 const initialState = {
   characters: [],

@@ -1,7 +1,7 @@
 import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import copyReactFixesPlugin from './src/utils/vite-plugins/copy-react-fixes';
+import copyReactFixesPlugin from './src/utils/vite-plugins/copy-react-fixes.mjs';
 
 // Detect environment
 const isProd = import.meta?.env?.PROD || process.env.NODE_ENV === 'production' || process.env.VITE_APP_ENV === 'production';
@@ -488,6 +488,7 @@ const getBuildConfig = () => {
     sourcemap: !isProd,
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
+      input: path.resolve(__dirname, 'index.html'),
       output: {
         entryFileNames: 'assets/[name].[hash].js',
         chunkFileNames: 'assets/[name].[hash].js',
@@ -535,13 +536,12 @@ export default defineConfig({
   ],
   base: '/',
   root: path.resolve(__dirname),
+  build: getBuildConfig(),
 
   define: {
     'process.env.NODE_ENV': JSON.stringify(isProd ? 'production' : 'development'),
     'process.env.VITE_APP_ENV': JSON.stringify(isProd ? 'production' : 'development')
   },
-
-  build: getBuildConfig(),
 
   resolve: {
     mainFields: ['browser', 'module', 'main'],

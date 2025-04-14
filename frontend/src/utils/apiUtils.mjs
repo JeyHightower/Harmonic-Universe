@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_CONFIG, AUTH_CONFIG } from './config.mjs";
+import { API_CONFIG, AUTH_CONFIG } from './config.mjs';
 
 // Keep track of the last request time for specific endpoints
 const lastRequestTimes = {};
