@@ -22,13 +22,13 @@ const handleError = (error) => {
 const cleanupAuthState = () => {
   // Remove the token
   localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-  
+
   // Remove user data
   localStorage.removeItem(AUTH_CONFIG.USER_KEY);
-  
+
   // Remove refresh token
   localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-  
+
   // Remove any error flags
   localStorage.removeItem("token_verification_failed");
 };
@@ -43,23 +43,23 @@ export const login = createAsyncThunk(
 
       // Clean up any previous failed auth state
       localStorage.removeItem("token_verification_failed");
-      
+
       const response = await api.auth.login(credentials);
-      
+
       if (!response.success) {
         throw new Error(response.message || "Login failed");
       }
-      
+
       // Store the token in localStorage - use the same key as in config
       if (response.data?.token) {
         localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.token);
       }
-      
+
       // Store user data if available
       if (response.data?.user) {
         localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(response.data.user));
       }
-      
+
       // Prepare data for state update
       const authData = {
         user: response.data.user,
@@ -285,21 +285,21 @@ export const logout = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const now = Date.now();
-      
+
       // Prevent rapid multiple logout attempts
       if (now - lastLogoutThunkAttempt < LOGOUT_THUNK_COOLDOWN) {
         console.log("Throttled logout thunk - too many requests");
         // Just clean up local state without API call
         cleanupAuthState();
-        return { 
-          message: "Logged out successfully (local only)", 
-          throttled: true 
+        return {
+          message: "Logged out successfully (local only)",
+          throttled: true
         };
       }
-      
+
       // Update timestamp
       lastLogoutThunkAttempt = now;
-      
+
       // Try to call the logout API endpoint first
       try {
         await api.auth.logout();
@@ -313,17 +313,17 @@ export const logout = createAsyncThunk(
         }
         // Continue with local logout even if API call fails
       }
-      
+
       // Clean up all auth state regardless of API result
       cleanupAuthState();
-      
+
       return { message: "Logged out successfully" };
     } catch (error) {
       console.error("Logout thunk encountered an error:", error);
-      
+
       // Still clean up local state even on error
       cleanupAuthState();
-      
+
       return rejectWithValue({
         message: error.message || "Logout failed, but local state was cleared",
         status: error.response?.status || 500,
@@ -337,7 +337,7 @@ export const loginWithToken = createAsyncThunk(
   async (loginData, { dispatch, rejectWithValue }) => {
     try {
       dispatch(loginStart());
-      
+
       const response = await api.auth.login(loginData);
       // ... existing code ...
     } catch (error) {
@@ -363,29 +363,32 @@ export const validateToken = createAsyncThunk(
           status: 401,
         });
       }
-      
+
       // Proceed with validation
+      console.debug("Attempting to validate token...");
       const response = await api.auth.validateToken();
-      
+      console.debug("API response for token validation:", response);
+      console.debug("Token validation response:", response);
+
       if (!response.success) {
         throw new Error(response.message || "Token validation failed");
       }
-      
+
       return response.data;
     } catch (error) {
       console.error("Token validation error:", error);
-      
+
       // Clear token on validation failure
-      if (error.response?.status === 401 || 
+      if (error.response?.status === 401 ||
           (error.message && (
-            error.message.includes("Token validation failed") || 
+            error.message.includes("Token validation failed") ||
             error.message.includes("Signature verification") ||
             error.message.includes("Invalid token")
           ))) {
         localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
         localStorage.removeItem(AUTH_CONFIG.USER_KEY);
       }
-      
+
       return rejectWithValue({
         message: error.response?.data?.message || error.message || "Token validation failed",
         status: error.response?.status || 401,

@@ -3,6 +3,8 @@ import { useSelector } from "react-redux";
 import { Navigate, useLocation } from "react-router-dom";
 import { Suspense, useTransition, useState, useEffect } from "react";
 import { AUTH_CONFIG, ROUTES } from "../../utils";
+import { validateToken } from "../../store/thunks/authThunks";
+import { useDispatch } from "react-redux";
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading, user } = useSelector((state) => state.auth);
