@@ -1,9 +1,11 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
+from flask_migrate import Migrate
 from datetime import datetime
 
 db = SQLAlchemy()
 jwt = JWTManager()
+migrate = Migrate()
 
 # In-memory token blocklist - in production, replace with a database or Redis
 token_blocklist = set()

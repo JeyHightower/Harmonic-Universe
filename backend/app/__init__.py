@@ -10,9 +10,9 @@ import click
 from pathlib import Path
 from typing import Optional, Union, cast, Any
 from logging.handlers import RotatingFileHandler
+from .config import Config
 
-from .config import config
-from .extensions import db, jwt
+from .extensions import db, migrate, jwt
 from .api.routes import api_bp
 from .api.routes.auth import auth_bp
 from .api.routes.user import user_bp
@@ -325,12 +325,6 @@ def create_app(config_class=Config):
     setup_error_handlers(app)
     setup_jwt_handlers(app)
     setup_routes(app)
-
-    # Register API blueprint
-    try:
-        app.register_blueprint(api_bp)
-    except ImportError as e:
-        print(f"Error importing API routes: {e}")
 
     # Initialize database models
     with app.app_context():
