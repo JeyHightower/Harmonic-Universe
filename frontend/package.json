@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --force --clearScreen=false",
+    "dev": "vite --force --clearScreen=false --host --cors",
+    "dev:debug": "VITE_DEBUG=true vite --force --clearScreen=false --host --cors",
     "build": "NODE_ENV=production CI=false VITE_APP_ENV=production vite build --emptyOutDir",
     "postbuild": "mkdir -p ../backend/static && cp -r dist/* ../backend/static/ || echo 'Note: Could not copy to backend/static'",
     "preview": "vite preview",

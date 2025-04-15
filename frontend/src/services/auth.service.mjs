@@ -174,7 +174,7 @@ export const logout = async () => {
  */
 export async function validateToken(token = null) {
   if (!token) {
-    token = localStorage.getItem('token');
+    token = localStorage.getItem(TOKEN_KEY);
   }
   
   if (!token) {
@@ -182,6 +182,12 @@ export async function validateToken(token = null) {
   }
   
   try {
+    // Check if token is a demo token using demoUserService
+    if (demoUserService.isDemoSession()) {
+      console.log('Validating demo token - considered valid without server check');
+      return { valid: true, demo: true };
+    }
+    
     // Use the correct endpoint from authEndpoints
     const validateEndpoint = authEndpoints.validate;
     console.log('Using validate endpoint:', validateEndpoint);
@@ -194,7 +200,9 @@ export async function validateToken(token = null) {
           'Authorization': `Bearer ${token}`, // In header
           'Content-Type': 'application/json' 
         },
-        withCredentials: true // Ensure cookies are sent and received
+        withCredentials: true, // Ensure cookies are sent and received
+        // Don't retry validation to avoid loops
+        maxRetries: 0
       }
     );
     
@@ -203,13 +211,13 @@ export async function validateToken(token = null) {
     if (response.data && response.data.valid) {
       // If user data was returned, update it in storage
       if (response.data.user) {
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        localStorage.setItem(USER_KEY, JSON.stringify(response.data.user));
       }
       return { valid: true, user: response.data.user };
     } else if (response.valid) {
       // Handle different response format
       if (response.user) {
-        localStorage.setItem('user', JSON.stringify(response.user));
+        localStorage.setItem(USER_KEY, JSON.stringify(response.user));
       }
       return { valid: true, user: response.user };
     } else {
@@ -250,9 +258,12 @@ export async function validateToken(token = null) {
  * @returns {Promise<ApiResponse>} - The API response
  */
 export async function refreshToken() {
-  const token = localStorage.getItem('token');
+  // Use the token constants imported at the top of the file
+  const token = localStorage.getItem(TOKEN_KEY);
+  const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
   
   if (!token) {
+    console.warn('refreshToken: No token available to refresh');
     return { success: false, message: 'No token to refresh' };
   }
   
@@ -262,42 +273,96 @@ export async function refreshToken() {
     const refreshEndpoint = authEndpoints.refresh;
     console.log('Using refresh endpoint:', refreshEndpoint);
     
-    // Send token in multiple ways to ensure it's received
+    // Send token in request, including the refreshToken if available
+    const requestBody = { 
+      token,
+      refresh_token: refreshToken || undefined
+    };
+    
     const response = await httpClient.post(refreshEndpoint, 
-      { token }, // In body
+      requestBody,
       { 
         headers: { 
           'Authorization': `Bearer ${token}` // In header
         },
-        withCredentials: true // Ensure cookies are sent
+        withCredentials: true, // Ensure cookies are sent
+        // Don't retry this request to avoid loops
+        maxRetries: 0
       }
     );
     
-    if (response && response.data && response.data.token) {
-      console.log('Token refreshed successfully');
-      localStorage.setItem('token', response.data.token);
+    // Properly validate the response structure before using it
+    if (response && typeof response === 'object') {
+      // Handle success response formats
+      const newToken = response.token || (response.data && response.data.token);
+      const userData = response.user || (response.data && response.data.user);
       
-      // If user data was returned, update it
-      if (response.data.user) {
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+      if (newToken) {
+        console.log('Token refreshed successfully');
+        // Store the new token in localStorage using the constant keys
+        localStorage.setItem(TOKEN_KEY, newToken);
+        
+        // If user data was returned, update it
+        if (userData) {
+          localStorage.setItem(USER_KEY, JSON.stringify(userData));
+        }
+        
+        // Clean up any error flags
+        localStorage.removeItem(TOKEN_VERIFICATION_FAILED);
+        
+        // Dispatch Redux action to update auth state if available
+        if (typeof window !== 'undefined' && window.store && window.store.dispatch) {
+          try {
+            window.store.dispatch({
+              type: 'auth/tokenRefreshed',
+              payload: { token: newToken, user: userData }
+            });
+          } catch (reduxError) {
+            console.error('Error dispatching to Redux store:', reduxError);
+          }
+        }
+        
+        return { 
+          success: true, 
+          data: { 
+            token: newToken, 
+            user: userData
+          } 
+        };
       }
-      
-      return { 
-        success: true, 
-        data: { 
-          token: response.data.token, 
-          user: response.data.user
-        } 
-      };
-    } else {
-      console.error('Invalid response format from token refresh endpoint');
-      return { 
-        success: false, 
-        message: 'Invalid response from token refresh endpoint' 
-      };
     }
+    
+    // If we get here, the response didn't contain a valid token
+    console.error('Invalid response format from token refresh endpoint', response);
+    return { 
+      success: false, 
+      message: 'Invalid response from token refresh endpoint',
+      data: response 
+    };
   } catch (error) {
     console.error('Error refreshing token:', error);
+    // Use safe error handling that won't throw additional errors
+    if (error && error.response && error.response.status === 401) {
+      // 401 means token is invalid or expired, clear auth data
+      clearAuthData();
+      
+      // Notify Redux of the auth failure if available
+      if (typeof window !== 'undefined' && window.store && window.store.dispatch) {
+        try {
+          window.store.dispatch({ type: 'auth/authFailure', payload: 'Token expired or invalid' });
+        } catch (reduxError) {
+          console.error('Error dispatching to Redux store:', reduxError);
+        }
+      }
+      
+      return {
+        success: false,
+        status: 401,
+        message: 'Invalid or expired token',
+        originalError: error
+      };
+    }
+    
     return responseHandler.handleError(error);
   }
 }

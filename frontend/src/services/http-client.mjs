@@ -5,35 +5,9 @@
 
 import axios from 'axios';
 import { API_SERVICE_CONFIG } from './config';
-
-// Import auth service - fixing missing import
-import authService from './auth.service';
-
-/**
- * Safe logging function that won't throw errors
- */
-const log = (category, message, data = {}) => {
-  try {
-    if (!import.meta.env.PROD) {
-      console.log(`[${category.toUpperCase()}] ${message}`, data || '');
-    }
-  } catch (error) {
-    // Fallback if there's any issue with logging
-    console.log(`[API] ${message}`);
-  }
-};
-
-/**
- * Safe error logging function
- */
-const logError = (message, error) => {
-  try {
-    console.error(`[API ERROR] ${message}`, error);
-  } catch (logError) {
-    // Ultra-safe fallback
-    console.error(message);
-  }
-};
+import { log, logError } from '../utils/logger';
+import { authService } from './auth.service.mjs';
+import { demoUserService } from './demo-user.service.mjs';
 
 // Create axios instance with default config
 const axiosInstance = axios.create({
@@ -130,6 +104,41 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
+    // Special handling for rate limiting (429)
+    if (error.response && error.response.status === 429) {
+      console.warn('Rate limit (429) detected, implementing backoff strategy');
+      
+      // Get retry after header or use default
+      const retryAfter = error.response.headers?.['retry-after'];
+      let delayMs = 3000; // Default 3 seconds
+      
+      if (retryAfter) {
+        // Parse the retry-after header (seconds or date)
+        if (/^\d+$/.test(retryAfter)) {
+          delayMs = parseInt(retryAfter) * 1000;
+        } else {
+          const retryDate = new Date(retryAfter);
+          delayMs = retryDate.getTime() - Date.now();
+        }
+      }
+      
+      // Add jitter to avoid thundering herd
+      delayMs += Math.random() * 1000;
+      
+      console.log(`Rate limited. Waiting ${delayMs}ms before retrying...`);
+      
+      // Wait and retry
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+      
+      // If this was a token refresh request, mark it in localStorage to prevent rapid retries
+      if (originalRequest.url.includes('/auth/refresh')) {
+        localStorage.setItem('lastTokenRefreshAttempt', Date.now().toString());
+        localStorage.setItem('tokenRefreshRateLimited', 'true');
+      }
+      
+      return axiosInstance(originalRequest);
+    }
+    
     // Don't retry if we've already tried to refresh
     if (originalRequest._retry) {
       console.error('Request already retried once, failing:', originalRequest.url);
@@ -205,26 +214,160 @@ axiosInstance.interceptors.response.use(
 async function refreshTokenAndRetry() {
   console.log('Refreshing token...');
   try {
-    // Get current token from storage
-    const token = localStorage.getItem('token') || '';
+    // Get current token from storage - use the consistent key name from config
+    const token = localStorage.getItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY) || '';
     
     if (!token) {
       console.error('No token found in storage to refresh');
       throw new Error('No token available to refresh');
     }
     
-    // Use authService directly instead of creating a new axios instance
-    const refreshResult = await authService.refreshToken();
+    // Check if we're in a rate-limited state
+    const lastRefreshAttempt = localStorage.getItem('lastTokenRefreshAttempt');
+    const now = Date.now();
     
-    if (refreshResult && refreshResult.success && refreshResult.data && refreshResult.data.token) {
-      console.log('Token refreshed successfully');
-      return refreshResult.data;
-    } else {
-      console.error('Invalid response from token refresh:', refreshResult);
-      throw new Error('Invalid response from token refresh');
+    if (lastRefreshAttempt) {
+      const timeSinceLastAttempt = now - parseInt(lastRefreshAttempt);
+      // If we tried to refresh less than 5 seconds ago, wait before trying again
+      if (timeSinceLastAttempt < 5000) {
+        console.log(`Rate limiting token refresh - will wait ${5000 - timeSinceLastAttempt}ms to prevent 429 errors`);
+        await new Promise(resolve => setTimeout(resolve, 5000 - timeSinceLastAttempt));
+      }
     }
+    
+    // Update the last attempt timestamp
+    localStorage.setItem('lastTokenRefreshAttempt', now.toString());
+    
+    // Check if this is a demo token and handle differently
+    if (token.includes('demo')) {
+      console.log('Demo token detected, using demo refresh flow');
+      // For demo tokens, we'll just pretend to refresh
+      const isDemoSession = typeof demoUserService !== 'undefined' && 
+                            typeof demoUserService.isDemoSession === 'function' && 
+                            demoUserService.isDemoSession();
+      
+      if (isDemoSession) {
+        console.log('Confirmed demo session, returning existing token');
+        try {
+          const demoUser = JSON.parse(localStorage.getItem(API_SERVICE_CONFIG.AUTH.USER_KEY) || '{}');
+          
+          // Dispatch Redux action if store is available
+          if (typeof window !== 'undefined' && window.store && window.store.dispatch) {
+            try {
+              window.store.dispatch({
+                type: 'auth/tokenRefreshed',
+                payload: { token, user: demoUser }
+              });
+            } catch (reduxError) {
+              console.error('Error dispatching to Redux store:', reduxError);
+            }
+          }
+          
+          return {
+            token: token, // Keep using the same token
+            user: demoUser
+          };
+        } catch (parseError) {
+          console.error('Error parsing demo user from localStorage', parseError);
+          // Even with error, return a valid response
+          return { token };
+        }
+      }
+    }
+    
+    // Use authService for normal token refresh
+    console.log('Calling authService.refreshToken()');
+    const refreshResult = await authService.refreshToken();
+    console.log('Refresh result:', refreshResult);
+    
+    // Handle different response formats
+    if (refreshResult) {
+      if (refreshResult.success && refreshResult.data && refreshResult.data.token) {
+        console.log('Token refreshed successfully via authService');
+        
+        // Notify Redux if available
+        if (typeof window !== 'undefined' && window.store && window.store.dispatch) {
+          try {
+            window.store.dispatch({
+              type: 'auth/tokenRefreshed',
+              payload: { 
+                token: refreshResult.data.token, 
+                user: refreshResult.data.user 
+              }
+            });
+          } catch (reduxError) {
+            console.error('Error dispatching to Redux store:', reduxError);
+          }
+        }
+        
+        return refreshResult.data;
+      } else if (refreshResult.token) {
+        // Direct token in response
+        console.log('Token received directly in response');
+        
+        // Notify Redux if available
+        if (typeof window !== 'undefined' && window.store && window.store.dispatch) {
+          try {
+            window.store.dispatch({
+              type: 'auth/tokenRefreshed',
+              payload: { 
+                token: refreshResult.token, 
+                user: refreshResult.user 
+              }
+            });
+          } catch (reduxError) {
+            console.error('Error dispatching to Redux store:', reduxError);
+          }
+        }
+        
+        return { token: refreshResult.token, user: refreshResult.user };
+      }
+    }
+    
+    // If we get here, the refresh was not successful
+    console.error('Invalid response from token refresh:', refreshResult);
+    
+    // Notify Redux of the auth failure if available
+    if (typeof window !== 'undefined' && window.store && window.store.dispatch) {
+      try {
+        window.store.dispatch({ 
+          type: 'auth/authFailure', 
+          payload: 'Token refresh failed' 
+        });
+      } catch (reduxError) {
+        console.error('Error dispatching to Redux store:', reduxError);
+      }
+    }
+    
+    throw new Error('Invalid response from token refresh');
   } catch (error) {
     console.error('Error in refreshTokenAndRetry:', error);
+    
+    // Notify Redux of the auth failure if available
+    if (typeof window !== 'undefined' && window.store && window.store.dispatch) {
+      try {
+        window.store.dispatch({ 
+          type: 'auth/authFailure', 
+          payload: error.message || 'Token refresh failed' 
+        });
+      } catch (reduxError) {
+        console.error('Error dispatching to Redux store:', reduxError);
+      }
+    }
+    
+    // Clear auth data on failure
+    try {
+      if (typeof authService !== 'undefined' && typeof authService.clearAuthData === 'function') {
+        authService.clearAuthData();
+      } else {
+        // Fallback clear
+        localStorage.removeItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
+        localStorage.removeItem(API_SERVICE_CONFIG.AUTH.USER_KEY);
+      }
+    } catch (clearError) {
+      console.error('Error clearing auth data:', clearError);
+    }
+    
     throw error;
   }
 }

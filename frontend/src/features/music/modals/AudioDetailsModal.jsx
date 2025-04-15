@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Button from "../../../components/common/Button";
 import Modal from "../../../components/common/Modal";
 import Spinner from "../../../components/common/Spinner";
-import "../styles/Modal.css";
+import "../../../styles/Modal.css";
 import { audioService } from "../../../services";
 
 /**

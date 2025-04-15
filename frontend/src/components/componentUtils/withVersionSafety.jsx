@@ -6,11 +6,14 @@ export const withVersionSafety = (IconComponent) => {
 
     const SafeIcon = (props) => {
         try {
-            return <IconComponent {...props} />;
+            return React.createElement(IconComponent, props);
         } catch (e) {
             if (e.message && e.message.includes('version')) {
                 console.warn('Caught version error in icon render');
-                return <span className={`ant-icon-fallback ${props.className || ''}`} style={props.style} />;
+                return React.createElement('span', {
+                    className: `ant-icon-fallback ${props.className || ''}`,
+                    style: props.style
+                });
             }
             throw e;
         }

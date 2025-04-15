@@ -57,13 +57,23 @@ const SignupModal = ({ onClose }) => {
           navigate("/dashboard");
         }, 500);
       } else {
-        throw new Error(
-          resultAction.error.message || "Signup failed. Please try again."
-        );
+        // Extract error message safely from the rejected action
+        const errorMessage = 
+          (typeof resultAction.payload === 'string' ? resultAction.payload : 
+          (resultAction.payload?.message || 
+           resultAction.error?.message || 
+           "Signup failed. Please try again."));
+        
+        throw new Error(errorMessage);
       }
     } catch (error) {
       log("auth", "Signup failed", { error: error.message });
-      message.error(error.message || "Signup failed. Please try again.");
+      // Ensure we're displaying a string error message
+      const errorMsg = typeof error === 'object' ? 
+        (error.message || "Signup failed. Please try again.") : 
+        (error || "Signup failed. Please try again.");
+      
+      message.error(errorMsg);
     } finally {
       setLoading(false);
     }

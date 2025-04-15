@@ -7,6 +7,8 @@ import PropTypes from "prop-types";
 import store, { persistor } from "./store";
 import { Navigation } from "./components";
 import ModalProvider from "./components/modals/ModalProvider";
+import ErrorBoundary from "./components/ErrorBoundary";
+import NetworkErrorHandler from "./components/NetworkErrorHandler";
 import routes from "./routes/index.jsx";
 import { checkAuthState, logout } from "./store/slices/authSlice";
 import { authService } from "./services/auth.service.mjs";
@@ -130,12 +132,12 @@ const AppContent = () => {
     return <LoadingPage />;
   }
 
-  // Show error if there was an auth check problem
+  // Show error if there was an auth check problem - ensure we don't render an object directly
   if (error && !loading) {
     return (
       <div className="auth-error">
         <h2>Authentication Error</h2>
-        <p>{error}</p>
+        <p>{typeof error === 'string' ? error : 'Failed to authenticate'}</p>
         <button onClick={() => {
           // Use centralized auth cleanup
           authService.clearAuthData();
@@ -151,27 +153,23 @@ const AppContent = () => {
 
 // The main App component
 function App() {
-  const [hasError, setHasError] = useState(false);
-
-  if (hasError) {
-    return <ErrorFallback />;
-  }
-
-  try {
-    return (
-      <Provider store={store}>
-        <PersistGate loading={<LoadingPage />} persistor={persistor}>
-          <ModalProvider>
-            <AppContent />
-          </ModalProvider>
-        </PersistGate>
-      </Provider>
-    );
-  } catch (error) {
-    console.error("Error rendering App:", error);
-    setHasError(true);
-    return <ErrorFallback />;
-  }
+  return (
+    <ErrorBoundary>
+      <NetworkErrorHandler>
+        <Provider store={store}>
+          <PersistGate loading={<LoadingPage />} persistor={persistor}>
+            <ErrorBoundary>
+              <ModalProvider>
+                <ErrorBoundary>
+                  <AppContent />
+                </ErrorBoundary>
+              </ModalProvider>
+            </ErrorBoundary>
+          </PersistGate>
+        </Provider>
+      </NetworkErrorHandler>
+    </ErrorBoundary>
+  );
 }
 
 export default App;

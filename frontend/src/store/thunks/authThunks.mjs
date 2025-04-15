@@ -5,16 +5,26 @@ import {
   loginFailure,
   loginStart,
   loginSuccess,
+  logoutSuccess,
   updateUser,
+  registerSuccess,
+  registerFailure,
+  validateTokenStart,
+  validateTokenSuccess,
+  validateTokenFailure,
 } from "../slices/authSlice.mjs";
+import { demoUserService } from "../../services/demo-user.service.mjs";
 
 const handleError = (error) => {
   console.error("API Error:", error);
+  // Format error to ensure we don't return a complex object that could be accidentally rendered
+  const errorMessage = error.response?.data?.message || error.message || "An error occurred";
   return {
-    message:
-      error.response?.data?.message || error.message || "An error occurred",
-    status: error.response?.status,
-    data: error.response?.data,
+    message: errorMessage,
+    status: error.response?.status || 500,
+    // Only include essential data, not the full response which might be complex
+    data: typeof error.response?.data === 'string' ? error.response?.data : 
+          (error.response?.data?.error || errorMessage)
   };
 };
 
@@ -106,7 +116,9 @@ export const register = createAsyncThunk(
       return response.data;
     } catch (error) {
       console.error("Registration failed:", error);
-      return rejectWithValue(handleError(error));
+      // Convert to a simple string message for rejectWithValue
+      const errorData = handleError(error);
+      return rejectWithValue(errorData.message || "Registration failed");
     }
   }
 );
@@ -358,8 +370,9 @@ export const validateToken = createAsyncThunk(
         return rejectWithValue("No token found");
       }
       
-      // Handle demo tokens locally
-      if (token.startsWith('demo-') || token.includes('demo')) {
+      // Handle demo tokens locally by checking if it's a demo token using demoUserService
+      const isDemoToken = demoUserService.isDemoSession();
+      if (isDemoToken) {
         console.log("Demo token detected, considering valid without server validation");
         return { valid: true };
       }

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
-import IconDefault, * as Icons from "../icons/Icons";
+import Icon from "../common/Icon";
+import SafeIcon from "../common/SafeIcon";
+import * as AntIcons from "@ant-design/icons";
 
 const IconTest = () => {
   const [testResults, setTestResults] = useState([]);
@@ -9,152 +11,56 @@ const IconTest = () => {
     const results = [];
     results.push({
       type: "info",
-      message: "IconTest component mounted - Using custom Icons implementation",
+      message: "IconTest component mounted - Using standard Icon component",
     });
 
-    // Log all available icons
-    const keys = Object.keys(Icons);
-    setIconKeys(keys);
-    results.push({ type: "info", message: `Found ${keys.length} icons` });
-
-    // Test specific icons
-    const iconNames = [
-      "SafeUserOutlined",
-      "SafeSettingOutlined",
-      "SafeHomeOutlined",
-      "SafeMenuOutlined",
-      "SafeCloseOutlined",
-    ];
-
-    iconNames.forEach((iconName) => {
-      if (Icons[iconName]) {
-        results.push({
-          type: "success",
-          message: `Icon ${iconName} is available`,
-        });
-      } else {
-        results.push({
-          type: "error",
-          message: `Icon ${iconName} is NOT available`,
-        });
-      }
+    // Get available icons
+    const standardIconNames = ["add", "delete", "edit", "info", "warning", "error"];
+    setIconKeys(standardIconNames);
+    
+    results.push({ 
+      type: "info", 
+      message: `Testing standard icons: ${standardIconNames.join(", ")}` 
     });
 
-    // Test Icon component
-    if (typeof Icons.Icon === "function") {
+    // Test icons
+    standardIconNames.forEach(iconName => {
       results.push({
         type: "success",
-        message: "Icon component is available",
+        message: `Testing icon: ${iconName}`
       });
-    } else {
-      results.push({
-        type: "error",
-        message: "Icon component is NOT available",
-      });
-    }
-
-    // Test getIcon function
-    if (typeof Icons.getIcon === "function") {
-      results.push({
-        type: "success",
-        message: "getIcon function is available",
-      });
-    } else {
-      results.push({
-        type: "error",
-        message: "getIcon function is NOT available",
-      });
-    }
+    });
 
     setTestResults(results);
   }, []);
 
   return (
-    <div
-      style={{
-        padding: "20px",
-        border: "1px solid #ccc",
-        margin: "20px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
+    <div className="icon-test-container">
       <h2>Icon Test Component</h2>
-
-      <h3>Test Results:</h3>
-      <div
-        style={{
-          backgroundColor: "#f5f5f5",
-          padding: "10px",
-          borderRadius: "5px",
-          maxHeight: "300px",
-          overflowY: "auto",
-        }}
-      >
+      <div className="test-results">
         {testResults.map((result, index) => (
           <div
             key={index}
-            style={{
-              margin: "5px 0",
-              color:
-                result.type === "error"
-                  ? "red"
-                  : result.type === "success"
-                  ? "green"
-                  : "black",
-            }}
+            className={`test-result test-result-${result.type}`}
           >
-            {result.type === "error"
-              ? "❌ "
-              : result.type === "success"
-              ? "✅ "
-              : "ℹ️ "}
             {result.message}
           </div>
         ))}
       </div>
-
-      <h3>Icon Samples:</h3>
-      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-        <div>
-          <Icons.SafeUserOutlined /> SafeUserOutlined
-        </div>
-        <div>
-          <Icons.SafeSettingOutlined /> SafeSettingOutlined
-        </div>
-        <div>
-          <Icons.SafeHomeOutlined /> SafeHomeOutlined
-        </div>
-        <div>
-          <Icons.SafeMenuOutlined /> SafeMenuOutlined
-        </div>
+      <div className="icon-grid">
+        {iconKeys.map((iconName) => (
+          <div key={iconName} className="icon-test-item">
+            <Icon name={iconName} />
+            <span>{iconName}</span>
+          </div>
+        ))}
       </div>
-
-      <h3>Dynamic Icon Samples:</h3>
-      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-        <div>
-          <Icons.Icon name="UserOutlined" /> UserOutlined (via Icon)
-        </div>
-        <div>
-          {React.createElement(Icons.getIcon("SettingOutlined"))}{" "}
-          SettingOutlined (via getIcon)
-        </div>
-      </div>
-
-      <h3>Available Icon Keys ({iconKeys.length}):</h3>
-      <div
-        style={{
-          backgroundColor: "#f5f5f5",
-          padding: "10px",
-          borderRadius: "5px",
-          maxHeight: "200px",
-          overflowY: "auto",
-          fontSize: "12px",
-          fontFamily: "monospace",
-        }}
-      >
-        {iconKeys.map((key, index) => (
-          <div key={index} style={{ margin: "2px 0" }}>
-            {key}
+      <h3>Ant Design Icons via SafeIcon</h3>
+      <div className="icon-grid">
+        {["UserOutlined", "SettingOutlined", "HomeOutlined"].map((iconName) => (
+          <div key={iconName} className="icon-test-item">
+            <SafeIcon icon={AntIcons[iconName]} />
+            <span>{iconName}</span>
           </div>
         ))}
       </div>

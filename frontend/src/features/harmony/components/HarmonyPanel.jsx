@@ -12,7 +12,6 @@ import Button from "../../../components/common/Button";
 import Input from "../../../components/common/Input";
 import Select from "../../../components/common/Select";
 import { updateHarmonyParams } from "../../../store/thunks/universeThunks";
-import "../styles/Universe.css";
 
 const DEFAULT_HARMONY_PARAMS = {
   resonance: {

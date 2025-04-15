@@ -8,8 +8,9 @@ import Modal from "../../../components/common/Modal";
 import Select from "../../../components/common/Select";
 import Slider from "../../../components/common/Slider";
 import Spinner from "../../../components/common/Spinner";
-import "../styles/Modal.css";
+import "../../../styles/Modal.css";
 import { audioService } from "../../../services";
+import { generateRandomId } from "../../../utils/idGenerators";
 
 /**
  * Modal for generating audio based on the physics of a universe and scene.

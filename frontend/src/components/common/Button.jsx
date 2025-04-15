@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 import React from "react";
 import { Link } from "react-router-dom";
-import "../../styles/Button.css";
+import "../../styles/buttons.css";
 import Spinner from "./Spinner";
 
 /**

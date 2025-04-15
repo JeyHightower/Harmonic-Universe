@@ -42,16 +42,10 @@ const createDemoUser = () => {
 // Helper to setup demo mode when needed
 const setupDemoMode = () => {
   console.debug("Setting up demo mode");
-  const demoUser = createDemoUser();
-  const token = `demo-token-${Date.now()}`;
-  const refreshToken = `demo-refresh-${Date.now()}`;
   
-  // Store in localStorage
-  localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, token);
-  localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, refreshToken);
-  localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(demoUser));
-  
-  return { user: demoUser, token };
+  // Use the demoUserService to set up the demo session properly
+  const demoData = demoUserService.setupDemoSession();
+  return demoData;
 };
 
 // Demo login functionality
@@ -431,7 +425,29 @@ const authSlice = createSlice({
       .addCase(demoLogin.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
-      });
+      })
+      .addMatcher(
+        (action) => action.type === 'auth/tokenRefreshed',
+        (state, action) => {
+          state.isLoading = false;
+          state.error = null;
+          state.token = action.payload.token;
+          if (action.payload.user) {
+            state.user = action.payload.user;
+          }
+          state.isAuthenticated = true;
+        }
+      )
+      .addMatcher(
+        (action) => action.type === 'auth/authFailure',
+        (state, action) => {
+          state.isLoading = false;
+          state.error = action.payload || 'Authentication error';
+          state.token = null;
+          state.user = null;
+          state.isAuthenticated = false;
+        }
+      );
   },
 });
 
@@ -447,5 +463,12 @@ export const {
   setNetworkError,
   setOfflineMode,
 } = authSlice.actions;
+
+// Additional action exports for compatibility
+export const registerSuccess = loginSuccess;
+export const registerFailure = loginFailure;
+export const validateTokenStart = loginStart;
+export const validateTokenSuccess = loginSuccess;
+export const validateTokenFailure = loginFailure;
 
 export default authSlice.reducer;

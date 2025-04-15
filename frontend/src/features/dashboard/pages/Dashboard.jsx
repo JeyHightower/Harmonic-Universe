@@ -23,90 +23,8 @@ import {
   Logout as LogoutIcon,
 } from "@mui/icons-material";
 
-// Create placeholder components for missing imports
-const UniverseCard = ({ universe, onView, onEdit, onDelete, isHighlighted }) => (
-  <div style={{ border: isHighlighted ? '2px solid blue' : '1px solid gray', padding: '10px', margin: '10px' }}>
-    <h3>{universe.name}</h3>
-    <p>{universe.description}</p>
-    <div>
-      <button onClick={() => onView(universe)}>View</button>
-      <button onClick={() => onEdit(universe)}>Edit</button>
-      <button onClick={() => onDelete(universe)}>Delete</button>
-    </div>
-  </div>
-);
-
-const UniverseModal = ({ open, onClose, universe, onSuccess }) => (
-  <Dialog
-    open={open || false}
-    onClose={onClose}
-    maxWidth="md"
-    fullWidth
-    PaperProps={{
-      component: 'form',
-      onSubmit: (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.currentTarget);
-        const universeData = {
-          name: formData.get('name'),
-          description: formData.get('description'),
-          is_public: formData.get('is_public') === 'true'
-        };
-        onSuccess(universeData);
-        onClose();
-      },
-    }}
-  >
-    <DialogTitle>{universe ? 'Edit Universe' : 'Create New Universe'}</DialogTitle>
-    <DialogContent>
-      <DialogContentText>
-        {universe 
-          ? 'Edit your universe details below.' 
-          : 'Enter details for your new universe. You can add scenes later.'}
-      </DialogContentText>
-      <TextField
-        autoFocus
-        margin="normal"
-        id="name"
-        name="name"
-        label="Universe Name"
-        type="text"
-        fullWidth
-        variant="outlined"
-        defaultValue={universe?.name || ''}
-        required
-      />
-      <TextField
-        margin="normal"
-        id="description"
-        name="description"
-        label="Description"
-        type="text"
-        fullWidth
-        multiline
-        rows={4}
-        variant="outlined"
-        defaultValue={universe?.description || ''}
-      />
-      <FormControlLabel
-        control={
-          <Checkbox
-            name="is_public"
-            value="true"
-            defaultChecked={universe?.is_public !== false}
-          />
-        }
-        label="Make this universe public"
-      />
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={onClose}>Cancel</Button>
-      <Button type="submit" variant="contained" color="primary">
-        {universe ? 'Save Changes' : 'Create Universe'}
-      </Button>
-    </DialogActions>
-  </Dialog>
-);
+// Import the UniverseModal and UniverseCard from features/universe
+import { UniverseModal, UniverseCard } from "../../universe";
 
 import { fetchUniverses } from "../../../store/thunks/universeThunks";
 import { deleteUniverse } from "../../../store/thunks/universeThunks";
@@ -583,9 +501,10 @@ const Dashboard = () => {
         </div>
         {isCreateModalOpen && (
           <UniverseModal
-            open={isCreateModalOpen}
+            isOpen={isCreateModalOpen}
             onClose={() => setIsCreateModalOpen(false)}
             onSuccess={handleCreateSuccess}
+            mode="create"
           />
         )}
       </div>
@@ -688,22 +607,21 @@ const Dashboard = () => {
   function renderModals() {
     return (
       <>
-        {isCreateModalOpen && (
-          <UniverseModal
-            open={isCreateModalOpen}
-            onClose={() => setIsCreateModalOpen(false)}
-            onSuccess={handleCreateSuccess}
-          />
-        )}
-        {isEditModalOpen && selectedUniverse && (
-          <UniverseModal
-            open={isEditModalOpen}
-            onClose={() => setIsEditModalOpen(false)}
-            onSuccess={handleEditSuccess}
-            universe={selectedUniverse}
-            isEdit={true}
-          />
-        )}
+        <UniverseModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSuccess={handleCreateSuccess}
+          mode="create"
+        />
+        
+        <UniverseModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          universe={selectedUniverse}
+          onSuccess={handleEditSuccess}
+          mode="edit"
+        />
+        
         {isDeleteModalOpen && selectedUniverse && (
           <Dialog
             open={isDeleteModalOpen}

@@ -4,7 +4,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { useModal } from "../../../contexts/ModalContext.jsx";
 import { fetchUniverseById } from "../../../store/thunks/universeThunks.mjs";
-import "../styles/PhysicsPage.css";
+import Button from "../../../components/common/Button";
+import Spinner from "../../../components/common/Spinner";
+import "../../../styles/PhysicsPage.css";
 
 const PhysicsPage = () => {
   const { universeId } = useParams();

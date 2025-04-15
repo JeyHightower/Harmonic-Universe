@@ -18,5 +18,4 @@ export { default as UniverseInfoModal } from './modals/UniverseInfoModal';
 // Page exports
 export { default as UniverseCreate } from './pages/UniverseCreate';
 export { default as UniverseDetail } from './pages/UniverseDetail';
-export { default as UniverseDetailPage } from './pages/UniverseDetailPage';
 export { default as UniverseEdit } from './pages/UniverseEdit'; 

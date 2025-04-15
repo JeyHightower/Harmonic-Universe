@@ -5,7 +5,7 @@ import { useModal } from "../../../contexts/ModalContext";
 import { updatePhysicsParams } from "../../../store/thunks/universeThunks";
 import { MODAL_TYPES } from "../../../constants/modalTypes";
 import { Button } from "../../../components/common";
-import "../styles/Universe.css";
+import "../styles/PhysicsPanel.css";
 
 const DEFAULT_PHYSICS_PARAMS = {
   gravity: {

@@ -25,6 +25,31 @@ export const createDemoUser = () => {
 };
 
 /**
+ * Creates a properly formatted JWT-like token for demo mode
+ * @param {string} userId - User ID to include in token
+ * @returns {string} JWT-like token
+ */
+const createDemoToken = (userId) => {
+  // Create a header part (base64 encoded)
+  const header = btoa(JSON.stringify({ alg: 'demo', typ: 'JWT' }));
+  
+  // Create a payload part (base64 encoded)
+  const now = Math.floor(Date.now() / 1000);
+  const payload = btoa(JSON.stringify({
+    sub: userId,
+    name: 'Demo User',
+    iat: now,
+    exp: now + 3600, // 1 hour from now
+  }));
+  
+  // Create a signature part (just a placeholder for demo)
+  const signature = btoa('demo-signature');
+  
+  // Return a properly formatted JWT token with 3 parts
+  return `${header}.${payload}.${signature}`;
+};
+
+/**
  * Sets up a demo session with demo user and token
  * @returns {Object} Object containing demo user and token
  */
@@ -33,8 +58,8 @@ export const setupDemoSession = () => {
   
   // Create demo user and tokens
   const demoUser = createDemoUser();
-  const token = `demo-token-${demoUser.id}-${Date.now()}`;
-  const refreshToken = `demo-refresh-${demoUser.id}-${Date.now()}`;
+  const token = createDemoToken(demoUser.id);
+  const refreshToken = createDemoToken(demoUser.id);
   
   // Store in localStorage
   localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, token);
@@ -54,7 +79,20 @@ export const setupDemoSession = () => {
 export const isDemoSession = () => {
   try {
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-    return token && (token.startsWith('demo-') || token.includes('demo'));
+    // Check if token exists and is a demo token (now using properly formatted JWT-like tokens)
+    if (!token) return false;
+    
+    try {
+      // Try to decode the middle part (payload)
+      const parts = token.split('.');
+      if (parts.length !== 3) return false;
+      
+      const payload = JSON.parse(atob(parts[1]));
+      return payload.sub && payload.sub.includes('demo-');
+    } catch (e) {
+      // If we can't decode it properly, check the old way
+      return token.startsWith('demo-') || token.includes('demo');
+    }
   } catch (error) {
     console.error("Error checking demo session:", error);
     return false;

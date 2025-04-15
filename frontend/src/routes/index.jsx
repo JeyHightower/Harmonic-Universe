@@ -33,7 +33,7 @@ const SettingsPage = lazy(() => import("../features/settings/pages/SettingsPage"
 const Dashboard = lazy(() => import("../features/dashboard/pages/Dashboard"));
 const Home = lazy(() => import("../features/home/pages/Home"));
 const LoginPage = lazy(() => import("../features/auth/pages/LoginPage"));
-const UniverseDetail = lazy(() => import("../features/universe/pages/UniverseDetailPage"));
+const UniverseDetail = lazy(() => import("../features/universe/pages/UniverseDetail"));
 const SceneList = lazy(() => import("../features/scene/pages/SceneList"));
 const SceneDetail = lazy(() => import("../features/scene/pages/SceneDetail"));
 const SceneEditPage = lazy(() => import("../features/scene/pages/SceneEditPage"));
