@@ -93,57 +93,9 @@ def setup_cors_handlers(app):
     which responds with appropriate CORS headers based on the app's configuration.
     """
     
-    @app.route('/api/<path:path>', methods=['OPTIONS'])
-    def cors_preflight_api(path):
-        """Handle OPTIONS requests for all API routes."""
-        # Get configured origins from app config
-        allowed_origins = app.config.get('CORS_ORIGINS', ["http://localhost:5173"])
-        origin = request.headers.get('Origin')
-        
-        # Create a response that will be returned for OPTIONS requests
-        response = make_response()
-        
-        # Log the CORS preflight for debugging
-        app.logger.info(f"CORS preflight request received for path: /api/{path}, Origin: {origin}")
-        app.logger.debug(f"Allowed origins: {allowed_origins}")
-        
-        # Check if the origin is allowed
-        if origin and origin in allowed_origins:
-            # Add specific origin for proper CORS with credentials (not using wildcard)
-            response.headers['Access-Control-Allow-Origin'] = origin
-            response.headers['Access-Control-Allow-Credentials'] = 'true'
-            
-            # Add all configured headers or use defaults
-            allowed_headers = app.config.get('CORS_HEADERS', [
-                'Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'
-            ])
-            response.headers['Access-Control-Allow-Headers'] = ', '.join(allowed_headers)
-            
-            # Add all configured methods or use defaults
-            allowed_methods = app.config.get('CORS_METHODS', [
-                'GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'
-            ])
-            response.headers['Access-Control-Allow-Methods'] = ', '.join(allowed_methods)
-            
-            # Expose headers
-            expose_headers = app.config.get('CORS_EXPOSE_HEADERS', [
-                'Content-Length', 'Content-Type', 'Authorization'
-            ])
-            response.headers['Access-Control-Expose-Headers'] = ', '.join(expose_headers)
-            
-            # Set max age from config or default (24 hours = 86400 seconds)
-            max_age = app.config.get('CORS_MAX_AGE', 86400)
-            response.headers['Access-Control-Max-Age'] = str(max_age)
-            
-            # Log success for debugging
-            app.logger.info(f"CORS preflight request successful for Origin: {origin}")
-            
-            # Return 200 OK status for successful preflight
-            return response, 200
-        else:
-            # Log failure for debugging
-            app.logger.warning(f"CORS preflight request denied for Origin: {origin}")
-            return response, 403
+    # This function is kept for backward compatibility but we'll rely on Flask-CORS
+    # for all CORS handling to avoid duplications
+    pass
 
 def setup_error_handlers(app):
     """Configure error handlers for the application."""
@@ -276,8 +228,8 @@ def create_app(config_class=Config):
     def after_request(response):
         origin = request.headers.get('Origin')
         
-        # If this is a CORS request (has Origin header)
-        if origin:
+        # If this is a CORS request (has Origin header) and headers are not already set
+        if origin and 'Access-Control-Allow-Origin' not in response.headers:
             # Check if origin is in allowed origins
             if origin in app.config['CORS_ORIGINS'] or '*' in app.config['CORS_ORIGINS']:
                 response.headers.add('Access-Control-Allow-Origin', origin)
@@ -294,16 +246,14 @@ def create_app(config_class=Config):
     def handle_preflight():
         if request.method == 'OPTIONS':
             response = make_response()
-            # Set CORS headers only if they don't already exist
-            if 'Access-Control-Allow-Origin' not in response.headers:
-                response.headers.add('Access-Control-Allow-Origin', request.headers.get('Origin', '*'))
-            if 'Access-Control-Allow-Credentials' not in response.headers:
+            origin = request.headers.get('Origin')
+            
+            # Only add headers if origin is allowed
+            if origin and (origin in app.config['CORS_ORIGINS'] or '*' in app.config['CORS_ORIGINS']):
+                response.headers.add('Access-Control-Allow-Origin', origin)
                 response.headers.add('Access-Control-Allow-Credentials', 'true')
-            if 'Access-Control-Allow-Methods' not in response.headers:
                 response.headers.add('Access-Control-Allow-Methods', ','.join(app.config['CORS_METHODS']))
-            if 'Access-Control-Allow-Headers' not in response.headers:
                 response.headers.add('Access-Control-Allow-Headers', ','.join(app.config['CORS_HEADERS']))
-            if 'Access-Control-Max-Age' not in response.headers:
                 response.headers.add('Access-Control-Max-Age', str(app.config['CORS_MAX_AGE']))
             return response
     
