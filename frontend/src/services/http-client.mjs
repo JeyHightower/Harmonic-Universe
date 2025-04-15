@@ -48,6 +48,11 @@ const axiosInstance = axios.create({
 
 // Log the base URL being used
 console.log(`API client initialized with baseURL: ${API_SERVICE_CONFIG.BASE_URL}`);
+console.log('Axios config:', {
+  withCredentials: true,
+  baseURL: API_SERVICE_CONFIG.BASE_URL,
+  timeout: API_SERVICE_CONFIG.TIMEOUT
+});
 
 // Simple in-memory cache for GET requests
 const cache = new Map();
@@ -239,16 +244,22 @@ const formatUrl = (url) => {
     return url;
   }
 
-  // If URL already starts with a slash, just return it
-  // (BASE_URL already includes the /api prefix)
-  if (url.startsWith('/')) {
-    console.log('URL starts with slash, using as is:', url);
-    return url;
+  // If URL already includes the API_PREFIX
+  const hasApiPrefix = url.startsWith(API_SERVICE_CONFIG.API_PREFIX);
+  
+  // If URL does not start with a slash, add one
+  if (!url.startsWith('/') && !hasApiPrefix) {
+    url = '/' + url;
   }
-
-  // Otherwise, add a slash and return it
-  const formattedUrl = `/${url}`;
-  console.log('Formatted URL:', formattedUrl);
+  
+  // If the URL already has the API prefix, make sure we don't duplicate it
+  // The baseURL should not have /api at the end, but just in case
+  const baseUrl = API_SERVICE_CONFIG.BASE_URL.endsWith('/api') 
+    ? API_SERVICE_CONFIG.BASE_URL 
+    : API_SERVICE_CONFIG.BASE_URL;
+    
+  const formattedUrl = hasApiPrefix ? url : url.startsWith('/api') ? url : url;
+  console.log(`Formatted URL: ${formattedUrl}`);
   return formattedUrl;
 };
 

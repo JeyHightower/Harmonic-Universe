@@ -94,47 +94,14 @@ def setup_static_folder(app):
 
 def setup_cors_handlers(app):
     """Configure CORS handling for the application."""
-    @app.before_request
-    def handle_preflight():
-        if request.method == "OPTIONS":
-            response = app.make_default_options_response()
-            origin = request.headers.get('Origin', '')
-
-            # Set appropriate CORS headers
-            if origin:
-                # For credentials, we must specify the exact origin, not a wildcard
-                response.headers.add('Access-Control-Allow-Origin', origin)
-                response.headers.add('Access-Control-Allow-Credentials', 'true')
-            elif app.config['CORS_ORIGINS']:
-                # Fall back to first origin in list if no origin in request
-                response.headers.add('Access-Control-Allow-Origin', app.config['CORS_ORIGINS'][0])
-            else:
-                # Last resort
-                response.headers.add('Access-Control-Allow-Origin', '*')
-
-            response.headers.add('Access-Control-Allow-Methods', ', '.join(app.config['CORS_METHODS']))
-            response.headers.add('Access-Control-Allow-Headers', ', '.join(app.config['CORS_HEADERS']))
-            response.headers.add('Access-Control-Max-Age', str(app.config['CORS_MAX_AGE']))
-            
-            return response
-
+    # Since we're using Flask-CORS extension, we don't need to manually handle OPTIONS requests
+    # We'll keep this function minimal to avoid conflicting with the extension
+    
+    # Handle /api/* OPTIONS requests specifically
     @app.route('/api/<path:path>', methods=['OPTIONS'])
     def cors_preflight(path):
         response = app.make_default_options_response()
-        origin = request.headers.get('Origin', '')
-
-        if origin:
-            response.headers.add('Access-Control-Allow-Origin', origin)
-        else:
-            response.headers.add('Access-Control-Allow-Origin', app.config['CORS_ORIGINS'][0] if app.config['CORS_ORIGINS'] else '*')
-
-        response.headers.add('Access-Control-Allow-Methods', ', '.join(app.config['CORS_METHODS']))
-        response.headers.add('Access-Control-Allow-Headers', ', '.join(app.config['CORS_HEADERS']))
-        response.headers.add('Access-Control-Max-Age', str(app.config['CORS_MAX_AGE']))
-
-        if app.config.get('CORS_SUPPORTS_CREDENTIALS', False):
-            response.headers.add('Access-Control-Allow-Credentials', 'true')
-
+        # We don't need to add CORS headers here as Flask-CORS will handle it
         return response, 200
 
 def setup_error_handlers(app):
@@ -304,43 +271,44 @@ def create_app(config_name='default'):
     print(f"CORS configured with origins: {app.config['CORS_ORIGINS']}")
     print(f"CORS credentials support: {True}")
     
-    # Add CORS headers to responses
+    # Instead, we'll create a simpler after_request handler just for cookies
     @app.after_request
-    def add_cors_headers(response):
-        origin = request.headers.get('Origin')
-        # Check if origin exists and is either in the allowed origins or if wildcard is allowed
-        if origin and (origin in app.config['CORS_ORIGINS'] or '*' in app.config['CORS_ORIGINS']):
-            # Set the specific origin instead of using * when credentials are used
-            response.headers.add('Access-Control-Allow-Origin', origin)
-            response.headers.add('Access-Control-Allow-Credentials', 'true')
-            
-            # Adjust SameSite based on environment
+    def fix_cookies(response):
+        if 'Set-Cookie' in response.headers:
+            # Always set the same consistent cookie settings
             is_prod = app.config.get('ENV') == 'production'
             same_site = 'None'  # Use None for both prod and dev to enable cross-site cookies
+            secure = True  # Set secure for both environments since SameSite=None requires it
             
-            # If SameSite=None, cookie must be secure
-            secure = is_prod or same_site == 'None'
+            # Log cookie settings being applied
+            print(f"Setting cookie headers - SameSite={same_site}, Secure={secure}, Env={app.config.get('ENV')}")
             
-            # Ensure cookie attributes are consistent for all routes
-            if 'Set-Cookie' in response.headers:
-                cookies = response.headers.getlist('Set-Cookie')
-                response.headers.pop('Set-Cookie')
+            cookies = response.headers.getlist('Set-Cookie')
+            response.headers.pop('Set-Cookie')
+            
+            for cookie in cookies:
+                cookie_parts = cookie.split(';')
+                base_cookie = cookie_parts[0]
                 
-                for cookie in cookies:
-                    cookie_parts = cookie.split(';')
-                    base_cookie = cookie_parts[0]
-                    
-                    # Build a new cookie with consistent settings
-                    new_cookie = f"{base_cookie}; Path=/; HttpOnly; SameSite={same_site}"
-                    if secure:
-                        new_cookie += "; Secure"
-                        
-                    response.headers.add('Set-Cookie', new_cookie)
+                # Build a new cookie with consistent settings
+                new_cookie = f"{base_cookie}; Path=/; HttpOnly; SameSite={same_site}; Secure"
+                response.headers.add('Set-Cookie', new_cookie)
+                
+        # Add CORS headers for pre-flight requests if not already present
+        if request.method == 'OPTIONS' and 'Origin' in request.headers:
+            # Ensure CORS headers are set for preflight requests
+            origin = request.headers.get('Origin')
+            allowed_origins = app.config['CORS_ORIGINS']
             
-            response.headers.add('Access-Control-Allow-Methods', ', '.join(app.config['CORS_METHODS']))
-            response.headers.add('Access-Control-Allow-Headers', ', '.join(app.config['CORS_HEADERS']))
-            response.headers.add('Access-Control-Expose-Headers', ', '.join(app.config['CORS_EXPOSE_HEADERS']))
-            response.headers.add('Access-Control-Max-Age', str(app.config['CORS_MAX_AGE']))
+            # Check if origin is allowed (either explicitly or via wildcard)
+            is_allowed = '*' in allowed_origins or origin in allowed_origins
+            
+            if is_allowed:
+                if 'Access-Control-Allow-Origin' not in response.headers:
+                    response.headers['Access-Control-Allow-Origin'] = origin
+                if 'Access-Control-Allow-Credentials' not in response.headers:
+                    response.headers['Access-Control-Allow-Credentials'] = 'true'
+        
         return response
 
     # Set up handlers and routes

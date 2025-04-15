@@ -13,19 +13,12 @@ def validate_token():
     """Validate the JWT token and return user data."""
     # Handle OPTIONS requests for CORS preflight
     if request.method == 'OPTIONS':
-        response = current_app.make_default_options_response()
-        # Add necessary CORS headers
-        origin = request.headers.get('Origin')
-        if origin:
-            response.headers.add('Access-Control-Allow-Origin', origin)
-            response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
-            response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-            response.headers.add('Access-Control-Allow-Credentials', 'true')
-            response.headers.add('Access-Control-Max-Age', '3600')
-        return response
+        # Let Flask-CORS handle the OPTIONS response
+        return current_app.make_default_options_response()
 
     # Print request details for debugging
     current_app.logger.debug(f"Token validate request: Headers={dict(request.headers)}, Origin={request.headers.get('Origin')}")
+    current_app.logger.debug(f"Request content type: {request.content_type}, method: {request.method}")
 
     try:
         # Get the token from the request
@@ -34,19 +27,40 @@ def validate_token():
 
         if auth_header and auth_header.startswith('Bearer '):
             token = auth_header.split(' ')[1]
+            current_app.logger.debug(f"Found token in Authorization header")
 
         # Check for token in cookies too
         if not token:
             token = request.cookies.get('token')
+            if token:
+                current_app.logger.debug(f"Found token in cookies")
 
         # Check JSON data as fallback
         if not token:
             try:
-                data = request.get_json(silent=True) or {}
-                if 'token' in data:
-                    token = data['token']
+                # Try to parse as JSON first
+                if request.is_json:
+                    data = request.get_json(silent=True) or {}
+                    if 'token' in data:
+                        token = data['token']
+                        current_app.logger.debug(f"Found token in JSON body")
+                # If not JSON, try form data
+                elif request.form:
+                    token = request.form.get('token')
+                    if token:
+                        current_app.logger.debug(f"Found token in form data")
+                # Finally, try raw data as JSON if content type is not specified correctly
+                elif request.data:
+                    try:
+                        import json
+                        data = json.loads(request.data.decode('utf-8'))
+                        if 'token' in data:
+                            token = data['token']
+                            current_app.logger.debug(f"Found token in raw request data")
+                    except:
+                        current_app.logger.debug("Failed to parse raw data as JSON")
             except Exception as e:
-                current_app.logger.error(f'Error parsing JSON in validate: {str(e)}')
+                current_app.logger.error(f'Error parsing request data in validate: {str(e)}')
 
         if not token:
             current_app.logger.warning("No token provided for validation")
@@ -78,11 +92,29 @@ def validate_token():
                 current_app.logger.error(f'User not found for ID: {user_id}')
                 return jsonify({'message': 'User not found', 'valid': False}), 404
 
-            return jsonify({
+            # Set cookie with the token for better client handling
+            response = jsonify({
                 'message': 'Token is valid',
                 'valid': True,
                 'user': user.to_dict()
-            }), 200
+            })
+            
+            # Set the token as a cookie with secure settings
+            is_production = current_app.config.get('ENV') == 'production'
+            same_site = 'None'  # Use None to enable cross-site cookies for both prod and dev
+            secure = True  # Must be secure if SameSite=None
+            
+            response.set_cookie(
+                'token',
+                token,
+                httponly=True,
+                secure=secure,
+                samesite=same_site,
+                max_age=24 * 60 * 60,  # 24 hours
+                path='/'  # Ensure cookie is available for all paths
+            )
+            
+            return response, 200
             
         except jwt.ExpiredSignatureError:
             current_app.logger.info("Token has expired during validation")
@@ -101,16 +133,8 @@ def refresh_token():
     """Refresh an expired JWT token."""
     # Handle OPTIONS requests for CORS preflight
     if request.method == 'OPTIONS':
-        response = current_app.make_default_options_response()
-        # Add necessary CORS headers
-        origin = request.headers.get('Origin')
-        if origin:
-            response.headers.add('Access-Control-Allow-Origin', origin)
-            response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
-            response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-            response.headers.add('Access-Control-Allow-Credentials', 'true')
-            response.headers.add('Access-Control-Max-Age', '3600')
-        return response
+        # Let Flask-CORS handle the OPTIONS response
+        return current_app.make_default_options_response()
         
     # Print request details for debugging
     current_app.logger.debug(f"Token refresh request: Headers={dict(request.headers)}, Origin={request.headers.get('Origin')}")

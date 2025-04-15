@@ -19,9 +19,9 @@ const getApiBaseUrl = () => {
   const baseUrl = 'http://localhost:5001';
   
   // Ensure we don't have doubled /api in the URL
-  const finalUrl = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
-  console.log(`Using development API URL: ${finalUrl}`);
-  return finalUrl;
+  // Don't append /api here as it's added by the endpoint functions
+  console.log(`Using development API URL: ${baseUrl}`);
+  return baseUrl;
 };
 
 export const API_SERVICE_CONFIG = {
@@ -29,7 +29,7 @@ export const API_SERVICE_CONFIG = {
   BASE_URL: getApiBaseUrl(),
   
   // API version prefix
-  API_PREFIX: '',  // Empty since we've already included /api in BASE_URL
+  API_PREFIX: '/api',  // Will be added to BASE_URL if not already included
   
   // Default request timeout in milliseconds
   TIMEOUT: 30000,

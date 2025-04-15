@@ -182,27 +182,40 @@ export async function validateToken(token = null) {
   }
   
   try {
+    // Use the correct endpoint from authEndpoints
+    const validateEndpoint = authEndpoints.validate;
+    console.log('Using validate endpoint:', validateEndpoint);
+    
     // Send token in multiple ways to ensure it's received by the backend
-    const response = await httpClient.post('/auth/token/validate', 
+    const response = await httpClient.post(validateEndpoint, 
       { token }, // In body
       { 
         headers: { 
           'Authorization': `Bearer ${token}`, // In header
           'Content-Type': 'application/json' 
-        }
+        },
+        withCredentials: true // Ensure cookies are sent and received
       }
     );
     
-    if (response.data.valid) {
+    console.log('Token validation response:', response);
+    
+    if (response.data && response.data.valid) {
       // If user data was returned, update it in storage
       if (response.data.user) {
         localStorage.setItem('user', JSON.stringify(response.data.user));
       }
       return { valid: true, user: response.data.user };
+    } else if (response.valid) {
+      // Handle different response format
+      if (response.user) {
+        localStorage.setItem('user', JSON.stringify(response.user));
+      }
+      return { valid: true, user: response.user };
     } else {
       // Clear token and user data if invalid
       clearAuthData();
-      return { valid: false, message: response.data.message || 'Token invalid' };
+      return { valid: false, message: (response.data && response.data.message) || 'Token invalid' };
     }
   } catch (error) {
     console.error('Error validating token:', error);
@@ -245,8 +258,12 @@ export async function refreshToken() {
   
   try {
     console.log('Attempting to refresh token...');
+    // Use the correct endpoint from authEndpoints
+    const refreshEndpoint = authEndpoints.refresh;
+    console.log('Using refresh endpoint:', refreshEndpoint);
+    
     // Send token in multiple ways to ensure it's received
-    const response = await httpClient.post('/auth/token/refresh', 
+    const response = await httpClient.post(refreshEndpoint, 
       { token }, // In body
       { 
         headers: { 
