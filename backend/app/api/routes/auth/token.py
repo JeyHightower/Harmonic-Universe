@@ -24,6 +24,9 @@ def validate_token():
             response.headers.add('Access-Control-Max-Age', '3600')
         return response
 
+    # Print request details for debugging
+    current_app.logger.debug(f"Token validate request: Headers={dict(request.headers)}, Origin={request.headers.get('Origin')}")
+
     try:
         # Get the token from the request
         token = None
@@ -55,6 +58,12 @@ def validate_token():
             if not secret_key:
                 current_app.logger.error('JWT_SECRET_KEY not configured')
                 return jsonify({'message': 'Server configuration error', 'valid': False}), 500
+
+            # Log token format for debugging
+            token_parts = token.split('.')
+            current_app.logger.debug(f'Token parts count: {len(token_parts)}')
+            if len(token_parts) != 3:
+                current_app.logger.warning(f'Malformed token - expected 3 parts, got {len(token_parts)}')
 
             # Verify the token (including expiration)
             payload = jwt.decode(token, secret_key, algorithms=['HS256'])
@@ -90,6 +99,22 @@ def validate_token():
 @auth_bp.route('/refresh', methods=['POST'])
 def refresh_token():
     """Refresh an expired JWT token."""
+    # Handle OPTIONS requests for CORS preflight
+    if request.method == 'OPTIONS':
+        response = current_app.make_default_options_response()
+        # Add necessary CORS headers
+        origin = request.headers.get('Origin')
+        if origin:
+            response.headers.add('Access-Control-Allow-Origin', origin)
+            response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
+            response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+            response.headers.add('Access-Control-Allow-Credentials', 'true')
+            response.headers.add('Access-Control-Max-Age', '3600')
+        return response
+        
+    # Print request details for debugging
+    current_app.logger.debug(f"Token refresh request: Headers={dict(request.headers)}, Origin={request.headers.get('Origin')}")
+        
     try:
         # Get the token from the request
         token = None

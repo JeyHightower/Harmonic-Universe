@@ -137,34 +137,48 @@ export const fetchUniverses = createAsyncThunk(
           headers: response.headers,
         });
 
-        // Extract and normalize the data
+        // Determine the format of the universes data
         let universes = [];
-
-        // Handle our mock response from development mode
-        if (response.data && Array.isArray(response.data.universes)) {
-          console.log("Found universes array in response.data.universes");
-          universes = normalizeUniverses(response.data.universes);
-        }
-        // Handle other response formats
-        else if (Array.isArray(response.data)) {
+        
+        if (response && response.data && Array.isArray(response.data)) {
           console.log("Response.data is an array of universes");
           universes = normalizeUniverses(response.data);
         }
-        else if (response.universes && Array.isArray(response.universes)) {
-          console.log("Found universes array in response.universes");
-          universes = normalizeUniverses(response.universes);
-        }
-        else if (response.data && response.data.data && Array.isArray(response.data.data.universes)) {
-          console.log("Found universes array in response.data.data.universes");
-          universes = normalizeUniverses(response.data.data.universes);
-        }
-        else if (Array.isArray(response)) {
+        else if (response && Array.isArray(response)) {
           console.log("Response itself is an array of universes");
           universes = normalizeUniverses(response);
         }
+        else if (response && response.data && response.data.universes && Array.isArray(response.data.universes)) {
+          console.log("Found universes array in response.data.universes");
+          universes = normalizeUniverses(response.data.universes);
+        }
+        else if (response && response.universes && Array.isArray(response.universes)) {
+          console.log("Found universes array in response.universes");
+          universes = normalizeUniverses(response.universes);
+        }
+        else if (response && response.data && response.data.data && Array.isArray(response.data.data.universes)) {
+          console.log("Found universes array in response.data.data.universes");
+          universes = normalizeUniverses(response.data.data.universes);
+        }
+        else if (response && response.data && response.data.data && Array.isArray(response.data.data)) {
+          console.log("Found universes array in response.data.data");
+          universes = normalizeUniverses(response.data.data);
+        }
         else {
           console.error("Unexpected universes response format:", response);
-          universes = [];
+          // Instead of returning empty array, try to extract any possible data
+          if (response && typeof response === 'object') {
+            // Look for any array property that might contain universes
+            const possibleArrays = Object.values(response).filter(val => Array.isArray(val));
+            if (possibleArrays.length > 0) {
+              console.log("Found possible universes array in unexpected location", possibleArrays[0]);
+              universes = normalizeUniverses(possibleArrays[0]);
+            } else {
+              universes = [];
+            }
+          } else {
+            universes = [];
+          }
         }
 
         console.log("Normalized universes:", {

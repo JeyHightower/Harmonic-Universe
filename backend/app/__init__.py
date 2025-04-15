@@ -101,24 +101,21 @@ def setup_cors_handlers(app):
             origin = request.headers.get('Origin', '')
 
             # Set appropriate CORS headers
-            if origin and origin in app.config['CORS_ORIGINS']:
+            if origin:
+                # For credentials, we must specify the exact origin, not a wildcard
                 response.headers.add('Access-Control-Allow-Origin', origin)
-            elif origin:
-                response.headers.add('Access-Control-Allow-Origin', origin)
-                if app.config.get('CORS_SUPPORTS_CREDENTIALS', False):
-                    response.headers.add('Access-Control-Allow-Credentials', 'true')
+                response.headers.add('Access-Control-Allow-Credentials', 'true')
             elif app.config['CORS_ORIGINS']:
+                # Fall back to first origin in list if no origin in request
                 response.headers.add('Access-Control-Allow-Origin', app.config['CORS_ORIGINS'][0])
             else:
+                # Last resort
                 response.headers.add('Access-Control-Allow-Origin', '*')
 
             response.headers.add('Access-Control-Allow-Methods', ', '.join(app.config['CORS_METHODS']))
             response.headers.add('Access-Control-Allow-Headers', ', '.join(app.config['CORS_HEADERS']))
             response.headers.add('Access-Control-Max-Age', str(app.config['CORS_MAX_AGE']))
-
-            if app.config.get('CORS_SUPPORTS_CREDENTIALS', False):
-                response.headers.add('Access-Control-Allow-Credentials', 'true')
-
+            
             return response
 
     @app.route('/api/<path:path>', methods=['OPTIONS'])
@@ -294,19 +291,26 @@ def create_app(config_name='default'):
         return False
 
     # Apply CORS for all routes, not just /api routes
-    CORS(app, origins=app.config['CORS_ORIGINS'], 
+    CORS(app, 
+        origins=app.config['CORS_ORIGINS'], 
         methods=app.config['CORS_METHODS'],
         allow_headers=app.config['CORS_HEADERS'],
         expose_headers=app.config['CORS_EXPOSE_HEADERS'],
         supports_credentials=True,
         max_age=app.config['CORS_MAX_AGE'],
         vary_header=True)
-        
+    
+    # Log CORS configuration
+    print(f"CORS configured with origins: {app.config['CORS_ORIGINS']}")
+    print(f"CORS credentials support: {True}")
+    
     # Add CORS headers to responses
     @app.after_request
     def add_cors_headers(response):
         origin = request.headers.get('Origin')
+        # Check if origin exists and is either in the allowed origins or if wildcard is allowed
         if origin and (origin in app.config['CORS_ORIGINS'] or '*' in app.config['CORS_ORIGINS']):
+            # Set the specific origin instead of using * when credentials are used
             response.headers.add('Access-Control-Allow-Origin', origin)
             response.headers.add('Access-Control-Allow-Credentials', 'true')
             
@@ -319,15 +323,19 @@ def create_app(config_name='default'):
             
             # Ensure cookie attributes are consistent for all routes
             if 'Set-Cookie' in response.headers:
-                cookie_parts = response.headers['Set-Cookie'].split(';')
-                base_cookie = cookie_parts[0]
+                cookies = response.headers.getlist('Set-Cookie')
+                response.headers.pop('Set-Cookie')
                 
-                # Build a new cookie with consistent settings
-                new_cookie = f"{base_cookie}; Path=/; HttpOnly; SameSite={same_site}"
-                if secure:
-                    new_cookie += "; Secure"
+                for cookie in cookies:
+                    cookie_parts = cookie.split(';')
+                    base_cookie = cookie_parts[0]
                     
-                response.headers['Set-Cookie'] = new_cookie
+                    # Build a new cookie with consistent settings
+                    new_cookie = f"{base_cookie}; Path=/; HttpOnly; SameSite={same_site}"
+                    if secure:
+                        new_cookie += "; Secure"
+                        
+                    response.headers.add('Set-Cookie', new_cookie)
             
             response.headers.add('Access-Control-Allow-Methods', ', '.join(app.config['CORS_METHODS']))
             response.headers.add('Access-Control-Allow-Headers', ', '.join(app.config['CORS_HEADERS']))

@@ -10,6 +10,10 @@ import React, {
 import { Outlet } from "react-router-dom";
 import { useModal } from "../../contexts/ModalContext";
 import { MODAL_TYPES } from "../../constants/modalTypes";
+import { useSelector } from "react-redux";
+
+// Import Navigation component
+import Navigation from "../navigation/Navigation";
 
 // Import safe versions of hooks
 import {
@@ -238,6 +242,7 @@ function Layout() {
 
   return (
     <div className="layout">
+      <Navigation />
       <main className="main-content">
         <ContentErrorBoundary>
           <Suspense fallback={loadingContent}>

@@ -6,6 +6,9 @@
 import axios from 'axios';
 import { API_SERVICE_CONFIG } from './config';
 
+// Import auth service - fixing missing import
+import authService from './auth.service';
+
 /**
  * Safe logging function that won't throw errors
  */
@@ -42,6 +45,9 @@ const axiosInstance = axios.create({
   },
   withCredentials: true, // Important for CORS with credentials
 });
+
+// Log the base URL being used
+console.log(`API client initialized with baseURL: ${API_SERVICE_CONFIG.BASE_URL}`);
 
 // Simple in-memory cache for GET requests
 const cache = new Map();
@@ -175,7 +181,14 @@ axiosInstance.interceptors.response.use(
     // Handle CORS errors
     if (error.message && error.message.includes('Network Error')) {
       console.error('Network error (possibly CORS):', error);
-      return Promise.reject(new Error('Network error: API may be unavailable or CORS not configured properly'));
+      console.error('Request details:', {
+        method: error.config?.method,
+        url: error.config?.url,
+        baseURL: error.config?.baseURL,
+        withCredentials: error.config?.withCredentials,
+        headers: error.config?.headers
+      });
+      return Promise.reject(new Error('Network error: API may be unavailable or CORS not configured properly. Check console for details.'));
     }
     
     // Pass through other errors
@@ -195,38 +208,14 @@ async function refreshTokenAndRetry() {
       throw new Error('No token available to refresh');
     }
     
-    // Create a separate axios instance for the refresh call
-    // to avoid intercept loops
-    const refreshClient = axios.create({
-      baseURL: API_SERVICE_CONFIG.BASE_URL,
-      timeout: 5000,
-      withCredentials: true
-    });
+    // Use authService directly instead of creating a new axios instance
+    const refreshResult = await authService.refreshToken();
     
-    // Try various ways to send the token
-    const response = await refreshClient.post('/auth/token/refresh', 
-      { token }, // In body
-      { 
-        headers: { 
-          'Authorization': `Bearer ${token}`,  // In header
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-    
-    if (response.data && response.data.token) {
-      // Update stored token
-      localStorage.setItem('token', response.data.token);
-      
-      // If user data was returned, update it too
-      if (response.data.user) {
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-      }
-      
+    if (refreshResult && refreshResult.success && refreshResult.data && refreshResult.data.token) {
       console.log('Token refreshed successfully');
-      return response.data;
+      return refreshResult.data;
     } else {
-      console.error('Invalid response from token refresh:', response);
+      console.error('Invalid response from token refresh:', refreshResult);
       throw new Error('Invalid response from token refresh');
     }
   } catch (error) {
@@ -237,26 +226,30 @@ async function refreshTokenAndRetry() {
 
 /**
  * Format a URL to include the API base if not already included
- * @param {string} url - URL to format
+ * @param {string} url - URL to request
  * @returns {string} - Formatted URL
  */
 const formatUrl = (url) => {
+  // Log the URL for debugging
+  console.log('Original URL:', url);
+
+  // If URL already starts with http:// or https://, return it as is
   if (url.startsWith('http')) {
+    console.log('URL starts with http, using as is:', url);
     return url;
   }
 
-  // If URL already starts with the API prefix, don't add it
-  if (url.startsWith(API_SERVICE_CONFIG.API_PREFIX)) {
-    return url;
-  }
-
-  // If URL starts with a slash, append it to API prefix
+  // If URL already starts with a slash, just return it
+  // (BASE_URL already includes the /api prefix)
   if (url.startsWith('/')) {
-    return `${API_SERVICE_CONFIG.API_PREFIX}${url}`;
+    console.log('URL starts with slash, using as is:', url);
+    return url;
   }
 
-  // Otherwise, add a slash and append it to API prefix
-  return `${API_SERVICE_CONFIG.API_PREFIX}/${url}`;
+  // Otherwise, add a slash and return it
+  const formattedUrl = `/${url}`;
+  console.log('Formatted URL:', formattedUrl);
+  return formattedUrl;
 };
 
 /**

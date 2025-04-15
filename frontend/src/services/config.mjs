@@ -11,11 +11,17 @@ const getApiBaseUrl = () => {
   // Check if we're in a production environment
   if (IS_PRODUCTION) {
     // In production, use relative URL (same origin)
+    console.log('Using production API URL: /api');
     return '/api';
   }
 
   // In development, use the full URL from config or environment
-  return API_CONFIG.BASE_URL || 'http://localhost:5001/api';
+  const baseUrl = 'http://localhost:5001';
+  
+  // Ensure we don't have doubled /api in the URL
+  const finalUrl = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
+  console.log(`Using development API URL: ${finalUrl}`);
+  return finalUrl;
 };
 
 export const API_SERVICE_CONFIG = {
@@ -23,7 +29,7 @@ export const API_SERVICE_CONFIG = {
   BASE_URL: getApiBaseUrl(),
   
   // API version prefix
-  API_PREFIX: API_CONFIG.API_PREFIX || '/api',
+  API_PREFIX: '',  // Empty since we've already included /api in BASE_URL
   
   // Default request timeout in milliseconds
   TIMEOUT: 30000,

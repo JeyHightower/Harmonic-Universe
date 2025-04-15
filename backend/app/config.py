@@ -59,7 +59,7 @@ class Config:
         print(f"DEBUG - JWT_SECRET_KEY: '{JWT_SECRET_KEY}'")
     
     # CORS config
-    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost:5001,http://localhost:5000,http://127.0.0.1:5001,http://127.0.0.1:5000,https://harmonic-universe.onrender.com,https://harmonic-universe-z5ka.onrender.com,*').split(',')
+    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost:5001,http://localhost:5000,http://127.0.0.1:5001,http://127.0.0.1:5000,https://harmonic-universe.onrender.com,https://harmonic-universe-z5ka.onrender.com,http://localhost:5174,http://127.0.0.1:5174,*').split(',')
     CORS_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
     CORS_HEADERS = ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With', 
                    'Access-Control-Allow-Credentials', 'Access-Control-Allow-Headers', 

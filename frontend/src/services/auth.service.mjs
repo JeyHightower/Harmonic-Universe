@@ -244,23 +244,23 @@ export async function refreshToken() {
   }
   
   try {
+    console.log('Attempting to refresh token...');
     // Send token in multiple ways to ensure it's received
     const response = await httpClient.post('/auth/token/refresh', 
       { token }, // In body
       { 
         headers: { 
-          'Authorization': `Bearer ${token}`, // In header
-          'Content-Type': 'application/json' 
-        }
+          'Authorization': `Bearer ${token}` // In header
+        },
+        withCredentials: true // Ensure cookies are sent
       }
     );
     
-    // Check if response has the expected format
-    if (response.data && response.data.token) {
-      // Update the token in storage
+    if (response && response.data && response.data.token) {
+      console.log('Token refreshed successfully');
       localStorage.setItem('token', response.data.token);
       
-      // If user data was returned, update it too
+      // If user data was returned, update it
       if (response.data.user) {
         localStorage.setItem('user', JSON.stringify(response.data.user));
       }
@@ -268,32 +268,20 @@ export async function refreshToken() {
       return { 
         success: true, 
         data: { 
-          token: response.data.token,
+          token: response.data.token, 
           user: response.data.user
         } 
       };
     } else {
-      // No token in response
-      clearAuthData();
-      return { success: false, message: 'Refresh did not return a valid token' };
+      console.error('Invalid response format from token refresh endpoint');
+      return { 
+        success: false, 
+        message: 'Invalid response from token refresh endpoint' 
+      };
     }
   } catch (error) {
     console.error('Error refreshing token:', error);
-    
-    // Clear auth data for auth errors
-    if (error.response && error.response.status === 401) {
-      clearAuthData();
-      return { success: false, message: 'Authentication failed during refresh' };
-    }
-    
-    // For server errors, don't necessarily clear auth data
-    if (error.response && error.response.status >= 500) {
-      return { success: false, message: 'Server error during token refresh' };
-    }
-    
-    // For other errors, clear auth data
-    clearAuthData();
-    return { success: false, message: 'Failed to refresh token' };
+    return responseHandler.handleError(error);
   }
 }
 

@@ -37,6 +37,14 @@
   gap: 1rem;
 }
 
+.welcome-message {
+  color: #4a5568;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  background-color: rgba(99, 102, 241, 0.1);
+}
+
 .nav-button {
   padding: 0.5rem 1rem;
   border: none;
@@ -99,6 +107,11 @@
     gap: 0.5rem;
   }
 
+  .welcome-message {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+  }
+
   .nav-button {
     padding: 0.4rem 0.8rem;
     font-size: 0.9rem;
@@ -141,6 +154,13 @@
   .navigation-menu {
     width: 100%;
     justify-content: center;
+  }
+
+  .welcome-message {
+    display: block;
+    text-align: center;
+    width: 100%;
+    margin-bottom: 0.5rem;
   }
 
   .navigation-link {

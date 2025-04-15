@@ -157,8 +157,8 @@ export const API_CONFIG = {
   // Cookie settings for authentication
   COOKIES: {
     DOMAIN: IS_PRODUCTION ? '.onrender.com' : 'localhost',
-    SECURE: IS_PRODUCTION,
-    SAMESITE: IS_PRODUCTION ? 'none' : 'lax',
+    SECURE: true,
+    SAMESITE: 'none',
     MAX_AGE: 24 * 60 * 60 * 1000 // 24 hours
   },
   // Always include credentials in requests

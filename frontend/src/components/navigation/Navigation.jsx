@@ -11,7 +11,7 @@ import "./Navigation.css";
 function Navigation() {
   const { open } = useModal();
   const dispatch = useDispatch();
-  const { isAuthenticated } = useSelector((state) => state.auth);
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
 
   const handleLoginClick = useCallback(() => {
     try {
@@ -80,6 +80,9 @@ function Navigation() {
           </>
         ) : (
           <>
+            <span className="welcome-message">
+              Hello, {user?.username || user?.firstName || 'User'}
+            </span>
             <Link to="/dashboard" className="nav-button">
               Dashboard
             </Link>
