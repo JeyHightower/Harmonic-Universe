@@ -3,7 +3,7 @@ import { Navigate, useParams, useNavigate } from "react-router-dom";
 import Layout from "../components/layout/Layout";
 import ProtectedRoute from "../components/routing/ProtectedRoute";
 import { ROUTES } from "../utils/routes";
-import { SceneModal } from "../features/scene";
+import { SceneModal } from "../features/scene/index.mjs";
 
 // Create a wrapper component for SceneModal in routes
 export const SceneCreateRoute = () => {

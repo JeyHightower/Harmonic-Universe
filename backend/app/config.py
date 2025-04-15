@@ -10,10 +10,12 @@ class Config:
     # Database config - PostgreSQL only
     database_url = os.environ.get('DATABASE_URL')
     
-    # Verify that DATABASE_URL is set
+    # If no DATABASE_URL is set, use SQLite for development
     if not database_url:
-        raise ValueError("DATABASE_URL environment variable is required. Please set DATABASE_URL to a valid PostgreSQL connection string.")
-    
+        print("WARNING: DATABASE_URL environment variable is not set. Using SQLite for development.")
+        # Use an in-memory SQLite database for development
+        database_url = 'sqlite:///memory:'
+        
     # Handle PostgreSQL URL from render.com (starts with postgres://) vs SQLAlchemy (requires postgresql://)
     if database_url.startswith('postgres://'):
         database_url = database_url.replace('postgres://', 'postgresql://', 1)
@@ -58,17 +60,13 @@ class Config:
     if os.environ.get('FLASK_ENV', 'development') == 'development' or os.environ.get('FLASK_DEBUG', 'False').lower() == 'true':
         print(f"DEBUG - JWT_SECRET_KEY: '{JWT_SECRET_KEY}'")
     
-    # CORS config
-    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost:5001,http://localhost:5000,http://127.0.0.1:5001,http://127.0.0.1:5000,https://harmonic-universe.onrender.com,https://harmonic-universe-z5ka.onrender.com,http://localhost:5174,http://127.0.0.1:5174,*').split(',')
-    CORS_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
-    CORS_HEADERS = ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With', 
-                   'Access-Control-Allow-Credentials', 'Access-Control-Allow-Headers', 
-                   'Access-Control-Allow-Methods', 'Access-Control-Allow-Origin',
-                   'Cache-Control', 'Pragma', 'X-CSRFToken']
-    CORS_EXPOSE_HEADERS = ['Content-Length', 'Content-Type', 'Authorization', 'X-CSRFToken']
-    CORS_MAX_AGE = 600
+    # CORS Configuration
+    CORS_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    CORS_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
+    CORS_HEADERS = ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"]
+    CORS_EXPOSE_HEADERS = ["Content-Length", "Content-Type", "Authorization"]
+    CORS_MAX_AGE = 86400  # 24 hours
     CORS_SUPPORTS_CREDENTIALS = True
-    CORS_SEND_WILDCARD = False  # Important for credentials
     
     # Security config
     SESSION_COOKIE_SECURE = os.environ.get('FLASK_ENV', 'development') == 'production'

@@ -8,7 +8,7 @@ import {
 } from "../../../store/thunks/consolidated/scenesThunks";
 import { fetchUniverseById } from "../../../store/thunks/universeThunks";
 import "../styles/Universe.css";
-import { SceneCard, SceneModal } from "../../scene";
+import { SceneCard, SceneModal } from "../../scene/index.mjs";
 import { UniverseModal, UniverseDeleteModal } from "../";
 
 const UniverseDetail = () => {

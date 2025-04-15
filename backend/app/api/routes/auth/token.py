@@ -8,6 +8,10 @@ import os
 # Removed unused imports
 
 from . import auth_bp
+
+# Note: This route can be rate-limited by Flask-Limiter and cause 429 errors
+# if too many requests occur in a short time frame. The frontend should handle
+# this by implementing backoff and retry logic.
 @auth_bp.route('/validate', methods=['POST', 'OPTIONS'])
 def validate_token():
     """Validate the JWT token and return user data."""
@@ -128,6 +132,9 @@ def validate_token():
         current_app.logger.error(f'Token validation error: {str(e)}')
         return jsonify({'message': 'An error occurred during token validation', 'valid': False, 'error': str(e)}), 500
 
+# Note: This route can be rate-limited by Flask-Limiter and cause 429 errors
+# if too many requests occur in a short time frame. The frontend should handle
+# this by implementing backoff and retry logic.
 @auth_bp.route('/refresh', methods=['POST'])
 def refresh_token():
     """Refresh an expired JWT token."""
@@ -138,7 +145,7 @@ def refresh_token():
         
     # Print request details for debugging
     current_app.logger.debug(f"Token refresh request: Headers={dict(request.headers)}, Origin={request.headers.get('Origin')}")
-        
+    
     try:
         # Get the token from the request
         token = None
@@ -146,10 +153,13 @@ def refresh_token():
 
         if auth_header and auth_header.startswith('Bearer '):
             token = auth_header.split(' ')[1]
+            current_app.logger.debug("Found token in Authorization header")
 
         # Check for token in cookies too
         if not token:
             token = request.cookies.get('token')
+            if token:
+                current_app.logger.debug("Found token in cookies")
 
         # If still no token, check request JSON
         if not token:
@@ -157,16 +167,26 @@ def refresh_token():
                 data = request.get_json(silent=True) or {}
                 if 'token' in data:
                     token = data['token']
+                    current_app.logger.debug("Found token in JSON body")
+                elif 'refresh_token' in data:
+                    token = data['refresh_token']
+                    current_app.logger.debug("Found refresh_token in JSON body")
             except Exception as e:
                 current_app.logger.error(f'Error parsing JSON data: {str(e)}')
 
         # Check form data as a fallback
         if not token and request.form:
-            token = request.form.get('token')
+            token = request.form.get('token') or request.form.get('refresh_token')
+            if token:
+                current_app.logger.debug("Found token in form data")
 
         if not token:
             current_app.logger.warning('No token provided in refresh request')
-            return jsonify({'message': 'No token provided'}), 401
+            return jsonify({
+                'success': False,
+                'message': 'No token provided',
+                'status': 401
+            }), 401
 
         # Log token format for debugging
         if token:
@@ -174,6 +194,11 @@ def refresh_token():
             current_app.logger.debug(f'Token parts count: {len(token_parts)}')
             if len(token_parts) != 3:
                 current_app.logger.warning(f'Malformed token - expected 3 parts, got {len(token_parts)}')
+                return jsonify({
+                    'success': False,
+                    'message': 'Malformed token',
+                    'status': 401
+                }), 401
 
         try:
             # Try to decode the token to get the user ID
@@ -182,7 +207,11 @@ def refresh_token():
 
             if not secret_key:
                 current_app.logger.error('JWT_SECRET_KEY not configured')
-                return jsonify({'message': 'Server configuration error'}), 500
+                return jsonify({
+                    'success': False,
+                    'message': 'Server configuration error',
+                    'status': 500
+                }), 500
 
             # Allow ExpiredSignatureError but catch other errors
             try:
@@ -192,27 +221,62 @@ def refresh_token():
                 # Do not verify expiration when refreshing
                 payload = jwt.decode(token, secret_key, algorithms=['HS256'], options={'verify_exp': False})
                 user_id = payload.get('sub')  # 'sub' is where Flask-JWT-Extended stores the identity
+                jti = payload.get('jti')  # JWT ID
+                
+                # Check if token has been revoked
+                from ....extensions import token_blocklist
+                if jti in token_blocklist:
+                    current_app.logger.warning(f'Attempt to use revoked token: {jti}')
+                    return jsonify({
+                        'success': False,
+                        'message': 'Token has been revoked',
+                        'status': 401,
+                        'error': 'token_revoked'
+                    }), 401
+                
                 current_app.logger.debug(f'Successfully decoded token for user ID: {user_id}')
             except jwt.InvalidTokenError as e:
                 current_app.logger.error(f'Invalid token during refresh: {str(e)}')
-                return jsonify({'message': 'Invalid token', 'error': str(e)}), 401
+                return jsonify({
+                    'success': False,
+                    'message': 'Invalid token',
+                    'error': str(e),
+                    'status': 401
+                }), 401
 
             if not user_id:
                 current_app.logger.error('Token missing user ID in payload')
-                return jsonify({'message': 'Invalid token payload - missing user ID'}), 401
+                return jsonify({
+                    'success': False,
+                    'message': 'Invalid token payload - missing user ID',
+                    'status': 401
+                }), 401
 
             # Verify the user exists
             user = User.query.get(user_id)
             if not user:
                 current_app.logger.error(f'User not found for ID: {user_id}')
-                return jsonify({'message': 'User not found'}), 404
+                return jsonify({
+                    'success': False,
+                    'message': 'User not found',
+                    'status': 404
+                }), 404
 
-            # Create a new token
+            # Create a new token with the new JTI (ensuring old token can be invalidated)
             new_token = create_access_token(identity=user.id)
+            
+            # If we're using refresh tokens, we might want to revoke the old one
+            if jti:
+                # Add to blocklist if needed
+                # from ....extensions import add_token_to_blocklist
+                # add_token_to_blocklist(jti)
+                pass
+                
             current_app.logger.info(f'Created new token for user ID: {user.id}')
 
             # Create response
             response = jsonify({
+                'success': True,
                 'message': 'Token refreshed successfully',
                 'token': new_token,
                 'user': user.to_dict()
@@ -243,8 +307,18 @@ def refresh_token():
 
         except Exception as decode_error:
             current_app.logger.error(f'Token decode error: {str(decode_error)}')
-            return jsonify({'message': 'Invalid token format', 'error': str(decode_error)}), 401
+            return jsonify({
+                'success': False,
+                'message': 'Invalid token format',
+                'error': str(decode_error),
+                'status': 401
+            }), 401
 
     except Exception as e:
         current_app.logger.error(f'Token refresh error: {str(e)}')
-        return jsonify({'message': 'An error occurred during token refresh', 'error': str(e)}), 500
+        return jsonify({
+            'success': False,
+            'message': 'An error occurred during token refresh',
+            'error': str(e),
+            'status': 500
+        }), 500

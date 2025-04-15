@@ -78,7 +78,7 @@ def create_mime_middleware(app):
             path = environ.get('PATH_INFO', '')
             
             # Check if this is a JavaScript file
-            if re.search(r'\.(js|mjs|jsx)$', path) or '/src/index.js' in path or '/jsx-runtime' in path:
+            if re.search(r'\.(js|mjs|jsx)$', path) or '/src/main.jsx' in path or '/jsx-runtime' in path:
                 # Replace Content-Type header or add it if not present
                 new_headers = []
                 content_type_added = False

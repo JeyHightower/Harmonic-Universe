@@ -85,12 +85,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  // Try to directly load index.js if needed
-  if (document.querySelector('script[src="/src/index.js"]') === null) {
-    console.log('Attempting to manually load index.js');
+  // Try to directly load main.jsx if needed
+  if (document.querySelector('script[src="/src/main.jsx"]') === null) {
+    console.log('Attempting to manually load main.jsx');
     const indexScript = document.createElement('script');
     indexScript.type = 'module';
-    indexScript.src = '/src/index.js';
+    indexScript.src = '/src/main.jsx';
     indexScript.setAttribute('data-manual-fix', 'true');
     indexScript.crossOrigin = 'anonymous';
     document.head.appendChild(indexScript);

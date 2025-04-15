@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, send_from_directory, Response, render_template, current_app, request
+from flask import Flask, jsonify, send_from_directory, Response, render_template, current_app, request, make_response
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_limiter import Limiter
@@ -12,7 +12,7 @@ from typing import Optional, Union, cast, Any
 from logging.handlers import RotatingFileHandler
 
 from .config import config
-from .extensions import db
+from .extensions import db, jwt
 from .api.routes import api_bp
 from .api.routes.auth import auth_bp
 from .api.routes.user import user_bp
@@ -38,7 +38,6 @@ except ImportError:
     FIXES_AVAILABLE = False
 
 # Initialize extensions
-jwt = JWTManager()
 limiter = Limiter(
     key_func=get_remote_address,
     storage_uri="memory://",
@@ -93,16 +92,63 @@ def setup_static_folder(app):
                 break
 
 def setup_cors_handlers(app):
-    """Configure CORS handling for the application."""
-    # Since we're using Flask-CORS extension, we don't need to manually handle OPTIONS requests
-    # We'll keep this function minimal to avoid conflicting with the extension
+    """Set up CORS handlers for OPTIONS preflight requests.
     
-    # Handle /api/* OPTIONS requests specifically
+    This function adds a route handler specifically for OPTIONS requests to the API,
+    which responds with appropriate CORS headers based on the app's configuration.
+    """
+    
     @app.route('/api/<path:path>', methods=['OPTIONS'])
-    def cors_preflight(path):
-        response = app.make_default_options_response()
-        # We don't need to add CORS headers here as Flask-CORS will handle it
-        return response, 200
+    def cors_preflight_api(path):
+        """Handle OPTIONS requests for all API routes."""
+        # Get configured origins from app config
+        allowed_origins = app.config.get('CORS_ORIGINS', ["http://localhost:5173"])
+        origin = request.headers.get('Origin')
+        
+        # Create a response that will be returned for OPTIONS requests
+        response = make_response()
+        
+        # Log the CORS preflight for debugging
+        app.logger.info(f"CORS preflight request received for path: /api/{path}, Origin: {origin}")
+        app.logger.debug(f"Allowed origins: {allowed_origins}")
+        
+        # Check if the origin is allowed
+        if origin and origin in allowed_origins:
+            # Add specific origin for proper CORS with credentials (not using wildcard)
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            
+            # Add all configured headers or use defaults
+            allowed_headers = app.config.get('CORS_HEADERS', [
+                'Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'
+            ])
+            response.headers['Access-Control-Allow-Headers'] = ', '.join(allowed_headers)
+            
+            # Add all configured methods or use defaults
+            allowed_methods = app.config.get('CORS_METHODS', [
+                'GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'
+            ])
+            response.headers['Access-Control-Allow-Methods'] = ', '.join(allowed_methods)
+            
+            # Expose headers
+            expose_headers = app.config.get('CORS_EXPOSE_HEADERS', [
+                'Content-Length', 'Content-Type', 'Authorization'
+            ])
+            response.headers['Access-Control-Expose-Headers'] = ', '.join(expose_headers)
+            
+            # Set max age from config or default (24 hours = 86400 seconds)
+            max_age = app.config.get('CORS_MAX_AGE', 86400)
+            response.headers['Access-Control-Max-Age'] = str(max_age)
+            
+            # Log success for debugging
+            app.logger.info(f"CORS preflight request successful for Origin: {origin}")
+            
+            # Return 200 OK status for successful preflight
+            return response, 200
+        else:
+            # Log failure for debugging
+            app.logger.warning(f"CORS preflight request denied for Origin: {origin}")
+            return response, 403
 
 def setup_error_handlers(app):
     """Configure error handlers for the application."""
@@ -208,29 +254,60 @@ def setup_routes(app):
 
         return app.send_static_file('index.html')
 
-def create_app(config_name='default'):
-    """Create and configure the Flask application."""
-    # Configure static folder
-    static_folder = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'frontend', 'dist'))
-    static_url_path = '/'
-
-    # Create Flask app
-    app = Flask(__name__, static_folder=static_folder, static_url_path=static_url_path)
-
-    # Log static folder configuration
-    print(f"Static folder set to: {app.static_folder}")
-    print(f"Static URL path set to: {app.static_url_path}")
-
-    # Set up static folder with fallbacks
-    setup_static_folder(app)
-
-    # Basic app configuration
-    app.url_map.strict_slashes = False
-    app.config.from_object(config[config_name])
-
+def create_app(config_class=Config):
+    """Create and configure an instance of the Flask application."""
+    app = Flask(__name__)
+    app.config.from_object(config_class)
+    
     # Initialize extensions
     db.init_app(app)
+    migrate.init_app(app, db)
     jwt.init_app(app)
+    
+    # Initialize CORS with specific settings
+    CORS(app, 
+         resources={r"/api/*": {
+             "origins": app.config['CORS_ORIGINS'],
+             "methods": app.config['CORS_METHODS'],
+             "allow_headers": app.config['CORS_HEADERS'],
+             "expose_headers": app.config['CORS_EXPOSE_HEADERS'],
+             "supports_credentials": app.config['CORS_SUPPORTS_CREDENTIALS'],
+             "max_age": app.config['CORS_MAX_AGE']
+         }})
+    
+    # Add CORS headers to all responses
+    @app.after_request
+    def after_request(response):
+        if request.endpoint and request.endpoint.startswith('api.'):
+            response.headers.add('Access-Control-Allow-Origin', request.headers.get('Origin', '*'))
+            response.headers.add('Access-Control-Allow-Credentials', 'true')
+            response.headers.add('Access-Control-Allow-Methods', ','.join(app.config['CORS_METHODS']))
+            response.headers.add('Access-Control-Allow-Headers', ','.join(app.config['CORS_HEADERS']))
+            response.headers.add('Access-Control-Expose-Headers', ','.join(app.config['CORS_EXPOSE_HEADERS']))
+            response.headers.add('Access-Control-Max-Age', str(app.config['CORS_MAX_AGE']))
+        return response
+    
+    # Handle preflight requests
+    @app.before_request
+    def handle_preflight():
+        if request.method == 'OPTIONS':
+            response = make_response()
+            response.headers.add('Access-Control-Allow-Origin', request.headers.get('Origin', '*'))
+            response.headers.add('Access-Control-Allow-Credentials', 'true')
+            response.headers.add('Access-Control-Allow-Methods', ','.join(app.config['CORS_METHODS']))
+            response.headers.add('Access-Control-Allow-Headers', ','.join(app.config['CORS_HEADERS']))
+            response.headers.add('Access-Control-Max-Age', str(app.config['CORS_MAX_AGE']))
+            return response
+    
+    # Register blueprints
+    app.register_blueprint(api_bp, url_prefix='/api')
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(user_bp, url_prefix='/api/user')
+    app.register_blueprint(scenes_bp, url_prefix='/api/scenes')
+    app.register_blueprint(characters_bp, url_prefix='/api/characters')
+    app.register_blueprint(notes_bp, url_prefix='/api/notes')
+    
+    # Initialize extensions
     limiter.init_app(app)
     cache.init_app(app)
 
@@ -239,80 +316,12 @@ def create_app(config_name='default'):
         print("Applying fixes for MIME types and Render compatibility...")
         try:
             apply_all_mime_fixes(app)
-            if config_name == 'production' or os.environ.get('APPLY_RENDER_FIXES') == 'true':
+            if app.config.get('ENV') == 'production' or os.environ.get('APPLY_RENDER_FIXES') == 'true':
                 apply_render_fixes(app)
         except Exception as e:
             print(f"WARNING: Error applying fixes: {str(e)}")
-
-    # Configure CORS
-    @limiter.request_filter
-    def options_request_filter():
-        return request.method == "OPTIONS"
-
-    exempt_methods = ["OPTIONS"]
-
-    @jwt.token_in_blocklist_loader
-    def check_if_token_in_blocklist(jwt_header, jwt_payload):
-        if request.method in exempt_methods:
-            return False
-        return False
-
-    # Apply CORS for all routes, not just /api routes
-    CORS(app, 
-        origins=app.config['CORS_ORIGINS'], 
-        methods=app.config['CORS_METHODS'],
-        allow_headers=app.config['CORS_HEADERS'],
-        expose_headers=app.config['CORS_EXPOSE_HEADERS'],
-        supports_credentials=True,
-        max_age=app.config['CORS_MAX_AGE'],
-        vary_header=True)
-    
-    # Log CORS configuration
-    print(f"CORS configured with origins: {app.config['CORS_ORIGINS']}")
-    print(f"CORS credentials support: {True}")
-    
-    # Instead, we'll create a simpler after_request handler just for cookies
-    @app.after_request
-    def fix_cookies(response):
-        if 'Set-Cookie' in response.headers:
-            # Always set the same consistent cookie settings
-            is_prod = app.config.get('ENV') == 'production'
-            same_site = 'None'  # Use None for both prod and dev to enable cross-site cookies
-            secure = True  # Set secure for both environments since SameSite=None requires it
             
-            # Log cookie settings being applied
-            print(f"Setting cookie headers - SameSite={same_site}, Secure={secure}, Env={app.config.get('ENV')}")
-            
-            cookies = response.headers.getlist('Set-Cookie')
-            response.headers.pop('Set-Cookie')
-            
-            for cookie in cookies:
-                cookie_parts = cookie.split(';')
-                base_cookie = cookie_parts[0]
-                
-                # Build a new cookie with consistent settings
-                new_cookie = f"{base_cookie}; Path=/; HttpOnly; SameSite={same_site}; Secure"
-                response.headers.add('Set-Cookie', new_cookie)
-                
-        # Add CORS headers for pre-flight requests if not already present
-        if request.method == 'OPTIONS' and 'Origin' in request.headers:
-            # Ensure CORS headers are set for preflight requests
-            origin = request.headers.get('Origin')
-            allowed_origins = app.config['CORS_ORIGINS']
-            
-            # Check if origin is allowed (either explicitly or via wildcard)
-            is_allowed = '*' in allowed_origins or origin in allowed_origins
-            
-            if is_allowed:
-                if 'Access-Control-Allow-Origin' not in response.headers:
-                    response.headers['Access-Control-Allow-Origin'] = origin
-                if 'Access-Control-Allow-Credentials' not in response.headers:
-                    response.headers['Access-Control-Allow-Credentials'] = 'true'
-        
-        return response
-
     # Set up handlers and routes
-    setup_cors_handlers(app)
     setup_error_handlers(app)
     setup_jwt_handlers(app)
     setup_routes(app)

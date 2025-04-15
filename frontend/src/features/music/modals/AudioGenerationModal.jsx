@@ -10,7 +10,7 @@ import Slider from "../../../components/common/Slider";
 import Spinner from "../../../components/common/Spinner";
 import "../../../styles/Modal.css";
 import { audioService } from "../../../services";
-import { generateRandomId } from "../../../utils/idGenerators";
+import { generateRandomId } from "../../../utils/idGenerators.mjs";
 
 /**
  * Modal for generating audio based on the physics of a universe and scene.
