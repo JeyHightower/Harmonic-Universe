@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { useSelector } from "react-redux";
-import Modal from "../common/Modal";
+import { ModalSystem } from "./index.mjs";
 import { selectIsModalOpen } from "../../store/slices/modalSlice";
 
 const ConfirmationModal = ({
@@ -39,7 +39,7 @@ const ConfirmationModal = ({
   };
 
   return (
-    <Modal
+    <ModalSystem
       isOpen={isOpen}
       type="confirm"
       title={title}
@@ -63,7 +63,7 @@ const ConfirmationModal = ({
           </button>
         </div>
       </div>
-    </Modal>
+    </ModalSystem>
   );
 };
 

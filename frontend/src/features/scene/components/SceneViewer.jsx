@@ -1,6 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { Typography, Descriptions, Button, Card, Tag } from "antd";
+import { Typography, Descriptions, Card, Tag } from "antd";
+import Button from "../../../components/common/Button";
 import { useParams, useNavigate } from "react-router-dom";
 import { Box, Paper, Grid, CircularProgress } from "@mui/material";
 import { ArrowBack } from "@mui/icons-material";
@@ -41,6 +42,8 @@ const SceneViewer = ({ scene, onClose }) => {
         return "default";
     }
   };
+
+  const navigate = useNavigate();
 
   return (
     <div className="scene-viewer">
@@ -99,7 +102,13 @@ const SceneViewer = ({ scene, onClose }) => {
         </Descriptions>
 
         <div className="viewer-actions">
-          <Button type="primary" onClick={onClose}>
+          <Button
+            variant="primary"
+            onClick={() => navigate(`/scenes/${scene.id}/edit`)}
+          >
+            Edit
+          </Button>
+          <Button variant="primary" onClick={onClose}>
             Close
           </Button>
         </div>

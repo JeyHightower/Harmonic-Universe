@@ -293,7 +293,7 @@ const StoryboardEditor = () => {
             variant="primary"
             disabled={loading}
           >
-            Save Storyboard
+            {loading ? "Saving..." : "Save Changes"}
           </Button>
           <Button
             onClick={() => navigate(`/universes/${universeId}/storyboards`)}
@@ -403,7 +403,7 @@ const StoryboardEditor = () => {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" variant="primary" disabled={loading}>
+                <Button variant="primary" disabled={loading}>
                   {loading ? "Creating..." : "Create Point"}
                 </Button>
               </div>

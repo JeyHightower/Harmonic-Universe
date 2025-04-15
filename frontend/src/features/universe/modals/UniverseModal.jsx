@@ -1,9 +1,9 @@
 import PropTypes from "prop-types";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Button } from "../../../components/common";
+import Button from "../../../components/common/Button";
 import Input from "../../../components/common/Input";
-import Modal from "../../../components/common/Modal";
+import { ModalSystem } from "../../../components/modals/index.mjs";
 import { MODAL_CONFIG } from "../../../utils/config";
 import {
   createUniverse,
@@ -229,7 +229,7 @@ const UniverseModal = ({
   };
 
   return (
-    <Modal
+    <ModalSystem
       isOpen={isModalOpen}
       onClose={onClose}
       title={getModalTitle()}
@@ -324,7 +324,7 @@ const UniverseModal = ({
           )}
         </div>
       </form>
-    </Modal>
+    </ModalSystem>
   );
 };
 

@@ -6,7 +6,7 @@ import {
   validateDescription,
   validateUniverseName,
 } from "../../../utils/validation";
-import { Button } from "../../../components/common";
+import Button from "../../../components/common/Button";
 import Input from "../../../components/common/Input";
 import "../styles/Universe.css";
 
@@ -48,6 +48,10 @@ function UniverseCreate({ onClose, onSuccess }) {
     });
 
     return !nameError && !descriptionError;
+  };
+
+  const handleCancel = () => {
+    navigate(-1);
   };
 
   const handleSubmit = async (e) => {
@@ -134,7 +138,10 @@ function UniverseCreate({ onClose, onSuccess }) {
         </div>
 
         <div className="form-actions">
-          <Button type="submit" disabled={isSubmitting} loading={isSubmitting}>
+          <Button onClick={handleCancel} variant="secondary" disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button variant="primary" disabled={isSubmitting} loading={isSubmitting}>
             Create Universe
           </Button>
         </div>

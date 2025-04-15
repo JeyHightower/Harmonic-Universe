@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
 import apiClient from "../../../services/api";
 import { endpoints } from "../../../services/endpoints";
-import { Button } from "../../../components/common";
+import Button from "../../../components/common/Button";
 import Icon from "../../../components/common/Icon";
 import Spinner from "../../../components/common/Spinner";
 import "../styles/PhysicsParameters.css";

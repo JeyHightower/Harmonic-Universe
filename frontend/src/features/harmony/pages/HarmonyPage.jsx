@@ -231,7 +231,7 @@ const HarmonyPage = () => {
             children: (
               <div className="harmony-tab-content">
                 <div className="harmony-actions">
-                  <Button type="primary" onClick={handleCreateHarmonyParameter}>
+                  <Button variant="primary" onClick={handleCreateHarmonyParameter}>
                     Create Harmony Parameter
                   </Button>
                 </div>

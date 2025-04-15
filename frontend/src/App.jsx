@@ -3,12 +3,9 @@ import { Routes, Route, Navigate, useRoutes } from "react-router-dom";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { useSelector, useDispatch } from "react-redux";
-import PropTypes from "prop-types";
 import store, { persistor } from "./store";
-import { Navigation } from "./components";
-import ModalProvider from "./components/modals/ModalProvider";
-import ErrorBoundary from "./components/ErrorBoundary";
-import NetworkErrorHandler from "./components/NetworkErrorHandler";
+import { Navigation, ErrorBoundary, NetworkErrorHandler } from "./components";
+import { ModalProvider } from "./contexts/ModalContext";
 import routes from "./routes/index.jsx";
 import { checkAuthState, logout } from "./store/slices/authSlice";
 import { authService } from "./services/auth.service.mjs";
@@ -30,34 +27,6 @@ const ErrorFallback = () => (
     <p>We&apos;re having trouble loading the application. Please try again later.</p>
   </div>
 );
-
-// Not Found component for invalid routes or missing components
-const NotFoundPage = () => (
-  <div className="not-found-page">
-    <h1>Page Not Found</h1>
-    <p>The requested page or component could not be found.</p>
-    <button onClick={() => window.history.back()}>Go Back</button>
-  </div>
-);
-
-// Protected Route component
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useSelector((state) => state.auth);
-
-  if (loading) {
-    return <LoadingPage />;
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
-  }
-
-  return children;
-};
-
-ProtectedRoute.propTypes = {
-  children: PropTypes.node.isRequired,
-};
 
 // A component to handle the root path with query parameters
 const RootPathHandler = () => {

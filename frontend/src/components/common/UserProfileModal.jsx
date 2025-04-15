@@ -126,11 +126,11 @@ const UserProfileModal = ({ userId, onClose, isGlobalModal = false }) => {
 
             {isCurrentUser && (
               <div className="form-actions">
-                <Button type="secondary" onClick={onClose} disabled={loading}>
+                <Button variant="secondary" onClick={onClose} disabled={loading}>
                   Cancel
                 </Button>
-                <Button type="primary" onClick={handleSubmit} loading={loading}>
-                  Update Profile
+                <Button variant="primary" onClick={handleSubmit} loading={loading}>
+                  Save Changes
                 </Button>
               </div>
             )}
@@ -151,8 +151,9 @@ const UserProfileModal = ({ userId, onClose, isGlobalModal = false }) => {
               <p>Additional account settings will be displayed here.</p>
 
               <div className="danger-zone">
-                <h4>Danger Zone</h4>
-                <Button type="danger">Delete Account</Button>
+                <h3>Danger Zone</h3>
+                <p>Once you delete your account, there is no going back. Please be certain.</p>
+                <Button variant="danger">Delete Account</Button>
               </div>
             </div>
           </TabPane>

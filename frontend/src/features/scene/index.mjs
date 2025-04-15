@@ -18,7 +18,4 @@ export { default as SceneDeleteConfirmation } from './modals/SceneDeleteConfirma
 export { default as SceneDetail } from './pages/SceneDetail.jsx';
 export { default as SceneEditPage } from './pages/SceneEditPage.jsx';
 export { default as SceneForm } from './pages/SceneForm.jsx';
-export { default as ScenesPage } from './pages/ScenesPage.jsx';
-
-// For backward compatibility
-export { default as SceneModalHandler } from './modals/SceneModal.jsx'; 
+export { default as ScenesPage } from './pages/ScenesPage.jsx'; 

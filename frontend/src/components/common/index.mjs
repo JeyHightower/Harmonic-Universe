@@ -6,7 +6,5 @@ export { default as Tooltip } from "./Tooltip";
 export { default as Icon } from "./Icon";
 export { default as SafeIcon } from "./SafeIcon";
 export { default as Slider } from "./Slider";
-export { default as Modal } from "./Modal";
 export { default as ConfirmDeleteWrapper } from "./ConfirmDeleteWrapper";
-export { default as VisualizationFormModal } from "./VisualizationFormModal";
 export { default as UserProfileModal } from "./UserProfileModal";

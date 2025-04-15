@@ -74,7 +74,7 @@ const PhysicsPage = () => {
             children: (
               <div className="physics-tab-content">
                 <div className="physics-actions">
-                  <Button type="primary" onClick={handleCreatePhysicsObject}>
+                  <Button variant="primary" onClick={handleCreatePhysicsObject}>
                     Create Physics Object
                   </Button>
                 </div>
@@ -85,7 +85,7 @@ const PhysicsPage = () => {
                       description="No physics objects defined yet"
                       image={Empty.PRESENTED_IMAGE_SIMPLE}
                     />
-                    <Button type="primary" onClick={handleCreatePhysicsObject}>
+                    <Button variant="primary" onClick={handleCreatePhysicsObject}>
                       Create Your First Physics Object
                     </Button>
                   </Card>
@@ -99,7 +99,7 @@ const PhysicsPage = () => {
             children: (
               <div className="physics-tab-content">
                 <div className="physics-actions">
-                  <Button type="primary" onClick={handleCreatePhysicsParameter}>
+                  <Button variant="primary" onClick={handleCreatePhysicsParameter}>
                     Create Physics Parameter
                   </Button>
                 </div>
@@ -111,7 +111,7 @@ const PhysicsPage = () => {
                       image={Empty.PRESENTED_IMAGE_SIMPLE}
                     />
                     <Button
-                      type="primary"
+                      variant="primary"
                       onClick={handleCreatePhysicsParameter}
                     >
                       Create Your First Physics Parameter
@@ -128,7 +128,7 @@ const PhysicsPage = () => {
               <div className="physics-tab-content">
                 <div className="physics-actions">
                   <Button
-                    type="primary"
+                    variant="primary"
                     onClick={handleCreatePhysicsConstraint}
                   >
                     Create Physics Constraint
@@ -142,7 +142,7 @@ const PhysicsPage = () => {
                       image={Empty.PRESENTED_IMAGE_SIMPLE}
                     />
                     <Button
-                      type="primary"
+                      variant="primary"
                       onClick={handleCreatePhysicsConstraint}
                     >
                       Create Your First Physics Constraint

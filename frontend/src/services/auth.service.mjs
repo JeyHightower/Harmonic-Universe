@@ -267,6 +267,11 @@ export async function refreshToken() {
     return { success: false, message: 'No token to refresh' };
   }
   
+  if (!refreshToken) {
+    console.warn('refreshToken: No refresh token available');
+    return { success: false, message: 'No refresh token available' };
+  }
+  
   try {
     console.log('Attempting to refresh token...');
     // Use the correct endpoint from authEndpoints
@@ -276,7 +281,7 @@ export async function refreshToken() {
     // Send token in request, including the refreshToken if available
     const requestBody = { 
       token,
-      refresh_token: refreshToken || undefined
+      refresh_token: refreshToken
     };
     
     const response = await httpClient.post(refreshEndpoint, 
@@ -302,6 +307,12 @@ export async function refreshToken() {
         // Store the new token in localStorage using the constant keys
         localStorage.setItem(TOKEN_KEY, newToken);
         
+        // If there's a refresh token in the response, store it
+        if (response.refresh_token || (response.data && response.data.refresh_token)) {
+          const newRefreshToken = response.refresh_token || (response.data && response.data.refresh_token);
+          localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
+        }
+        
         // If user data was returned, update it
         if (userData) {
           localStorage.setItem(USER_KEY, JSON.stringify(userData));
@@ -322,12 +333,11 @@ export async function refreshToken() {
           }
         }
         
+        // Return a properly formatted response that matches what refreshTokenAndRetry expects
         return { 
           success: true, 
-          data: { 
-            token: newToken, 
-            user: userData
-          } 
+          token: newToken,
+          user: userData
         };
       }
     }
@@ -341,29 +351,27 @@ export async function refreshToken() {
     };
   } catch (error) {
     console.error('Error refreshing token:', error);
-    // Use safe error handling that won't throw additional errors
-    if (error && error.response && error.response.status === 401) {
-      // 401 means token is invalid or expired, clear auth data
-      clearAuthData();
-      
-      // Notify Redux of the auth failure if available
-      if (typeof window !== 'undefined' && window.store && window.store.dispatch) {
-        try {
-          window.store.dispatch({ type: 'auth/authFailure', payload: 'Token expired or invalid' });
-        } catch (reduxError) {
-          console.error('Error dispatching to Redux store:', reduxError);
-        }
-      }
-      
+    
+    // For network errors, don't immediately clear auth data
+    if (error.message && error.message.includes('Network Error')) {
       return {
         success: false,
-        status: 401,
-        message: 'Invalid or expired token',
-        originalError: error
+        message: 'Network error during token refresh',
+        error: error.message
       };
     }
     
-    return responseHandler.handleError(error);
+    // For 401/403 errors, clear auth data
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      clearAuthData();
+    }
+    
+    return {
+      success: false,
+      status: error.response?.status,
+      message: error.response?.data?.message || error.message || 'Error refreshing token',
+      originalError: error
+    };
   }
 }
 

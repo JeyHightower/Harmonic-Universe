@@ -11,9 +11,9 @@ import {
   validateDescription,
   validateUniverseName,
 } from "../../../utils/validation";
-import { Button } from "../../../components/common";
+import Button from "../../../components/common/Button";
 import Input from "../../../components/common/Input";
-import Modal from "../../../components/common/Modal";
+import { ModalSystem } from "../../../components/modals/index.mjs";
 import Spinner from "../../../components/common/Spinner";
 import { PhysicsPanel } from "../../physics";
 import "../styles/Universe.css";
@@ -272,7 +272,7 @@ function UniverseEdit() {
         </div>
       </form>
 
-      <Modal
+      <ModalSystem
         isOpen={showCancelModal}
         onClose={handleCancelModalClose}
         title="Discard Changes"
@@ -294,7 +294,7 @@ function UniverseEdit() {
             </Button>
           </div>
         </div>
-      </Modal>
+      </ModalSystem>
     </div>
   );
 }

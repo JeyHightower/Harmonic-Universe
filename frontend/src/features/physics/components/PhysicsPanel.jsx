@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useModal } from "../../../contexts/ModalContext";
 import { updatePhysicsParams } from "../../../store/thunks/universeThunks";
 import { MODAL_TYPES } from "../../../constants/modalTypes";
-import { Button } from "../../../components/common";
+import Button from "../../../components/common/Button";
 import "../styles/PhysicsPanel.css";
 
 const DEFAULT_PHYSICS_PARAMS = {

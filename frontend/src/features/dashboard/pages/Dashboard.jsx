@@ -59,9 +59,20 @@ const Dashboard = () => {
   const loadUniverses = useCallback(() => {
     console.log("Dashboard - Loading universes, attempt:", retryCount + 1);
     
-    // Check token before making request
+    // Verify token and user before making request
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
     const tokenVerificationFailed = localStorage.getItem("token_verification_failed");
+    const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+    
+    // Enhanced logging for debugging purposes
+    console.log("Dashboard - Auth state check:", {
+      hasToken: !!token,
+      tokenLength: token?.length || 0,
+      tokenStart: token ? token.substring(0, 5) : null,
+      tokenVerificationFailed: tokenVerificationFailed === "true",
+      hasUser: !!userStr,
+      userValid: userStr ? !!JSON.parse(userStr) : false
+    });
     
     if (!token) {
       console.error("Dashboard - No auth token found, cannot load universes");
@@ -75,6 +86,17 @@ const Dashboard = () => {
       localStorage.removeItem("token_verification_failed");
       navigate("/?modal=login", { replace: true });
       return Promise.resolve({ error: "Authentication error" });
+    }
+    
+    // Add Authorization header to axios manually to ensure it's available for this request
+    try {
+      const axiosInstance = api.auth.getAxiosInstance?.() || window.axios;
+      if (axiosInstance && axiosInstance.defaults) {
+        console.log("Dashboard - Manually setting Authorization header");
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      }
+    } catch (err) {
+      console.warn("Dashboard - Could not manually set auth header:", err.message);
     }
     
     return dispatch(fetchUniverses({ userId: user?.id, user_only: true }))
@@ -270,14 +292,39 @@ const Dashboard = () => {
   const handleRefreshAuth = () => {
     console.log("Dashboard - Refreshing authentication");
     
+    // Remove any stale tokens or verification flags
+    localStorage.removeItem("token_verification_failed");
+    localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+    localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+    localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+    
     // Use the auth service for consistent cleanup
     authService.clearAuthData();
     
-    // Dispatch logout action
+    // Dispatch logout action to clear Redux state
     dispatch(logout());
+    
+    // Remove any cached API responses
+    if (typeof window !== 'undefined' && window.localStorage) {
+      // Clear any items with "cache" in the key
+      Object.keys(localStorage).forEach(key => {
+        if (key.includes('cache') || key.includes('token') || key.includes('auth')) {
+          localStorage.removeItem(key);
+        }
+      });
+    }
+    
+    // Set a flag to show login modal
+    const loginFlag = 'show_login_modal';
+    localStorage.setItem(loginFlag, 'true');
     
     // Redirect to login page with modal
     navigate("/?modal=login", { replace: true });
+    
+    // Additional cleanup after navigation
+    setTimeout(() => {
+      console.log("Dashboard - Completed auth refresh cleanup");
+    }, 500);
   };
 
   const handleCreateClick = () => {

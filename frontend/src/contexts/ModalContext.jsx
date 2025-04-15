@@ -100,10 +100,10 @@ const ModalRenderer = ({ type, props, onClose }) => {
     ModalComponent.name || "Unknown"
   );
 
-  // Check if this is a SceneModalHandler and ensure modalType is passed
+  // Check if this is a SceneModal and ensure modalType is passed
   const modalProps = {
     ...props,
-    // If this is a SceneModalHandler (SCENE_FORM type), pass modalType
+    // If this is a SceneModal (SCENE_FORM type), pass modalType
     ...(type === "SCENE_FORM" && { 
       modalType: props.modalType || "create",
       // For consolidated component - map to its expected prop names

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
-import ConfirmDeleteModal from "../../components/modals/ConfirmDeleteModal";
+import { ConfirmationModal } from "../modals/index.mjs";
 import { deleteScene } from "../../store/thunks/consolidated/scenesThunks";
 
 // Global state to prevent modal from unmounting
@@ -173,14 +173,14 @@ const ConfirmDeleteWrapper = ({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <ConfirmDeleteModal
-          entityType={displayEntityType}
-          entityId={displayEntityId}
-          entityName={displayEntityName}
+        <ConfirmationModal
+          title={`Delete ${displayEntityType}`}
+          message={`Are you sure you want to delete ${displayEntityName || `this ${displayEntityType}`}? This action cannot be undone. All associated data will be permanently removed.`}
+          confirmText="Delete"
+          cancelText="Cancel"
           onConfirm={handleConfirm}
           onClose={handleModalClose}
-          isGlobalModal={isGlobalModal}
-          isLoading={isDeleting}
+          isOpen={true}
         />
       </div>
     </div>

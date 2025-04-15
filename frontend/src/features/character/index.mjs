@@ -17,7 +17,4 @@ export { default as CharacterModal } from './modals/CharacterModal';
 export { default as CharacterDetail } from './pages/CharacterDetail';
 export { default as CharacterForm } from './pages/CharacterForm';
 export { default as CharacterManagement } from './pages/CharacterManagement';
-export { default as CharactersPage } from './pages/CharactersPage';
-
-// For backward compatibility
-export { default as CharacterModalHandler } from './modals/CharacterModal'; 
+export { default as CharactersPage } from './pages/CharactersPage'; 

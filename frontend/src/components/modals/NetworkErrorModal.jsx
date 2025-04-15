@@ -1,6 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
-import Modal from "../common/Modal";
+import { ModalSystem } from "./index.mjs";
 
 const NetworkErrorModal = ({
   title = "Network Error",
@@ -10,7 +10,7 @@ const NetworkErrorModal = ({
   ...props
 }) => {
   return (
-    <Modal type="error" title={title} onClose={onClose} {...props}>
+    <ModalSystem type="error" title={title} onClose={onClose} {...props}>
       <div className="modal-content">
         <p>{message}</p>
         <div className="modal-actions">
@@ -18,7 +18,7 @@ const NetworkErrorModal = ({
           <button onClick={onClose}>Close</button>
         </div>
       </div>
-    </Modal>
+    </ModalSystem>
   );
 };
 

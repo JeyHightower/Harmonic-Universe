@@ -8,7 +8,6 @@
 // Component exports
 export { default as PhysicsPanel } from './components/PhysicsPanel';
 export { default as PhysicsObjectsManager } from './components/PhysicsObjectsManager';
-export { default as PhysicsObjectForm } from './components/PhysicsObjectForm';
 export { default as PhysicsObjectsList } from './components/PhysicsObjectsList';
 export { default as PhysicsParametersManager } from './components/PhysicsParametersManager';
 

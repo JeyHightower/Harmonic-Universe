@@ -1,7 +1,9 @@
 import PropTypes from "prop-types";
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Form, Input, Button, message, Select, Radio, Checkbox } from "antd";
+import { Form, Input, message, Select, Radio, Checkbox } from "antd";
+import Button from "../../../components/common/Button";
+import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { register } from "../../../store/thunks/authThunks";
 import { log, MODAL_CONFIG } from "../../../utils";
@@ -157,11 +159,11 @@ const SignupModal = ({ onClose }) => {
         </Form.Item>
 
         <div className="form-actions">
-          <Button onClick={onClose} disabled={loading}>
+          <Button onClick={onClose} disabled={loading} variant="secondary">
             Cancel
           </Button>
           <Button
-            type="primary"
+            variant="primary"
             htmlType="submit"
             loading={loading}
             className="auth-button"

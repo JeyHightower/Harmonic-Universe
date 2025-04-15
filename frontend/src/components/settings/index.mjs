@@ -1,1 +1,2 @@
-export { default as Settings } from "./Settings";
+// This file intentionally left empty
+// The Settings component has been removed and replaced by features/settings/pages/SettingsPage

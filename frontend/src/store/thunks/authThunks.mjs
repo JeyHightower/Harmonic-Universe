@@ -147,9 +147,23 @@ export const demoLogin = createAsyncThunk(
         updatedAt: new Date().toISOString(),
       };
 
-      // Create a mock token - use simple format without special characters
-      const mockToken = `demo-token-${Date.now()}`;
-      const mockRefreshToken = `demo-refresh-${Date.now()}`;
+      // Create a proper JWT-like token with three parts
+      const header = btoa(JSON.stringify({ alg: 'demo', typ: 'JWT' }));
+      const now = Math.floor(Date.now() / 1000);
+      const payload = btoa(JSON.stringify({
+        sub: demoUser.id,
+        name: demoUser.firstName + ' ' + demoUser.lastName,
+        iat: now,
+        exp: now + 3600, // 1 hour from now
+      }));
+      const signature = btoa('demo-signature');
+      
+      // Create token with header.payload.signature format
+      const mockToken = `${header}.${payload}.${signature}`;
+      const mockRefreshToken = `${header}.${btoa(JSON.stringify({
+        sub: demoUser.id,
+        exp: now + 86400, // 24 hours from now
+      }))}.${signature}`;
 
       // Store in localStorage
       console.log("Thunk - Storing demo authentication data in localStorage");

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Button } from "../../../components/common";
+import Button from "../../../components/common/Button";
 import { useModal } from "../../../contexts/ModalContext";
 import { MODAL_TYPES } from "../../../constants/modalTypes";
 import "../styles/Universe.css";

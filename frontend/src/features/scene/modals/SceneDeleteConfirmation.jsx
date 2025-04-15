@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import PropTypes from "prop-types";
-import { Button, Typography, Space, Alert } from "antd";
+import { Typography, Space, Alert } from "antd";
+import Button from "../../../components/common/Button";
 import apiClient from "../../../services/api.adapter";
 
 const { Text, Title } = Typography;

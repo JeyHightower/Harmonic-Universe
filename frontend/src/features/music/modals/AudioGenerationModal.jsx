@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import * as Tone from "tone";
 import Button from "../../../components/common/Button";
 import Input from "../../../components/common/Input";
-import Modal from "../../../components/common/Modal";
+import { ModalSystem } from "../../../components/modals/index.mjs";
 import Select from "../../../components/common/Select";
 import Slider from "../../../components/common/Slider";
 import Spinner from "../../../components/common/Spinner";
@@ -453,7 +453,7 @@ const AudioGenerationModal = ({
   };
   
   return (
-    <Modal
+    <ModalSystem
       title={initialData ? "Edit Audio" : "Generate Audio"}
       onClose={onClose}
       {...modalProps}
@@ -624,7 +624,7 @@ const AudioGenerationModal = ({
           </Button>
         </div>
       </div>
-    </Modal>
+    </ModalSystem>
   );
 };
 

@@ -1,8 +1,8 @@
 import PropTypes from "prop-types";
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
-import { Button } from "../../../components/common";
-import Modal from "../../../components/common/Modal";
+import Button from "../../../components/common/Button";
+import { ModalSystem } from "../../../components/modals/index.mjs";
 import { deleteUniverse } from "../../../store/thunks/universeThunks";
 import { MODAL_CONFIG } from "../../../utils/config";
 import "../styles/UniverseFormModal.css";
@@ -44,7 +44,7 @@ const UniverseDeleteModal = ({ isOpen, onClose, onSuccess, universe }) => {
   };
 
   return (
-    <Modal
+    <ModalSystem
       isOpen={isOpen}
       onClose={onClose}
       title="Delete Universe"
@@ -80,7 +80,7 @@ const UniverseDeleteModal = ({ isOpen, onClose, onSuccess, universe }) => {
           </Button>
         </div>
       </div>
-    </Modal>
+    </ModalSystem>
   );
 };
 

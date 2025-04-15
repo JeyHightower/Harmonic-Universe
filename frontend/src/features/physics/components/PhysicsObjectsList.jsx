@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import PropTypes from "prop-types";
 import "../styles/PhysicsObjects.css";
 import { fetchPhysicsObjects } from "../../../store/thunks/physicsObjectsThunks";
-import { Button } from "../../../components/common";
+import Button from "../../../components/common/Button";
 import Icon from "../../../components/common/Icon";
 import Spinner from "../../../components/common/Spinner";
 import { setCurrentPhysicsObject } from "../../../store/slices/physicsObjectsSlice";

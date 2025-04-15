@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import "../styles/SceneCard.css";
 // Import a local default image to avoid server requests
 import defaultSceneImage from "../../../assets/images/default-scene.svg";
+import { formatDate } from "../../../utils";
 
 /**
  * SceneCard component displays a card representation of a scene
@@ -88,19 +89,6 @@ const SceneCard = ({ scene, onEdit, onDelete, onView, active = false, _isOwner =
     handleView(e);
   };
 
-  // Format date string to a more readable format
-  const formatDateString = (dateString) => {
-    if (!dateString) return "N/A";
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return "N/A";
-      return date.toLocaleDateString();
-    } catch (error) {
-      console.warn("Error formatting date:", error);
-      return "N/A";
-    }
-  };
-
   // Check if scene is marked as deleted and handle appropriately
   if (scene.is_deleted === true) {
     console.log(
@@ -140,11 +128,11 @@ const SceneCard = ({ scene, onEdit, onDelete, onView, active = false, _isOwner =
           </p>
           <div className="scene-card-meta">
             <span className="scene-card-date">
-              Created: {formatDateString(scene.created_at)}
+              Created: {formatDate(scene.created_at)}
             </span>
             {scene.updated_at && (
               <span className="scene-card-date">
-                Updated: {formatDateString(scene.updated_at)}
+                Updated: {formatDate(scene.updated_at)}
               </span>
             )}
             {scene.order !== undefined && (

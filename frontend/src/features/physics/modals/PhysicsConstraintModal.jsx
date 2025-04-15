@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Button from "../../../components/common/Button";
 import Input from "../../../components/common/Input";
 import Spinner from "../../../components/common/Spinner";
-import Modal from "../../../components/common/Modal";
+import { ModalSystem } from "../../../components/modals/index.mjs";
 import "../../../styles/Modal.css";
 
 /**
@@ -365,14 +365,10 @@ const PhysicsConstraintModal = (props) => {
                 </fieldset>
 
                 <div className="form-actions">
-                  <Button type="button" variant="secondary" onClick={onClose}>
+                  <Button variant="secondary" onClick={onClose}>
                     Cancel
                   </Button>
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    disabled={loading || physicsObjects.length < 2}
-                  >
+                  <Button variant="primary" disabled={loading || physicsObjects.length < 2} loading={loading}>
                     {loading ? (
                       <Spinner size="small" />
                     ) : isEditing ? (

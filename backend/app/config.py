@@ -61,7 +61,7 @@ class Config:
         print(f"DEBUG - JWT_SECRET_KEY: '{JWT_SECRET_KEY}'")
     
     # CORS Configuration
-    CORS_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    CORS_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5001", "http://127.0.0.1:5001"]
     CORS_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
     CORS_HEADERS = ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"]
     CORS_EXPOSE_HEADERS = ["Content-Length", "Content-Type", "Authorization"]

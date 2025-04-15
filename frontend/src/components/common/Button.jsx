@@ -13,7 +13,7 @@ import Spinner from "./Spinner";
  * @param {boolean} [props.disabled=false] - Whether button is disabled
  * @param {boolean} [props.loading=false] - Whether button is in loading state
  */
-export const Button = React.forwardRef(
+const Button = React.forwardRef(
   (
     {
       children,
@@ -97,5 +97,4 @@ Button.propTypes = {
 
 Button.displayName = "Button";
 
-// Add default export for backward compatibility
 export default Button;

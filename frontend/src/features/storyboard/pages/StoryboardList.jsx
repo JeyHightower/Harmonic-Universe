@@ -211,7 +211,7 @@ const StoryboardList = () => {
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" disabled={loading}>
+              <Button variant="primary" disabled={loading}>
                 {loading ? "Creating..." : "Create Storyboard"}
               </Button>
             </div>

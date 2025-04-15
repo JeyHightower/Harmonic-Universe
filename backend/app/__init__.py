@@ -14,11 +14,6 @@ from .config import Config
 
 from .extensions import db, migrate, jwt
 from .api.routes import api_bp
-from .api.routes.auth import auth_bp
-from .api.routes.user import user_bp
-from .api.routes.scenes import scenes_bp
-from .api.routes.characters import characters_bp
-from .api.routes.notes import notes_bp
 
 # Initialize caching
 try:
@@ -273,18 +268,25 @@ def create_app(config_class=Config):
              "expose_headers": app.config['CORS_EXPOSE_HEADERS'],
              "supports_credentials": app.config['CORS_SUPPORTS_CREDENTIALS'],
              "max_age": app.config['CORS_MAX_AGE']
-         }})
+         }},
+         supports_credentials=True)
     
     # Add CORS headers to all responses
     @app.after_request
     def after_request(response):
-        if request.endpoint and request.endpoint.startswith('api.'):
-            response.headers.add('Access-Control-Allow-Origin', request.headers.get('Origin', '*'))
-            response.headers.add('Access-Control-Allow-Credentials', 'true')
-            response.headers.add('Access-Control-Allow-Methods', ','.join(app.config['CORS_METHODS']))
-            response.headers.add('Access-Control-Allow-Headers', ','.join(app.config['CORS_HEADERS']))
-            response.headers.add('Access-Control-Expose-Headers', ','.join(app.config['CORS_EXPOSE_HEADERS']))
-            response.headers.add('Access-Control-Max-Age', str(app.config['CORS_MAX_AGE']))
+        origin = request.headers.get('Origin')
+        
+        # If this is a CORS request (has Origin header)
+        if origin:
+            # Check if origin is in allowed origins
+            if origin in app.config['CORS_ORIGINS'] or '*' in app.config['CORS_ORIGINS']:
+                response.headers.add('Access-Control-Allow-Origin', origin)
+                response.headers.add('Access-Control-Allow-Credentials', 'true')
+                response.headers.add('Access-Control-Allow-Methods', ','.join(app.config['CORS_METHODS']))
+                response.headers.add('Access-Control-Allow-Headers', ','.join(app.config['CORS_HEADERS']))
+                response.headers.add('Access-Control-Expose-Headers', ','.join(app.config['CORS_EXPOSE_HEADERS']))
+                response.headers.add('Access-Control-Max-Age', str(app.config['CORS_MAX_AGE']))
+        
         return response
     
     # Handle preflight requests
@@ -292,20 +294,21 @@ def create_app(config_class=Config):
     def handle_preflight():
         if request.method == 'OPTIONS':
             response = make_response()
-            response.headers.add('Access-Control-Allow-Origin', request.headers.get('Origin', '*'))
-            response.headers.add('Access-Control-Allow-Credentials', 'true')
-            response.headers.add('Access-Control-Allow-Methods', ','.join(app.config['CORS_METHODS']))
-            response.headers.add('Access-Control-Allow-Headers', ','.join(app.config['CORS_HEADERS']))
-            response.headers.add('Access-Control-Max-Age', str(app.config['CORS_MAX_AGE']))
+            # Set CORS headers only if they don't already exist
+            if 'Access-Control-Allow-Origin' not in response.headers:
+                response.headers.add('Access-Control-Allow-Origin', request.headers.get('Origin', '*'))
+            if 'Access-Control-Allow-Credentials' not in response.headers:
+                response.headers.add('Access-Control-Allow-Credentials', 'true')
+            if 'Access-Control-Allow-Methods' not in response.headers:
+                response.headers.add('Access-Control-Allow-Methods', ','.join(app.config['CORS_METHODS']))
+            if 'Access-Control-Allow-Headers' not in response.headers:
+                response.headers.add('Access-Control-Allow-Headers', ','.join(app.config['CORS_HEADERS']))
+            if 'Access-Control-Max-Age' not in response.headers:
+                response.headers.add('Access-Control-Max-Age', str(app.config['CORS_MAX_AGE']))
             return response
     
     # Register blueprints
     app.register_blueprint(api_bp, url_prefix='/api')
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(user_bp, url_prefix='/api/user')
-    app.register_blueprint(scenes_bp, url_prefix='/api/scenes')
-    app.register_blueprint(characters_bp, url_prefix='/api/characters')
-    app.register_blueprint(notes_bp, url_prefix='/api/notes')
     
     # Initialize extensions
     limiter.init_app(app)

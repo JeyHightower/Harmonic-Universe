@@ -1,7 +1,8 @@
 import PropTypes from "prop-types";
 import React, { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Form, Input, Button, message } from "antd";
+import { Form, Input, message } from "antd";
+import Button from "../../../components/common/Button";
 import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { login, demoLogin } from "../../../store/thunks/authThunks";
 import { AUTH_CONFIG, MODAL_CONFIG } from "../../../utils/config";
@@ -158,11 +159,11 @@ const LoginModal = ({ onClose }) => {
         </Form>
       </DialogContent>
       <DialogActions>
-        <Button onClick={forceClose} disabled={loading}>
+        <Button onClick={forceClose} disabled={loading} variant="secondary">
           Cancel
         </Button>
         <Button
-          type="primary"
+          variant="primary"
           onClick={() => form.submit()}
           loading={loading}
           className="auth-button"

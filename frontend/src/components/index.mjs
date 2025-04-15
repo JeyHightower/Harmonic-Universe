@@ -5,10 +5,10 @@ import LoginModal from "../features/auth/modals/LoginModal.jsx";
 import SignupModal from "../features/auth/modals/SignupModal.jsx";
 
 // Navigation Components
-export { default as Navigation } from "./navigation/Navigation.jsx";
+export * from "./navigation/index.mjs";
 
 // Common Components
-export { Button } from "./common/Button.jsx";
+export { default as Button } from "./common/Button.jsx";
 export { default as Icon } from "./common/Icon.jsx";
 export { default as Input } from "./common/Input.jsx";
 export { default as Select } from "./common/Select.jsx";
@@ -16,6 +16,9 @@ export { default as Slider } from "./common/Slider.jsx";
 export { default as Spinner } from "./common/Spinner.jsx";
 export { default as Tooltip } from "./common/Tooltip.jsx";
 export { default as SafeIcon } from "./common/SafeIcon.jsx";
+
+// Error Components
+export * from "./error/index.mjs";
 
 // Feature Components - Import from feature index files
 export * from "../features/character/index.mjs";

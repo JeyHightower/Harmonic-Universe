@@ -49,5 +49,4 @@ jsx-runtime.js
 **/*.worker.js
 **/*.js.map
 **/*.css.map
-src/assets/**
-src/components/common/ExportModal.jsx 
+src/assets/** 

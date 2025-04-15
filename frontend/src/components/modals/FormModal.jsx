@@ -1,6 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
-import Modal from "../common/Modal";
+import { ModalSystem } from "./index.mjs";
 
 const FormModal = ({
   title,
@@ -11,9 +11,9 @@ const FormModal = ({
   ...props
 }) => {
   return (
-    <Modal type="form" title={title} onClose={onClose} {...props}>
+    <ModalSystem type="form" title={title} onClose={onClose} {...props}>
       <div className="modal-content">{children}</div>
-    </Modal>
+    </ModalSystem>
   );
 };
 

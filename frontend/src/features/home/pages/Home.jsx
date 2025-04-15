@@ -126,9 +126,19 @@ function Home() {
       updatedAt: new Date().toISOString(),
     };
 
-    // Create a mock token
-    const mockToken =
-      "demo-token-" + Math.random().toString(36).substring(2, 15);
+    // Create a proper JWT-like token with three parts
+    const header = btoa(JSON.stringify({ alg: 'demo', typ: 'JWT' }));
+    const now = Math.floor(Date.now() / 1000);
+    const payload = btoa(JSON.stringify({
+      sub: demoUser.id,
+      name: demoUser.firstName + ' ' + demoUser.lastName,
+      iat: now,
+      exp: now + 3600, // 1 hour from now
+    }));
+    const signature = btoa('demo-signature');
+    
+    // Create token with header.payload.signature format
+    const mockToken = `${header}.${payload}.${signature}`;
 
     // Store in localStorage
     localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, mockToken);

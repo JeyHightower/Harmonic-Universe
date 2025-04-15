@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../components/common/Button";
-import Modal from "../../../components/common/Modal";
+import { ModalSystem } from "../../../components/modals/index.mjs";
 import Spinner from "../../../components/common/Spinner";
 import "../../../styles/Modal.css";
 import { audioService } from "../../../services";
@@ -172,7 +172,7 @@ const AudioDetailsModal = ({
   };
 
   return (
-    <Modal {...modalProps} onClose={onClose} className="audio-details-modal">
+    <ModalSystem {...modalProps} onClose={onClose} className="audio-details-modal">
       <div className="modal-header">
         <h2>
           {modalProps.title ||
@@ -285,7 +285,7 @@ const AudioDetailsModal = ({
           )}
         </div>
       </div>
-    </Modal>
+    </ModalSystem>
   );
 };
 

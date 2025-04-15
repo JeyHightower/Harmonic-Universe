@@ -93,9 +93,20 @@ def create_mime_middleware(app):
                 if not content_type_added:
                     new_headers.append(('Content-Type', 'application/javascript; charset=utf-8'))
                 
-                # Add CORS headers for JavaScript
-                new_headers.append(('Access-Control-Allow-Origin', '*'))
-                new_headers.append(('Access-Control-Allow-Methods', 'GET, OPTIONS'))
+                # Add CORS headers for JavaScript only if they don't already exist
+                cors_origin_found = False
+                cors_methods_found = False
+                
+                for name, value in new_headers:
+                    if name.lower() == 'access-control-allow-origin':
+                        cors_origin_found = True
+                    elif name.lower() == 'access-control-allow-methods':
+                        cors_methods_found = True
+                
+                if not cors_origin_found:
+                    new_headers.append(('Access-Control-Allow-Origin', '*'))
+                if not cors_methods_found:
+                    new_headers.append(('Access-Control-Allow-Methods', 'GET, OPTIONS'))
                 
                 return original_start_response(status, new_headers, exc_info)
             

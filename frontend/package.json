@@ -11,8 +11,8 @@
     "preview": "vite preview",
     "start": "vite --port 5173",
     "serve": "vite preview --port 5173",
-    "lint": "eslint --ignore-pattern 'src/assets/*' --ignore-pattern 'src/__tests__/*' --ignore-pattern 'public/*' --ignore-pattern 'scripts/*' --ignore-pattern '**/*.min.js' --ignore-pattern 'babel.config.js' --ignore-pattern 'src/components/common/ExportModal.jsx' --ignore-pattern '**/*-*.js' .",
-    "lint:fix": "eslint --ignore-pattern 'src/assets/*' --ignore-pattern 'src/__tests__/*' --ignore-pattern 'public/*' --ignore-pattern 'scripts/*' --ignore-pattern '**/*.min.js' --ignore-pattern 'babel.config.js' --ignore-pattern 'src/components/common/ExportModal.jsx' --ignore-pattern '**/*-*.js' . --fix"
+    "lint": "eslint --ignore-pattern 'src/assets/*' --ignore-pattern 'src/__tests__/*' --ignore-pattern 'public/*' --ignore-pattern 'scripts/*' --ignore-pattern '**/*.min.js' --ignore-pattern 'babel.config.js' --ignore-pattern '**/*-*.js' .",
+    "lint:fix": "eslint --ignore-pattern 'src/assets/*' --ignore-pattern 'src/__tests__/*' --ignore-pattern 'public/*' --ignore-pattern 'scripts/*' --ignore-pattern '**/*.min.js' --ignore-pattern 'babel.config.js' --ignore-pattern '**/*-*.js' . --fix"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

@@ -1,6 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
-import Modal from "../common/Modal";
+import { ModalSystem } from "./index.mjs";
 import { MODAL_CONFIG } from "../../utils/config";
 
 const AlertModal = ({
@@ -12,7 +12,7 @@ const AlertModal = ({
   ...props
 }) => {
   return (
-    <Modal
+    <ModalSystem
       type="alert"
       title={title}
       onClose={onClose}
@@ -26,7 +26,7 @@ const AlertModal = ({
           <button onClick={onConfirm || onClose}>{confirmText}</button>
         </div>
       </div>
-    </Modal>
+    </ModalSystem>
   );
 };
 

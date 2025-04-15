@@ -1,15 +1,12 @@
-import {
-  AppstoreOutlined,
-  PictureOutlined,
-  PlusOutlined,
-} from '@ant-design/icons';
-import { Button, Card, Col, Empty, Image, Row, Spin, Tabs, Tag } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { Card, Col, Empty, Image, Row, Spin, Tabs, Tag } from 'antd';
 import { useParams } from 'react-router-dom';
 import { useModal } from '../../../contexts/ModalContext';
 import { fetchUniverseById } from '../../../store/thunks/universeThunks';
 import '../../../styles/VisualPage.css';
+import Button from "../../../components/common/Button";
+import { PictureOutlined, AppstoreOutlined, PlusOutlined } from '@ant-design/icons';
 
 // Placeholder image for visualization examples
 const PLACEHOLDER_IMAGES = [
@@ -45,7 +42,23 @@ const VisualPage = () => {
   }, [dispatch, universeId]);
 
   const handleCreateVisualization = () => {
-    openModal('visualization-create', { universeId });
+    // Implementation for creating a new visualization
+    console.log('Create visualization');
+  };
+  
+  const handleViewVisualization = (id) => {
+    // Implementation for viewing a visualization
+    console.log('View visualization', id);
+  };
+  
+  const handleEditVisualization = (id) => {
+    // Implementation for editing a visualization
+    console.log('Edit visualization', id);
+  };
+  
+  const handleDeleteVisualization = (id) => {
+    // Implementation for deleting a visualization
+    console.log('Delete visualization', id);
   };
 
   if (loading) {
@@ -78,11 +91,7 @@ const VisualPage = () => {
             children: (
               <div className="visual-tab-content">
                 <div className="visual-actions">
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={handleCreateVisualization}
-                  >
+                  <Button variant="primary" onClick={handleCreateVisualization}>
                     Create Visualization
                   </Button>
                 </div>
@@ -104,13 +113,13 @@ const VisualPage = () => {
                               </div>
                             }
                             actions={[
-                              <Button type="link" key="view">
+                              <Button variant="tertiary" key="view" onClick={() => handleViewVisualization('sample-id')}>
                                 View
                               </Button>,
-                              <Button type="link" key="edit">
+                              <Button variant="tertiary" key="edit" onClick={() => handleEditVisualization('sample-id')}>
                                 Edit
                               </Button>,
-                              <Button type="link" key="delete" danger>
+                              <Button variant="danger" key="delete" onClick={() => handleDeleteVisualization('sample-id')}>
                                 Delete
                               </Button>,
                             ]}
@@ -134,7 +143,7 @@ const VisualPage = () => {
                       description="No visualizations created yet"
                       image={Empty.PRESENTED_IMAGE_SIMPLE}
                     />
-                    <Button type="primary" onClick={handleCreateVisualization}>
+                    <Button variant="primary" onClick={handleCreateVisualization}>
                       Create Your First Visualization
                     </Button>
                   </div>

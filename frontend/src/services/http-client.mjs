@@ -6,8 +6,9 @@
 import axios from 'axios';
 import { API_SERVICE_CONFIG } from './config';
 import { log, logError } from '../utils/logger';
-import { authService } from './auth.service.mjs';
+import * as authServiceModule from './auth.service.mjs';
 import { demoUserService } from './demo-user.service.mjs';
+import { AUTH_CONFIG } from '../utils/config.mjs';
 
 // Create axios instance with default config
 const axiosInstance = axios.create({
@@ -66,7 +67,12 @@ const addAuthHeader = (config) => {
       log('api', 'Adding auth token', { tokenFormat: `${tokenStart}...${tokenEnd}`, length: token.length });
       
       // Add proper Authorization header
-      config.headers.Authorization = `${API_SERVICE_CONFIG.AUTH.TOKEN_TYPE} ${token}`;
+      config.headers['Authorization'] = `Bearer ${token}`;
+      
+      // Ensure Content-Type is set correctly
+      if (!config.headers['Content-Type'] && !config.headers['content-type']) {
+        config.headers['Content-Type'] = 'application/json';
+      }
     } catch (err) {
       log('api', 'Error adding auth token', { error: err.message });
     }
@@ -96,276 +102,130 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Configure response interceptor for handling auth errors and refreshing tokens
+// Response interceptor
 axiosInstance.interceptors.response.use(
   (response) => {
+    // Successful responses pass through
     return response;
   },
   async (error) => {
     const originalRequest = error.config;
     
-    // Special handling for rate limiting (429)
-    if (error.response && error.response.status === 429) {
-      console.warn('Rate limit (429) detected, implementing backoff strategy');
-      
-      // Get retry after header or use default
-      const retryAfter = error.response.headers?.['retry-after'];
-      let delayMs = 3000; // Default 3 seconds
-      
-      if (retryAfter) {
-        // Parse the retry-after header (seconds or date)
-        if (/^\d+$/.test(retryAfter)) {
-          delayMs = parseInt(retryAfter) * 1000;
-        } else {
-          const retryDate = new Date(retryAfter);
-          delayMs = retryDate.getTime() - Date.now();
-        }
-      }
-      
-      // Add jitter to avoid thundering herd
-      delayMs += Math.random() * 1000;
-      
-      console.log(`Rate limited. Waiting ${delayMs}ms before retrying...`);
-      
-      // Wait and retry
-      await new Promise(resolve => setTimeout(resolve, delayMs));
-      
-      // If this was a token refresh request, mark it in localStorage to prevent rapid retries
-      if (originalRequest.url.includes('/auth/refresh')) {
-        localStorage.setItem('lastTokenRefreshAttempt', Date.now().toString());
-        localStorage.setItem('tokenRefreshRateLimited', 'true');
-      }
-      
-      return axiosInstance(originalRequest);
-    }
-    
-    // Don't retry if we've already tried to refresh
-    if (originalRequest._retry) {
-      console.error('Request already retried once, failing:', originalRequest.url);
+    // If the error is a network error, don't attempt to refresh
+    if (!error.response) {
+      console.error('Network error occurred:', error.message);
       return Promise.reject(error);
     }
     
-    // Only handle 401 errors for token refresh
-    if (error.response && error.response.status === 401 && !originalRequest._retry) {
-      // Check if this is a token refresh attempt that failed
-      if (originalRequest.url.includes('/auth/token/refresh') || 
-          originalRequest.url.includes('/auth/token/validate')) {
-        // Clear auth data if token refresh fails
-        console.error('Auth error during token refresh or validation, signing out');
-        authService.clearAuthData();
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('auth:signout'));
-        }
-        return Promise.reject(error);
-      }
+    // Log the error status
+    console.log(`HTTP Error: ${error.response.status} ${error.response.statusText}`);
+    
+    // Handle rate limiting
+    if (error.response.status === 429) {
+      console.warn('Rate limit hit, backing off');
+      // Wait for the retry-after header value or default to 2 seconds
+      const retryAfter = error.response.headers['retry-after'] || 2;
+      await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+      return axiosInstance(originalRequest);
+    }
+    
+    // Only attempt token refresh for 401 errors and only if not already retrying
+    if (error.response.status === 401 && !originalRequest._retry) {
+      console.log('Unauthorized (401) error detected, attempting token refresh');
       
       try {
-        console.log('Attempting token refresh due to 401 response');
-        originalRequest._retry = true;
-        
-        // Setup timeout for token refresh
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Token refresh timeout')), 5000);
-        });
-        
-        // Attempt to refresh the token
-        const refreshPromise = refreshTokenAndRetry();
-        const result = await Promise.race([refreshPromise, timeoutPromise]);
-        
-        // Update auth header with new token
-        if (result && result.token) {
-          originalRequest.headers['Authorization'] = `Bearer ${result.token}`;
-          console.log('Token refreshed successfully, retrying original request');
-          return axiosInstance(originalRequest);
-        } else {
-          console.error('No token received after refresh attempt');
-          throw new Error('Token refresh failed - no token received');
-        }
+        // Use the enhanced refreshTokenAndRetry function
+        return await refreshTokenAndRetry(originalRequest);
       } catch (refreshError) {
-        console.error('Error refreshing token:', refreshError);
-        // Clear auth data and notify the app
-        authService.clearAuthData();
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('auth:signout'));
-        }
-        return Promise.reject(error);
+        console.error('Token refresh failed:', refreshError.message);
+        
+        // Forward the original error with additional context
+        const enhancedError = new Error('Authentication error after failed token refresh');
+        enhancedError.originalError = error;
+        enhancedError.refreshError = refreshError;
+        return Promise.reject(enhancedError);
       }
     }
     
-    // Handle CORS errors
-    if (error.message && error.message.includes('Network Error')) {
-      console.error('Network error (possibly CORS):', error);
-      console.error('Request details:', {
-        method: error.config?.method,
-        url: error.config?.url,
-        baseURL: error.config?.baseURL,
-        withCredentials: error.config?.withCredentials,
-        headers: error.config?.headers
-      });
-      return Promise.reject(new Error('Network error: API may be unavailable or CORS not configured properly. Check console for details.'));
-    }
-    
-    // Pass through other errors
+    // For all other errors, pass them through
     return Promise.reject(error);
   }
 );
 
-// Function to refresh the token
-async function refreshTokenAndRetry() {
-  console.log('Refreshing token...');
+/**
+ * Refresh the token and retry the original request
+ * @param {Object} originalRequest - The original request configuration
+ * @returns {Promise<Object>} - The response from the retried request
+ */
+export async function refreshTokenAndRetry(originalRequest) {
+  // Check if we already have a refresh token
+  const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+  if (!refreshToken) {
+    console.error('No refresh token available for token refresh');
+    authServiceModule.clearAuthData();
+    throw new Error('Authentication failed: No refresh token available');
+  }
+
+  // Prevent multiple retry attempts for the same request
+  if (originalRequest._retry) {
+    console.warn('Request already retried once, not attempting again');
+    throw new Error('Authentication failed: Token refresh failed');
+  }
+  
+  // Mark this request as having been retried
+  originalRequest._retry = true;
+  
+  console.log('Attempting to refresh token and retry request');
+  
+  // Set up a timeout for the token refresh process
+  const tokenRefreshTimeout = new Promise((_, reject) => {
+    setTimeout(() => {
+      reject(new Error('Token refresh timed out after 10 seconds'));
+    }, 10000);
+  });
+  
   try {
-    // Get current token from storage - use the consistent key name from config
-    const token = localStorage.getItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY) || '';
+    // Race the token refresh against the timeout
+    const refreshResult = await Promise.race([
+      authServiceModule.refreshToken(),
+      tokenRefreshTimeout
+    ]);
     
-    if (!token) {
-      console.error('No token found in storage to refresh');
-      throw new Error('No token available to refresh');
+    console.log('Token refresh completed, checking result');
+    
+    // Validate refresh result and ensure it contains a new token
+    if (!refreshResult) {
+      throw new Error('Token refresh failed: No response received');
     }
     
-    // Check if we're in a rate-limited state
-    const lastRefreshAttempt = localStorage.getItem('lastTokenRefreshAttempt');
-    const now = Date.now();
-    
-    if (lastRefreshAttempt) {
-      const timeSinceLastAttempt = now - parseInt(lastRefreshAttempt);
-      // If we tried to refresh less than 5 seconds ago, wait before trying again
-      if (timeSinceLastAttempt < 5000) {
-        console.log(`Rate limiting token refresh - will wait ${5000 - timeSinceLastAttempt}ms to prevent 429 errors`);
-        await new Promise(resolve => setTimeout(resolve, 5000 - timeSinceLastAttempt));
-      }
+    if (!refreshResult.success) {
+      throw new Error(`Token refresh failed: ${refreshResult.message || 'Unknown error'}`);
     }
     
-    // Update the last attempt timestamp
-    localStorage.setItem('lastTokenRefreshAttempt', now.toString());
-    
-    // Check if this is a demo token and handle differently
-    if (token.includes('demo')) {
-      console.log('Demo token detected, using demo refresh flow');
-      // For demo tokens, we'll just pretend to refresh
-      const isDemoSession = typeof demoUserService !== 'undefined' && 
-                            typeof demoUserService.isDemoSession === 'function' && 
-                            demoUserService.isDemoSession();
-      
-      if (isDemoSession) {
-        console.log('Confirmed demo session, returning existing token');
-        try {
-          const demoUser = JSON.parse(localStorage.getItem(API_SERVICE_CONFIG.AUTH.USER_KEY) || '{}');
-          
-          // Dispatch Redux action if store is available
-          if (typeof window !== 'undefined' && window.store && window.store.dispatch) {
-            try {
-              window.store.dispatch({
-                type: 'auth/tokenRefreshed',
-                payload: { token, user: demoUser }
-              });
-            } catch (reduxError) {
-              console.error('Error dispatching to Redux store:', reduxError);
-            }
-          }
-          
-          return {
-            token: token, // Keep using the same token
-            user: demoUser
-          };
-        } catch (parseError) {
-          console.error('Error parsing demo user from localStorage', parseError);
-          // Even with error, return a valid response
-          return { token };
-        }
-      }
+    if (!refreshResult.token) {
+      throw new Error('Token refresh failed: No token in response');
     }
     
-    // Use authService for normal token refresh
-    console.log('Calling authService.refreshToken()');
-    const refreshResult = await authService.refreshToken();
-    console.log('Refresh result:', refreshResult);
+    // Log the successful token refresh
+    console.log('Token refreshed successfully, updating request and retrying');
     
-    // Handle different response formats
-    if (refreshResult) {
-      if (refreshResult.success && refreshResult.data && refreshResult.data.token) {
-        console.log('Token refreshed successfully via authService');
-        
-        // Notify Redux if available
-        if (typeof window !== 'undefined' && window.store && window.store.dispatch) {
-          try {
-            window.store.dispatch({
-              type: 'auth/tokenRefreshed',
-              payload: { 
-                token: refreshResult.data.token, 
-                user: refreshResult.data.user 
-              }
-            });
-          } catch (reduxError) {
-            console.error('Error dispatching to Redux store:', reduxError);
-          }
-        }
-        
-        return refreshResult.data;
-      } else if (refreshResult.token) {
-        // Direct token in response
-        console.log('Token received directly in response');
-        
-        // Notify Redux if available
-        if (typeof window !== 'undefined' && window.store && window.store.dispatch) {
-          try {
-            window.store.dispatch({
-              type: 'auth/tokenRefreshed',
-              payload: { 
-                token: refreshResult.token, 
-                user: refreshResult.user 
-              }
-            });
-          } catch (reduxError) {
-            console.error('Error dispatching to Redux store:', reduxError);
-          }
-        }
-        
-        return { token: refreshResult.token, user: refreshResult.user };
-      }
-    }
+    // Update the Authorization header with the new token
+    const newToken = refreshResult.token;
+    originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
     
-    // If we get here, the refresh was not successful
-    console.error('Invalid response from token refresh:', refreshResult);
-    
-    // Notify Redux of the auth failure if available
-    if (typeof window !== 'undefined' && window.store && window.store.dispatch) {
-      try {
-        window.store.dispatch({ 
-          type: 'auth/authFailure', 
-          payload: 'Token refresh failed' 
-        });
-      } catch (reduxError) {
-        console.error('Error dispatching to Redux store:', reduxError);
-      }
-    }
-    
-    throw new Error('Invalid response from token refresh');
+    // Retry the original request with the new token
+    return axiosInstance(originalRequest);
   } catch (error) {
-    console.error('Error in refreshTokenAndRetry:', error);
+    console.error('Error during token refresh or retry:', error);
     
-    // Notify Redux of the auth failure if available
-    if (typeof window !== 'undefined' && window.store && window.store.dispatch) {
-      try {
-        window.store.dispatch({ 
-          type: 'auth/authFailure', 
-          payload: error.message || 'Token refresh failed' 
-        });
-      } catch (reduxError) {
-        console.error('Error dispatching to Redux store:', reduxError);
-      }
-    }
+    // Clear auth data to force a re-login
+    authServiceModule.clearAuthData();
     
-    // Clear auth data on failure
-    try {
-      if (typeof authService !== 'undefined' && typeof authService.clearAuthData === 'function') {
-        authService.clearAuthData();
-      } else {
-        // Fallback clear
-        localStorage.removeItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
-        localStorage.removeItem(API_SERVICE_CONFIG.AUTH.USER_KEY);
-      }
-    } catch (clearError) {
-      console.error('Error clearing auth data:', clearError);
+    // Notify the app about the authentication failure
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('auth:refreshFailed', { 
+        detail: { error: error.message } 
+      }));
     }
     
     throw error;

@@ -45,7 +45,7 @@ logger.info("Initializing development application")
 from app import create_app
 
 # Create the Flask application with development-specific settings
-app = create_app(config_name='development')
+app = create_app()
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5001))

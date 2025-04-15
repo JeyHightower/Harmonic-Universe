@@ -152,7 +152,7 @@ backup_db() {
     fi
     
     # Create backup directory
-    local backup_dir="$ROOT_DIR/backups/db"
+    local backup_dir="$ROOT_DIR/data/backups"
     ensure_directory "$backup_dir"
     
     # Create backup

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import PropTypes from 'prop-types';
 import Button from "../../../components/common/Button";
 import Input from "../../../components/common/Input";
-import Modal from "../../../components/common/Modal";
+import { ModalSystem } from "../../../components/modals/index.mjs";
 import "../../../styles/Modal.css";
 
 const PhysicsSettingsModal = ({ initialPhysicsParams, onSave, onClose }) => {

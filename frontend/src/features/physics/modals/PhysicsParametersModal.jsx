@@ -483,16 +483,13 @@ const PhysicsParametersModal = (props) => {
           </div>
         </div>
 
-        <div className="modal-actions">
+        <div className="form-actions">
           <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
-            {mode === "view" ? "Close" : "Cancel"}
+            Cancel
           </Button>
-
-          {mode !== "view" && (
-            <Button variant="primary" type="submit" loading={isSubmitting}>
-              {mode === "create" ? "Create" : "Save Changes"}
-            </Button>
-          )}
+          <Button variant="primary" loading={isSubmitting}>
+            {isSubmitting ? (mode === "edit" ? "Updating..." : "Creating...") : (mode === "edit" ? "Update" : "Create")}
+          </Button>
         </div>
 
         {submitError && <div className="error-message">{submitError}</div>}

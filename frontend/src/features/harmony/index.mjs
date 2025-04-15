@@ -6,7 +6,6 @@
  */
 
 // Component exports
-export { default as HarmonyPanel } from './components/HarmonyPanel';
 
 // Modal exports
 export { default as HarmonyParametersModal } from './modals/HarmonyParametersModal';

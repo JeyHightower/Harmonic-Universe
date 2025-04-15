@@ -586,6 +586,10 @@ export default defineConfig({
       '@reduxjs/toolkit',
       'react-redux'
     ],
+    exclude: [
+      'react-jsx-dev-runtime', 
+      'redux-persist/integration/react'
+    ],
     esbuildOptions: {
       loader: {
         '.js': 'jsx',

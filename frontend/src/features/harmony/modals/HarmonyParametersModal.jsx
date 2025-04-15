@@ -245,8 +245,10 @@ const HarmonyParametersModal = ({
         </Row>
 
         <div className="harmony-parameters-actions">
-          <Button onClick={onClose}>Cancel</Button>
-          <Button type="primary" htmlType="submit" loading={loading}>
+          <Button variant="secondary" onClick={onClose} disabled={loading}>
+            Cancel
+          </Button>
+          <Button variant="primary" htmlType="submit" loading={loading}>
             {initialData ? "Update" : "Create"}
           </Button>
         </div>
