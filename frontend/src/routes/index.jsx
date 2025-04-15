@@ -3,7 +3,6 @@ import { Navigate, useParams, useNavigate } from "react-router-dom";
 import Layout from "../components/layout/Layout";
 import ProtectedRoute from "../components/routing/ProtectedRoute";
 import { ROUTES } from "../utils/routes";
-import ModalTest from "../components/test/ModalTest";
 import { SceneModal } from "../features/scene";
 
 // Create a wrapper component for SceneModal in routes
@@ -38,6 +37,7 @@ const SceneList = lazy(() => import("../features/scene/pages/SceneList"));
 const SceneDetail = lazy(() => import("../features/scene/pages/SceneDetail"));
 const SceneEditPage = lazy(() => import("../features/scene/pages/SceneEditPage"));
 const SceneEditRedirect = lazy(() => import("../components/routing/SceneEditRedirect"));
+const PhysicsPage = lazy(() => import("../features/physics/pages/PhysicsPage"));
 
 // New character and note pages
 const CharactersPage = lazy(() => import("../features/character/pages/CharactersPage"));
@@ -312,10 +312,6 @@ const routes = [
         element: <SettingsPage />,
       },
       {
-        path: ROUTES.MODAL_TEST,
-        element: <ModalTest />,
-      },
-      {
         path: ROUTES.LOGIN,
         element: <LoginRedirect />,
       },
@@ -331,6 +327,14 @@ const routes = [
       {
         path: "demo-login",
         element: <LoginPage />,
+      },
+      {
+        path: ROUTES.PHYSICS,
+        element: (
+          <ProtectedRoute>
+            <PhysicsPage />
+          </ProtectedRoute>
+        ),
       },
     ],
   },

@@ -3,37 +3,30 @@ import { API_CONFIG } from "./config";
 export const ROUTES = {
   HOME: "/",
   LOGIN: "/login",
+  REGISTER: "/register",
+  UNIVERSES: "/universes",
+  UNIVERSE: "/universes/:universeId",
+  SCENES: "/universes/:universeId/scenes",
+  SCENE: "/universes/:universeId/scenes/:sceneId",
+  CHARACTERS: "/universes/:universeId/characters",
+  CHARACTER: "/universes/:universeId/characters/:characterId",
+  NOTES: "/universes/:universeId/notes",
+  NOTE: "/universes/:universeId/notes/:noteId",
+  SETTINGS: "/settings",
+  PROFILE: "/profile",
   SIGNUP: "/signup",
   DASHBOARD: "/dashboard",
-  UNIVERSES: "/universes",
   UNIVERSE_DETAIL: "/universes/:id",
   UNIVERSE_EDIT: "/universes/:id/edit",
-  SCENES: "/universes/:universeId/scenes",
-  SCENE_DETAIL: "/universes/:universeId/scenes/:sceneId",
+  PHYSICS: "/universes/:universeId/physics",
   SCENE_CREATE: "/universes/:universeId/scenes/create",
   SCENE_EDIT: "/universes/:universeId/scenes/:sceneId/edit",
   DIRECT_SCENE_EDIT: "/scenes/:sceneId/edit",
-  MODAL_EXAMPLES: "/examples/modals",
-  SETTINGS: "/settings",
-  ICON_TEST: "/test/icons",
-  MODAL_TEST: "/test/modal",
-  SIMPLE_MODAL_TEST: "/test/simple-modal",
-  STANDALONE_TEST: "/standalone-test",
-  MODAL_ACCESSIBILITY_TEST: "/test/modal-accessibility",
-  MODAL_ROUTE_TEST: "/test/modal-routes",
-
-  // Updated character routes - now at universe level too
-  CHARACTERS: "/universes/:universeId/characters",
   CHARACTERS_FOR_SCENE: "/universes/:universeId/scenes/:sceneId/characters",
-  CHARACTER_DETAIL: "/universes/:universeId/characters/:characterId",
   CHARACTER_EDIT: "/universes/:universeId/characters/:characterId/edit",
-
-  // Updated notes routes
-  NOTES: "/universes/:universeId/notes",
   NOTES_FOR_SCENE: "/universes/:universeId/scenes/:sceneId/notes",
   NOTES_FOR_CHARACTER: "/universes/:universeId/characters/:characterId/notes",
-  NOTE_DETAIL: "/universes/:universeId/notes/:noteId",
-  NOTE_EDIT: "/universes/:universeId/notes/:noteId/edit",
+  NOTE_EDIT: "/universes/:universeId/notes/:noteId/edit"
 };
 
 export const API_MODAL_ROUTES = {
