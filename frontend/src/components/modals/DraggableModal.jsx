@@ -1,6 +1,6 @@
 import PropTypes from "prop-types";
 import React, { useCallback, useEffect, useState } from "react";
-import { ModalSystem } from "./";
+import { ModalSystem } from "./index.mjs";
 
 const DraggableModal = ({ children, ...modalProps }) => {
   const [isDragging, setIsDragging] = useState(false);

@@ -10,7 +10,7 @@ import {
   validatePassword,
   validateUsername,
 } from "../../../utils/validation";
-import { ModalSystem } from "../../../components/modals";
+import { ModalSystem } from "../../../components/modals/index.mjs";
 import "../styles/Auth.css";
 
 const SignupModal = ({ onClose }) => {

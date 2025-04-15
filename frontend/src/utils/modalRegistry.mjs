@@ -2,9 +2,8 @@ import React, { lazy } from 'react';
 import { MODAL_TYPES } from "../constants/modalTypes";
 
 // Import components statically instead of dynamically
-import AlertModal from "../components/modals/AlertModal";
+import { AlertModal, FormModal } from "../components/modals/index.mjs";
 import ConfirmationModal from "../components/modals/ConfirmationModal";
-import FormModal from "../components/modals/FormModal";
 import LoginModal from "../features/auth/modals/LoginModal";
 import SignupModal from "../features/auth/modals/SignupModal";
 import { PhysicsParametersModal, PhysicsConstraintModal } from "../features/physics";

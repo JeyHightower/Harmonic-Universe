@@ -1,6 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { ModalSystem } from "../modals";
+import { ModalSystem } from "../modals/index.mjs";
 import { MODAL_CONFIG } from "../../utils/config";
 
 /**

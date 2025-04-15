@@ -33,7 +33,7 @@ const Dashboard = lazy(() => import("../features/dashboard/pages/Dashboard"));
 const Home = lazy(() => import("../features/home/pages/Home"));
 const LoginPage = lazy(() => import("../features/auth/pages/LoginPage"));
 const UniverseDetail = lazy(() => import("../features/universe/pages/UniverseDetail"));
-const SceneList = lazy(() => import("../features/scene/pages/SceneList"));
+const ScenesPage = lazy(() => import("../features/scene/pages/ScenesPage"));
 const SceneDetail = lazy(() => import("../features/scene/pages/SceneDetail"));
 const SceneEditPage = lazy(() => import("../features/scene/pages/SceneEditPage"));
 const SceneEditRedirect = lazy(() => import("../components/routing/SceneEditRedirect"));
@@ -197,7 +197,7 @@ const routes = [
         path: ROUTES.SCENES,
         element: (
           <ProtectedRoute>
-            <SceneList />
+            <ScenesPage />
           </ProtectedRoute>
         ),
       },
@@ -250,22 +250,6 @@ const routes = [
           </ProtectedRoute>
         ),
       },
-      {
-        path: ROUTES.CHARACTER_DETAIL,
-        element: (
-          <ProtectedRoute>
-            <CharacterDetail />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: ROUTES.CHARACTER_EDIT,
-        element: (
-          <ProtectedRoute>
-            <CharacterDetail />
-          </ProtectedRoute>
-        ),
-      },
       // New note routes
       {
         path: ROUTES.NOTES,
@@ -283,11 +267,12 @@ const routes = [
           </ProtectedRoute>
         ),
       },
+      // Legacy routes for backward compatibility
       {
-        path: ROUTES.NOTES_FOR_CHARACTER,
+        path: ROUTES.CHARACTER_DETAIL,
         element: (
           <ProtectedRoute>
-            <NotesRouteHandler />
+            <CharacterDetail />
           </ProtectedRoute>
         ),
       },
@@ -299,35 +284,16 @@ const routes = [
           </ProtectedRoute>
         ),
       },
+      // Settings route
       {
-        path: ROUTES.NOTE_EDIT,
+        path: ROUTES.SETTINGS,
         element: (
           <ProtectedRoute>
-            <NoteDetail />
+            <SettingsPage />
           </ProtectedRoute>
         ),
       },
-      {
-        path: ROUTES.SETTINGS,
-        element: <SettingsPage />,
-      },
-      {
-        path: ROUTES.LOGIN,
-        element: <LoginRedirect />,
-      },
-      {
-        path: ROUTES.SIGNUP,
-        element: <Navigate to="/?modal=signup" replace />,
-      },
-      {
-        path: "/demo",
-        element: <Navigate to="/login" replace />,
-      },
-      // Add route for /demo-login that loads the LoginPage component
-      {
-        path: "demo-login",
-        element: <LoginPage />,
-      },
+      // Physics route
       {
         path: ROUTES.PHYSICS,
         element: (
@@ -336,37 +302,28 @@ const routes = [
           </ProtectedRoute>
         ),
       },
+      // Login redirect route
+      {
+        path: ROUTES.LOGIN,
+        element: <LoginRedirect />,
+      },
+      // Signup redirect route
+      {
+        path: ROUTES.SIGNUP,
+        element: <Navigate to="/?modal=signup" replace />,
+      },
+      // Demo login route
+      {
+        path: ROUTES.DEMO_LOGIN,
+        element: <LoginPage />,
+      },
+      // Catch-all route for 404
+      {
+        path: "*",
+        element: <Navigate to="/" replace />,
+      },
     ],
   },
-  {
-    path: "*",
-    element: <Navigate to={ROUTES.HOME} replace />,
-  },
 ];
-
-// Log all route paths for debugging
-console.log(
-  "Defined routes in routes/index.jsx:",
-  routes.flatMap((route) =>
-    route.children
-      ? [
-          `Parent: ${route.path}`,
-          ...route.children.map((child) => `  Child: ${child.path || "index"}`),
-        ]
-      : [route.path]
-  )
-);
-
-// Log specific character routes for debugging
-const characterRoutes = routes[0].children.filter(
-  (route) =>
-    route.path &&
-    (route.path.includes("characters") || route.path.includes("character"))
-);
-
-console.log(
-  "Character routes:",
-  characterRoutes.map((r) => r.path)
-);
 
 export default routes;

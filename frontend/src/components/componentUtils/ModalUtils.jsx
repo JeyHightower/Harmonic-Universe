@@ -1,9 +1,7 @@
 import React from "react";
-import { ModalSystem } from "../modals";
+import { ModalSystem, AlertModal, FormModal } from "../modals/index.mjs";
 import { MODAL_CONFIG } from "../../utils/config";
-import AlertModal from "../modals/AlertModal";
 import ConfirmationModal from "../modals/ConfirmationModal";
-import FormModal from "../modals/FormModal";
 import LoginModal from "../../features/auth/modals/LoginModal";
 import SignupModal from "../../features/auth/modals/SignupModal";
 import HarmonyParametersModal from "../../features/harmony/modals/HarmonyParametersModal";

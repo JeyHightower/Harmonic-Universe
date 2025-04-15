@@ -16,7 +16,6 @@ export { default as Navigation } from "./navigation/Navigation";
 export { Button } from "./common";
 export { default as Icon } from "./common/Icon";
 export { default as Input } from "./common/Input";
-export { default as Modal } from "./common/Modal";
 export { default as Select } from "./common/Select";
 export { default as Slider } from "./common/Slider";
 export { default as Spinner } from "./common/Spinner";
@@ -41,18 +40,8 @@ export {
   NoteFormModal
 } from "../features/note";
 
-// Modal Components
-// Import from the modals directory for consistency
-import {
-  ModalSystem,
-  DraggableModal,
-  AlertModal,
-  ConfirmationModal as ConfirmModal,
-  FormModal
-} from "./modals";
-
-// Export modal components directly
-export { ModalSystem, DraggableModal, AlertModal, ConfirmModal, FormModal };
+// Import all modal components from the modals directory
+export * from "./modals";
 
 // Lazily loaded components
 const ExportModal = React.lazy(() => import("./common/ExportModal"));
@@ -60,19 +49,6 @@ const ImportModal = React.lazy(() => import("./common/ImportModal"));
 
 // Export these as well
 export { ExportModal, ImportModal };
-
-// Also export as an object for backward compatibility
-export const ModalComponents = {
-  LoginModal,
-  SignupModal,
-  ModalSystem,
-  DraggableModal,
-  AlertModal,
-  ConfirmModal,
-  FormModal,
-  ExportModal,
-  ImportModal,
-};
 
 // Fallback lazy loader that always returns the fallback component
 const lazyFallback = () => Promise.resolve({ default: LazyFallbackComponent });
@@ -98,10 +74,6 @@ export const UniverseComponents = {
   UniverseDetail: React.lazy(() => import("../features/universe/pages/UniverseDetail")),
   UniverseEdit: React.lazy(() => import("../features/universe/pages/UniverseEdit")),
   UniverseList: React.lazy(() => import("../features/universe/components/UniverseList")),
-  UniverseManager: React.lazy(() => import("../features/universe/components/UniverseManager")),
-  UniverseModal: React.lazy(() => import("../features/universe/modals/UniverseModal")),
-  UniverseDeleteModal: React.lazy(() => import("../features/universe/modals/UniverseDeleteModal")),
-  UniverseInfoModal: React.lazy(() => import("../features/universe/modals/UniverseInfoModal")),
 };
 
 // Fix physics component imports based on actual file structure

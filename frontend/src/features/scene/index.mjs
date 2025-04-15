@@ -9,7 +9,6 @@
 export { default as SceneCard } from './components/SceneCard';
 export { default as SceneCardSimple } from './components/SceneCardSimple';
 export { default as SceneViewer } from './components/SceneViewer';
-export { default as ScenesExample } from './components/ScenesExample';
 
 // Modal exports
 export { default as SceneModal } from './modals/SceneModal';
