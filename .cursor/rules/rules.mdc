@@ -8,43 +8,49 @@ alwaysApply: true
 ## General Rules
 
 1. **Directory Management**
-   - Always perform `pwd` before executing terminal commands to confirm your current directory.
-   - Verify your directory before running commands to avoid creating nested directories.
+   - Always run `pwd` to confirm your current directory before executing terminal commands.
+   - Verify your directory to avoid creating nested directories.
 
 2. **Planning and Execution**
-   - Develop a logical plan before executing any tasks. Break this plan into clear, actionable steps.
-   - Always adhere to current best practices when performing tasks.
+   - Create a logical plan before starting any tasks. Break it down into clear, actionable steps.
+   - Follow best practices for all tasks.
 
 3. **Codebase Integrity**
-   - Never rush to add new code or files. Thoroughly search the entire codebase before making modifications to prevent clutter.
-   - Ensure consistency in naming, URLs, variables, routes, APIs, etc., when fixing errors. Review other files to maintain organization.
+   - Do not rush to add new code or files. Search the entire codebase before making changes to avoid clutter.
+   - Ensure consistency in naming, URLs, variables, routes, and APIs when fixing errors. Review other files for organization.
 
-4. **Error Handling**
-   - Investigate the root cause of any error, conflict, or issue before attempting to resolve it.
-   - For frontend issues, utilize Redux whenever possible to implement fixes.
-   - When addressing backend issues, maintain consistency with files in:
+4. **File Structure and Naming Conventions**
+   - Maintain a logical and consistent file structure for both the backend and frontend.
+   - Use simple and direct names for files and directories. Avoid complex or vague terms.
+   - Ensure that the naming of files and directories clearly reflects their purpose and functionality.
+   - Organize files in a way that makes it easy to navigate and understand the project structure.
+
+5. **Error Handling**
+   - Investigate the root cause of any error or issue before attempting to resolve it.
+   - For frontend issues, use Redux whenever possible for robust fixes.
+   - For backend issues, maintain consistency with files in:
      - `harmonic-universe/backend/app/api/models/**/*`
      - `harmonic-universe/backend/app/api/routes/**/*`
-   - Check for similar errors in other features (universe management, scene management, character management, notes management) and address them as needed.
+   - Check other features (universe management, scene management, character management, notes management) for similar errors. Trace data flow to identify and address the root cause of issues.
 
-5. **Codebase Modifications**
-   - Do not add new files or code. If something is needed, search for it and update the import instead.
-   - There is no need to start or restart servers, as they are already running with hot reloading enabled (backend on port 5001 and frontend on port 5173).
+6. **Codebase Modifications**
+   - Do not create new files or code. If something is needed, search for it and update the import instead.
+   - There is no need to start or restart servers; they are already running with hot reloading (backend on port 5001 and frontend on port 5173).
 
 ## Core Principles
 
 1. **Exploration Over Conclusion**
-   - Avoid rushing to conclusions; keep exploring until a solution emerges.
-   - Question every assumption and inference, and continue reasoning until clarity is achieved.
+   - Avoid rushing to conclusions; keep exploring until a solution is found.
+   - Question every assumption and inference until clarity is achieved.
 
 2. **Depth of Reasoning**
-   - Engage in extensive contemplation, breaking down complex thoughts into simple, atomic steps.
+   - Break down complex thoughts into simple, atomic steps.
    - Embrace uncertainty and be open to revising previous thoughts.
 
 3. **Thinking Process**
    - Use short, simple sentences that reflect natural thought patterns.
-   - Freely express uncertainty and internal debate, showing work-in-progress thinking.
-   - Acknowledge and explore dead ends, backtrack, and revise as necessary.
+   - Express uncertainty and internal debate, showing your thought process.
+   - Acknowledge and explore dead ends; backtrack and revise as necessary.
    - Generate at least two alternative solutions for problem-solving.
 
 4. **Persistence**
@@ -57,8 +63,8 @@ Your responses must follow this exact structure:
 <contemplator>
 [Your extensive internal monologue goes here]
 - Perform breadth and depth traversal of the entire codebase to understand file structure and overall features of the application/program.
-- read files in:
-  - `harmonic-universe/backend/**/*` 
+- Read files in:
+  - `harmonic-universe/backend/**/*`
   - `harmonic-universe/frontend/**/*`
 - Develop a logical and methodical plan of action and execute that plan efficiently.
 - Begin with small, foundational observations.
