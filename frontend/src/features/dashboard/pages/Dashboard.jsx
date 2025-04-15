@@ -113,6 +113,7 @@ import { deleteUniverse } from "../../../store/thunks/universeThunks";
 import { AUTH_CONFIG } from "../../../utils/config";
 import { logout } from "../../../store/thunks/authThunks";
 import api from "../../../services/api.adapter";
+import { authService } from "../../../services/auth.service.mjs";
 
 /**
  * Dashboard component for displaying and managing user's universes
@@ -146,14 +147,16 @@ const Dashboard = () => {
     
     if (!token) {
       console.error("Dashboard - No auth token found, cannot load universes");
-      handleRefreshAuth();
-      return Promise.resolve({ error: "Authentication failed" });
+      navigate("/?modal=login", { replace: true });
+      return Promise.resolve({ error: "Authentication error" });
     }
     
     if (tokenVerificationFailed === "true") {
       console.error("Dashboard - Token verification previously failed");
-      handleRefreshAuth();
-      return Promise.resolve({ error: "Authentication failed" });
+      // Clear the flag and redirect to login
+      localStorage.removeItem("token_verification_failed");
+      navigate("/?modal=login", { replace: true });
+      return Promise.resolve({ error: "Authentication error" });
     }
     
     return dispatch(fetchUniverses({ userId: user?.id, user_only: true }))
@@ -182,24 +185,14 @@ const Dashboard = () => {
           if (isAuthError) {
             console.error("Dashboard - Authentication error, redirecting to login");
             localStorage.setItem("token_verification_failed", "true");
-            handleRefreshAuth();
-            return { error: "Authentication failed" };
+            navigate("/?modal=login", { replace: true });
+            return { error: "Authentication error" };
           }
           
           return { error: result.payload?.message || "API error" };
         }
         
-        // Other data handling remains the same
-        if (!result.payload) {
-          console.warn("Dashboard - No payload in result:", result);
-          if (retryCount < 3) {
-            console.log("Dashboard - Retrying fetch...");
-            setRetryCount((prev) => prev + 1);
-          }
-          return { error: "No data received from server" };
-        }
-
-        // Handle different response formats
+        // Process successful result
         let universes = [];
         if (Array.isArray(result.payload)) {
           universes = result.payload;
@@ -219,12 +212,6 @@ const Dashboard = () => {
             result.payload
           );
         }
-
-        console.log("Dashboard - Processed universes:", {
-          count: universes.length,
-          isArray: Array.isArray(universes),
-          hasData: !!universes,
-        });
 
         return { universes };
       })
@@ -246,8 +233,8 @@ const Dashboard = () => {
         if (isAuthError) {
           console.error("Dashboard - Authentication error in catch block, redirecting to login");
           localStorage.setItem("token_verification_failed", "true");
-          handleRefreshAuth();
-          return { error: "Authentication failed" };
+          navigate("/?modal=login", { replace: true });
+          return { error: "Authentication error" };
         }
         
         return { error: error.message };
@@ -329,6 +316,7 @@ const Dashboard = () => {
     }
   }, [newUniverseId]);
 
+  // Consistent logout handler that uses the auth service
   const handleLogout = () => {
     const now = Date.now();
     
@@ -343,11 +331,6 @@ const Dashboard = () => {
     
     console.log("Dashboard - Logging out user");
     
-    // Proceed with normal logout flow
-    localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-    localStorage.removeItem(AUTH_CONFIG.USER_KEY);
-    localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-    
     // Disable the logout buttons temporarily to prevent multiple clicks
     const logoutButtons = document.querySelectorAll('button[data-action="logout"]');
     logoutButtons.forEach(button => {
@@ -359,28 +342,18 @@ const Dashboard = () => {
       }
     });
     
+    // Use the auth service for consistent logout
+    authService.clearAuthData();
     dispatch(logout());
     navigate("/?modal=login", { replace: true });
   };
   
+  // Consistent auth refresh handler that uses the auth service
   const handleRefreshAuth = () => {
     console.log("Dashboard - Refreshing authentication");
     
-    // Clear all auth-related localStorage items
-    localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-    localStorage.removeItem(AUTH_CONFIG.USER_KEY);
-    localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-    localStorage.removeItem("token_verification_failed");
-    
-    // Clear any cached data
-    try {
-      if (typeof api.clearCache === 'function') {
-        api.clearCache();
-        console.log("Dashboard - API cache cleared");
-      }
-    } catch (error) {
-      console.error("Dashboard - Error clearing API cache:", error);
-    }
+    // Use the auth service for consistent cleanup
+    authService.clearAuthData();
     
     // Dispatch logout action
     dispatch(logout());

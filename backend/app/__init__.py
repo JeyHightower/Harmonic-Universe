@@ -293,16 +293,47 @@ def create_app(config_name='default'):
             return False
         return False
 
-    CORS(app, resources={
-        r"/api/*": {
-            "origins": ["http://localhost:5173", "http://127.0.0.1:5173"],
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization"],
-            "expose_headers": ["Content-Type", "Authorization"],
-            "max_age": 86400,
-            "supports_credentials": True
-        }
-    })
+    # Apply CORS for all routes, not just /api routes
+    CORS(app, origins=app.config['CORS_ORIGINS'], 
+        methods=app.config['CORS_METHODS'],
+        allow_headers=app.config['CORS_HEADERS'],
+        expose_headers=app.config['CORS_EXPOSE_HEADERS'],
+        supports_credentials=True,
+        max_age=app.config['CORS_MAX_AGE'],
+        vary_header=True)
+        
+    # Add CORS headers to responses
+    @app.after_request
+    def add_cors_headers(response):
+        origin = request.headers.get('Origin')
+        if origin and (origin in app.config['CORS_ORIGINS'] or '*' in app.config['CORS_ORIGINS']):
+            response.headers.add('Access-Control-Allow-Origin', origin)
+            response.headers.add('Access-Control-Allow-Credentials', 'true')
+            
+            # Adjust SameSite based on environment
+            is_prod = app.config.get('ENV') == 'production'
+            same_site = 'None'  # Use None for both prod and dev to enable cross-site cookies
+            
+            # If SameSite=None, cookie must be secure
+            secure = is_prod or same_site == 'None'
+            
+            # Ensure cookie attributes are consistent for all routes
+            if 'Set-Cookie' in response.headers:
+                cookie_parts = response.headers['Set-Cookie'].split(';')
+                base_cookie = cookie_parts[0]
+                
+                # Build a new cookie with consistent settings
+                new_cookie = f"{base_cookie}; Path=/; HttpOnly; SameSite={same_site}"
+                if secure:
+                    new_cookie += "; Secure"
+                    
+                response.headers['Set-Cookie'] = new_cookie
+            
+            response.headers.add('Access-Control-Allow-Methods', ', '.join(app.config['CORS_METHODS']))
+            response.headers.add('Access-Control-Allow-Headers', ', '.join(app.config['CORS_HEADERS']))
+            response.headers.add('Access-Control-Expose-Headers', ', '.join(app.config['CORS_EXPOSE_HEADERS']))
+            response.headers.add('Access-Control-Max-Age', str(app.config['CORS_MAX_AGE']))
+        return response
 
     # Set up handlers and routes
     setup_cors_handlers(app)

@@ -111,174 +111,129 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Response interceptor
+// Configure response interceptor for handling auth errors and refreshing tokens
 axiosInstance.interceptors.response.use(
   (response) => {
-    // Log successful response
-    log('api', 'Response received', {
-      status: response.status,
-      url: response.config.url,
-    });
-
     return response;
   },
-  (error) => {
-    // Get error details
-    const status = error.response ? error.response.status : 'No status';
-    const url = error.config ? error.config.url : 'Unknown URL';
-    const method = error.config ? error.config.method?.toUpperCase() : 'Unknown Method';
-
-    // Log error
-    logError(`${method} ${url} - ${status}`, {
-      status,
-      url,
-      method,
-      message: error.message,
-      data: error.response?.data
-    });
-
-    // Handle 401 Unauthorized errors (token expired or invalid)
-    if (error.response && error.response.status === 401) {
-      // Check if it's a signature verification failure or other auth error
-      const errorMessage = error.response.data?.message || '';
-      const isTokenError = 
-        errorMessage.includes('Signature verification failed') || 
-        errorMessage.includes('Invalid token') ||
-        errorMessage.includes('expired') ||
-        errorMessage.includes('Token has expired') ||
-        errorMessage.includes('Not enough segments') ||
-        errorMessage.includes('authentication');
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // Don't retry if we've already tried to refresh
+    if (originalRequest._retry) {
+      console.error('Request already retried once, failing:', originalRequest.url);
+      return Promise.reject(error);
+    }
+    
+    // Only handle 401 errors for token refresh
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+      // Check if this is a token refresh attempt that failed
+      if (originalRequest.url.includes('/auth/token/refresh') || 
+          originalRequest.url.includes('/auth/token/validate')) {
+        // Clear auth data if token refresh fails
+        console.error('Auth error during token refresh or validation, signing out');
+        authService.clearAuthData();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('auth:signout'));
+        }
+        return Promise.reject(error);
+      }
+      
+      try {
+        console.log('Attempting token refresh due to 401 response');
+        originalRequest._retry = true;
         
-      if (isTokenError) {
-        logError('Authentication token invalid or expired', {
-          message: errorMessage,
-          url,
-          method
+        // Setup timeout for token refresh
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Token refresh timeout')), 5000);
         });
         
-        // Try to refresh the token first
-        try {
-          // Store original request config for potential retry
-          const originalConfig = error.config;
-          
-          // We need to prevent clearing the token while refreshing it
-          let refreshing = true;
-          let refreshTimeout = null;
-          
-          // Import dynamically to avoid circular dependencies
-          import('../services/auth.service.mjs').then(async ({ refreshToken }) => {
-            try {
-              log('api', 'Attempting to refresh token');
-              const result = await refreshToken();
-              
-              if (result.success && result.data?.token) {
-                log('api', 'Token refreshed successfully');
-                refreshing = false;
-                
-                // Clear timeout if it's still running
-                if (refreshTimeout) {
-                  clearTimeout(refreshTimeout);
-                  refreshTimeout = null;
-                }
-                
-                // If original request exists and we can retry it
-                if (originalConfig) {
-                  // Retry the original request with new token
-                  log('api', 'Retrying original request with new token');
-                  try {
-                    // Create new axios instance for retry
-                    const newResponse = await axiosInstance(originalConfig);
-                    return newResponse;
-                  } catch (retryError) {
-                    log('api', 'Retry with new token failed', { error: retryError.message });
-                  }
-                }
-              } else {
-                // Only if refresh explicitly fails, set token as verification failed
-                log('api', 'Token refresh failed explicitly');
-                refreshing = false;
-                localStorage.setItem("token_verification_failed", "true");
-                
-                // Only clear token if refresh explicitly failed
-                localStorage.removeItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
-                
-                // Also clear user and refresh token with proper keys
-                try {
-                  import('../utils/config').then(({ AUTH_CONFIG }) => {
-                    localStorage.removeItem(AUTH_CONFIG.USER_KEY);
-                    localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-                    log('api', 'Cleared all auth related localStorage items after failed refresh');
-                  });
-                } catch (err) {
-                  // Fallback to common keys if import fails
-                  localStorage.removeItem("user");
-                  localStorage.removeItem("refreshToken");
-                }
-              }
-            } catch (refreshError) {
-              log('api', 'Error during token refresh', { error: refreshError.message });
-              refreshing = false;
-              localStorage.setItem("token_verification_failed", "true");
-              localStorage.removeItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
-            }
-          }).catch(importError => {
-            log('api', 'Error importing auth service', { error: importError.message });
-            refreshing = false;
-            localStorage.setItem("token_verification_failed", "true");
-            localStorage.removeItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
-          });
-          
-          // Set a timeout to avoid waiting too long for the refresh
-          refreshTimeout = setTimeout(() => {
-            if (refreshing) {
-              log('api', 'Token refresh timeout reached');
-              refreshing = false;
-              localStorage.setItem("token_verification_failed", "true");
-              localStorage.removeItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
-              
-              // Also clear user and refresh token
-              try {
-                import('../utils/config').then(({ AUTH_CONFIG }) => {
-                  localStorage.removeItem(AUTH_CONFIG.USER_KEY);
-                  localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-                });
-              } catch (err) {
-                localStorage.removeItem("user");
-                localStorage.removeItem("refreshToken");
-              }
-            }
-          }, 5000); // Increased timeout to 5 seconds to give refresh more time
-        } catch (mainError) {
-          log('api', 'Fatal error attempting token refresh', { error: mainError.message });
-          localStorage.setItem("token_verification_failed", "true");
-          localStorage.removeItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
-          
-          // Also clear user and refresh token with proper keys
-          try {
-            // Use dynamic import to avoid circular dependencies
-            import('../utils/config').then(({ AUTH_CONFIG }) => {
-              localStorage.removeItem(AUTH_CONFIG.USER_KEY);
-              localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-              log('api', 'Cleared all auth related localStorage items');
-            }).catch(err => {
-              // Fallback to common keys if import fails
-              localStorage.removeItem("user");
-              localStorage.removeItem("refreshToken");
-              log('api', 'Cleared auth related localStorage items with fallback keys');
-            });
-          } catch (err) {
-            // Ultra-safe fallback
-            localStorage.removeItem("user");
-            localStorage.removeItem("refreshToken");
-            log('api', 'Cleared auth related localStorage with fallback due to error', { error: err.message });
-          }
+        // Attempt to refresh the token
+        const refreshPromise = refreshTokenAndRetry();
+        const result = await Promise.race([refreshPromise, timeoutPromise]);
+        
+        // Update auth header with new token
+        if (result && result.token) {
+          originalRequest.headers['Authorization'] = `Bearer ${result.token}`;
+          console.log('Token refreshed successfully, retrying original request');
+          return axiosInstance(originalRequest);
+        } else {
+          console.error('No token received after refresh attempt');
+          throw new Error('Token refresh failed - no token received');
         }
+      } catch (refreshError) {
+        console.error('Error refreshing token:', refreshError);
+        // Clear auth data and notify the app
+        authService.clearAuthData();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('auth:signout'));
+        }
+        return Promise.reject(error);
       }
     }
-
+    
+    // Handle CORS errors
+    if (error.message && error.message.includes('Network Error')) {
+      console.error('Network error (possibly CORS):', error);
+      return Promise.reject(new Error('Network error: API may be unavailable or CORS not configured properly'));
+    }
+    
+    // Pass through other errors
     return Promise.reject(error);
   }
 );
+
+// Function to refresh the token
+async function refreshTokenAndRetry() {
+  console.log('Refreshing token...');
+  try {
+    // Get current token from storage
+    const token = localStorage.getItem('token') || '';
+    
+    if (!token) {
+      console.error('No token found in storage to refresh');
+      throw new Error('No token available to refresh');
+    }
+    
+    // Create a separate axios instance for the refresh call
+    // to avoid intercept loops
+    const refreshClient = axios.create({
+      baseURL: API_SERVICE_CONFIG.BASE_URL,
+      timeout: 5000,
+      withCredentials: true
+    });
+    
+    // Try various ways to send the token
+    const response = await refreshClient.post('/auth/token/refresh', 
+      { token }, // In body
+      { 
+        headers: { 
+          'Authorization': `Bearer ${token}`,  // In header
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    if (response.data && response.data.token) {
+      // Update stored token
+      localStorage.setItem('token', response.data.token);
+      
+      // If user data was returned, update it too
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+      
+      console.log('Token refreshed successfully');
+      return response.data;
+    } else {
+      console.error('Invalid response from token refresh:', response);
+      throw new Error('Invalid response from token refresh');
+    }
+  } catch (error) {
+    console.error('Error in refreshTokenAndRetry:', error);
+    throw error;
+  }
+}
 
 /**
  * Format a URL to include the API base if not already included

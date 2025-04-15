@@ -38,8 +38,8 @@ def login():
         # Set cookie for token (in addition to JSON response)
         is_production = current_app.config.get('ENV') == 'production'
         cookie_domain = None  # Let browser set domain automatically
-        same_site = 'None' if is_production else 'Lax'
-        secure = is_production
+        same_site = 'None'  # Use None to enable cross-site cookies for both prod and dev
+        secure = is_production or same_site == 'None'  # Must be secure if SameSite=None
         
         # Get token expiration time or default to 24 hours
         token_expires = current_app.config.get('JWT_ACCESS_TOKEN_EXPIRES')
@@ -52,7 +52,8 @@ def login():
             secure=secure,
             samesite=same_site,
             max_age=max_age,
-            domain=cookie_domain
+            domain=cookie_domain,
+            path='/'  # Ensure cookie is available for all paths
         )
         
         return response, 200

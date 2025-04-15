@@ -38,11 +38,16 @@ create_migrations() {
     # Change to backend directory
     cd "$BACKEND_DIR"
     
-    # Activate virtual environment
-    if [ -d "venv" ]; then
-        source venv/bin/activate
+    # Activate virtual environment using pyenv
+    if command -v pyenv &> /dev/null; then
+        eval "$(pyenv init -)"
+        eval "$(pyenv virtualenv-init -)"
+        pyenv activate myenv || log_error "Failed to activate myenv, falling back to pyenv shell"
+        pyenv shell myenv
+    elif [ -d "myenv" ]; then
+        source myenv/bin/activate
     else
-        log_error "Virtual environment not found. Please run setup.sh first."
+        log_error "Virtual environment not found. Please ensure myenv is created with pyenv."
         return 1
     fi
     
@@ -60,11 +65,16 @@ apply_migrations() {
     # Change to backend directory
     cd "$BACKEND_DIR"
     
-    # Activate virtual environment
-    if [ -d "venv" ]; then
-        source venv/bin/activate
+    # Activate virtual environment using pyenv
+    if command -v pyenv &> /dev/null; then
+        eval "$(pyenv init -)"
+        eval "$(pyenv virtualenv-init -)"
+        pyenv activate myenv || log_error "Failed to activate myenv, falling back to pyenv shell"
+        pyenv shell myenv
+    elif [ -d "myenv" ]; then
+        source myenv/bin/activate
     else
-        log_error "Virtual environment not found. Please run setup.sh first."
+        log_error "Virtual environment not found. Please ensure myenv is created with pyenv."
         return 1
     fi
     
@@ -82,11 +92,16 @@ reset_db() {
     # Change to backend directory
     cd "$BACKEND_DIR"
     
-    # Activate virtual environment
-    if [ -d "venv" ]; then
-        source venv/bin/activate
+    # Activate virtual environment using pyenv
+    if command -v pyenv &> /dev/null; then
+        eval "$(pyenv init -)"
+        eval "$(pyenv virtualenv-init -)"
+        pyenv activate myenv || log_error "Failed to activate myenv, falling back to pyenv shell"
+        pyenv shell myenv
+    elif [ -d "myenv" ]; then
+        source myenv/bin/activate
     else
-        log_error "Virtual environment not found. Please run setup.sh first."
+        log_error "Virtual environment not found. Please ensure myenv is created with pyenv."
         return 1
     fi
     

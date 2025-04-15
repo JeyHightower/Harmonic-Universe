@@ -24,11 +24,20 @@ print_red() {
 
 # Check if Python virtual environment exists
 check_backend() {
-    if [ ! -d "$BACKEND_DIR/venv" ]; then
-        print_red "Backend virtual environment not found. Please run setup.sh first."
+    # Check if pyenv exists first
+    if command -v pyenv &> /dev/null; then
+        if pyenv virtualenvs | grep -q "myenv"; then
+            print_green "Backend environment (pyenv myenv) found."
+            return 0
+        fi
+    # Fall back to checking for directory
+    elif [ -d "$BACKEND_DIR/myenv" ]; then
+        print_green "Backend environment (myenv directory) found."
+        return 0
+    else
+        print_red "Backend virtual environment not found. Please ensure myenv is created with pyenv."
         exit 1
     fi
-    print_green "Backend environment found."
 }
 
 # Check if frontend dependencies are installed
@@ -59,7 +68,19 @@ check_postgres() {
 start_backend() {
     print_yellow "Starting backend server..."
     cd "$BACKEND_DIR"
-    source venv/bin/activate
+    
+    # Activate virtual environment using pyenv
+    if command -v pyenv &> /dev/null; then
+        eval "$(pyenv init -)"
+        eval "$(pyenv virtualenv-init -)"
+        pyenv activate myenv || print_yellow "Failed to activate myenv via pyenv activate, falling back to pyenv shell"
+        pyenv shell myenv
+    elif [ -d "myenv" ]; then
+        source myenv/bin/activate
+    else
+        print_red "Virtual environment not found. Please ensure myenv is created with pyenv."
+        exit 1
+    fi
     
     # Start the backend server in the background
     python run.py &

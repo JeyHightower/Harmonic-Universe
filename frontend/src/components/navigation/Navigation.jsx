@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { useModal } from "../../contexts/ModalContext";
 import { MODAL_TYPES } from "../../constants/modalTypes";
 import { logout } from "../../store/thunks/authThunks";
+import { authService } from "../../services/auth.service.mjs";
 import logoSvg from "../../assets/logo.svg";
 import "./Navigation.css";
 
@@ -49,6 +50,9 @@ function Navigation() {
   }, [open]);
 
   const handleLogout = useCallback(() => {
+    console.log("[Navigation] Logging out user");
+    // Use the centralized auth service for consistent logout
+    authService.clearAuthData();
     dispatch(logout());
   }, [dispatch]);
 

@@ -27,8 +27,21 @@ def debug_jwt():
             'JWT_HEADER_TYPE': current_app.config.get('JWT_HEADER_TYPE'),
             'JWT_HEADER_NAME': current_app.config.get('JWT_HEADER_NAME'),
             'JWT_TOKEN_LOCATION': current_app.config.get('JWT_TOKEN_LOCATION'),
-            'JWT manager initialized': JWTManager.jwt_manager is not None if hasattr(JWTManager, 'jwt_manager') else 'Unknown'
+            'JWT manager initialized': JWTManager.jwt_manager is not None if hasattr(JWTManager, 'jwt_manager') else 'Unknown',
+            'ENV': current_app.config.get('ENV'),
+            'SECRET_KEY_FULL': current_app.config.get('JWT_SECRET_KEY') == os.environ.get('JWT_SECRET_KEY'),
         }
+        
+        # Generate a test token for validation
+        try:
+            current_app.logger.info('Generating test token')
+            secret_key = current_app.config.get('JWT_SECRET_KEY') or os.environ.get('JWT_SECRET_KEY')
+            test_token = jwt.encode({'sub': 1, 'test': True}, secret_key, algorithm='HS256')
+            jwt_config['test_token'] = test_token
+            jwt_config['test_token_decode'] = jwt.decode(test_token, secret_key, algorithms=['HS256'])
+            jwt_config['test_token_validation'] = 'Success'
+        except Exception as e:
+            jwt_config['test_token_error'] = str(e)
         
         # Get debug info from any Auth header
         auth_header = request.headers.get('Authorization')
@@ -86,12 +99,12 @@ def debug_jwt():
         return jsonify({'message': 'Error during JWT debugging', 'error': str(e)}), 500
 
 def _mask_key(key):
-    """Mask a secret key for safe display."""
+    """Mask a key for display (without revealing it fully)."""
     if not key:
         return None
-    if len(key) <= 8:
-        return "***" 
-    return key[:4] + "***" + key[-2:]
+    if len(key) <= 6:
+        return key
+    return key[:4] + '***' + key[-2:]
 
 def _get_fixed_get_secret_key_info():
     """Check if the patched get_secret_key function is in place."""

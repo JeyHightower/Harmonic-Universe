@@ -101,8 +101,10 @@ const parseInt = (value, defaultValue = undefined) => {
   return isNaN(parsed) ? defaultValue : parsed;
 };
 
-// Force demo mode in production for testing
-export const FORCE_DEMO_MODE = IS_PRODUCTION;
+// Demo mode settings
+export const FORCE_DEMO_MODE = isNodeEnv
+  ? false
+  : parseBool(validateEnvVar("VITE_FEATURE_DEMO_MODE", "false"));
 
 // Authentication configuration
 export const AUTH_CONFIG = {

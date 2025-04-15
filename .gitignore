@@ -38,6 +38,7 @@ env/
 venv/
 ENV/
 .venv/
+myenv/
 .env
 .env.sqlite
 

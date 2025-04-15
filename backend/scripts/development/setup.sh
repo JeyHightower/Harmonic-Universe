@@ -59,7 +59,7 @@ cd "$ROOT_DIR/backend"
 
 # Create virtual environment
 if confirm "Do you want to set up a Python virtual environment?"; then
-    setup_python_venv "venv"
+    setup_python_myenv "myenv"
 fi
 
 # Initialize database

@@ -179,8 +179,8 @@ create_dockerignore() {
 .env.*
 
 # Virtual environment
-venv/
-.venv/
+myenv/
+.myenv/
 env/
 
 # Python cache

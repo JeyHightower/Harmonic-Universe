@@ -41,25 +41,25 @@ check_exposed_secrets() {
         # Look for API keys
         grep -r -n -E 'api_?key|api.?secret|access.?key|auth.?token|client.?secret|private.?key' \
             --include="*.{js,ts,jsx,tsx,py,json,yml,yaml,env,cfg,rb,php,html,css}" \
-            --exclude-dir={node_modules,venv,dist,build,__pycache__,coverage,.git} \
+            --exclude-dir={node_modules,myenv,dist,build,__pycache__,coverage,.git} \
             "$ROOT_DIR" 2>/dev/null
         
         # Look for potential AWS keys
         grep -r -n -E 'AKIA[0-9A-Z]{16}' \
             --include="*.{js,ts,jsx,tsx,py,json,yml,yaml,env,cfg,rb,php,html,css}" \
-            --exclude-dir={node_modules,venv,dist,build,__pycache__,coverage,.git} \
+            --exclude-dir={node_modules,myenv,dist,build,__pycache__,coverage,.git} \
             "$ROOT_DIR" 2>/dev/null
         
         # Look for potential passwords
         grep -r -n -E 'password\s*=\s*[\'"][^\'"]+[\'"]|pass\s*=\s*[\'"][^\'"]+[\'"]' \
             --include="*.{js,ts,jsx,tsx,py,json,yml,yaml,env,cfg,rb,php,html,css}" \
-            --exclude-dir={node_modules,venv,dist,build,__pycache__,coverage,.git} \
+            --exclude-dir={node_modules,myenv,dist,build,__pycache__,coverage,.git} \
             "$ROOT_DIR" 2>/dev/null
         
         # Look for private keys
         grep -r -n -E '-----BEGIN .* PRIVATE KEY-----' \
             --include="*.{js,ts,jsx,tsx,py,json,yml,yaml,env,cfg,rb,php,html,css}" \
-            --exclude-dir={node_modules,venv,dist,build,__pycache__,coverage,.git} \
+            --exclude-dir={node_modules,myenv,dist,build,__pycache__,coverage,.git} \
             "$ROOT_DIR" 2>/dev/null
     } > "$SECRETS_FILE"
     
@@ -107,9 +107,9 @@ check_outdated_deps() {
         cd "$ROOT_DIR/backend"
         
         # Check if virtual environment exists
-        if [ -d "venv" ]; then
+        if [ -d "myenv" ]; then
             # Activate virtual environment
-            source venv/bin/activate
+            source myenv/bin/activate
             
             # Check for outdated packages
             pip list --outdated --format=json > "$PIP_OUTDATED_FILE" 2>/dev/null
@@ -215,42 +215,42 @@ check_backend_security() {
         log_info "Checking for SQL injection vulnerabilities..."
         grep -r -n -E 'execute\s*\(\s*[\'"].*\%|cursor\.execute\s*\(\s*[\'"].*\+|cursor\.executemany\s*\(\s*[\'"].*\+|db\.execute\s*\(\s*[\'"].*\+|raw_connection' \
             --include="*.py" \
-            --exclude-dir={venv,dist,build,__pycache__,.git} \
+            --exclude-dir={myenv,dist,build,__pycache__,.git} \
             "$ROOT_DIR/backend" 2>/dev/null
         
         # Check for shell injection vulnerabilities
         log_info "Checking for shell injection vulnerabilities..."
         grep -r -n -E 'os\.system\s*\(|os\.popen\s*\(|subprocess\.call\s*\(|subprocess\.Popen\s*\(|eval\s*\(|exec\s*\(' \
             --include="*.py" \
-            --exclude-dir={venv,dist,build,__pycache__,.git} \
+            --exclude-dir={myenv,dist,build,__pycache__,.git} \
             "$ROOT_DIR/backend" 2>/dev/null
         
         # Check for unsafe deserialization
         log_info "Checking for unsafe deserialization..."
         grep -r -n -E 'pickle\.loads|yaml\.load\s*\([^,]|marshal\.loads|cPickle\.loads' \
             --include="*.py" \
-            --exclude-dir={venv,dist,build,__pycache__,.git} \
+            --exclude-dir={myenv,dist,build,__pycache__,.git} \
             "$ROOT_DIR/backend" 2>/dev/null
         
         # Check for hardcoded secrets
         log_info "Checking for hardcoded secrets..."
         grep -r -n -E '(SECRET_KEY|API_KEY|PASSWORD|TOKEN)\s*=\s*[\'"][^\'"]+[\'"]' \
             --include="*.py" \
-            --exclude-dir={venv,dist,build,__pycache__,.git} \
+            --exclude-dir={myenv,dist,build,__pycache__,.git} \
             "$ROOT_DIR/backend" 2>/dev/null
         
         # Check for file inclusion vulnerabilities
         log_info "Checking for file inclusion vulnerabilities..."
         grep -r -n -E 'open\s*\(\s*.*\+|__import__\s*\(\s*.*\+|importlib\.import_module\s*\(\s*.*\+' \
             --include="*.py" \
-            --exclude-dir={venv,dist,build,__pycache__,.git} \
+            --exclude-dir={myenv,dist,build,__pycache__,.git} \
             "$ROOT_DIR/backend" 2>/dev/null
         
         # Check for session related issues
         log_info "Checking for session security issues..."
         grep -r -n -E 'PERMANENT_SESSION_LIFETIME|session\.permanent|remember_cookie_duration' \
             --include="*.py" \
-            --exclude-dir={venv,dist,build,__pycache__,.git} \
+            --exclude-dir={myenv,dist,build,__pycache__,.git} \
             "$ROOT_DIR/backend" 2>/dev/null
     } > "$BACKEND_ISSUES_FILE"
     
@@ -275,28 +275,28 @@ check_insecure_configs() {
         log_info "Checking for DEBUG=True in production settings..."
         grep -r -n -E 'DEBUG\s*=\s*True' \
             --include="*.{py,json,yml,yaml,env,cfg}" \
-            --exclude-dir={node_modules,venv,dist,build,__pycache__,coverage,.git} \
+            --exclude-dir={node_modules,myenv,dist,build,__pycache__,coverage,.git} \
             "$ROOT_DIR" 2>/dev/null
         
         # Check for missing CORS configurations
         log_info "Checking for missing CORS configurations..."
         grep -r -n -E "Access-Control-Allow-Origin:\s*\*" \
             --include="*.{py,js,ts,json,yml,yaml,env,cfg}" \
-            --exclude-dir={node_modules,venv,dist,build,__pycache__,coverage,.git} \
+            --exclude-dir={node_modules,myenv,dist,build,__pycache__,coverage,.git} \
             "$ROOT_DIR" 2>/dev/null
         
         # Check for missing content security policy
         log_info "Checking for content security policy..."
         grep -r -n -E "Content-Security-Policy" \
             --include="*.{py,js,ts,html,json,yml,yaml,env,cfg}" \
-            --exclude-dir={node_modules,venv,dist,build,__pycache__,coverage,.git} \
+            --exclude-dir={node_modules,myenv,dist,build,__pycache__,coverage,.git} \
             "$ROOT_DIR" 2>/dev/null
         
         # Check for insecure cookie settings
         log_info "Checking for insecure cookie settings..."
         grep -r -n -E 'secure=False|httpOnly=False|SameSite=None' \
             --include="*.{py,js,ts,json,yml,yaml,env,cfg}" \
-            --exclude-dir={node_modules,venv,dist,build,__pycache__,coverage,.git} \
+            --exclude-dir={node_modules,myenv,dist,build,__pycache__,coverage,.git} \
             "$ROOT_DIR" 2>/dev/null
     } > "$CONFIG_ISSUES_FILE"
     

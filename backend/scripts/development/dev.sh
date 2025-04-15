@@ -19,17 +19,26 @@ start_backend() {
     ROOT_DIR=$(get_root_dir)
     BACKEND_DIR="$ROOT_DIR/backend"
     
-    # Check if Python virtual environment exists
-    if [ ! -d "$BACKEND_DIR/venv" ]; then
-        log_error "Python virtual environment not found. Please run setup.sh first."
-        return 1
+    # Check virtual environment
+    if [ ! -d "$BACKEND_DIR/myenv" ] && ! (command -v pyenv &> /dev/null && pyenv virtualenvs | grep -q "myenv"); then
+        echo "Error: Python virtual environment not found."
+        echo "Please ensure myenv is created with pyenv or run the setup script first."
+        exit 1
     fi
     
-    # Change to backend directory
-    cd "$BACKEND_DIR"
-    
     # Activate virtual environment
-    source venv/bin/activate
+    cd "$BACKEND_DIR"
+    if command -v pyenv &> /dev/null; then
+        eval "$(pyenv init -)"
+        eval "$(pyenv virtualenv-init -)"
+        pyenv activate myenv || echo "Warning: Failed to activate myenv via pyenv activate, falling back to pyenv shell"
+        pyenv shell myenv
+    elif [ -d "myenv" ]; then
+        source myenv/bin/activate
+    else
+        echo "Error: Virtual environment not found after checking. This shouldn't happen."
+        exit 1
+    fi
     
     # Load environment variables
     if [ -f ".env" ]; then

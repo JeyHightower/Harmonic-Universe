@@ -35,7 +35,7 @@ install_os_dependencies() {
         execute_command "sudo apt-get update" "Updating package lists"
         
         log_info "Installing dependencies..."
-        execute_command "sudo apt-get install -y python3.9 python3.9-venv python3-pip nodejs npm postgresql postgresql-contrib" "Installing required packages"
+        execute_command "sudo apt-get install -y python3.9 python3.9-myenv python3-pip nodejs npm postgresql postgresql-contrib" "Installing required packages"
     else
         log_error "Unsupported operating system."
         return 1
@@ -119,20 +119,35 @@ init_database() {
 # =====================
 
 # Setup Python virtual environment
-setup_python_venv() {
-    local venv_dir="${1:-venv}"
+setup_python_myenv() {
+    # For backward compatibility, still accept the parameter but ignore it
+    # and use myenv instead
+    log_info "Setting up Python virtual environment with pyenv (myenv)"
     
-    log_info "Setting up Python virtual environment: $venv_dir"
-    
-    if check_venv "$venv_dir"; then
-        log_info "Virtual environment already exists. Skipping creation."
-    else
-        execute_command "python3 -m venv $venv_dir" "Creating virtual environment"
+    # Check if pyenv is installed
+    if ! check_command "pyenv"; then
+        log_error "pyenv not found. Please install pyenv first."
+        log_info "Visit https://github.com/pyenv/pyenv#installation for instructions."
+        return 1
     fi
     
-    # Activate virtual environment
-    log_info "Activating virtual environment..."
-    source "$venv_dir/bin/activate"
+    # Try to create the myenv environment if it doesn't exist
+    if ! pyenv virtualenvs | grep -q "myenv"; then
+        log_info "Creating myenv virtual environment with pyenv..."
+        execute_command "pyenv virtualenv myenv" "Creating myenv virtual environment"
+    else
+        log_info "myenv virtual environment already exists. Skipping creation."
+    fi
+    
+    # Set myenv as local python version
+    execute_command "echo 'myenv' > .python-version" "Setting myenv as local python version"
+    
+    # Activate the environment
+    log_info "Activating myenv virtual environment..."
+    eval "$(pyenv init -)"
+    eval "$(pyenv virtualenv-init -)"
+    pyenv activate myenv || log_warning "Failed to activate myenv via pyenv activate, falling back to pyenv shell"
+    pyenv shell myenv
     
     # Install requirements
     if [ -f "requirements.txt" ]; then
@@ -144,6 +159,34 @@ setup_python_venv() {
     
     log_success "Python virtual environment setup complete."
     return 0
+}
+
+# Activate Python virtual environment using pyenv
+activate_pyenv_virtualenv() {
+    log_info "Activating Python virtual environment with pyenv (myenv)..."
+    
+    # Check if pyenv is installed
+    if check_command "pyenv"; then
+        eval "$(pyenv init -)"
+        eval "$(pyenv virtualenv-init -)"
+        if pyenv activate myenv; then
+            log_success "Activated myenv virtual environment."
+            return 0
+        else
+            log_warning "Failed to activate myenv via pyenv activate, falling back to pyenv shell"
+            pyenv shell myenv
+            log_success "Set pyenv shell to myenv."
+            return 0
+        fi
+    elif [ -d "myenv" ]; then
+        # Fall back to traditional virtual environment
+        source myenv/bin/activate
+        log_success "Activated myenv virtual environment (traditional method)."
+        return 0
+    else
+        log_error "Failed to activate virtual environment. Please ensure myenv is created with pyenv."
+        return 1
+    fi
 }
 
 # =====================
@@ -200,8 +243,8 @@ create_backup() {
     # Ensure backup directory exists
     ensure_directory "$backup_dir"
     
-    # Create tarball excluding node_modules, venv, etc.
-    execute_command "tar --exclude='node_modules' --exclude='venv' --exclude='__pycache__' --exclude='.git' -czf $backup_file ." "Creating backup archive"
+    # Create tarball excluding node_modules, myenv, etc.
+    execute_command "tar --exclude='node_modules' --exclude='myenv' --exclude='__pycache__' --exclude='.git' -czf $backup_file ." "Creating backup archive"
     
     log_success "Backup created: $backup_file"
     return 0

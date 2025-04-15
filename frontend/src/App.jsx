@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense, useTransition, lazy } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useRoutes } from "react-router-dom";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { useSelector, useDispatch } from "react-redux";
@@ -8,7 +8,8 @@ import store, { persistor } from "./store";
 import { Navigation } from "./components";
 import ModalProvider from "./components/modals/ModalProvider";
 import routes from "./routes/index.jsx";
-import { checkAuthState } from "./store/slices/authSlice";
+import { checkAuthState, logout } from "./store/slices/authSlice";
+import { authService } from "./services/auth.service.mjs";
 import { AUTH_CONFIG } from "./utils";
 import "./styles"; // Import all styles
 
@@ -25,6 +26,15 @@ const ErrorFallback = () => (
   <div className="error-fallback">
     <h1>Something went wrong</h1>
     <p>We&apos;re having trouble loading the application. Please try again later.</p>
+  </div>
+);
+
+// Not Found component for invalid routes or missing components
+const NotFoundPage = () => (
+  <div className="not-found-page">
+    <h1>Page Not Found</h1>
+    <p>The requested page or component could not be found.</p>
+    <button onClick={() => window.history.back()}>Go Back</button>
   </div>
 );
 
@@ -68,133 +78,75 @@ const DashboardComponent = () => (
 
 // Create a separate component for the main app content
 const AppContent = () => {
-  const { isAuthenticated, loading: isLoading } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
+  const { isAuthenticated, loading, error } = useSelector((state) => state.auth);
   const [isPending, startTransition] = useTransition();
-  const [routeElements, setRouteElements] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // Persist login state on navigation
-  useEffect(() => {
-    const handleAuthStorageChange = () => dispatch(checkAuthState());
-    window.addEventListener("auth-storage-changed", handleAuthStorageChange);
-    
-    // Check auth state when component mounts
-    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-    const userData = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-    
-    if (token && userData && !isAuthenticated) {
-      dispatch(checkAuthState());
-    }
-    
-    return () => {
-      window.removeEventListener("auth-storage-changed", handleAuthStorageChange);
-    };
-  }, [dispatch, isAuthenticated]);
+  // Use React Router's useRoutes hook to render routes directly
+  const element = useRoutes(routes);
 
-  // Setup routes when auth state changes
+  // Check auth state on component mount
   useEffect(() => {
-    if (!isLoading) {
-      startTransition(() => {
-        try {
-          if (routes && Array.isArray(routes)) {
-            const routeComponentsList = routes.map((route, index) => (
-              <Route key={index} path={route.path} element={route.element}>
-                {route.children?.map((child, childIndex) => (
-                  <Route
-                    key={childIndex}
-                    index={child.index}
-                    path={child.path}
-                    element={child.element}
-                  />
-                ))}
-              </Route>
-            ));
-            setRouteElements(routeComponentsList);
-          }
-        } catch (error) {
-          console.error("Error setting up routes:", error);
+    const checkAuth = async () => {
+      try {
+        // Only check auth if we have a token
+        const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+        
+        if (!token) {
+          // If no token, nothing to check
+          setAuthChecked(true);
+          return;
         }
-      });
-    }
-  }, [isLoading, isAuthenticated]);
+        
+        // Check for token validation failure flag
+        const tokenFailed = localStorage.getItem("token_verification_failed");
+        if (tokenFailed === "true") {
+          console.warn("Token previously failed verification, cleaning up");
+          // Use centralized auth cleanup
+          authService.clearAuthData();
+          setAuthChecked(true);
+          return;
+        }
+        
+        // Check auth state with a state transition to avoid blocking UI
+        startTransition(() => {
+          dispatch(checkAuthState());
+        });
+        
+        // Mark as checked regardless of success/failure
+        setAuthChecked(true);
+      } catch (e) {
+        console.error("Auth check error:", e);
+        setAuthChecked(true);
+      }
+    };
 
-  const authKey = isAuthenticated ? "authenticated" : "unauthenticated";
+    checkAuth();
+  }, [dispatch]);
 
-  if (isLoading) {
+  // Show loading when checking initial auth state
+  if (loading && !authChecked) {
     return <LoadingPage />;
   }
 
-  try {
+  // Show error if there was an auth check problem
+  if (error && !loading) {
     return (
-      <div className="App" key={authKey}>
-        <Navigation />
-        <main className="App-main">
-          <Suspense fallback={<LoadingPage />}>
-            <Routes>
-              {isPending ? (
-                <Route path="*" element={<LoadingPage />} />
-              ) : (
-                <>
-                  <Route path="/" element={<RootPathHandler />} />
-                  <Route
-                    path="/dashboard"
-                    element={
-                      <ProtectedRoute>
-                        <DashboardComponent />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/universes/:universeId/characters"
-                    element={
-                      <ProtectedRoute>
-                        <Suspense fallback={<LoadingPage />}>
-                          {React.createElement(
-                            lazy(() => import("./features/character/pages/CharactersPage"))
-                          )}
-                        </Suspense>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/universes/:universeId/scenes"
-                    element={
-                      <ProtectedRoute>
-                        <Suspense fallback={<LoadingPage />}>
-                          {React.createElement(
-                            lazy(() => import("./features/scene/pages/ScenesPage"))
-                          )}
-                        </Suspense>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/scenes/:sceneId"
-                    element={
-                      <ProtectedRoute>
-                        <Suspense fallback={<LoadingPage />}>
-                          {React.createElement(
-                            lazy(() => import("./features/scene/pages/SceneDetail"))
-                          )}
-                        </Suspense>
-                      </ProtectedRoute>
-                    }
-                  />
-                  {routeElements}
-                </>
-              )}
-            </Routes>
-          </Suspense>
-        </main>
-        <footer className="App-footer">
-          <p>© {new Date().getFullYear()} Harmonic Universe</p>
-        </footer>
+      <div className="auth-error">
+        <h2>Authentication Error</h2>
+        <p>{error}</p>
+        <button onClick={() => {
+          // Use centralized auth cleanup
+          authService.clearAuthData();
+          dispatch(logout());
+        }}>Return to Login</button>
       </div>
     );
-  } catch (error) {
-    console.error("Error rendering AppContent:", error);
-    return <ErrorFallback />;
   }
+
+  // Render the routes using useRoutes
+  return element;
 };
 
 // The main App component

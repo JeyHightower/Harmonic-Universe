@@ -72,7 +72,7 @@ setup_linting_configs() {
             cat > "$BACKEND_DIR/.flake8" << EOF
 [flake8]
 max-line-length = 100
-exclude = .git,__pycache__,venv,migrations,tests,docs
+exclude = .git,__pycache__,myenv,migrations,tests,docs
 ignore = E203, W503
 EOF
             print_green "Created flake8 configuration at $BACKEND_DIR/.flake8"
@@ -91,8 +91,8 @@ exclude = '''
   | \.hg
   | \.mypy_cache
   | \.tox
-  | \.venv
-  | venv
+  | \.myenv
+  | myenv
   | _build
   | buck-out
   | build
@@ -193,8 +193,8 @@ lint_python() {
     cd "$BACKEND_DIR"
     
     # Activate virtual environment if it exists
-    if [ -d "venv" ]; then
-        source venv/bin/activate
+    if [ -d "myenv" ]; then
+        source myenv/bin/activate
     fi
     
     # Run flake8
@@ -220,7 +220,7 @@ lint_python() {
     fi
     
     # Deactivate virtual environment if activated
-    if [ -d "venv" ]; then
+    if [ -d "myenv" ]; then
         deactivate
     fi
 }
@@ -295,8 +295,8 @@ check_unused_dependencies() {
         cd "$BACKEND_DIR"
         
         # Activate virtual environment if it exists
-        if [ -d "venv" ]; then
-            source venv/bin/activate
+        if [ -d "myenv" ]; then
+            source myenv/bin/activate
         fi
         
         # Check if pipreqs is installed
@@ -310,7 +310,7 @@ check_unused_dependencies() {
         print_green "Generated requirements.txt with only used packages."
         
         # Deactivate virtual environment if activated
-        if [ -d "venv" ]; then
+        if [ -d "myenv" ]; then
             deactivate
         fi
     fi
@@ -326,8 +326,8 @@ check_security() {
         cd "$BACKEND_DIR"
         
         # Activate virtual environment if it exists
-        if [ -d "venv" ]; then
-            source venv/bin/activate
+        if [ -d "myenv" ]; then
+            source myenv/bin/activate
         fi
         
         # Check if bandit is installed
@@ -337,10 +337,10 @@ check_security() {
         fi
         
         print_yellow "Running bandit for Python security checks..."
-        bandit -r . -x venv,tests
+        bandit -r . -x myenv,tests
         
         # Deactivate virtual environment if activated
-        if [ -d "venv" ]; then
+        if [ -d "myenv" ]; then
             deactivate
         fi
     fi

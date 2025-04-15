@@ -78,7 +78,7 @@ exclude = '''
   | \.hg
   | \.mypy_cache
   | \.tox
-  | \.venv
+  | \.myenv
   | _build
   | buck-out
   | build

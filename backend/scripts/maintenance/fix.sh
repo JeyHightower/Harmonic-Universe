@@ -205,8 +205,8 @@ fix_start_script() {
 #!/bin/bash
 
 # Start backend server
-if [ -d "venv" ]; then
-    source venv/bin/activate
+if [ -d "myenv" ]; then
+    source myenv/bin/activate
 fi
 
 export FLASK_APP=app.py

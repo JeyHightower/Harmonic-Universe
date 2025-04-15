@@ -92,8 +92,8 @@ monitor_backend_errors() {
     TEMP_LOG=$(mktemp)
     
     # Activate virtual environment if it exists
-    if [ -d "venv" ]; then
-        source venv/bin/activate
+    if [ -d "myenv" ]; then
+        source myenv/bin/activate
     fi
     
     # Start Flask server
@@ -320,8 +320,8 @@ capture_build_errors() {
             cd "$ROOT_DIR/backend"
             
             # Activate virtual environment if it exists
-            if [ -d "venv" ]; then
-                source venv/bin/activate
+            if [ -d "myenv" ]; then
+                source myenv/bin/activate
             fi
             
             # Run migrations
@@ -406,4 +406,101 @@ main() {
 }
 
 # Run main function with all arguments
-main "$@" 
+main "$@"
+
+# Install Python error reporting tools and run static analysis
+run_python_error_analysis() {
+    log_info "Running Python error analysis..."
+    
+    # Check if virtual environment exists
+    if [ -d "myenv" ]; then
+        source myenv/bin/activate
+        
+        # Install necessary tools if not already installed
+        pip install -q flake8 pyflakes pylint mypy bandit
+        
+        # Run flake8
+        log_info "Running flake8..."
+        flake8 --exit-zero --format=pylint > "${REPORTS_DIR}/flake8_report.txt" 2>/dev/null
+        
+        # Run pylint
+        log_info "Running pylint..."
+        pylint --exit-zero --output-format=text app > "${REPORTS_DIR}/pylint_report.txt" 2>/dev/null
+        
+        # Run mypy for type checking
+        log_info "Running mypy for type checking..."
+        mypy --ignore-missing-imports --show-error-codes app > "${REPORTS_DIR}/mypy_report.txt" 2>/dev/null
+        
+        # Run bandit for security checks
+        log_info "Running bandit for security checks..."
+        bandit -r app -f txt -o "${REPORTS_DIR}/bandit_report.txt" 2>/dev/null
+        
+        log_success "Python error analysis completed."
+    else
+        log_warning "Python virtual environment not found. Skipping Python error analysis."
+    fi
+}
+
+# Check for existing log files
+run_log_analysis() {
+    local log_directory="${1:-logs}"
+    log_info "Analyzing existing log files in ${log_directory}..."
+    
+    if [ -d "${log_directory}" ]; then
+        local error_count=0
+        local warning_count=0
+        
+        # Create a report file
+        local report_file="${REPORTS_DIR}/log_analysis.txt"
+        echo "Log Analysis Report - $(date)" > "${report_file}"
+        echo "=====================================" >> "${report_file}"
+        
+        # Find error patterns
+        log_info "Searching for error patterns..."
+        {
+            find "${log_directory}" -type f -name "*.log" -exec grep -l "ERROR\|Exception\|Traceback" {} \; | while read -r log_file; do
+                echo "Errors in ${log_file}:" >> "${report_file}"
+                grep -A 3 "ERROR\|Exception\|Traceback" "${log_file}" | head -n 50 >> "${report_file}"
+                echo "-----------------------------------------" >> "${report_file}"
+                error_count=$((error_count + $(grep -c "ERROR\|Exception\|Traceback" "${log_file}")))
+            done
+            
+            # Find warning patterns
+            log_info "Searching for warning patterns..."
+            find "${log_directory}" -type f -name "*.log" -exec grep -l "WARNING" {} \; | while read -r log_file; do
+                echo "Warnings in ${log_file}:" >> "${report_file}"
+                grep -A 1 "WARNING" "${log_file}" | head -n 50 >> "${report_file}"
+                echo "-----------------------------------------" >> "${report_file}"
+                warning_count=$((warning_count + $(grep -c "WARNING" "${log_file}")))
+            done
+            
+            # Summarize
+            echo "Summary:" >> "${report_file}"
+            echo "  - Total error occurrences: ${error_count}" >> "${report_file}"
+            echo "  - Total warning occurrences: ${warning_count}" >> "${report_file}"
+        } || log_warning "Error analyzing log files."
+        
+        log_success "Log analysis completed. Report saved to ${report_file}"
+    else
+        log_warning "Log directory not found. Skipping log analysis."
+    fi
+}
+
+# Generate report for backend usage
+generate_backend_usage_report() {
+    log_info "Generating backend usage report..."
+    
+    # Activate virtual environment if available
+    if [ -d "myenv" ]; then
+        source myenv/bin/activate
+        
+        # Install necessary reporting tools
+        pip install -q psutil requests matplotlib python-dotenv
+        
+        # Create a Python script to generate the report
+        log_info "Creating usage report script..."
+        
+        # Save the report script
+        cat > "${SCRIPT_DIR}/usage_report.py" << 'EOF'
+
+EOF 

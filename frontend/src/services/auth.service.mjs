@@ -8,6 +8,13 @@ import { httpClient } from './http-client';
 import { authEndpoints } from './endpoints';
 import { responseHandler } from './response-handler';
 import { API_SERVICE_CONFIG } from './config';
+import { demoUserService } from './demo-user.service.mjs';
+
+// Constants for token-related localStorage keys
+const TOKEN_KEY = API_SERVICE_CONFIG.AUTH.TOKEN_KEY;
+const REFRESH_TOKEN_KEY = API_SERVICE_CONFIG.AUTH.REFRESH_TOKEN_KEY;
+const USER_KEY = API_SERVICE_CONFIG.AUTH.USER_KEY;
+const TOKEN_VERIFICATION_FAILED = "token_verification_failed";
 
 /**
  * Perform user login
@@ -42,10 +49,10 @@ export const login = async (emailOrCredentials, password) => {
     // Handle successful login
     if (response.token) {
       // Clear any previous token verification failures
-      localStorage.removeItem("token_verification_failed");
+      localStorage.removeItem(TOKEN_VERIFICATION_FAILED);
       
       // Store token in localStorage
-      localStorage.setItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY, response.token);
+      localStorage.setItem(TOKEN_KEY, response.token);
       
       // Log successful login
       Logger.log('auth', 'User logged in successfully', { 
@@ -86,21 +93,15 @@ export const register = async (userData) => {
  */
 export const demoLogin = async () => {
   try {
-    const response = await httpClient.post(authEndpoints.demoLogin, {});
+    // Use the dedicated demo user service
+    const demoResponse = await demoUserService.performDemoLogin();
     
-    // Handle successful demo login
-    if (response.token) {
-      // Clear any previous token verification failures
-      localStorage.removeItem("token_verification_failed");
-      
-      // Store token in localStorage
-      localStorage.setItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY, response.token);
-      
+    if (demoResponse.success) {
       Logger.log('auth', 'Demo user logged in successfully');
-      return responseHandler.handleSuccess(response);
+      return responseHandler.handleSuccess(demoResponse.data);
     } else {
-      Logger.logError('Demo login failed - No token in response', response);
-      return responseHandler.handleError(new Error('No token received from server'));
+      Logger.logError('Demo login failed', demoResponse.error);
+      return responseHandler.handleError(new Error(demoResponse.error || 'Demo login failed'));
     }
   } catch (error) {
     Logger.logError('Demo login failed', error, 'auth');
@@ -123,11 +124,8 @@ export const logout = async () => {
     // Check if we're trying to logout too frequently
     if (now - lastLogoutAttempt < LOGOUT_COOLDOWN) {
       Logger.log('auth', 'Logout throttled - too many requests');
-      // Still remove token to ensure user is logged out locally
-      localStorage.removeItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
-      localStorage.removeItem(API_SERVICE_CONFIG.AUTH.USER_KEY);
-      localStorage.removeItem(API_SERVICE_CONFIG.AUTH.REFRESH_TOKEN_KEY);
-      httpClient.clearCache();
+      // Still clear auth data to ensure user is logged out locally
+      clearAuthData();
       
       // Return a synthetic success response without calling the API
       return responseHandler.handleSuccess({ 
@@ -140,16 +138,13 @@ export const logout = async () => {
     lastLogoutAttempt = now;
     
     // Get token to check if it's a demo token
-    const token = localStorage.getItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
-    const isDemoToken = token && (token.startsWith('demo-') || token.includes('demo'));
+    const token = localStorage.getItem(TOKEN_KEY);
+    const isDemoToken = demoUserService.isDemoSession();
     
     // For demo tokens, just handle locally
     if (isDemoToken) {
       Logger.log('auth', 'Logging out demo user (client-side only)');
-      localStorage.removeItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
-      localStorage.removeItem(API_SERVICE_CONFIG.AUTH.USER_KEY);
-      localStorage.removeItem(API_SERVICE_CONFIG.AUTH.REFRESH_TOKEN_KEY);
-      httpClient.clearCache();
+      demoUserService.endDemoSession();
       
       return responseHandler.handleSuccess({ 
         message: "Demo user logged out successfully",
@@ -160,21 +155,14 @@ export const logout = async () => {
     // Call logout endpoint for regular tokens
     const response = await httpClient.post(authEndpoints.logout);
     
-    // Clear auth token regardless of response
-    localStorage.removeItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
-    localStorage.removeItem(API_SERVICE_CONFIG.AUTH.USER_KEY);
-    localStorage.removeItem(API_SERVICE_CONFIG.AUTH.REFRESH_TOKEN_KEY);
-    
-    // Clear any cached data
-    httpClient.clearCache();
+    // Clear auth data regardless of response
+    clearAuthData();
     
     Logger.log('auth', 'User logged out successfully');
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    // Still remove token even if logout fails
-    localStorage.removeItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
-    localStorage.removeItem(API_SERVICE_CONFIG.AUTH.USER_KEY);
-    localStorage.removeItem(API_SERVICE_CONFIG.AUTH.REFRESH_TOKEN_KEY);
+    // Still clear auth data even if logout fails
+    clearAuthData();
     
     Logger.logError('Logout failed', error, 'auth');
     return responseHandler.handleError(error);
@@ -184,142 +172,130 @@ export const logout = async () => {
 /**
  * Validate the current token
  */
-export const validateToken = async () => {
-  try {
-    // Check if there's already a token verification failure flag set
-    if (localStorage.getItem("token_verification_failed") === "true") {
-      Logger.log('auth-service', 'Token verification previously failed, returning false');
-      return false;
-    }
-
-    // Get token from localStorage
-    const token = getToken();
-    
-    if (!token) {
-      Logger.log('auth-service', 'No token found in localStorage');
-      return false;
-    }
-    
-    // Handle demo tokens locally without calling the server
-    if (token.startsWith('demo-') || token.includes('demo')) {
-      Logger.log('auth-service', 'Demo token detected, validating locally');
-      // Demo tokens are always considered valid
-      return true;
-    }
-    
-    // Call the validate endpoint for non-demo tokens
-    const response = await httpClient.post('/auth/validate', null, { 
-      headers: { 'Authorization': `Bearer ${token}` },
-      // Disable retry for token validation to prevent excessive calls
-      maxRetries: 0
-    });
-    
-    // If successful, clear any previous token verification failure flag
-    localStorage.removeItem("token_verification_failed");
-    
-    return response.data?.valid || false;
-  } catch (error) {
-    // Check for specific signature verification failures
-    const isSignatureError = 
-      error.message?.includes('Signature verification failed') || 
-      error.response?.data?.message?.includes('Signature verification failed');
-    
-    if (isSignatureError) {
-      Logger.logError('Token signature verification failed - token is invalid', error);
-      // Set token verification failed flag
-      localStorage.setItem("token_verification_failed", "true");
-    } else {
-      Logger.logError('Token validation error (non-signature issue)', error);
-    }
-    
-    // Clear authorization related data from localStorage
-    localStorage.removeItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
-    localStorage.removeItem(API_SERVICE_CONFIG.AUTH.USER_KEY);
-    localStorage.removeItem(API_SERVICE_CONFIG.AUTH.REFRESH_TOKEN_KEY);
-    
-    return false;
+export async function validateToken(token = null) {
+  if (!token) {
+    token = localStorage.getItem('token');
   }
-};
+  
+  if (!token) {
+    return { valid: false, message: 'No token available to validate' };
+  }
+  
+  try {
+    // Send token in multiple ways to ensure it's received by the backend
+    const response = await httpClient.post('/auth/token/validate', 
+      { token }, // In body
+      { 
+        headers: { 
+          'Authorization': `Bearer ${token}`, // In header
+          'Content-Type': 'application/json' 
+        }
+      }
+    );
+    
+    if (response.data.valid) {
+      // If user data was returned, update it in storage
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+      return { valid: true, user: response.data.user };
+    } else {
+      // Clear token and user data if invalid
+      clearAuthData();
+      return { valid: false, message: response.data.message || 'Token invalid' };
+    }
+  } catch (error) {
+    console.error('Error validating token:', error);
+    
+    // Check for specific error conditions
+    if (error.response) {
+      if (error.response.status === 401) {
+        clearAuthData();
+        return { valid: false, message: 'Token expired or invalid' };
+      }
+      
+      // CORS or server error
+      if (error.response.status === 0 || error.response.status >= 500) {
+        // Don't clear auth data for server errors, might be temporary
+        return { valid: false, message: 'Server error during validation' };
+      }
+    }
+    
+    // Network error could be CORS issue
+    if (error.message && error.message.includes('Network Error')) {
+      return { valid: false, message: 'Network error (possibly CORS)' };
+    }
+    
+    // Default case: clear data and return invalid
+    clearAuthData();
+    return { valid: false, message: 'Unknown error during token validation' };
+  }
+}
 
 /**
  * Refresh authentication token
  * @returns {Promise<ApiResponse>} - The API response
  */
-export const refreshToken = async () => {
+export async function refreshToken() {
+  const token = localStorage.getItem('token');
+  
+  if (!token) {
+    return { success: false, message: 'No token to refresh' };
+  }
+  
   try {
-    console.log('Attempting to refresh authentication token');
+    // Send token in multiple ways to ensure it's received
+    const response = await httpClient.post('/auth/token/refresh', 
+      { token }, // In body
+      { 
+        headers: { 
+          'Authorization': `Bearer ${token}`, // In header
+          'Content-Type': 'application/json' 
+        }
+      }
+    );
     
-    // Get the refresh token from localStorage
-    const refreshToken = localStorage.getItem(API_SERVICE_CONFIG.AUTH.REFRESH_TOKEN_KEY);
-    
-    if (!refreshToken) {
-      console.warn('No refresh token available');
-      return { success: false, message: 'No refresh token available' };
-    }
-
-    // Make sure we don't have a token verification failed flag set
-    const tokenVerificationFailed = localStorage.getItem("token_verification_failed");
-    if (tokenVerificationFailed === "true") {
-      console.warn('Token verification previously failed, aborting refresh');
-      return { success: false, message: 'Token verification previously failed' };
-    }
-    
-    // Make the actual refresh request
-    const response = await httpClient.post('/auth/refresh', { refreshToken });
-    
-    if (response?.token || response?.data?.token) {
-      const newToken = response.token || response.data?.token;
-      const newRefreshToken = response.refreshToken || response.data?.refreshToken;
+    // Check if response has the expected format
+    if (response.data && response.data.token) {
+      // Update the token in storage
+      localStorage.setItem('token', response.data.token);
       
-      console.log('Token refresh successful, storing new token');
-      
-      // Store the new token
-      localStorage.setItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY, newToken);
-      
-      // Clear any token verification failure flag
-      localStorage.removeItem("token_verification_failed");
-      
-      // Update refresh token if a new one is provided
-      if (newRefreshToken) {
-        localStorage.setItem(API_SERVICE_CONFIG.AUTH.REFRESH_TOKEN_KEY, newRefreshToken);
+      // If user data was returned, update it too
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
       }
       
       return { 
         success: true, 
         data: { 
-          token: newToken, 
-          refreshToken: newRefreshToken 
+          token: response.data.token,
+          user: response.data.user
         } 
       };
     } else {
-      console.warn('No token in refresh response', response);
-      return { success: false, message: 'No token in refresh response' };
+      // No token in response
+      clearAuthData();
+      return { success: false, message: 'Refresh did not return a valid token' };
     }
   } catch (error) {
-    console.error('Token refresh failed:', error);
+    console.error('Error refreshing token:', error);
     
-    // Check for specific error types that indicate the refresh token is invalid
-    const isAuthError = 
-      error.response?.status === 401 || 
-      error.message?.includes('auth') ||
-      error.message?.includes('token') ||
-      error.message?.includes('expired') ||
-      error.response?.data?.message?.includes('token') ||
-      error.response?.data?.message?.includes('auth');
-      
-    if (isAuthError) {
-      console.error('Auth error during token refresh, tokens are likely invalid');
-      localStorage.setItem("token_verification_failed", "true");
+    // Clear auth data for auth errors
+    if (error.response && error.response.status === 401) {
+      clearAuthData();
+      return { success: false, message: 'Authentication failed during refresh' };
     }
     
-    return { 
-      success: false, 
-      message: error.response?.data?.message || error.message || 'Failed to refresh token',
-      status: error.response?.status || 401,
-      authError: isAuthError
-    };
+    // For server errors, don't necessarily clear auth data
+    if (error.response && error.response.status >= 500) {
+      return { success: false, message: 'Server error during token refresh' };
+    }
+    
+    // For other errors, clear auth data
+    clearAuthData();
+    return { success: false, message: 'Failed to refresh token' };
   }
-};
+}
 
 /**
  * Check if user is currently authenticated with better error handling
@@ -328,10 +304,10 @@ export const refreshToken = async () => {
 export const isAuthenticated = () => {
   try {
     // Get token from localStorage
-    const token = localStorage.getItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
+    const token = localStorage.getItem(TOKEN_KEY);
     
     // Check for token verification failure flag
-    const tokenFailed = localStorage.getItem("token_verification_failed");
+    const tokenFailed = localStorage.getItem(TOKEN_VERIFICATION_FAILED);
     
     // Only consider authenticated if token exists and hasn't failed verification
     return !!token && tokenFailed !== "true";
@@ -349,10 +325,10 @@ export const isAuthenticated = () => {
 export const getToken = () => {
   try {
     // Get token from localStorage
-    const token = localStorage.getItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
+    const token = localStorage.getItem(TOKEN_KEY);
     
     // Check for token verification failure flag
-    const tokenFailed = localStorage.getItem("token_verification_failed");
+    const tokenFailed = localStorage.getItem(TOKEN_VERIFICATION_FAILED);
     
     // Return null if token has failed verification
     if (tokenFailed === "true") {
@@ -369,6 +345,34 @@ export const getToken = () => {
 };
 
 /**
+ * Clear all authentication data from localStorage
+ * This centralizes the logout cleanup to ensure consistency
+ */
+export const clearAuthData = () => {
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(TOKEN_VERIFICATION_FAILED);
+    
+    // Clear any cached data if httpClient has clearCache method
+    if (typeof httpClient.clearCache === 'function') {
+      httpClient.clearCache();
+    }
+    
+    // Notify the app about signout
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('auth:signout'));
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error clearing auth data:", error);
+    return false;
+  }
+};
+
+/**
  * Authentication service object
  */
 export const authService = {
@@ -380,6 +384,7 @@ export const authService = {
   refreshToken,
   isAuthenticated,
   getToken,
+  clearAuthData,
 };
 
 export default authService; 

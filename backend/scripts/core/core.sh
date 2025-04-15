@@ -237,14 +237,14 @@ confirm() {
 } 
 
 # Check for virtual environment (Python)
-check_venv() {
-    local venv_dir="$1"
+check_myenv() {
+    local myenv_dir="$1"
     
-    if [ -d "$venv_dir" ] && [ -f "$venv_dir/bin/python" ]; then
-        log_debug "Virtual environment found: $venv_dir"
+    if [ -d "$myenv_dir" ] && [ -f "$myenv_dir/bin/python" ]; then
+        log_debug "Virtual environment found: $myenv_dir"
         return 0
     else
-        log_debug "Virtual environment not found: $venv_dir"
+        log_debug "Virtual environment not found: $myenv_dir"
         return 1
     fi
 }

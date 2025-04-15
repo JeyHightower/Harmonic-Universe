@@ -83,9 +83,9 @@ clean_dependencies() {
     
     # Clean backend dependencies
     log_info "Cleaning backend dependencies..."
-    if [ -d "$BACKEND_DIR/venv" ]; then
-        log_info "Removing backend/venv directory..."
-        rm -rf "$BACKEND_DIR/venv"
+    if [ -d "$BACKEND_DIR/myenv" ]; then
+        log_info "Removing backend/myenv directory..."
+        rm -rf "$BACKEND_DIR/myenv"
     fi
     
     # Clean root dependencies

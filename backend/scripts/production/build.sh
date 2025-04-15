@@ -24,8 +24,8 @@ build_backend() {
     cd "$BACKEND_DIR"
     
     # Activate virtual environment
-    if [ -d "venv" ]; then
-        source venv/bin/activate
+    if [ -d "myenv" ]; then
+        source myenv/bin/activate
     else
         log_error "Virtual environment not found. Please run setup.sh first."
         return 1
