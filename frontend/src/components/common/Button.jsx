@@ -13,7 +13,7 @@ import Spinner from "./Spinner";
  * @param {boolean} [props.disabled=false] - Whether button is disabled
  * @param {boolean} [props.loading=false] - Whether button is in loading state
  */
-const Button = React.forwardRef(
+export const Button = React.forwardRef(
   (
     {
       children,
@@ -48,20 +48,12 @@ const Button = React.forwardRef(
       return (
         <button
           className={buttonClass}
-          disabled
-          onClick={(e) => e.preventDefault()}
-          type="button"
+          disabled={disabled || loading}
+          onClick={onClick}
           ref={ref}
           {...props}
         >
-          {loading ? (
-            <>
-              <Spinner size="small" />
-              <span className="button-text">{children}</span>
-            </>
-          ) : (
-            children
-          )}
+          {loading ? <Spinner size="small" /> : children}
         </button>
       );
     }
@@ -74,23 +66,13 @@ const Button = React.forwardRef(
         ref={ref}
         {...props}
       >
-        {loading ? (
-          <>
-            <Spinner size="small" />
-            <span className="button-text">{children}</span>
-          </>
-        ) : (
-          children
-        )}
+        {loading ? <Spinner size="small" /> : children}
       </Component>
     );
   }
 );
 
-Button.displayName = "Button";
-
 Button.propTypes = {
-  children: PropTypes.node.isRequired,
   variant: PropTypes.oneOf([
     "primary",
     "secondary",
@@ -110,6 +92,10 @@ Button.propTypes = {
   as: PropTypes.elementType,
   className: PropTypes.string,
   onClick: PropTypes.func,
+  children: PropTypes.node,
 };
 
+Button.displayName = "Button";
+
+// Add default export for backward compatibility
 export default Button;
