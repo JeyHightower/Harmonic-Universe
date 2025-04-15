@@ -1,8 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { log, AUTH_CONFIG, FORCE_DEMO_MODE, IS_PRODUCTION, ROUTES, isHardRefresh } from "../../utils";
-import apiClient from "../../services/api"; // Ensure this import is correct
-
-console.log("API Client Structure:", JSON.stringify(apiClient, null, 2)); // Log the entire API client structure
+import { login, register } from "../thunks/authThunks"; // Import login and register thunks
+import { authService } from "../../services/auth.service.mjs"; // Import the auth service directly
 
 // Debug logging for all authentication operations
 const logAuthOperation = (operation, data = {}) => {
@@ -37,6 +36,21 @@ const createDemoUser = () => {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
+};
+
+// Helper to setup demo mode when needed
+const setupDemoMode = () => {
+  console.debug("Setting up demo mode");
+  const demoUser = createDemoUser();
+  const token = `demo-token-${Date.now()}`;
+  const refreshToken = `demo-refresh-${Date.now()}`;
+  
+  // Store in localStorage
+  localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, token);
+  localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, refreshToken);
+  localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(demoUser));
+  
+  return { user: demoUser, token };
 };
 
 // Demo login functionality
@@ -143,39 +157,64 @@ export const checkAuthState = createAsyncThunk(
         }
       }
 
-      // Try to validate token
+      // Check if this is a demo token
+      const isDemoToken = token && (token.startsWith('demo-') || token.includes('demo'));
+      
+      if (isDemoToken && userData) {
+        console.log("Demo token detected, handling demo session");
+        // For demo tokens, don't try to validate with the server 
+        // Just ensure we have valid demo data
+        userData = userData || createDemoUser();
+        
+        // Update localStorage with fresh demo token if needed
+        if (!token.startsWith('demo-')) {
+          const newToken = `demo-token-${Date.now()}`;
+          localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, newToken);
+        }
+        
+        dispatch(loginSuccess({ user: userData, token }));
+        return userData;
+      }
+
+      // Only try to validate non-demo tokens
       try {
         console.debug("Attempting to validate token");
-        const response = await apiClient.validateToken();
-        console.debug("Token validation successful:", response);
+        const isValid = await authService.validateToken();
+        console.debug("Token validation result:", isValid);
 
-        // Update state with validated user
-        if (response.data && response.data.user) {
-          userData = response.data.user;
-          // Update localStorage with fresh data
-          localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(userData));
+        if (isValid) {
+          if (userData) {
+            // Update localStorage with fresh data if needed
+            localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(userData));
+            dispatch(loginSuccess({ user: userData, token }));
+            return userData;
+          }
+        } else {
+          // Token invalid but we have userData - try to handle as demo user if allowed
+          console.warn("Token validation failed, handling as unauthenticated");
+          return null;
         }
       } catch (err) {
         console.warn("Token validation failed, using stored user data:", err);
-        // Handle demo tokens
-        if (token.startsWith('demo-')) {
-          console.log("Demo token detected, creating fresh demo session");
-          const userId = userData?.id || `demo-${Date.now()}`;
-          userData = createDemoUser();
-          const newToken = `demo-${userId}-${Date.now()}`;
-          const newRefreshToken = `demo-refresh-${userId}-${Date.now()}`;
+        
+        // Check if we should fall back to demo mode
+        if (FORCE_DEMO_MODE) {
+          console.log("Forcing demo mode after token validation failure");
+          const demoUser = createDemoUser();
+          const newToken = `demo-token-${Date.now()}`;
+          const newRefreshToken = `demo-refresh-${Date.now()}`;
+          
           localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, newToken);
           localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, newRefreshToken);
-          localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(userData));
-        } else if (!userData) {
-          console.error("No valid user data available after token validation failure");
-          return null;
+          localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(demoUser));
+          
+          dispatch(loginSuccess({ user: demoUser, token: newToken }));
+          return demoUser;
         }
-      }
-
-      if (userData) {
-        dispatch(loginSuccess({ user: userData, token }));
-        return userData;
+        
+        // Otherwise, handle as unauthenticated
+        dispatch(logout());
+        return null;
       }
 
       return null;
@@ -222,8 +261,6 @@ export const logout = createAsyncThunk(
 // Initialize the auth state
 const initialState = (() => {
   try {
-    let demoModeHelper = null;
-
     if (FORCE_DEMO_MODE && IS_PRODUCTION) {
       console.log("Forcing demo mode in production");
       const demoData = setupDemoMode();

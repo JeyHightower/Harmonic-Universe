@@ -3,19 +3,22 @@ import { useSelector } from "react-redux";
 import { Navigate, useLocation } from "react-router-dom";
 import { Suspense, useTransition, useState, useEffect } from "react";
 import { AUTH_CONFIG, ROUTES } from "../../utils";
-import { validateToken } from "../../store/thunks/authThunks";
 import { useDispatch } from "react-redux";
+import { demoLogin } from "../../store/slices/authSlice.mjs";
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading, user } = useSelector((state) => state.auth);
   const location = useLocation();
   const [isPending, startTransition] = useTransition();
   const [content, setContent] = useState(null);
+  const dispatch = useDispatch();
 
   // Get tokens directly from localStorage for comparison
-  const hasAccessToken = !!localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+  const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+  const hasAccessToken = !!token;
   const hasRefreshToken = !!localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
   const hasStoredUser = !!localStorage.getItem(AUTH_CONFIG.USER_KEY);
+  const isDemoToken = token && (token.startsWith('demo-') || token.includes('demo'));
 
   console.debug("ProtectedRoute check:", {
     isAuthenticated,
@@ -27,7 +30,16 @@ function ProtectedRoute({ children }) {
     hasStoredUser,
     hasUser: !!user,
     userId: user?.id,
+    isDemoToken
   });
+
+  // If we have a demo token but aren't authenticated, try to auto-login as demo
+  useEffect(() => {
+    if (!isAuthenticated && !loading && isDemoToken) {
+      console.log("Demo token found but not authenticated, trying demo login");
+      dispatch(demoLogin());
+    }
+  }, [isAuthenticated, isDemoToken, loading, dispatch]);
 
   // Update content with startTransition when authentication state changes
   useEffect(() => {

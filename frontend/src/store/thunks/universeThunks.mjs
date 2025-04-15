@@ -35,7 +35,7 @@ const normalizeUniverses = (universes) => {
 // Fetch all universes
 export const fetchUniverses = createAsyncThunk(
   "universe/fetchUniverses",
-  async (params, { rejectWithValue }) => {
+  async (params, { rejectWithValue, dispatch }) => {
     try {
       console.log("Fetching universes with params:", params);
       
@@ -43,8 +43,8 @@ export const fetchUniverses = createAsyncThunk(
       const tokenVerificationFailed = localStorage.getItem("token_verification_failed");
       if (tokenVerificationFailed === "true") {
         console.error("Token verification previously failed, aborting universes fetch");
-        // Clear the flag to allow future authentication attempts
-        localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+        
+        // Don't clear the token here - let auth management handle it
         return rejectWithValue({
           message: "Authentication token verification failed. Please log in again.",
           status: 401,
@@ -63,73 +63,135 @@ export const fetchUniverses = createAsyncThunk(
         });
       }
       
-      // Try to validate token before making the actual request
+      // Check if it's a demo token - no need to validate with server
+      const isDemoToken = token && (token.startsWith('demo-') || token.includes('demo'));
+      
+      // Only perform validation for non-demo tokens
+      let shouldAttemptRefresh = false;
+      
+      if (!isDemoToken) {
+        try {
+          // Make a lightweight request to validate the token
+          await api.auth.validateToken();
+          console.log("Token validated successfully");
+        } catch (validationError) {
+          console.error("Token validation error:", validationError.message);
+          
+          // Specifically check for signature verification errors
+          if (validationError.message?.includes("Signature verification failed") ||
+              validationError.response?.data?.message?.includes("Signature verification failed")) {
+            
+            console.log("Token validation failed with signature verification error, attempting refresh");
+            shouldAttemptRefresh = true;
+          }
+        }
+        
+        // If token validation failed, try refreshing the token
+        if (shouldAttemptRefresh) {
+          try {
+            console.log("Attempting to refresh token before universe fetch");
+            
+            // Import auth service dynamically to avoid circular dependencies
+            const authModule = await import('../../services/auth.service.mjs');
+            const result = await authModule.refreshToken();
+            
+            if (result.success && result.data?.token) {
+              console.log("Token refreshed successfully, proceeding with universe fetch");
+              // No need to set anything, as token is already stored in localStorage
+            } else {
+              console.error("Token refresh failed:", result.message);
+              localStorage.setItem("token_verification_failed", "true");
+              
+              return rejectWithValue({
+                message: "Authentication failed and token refresh was unsuccessful. Please log in again.",
+                status: 401,
+                authError: true
+              });
+            }
+          } catch (refreshError) {
+            console.error("Error during token refresh:", refreshError);
+            localStorage.setItem("token_verification_failed", "true");
+            
+            return rejectWithValue({
+              message: "Authentication token refresh failed. Please log in again.",
+              status: 401,
+              authError: true
+            });
+          }
+        }
+      } else {
+        console.log("Using demo token, skipping server validation");
+      }
+      
+      // If we get here, either:
+      // 1. Token validated successfully
+      // 2. Token was refreshed successfully
+      // 3. It's a demo token which doesn't need validation
       try {
-        // Make a lightweight request first just to validate the token
-        await api.auth.validateToken();
-      } catch (validationError) {
-        // If validation explicitly fails with a signature error, don't continue
-        if (validationError.message?.includes("Signature verification failed") ||
-            validationError.response?.data?.message?.includes("Signature verification failed")) {
-          console.error("Token validation failed with signature verification error");
-          localStorage.setItem("token_verification_failed", "true");
-          localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+        const response = await api.universes.getUniverses(params);
+        console.log("Got universes response:", {
+          status: response.status,
+          data: response.data,
+          hasUniverses: !!response.data?.universes,
+          universesCount: response.data?.universes?.length || 0,
+          headers: response.headers,
+        });
+
+        // Extract and normalize the data
+        let universes = [];
+
+        // Handle our mock response from development mode
+        if (response.data && Array.isArray(response.data.universes)) {
+          console.log("Found universes array in response.data.universes");
+          universes = normalizeUniverses(response.data.universes);
+        }
+        // Handle other response formats
+        else if (Array.isArray(response.data)) {
+          console.log("Response.data is an array of universes");
+          universes = normalizeUniverses(response.data);
+        }
+        else if (response.universes && Array.isArray(response.universes)) {
+          console.log("Found universes array in response.universes");
+          universes = normalizeUniverses(response.universes);
+        }
+        else if (response.data && response.data.data && Array.isArray(response.data.data.universes)) {
+          console.log("Found universes array in response.data.data.universes");
+          universes = normalizeUniverses(response.data.data.universes);
+        }
+        else if (Array.isArray(response)) {
+          console.log("Response itself is an array of universes");
+          universes = normalizeUniverses(response);
+        }
+        else {
+          console.error("Unexpected universes response format:", response);
+          universes = [];
+        }
+
+        console.log("Normalized universes:", {
+          count: universes.length,
+          isArray: Array.isArray(universes),
+          hasData: !!universes,
+          data: universes,
+        });
+
+        return { universes };
+      } catch (apiError) {
+        // Check if this is an auth error
+        if (apiError.response?.status === 401) {
+          // This could happen if the token was just refreshed but still invalid
+          // Or if there's an issue with the backend auth system
+          console.error("Auth error after token validation/refresh:", apiError.message);
+          
           return rejectWithValue({
-            message: "Authentication token signature verification failed. Please log in again.",
+            message: apiError.response?.data?.message || "Authentication failed after token refresh.",
             status: 401,
             authError: true
           });
         }
+        
+        // For other API errors, just pass through
+        throw apiError;
       }
-      
-      // If we get here, either validation succeeded or had a non-signature error we can try to proceed
-      const response = await api.universes.getUniverses(params);
-      console.log("Got universes response:", {
-        status: response.status,
-        data: response.data,
-        hasUniverses: !!response.data?.universes,
-        universesCount: response.data?.universes?.length || 0,
-        headers: response.headers,
-      });
-
-      // Extract and normalize the data
-      let universes = [];
-
-      // Handle our mock response from development mode
-      if (response.data && Array.isArray(response.data.universes)) {
-        console.log("Found universes array in response.data.universes");
-        universes = normalizeUniverses(response.data.universes);
-      }
-      // Handle other response formats
-      else if (Array.isArray(response.data)) {
-        console.log("Response.data is an array of universes");
-        universes = normalizeUniverses(response.data);
-      }
-      else if (response.universes && Array.isArray(response.universes)) {
-        console.log("Found universes array in response.universes");
-        universes = normalizeUniverses(response.universes);
-      }
-      else if (response.data && response.data.data && Array.isArray(response.data.data.universes)) {
-        console.log("Found universes array in response.data.data.universes");
-        universes = normalizeUniverses(response.data.data.universes);
-      }
-      else if (Array.isArray(response)) {
-        console.log("Response itself is an array of universes");
-        universes = normalizeUniverses(response);
-      }
-      else {
-        console.error("Unexpected universes response format:", response);
-        universes = [];
-      }
-
-      console.log("Normalized universes:", {
-        count: universes.length,
-        isArray: Array.isArray(universes),
-        hasData: !!universes,
-        data: universes,
-      });
-
-      return { universes };
     } catch (error) {
       console.error("Error fetching universes:", {
         error: error.message,
@@ -149,8 +211,6 @@ export const fetchUniverses = createAsyncThunk(
             errorMessage.includes("Token has expired")) {
           console.error("Token signature verification failed - token may be invalid");
           localStorage.setItem("token_verification_failed", "true");
-          // Clear the invalid token
-          localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
         }
         
         return rejectWithValue({

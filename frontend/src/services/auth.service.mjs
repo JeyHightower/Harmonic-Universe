@@ -139,7 +139,25 @@ export const logout = async () => {
     // Update timestamp for throttling
     lastLogoutAttempt = now;
     
-    // Call logout endpoint
+    // Get token to check if it's a demo token
+    const token = localStorage.getItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
+    const isDemoToken = token && (token.startsWith('demo-') || token.includes('demo'));
+    
+    // For demo tokens, just handle locally
+    if (isDemoToken) {
+      Logger.log('auth', 'Logging out demo user (client-side only)');
+      localStorage.removeItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
+      localStorage.removeItem(API_SERVICE_CONFIG.AUTH.USER_KEY);
+      localStorage.removeItem(API_SERVICE_CONFIG.AUTH.REFRESH_TOKEN_KEY);
+      httpClient.clearCache();
+      
+      return responseHandler.handleSuccess({ 
+        message: "Demo user logged out successfully",
+        success: true 
+      });
+    }
+    
+    // Call logout endpoint for regular tokens
     const response = await httpClient.post(authEndpoints.logout);
     
     // Clear auth token regardless of response
@@ -182,7 +200,14 @@ export const validateToken = async () => {
       return false;
     }
     
-    // Call the validate endpoint
+    // Handle demo tokens locally without calling the server
+    if (token.startsWith('demo-') || token.includes('demo')) {
+      Logger.log('auth-service', 'Demo token detected, validating locally');
+      // Demo tokens are always considered valid
+      return true;
+    }
+    
+    // Call the validate endpoint for non-demo tokens
     const response = await httpClient.post('/auth/validate', null, { 
       headers: { 'Authorization': `Bearer ${token}` },
       // Disable retry for token validation to prevent excessive calls
@@ -222,34 +247,76 @@ export const validateToken = async () => {
  */
 export const refreshToken = async () => {
   try {
+    console.log('Attempting to refresh authentication token');
+    
     // Get the refresh token from localStorage
     const refreshToken = localStorage.getItem(API_SERVICE_CONFIG.AUTH.REFRESH_TOKEN_KEY);
     
     if (!refreshToken) {
+      console.warn('No refresh token available');
       return { success: false, message: 'No refresh token available' };
     }
 
+    // Make sure we don't have a token verification failed flag set
+    const tokenVerificationFailed = localStorage.getItem("token_verification_failed");
+    if (tokenVerificationFailed === "true") {
+      console.warn('Token verification previously failed, aborting refresh');
+      return { success: false, message: 'Token verification previously failed' };
+    }
+    
+    // Make the actual refresh request
     const response = await httpClient.post('/auth/refresh', { refreshToken });
     
-    if (response.data?.token) {
+    if (response?.token || response?.data?.token) {
+      const newToken = response.token || response.data?.token;
+      const newRefreshToken = response.refreshToken || response.data?.refreshToken;
+      
+      console.log('Token refresh successful, storing new token');
+      
       // Store the new token
-      localStorage.setItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY, response.data.token);
+      localStorage.setItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY, newToken);
+      
+      // Clear any token verification failure flag
+      localStorage.removeItem("token_verification_failed");
       
       // Update refresh token if a new one is provided
-      if (response.data.refreshToken) {
-        localStorage.setItem(API_SERVICE_CONFIG.AUTH.REFRESH_TOKEN_KEY, response.data.refreshToken);
+      if (newRefreshToken) {
+        localStorage.setItem(API_SERVICE_CONFIG.AUTH.REFRESH_TOKEN_KEY, newRefreshToken);
       }
       
-      return { success: true, data: response.data };
+      return { 
+        success: true, 
+        data: { 
+          token: newToken, 
+          refreshToken: newRefreshToken 
+        } 
+      };
     } else {
+      console.warn('No token in refresh response', response);
       return { success: false, message: 'No token in refresh response' };
     }
   } catch (error) {
     console.error('Token refresh failed:', error);
+    
+    // Check for specific error types that indicate the refresh token is invalid
+    const isAuthError = 
+      error.response?.status === 401 || 
+      error.message?.includes('auth') ||
+      error.message?.includes('token') ||
+      error.message?.includes('expired') ||
+      error.response?.data?.message?.includes('token') ||
+      error.response?.data?.message?.includes('auth');
+      
+    if (isAuthError) {
+      console.error('Auth error during token refresh, tokens are likely invalid');
+      localStorage.setItem("token_verification_failed", "true");
+    }
+    
     return { 
       success: false, 
       message: error.response?.data?.message || error.message || 'Failed to refresh token',
-      status: error.response?.status || 401
+      status: error.response?.status || 401,
+      authError: isAuthError
     };
   }
 };

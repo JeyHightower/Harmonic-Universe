@@ -10,6 +10,10 @@ import {
   DialogContent,
   DialogActions,
   Tooltip,
+  DialogContentText,
+  TextField,
+  FormControlLabel,
+  Checkbox,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -33,14 +37,73 @@ const UniverseCard = ({ universe, onView, onEdit, onDelete, isHighlighted }) => 
 );
 
 const UniverseModal = ({ open, onClose, universe, onSuccess }) => (
-  <Dialog open={open} onClose={onClose}>
-    <DialogTitle>{universe ? 'Edit Universe' : 'Create Universe'}</DialogTitle>
+  <Dialog
+    open={open || false}
+    onClose={onClose}
+    maxWidth="md"
+    fullWidth
+    PaperProps={{
+      component: 'form',
+      onSubmit: (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        const universeData = {
+          name: formData.get('name'),
+          description: formData.get('description'),
+          is_public: formData.get('is_public') === 'true'
+        };
+        onSuccess(universeData);
+        onClose();
+      },
+    }}
+  >
+    <DialogTitle>{universe ? 'Edit Universe' : 'Create New Universe'}</DialogTitle>
     <DialogContent>
-      <p>This is a placeholder for the universe modal</p>
+      <DialogContentText>
+        {universe 
+          ? 'Edit your universe details below.' 
+          : 'Enter details for your new universe. You can add scenes later.'}
+      </DialogContentText>
+      <TextField
+        autoFocus
+        margin="normal"
+        id="name"
+        name="name"
+        label="Universe Name"
+        type="text"
+        fullWidth
+        variant="outlined"
+        defaultValue={universe?.name || ''}
+        required
+      />
+      <TextField
+        margin="normal"
+        id="description"
+        name="description"
+        label="Description"
+        type="text"
+        fullWidth
+        multiline
+        rows={4}
+        variant="outlined"
+        defaultValue={universe?.description || ''}
+      />
+      <FormControlLabel
+        control={
+          <Checkbox
+            name="is_public"
+            value="true"
+            defaultChecked={universe?.is_public !== false}
+          />
+        }
+        label="Make this universe public"
+      />
     </DialogContent>
     <DialogActions>
       <Button onClick={onClose}>Cancel</Button>
-      <Button onClick={() => onSuccess({ id: 123, name: 'New Universe' })}>Save</Button>
+      <Button type="submit" variant="contained" color="primary">
+        {universe ? 'Save Changes' : 'Create Universe'}
+      </Button>
     </DialogActions>
   </Dialog>
 );
@@ -547,7 +610,7 @@ const Dashboard = () => {
         </div>
         {isCreateModalOpen && (
           <UniverseModal
-            isOpen={isCreateModalOpen}
+            open={isCreateModalOpen}
             onClose={() => setIsCreateModalOpen(false)}
             onSuccess={handleCreateSuccess}
           />
@@ -654,14 +717,14 @@ const Dashboard = () => {
       <>
         {isCreateModalOpen && (
           <UniverseModal
-            isOpen={isCreateModalOpen}
+            open={isCreateModalOpen}
             onClose={() => setIsCreateModalOpen(false)}
             onSuccess={handleCreateSuccess}
           />
         )}
         {isEditModalOpen && selectedUniverse && (
           <UniverseModal
-            isOpen={isEditModalOpen}
+            open={isEditModalOpen}
             onClose={() => setIsEditModalOpen(false)}
             onSuccess={handleEditSuccess}
             universe={selectedUniverse}

@@ -156,30 +156,122 @@ axiosInstance.interceptors.response.use(
           method
         });
         
-        // Mark token as verification failed to trigger a redirect to login
-        localStorage.setItem("token_verification_failed", "true");
-        
-        // Clear ALL auth related values from localStorage - use consistent keys from config
-        localStorage.removeItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
-        
-        // Also clear user and refresh token with proper keys from the config
+        // Try to refresh the token first
         try {
-          // Use dynamic import to avoid circular dependencies
-          import('../utils/config').then(({ AUTH_CONFIG }) => {
-            localStorage.removeItem(AUTH_CONFIG.USER_KEY);
-            localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-            log('api', 'Cleared all auth related localStorage items');
-          }).catch(err => {
-            // Fallback to common keys if import fails
+          // Store original request config for potential retry
+          const originalConfig = error.config;
+          
+          // We need to prevent clearing the token while refreshing it
+          let refreshing = true;
+          let refreshTimeout = null;
+          
+          // Import dynamically to avoid circular dependencies
+          import('../services/auth.service.mjs').then(async ({ refreshToken }) => {
+            try {
+              log('api', 'Attempting to refresh token');
+              const result = await refreshToken();
+              
+              if (result.success && result.data?.token) {
+                log('api', 'Token refreshed successfully');
+                refreshing = false;
+                
+                // Clear timeout if it's still running
+                if (refreshTimeout) {
+                  clearTimeout(refreshTimeout);
+                  refreshTimeout = null;
+                }
+                
+                // If original request exists and we can retry it
+                if (originalConfig) {
+                  // Retry the original request with new token
+                  log('api', 'Retrying original request with new token');
+                  try {
+                    // Create new axios instance for retry
+                    const newResponse = await axiosInstance(originalConfig);
+                    return newResponse;
+                  } catch (retryError) {
+                    log('api', 'Retry with new token failed', { error: retryError.message });
+                  }
+                }
+              } else {
+                // Only if refresh explicitly fails, set token as verification failed
+                log('api', 'Token refresh failed explicitly');
+                refreshing = false;
+                localStorage.setItem("token_verification_failed", "true");
+                
+                // Only clear token if refresh explicitly failed
+                localStorage.removeItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
+                
+                // Also clear user and refresh token with proper keys
+                try {
+                  import('../utils/config').then(({ AUTH_CONFIG }) => {
+                    localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+                    localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+                    log('api', 'Cleared all auth related localStorage items after failed refresh');
+                  });
+                } catch (err) {
+                  // Fallback to common keys if import fails
+                  localStorage.removeItem("user");
+                  localStorage.removeItem("refreshToken");
+                }
+              }
+            } catch (refreshError) {
+              log('api', 'Error during token refresh', { error: refreshError.message });
+              refreshing = false;
+              localStorage.setItem("token_verification_failed", "true");
+              localStorage.removeItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
+            }
+          }).catch(importError => {
+            log('api', 'Error importing auth service', { error: importError.message });
+            refreshing = false;
+            localStorage.setItem("token_verification_failed", "true");
+            localStorage.removeItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
+          });
+          
+          // Set a timeout to avoid waiting too long for the refresh
+          refreshTimeout = setTimeout(() => {
+            if (refreshing) {
+              log('api', 'Token refresh timeout reached');
+              refreshing = false;
+              localStorage.setItem("token_verification_failed", "true");
+              localStorage.removeItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
+              
+              // Also clear user and refresh token
+              try {
+                import('../utils/config').then(({ AUTH_CONFIG }) => {
+                  localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+                  localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+                });
+              } catch (err) {
+                localStorage.removeItem("user");
+                localStorage.removeItem("refreshToken");
+              }
+            }
+          }, 5000); // Increased timeout to 5 seconds to give refresh more time
+        } catch (mainError) {
+          log('api', 'Fatal error attempting token refresh', { error: mainError.message });
+          localStorage.setItem("token_verification_failed", "true");
+          localStorage.removeItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
+          
+          // Also clear user and refresh token with proper keys
+          try {
+            // Use dynamic import to avoid circular dependencies
+            import('../utils/config').then(({ AUTH_CONFIG }) => {
+              localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+              localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+              log('api', 'Cleared all auth related localStorage items');
+            }).catch(err => {
+              // Fallback to common keys if import fails
+              localStorage.removeItem("user");
+              localStorage.removeItem("refreshToken");
+              log('api', 'Cleared auth related localStorage items with fallback keys');
+            });
+          } catch (err) {
+            // Ultra-safe fallback
             localStorage.removeItem("user");
             localStorage.removeItem("refreshToken");
-            log('api', 'Cleared auth related localStorage items with fallback keys');
-          });
-        } catch (err) {
-          // Ultra-safe fallback
-          localStorage.removeItem("user");
-          localStorage.removeItem("refreshToken");
-          log('api', 'Cleared auth related localStorage with fallback due to error', { error: err.message });
+            log('api', 'Cleared auth related localStorage with fallback due to error', { error: err.message });
+          }
         }
       }
     }
