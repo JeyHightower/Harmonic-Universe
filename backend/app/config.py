@@ -3,18 +3,15 @@ from datetime import timedelta
 
 class Config:
     # Basic Flask config
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key')
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-please-change-in-production'
     DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
     PORT = int(os.environ.get('PORT', 5001))
     
     # Database config - PostgreSQL only
     database_url = os.environ.get('DATABASE_URL')
     
-    # If no DATABASE_URL is set, use SQLite for development
     if not database_url:
-        print("WARNING: DATABASE_URL environment variable is not set. Using SQLite for development.")
-        # Use an in-memory SQLite database for development
-        database_url = 'sqlite:///memory:'
+        raise ValueError("DATABASE_URL environment variable must be set for PostgreSQL connection")
         
     # Handle PostgreSQL URL from render.com (starts with postgres://) vs SQLAlchemy (requires postgresql://)
     if database_url.startswith('postgres://'):
@@ -43,25 +40,35 @@ class Config:
     AUTO_CREATE_TABLES = os.environ.get('AUTO_CREATE_TABLES', 'False').lower() == 'true'
     
     # JWT config
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'jwt-secret-key')
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'jwt-secret-key-change-in-production'
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
-    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=7)
-    # Use both headers and cookies for JWT
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
+    JWT_BLACKLIST_ENABLED = True
+    JWT_BLACKLIST_TOKEN_CHECKS = ['access', 'refresh']
+    JWT_ERROR_MESSAGE_KEY = 'message'
     JWT_TOKEN_LOCATION = ['headers', 'cookies']
+    JWT_COOKIE_CSRF_PROTECT = False  # Disable CSRF for simplicity during development
+    JWT_COOKIE_SECURE = False  # Set to True in production
     JWT_HEADER_NAME = 'Authorization'
     JWT_HEADER_TYPE = 'Bearer'
     # Secure cookies in production
-    JWT_COOKIE_SECURE = os.environ.get('FLASK_ENV', 'development') == 'production'
     JWT_COOKIE_SAMESITE = 'None' if os.environ.get('FLASK_ENV', 'development') == 'production' else 'Lax'
-    # Don't CSRF protect the JWT endpoints
-    JWT_COOKIE_CSRF_PROTECT = False
     
     # Log the secret key in development mode to help with debugging
     if os.environ.get('FLASK_ENV', 'development') == 'development' or os.environ.get('FLASK_DEBUG', 'False').lower() == 'true':
         print(f"DEBUG - JWT_SECRET_KEY: '{JWT_SECRET_KEY}'")
     
     # CORS Configuration
-    CORS_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5001", "http://127.0.0.1:5001"]
+    CORS_CONFIG = {
+        'ORIGINS': [
+            'http://localhost:5173',
+            'http://127.0.0.1:5173',
+            'http://localhost:5174',
+            'http://127.0.0.1:5174',
+            'https://harmonic-universe.vercel.app',
+            'https://harmonic-universe-git-main-someones-projects-4ec78d48.vercel.app'
+        ],
+    }
     CORS_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
     CORS_HEADERS = ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"]
     CORS_EXPOSE_HEADERS = ["Content-Length", "Content-Type", "Authorization"]
@@ -77,7 +84,7 @@ class Config:
     RATELIMIT_ENABLED = True
     RATELIMIT_STORAGE_URL = "memory://"
     RATELIMIT_STRATEGY = "fixed-window"
-    RATELIMIT_DEFAULT = "100 per minute"
+    RATELIMIT_DEFAULT = "200 per day, 50 per hour"
     
     # API config
     API_PREFIX = '/api'
@@ -129,6 +136,16 @@ class DevelopmentConfig(Config):
     }
     # In development, create tables automatically by default
     AUTO_CREATE_TABLES = os.environ.get('AUTO_CREATE_TABLES', 'True').lower() == 'true'
+    CORS_CONFIG = {
+        'ORIGINS': [
+            'http://localhost:5173',
+            'http://127.0.0.1:5173',
+            'http://localhost:5174',
+            'http://127.0.0.1:5174',
+            'http://localhost:3000',
+            'http://127.0.0.1:3000'
+        ],
+    }
 
 class TestingConfig(Config):
     TESTING = True
@@ -154,6 +171,10 @@ class TestingConfig(Config):
     LOG_LEVEL = 'DEBUG'
     # In testing, allow table creation
     AUTO_CREATE_TABLES = True
+    PRESERVE_CONTEXT_ON_EXCEPTION = False
+    CORS_CONFIG = {
+        'ORIGINS': ['*'],  # Allow all origins in testing
+    }
 
 class ProductionConfig(Config):
     DEBUG = False
@@ -182,10 +203,16 @@ class ProductionConfig(Config):
     }
     # In production, never create tables automatically
     AUTO_CREATE_TABLES = False
+    CORS_CONFIG = {
+        'ORIGINS': [
+            'https://harmonic-universe.vercel.app',
+            'https://harmonic-universe-git-main-someones-projects-4ec78d48.vercel.app'
+        ],
+    }
 
-config = {
-    'development': DevelopmentConfig,
-    'testing': TestingConfig,
-    'production': ProductionConfig,
+config_by_name = {
+    'dev': DevelopmentConfig,
+    'test': TestingConfig,
+    'prod': ProductionConfig,
     'default': DevelopmentConfig
 } 

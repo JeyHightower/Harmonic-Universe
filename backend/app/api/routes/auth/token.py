@@ -8,11 +8,24 @@ import os
 # Removed unused imports
 
 from . import auth_bp
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask import current_app
+
+# Function to get the JWT secret key consistently
+def get_jwt_secret_key():
+    """Get the JWT secret key from config or environment variables."""
+    secret_key = current_app.config.get('JWT_SECRET_KEY')
+    if not secret_key:
+        secret_key = os.environ.get('JWT_SECRET_KEY', 'jwt-secret-key')
+        # Store it in config for consistency
+        current_app.config['JWT_SECRET_KEY'] = secret_key
+    return secret_key
 
 # Note: This route can be rate-limited by Flask-Limiter and cause 429 errors
 # if too many requests occur in a short time frame. The frontend should handle
 # this by implementing backoff and retry logic.
-@auth_bp.route('/validate', methods=['POST', 'OPTIONS'])
+@auth_bp.route('/validate/', methods=['POST', 'OPTIONS'])
 def validate_token():
     """Validate the JWT token and return user data."""
     # Handle OPTIONS requests for CORS preflight
@@ -72,10 +85,8 @@ def validate_token():
 
         # Validate token
         try:
-            secret_key = current_app.config.get('JWT_SECRET_KEY') or os.environ.get('JWT_SECRET_KEY')
-            if not secret_key:
-                current_app.logger.error('JWT_SECRET_KEY not configured')
-                return jsonify({'message': 'Server configuration error', 'valid': False}), 500
+            secret_key = get_jwt_secret_key()
+            current_app.logger.debug(f"Using JWT secret key for validation (first 3 chars): {secret_key[:3]}...")
 
             # Log token format for debugging
             token_parts = token.split('.')
@@ -90,6 +101,14 @@ def validate_token():
             if not user_id:
                 current_app.logger.error('Token missing user ID in payload')
                 return jsonify({'message': 'Invalid token payload', 'valid': False}), 401
+
+            # Convert user_id to int if it's a string (since DB expects integers for IDs)
+            try:
+                if isinstance(user_id, str) and user_id.isdigit():
+                    user_id = int(user_id)
+            except Exception as e:
+                current_app.logger.error(f'Error converting user_id to int: {str(e)}')
+                # Continue with the original value
 
             user = User.query.get(user_id)
             if not user:
@@ -135,190 +154,208 @@ def validate_token():
 # Note: This route can be rate-limited by Flask-Limiter and cause 429 errors
 # if too many requests occur in a short time frame. The frontend should handle
 # this by implementing backoff and retry logic.
-@auth_bp.route('/refresh', methods=['POST'])
+@auth_bp.route('/refresh/', methods=['POST', 'GET', 'OPTIONS'])
 def refresh_token():
     """Refresh an expired JWT token."""
     # Handle OPTIONS requests for CORS preflight
     if request.method == 'OPTIONS':
-        # Let Flask-CORS handle the OPTIONS response
-        return current_app.make_default_options_response()
+        # Create a response with CORS headers
+        response = current_app.make_default_options_response()
+        
+        # Add CORS headers
+        origin = request.headers.get('Origin')
+        cors_origins = current_app.config.get('CORS_ORIGINS', ['*'])
+        
+        if origin and (origin in cors_origins or '*' in cors_origins):
+            response.headers.add('Access-Control-Allow-Origin', origin)
+            response.headers.add('Access-Control-Allow-Headers', 
+                               ','.join(current_app.config.get('CORS_HEADERS', 
+                                      ['Content-Type', 'Authorization', 'Accept'])))
+            response.headers.add('Access-Control-Allow-Methods',
+                               ','.join(current_app.config.get('CORS_METHODS',
+                                      ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])))
+            response.headers.add('Access-Control-Allow-Credentials', 'true')
+            response.headers.add('Access-Control-Max-Age', 
+                               str(current_app.config.get('CORS_MAX_AGE', 86400)))
+        
+        return response, 200
         
     # Print request details for debugging
-    current_app.logger.debug(f"Token refresh request: Headers={dict(request.headers)}, Origin={request.headers.get('Origin')}")
+    current_app.logger.debug(f"Token refresh request: Method={request.method}, Headers={dict(request.headers)}, Origin={request.headers.get('Origin')}")
+    current_app.logger.debug(f"Request args: {request.args}, Form: {request.form}, JSON: {request.get_json(silent=True)}")
     
     try:
-        # Get the token from the request
+        # Get token from request
         token = None
+        refresh_token = None
+        
+        # Try to get token from Authorization header
         auth_header = request.headers.get('Authorization')
-
         if auth_header and auth_header.startswith('Bearer '):
             token = auth_header.split(' ')[1]
-            current_app.logger.debug("Found token in Authorization header")
-
-        # Check for token in cookies too
-        if not token:
-            token = request.cookies.get('token')
-            if token:
-                current_app.logger.debug("Found token in cookies")
-
-        # If still no token, check request JSON
-        if not token:
+        
+        # Try to get refresh token from request body
+        if request.is_json:
+            data = request.get_json()
+            refresh_token = data.get('refresh_token')
+        else:
+            refresh_token = request.form.get('refresh_token')
+        
+        # If no token in header, try to get from request body
+        if not token and request.is_json:
+            data = request.get_json()
+            token = data.get('token')
+        elif not token:
+            token = request.form.get('token')
+        
+        # If we have a refresh token, use it
+        if refresh_token:
+            current_app.logger.debug("Using refresh token for refresh")
+            # Validate refresh token
             try:
-                data = request.get_json(silent=True) or {}
-                if 'token' in data:
-                    token = data['token']
-                    current_app.logger.debug("Found token in JSON body")
-                elif 'refresh_token' in data:
-                    token = data['refresh_token']
-                    current_app.logger.debug("Found refresh_token in JSON body")
-            except Exception as e:
-                current_app.logger.error(f'Error parsing JSON data: {str(e)}')
-
-        # Check form data as a fallback
-        if not token and request.form:
-            token = request.form.get('token') or request.form.get('refresh_token')
-            if token:
-                current_app.logger.debug("Found token in form data")
-
-        if not token:
-            current_app.logger.warning('No token provided in refresh request')
-            return jsonify({
-                'success': False,
-                'message': 'No token provided',
-                'status': 401
-            }), 401
-
-        # Log token format for debugging
-        if token:
-            token_parts = token.split('.')
-            current_app.logger.debug(f'Token parts count: {len(token_parts)}')
-            if len(token_parts) != 3:
-                current_app.logger.warning(f'Malformed token - expected 3 parts, got {len(token_parts)}')
-                return jsonify({
-                    'success': False,
-                    'message': 'Malformed token',
-                    'status': 401
-                }), 401
-
-        try:
-            # Try to decode the token to get the user ID
-            # Even though it's expired, we can still get the user ID if the signature is valid
-            secret_key = current_app.config.get('JWT_SECRET_KEY') or os.environ.get('JWT_SECRET_KEY')
-
-            if not secret_key:
-                current_app.logger.error('JWT_SECRET_KEY not configured')
-                return jsonify({
-                    'success': False,
-                    'message': 'Server configuration error',
-                    'status': 500
-                }), 500
-
-            # Allow ExpiredSignatureError but catch other errors
-            try:
-                # Log JWT secret key length for debugging (never log the actual key)
-                current_app.logger.debug(f'JWT secret key length: {len(secret_key)}')
+                secret_key = get_jwt_secret_key()
+                current_app.logger.debug(f"Using JWT secret key for refresh (first 3 chars): {secret_key[:3]}...")
                 
-                # Do not verify expiration when refreshing
-                payload = jwt.decode(token, secret_key, algorithms=['HS256'], options={'verify_exp': False})
-                user_id = payload.get('sub')  # 'sub' is where Flask-JWT-Extended stores the identity
-                jti = payload.get('jti')  # JWT ID
+                # Verify the refresh token
+                payload = jwt.decode(refresh_token, secret_key, algorithms=['HS256'])
+                user_id = payload.get('sub')
                 
-                # Check if token has been revoked
-                from ....extensions import token_blocklist
-                if jti in token_blocklist:
-                    current_app.logger.warning(f'Attempt to use revoked token: {jti}')
-                    return jsonify({
-                        'success': False,
-                        'message': 'Token has been revoked',
-                        'status': 401,
-                        'error': 'token_revoked'
-                    }), 401
+                if not user_id:
+                    current_app.logger.error('Refresh token missing user ID')
+                    return jsonify({'message': 'Invalid refresh token'}), 401
                 
-                current_app.logger.debug(f'Successfully decoded token for user ID: {user_id}')
+                # Convert user_id to int if it's a string (since DB expects integers for IDs)
+                try:
+                    if isinstance(user_id, str) and user_id.isdigit():
+                        user_id = int(user_id)
+                except Exception as e:
+                    current_app.logger.error(f'Error converting user_id to int: {str(e)}')
+                    # Continue with the original value
+                
+                # Get user
+                user = User.query.get(user_id)
+                if not user:
+                    current_app.logger.error(f'User not found for refresh token: {user_id}')
+                    return jsonify({'message': 'User not found'}), 404
+                
+                # Create new token
+                new_token = create_access_token(identity=user.id)
+                
+                # Create response
+                response = jsonify({
+                    'message': 'Token refreshed successfully',
+                    'token': new_token,
+                    'user': user.to_dict()
+                })
+                
+                # Set cookie for token
+                is_production = current_app.config.get('ENV') == 'production'
+                cookie_domain = None  # Let browser set domain automatically
+                same_site = 'None'  # Use None to enable cross-site cookies for both prod and dev
+                secure = is_production or same_site == 'None'  # Must be secure if SameSite=None
+                
+                # Get token expiration time or default to 24 hours
+                token_expires = current_app.config.get('JWT_ACCESS_TOKEN_EXPIRES')
+                max_age = token_expires.total_seconds() if token_expires else 24 * 60 * 60  # 24 hours default
+                
+                response.set_cookie(
+                    'token',
+                    new_token,
+                    httponly=True,
+                    secure=secure,
+                    samesite=same_site,
+                    max_age=max_age,
+                    domain=cookie_domain,
+                    path='/'  # Ensure cookie is available for all paths
+                )
+                
+                return response, 200
+                
+            except jwt.ExpiredSignatureError:
+                current_app.logger.info("Refresh token has expired")
+                return jsonify({'message': 'Refresh token has expired'}), 401
+                
             except jwt.InvalidTokenError as e:
-                current_app.logger.error(f'Invalid token during refresh: {str(e)}')
-                return jsonify({
-                    'success': False,
-                    'message': 'Invalid token',
-                    'error': str(e),
-                    'status': 401
-                }), 401
-
-            if not user_id:
-                current_app.logger.error('Token missing user ID in payload')
-                return jsonify({
-                    'success': False,
-                    'message': 'Invalid token payload - missing user ID',
-                    'status': 401
-                }), 401
-
-            # Verify the user exists
-            user = User.query.get(user_id)
-            if not user:
-                current_app.logger.error(f'User not found for ID: {user_id}')
-                return jsonify({
-                    'success': False,
-                    'message': 'User not found',
-                    'status': 404
-                }), 404
-
-            # Create a new token with the new JTI (ensuring old token can be invalidated)
-            new_token = create_access_token(identity=user.id)
-            
-            # If we're using refresh tokens, we might want to revoke the old one
-            if jti:
-                # Add to blocklist if needed
-                # from ....extensions import add_token_to_blocklist
-                # add_token_to_blocklist(jti)
-                pass
+                current_app.logger.error(f'Invalid refresh token: {str(e)}')
+                return jsonify({'message': 'Invalid refresh token'}), 401
                 
-            current_app.logger.info(f'Created new token for user ID: {user.id}')
-
-            # Create response
-            response = jsonify({
-                'success': True,
-                'message': 'Token refreshed successfully',
-                'token': new_token,
-                'user': user.to_dict()
-            })
-
-            # Set the new token as a cookie as well
-            is_production = current_app.config.get('ENV') == 'production'
-            cookie_domain = None  # Let browser set domain automatically
-            same_site = 'None'  # Use None to enable cross-site cookies for both prod and dev
-            secure = is_production or same_site == 'None'  # Must be secure if SameSite=None
-
-            # Get token expiration time or default to 24 hours
-            token_expires = current_app.config.get('JWT_ACCESS_TOKEN_EXPIRES')
-            max_age = token_expires.total_seconds() if token_expires else 24 * 60 * 60  # 24 hours default
-
-            response.set_cookie(
-                'token',
-                new_token,
-                httponly=True,
-                secure=secure,
-                samesite=same_site,
-                max_age=max_age,
-                domain=cookie_domain,
-                path='/'  # Ensure cookie is available for all paths
-            )
-
-            return response, 200
-
-        except Exception as decode_error:
-            current_app.logger.error(f'Token decode error: {str(decode_error)}')
-            return jsonify({
-                'success': False,
-                'message': 'Invalid token format',
-                'error': str(decode_error),
-                'status': 401
-            }), 401
-
+        # If we have a main token, try to refresh it
+        elif token:
+            current_app.logger.debug("Using main token for refresh")
+            try:
+                secret_key = get_jwt_secret_key()
+                current_app.logger.debug(f"Using JWT secret key for refresh (first 3 chars): {secret_key[:3]}...")
+                
+                # Verify the token
+                payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+                user_id = payload.get('sub')
+                
+                if not user_id:
+                    current_app.logger.error('Token missing user ID')
+                    return jsonify({'message': 'Invalid token'}), 401
+                
+                # Convert user_id to int if it's a string (since DB expects integers for IDs)
+                try:
+                    if isinstance(user_id, str) and user_id.isdigit():
+                        user_id = int(user_id)
+                except Exception as e:
+                    current_app.logger.error(f'Error converting user_id to int: {str(e)}')
+                    # Continue with the original value
+                
+                # Get user
+                user = User.query.get(user_id)
+                if not user:
+                    current_app.logger.error(f'User not found for token: {user_id}')
+                    return jsonify({'message': 'User not found'}), 404
+                
+                # Create new token
+                new_token = create_access_token(identity=user.id)
+                
+                # Create response
+                response = jsonify({
+                    'message': 'Token refreshed successfully',
+                    'token': new_token,
+                    'user': user.to_dict()
+                })
+                
+                # Set cookie for token
+                is_production = current_app.config.get('ENV') == 'production'
+                cookie_domain = None  # Let browser set domain automatically
+                same_site = 'None'  # Use None to enable cross-site cookies for both prod and dev
+                secure = is_production or same_site == 'None'  # Must be secure if SameSite=None
+                
+                # Get token expiration time or default to 24 hours
+                token_expires = current_app.config.get('JWT_ACCESS_TOKEN_EXPIRES')
+                max_age = token_expires.total_seconds() if token_expires else 24 * 60 * 60  # 24 hours default
+                
+                response.set_cookie(
+                    'token',
+                    new_token,
+                    httponly=True,
+                    secure=secure,
+                    samesite=same_site,
+                    max_age=max_age,
+                    domain=cookie_domain,
+                    path='/'  # Ensure cookie is available for all paths
+                )
+                
+                return response, 200
+                
+            except jwt.ExpiredSignatureError:
+                current_app.logger.info("Token has expired")
+                return jsonify({'message': 'Token has expired'}), 401
+                
+            except jwt.InvalidTokenError as e:
+                current_app.logger.error(f'Invalid token: {str(e)}')
+                return jsonify({'message': 'Invalid token'}), 401
+                
+        else:
+            current_app.logger.warning("No token provided for refresh")
+            return jsonify({'message': 'No token provided'}), 401
+            
     except Exception as e:
         current_app.logger.error(f'Token refresh error: {str(e)}')
         return jsonify({
-            'success': False,
             'message': 'An error occurred during token refresh',
-            'error': str(e),
-            'status': 500
+            'error': str(e)
         }), 500

@@ -10,6 +10,43 @@ import * as authServiceModule from './auth.service.mjs';
 import { demoUserService } from './demo-user.service.mjs';
 import { AUTH_CONFIG } from '../utils/config.mjs';
 
+// Determine if we need a CORS proxy for different environments
+const shouldUseCorsProxy = () => {
+  // In development, check if we're hitting CORS issues
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    // Only use the proxy if specifically enabled to avoid unnecessary proxying
+    const forceCorsProxy = localStorage.getItem('force_cors_proxy') === 'true';
+    const useCorsProxy = localStorage.getItem('use_cors_proxy') === 'true';
+    
+    // For debugging authentication issues
+    const useProxyForAuth = localStorage.getItem('use_proxy_for_auth') === 'true';
+    
+    return forceCorsProxy || useCorsProxy || useProxyForAuth;
+  }
+  return false;
+};
+
+// Get the appropriate CORS proxy URL if needed
+const getCorsProxyUrl = (url) => {
+  if (!shouldUseCorsProxy()) return url;
+  
+  // Don't add proxy for URLs that already have it
+  if (url.includes('https://cors-anywhere.herokuapp.com/')) return url;
+  
+  // Determine which CORS proxy to use
+  const preferredProxy = localStorage.getItem('cors_proxy_url');
+  
+  // Add CORS proxy prefix
+  console.log(`Adding CORS proxy to URL: ${url}`);
+  
+  if (preferredProxy) {
+    return `${preferredProxy}${url}`;
+  }
+  
+  // Default to cors-anywhere
+  return `https://cors-anywhere.herokuapp.com/${url}`;
+};
+
 // Create axios instance with default config
 const axiosInstance = axios.create({
   baseURL: API_SERVICE_CONFIG.BASE_URL,
@@ -93,6 +130,28 @@ axiosInstance.interceptors.request.use(
       baseURL: config.baseURL,
     });
 
+    // Check if this is an auth refresh request that might need CORS handling
+    if (config.url && 
+        (config.url.includes('/auth/refresh') || 
+         config.url.includes('/auth/validate'))) {
+      
+      // Add special CORS handling for auth requests
+      console.log('Auth request detected, ensuring CORS compatibility');
+      
+      // Make sure Origin header is properly set for CORS
+      if (!config.headers['Origin'] && typeof window !== 'undefined') {
+        config.headers['Origin'] = window.location.origin;
+      }
+      
+      // Set mode to 'cors' for fetch-based requests
+      config.mode = 'cors';
+      
+      // Apply CORS proxy if needed
+      if (shouldUseCorsProxy() && config.url.startsWith('http')) {
+        config.url = getCorsProxyUrl(config.url);
+      }
+    }
+
     // Add auth token if available
     return addAuthHeader(config);
   },
@@ -129,15 +188,32 @@ axiosInstance.interceptors.response.use(
       return axiosInstance(originalRequest);
     }
     
-    // Only attempt token refresh for 401 errors and only if not already retrying
-    if (error.response.status === 401 && !originalRequest._retry) {
-      console.log('Unauthorized (401) error detected, attempting token refresh');
+    // Handle authentication errors (401 and 403)
+    if (error.response.status === 401 || error.response.status === 403) {
+      console.log('Authentication error detected, attempting token refresh');
+      
+      // Check if this is a logout request to avoid infinite loops
+      if (originalRequest.url?.includes('/logout')) {
+        console.log('Logout request failed, clearing auth data');
+        authServiceModule.clearAuthData();
+        return Promise.reject(error);
+      }
+      
+      // Check if we've already retried this request
+      if (originalRequest._retry) {
+        console.log('Request already retried, clearing auth data');
+        authServiceModule.clearAuthData();
+        return Promise.reject(error);
+      }
       
       try {
         // Use the enhanced refreshTokenAndRetry function
         return await refreshTokenAndRetry(originalRequest);
       } catch (refreshError) {
         console.error('Token refresh failed:', refreshError.message);
+        
+        // If the refresh failed, clear auth data
+        authServiceModule.clearAuthData();
         
         // Forward the original error with additional context
         const enhancedError = new Error('Authentication error after failed token refresh');
@@ -159,11 +235,18 @@ axiosInstance.interceptors.response.use(
  */
 export async function refreshTokenAndRetry(originalRequest) {
   // Check if we already have a refresh token
-  const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-  if (!refreshToken) {
-    console.error('No refresh token available for token refresh');
+  let refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+  const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+  
+  // Create a temporary refresh token if none exists
+  if (!refreshToken && token) {
+    console.warn('No refresh token available for token refresh, creating a temporary one');
+    refreshToken = `temp_refresh_${token.substring(0, 20)}`;
+    localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, refreshToken);
+  } else if (!token) {
+    console.error('No token available for token refresh');
     authServiceModule.clearAuthData();
-    throw new Error('Authentication failed: No refresh token available');
+    throw new Error('Authentication failed: No token available');
   }
 
   // Prevent multiple retry attempts for the same request
@@ -253,6 +336,11 @@ const formatUrl = (url) => {
   // If URL does not start with a slash, add one
   if (!url.startsWith('/') && !hasApiPrefix) {
     url = '/' + url;
+  }
+  
+  // Ensure trailing slash to prevent redirects
+  if (!url.endsWith('/')) {
+    url = url + '/';
   }
   
   // If the URL already has the API prefix, make sure we don't duplicate it

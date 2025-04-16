@@ -4,7 +4,7 @@ from flask_jwt_extended import jwt_required, get_jwt
 from . import auth_bp
 from ....extensions import add_token_to_blocklist
 
-@auth_bp.route('/logout', methods=['POST'])
+@auth_bp.route('/logout/', methods=['POST'])
 @jwt_required()
 def logout():
     """Logout the current user."""

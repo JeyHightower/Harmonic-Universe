@@ -6,7 +6,7 @@ import re
 
 from . import auth_bp
 
-@auth_bp.route('/signup', methods=['POST'])
+@auth_bp.route('/signup/', methods=['POST'])
 def signup():
     """Sign up a new user."""
     try:

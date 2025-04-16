@@ -219,10 +219,10 @@ api.interceptors.response.use(
             // Try multiple refresh endpoints
             let response = null;
             const refreshEndpoints = [
-              "/api/auth/refresh",
-              "/api/v1/auth/refresh",
-              `${apiBaseUrl}/api/auth/refresh`,
-              `${apiBaseUrl}/api/v1/auth/refresh`,
+              "/api/auth/refresh/",
+              "/api/v1/auth/refresh/",
+              `${apiBaseUrl}/api/auth/refresh/`,
+              `${apiBaseUrl}/api/v1/auth/refresh/`,
             ];
 
             for (const endpoint of refreshEndpoints) {

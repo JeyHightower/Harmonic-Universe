@@ -120,6 +120,78 @@ const AppContent = () => {
   return element;
 };
 
+// Inside App.jsx, add a debugging panel component for CORS issues
+const DebugPanel = () => {
+  const [visible, setVisible] = useState(false);
+  const [useProxy, setUseProxy] = useState(
+    localStorage.getItem('use_proxy_for_auth') === 'true'
+  );
+  
+  const toggleProxy = () => {
+    const newValue = !useProxy;
+    setUseProxy(newValue);
+    localStorage.setItem('use_proxy_for_auth', String(newValue));
+    console.log(`CORS proxy for auth ${newValue ? 'enabled' : 'disabled'}`);
+  };
+  
+  // Secret key combo to show/hide debug panel: Shift+Alt+D
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.shiftKey && e.altKey && e.key === 'D') {
+        setVisible(prev => !prev);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+  
+  if (!visible) return null;
+  
+  return (
+    <div style={{
+      position: 'fixed',
+      bottom: '10px',
+      right: '10px',
+      background: 'rgba(0,0,0,0.8)',
+      padding: '10px',
+      borderRadius: '5px',
+      color: 'white',
+      zIndex: 9999,
+      fontSize: '12px'
+    }}>
+      <h4 style={{ margin: '0 0 8px 0' }}>Debug Tools</h4>
+      <div>
+        <label>
+          <input 
+            type="checkbox" 
+            checked={useProxy} 
+            onChange={toggleProxy} 
+          />
+          Use CORS proxy for auth
+        </label>
+      </div>
+      <button 
+        onClick={() => {
+          localStorage.clear();
+          window.location.reload();
+        }}
+        style={{
+          marginTop: '8px',
+          padding: '4px 8px',
+          background: '#d9534f',
+          border: 'none',
+          borderRadius: '3px',
+          color: 'white',
+          cursor: 'pointer'
+        }}
+      >
+        Clear All & Reload
+      </button>
+    </div>
+  );
+};
+
 // The main App component
 function App() {
   return (
@@ -137,6 +209,9 @@ function App() {
           </PersistGate>
         </Provider>
       </NetworkErrorHandler>
+      
+      {/* Add DebugPanel at the end */}
+      <DebugPanel />
     </ErrorBoundary>
   );
 }

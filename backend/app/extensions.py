@@ -2,10 +2,17 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 from datetime import datetime
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 db = SQLAlchemy()
 jwt = JWTManager()
 migrate = Migrate()
+limiter = Limiter(
+    key_func=get_remote_address,
+    storage_uri="memory://",
+    storage_options={}
+)
 
 # In-memory token blocklist - in production, replace with a database or Redis
 token_blocklist = set()
@@ -52,4 +59,12 @@ def revoked_token_callback(jwt_header, jwt_payload):
         'status': 401,
         'message': 'The token has been revoked',
         'error': 'token_revoked'
-    }, 401 
+    }, 401
+
+def init_extensions(app):
+    """Initialize Flask extensions with the app context."""
+    db.init_app(app)
+    jwt.init_app(app)
+    migrate.init_app(app, db)
+    limiter.init_app(app)
+    return app 

@@ -5,7 +5,7 @@ from ....extensions import db
 
 from . import auth_bp
 
-@auth_bp.route('/login', methods=['POST'])
+@auth_bp.route('/login/', methods=['POST'])
 def login():
     """Login a user."""
     try:

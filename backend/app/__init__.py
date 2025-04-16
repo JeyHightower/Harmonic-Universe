@@ -11,9 +11,19 @@ from pathlib import Path
 from typing import Optional, Union, cast, Any
 from logging.handlers import RotatingFileHandler
 from .config import Config
+import hmac
+import hashlib
+from datetime import datetime, timedelta
+from werkzeug.middleware.proxy_fix import ProxyFix
+from functools import partial
 
-from .extensions import db, migrate, jwt
+from .extensions import db, migrate, jwt, limiter
 from .api.routes import api_bp
+from app.api.routes.auth.jwt_monkey_patch import apply_all_jwt_patches  # Use the existing JWT patch utility
+# from app.routes import register_routes  # This module doesn't exist
+from app.api import register_routes  # Use register_routes from app.api
+from app.config import config_by_name
+from app.extensions import init_extensions
 
 # Initialize caching
 try:
@@ -114,6 +124,16 @@ def setup_error_handlers(app):
 
 def setup_jwt_handlers(app):
     """Configure JWT token handlers."""
+    # Ensure JWT secret key is correctly set
+    secret_key = app.config.get('JWT_SECRET_KEY')
+    if not secret_key:
+        secret_key = os.environ.get('JWT_SECRET_KEY', 'jwt-secret-key')
+        app.config['JWT_SECRET_KEY'] = secret_key
+    
+    # Log the JWT secret key for debugging in development
+    if app.config.get('ENV') == 'development' or os.environ.get('FLASK_DEBUG', 'False').lower() == 'true':
+        app.logger.debug(f"JWT secret key in use (first 3 chars): {secret_key[:3]}...")
+    
     @jwt.expired_token_loader
     def expired_token_callback(jwt_header, jwt_payload):
         return jsonify({
@@ -201,95 +221,113 @@ def setup_routes(app):
 
         return app.send_static_file('index.html')
 
-def create_app(config_class=Config):
-    """Create and configure an instance of the Flask application."""
-    app = Flask(__name__)
-    app.config.from_object(config_class)
+def configure_logging(app):
+    """Configure logging for the application."""
+    if not app.debug and not app.testing:
+        if not os.path.exists('logs'):
+            os.mkdir('logs')
+        file_handler = RotatingFileHandler('logs/harmonic_universe.log', maxBytes=10240, backupCount=10)
+        file_handler.setFormatter(logging.Formatter(
+            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+        ))
+        file_handler.setLevel(logging.INFO)
+        app.logger.addHandler(file_handler)
+        
+        app.logger.setLevel(logging.INFO)
+        app.logger.info('Harmonic Universe startup')
+
+def create_app(config_name="development"):
+    """
+    Create and configure the Flask application based on the specified configuration.
+    
+    Args:
+        config_name: The configuration environment to use (development, testing, production)
+        
+    Returns:
+        The configured Flask application
+    """
+    
+    app = Flask(__name__, static_folder=None)
+    
+    # Load the appropriate configuration
+    app.config.from_object(f"app.config.{config_name.capitalize()}Config")
+    
+    # Configure logging
+    configure_logging(app)
+    
+    # Configure JWT token settings
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+    app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)
     
     # Initialize extensions
     db.init_app(app)
-    migrate.init_app(app, db)
     jwt.init_app(app)
+    migrate.init_app(app, db)
+    limiter.init_app(app)
     
-    # Initialize CORS with specific settings
-    CORS(app, 
-         resources={r"/api/*": {
-             "origins": app.config['CORS_ORIGINS'],
-             "methods": app.config['CORS_METHODS'],
-             "allow_headers": app.config['CORS_HEADERS'],
-             "expose_headers": app.config['CORS_EXPOSE_HEADERS'],
-             "supports_credentials": app.config['CORS_SUPPORTS_CREDENTIALS'],
-             "max_age": app.config['CORS_MAX_AGE']
-         }},
-         supports_credentials=True)
+    # Import and apply JWT monkey patch
+    try:
+        apply_all_jwt_patches()
+        app.logger.info("JWT monkey patches applied successfully")
+    except Exception as e:
+        app.logger.warning(f"Failed to apply JWT monkey patches: {str(e)}")
     
-    # Add CORS headers to all responses
-    @app.after_request
-    def after_request(response):
-        origin = request.headers.get('Origin')
-        
-        # If this is a CORS request (has Origin header) and headers are not already set
-        if origin and 'Access-Control-Allow-Origin' not in response.headers:
-            # Check if origin is in allowed origins
-            if origin in app.config['CORS_ORIGINS'] or '*' in app.config['CORS_ORIGINS']:
-                response.headers.add('Access-Control-Allow-Origin', origin)
-                response.headers.add('Access-Control-Allow-Credentials', 'true')
-                response.headers.add('Access-Control-Allow-Methods', ','.join(app.config['CORS_METHODS']))
-                response.headers.add('Access-Control-Allow-Headers', ','.join(app.config['CORS_HEADERS']))
-                response.headers.add('Access-Control-Expose-Headers', ','.join(app.config['CORS_EXPOSE_HEADERS']))
-                response.headers.add('Access-Control-Max-Age', str(app.config['CORS_MAX_AGE']))
-        
-        return response
+    # Set up CORS
+    setup_cors(app)
     
-    # Handle preflight requests
-    @app.before_request
-    def handle_preflight():
-        if request.method == 'OPTIONS':
-            response = make_response()
-            origin = request.headers.get('Origin')
-            
-            # Only add headers if origin is allowed
-            if origin and (origin in app.config['CORS_ORIGINS'] or '*' in app.config['CORS_ORIGINS']):
-                response.headers.add('Access-Control-Allow-Origin', origin)
-                response.headers.add('Access-Control-Allow-Credentials', 'true')
-                response.headers.add('Access-Control-Allow-Methods', ','.join(app.config['CORS_METHODS']))
-                response.headers.add('Access-Control-Allow-Headers', ','.join(app.config['CORS_HEADERS']))
-                response.headers.add('Access-Control-Max-Age', str(app.config['CORS_MAX_AGE']))
-            return response
+    # Set up static folders
+    setup_static_folders(app)
     
-    # Register blueprints
+    # Register API routes
     app.register_blueprint(api_bp, url_prefix='/api')
     
-    # Initialize extensions
-    limiter.init_app(app)
-    cache.init_app(app)
-
-    # Apply MIME type and Render fixes if available
-    if FIXES_AVAILABLE:
-        print("Applying fixes for MIME types and Render compatibility...")
-        try:
-            apply_all_mime_fixes(app)
-            if app.config.get('ENV') == 'production' or os.environ.get('APPLY_RENDER_FIXES') == 'true':
-                apply_render_fixes(app)
-        except Exception as e:
-            print(f"WARNING: Error applying fixes: {str(e)}")
-            
-    # Set up handlers and routes
-    setup_error_handlers(app)
-    setup_jwt_handlers(app)
+    # Register error handlers
+    register_error_handlers(app)
+    
+    # Register main routes
     setup_routes(app)
+    
+    return app
 
-    # Initialize database models
-    with app.app_context():
-        from .api.models import (
-            User, Note, Universe, Physics2D, Physics3D, SoundProfile,
-            AudioSample, MusicPiece, Harmony, MusicalTheme, Character
-        )
+def setup_cors(app):
+    """Configure CORS for the application."""
+    # Extract CORS configuration from app config
+    origins = app.config.get('CORS_CONFIG', {}).get('ORIGINS', ['*'])
+    
+    # Set explicit CORS_ORIGINS for use in other parts of the application
+    app.config['CORS_ORIGINS'] = origins
+    
+    # Configure CORS
+    CORS(app, 
+         resources={r"/api/*": {"origins": origins}},
+         supports_credentials=app.config.get('CORS_SUPPORTS_CREDENTIALS', True),
+         methods=app.config.get('CORS_METHODS'),
+         allow_headers=app.config.get('CORS_HEADERS'),
+         expose_headers=app.config.get('CORS_EXPOSE_HEADERS'),
+         max_age=app.config.get('CORS_MAX_AGE'))
+    
+    return app
 
-        if app.config.get('ENV') == 'development' and os.environ.get('AUTO_CREATE_TABLES') == 'true':
-            db.create_all()
-            print("Database tables created automatically (development mode)")
-        else:
-            print("Skipping automatic table creation. Use setup_db.py to manage database.")
+def setup_static_folders(app):
+    """Configure static folders for the application."""
+    # Look for static folders in various locations
+    possible_static_folders = [
+        os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'static')),
+        os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static')),
+        os.environ.get('STATIC_FOLDER'),
+        '/opt/render/project/src/static',
+        '/opt/render/project/src/backend/static'
+    ]
+    
+    for folder in possible_static_folders:
+        if folder and os.path.exists(folder) and os.path.isdir(folder):
+            app.static_folder = folder
+            app.logger.info(f"Using static folder: {app.static_folder}")
+            break
+    
+    return app
 
+def register_error_handlers(app):
+    """Register error handlers for the application."""
+    setup_error_handlers(app)
     return app

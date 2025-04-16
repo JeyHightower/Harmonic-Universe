@@ -5,7 +5,7 @@ from ....extensions import db
 
 from . import auth_bp
 
-@auth_bp.route('/demo-login', methods=['GET', 'POST'])
+@auth_bp.route('/demo-login/', methods=['GET', 'POST'])
 def demo_login():
     """Login as a demo user."""
     try:
@@ -39,54 +39,45 @@ def demo_login():
                     'error': str(e)
                 }), 500
         
-        try:
-            current_app.logger.info('Generating access token')
-            # Generate token
-            access_token = create_access_token(identity=demo_user.id)
-            
-            response_data = {
-                'message': 'Demo login successful',
-                'user': demo_user.to_dict(),
-                'token': access_token
-            }
-            current_app.logger.info('Demo login successful')
-            
-            # Create response with cookies
-            response = jsonify(response_data)
-            
-            # Set cookie for token
-            is_production = current_app.config.get('ENV') == 'production'
-            cookie_domain = None  # Let browser set domain automatically
-            same_site = 'None' if is_production else 'Lax'
-            secure = is_production
-            
-            # Get token expiration time or default to 24 hours
-            token_expires = current_app.config.get('JWT_ACCESS_TOKEN_EXPIRES')
-            max_age = token_expires.total_seconds() if token_expires else 24 * 60 * 60  # 24 hours default
-            
-            response.set_cookie(
-                'token',
-                access_token,
-                httponly=True,
-                secure=secure,
-                samesite=same_site,
-                max_age=max_age,
-                domain=cookie_domain
-            )
-            
-            return response, 200
-        except Exception as e:
-            current_app.logger.error(f'Error generating token: {str(e)}')
-            current_app.logger.exception('Full traceback:')
-            return jsonify({
-                'message': 'Failed to generate access token',
-                'error': str(e)
-            }), 500
+        # Create access token
+        # Ensure user ID is converted to string for consistent behavior
+        access_token = create_access_token(identity=str(demo_user.id))
+        
+        # Return token
+        current_app.logger.info('Demo login successful')
+        
+        # Create response
+        response = jsonify({
+            'message': 'Demo login successful',
+            'token': access_token,
+            'user': demo_user.to_dict()
+        })
+        
+        # Set token cookie
+        is_production = current_app.config.get('ENV') == 'production'
+        cookie_domain = None  # Let browser set domain automatically
+        same_site = 'None'  # Use None to enable cross-site cookies for both prod and dev
+        secure = is_production or same_site == 'None'  # Must be secure if SameSite=None
+        
+        # Get token expiration time or default to 24 hours
+        token_expires = current_app.config.get('JWT_ACCESS_TOKEN_EXPIRES')
+        max_age = token_expires.total_seconds() if token_expires else 24 * 60 * 60
+        
+        response.set_cookie(
+            'token',
+            access_token,
+            httponly=True,
+            secure=secure,
+            samesite=same_site,
+            max_age=max_age,
+            domain=cookie_domain,
+            path='/'  # Ensure cookie is available for all paths
+        )
+        
+        return response, 200
         
     except Exception as e:
-        db.session.rollback()
         current_app.logger.error(f'Demo login error: {str(e)}')
-        current_app.logger.exception('Full traceback:')
         return jsonify({
             'message': 'An error occurred during demo login',
             'error': str(e)

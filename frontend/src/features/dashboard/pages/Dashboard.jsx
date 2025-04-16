@@ -76,16 +76,33 @@ const Dashboard = () => {
     
     if (!token) {
       console.error("Dashboard - No auth token found, cannot load universes");
-      navigate("/?modal=login", { replace: true });
-      return Promise.resolve({ error: "Authentication error" });
+      // Instead of immediately redirecting, try to refresh the token first
+      return authService.refreshToken()
+        .then(() => {
+          // If refresh succeeds, retry loading universes
+          return dispatch(fetchUniverses());
+        })
+        .catch((refreshError) => {
+          console.error("Dashboard - Token refresh failed:", refreshError);
+          // Only redirect if refresh fails
+          navigate("/?modal=login", { replace: true });
+          return Promise.resolve({ error: "Authentication error" });
+        });
     }
     
     if (tokenVerificationFailed === "true") {
       console.error("Dashboard - Token verification previously failed");
-      // Clear the flag and redirect to login
+      // Clear the flag and try to refresh token
       localStorage.removeItem("token_verification_failed");
-      navigate("/?modal=login", { replace: true });
-      return Promise.resolve({ error: "Authentication error" });
+      return authService.refreshToken()
+        .then(() => {
+          return dispatch(fetchUniverses());
+        })
+        .catch((refreshError) => {
+          console.error("Dashboard - Token refresh failed after verification:", refreshError);
+          navigate("/?modal=login", { replace: true });
+          return Promise.resolve({ error: "Authentication error" });
+        });
     }
     
     // Add Authorization header to axios manually to ensure it's available for this request
@@ -99,87 +116,26 @@ const Dashboard = () => {
       console.warn("Dashboard - Could not manually set auth header:", err.message);
     }
     
-    return dispatch(fetchUniverses({ userId: user?.id, user_only: true }))
-      .then((result) => {
-        console.log("Dashboard - Fetch universes result:", {
-          type: result.type,
-          hasError: !!result.error, 
-          meta: result.meta,
-        });
-        
-        // Check if the action was rejected
-        if (result.error) {
-          console.error("Dashboard - API error response:", result.payload);
-          
-          // Check for authentication errors (401)
-          const isAuthError = 
-            result.payload?.status === 401 || 
-            result.payload?.authError || 
-            (result.payload?.message && (
-              result.payload.message.includes("authentication") ||
-              result.payload.message.includes("Signature verification failed") ||
-              result.payload.message.includes("token") ||
-              result.payload.message.includes("login")
-            ));
-            
-          if (isAuthError) {
-            console.error("Dashboard - Authentication error, redirecting to login");
-            localStorage.setItem("token_verification_failed", "true");
-            navigate("/?modal=login", { replace: true });
-            return { error: "Authentication error" };
-          }
-          
-          return { error: result.payload?.message || "API error" };
-        }
-        
-        // Process successful result
-        let universes = [];
-        if (Array.isArray(result.payload)) {
-          universes = result.payload;
-        } else if (
-          result.payload.universes &&
-          Array.isArray(result.payload.universes)
-        ) {
-          universes = result.payload.universes;
-        } else if (
-          result.payload.data &&
-          Array.isArray(result.payload.data.universes)
-        ) {
-          universes = result.payload.data.universes;
-        } else {
-          console.warn(
-            "Dashboard - Unexpected response format:",
-            result.payload
-          );
-        }
-
-        return { universes };
-      })
+    // Proceed with loading universes
+    return dispatch(fetchUniverses())
       .catch((error) => {
-        console.error("Dashboard - Error loading universes:", {
-          error: error.message,
-          response: error.response?.data,
-          status: error.response?.status,
-        });
-        
-        // Check if error is related to authentication
-        const isAuthError = 
-          error.response?.status === 401 || 
-          error.message?.includes("authentication") ||
-          error.message?.includes("Signature verification failed") ||
-          error.message?.includes("token") ||
-          error.message?.includes("login");
-          
-        if (isAuthError) {
-          console.error("Dashboard - Authentication error in catch block, redirecting to login");
-          localStorage.setItem("token_verification_failed", "true");
-          navigate("/?modal=login", { replace: true });
-          return { error: "Authentication error" };
+        console.error("Dashboard - Error loading universes:", error);
+        if (error.response?.status === 401) {
+          // If we get a 401, try to refresh the token
+          return authService.refreshToken()
+            .then(() => {
+              // If refresh succeeds, retry loading universes
+              return dispatch(fetchUniverses());
+            })
+            .catch((refreshError) => {
+              console.error("Dashboard - Token refresh failed after 401:", refreshError);
+              navigate("/?modal=login", { replace: true });
+              return Promise.resolve({ error: "Authentication error" });
+            });
         }
-        
-        return { error: error.message };
+        return Promise.resolve({ error: error.message });
       });
-  }, [dispatch, retryCount, user?.id, navigate]);
+  }, [dispatch, navigate, retryCount]);
 
   // Load universes on component mount
   useEffect(() => {

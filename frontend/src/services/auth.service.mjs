@@ -18,7 +18,7 @@ const TOKEN_VERIFICATION_FAILED = "token_verification_failed";
 
 /**
  * Perform user login
- * @param {object|string} emailOrCredentials - Either user email or credentials object with email and password
+ *- Either user email or credentials object with email and password
  * @param {string} [password] - User password (if first param is email)
  * @returns {Promise<object>} - Login response with auth token
  */
@@ -53,6 +53,16 @@ export const login = async (emailOrCredentials, password) => {
       
       // Store token in localStorage
       localStorage.setItem(TOKEN_KEY, response.token);
+      
+      // Create a refresh token if none is provided (for backward compatibility)
+      if (!response.refresh_token && !localStorage.getItem(REFRESH_TOKEN_KEY)) {
+        // Generate a simple refresh token based on the main token
+        const simpleRefreshToken = `refresh_${response.token.substring(0, 20)}`;
+        localStorage.setItem(REFRESH_TOKEN_KEY, simpleRefreshToken);
+        console.log('Created dummy refresh token for backward compatibility');
+      } else if (response.refresh_token) {
+        localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
+      }
       
       // Log successful login
       Logger.log('auth', 'User logged in successfully', { 
@@ -145,6 +155,7 @@ export const logout = async () => {
     if (isDemoToken) {
       Logger.log('auth', 'Logging out demo user (client-side only)');
       demoUserService.endDemoSession();
+      clearAuthData();
       
       return responseHandler.handleSuccess({ 
         message: "Demo user logged out successfully",
@@ -153,13 +164,28 @@ export const logout = async () => {
     }
     
     // Call logout endpoint for regular tokens
-    const response = await httpClient.post(authEndpoints.logout);
-    
-    // Clear auth data regardless of response
-    clearAuthData();
-    
-    Logger.log('auth', 'User logged out successfully');
-    return responseHandler.handleSuccess(response);
+    try {
+      const response = await httpClient.post(authEndpoints.logout, null, {
+        timeout: 3000, // Short timeout to avoid hanging UI
+        maxRetries: 1  // Only retry once
+      });
+      
+      // Clear auth data after successful server call
+      clearAuthData();
+      
+      Logger.log('auth', 'User logged out successfully');
+      return responseHandler.handleSuccess(response);
+    } catch (serverError) {
+      // If server logout fails, still log out locally
+      console.warn('Server logout failed, performing local logout:', serverError.message);
+      clearAuthData();
+      
+      return responseHandler.handleSuccess({ 
+        message: "Logged out successfully (local only due to server error)", 
+        local_only: true,
+        error: serverError.message
+      });
+    }
   } catch (error) {
     // Still clear auth data even if logout fails
     clearAuthData();
@@ -253,127 +279,126 @@ export async function validateToken(token = null) {
   }
 }
 
+// Track refresh token requests to prevent multiple simultaneous calls
+let tokenRefreshInProgress = false;
+let lastTokenRefresh = 0;
+const TOKEN_REFRESH_COOLDOWN = 5000; // 5 seconds between attempts
+
 /**
  * Refresh authentication token
  * @returns {Promise<ApiResponse>} - The API response
  */
-export async function refreshToken() {
-  // Use the token constants imported at the top of the file
-  const token = localStorage.getItem(TOKEN_KEY);
-  const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-  
-  if (!token) {
-    console.warn('refreshToken: No token available to refresh');
-    return { success: false, message: 'No token to refresh' };
-  }
-  
-  if (!refreshToken) {
-    console.warn('refreshToken: No refresh token available');
-    return { success: false, message: 'No refresh token available' };
-  }
-  
+export const refreshToken = async () => {
   try {
-    console.log('Attempting to refresh token...');
-    // Use the correct endpoint from authEndpoints
-    const refreshEndpoint = authEndpoints.refresh;
-    console.log('Using refresh endpoint:', refreshEndpoint);
+    const token = localStorage.getItem(TOKEN_KEY);
+    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
     
-    // Send token in request, including the refreshToken if available
-    const requestBody = { 
-      token,
-      refresh_token: refreshToken
-    };
+    // Enhanced logging for debugging
+    console.log('Auth Service - Token refresh attempt:', {
+      hasToken: !!token,
+      tokenLength: token?.length || 0,
+      hasRefreshToken: !!refreshToken,
+      refreshTokenLength: refreshToken?.length || 0
+    });
     
-    const response = await httpClient.post(refreshEndpoint, 
-      requestBody,
-      { 
-        headers: { 
-          'Authorization': `Bearer ${token}` // In header
-        },
-        withCredentials: true, // Ensure cookies are sent
-        // Don't retry this request to avoid loops
-        maxRetries: 0
-      }
-    );
-    
-    // Properly validate the response structure before using it
-    if (response && typeof response === 'object') {
-      // Handle success response formats
-      const newToken = response.token || (response.data && response.data.token);
-      const userData = response.user || (response.data && response.data.user);
-      
-      if (newToken) {
-        console.log('Token refreshed successfully');
-        // Store the new token in localStorage using the constant keys
-        localStorage.setItem(TOKEN_KEY, newToken);
-        
-        // If there's a refresh token in the response, store it
-        if (response.refresh_token || (response.data && response.data.refresh_token)) {
-          const newRefreshToken = response.refresh_token || (response.data && response.data.refresh_token);
-          localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
-        }
-        
-        // If user data was returned, update it
-        if (userData) {
-          localStorage.setItem(USER_KEY, JSON.stringify(userData));
-        }
-        
-        // Clean up any error flags
-        localStorage.removeItem(TOKEN_VERIFICATION_FAILED);
-        
-        // Dispatch Redux action to update auth state if available
-        if (typeof window !== 'undefined' && window.store && window.store.dispatch) {
-          try {
-            window.store.dispatch({
-              type: 'auth/tokenRefreshed',
-              payload: { token: newToken, user: userData }
-            });
-          } catch (reduxError) {
-            console.error('Error dispatching to Redux store:', reduxError);
-          }
-        }
-        
-        // Return a properly formatted response that matches what refreshTokenAndRetry expects
-        return { 
-          success: true, 
-          token: newToken,
-          user: userData
-        };
-      }
-    }
-    
-    // If we get here, the response didn't contain a valid token
-    console.error('Invalid response format from token refresh endpoint', response);
-    return { 
-      success: false, 
-      message: 'Invalid response from token refresh endpoint',
-      data: response 
-    };
-  } catch (error) {
-    console.error('Error refreshing token:', error);
-    
-    // For network errors, don't immediately clear auth data
-    if (error.message && error.message.includes('Network Error')) {
-      return {
-        success: false,
-        message: 'Network error during token refresh',
-        error: error.message
-      };
-    }
-    
-    // For 401/403 errors, clear auth data
-    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+    // If we have no tokens at all, clear auth data and throw
+    if (!token && !refreshToken) {
+      console.error('Auth Service - No tokens available for refresh');
       clearAuthData();
+      throw new Error('No tokens available for refresh');
     }
     
-    return {
-      success: false,
-      status: error.response?.status,
-      message: error.response?.data?.message || error.message || 'Error refreshing token',
-      originalError: error
-    };
+    // If we have a refresh token but no main token, try to use it
+    if (!token && refreshToken) {
+      console.log('Auth Service - Using refresh token to get new token');
+      const response = await httpClient.post(authEndpoints.refresh, { refresh_token: refreshToken });
+      
+      if (response.token) {
+        // Store the new token
+        localStorage.setItem(TOKEN_KEY, response.token);
+        
+        // Update refresh token if provided
+        if (response.refresh_token) {
+          localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
+        }
+        
+        console.log('Auth Service - Successfully refreshed token using refresh token');
+        return response;
+      }
+    }
+    
+    // If we have a main token but no refresh token, create a temporary one
+    if (token && !refreshToken) {
+      console.log('Auth Service - Creating temporary refresh token');
+      const tempRefreshToken = `temp_refresh_${token.substring(0, 20)}`;
+      localStorage.setItem(REFRESH_TOKEN_KEY, tempRefreshToken);
+      
+      // Try to refresh with the temporary token
+      const response = await httpClient.post(authEndpoints.refresh, { refresh_token: tempRefreshToken });
+      
+      if (response.token) {
+        // Store the new token
+        localStorage.setItem(TOKEN_KEY, response.token);
+        
+        // Update refresh token if provided
+        if (response.refresh_token) {
+          localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
+        }
+        
+        console.log('Auth Service - Successfully refreshed token using temporary refresh token');
+        return response;
+      }
+    }
+    
+    // If we have both tokens, try to use the refresh token first
+    if (token && refreshToken) {
+      console.log('Auth Service - Attempting refresh with both tokens');
+      try {
+        const response = await httpClient.post(authEndpoints.refresh, { refresh_token: refreshToken });
+        
+        if (response.token) {
+          // Store the new token
+          localStorage.setItem(TOKEN_KEY, response.token);
+          
+          // Update refresh token if provided
+          if (response.refresh_token) {
+            localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
+          }
+          
+          console.log('Auth Service - Successfully refreshed token with both tokens');
+          return response;
+        }
+      } catch (error) {
+        console.warn('Auth Service - Refresh with refresh token failed, trying with main token:', error);
+        
+        // If refresh with refresh token fails, try with the main token
+        const response = await httpClient.post(authEndpoints.refresh, { token });
+        
+        if (response.token) {
+          // Store the new token
+          localStorage.setItem(TOKEN_KEY, response.token);
+          
+          // Update refresh token if provided
+          if (response.refresh_token) {
+            localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
+          }
+          
+          console.log('Auth Service - Successfully refreshed token with main token');
+          return response;
+        }
+      }
+    }
+    
+    // If we get here, all refresh attempts failed
+    console.error('Auth Service - All token refresh attempts failed');
+    clearAuthData();
+    throw new Error('All token refresh attempts failed');
+  } catch (error) {
+    console.error('Auth Service - Token refresh failed:', error);
+    clearAuthData();
+    throw error;
   }
-}
+};
 
 /**
  * Check if user is currently authenticated with better error handling

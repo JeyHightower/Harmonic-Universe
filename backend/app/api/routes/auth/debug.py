@@ -1,5 +1,5 @@
 from flask import jsonify, current_app, request
-from flask_jwt_extended import JWTManager
+from flask_jwt_extended import JWTManager, create_access_token
 import os
 import sys
 import jwt
@@ -97,6 +97,89 @@ def debug_jwt():
     except Exception as e:
         current_app.logger.error(f'JWT debug error: {str(e)}')
         return jsonify({'message': 'Error during JWT debugging', 'error': str(e)}), 500
+
+@auth_bp.route('/debug/token-test', methods=['GET', 'POST'])
+def debug_token_test():
+    """Debug endpoint to test token creation and verification."""
+    try:
+        # Get the JWT secret key from config
+        secret_key = current_app.config.get('JWT_SECRET_KEY')
+        if not secret_key:
+            secret_key = os.environ.get('JWT_SECRET_KEY', 'jwt-secret-key')
+        
+        # Create a test token
+        test_token = create_access_token(identity=1)
+        
+        # Try to decode the token with PyJWT directly to verify
+        try:
+            # Decode without verification first
+            unverified_payload = jwt.decode(test_token, options={"verify_signature": False})
+            
+            # Then try to verify with our secret key
+            try:
+                verified_payload = jwt.decode(test_token, secret_key, algorithms=['HS256'])
+                verification_status = "SUCCESS"
+            except Exception as e:
+                verification_status = f"FAILED: {str(e)}"
+                
+            # Check for token in authorization header
+            auth_header = request.headers.get('Authorization', '')
+            if auth_header.startswith('Bearer '):
+                user_token = auth_header.split(' ')[1]
+                
+                # Try to verify user token
+                try:
+                    user_payload = jwt.decode(user_token, secret_key, algorithms=['HS256'])
+                    user_token_status = "VALID"
+                except Exception as e:
+                    user_token_status = f"INVALID: {str(e)}"
+                    
+                    # Try with other keys
+                    other_keys = ['jwt-secret-key', 'development-jwt-secret-key', 'secret-key']
+                    success_key = None
+                    
+                    for key in other_keys:
+                        try:
+                            if key != secret_key:  # Skip if same as current
+                                test_payload = jwt.decode(user_token, key, algorithms=['HS256'])
+                                success_key = key
+                                break
+                        except:
+                            pass
+                    
+                    if success_key:
+                        user_token_status += f" (But valid with key: '{success_key}')"
+            else:
+                user_token = None
+                user_token_status = "NOT PROVIDED"
+            
+            return jsonify({
+                'current_config': {
+                    'jwt_secret_key': secret_key[:3] + '...' if secret_key else None,
+                    'jwt_secret_key_length': len(secret_key) if secret_key else 0,
+                },
+                'test_token': test_token,
+                'test_token_payload': unverified_payload,
+                'test_token_verification': verification_status,
+                'user_token': user_token,
+                'user_token_status': user_token_status if user_token else None,
+                'message': 'JWT debug information'
+            }), 200
+            
+        except Exception as decode_error:
+            return jsonify({
+                'jwt_secret_key': secret_key[:3] + '...' if secret_key else None,
+                'test_token': test_token,
+                'error': f"Token decode error: {str(decode_error)}",
+                'message': 'Error decoding JWT token'
+            }), 500
+            
+    except Exception as e:
+        current_app.logger.error(f"JWT debug error: {str(e)}")
+        return jsonify({
+            'error': str(e),
+            'message': 'Error in JWT debug endpoint'
+        }), 500
 
 def _mask_key(key):
     """Mask a key for display (without revealing it fully)."""

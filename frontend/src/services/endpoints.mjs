@@ -19,8 +19,16 @@ const endpoint = (path) => {
   // Ensure the API prefix doesn't have a trailing slash
   const prefix = API_PREFIX.endsWith('/') ? API_PREFIX.slice(0, -1) : API_PREFIX;
   
+  // Add trailing slash if not present to avoid redirects
+  const pathWithTrailingSlash = formattedPath.endsWith('/') 
+    ? formattedPath 
+    : `${formattedPath}/`;
+  
   // Combine the prefix with the path
-  return `${prefix}${formattedPath}`;
+  const fullEndpoint = `${prefix}${pathWithTrailingSlash}`;
+  
+  console.log(`Endpoint: ${path} -> ${fullEndpoint}`);
+  return fullEndpoint;
 };
 
 /**
@@ -30,9 +38,9 @@ export const authEndpoints = {
   login: endpoint('/auth/login'),
   register: endpoint('/auth/signup'),
   demoLogin: endpoint('/auth/demo-login'),
-  refresh: endpoint('/auth/refresh'),
-  logout: endpoint('/auth/logout'),
-  validate: endpoint('/auth/validate'),
+  refresh: endpoint('/auth/refresh/'),
+  logout: endpoint('/auth/logout/'),
+  validate: endpoint('/auth/validate/'),
 };
 
 /**
@@ -49,19 +57,19 @@ export const userEndpoints = {
  * Universe Endpoints
  */
 export const universeEndpoints = {
-  list: endpoint('/universes'),
-  create: endpoint('/universes'),
-  get: (id) => endpoint(`/universes/${id}`),
-  update: (id) => endpoint(`/universes/${id}`),
-  delete: (id) => endpoint(`/universes/${id}`),
-  physics: (id) => endpoint(`/universes/${id}/physics`),
-  audio: (id) => endpoint(`/universes/${id}/audio`),
-  visualization: (id) => endpoint(`/universes/${id}/visualization`),
-  generateMusic: (id) => endpoint(`/universes/${id}/generate-music`),
-  saveMusic: (id) => endpoint(`/universes/${id}/save-music`),
-  downloadMusic: (id) => endpoint(`/universes/${id}/download-music`),
-  getMusic: (id, musicId) => endpoint(`/universes/${id}/music/${musicId}`),
-  deleteMusic: (id, musicId) => endpoint(`/universes/${id}/music/${musicId}`),
+  list: endpoint('/universes/'),
+  create: endpoint('/universes/'),
+  get: (id) => endpoint(`/universes/${id}/`),
+  update: (id) => endpoint(`/universes/${id}/`),
+  delete: (id) => endpoint(`/universes/${id}/`),
+  physics: (id) => endpoint(`/universes/${id}/physics/`),
+  audio: (id) => endpoint(`/universes/${id}/audio/`),
+  visualization: (id) => endpoint(`/universes/${id}/visualization/`),
+  generateMusic: (id) => endpoint(`/universes/${id}/generate-music/`),
+  saveMusic: (id) => endpoint(`/universes/${id}/save-music/`),
+  downloadMusic: (id) => endpoint(`/universes/${id}/download-music/`),
+  getMusic: (id, musicId) => endpoint(`/universes/${id}/music/${musicId}/`),
+  deleteMusic: (id, musicId) => endpoint(`/universes/${id}/music/${musicId}/`),
 };
 
 /**
