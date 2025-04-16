@@ -1,17 +1,43 @@
-from flask import jsonify, current_app
-from flask_jwt_extended import jwt_required, get_jwt
+from flask import jsonify, current_app, request
+from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
 
 from . import auth_bp
 from ....extensions import add_token_to_blocklist
+from .token import get_jwt_secret_key
+import jwt
 
 @auth_bp.route('/logout/', methods=['POST'])
-@jwt_required()
+@jwt_required(optional=True)
 def logout():
     """Logout the current user."""
     try:
-        # Revoke the token by adding it to the blocklist
-        jwt_payload = get_jwt()
-        jti = jwt_payload['jti']
+        # First try the standard way
+        try:
+            jwt_payload = get_jwt()
+            jti = jwt_payload['jti']
+        except Exception as e:
+            # If that fails, try manual extraction
+            auth_header = request.headers.get('Authorization')
+            if auth_header and auth_header.startswith('Bearer '):
+                token = auth_header.split(' ')[1]
+                try:
+                    secret_key = get_jwt_secret_key()
+                    payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+                    # We don't have a JTI in manually decoded token, so use token itself
+                    jti = token
+                except Exception as e:
+                    current_app.logger.error(f"Error decoding token manually: {str(e)}")
+                    return jsonify({
+                        'success': False,
+                        'message': 'Invalid token',
+                        'status': 401
+                    }), 401
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': 'No token provided',
+                    'status': 401
+                }), 401
         
         current_app.logger.info(f'Logging out user, revoking token with JTI: {jti}')
         add_token_to_blocklist(jti)

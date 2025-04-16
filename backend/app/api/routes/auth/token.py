@@ -359,3 +359,42 @@ def refresh_token():
             'message': 'An error occurred during token refresh',
             'error': str(e)
         }), 500
+
+@auth_bp.route('/me/', methods=['GET'])
+@jwt_required(optional=True)  # Make JWT optional so we can handle errors better
+def get_current_user():
+    """Get current user information."""
+    try:
+        # First try using Flask-JWT-Extended's method
+        user_id = get_jwt_identity()
+
+        # If that fails, try to get the token manually from the Authorization header
+        if not user_id:
+            auth_header = request.headers.get('Authorization')
+            if auth_header and auth_header.startswith('Bearer '):
+                token = auth_header.split(' ')[1]
+                try:
+                    secret_key = get_jwt_secret_key()
+                    payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+                    user_id = payload.get('sub')
+                    if isinstance(user_id, str) and user_id.isdigit():
+                        user_id = int(user_id)
+                except Exception as e:
+                    current_app.logger.error(f"Error decoding token manually: {str(e)}")
+            
+        if not user_id:
+            return jsonify({"message": "Authentication required"}), 401
+        
+        user = User.query.get(user_id)
+        
+        if not user:
+            return jsonify({"message": "User not found"}), 404
+            
+        return jsonify({
+            "user": user.to_dict(),
+            "message": "Current user retrieved successfully"
+        }), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Error retrieving current user: {str(e)}")
+        return jsonify({"message": "An error occurred retrieving the current user"}), 500

@@ -1,4 +1,4 @@
-from flask import Blueprint
+from flask import Blueprint, jsonify
 
 # Create API blueprint with version prefix
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -20,3 +20,9 @@ api_bp.register_blueprint(modal_bp)
 api_bp.register_blueprint(notes_bp, url_prefix='/notes')
 api_bp.register_blueprint(characters_bp, url_prefix='/characters')
 api_bp.register_blueprint(scenes_bp, url_prefix='/scenes')
+
+# Add a ping endpoint for health checks
+@api_bp.route('/ping', methods=['GET'])
+def ping():
+    """Simple health check endpoint."""
+    return jsonify({"status": "ok", "message": "Service is running"})
